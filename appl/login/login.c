@@ -289,15 +289,6 @@ krb5_verify(struct passwd *pwd, const char *password)
  * old krb4 code.
  */
 
-#ifndef KRB_VERIFY_SECURE_FAIL
-
-/* flags for krb_verify_user() */
-#define KRB_VERIFY_NOT_SECURE	0
-#define KRB_VERIFY_SECURE	1
-#define KRB_VERIFY_SECURE_FAIL	2
-
-#endif
-
 static int
 krb4_verify(struct passwd *pwd, const char *password)
 {
