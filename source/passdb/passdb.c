@@ -790,12 +790,13 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		return False;
 
 	if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
-
+		
 		/* the SID is in the mapping table but not mapped */
 		if (map.gid==-1)
 			return False;
 
-		sid_peek_rid(&map.sid, pgid);
+		sid_peek_rid(&map.sid, &rid);
+		*pgid = rid;
 		*name_type = map.sid_name_use;
 	} else {
 		*pgid = pdb_group_rid_to_gid(rid);
@@ -1765,7 +1766,7 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, const uint8 *hours)
 
 BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 {
-	time_t expire;
+	uint32 expire;
 
 	if (!sampass)
 		return False;
@@ -1773,9 +1774,9 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 	if (!pdb_set_pass_last_set_time (sampass, time(NULL)))
 		return False;
 
-	account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&expire);
+	account_policy_get(AP_MAX_PASSWORD_AGE, &expire);
 
-	if (expire==-1) {
+	if (expire==(uint32)-1) {
 		if (!pdb_set_pass_must_change_time (sampass, 0))
 			return False;
 	} else {
