@@ -28,6 +28,94 @@
 #include <gtk/gtk.h>
 #include "libsmbclient.h"
 
+struct tree_data {
+
+  guint32 type;    /* Type of tree item, an SMBC_TYPE */
+  char name[256];  /* May need to change this later   */
+
+};
+
+/*
+ * We are given a widget, and we want to retrieve its URL so we 
+ * can do a directory listing.
+ *
+ * We walk back up the tree, picking up pieces until we hit a server or
+ * workgroup type and return a path from there
+ */
+
+static char path_string[1024];
+
+char *get_path(GtkWidget *item)
+{
+  GtkWidget *p = item;
+  struct tree_data *pd;
+  char *comps[1024];  /* We keep pointers to the components here */
+  int i = 0, j, level,type;
+
+  /* Walk back up the tree, getting the private data */
+
+  level = GTK_TREE(item->parent)->level;
+
+  /* Pick up this item's component info */
+
+  pd = (struct tree_data *)gtk_object_get_user_data(GTK_OBJECT(item));
+
+  comps[i++] = pd->name;
+  type = pd->type;
+
+  while (level > 0 && type != SMBC_SERVER && type != SMBC_WORKGROUP) {
+
+    /* Find the parent and extract the data etc ... */
+
+    p = GTK_WIDGET(p->parent);    
+    p = GTK_WIDGET(GTK_TREE(p)->tree_owner);
+
+    pd = (struct tree_data *)gtk_object_get_user_data(GTK_OBJECT(p));
+
+    level = GTK_TREE(item->parent)->level;
+
+    comps[i++] = pd->name;
+    type = pd->type;
+
+  }
+
+  /* 
+   * Got a list of comps now, should check that we did not hit a workgroup
+   * when we got other things as well ... Later
+   *
+   * Now, build the path
+   */
+
+  snprintf(path_string, sizeof(path_string), "smb:/");
+
+  for (j = i - 1; j >= 0; j--) {
+
+    strncat(path_string, "/", sizeof(path_string) - strlen(path_string));
+    strncat(path_string, comps[j], sizeof(path_string) - strlen(path_string));
+
+  }
+  
+  fprintf(stdout, "Path string = %s\n", path_string);
+
+  return path_string;
+
+}
+
+struct tree_data *make_tree_data(guint32 type, const char *name)
+{
+  struct tree_data *p = (struct tree_data *)malloc(sizeof(struct tree_data));
+
+  if (p) {
+
+    p->type = type;
+    strncpy(p->name, name, sizeof(p->name));
+
+  }
+
+  return p;
+
+}
+
 /* for all the GtkItem:: and GtkTreeItem:: signals */
 static void cb_itemsignal( GtkWidget *item,
                            gchar     *signame )
@@ -39,8 +127,6 @@ static void cb_itemsignal( GtkWidget *item,
   char dirbuf[512];
   struct smbc_dirent *dirp;
   
-  /* It's a Bin, so it has one child, which we know to be a
-     label, so get that */
   label = GTK_LABEL (GTK_BIN (item)->child);
   /* Get the text of the label */
   gtk_label_get (label, &name);
@@ -54,23 +140,7 @@ static void cb_itemsignal( GtkWidget *item,
   if (strncmp(signame, "expand", 6) == 0) { /* Expand called */
     char server[128];
 
-    if (level>0) {
-      gchar *sname;
-      GtkLabel *l2;
-      GtkWidget *p = GTK_WIDGET(item->parent);
-
-      p = GTK_TREE(p)->tree_owner;
-
-      l2 = GTK_LABEL(GTK_BIN(p)->child);
-
-      gtk_label_get(l2, &sname);
-      slprintf(server, 128, "smb://%s/%s", sname, name);
-
-    }
-    else
-      slprintf(server, 128, "smb://%s", name);
-
-    if ((dh = smbc_opendir(server)) < 0) { /* Handle error */
+    if ((dh = smbc_opendir(get_path(item))) < 0) { /* Handle error */
 
       g_print("cb_wholenet: Could not open dir %s, %s\n", server, 
 	      strerror(errno));
@@ -100,9 +170,21 @@ static void cb_itemsignal( GtkWidget *item,
       dirp = (struct smbc_dirent *)dirbuf;
 
       while (err > 0) {
+	struct tree_data *my_data;
 
-	dirlen = sizeof(struct smbc_dirent) + dirp->namelen +
-	  dirp->commentlen + 1;
+	dirlen = dirp->dirlen;
+
+	my_data = make_tree_data(dirp->smbc_type, dirp->name);
+
+	if (!my_data) {
+
+	  g_print("Could not allocate space for tree_data: %s\n",
+		  dirp->name);
+
+	  gtk_main_quit();
+	  return;
+
+	}
 
 	aitem = gtk_tree_item_new_with_label(dirp->name);
 
@@ -119,14 +201,19 @@ static void cb_itemsignal( GtkWidget *item,
 			    GTK_SIGNAL_FUNC(cb_itemsignal), "collapse");
 	/* Add it to the parent tree */
 	gtk_tree_append (GTK_TREE(real_tree), aitem);
-	/* Show it - this can be done at any time */
+
 	gtk_widget_show (aitem);
+
+	gtk_object_set_user_data(GTK_OBJECT(aitem), (gpointer)my_data);
 
 	fprintf(stdout, "Added: %s, len: %u\n", dirp->name, dirlen);
 
-	subtree = gtk_tree_new();
+	if (dirp->smbc_type != SMBC_FILE && dirp->smbc_type != SMBC_IPC_SHARE){
+	  
+	  subtree = gtk_tree_new();
+	  gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);
 
-	gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);
+	}
 
 	(char *)dirp += dirlen;
 	err -= dirlen;
@@ -231,9 +318,11 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
       dirp = (struct smbc_dirent *)dirbuf;
 
       while (err > 0) {
+	struct tree_data *my_data;
 
-	dirlen = sizeof(struct smbc_dirent) + dirp->namelen +
-	  dirp->commentlen + 1;
+	dirlen = dirp->dirlen;
+
+	my_data = make_tree_data(dirp->smbc_type, dirp->name);
 
 	aitem = gtk_tree_item_new_with_label(dirp->name);
 
@@ -253,6 +342,8 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 	/* Show it - this can be done at any time */
 	gtk_widget_show (aitem);
 
+	gtk_object_set_user_data(GTK_OBJECT(aitem), (gpointer)my_data);
+
 	fprintf(stdout, "Added: %s, len: %u\n", dirp->name, dirlen);
 
 	subtree = gtk_tree_new();
@@ -270,54 +361,6 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 
   }
 
-  /* Create this item's subtree */
-  /*  subtree = gtk_tree_new();
-  g_print ("-> item %s->%p, subtree %p\n", "Whole Network", item,
-	   subtree);
-
-  /* This is still necessary if you want these signals to be called
-     for the subtree's children.  Note that selection_change will be 
-     signalled for the root tree regardless. */
-  /*  gtk_signal_connect (GTK_OBJECT(subtree), "select_child",
-		      GTK_SIGNAL_FUNC(cb_select_child), subtree);
-    gtk_signal_connect (GTK_OBJECT(subtree), "unselect_child",
-			GTK_SIGNAL_FUNC(cb_unselect_child), subtree);
-    /* This has absolutely no effect, because it is completely ignored 
-       in subtrees */
-  /*    gtk_tree_set_selection_mode (GTK_TREE(subtree),
-				 GTK_SELECTION_SINGLE);
-    /* Neither does this, but for a rather different reason - the
-       view_mode and view_line values of a tree are propagated to
-       subtrees when they are mapped.  So, setting it later on would
-       actually have a (somewhat unpredictable) effect */
-  /*    gtk_tree_set_view_mode (GTK_TREE(subtree), GTK_TREE_VIEW_ITEM);
-    /* Set this item's subtree - note that you cannot do this until
-       AFTER the item has been added to its parent tree! */
-  /*    gtk_tree_item_set_subtree (GTK_TREE_ITEM(item), subtree);
-
-    for (j = 0; j < 5; j++){
-      GtkWidget *subitem;
-
-      /* Create a subtree item, in much the same way */
-  /*      subitem = gtk_tree_item_new_with_label (itemnames[j]);
-      /* Connect all GtkItem:: and GtkTreeItem:: signals */
-  /*      gtk_signal_connect (GTK_OBJECT(subitem), "select",
-			  GTK_SIGNAL_FUNC(cb_itemsignal), "select");
-      gtk_signal_connect (GTK_OBJECT(subitem), "deselect",
-			  GTK_SIGNAL_FUNC(cb_itemsignal), "deselect");
-      gtk_signal_connect (GTK_OBJECT(subitem), "toggle",
-			  GTK_SIGNAL_FUNC(cb_itemsignal), "toggle");
-      gtk_signal_connect (GTK_OBJECT(subitem), "expand",
-			  GTK_SIGNAL_FUNC(cb_itemsignal), "expand");
-      gtk_signal_connect (GTK_OBJECT(subitem), "collapse",
-			  GTK_SIGNAL_FUNC(cb_itemsignal), "collapse");
-      g_print ("-> -> item %s->%p\n", itemnames[j], subitem);
-      /* Add it to its parent tree */
-  /*      gtk_tree_append (GTK_TREE(subtree), subitem);
-      /* Show it */
-  /*      gtk_widget_show (subitem);
-    }
-  */
 }
 
 static void 
@@ -434,9 +477,10 @@ int main( int   argc,
     fprintf(stdout, "Dir len: %u\n", err);
 
     while (err > 0) { /* Extract each entry and make a sub-tree */
+      struct tree_data *my_data;
+      int dirlen = dirp->dirlen;
 
-      int dirlen = sizeof(struct smbc_dirent) + dirp->namelen + 
-	dirp->commentlen + 1;
+      my_data = make_tree_data(dirp->smbc_type, dirp->name);
 
       item = gtk_tree_item_new_with_label(dirp->name);
       /* Connect all GtkItem:: and GtkTreeItem:: signals */
@@ -454,6 +498,8 @@ int main( int   argc,
       gtk_tree_append (GTK_TREE(tree), item);
       /* Show it - this can be done at any time */
       gtk_widget_show (item);
+
+      gtk_object_set_user_data(GTK_OBJECT(item), (gpointer)my_data);
 
       fprintf(stdout, "Added: %s, len: %u\n", dirp->name, dirlen);
 
