@@ -383,6 +383,7 @@ char *file_load(char *fname, size_t *size);
 char **file_lines_load(char *fname, int *numlines);
 char **file_lines_pload(char *syscmd, int *numlines);
 void file_lines_free(char **lines);
+void file_lines_slashcont(char **lines);
 
 /*The following definitions come from  lib/util_sec.c  */
 

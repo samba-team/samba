@@ -71,9 +71,8 @@ void load_groupname_map(void)
   static BOOL initialized = False;
   char *groupname_map_file = lp_groupname_map();
   SMB_STRUCT_STAT st;
-  FILE *fp;
-  char *s;
-  pstring buf;
+  char **lines;
+  int i;
   groupname_map_entry *new_ep;
 
   if(!initialized) {
@@ -102,12 +101,13 @@ void load_groupname_map(void)
    * Load the file.
    */
 
-  fp = sys_fopen(groupname_map_file,"r");
-  if (!fp) {
+  lines = file_lines_load(groupname_map_file,NULL);
+  if (!lines) {
     DEBUG(0,("load_groupname_map: can't open groupname map %s. Error was %s\n",
           groupname_map_file, strerror(errno)));
     return;
   }
+  file_lines_slashcont(lines);
 
   /*
    * Throw away any previous list.
@@ -116,11 +116,12 @@ void load_groupname_map(void)
 
   DEBUG(4,("load_groupname_map: Scanning groupname map %s\n",groupname_map_file));
 
-  while((s=fgets_slash(buf,sizeof(buf),fp))!=NULL) {
+  for (i=0; lines[i]; i++) {
     pstring unixname;
     pstring windows_name;
     struct group *gptr;
     DOM_SID tmp_sid;
+    char *s = lines[i];
 
     DEBUG(10,("load_groupname_map: Read line |%s|\n", s));
 
@@ -202,7 +203,7 @@ Error was %s.\n", unixname, strerror(errno) ));
   DEBUG(10,("load_groupname_map: Added %ld entries to groupname map.\n",
 	    ubi_slCount(&groupname_map_list)));
            
-  fclose(fp);
+  file_lines_free(lines);
 }
 
 /***********************************************************
