@@ -51,7 +51,11 @@
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS lsa_QuerySecObj ();
+	NTSTATUS lsa_QuerySecObj (
+		[in,ref]     policy_handle *handle,
+		[in]         uint32 sec_info,
+		[out]        sec_desc_buf *sd
+		);
 
 
 	/******************/

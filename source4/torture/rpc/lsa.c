@@ -332,6 +332,31 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 	return True;
 }
 
+
+static BOOL test_QuerySecObj(struct dcerpc_pipe *p, 
+			     TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *acct_handle,
+			     struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct lsa_QuerySecObj r;
+
+	printf("Testing QuerySecObj\n");
+
+	r.in.handle = acct_handle;
+	r.in.sec_info = 7;
+
+	status = dcerpc_lsa_QuerySecObj(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QuerySecObj failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	NDR_PRINT_DEBUG(sec_desc_buf, r.out.sd);
+
+	return True;
+}
+
 static BOOL test_OpenAccount(struct dcerpc_pipe *p, 
 			     TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle,
@@ -355,6 +380,10 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 	}
 
 	if (!test_EnumPrivsAccount(p, mem_ctx, handle, &acct_handle)) {
+		return False;
+	}
+
+	if (!test_QuerySecObj(p, mem_ctx, handle, &acct_handle)) {
 		return False;
 	}
 

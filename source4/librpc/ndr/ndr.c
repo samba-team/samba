@@ -50,6 +50,20 @@ struct ndr_pull *ndr_pull_init_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 	return ndr;
 }
 
+/*
+  create an ndr sub-context based on an existing context. The new context starts
+  at the current offset, with the given size limit
+*/
+NTSTATUS ndr_pull_subcontext(struct ndr_pull *ndr, struct ndr_pull *ndr2, uint32 size)
+{
+	NDR_PULL_NEED_BYTES(ndr, size);
+	*ndr2 = *ndr;
+	ndr2->data += ndr2->offset;
+	ndr2->offset = 0;
+	ndr2->data_size = size;
+	return NT_STATUS_OK;
+}
+
 
 /* limit the remaining size of the current ndr parse structure to the
    given size, starting at the given offset 

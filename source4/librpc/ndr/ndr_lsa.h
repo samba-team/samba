@@ -57,9 +57,12 @@ struct lsa_EnumPrivs {
 
 struct lsa_QuerySecObj {
 	struct {
+		struct policy_handle *handle;
+		uint32 sec_info;
 	} in;
 
 	struct {
+		struct sec_desc_buf *sd;
 		NTSTATUS result;
 	} out;
 
