@@ -275,14 +275,17 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
 	if (p->dc.challange_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
-		/* copy the client credentials */
-		
-		/* create server challenge for inclusion in the reply */
-		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
+
+		/* from client / server challenges and md4 password, generate sess key */
+		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
+				 (char *)p->dc.md4pw, p->dc.sess_key);
 		
 		/* check that the client credentials are valid */
 		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
 			
+			/* create server challenge for inclusion in the reply */
+			cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
+		
 			/* copy the received client credentials for use next time */
 			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
@@ -291,6 +294,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 			fstrcpy(p->dc.mach_acct, mach_acct);
 		
 			p->dc.authenticated = True;
+
 		} else {
 			status = NT_STATUS_ACCESS_DENIED;
 		}
@@ -333,14 +337,10 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
 	if (p->dc.challange_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
-		/* copy the client credentials */
 		
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
 				 (char *)p->dc.md4pw, p->dc.sess_key);
-		
-		/* create server challenge for inclusion in the reply */
-		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
 		
 		/* check that the client credentials are valid */
 		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
