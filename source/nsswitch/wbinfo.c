@@ -262,6 +262,77 @@ static BOOL wbinfo_lookupname(char *name)
 	return True;
 }
 
+/* Authenticate a user with a plaintext password */
+
+static BOOL wbinfo_auth(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        enum winbindd_result result;
+        char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+        p = strchr(username, '%');
+
+        if (p) {
+                *p = 0;
+                fstrcpy(request.data.auth.user, username);
+                fstrcpy(request.data.auth.pass, p + 1);
+                *p = '%';
+        } else
+                fstrcpy(request.data.auth.user, username);
+
+	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+
+	/* Display response */
+
+        printf("plaintest password authentication %s\n", 
+               (result == WINBINDD_OK) ? "succeeded" : "failed");
+
+        return result == WINBINDD_OK;
+}
+
+/* Authenticate a user with a hashed password */
+
+static BOOL wbinfo_auth_ntlm(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        enum winbindd_result result;
+        fstring password;
+        char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+        p = strchr(username, '%');
+
+        if (p) {
+                *p = 0;
+                fstrcpy(password, p + 1);
+        }
+
+	fstrcpy(request.data.auth_ntlm.user, username);
+
+	nt_lm_owf_gen(password, request.data.auth_ntlm.nt_hash,
+                      request.data.auth_ntlm.lm_hash);
+
+	result = winbindd_request(WINBINDD_PAM_AUTH_NTLM, &request, &response);
+
+	/* Display response */
+
+        printf("hashed password authentication %s\n", (result == WINBINDD_OK) ?
+               "succeeded" : "failed");
+
+        return result == WINBINDD_OK;
+}
+
 /* Print domain users */
 
 static BOOL print_domain_users(void)
@@ -324,18 +395,20 @@ static BOOL print_domain_groups(void)
 
 static void usage(void)
 {
-	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm\n");
-	printf("\t-u\tlists all domain users\n");
-	printf("\t-g\tlists all domain groups\n");
-	printf("\t-n name\tconverts name to sid\n");
-	printf("\t-s sid\tconverts sid to name\n");
-	printf("\t-U uid\tconverts uid to sid\n");
-	printf("\t-G gid\tconverts gid to sid\n");
-	printf("\t-S sid\tconverts sid to uid\n");
-	printf("\t-Y sid\tconverts sid to gid\n");
-	printf("\t-t\tcheck shared secret\n");
-	printf("\t-m\tlist trusted domains\n");
-	printf("\t-r user\tget user groups\n");
+	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
+               "| -a user%%password\n");
+	printf("\t-u\t\t\tlists all domain users\n");
+	printf("\t-g\t\t\tlists all domain groups\n");
+	printf("\t-n name\t\t\tconverts name to sid\n");
+	printf("\t-s sid\t\t\tconverts sid to name\n");
+	printf("\t-U uid\t\t\tconverts uid to sid\n");
+	printf("\t-G gid\t\t\tconverts gid to sid\n");
+	printf("\t-S sid\t\t\tconverts sid to uid\n");
+	printf("\t-Y sid\t\t\tconverts sid to gid\n");
+	printf("\t-t\t\t\tcheck shared secret\n");
+	printf("\t-m\t\t\tlist trusted domains\n");
+	printf("\t-r user\t\t\tget user groups\n");
+	printf("\t-a user%%password\tauthenticate user\n");
 }
 
 /* Main program */
@@ -375,7 +448,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -448,6 +521,25 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			break;
+
+                case 'a': {
+                        BOOL got_error = False;
+
+                        if (!wbinfo_auth(optarg)) {
+                                printf("Could not authenticate user %s with "
+                                       "plaintext password\n", optarg);
+                                got_error = True;
+                        }
+                        if (!wbinfo_auth_ntlm(optarg)) {
+                                printf("Could not authenticate user %s with "
+                                       "hashed password\n", optarg);
+                                got_error = True;
+                        }
+
+                        if (got_error)
+                                return 1;
+                        break;
+                }
 				
                       /* Invalid option */
 
