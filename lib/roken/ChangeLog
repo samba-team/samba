@@ -1,3 +1,12 @@
+1998-12-20  Assar Westerlund  <assar@sics.se>
+
+	* snprintf.c, iruserok.c, parse-units.c: unsigned char-correctness
+
+	* roken.h.in (inet_aton): also chedk NEED_INET_ATON_PROTO
+
+	* roken-common.h: __attribute__: check for autoconf'd
+	HAVE___ATTRIBUTE__ instead of GNUC
+
 Sun Dec  6 19:53:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* parse_units.c (parse_something): func is called with val == 0 if
