@@ -1189,6 +1189,8 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	}
 
 	DEBUG(5,("_samr_lookup_names: looking name on SID %s\n", sid_to_string(sid_str, &pol_sid)));
+	
+	become_root(); /* local_lookup_name can require root privs */
 
 	for (i = 0; i < num_rids; i++) {
 		fstring name;
@@ -1212,7 +1214,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		 * a cleaner code is to add the sid of the domain we're looking in
 		 * to the local_lookup_name function.
 		 */
-            	if(local_lookup_name(global_myname, name, &sid, &local_type)) {
+            	if(local_lookup_name(name, &sid, &local_type)) {
                 	sid_split_rid(&sid, &local_rid);
 				
 			if (sid_equal(&sid, &pol_sid)) {
@@ -1222,6 +1224,8 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 			}
             	}
 	}
+
+	unbecome_root();
 
 	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
 
@@ -1342,6 +1346,8 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
  
 	r_u->status = NT_STATUS_NONE_MAPPED;
 
+	become_root();  /* lookup_sid can require root privs */
+
 	for (i = 0; i < num_rids; i++) {
 		fstring tmpname;
 		fstring domname;
@@ -1363,6 +1369,8 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 			}
 		}
 	}
+
+	unbecome_root();
 
 	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
