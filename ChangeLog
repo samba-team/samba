@@ -1,3 +1,12 @@
+2003-04-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/mk_priv.c lib/krb5/mk_safe.c lib/krb5/rd_priv.c
+	lib/krb5/rd_safe.c lib/krb5/rd_cred.c: implement RET_SEQUENCE and
+	RET_TIME
+
+	* lib/krb5/krb5.h (krb5_replay_data): make usec signed (matching
+	asn1)
+
 2003-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/programming.texi: s/managment/management/, from jmc
