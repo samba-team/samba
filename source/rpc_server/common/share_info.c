@@ -100,7 +100,7 @@ uint32 dcesrv_common_get_share_unknown(TALLOC_CTX *mem_ctx, struct dcesrv_contex
 }
 
 /* This hardcoded value should go into a ldb database! */
-struct security_decriptor *dcesrv_common_get_security_descriptor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+struct security_descriptor *dcesrv_common_get_security_descriptor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
 	return NULL;
 }
