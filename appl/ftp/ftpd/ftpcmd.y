@@ -324,14 +324,16 @@ cmd
 		}
 	| STAT CRLF
 		{
-			if(oobflag){
-				if (file_size != (off_t) -1)
-					reply(213, "Status: %ld of %ld bytes transferred",
-						byte_count, file_size);
-				else
-					reply(213, "Status: %ld bytes transferred", byte_count);
-			}else
-				statcmd();
+		    if(oobflag){
+			if (file_size != (off_t) -1)
+			    reply(213, "Status: %ld of %ld bytes transferred",
+				  (unsigned long)byte_count, 
+				  (unsigned long)file_size);
+			else
+			    reply(213, "Status: %ld bytes transferred", 
+				  (unsigned long)byte_count);
+		    }else
+			statcmd();
 	}
 	| DELE check_login_no_guest SP pathname CRLF
 		{
@@ -1382,7 +1384,7 @@ sizecmd(char *filename)
 	case TYPE_A: {
 		FILE *fin;
 		int c;
-		off_t count;
+		size_t count;
 		struct stat stbuf;
 		fin = fopen(filename, "r");
 		if (fin == NULL) {
@@ -1403,7 +1405,7 @@ sizecmd(char *filename)
 		}
 		fclose(fin);
 
-		reply(213, "%ld", count);
+		reply(213, "%ld", (unsigned long)count);
 		break; }
 	default:
 		reply(504, "SIZE not implemented for Type %c.", "?AEIL"[type]);

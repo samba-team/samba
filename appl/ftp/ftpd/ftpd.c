@@ -1096,10 +1096,10 @@ dataconn(char *name, off_t size, char *mode)
 
 	file_size = size;
 	byte_count = 0;
-	if (size != (off_t) -1)
-		snprintf(sizebuf, sizeof(sizebuf), " (%ld bytes)", size);
+	if (size >= 0)
+	    snprintf(sizebuf, sizeof(sizebuf), " (%ld bytes)", (long)size);
 	else
-		strcpy(sizebuf, "");
+	    strcpy(sizebuf, "");
 	if (pdata >= 0) {
 		struct sockaddr_in from;
 		int s, fromlen = sizeof(from);

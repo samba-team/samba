@@ -436,7 +436,7 @@ void pbsz(int size)
 	buffer_size = size;
     }
     if(new != size)
-	reply(200, "PBSZ=%lu", new);
+	reply(200, "PBSZ=%lu", (unsigned long)new);
     else
 	reply(200, "OK");
 }
