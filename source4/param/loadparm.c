@@ -939,7 +939,7 @@ static void init_globals(void)
 	do_parameter("load printers", "True");
 
 	do_parameter("max mux", "50");
-	do_parameter("max xmit", "4356");
+	do_parameter("max xmit", "65535");
 	do_parameter("lpqcachetime", "10");
 	do_parameter("DisableSpoolss", "False");
 	do_parameter("password level", "0");
