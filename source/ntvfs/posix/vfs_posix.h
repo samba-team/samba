@@ -75,15 +75,6 @@ struct pvfs_filename {
 };
 
 
-/* this holds a list of file names for a search. We deliberately do
-   not hold the file stat information here to minimise the memory
-   overhead of idle searches */
-struct pvfs_dir {
-	uint_t count;
-	const char *unix_path;
-	const char **names;
-};
-
 /* the state of a search started with pvfs_search_first() */
 struct pvfs_search_state {
 	struct pvfs_state *pvfs;

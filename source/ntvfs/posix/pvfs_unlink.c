@@ -79,9 +79,10 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_dir *dir;
 	NTSTATUS status;
-	uint32_t i, total_deleted=0;
+	uint32_t total_deleted=0;
 	struct pvfs_filename *name;
 	const char *fname;
+	uint_t ofs;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, unl->in.pattern, 0, &name);
@@ -98,22 +99,17 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	dir = talloc_p(req, struct pvfs_dir);
-	if (dir == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* get list of matching files */
-	status = pvfs_list_start(pvfs, name, dir);
+	status = pvfs_list_start(pvfs, name, req, &dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	status = NT_STATUS_NO_SUCH_FILE;
 
-	for (i=0; 
-	     (fname = pvfs_list_next(dir, i));
-	      i++) {
+	ofs = 0;
+
+	while ((fname = pvfs_list_next(dir, &ofs))) {
 		/* this seems to be a special case */
 		if ((unl->in.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
 		    (strcmp(fname, ".") == 0 ||
@@ -121,7 +117,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
-		status = pvfs_unlink_one(pvfs, req, dir->unix_path, fname, unl->in.attrib);
+		status = pvfs_unlink_one(pvfs, req, pvfs_list_unix_path(dir), fname, unl->in.attrib);
 		if (NT_STATUS_IS_OK(status)) {
 			total_deleted++;
 		}
