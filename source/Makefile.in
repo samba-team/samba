@@ -267,7 +267,8 @@ BROWSERD_OBJ1 = browserd/browserd.o \
 
 WKSSVCD_OBJ1 = wkssvcd/wkssvcd.o \
 		passdb/smbpassfile.o \
-		rpc_server/srv_wkssvc.o
+		rpc_server/srv_wkssvc.o \
+		wkssvcd/srv_wkssvc_nt.o
 
 SRVSVCD_OBJ1 = srvsvcd/srvsvcd.o \
 		passdb/smbpassfile.o \
