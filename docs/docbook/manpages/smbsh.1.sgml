@@ -70,7 +70,8 @@
 		</para></listitem>
 	    </varlistentry>
 
-		&popt.common.samba;
+		&stdarg.configfile;
+		&stdarg.debug;
 		&stdarg.resolve.order;
 
 	    <varlistentry>
