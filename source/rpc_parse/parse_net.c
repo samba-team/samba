@@ -991,22 +991,22 @@ static BOOL net_io_id_info1(char *desc, NET_ID_INFO_1 * id, prs_struct *ps,
 
 	if (id->ptr_id_info1 != 0)
 	{
-		smb_io_unihdr("unihdr", &(id->hdr_domain_name), ps, depth);
+		smb_io_unihdr("hdr_domain_name", &(id->hdr_domain_name), ps, depth);
 
 		prs_uint32("param_ctrl", ps, depth, &(id->param_ctrl));
-		smb_io_bigint("", &(id->logon_id), ps, depth);
+		smb_io_bigint("logon_id", &(id->logon_id), ps, depth);
 
-		smb_io_unihdr("unihdr", &(id->hdr_user_name), ps, depth);
-		smb_io_unihdr("unihdr", &(id->hdr_wksta_name), ps, depth);
+		smb_io_unihdr("hdr_user_name", &(id->hdr_user_name), ps, depth);
+		smb_io_unihdr("hdr_wksta_name", &(id->hdr_wksta_name), ps, depth);
 
-		smb_io_owf_info("", &(id->lm_owf), ps, depth);
-		smb_io_owf_info("", &(id->nt_owf), ps, depth);
+		smb_io_owf_info("lm_owf", &(id->lm_owf), ps, depth);
+		smb_io_owf_info("nt_owf", &(id->nt_owf), ps, depth);
 
-		smb_io_unistr2("unistr2", &(id->uni_domain_name),
+		smb_io_unistr2("uni_domain_name", &(id->uni_domain_name),
 			       id->hdr_domain_name.buffer, ps, depth);
-		smb_io_unistr2("unistr2", &(id->uni_user_name),
+		smb_io_unistr2("uni_user_name", &(id->uni_user_name),
 			       id->hdr_user_name.buffer, ps, depth);
-		smb_io_unistr2("unistr2", &(id->uni_wksta_name),
+		smb_io_unistr2("uni_wksta_name", &(id->uni_wksta_name),
 			       id->hdr_wksta_name.buffer, ps, depth);
 	}
 
