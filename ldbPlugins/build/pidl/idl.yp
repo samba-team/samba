@@ -1,0 +1,380 @@
+########################
+# IDL Parse::Yapp parser
+# Copyright (C) Andrew Tridgell <tridge@samba.org>
+# released under the GNU GPL version 2 or later
+
+
+
+# the precedence actually doesn't matter at all for this grammer, but
+# by providing a precedence we reduce the number of conflicts
+# enormously
+%left   '-' '+' '&' '|' '*' '>' '.' '/' '(' ')' '[' ',' ';'
+
+
+################
+# grammer
+%%
+idl: 
+	#empty  { {} }
+    | idl interface { push(@{$_[1]}, $_[2]); $_[1] }
+	| idl coclass { push(@{$_[1]}, $_[2]); $_[1] }
+;
+
+coclass: property_list 'coclass' identifier '{' interfaces '}' optional_semicolon
+          {$_[3] => {
+               "TYPE" => "COCLASS", 
+			   "PROPERTIES" => $_[1],
+		       "NAME" => $_[3],
+		       "DATA" => $_[5],
+          }}
+;
+
+interfaces:
+	#empty { {} }
+	| interfaces interface { push(@{$_[1]}, $_[2]); $_[1] }
+;
+
+interface: property_list 'interface' identifier base_interface '{' definitions '}' optional_semicolon
+          {$_[3] => {
+               "TYPE" => "INTERFACE", 
+			   "PROPERTIES" => $_[1],
+		       "NAME" => $_[3],
+			   "BASE" => $_[4],
+		       "DATA" => $_[6],
+          }}
+;
+
+base_interface:
+	#empty
+	| ':' identifier { $_[2] }
+;
+
+definitions: 
+      definition              { [ $_[1] ] }    
+    | definitions definition  { push(@{$_[1]}, $_[2]); $_[1] }
+;    
+
+
+definition: function | const | typedef
+;
+
+const: 'const' identifier identifier '=' anytext ';' 
+        {{
+                     "TYPE"  => "CONST", 
+		     "DTYPE"  => $_[2],
+		     "NAME"  => $_[3],
+		     "VALUE" => $_[5]
+        }}
+;
+
+
+function: property_list type identifier '(' element_list2 ')' ';' 
+	 {{
+		"TYPE" => "FUNCTION",
+		"NAME" => $_[3],
+		"RETURN_TYPE" => $_[2],
+		"PROPERTIES" => $_[1],
+		"DATA" => $_[5]
+	 }}
+;
+
+typedef: 'typedef' type identifier array_len ';' 
+        {{
+                     "TYPE" => "TYPEDEF", 
+		     "NAME" => $_[3],
+		     "DATA" => $_[2],
+		     "ARRAY_LEN" => $_[4]
+        }}
+;
+
+type:   struct | union | enum | identifier 
+	| void { "void" }
+;
+
+
+enum: 'enum' '{' enum_elements '}' 
+        {{
+                     "TYPE" => "ENUM", 
+		     "ELEMENTS" => $_[3]
+        }}
+;
+
+enum_elements: 
+      enum_element                    { [ $_[1] ] }            
+    | enum_elements ',' enum_element  { push(@{$_[1]}, $_[3]); $_[1] }
+;
+
+enum_element: identifier 
+	      | identifier '=' anytext { "$_[1]$_[2]$_[3]" }
+;
+
+struct: property_list 'struct' '{' element_list1 '}' 
+        {{
+                     "TYPE" => "STRUCT", 
+		     "PROPERTIES" => $_[1],
+		     "ELEMENTS" => $_[4]
+        }}
+;
+
+union: property_list 'union' '{' union_elements '}' 
+	 {{
+		"TYPE" => "UNION",
+		"PROPERTIES" => $_[1],
+		"DATA" => $_[4]
+	 }}
+;
+
+union_elements: 
+      union_element                    { [ $_[1] ] }            
+    | union_elements union_element  { push(@{$_[1]}, $_[2]); $_[1] }
+;
+
+union_element: 
+         '[' 'case' '(' anytext ')' ']' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => $_[4],
+		"DATA" => $_[7]
+	 }}
+         | '[' 'case' '(' anytext ')' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => $_[4],
+	 }}
+         | '[' 'default' ']' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => "default",
+		"DATA" => $_[4]
+	 }}
+         | '[' 'default' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => "default",
+	 }}
+;
+
+base_element: property_list type pointers identifier array_len
+	      {{
+			   "NAME" => $_[4],
+			   "TYPE" => $_[2],
+			   "PROPERTIES" => $_[1],
+			   "POINTERS" => $_[3],
+			   "ARRAY_LEN" => $_[5]
+              }}
+;
+
+
+pointers: 
+  #empty            
+   { 0 }
+    | pointers '*'  { $_[1]+1 }
+;
+
+
+
+element_list1: 
+    #empty
+    | element_list1 base_element ';' { push(@{$_[1]}, $_[2]); $_[1] }
+;
+
+element_list2: 
+    #empty
+    | 'void' 
+    | base_element { [ $_[1] ] }
+    | element_list2 ',' base_element { push(@{$_[1]}, $_[3]); $_[1] }
+;
+
+array_len: 
+    #empty 
+    | '[' ']'            { "*" }
+    | '[' anytext ']'    { "$_[2]" }
+;
+
+
+property_list: 
+    #empty
+    | property_list '[' properties ']' { util::FlattenHash([$_[1],$_[3]]); }
+;
+
+properties: property          { $_[1] }
+    | properties ',' property { util::FlattenHash([$_[1], $_[3]]); }
+;
+
+property: identifier                   {{ "$_[1]" => "1"     }}
+          | identifier '(' listtext ')' {{ "$_[1]" => "$_[3]" }}
+;
+
+listtext:
+    anytext 
+    | listtext ',' anytext { "$_[1] $_[3]" }
+;
+
+commalisttext:
+    anytext 
+    | commalisttext ',' anytext { "$_[1],$_[3]" }
+;
+
+anytext:  #empty
+    { "" }
+    | identifier | constant | text
+    | anytext '-' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '.' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '*' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '>' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '|' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '&' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '/' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '+' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '(' commalisttext ')' anytext  { "$_[1]$_[2]$_[3]$_[4]$_[5]" }
+;
+
+identifier: IDENTIFIER
+;
+
+constant: CONSTANT
+;
+
+text: TEXT { "\"$_[1]\"" }
+;
+
+optional_semicolon: 
+	#empty
+	| ';'
+;
+
+
+#####################################
+# start code
+%%
+
+use util;
+
+sub _Error {
+        if (exists $_[0]->YYData->{ERRMSG}) {
+		print $_[0]->YYData->{ERRMSG};
+		delete $_[0]->YYData->{ERRMSG};
+		return;
+	};
+	my $line = $_[0]->YYData->{LINE};
+	my $last_token = $_[0]->YYData->{LAST_TOKEN};
+	my $file = $_[0]->YYData->{INPUT_FILENAME};
+	
+	print "$file:$line: Syntax error near '$last_token'\n";
+}
+
+sub _Lexer($)
+{
+	my($parser)=shift;
+
+        $parser->YYData->{INPUT}
+        or  return('',undef);
+
+again:
+	$parser->YYData->{INPUT} =~ s/^[ \t]*//;
+
+	for ($parser->YYData->{INPUT}) {
+		if (/^\#/) {
+			if (s/^\# (\d+) \"(.*?)\"( \d+|)//) {
+				$parser->YYData->{LINE} = $1-1;
+				$parser->YYData->{INPUT_FILENAME} = $2;
+				goto again;
+			}
+			if (s/^\#line (\d+) \"(.*?)\"( \d+|)//) {
+				$parser->YYData->{LINE} = $1-1;
+				$parser->YYData->{INPUT_FILENAME} = $2;
+				goto again;
+			}
+			if (s/^(\#.*)$//m) {
+				goto again;
+			}
+		}
+		if (s/^(\n)//) {
+			$parser->YYData->{LINE}++;
+			goto again;
+		}
+		if (s/^\"(.*?)\"//) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return('TEXT',$1); 
+		}
+		if (s/^(\d+)(\W|$)/$2/) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return('CONSTANT',$1); 
+		}
+		if (s/^([\w_]+)//) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			if ($1 =~ 
+			    /^(coclass|interface|const|typedef|union
+			      |struct|enum|void|case|default)$/x) {
+				return $1;
+			}
+			return('IDENTIFIER',$1);
+		}
+		if (s/^(.)//s) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return($1,$1);
+		}
+	}
+}
+
+sub parse_idl($$)
+{
+	my $self = shift;
+	my $filename = shift;
+
+	my $saved_delim = $/;
+	undef $/;
+	my $cpp = $ENV{CPP};
+	if (! defined $cpp) {
+		$cpp = "cpp"
+	}
+	my $data = `$cpp -xc $filename`;
+	$/ = $saved_delim;
+
+    $self->YYData->{INPUT} = $data;
+    $self->YYData->{LINE} = 0;
+    $self->YYData->{LAST_TOKEN} = "NONE";
+
+	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+
+	foreach my $x (@{$idl}) {
+		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
+		# for 'object' interfaces
+		if (defined($x->{PROPERTIES}->{object})) {
+			foreach my $e (@{$x->{DATA}}) {
+				if($e->{TYPE} eq "FUNCTION") {
+					$e->{PROPERTIES}->{object} = 1;
+					unshift(@{$e->{DATA}}, 
+                        { 'NAME' => 'ORPCthis',
+                          'POINTERS' => 0,
+                          'PROPERTIES' => { 'in' => '1' },
+                          'TYPE' => 'ORPCTHIS'
+                        });
+					unshift(@{$e->{DATA}},
+                        { 'NAME' => 'ORPCthat',
+                          'POINTERS' => 0,
+                          'PROPERTIES' => { 'out' => '1' },
+						  'TYPE' => 'ORPCTHAT'
+                        });
+				}
+			}
+		}
+		
+		# Do the inheritance
+		if (defined($x->{BASE}) and $x->{BASE} ne "") {
+			my $parent = util::get_interface($idl, $x->{BASE});
+
+			if(not defined($parent)) { 
+				die("No such parent interface " . $x->{BASE});
+			}
+			
+			$x->{INHERITED_FUNCTIONS} = scalar @{$parent->{INHERITED_DATA}};
+			@{$x->{INHERITED_DATA}} = (@{$parent->{INHERITED_DATA}}, @{$x->{DATA}});
+		} else {
+			$x->{INHERITED_FUNCTIONS} = 0;
+			$x->{INHERITED_DATA} = $x->{DATA};
+		}
+	}
+
+	return $idl;
+}

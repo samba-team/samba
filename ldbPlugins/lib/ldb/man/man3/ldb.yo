@@ -1,0 +1,133 @@
+manpage(ldb)(3)(May 2004)()()
+manpagename(ldb)(A light-weight database library)
+
+manpagesynopsis()
+
+	bf(#include <ldb.h>)
+
+manpagedescription()
+
+ldb is a light weight embedded database library and API. With a
+programming interface that is very similar to LDAP, ldb can store its
+data either in a tdb(3) database or in a real LDAP database.
+
+When used with the tdb backend ldb does not require any database
+daemon. Instead, ldb function calls are processed immediately by the
+ldb library, which does IO directly on the database, while allowing
+multiple readers/writers using operating system byte range locks. This
+leads to an API with very low overheads, often resulting in speeds of
+more than 10x what can be achieved with a more traditional LDAP
+architecture.
+
+It a taxonomy of databases ldb would sit half way between key/value
+pair databases (such as berkley db or tdb) and a full LDAP
+database. With a structured attribute oriented API like LDAP and good
+indexing capabilities, ldb can be used for quite sophisticated
+applications that need a light weight database, without the
+administrative overhead of a full LDAP installation.
+
+Included with ldb are a number of useful command line tools for
+manipulating a ldb database. These tools are similar in style to the
+equivalent ldap command line tools.
+
+In its default mode of operation with a tdb backend, ldb can also be
+seen as a "schema-less LDAP". By default ldb does not require a
+schema, which greatly reduces the complexity of getting started with
+ldb databases. As the complexity of you application grows you can take
+advantage of some of the optional schema-like attributes that ldb
+offers, or you can migrate to using the full LDAP api while keeping
+your exiting ldb code.
+
+If you are new to ldb, then I suggest starting with the manual pages
+for ldbsearch(1) and ldbedit(1), and experimenting with a local
+database. Then I suggest you look at the ldb_connect(3) and
+ldb_search(3) manual pages.
+
+manpagesection(INDEX)
+
+startdit()
+
+dit(bf(ldbsearch(1))) command line ldb search utility
+
+dit(bf(ldbedit(1))) edit all or part of a ldb databse using your
+favourite editor
+
+dit(bf(ldbedit(1))) edit all or part of a ldb databse using your
+favourite editor
+
+dit(bf(ldbadd(1))) add records to a ldb database using LDIF formatted input
+
+dit(bf(ldbdel(1))) delete records from a ldb database
+
+dit(bf(ldbmodify(1))) modify records in a ldb database using LDIF
+formatted input
+
+dit(bf(ldb_connect(3))) connect to a ldb backend
+
+dit(bf(ldb_close(3))) close a connection to a ldb backend
+
+dit(bf(ldb_search(3))) perform a database search
+
+dit(bf(ldb_search_free(3))) free the results of a ldb_search
+
+dit(bf(ldb_add(3))) add a record to the database
+
+dit(bf(ldb_delete(3))) delete a record from the database
+
+dit(bf(ldb_modify(3))) modify a record in the database
+
+dit(bf(ldb_errstring(3))) retrieve extended error information from the
+last operation
+
+dit(bf(ldb_ldif_write(3))) write a LDIF formatted message
+
+dit(bf(ldb_ldif_write_file(3))) write a LDIF formatted message to a file
+
+dit(bf(ldb_ldif_read(3))) read a LDIF formatted message
+
+dit(bf(ldb_ldif_read_free(3))) free the result of a ldb_ldif_read()
+
+dit(bf(ldb_ldif_read_file(3))) read a LDIF message from a file
+
+dit(bf(ldb_ldif_read_string(3))) read a LDIF message from a string
+
+dit(bf(ldb_msg_find_element(3))) find an element in a ldb_message
+
+dit(bf(ldb_val_equal_exact(3))) compare two ldb_val structures
+
+dit(bf(ldb_msg_find_val(3))) find an element by value
+
+dit(bf(ldb_msg_add_empty(3))) add an empty message element to a ldb_message
+
+dit(bf(ldb_msg_add(3))) add a non-empty message element to a ldb_message
+
+dit(bf(ldb_msg_element_compare(3))) compare two ldb_message_element structures
+
+dit(bf(ldb_msg_find_int(3))) return an integer value from a ldb_message
+
+dit(bf(ldb_msg_find_uint(3))) return an unsigned integer value from a ldb_message
+
+dit(bf(ldb_msg_find_double(3))) return a double value from a ldb_message
+
+dit(bf(ldb_msg_find_string(3))) return a string value from a ldb_message
+
+dit(bf(ldb_set_alloc(3))) set the memory allocation function to be used by ldb
+
+dit(bf(ldb_set_debug(3))) set a debug handler to be used by ldb
+
+dit(bf(ldb_set_debug_stderr(3))) set a debug handler for stderr output
+
+enddit()
+
+manpageauthor()
+
+ldb was written by Andrew Tridgell
+url(http://samba.org/~tridge/)(http://samba.org/~tridge/)
+
+If you wish to report a problem or make a suggestion then please see
+the url(http://ldb.samba.org/)(http://ldb.samba.org/) web site for
+current contact and maintainer information.
+
+ldb is released under the GNU Lesser General Public License version 2
+or later. Please see the file COPYING for license details.
+

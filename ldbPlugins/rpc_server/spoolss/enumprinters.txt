@@ -1,0 +1,71 @@
+000018 spoolss_io_r_enumprinters 
+    000018 spoolss_io_buffer 
+        0018 ptr: 000d1918
+        001c size: 00000238
+    0258 needed: 00000238
+    025c returned: 00000004
+    0260 status: WERR_OK
+000000 smb_io_printer_info_1 
+    0000 flags: 00800000
+    0004 offset: 00000200
+    000200 smb_io_unistr description
+        0200 unistr: \.\.W.I.N.2.K.D.C.1.\.q.,.H.P. .L.a.s.e.r.J.e.t. .4.,...
+    0008 offset: 000001e6
+    0001e6 smb_io_unistr name
+        01e6 unistr: \.\.W.I.N.2.K.D.C.1.\.q...
+    000c offset: 000001cc
+    0001cc smb_io_unistr comment
+        01cc unistr: c.h.e.e.p.y. .b.i.r.d.s...
+000010 smb_io_printer_info_1 
+    0010 flags: 00800000
+    0014 offset: 00000166
+    000176 smb_io_unistr description
+        0176 unistr: \.\.W.I.N.2.K.D.C.1.\.p.,.H.P. .L.a.s.e.r.J.e.t. .4.,.C.a.n.b.e.r.r.a. .o.f.f.i.c.e...
+    0018 offset: 0000014c
+    00015c smb_io_unistr name
+        015c unistr: \.\.W.I.N.2.K.D.C.1.\.p...
+    001c offset: 00000130
+    000140 smb_io_unistr comment
+        0140 unistr: I.'.m. .a. .t.e.a.p.o.t.!...
+000020 smb_io_printer_info_1 
+    0020 flags: 00800000
+    0024 offset: 000000d2
+    0000f2 smb_io_unistr description
+        00f2 unistr: \.\.W.I.N.2.K.D.C.1.\.m.a.g.p.i.e.,.G.e.n.e.r.i.c. ./. .T.e.x.t. .O.n.l.y.,...
+    0028 offset: 000000ae
+    0000ce smb_io_unistr name
+        00ce unistr: \.\.W.I.N.2.K.D.C.1.\.m.a.g.p.i.e...
+    002c offset: 000000ac
+    0000cc smb_io_unistr comment
+        00cc unistr: 
+000030 smb_io_printer_info_1 
+    0030 flags: 00800000
+    0034 offset: 00000042
+    000072 smb_io_unistr description
+        0072 unistr: \.\.W.I.N.2.K.D.C.1.\.\.\.p.r.o.f.o.r.m.a.\.p.,.G.e.n.e.r.i.c. ./. .T.e.x.t. .O.n.l.y.,...
+    0038 offset: 00000012
+    000042 smb_io_unistr name
+        0042 unistr: \.\.W.I.N.2.K.D.C.1.\.\.\.p.r.o.f.o.r.m.a.\.p...
+    003c offset: 00000010
+    000040 smb_io_unistr comment
+        0040 unistr: 
+
+	flags:[0x800000]
+	name:[\\WIN2KDC1\q]
+	description:[\\WIN2KDC1\q,HP LaserJet 4,]
+	comment:[cheepy birds]
+
+	flags:[0x800000]
+	name:[\\WIN2KDC1\p]
+	description:[\\WIN2KDC1\p,HP LaserJet 4,Canberra office]
+	comment:[I'm a teapot!]
+
+	flags:[0x800000]
+	name:[\\WIN2KDC1\magpie]
+	description:[\\WIN2KDC1\magpie,Generic / Text Only,]
+	comment:[]
+
+	flags:[0x800000]
+	name:[\\WIN2KDC1\\\proforma\p]
+	description:[\\WIN2KDC1\\\proforma\p,Generic / Text Only,]
+	comment:[]

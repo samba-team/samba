@@ -1,0 +1,33 @@
+- ..\..\, \bla\blie support in regshell
+- finish rpc_server
+
+reg_backend_dir:
+ - value support
+
+reg_backend_w95.c:
+ - write support
+ 
+reg_backend_nt4:
+ - write support
+
+reg_backend_rpc:
+ - value enum support
+ - write support
+ - rewrite
+ 
+reg_backend_ldb:
+ - finish 
+
+reg_backend_wine.c:
+ - finish 
+
+regshell:
+ - support for security descriptors
+
+ regdiff:
+  - fix
+ 
+gregedit.c:
+ - support for editing values / adding values / deleting values
+ - support for adding/deleting keys
+ - support for security descriptors

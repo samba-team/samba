@@ -1,0 +1,266 @@
+#include "idl_types.h"
+
+[ 
+  uuid("e3514235-4b06-11d1-ab04-00c04fc2dcd2"),
+  version(4.0),
+  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:"),
+  helpstring("Active Directory Replication"),
+  pointer_default(unique)
+] 
+interface drsuapi
+{
+	/*****************/
+        /* Function 0x00 */
+
+	typedef [flag(NDR_PAHEX)] struct {
+		[range(1,10000)] uint32 length;
+		[size_is(length)] uint8 data[];
+	} drsuapi_DsBindInfo;
+
+	WERROR drsuapi_DsBind(
+		[in]	    GUID *server_guid,
+		[in,out]    drsuapi_DsBindInfo *bind_info,
+		[out,ref]   policy_handle *bind_handle
+		);
+
+	/*****************/
+        /* Function 0x01 */
+	WERROR drsuapi_DsUnbind(
+		[in,out,ref] policy_handle *bind_handle
+		);
+
+	/*****************/
+        /* Function 0x02 */
+	WERROR DRSUAPI_REPLICA_SYNC();
+
+	/*****************/
+        /* Function 0x03 */
+	WERROR DRSUAPI_GET_NC_CHANGES();
+
+	/*****************/
+        /* Function 0x04 */
+	WERROR DRSUAPI_UPDATE_REFS();
+
+	/*****************/
+        /* Function 0x05 */
+	WERROR DRSUAPI_REPLICA_ADD();
+
+	/*****************/
+        /* Function 0x06 */
+	WERROR DRSUAPI_REPLICA_DEL();
+
+	/*****************/
+        /* Function 0x07 */
+	WERROR DRSUAPI_REPLICA_MODIFY();
+
+	/*****************/
+        /* Function 0x08 */
+	WERROR DRSUAPI_VERIFY_NAMES();
+
+	/*****************/
+        /* Function 0x09 */
+	WERROR DRSUAPI_GET_MEMBERSHIPS();
+
+	/*****************/
+        /* Function 0x0a */
+	WERROR DRSUAPI_INTER_DOMAIN_MOVE();
+
+	/*****************/
+        /* Function 0x0b */
+	WERROR DRSUAPI_GET_NT4_CHANGELOG();
+
+	/*****************/
+	/* Function 0x0c */
+	typedef enum {
+		DRSUAPI_DS_NAME_STATUS_OK			= 0,
+		DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR		= 1,
+		DRSUAPI_DS_NAME_STATUS_NOT_FOUND		= 2,
+		DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE		= 3,
+		DRSUAPI_DS_NAME_STATUS_NO_MAPPING		= 4,
+		DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY		= 5,
+		DRSUAPI_DS_NAME_STATUS_NO_SYNTACTICAL_MAPPING	= 6,
+		DRSUAPI_DS_NAME_STATUS_TRUST_REFERRAL		= 7
+	} drsuapi_DsNameStatus;
+
+	typedef enum {
+		DRSUAPI_DS_NAME_FLAG_NO_FLAGS			= 0x0,
+		DRSUAPI_DS_NAME_FLAG_SYNTACTICAL_ONLY		= 0x1,
+		DRSUAPI_DS_NAME_FLAG_EVAL_AT_DC			= 0x2,
+		DRSUAPI_DS_NAME_FLAG_GCVERIFY			= 0x4,
+		DRSUAPI_DS_NAME_FLAG_TRUST_REFERRAL		= 0x8
+	} drsuapi_DsNameFlags;
+
+	typedef enum {
+		DRSUAPI_DS_NAME_FORMAT_UKNOWN			= 0,
+		DRSUAPI_DS_NAME_FORMAT_FQDN_1779		= 1,
+		DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT		= 2,
+		DRSUAPI_DS_NAME_FORMAT_DISPLAY			= 3,
+		DRSUAPI_DS_NAME_FORMAT_GUID 			= 6,
+		DRSUAPI_DS_NAME_FORMAT_CANONICAL		= 7,
+		DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL		= 8,
+		DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX		= 9,
+		DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL	= 10,
+		DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY	= 11,
+		DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN		= 12
+	} drsuapi_DsNameFormat;
+
+	typedef struct {
+		unistr *str;
+	} drsuapi_DsNameString;
+
+	typedef struct {
+		uint32 unknown1; /* 0x000004e4 */
+		uint32 unknown2; /* 0x00000407 */
+		uint32 format_flags;
+		uint32 format_offered;
+		uint32 format_desired;
+		[range(1,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsNameString *names;
+	} drsuapi_DsNameRequest1;
+
+	typedef union {
+		[case(1)] drsuapi_DsNameRequest1 req1;
+	} drsuapi_DsNameRequest;
+
+	typedef struct {
+		uint32 status;
+		unistr *dns_domain_name;
+		unistr *result_name;
+	} drsuapi_DsNameInfo1;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] drsuapi_DsNameInfo1 *array;
+	} drsuapi_DsNameCtr1;
+
+	typedef union {
+		[case(1)] drsuapi_DsNameCtr1 *ctr1;
+	} drsuapi_DsNameCtr;
+
+	WERROR drsuapi_DsCrackNames(
+		[in,ref] policy_handle *bind_handle,
+		[in, out] uint32 level,
+		[in,switch_is(level)] drsuapi_DsNameRequest req,
+		[out,switch_is(level)] drsuapi_DsNameCtr ctr
+		);
+
+	/*****************/
+        /* Function 0x0d */
+	WERROR DRSUAPI_WRITE_SPN();
+
+	/*****************/
+        /* Function 0x0e */
+	WERROR DRSUAPI_REMOVE_DS_SERVER();
+
+	/*****************/
+        /* Function 0x0f */
+	WERROR DRSUAPI_REMOVE_DS_DOMAIN();
+
+	/*****************/
+        /* Function 0x10 */
+	typedef struct {
+		unistr *domain_name; /* netbios or dns */
+		int32 level; /* specifies the switch level for the request */
+	} drsuapi_DsGetDCInfoRequest1;
+
+	typedef union {
+		[case(1)] drsuapi_DsGetDCInfoRequest1 req1;
+	} drsuapi_DsGetDCInfoRequest;
+
+	typedef struct {
+		unistr *netbios_name;
+		unistr *dns_name;
+		unistr *site_name;
+		unistr *computer_dn;
+		unistr *server_dn;
+		uint32 is_pdc;
+		uint32 is_enabled;
+	} drsuapi_DsGetDCInfo1;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo1 *array;
+	} drsuapi_DsGetDCInfoCtr1;
+
+	typedef struct {
+		unistr *netbios_name;
+		unistr *dns_name;
+		unistr *site_name;
+		unistr *site_dn;
+		unistr *computer_dn;
+		unistr *server_dn;
+		unistr *ntds_dn;
+		uint32 is_pdc;
+		uint32 is_enabled;
+		uint32 is_gc;
+		GUID site_guid;
+		GUID computer_guid;
+		GUID server_guid;
+		GUID ntds_guid;
+	} drsuapi_DsGetDCInfo2;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo2 *array;
+	} drsuapi_DsGetDCInfoCtr2;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		uint32 unknown5;
+		uint32 unknown6;
+		unistr *server_nt4_account;
+	} drsuapi_DsGetDCInfo01;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo01 *array;
+	} drsuapi_DsGetDCInfoCtr01;
+
+	typedef union {
+		[case(1)] drsuapi_DsGetDCInfoCtr1 ctr1;
+		[case(2)] drsuapi_DsGetDCInfoCtr2 ctr2;
+		[case(-1)] drsuapi_DsGetDCInfoCtr01 ctr01;
+	} drsuapi_DsGetDCInfoCtr;
+
+	WERROR drsuapi_DsGetDomainControllerInfo(
+		[in,ref] policy_handle *bind_handle,
+		[in, out] int32 level,
+		[in,switch_is(level)] drsuapi_DsGetDCInfoRequest req,
+		[out,switch_is(level)] drsuapi_DsGetDCInfoCtr ctr
+		);
+
+	/*****************/
+        /* Function 0x11 */
+	WERROR DRSUAPI_ADD_ENTRY();
+
+	/*****************/
+        /* Function 0x12 */
+	WERROR DRSUAPI_EXECUTE_KCC();
+
+	/*****************/
+        /* Function 0x13 */
+	WERROR DRSUAPI_GET_REPL_INFO();
+
+	/*****************/
+        /* Function 0x14 */
+	WERROR DRSUAPI_ADD_SID_HISTORY();
+
+	/*****************/
+        /* Function 0x15 */
+	WERROR DRSUAPI_GET_MEMBERSHIPS2();
+
+	/*****************/
+        /* Function 0x16 */
+	WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS();
+
+	/*****************/
+        /* Function 0x17 */
+	WERROR DRSUAPI_GET_OBJECT_EXISTENCE();
+
+	/*****************/
+        /* Function 0x18 */
+	WERROR DRSUAPI_QUERY_SITES_BY_COST();
+}
