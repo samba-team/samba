@@ -2315,7 +2315,6 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
 BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
-BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
@@ -2334,6 +2333,10 @@ BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32
 BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
 			     uint32 change_low, uint32 change_high, uint32 *status);
 BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
+
+/* The following definitions come from rpc_client/cli_trust.c  */
+
+BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 /* The following definitions come from rpc_client/cli_use.c  */
 
@@ -4149,7 +4152,7 @@ BOOL server_validate(char *user, char *domain,
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists);
+                             BOOL *user_exists, char *server);
 
 /* The following definitions come from smbd/pipes.c  */
 
