@@ -1,5 +1,8 @@
 2002-07-31  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/{kerberos5,524}.c: ENOENT -> HDB_ERR_NOENTRY (from Derrick
+	Brashear)
+
 	* lib/krb5/principal.c: actually lower case the lower case
 	instance name (spotted by Derrick Brashear)
 
