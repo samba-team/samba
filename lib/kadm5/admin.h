@@ -253,6 +253,18 @@ kadm5_c_get_principal __P((
 	u_int32_t mask));
 
 kadm5_ret_t
+kadm5_c_get_principals __P((
+	void *server_handle,
+	const char *exp,
+	char ***princs,
+	int *count));
+
+kadm5_ret_t
+kadm5_c_get_privs __P((
+	void *server_handle,
+	u_int32_t *privs));
+
+kadm5_ret_t
 kadm5_c_init_with_password __P((
 	char *client_name,
 	char *pass,
@@ -323,6 +335,12 @@ kadm5_free_key_data __P((
 	krb5_key_data *key_data));
 
 void
+kadm5_free_name_list __P((
+	void *server_handle,
+	char **names,
+	int *count));
+
+void
 kadm5_free_principal_ent __P((
 	void *server_handle,
 	kadm5_principal_ent_t princ));
@@ -333,6 +351,18 @@ kadm5_get_principal __P((
 	krb5_principal princ,
 	kadm5_principal_ent_t out,
 	u_int32_t mask));
+
+kadm5_ret_t
+kadm5_get_principals __P((
+	void *server_handle,
+	const char *exp,
+	char ***princs,
+	int *count));
+
+kadm5_ret_t
+kadm5_get_privs __P((
+	void *server_handle,
+	u_int32_t *privs));
 
 kadm5_ret_t
 kadm5_init_with_password __P((
@@ -421,6 +451,18 @@ kadm5_s_get_principal __P((
 	u_int32_t mask));
 
 kadm5_ret_t
+kadm5_s_get_principals __P((
+	void *server_handle,
+	char *exp,
+	char ***princs,
+	int *count));
+
+kadm5_ret_t
+kadm5_s_get_privs __P((
+	void *server_handle,
+	u_int32_t *privs));
+
+kadm5_ret_t
 kadm5_s_init_with_password __P((
 	char *client_name,
 	char *pass,
@@ -490,10 +532,6 @@ kadm5_decrypt_key(void *server_handle,
 		  krb5_keysalt *keysalt, int *kvnop);
 
 kadm5_ret_t
-kadm5_get_principals(void *server_handle, char *exp,
-		     char ***princs, int *count);
-
-kadm5_ret_t
 kadm5_create_policy(void *server_handle,
 		    kadm5_policy_ent_t policy, u_int32_t mask); 
 
@@ -515,14 +553,6 @@ kadm5_get_policies(void *server_handle, char *exp,
 
 void 
 kadm5_free_policy_ent(kadm5_policy_ent_t policy);
-
-void 
-kadm5_free_name_list(void *server_handle,
-		     char **names, 
-		     int *count);
-
-kadm5_ret_t
-kadm5_get_privs(void *server_handle, u_int32_t *privs);
 
 #endif
 
