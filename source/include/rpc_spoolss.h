@@ -259,6 +259,8 @@
 #define JOB_NOTIFY_TOTAL_BYTES			0x16
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
 
+#define PRINTER_NOTIFY_OPTIONS_REFRESH  	0x01
+
 #define PRINTER_CHANGE_ADD_PRINTER			0x00000001
 #define PRINTER_CHANGE_SET_PRINTER			0x00000002
 #define PRINTER_CHANGE_DELETE_PRINTER			0x00000004
@@ -331,14 +333,10 @@
 #define PRINTER_MESSAGE_SHARENAME	0x00001000
 
 typedef struct printer_message_info {
-	/* PRINTER_CHANGE_XXX*/
-	uint32 low;
-	uint32 high;
-
+	uint32 low;		/* PRINTER_CHANGE_XXX */
+	uint32 high;		/* PRINTER_CHANGE_XXX */
 	fstring printer_name;
-
-	/* PRINTER_MESSAGE_XXX */
-	uint32 flags;
+	uint32 flags;		/* PRINTER_MESSAGE_XXX */
 }
 PRINTER_MESSAGE_INFO;
 
