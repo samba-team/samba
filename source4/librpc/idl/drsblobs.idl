@@ -83,4 +83,41 @@ interface drsblobs {
 	void decode_replUpToDateVector(
 		[in] replUpToDateVectorBlob blob
 		);
+
+	/*
+	 * repsFrom/repsTo
+	 * w2k  uses version 1
+	 * w2k3 uses version 1
+	 */
+	typedef [flag(NDR_PAHEX)] struct {
+		NTTIME_1sec time1;
+		NTTIME_1sec time2;
+		uint32 unknown1[4];
+		uint8 unknown2[84];
+		uint32 unknown3;
+		uint64 usn1;
+		uint32 unknown4;
+		uint32 unknown5;
+		uint64 usn2;
+		GUID guid1;
+		GUID guid2;
+		uint32 unknown6[4];
+		asclstr dns_name;
+	} repsFromTo1;
+
+	typedef [nodiscriminant] union {
+		[case(1)] repsFromTo1 ctr1;
+	} repsFromTo;
+
+	typedef [public,gensize] struct {
+		uint32 version;
+		uint32 unknown1;
+		[value(ndr_size_repsFromToBlob(0, r, ndr->flags))] uint32 blobsize;
+		uint32 unknown2;
+		[switch_is(version)] repsFromTo ctr;
+	} repsFromToBlob;
+
+	void decode_repsFromTo(
+		[in] repsFromToBlob blob
+		);
 }
