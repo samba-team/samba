@@ -176,6 +176,8 @@ BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
 		    prs_struct *ps, int depth);
+BOOL lsa_io_q_set_info(char *desc, LSA_Q_SET_INFO * q_q,
+		       prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_netsec.c  */
 
@@ -806,10 +808,8 @@ BOOL make_sec_access(SEC_ACCESS * t, uint32 mask);
 BOOL sec_io_access(char *desc, SEC_ACCESS * t, prs_struct *ps, int depth);
 BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 		  SEC_ACCESS mask, uint8 flag);
-BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth);
 BOOL make_sec_acl(SEC_ACL * t, uint16 revision, int num_aces, SEC_ACE * ace);
 void free_sec_acl(SEC_ACL * t);
-BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth);
 int make_sec_desc(SEC_DESC * t, uint16 revision, uint16 type,
 		  DOM_SID *owner_sid, DOM_SID *grp_sid,
 		  SEC_ACL * sacl, SEC_ACL * dacl);

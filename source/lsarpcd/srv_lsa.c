@@ -224,8 +224,12 @@ api_lsa_set_info
 static BOOL api_lsa_set_info(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_SET_INFO q_i;
-
 	ZERO_STRUCT(q_i);
+
+	if (!lsa_io_q_set_info("", &q_i, data, 0))
+	{
+		return False;
+	}
 
 	return False;
 }

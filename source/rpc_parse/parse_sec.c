@@ -79,7 +79,7 @@ BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth)
+static BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
@@ -151,7 +151,7 @@ reads or writes a structure.
 first of the xx_io_xx functions that allocates its data structures
  for you as it reads them.
 ********************************************************************/
-BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
+static BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
 {
 	uint32 i;
 	uint32 old_offset;

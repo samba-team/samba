@@ -20,10 +20,10 @@
 */
 
 #include "includes.h"
+#include "rpc_parse.h"
 #include "nterr.h"
 #include "sids.h"
 
-extern int DEBUGLEVEL;
 extern int Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;

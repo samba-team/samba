@@ -539,8 +539,7 @@ BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint16 info_class)
 
 	DEBUG(5, ("make_q_query\n"));
 
-	memcpy(&(q_q->pol), hnd, sizeof(q_q->pol));
-
+	q_q->pol = *hnd;
 	q_q->info_class = info_class;
 
 	return True;
@@ -579,7 +578,7 @@ BOOL make_q_create_secret(LSA_Q_CREATE_SECRET * q_o,
 
 	DEBUG(5, ("make_q_create_secret"));
 
-	memcpy(&(q_o->pol), pol_hnd, sizeof(q_o->pol));
+	q_o->pol = *pol_hnd;
 
 	make_uni_hdr(&(q_o->hdr_secret), len);
 	make_unistr2(&(q_o->uni_secret), secret_name, len);
@@ -645,7 +644,7 @@ BOOL make_q_open_secret(LSA_Q_OPEN_SECRET * q_o, const POLICY_HND *pol_hnd,
 
 	DEBUG(5, ("make_q_open_secret"));
 
-	memcpy(&(q_o->pol), pol_hnd, sizeof(q_o->pol));
+	q_o->pol = *pol_hnd;
 
 	make_uni_hdr(&(q_o->hdr_secret), len);
 	make_unistr2(&(q_o->uni_secret), secret_name, len);
@@ -790,7 +789,7 @@ BOOL make_q_query_secret(LSA_Q_QUERY_SECRET * q_q, POLICY_HND *pol,
 
 	DEBUG(5, ("make_q_query_secret\n"));
 
-	memcpy(&(q_q->pol), pol, sizeof(q_q->pol));
+	q_q->pol = *pol;
 
 	/* Want secret */
 	q_q->sec.curinfo.ptr_value = secret != NULL ? 1 : 0;
@@ -893,7 +892,7 @@ BOOL make_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e,
 
 	DEBUG(5, ("make_q_enum_trust_dom\n"));
 
-	memcpy(&(q_e->pol), pol, sizeof(q_e->pol));
+	q_e->pol = *pol;
 	q_e->enum_context = enum_context;
 	q_e->preferred_len = preferred_len;
 
@@ -1192,7 +1191,7 @@ BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, POLICY_HND *hnd,
 
 	DEBUG(5, ("make_q_lookup_sids\n"));
 
-	memcpy(&(q_l->pol), hnd, sizeof(q_l->pol));
+	q_l->pol = *hnd;
 	make_lsa_sid_enum(&(q_l->sids), num_sids, sids);
 
 	q_l->names.ptr_trans_names = 0;
@@ -1269,8 +1268,7 @@ BOOL make_q_lookup_names(LSA_Q_LOOKUP_NAMES * q_l, POLICY_HND *hnd,
 
 	DEBUG(5, ("make_q_lookup_names\n"));
 
-	memcpy(&(q_l->pol), hnd, sizeof(q_l->pol));
-
+	q_l->pol = *hnd;
 	q_l->num_entries = num_names;
 	q_l->num_entries2 = num_names;
 
@@ -1395,7 +1393,7 @@ BOOL make_lsa_q_close(LSA_Q_CLOSE * q_c, POLICY_HND *hnd)
 
 	DEBUG(5, ("make_lsa_q_close\n"));
 
-	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+	q_c->pol = *hnd;
 
 	return True;
 }
@@ -1558,6 +1556,49 @@ static BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, in
 }
 
 /*******************************************************************
+reads or writes an LSA_INFO_UNION structure.
+********************************************************************/
+static BOOL lsa_io_info_union(char *desc, LSA_INFO_UNION *info,
+			      uint16 info_class, prs_struct *ps, int depth)
+{
+	if (info == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_info_union");
+	depth++;
+
+	switch (info_class)
+	{
+		case 2:
+		{
+			return lsa_io_dom_query_2("", &(info->id2),
+						  ps, depth);
+			break;
+		}
+		case 3:
+		{
+			return lsa_io_dom_query_3("", &(info->id3),
+						  ps, depth);
+			break;
+		}
+		case 5:
+		{
+			return lsa_io_dom_query_5("", &(info->id5),
+						  ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(2,
+			      ("lsa_io_info_union: invalid info_class %d\n",
+			       info_class));
+			/* PANIC! */
+			return False;
+		}
+	}
+}
+
+/*******************************************************************
 reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
@@ -1576,35 +1617,40 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
 		prs_uint16("info_class", ps, depth, &(r_q->info_class));
 		prs_align(ps);
 
-		switch (r_q->info_class)
+		if (!lsa_io_info_union("", &(r_q->dom), r_q->info_class,
+				       ps, depth))
 		{
-			case 2:
-			{
-				lsa_io_dom_query_2("", &(r_q->dom.id2), ps,
-						   depth);
-				break;
-			}
-			case 3:
-			{
-				lsa_io_dom_query_3("", &(r_q->dom.id3), ps,
-						   depth);
-				break;
-			}
-			case 5:
-			{
-				lsa_io_dom_query_5("", &(r_q->dom.id3), ps,
-						   depth);
-				break;
-			}
-			default:
-			{
-				/* PANIC! */
-				break;
-			}
+			return False;
 		}
 	}
 
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_SET_INFO structure.
+********************************************************************/
+BOOL lsa_io_q_set_info(char *desc, LSA_Q_SET_INFO * q_q,
+		       prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_set_info");
+	depth++;
+
+	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+
+	prs_uint16("info_class", ps, depth, &q_q->info_class);
+	prs_align(ps);
+
+	if (!lsa_io_info_union("", &(q_q->info), q_q->info_class,
+			       ps, depth))
+	{
+		return False;
+	}
 
 	return True;
 }

@@ -73,6 +73,6 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 	}
 	else
 	{
-		DEBUG(5,("cmd_brs_query_info: query failed\n"));
+		report(out_hnd, "cmd_brs_query_info: query failed\n");
 	}
 }

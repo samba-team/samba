@@ -655,7 +655,7 @@ BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 
 		if (p)
 		{
-			memcpy(connect_pol, &r_o.connect_pol, sizeof(r_o.connect_pol));
+			*connect_pol = r_o.connect_pol;
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
 			                                cli_con_sec_ctx(con),
 			                                connect_pol,
@@ -780,7 +780,7 @@ BOOL samr_open_user(  const POLICY_HND *pol,
 
 		if (p)
 		{
-			memcpy(user_pol, &r_o.user_pol, sizeof(r_o.user_pol));
+			*user_pol = r_o.user_pol;
 			valid_pol = cli_pol_link(user_pol, pol);
 		}
 	}
@@ -835,8 +835,15 @@ BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 
 		if (p)
 		{
-			memcpy(alias_pol, &r_o.pol, sizeof(r_o.pol));
+			*alias_pol = r_o.pol;
 			valid_pol = cli_pol_link(alias_pol, domain_pol);
+
+			if (valid_pol)
+			{
+				policy_hnd_set_name(get_global_hnd_cache(),
+						    alias_pol,
+						    "SAM_ALIAS");
+			}
 		}
 	}
 
@@ -1047,7 +1054,7 @@ uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 
 		if (p)
 		{
-			memcpy(user_pol, &r_o.user_pol, sizeof(r_o.user_pol));
+			*user_pol = r_o.user_pol;
 			*rid = r_o.user_rid;
 			if (!cli_pol_link(user_pol, domain_pol))
 			{
@@ -1105,7 +1112,7 @@ BOOL samr_create_dom_alias(  POLICY_HND *domain_pol, const char *acct_name,
 
 		if (p)
 		{
-			memcpy(alias_pol, &r_o.alias_pol, sizeof(r_o.alias_pol));
+			*alias_pol = r_o.alias_pol;
 			*rid = r_o.rid;
 			valid_pol = cli_pol_link(alias_pol, domain_pol);
 		}
@@ -1269,7 +1276,7 @@ BOOL samr_open_group(  const POLICY_HND *domain_pol,
 
 		if (p)
 		{
-			memcpy(group_pol, &r_o.pol, sizeof(r_o.pol));
+			*group_pol = r_o.pol;
 			valid_pol = cli_pol_link(group_pol, domain_pol);
 		}
 	}
@@ -1532,7 +1539,7 @@ BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 
 		if (p)
 		{
-			memcpy(group_pol, &r_o.pol, sizeof(r_o.pol));
+			*group_pol = r_o.pol;
 			*rid = r_o.rid;
 			valid_pol = cli_pol_link(group_pol, domain_pol);
 		}
@@ -1705,7 +1712,7 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 
 		if (p)
 		{
-			memcpy(domain_pol, &r_o.domain_pol, sizeof(r_o.domain_pol));
+			*domain_pol = r_o.domain_pol;
 			valid_pol = cli_pol_link(domain_pol, connect_pol);
 			policy_hnd_set_name(get_global_hnd_cache(),
 					    domain_pol, "SAM_DOMAIN");

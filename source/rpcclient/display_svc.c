@@ -77,7 +77,7 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 			unistr2_to_ascii(temp, &cfg->uni_service_start_name, sizeof(temp)-1);
 			report(out_hnd, "\tService Start:\t%s\n", temp);
 
-			report(out_hnd, "\tService Type:\t%d\n", cfg->service_type);
+			report(out_hnd, "\tService Type:\t0x%x\n", cfg->service_type);
 			report(out_hnd, "\tStart Type:\t%s\n" , get_svc_start_type_str(cfg->start_type));
 			report(out_hnd, "\tError Control:\t%d\n" , cfg->error_control);
 			report(out_hnd, "\tTag Id:\t%d\n" , cfg->tag_id);

@@ -160,14 +160,14 @@ BOOL policy_hnd_set_name(struct policy_cache *cache,
 	safe_free(p->name);
 	if (name)
 	{
-		DEBUG(4, ("policy pnum=%x setting name to %s\n",
+		DEBUG(4, ("policy(pnum=%x): setting name to %s\n",
 			  p->pnum, name));
 		p->name = strdup(name);
 		return (p->name != NULL);
 	}
 	else
 	{
-		DEBUG(4, ("policy pnum=%x setting name to %s\n",
+		DEBUG(4, ("policy(pnum=%x): setting name to %s\n",
 			  p->pnum, "NULL"));
 		p->name = NULL;
 		return True;
@@ -222,7 +222,8 @@ BOOL dup_policy_hnd(struct policy_cache *cache,
 	{
 		return False;
 	}
-	DEBUG(3, ("Duplicating policy state pnum=%x\n", p->pnum));
+	DEBUG(3, ("policy(pnum=%x %s): Duplicating policy\n",
+		  p->pnum, pol_get_name(p)));
 	return register_policy_hnd(cache, &p->key, hnd, p->access_mask);
 }
 

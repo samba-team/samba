@@ -69,7 +69,7 @@ static void free_cli_array(uint32 num_entries, struct cli_use **entries)
 /****************************************************************************
 add a client state to the array
 ****************************************************************************/
-static struct cli_use *add_cli_to_array(uint32 * len,
+static struct cli_use *add_cli_to_array(uint32 *len,
 					struct cli_use ***array,
 					struct cli_use *cli)
 {
@@ -132,7 +132,7 @@ static struct cli_use *cli_find(const char *srv_name,
 
 	DEBUG(10, ("cli_find: %s %s %s reuse: %s\n",
 		   srv_name, usr_creds->user_name, usr_creds->domain,
-	           BOOLSTR(reuse)));
+		   BOOLSTR(reuse)));
 
 
 	for (i = 0; i < num_clis; i++)
@@ -306,8 +306,7 @@ BOOL cli_net_use_del(const char *srv_name,
 	DEBUG(10, ("cli_net_use_del: %s. %s. %s. force close: %s\n",
 		   srv_name,
 		   usr_creds ? usr_creds->user_name : "",
-		   usr_creds ? usr_creds->domain : "",
-		   BOOLSTR(force_close)));
+		   usr_creds ? usr_creds->domain : "", BOOLSTR(force_close)));
 
 	if (strnequal("\\\\", sv_name, 2))
 	{
@@ -345,7 +344,7 @@ BOOL cli_net_use_del(const char *srv_name,
 		if (strequal(usr_creds ? usr_creds->user_name : "",
 			     clis[i]->cli->usr.user_name) &&
 		    strequal(usr_creds ? usr_creds->domain : "",
-			    clis[i]->cli->usr.domain))
+			     clis[i]->cli->usr.domain))
 		{
 			/* decrement number of users */
 			clis[i]->num_users--;
@@ -372,7 +371,7 @@ BOOL cli_net_use_del(const char *srv_name,
 /****************************************************************************
 enumerate client states
 ****************************************************************************/
-void cli_net_use_enum(uint32 * num_cons, struct use_info ***use)
+void cli_net_use_enum(uint32 *num_cons, struct use_info ***use)
 {
 	int i;
 
