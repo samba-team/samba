@@ -1,3 +1,22 @@
+1999-07-06  Assar Westerlund  <assar@sics.se>
+
+	* etc/services.append: new file
+
+	* lib/krb5/cache.c (krb5_cc_resolve): fall-back to files if
+ 	there's no prefix.  also clean-up a little bit.
+
+	* kdc/hprop.c (--kaspecials): new flag for handling special KA
+ 	server entries.  From "Brandon S. Allbery KF8NH"
+ 	<allbery@kf8nh.apk.net>
+
+1999-07-05  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c (handle_tcp): make sure we have data before
+ 	starting to look for HTTP
+
+	* kdc/connect.c (handle_tcp): always do getpeername, we can't
+ 	trust recvfrom to return anything sensible
+
 1999-07-04  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_in_tkt.c (add_padat): encrypt pre-auth data with
