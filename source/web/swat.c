@@ -1042,16 +1042,19 @@ static void chg_passwd(void)
 	 */
 
 	local_flags |= (cgi_variable(ADD_USER_FLAG) ? LOCAL_ADD_USER : 0);
+	local_flags |= (cgi_variable(ADD_USER_FLAG) ?  LOCAL_SET_PASSWORD : 0);
+	local_flags |= (cgi_variable(CHG_S_PASSWD_FLAG) ? LOCAL_SET_PASSWORD : 0);
 	local_flags |= (cgi_variable(DELETE_USER_FLAG) ? LOCAL_DELETE_USER : 0);
 	local_flags |= (cgi_variable(ENABLE_USER_FLAG) ? LOCAL_ENABLE_USER : 0);
 	local_flags |= (cgi_variable(DISABLE_USER_FLAG) ? LOCAL_DISABLE_USER : 0);
+	
 
 	rslt = change_password(host,
 			       cgi_variable(SWAT_USER),
 			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
 				   local_flags);
 
-	if(local_flags == 0) {
+	if(cgi_variable(CHG_S_PASSWD_FLAG)) {
 		d_printf("<p>");
 		if (rslt == True) {
 			d_printf(_(" The passwd for '%s' has been changed."), cgi_variable(SWAT_USER));
