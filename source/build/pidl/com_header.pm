@@ -106,7 +106,13 @@ sub ParseInterface($)
 sub ParseCoClass($)
 {
 	my $c = shift;
-	return "#define CLSID_$c->{NAME} $c->{PROPERTIES}->{uuid}\n\n";
+	my $res = "";
+	$res .= "#define CLSID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{uuid}\n";
+	if (util::has_property($c, "progid")) {
+		$res .= "#define PROGID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{progid}\n";
+	}
+	$res .= "\n";
+	return $res;
 }
 
 sub Parse($)
