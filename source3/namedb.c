@@ -38,6 +38,8 @@ extern time_t StartupTime;
 extern pstring myname;
 extern pstring scope;
 
+extern struct in_addr ipgrp;
+
 /* this is our browse master/backup cache database */
 struct browse_cache_record *browserlist = NULL;
 
@@ -54,9 +56,6 @@ int workgroup_count = 0; /* unique index key: one for each workgroup */
 #define DFLT_SERVER_TYPE (SV_TYPE_WORKSTATION | SV_TYPE_SERVER | \
 			SV_TYPE_TIME_SOURCE | SV_TYPE_SERVER_UNIX | \
 			SV_TYPE_PRINTQ_SERVER | SV_TYPE_POTENTIAL_BROWSER)
-
-/* here are my election parameters */
-#define MSBROWSE "\001\002__MSBROWSE__\002"
 
 
 /****************************************************************************
@@ -449,7 +448,7 @@ struct domain_record *add_domain_entry(struct in_addr source_ip,
   struct domain_record *d;
   struct in_addr ip;
   
-  ip = *interpret_addr2("255.255.255.255");
+  ip = ipgrp;
   
   if (zero_ip(source_ip)) 
     source_ip = *iface_bcast(source_ip);
