@@ -69,7 +69,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "acct: username [%s] obtained", name );
     }
 
-    if (!initialize_password_db()) {
+    if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         return PAM_AUTHINFO_UNAVAIL;
     }
