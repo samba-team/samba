@@ -206,7 +206,8 @@ BOOL sid_split_rid(struct dom_sid *sid, uint32 *rid)
 {
 	if (sid->num_auths > 0) {
 		sid->num_auths--;
-		*rid = sid->sub_auths[sid->num_auths];
+		if (rid) 
+			*rid = sid->sub_auths[sid->num_auths];
 		return True;
 	}
 	return False;
