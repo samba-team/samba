@@ -80,7 +80,7 @@ of a domain security context. This means by definition that all user authenticat
 will be done from a centrally defined authentication regime. The authentication
 regime may come from an NT3/4 style (old domain technology) server, or it may be
 provided from an Active Directory server (ADS) running on MS Windows 2000 or later.
->/para>
+</para>
 
 <para><emphasis>
 Of course it should be clear that the authentication back end itself could be from any

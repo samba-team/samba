@@ -11,10 +11,10 @@
         </author>
         <pubdate>April 3 2003</pubdate>
 </chapterinfo>
-<title>Policy Management - Hows and Whys</title>
+<title>System and Account Policies</title>
 
 <sect1>
-<title>System Policies</title>
+<title>Creating and Managing System Policies</title>
 
 <para>
 Under MS Windows platforms, particularly those following the release of MS Windows
@@ -36,7 +36,7 @@ a part of the MS Windows Me Resource Kit.
 
 <para>
 MS Windows NT4 Server products include the <emphasis>System Policy Editor</emphasis>
-under the <filename>Start->Programs->Administrative Tools</filename> menu item.
+under the <filename>Start -> Programs -> Administrative Tools</filename> menu item.
 For MS Windows NT4 and later clients this file must be called <filename>NTConfig.POL</filename>.
 </para>
 
@@ -51,9 +51,9 @@ be a step forward, but improved functionality comes at a great price.
 
 <para>
 Before embarking on the configuration of network and system policies it is highly
-advisable to read the documentation available from Microsoft's web site from
+advisable to read the documentation available from Microsoft's web site regarding
 <ulink url="http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp">
-Implementing Profiles and Policies in Windows NT 4.0</ulink> available from Microsoft.
+Implementing Profiles and Policies in Windows NT 4.0 from http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp</ulink> available from Microsoft.
 There are a large number of documents in addition to this old one that should also
 be read and understood. Try searching on the Microsoft web site for "Group Policies".
 </para>
@@ -64,22 +64,22 @@ here is incomplete - you are warned.
 </para>
 
 <sect2>
-<title>Creating and Managing Windows 9x/Me Policies</title>
+<title>Windows 9x/Me Policies</title>
 
 <para>
 You need the Win98 Group Policy Editor to set Group Profiles up under Windows 9x/Me.
 It can be found on the Original full product Win98 installation CD under
-<filename>tools/reskit/netadmin/poledit</filename>.  You install this using the
+<filename>tools/reskit/netadmin/poledit</filename>.  Install this using the
 Add/Remove Programs facility and then click on the 'Have Disk' tab.
 </para>
 
 <para>
 Use the Group Policy Editor to create a policy file that specifies the location of
-user profiles and/or the <filename>My Documents</filename> etc.  stuff. You then
+user profiles and/or the <filename>My Documents</filename> etc.  stuff. Then
 save these settings in a file called <filename>Config.POL</filename> that needs to
-be placed in the root of the [NETLOGON] share. If your Win98 is configured to log onto
+be placed in the root of the [NETLOGON] share. If Win98 is configured to log onto
 the Samba Domain, it will automatically read this file and update the Win9x/Me registry
-of the machine that is logging on.
+of the machine as it logs on.
 </para>
 
 <para>
@@ -87,7 +87,7 @@ Further details are covered in the Win98 Resource Kit documentation.
 </para>
 
 <para>
-If you do not do it this way, then every so often Win9x/Me will check the
+If you do not take the right steps, then every so often Win9x/Me will check the
 integrity of the registry and will restore it's settings from the back-up
 copy of the registry it stores on each Win9x/Me machine. Hence, you will
 occasionally notice things changing back to the original settings.
@@ -104,7 +104,7 @@ Win9x/Me machine that uses group policies.
 
 </sect2>
 <sect2>
-<title>Creating and Managing Windows NT4 Style Policy Files</title>
+<title>Windows NT4 Style Policy Files</title>
 
 <para>
 To create or edit <filename>ntconfig.pol</filename> you must use the NT Server
@@ -136,20 +136,20 @@ location is with the Zero Administration Kit available for download from Microso
 <sect3>
 <title>Registry Tattoos</title>
 
-<para>
-With NT4 style registry based policy changes, a large number of settings are not
-automatically reversed as the user logs off. Since the settings that were in the
-NTConfig.POL file were applied to the client machine registry and that apply to the
-hive key HKEY_LOCAL_MACHINE are permanent until explicitly reveresd. This is known
-as tattooing. It can have serious consequences down-stream and the administrator must
-be extreemly careful not to lock out the ability to manage the machine at a later date.
-</para>
+	<para>
+	With NT4 style registry based policy changes, a large number of settings are not
+	automatically reversed as the user logs off. Since the settings that were in the
+	NTConfig.POL file were applied to the client machine registry and that apply to the
+	hive key HKEY_LOCAL_MACHINE are permanent until explicitly reversed. This is known
+	as tattooing. It can have serious consequences down-stream and the administrator must
+	be extremely careful not to lock out the ability to manage the machine at a later date.
+	</para>
 
 
 </sect3>
 </sect2>
 <sect2>
-<title>Creating and Managing MS Windows 200x Policies</title>
+<title>MS Windows 200x / XP Professional Policies</title>
 
 <para>
 Windows NT4 System policies allows setting of registry parameters specific to
@@ -201,7 +201,7 @@ exists with NT4 style policy files.
 </para>
 
 <sect3>
-<title>Administration of Win2K Policies</title>
+<title>Administration of Win2K / XP Policies</title>
 
 <para>
 Instead of using the tool called "The System Policy Editor", commonly called Poledit (from the
@@ -212,7 +212,7 @@ executable name poledit.exe), GPOs are created and managed using a Microsoft Man
 <itemizedlist>
 	<listitem>
 	<para>
-	Go to the Windows 200x / XP menu <filename>Start->Programs->Adminsitrative Tools</filename>
+	Go to the Windows 200x / XP menu <filename>Start->Programs->Administrative Tools</filename>
 	and select the MMC snap-in called "Active Directory Users and Computers"
 	<para>
 	</listitem>
@@ -258,4 +258,47 @@ use this powerful tool. Please refer to the resource kit manuals for specific us
 
 </sect2>
 </sect1>
+
+<sect1>
+<title>Managing Account/User Policies</title>
+
+<para>
+Document what are user policies (ie: Account Policies) here.
+</para>
+
+<sect2>
+<title>With Windows NT4/200x</title>
+
+<para>
+Brief overview of the tools and how to use them.
+</para>
+
+<sect3>
+<title>Windows NT4 Tools</title>
+
+<para>
+Blah, blah, blah ...
+</para>
+
+</sect3>
+
+<sect3>
+<title>Windows 200x Tools</title>
+
+<para>
+Blah, blah, blah ...
+</para>
+
+</sect3>
+</sect2>
+
+<sect2>
+<title>With a Samba PDC</title>
+
+<para>
+Document the HOWTO here.
+</para>
+
+</sect1>
+
 </chapter>

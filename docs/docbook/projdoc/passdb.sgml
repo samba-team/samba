@@ -180,7 +180,7 @@
 			only things you can do to stop this is to use SMB encryption.
 			</member>
 
-			<member>Encrypted password support allows auto-matic share
+			<member>Encrypted password support allows automatic share
 			(resource) reconnects.</member>
 		</simplelist>
 	</sect2>
