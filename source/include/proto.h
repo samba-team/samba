@@ -1463,7 +1463,7 @@ void wins_write_database(BOOL background);
 struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec, 
                                              const char *name);
 struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
-                                               fstring name, int ttl);
+                                               const char *name, int ttl);
 void update_workgroup_ttl(struct work_record *work, int ttl);
 void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_record *work);
 void dump_workgroups(BOOL force_write);
