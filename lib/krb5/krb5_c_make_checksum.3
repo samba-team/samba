@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 25, 2003
+.Dd March 20, 2004
 .Dt KRB5_CCACHE 3
 .Os HEIMDAL
 .Sh NAME
@@ -49,6 +49,7 @@
 .Nm krb5_c_valid_cksumtype ,
 .Nm krb5_c_valid_enctype ,
 .Nm krb5_c_verify_checksum ,
+.Nm krb5_c_checksum_length ,
 .Nm krb5_copy_checksum ,
 .Nm krb5_free_checksum ,
 .Nm krb5_free_checksum_contents ,
@@ -120,22 +121,6 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "const krb5_checksum *cksum"
 .Fa "krb5_boolean *valid"
 .Fc
-.Ft void
-.Fo krb5_free_checksum
-.Fa "krb5_context context"
-.Fa "krb5_checksum *cksum"
-.Fc
-.Ft void
-.Fo krb5_free_checksum_contents
-.Fa "krb5_context context"
-.Fa "krb5_checksum *cksum"
-.Fc
-.Ft krb5_error_code
-.Fo krb5_copy_checksum
-.Fa "krb5_context context"
-.Fa "const krb5_checksum *old"
-.Fa "krb5_checksum **new"
-.Fc
 .Ft krb5_error_code
 .Fo krb5_c_checksum_length
 .Fa "krb5_context context"
@@ -173,12 +158,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_cksumtype ctype"
 .Fc
 .Sh DESCRIPTION
-The
-.Li krb5_checksum
-structure holds a Kerberos checksum.
-There is no component inside
-.Li krb5_checksum
-that is directly referable.
+The functions starting with krb5_c are compat functions with MIT kerberos.
 .Pp
 The
 .Li krb5_enc_data
@@ -249,20 +229,6 @@ Returns 0 or an error code.
 .Fn krb5_c_checksum_length
 returns the length of the checksum.
 .Pp
-.Fn krb5_copy_checksum
-returns a copy of the checksum
-.Fn krb5_free_checksum
-should use used to free the
-.Fa new
-checksum.
-.Pp
-.Fn krb5_free_checksum
-free the checksum and the content of the checksum.
-.Pp
-.Fn krb5_free_checksum_contents
-frees the content of checksum in
-.Fa cksum .
-.Pp
 .Fn krb5_c_set_checksum
 sets the
 .Li krb5_checksum
@@ -311,5 +277,6 @@ returns true if
 is a collition proof checksum type.
 .Sh SEE ALSO
 .Xr krb5 3 ,
+.Xr krb5_create_checksum 3 ,
 .Xr krb5_free_data 3 ,
 .Xr kerberos 8
