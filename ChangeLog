@@ -1,3 +1,8 @@
+2000-06-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/524.c: handle non-existant server principals (from Daniel
+	Kouril)
+
 2000-05-28  Assar Westerlund  <assar@sics.se>
 
 	* kuser/klist.c: continue even we have no v5 ccache.  make showing
