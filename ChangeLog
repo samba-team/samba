@@ -1,3 +1,15 @@
+Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kaserver.c: quick hack at talking kaserver protocol
+
+	* kdc/kerberos4.c: Make `db-fetch4' global
+
+	* configure.in: add --enable-kaserver
+
+	* kdc/rx.h, kdc/kerberos4.h: new header files
+
+	* lib/krb5/principal.c: fix krb5_build_principal_ext & c:o
+
 Sun Aug 24 03:52:44 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/{get_in_tkt,mk_safe,mk_priv}.c: Fix some Cray specific
