@@ -338,7 +338,8 @@ int spnego_gen_negTokenTarg(const char *principal, int time_offset,
 		return retval;
 
 	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
+	tkt_wrapped = spnego_gen_krb5_wrap(
+            tkt, CONST_ADD(const uint8 *, TOK_ID_KRB_AP_REQ));
 
 	/* and wrap that in a shiny SPNEGO wrapper */
 	*targ = gen_negTokenTarg(krb_mechs, tkt_wrapped);

@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
+#define KRB5_DEPRECATED 1       /* this file uses DEPRECATED interfaces! */
+
 #include "includes.h"
 
 #ifdef HAVE_KRB5

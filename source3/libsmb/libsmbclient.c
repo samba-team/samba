@@ -3278,7 +3278,8 @@ static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
         }
 
         /* Obtain the DOS attributes */
-        if (!smbc_getatr(context, srv, (char *) filename, &mode, &size, 
+        if (!smbc_getatr(context, srv, CONST_DISCARD(char *, filename),
+                         &mode, &size, 
                          &c_time, &a_time, &m_time, &inode)) {
         
                 errno = smbc_errno(context, &srv->cli);
@@ -3347,21 +3348,35 @@ retrieve the acls for a file
 *******************************************************/
 static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                     struct cli_state *ipc_cli, POLICY_HND *pol,
-                    char *filename, char *name, char *buf, int bufsize)
+                    char *filename, char *attr_name, char *buf, int bufsize)
 {
 	uint32 i;
         int n = 0;
         int n_used;
         BOOL all;
         BOOL all_nt;
+        BOOL all_nt_acls;
         BOOL all_dos;
         BOOL some_nt;
         BOOL some_dos;
+        BOOL exclude_nt_revision = False;
+        BOOL exclude_nt_owner = False;
+        BOOL exclude_nt_group = False;
+        BOOL exclude_nt_acl = False;
+        BOOL exclude_dos_mode = False;
+        BOOL exclude_dos_size = False;
+        BOOL exclude_dos_ctime = False;
+        BOOL exclude_dos_atime = False;
+        BOOL exclude_dos_mtime = False;
+        BOOL exclude_dos_inode = False;
         BOOL numeric = True;
         BOOL determine_size = (bufsize == 0);
 	int fnum = -1;
 	SEC_DESC *sd;
 	fstring sidstr;
+        fstring name_sandbox;
+        char *name;
+        char *pExclude;
         char *p;
 	time_t m_time = 0, a_time = 0, c_time = 0;
 	SMB_OFF_T size = 0;
@@ -3369,12 +3384,80 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
 	SMB_INO_T ino = 0;
         struct cli_state *cli = &srv->cli;
 
+        /* Copy name so we can strip off exclusions (if any are specified) */
+        strncpy(name_sandbox, attr_name, sizeof(name_sandbox) - 1);
+
+        /* Ensure name is null terminated */
+        name_sandbox[sizeof(name_sandbox) - 1] = '\0';
+
+        /* Play in the sandbox */
+        name = name_sandbox;
+
+        /* If there are any exclusions, point to them and mask them from name */
+        if ((pExclude = strchr(name, '!')) != NULL)
+        {
+                *pExclude++ = '\0';
+        }
+
         all = (StrnCaseCmp(name, "system.*", 8) == 0);
         all_nt = (StrnCaseCmp(name, "system.nt_sec_desc.*", 20) == 0);
+        all_nt_acls = (StrnCaseCmp(name, "system.nt_sec_desc.acl.*", 24) == 0);
         all_dos = (StrnCaseCmp(name, "system.dos_attr.*", 17) == 0);
         some_nt = (StrnCaseCmp(name, "system.nt_sec_desc.", 19) == 0);
         some_dos = (StrnCaseCmp(name, "system.dos_attr.", 16) == 0);
         numeric = (* (name + strlen(name) - 1) != '+');
+
+        /* Look for exclusions from "all" requests */
+        if (all || all_nt || all_dos) {
+
+                /* Exclusions are delimited by '!' */
+                for (; pExclude != NULL; pExclude = (p == NULL ? NULL : p + 1)) {
+
+                /* Find end of this exclusion name */
+                if ((p = strchr(pExclude, '!')) != NULL)
+                {
+                    *p = '\0';
+                }
+
+                /* Which exclusion name is this? */
+                if (StrCaseCmp(pExclude, "nt_sec_desc.revision") == 0) {
+                    exclude_nt_revision = True;
+                }
+                else if (StrCaseCmp(pExclude, "nt_sec_desc.owner") == 0) {
+                    exclude_nt_owner = True;
+                }
+                else if (StrCaseCmp(pExclude, "nt_sec_desc.group") == 0) {
+                    exclude_nt_group = True;
+                }
+                else if (StrCaseCmp(pExclude, "nt_sec_desc.acl") == 0) {
+                    exclude_nt_acl = True;
+                }
+                else if (StrCaseCmp(pExclude, "dos_attr.mode") == 0) {
+                    exclude_dos_mode = True;
+                }
+                else if (StrCaseCmp(pExclude, "dos_attr.size") == 0) {
+                    exclude_dos_size = True;
+                }
+                else if (StrCaseCmp(pExclude, "dos_attr.c_time") == 0) {
+                    exclude_dos_ctime = True;
+                }
+                else if (StrCaseCmp(pExclude, "dos_attr.a_time") == 0) {
+                    exclude_dos_atime = True;
+                }
+                else if (StrCaseCmp(pExclude, "dos_attr.m_time") == 0) {
+                    exclude_dos_mtime = True;
+                }
+                else if (StrCaseCmp(pExclude, "dos_attr.inode") == 0) {
+                    exclude_dos_inode = True;
+                }
+                else {
+                    DEBUG(5, ("cacl_get received unknown exclusion: %s\n",
+                              pExclude));
+                    errno = ENOATTR;
+                    return -1;
+                }
+            }
+        }
 
         n_used = 0;
 
@@ -3382,7 +3465,7 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
          * If we are (possibly) talking to an NT or new system and some NT
          * attributes have been requested...
          */
-        if (ipc_cli && (all || some_nt)) {
+        if (ipc_cli && (all || some_nt || all_nt_acls)) {
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
 
@@ -3407,139 +3490,12 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
 
                 cli_close(cli, fnum);
 
-                if (all || all_nt) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    "REVISION:%d",
-                                                    sd->revision);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             "REVISION:%d", sd->revision);
-                        }
-                } else if (StrCaseCmp(name, "revision") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "%d", sd->revision);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "%d", sd->revision);
-                        }
-                }
-        
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
-                }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
-
-                /* Get owner and group sid */
-
-                if (sd->owner_sid) {
-                        convert_sid_to_string(ipc_cli, pol,
-                                              sidstr, numeric, sd->owner_sid);
-                } else {
-                        fstrcpy(sidstr, "");
-                }
-
-                if (all || all_nt) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, ",OWNER:%s", sidstr);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",OWNER:%s", sidstr);
-                        }
-                } else if (StrnCaseCmp(name, "owner", 5) == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "%s", sidstr);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "%s", sidstr);
-                        }
-                }
-
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
-                }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
-
-                if (sd->grp_sid) {
-                        convert_sid_to_string(ipc_cli, pol,
-                                              sidstr, numeric, sd->grp_sid);
-                } else {
-                        fstrcpy(sidstr, "");
-                }
-
-                if (all || all_nt) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, ",GROUP:%s", sidstr);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",GROUP:%s", sidstr);
-                        }
-                } else if (StrnCaseCmp(name, "group", 5) == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "%s", sidstr);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "%s", sidstr);
-                        }
-                }
-
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
-                }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
-
-                /* Add aces to value buffer  */
-                for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-
-                        SEC_ACE *ace = &sd->dacl->ace[i];
-                        convert_sid_to_string(ipc_cli, pol,
-                                              sidstr, numeric, &ace->trustee);
-
+                if (! exclude_nt_revision) {
                         if (all || all_nt) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, 
-                                                            ",ACL:"
-                                                            "%s:%d/%d/0x%08x", 
-                                                            sidstr,
-                                                            ace->type,
-                                                            ace->flags,
-                                                            ace->info.mask);
+                                        p = talloc_asprintf(ctx,
+                                                            "REVISION:%d",
+                                                            sd->revision);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -3547,42 +3503,212 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     ",ACL:%s:%d/%d/0x%08x", 
-                                                     sidstr,
-                                                     ace->type,
-                                                     ace->flags,
-                                                     ace->info.mask);
+                                                     "REVISION:%d", sd->revision);
                                 }
-                        } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
-                                    StrCaseCmp(name + 3, sidstr) == 0) ||
-                                   (StrnCaseCmp(name, "acl+", 4) == 0 &&
-                                    StrCaseCmp(name + 4, sidstr) == 0)) {
+                        } else if (StrCaseCmp(name, "revision") == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, 
-                                                            "%d/%d/0x%08x", 
-                                                            ace->type,
-                                                            ace->flags,
-                                                            ace->info.mask);
+                                        p = talloc_asprintf(ctx, "%d",
+                                                            sd->revision);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
                                         }
                                         n = strlen(p);
                                 } else {
-                                        n = snprintf(buf, bufsize,
-                                                     "%d/%d/0x%08x", 
-                                                     ace->type,
-                                                     ace->flags,
-                                                     ace->info.mask);
+                                        n = snprintf(buf, bufsize, "%d",
+                                                     sd->revision);
                                 }
                         }
-                        if (n > bufsize) {
+        
+                        if (!determine_size && n > bufsize) {
                                 errno = ERANGE;
                                 return -1;
                         }
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                }
+
+                if (! exclude_nt_owner) {
+                        /* Get owner and group sid */
+                        if (sd->owner_sid) {
+                                convert_sid_to_string(ipc_cli, pol,
+                                                      sidstr,
+                                                      numeric,
+                                                      sd->owner_sid);
+                        } else {
+                                fstrcpy(sidstr, "");
+                        }
+
+                        if (all || all_nt) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, ",OWNER:%s",
+                                                            sidstr);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",OWNER:%s", sidstr);
+                                }
+                        } else if (StrnCaseCmp(name, "owner", 5) == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "%s", sidstr);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize, "%s",
+                                                     sidstr);
+                                }
+                        }
+
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
+                }
+
+                if (! exclude_nt_group) {
+                        if (sd->grp_sid) {
+                                convert_sid_to_string(ipc_cli, pol,
+                                                      sidstr, numeric,
+                                                      sd->grp_sid);
+                        } else {
+                                fstrcpy(sidstr, "");
+                        }
+
+                        if (all || all_nt) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, ",GROUP:%s",
+                                                            sidstr);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",GROUP:%s", sidstr);
+                                }
+                        } else if (StrnCaseCmp(name, "group", 5) == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "%s", sidstr);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize, "%s", sidstr);
+                                }
+                        }
+
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
+                }
+
+                if (! exclude_nt_acl) {
+                        /* Add aces to value buffer  */
+                        for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+
+                                SEC_ACE *ace = &sd->dacl->ace[i];
+                                convert_sid_to_string(ipc_cli, pol,
+                                                      sidstr, numeric,
+                                                      &ace->trustee);
+
+                                if (all || all_nt) {
+                                        if (determine_size) {
+                                                p = talloc_asprintf(
+                                                        ctx, 
+                                                        ",ACL:"
+                                                        "%s:%d/%d/0x%08x", 
+                                                        sidstr,
+                                                        ace->type,
+                                                        ace->flags,
+                                                        ace->info.mask);
+                                                if (!p) {
+                                                        errno = ENOMEM;
+                                                        return -1;
+                                                }
+                                                n = strlen(p);
+                                        } else {
+                                                n = snprintf(
+                                                        buf, bufsize,
+                                                        ",ACL:%s:%d/%d/0x%08x", 
+                                                        sidstr,
+                                                        ace->type,
+                                                        ace->flags,
+                                                        ace->info.mask);
+                                        }
+                                } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
+                                            StrCaseCmp(name + 3, sidstr) == 0) ||
+                                           (StrnCaseCmp(name, "acl+", 4) == 0 &&
+                                            StrCaseCmp(name + 4, sidstr) == 0)) {
+                                        if (determine_size) {
+                                                p = talloc_asprintf(
+                                                        ctx, 
+                                                        "%d/%d/0x%08x", 
+                                                        ace->type,
+                                                        ace->flags,
+                                                        ace->info.mask);
+                                                if (!p) {
+                                                        errno = ENOMEM;
+                                                        return -1;
+                                                }
+                                                n = strlen(p);
+                                        } else {
+                                                n = snprintf(buf, bufsize,
+                                                             "%d/%d/0x%08x", 
+                                                             ace->type,
+                                                             ace->flags,
+                                                             ace->info.mask);
+                                        }
+                                } else if (all_nt_acls) {
+                                        if (determine_size) {
+                                                p = talloc_asprintf(
+                                                        ctx, 
+                                                        "%s%s:%d/%d/0x%08x",
+                                                        i ? "," : "",
+                                                        sidstr,
+                                                        ace->type,
+                                                        ace->flags,
+                                                        ace->info.mask);
+                                                if (!p) {
+                                                        errno = ENOMEM;
+                                                        return -1;
+                                                }
+                                                n = strlen(p);
+                                        } else {
+                                                n = snprintf(buf, bufsize,
+                                                             "%s%s:%d/%d/0x%08x",
+                                                             i ? "," : "",
+                                                             sidstr,
+                                                             ace->type,
+                                                             ace->flags,
+                                                             ace->info.mask);
+                                        }
+                                }
+                                if (n > bufsize) {
+                                        errno = ERANGE;
+                                        return -1;
+                                }
+                                buf += n;
+                                n_used += n;
+                                bufsize -= n;
+                        }
                 }
 
                 /* Restore name pointer to its original value */
@@ -3602,231 +3728,250 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                         
                 }
                 
-                if (all || all_dos) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    "%sMODE:0x%x",
-                                                    (ipc_cli &&
-                                                     (all || some_nt)
-                                                     ? ","
-                                                     : ""),
-                                                    mode);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                if (! exclude_dos_mode) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx,
+                                                            "%sMODE:0x%x",
+                                                            (ipc_cli &&
+                                                             (all || some_nt)
+                                                             ? ","
+                                                             : ""),
+                                                            mode);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     "%sMODE:0x%x",
+                                                     (ipc_cli &&
+                                                      (all || some_nt)
+                                                      ? ","
+                                                      : ""),
+                                                     mode);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             "%sMODE:0x%x",
-                                             (ipc_cli &&
-                                              (all || some_nt)
-                                              ? ","
-                                              : ""),
-                                             mode);
-                        }
-                } else if (StrCaseCmp(name, "mode") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "0x%x", mode);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                        } else if (StrCaseCmp(name, "mode") == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "0x%x", mode);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize, "0x%x", mode);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "0x%x", mode);
                         }
-                }
         
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
                 }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
 
-                if (all || all_dos) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    ",SIZE:%llu",
-                                                    (unsigned long long) size);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                if (! exclude_dos_size) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(
+                                                ctx,
+                                                ",SIZE:%llu",
+                                                (unsigned long long) size);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",SIZE:%llu",
+                                                     (unsigned long long) size);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",SIZE:%llu",
-                                             (unsigned long long) size);
-                        }
-                } else if (StrCaseCmp(name, "size") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    "%llu",
-                                                    (unsigned long long) size);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                        } else if (StrCaseCmp(name, "size") == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(
+                                                ctx,
+                                                "%llu",
+                                                (unsigned long long) size);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     "%llu",
+                                                     (unsigned long long) size);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             "%llu",
-                                             (unsigned long long) size);
                         }
-                }
         
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
                 }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
 
-                if (all || all_dos) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    ",C_TIME:%lu", c_time);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                if (! exclude_dos_ctime) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx,
+                                                            ",C_TIME:%lu",
+                                                            c_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",C_TIME:%lu", c_time);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",C_TIME:%lu", c_time);
-                        }
-                } else if (StrCaseCmp(name, "c_time") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "%lu", c_time);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                        } else if (StrCaseCmp(name, "c_time") == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "%lu", c_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize, "%lu", c_time);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "%lu", c_time);
                         }
-                }
         
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
                 }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
 
-                if (all || all_dos) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    ",A_TIME:%lu", a_time);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                if (! exclude_dos_atime) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx,
+                                                            ",A_TIME:%lu",
+                                                            a_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",A_TIME:%lu", a_time);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",A_TIME:%lu", a_time);
-                        }
-                } else if (StrCaseCmp(name, "a_time") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "%lu", a_time);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                        } else if (StrCaseCmp(name, "a_time") == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "%lu", a_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize, "%lu", a_time);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "%lu", a_time);
                         }
-                }
         
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
                 }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
 
-                if (all || all_dos) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    ",M_TIME:%lu", m_time);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                if (! exclude_dos_mtime) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx,
+                                                            ",M_TIME:%lu",
+                                                            m_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",M_TIME:%lu", m_time);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",M_TIME:%lu", m_time);
-                        }
-                } else if (StrCaseCmp(name, "m_time") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, "%lu", m_time);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                        } else if (StrCaseCmp(name, "m_time") == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "%lu", m_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize, "%lu", m_time);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize, "%lu", m_time);
                         }
-                }
         
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
                 }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
 
-                if (all || all_dos) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    ",INODE:%llu",
-                                                    (unsigned long long) ino);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                if (! exclude_dos_inode) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(
+                                                ctx,
+                                                ",INODE:%llu",
+                                                (unsigned long long) ino);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",INODE:%llu",
+                                                     (unsigned long long) ino);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",INODE:%llu",
-                                             (unsigned long long) ino);
-                        }
-                } else if (StrCaseCmp(name, "inode") == 0) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx,
-                                                    "%llu",
-                                                    (unsigned long long) ino);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
+                        } else if (StrCaseCmp(name, "inode") == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(
+                                                ctx,
+                                                "%llu",
+                                                (unsigned long long) ino);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     "%llu",
+                                                     (unsigned long long) ino);
                                 }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             "%llu",
-                                             (unsigned long long) ino);
                         }
-                }
         
-                if (!determine_size && n > bufsize) {
-                        errno = ERANGE;
-                        return -1;
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
                 }
-                buf += n;
-                n_used += n;
-                bufsize -= n;
 
                 /* Restore name pointer to its original value */
                 name -= 16;
@@ -3873,7 +4018,8 @@ static int cacl_set(TALLOC_CTX *ctx, struct cli_state *cli,
                         the_acl = p + 1;
                 }
 
-                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric, (char *) the_acl);
+                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric,
+                                    CONST_DISCARD(char *, the_acl));
 
                 if (!sd) {
                         errno = EINVAL;
@@ -4380,9 +4526,13 @@ int smbc_getxattr_ctx(SMBCCTX *context,
 
         /* Are they requesting a supported attribute? */
         if (StrCaseCmp(name, "system.*") == 0 ||
+            StrnCaseCmp(name, "system.*!", 9) == 0 ||
             StrCaseCmp(name, "system.*+") == 0 ||
+            StrnCaseCmp(name, "system.*+!", 10) == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.*") == 0 ||
+            StrnCaseCmp(name, "system.nt_sec_desc.*!", 21) == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.*+") == 0 ||
+            StrnCaseCmp(name, "system.nt_sec_desc.*+!", 22) == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.revision") == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.owner") == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.owner+") == 0 ||
@@ -4391,6 +4541,7 @@ int smbc_getxattr_ctx(SMBCCTX *context,
             StrnCaseCmp(name, "system.nt_sec_desc.acl", 22) == 0 ||
             StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0 ||
             StrCaseCmp(name, "system.dos_attr.*") == 0 ||
+            StrnCaseCmp(name, "system.dos_attr.*!", 18) == 0 ||
             StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
             StrCaseCmp(name, "system.dos_attr.size") == 0 ||
             StrCaseCmp(name, "system.dos_attr.c_time") == 0 ||
@@ -4401,7 +4552,9 @@ int smbc_getxattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_get(context, ctx, srv,
                                ipc_srv == NULL ? NULL : &ipc_srv->cli, 
-                               &pol, path, (char *) name, (char *) value, size);
+                               &pol, path,
+                               CONST_DISCARD(char *, name),
+                               CONST_DISCARD(char *, value), size);
                 if (ret < 0 && errno == 0) {
                         errno = smbc_errno(context, &srv->cli);
                 }
@@ -4540,6 +4693,7 @@ int smbc_listxattr_ctx(SMBCCTX *context,
                 "system.nt_sec_desc.owner+\0"
                 "system.nt_sec_desc.group\0"
                 "system.nt_sec_desc.group+\0"
+                "system.nt_sec_desc.acl.*\0"
                 "system.nt_sec_desc.acl\0"
                 "system.nt_sec_desc.acl+\0"
                 "system.nt_sec_desc.*\0"

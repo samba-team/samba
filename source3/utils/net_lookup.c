@@ -193,7 +193,7 @@ static int net_lookup_kdc(int argc, const char **argv)
 	}
 
 	if (argc>0) {
-		realm.data = (krb5_pointer) argv[0];
+                realm.data = CONST_DISCARD(krb5_pointer, argv[0]);
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
 		realm.data = (krb5_pointer) lp_realm();

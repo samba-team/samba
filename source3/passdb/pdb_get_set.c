@@ -1195,7 +1195,7 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 			/* We need to make sure we don't have a race condition here - the
 			   account policy history length can change between when the pw_history
 			   was first loaded into the SAM_ACCOUNT struct and now.... JRA. */
-			pwhistory = (uchar *)pdb_get_pw_history(sampass, &current_history_len);
+			pwhistory = CONST_DISCARD(uchar *, pdb_get_pw_history(sampass, &current_history_len));
 
 			if (current_history_len != pwHistLen) {
 				/* After closing and reopening SAM_ACCOUNT the history

@@ -636,7 +636,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 */
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
-        strlower_m( (char *) user );
+        strlower_m(CONST_DISCARD(char *, user));
 
 	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
