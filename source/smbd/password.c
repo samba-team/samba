@@ -958,60 +958,74 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
 
   if ((pwlen == 24) && challenge_done)
+  {
+    DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
+
+    if (!pass) 
     {
-      DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
+      DEBUG(3,("Couldn't find user %s\n",user));
+      return(False);
+    }
 
-      if (!pass) 
-	{
-	  DEBUG(3,("Couldn't find user %s\n",user));
-	  return(False);
-	}
+    /* non-null username indicates search by username not smb userid */
+    smb_pass = get_smbpwd_entry(user, 0);
+    if (!smb_pass)
+    {
+      DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
+      return(False);
+    }
 
-      /* non-null username indicates search by username not smb userid */
-      smb_pass = get_smbpwd_entry(user, 0);
-      if (!smb_pass)
-	{
-	  DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
-	  return(False);
-	}
+    if(smb_pass->acct_ctrl & ACB_DISABLED)
+    {
+      DEBUG(3,("password_ok: account for user %s was disabled.\n", user));
+          return(False);
+    }
 
       /* Ensure the uid's match */
-      if (smb_pass->smb_userid != pass->pw_uid)
-	{
-	  DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
-	  return(False);
-	}
-
-	if (Protocol >= PROTOCOL_NT1)
-	{
-		/* We have the NT MD4 hash challenge available - see if we can
-		   use it (ie. does it exist in the smbpasswd file).
-		*/
-		if (smb_pass->smb_nt_passwd != NULL)
-		{
-		  DEBUG(4,("Checking NT MD4 password\n"));
-		  if (smb_password_check(password, 
-					smb_pass->smb_nt_passwd, 
-					(unsigned char *)challenge))
-   		  {
-	      	update_protected_database(user,True);
-	        return(True);
-    	  }
-		  DEBUG(4,("NT MD4 password check failed\n"));
-		}
-	}
-
-	/* Try against the lanman password */
-
-      if (smb_password_check(password, 
-			     smb_pass->smb_passwd,
-			     (unsigned char *)challenge)) {
-	update_protected_database(user,True);
-	return(True);
-      }
-
-	DEBUG(3,("Error smb_password_check failed\n"));
+    if (smb_pass->smb_userid != pass->pw_uid)
+    {
+      DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
+      return(False);
     }
+
+    if (Protocol >= PROTOCOL_NT1)
+    {
+      /* We have the NT MD4 hash challenge available - see if we can
+         use it (ie. does it exist in the smbpasswd file).
+       */
+      if (smb_pass->smb_nt_passwd != NULL)
+      {
+        DEBUG(4,("Checking NT MD4 password\n"));
+        if (smb_password_check(password, 
+                               smb_pass->smb_nt_passwd, 
+                               (unsigned char *)challenge))
+        {
+          update_protected_database(user,True);
+          return(True);
+        }
+        DEBUG(4,("NT MD4 password check failed\n"));
+      }
+    }
+
+    /* Try against the lanman password */
+    if((smb_pass->smb_passwd == NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ ))
+    {
+      /* No password. */
+      DEBUG(1,("password_ok: User %s has NO PASSWORD !\n", user));
+      update_protected_database(user,True);
+      return(True);
+    }
+
+    if ((smb_pass->smb_passwd != NULL) && 
+        smb_password_check(password, smb_pass->smb_passwd,
+                           (unsigned char *)challenge))
+    {
+      update_protected_database(user,True);
+      return(True);
+    }
+
+    DEBUG(3,("Error smb_password_check failed\n"));
+  }
 
   DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
 
