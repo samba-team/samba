@@ -317,7 +317,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 	
 	/* Make request */
 
-	result = generic_request(WINBINDD_LOOKUPSID, &request, &response);
+	result = winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
 
 	/* Copy out result */
 
