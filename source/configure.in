@@ -150,10 +150,10 @@ AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
-AC_SUBST(PRINTLIBS)
-AC_SUBST(AUTHLIBS)
-AC_SUBST(ACLLIBS)
-AC_SUBST(PASSDBLIBS)
+AC_SUBST(PRINT_LIBS)
+AC_SUBST(AUTH_LIBS)
+AC_SUBST(ACL_LIBS)
+AC_SUBST(PASSDB_LIBS)
 AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
@@ -605,7 +605,7 @@ if test x$enable_cups != xno; then
                         AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
-		PRINTLIBS="$PRINTLIBS `$CUPS_CONFIG --libs`"
+		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
         fi
 fi
 
@@ -2734,7 +2734,7 @@ AC_ARG_WITH(pam,
        fi
     fi
     AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
-    AUTHLIBS="$AUTHLIBS -lpam"
+    AUTH_LIBS="$AUTH_LIBS -lpam"
     with_pam_for_crypt=yes
     ;;
   *)
@@ -2765,7 +2765,7 @@ AC_ARG_WITH(pam_smbpass,
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
           AC_MSG_ERROR([No libpam found])
        else
-	  AUTHLIBS="$AUTHLIBS -lpam"
+	  AUTH_LIBS="$AUTH_LIBS -lpam"
           SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
        fi
     ;;
@@ -2780,7 +2780,7 @@ AC_ARG_WITH(pam_smbpass,
 ###############################################
 # test for where we get crypt() from
 AC_SEARCH_LIBS(crypt, [crypt],
-  [test "$ac_cv_search_crypt" = "none required" || AUTHLIBS="-lcrypt $AUTHLIBS"
+  [test "$ac_cv_search_crypt" = "none required" || AUTH_LIBS="-lcrypt $AUTH_LIBS"
   AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
 
 ##
@@ -2792,7 +2792,7 @@ AC_SEARCH_LIBS(crypt, [crypt],
 if test $with_pam_for_crypt = no; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 crypt_LIBS="$LIBS"
-LIBS="$AUTHLIBS $LIBS"
+LIBS="$AUTH_LIBS $LIBS"
 AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
 	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
 LIBS="$crypt_LIBS"])
@@ -3537,7 +3537,7 @@ AC_ARG_WITH(acl-support,
 	*osf*)
 		AC_MSG_RESULT(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
-		ACLLIBS="$ACLLIBS -lpacl"
+		ACL_LIBS="$ACL_LIBS -lpacl"
 		;;
 	*freebsd5*)
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
@@ -3545,8 +3545,8 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 		;;
 	*linux*)
-		AC_CHECK_LIB(attr,getxattr,[ACLLIBS="$ACLLIBS -lattr"])
-       		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
+       		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
 		LIBS="$LIBS -lacl"
@@ -3572,7 +3572,7 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
 			fi
             ;;
          *)
-		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
 		LIBS="$LIBS -lacl"
@@ -4055,15 +4055,15 @@ fi ])
 ## contributed pdb_modules
 
 SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
-		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
+		  [ PASSDB_LIBS="$PASSDB_LIBS $XML_LIBS" ] )
 SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
-		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
+		   [ PASSDB_LIBS="$PASSDB_LIBS $MYSQL_LIBS" ]	)
 
 ## end of contributed pdb_modules
 ###########################################################################
 
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
-		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
+		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
@@ -4129,7 +4129,7 @@ fi
 if test x"$with_ldap_support" != x"no"; then
    AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
 fi
-AC_MSG_RESULT([    AUTHLIBS = $AUTHLIBS])
+AC_MSG_RESULT([    AUTH_LIBS = $AUTH_LIBS])
 
 #################################################
 # final configure stuff
