@@ -31,7 +31,7 @@
 .\" 
 .\"	$Id$
 .\"
-.Dd September 4, 2002
+.Dd April 22, 2003
 .Dt RSH 1
 .Os HEIMDAL
 .Sh NAME
@@ -208,7 +208,7 @@ machine.
 .Pp
 The following command:
 .Pp
-.Dl rsh otherhost cat remotefile > localfile
+.Dl rsh otherhost cat remotefile \*[Gt] localfile
 .Pp
 will write the contents of the remote
 .Pa remotefile
@@ -216,7 +216,7 @@ to the local
 .Pa localfile ,
 but:
 .Pp
-.Dl rsh otherhost 'cat remotefile > remotefile2'
+.Dl rsh otherhost 'cat remotefile \*[Gt] remotefile2'
 .Pp
 will write it to the remote
 .Pa remotefile2 .
