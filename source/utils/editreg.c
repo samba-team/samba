@@ -386,6 +386,7 @@ typedef struct val_key_s {
 
 typedef struct val_list_s {
   int val_count;
+  int max_vals;
   VAL_KEY *vals[1];
 } VAL_LIST;
 
@@ -562,6 +563,7 @@ typedef struct vk_struct {
   char dat_name[1]; /* Name starts here ... */
 } VK_HDR;
 
+#define REG_TYPE_DELETE    -1
 #define REG_TYPE_NONE      0
 #define REG_TYPE_REGSZ     1
 #define REG_TYPE_EXPANDSZ  2
@@ -792,6 +794,7 @@ int nt_delete_val_key(VAL_KEY *val_key)
 {
 
   if (val_key) {
+    if (val_key->name) free(val_key->name);
     if (val_key->data_blk) free(val_key->data_blk);
     free(val_key);
   };
@@ -959,20 +962,67 @@ int nt_delete_reg_key(REG_KEY *key, int delete_name)
 }
 
 /*
- * Add a value to the key specified ...
+ * Add a value to the key specified ... We have to parse the value some more
+ * based on the type to get it in the correct internal form
+ * An empty name will be converted to "<No Name>" before here 
  */
 REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
 {
+  int i;
+  VAL_KEY *tmp = NULL;
 
+  if (!key || !key->values || !name || !*name) return NULL;
+
+  assert(type != REG_TYPE_DELETE); /* We never process deletes here */
+
+  for (i = 0; i < key->values->val_count; i++) {
+    if (strcmp(name, key->values->vals[i]->name) == 0){ /* Change the value */
+
+
+    }
+  }
+
+  /* 
+   * If we get here, the name was not found, so insert it 
+   */
+
+  tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
+  if (!tmp) goto error;
+
+  bzero(tmp, sizeof(VAL_KEY));
+  tmp->name = strdup(name);
+  if (!tmp->name) goto error;
+  tmp->data_type = type;
+
+ error:
+  if (tmp) nt_delete_val_key(tmp);
   return NULL;
 }
 
 /*
- * Delete a value. Should perhaps return the value ...
+ * Delete a value. We return the value and let the caller deal witj it. 
  */
-REG_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
+VAL_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
 {
+  int i, j;
 
+  if (!key || !key->values || !name || !*name) return NULL;
+
+  for (i = 0; i< key->values->val_count; i++) {
+    if (strcmp(name, key->values->vals[i]->name) == 0) {
+      VAL_KEY *val;
+
+      val = key->values->vals[i];
+
+      /* Shuffle down */
+      for (j = i + 1; j < key->values->val_count; j++)
+	key->values->vals[j - 1] = key->values->vals[j];
+
+      key->values->val_count--;
+
+      return val;
+    }
+  }
   return NULL;
 }
 
@@ -1819,7 +1869,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   return tmp;
 
  error:
-  /* XXX: FIXME, free the partially allocated struct */
+  if (tmp) nt_delete_val_key(tmp);
   return NULL;
 
 }
@@ -1855,6 +1905,7 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
   }
 
   tmp->val_count = count;
+  tmp->max_vals = count;
 
   return tmp;
 
@@ -2415,6 +2466,8 @@ int parse_value_type(char *tstr)
     return REG_TYPE_REGSZ;
   else if (strcmp(tstr, "REG_MULTI_SZ") == 0)
     return REG_TYPE_MULTISZ;
+  else if (strcmp(tstr, "-") == 0)
+    return REG_TYPE_DELETE;
 
   return 0;
 }
@@ -2624,6 +2677,7 @@ void trim_trailing_spaces(struct cmd_line *cl)
  * value ::= <value-name>=<value-type>':'<value-string>
  * <value-name> is some path, possibly enclosed in quotes ...
  * We alctually look for the next key to terminate a previous key
+ * if <value-type> == '-', then it is a delete type.
  */
 CMD *regedit4_get_cmd(int fd)
 {
