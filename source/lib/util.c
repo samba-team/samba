@@ -452,7 +452,7 @@ struct ipv4_addr interpret_addr2(const char *str)
 {
 	struct ipv4_addr ret;
 	uint32_t a = interpret_addr(str);
-	ret.s_addr = a;
+	ret.addr = a;
 	return ret;
 }
 
@@ -486,9 +486,9 @@ BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
 {
 	uint32_t net1,net2,nmask;
 
-	nmask = ntohl(mask.s_addr);
-	net1  = ntohl(ip1.s_addr);
-	net2  = ntohl(ip2.s_addr);
+	nmask = ntohl(mask.addr);
+	net1  = ntohl(ip1.addr);
+	net2  = ntohl(ip2.addr);
             
 	return((net1 & nmask) == (net2 & nmask));
 }

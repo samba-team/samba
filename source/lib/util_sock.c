@@ -170,7 +170,7 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len,
 	}
 
 	if (from_addr) {
-		from_addr->s_addr = sock.sin_addr.s_addr;
+		from_addr->addr = sock.sin_addr.s_addr;
 	}
 	if (from_port) {
 		*from_port = ntohs(sock.sin_port);
@@ -512,7 +512,7 @@ char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 	addr = interpret_addr2(p);
 	
 	/* Look up the remote host name. */
-	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {
+	if ((hp = gethostbyaddr((char *)&addr.addr, sizeof(addr.addr), AF_INET)) == 0) {
 		DEBUG(1,("Gethostbyaddr failed for %s\n",p));
 		name_buf = talloc_strdup(mem_ctx, p);
 	} else {

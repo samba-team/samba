@@ -387,7 +387,7 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 
 		{
 			struct ipv4_addr in;
-			in.s_addr = htonl(floor->rhs.ip.address);
+			in.addr = htonl(floor->rhs.ip.address);
 			return talloc_strdup(mem_ctx, sys_inet_ntoa(in));
 		}
 

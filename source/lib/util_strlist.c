@@ -297,7 +297,7 @@ int ipstr_list_parse(const char* ipstr_list, struct ipv4_addr** ip_list)
 		struct ipv4_addr addr;
 
 		/* convert single token to ip address */
-		if ( (addr.s_addr = sys_inet_addr(token_str)) == INADDR_NONE )
+		if ( (addr.addr = sys_inet_addr(token_str)) == INADDR_NONE )
 			break;
 		
 		/* prepare place for another in_addr structure */

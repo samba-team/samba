@@ -45,7 +45,7 @@ static struct interface *local_interfaces;
 static struct ipv4_addr tov4(struct in_addr in)
 {
 	struct ipv4_addr in2;
-	in2.s_addr = in.s_addr;
+	in2.addr = in.s_addr;
 	return in2;
 }
 
@@ -60,7 +60,7 @@ static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
 	for (i=local_interfaces;i;i=i->next)
 		if (CheckMask) {
 			if (same_net(i->ip,tov4(ip),i->nmask)) return i;
-		} else if ((i->ip).s_addr == ip.s_addr) return i;
+		} else if (i->ip.addr == ip.s_addr) return i;
 
 	return NULL;
 }
@@ -77,7 +77,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		return;
 	}
 
-	if (ip_equal(nmask, allones_ip)) {
+	if (nmask.s_addr == allones_ip.addr) {
 		DEBUG(3,("not adding non-broadcast interface %s\n",inet_ntoa(ip)));
 		return;
 	}
@@ -89,7 +89,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 
 	iface->ip = tov4(ip);
 	iface->nmask = tov4(nmask);
-	iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
+	iface->bcast.addr = MKBCADDR(iface->ip.addr, iface->nmask.addr);
 
 	DLIST_ADD(local_interfaces, iface);
 
@@ -133,10 +133,10 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (!p) {
-		ip.s_addr = interpret_addr2(token).s_addr;
+		ip.s_addr = interpret_addr2(token).addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
-			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
+			    allones_ip.addr != probed_ifaces[i].netmask.s_addr) {
 				add_interface(probed_ifaces[i].ip,
 					      probed_ifaces[i].netmask);
 				return;
@@ -149,10 +149,10 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip.s_addr = interpret_addr2(token).s_addr;
+	ip.s_addr = interpret_addr2(token).addr;
 
 	if (strlen(p) > 2) {
-		nmask.s_addr = interpret_addr2(p).s_addr;
+		nmask.s_addr = interpret_addr2(p).addr;
 	} else {
 		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
 	}
@@ -219,8 +219,8 @@ void load_interfaces(void)
 			exit(1);
 		}
 		for (i=0;i<total_probed;i++) {
-			if (probed_ifaces[i].netmask.s_addr != allones_ip.s_addr &&
-			    probed_ifaces[i].ip.s_addr != loopback_ip.s_addr) {
+			if (probed_ifaces[i].netmask.s_addr != allones_ip.addr &&
+			    probed_ifaces[i].ip.s_addr != loopback_ip.addr) {
 				add_interface(probed_ifaces[i].ip, 
 					      probed_ifaces[i].netmask);
 			}
@@ -270,7 +270,7 @@ BOOL ismyip(struct ipv4_addr ip)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next)
-		if (ip_equal(i->ip,ip)) return True;
+		if (ipv4_equal(i->ip,ip)) return True;
 	return False;
 }
 
@@ -281,8 +281,8 @@ BOOL is_local_net(struct ipv4_addr from)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
-		if((from.s_addr & i->nmask.s_addr) == 
-		   (i->ip.s_addr & i->nmask.s_addr))
+		if((from.addr & i->nmask.addr) == 
+		   (i->ip.addr & i->nmask.addr))
 			return True;
 	}
 	return False;
@@ -339,7 +339,7 @@ struct ipv4_addr *iface_ip(struct ipv4_addr ip)
 {
 	struct in_addr in;
 	struct interface *i;
-	in.s_addr = ip.s_addr;
+	in.s_addr = ip.addr;
 	i = iface_find(in, True);
 	return(i ? &i->ip : &local_interfaces->ip);
 }
@@ -350,6 +350,6 @@ struct ipv4_addr *iface_ip(struct ipv4_addr ip)
 BOOL iface_local(struct ipv4_addr ip)
 {
 	struct in_addr in;
-	in.s_addr = ip.s_addr;
+	in.s_addr = ip.addr;
 	return iface_find(in, True) ? True : False;
 }

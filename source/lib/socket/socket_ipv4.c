@@ -48,13 +48,13 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 
 	my_ip = interpret_addr2(my_address);
 
-	if (my_ip.s_addr != 0 || my_port != 0) {
+	if (my_ip.addr != 0 || my_port != 0) {
 		struct sockaddr_in my_addr;
 		ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
 		my_addr.sin_len		= sizeof(my_addr);
 #endif
-		my_addr.sin_addr.s_addr	= my_ip.s_addr;
+		my_addr.sin_addr.s_addr	= my_ip.addr;
 		my_addr.sin_port	= htons(my_port);
 		my_addr.sin_family	= PF_INET;
 		
@@ -70,7 +70,7 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 	srv_addr.sin_len	= sizeof(srv_addr);
 #endif
-	srv_addr.sin_addr.s_addr= srv_ip.s_addr;
+	srv_addr.sin_addr.s_addr= srv_ip.addr;
 	srv_addr.sin_port	= htons(srv_port);
 	srv_addr.sin_family	= PF_INET;
 
@@ -105,7 +105,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 	my_addr.sin_len		= sizeof(my_addr);
 #endif
-	my_addr.sin_addr.s_addr	= ip_addr.s_addr;
+	my_addr.sin_addr.s_addr	= ip_addr.addr;
 	my_addr.sin_port	= htons(port);
 	my_addr.sin_family	= PF_INET;
 
