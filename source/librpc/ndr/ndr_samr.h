@@ -41,7 +41,7 @@
 #define DCERPC_SAMR_OPENUSER 34
 #define DCERPC_SAMR_DELETEUSER 35
 #define DCERPC_SAMR_QUERYUSERINFO 36
-#define DCERPC_SAMR_SET_USERINFO 37
+#define DCERPC_SAMR_SETUSERINFO 37
 #define DCERPC_SAMR_CHANGE_PASSWORD_USER 38
 #define DCERPC_SAMR_GET_GROUPS_FOR_USER 39
 #define DCERPC_SAMR_QUERY_DISPINFO 40
@@ -745,7 +745,7 @@ struct samr_UserInfo5 {
 	struct samr_Name home_drive;
 	struct samr_Name logon_script;
 	struct samr_Name profile;
-	struct samr_Name descriptiom;
+	struct samr_Name description;
 	struct samr_Name workstations;
 	NTTIME last_logon;
 	NTTIME last_logoff;
@@ -789,7 +789,7 @@ struct samr_UserInfo12 {
 };
 
 struct samr_UserInfo13 {
-	struct samr_Name descriptiom;
+	struct samr_Name description;
 };
 
 struct samr_UserInfo14 {
@@ -880,8 +880,11 @@ struct samr_QueryUserInfo {
 
 };
 
-struct samr_SET_USERINFO {
+struct samr_SetUserInfo {
 	struct {
+		struct policy_handle *handle;
+		uint16 level;
+		union samr_UserInfo *info;
 	} in;
 
 	struct {

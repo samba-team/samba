@@ -72,6 +72,34 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+
+static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo r;
+	union samr_UserInfo u;
+	BOOL ret = True;
+
+	r.in.handle = handle;
+	r.in.level = 13;
+	r.in.info = &u;
+
+	printf("Testing SetUserInfo level %u\n", r.in.level);
+
+	init_samr_Name(&u.info13.description, "my description");
+	
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u failed - %s\n", 
+		       r.in.level, nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
@@ -85,7 +113,55 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_SetUserInfo(p, mem_ctx, handle)) {
+		ret = False;
+	}	
+
 	return ret;
+}
+
+
+static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				   struct policy_handle *handle, const char *name)
+{
+	NTSTATUS status;
+	struct samr_LookupNames n;
+	struct samr_OpenUser r;
+	struct samr_DeleteUser d;
+	struct policy_handle acct_handle;
+	struct samr_Name sname;
+
+	init_samr_Name(&sname, name);
+
+	n.in.handle = handle;
+	n.in.num_names = 1;
+	n.in.names = &sname;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	r.in.handle = handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = n.out.rids.ids[0];
+	r.out.acct_handle = &acct_handle;
+	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	d.in.handle = &acct_handle;
+	d.out.handle = &acct_handle;
+	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	return True;
+
+failed:
+	printf("DeleteUser_byname(%s) failed - %s\n", name, nt_errstr(status));
+	return False;
 }
 
 
@@ -117,8 +193,13 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return True;
 	}
 
-	if (!NT_STATUS_IS_OK(status) && 
-	    !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+		if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.username->name)) {
+			return False;
+		}
+		status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateUser failed - %s\n", nt_errstr(status));
 		return False;
 	}
