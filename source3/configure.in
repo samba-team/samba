@@ -2083,6 +2083,21 @@ FOUND_KRB5=no
 if test x"$with_ads_support" = x"yes"; then
 
   #################################################
+  # check for krb5-config from recent MIT and Heimdal kerberos 5
+  AC_PATH_PROG(KRB5_CONFIG, krb5-config)
+  AC_MSG_CHECKING(for working krb5-config)
+  if test -x "$KRB5_CONFIG"; then
+    LIBS="$LIBS `$KRB5_CONFIG --libs`"
+    CFLAGS="$CFLAGS `$KRB5_CONFIG --cflags`" 
+    CPPFLAGS="$CPPFLAGS `$KRB5_CONFIG --cflags`"
+    FOUND_KRB5=yes
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no. Fallback to previous krb5 detection strategy)
+  fi
+  
+  if test x$FOUND_KRB5 = x"no"; then
+  #################################################
   # check for location of Kerberos 5 install
   AC_MSG_CHECKING(for kerberos 5 install path)
   AC_ARG_WITH(krb5,
@@ -2102,7 +2117,7 @@ if test x"$with_ads_support" = x"yes"; then
     esac ],
     AC_MSG_RESULT(no)
   )
-
+  fi
 
 if test x$FOUND_KRB5 = x"no"; then
 #################################################
