@@ -1,5 +1,5 @@
 !==
-!== rpcclient.1.txt for Samba release TNG-prealpha 11 Mar 2000
+!== rpcclient.1.txt for Samba release TNG-prealpha 14 Mar 2000
 !==
 
 TITLE INFORMATION: rpcclient (1) 

@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release TNG-prealpha 11 Mar 2000
+!== Support.txt for Samba release TNG-prealpha 14 Mar 2000
 !==
 The Samba Consultants List
 ==========================
