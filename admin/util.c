@@ -68,10 +68,10 @@ set_keys(hdb_entry *ent, char *password)
     int i;
 
     memset(&salt, 0, sizeof(salt));
-    krb5_get_salt(ent->principal, &salt);
+    krb5_get_salt(ent->principal, &salt); /* XXX */
     for(i = 0; i < ent->keys.len; i++) {
 	krb5_string_to_key(password, &salt, ent->keys.val[i].key.keytype,
-			   &ent->keys.val[i].key); /* XXX */
+			   &ent->keys.val[i].key);
     }
     krb5_data_free(&salt);
     ent->kvno++;
@@ -263,16 +263,25 @@ set_password(hdb_entry *ent)
     for (i = 0; i < ent->keys.len; ++i)
 	free_Key (&ent->keys.val[i]);
     free (ent->keys.val);
-    if(strcasecmp(buf, "random") == 0) {
-	ent->keys.len = 0;
-	ent->keys.val = NULL;
-	init_des_key(ent);
-    } else{
-	ent->keys.len = 2;
-	ent->keys.val = calloc(2, sizeof(*ent->keys.val));
-	ent->keys.val[0].key.keytype = KEYTYPE_DES;
-	ent->keys.val[1].key.keytype = KEYTYPE_DES3;
-	set_keys(ent, buf);
-    }
+    ent->keys.len = 2;
+    ent->keys.val = calloc(2, sizeof(*ent->keys.val));
+    ent->keys.val[0].key.keytype = KEYTYPE_DES;
+    ent->keys.val[1].key.keytype = KEYTYPE_DES3;
+    set_keys(ent, buf);
+    return 0;
+}
+
+int
+set_random_key(hdb_entry *ent)
+{
+    int i;
+
+    for (i = 0; i < ent->keys.len; ++i)
+	free_Key (&ent->keys.val[i]);
+    free (ent->keys.val);
+
+    ent->keys.len = 0;
+    ent->keys.val = NULL;
+    init_des_key(ent);
     return 0;
 }
