@@ -2633,18 +2633,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 		}
 	}
 	DEBUG(0,("Using workgroup %s.\n", context->workgroup));
-	
 					
-	/* 
-	 * I think we can do this more than once for the same name without 
-	 * being shot but who am I? -- Tom
-	 * Actually, we probably don't want to register a name, 
-	 * but one day the user might want to be able to do so. RJS
-	 */
-	if (0) {
-		name_register_wins(context->netbios_name, 0);
-	}
-
 	/* shortest timeout is 1 second */
 	if (context->timeout > 0 && context->timeout < 1000) 
 		context->timeout = 1000;
