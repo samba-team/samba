@@ -20,7 +20,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 
 char *unix2dos_format(char *str,BOOL overwrite);
 char *dos2unix_format(char *str, BOOL overwrite);
-int interpret_character_set(char *str, int def);
+void interpret_character_set(char *str);
 
 /*The following definitions come from  charset.c  */
 
@@ -180,7 +180,7 @@ char *sj_strtok(char *s1, char *s2);
 char *sj_strstr(char *s1, char *s2);
 char *sj_strchr (char *s, int c);
 char *sj_strrchr(char *s, int c);
-int interpret_coding_system(char *str, int def);
+int interpret_coding_system(char *str);
 
 /*The following definitions come from  loadparm.c  */
 
