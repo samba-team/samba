@@ -136,7 +136,7 @@
 	</constant> attaches to your domain security Samba server, there needs 
 	to be a local Unix user fred to represent that user in the Unix 
 	filesystem. This is very similar to the older Samba security mode 
-	<ulink url="smb.conf.5.html#SECURITYEQUALSERVER">security = server</ulink>, 
+	<ulink url="smb.conf.5.html#SECURITYEQUALSSERVER">security = server</ulink>, 
 	where Samba would pass through the authentication request to a Windows 
 	NT server in the same way as a Windows 95 or Windows 98 server would.
 	</para>

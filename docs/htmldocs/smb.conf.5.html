@@ -2122,6 +2122,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>total print jobs</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >unix password sync</I
 ></TT
 ></P
@@ -2284,7 +2293,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN740"
+NAME="AEN743"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3361,7 +3370,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1098"
+NAME="AEN1101"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -7197,7 +7206,7 @@ CLASS="CONSTANT"
 >yes</TT
 > for 
 		a service, then only guest connections to the service are permitted. 
-		This parameter will have no affect if <A
+		This parameter will have no effect if <A
 HREF="#GUESTOK"
 >		<TT
 CLASS="PARAMETER"
@@ -8458,9 +8467,9 @@ NAME="LOCKING"
 >If <B
 CLASS="COMMAND"
 >locking = no</B
->, all lock and unlock requests 
-		will appear to succeed and all lock queries will indicate that the 
-		queried lock is clear.</P
+>, all lock and unlock 
+		requests will appear to succeed and all lock queries will report 
+		that the file in question is available for locking.</P
 ><P
 >If <B
 CLASS="COMMAND"
@@ -9299,7 +9308,8 @@ NAME="MAGICSCRIPT"
 		executed on behalf of the connected user.</P
 ><P
 >Scripts executed in this way will be deleted upon 
-		completion, permissions permitting.</P
+		completion assuming that the user has the appripriate level 
+		of priviledge and the ile permissions allow the deletion.</P
 ><P
 >If the script generates output, output will be sent to 
 		the file specified by the <A
@@ -9313,7 +9323,7 @@ CLASS="PARAMETER"
 > parameter (see above).</P
 ><P
 >Note that some shells are unable to interpret scripts 
-		containing carriage-return-linefeed instead of linefeed as 
+		containing CR/LF instead of CR as 
 		the end-of-line marker. Magic scripts must be executable 
 		<I
 CLASS="EMPHASIS"
@@ -9738,7 +9748,7 @@ HREF="#GUESTACCOUNT"
 >guest account</A
 >. Note that 
 			this can cause problems as it means that any user incorrectly typing 
-			their password will be silently logged on as a "guest" - and 
+			their password will be silently logged on as "guest" - and 
 			will not know the reason they cannot access files they think
 			they should - there will have been no message given to them
 			that they got their password wrong. Helpdesk services will
@@ -10327,7 +10337,10 @@ NAME="MINPASSWORDLENGTH"
 ><DD
 ><P
 >This option sets the minimum length in characters 
-		of a plaintext password than smbd will accept when performing 
+		of a plaintext password that <B
+CLASS="COMMAND"
+>smbd</B
+> will accept when performing 
 		UNIX password changing.</P
 ><P
 >See also <A
@@ -10533,9 +10546,9 @@ NAME="NAMERESOLVEORDER"
 ><DD
 ><P
 >This option is used by the programs in the Samba 
-		suite to determine what naming services and in what order to resolve 
-		host names to IP addresses. The option takes a space separated 
-		string of different name resolution options.</P
+		suite to determine what naming services to use and in what order 
+		to resolve host names to IP addresses. The option takes a space 
+		separated string of name resolution options.</P
 ><P
 >The options are :"lmhosts", "host", "wins" and "bcast". They 
 		cause names to be resolved as follows :</P
@@ -10874,8 +10887,20 @@ CLASS="PARAMETER"
 >user</I
 ></TT
 > 
-		list will be allowed. By default this option is disabled so a client 
-		can supply a username to be used by the server.</P
+		list will be allowed. By default this option is disabled so that a 
+		client can supply a username to be used by the server.  Enabling
+		this parameter will force the server to only user the login 
+		names from the <TT
+CLASS="PARAMETER"
+><I
+>user</I
+></TT
+> list and is only really
+		useful in <A
+HREF="#SECURITYEQUALSSHARE"
+>shave level</A
+>
+		security.</P
 ><P
 >Note that this also means Samba won't try to deduce 
 		usernames from the service name. This can be annoying for 
@@ -10959,7 +10984,7 @@ NAME="OPLOCKBREAKWAITTIME"
 >This is a tuning parameter added due to bugs in 
 		both Windows 9x and WinNT. If Samba responds to a client too 
 		quickly when that client issues an SMB that can cause an oplock 
-		break request, then the client redirector can fail and not respond 
+		break request, then the network client can fail and not respond 
 		to the break request. This tuning parameter (which is set in milliseconds) 
 		is the amount of time Samba will wait before sending an oplock break 
 		request to such (broken) clients.</P
@@ -11037,8 +11062,8 @@ CLASS="FILENAME"
 > 
 		directory.</P
 ><P
->Oplocks may be selectively turned off on certain files on 
-		a per share basis. See the <A
+>Oplocks may be selectively turned off on certain files with a 
+		share. See the <A
 HREF="#VETOOPLOCKFILES"
 ><TT
 CLASS="PARAMETER"
@@ -11274,7 +11299,7 @@ CLASS="CONSTANT"
 ><P
 >If the send string in any part of the chat sequence 
 		is a fullstop ".",  then no string is sent. Similarly, 
-		is the expect string is a fullstop then no string is expected.</P
+		if the expect string is a fullstop then no string is expected.</P
 ><P
 >Note that if the <A
 HREF="#UNIXPASSWORDSYNC"
@@ -13584,7 +13609,7 @@ CLASS="PARAMETER"
 >The different settings will now be explained.</P
 ><P
 ><A
-NAME="SECURITYEQUALSHARE"
+NAME="SECURITYEQUALSSHARE"
 ></A
 ><I
 CLASS="EMPHASIS"
@@ -13740,7 +13765,7 @@ HREF="#AEN234"
 >.</P
 ><P
 ><A
-NAME="SECURITYEQUALUSER"
+NAME="SECURITYEQUALSUSER"
 ></A
 ><I
 CLASS="EMPHASIS"
@@ -13824,7 +13849,7 @@ HREF="#AEN234"
 >.</P
 ><P
 ><A
-NAME="SECURITYEQUALSERVER"
+NAME="SECURITYEQUALSSERVER"
 ></A
 ><I
 CLASS="EMPHASIS"
@@ -15648,6 +15673,32 @@ CLASS="PARAMETER"
 ></DD
 ><DT
 ><A
+NAME="TOTALPRINTJOBS"
+></A
+>total print jobs (G)</DT
+><DD
+><P
+>This parameter accepts an integer value which defines
+		a limit on the maximum number of print jobs that will be accepted 
+		on a printer share at any given time.  If a print job is submitted
+		by a client which will exceed this number, then smbd will return an 
+		error indicating that no space is available on the server.  The 
+		default value of 0 means that no such limit exists.  This parameter
+		can be used to prevent a server from exceeding its capacity and is
+		designed as a printing throttle.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>total print jobs = 0</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>total print jobs = 5000</B
+></P
+></DD
+><DT
+><A
 NAME="UNIXPASSWORDSYNC"
 ></A
 >unix password sync (G)</DT
@@ -17084,7 +17135,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5384"
+NAME="AEN5399"
 ></A
 ><H2
 >WARNINGS</H2
@@ -17114,7 +17165,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5390"
+NAME="AEN5405"
 ></A
 ><H2
 >VERSION</H2
@@ -17125,7 +17176,7 @@ NAME="AEN5390"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5393"
+NAME="AEN5408"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -17204,7 +17255,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5413"
+NAME="AEN5428"
 ></A
 ><H2
 >AUTHOR</H2

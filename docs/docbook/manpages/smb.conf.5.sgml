@@ -729,6 +729,7 @@
 		<listitem><para><parameter>time offset</parameter></para></listitem>
 		<listitem><para><parameter>time server</parameter></para></listitem>
 		<listitem><para><parameter>timestamp logs</parameter></para></listitem>
+		<listitem><para><parameter>total print jobs</parameter></para></listitem>
 		<listitem><para><parameter>unix password sync</parameter></para></listitem>
 		<listitem><para><parameter>unix realname</parameter></para></listitem>
 		<listitem><para><parameter>update encrypted</parameter></para></listitem>
@@ -2711,7 +2712,7 @@
 		<term><anchor id="GUESTONLY">guest only (S)</term>
 		<listitem><para>If this parameter is <constant>yes</constant> for 
 		a service, then only guest connections to the service are permitted. 
-		This parameter will have no affect if <link linkend="GUESTOK">
+		This parameter will have no effect if <link linkend="GUESTOK">
 		<parameter>guest ok</parameter></link> is not set for the service.</para>
 
 		<para>See the section below on <link linkend="SECURITY"><parameter>
@@ -3306,9 +3307,9 @@
 		performed by the server in response to lock requests from the 
 		client.</para>
 
-		<para>If <command>locking = no</command>, all lock and unlock requests 
-		will appear to succeed and all lock queries will indicate that the 
-		queried lock is clear.</para>
+		<para>If <command>locking = no</command>, all lock and unlock 
+		requests will appear to succeed and all lock queries will report 
+		that the file in question is available for locking.</para>
 
 		<para>If <command>locking = yes</command>, real locking will be performed 
 		by the server.</para>
@@ -3732,14 +3733,15 @@
 		executed on behalf of the connected user.</para>
 
 		<para>Scripts executed in this way will be deleted upon 
-		completion, permissions permitting.</para>
+		completion assuming that the user has the appripriate level 
+		of priviledge and the ile permissions allow the deletion.</para>
 
 		<para>If the script generates output, output will be sent to 
 		the file specified by the <link linkend="MAGICOUTPUT"><parameter>
 		magic output</parameter></link> parameter (see above).</para>
 
 		<para>Note that some shells are unable to interpret scripts 
-		containing carriage-return-linefeed instead of linefeed as 
+		containing CR/LF instead of CR as 
 		the end-of-line marker. Magic scripts must be executable 
 		<emphasis>as is</emphasis> on the host, which for some hosts and 
 		some shells will require filtering at the DOS end.</para>
@@ -3972,7 +3974,7 @@
 			with an invalid password are treated as a guest login and mapped 
 			into the <link linkend="GUESTACCOUNT">guest account</link>. Note that 
 			this can cause problems as it means that any user incorrectly typing 
-			their password will be silently logged on as a "guest" - and 
+			their password will be silently logged on as "guest" - and 
 			will not know the reason they cannot access files they think
 			they should - there will have been no message given to them
 			that they got their password wrong. Helpdesk services will
@@ -4292,7 +4294,7 @@
 		<varlistentry>
 		<term><anchor id="MINPASSWORDLENGTH">min password length (G)</term>
 		<listitem><para>This option sets the minimum length in characters 
-		of a plaintext password than smbd will accept when performing 
+		of a plaintext password that <command>smbd</command> will accept when performing 
 		UNIX password changing.</para>
 
 		<para>See also <link linkend="UNIXPASSWORDSYNC"><parameter>unix 
@@ -4389,9 +4391,9 @@
 		<varlistentry> 
 		<term><anchor id="NAMERESOLVEORDER">name resolve order (G)</term>
 		<listitem><para>This option is used by the programs in the Samba 
-		suite to determine what naming services and in what order to resolve 
-		host names to IP addresses. The option takes a space separated 
-		string of different name resolution options.</para>
+		suite to determine what naming services to use and in what order 
+		to resolve host names to IP addresses. The option takes a space 
+		separated string of name resolution options.</para>
 
 		<para>The options are :"lmhosts", "host", "wins" and "bcast". They 
 		cause names to be resolved as follows :</para>
@@ -4585,8 +4587,12 @@
 		<term><anchor id="ONLYUSER">only user (S)</term>
 		<listitem><para>This is a boolean option that controls whether 
 		connections with usernames not in the <parameter>user</parameter> 
-		list will be allowed. By default this option is disabled so a client 
-		can supply a username to be used by the server.</para>
+		list will be allowed. By default this option is disabled so that a 
+		client can supply a username to be used by the server.  Enabling
+		this parameter will force the server to only user the login 
+		names from the <parameter>user</parameter> list and is only really
+		useful in <link linkend="SECURITYEQUALSSHARE">shave level</link>
+		security.</para>
 
 		<para>Note that this also means Samba won't try to deduce 
 		usernames from the service name. This can be annoying for 
@@ -4637,7 +4643,7 @@
 		<listitem><para>This is a tuning parameter added due to bugs in 
 		both Windows 9x and WinNT. If Samba responds to a client too 
 		quickly when that client issues an SMB that can cause an oplock 
-		break request, then the client redirector can fail and not respond 
+		break request, then the network client can fail and not respond 
 		to the break request. This tuning parameter (which is set in milliseconds) 
 		is the amount of time Samba will wait before sending an oplock break 
 		request to such (broken) clients.</para>
@@ -4686,8 +4692,8 @@
 		<filename>Speed.txt</filename> in the Samba <filename>docs/</filename> 
 		directory.</para>
 
-		<para>Oplocks may be selectively turned off on certain files on 
-		a per share basis. See the <link linkend="VETOOPLOCKFILES"><parameter>
+		<para>Oplocks may be selectively turned off on certain files with a 
+		share. See the <link linkend="VETOOPLOCKFILES"><parameter>
 		veto oplock files</parameter></link> parameter. On some systems 
 		oplocks are recognized by the underlying operating system. This 
 		allows data synchronization between all access to oplocked files, 
@@ -4798,7 +4804,7 @@
 
 		<para>If the send string in any part of the chat sequence 
 		is a fullstop ".",  then no string is sent. Similarly, 
-		is the expect string is a fullstop then no string is expected.</para>
+		if the expect string is a fullstop then no string is expected.</para>
 
 		<para>Note that if the <link linkend="UNIXPASSWORDSYNC"><parameter>unix 
 		password sync</parameter></link> parameter is set to true, then this 
@@ -5975,7 +5981,7 @@
 		<para>The different settings will now be explained.</para>
 
 
-		<para><anchor id="SECURITYEQUALSHARE"><emphasis>SECURITY = SHARE
+		<para><anchor id="SECURITYEQUALSSHARE"><emphasis>SECURITY = SHARE
 		</emphasis></para> 
 		
 		<para>When clients connect to a share level security server then 
@@ -6044,7 +6050,7 @@
 		<para>See also the section <link linkend="VALIDATIONSECT">
 		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
-		<para><anchor id="SECURITYEQUALUSER"><emphasis>SECURIYT = USER
+		<para><anchor id="SECURITYEQUALSUSER"><emphasis>SECURIYT = USER
 		</emphasis></para>
 
 		<para>This is the default security setting in Samba 2.2. 
@@ -6071,7 +6077,7 @@
 		<para>See also the section <link linkend="VALIDATIONSECT">
 		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
-		<para><anchor id="SECURITYEQUALSERVER"><emphasis>SECURITY = SERVER
+		<para><anchor id="SECURITYEQUALSSERVER"><emphasis>SECURITY = SERVER
 		</emphasis></para>
 
 		<para>In this mode Samba will try to validate the username/password 
@@ -7022,6 +7028,26 @@
 		<term><anchor id="TIMESTAMPLOGS">timestamp logs (G)</term>
 		<listitem><para>Synonym for <link linkend="DEBUGTIMESTAMP"><parameter>
 		debug timestamp</parameter></link>.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+
+		<varlistentry>
+		<term><anchor id="TOTALPRINTJOBS">total print jobs (G)</term>
+		<listitem><para>This parameter accepts an integer value which defines
+		a limit on the maximum number of print jobs that will be accepted 
+		on a printer share at any given time.  If a print job is submitted
+		by a client which will exceed this number, then smbd will return an 
+		error indicating that no space is available on the server.  The 
+		default value of 0 means that no such limit exists.  This parameter
+		can be used to prevent a server from exceeding its capacity and is
+		designed as a printing throttle.</para>
+		
+		<para>Default: <command>total print jobs = 0</command></para>
+		<para>Example: <command>total print jobs = 5000</command></para>
 		</listitem>
 		</varlistentry>
 

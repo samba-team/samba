@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "30 March 2001" "" ""
+.TH "SMB.CONF" "5" "03 April 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -930,6 +930,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fItimestamp logs\fR
+.TP 0.2i
+\(bu
+\fItotal print jobs\fR
 .TP 0.2i
 \(bu
 \fIunix password sync\fR
@@ -2804,7 +2807,7 @@ Default: \fBguest ok = no\fR
 \fBguest only (S)\fR
 If this parameter is yes for 
 a service, then only guest connections to the service are permitted. 
-This parameter will have no affect if  \fIguest ok\fR is not set for the service.
+This parameter will have no effect if  \fIguest ok\fR is not set for the service.
 
 See the section below on \fI security\fR for more information about this option.
 
@@ -3271,9 +3274,9 @@ This controls whether or not locking will be
 performed by the server in response to lock requests from the 
 client.
 
-If \fBlocking = no\fR, all lock and unlock requests 
-will appear to succeed and all lock queries will indicate that the 
-queried lock is clear.
+If \fBlocking = no\fR, all lock and unlock 
+requests will appear to succeed and all lock queries will report 
+that the file in question is available for locking.
 
 If \fBlocking = yes\fR, real locking will be performed 
 by the server.
@@ -3621,13 +3624,14 @@ This allows a UNIX script to be sent to the Samba host and
 executed on behalf of the connected user.
 
 Scripts executed in this way will be deleted upon 
-completion, permissions permitting.
+completion assuming that the user has the appripriate level 
+of priviledge and the ile permissions allow the deletion.
 
 If the script generates output, output will be sent to 
 the file specified by the \fI magic output\fR parameter (see above).
 
 Note that some shells are unable to interpret scripts 
-containing carriage-return-linefeed instead of linefeed as 
+containing CR/LF instead of CR as 
 the end-of-line marker. Magic scripts must be executable 
 \fBas is\fR on the host, which for some hosts and 
 some shells will require filtering at the DOS end.
@@ -3821,7 +3825,7 @@ Bad Password - Means user logins
 with an invalid password are treated as a guest login and mapped 
 into the guest account. Note that 
 this can cause problems as it means that any user incorrectly typing 
-their password will be silently logged on as a "guest" - and 
+their password will be silently logged on as "guest" - and 
 will not know the reason they cannot access files they think
 they should - there will have been no message given to them
 that they got their password wrong. Helpdesk services will
@@ -4088,7 +4092,7 @@ Synonym for  \fImin password length\fR.
 .TP
 \fBmin password length (G)\fR
 This option sets the minimum length in characters 
-of a plaintext password than smbd will accept when performing 
+of a plaintext password that \fBsmbd\fR will accept when performing 
 UNIX password changing.
 
 See also \fIunix 
@@ -4154,9 +4158,9 @@ Default: \fBmsdfs root = no\fR
 .TP
 \fBname resolve order (G)\fR
 This option is used by the programs in the Samba 
-suite to determine what naming services and in what order to resolve 
-host names to IP addresses. The option takes a space separated 
-string of different name resolution options.
+suite to determine what naming services to use and in what order 
+to resolve host names to IP addresses. The option takes a space 
+separated string of name resolution options.
 
 The options are :"lmhosts", "host", "wins" and "bcast". They 
 cause names to be resolved as follows :
@@ -4307,8 +4311,12 @@ Default: \fBnull passwords = no\fR
 \fBonly user (S)\fR
 This is a boolean option that controls whether 
 connections with usernames not in the \fIuser\fR 
-list will be allowed. By default this option is disabled so a client 
-can supply a username to be used by the server.
+list will be allowed. By default this option is disabled so that a 
+client can supply a username to be used by the server. Enabling
+this parameter will force the server to only user the login 
+names from the \fIuser\fR list and is only really
+useful in shave level
+security.
 
 Note that this also means Samba won't try to deduce 
 usernames from the service name. This can be annoying for 
@@ -4341,7 +4349,7 @@ A synonym for \fI guest only\fR.
 This is a tuning parameter added due to bugs in 
 both Windows 9x and WinNT. If Samba responds to a client too 
 quickly when that client issues an SMB that can cause an oplock 
-break request, then the client redirector can fail and not respond 
+break request, then the network client can fail and not respond 
 to the break request. This tuning parameter (which is set in milliseconds) 
 is the amount of time Samba will wait before sending an oplock break 
 request to such (broken) clients.
@@ -4379,8 +4387,8 @@ default in Windows NT Servers). For more information see the file
 \fISpeed.txt\fR in the Samba \fIdocs/\fR 
 directory.
 
-Oplocks may be selectively turned off on certain files on 
-a per share basis. See the \fI veto oplock files\fR parameter. On some systems 
+Oplocks may be selectively turned off on certain files with a 
+share. See the \fI veto oplock files\fR parameter. On some systems 
 oplocks are recognized by the underlying operating system. This 
 allows data synchronization between all access to oplocked files, 
 whether it be via Samba or NFS or a local UNIX process. See the 
@@ -4464,7 +4472,7 @@ in them into a single string.
 
 If the send string in any part of the chat sequence 
 is a fullstop ".", then no string is sent. Similarly, 
-is the expect string is a fullstop then no string is expected.
+if the expect string is a fullstop then no string is expected.
 
 Note that if the \fIunix 
 password sync\fR parameter is set to true, then this 
@@ -6234,6 +6242,20 @@ Default: \fBtime server = no\fR
 .TP
 \fBtimestamp logs (G)\fR
 Synonym for \fI debug timestamp\fR.
+.TP
+\fBtotal print jobs (G)\fR
+This parameter accepts an integer value which defines
+a limit on the maximum number of print jobs that will be accepted 
+on a printer share at any given time. If a print job is submitted
+by a client which will exceed this number, then smbd will return an 
+error indicating that no space is available on the server. The 
+default value of 0 means that no such limit exists. This parameter
+can be used to prevent a server from exceeding its capacity and is
+designed as a printing throttle.
+
+Default: \fBtotal print jobs = 0\fR
+
+Example: \fBtotal print jobs = 5000\fR
 .TP
 \fBunix password sync (G)\fR
 This boolean parameter controls whether Samba 
