@@ -839,7 +839,8 @@ to extend the printcap to multiple lines.
 Here are some examples of printcap files:
 </para>
 
-<table>
+<table frame="all">
+	<title>Example printcap files</title>
 	<tgroup cols="2" align="left">
 		<tbody>
 			<row><entry><programlisting>pr</programlisting></entry><entry>just printer name</entry></row>
