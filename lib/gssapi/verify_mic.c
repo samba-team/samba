@@ -49,9 +49,9 @@ verify_mic_des
   u_char *p;
   MD5_CTX md5;
   u_char hash[16], *seq;
-  des_key_schedule schedule;
-  des_cblock zero;
-  des_cblock deskey;
+  DES_key_schedule schedule;
+  DES_cblock zero;
+  DES_cblock deskey;
   int32_t seq_number;
   OM_uint32 ret;
   int cmp;
@@ -82,12 +82,12 @@ verify_mic_des
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
 
-  des_set_key (&deskey, schedule);
-  des_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
-		 schedule, &zero);
+  DES_set_key (&deskey, &schedule);
+  DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
+		 &schedule, &zero);
   if (memcmp (p - 8, hash, 8) != 0) {
     memset (deskey, 0, sizeof(deskey));
-    memset (schedule, 0, sizeof(schedule));
+    memset (&schedule, 0, sizeof(schedule));
     return GSS_S_BAD_MIC;
   }
 
@@ -96,12 +96,12 @@ verify_mic_des
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
   p -= 16;
-  des_set_key (&deskey, schedule);
-  des_cbc_encrypt ((void *)p, (void *)p, 8,
-		   schedule, (des_cblock *)hash, DES_DECRYPT);
+  DES_set_key (&deskey, &schedule);
+  DES_cbc_encrypt ((void *)p, (void *)p, 8,
+		   &schedule, (DES_cblock *)hash, DES_DECRYPT);
 
   memset (deskey, 0, sizeof(deskey));
-  memset (schedule, 0, sizeof(schedule));
+  memset (&schedule, 0, sizeof(schedule));
 
   seq = p;
   gssapi_decode_om_uint32(seq, &seq_number);

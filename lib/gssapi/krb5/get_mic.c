@@ -48,9 +48,9 @@ mic_des
   u_char *p;
   MD5_CTX md5;
   u_char hash[16];
-  des_key_schedule schedule;
-  des_cblock deskey;
-  des_cblock zero;
+  DES_key_schedule schedule;
+  DES_cblock deskey;
+  DES_cblock zero;
   int32_t seq_number;
   size_t len, total_len;
 
@@ -86,9 +86,9 @@ mic_des
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
-  des_set_key (&deskey, schedule);
-  des_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
-		 schedule, &zero);
+  DES_set_key (&deskey, &schedule);
+  DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
+		 &schedule, &zero);
   memcpy (p - 8, hash, 8);	/* SGN_CKSUM */
 
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
@@ -106,9 +106,9 @@ mic_des
 	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
-  des_set_key (&deskey, schedule);
-  des_cbc_encrypt ((void *)p, (void *)p, 8,
-		   schedule, (des_cblock *)(p + 8), DES_ENCRYPT);
+  DES_set_key (&deskey, &schedule);
+  DES_cbc_encrypt ((void *)p, (void *)p, 8,
+		   &schedule, (DES_cblock *)(p + 8), DES_ENCRYPT);
 
   krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
@@ -116,7 +116,7 @@ mic_des
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
   
   memset (deskey, 0, sizeof(deskey));
-  memset (schedule, 0, sizeof(schedule));
+  memset (&schedule, 0, sizeof(schedule));
   
   *minor_status = 0;
   return GSS_S_COMPLETE;
