@@ -148,7 +148,7 @@ for i in swat/help/*.html
 do
 install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/help
 done
-for i in swat/images/*.{jpg,gif}
+for i in swat/images/*.gif
 do
 install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/images
 done
@@ -277,12 +277,11 @@ fi
 %attr(-,root,root) /usr/bin/smbadduser
 %attr(0755,root,root) /usr/bin/smbsh
 %attr(0755,root,root) /usr/bin/smbwrapper.so
-%attr(-,root,root) /usr/share/swat/help/parameters.html
+%attr(-,root,root) /usr/share/swat/help/smb.conf.5.html
 %attr(-,root,root) /usr/share/swat/help/welcome.html
-%attr(-,root,root) /usr/share/swat/images/background.jpg
-%attr(-,root,root) /usr/share/swat/images/background.gif
 %attr(-,root,root) /usr/share/swat/images/globals.gif
 %attr(-,root,root) /usr/share/swat/images/home.gif
+%attr(-,root,root) /usr/share/swat/images/passwd.gif
 %attr(-,root,root) /usr/share/swat/images/printers.gif
 %attr(-,root,root) /usr/share/swat/images/shares.gif
 %attr(-,root,root) /usr/share/swat/images/samba.gif
