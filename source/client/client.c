@@ -83,9 +83,9 @@ static BOOL abort_mget = True;
 static pstring fileselection = "";
 
 /* timing globals */
-SMB_BIG_UINT get_total_size = 0;
+uint64_t get_total_size = 0;
 unsigned int get_total_time_ms = 0;
-static SMB_BIG_UINT put_total_size = 0;
+static uint64_t put_total_size = 0;
 static unsigned int put_total_time_ms = 0;
 
 /* totals globals */
@@ -1663,10 +1663,10 @@ static int cmd_allinfo(void)
 		goto done;
 	}
 
-	d_printf("\tcreate_time:    %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.create_time));
-	d_printf("\taccess_time:    %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.access_time));
-	d_printf("\twrite_time:     %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.write_time));
-	d_printf("\tchange_time:    %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.change_time));
+	d_printf("\tcreate_time:    %s\n", nt_time_string(mem_ctx, finfo.all_info.out.create_time));
+	d_printf("\taccess_time:    %s\n", nt_time_string(mem_ctx, finfo.all_info.out.access_time));
+	d_printf("\twrite_time:     %s\n", nt_time_string(mem_ctx, finfo.all_info.out.write_time));
+	d_printf("\tchange_time:    %s\n", nt_time_string(mem_ctx, finfo.all_info.out.change_time));
 	d_printf("\tattrib:         0x%x\n", finfo.all_info.out.attrib);
 	d_printf("\talloc_size:     %lu\n", (unsigned long)finfo.all_info.out.alloc_size);
 	d_printf("\tsize:           %lu\n", (unsigned long)finfo.all_info.out.size);

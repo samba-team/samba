@@ -608,8 +608,7 @@ static KEY_SEC_DESC *nt_create_init_sec(REG_HANDLE *h)
 #define REG_HANDLE_REGTYPE_NT   1
 #define REG_HANDLE_REGTYPE_W9X  2
 
-#define TTTONTTIME(r, t1, t2) (r)->last_mod_time.low = (t1); \
-                              (r)->last_mod_time.high = (t2);
+#define TTTONTTIME(r, t1, t2) (r)->last_mod_time = (t1) | (((uint64_t)(t2)) << 32)
 
 #define REGF_HDR_BLKSIZ 0x1000 
 

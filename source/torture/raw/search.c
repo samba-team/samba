@@ -197,11 +197,11 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 #define CHECK_TIME(name, sname1, field1, v, sname2, field2) do { \
 	s = find(name); \
 	if (s) { \
-		if (s->sname1.field1 != (~1 & nt_time_to_unix(&v.sname2.out.field2))) { \
+		if (s->sname1.field1 != (~1 & nt_time_to_unix(v.sname2.out.field2))) { \
 			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
 			       __LINE__, \
 				#sname1, #field1, timestring(mem_ctx, s->sname1.field1), \
-				#sname2, #field2, nt_time_string(mem_ctx, &v.sname2.out.field2)); \
+				#sname2, #field2, nt_time_string(mem_ctx, v.sname2.out.field2)); \
 			ret = False; \
 		} \
 	}} while (0)
@@ -209,11 +209,11 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 #define CHECK_NTTIME(name, sname1, field1, v, sname2, field2) do { \
 	s = find(name); \
 	if (s) { \
-		if (memcmp(&s->sname1.field1, &v.sname2.out.field2, sizeof(NTTIME))) { \
+		if (s->sname1.field1 != v.sname2.out.field2) { \
 			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
 			       __LINE__, \
-				#sname1, #field1, nt_time_string(mem_ctx, &s->sname1.field1), \
-				#sname2, #field2, nt_time_string(mem_ctx, &v.sname2.out.field2)); \
+				#sname1, #field1, nt_time_string(mem_ctx, s->sname1.field1), \
+				#sname2, #field2, nt_time_string(mem_ctx, v.sname2.out.field2)); \
 			ret = False; \
 		} \
 	}} while (0)

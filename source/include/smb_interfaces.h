@@ -20,24 +20,14 @@
 */
 
 
-typedef SMB_BIG_UINT large_t;
-
 /* Globally Unique ID */
 #define GUID_SIZE 16
 
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
-typedef struct nttime_info
-{
-	uint32 low;
-	uint32 high;
-} NTTIME;
+typedef uint64_t NTTIME;
 
 /* 8 byte aligned 'hyper' type from MS IDL */
-typedef struct
-{
-	uint32 low;
-	uint32 high;
-} HYPER_T;
+typedef uint64_t HYPER_T;
 
 
 
@@ -376,28 +366,28 @@ union smb_fileinfo {
 			NTTIME write_time;
 			NTTIME change_time;
 			uint32 ex_attrib;	
-			large_t alloc_size;
-			large_t size;
+			uint64_t alloc_size;
+			uint64_t size;
 			uint32 nlink;
 			WIRE_STRING fname;	
 			WIRE_STRING alt_fname;	
 			uint8 delete_pending;
 			uint8 directory;
-			large_t compressed_size;
+			uint64_t compressed_size;
 			uint16 format;
 			uint8 unit_shift;
 			uint8 chunk_shift;
 			uint8 cluster_shift;
-			large_t file_id;
+			uint64_t file_id;
 			uint32 access_flags; /* seen 0x001f01ff from w2k3 */
-			large_t position;
+			uint64_t position;
 			uint32 mode;
 			uint32 alignment_requirement;
 			uint32 reparse_tag;
 			uint_t num_streams;
 			struct stream_struct {
-				large_t size;
-				large_t alloc_size;
+				uint64_t size;
+				uint64_t alloc_size;
 				WIRE_STRING stream_name;
 			} *streams;
 		} out;
@@ -503,8 +493,8 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			large_t alloc_size;
-			large_t size;
+			uint64_t alloc_size;
+			uint64_t size;
 			uint32 nlink;
 			BOOL delete_pending;
 			BOOL directory;
@@ -542,8 +532,8 @@ union smb_fileinfo {
 			NTTIME write_time;
 			NTTIME change_time;
 			uint32 attrib;
-			large_t alloc_size;
-			large_t size;
+			uint64_t alloc_size;
+			uint64_t size;
 			uint32 nlink;
 			uint8 delete_pending;
 			uint8 directory;
@@ -579,7 +569,7 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			large_t compressed_size;
+			uint64_t compressed_size;
 			uint16 format;
 			uint8 unit_shift;
 			uint8 chunk_shift;
@@ -593,19 +583,19 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			large_t end_of_file;
-			large_t num_bytes;
+			uint64_t end_of_file;
+			uint64_t num_bytes;
 			NTTIME status_change_time;
 			NTTIME access_time;
 			NTTIME change_time;
-			large_t uid;
-			large_t gid;
+			uint64_t uid;
+			uint64_t gid;
 			uint32 file_type;
-			large_t dev_major;
-			large_t dev_minor;
-			large_t unique_id;
-			large_t permissions;
-			large_t nlink;
+			uint64_t dev_major;
+			uint64_t dev_minor;
+			uint64_t unique_id;
+			uint64_t permissions;
+			uint64_t nlink;
 		} out;
 	} unix_basic_info;
 
@@ -625,7 +615,7 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			large_t file_id;
+			uint64_t file_id;
 		} out;
 	} internal_information;
 
@@ -645,7 +635,7 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			large_t position;
+			uint64_t position;
 		} out;
 	} position_information;
 
@@ -679,8 +669,8 @@ union smb_fileinfo {
 			NTTIME access_time;
 			NTTIME write_time;
 			NTTIME change_time;
-			large_t alloc_size;
-			large_t size;
+			uint64_t alloc_size;
+			uint64_t size;
 			uint32 attrib;
 		} out;
 	} network_open_information;
@@ -820,7 +810,7 @@ union smb_setfileinfo {
 
 		struct {
 			/* w2k3 rounds this up to nearest 4096 */
-			large_t alloc_size;
+			uint64_t alloc_size;
 		} in;
 	} allocation_info;
 	
@@ -831,7 +821,7 @@ union smb_setfileinfo {
 		union setfileinfo_file file;
 
 		struct {
-			large_t size;
+			uint64_t size;
 		} in;
 	} end_of_file_info;
 
@@ -853,7 +843,7 @@ union smb_setfileinfo {
 		union setfileinfo_file file;
 
 		struct {
-			large_t position;
+			uint64_t position;
 		} in;
 	} position_information;
 
@@ -876,19 +866,19 @@ union smb_setfileinfo {
 		union setfileinfo_file file;
 		struct {
 			uint32 mode; /* yuck - this field remains to fix compile of libcli/clifile.c */
-			large_t end_of_file;
-			large_t num_bytes;
+			uint64_t end_of_file;
+			uint64_t num_bytes;
 			NTTIME status_change_time;
 			NTTIME access_time;
 			NTTIME change_time;
-			large_t uid;
-			large_t gid;
+			uint64_t uid;
+			uint64_t gid;
 			uint32 file_type;
-			large_t dev_major;
-			large_t dev_minor;
-			large_t unique_id;
-			large_t permissions;
-			large_t nlink;
+			uint64_t dev_major;
+			uint64_t dev_minor;
+			uint64_t unique_id;
+			uint64_t permissions;
+			uint64_t nlink;
 		} in;
 	} unix_basic;
 	
@@ -930,8 +920,8 @@ union smb_fsinfo {
 
 		struct {
 			uint32 block_size;
-			large_t blocks_total;
-			large_t blocks_free;
+			uint64_t blocks_total;
+			uint64_t blocks_free;
 			uint32 fs_id;
 			NTTIME create_time;
 			uint32 serial_number;
@@ -939,9 +929,9 @@ union smb_fsinfo {
 			uint32 max_file_component_length;
 			uint32 device_type;
 			uint32 device_characteristics;
-			large_t quota_soft;
-			large_t quota_hard;
-			large_t quota_flags;
+			uint64_t quota_soft;
+			uint64_t quota_hard;
+			uint64_t quota_flags;
 			struct GUID guid;
 			char *volume_name;
 			char *fs_type;
@@ -999,8 +989,8 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-			large_t total_alloc_units;
-			large_t avail_alloc_units; /* maps to call_avail_alloc_units */
+			uint64_t total_alloc_units;
+			uint64_t avail_alloc_units; /* maps to call_avail_alloc_units */
 			uint32 sectors_per_unit;
 			uint32 bytes_per_sector;
 		} out;
@@ -1036,7 +1026,7 @@ union smb_fsinfo {
 		struct {
 			uint16 major_version;
 			uint16 minor_version;
-			large_t capability;
+			uint64_t capability;
 		} out;
 	} unix_info;
 
@@ -1045,10 +1035,10 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-			large_t unknown[3];
-			large_t quota_soft;
-			large_t quota_hard;
-			large_t quota_flags;
+			uint64_t unknown[3];
+			uint64_t quota_soft;
+			uint64_t quota_hard;
+			uint64_t quota_flags;
 		} out;
 	} quota_information;	
 
@@ -1057,9 +1047,9 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-			large_t total_alloc_units;
-			large_t call_avail_alloc_units;
-			large_t actual_avail_alloc_units;
+			uint64_t total_alloc_units;
+			uint64_t call_avail_alloc_units;
+			uint64_t actual_avail_alloc_units;
 			uint32 sectors_per_unit;
 			uint32 bytes_per_sector;
 		} out;
@@ -1071,7 +1061,7 @@ union smb_fsinfo {
 
 		struct {
 			struct GUID  guid;
-			large_t unknown[6];
+			uint64_t unknown[6];
 		} out;
 	} objectid_information;	
 };
@@ -1096,7 +1086,7 @@ union smb_open {
 			uint32 flags;
 			uint32 root_fid;
 			uint32 access_mask;
-			large_t alloc_size;
+			uint64_t alloc_size;
 			uint32 file_attr;
 			uint32 share_access;
 			uint32 open_disposition;
@@ -1115,8 +1105,8 @@ union smb_open {
 			NTTIME write_time;
 			NTTIME change_time;
 			uint32 attrib;
-			large_t alloc_size;
-			large_t size;
+			uint64_t alloc_size;
+			uint64_t size;
 			uint16 file_type;
 			uint16 ipc_state;
 			uint8  is_directory;
@@ -1264,7 +1254,7 @@ union smb_read {
 
 		struct {
 			uint16 fnum;
-			SMB_BIG_UINT offset;
+			uint64_t offset;
 			uint32    size;
 		} in;
 		struct {
@@ -1280,7 +1270,7 @@ union smb_read {
 
 		struct {
 			uint16 fnum;
-			SMB_BIG_UINT offset;
+			uint64_t offset;
 			uint16  maxcnt;
 			uint16  mincnt;
 			uint32  timeout;
@@ -1330,7 +1320,7 @@ union smb_read {
 
 		struct {
 			uint16 fnum;
-			SMB_BIG_UINT offset;
+			uint64_t offset;
 			uint16 mincnt;
 			uint16 maxcnt;
 			uint16 remaining;
@@ -1357,7 +1347,7 @@ union smb_write {
 
 		struct {
 			uint16 fnum;
-			SMB_BIG_UINT offset;
+			uint64_t offset;
 			uint32    count;
 			const char *data;
 		} in;
@@ -1405,7 +1395,7 @@ union smb_write {
 
 		struct {
 			uint16 fnum;
-			SMB_BIG_UINT offset;
+			uint64_t offset;
 			uint16 wmode;
 			uint16 remaining;
 			uint32 count;
@@ -1491,8 +1481,8 @@ union smb_lock {
 			uint16 lock_cnt;
 			struct smb_lock_entry {
 				uint16 pid;
-				SMB_BIG_UINT offset;
-				SMB_BIG_UINT count;
+				uint64_t offset;
+				uint64_t count;
 			} *locks; /* unlocks are first in the arrray */
 		} in;
 	} lockx;
@@ -1831,8 +1821,8 @@ union smb_search_data {
 		NTTIME access_time;
 		NTTIME write_time;
 		NTTIME change_time;
-		large_t  size;
-		large_t  alloc_size;
+		uint64_t  size;
+		uint64_t  alloc_size;
 		uint32   attrib;
 		WIRE_STRING name;
 	} directory_info;
@@ -1844,8 +1834,8 @@ union smb_search_data {
 		NTTIME access_time;
 		NTTIME write_time;
 		NTTIME change_time;
-		large_t  size;
-		large_t  alloc_size;
+		uint64_t  size;
+		uint64_t  alloc_size;
 		uint32   attrib;
 		uint32   ea_size;
 		WIRE_STRING name;
@@ -1864,8 +1854,8 @@ union smb_search_data {
 		NTTIME access_time;
 		NTTIME write_time;
 		NTTIME change_time;
-		large_t  size;
-		large_t  alloc_size;
+		uint64_t  size;
+		uint64_t  alloc_size;
 		uint32   attrib;
 		uint32   ea_size;
 		WIRE_STRING short_name;
@@ -1879,11 +1869,11 @@ union smb_search_data {
 		NTTIME access_time;
 		NTTIME write_time;
 		NTTIME change_time;
-		large_t size;
-		large_t alloc_size;
+		uint64_t size;
+		uint64_t alloc_size;
 		uint32 attrib;
 		uint32 ea_size;
-		large_t file_id;
+		uint64_t file_id;
 		WIRE_STRING name;
 	} id_full_directory_info;
 
@@ -1894,11 +1884,11 @@ union smb_search_data {
 		NTTIME access_time;
 		NTTIME write_time;
 		NTTIME change_time;
-		large_t size;
-		large_t alloc_size;
+		uint64_t size;
+		uint64_t alloc_size;
 		uint32  attrib;
 		uint32  ea_size;
-		large_t file_id;
+		uint64_t file_id;
 		WIRE_STRING short_name;
 		WIRE_STRING name;
 	} id_both_directory_info;
@@ -1906,19 +1896,19 @@ union smb_search_data {
 	/* RAW_SEARCH_UNIX_INFO interface */
 	struct {
 		uint32 file_index;
-		large_t size;
-		large_t alloc_size;
+		uint64_t size;
+		uint64_t alloc_size;
 		NTTIME status_change_time;
 		NTTIME access_time;
 		NTTIME change_time;
-		large_t uid;
-		large_t gid;
+		uint64_t uid;
+		uint64_t gid;
 		uint32 file_type;
-		large_t dev_major;
-		large_t dev_minor;
-		large_t unique_id;
-		large_t permissions;
-		large_t nlink;		
+		uint64_t dev_major;
+		uint64_t dev_minor;
+		uint64_t unique_id;
+		uint64_t permissions;
+		uint64_t nlink;		
 		const char *name;
 	} unix_info;
 };

@@ -152,13 +152,13 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 #define CHECK_TIME(call, stype, field, value) do { \
  	CHECK1(call); \
-	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && nt_time_to_unix(&finfo2.stype.out.field) != value) { \
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && nt_time_to_unix(finfo2.stype.out.field) != value) { \
 		printf("(%d) %s - %s/%s should be 0x%x - 0x%x\n", __LINE__, \
 		        call_name, #stype, #field, \
 		        (uint_t)value, \
-			(uint_t)nt_time_to_unix(&finfo2.stype.out.field)); \
+			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
 		printf("\t%s", timestring(mem_ctx, value)); \
-		printf("\t%s\n", nt_time_string(mem_ctx, &finfo2.stype.out.field)); \
+		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
 		dump_all_info(mem_ctx, &finfo1); \
 	}} while (0)
 

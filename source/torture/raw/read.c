@@ -502,9 +502,8 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);	
 
-#ifdef LARGE_SMB_OFF_T
 	printf("Trying large offset read\n");
-	io.readx.in.offset = ((SMB_BIG_UINT)0x2) << 32;
+	io.readx.in.offset = ((uint64_t)0x2) << 32;
 	io.readx.in.mincnt = 10;
 	io.readx.in.maxcnt = 10;
 	status = smb_raw_read(cli->tree, &io);
@@ -520,7 +519,6 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.nread, 0);
-#endif
 
 done:
 	cli_close(cli->tree, fnum);
@@ -684,16 +682,14 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readbraw.out.nread, 0);
 
-#ifdef LARGE_SMB_OFF_T
 	printf("Trying large offset read\n");
-	io.readbraw.in.offset = ((SMB_BIG_UINT)0x2) << 32;
+	io.readbraw.in.offset = ((uint64_t)0x2) << 32;
 	io.readbraw.in.mincnt = 10;
 	io.readbraw.in.maxcnt = 10;
 	io.readbraw.in.timeout = 0;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readbraw.out.nread, 0);
-#endif
 
 done:
 	cli_close(cli->tree, fnum);

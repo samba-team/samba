@@ -1081,7 +1081,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
-static struct ULONG8 sequence_nums[3];
+static uint64_t sequence_nums[3];
 
 /*
   try a netlogon DatabaseSync
@@ -1133,10 +1133,9 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			    r.out.delta_enum_array->delta_enum[0].delta_union.domain) {
 				sequence_nums[r.in.database_id] = 
 					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
-				printf("\tsequence_nums[%d]=0x%08x%08x\n",
+				printf("\tsequence_nums[%d]=%llu\n",
 				       r.in.database_id, 
-				       sequence_nums[r.in.database_id].high,
-				       sequence_nums[r.in.database_id].low);
+				       sequence_nums[r.in.database_id]);
 			}
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
@@ -1170,13 +1169,13 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.database_id = database_ids[i];
 		r.in.sequence_num = sequence_nums[r.in.database_id];
 
-		if (r.in.sequence_num.low == 0) continue;
+		if (r.in.sequence_num == 0) continue;
 
-		r.in.sequence_num.low -= 1;
+		r.in.sequence_num -= 1;
 
 
-		printf("Testing DatabaseDeltas of id %d at %d\n", 
-		       r.in.database_id, r.in.sequence_num.low);
+		printf("Testing DatabaseDeltas of id %d at %llu\n", 
+		       r.in.database_id, r.in.sequence_num);
 
 		do {
 			creds_client_authenticator(&creds, &r.in.credential);
@@ -1193,8 +1192,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 				printf("Credential chaining failed\n");
 			}
 
-			r.in.sequence_num.low++;
-			r.in.sequence_num.high = 0;
+			r.in.sequence_num++;
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 

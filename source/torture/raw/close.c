@@ -77,10 +77,10 @@ BOOL torture_raw_close(int dummy)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (basetime != nt_time_to_unix(&finfo.all_info.out.write_time)) {
+	if (basetime != nt_time_to_unix(finfo.all_info.out.write_time)) {
 		printf("Incorrect write time on file - %s - %s\n",
 		       timestring(mem_ctx, basetime), 
-		       nt_time_string(mem_ctx, &finfo.all_info.out.write_time));
+		       nt_time_string(mem_ctx, finfo.all_info.out.write_time));
 		dump_all_info(mem_ctx, &finfo);
 		ret = False;
 	}

@@ -23,11 +23,10 @@
 #include "includes.h"
 
 #ifndef TIME_T_MIN
-#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
-		    : ~ (time_t) 0 << (sizeof (time_t) * 8 - 1))
+#define TIME_T_MIN 0
 #endif
 #ifndef TIME_T_MAX
-#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
+#define TIME_T_MAX (~(time_t)0)
 #endif
 
 /*******************************************************************
@@ -84,35 +83,23 @@ int get_time_zone(time_t t)
 	return tm_diff(&tm_utc,tm);
 }
 
-#define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
+#define TIME_FIXUP_CONSTANT 11644473600LL
 
 /****************************************************************************
 interpret an 8 byte "filetime" structure to a time_t
 It's originally in "100ns units since jan 1st 1601"
 ****************************************************************************/
-time_t nt_time_to_unix(const NTTIME *nt)
+time_t nt_time_to_unix(NTTIME nt)
 {
-	double d;
-	time_t ret;
+	nt += 1000*1000*10/2;
+	nt /= 1000*1000*10;
+	nt -= TIME_FIXUP_CONSTANT;
 
-	if (nt->high == 0) {
+	if (TIME_T_MIN >= nt || nt >= TIME_T_MAX) {
 		return 0;
 	}
 
-	d = ((double)nt->high)*4.0*(double)(1<<30);
-	d += (nt->low&0xFFF00000);
-	d *= 1.0e-7;
- 
-	/* now adjust by 369 years to make the secs since 1970 */
-	d -= TIME_FIXUP_CONSTANT;
-
-	if (TIME_T_MIN >= d || d >= TIME_T_MAX) {
-		return 0;
-	}
-
-	ret = (time_t)(d+0.5);
-
-	return ret;
+	return (time_t)nt;
 }
 
 
@@ -122,30 +109,22 @@ This takes GMT as input
 ****************************************************************************/
 void unix_to_nt_time(NTTIME *nt, time_t t)
 {
-	double d;
+	uint64_t t2; 
 
-	if (t==0) {
-		nt->low = 0;
-		nt->high = 0;
-		return;
-	}
-	if (t == TIME_T_MAX) {
-		nt->low = 0xffffffff;
-		nt->high = 0x7fffffff;
+	if (t == (time_t)-1) {
+		*nt = (NTTIME)-1LL;
 		return;
 	}		
-	if (t == -1) {
-		nt->low = 0xffffffff;
-		nt->high = 0xffffffff;
+	if (t == 0) {
+		*nt = 0;
 		return;
 	}		
 
-	d = (double)(t);
-	d += TIME_FIXUP_CONSTANT;
-	d *= 1.0e7;
+	t2 = t;
+	t2 += TIME_FIXUP_CONSTANT;
+	t2 *= 1000*1000*10;
 
-	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
+	*nt = t2;
 }
 
 
@@ -390,18 +369,10 @@ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 	return TimeBuf;
 }
 
-/****************************************************************************
-check if NTTIME is 0
-****************************************************************************/
-BOOL nt_time_is_zero(NTTIME *nt)
-{
-	return (nt->high==0);
-}
-
 /*
   return a talloced string representing a NTTIME for human consumption
 */
-const char *nt_time_string(TALLOC_CTX *mem_ctx, const NTTIME *nt)
+const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 {
 	time_t t = nt_time_to_unix(nt);
 	return talloc_strdup(mem_ctx, timestring(mem_ctx, t));
@@ -411,10 +382,9 @@ const char *nt_time_string(TALLOC_CTX *mem_ctx, const NTTIME *nt)
 /*
   put a NTTIME into a packet
 */
-void push_nttime(void *base, uint16 offset, NTTIME *t)
+void push_nttime(void *base, uint16 offset, NTTIME t)
 {
-	SIVAL(base, offset,   t->low);
-	SIVAL(base, offset+4, t->high);
+	SBVAL(base, offset,   t);
 }
 
 /*
@@ -422,30 +392,7 @@ void push_nttime(void *base, uint16 offset, NTTIME *t)
 */
 NTTIME pull_nttime(void *base, uint16 offset)
 {
-	NTTIME ret;
-	ret.low = IVAL(base, offset);
-	ret.high = IVAL(base, offset+4);
-	return ret;
-}
-
-/*
-  convert a NTTIME to a double in 100-nano-seconds since 1601
-*/
-double nttime_to_double_nt(NTTIME t)
-{
-	const double t32 = 4294967296.0;
-	return t.high*t32 + t.low;
-}
-
-/*
-  convert a double in 100-nano-seconds since 1601 to a NTTIME
-*/
-NTTIME nttime_from_double_nt(double t)
-{
-	const double t32 = 4294967296.0;
-	NTTIME ret;
-	ret.high = t / t32;
-	ret.low = t - (ret.high*t32);
+	NTTIME ret = BVAL(base, offset);
 	return ret;
 }
 
@@ -454,5 +401,5 @@ NTTIME nttime_from_double_nt(double t)
 */
 NTTIME nttime_from_string(const char *s)
 {
-	return nttime_from_double_nt(strtod(s, NULL));
+	return strtoull(s, NULL, 0);
 }

@@ -256,13 +256,11 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 		capabilities |= CAP_UNIX;
 	}
 	
-	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) {
+	if (lp_large_readwrite()) {
 		capabilities |= CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS;
 	}
 	
-	if (SMB_OFF_T_BITS >= 64) {
-		capabilities |= CAP_LARGE_FILES;
-	}
+	capabilities |= CAP_LARGE_FILES;
 
 	if (lp_readraw() && lp_writeraw()) {
 		capabilities |= CAP_RAW_MODE;
@@ -320,7 +318,7 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 	SIVAL(req->out.vwv+1, VWV(5), 0x10000); /* raw size. full 64k */
 	SIVAL(req->out.vwv+1, VWV(7), req->smb->pid); /* session key */
 	SIVAL(req->out.vwv+1, VWV(9), capabilities);
-	push_nttime(req->out.vwv+1, VWV(11), &nttime);
+	push_nttime(req->out.vwv+1, VWV(11), nttime);
 	SSVALS(req->out.vwv+1,VWV(15), req->smb->negotiate.zone_offset/60);
 	
 	if (!negotiate_spnego) {

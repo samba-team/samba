@@ -260,7 +260,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 
 		trans2_setup_reply(req, trans, 0, 18, 0);
 
-		push_nttime(trans->out.data.data, 0, &fsinfo.volume_info.out.create_time);
+		push_nttime(trans->out.data.data, 0, fsinfo.volume_info.out.create_time);
 		SIVAL(trans->out.data.data,       8, fsinfo.volume_info.out.serial_number);
 		trans2_append_data_string(req, trans, 
 					  &fsinfo.volume_info.out.volume_name, 
@@ -408,10 +408,10 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 		trans2_setup_reply(req, trans, 2, 40, 0);
 
 		SSVAL(trans->out.params.data, 0, 0);
-		push_nttime(trans->out.data.data,  0, &st->basic_info.out.create_time);
-		push_nttime(trans->out.data.data,  8, &st->basic_info.out.access_time);
-		push_nttime(trans->out.data.data, 16, &st->basic_info.out.write_time);
-		push_nttime(trans->out.data.data, 24, &st->basic_info.out.change_time);
+		push_nttime(trans->out.data.data,  0, st->basic_info.out.create_time);
+		push_nttime(trans->out.data.data,  8, st->basic_info.out.access_time);
+		push_nttime(trans->out.data.data, 16, st->basic_info.out.write_time);
+		push_nttime(trans->out.data.data, 24, st->basic_info.out.change_time);
 		SIVAL(trans->out.data.data,       32, st->basic_info.out.attrib);
 		SIVAL(trans->out.data.data,       36, 0); /* padding */
 		return NT_STATUS_OK;
@@ -445,10 +445,10 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 		trans2_setup_reply(req, trans, 2, 56, 0);
 
 		SSVAL(trans->out.params.data, 0, 0);
-		push_nttime(trans->out.data.data,  0, &st->network_open_information.out.create_time);
-		push_nttime(trans->out.data.data,  8, &st->network_open_information.out.access_time);
-		push_nttime(trans->out.data.data, 16, &st->network_open_information.out.write_time);
-		push_nttime(trans->out.data.data, 24, &st->network_open_information.out.change_time);
+		push_nttime(trans->out.data.data,  0, st->network_open_information.out.create_time);
+		push_nttime(trans->out.data.data,  8, st->network_open_information.out.access_time);
+		push_nttime(trans->out.data.data, 16, st->network_open_information.out.write_time);
+		push_nttime(trans->out.data.data, 24, st->network_open_information.out.change_time);
 		SBVAL(trans->out.data.data,       32, st->network_open_information.out.alloc_size);
 		SBVAL(trans->out.data.data,       40, st->network_open_information.out.size);
 		SIVAL(trans->out.data.data,       48, st->network_open_information.out.attrib);
@@ -550,10 +550,10 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 		trans2_setup_reply(req, trans, 2, 72, 0);
 
 		SSVAL(trans->out.params.data, 0, 0);
-		push_nttime(trans->out.data.data,  0, &st->all_info.out.create_time);
-		push_nttime(trans->out.data.data,  8, &st->all_info.out.access_time);
-		push_nttime(trans->out.data.data, 16, &st->all_info.out.write_time);
-		push_nttime(trans->out.data.data, 24, &st->all_info.out.change_time);
+		push_nttime(trans->out.data.data,  0, st->all_info.out.create_time);
+		push_nttime(trans->out.data.data,  8, st->all_info.out.access_time);
+		push_nttime(trans->out.data.data, 16, st->all_info.out.write_time);
+		push_nttime(trans->out.data.data, 24, st->all_info.out.change_time);
 		SIVAL(trans->out.data.data,       32, st->all_info.out.attrib);
 		SBVAL(trans->out.data.data,       40, st->all_info.out.alloc_size);
 		SBVAL(trans->out.data.data,       48, st->all_info.out.size);
@@ -930,10 +930,10 @@ static void find_fill_info(struct request_context *req,
 		trans2_grow_data(req, trans, ofs + 64);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->directory_info.file_index);
-		push_nttime(data,    8, &file->directory_info.create_time);
-		push_nttime(data,   16, &file->directory_info.access_time);
-		push_nttime(data,   24, &file->directory_info.write_time);
-		push_nttime(data,   32, &file->directory_info.change_time);
+		push_nttime(data,    8, file->directory_info.create_time);
+		push_nttime(data,   16, file->directory_info.access_time);
+		push_nttime(data,   24, file->directory_info.write_time);
+		push_nttime(data,   32, file->directory_info.change_time);
 		SBVAL(data,         40, file->directory_info.size);
 		SBVAL(data,         48, file->directory_info.alloc_size);
 		SIVAL(data,         56, file->directory_info.attrib);
@@ -947,10 +947,10 @@ static void find_fill_info(struct request_context *req,
 		trans2_grow_data(req, trans, ofs + 68);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->full_directory_info.file_index);
-		push_nttime(data,    8, &file->full_directory_info.create_time);
-		push_nttime(data,   16, &file->full_directory_info.access_time);
-		push_nttime(data,   24, &file->full_directory_info.write_time);
-		push_nttime(data,   32, &file->full_directory_info.change_time);
+		push_nttime(data,    8, file->full_directory_info.create_time);
+		push_nttime(data,   16, file->full_directory_info.access_time);
+		push_nttime(data,   24, file->full_directory_info.write_time);
+		push_nttime(data,   32, file->full_directory_info.change_time);
 		SBVAL(data,         40, file->full_directory_info.size);
 		SBVAL(data,         48, file->full_directory_info.alloc_size);
 		SIVAL(data,         56, file->full_directory_info.attrib);
@@ -975,10 +975,10 @@ static void find_fill_info(struct request_context *req,
 		trans2_grow_data(req, trans, ofs + 94);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->both_directory_info.file_index);
-		push_nttime(data,    8, &file->both_directory_info.create_time);
-		push_nttime(data,   16, &file->both_directory_info.access_time);
-		push_nttime(data,   24, &file->both_directory_info.write_time);
-		push_nttime(data,   32, &file->both_directory_info.change_time);
+		push_nttime(data,    8, file->both_directory_info.create_time);
+		push_nttime(data,   16, file->both_directory_info.access_time);
+		push_nttime(data,   24, file->both_directory_info.write_time);
+		push_nttime(data,   32, file->both_directory_info.change_time);
 		SBVAL(data,         40, file->both_directory_info.size);
 		SBVAL(data,         48, file->both_directory_info.alloc_size);
 		SIVAL(data,         56, file->both_directory_info.attrib);
@@ -999,10 +999,10 @@ static void find_fill_info(struct request_context *req,
 		trans2_grow_data(req, trans, ofs + 80);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->id_full_directory_info.file_index);
-		push_nttime(data,    8, &file->id_full_directory_info.create_time);
-		push_nttime(data,   16, &file->id_full_directory_info.access_time);
-		push_nttime(data,   24, &file->id_full_directory_info.write_time);
-		push_nttime(data,   32, &file->id_full_directory_info.change_time);
+		push_nttime(data,    8, file->id_full_directory_info.create_time);
+		push_nttime(data,   16, file->id_full_directory_info.access_time);
+		push_nttime(data,   24, file->id_full_directory_info.write_time);
+		push_nttime(data,   32, file->id_full_directory_info.change_time);
 		SBVAL(data,         40, file->id_full_directory_info.size);
 		SBVAL(data,         48, file->id_full_directory_info.alloc_size);
 		SIVAL(data,         56, file->id_full_directory_info.attrib);
@@ -1019,10 +1019,10 @@ static void find_fill_info(struct request_context *req,
 		trans2_grow_data(req, trans, ofs + 104);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->id_both_directory_info.file_index);
-		push_nttime(data,    8, &file->id_both_directory_info.create_time);
-		push_nttime(data,   16, &file->id_both_directory_info.access_time);
-		push_nttime(data,   24, &file->id_both_directory_info.write_time);
-		push_nttime(data,   32, &file->id_both_directory_info.change_time);
+		push_nttime(data,    8, file->id_both_directory_info.create_time);
+		push_nttime(data,   16, file->id_both_directory_info.access_time);
+		push_nttime(data,   24, file->id_both_directory_info.write_time);
+		push_nttime(data,   32, file->id_both_directory_info.change_time);
 		SBVAL(data,         40, file->id_both_directory_info.size);
 		SBVAL(data,         48, file->id_both_directory_info.alloc_size);
 		SIVAL(data,         56, file->id_both_directory_info.attrib);

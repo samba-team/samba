@@ -314,7 +314,7 @@ static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob)
 
 	generate_random_buffer(client_chal, sizeof(client_chal), False);
 
-	push_nttime(long_date, 0, &nttime);
+	push_nttime(long_date, 0, nttime);
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 

@@ -91,28 +91,28 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* Test account expire time */
 	
-	if (!nt_time_is_zero(acct_expiry) && time(NULL) > nt_time_to_unix(acct_expiry)) {
+	if ((*acct_expiry) != 0 && time(NULL) > nt_time_to_unix(*acct_expiry)) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' has expired.\n", username));
 		DEBUG(3,("sam_account_ok: Account expired at '%s'.\n", 
-			 nt_time_string(mem_ctx, acct_expiry)));
+			 nt_time_string(mem_ctx, *acct_expiry)));
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
 	if (!(acct_flags & ACB_PWNOEXP)) {
 
 		/* check for immediate expiry "must change at next logon" */
-		if (nt_time_is_zero(must_change_time) && !nt_time_is_zero(last_set_time)) {
+		if (*must_change_time == 0 && *last_set_time != 0) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
 				 username));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
 		/* check for expired password */
-		if (!nt_time_is_zero(must_change_time) && nt_time_to_unix(must_change_time) < time(NULL)) {
+		if ((*must_change_time) != 0 && nt_time_to_unix(*must_change_time) < time(NULL)) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
 				 username));
 			DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
-				 nt_time_string(mem_ctx, must_change_time)));
+				 nt_time_string(mem_ctx, *must_change_time)));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
 	}

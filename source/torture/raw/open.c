@@ -84,7 +84,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t1 = t & ~1; \
-	t2 = nt_time_to_unix(&finfo.all_info.out.field) & ~1; \
+	t2 = nt_time_to_unix(finfo.all_info.out.field) & ~1; \
 	if (ABS(t1-t2) > 2) { \
 		printf("(%d) wrong time for field %s  %s - %s\n", \
 		       __LINE__, #field, \
@@ -101,11 +101,11 @@ static const char *rdwr_string(enum rdwr_mode m)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t2 = finfo.all_info.out.field; \
-	if (!nt_time_equal(&t, &t2)) { \
+	if (t != t2) { \
 		printf("(%d) wrong time for field %s  %s - %s\n", \
 		       __LINE__, #field, \
-		       nt_time_string(mem_ctx, &t), \
-		       nt_time_string(mem_ctx, &t2)); \
+		       nt_time_string(mem_ctx, t), \
+		       nt_time_string(mem_ctx, t2)); \
 		dump_all_info(mem_ctx, &finfo); \
 		ret = False; \
 	}} while (0)

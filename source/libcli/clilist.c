@@ -45,9 +45,9 @@ static BOOL interpret_long_filename(int level,
 	ZERO_STRUCTP(finfo);
 	
 	finfo->size = info->both_directory_info.size;
-	finfo->ctime = nt_time_to_unix(&info->both_directory_info.create_time);
-	finfo->atime = nt_time_to_unix(&info->both_directory_info.access_time);
-	finfo->mtime = nt_time_to_unix(&info->both_directory_info.write_time);
+	finfo->ctime = nt_time_to_unix(info->both_directory_info.create_time);
+	finfo->atime = nt_time_to_unix(info->both_directory_info.access_time);
+	finfo->mtime = nt_time_to_unix(info->both_directory_info.write_time);
 	finfo->mode = info->both_directory_info.attrib; /* 32 bit->16 bit attrib */
 	if (info->both_directory_info.short_name.s) {
 		strncpy(finfo->short_name, info->both_directory_info.short_name.s, 

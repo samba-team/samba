@@ -85,16 +85,16 @@ NTSTATUS cli_qpathinfo2(struct cli_tree *tree, const char *fname,
 		return status;
 
 	if (c_time) {
-		*c_time = nt_time_to_unix(&parms.all_info.out.create_time);
+		*c_time = nt_time_to_unix(parms.all_info.out.create_time);
 	}
 	if (a_time) {
-		*a_time = nt_time_to_unix(&parms.all_info.out.access_time);
+		*a_time = nt_time_to_unix(parms.all_info.out.access_time);
 	}
 	if (m_time) {
-		*m_time = nt_time_to_unix(&parms.all_info.out.change_time);
+		*m_time = nt_time_to_unix(parms.all_info.out.change_time);
 	}
 	if (w_time) {
-		*w_time = nt_time_to_unix(&parms.all_info.out.write_time);
+		*w_time = nt_time_to_unix(parms.all_info.out.write_time);
 	}
 	if (size) {
 		*size = parms.all_info.out.size;
@@ -163,16 +163,16 @@ NTSTATUS cli_qfileinfo(struct cli_tree *tree, int fnum,
 	}
 
 	if (c_time) {
-		*c_time = nt_time_to_unix(&parms.all_info.out.create_time);
+		*c_time = nt_time_to_unix(parms.all_info.out.create_time);
 	}
 	if (a_time) {
-		*a_time = nt_time_to_unix(&parms.all_info.out.access_time);
+		*a_time = nt_time_to_unix(parms.all_info.out.access_time);
 	}
 	if (m_time) {
-		*m_time = nt_time_to_unix(&parms.all_info.out.change_time);
+		*m_time = nt_time_to_unix(parms.all_info.out.change_time);
 	}
 	if (w_time) {
-		*w_time = nt_time_to_unix(&parms.all_info.out.write_time);
+		*w_time = nt_time_to_unix(parms.all_info.out.write_time);
 	}
 	if (mode) {
 		*mode = parms.all_info.out.attrib;

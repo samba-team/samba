@@ -65,12 +65,6 @@ interface misc
 		GUID   uuid;
 	} policy_handle;
 
-	/* a 4 byte aligned 64-bit integer */
-	typedef [public] struct {
-		uint32 low;
-		uint32 high;
-	} ULONG8;
-
 	/* this is also used in samr and netlogon */
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint16 units_per_week;

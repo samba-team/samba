@@ -55,7 +55,7 @@ struct record {
 	enum lock_op lock_op;
 	enum brl_type lock_type;
 	char conn, f;
-	SMB_BIG_UINT start, len;
+	uint64_t start, len;
 	char needed;
 };
 
@@ -166,8 +166,8 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 {
 	unsigned conn = rec->conn;
 	unsigned f = rec->f;
-	SMB_BIG_UINT start = rec->start;
-	SMB_BIG_UINT len = rec->len;
+	uint64_t start = rec->start;
+	uint64_t len = rec->len;
 	enum brl_type op = rec->lock_type;
 	int server;
 	BOOL ret[NSERVERS];

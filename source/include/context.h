@@ -115,7 +115,7 @@ struct request_context {
 	unsigned chain_count;
 
 	/* the sequence number for signing */
-	large_t seq_num;
+	uint64_t seq_num;
 
 	/* the async structure allows backend functions to delay
 	   replying to requests. To use this, the front end must set
@@ -335,7 +335,7 @@ struct timers_context {
 
 struct signing_context {
 	DATA_BLOB mac_key;
-	large_t next_seq_num;
+	uint64_t next_seq_num;
 	enum smb_signing_state signing_state;
 };
 

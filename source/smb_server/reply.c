@@ -672,13 +672,7 @@ void reply_readbraw(struct request_context *req)
 	/* the 64 bit varient */
 	if (req->in.wct == 10) {
 		uint32 offset_high = IVAL(req->in.vwv, VWV(8));
-#ifdef LARGE_SMB_OFF_T
 		io.readbraw.in.offset |= (((SMB_OFF_T)offset_high) << 32);
-#else
-		if (offset_high != 0) {
-			goto failed;
-		}
-#endif
 	}
 
 	/* before calling the backend we setup the raw buffer. This
@@ -884,14 +878,7 @@ void reply_read_and_X(struct request_context *req)
 	/* the 64 bit varient */
 	if (req->in.wct == 12) {
 		uint32 offset_high = IVAL(req->in.vwv, VWV(10));
-#ifdef LARGE_SMB_OFF_T
-		io->readx.in.offset |= (((SMB_OFF_T)offset_high) << 32);
-#else
-		if (offset_high != 0) {
-			req_reply_error(req, NT_STATUS_FOOBAR);
-			return;
-		}
-#endif
+		io->readx.in.offset |= (((uint64_t)offset_high) << 32);
 	}
 
 	/* setup the reply packet assuming the maximum possible read */
@@ -1079,14 +1066,7 @@ void reply_write_and_X(struct request_context *req)
 	if (req->in.wct == 14) {
 		uint32 offset_high = IVAL(req->in.vwv, VWV(12));
 		uint16 count_high = SVAL(req->in.vwv, VWV(9));
-#ifdef LARGE_SMB_OFF_T
-		io->writex.in.offset |= (((SMB_OFF_T)offset_high) << 32);
-#else
-		if (offset_high != 0) {
-			req_reply_error(req, NT_STATUS_FOOBAR);
-			return;
-		}
-#endif
+		io->writex.in.offset |= (((uint64_t)offset_high) << 32);
 		io->writex.in.count |= ((uint32)count_high) << 16;
 	}
 
@@ -1788,13 +1768,8 @@ void reply_lockingX(struct request_context *req)
 			lck->lockx.in.locks[i].count  = IVAL(p, 6);
 		}
 		if (ofs_high != 0 || count_high != 0) {
-#ifdef LARGE_SMB_OFF_T
-			lck->lockx.in.locks[i].count  |= ((SMB_OFF_T)count_high) << 32;
-			lck->lockx.in.locks[i].offset |= ((SMB_OFF_T)ofs_high) << 32;
-#else
-			req_reply_error(req, NT_STATUS_FOOBAR);
-			return;
-#endif
+			lck->lockx.in.locks[i].count  |= ((uint64_t)count_high) << 32;
+			lck->lockx.in.locks[i].offset |= ((uint64_t)ofs_high) << 32;
 		}
 		p += lck_size;
 	}
@@ -2204,10 +2179,10 @@ static void reply_ntcreate_and_X_send(struct request_context *req)
 	/* the rest of the parameters are not aligned! */
 	SSVAL(req->out.vwv,        5, io->ntcreatex.out.fnum);
 	SIVAL(req->out.vwv,        7, io->ntcreatex.out.create_action);
-	push_nttime(req->out.vwv, 11, &io->ntcreatex.out.create_time);
-	push_nttime(req->out.vwv, 19, &io->ntcreatex.out.access_time);
-	push_nttime(req->out.vwv, 27, &io->ntcreatex.out.write_time);
-	push_nttime(req->out.vwv, 35, &io->ntcreatex.out.change_time);
+	push_nttime(req->out.vwv, 11, io->ntcreatex.out.create_time);
+	push_nttime(req->out.vwv, 19, io->ntcreatex.out.access_time);
+	push_nttime(req->out.vwv, 27, io->ntcreatex.out.write_time);
+	push_nttime(req->out.vwv, 35, io->ntcreatex.out.change_time);
 	SIVAL(req->out.vwv,       43, io->ntcreatex.out.attrib);
 	SBVAL(req->out.vwv,       47, io->ntcreatex.out.alloc_size);
 	SBVAL(req->out.vwv,       55, io->ntcreatex.out.size);

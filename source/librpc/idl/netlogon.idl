@@ -77,8 +77,8 @@ interface netlogon
 	/* in netr_AcctLockStr size seems to be be 24, and rrenard thinks 
 	   that the structure of the bindata looks like this:
 
-		ULONG8 lockout_duration;
-		ULONG8 reset_count;
+		uint64 lockout_duration;
+		uint64 reset_count;
 		uint32 bad_attempt_lockout;
 		uint32 dummy;	
 
@@ -371,9 +371,9 @@ interface netlogon
 		NTTIME forcedlogoff;
 		uint16 minpasswdlen;
 		uint16 passwdhistorylen;
-		ULONG8 pwd_must_change_time;
-		ULONG8 pwd_can_change_time;
-		ULONG8 sequence_num;
+		uint64 pwd_must_change_time;
+		uint64 pwd_can_change_time;
+		uint64 sequence_num;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -597,7 +597,7 @@ interface netlogon
 		[case(NETR_DELTA_DELETE_SECRET)]   netr_DELTA_DELETE_SECRET   delete_secret;
 		[case(NETR_DELTA_DELETE_GROUP2)]   netr_DELTA_DELETE_USER     *delete_group;
 		[case(NETR_DELTA_DELETE_USER2)]    netr_DELTA_DELETE_USER     *delete_user;
-		[case(NETR_DELTA_MODIFY_COUNT)]    ULONG8                     *modified_count;
+		[case(NETR_DELTA_MODIFY_COUNT)]    uint64                     *modified_count;
 	} netr_DELTA_UNION;
 
 	typedef union {
@@ -643,7 +643,7 @@ interface netlogon
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
 		[in]      uint32 database_id,
-		[in,out]  ULONG8 sequence_num,
+		[in,out]  uint64 sequence_num,
 		[in]      uint32 preferredmaximumlength,
 		[out]     netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);

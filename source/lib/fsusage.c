@@ -24,7 +24,7 @@
 /* Return the number of TOSIZE-byte blocks used by
    BLOCKS FROMSIZE-byte blocks, rounding away from zero.
 */
-static SMB_BIG_UINT adjust_blocks(SMB_BIG_UINT blocks, SMB_BIG_UINT fromsize, SMB_BIG_UINT tosize)
+static uint64_t adjust_blocks(uint64_t blocks, uint64_t fromsize, uint64_t tosize)
 {
 	if (fromsize == tosize)	/* e.g., from 512 to 512 */
 		return blocks;
@@ -40,10 +40,10 @@ static SMB_BIG_UINT adjust_blocks(SMB_BIG_UINT blocks, SMB_BIG_UINT fromsize, SM
 
    results are returned in *dfree and *dsize, in 512 byte units
 */
-int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 {
 #ifdef STAT_STATFS3_OSF1
-#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_fsize, (SMB_BIG_UINT)512)
+#define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_fsize, (uint64_t)512)
 	struct statfs fsd;
 
 	if (statfs (path, &fsd, sizeof (struct statfs)) != 0)
@@ -51,7 +51,7 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 #endif /* STAT_STATFS3_OSF1 */
 	
 #ifdef STAT_STATFS2_FS_DATA	/* Ultrix */
-#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)1024, (SMB_BIG_UINT)512)	
+#define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)1024, (uint64_t)512)	
 	struct fs_data fsd;
 	
 	if (statfs (path, &fsd) != 1)
@@ -62,7 +62,7 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 #endif /* STAT_STATFS2_FS_DATA */
 	
 #ifdef STAT_STATFS2_BSIZE	/* 4.3BSD, SunOS 4, HP-UX, AIX */
-#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
+#define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_bsize, (uint64_t)512)
 	struct statfs fsd;
 	
 	if (statfs (path, &fsd) < 0)
@@ -84,7 +84,7 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 	
 
 #ifdef STAT_STATFS2_FSIZE	/* 4.4BSD */
-#define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_fsize, (SMB_BIG_UINT)512)
+#define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_fsize, (uint64_t)512)
 	
 	struct statfs fsd;
 	
@@ -94,12 +94,12 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 	
 #ifdef STAT_STATFS4		/* SVR3, Dynix, Irix, AIX */
 # if _AIX || defined(_CRAY)
-#  define CONVERT_BLOCKS(B) adjust_blocks ((SMB_BIG_UINT)(B), (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
+#  define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_bsize, (uint64_t)512)
 #  ifdef _CRAY
 #   define f_bavail f_bfree
 #  endif
 # else
-#  define CONVERT_BLOCKS(B) ((SMB_BIG_UINT)B)
+#  define CONVERT_BLOCKS(B) ((uint64_t)B)
 #  ifndef _SEQUENT_		/* _SEQUENT_ is DYNIX/ptx */
 #   ifndef DOLPHIN		/* DOLPHIN 3.8.alfa/7.18 has f_bavail */
 #    define f_bavail f_bfree
@@ -119,7 +119,7 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 
 #if defined(STAT_STATVFS) || defined(STAT_STATVFS64)		/* SVR4 */
 # define CONVERT_BLOCKS(B) \
-	adjust_blocks ((SMB_BIG_UINT)(B), fsd.f_frsize ? (SMB_BIG_UINT)fsd.f_frsize : (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
+	adjust_blocks ((uint64_t)(B), fsd.f_frsize ? (uint64_t)fsd.f_frsize : (uint64_t)fsd.f_bsize, (uint64_t)512)
 
 #ifdef STAT_STATVFS64
 	struct statvfs64 fsd;
