@@ -929,6 +929,12 @@ uint32 cli_spoolss_addprinterex (
 	uint32 			level,
 	PRINTER_INFO_CTR  	*ctr
 );
+uint32 cli_spoolss_deleteprinterdriver (
+	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
+	char			*arch,
+	char			*driver
+);
 
 /* The following definitions come from libsmb/cliconnect.c  */
 
@@ -2195,6 +2201,8 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
                             fstring printername, fstring architecture, uint32 version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
+BOOL printer_driver_in_use (char *arch, char *driver);
+uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i);
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
 BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
@@ -3294,6 +3302,13 @@ BOOL make_spoolss_printer_info_2(
 	PRINTER_INFO_2 *info
 );
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_deleteprinterdriver(
+	TALLOC_CTX *mem_ctx,
+	SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+	const char *server,
+	const char* arch, 
+	const char* driver 
+);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
                                 const POLICY_HND *handle,
@@ -3307,6 +3322,8 @@ BOOL spoolss_io_q_abortprinter(char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct
 BOOL spoolss_io_r_abortprinter(char *desc, SPOOL_R_ABORTPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_deleteprinter(char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_deleteprinterdriver(char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth);
@@ -3779,6 +3796,8 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
 uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R_CLOSEPRINTER *r_u);
 uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL_R_DELETEPRINTER *r_u);
+uint32 _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+				    SPOOL_R_DELETEPRINTERDRIVER *r_u);
 uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u);
 uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u);
 uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
