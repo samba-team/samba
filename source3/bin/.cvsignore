@@ -1,0 +1,14 @@
+make_printerdef
+make_smbcodepage
+make_unicodemap
+nmbd
+nmblookup
+rpcclient
+smbclient
+smbd
+smbpasswd
+smbspool
+smbstatus
+swat
+testparm
+testprns
