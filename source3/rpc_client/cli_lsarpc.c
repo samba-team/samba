@@ -80,7 +80,7 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 		return False;
 	}
 
-	if (r_o.status != 0) {
+	if (!NT_STATUS_IS_OK(r_o.status)) {
 		/* report error code */
 		DEBUG(0,("LSA_OPENPOLICY: %s\n", get_nt_error_msg(r_o.status)));
 		prs_mem_free(&rbuf);
@@ -145,7 +145,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 		return False;
 	}
 
-	if (r_q.status != 0) {
+	if (!NT_STATUS_IS_OK(r_q.status)) {
 		/* report error code */
 		DEBUG(0,("LSA_QUERYINFOPOLICY: %s\n", get_nt_error_msg(r_q.status)));
 		prs_mem_free(&rbuf);
@@ -238,7 +238,7 @@ BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 		return False;
 	}
 
-	if (r_c.status != 0) {
+	if (!NT_STATUS_IS_OK(r_c.status)) {
 		/* report error code */
 		DEBUG(0,("LSA_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
 		prs_mem_free(&rbuf);
@@ -285,7 +285,7 @@ BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server)
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
+NTSTATUS lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 		       BOOL sec_qos, uint32 des_access)
 {
 	prs_struct rbuf;
@@ -293,7 +293,7 @@ uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 	LSA_Q_OPEN_POL q_o;
 	LSA_SEC_QOS qos;
 	struct cli_connection *con = NULL;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (!cli_connection_init(system_name, PIPE_LSARPC, &con)) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -327,7 +327,7 @@ uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 
 		result = r_o.status;
 
-		if (p && r_o.status != 0) {
+		if (p && !NT_STATUS_IS_OK(r_o.status)) {
 			/* report error code */
 			DEBUG(0,
 			      ("LSA_OPENPOLICY: %s\n",
@@ -356,14 +356,14 @@ uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 /****************************************************************************
 do a LSA Close
 ****************************************************************************/
-uint32 lsa_close(POLICY_HND *hnd)
+NTSTATUS lsa_close(POLICY_HND *hnd)
 {
         prs_struct rbuf;
         prs_struct buf;
         LSA_Q_CLOSE q_c;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-        if (hnd == NULL) return False;
+        if (hnd == NULL) return NT_STATUS_INVALID_PARAMETER;
 
         /* Create and send a MSRPC command with api LSA_OPENPOLICY */
 
@@ -387,7 +387,7 @@ uint32 lsa_close(POLICY_HND *hnd)
                 p = rbuf.data_offset != 0;
 		result = r_c.status;
 
-                if (p && r_c.status != 0) {
+                if (p && !NT_STATUS_IS_OK(r_c.status)) {
 
                         /* Report error code */
 
@@ -408,18 +408,19 @@ uint32 lsa_close(POLICY_HND *hnd)
 /****************************************************************************
 do a LSA Lookup SIDs
 ****************************************************************************/
-uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+NTSTATUS lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 		       char ***names, uint32 **types, int *num_names)
 {
 	prs_struct rbuf;
 	prs_struct buf;
 	LSA_Q_LOOKUP_SIDS q_l;
 	TALLOC_CTX *ctx = talloc_init();
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q_l);
 
-	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+	if (hnd == NULL || num_sids == 0 || sids == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
 
 	if (num_names != NULL) {
 		*num_names = 0;
@@ -459,10 +460,9 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 		p = rbuf.data_offset != 0;
 		result = r_l.status;
 
-		if (p && r_l.status != 0 &&
-		    r_l.status != 0x107 &&
-		    r_l.status != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
-
+		if (p && !NT_STATUS_IS_OK(r_l.status) &&
+		    NT_STATUS_V(r_l.status) != 0x107 &&
+		    NT_STATUS_V(r_l.status) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
 			/* Report error code */
 
 			DEBUG(1, ("LSA_LOOKUP_SIDS: %s\n",
@@ -564,17 +564,18 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 /****************************************************************************
 do a LSA Lookup Names
 ****************************************************************************/
-uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
-			DOM_SID **sids, uint32 **types, int *num_sids)
+NTSTATUS lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
+			  DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct rbuf;
 	prs_struct buf;
 	LSA_Q_LOOKUP_NAMES q_l;
 	BOOL valid_response = False;
 	TALLOC_CTX *ctx = talloc_init();
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+	if (hnd == NULL || num_sids == 0 || sids == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
 
 	prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
 	prs_init(&rbuf, 0, ctx, UNMARSHALL);
@@ -603,7 +604,7 @@ uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
 		lsa_io_r_lookup_names("", &r_l, &rbuf, 0);
 		p = rbuf.data_offset != 0;
 
-		if (p && r_l.status != 0) {
+		if (p && !NT_STATUS_IS_OK(r_l.status)) {
 			/* report error code */
 			DEBUG(1,
 			      ("LSA_LOOKUP_NAMES: %s\n",

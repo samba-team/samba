@@ -68,9 +68,9 @@ check if a username/password is OK assuming the password
 in PLAIN TEXT
 ****************************************************************************/
 
-uint32 check_unix_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
-	uint32 nt_status;
+	NTSTATUS nt_status;
 	
 	become_root();
 	nt_status = (pass_check(user_info->smb_username.str, user_info->plaintext_password.str,

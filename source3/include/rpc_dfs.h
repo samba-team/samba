@@ -55,7 +55,7 @@ DFS_Q_DFS_EXIST;
 /* status == 1 if dfs exists. */
 typedef struct dfs_r_dfs_exist
 {
-  NTSTATUS status;
+	uint32 status;
 }
 DFS_R_DFS_EXIST;
 

@@ -25,7 +25,7 @@
 
 struct cmd_set {
 	char *name;
-	uint32 (*fn)(struct cli_state*, int argc, char **argv);
+	NTSTATUS (*fn)(struct cli_state*, int argc, char **argv);
 	char *description;
 	char *usage;
 };

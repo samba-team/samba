@@ -551,6 +551,67 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 	return True;
 }
 
+/*******************************************************************
+ Stream a NTSTATUS
+ ********************************************************************/
+
+BOOL prs_ntstatus(char *name, prs_struct *ps, int depth, NTSTATUS *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = NT_STATUS(RIVAL(q,0));
+		else
+			*status = NT_STATUS(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,NT_STATUS_V(*status));
+		else
+			SIVAL(q,0,NT_STATUS_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 get_nt_error_msg(*status)));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+/*******************************************************************
+ Stream a WERROR
+ ********************************************************************/
+
+BOOL prs_werror(char *name, prs_struct *ps, int depth, WERROR *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = W_ERROR(RIVAL(q,0));
+		else
+			*status = W_ERROR(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,W_ERROR_V(*status));
+		else
+			SIVAL(q,0,W_ERROR_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 werror_str(*status)));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+
 /******************************************************************
  Stream an array of uint8s. Length is number of uint8s.
  ********************************************************************/

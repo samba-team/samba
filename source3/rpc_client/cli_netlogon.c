@@ -154,7 +154,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
 
     ok = net_io_r_auth_2("", &r_a, &rbuf, 0);
 		
-    if (ok && r_a.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_a.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(r_a.status)));
@@ -243,7 +243,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
 
     ok = net_io_r_req_chal("", &r_c, &rbuf, 0);
 		
-    if (ok && r_c.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_c.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
@@ -308,7 +308,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 
     ok = net_io_r_srv_pwset("", &r_s, &rbuf, 0);
 		
-    if (ok && r_s.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_s.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(r_s.status)));
@@ -338,8 +338,9 @@ password ?).\n", cli->desthost ));
  returns level 3.
 ****************************************************************************/
 
-static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3, uint16 validation_level)
+static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+					   NET_USER_INFO_3 *user_info3, 
+					   uint16 validation_level)
 {
 	DOM_CRED new_clnt_cred;
 	DOM_CRED dummy_rtn_creds;
@@ -347,7 +348,7 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	prs_struct buf; 
 	NET_Q_SAM_LOGON q_s;
 	NET_R_SAM_LOGON r_s;
-	uint32 retval = 0;
+	NTSTATUS retval = NT_STATUS_OK;
 
 	gen_next_creds( cli, &new_clnt_cred);
 
@@ -398,38 +399,38 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	 * the call.
 	 */
 	
-	if (retval == NT_STATUS_INVALID_INFO_CLASS) {
+	if (NT_STATUS_V(retval) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
 		goto out;
 	}
 
-	if (retval != 0) {
+	if (!NT_STATUS_IS_OK(retval)) {
 		/* report error code */
 		DEBUG(0,("cli_net_sam_logon_internal: %s\n", get_nt_error_msg(r_s.status)));
 		goto out;
-    }
+	}
 
-    /* Update the credentials. */
-    if (!clnt_deal_with_creds(cli->sess_key, &cli->clnt_cred, &r_s.srv_creds)) {
+	/* Update the credentials. */
+	if (!clnt_deal_with_creds(cli->sess_key, &cli->clnt_cred, &r_s.srv_creds)) {
 		/*
 		 * Server replied with bad credential. Fail.
 		 */
 		DEBUG(0,("cli_net_sam_logon_internal: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
 		retval = NT_STATUS_WRONG_PASSWORD;
-    }
-
-    if (r_s.switch_value != validation_level) {
+	}
+	
+	if (r_s.switch_value != validation_level) {
 		/* report different switch_value */
 		DEBUG(0,("cli_net_sam_logon: switch_value of %x expected %x\n", (unsigned int)validation_level,
-					(unsigned int)r_s.switch_value));
+			 (unsigned int)r_s.switch_value));
 		retval = NT_STATUS_INVALID_PARAMETER;
-    }
+	}
 
-  out:
+out:
 
 	prs_mem_free(&buf);
 	prs_mem_free(&rbuf);
-
+	
 	return retval;
 }
 
@@ -437,18 +438,18 @@ password ?).\n", cli->desthost ));
 LSA SAM Logon - interactive or network.
 ****************************************************************************/
 
-uint32 cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+NTSTATUS cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
                          NET_USER_INFO_3 *user_info3)
 {
 	uint16 validation_level=3;
-	uint32 result;
+	NTSTATUS result;
 
 	result = cli_net_sam_logon_internal(cli, ctr, user_info3, 
                                             validation_level);
 
-	if(result == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cli_net_sam_logon: Success \n"));
-	} else if (result == NT_STATUS_INVALID_INFO_CLASS) {
+	} else if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
 		DEBUG(10,("cli_net_sam_logon: STATUS INVALID INFO CLASS \n"));
 
 		validation_level=2;
@@ -518,7 +519,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 
     ok = net_io_r_sam_logoff("", &r_s, &rbuf, 0);
 		
-    if (ok && r_s.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_s.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));

@@ -101,11 +101,11 @@ static int smb_delete_user(char *unix_user)
  Add and Delete UNIX users on demand, based on NT_STATUS codes.
 ****************************************************************************/
 
-void smb_user_control(char *unix_user, uint32 nt_status) 
+void smb_user_control(char *unix_user, NTSTATUS nt_status) 
 {
 	struct passwd *pwd=NULL;
 
-	if(nt_status == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(nt_status)) {
 		/*
 		 * User validated ok against Domain controller.
 		 * If the admin wants us to try and create a UNIX
@@ -127,7 +127,7 @@ void smb_user_control(char *unix_user, uint32 nt_status)
 				smb_create_user(unix_user, pwd->pw_dir);
 		}
 
-	} else if (nt_status == NT_STATUS_NO_SUCH_USER) {
+	} else if (NT_STATUS_V(nt_status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) {
 		/*
 		 * User failed to validate ok against Domain controller.
 		 * If the failure was "user doesn't exist" and admin 

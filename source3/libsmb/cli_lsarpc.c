@@ -78,7 +78,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
 	}
 
@@ -136,7 +136,7 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
 	}
 
@@ -184,7 +184,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		*pol = r.pol;
 	}
 
@@ -242,8 +242,9 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_OK && result != 0x00000107 &&
-	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+	if (!NT_STATUS_IS_OK(result) && 
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_FILES_OPEN) &&
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
 		
 		/* An actual error occured */
 
@@ -347,8 +348,8 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_OK && 
-	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+	if (!NT_STATUS_IS_OK(result) && 
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
 
 		/* An actual error occured */
 
@@ -441,7 +442,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if ((result = r.status) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(result = r.status)) {
 		goto done;
 	}
 
@@ -536,8 +537,8 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	   0x8000001a (NT_STATUS_UNABLE_TO_FREE_VM) so we ignore it and
 	   pretend everything is OK. */
 
-	if (result != NT_STATUS_OK && 
-	    result != NT_STATUS_UNABLE_TO_FREE_VM) {
+	if (!NT_STATUS_IS_OK(result) && 
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_UNABLE_TO_FREE_VM)) {
 
 		/* An actual error ocured */
 

@@ -162,13 +162,13 @@ Join a domain using the administrator username and password
 /* Macro for checking RPC error codes to make things more readable */
 
 #define CHECK_RPC_ERR(rpc, msg) \
-        if ((result = rpc) != NT_STATUS_OK) { \
+        if (!NT_STATUS_IS_OK(result = rpc)) { \
                 DEBUG(0, (msg ": %s\n", get_nt_error_msg(result))); \
                 goto done; \
         }
 
 #define CHECK_RPC_ERR_DEBUG(rpc, debug_args) \
-        if ((result = rpc) != NT_STATUS_OK) { \
+        if (!NT_STATUS_IS_OK(result = rpc)) { \
                 DEBUG(0, debug_args); \
                 goto done; \
         }
@@ -203,7 +203,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 
 	/* Misc */
 
-	uint32 result;
+	NTSTATUS result;
 	int retval = 1;
 
 	/* Connect to remote machine */
@@ -301,7 +301,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 		result = NT_STATUS_USER_EXISTS;
 	}	
 
-	if (result == NT_STATUS_USER_EXISTS) {
+	if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_USER_EXISTS)) {
 		uint32 num_rids, *name_types, *user_rids;
 		uint32 flags = 0x3e8;
 		char *names;
@@ -334,7 +334,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 			("could not re-open existing user %s: %s\n",
 			 acct_name, get_nt_error_msg(result)));
 		
-	} else if (result != NT_STATUS_OK) {
+	} else if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error creating domain user: %s\n",
 			  get_nt_error_msg(result)));
 		goto done;

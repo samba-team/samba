@@ -54,7 +54,7 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
-	uint32 result;
+	NTSTATUS result;
 	fstring name_domain, name_user;
 	int passlen;
 	unsigned char trust_passwd[16];
@@ -135,14 +135,14 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                                         server_state.controller, trust_passwd,
                                         last_change_time);
 
-	return (result == NT_STATUS_OK) ? WINBINDD_OK : WINBINDD_ERROR;
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Challenge Response Authentication Protocol */
 
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
-	uint32 result;
+	NTSTATUS result;
 	fstring name_domain, name_user;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
@@ -206,7 +206,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
                                         server_state.controller, trust_passwd,
                                         last_change_time);
 
-	return (result == NT_STATUS_OK) ? WINBINDD_OK : WINBINDD_ERROR;
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Change a user password */

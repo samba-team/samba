@@ -249,18 +249,18 @@ void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 	case 1:
 		r_l->ptr = 1; /* undocumented pointer */
 		init_netinfo_1(&r_l->logon.info1, flags, pdc_status);	
-		r_l->status = 0;
+		r_l->status = NT_STATUS_OK;
 		break;
 	case 2:
 		r_l->ptr = 1; /* undocumented pointer */
 		init_netinfo_2(&r_l->logon.info2, flags, pdc_status,
 		               tc_status, trusted_domain_name);	
-		r_l->status = 0;
+		r_l->status = NT_STATUS_OK;
 		break;
 	case 3:
 		r_l->ptr = 1; /* undocumented pointer */
 		init_netinfo_3(&(r_l->logon.info3), flags, logon_attempts);	
-		r_l->status = 0;
+		r_l->status = NT_STATUS_OK;
 		break;
 	default:
 		DEBUG(2,("init_r_logon_ctrl2: unsupported switch value %d\n",
@@ -311,7 +311,7 @@ BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, in
 		}
 	}
 
-	if(!prs_uint32("status       ", ps, depth, &r_l->status))
+	if(!prs_ntstatus("status       ", ps, depth, &r_l->status))
 		return False;
 
 	return True;
@@ -377,7 +377,7 @@ void init_net_r_logon_ctrl(NET_R_LOGON_CTRL *r_l, uint32 query_level,
 	case 1:
 		r_l->ptr = 1; /* undocumented pointer */
 		init_netinfo_1(&r_l->logon.info1, flags, pdc_status);	
-		r_l->status = 0;
+		r_l->status = NT_STATUS_OK;
 		break;
 	default:
 		DEBUG(2,("init_r_logon_ctrl: unsupported switch value %d\n",
@@ -418,7 +418,7 @@ BOOL net_io_r_logon_ctrl(char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps,
 		}
 	}
 
-	if(!prs_uint32("status       ", ps, depth, &r_l->status))
+	if(!prs_ntstatus("status       ", ps, depth, &r_l->status))
 		return False;
 
 	return True;
@@ -451,7 +451,7 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 		r_t->uni_trust_dom_name[i].undoc = 0x1;
 	}
 	
-	r_t->status = 0;
+	r_t->status = NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -499,7 +499,7 @@ BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, i
 			 return False;
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_t->status))
+	if(!prs_ntstatus("status", ps, depth, &r_t->status))
 		 return False;
 #endif
 	return True;
@@ -602,7 +602,7 @@ BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int dept
 	if(!smb_io_chal("", &r_c->srv_chal, ps, depth)) /* server challenge */
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -658,7 +658,7 @@ BOOL net_io_r_auth(char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
 	if(!smb_io_chal("", &r_a->srv_chal, ps, depth)) /* server challenge */
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_a->status))
+	if(!prs_ntstatus("status", ps, depth, &r_a->status))
 		return False;
 
 	return True;
@@ -734,7 +734,7 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 	if(!net_io_neg_flags("", &r_a->srv_flgs, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_a->status))
+	if(!prs_ntstatus("status", ps, depth, &r_a->status))
 		return False;
 
 	return True;
@@ -796,7 +796,7 @@ BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int de
 	if(!smb_io_cred("", &r_s->srv_cred, ps, depth)) /* server challenge */
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_s->status))
+	if(!prs_ntstatus("status", ps, depth, &r_s->status))
 		return False;
 
 	return True;
@@ -1534,7 +1534,7 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int de
 	if(!prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp)) /* 1 - Authoritative response; 0 - Non-Auth? */
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_l->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_l->status))
 		return False;
 
 	if(!prs_align(ps))
@@ -1584,7 +1584,7 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 	if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_l->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_l->status))
 		return False;
 
 	return True;

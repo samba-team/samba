@@ -83,12 +83,13 @@ static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, 
 *********************************************************************/
 
 static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
-							char *msg, int dbglvl, uint32 *nt_status)
+							char *msg, int dbglvl, 
+					    NTSTATUS *nt_status)
 {
 	if (smb_pam_error_handler(pamh, pam_error, msg, dbglvl))
 		return True;
 
-	if (*nt_status == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(*nt_status)) {
 		/* Complain LOUDLY */
 		DEBUG(0, ("smb_pam_nt_status_error_handler: PAM: BUG: PAM and NT_STATUS \
 error MISMATCH, forcing to NT_STATUS_LOGON_FAILURE"));
@@ -494,10 +495,10 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost, struct p
 /*
  * PAM Authentication Handler
  */
-static uint32 smb_pam_auth(pam_handle_t *pamh, char *user)
+static NTSTATUS smb_pam_auth(pam_handle_t *pamh, char *user)
 {
 	int pam_error;
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
 	/*
 	 * To enable debugging set in /etc/pam.d/samba:
@@ -548,10 +549,10 @@ static uint32 smb_pam_auth(pam_handle_t *pamh, char *user)
 /* 
  * PAM Account Handler
  */
-static uint32 smb_pam_account(pam_handle_t *pamh, char * user)
+static NTSTATUS smb_pam_account(pam_handle_t *pamh, char * user)
 {
 	int pam_error;
-	uint32 nt_status = NT_STATUS_ACCOUNT_DISABLED;
+	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
 
 	DEBUG(4,("smb_pam_account: PAM: Account Management for User: %s\n", user));
 	pam_error = pam_acct_mgmt(pamh, PAM_SILENT); /* Is user account enabled? */
@@ -594,10 +595,10 @@ static uint32 smb_pam_account(pam_handle_t *pamh, char * user)
  * PAM Credential Setting
  */
 
-static uint32 smb_pam_setcred(pam_handle_t *pamh, char * user)
+static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, char * user)
 {
 	int pam_error;
-	uint32 nt_status = NT_STATUS_NO_TOKEN;
+	NTSTATUS nt_status = NT_STATUS_NO_TOKEN;
 
 	/*
 	 * This will allow samba to aquire a kerberos token. And, when
@@ -778,9 +779,9 @@ BOOL smb_pam_close_session(char *user, char *tty, char *rhost)
  * PAM Externally accessible Account handler
  */
 
-uint32 smb_pam_accountcheck(char * user)
+NTSTATUS smb_pam_accountcheck(char * user)
 {
-	uint32 nt_status = NT_STATUS_ACCOUNT_DISABLED;
+	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
 	pam_handle_t *pamh = NULL;
 	struct pam_conv *pconv = NULL;
 
@@ -790,12 +791,12 @@ uint32 smb_pam_accountcheck(char * user)
 		return NT_STATUS_OK;
 
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, NULL, NULL)) == NULL)
-		return False;
+		return NT_STATUS_NO_MEMORY;
 
 	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_ACCOUNT_DISABLED;
 
-	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_OK)
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_account(pamh, user)))
 		DEBUG(0, ("smb_pam_accountcheck: PAM: Account Validation Failed - Rejecting User %s!\n", user));
 
 	smb_pam_end(pamh, pconv);
@@ -806,10 +807,10 @@ uint32 smb_pam_accountcheck(char * user)
  * PAM Password Validation Suite
  */
 
-uint32 smb_pam_passcheck(char * user, char * password)
+NTSTATUS smb_pam_passcheck(char * user, char * password)
 {
 	pam_handle_t *pamh = NULL;
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	struct pam_conv *pconv = NULL;
 
 	/*
@@ -824,19 +825,19 @@ uint32 smb_pam_passcheck(char * user, char * password)
 	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_LOGON_FAILURE;
 
-	if ((nt_status = smb_pam_auth(pamh, user)) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_auth(pamh, user))) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_auth failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
 	}
 
-	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_account(pamh, user))) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_account failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
 	}
 
-	if ((nt_status = smb_pam_setcred(pamh, user)) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_setcred(pamh, user))) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_setcred failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;

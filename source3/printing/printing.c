@@ -656,7 +656,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -664,7 +664,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -700,14 +700,14 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
 	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 

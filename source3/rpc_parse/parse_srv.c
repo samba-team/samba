@@ -617,7 +617,7 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_uint32("status     ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -742,7 +742,7 @@ BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -803,7 +803,7 @@ BOOL srv_io_r_net_share_set_info(char *desc, SRV_R_NET_SHARE_SET_INFO *q_n, prs_
 
 	if(!prs_uint32("switch_value  ", ps, depth, &q_n->switch_value))
 		return False;
-	if(!prs_uint32("status        ", ps, depth, &q_n->status))
+	if(!prs_ntstatus("status        ", ps, depth, &q_n->status))
 		return False;
 
 	return True;
@@ -861,7 +861,7 @@ BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD *q_n, prs_struct *ps
 
 	if(!prs_uint32("switch_value  ", ps, depth, &q_n->switch_value))
 		return False;
-	if(!prs_uint32("status        ", ps, depth, &q_n->status))
+	if(!prs_ntstatus("status        ", ps, depth, &q_n->status))
 		return False;
 
 	return True;
@@ -908,7 +908,7 @@ BOOL srv_io_r_net_share_del(char *desc, SRV_R_NET_SHARE_DEL *q_n, prs_struct *ps
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status        ", ps, depth, &q_n->status))
+	if(!prs_ntstatus("status        ", ps, depth, &q_n->status))
 		return False;
 
 	return True;
@@ -1311,7 +1311,7 @@ BOOL srv_io_r_net_sess_enum(char *desc, SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_uint32("status     ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -1676,7 +1676,7 @@ BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *p
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_uint32("status     ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -1954,7 +1954,7 @@ BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_uint32("status     ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2246,7 +2246,7 @@ void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 
 	srv->ctr = ctr;
 
-	if (status == 0x0) {
+	if (NT_STATUS_IS_OK(status)) {
 		srv->ctr->switch_value = switch_value;
 		srv->ctr->ptr_srv_ctr  = 1;
 	} else {
@@ -2326,7 +2326,7 @@ BOOL srv_io_r_net_srv_get_info(char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_stru
 	if(!srv_io_info_ctr("ctr", r_n->ctr, ps, depth))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2348,7 +2348,7 @@ BOOL srv_io_r_net_srv_set_info(char *desc, SRV_R_NET_SRV_SET_INFO *r_n,
 	if(!prs_uint32("switch_value  ", ps, depth, &r_n->switch_value))
 		return False;
 
-	if(!prs_uint32("status ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2467,7 +2467,7 @@ BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 	if(!srv_io_time_of_day_info("tod", r_n->tod, ps, depth))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2566,7 +2566,7 @@ BOOL srv_io_r_net_disk_enum(char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2626,7 +2626,7 @@ BOOL srv_io_r_net_name_validate(char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_st
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2713,7 +2713,7 @@ BOOL srv_io_r_net_file_query_secdesc(char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2791,7 +2791,7 @@ BOOL srv_io_r_net_file_set_secdesc(char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_n->status))
+	if(!prs_ntstatus("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;

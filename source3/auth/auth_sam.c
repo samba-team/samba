@@ -109,7 +109,7 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	uint8 *nt_pw, *lm_pw;
 	uint16	acct_ctrl;
@@ -202,11 +202,11 @@ SMB hash supplied in the user_info structure
 return an NT_STATUS constant.
 ****************************************************************************/
 
-uint32 check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
-	uint32 nt_status;
+	NTSTATUS nt_status;
 
 	pdb_init_sam(&sampass);
 
@@ -220,7 +220,7 @@ uint32 check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_se
 	{
 		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->smb_username.str));
 		pdb_free_sam(sampass);
-		return(NT_STATUS_NO_SUCH_USER);
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	nt_status = smb_password_ok(sampass, user_info, server_info);

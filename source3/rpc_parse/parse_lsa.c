@@ -324,7 +324,7 @@ BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps,
 	if(!smb_io_pol_hnd("", &r_p->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_p->status))
+	if(!prs_ntstatus("status", ps, depth, &r_p->status))
 		return False;
 
 	return True;
@@ -391,7 +391,7 @@ BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps,
 	if(!smb_io_pol_hnd("", &r_p->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_p->status))
+	if(!prs_ntstatus("status", ps, depth, &r_p->status))
 		return False;
 
 	return True;
@@ -452,7 +452,7 @@ BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u,
 			return False;
 	}
 
-	if (!prs_uint32("status", ps, depth, &r_u->status))
+	if (!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -538,7 +538,7 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 en
 	
         r_e->enum_context = enum_context;
 	
-        if (status == 0) {
+        if (NT_STATUS_IS_OK(status)) {
                 int len_domain_name = strlen(domain_name) + 1;
 		
                 r_e->num_domains  = 1;
@@ -619,7 +619,7 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 		}
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_e->status))
+	if(!prs_ntstatus("status", ps, depth, &r_e->status))
 		return False;
 
 	return True;
@@ -789,7 +789,7 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_q->status))
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1031,7 +1031,7 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s,
 	if(!prs_uint32("mapped_count", ps, depth, &r_s->mapped_count))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_s->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_s->status))
 		return False;
 
 	return True;
@@ -1192,7 +1192,7 @@ BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r,
 	if(!prs_uint32("mapped_count", ps, depth, &r_r->mapped_count))
 		return False;
 
-	if(!prs_uint32("status      ", ps, depth, &r_r->status))
+	if(!prs_ntstatus("status      ", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -1237,7 +1237,7 @@ BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth)
 	if(!smb_io_pol_hnd("", &r_c->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -1276,7 +1276,7 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, in
 		return False;
 	if(!prs_uint32("dummy4", ps, depth, &r_c->dummy4))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -1391,7 +1391,7 @@ BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS *r_q, prs_struct *ps, int 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_q->status))
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1461,7 +1461,7 @@ BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME *r_q, prs_st
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_q->status))
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1532,7 +1532,7 @@ BOOL lsa_io_r_enum_accounts(char *desc, LSA_R_ENUM_ACCOUNTS *r_q, prs_struct *ps
 	if (!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_q->status))
+	if(!prs_ntstatus("status", ps, depth, &r_q->status))
 		return False;
 
 	return True;
@@ -1603,7 +1603,7 @@ BOOL lsa_io_r_unk_get_connuser(char *desc, LSA_R_UNK_GET_CONNUSER *r_c, prs_stru
 	if (!prs_align(ps))
 	  return False;
 	
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -1648,7 +1648,7 @@ BOOL lsa_io_r_open_account(char *desc, LSA_R_OPENACCOUNT  *r_c, prs_struct *ps, 
 	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -1776,7 +1776,7 @@ BOOL lsa_io_r_enum_privsaccount(char *desc, LSA_R_ENUMPRIVSACCOUNT *r_c, prs_str
 			return False;
 	}
 
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;
@@ -1817,7 +1817,7 @@ BOOL lsa_io_r_getsystemaccount(char *desc, LSA_R_GETSYSTEMACCOUNT  *r_c, prs_str
 	if(!prs_uint32("access", ps, depth, &r_c->access))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &r_c->status))
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
 	return True;

@@ -84,8 +84,11 @@ NTSTATUS cli_spoolss_open_printer_ex(
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (W_ERROR_IS_OK(r.status)) {
+		result = NT_STATUS_OK;
 		*pol = r.handle;
+	} else {
+		result = werror_to_ntstatus(r.status);
 	}
 
  done:
@@ -137,8 +140,11 @@ NTSTATUS cli_spoolss_close_printer(
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (W_ERROR_IS_OK(r.status)) {
 		*pol = r.handle;
+		result = NT_STATUS_OK;
+	} else {
+		result = werror_to_ntstatus(r.status);
 	}
 
  done:
@@ -428,10 +434,12 @@ NTSTATUS cli_spoolss_enum_printers(
 		}
 		
 		/* Return output parameters */
+		if (!W_ERROR_IS_OK(r.status)) {
+			result = werror_to_ntstatus(r.status);
+			goto done;
+		}
 
-		if (((result=r.status) == NT_STATUS_OK) && (*returned = r.returned))
-		{
-
+		if ((*returned = r.returned)) {
 			switch (level) {
 			case 1:
 				decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
@@ -452,7 +460,7 @@ NTSTATUS cli_spoolss_enum_printers(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -504,8 +512,9 @@ NTSTATUS cli_spoolss_enum_ports(
 		}
 		
 		/* Return output parameters */
+		result = werror_to_ntstatus(r.status);
 
-		if ((result = r.status) == NT_STATUS_OK &&
+		if (NT_STATUS_IS_OK(result) &&
 		    r.returned > 0) {
 
 			*returned = r.returned;
@@ -526,7 +535,7 @@ NTSTATUS cli_spoolss_enum_ports(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -574,8 +583,8 @@ NTSTATUS cli_spoolss_getprinter(
 		}
 		
 		/* Return output parameters */
-		if ((result = r.status) == NT_STATUS_OK) {
-
+		result = werror_to_ntstatus(r.status);
+		if (NT_STATUS_IS_OK(result)) {
 			switch (level) {
 			case 0:
 				decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
@@ -596,7 +605,7 @@ NTSTATUS cli_spoolss_getprinter(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -616,7 +625,7 @@ NTSTATUS cli_spoolss_setprinter(
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETPRINTER q;
 	SPOOL_R_SETPRINTER r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -631,7 +640,7 @@ NTSTATUS cli_spoolss_setprinter(
 	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf)) 
 	{
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
 
@@ -641,7 +650,7 @@ NTSTATUS cli_spoolss_setprinter(
 		goto done;
 	}
 	
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 		
 done:
 	prs_mem_free(&qbuf);
@@ -705,9 +714,9 @@ NTSTATUS cli_spoolss_getprinterdriver (
 		}
 		
 		/* Return output parameters */
-		if ((result = r.status) == NT_STATUS_OK) 
+		result = werror_to_ntstatus(r.status);
+		if (NT_STATUS_IS_OK(result))
 		{
-
 			switch (level) 
 			{
 			case 1:
@@ -726,7 +735,7 @@ NTSTATUS cli_spoolss_getprinterdriver (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -784,7 +793,8 @@ NTSTATUS cli_spoolss_enumprinterdrivers (
 		}
 		
 		/* Return output parameters */
-		if (((result=r.status) == NT_STATUS_OK) && 
+		result = werror_to_ntstatus(r.status);
+		if (NT_STATUS_IS_OK(result) && 
 		    (r.returned != 0))
 		{
 			*returned = r.returned;
@@ -807,7 +817,7 @@ NTSTATUS cli_spoolss_enumprinterdrivers (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -865,7 +875,8 @@ NTSTATUS cli_spoolss_getprinterdriverdir (
 		}
 		
 		/* Return output parameters */
-		if ((result=r.status) == NT_STATUS_OK)
+		result = werror_to_ntstatus(r.status);
+		if (NT_STATUS_IS_OK(result))
 		{
 			switch (level) 
 			{
@@ -879,7 +890,7 @@ NTSTATUS cli_spoolss_getprinterdriverdir (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -931,7 +942,7 @@ NTSTATUS cli_spoolss_addprinterdriver (
 	}
 		
 	/* Return output parameters */
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
 done:
 	prs_mem_free(&qbuf);
@@ -993,7 +1004,7 @@ NTSTATUS cli_spoolss_addprinterex (
 	}
 		
 	/* Return output parameters */
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
 done:
 	prs_mem_free(&qbuf);
@@ -1050,7 +1061,7 @@ NTSTATUS cli_spoolss_deleteprinterdriver (
 	}
 		
 	/* Return output parameters */
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
 done:
 	prs_mem_free(&qbuf);

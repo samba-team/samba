@@ -30,10 +30,10 @@ BOOL global_machine_password_needs_changing = False;
  Check for a valid username and password in security=domain mode.
 ****************************************************************************/
 
-uint32 check_domain_security(const auth_usersupplied_info *user_info, 
-			     auth_serversupplied_info *server_info)
+NTSTATUS check_domain_security(const auth_usersupplied_info *user_info, 
+			       auth_serversupplied_info *server_info)
 {
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	char *p, *pserver;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;

@@ -365,7 +365,6 @@ typedef struct lsa_r_lookup_names
 	uint32 mapped_count;
 
 	NTSTATUS status; /* return code */
-
 } LSA_R_LOOKUP_NAMES;
 
 /* This is probably a policy handle but at the moment we

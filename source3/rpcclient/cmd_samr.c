@@ -141,8 +141,8 @@ void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
-	uint32 	result = NT_STATUS_UNSUCCESSFUL, 
-		info_level = 21;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 info_level = 21;
 	BOOL 	got_connect_pol = False, 
 		got_domain_pol = False,
 		got_user_pol = False;

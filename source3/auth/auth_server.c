@@ -113,14 +113,14 @@ struct cli_state *server_cryptkey(void)
  Validate a password with the password server.
 ****************************************************************************/
 
-static uint32 server_validate(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+static NTSTATUS server_validate(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	struct cli_state *cli;
 	static unsigned char badpass[24];
 	static fstring baduser; 
 	static BOOL tested_password_server = False;
 	static BOOL bad_password_server = False;
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
 	cli = server_client();
 
@@ -232,14 +232,13 @@ use this machine as the password server.\n"));
  Check for a valid username and password in security=server mode.
 ****************************************************************************/
 
-uint32 check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	
 	if(lp_security() != SEC_SERVER)
 		return NT_STATUS_LOGON_FAILURE;
 	
 	return server_validate(user_info, server_info);
-
 }
 
 
