@@ -217,6 +217,19 @@ AC_TRY_RUN([#include "tests/getgroups.c"],
 	   echo no)
 
 
+echo $ac_n "checking for broken inet_ntoa ... $ac_c"
+AC_TRY_RUN([
+#include <stdio.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+main() { struct in_addr ip; ip.s_addr = 0x12345678;
+if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
+    strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); } 
+exit(1);}],
+           echo yes;AC_DEFINE(REPLACE_INET_NTOA), 
+	   echo no)
+
 echo $ac_n "checking for root ... $ac_c"
 AC_TRY_RUN([main() { exit(getuid() != 0); }],
            echo yes;AC_DEFINE(HAVE_ROOT), 
