@@ -661,6 +661,9 @@ showlayout:
 	\@echo \"  sbindir: \$(SBINDIR)\"
 	\@echo \"  libdir:  \$(LIBDIR)\"
 	\@echo \"  vardir:  \$(VARDIR)\"
+	\@echo \"  privatedir:  \$(PRIVATEDIR)\"
+	\@echo \"  piddir:  \$(PIDDIR)\"
+	\@echo \"  lockdir:  \$(LOCKDIR)\"
 
 SBIN_PROGS = bin/smbd
 
@@ -695,6 +698,7 @@ install: showlayout installbin installtorture installldb installreg installdat
 # is not used
 
 installdirs:
+	\@\$(SHELL) \$(srcdir)/script/installdirs.sh \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(PRIVATEDIR) \$(DESTDIR)\$(PIDDIR) \$(DESTDIR)\$(LOCKDIR)
 
 installbin: all installdirs
 	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(SBIN_PROGS)
