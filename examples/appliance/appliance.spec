@@ -2,8 +2,6 @@
 # Spec file for Samba appliance
 #
 
-%define _topdir /tmp
-
 Summary: Samba appliance executables
 Name: samba-appliance
 Version: 0.1
