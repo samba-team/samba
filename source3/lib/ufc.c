@@ -656,8 +656,6 @@ static char *output_conversion(v1, v2, salt)
     return outbuf;
   }
 
-ufc_long *_ufc_doit();
-
 /* 
  * UNIX crypt function
  */

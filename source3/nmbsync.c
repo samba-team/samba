@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "loadparm.h"
 
 extern int ClientNMB;
 extern int ClientDGRAM;

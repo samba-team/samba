@@ -75,10 +75,7 @@ static void dozerobuf();
 static void dotareof();
 static void initarbuf();
 static int do_setrattr();
-void cmd_tar();
-int process_tar();
-char **toktocliplist();
-int clipfind();
+
 /* restore functions */
 static long readtarheader();
 static long unoct();
@@ -1486,7 +1483,7 @@ void cmd_setmode(void)
       return;
     }
 
-DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
+  DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
   (void) do_setrattr(fname, attra[ATTRSET], ATTRSET);
   (void) do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
 }

@@ -24,8 +24,6 @@
    */
 
 #include "includes.h"
-#include "loadparm.h"
-#include "pcap.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

@@ -273,7 +273,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     return(False) ;
   
   devno = sbuf.st_dev ;
-DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%o\n", path,devno));
+  DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%o\n", path,devno));
   if ( devno != devno_cached ) {
     devno_cached = devno ;
 #if defined(SUNOS5)
@@ -284,7 +284,8 @@ DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%o\n", path,devno));
     while (getmntent(fd, &mnt) == 0) {
       if ( stat(mnt.mnt_mountp,&sbuf) == -1 )
 	continue ;
-DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt.mnt_mountp,sbuf.st_dev));
+      DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", 
+	       mnt.mnt_mountp,sbuf.st_dev));
       if (sbuf.st_dev == devno) {
 	found = True ;
 	break ;
@@ -302,7 +303,8 @@ DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt.mnt_mountp,sbuf.st_dev));
     while ((mnt = getmntent(fd)) != NULL) {
       if ( stat(mnt->mnt_dir,&sbuf) == -1 )
 	continue ;
-DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt->mnt_dir,sbuf.st_dev));
+      DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", 
+	       mnt->mnt_dir,sbuf.st_dev));
       if (sbuf.st_dev == devno) {
 	found = True ;
 	break ;
@@ -324,7 +326,7 @@ DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt->mnt_dir,sbuf.st_dev));
   seteuid(0);
 
 #if defined(SUNOS5)
-DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
+  DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
   if((file=open(name, O_RDONLY))<0) {
     setuid(user_id);  /* Restore the original UID status */
     seteuid(euser_id);
@@ -336,7 +338,7 @@ DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
   ret = ioctl(file, Q_QUOTACTL, &command);
   close(file);
 #else
-DEBUG(5,("disk_quotas: trying quotactl on device \"%s\"\n", name));
+  DEBUG(5,("disk_quotas: trying quotactl on device \"%s\"\n", name));
   ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 

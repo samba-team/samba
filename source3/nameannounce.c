@@ -26,7 +26,6 @@
 */
 
 #include "includes.h"
-#include "loadparm.h"
 
 #define TEST_CODE
 

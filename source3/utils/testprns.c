@@ -33,7 +33,6 @@
 
 #include "includes.h"
 #include "smb.h"
-#include "pcap.h"
 
 /* these live in util.c */
 extern FILE *dbf;

@@ -20,10 +20,7 @@
 */
 
 #include "includes.h"
-#include "loadparm.h"
-#include "pcap.h"
 #include "trans2.h"
-#include "reply.h"
 
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;

@@ -34,8 +34,6 @@
 
 #include "includes.h"
 #include "smb.h"
-#include "params.h"
-#include "loadparm.h"
 
 /* these live in util.c */
 extern FILE *dbf;

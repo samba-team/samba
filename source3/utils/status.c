@@ -28,7 +28,6 @@
 #endif
 
 #include "includes.h"
-#include "loadparm.h"
 
 struct connect_record crec;
 extern int DEBUGLEVEL;
@@ -39,10 +38,6 @@ static pstring Ucrit_username = "";                   /* added by OH */
 int            Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 int            Ucrit_MaxPid=0;                        /* added by OH */
 unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
-void           Ucrit_addUsername(pstring username);   /* added by OH */
-unsigned int   Ucrit_checkUsername(pstring username); /* added by OH */
-void           Ucrit_addPid(int pid);                 /* added by OH */
-unsigned int   Ucrit_checkPid(int pid);               /* added by OH */
 
  int main(int argc, char *argv[])
 {

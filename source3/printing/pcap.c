@@ -54,8 +54,6 @@
 #include "includes.h"
 
 #include "smb.h"
-#include "loadparm.h"
-#include "pcap.h"
 
 extern int DEBUGLEVEL;
 

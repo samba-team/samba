@@ -25,7 +25,6 @@
 
 
 #include "includes.h"
-#include "loadparm.h"
 #include "trans2.h"
 
 /* look in server.c for some explanation of these variables */

@@ -49,10 +49,6 @@
 
 #include "includes.h"
 
-#include "params.h"
-#include "loadparm.h"
-#include "pcap.h"
-
 BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;

@@ -9,7 +9,6 @@ should be sent to Andrew.Tridgell@anu.edu.au
 */
 
 #include "includes.h"
-#include "loadparm.h"
 
 #define ALLOW_PURE_ADDRESSES
 
@@ -37,14 +36,11 @@ static char sep[] = ", \t";
 #define	FAIL		(-1)
 
 /* Forward declarations. */
-BOOL allow_access(char *deny_list,char *allow_list,struct from_host *client);
 static int list_match(char *list,char *item, int (*match_fn)());
 static int client_match(char *tok,char *item);
 static int string_match(char *tok,char *s);
 static int masked_match(char *tok, char *slash, char *s);
 static int matchname(char *remotehost,struct in_addr  addr);
-BOOL fromhost(int sock,struct from_host *f);
-
 
 /* Size of logical line buffer. */
 #define	BUFLEN 2048

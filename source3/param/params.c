@@ -57,7 +57,6 @@ the other = 3
 #include "includes.h"
 
 #include "smb.h"
-#include "params.h"
 
 /* local variable pointing to passed filename */
 static char *pszParmFile = NULL;

@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "loadparm.h"
 
 pstring scope = "";
 

@@ -19,7 +19,6 @@
  */
 
 #include "includes.h"
-#include "loadparm.h"
 
 extern int      DEBUGLEVEL;
 

@@ -3694,10 +3694,6 @@ static BOOL list_servers()
 }
 
 
-
-
-void cmd_help();
-
 /* This defines the commands supported by this client */
 struct
 {
