@@ -136,7 +136,7 @@ BOOL torture_close_connection(struct smbcli_state *c)
 }
 
 
-/* open a rpc connection to a named pipe */
+/* open a rpc connection to the chosen binding string */
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
 				const char *pipe_name,
 				const char *pipe_uuid, 
@@ -154,6 +154,39 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 				     lp_parm_string(-1, "torture", "userdomain"), 
 				     lp_parm_string(-1, "torture", "username"),
 				     lp_parm_string(-1, "torture", "password"));
+ 
+        return status;
+}
+
+/* open a rpc connection to a named pipe */
+NTSTATUS torture_rpc_connection_smb(struct dcerpc_pipe **p, 
+				    const char *pipe_name,
+				    const char *pipe_uuid, 
+				    uint32_t pipe_version)
+{
+        NTSTATUS status;
+	const char *binding = lp_parm_string(-1, "torture", "binding");
+	struct dcerpc_binding b;
+	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_connection_smb");
+
+	if (!binding) {
+		printf("You must specify a ncacn binding string\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
+		talloc_destroy(mem_ctx);
+		return status;
+	}
+
+	b.transport = NCACN_NP;
+
+	status = dcerpc_pipe_connect_b(p, &b, pipe_uuid, pipe_version,
+				       lp_parm_string(-1, "torture", "userdomain"), 
+				       lp_parm_string(-1, "torture", "username"),
+				       lp_parm_string(-1, "torture", "password"));
  
         return status;
 }
