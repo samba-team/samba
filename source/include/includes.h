@@ -321,3 +321,8 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 
 #endif /* _INCLUDES_H */
 
+/*
+  type safe varient of smb_xmalloc()
+*/
+#define smb_xmalloc_p(type) (type *)smb_xmalloc(sizeof(type))
+

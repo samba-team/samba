@@ -1576,8 +1576,7 @@ static int add_a_service(const service *pservice, const char *name)
 		}
 		else {
 			ServicePtrs = tsp;
-			ServicePtrs[iNumServices] =
-				(service *) malloc(sizeof(service));
+			ServicePtrs[iNumServices] = malloc_p(service);
 		}
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
@@ -1871,7 +1870,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 			pdata = pdata->next;
 		}
 		if (not_added) {
-			paramo = smb_xmalloc(sizeof(*paramo));
+			paramo = smb_xmalloc_p(struct param_opt);
 			paramo->key = strdup(data->key);
 			paramo->value = strdup(data->value);
 			DLIST_ADD(pserviceDest->param_opt, paramo);
@@ -1940,7 +1939,7 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 
 	if (!f) {
-		f = (struct file_lists *)malloc(sizeof(file_lists[0]));
+		f = malloc_p(struct file_lists);
 		if (!f)
 			return;
 		f->next = file_lists;
@@ -2247,7 +2246,7 @@ static BOOL lp_do_parameter_parametric(int snum, const char *pszParmName, const 
 		}
 	}
 
-	paramo = smb_xmalloc(sizeof(*paramo));
+	paramo = smb_xmalloc_p(struct param_opt);
 	paramo->key = strdup(name);
 	paramo->value = strdup(pszParmValue);
 	paramo->flags = flags;
