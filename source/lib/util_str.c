@@ -1037,8 +1037,10 @@ void strlower_m(char *s)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x7F))
-		*s++ = tolower((unsigned char)*s);
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		*s = tolower((unsigned char)*s);
+		s++;
+	}
 
 	if (!*s)
 		return;
@@ -1074,8 +1076,10 @@ void strupper_m(char *s)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x7F))
-		*s++ = toupper((unsigned char)*s);
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		*s = toupper((unsigned char)*s);
+		s++;
+	}
 
 	if (!*s)
 		return;
