@@ -7919,7 +7919,9 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
 	fstring			valuename;
 	fstring			keyname;
-
+	char			*oid_string;
+	UNISTR2			uni_oid;
+	
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
         /* From MSDN documentation of SetPrinterDataEx: pass request to
@@ -7953,11 +7955,39 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
         unistr2_to_ascii( valuename, &q_u->value, sizeof(valuename) - 1);
         unistr2_to_ascii( keyname, &q_u->key, sizeof(keyname) - 1);
+	
+	/* check for OID in valuename */
+	
+	if ( (oid_string = strchr( valuename, ',' )) != NULL )
+	{
+		*oid_string = '\0';
+		oid_string++;
+	}
 
 	/* save the registry data */
 	
 	status = set_printer_dataex( printer, keyname, valuename, type, data, real_len ); 
+	
+	/* save the OID if one was specified and the previous set call succeeded */
+	
+	if ( W_ERROR_IS_OK(status) && oid_string )
+	{
 
+		fstrcat( keyname, "\\" );
+		fstrcat( keyname, SPOOL_OID_KEY );
+		
+		/* 
+		 * I'm not checking the status here on purpose.  Don't know 
+		 * if this is right, but I'm returning the status from the 
+		 * previous set_printer_dataex() call.  I have no idea if 
+		 * this is right.    --jerry
+		 */
+		 
+		init_unistr2(  &uni_oid, oid_string, strlen(oid_string)+1 );	
+		set_printer_dataex( printer, keyname, valuename, 
+		                    REG_SZ, (void*)uni_oid.buffer, uni_oid.uni_str_len*sizeof(uint16) );		
+	}
+	
 	free_a_printer(&printer, 2);
 
 	return status;
