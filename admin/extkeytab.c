@@ -45,11 +45,10 @@ ext_keytab(int argc, char **argv)
 {
     HDB *db;
     hdb_entry ent;
-    int ret;
     krb5_keytab kid;
-    krb5_keytab_entry key_entry;
     krb5_principal principal;
-    Key *k;
+    krb5_error_code ret = 0;
+    int i;
     
     if(argc < 2 || argc > 3){
 	krb5_warnx(context, "Usage: ext_keytab principal [file]");
@@ -76,18 +75,6 @@ ext_keytab(int argc, char **argv)
 	goto cleanup1;
     }
 
-    key_entry.principal = principal;
-    key_entry.vno = ent.kvno;
-    /* XXX XXX XXX XXX */
-    k = unseal_key(&ent.keys.val[0]);
-
-    key_entry.keyblock.keytype = k->key.keytype;
-    key_entry.keyblock.keyvalue.length = 0;
-    krb5_data_copy(&key_entry.keyblock.keyvalue,
-		   k->key.keyvalue.data,
-		   k->key.keyvalue.length);
-    hdb_free_key (k);
-
     { 
 	char ktname[128] = "FILE:";
 	if(argc == 3)
@@ -99,22 +86,39 @@ ext_keytab(int argc, char **argv)
 
     if (ret) {
 	krb5_warn(context, ret, "krb5_kt_resolve");
-	goto cleanup2;
+	goto cleanup1;
     }
 
-    ret = krb5_kt_add_entry(context,
-			    kid,
-			    &key_entry);
+    for(i = 0; i < ent.keys.len; ++i) {
+	krb5_keytab_entry key_entry;
+	Key *k;
 
-    if (ret) {
-	krb5_warn(context, ret, "krb5_kt_add_entry");
+	krb5_copy_principal (context, principal, &key_entry.principal);
+	key_entry.vno = ent.kvno;
+	k = unseal_key(&ent.keys.val[i]);
+
+	key_entry.keyblock.keytype = k->key.keytype;
+	key_entry.keyblock.keyvalue.length = 0;
+	krb5_data_copy(&key_entry.keyblock.keyvalue,
+		       k->key.keyvalue.data,
+		       k->key.keyvalue.length);
+	hdb_free_key (k);
+
+	ret = krb5_kt_add_entry(context,
+				kid,
+				&key_entry);
+	
+	if (ret) {
+	    krb5_free_principal (context, key_entry.principal);
+	    krb5_free_keyblock (context, &key_entry.keyblock);
+	    krb5_warn(context, ret, "krb5_kt_add_entry");
+	    break;
+	}
     }
+
     krb5_kt_close (context, kid);
-cleanup2:
-    krb5_free_principal (context, key_entry.principal);
-    krb5_free_keyblock (context, &key_entry.keyblock);
     hdb_free_entry (context, &ent);
 cleanup1:
     db->close (context, db);
-    return 0;
+    return ret;
 }
