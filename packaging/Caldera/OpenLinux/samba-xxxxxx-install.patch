@@ -6,7 +6,7 @@
   if [ $p2 = smbmount ]; then
 -   ln -sf $BINDIR/$p2 /sbin/mount.smbfs
 +   mv $BINDIR/$p2 `dirname $BASEDIR`/sbin/mount.smbfs    # a move is faster than copy
-+   ln -s `dirname $BASEDIR`/sbin/mount.smbfs $BINDIR/$p2
++   ln -s /sbin/mount.smbfs $BINDIR/$p2
   fi
  done
  
