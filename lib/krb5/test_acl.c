@@ -86,6 +86,9 @@ test_match_string(krb5_context context)
     ret = krb5_acl_match_string(context, "foo bar", "sr", "bar", &s1);
     RETVAL(context, ret, EACCES, "ret mismatch");
     if (s1 != NULL) krb5_errx(context, 1, "s1 not NULL");
+
+    ret = krb5_acl_match_string(context, "foo", "l", "foo");
+    RETVAL(context, ret, EINVAL, "unknown letter");
 }
 
 
