@@ -649,8 +649,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,l2_cbList,0); /* No extended attributes */
 			p += l2_achName;
 			nameptr = p;
-			p += align_string(outbuf, p, 0);
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE | STR_NOALIGN);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)
 				SCVAL(nameptr, -1, len-2);
 			else
