@@ -392,7 +392,6 @@ static void centry_put_string(struct cache_entry *centry, const char *s)
 
 static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid) 
 {
-	int len;
 	fstring sid_string;
 	centry_put_string(centry, sid_to_string(sid_string, sid));
 }
@@ -446,7 +445,6 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 				    enum SID_NAME_USE type)
 {
 	struct cache_entry *centry;
-	uint32 len;
 	fstring uname;
 	fstring sid_string;
 
