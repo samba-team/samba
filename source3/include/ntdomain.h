@@ -166,7 +166,7 @@ typedef struct pipes_struct
 	 */
 
 	fstring pipe_user_name;
-	user_struct pipe_user;
+	struct current_user pipe_user;
 
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
