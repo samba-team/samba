@@ -65,7 +65,7 @@ struct snprintf_state {
     /* XXX - methods */
 };
 
-#if TEST_SNPRINTF
+#if defined(TEST_SNPRINTF)
 #include "snprintf-test.h"
 #endif /* TEST_SNPRINTF */
 
