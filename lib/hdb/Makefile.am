@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include
 
-SUFFIXES = .x .et
+SUFFIXES = .x .et .h
 
 INCLUDES = -I../asn1 -I$(srcdir)/../asn1
 
