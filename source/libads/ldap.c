@@ -2377,19 +2377,7 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
    2002, timezone 0 */
 static time_t ads_parse_time(const char *str)
 {
-	struct tm tm;
-
-	ZERO_STRUCT(tm);
-
-	if (sscanf(str, "%4d%2d%2d%2d%2d%2d", 
-		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
-		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
-		return 0;
-	}
-	tm.tm_year -= 1900;
-	tm.tm_mon -= 1;
-
-	return timegm(&tm);
+	return generalized_to_unix_time(str);
 }
 
 

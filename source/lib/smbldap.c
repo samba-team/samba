@@ -1292,7 +1292,8 @@ static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char 
 	}
 
 	if (!strequal(attrs[0], "supportedExtension") && 
-	    !strequal(attrs[0], "supportedControl")) {
+	    !strequal(attrs[0], "supportedControl") && 
+	    !strequal(attrs[0], "namingContexts")) {
 		DEBUG(3,("smbldap_check_root_dse: no idea what to query root-dse for: %s ?\n", attrs[0]));
 		return False;
 	}
@@ -1367,4 +1368,14 @@ BOOL smbldap_has_extension(struct smbldap_state *ldap_state, const char *extensi
 {
 	const char *attrs[] = { "supportedExtension", NULL };
 	return smbldap_check_root_dse(ldap_state, attrs, extension);
+}
+
+/*******************************************************************
+ Check if LDAP-Server holds a given namingContext
+********************************************************************/
+
+BOOL smbldap_has_naming_context(struct smbldap_state *ldap_state, const char *naming_context)
+{
+	const char *attrs[] = { "namingContexts", NULL };
+	return smbldap_check_root_dse(ldap_state, attrs, naming_context);
 }

@@ -650,6 +650,17 @@ static NTSTATUS context_set_account_policy(struct pdb_context *context,
 							policy_index, value);
 }
 
+static NTSTATUS context_get_seq_num(struct pdb_context *context, time_t *seq_num)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->get_seq_num(context->pdb_methods, seq_num);
+}
 	
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
@@ -781,6 +792,8 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 
 	(*context)->pdb_get_account_policy = context_get_account_policy;
 	(*context)->pdb_set_account_policy = context_set_account_policy;
+
+	(*context)->pdb_get_seq_num = context_get_seq_num;
 
 	(*context)->free_fn = free_pdb_context;
 
@@ -1258,6 +1271,17 @@ BOOL pdb_set_account_policy(int policy_index, int value)
 			       pdb_set_account_policy(pdb_context, policy_index, value));
 }
 
+BOOL pdb_get_seq_num(time_t *seq_num)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_get_seq_num(pdb_context, seq_num));
+}
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
 
@@ -1325,6 +1349,12 @@ static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, int 
 	return account_policy_set(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq_num)
+{
+	*seq_num = time(NULL);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
 	*methods = TALLOC_P(mem_ctx, struct pdb_methods);
@@ -1362,8 +1392,10 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->del_aliasmem = pdb_default_del_aliasmem;
 	(*methods)->enum_aliasmem = pdb_default_enum_aliasmem;
 	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
+
 	(*methods)->get_account_policy = pdb_default_get_account_policy;
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
+	(*methods)->get_seq_num = pdb_default_get_seq_num;
 
 	return NT_STATUS_OK;
 }

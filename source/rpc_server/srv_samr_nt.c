@@ -2189,6 +2189,8 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 	uint32 account_policy_temp;
 
+	time_t seq_num;
+
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
@@ -2252,8 +2254,10 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 
-			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
 				       num_users, num_groups, num_aliases, nt_logout);
 			break;
 		case 0x03:
@@ -2272,7 +2276,10 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info7(&ctr->info.inf7);
 			break;
 		case 0x08:
-			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			init_unk_info8(&ctr->info.inf8, (uint32) seq_num);
 			break;
 		case 0x0c:
 			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
@@ -4577,6 +4584,8 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	uint32 account_policy_temp;
 
+	time_t seq_num;
+
 	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -4637,8 +4646,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 
-			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
 				       num_users, num_groups, num_aliases, nt_logout);
 			break;
 		case 0x03:
@@ -4659,7 +4670,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			init_unk_info7(&ctr->info.inf7);
 			break;
 		case 0x08:
-			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			init_unk_info8(&ctr->info.inf8, (uint32) seq_num);
 			break;
 		case 0x0c:
 			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);

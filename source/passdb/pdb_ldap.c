@@ -195,6 +195,153 @@ static const char* get_objclass_filter( int schema_ver )
 	return objclass_filter;	
 }
 
+/*****************************************************************
+ Scan a sequence number off OpenLDAP's syncrepl contextCSN
+******************************************************************/
+
+static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_num)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry = NULL;
+	TALLOC_CTX *mem_ctx;
+	char **values = NULL;
+	int rc, num_result, num_values, rid;
+	pstring suffix;
+	fstring tok;
+	const char *p;
+	const char **attrs;
+	char **search_attrs;
+
+	/* Unfortunatly there is no proper way to detect syncrepl-support in
+	 * smbldap_connect_system(). The syncrepl OIDs are submitted for publication
+	 * but do not show up in the root-DSE yet. Neither we can query the
+	 * subschema-context for the syncProviderSubentry or syncConsumerSubentry
+	 * objectclass. Currently we require lp_ldap_suffix() to show up as
+	 * namingContext.  -  Guenther
+	 */
+
+	if (!lp_parm_bool(-1, "ldapsam", "syncrepl_seqnum", False)) {
+		return ntstatus;
+	}
+
+	if (!seq_num) {
+		DEBUG(3,("ldapsam_get_seq_num: no sequence_number\n"));
+		return ntstatus;
+	}
+
+	if (!smbldap_has_naming_context(ldap_state->smbldap_state, lp_ldap_suffix())) {
+		DEBUG(3,("ldapsam_get_seq_num: DIT not configured to hold %s "
+			 "as top-level namingContext\n", lp_ldap_suffix()));
+		return ntstatus;
+	}
+
+	mem_ctx = talloc_init("ldapsam_get_seq_num");
+
+	if (mem_ctx == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	attrs = TALLOC_ARRAY(mem_ctx, const char *, 2);
+
+	/* if we got a syncrepl-rid (up to three digits long) we speak with a consumer */
+	rid = lp_parm_int(-1, "ldapsam", "syncrepl_rid", -1);
+	if (rid > 0) {
+
+		/* consumer syncreplCookie: */
+		/* csn=20050126161620Z#0000001#00#00000 */
+		attrs[0] = talloc_strdup(mem_ctx, "syncreplCookie");
+		attrs[1] = NULL;
+		pstr_sprintf( suffix, "cn=syncrepl%d,%s", rid, lp_ldap_suffix());
+
+	} else {
+
+		/* provider contextCSN */
+		/* 20050126161620Z#000009#00#000000 */
+		attrs[0] = talloc_strdup(mem_ctx, "contextCSN");
+		attrs[1] = NULL;
+		pstr_sprintf( suffix, "cn=ldapsync,%s", lp_ldap_suffix());
+
+	}
+
+	if (!(str_list_copy(&search_attrs, attrs))) {
+		ntstatus = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	rc = smbldap_search(ldap_state->smbldap_state, suffix,
+			    LDAP_SCOPE_BASE, "(objectclass=*)", search_attrs, 0, &msg);
+
+	if (rc != LDAP_SUCCESS) {
+
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(0,("ldapsam_get_seq_num: Failed search for suffix: %s, error: %s (%s)\n", 
+			suffix,ldap_err2string(rc), ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+		goto done;
+	}
+
+	num_result = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, msg);
+	if (num_result != 1) {
+		DEBUG(3,("ldapsam_get_seq_num: Expected one entry, got %d\n", num_result));
+		goto done;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, msg);
+	if (entry == NULL) {
+		DEBUG(3,("ldapsam_get_seq_num: Could not retrieve entry\n"));
+		goto done;
+	}
+
+	values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, (char *)attrs[0]);
+	if (values == NULL) {
+		DEBUG(3,("ldapsam_get_seq_num: no values\n"));
+		goto done;
+	}
+
+	num_values = ldap_count_values(values);
+	if (num_values == 0) {
+		DEBUG(3,("ldapsam_get_seq_num: not a single value\n"));
+		goto done;
+	}
+
+	p = values[0];
+	if (!next_token(&p, tok, "#", sizeof(tok))) {
+		DEBUG(0,("ldapsam_get_seq_num: failed to parse sequence number\n"));
+		goto done;
+	}
+
+	p = tok;
+	if (!strncmp(p, "csn=", strlen("csn=")))
+		p += strlen("csn=");
+
+	DEBUG(10,("ldapsam_get_seq_num: got %s: %s\n", (char *)attrs[0], p));
+
+	*seq_num = generalized_to_unix_time(p);
+
+	/* very basic sanity check */
+	if (*seq_num <= 0) {
+		DEBUG(3,("ldapsam_get_seq_num: invalid sequence number: %d\n", 
+			(int)*seq_num));
+		goto done;
+	}
+
+	ntstatus = NT_STATUS_OK;
+
+ done:
+	if (values != NULL)
+		ldap_value_free(values);
+	if (msg != NULL)
+		ldap_msgfree(msg);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
+	str_list_free(&search_attrs);
+
+	return ntstatus;
+}
+
 /*******************************************************************
  Run the search by name.
 ******************************************************************/
@@ -3185,6 +3332,8 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 
 	(*pdb_method)->get_account_policy = ldapsam_get_account_policy;
 	(*pdb_method)->set_account_policy = ldapsam_set_account_policy;
+
+	(*pdb_method)->get_seq_num = ldapsam_get_seq_num;
 
 	/* TODO: Setup private data and free */
 

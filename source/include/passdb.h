@@ -241,7 +241,7 @@ struct acct_info
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 7
+#define PASSDB_INTERFACE_VERSION 8
 
 typedef struct pdb_context 
 {
@@ -340,6 +340,8 @@ typedef struct pdb_context
 	NTSTATUS (*pdb_set_account_policy)(struct pdb_context *context,
 					   int policy_index, int value);
 
+	NTSTATUS (*pdb_get_seq_num)(struct pdb_context *context, time_t *seq_num);
+
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -436,6 +438,8 @@ typedef struct pdb_methods
 
 	NTSTATUS (*set_account_policy)(struct pdb_methods *methods,
 				       int policy_index, int value);
+
+	NTSTATUS (*get_seq_num)(struct pdb_methods *methods, time_t *seq_num);
 
 	void *private_data;  /* Private data of some kind */
 	
