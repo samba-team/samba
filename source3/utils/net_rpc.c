@@ -957,6 +957,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	/* query domain aliases */
+	start_idx = 0;
 	do {
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
@@ -981,6 +982,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		goto done;
 	}
 	/* query builtin aliases */
+	start_idx = 0;
 	do {
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
