@@ -1044,6 +1044,67 @@ static int rpc_group_usage(int argc, const char **argv)
 	return net_help_group(argc, argv);
 }
 
+static NTSTATUS 
+rpc_group_add_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
+			TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol, group_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	GROUP_INFO_CTR group_info;
+
+	if (argc != 1) {
+		d_printf("Group name must be specified\n");
+		rpc_group_usage(argc, argv);
+		return NT_STATUS_OK;
+	}
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	/* Create the group */
+
+	result = cli_samr_create_dom_group(cli, mem_ctx, &domain_pol,
+					   argv[0], MAXIMUM_ALLOWED_ACCESS,
+					   &group_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	if (strlen(opt_comment) == 0) goto done;
+
+	/* We've got a comment to set */
+
+	group_info.switch_value1 = 4;
+	init_samr_group_info4(&group_info.group.info4, opt_comment);
+
+	result = cli_samr_set_groupinfo(cli, mem_ctx, &group_pol, &group_info);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+	
+ done:
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5, ("add group succeeded\n"));
+	else
+		d_printf("add group failed: %s\n", nt_errstr(result));
+
+	return result;
+}
+
+static int rpc_group_add(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_add_internals,
+			       argc, argv);
+}
+
 /** 
  * List groups on a remote RPC server
  *
@@ -1498,8 +1559,8 @@ static int rpc_group_members(int argc, const char **argv)
 int net_rpc_group(int argc, const char **argv) 
 {
 	struct functable func[] = {
-#if 0
 		{"add", rpc_group_add},
+#if 0
 		{"delete", rpc_group_delete},
 #endif
 		{"list", rpc_group_list},

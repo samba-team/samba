@@ -322,6 +322,55 @@ NTSTATUS cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Create domain group */
+
+NTSTATUS cli_samr_create_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *domain_pol,
+				   const char *group_name,
+				   uint32 access_mask, POLICY_HND *group_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CREATE_DOM_GROUP q;
+	SAMR_R_CREATE_DOM_GROUP r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_create_dom_group\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_create_dom_group(&q, domain_pol, group_name, access_mask);
+
+	if (!samr_io_q_create_dom_group("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CREATE_DOM_GROUP, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_create_dom_group("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result))
+		*group_pol = r.pol;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query user info */
 
 NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -360,6 +409,50 @@ NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 	*ctr = r.ctr;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set group info */
+
+NTSTATUS cli_samr_set_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *group_pol, GROUP_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_GROUPINFO q;
+	SAMR_R_SET_GROUPINFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_groupinfo\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_groupinfo(&q, group_pol, ctr);
+
+	if (!samr_io_q_set_groupinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_SET_GROUPINFO, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_set_groupinfo("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);
