@@ -981,14 +981,6 @@ static BOOL get_sid_and_type(const char *fullntname, uint8 expected_type,
 	return True;
 }
 
-/*
- * used by lookup functions below
- */
-
-static fstring nt_name;
-static fstring unix_name;
-static fstring nt_domain;
-
 /*************************************************************************
  looks up a uid, returns User Information.  
 *************************************************************************/
@@ -1001,6 +993,10 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		static fstring nt_name;
+		static fstring unix_name;
+		static fstring nt_domain;
+
 		gmep->nt_name   = nt_name;
 		gmep->unix_name = unix_name;
 		gmep->nt_domain = nt_domain;
@@ -1049,6 +1045,10 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 *************************************************************************/
 BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP *gmep)
 {
+	static fstring nt_name;
+	static fstring unix_name;
+	static fstring nt_domain;
+
 	DEBUG(10,("lookupsmbpwntnam: nt user name %s\n", fullntname));
 
 	if (!split_domain_name(fullntname, nt_domain, nt_name))
@@ -1105,6 +1105,10 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		static fstring nt_name;
+		static fstring unix_name;
+		static fstring nt_domain;
+
 		gmep->nt_name   = nt_name;
 		gmep->unix_name = unix_name;
 		gmep->nt_domain = nt_domain;
@@ -1183,6 +1187,10 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		static fstring nt_name;
+		static fstring unix_name;
+		static fstring nt_domain;
+
 		gmep->nt_name   = nt_name;
 		gmep->unix_name = unix_name;
 		gmep->nt_domain = nt_domain;
@@ -1255,6 +1263,10 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep)
 	}
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
+		static fstring nt_name;
+		static fstring unix_name;
+		static fstring nt_domain;
+
 		gmep->nt_name   = nt_name;
 		gmep->unix_name = unix_name;
 		gmep->nt_domain = nt_domain;
@@ -1299,6 +1311,7 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep)
 		 	/* ... as a DOMAIN group. */
 			gmep->type = SID_NAME_DOM_GRP;
 		}
+		fstrcpy(gmep->nt_domain, global_sam_name);
 		fstrcpy(gmep->nt_name, gidtoname(gid));
 		fstrcpy(gmep->unix_name, gmep->nt_name);
 
