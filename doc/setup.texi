@@ -16,14 +16,15 @@ configuration options, some of which are described here.
 
 There is a sample @file{krb5.conf} supplied with the distribution.
 
-The configuration file is a hierarchical structure consisting of sections,
-each containing a list of bindings (either variable assignments or
-subsections). A section starts with @samp{[section-name]}.  A binding
-consists of a left hand side, an equal (@samp{=}) and a right hand
-side. The left hand side tag must be separated from the equal with some
-whitespace. Subsections has a @samp{@{} as the first non-whitespace
-character after the equal. All other bindings are treated as variable
-assignments. The value of a variable extends to the end of the line.
+The configuration file is a hierarchical structure consisting of
+sections, each containing a list of bindings (either variable
+assignments or subsections). A section starts with
+@samp{[section-name]}.  A binding consists of a left hand side, an equal
+(@samp{=}) and a right hand side (the left hand side tag must be
+separated from the equal with some whitespace.) Subsections has a
+@samp{@{} as the first non-whitespace character after the equal. All
+other bindings are treated as variable assignments. The value of a
+variable extends to the end of the line.
 
 @example
 [section1]
@@ -72,7 +73,9 @@ with contents similar to the following.
 @end example
 
 If you use a realm name equal to your domain name, you can omit the
-@samp{libdefaults}, and @samp{domain_realm}, sections.
+@samp{libdefaults}, and @samp{domain_realm}, sections. If you have a
+SRV-record for your realm, or your kerberos server has CNAME called
+@samp{kerberos.my.realm}, you can omit the @samp{realms} section too.
 
 @section Creating the database
 
@@ -159,9 +162,11 @@ Max renewable life [unlimited]:
 Attributes []:
 kadmin> ext host/my.host.name
 # ktutil list
-Version  Type    Principal
-     1   des     host/my.host.name@@MY.REALM
-     1   des3    host/my.host.name@@MY.REALM
+Version  Type             Principal
+     1   des-cbc-md5      host/my.host.name@@MY.REALM
+     1   des-cbc-md4      host/my.host.name@@MY.REALM
+     1   des-cbc-crc      host/my.host.name@@MY.REALM
+     1   des3-cbc-sha1    host/my.host.name@@MY.REALM
 @end example
 
 @section Remote administration
@@ -176,6 +181,8 @@ kerberos-adm stream     tcp     nowait  root /usr/heimdal/libexec/kadmind kadmin
 
 You might need to add @samp{kerberos-adm} to your @file{/etc/services}
 as 749/tcp.
+
+You need to add a key for @samp{kadmin/admin} to your keytab.
 
 Access to the admin server is controlled by an acl-file, (default
 @file{/var/heimdal/kadmind.acl}.) The lines in the access file, has the
