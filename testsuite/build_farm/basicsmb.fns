@@ -63,7 +63,15 @@ test_smb_conf_setup() {
     template_smb_conf_setup .preexec_close
     template_smb_conf_setup .preexec_cl_fl
 
+    template_smb_conf_setup .share
+    template_smb_conf_setup .user
+    template_smb_conf_setup .server
+    template_smb_conf_setup .domain
+
     template_setup preexec lib/preexec
+
+    touch $prefix/lib/smb.conf.
+    touch $prefix/lib/smb.conf.localhost
 
 	echo "127.0.0.1    localhost">$prefix/lib/lmhosts
 	echo "127.0.0.2    BUILDFARM">>$prefix/lib/lmhosts
@@ -81,13 +89,6 @@ test_smb_conf_setup() {
 
 	echo "127.0.0.1" > $prefix/lib/hosts.equiv
 
-    cp basicsmb.smb.conf.share $prefix/lib/smb.conf.share
-    cp basicsmb.smb.conf.user $prefix/lib/smb.conf.user
-    cp basicsmb.smb.conf.server $prefix/lib/smb.conf.server
-    cp basicsmb.smb.conf.domain $prefix/lib/smb.conf.domain
-
-    touch $prefix/lib/smb.conf.
-    touch $prefix/lib/smb.conf.localhost
 }
 
 test_smbpasswd() {

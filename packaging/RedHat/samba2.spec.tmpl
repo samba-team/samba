@@ -2,7 +2,7 @@ Summary: Samba SMB client and server
 Name: samba
 Version: PVERSION
 Release: PRELEASE
-Copyright: GNU GPL version 2
+License: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
@@ -10,7 +10,7 @@ Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
-BuildRoot: /var/tmp/samba
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
 
 %description
@@ -26,6 +26,7 @@ Samba 3.0 also introduces UNICODE support and kerberos/ldap
 integration as a member server in a Windows 2000 domain.
 
 Please refer to the WHATSNEW.txt document for fixup information.
+docs directory for implementation details.
 
 %changelog
 * Mon Nov 18 2002 Gerald Carter <jerry@samba.org>
@@ -46,6 +47,9 @@ autoconf
 EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
+if [ ! -f "configure" ]; then
+	./autogen.sh
+fi
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
 	--localstatedir=/var \
@@ -89,7 +93,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net smbgroupedit \
+	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
 	smbcacls pdbedit tdbbackup smbtree
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
@@ -101,7 +105,7 @@ do
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount debug2html winbindd wrepld
+for i in smbd nmbd swat smbmount smbumount debug2html winbindd 
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -157,6 +161,7 @@ install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 #done
 
 # Install the miscellany
+install -m755 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat/README
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
@@ -168,6 +173,9 @@ install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.stack
 install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
+
+# Remove "*.old" files
+find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -369,7 +377,6 @@ fi
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
 %{prefix}/sbin/winbindd
-%{prefix}/sbin/wrepld
 %{prefix}/sbin/samba
 %{prefix}/sbin/debug2html
 /sbin/mount.smbfs
@@ -389,13 +396,13 @@ fi
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/wbinfo
 %{prefix}/bin/net
-%{prefix}/bin/smbgroupedit
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
 %{prefix}/bin/tdbbackup
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
 %attr(755,root,root) %{prefix}/lib/samba/*.dat
 %{prefix}/include/libsmbclient.h
 %{prefix}/lib/libsmbclient.a
@@ -407,6 +414,7 @@ fi
 %{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/lang/*/include/*.html
 %{prefix}/share/swat/using_samba/*
+%{prefix}/share/swat/README
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers

@@ -5,7 +5,20 @@
 # and turn it into a PDF, informing the user of where it is when it
 # is done
 #
-# Buchan Milne <bgmilne@cae.co.za> 20020723
+# (c) Buchan Milne <bgmilne@cae.co.za> 2002 
+# License: GPLv2
+# Changelog
+# v0.0.6 20030428
+#  - Allow options passed as env. variables from print command
+#  - Inline and simplify sed (use tr) clean script
+#  - Ensure file arrives in PREFIX even if TEMP is used without provided name
+#  - Changes from Joshua M. Schmidlkofer <joshua@imr-net.com> 20030425
+#    - Debugging, adjustments, and corrections.
+#    - Stupid sed sanitizing script. [probably horribly inefficient also]. 
+#    - Temp file usage cleanup.
+# v0.0.5 20020723
+#  - Add support for preset settings
+#  - Allow passing of filename provided by client as final filename
 #
 # Arguments:
 # $1 = file (usually passed with %s from samba)
@@ -18,61 +31,80 @@
 #
 # If you want to customise any of the following configuration defaults, 
 # you can place them in the file /etc/samba/print-pdf.conf.
+# If you need to modify anything in this script, please provide me with your
+# changes, preferably in such a way that the changes are configurable.
 
 PS2PDF=ps2pdf13 
 OPTIONS="-dAutoFilterColorImages=false -sColorImageFilter=FlateEncode"
+#Values taken from arguments:
 INPUT=$1
-KEEP_PS=1
-PERMS=640
-INFILE=$(basename $INPUT)
-BASEFILE=pdf-service
 PREFIX="$2"
-NAME="$6"
 WINBASE=$(echo "$3"|sed -e 's,/,\\\\,g')
+#NAME=`echo "$6"|sed -e 's/[&/:{}\\\[<>$#@*^!?=|]/-/g;s/\]/-/g'`
+NAME=`echo "$6"|tr '[:punct:]' '[-*]'`
 
 # Source config file if it exists:
 CONFFILE=/etc/samba/print-pdf.conf
 [ -e $CONFFILE ] && . $CONFFILE
 
+#Values not taken as arguments, could be set via env. vars (?) or config file
+KEEP_PS=${KEEP_PS=0}
+PERMS=${PERMS=640}
+BASEFILE=${BASEFILE=pdf-service}
+TEMP="${TEMP=$2}"
+UMASK=${UMASK=006}
+
+#Make sure that destination directory exists
+mkdir -p "$PREFIX"
+
+INFILE=$(basename $INPUT)
+
+umask $UMASK
+
+[ -n "$NAME" ] && TEMP="$PREFIX"
+
 #make a temp file to use for the output of the PDF
-OUTPUT=`mktemp -q $2/$BASEFILE-XXXXXX`
+OUTPUT=`mktemp -q $TEMP/$BASEFILE-XXXXXX`
 if [ $? -ne 0 ]; then
-	echo "$0: Can't create temp file $2/$BASEFILE-XXXXXX, exiting..."
+	echo "$0: Can't create temp file $TEMP/$OUTPUT, exiting..."
 	exit 1
 fi
-if [ "$NAME" != "" ]; then
+if [ -n "$NAME" ]; then
 	FINALOUTPUT="$PREFIX/$NAME"
 else
 	FINALOUTPUT="$OUTPUT"
 fi
-if [ "$7" != "" ]; then
+if [ -n "$7" ]; then
 	OPTIONS="$OPTIONS -dPDFSETTINGS=/${7#pdf-}"
 else
 	OPTIONS="$OPTIONS -dPDFSETTINGS=/default"
 fi
-									
-WIN_OUTPUT="$WINBASE\\"`basename "$FINALOUTPUT"`
 
-# create the PDF:
-$PS2PDF $OPTIONS $INPUT "$OUTPUT".pdf >/dev/null 2>&1
-mv -f "$OUTPUT".pdf "$FINALOUTPUT".pdf
+WIN_OUTPUT="$WINBASE\\"`basename "$FINALOUTPUT"`
+#mv "$INPUT" "$INPUT.ps";INPUT="$INPUT.ps"
+
+# create the pdf
+$PS2PDF $OPTIONS "$INPUT" "$OUTPUT.pdf" >/dev/null 2>&1
+mv -f "${OUTPUT}.pdf" "${FINALOUTPUT}".pdf
 
 # Generate a message to send to the user, and deal with the original file:
 MESSAGE=$(echo "Your PDF file has been created as $WIN_OUTPUT.pdf\n")
 
-if [ $KEEP_PS ];then
+
+# Cleanup
+if [ $KEEP_PS != 0 ];then
 	mv -f $INPUT "${FINALOUTPUT}".ps
 	MESSAGE=$(echo "$MESSAGE and your postscript file as $WIN_OUTPUT.ps")
 	# Fix permissions on the generated files
-	chmod $PERMS "${FINALOUTPUT}".ps
+	chmod $PERMS "${FINALOUTPUT}".ps "${FINALOUTPUT}".pdf
 else
 	rm -f $INPUT
-	chmod $PERMS "${FINALOUTPUT}".ps "${FINALOUTPUT}".pdf
 	# Fix permissions on the generated files
+	chmod $PERMS "${FINALOUTPUT}".pdf
 fi
-					                        
+                                            
 #Remove empty file from mktemp:
-[ "x$NAME" -eq "x" ] && rm -f  $OUTPUT
+rm -f  $OUTPUT
 
 # Send notification to user
 echo -e $MESSAGE|smbclient -M $4 -I $5 -U "PDF Generator" >/dev/null 2>&1
