@@ -83,14 +83,13 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Sh DESCRIPTION
 .Nm krb5_set_real_time
-set the
-.Fa sec
-and 
-.Fa usec
-to the match the time as the KDC time.
-This update the time screw parameter
-in
-.Fa context .
+sets the absolute time that the caller knows the KDC has.
+With this the to the Kerberos library can calculate the relative
+diffrence beteen the KDC time and the local system time and store it
+in the
+.Fa content .
+With this information the Kerberos library can adjust all time stamps
+Kerberos packages.
 .Pp
 .Fn krb5_timeofday
 returns the current time, but adjusted with the time difference
