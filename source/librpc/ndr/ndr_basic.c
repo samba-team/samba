@@ -108,7 +108,7 @@ NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, int32_t *v)
 /*
   parse a pointer referent identifier
 */
-NTSTATUS ndr_pull_ptr(struct ndr_pull *ndr, uint32_t *v)
+NTSTATUS ndr_pull_unique_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
 	NTSTATUS status;
 	status = ndr_pull_uint32(ndr, NDR_SCALARS, v);
@@ -482,7 +482,7 @@ void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save)
 /*
   push a 1 if a pointer is non-NULL, otherwise 0
 */
-NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
+NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 {
 	uint32_t ptr = 0;
 	if (p) {
