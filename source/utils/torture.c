@@ -282,8 +282,12 @@ static void run_netbench(void)
 
 	cli_sockopt(&cli, sockops);
 
+	slprintf(fname, sizeof(fname) - 1, "\\c%05d", pid);
+
+	cli_mkdir(&cli, fname);
+
 	for (i=0;i<numops;i++) {
-		slprintf(fname, sizeof(fname) - 1, "\\%03d%05d.doc", i, pid);
+		slprintf(fname, sizeof(fname) - 1, "\\c%05d\\%d.doc", pid, i);
 
 		fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
 		if (fnum == -1) {
@@ -313,9 +317,12 @@ static void run_netbench(void)
 	printf("+"); fflush(stdout);
 
 	for (i=0;i<numops;i++) {
-		slprintf(fname, sizeof(fname) - 1, "\\%03d%05d.doc", i, pid);
+		slprintf(fname, sizeof(fname) - 1, "\\c%05d\\%d.doc", pid, i);
 		cli_unlink(&cli, fname);
 	}
+
+	slprintf(fname, sizeof(fname) - 1, "\\c%05d", pid);
+	cli_rmdir(&cli, fname);
 
 	close_connection(&cli);
 }
