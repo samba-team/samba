@@ -2879,6 +2879,10 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		Privileges will be those of the <link linkend="GUESTACCOUNT"><parameter>
 		guest account</parameter></link>.</para>
 
+	        <para>This paramater nullifies the benifits of setting
+	        <link linkend="RESTRICTANONYMOUS"><parameter>restrict
+	        anonymous</parameter></link> = 2</para>
+
 		<para>See the section below on <link linkend="SECURITY"><parameter>
 		security</parameter></link> for more information about this option.
 		</para>
@@ -5392,8 +5396,12 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		<listitem><para>Some version of NT 4.x allow non-guest 
 		users with a bad passowrd. When this option is enabled, samba will not 
 		use a broken NT 4.x server as password server, but instead complain
-		to the logs and exit.
+		to the logs and exit.  
 		</para>
+
+	        <para>Disabling this option prevents Samba from making
+	        this check, which involves deliberatly attempting a
+	        bad logon to the remote server.</para>
 
 		<para>Default: <command>paranoid server security = yes</command></para>
 
@@ -6851,7 +6859,7 @@ print5|My Printer 5
 		<para><anchor id="SECURITYEQUALSUSER"/><emphasis>SECURITY = USER
 		</emphasis></para>
 
-		<para>This is the default security setting in Samba 2.2. 
+		<para>This is the default security setting in Samba 3.0. 
 		With user-level security a client must first "log-on" with a 
 		valid username and password (which can be mapped using the <link
 		linkend="USERNAMEMAP"><parameter>username map</parameter></link> 
@@ -6875,47 +6883,12 @@ print5|My Printer 5
 		<para>See also the section <link linkend="VALIDATIONSECT">
 		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
-		<para><anchor id="SECURITYEQUALSSERVER"/><emphasis>SECURITY = SERVER
-		</emphasis></para>
-
-		<para>In this mode Samba will try to validate the username/password 
-		by passing it to another SMB server, such as an NT box. If this 
-		fails it will revert to <command>security = user</command>, but note 
-		that if encrypted passwords have been negotiated then Samba cannot 
-		revert back to checking the UNIX password file, it must have a valid 
-		<filename>smbpasswd</filename> file to check users against. See the 
-		documentation file in the <filename>docs/</filename> directory 
-		<filename>ENCRYPTION.txt</filename> for details on how to set this 
-		up.</para>
-
-		<para><emphasis>Note</emphasis> that from the client's point of 
-		view <command>security = server</command> is the same as <command>
-		security = user</command>.  It only affects how the server deals 
-		with the authentication, it does not in any way affect what the 
-		client sees.</para>
-
-		<para><emphasis>Note</emphasis> that the name of the resource being 
-		requested is <emphasis>not</emphasis> sent to the server until after 
-		the server has successfully authenticated the client. This is why 
-		guest shares don't work in user level security without allowing 
-		the server to automatically map unknown users into the <link
-		linkend="GUESTACCOUNT"><parameter>guest account</parameter></link>. 
-		See the <link linkend="MAPTOGUEST"><parameter>map to guest</parameter>
-		</link> parameter for details on doing this.</para>
-
-		<para>See also the section <link linkend="VALIDATIONSECT">
-		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
-
-		<para>See also the <link linkend="PASSWORDSERVER"><parameter>password 
-		server</parameter></link> parameter and the <link 
-		linkend="ENCRYPTPASSWORDS"><parameter>encrypted passwords</parameter>
-		</link> parameter.</para>
-		
 		<para><anchor id="SECURITYEQUALSDOMAIN"/><emphasis>SECURITY = DOMAIN
+
 		</emphasis></para>
 
-		<para>This mode will only work correctly if <citerefentry><refentrytitle>smbpasswd</refentrytitle>
-		<manvolnum>8</manvolnum></citerefentry> has been used to add this 
+	        <para>This mode will only work correctly if <citerefentry><refentrytitle>net</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> has been used to add this
 		machine into a Windows NT Domain. It expects the <link 
 		linkend="ENCRYPTPASSWORDS"><parameter>encrypted passwords</parameter>
 		</link> parameter to be set to <constant>yes</constant>. In this 
@@ -6941,14 +6914,6 @@ print5|My Printer 5
 		See the <link linkend="MAPTOGUEST"><parameter>map to guest</parameter>
 		</link> parameter for details on doing this.</para>
 
-		<para><emphasis>BUG:</emphasis> There is currently a bug in the 
-		implementation of <command>security = domain</command> with respect 
-		to multi-byte character set usernames. The communication with a 
-		Domain Controller must be done in UNICODE and Samba currently 
-		does not widen multi-byte user names to UNICODE correctly, thus 
-		a multi-byte username will not be recognized correctly at the 
-		Domain Controller. This issue will be addressed in a future release.</para>
-
 		<para>See also the section <link linkend="VALIDATIONSECT">
 		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
@@ -6957,8 +6922,62 @@ print5|My Printer 5
 		linkend="ENCRYPTPASSWORDS"><parameter>encrypted passwords</parameter>
 		</link> parameter.</para>
 
+		<para><anchor id="SECURITYEQUALSSERVER"/><emphasis>SECURITY = SERVER
+		</emphasis></para>
+
+		<para>In this mode Samba will try to validate the username/password 
+		by passing it to another SMB server, such as an NT box. If this 
+		fails it will revert to <command>security =
+		user</command>. It expects the <link
+		linkend="ENCRYPTPASSWORDS"><parameter>encrypted passwords</parameter>
+		</link> parameter to be set to
+		<constant>yes</constant>, unless the remote server
+		does not support them.  However note
+		that if encrypted passwords have been negotiated then Samba cannot 
+		revert back to checking the UNIX password file, it must have a valid 
+		<filename>smbpasswd</filename> file to check users against. See the 
+		documentation file in the <filename>docs/</filename> directory 
+		<filename>ENCRYPTION.txt</filename> for details on how to set this 
+		up.</para>
+
+		<para><emphasis>Note</emphasis> this mode of operation
+		has significant pitfalls, due to the fact that is
+		activly initiates a man-in-the-middle attack on the
+		remote SMB server.  In particular, this mode of
+		operation can cause significant resource consuption on
+		the PDC, as it must maintain an active connection for
+		the duration of the user's session.  Furthermore, if
+		this connection is lost, there is no way to
+		reestablish it, and futher authenticaions to the Samba
+		server may fail.  (From a single client, till it
+		disconnects). </para>
+
+		<para><emphasis>Note</emphasis> that from the client's point of 
+		view <command>security = server</command> is the same as <command>
+		security = user</command>.  It only affects how the server deals 
+		with the authentication, it does not in any way affect what the 
+		client sees.</para>
+
+		<para><emphasis>Note</emphasis> that the name of the resource being 
+		requested is <emphasis>not</emphasis> sent to the server until after 
+		the server has successfully authenticated the client. This is why 
+		guest shares don't work in user level security without allowing 
+		the server to automatically map unknown users into the <link
+		linkend="GUESTACCOUNT"><parameter>guest account</parameter></link>. 
+		See the <link linkend="MAPTOGUEST"><parameter>map to guest</parameter>
+		</link> parameter for details on doing this.</para>
+
+		<para>See also the section <link linkend="VALIDATIONSECT">
+		NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
+
+		<para>See also the <link linkend="PASSWORDSERVER"><parameter>password 
+		server</parameter></link> parameter and the <link 
+		linkend="ENCRYPTPASSWORDS"><parameter>encrypted passwords</parameter>
+		</link> parameter.</para>
+		
 		<para>Default: <command>security = USER</command></para>
 		<para>Example: <command>security = DOMAIN</command></para>
+
 		</listitem>
 		</varlistentry>
 
