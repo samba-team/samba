@@ -551,19 +551,21 @@ static struct uid_sid_cache {
 	struct uid_sid_cache *next, *prev;
 	uid_t uid;
 	DOM_SID sid;
+	enum SID_NAME_USE sidtype;
 } *uid_sid_cache_head;
 
 static struct gid_sid_cache {
 	struct gid_sid_cache *next, *prev;
 	gid_t gid;
 	DOM_SID sid;
+	enum SID_NAME_USE sidtype;
 } *gid_sid_cache_head;
 
 /*****************************************************************
   Find a SID given a uid.
 *****************************************************************/  
 
-static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
+static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, enum SID_NAME_USE *psidtype, uid_t uid)
 {
 	struct uid_sid_cache *pc;
 
@@ -571,6 +573,7 @@ static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 		if (pc->uid == uid) {
 			fstring sid;
 			*psid = pc->sid;
+			*psidtype = pc->sidtype;
 			DEBUG(3,("fetch sid from uid cache %u -> %s\n",
 				(unsigned int)uid, sid_to_string(sid, psid)));
 			DLIST_PROMOTE(uid_sid_cache_head, pc);
@@ -584,7 +587,7 @@ static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
   Find a uid given a SID.
 *****************************************************************/  
 
-static BOOL fetch_uid_from_cache(uid_t *puid, const DOM_SID *psid)
+static BOOL fetch_uid_from_cache(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE sidtype)
 {
 	struct uid_sid_cache *pc;
 
@@ -605,7 +608,7 @@ static BOOL fetch_uid_from_cache(uid_t *puid, const DOM_SID *psid)
  Store uid to SID mapping in cache.
 *****************************************************************/  
 
-static void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
+static void store_uid_sid_cache(const DOM_SID *psid, const enum SID_NAME_USE sidtype, uid_t uid)
 {
 	struct uid_sid_cache *pc;
 
@@ -629,6 +632,7 @@ static void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
 		return;
 	pc->uid = uid;
 	sid_copy(&pc->sid, psid);
+	pc->sidtype = sidtype;
 	DLIST_ADD(uid_sid_cache_head, pc);
 	n_uid_sid_cache++;
 }
@@ -637,7 +641,7 @@ static void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
   Find a SID given a gid.
 *****************************************************************/  
 
-static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
+static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, enum SID_NAME_USE *psidtype, gid_t gid)
 {
 	struct gid_sid_cache *pc;
 
@@ -645,6 +649,7 @@ static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
 		if (pc->gid == gid) {
 			fstring sid;
 			*psid = pc->sid;
+			*psidtype = pc->sidtype;
 			DEBUG(3,("fetch sid from gid cache %u -> %s\n",
 				(unsigned int)gid, sid_to_string(sid, psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
@@ -658,7 +663,7 @@ static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
   Find a gid given a SID.
 *****************************************************************/  
 
-static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
+static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE sidtype)
 {
 	struct gid_sid_cache *pc;
 
@@ -679,7 +684,7 @@ static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
  Store gid to SID mapping in cache.
 *****************************************************************/  
 
-static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
+static void store_gid_sid_cache(const DOM_SID *psid, const enum SID_NAME_USE sidtype, gid_t gid)
 {
 	struct gid_sid_cache *pc;
 
@@ -703,6 +708,7 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 		return;
 	pc->gid = gid;
 	sid_copy(&pc->sid, psid);
+	pc->sidtype = sidtype;
 	DLIST_ADD(gid_sid_cache_head, pc);
 	n_gid_sid_cache++;
 }
@@ -717,9 +723,10 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	uid_t low, high;
+	enum SID_NAME_USE sidtype;
 	fstring sid;
 
-	if (fetch_sid_from_uid_cache(psid, uid))
+	if (fetch_sid_from_uid_cache(psid, &sidtype, uid))
 		return psid;
 
 	if (lp_winbind_uid(&low, &high) && uid >= low && uid <= high) {
@@ -729,7 +736,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 				(unsigned int)uid, sid_to_string(sid, psid)));
 
 			if (psid)
-				store_uid_sid_cache(psid, uid);
+				store_uid_sid_cache(psid, SID_NAME_USER, uid);
 			return psid;
 		}
 	}
@@ -741,7 +748,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
 	if (psid)
-		store_uid_sid_cache(psid, uid);
+		store_uid_sid_cache(psid, SID_NAME_USER, uid);
 
 	return psid;
 }
@@ -755,9 +762,10 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	gid_t low, high;
+	enum SID_NAME_USE sidtype;
 	fstring sid;
 
-	if (fetch_sid_from_gid_cache(psid, gid))
+	if (fetch_sid_from_gid_cache(psid, &sidtype, gid))
 		return psid;
 
 	if (lp_winbind_gid(&low, &high) && gid >= low && gid <= high) {
@@ -767,7 +775,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 				(unsigned int)gid, sid_to_string(sid, psid)));
                         
 			if (psid)
-				store_gid_sid_cache(psid, gid);
+				store_gid_sid_cache(psid, SID_NAME_DOM_GRP, gid);
 			return psid;
 		}
 	}
@@ -776,7 +784,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 	psid = local_gid_to_sid(psid, gid);
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
 	if (psid)
-		store_gid_sid_cache(psid, gid);
+		store_gid_sid_cache(psid, SID_NAME_DOM_GRP, gid);
 
 	return psid;
 }
@@ -792,7 +800,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
 	fstring sid_str;
 
-	if (fetch_uid_from_cache(puid, psid))
+	if (fetch_uid_from_cache(puid, psid, *sidtype))
 		return True;
 
 	/* if we know its local then don't try winbindd */
@@ -802,7 +810,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 		result = local_sid_to_uid(puid, psid, sidtype);
 		unbecome_root();
 		if (result)
-			store_uid_sid_cache(psid, *puid);
+			store_uid_sid_cache(psid, *sidtype, *puid);
 		return result;
 	}
 
@@ -853,7 +861,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 		result = local_sid_to_uid(puid, psid, sidtype);
 		unbecome_root();
 		if (result)
-			store_uid_sid_cache(psid, *puid);
+			store_uid_sid_cache(psid, *sidtype, *puid);
 		return result;
 	}
 
@@ -861,7 +869,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 		sid_to_string(sid_str, psid),
 		(unsigned int)*puid ));
 
-	store_uid_sid_cache(psid, *puid);
+	store_uid_sid_cache(psid, *sidtype, *puid);
 	return True;
 }
 
@@ -879,7 +887,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 
 	*sidtype = SID_NAME_UNKNOWN;
 
-	if (fetch_gid_from_cache(pgid, psid))
+	if (fetch_gid_from_cache(pgid, psid, *sidtype))
 		return True;
 
 	/*
@@ -893,7 +901,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		result = local_sid_to_gid(pgid, psid, sidtype);
 		unbecome_root();
 		if (result)
-			store_gid_sid_cache(psid, *pgid);
+			store_gid_sid_cache(psid, *sidtype, *pgid);
 		return result;
 	}
 
@@ -932,7 +940,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		sid_to_string(sid_str, psid),
 		(unsigned int)*pgid ));
 
-	store_gid_sid_cache(psid, *pgid);
+	store_gid_sid_cache(psid, *sidtype, *pgid);
 	return True;
 }
 
