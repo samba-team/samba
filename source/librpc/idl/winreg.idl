@@ -10,7 +10,7 @@
   endpoint("ncacn_np:[\\pipe\\winreg]","ncacn_ip_tcp:","ncalrpc:"),
   pointer_default(unique),
   helpstring("Remote Registry Service"),
-  depends(lsa)
+  depends(lsa,initshutdown)
 ] interface winreg
 {
 	typedef struct {
@@ -270,7 +270,7 @@
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
 		[in]	uint16 *hostname,
-		[in]	winreg_String *message,
+		[in]	initshutdown_String *message,
 		[in]	uint32 timeout,
 		[in]	uint8 force_apps,
 		[in]	uint8 reboot
@@ -326,7 +326,7 @@
 	/* Function: 0x1e */
 	WERROR winreg_InitiateSystemShutdownEx(
 		[in] uint16 *hostname,
-		[in] winreg_String *message,
+		[in] initshutdown_String *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
 		[in] uint8 reboot,
