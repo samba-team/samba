@@ -24,7 +24,7 @@
 }
 
 /^[ \t]*union.*\{/ {
-	start_union($2, $3);
+	start_union($2);
 	next;
 }
 
@@ -44,15 +44,9 @@
 	next;
 }
 
-/^[ \t]*\{.*\}.*;/ {
-	split($0,a,"[ \t;{}]*");
-	add_array(a[2], a[3], a[4]);
-	next;
-}
-
 /.*;/ {
 	split($0,a,"[ \t;]*");
-	add_elem(a[2], a[3]);
+	add_struct_elem(a[2], a[3]);
 }
 
 END {

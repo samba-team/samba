@@ -19,14 +19,6 @@ function parse_elem(f, v, struct_num, elem_num,
 }
 
 
-function parse_pointer(f, v, struct_num, elem_num,
-		       LOCAL, elem)
-{
-	elem = structs[struct_num, elem_num, "elem"];
-	v["ELEM"] = noptr(elem);
-	print_template(f, "prs_pointer.tpl", v);
-}
-
 function parse_array(f, v, struct_num, elem_num,
 		     LOCAL, elem, type)
 {
@@ -80,29 +72,53 @@ function parse_ptr_elem(f, v, struct_num, elem_num,
 	print_template(f, "ifptr_end.tpl", v);
 }
 
+function parse_scalar(f, v, elnum,
+		      LOCAL, elem, type)
+{
+	if (elements[elnum, "type"] == "union") {
+		parse_union(f, v, elnum);
+	} else if (elements[elnum, "array_len"]!="") {
+		parse_array(f, v, elnum);
+	} else {
+		
+	}
+	elem = elements[elnum, "elem"];
+	v["ELEM"] = elem;
+	print_template(f, "prs_pointer.tpl", v);
+}
+
+function parse_pointer(f, v, elnum,
+		       LOCAL, elem)
+{
+	elem = elements[elnum, "elem"];
+	v["ELEM"] = elem;
+	print_template(f, "prs_pointer.tpl", v);
+}
+
+function parse_scalars(f, v, elnum)
+{
+	if (elements[elnum, "ptr"] == "1") {
+		parse_pointer(f, v, elnum);
+	} else {
+		parse_scalar(f, v, elnum);
+	}
+}
 
 function struct_parser(f, v, struct_num,
 		       LOCAL, i) 
 {
 	v["STRUCTNAME"] = structs[struct_num, "name"];
-	v["FUNCNAME"] = v["MODULE"] "_io_" v["STRUCTNAME"];
+	v["FUNCNAME"] = "prs_" v["STRUCTNAME"];
 	print_template(f, "fn_start.tpl", v);
 
         # first all the structure pointers, scalars and arrays
 	for (i=0;i<structs[struct_num, "num_elems"];i++) {
-		if (isaptr(structs[struct_num, i, "elem"])) {
-			parse_pointer(f, v, struct_num, i);
-		} else if (structs[struct_num, i, "array_len"]) {
-			parse_array(f, v, struct_num, i);
-		} else {
-			parse_elem(f, v, struct_num, i);
-		}
+		parse_scalars(f, v, structs[struct_num, i]);
 	}
 
-	# now the structures
+	# now the buffers
 	for (i=0;i<structs[struct_num, "num_elems"];i++) {
-		if (!isaptr(structs[struct_num, i, "elem"])) continue;
-		parse_ptr_elem(f, v, struct_num, i);
+		parse_buffers(f, v, structs[struct_num, i]);
 	}
 
 	print_template(f, "fn_end.tpl", v);

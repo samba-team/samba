@@ -1,39 +1,50 @@
 # dump the current parse tree
 
-function dump_union(f, struct_num, union,
+
+function element_string(elnum,
+			LOCAL, elem)
+{
+	elem = elements[elnum, "elem"];
+	if (elements[elnum, "ptr"]=="1") elem="*"elem;
+	if (elements[elnum, "array_len"]!="") 
+		elem=elem"["elements[elnum, "array_len"]"]";
+	if (elements[elnum, "switch"]!="") 
+		elem=elem"["elements[elnum, "switch"]"]";
+	return elem;
+}
+
+function dump_element(f, elnum,
+		      LOCAL, elem, type)
+{
+	type = elements[elnum, "type"];
+	case = elements[elnum, "case"];
+	elem = element_string(elnum);
+	if (case != "") {
+		xprintf(f,"\t\tcase %d %s %s;\n", case, type, elem);
+	} else {
+		xprintf(f,"\t%s %s;\n", type, elem);
+	}
+}
+
+function dump_union(f, elnum,
 		    LOCAL, i) 
 {
-	xprintf(f,"\tunion %s %s {\n", 
-	       structs[struct_num, "unions", union, "switch"],
-	       union);
-	for (i=0;i<structs[struct_num, "unions", union, "num_elems"];i++) {
-		xprintf(f,"\t\tcase %d %s %s;\n", 
-		       structs[struct_num, "unions", union, i, "value"],
-		       structs[struct_num, "unions", union, i, "type"],
-		       structs[struct_num, "unions", union, i, "elem"]);
+	xprintf(f,"\tunion %s {\n", element_string(elnum));
+	for (i=0;i<unions[elnum, "num_elems"];i++) {
+		dump_element(f, unions[elnum, i]);
 	}
 	xprintf(f,"\t}\n");
 }
 
-function dump_array(f, struct_num, elem_num,
-		    LOCAL, i) 
+function dump_elem(f, struct_num, elem_num,
+		   LOCAL, enum) 
 {
-	xprintf(f,"\t{%s} %s %s;\n", 
-	       structs[struct_num, elem_num, "array_len"],
-	       structs[struct_num, elem_num, "type"],
-	       structs[struct_num, elem_num, "elem"]);
-}
+	elnum = structs[struct_num, elem_num];
 
-function dump_elem(f, struct_num, elem_num) 
-{
-	if (structs[struct_num, elem_num, "type"] == "union") {
-		dump_union(f, struct_num, structs[struct_num, elem_num, "elem"]);
-	} else if (structs[struct_num, elem_num, "array_len"]) {
-		dump_array(f, struct_num, elem_num);
+	if (elements[elnum, "type"] == "union") {
+		dump_union(f, elnum);
 	} else {
-		xprintf(f,"\t%s %s;\n", 
-		       structs[struct_num, elem_num, "type"],
-		       structs[struct_num, elem_num, "elem"]);
+		dump_element(f, elnum);
 	}
 }
 
@@ -51,5 +62,3 @@ function dump_structs(f, NIL,
 	}
 	xprintf(f,"/* end dump */\n\n");
 }
-
-
