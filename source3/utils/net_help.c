@@ -76,6 +76,9 @@ int net_help_user(int argc, const char **argv)
 	d_printf("\nnet [<method>] user ADD <name> [password] [-c container] "\
 		 "[-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
+	d_printf("\nnet [<method>] user RENAME <oldusername> <newusername>"\
+		 " [targets]\n\tRename specified user\n\n");
+
 
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
