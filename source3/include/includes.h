@@ -456,7 +456,7 @@ typedef int socklen_t;
 #define int32 short
 #else
 /* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#define uint32 int
+#define int32 int
 #endif
 #endif
 
