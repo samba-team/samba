@@ -56,6 +56,7 @@ krb5_rd_req(krb5_context context,
   krb5_error_code ret;
   AP_REQ ap_req;
   int len;
+  struct timeval now;
 
   if (*auth_context == NULL) {
     ret = krb5_auth_con_init(context, auth_context);
@@ -143,6 +144,13 @@ krb5_rd_req(krb5_context context,
     }
 
     /* Check address and time */
+    gettimeofday (&now, NULL);
+    if ((decr_part.starttime ? *decr_part.starttime : decr_part.authtime)
+	- now.tv_sec > 600 ||
+	decr_part.flags.invalid)
+      return KRB5KRB_AP_ERR_TKT_NYV;
+    if (now.tv_sec - decr_part.endtime > 600)
+      return KRB5KRB_AP_ERR_TKT_EXPIRED;
 
     return 0;
   }
