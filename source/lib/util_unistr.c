@@ -242,6 +242,11 @@ smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	return NULL;
 }
 
+smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c)
+{
+	return strchr_w(s, UCS2_CHAR(c));
+}
+
 smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 {
 	const smb_ucs2_t *p = s;
