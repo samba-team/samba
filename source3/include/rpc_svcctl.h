@@ -65,14 +65,14 @@ typedef struct svc_status_info
 
 } SVC_STATUS;
 
-/* ENUM_SVC_STATUS */
+/* ENUM_SRVC_STATUS */
 typedef struct enum_svc_status_info
 {
 	UNISTR uni_srvc_name;
 	UNISTR uni_disp_name;
 	SVC_STATUS status;
 
-} ENUM_SVC_STATUS;
+} ENUM_SRVC_STATUS;
 
 /* SVC_Q_ENUM_SVCS_STATUS */
 typedef struct q_svc_enum_svcs_status_info
@@ -89,8 +89,11 @@ typedef struct q_svc_enum_svcs_status_info
 typedef struct r_svc_enum_svcs_status_info
 {
 	uint32 buf_size; /* service buffer size */
-	ENUM_SVC_STATUS *svcs;
-	uint32 status;             /* return status */
+	ENUM_SRVC_STATUS *svcs;
+	uint32 more_buf_size;
+	uint32 num_svcs;
+	ENUM_HND resume_hnd; /* resume handle */
+	uint32 dos_status; /* return status, DOS error code (wow!) */
 
 } SVC_R_ENUM_SVCS_STATUS;
 
