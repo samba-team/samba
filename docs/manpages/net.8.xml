@@ -734,6 +734,18 @@ Interdomain account must already be created on the remote PDC.
 
 </refsect3>
 
+<refsect3>
+<title>RPC RIGHTS</title>
+
+<para>This subcommand is used to view and manage Samba's rights assignments (also 
+referred to as privileges).  There are three options current available: 
+<parameter>list</parameter>, <parameter>grant</parameter>, and 
+<parameter>revoke</parameter>.  More details on Samba's privilege model and its use
+can be found in the Samba-HOWTO-Collection.</para>
+
+</refsect3>
+
+
 </refsect2>
 
 <refsect2>
