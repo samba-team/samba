@@ -161,6 +161,33 @@ sequence number query packet every "winbind cache time" seconds\&.
 \fBDefault:\fP
 \f(CW     winbind cache time = 15\fP
 .IP 
+.IP "winbind enum users" 
+.IP 
+On large installations it may be necessary to suppress the enumeration of
+users through the \f(CWsetpwent\fP, \f(CWgetpwent\fP and \f(CWendpwent\fP group of
+system calls\&.  If the \f(CWwinbind enum users\fP parameter is false, calls to
+the \f(CWgetpwent\fP system call will not return any data\&.
+.IP 
+Warning: Turning off user enumeration may cause some programs to behave
+oddly\&.  For example, the finger program relies on having access to the full
+user list when searching for matching usernames\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind enum users = true\fP
+.IP 
+.IP "winbind enum groups" 
+.IP 
+On large installations it may be necessary to suppress the enumeration of
+groups through the \f(CWsetgrent\fP, \f(CWgetgrent\fP and \f(CWendgrent\fP group of
+system calls\&.  If the \f(CWwinbind enum groups\fP parameter is false, calls to
+the \f(CWgetgrent\fP system call will not return any data\&.
+.IP 
+Warning: Turning off group enumeration may cause some programs to behave
+oddly\&.
+.IP 
+\fBDefault:\fP
+\f(CW     winbind enum groups = true\fP
+.IP 
 .IP "template homedir" 
 .IP 
 When filling out the user information for a Windows NT user, the
