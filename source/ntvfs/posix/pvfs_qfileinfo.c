@@ -219,8 +219,7 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, 
-				   PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -85,7 +85,8 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	uint_t ofs;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, unl->in.pattern, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, unl->in.pattern, 
+				   PVFS_RESOLVE_WILDCARD, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

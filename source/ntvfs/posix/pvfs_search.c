@@ -300,7 +300,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	pattern       = io->search_first.in.pattern;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, pattern, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, pattern, PVFS_RESOLVE_WILDCARD, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -436,7 +436,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	max_count     = io->t2ffirst.in.max_count;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, pattern, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, pattern, PVFS_RESOLVE_WILDCARD, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

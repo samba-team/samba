@@ -70,7 +70,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	}
 
 	/* resolve the new name */
-	status = pvfs_resolve_name(pvfs, name, new_name, PVFS_RESOLVE_NO_WILDCARD, &name2);
+	status = pvfs_resolve_name(pvfs, name, new_name, 0, &name2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -144,6 +144,17 @@ static NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
 	ealist->num_eas++;
 	
 save:
+	/* pull out any null EAs */
+	for (i=0;i<ealist->num_eas;i++) {
+		if (ealist->eas[i].value.length == 0) {
+			memmove(&ealist->eas[i],
+				&ealist->eas[i+1],
+				(ealist->num_eas-(i+1)) * sizeof(ealist->eas[i]));
+			ealist->num_eas--;
+			i--;
+		}
+	}
+
 	status = pvfs_doseas_save(pvfs, name, fd, ealist);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -348,8 +359,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	struct utimbuf unix_times;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.file.fname, 
-				   PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, info->generic.file.fname, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

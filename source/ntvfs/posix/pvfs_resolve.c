@@ -253,7 +253,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 		case '<':
 		case '?':
 		case '"':
-			if (flags & PVFS_RESOLVE_NO_WILDCARD) {
+			if (!(flags & PVFS_RESOLVE_WILDCARD)) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			name->has_wildcard = True;
@@ -341,7 +341,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 		}
 	}
 	if (err_count) {
-		if (!(flags & PVFS_RESOLVE_NO_WILDCARD)) err_count--;
+		if (flags & PVFS_RESOLVE_WILDCARD) err_count--;
 
 		if (err_count==1) {
 			return NT_STATUS_OBJECT_NAME_INVALID;

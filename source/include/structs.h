@@ -110,6 +110,7 @@ struct net_context;
 struct file_info;
 
 struct xattr_DosEAs;
+struct xattr_DosStreams;
 
 struct test_join;
 
