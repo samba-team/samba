@@ -105,7 +105,7 @@ while ( !$ldif->eof ) {
 	} elsif ( defined ( $is_samba_group ) ) {
 		foreach $key ( keys %group_attr_map ) {
 			if ( defined($entry->get_value($key)) ) {
-				$entry->add( $attr_map{$key} => $entry->get_value($key) );
+				$entry->add( $group_attr_map{$key} => $entry->get_value($key) );
 				$entry->delete( $key );
 			}
 		}

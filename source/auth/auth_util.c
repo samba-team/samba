@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Authentication utility functions
    Copyright (C) Andrew Tridgell 1992-1998
@@ -1258,4 +1258,47 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status)
 }
 
 
+/**
+ * Verify whether or not given domain is trusted.
+ *
+ * @param domain_name name of the domain to be verified
+ * @return true if domain is one of the trusted once or
+ *         false if otherwise
+ **/
+
+BOOL is_trusted_domain(const char* dom_name)
+{
+	DOM_SID trustdom_sid;
+	char *pass = NULL;
+	time_t lct;
+	BOOL ret;
+
+	/* if we are a DC, then check for a direct trust relationships */
+
+	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
+		become_root();
+		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
+		unbecome_root();
+		SAFE_FREE(pass);
+		if (ret)
+			return True;
+	}
+	else {
+		/* if winbindd is not up and we are a domain member) then we need to update the
+		   trustdom_cache ourselves */
+
+		if ( !winbind_ping() )
+			update_trustdom_cache();
+	}
+
+	/* now the trustdom cache should be available a DC could still
+	 * have a transitive trust so fall back to the cache of trusted
+	 * domains (like a domain member would use  */
+
+	if ( trustdom_cache_fetch(dom_name, &trustdom_sid) ) {
+		return True;
+	}
+
+	return False;
+}
 
