@@ -1042,8 +1042,8 @@ int open_pipe_sock(char *path)
  permissions, instead.
  ******************************************************************/
 int create_pipe_sock(const char *socket_dir,
-					const char *socket_name,
-					mode_t dir_perms)
+		     const char *socket_name,
+		     mode_t dir_perms)
 {
         struct sockaddr_un sunaddr;
         struct stat st;

@@ -1122,7 +1122,7 @@ gid_t nametogid(const char *name)
 	if ((p != name) && (*p == '\0'))
 		return g;
 
-	grp = getgrnam(name);
+	grp = sys_getgrnam(name);
 	if (grp)
 		return(grp->gr_gid);
 	return (gid_t)-1;
