@@ -496,11 +496,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
 	}
 
-	if (global_spnego_negotiated) {
-		DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
-		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
-	}
-
 	smb_bufsize = SVAL(inbuf,smb_vwv2);
 
 	if (Protocol < PROTOCOL_NT1) {
@@ -635,6 +630,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (!*user) {
 		pstrcpy(user,lp_guestaccount(-1));
 		guest = True;
+	} else {
+		if (global_spnego_negotiated) {
+			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
+			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		}
 	}
 
 	pstrcpy(current_user_info.smb_name,user);
