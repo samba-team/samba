@@ -1011,7 +1011,6 @@ if test "$enable_shared" = "yes"; then
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
-			AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-h "
