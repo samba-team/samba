@@ -171,9 +171,10 @@
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,False,__LINE__,__FILE__)
+#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,True,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,status,0,0,False,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,False,__LINE__,__FILE__)
 
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
