@@ -7,6 +7,8 @@ SHELL = /bin/sh
 srcdir = @srcdir@
 VPATH = @srcdir@
 
+top_builddir=../..
+
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
