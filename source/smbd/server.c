@@ -2799,8 +2799,8 @@ pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
 BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
 {
   extern int Client;
-  static char *inbuf = NULL;
-  static char *outbuf = NULL;
+  char *inbuf = NULL;
+  char *outbuf = NULL;
   files_struct *fsp = NULL;
   int fnum;
   time_t start_time;
