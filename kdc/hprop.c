@@ -101,7 +101,7 @@ open_socket(krb5_context context, const char *hostname, const char *port)
 
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
 
-krb5_error_code
+static krb5_error_code
 v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
     krb5_error_code ret;
