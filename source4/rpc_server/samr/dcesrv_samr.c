@@ -1155,7 +1155,87 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetAliasMembership *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+	struct ldb_message **res;
+	struct dom_sid *domain_sid;
+	int i, count = 0;
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	if (r->in.sids->num_sids > 0) {
+		const char *filter;
+		const char * const attrs[2] = { "objectSid", NULL };
+
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(|(grouptype=%s)(grouptype=%s))"
+					 "(objectclass=group)(|",
+					 ldb_hexstr(mem_ctx,
+						    GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+					 ldb_hexstr(mem_ctx,
+						    GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+		if (filter == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		for (i=0; i<r->in.sids->num_sids; i++) {
+			const char *sidstr, *memberdn;
+
+			sidstr = dom_sid_string(mem_ctx,
+						r->in.sids->sids[i].sid);
+			if (sidstr == NULL)
+				return NT_STATUS_NO_MEMORY;
+
+			memberdn = samdb_search_string(d_state->sam_ctx,
+						       mem_ctx, NULL, "dn",
+						       "(objectSid=%s)",
+						       sidstr);
+
+			if (memberdn == NULL)
+				continue;
+
+			filter = talloc_asprintf(mem_ctx, "%s(member=%s)",
+						 filter, memberdn);
+			if (filter == NULL)
+				return NT_STATUS_NO_MEMORY;
+		}
+
+		count = samdb_search(d_state->sam_ctx, mem_ctx,
+				     d_state->domain_dn, &res, attrs,
+				     "%s))", filter);
+		if (count < 0)
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	r->out.rids->count = 0;
+	r->out.rids->ids = talloc_array_p(mem_ctx, uint32_t, count);
+	if (r->out.rids->ids == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
+	if (domain_sid == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<count; i++) {
+		struct dom_sid *alias_sid;
+
+		alias_sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
+
+		if (alias_sid == NULL) {
+			DEBUG(0, ("Could not find objectSid\n"));
+			continue;
+		}
+
+		if (!dom_sid_in_domain(domain_sid, alias_sid))
+			continue;
+
+		r->out.rids->ids[r->out.rids->count] =
+			alias_sid->sub_auths[alias_sid->num_auths-1];
+		r->out.rids->count += 1;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -2717,7 +2797,68 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetGroupsForUser *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
+	struct ldb_message **res;
+	const char * const attrs[2] = { "objectSid", NULL };
+	struct samr_RidArray *array;
+	int count;
+
+	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
+
+	a_state = h->data;
+	d_state = a_state->domain_state;
+
+	count = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			     "(&(member=%s)(grouptype=%s)(objectclass=group))",
+			     a_state->account_dn,
+			     ldb_hexstr(mem_ctx, GTYPE_SECURITY_GLOBAL_GROUP));
+	if (count < 0)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	array = talloc_p(mem_ctx, struct samr_RidArray);
+	if (array == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	array->count = 0;
+	array->rid = NULL;
+
+	if (count > 0) {
+		int i;
+		struct dom_sid *domain_sid;
+
+		domain_sid = dom_sid_parse_talloc(mem_ctx,
+						  d_state->domain_sid);
+		array->rid = talloc_array_p(mem_ctx, struct samr_RidType,
+					    count);
+
+		if ((domain_sid == NULL) || (array->rid == NULL))
+			return NT_STATUS_NO_MEMORY;
+
+		for (i=0; i<count; i++) {
+			struct dom_sid *group_sid;
+
+			group_sid = samdb_result_dom_sid(mem_ctx, res[i],
+							 "objectSid");
+			if (group_sid == NULL) {
+				DEBUG(0, ("Couldn't find objectSid attrib\n"));
+				continue;
+			}
+
+			if (!dom_sid_in_domain(domain_sid, group_sid))
+				continue;
+
+			array->rid[array->count].rid =
+				group_sid->sub_auths[group_sid->num_auths-1];
+			array->rid[array->count].type = 7;
+			array->count += 1;
+		}
+	}
+
+	r->out.rids = array;
+
+	return NT_STATUS_OK;
 }
 
 
