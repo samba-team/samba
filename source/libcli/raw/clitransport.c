@@ -21,6 +21,10 @@
 
 #include "includes.h"
 
+
+static void smbcli_transport_process_recv(struct smbcli_transport *transport);
+static void smbcli_transport_process_send(struct smbcli_transport *transport);
+
 /*
   an event has happened on the socket
 */
@@ -29,7 +33,12 @@ static void smbcli_transport_event_handler(struct event_context *ev, struct fd_e
 {
 	struct smbcli_transport *transport = fde->private;
 
-	smbcli_transport_process(transport);
+	if (flags & EVENT_FD_READ) {
+		smbcli_transport_process_recv(transport);
+	}
+	if (flags & EVENT_FD_WRITE) {
+		smbcli_transport_process_send(transport);
+	}
 }
 
 /*
@@ -265,6 +274,7 @@ static void smbcli_transport_process_send(struct smbcli_transport *transport)
 				return;
 			}
 			smbcli_transport_dead(transport);
+			return;
 		}
 		req->out.buffer += ret;
 		req->out.size -= ret;
