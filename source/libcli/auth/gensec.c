@@ -106,6 +106,14 @@ static NTSTATUS gensec_start(struct gensec_security **gensec_security)
 	(*gensec_security)->mem_ctx = mem_ctx;
 	(*gensec_security)->ops = NULL;
 
+	ZERO_STRUCT((*gensec_security)->user);
+	ZERO_STRUCT((*gensec_security)->target);
+	ZERO_STRUCT((*gensec_security)->default_user);
+
+	(*gensec_security)->default_user.name = "";
+	(*gensec_security)->default_user.domain = talloc_strdup(mem_ctx, lp_workgroup());
+	(*gensec_security)->default_user.realm = talloc_strdup(mem_ctx, lp_realm());
+
 	(*gensec_security)->subcontext = False;
 	return NT_STATUS_OK;
 }
@@ -163,6 +171,9 @@ NTSTATUS gensec_server_start(struct gensec_security **gensec_security)
 static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security) 
 {
 	NTSTATUS status;
+	DEBUG(5, ("Starting GENSEC %smechanism %s\n", 
+		  gensec_security->subcontext ? "sub" : "", 
+		  gensec_security->ops->name));
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
 		if (gensec_security->ops->client_start) {
@@ -342,6 +353,61 @@ void gensec_end(struct gensec_security **gensec_security)
  *
  */
 
+NTSTATUS gensec_set_unparsed_username(struct gensec_security *gensec_security, const char *user) 
+{
+	char *p;
+	char *u = talloc_strdup(gensec_security->mem_ctx, user);
+	if (!u) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	p = strchr_m(user, '@');
+	
+	if (p) {
+		*p = '\0';
+		gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, u);
+		if (!gensec_security->user.name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		gensec_security->user.realm = talloc_strdup(gensec_security->mem_ctx, p+1);
+		if (!gensec_security->user.realm) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+	} 
+
+	p = strchr_m(user, '\\');
+	if (!p) {
+		p = strchr_m(user, '/');
+	}
+	
+	if (p) {
+		*p = '\0';
+		gensec_security->user.domain = talloc_strdup(gensec_security->mem_ctx, u);
+		if (!gensec_security->user.domain) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, p+1);
+		if (!gensec_security->user.name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		return NT_STATUS_OK;
+	} 
+	
+	gensec_security->user.name = u;
+	if (!gensec_security->user.name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a username on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
 NTSTATUS gensec_set_username(struct gensec_security *gensec_security, const char *user) 
 {
 	gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, user);
@@ -349,6 +415,19 @@ NTSTATUS gensec_set_username(struct gensec_security *gensec_security, const char
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a username on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+const char *gensec_get_username(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->user.name) {
+		return gensec_security->user.name;
+	}
+	return gensec_security->default_user.name;
 }
 
 /** 
@@ -363,6 +442,67 @@ NTSTATUS gensec_set_domain(struct gensec_security *gensec_security, const char *
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
+}
+
+/** 
+ * Return the NT domain for this GENSEC context
+ *
+ */
+
+const char *gensec_get_domain(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->user.domain) {
+		return gensec_security->user.domain;
+	} else if (gensec_security->user.realm) {
+		return gensec_security->user.realm;
+	}
+	return gensec_security->default_user.domain;
+}
+
+/** 
+ * Set a kerberos realm on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_realm(struct gensec_security *gensec_security, const char *realm) 
+{
+	gensec_security->user.realm = talloc_strdup(gensec_security->mem_ctx, realm);
+	if (!gensec_security->user.realm) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Return the Krb5 realm for this context
+ *
+ */
+
+const char *gensec_get_realm(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->user.realm) {
+		return gensec_security->user.realm;
+	} else if (gensec_security->user.domain) {
+		return gensec_security->user.domain;
+	}
+	return gensec_security->default_user.realm;
+}
+
+/** 
+ * Return a kerberos principal for this context, if one has been set 
+ *
+ */
+
+char *gensec_get_client_principal(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx) 
+{
+	const char *realm = gensec_get_realm(gensec_security);
+	if (realm) {
+		return talloc_asprintf(mem_ctx, "%s@%s", 
+				       gensec_get_username(gensec_security), 
+				       gensec_get_realm(gensec_security));
+	} else {
+		return talloc_strdup(mem_ctx, gensec_get_username(gensec_security));
+	}
 }
 
 /** 
@@ -382,20 +522,6 @@ NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
 }
 
 /** 
- * Set a kerberos realm on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
-NTSTATUS gensec_set_realm(struct gensec_security *gensec_security, const char *realm) 
-{
-	gensec_security->user.realm = talloc_strdup(gensec_security->mem_ctx, realm);
-	if (!gensec_security->user.realm) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
  * Set the target principal name (if already known) on a GENSEC context - ensures it is talloc()ed 
  *
  */
@@ -407,6 +533,53 @@ NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, co
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
+}
+
+/** 
+ * Set the target service (such as 'http' or 'host') on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service) 
+{
+	gensec_security->target.service = talloc_strdup(gensec_security->mem_ctx, service);
+	if (!gensec_security->target.service) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set the target hostname (suitable for kerberos resolutation) on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname) 
+{
+	gensec_security->target.hostname = talloc_strdup(gensec_security->mem_ctx, hostname);
+	if (!gensec_security->target.hostname) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+const char *gensec_get_target_hostname(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->target.hostname) {
+		return gensec_security->target.hostname;
+	}
+
+	/* TODO: Add a 'set sockaddr' call, and do a reverse lookup */
+	return NULL;
+}
+
+const char *gensec_get_target_service(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->target.service) {
+		return gensec_security->target.service;
+	}
+
+	return "host";
 }
 
 /** 

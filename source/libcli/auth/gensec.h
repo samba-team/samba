@@ -34,6 +34,7 @@ struct gensec_target {
 	const char *principal;
 	const char *hostname;
 	const struct sock_addr *addr;
+	const char *service;
 };
 		
 
@@ -79,6 +80,7 @@ struct gensec_security {
 	const struct gensec_security_ops *ops;
 	void *private_data;
 	struct gensec_user user;
+	struct gensec_user default_user;
 	struct gensec_target target;
 	enum gensec_role gensec_role;
 	BOOL subcontext;
