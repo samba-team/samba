@@ -267,7 +267,7 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 
 /* Display help on commands */
 
-static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_help(struct cli_state *cli, int argc, char **argv)
 {
 	struct cmd_list *tmp;
         struct cmd_set *tmp_set;
@@ -276,7 +276,7 @@ static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 
         if (argc > 2) {
                 printf("Usage: %s [command]\n", argv[0]);
-                return 0;
+                return NT_STATUS_OK;
         }
 
         /* Help on one command */
@@ -294,7 +294,7 @@ static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
                                         else
                                                 printf("No help for %s\n", tmp_set->name);
 
-                                        return 0;
+                                        return NT_STATUS_OK;
                                 }
 
                                 tmp_set++;
@@ -302,7 +302,7 @@ static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
                 }
 
                 printf("No such command: %s\n", argv[1]);
-                return 0;
+                return NT_STATUS_OK;
         }
 
         /* List all commands */
@@ -320,7 +320,7 @@ static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 		}
 	}
 
-	return 0;
+	return NT_STATUS_OK;
 }
 
 /* Change the debug level */
