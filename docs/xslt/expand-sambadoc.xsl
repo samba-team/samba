@@ -239,7 +239,7 @@
 					<xsl:attribute name="role"><xsl:text>latex</xsl:text></xsl:attribute>
 					<xsl:element name="imagedata">
 						<xsl:attribute name="fileref">
-							<xsl:text>howto/imagefiles/</xsl:text><xsl:value-of select="imagefile"/></xsl:attribute>
+							<xsl:value-of select="$imagedir"/><xsl:value-of select="imagefile"/></xsl:attribute>
 						<xsl:attribute name="scale">
 							<xsl:choose>
 								<xsl:when test="@scale != ''">

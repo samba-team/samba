@@ -325,17 +325,10 @@
 	selected hardware that is appropriate to the task.
 	</para>
 
-<figure id="chap05net">
-	<title>Network Topology &smbmdash; 500 User Network Using tdbsam passdb backend.</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/chap5-net.png" scale="80" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/chap5-net.png" scale="80" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="chap05net">
+		<description>Network Topology &smbmdash; 500 User Network Using tdbsam passdb backend.</description>
+		<imagefile scale="80">chap5-net.png</imagefile>
+	</image>
 
 	<sect2 id="ch5-dnshcp-setup">
 	<title>Installation of DHCP, DNS, and Samba Control Files</title>

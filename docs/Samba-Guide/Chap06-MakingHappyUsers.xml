@@ -574,17 +574,10 @@
 	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="ch6-LDAPdiag"/>.
 	</para>
 
-	<figure id="ch6-LDAPdiag">
-		<title>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/UNIX-Samba-and-LDAP.png" scale="70" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/UNIX-Samba-and-LDAP.png" scale="70" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="ch6-LDAPdiag">
+		<description>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</description>
+		<imagefile scale="70">UNIX-Samba-and-LDAP.png</imagefile>
+	</image>
 
 	<para><indexterm>
 	    <primary>security</primary>
@@ -965,19 +958,10 @@
 	that you will install additional file servers, and possibly additional BDCs.
 	</para>
 
-<figure id="chap6net">
-	<title>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend.</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata scale="70" scalefit="1"
-			  fileref="guide/images/chap6-net.png"/>
-		</imageobject>
-		<imageobject>
-			<imagedata scale="70" scalefit="1"
-			  fileref="guide/images/chap6-net.png"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="chap6net">
+		<description>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend.</description>
+		<imagefile scale="70">chap6-net.png</imagefile>
+	</image>
 
       <para><indexterm>
 	  <primary>SUSE Linux</primary>
@@ -3146,19 +3130,10 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 	</procedure>
 
-<figure id="XP-screen001">
-	<title>Windows XP Professional &smbmdash; User Shared Folders</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata scale="65" scalefit="1"
-			  fileref="guide/images/XP-screen001.png"/>
-		</imageobject>
-		<imageobject>
-			<imagedata scale="65" scalefit="1"
-			  fileref="guide/images/XP-screen001.png"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="XP-screen001">
+		<description>Windows XP Professional &smbmdash; User Shared Folders</description>
+		<imagefile scale="65">XP-screen001.png</imagefile>
+	</image>
 
 <table id="proffold">
 	<title>Default Profile Redirections</title>

@@ -496,17 +496,10 @@
 		The office network is built as shown in <link linkend="charitynet"/>.
 		</para>
 
-<figure id="charitynet">
-	<title>Charity Administration Office Network</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/Charity-Network.png" scale="100" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/Charity-Network.png" scale="100" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+		<image id="charitynet">
+			<description>Charity Administration Office Network</description>
+			<imagefile scale="100">Charity-Network.png</imagefile>
+		</image>
 
 		<procedure>
 		<title>Samba Server Configuration</title>
@@ -992,17 +985,10 @@ C:\WINDOWS: regedit ME-dpwc.reg
 		start of Samba configuration. The following prescriptive steps may now commence.
 		</para>
 
-		<figure id="acctingnet2">
-			<title>Accounting Office Network Topology</title>
-			<mediaobject>
-				<imageobject role="latex">
-					<imagedata fileref="guide/images/AccountingNetwork.png" scale="100" scalefit="1"/>
-				</imageobject>
-				<imageobject>
-					<imagedata fileref="guide/images/AccountingNetwork.png" scale="100" scalefit="1"/>
-				</imageobject>
-			</mediaobject>
-		</figure>
+		<image id="acctingnet2">
+			<description>Accounting Office Network Topology</description>
+			<imagefile scale="100">AccountingNetwork.png</imagefile>
+		</image>
 
 		<table id="acctingnet">
 			<title>Accounting Office Network Information</title>

@@ -1194,17 +1194,10 @@ example:
 	An example of the LAM login screen is provided in <link linkend="lam-login"/>.
 	</para>
 
-	<figure id="lam-login">
-		<title>The LDAP Account Manager Login Screen</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/lam-login.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/lam-login.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="lam-login">
+		<description>The LDAP Account Manager Login Screen</description>
+		<imagefile scale="50">lam-login.png</imagefile>
+	</image>
 
       <para><indexterm>
 	  <primary>LAM</primary>
@@ -1220,17 +1213,10 @@ example:
 	using LAM to add additional users and groups.
 	</para>
 
-	<figure id="lam-config">
-		<title>The LDAP Account Manager Configuration Screen</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/lam-config.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/lam-config.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="lam-config">
+		<description>The LDAP Account Manager Configuration Screen</description>
+		<imagefile scale="50">lam-config.png</imagefile>
+	</image>
 
       <para><indexterm>
 	  <primary>PDF</primary>
@@ -1254,17 +1240,10 @@ example:
 	finished editing simply press the <guimenu>Final</guimenu> button.
 	</para>
 
-	<figure id="lam-user">
-		<title>The LDAP Account Manager User Edit Screen</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/lam-users.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/lam-users.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="lam-user">
+		<description>The LDAP Account Manager User Edit Screen</description>
+		<imagefile scale="50">lam-users.png</imagefile>
+	</image>
 
 	<para>
 	The edit screen for groups is shown in <link linkend="lam-group"/>. As with the edit screen
@@ -1273,29 +1252,15 @@ example:
 	memberships. 
 	</para>
 
-	<figure id="lam-group">
-		<title>The LDAP Account Manager Group Edit Screen</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/lam-groups.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/lam-groups.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="lam-group">
+		<description>The LDAP Account Manager Group Edit Screen</description>
+		<imagefile scale="50">lam-groups.png</imagefile>
+	</image>
 
-	<figure id="lam-group-mem">
-		<title>The LDAP Account Manager Group Membership Edit Screen</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/lam-group-members.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/lam-group-members.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="lam-group-mem">
+		<description>The LDAP Account Manager Group Membership Edit Screen</description>
+		<imagefile scale="50">lam-group-members.png</imagefile>
+	</image>
 
       <para><indexterm>
 	  <primary>smbldap-tools</primary>
@@ -1307,17 +1272,10 @@ example:
 	will, in most cases, not be used.
 	</para>
 
-	<figure id="lam-host">
-		<title>The LDAP Account Manager Host Edit Screen</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/lam-hosts.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/lam-hosts.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="lam-host">
+		<description>The LDAP Account Manager Host Edit Screen</description>
+		<imagefile scale="50">lam-hosts.png</imagefile>
+	</image>
 
 	<para>
 	One aspect of LAM that may annoy some users is the way it forces certain conventions on

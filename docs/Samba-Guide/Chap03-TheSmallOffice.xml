@@ -302,17 +302,10 @@
 	by setting the sticky bit (set UID/GID) on the top-level directories.
 	</para>
 
-<figure id="acct2net">
-	<title>Abmas Accounting &smbmdash; 52 User Network Topology</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/acct2net.png" scale="100" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/acct2net.png" scale="100" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="acct2net">
+		<description>Abmas Accounting &smbmdash; 52 User Network Topology</description>
+		<imagefile scale="100">acct2net.png</imagefile>
+	</image>
 
 	<procedure>
 		<step><para>
