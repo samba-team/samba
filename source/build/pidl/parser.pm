@@ -448,7 +448,7 @@ sub ParseElementPullSwitch($$$$)
 		} else {
 			pidl "\t\tif (_level != $switch_var) {\n";
 		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
+		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\", _level);\t\t}\n";
 		if ($switch_var =~ /r->/) {
 			pidl "else { $switch_var = _level; }\n";
 		}
@@ -524,7 +524,7 @@ sub ParseElementPullScalar($$$)
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
-		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
+		pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
 		pidl "\tif (_ptr_$e->{NAME}) {\n";
 		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
 		pidl "\t} else {\n";
@@ -1209,7 +1209,7 @@ sub ParseFunctionElementPull($$)
 
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
-			pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
+			pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
 			pidl "\tif (_ptr_$e->{NAME}) {\n";
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";

@@ -66,6 +66,16 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32_t *v)
 }
 
 /*
+  parse a pointer
+*/
+NTSTATUS ndr_pull_ptr(struct ndr_pull *ndr, uint32_t *v)
+{
+	NTSTATUS status;
+	status = ndr_pull_uint32(ndr, v);
+	return status;
+}
+
+/*
   parse a uint64
 */
 NTSTATUS ndr_pull_uint64(struct ndr_pull *ndr, uint64_t *v)
