@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -383,9 +383,12 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 	
-#if 0
+	snprintf (client_name, sizeof(client_name),
+		  "%s.%s@%s",
+		  ad.pname, ad.pinst, ad.prealm);
 	ret = db_fetch4(ad.pname, ad.pinst, ad.prealm, &client);
-	if(ret){
+	if(ret != HDB_ERR_NOENTRY || 
+	   (ret == HDB_ERR_NOENTRY && strcmp(ad.prealm, v4_realm) == 0)) {
 	    char *s;
 	    s = kdc_log_msg(0, "Client not found in database: (krb4) "
 			    "%s.%s@%s: %s",
@@ -395,7 +398,6 @@ do_version4(unsigned char *buf,
 	    free(s);
 	    goto out2;
 	}
-#endif
 	
 	ret = db_fetch4(sname, sinst, v4_realm, &server);
 	if(ret){
@@ -407,7 +409,7 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 
-	ret = check_flags (NULL, NULL,
+	ret = check_flags (client, client_name,
 			   server, server_name,
 			   FALSE);
 	if (ret) {
@@ -427,6 +429,10 @@ do_version4(unsigned char *buf,
 
 	max_end = krb_life_to_time(ad.time_sec, ad.life);
 	max_end = min(max_end, krb_life_to_time(kdc_time, life));
+	if(server->max_life)
+	    max_end = min(max_end, kdc_time + server->max_life);
+	if(client && client->max_life)
+	    max_end = min(max_end, kdc_time + client->max_life);
 	life = min(life, krb_time_to_life(kdc_time, max_end));
 	
 	issue_time = kdc_time;
