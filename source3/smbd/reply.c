@@ -397,7 +397,8 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	if (check_name(name,conn)) {
 		if (VALID_STAT(sbuf) || vfs_stat(conn,name,&sbuf) == 0)
-			ok = S_ISDIR(sbuf.st_mode);
+			if (!(ok = S_ISDIR(sbuf.st_mode)))
+				errno = ENOTDIR;
 	}
 
 	if (!ok) {
