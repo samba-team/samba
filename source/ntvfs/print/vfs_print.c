@@ -34,6 +34,14 @@
 static NTSTATUS print_connect(struct ntvfs_module_context *ntvfs,
 			      struct smbsrv_request *req, const char *sharename)
 {
+	struct smbsrv_tcon *tcon = req->tcon;
+
+	tcon->fs_type = talloc_strdup(tcon, "NTFS");
+	NT_STATUS_HAVE_NO_MEMORY(tcon->fs_type);
+
+	tcon->dev_type = talloc_strdup(tcon, "LPT1:");
+	NT_STATUS_HAVE_NO_MEMORY(tcon->dev_type);
+
 	return NT_STATUS_OK;
 }
 
