@@ -23,7 +23,7 @@
 int net_lookup_usage(int argc, const char **argv)
 {
 	d_printf(
-"net lookup host HOSTNAME <type>\n\tgives IP for a hostname\n\n"\
+"  net lookup host HOSTNAME <type>\n\tgives IP for a hostname\n\n"\
 "\n");
 	return -1;
 }

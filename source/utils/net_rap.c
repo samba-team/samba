@@ -48,27 +48,6 @@ static int errmsg_not_implemented(void)
 	return 0;
 }
 
-int general_rap_usage(int argc, const char **argv)
-{
-
-	d_printf("Valid targets: choose one (none defaults to localhost)\n");
-	d_printf("\t-S or --server=<server>\t\tserver name\n");
-	d_printf("\t-I or --ipaddress=<ipaddr>\taddress of target server\n");
-	d_printf("\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n");
-
-	d_printf("\n");
-	d_printf("Valid miscellaneous options are:\n"); /* misc options */
-	d_printf("\t-p or --port=<port>\tconnection port on target server\n");
-	d_printf("\t-W or --myworkgroup=<wg>\tclient workgroup\n");
-	d_printf("\t-d or --debug=<level>\t\tdebug level (0-10)\n");
-	d_printf("\t-n or --myname=<name>\t\tclient name\n");
-	d_printf("\t-U or --user=<name>\t\tuser name\n");
-	d_printf("\t-s or --conf=<path>\t\tpathname of smb.conf file\n");
-	d_printf("\t-l or --long\t\t\tDisplay full information\n");
-	return -1;
-}
-
-
 int net_rap_file_usage(int argc, const char **argv)
 {
 	d_printf("net rap file [misc. options] [targets]\n"\
@@ -78,7 +57,7 @@ int net_rap_file_usage(int argc, const char **argv)
 	d_printf("net rap file CLOSE <id> [misc. options] [targets]\n"\
 		 "\tcloses specified file on target server\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -188,7 +167,7 @@ int net_rap_share_usage(int argc, const char **argv)
 	 "\tor"\
 	 "\nnet rap share CLOSE <sharename> [misc. options] [targets]"\
 	 "\n\tDeletes a share from a server (makes the export inactive)\n");
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	d_printf("\t-M or --maxusers=<num>\t\tmax users allowed for share\n");
@@ -306,7 +285,7 @@ int net_rap_session_usage(int argc, const char **argv)
 	 "\nnet rap session CLOSE <client_name> [misc. options] [targets]"\
 	 "\n\tDeletes (closes) a session from specified client to server\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
     
@@ -441,7 +420,7 @@ int net_rap_server_usage(int argc, const char **argv)
 	d_printf("\n\tIf domain is not specified, it uses the current"\
 		 " domain or workgroup as\n\tthe default.\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 		    
@@ -468,7 +447,7 @@ int net_rap_domain_usage(int argc, const char **argv)
 	d_printf("net rap domain [misc. options] [target]\n\tlists the"\
 		 " domains or workgroups visible on the current network\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -504,7 +483,7 @@ int net_rap_printq_usage(int argc, const char **argv)
 	 "\tdeletes the specified job number on the target server, or the\n"\
 	 "\tprinter queue if no job number is specified\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
         d_printf("\t-j or --jobid=<job id>\t\tjob id\n");
 
 	return -1;
@@ -636,7 +615,7 @@ int net_rap_user_usage(int argc, const char **argv)
 	d_printf("\nnet rap user ADD <name> [-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	return -1;
@@ -770,7 +749,7 @@ int net_rap_group_usage(int argc, const char **argv)
 	d_printf("\nnet rap group ADD <name> [-C comment] [misc. options]"\
 		 " [targets]\n\tCreate specified group\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	return -1;
@@ -866,7 +845,7 @@ int net_rap_groupmember_usage(int argc, const char **argv)
 	 "\nnet rap groupmember ADD <group> <user> [misc. options] [targets]"\
 	 "\n\t Add specified user to specified group\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -940,7 +919,7 @@ int net_rap_validate_usage(int argc, const char **argv)
 		 "\tValidate user and password to check whether they"\
 		 " can access target server or domain\n");
 
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -959,7 +938,7 @@ int net_rap_service_usage(int argc, const char **argv)
 	d_printf("\nnet rap service STOP <name> [misc. options] [targets]\n"\
 		 "\n\tStop named service on remote server\n");
     
-	general_rap_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -1047,38 +1026,27 @@ int net_rap_admin(int argc, const char **argv)
 int net_rap_usage(int argc, const char **argv)
 {
 	d_printf("  net rap domain \tto list domains \n"\
-		 "  net rap file \tto list open files on a server \n"\
+		 "  net rap file \t\tto list open files on a server \n"\
 		 "  net rap group \tto list user groups  \n"\
-		 "  net rap groupmember to list users in a group \n"\
-		 "  net rap password\t to change the password of a user\n"\
+		 "  net rap groupmember \tto list users in a group \n"\
+		 "  net rap password \tto change the password of a user\n"\
 		 "  net rap printq \tto list the print queues on a server\n"\
 		 "  net rap server \tto list servers in a domain\n"\
 		 "  net rap session \tto list clients with open sessions to a server\n"\
 		 "  net rap share \tto list shares exported by a server\n"\
-		 "  net rap user \tto list users\n"\
+		 "  net rap user \t\tto list users\n"\
 		 "  net rap validate \tto check whether a user and the corresponding password are valid\n"\
 		 "  net rap help\n"\
 		 "\nType \"net help <option>\" to get more information on that option\n\n");
 
-	general_rap_usage(argc, argv);
-	return -1;
-}
-
-int rap_help_usage(int argc, const char **argv)
-{
-	d_printf("\n"\
-		 "Usage: net rap help <function>\n"\
-		 "\n"\
-		 "Valid functions are:\n"\
-		 "  FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP\n"\
-		 "  VALIDATE GROUPMEMBER ADMIN SERVICE PASSWORD\n");
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
 /*
-  handle "net help rap *" subcommands
+  handle "net rap help *" subcommands
 */
-static int net_rap_help(int argc, const char **argv)
+int net_rap_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"FILE", net_rap_file_usage},
@@ -1096,7 +1064,7 @@ static int net_rap_help(int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{NULL, NULL}};
 
-	return net_run_function(argc, argv, func, rap_help_usage);
+	return net_run_function(argc, argv, func, net_rap_usage);
 }
 
 /* Entry-point for all the RAP functions. */
