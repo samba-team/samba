@@ -96,7 +96,7 @@ static BOOL test_one(struct smbcli_state *cli, const char *name)
 	} else {
 		TDB_DATA namedata;
 		/* store it for later */
-		namedata.dptr = name;
+		namedata.dptr = discard_const_p(char, name);
 		namedata.dsize = strlen(name)+1;
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}
@@ -148,7 +148,7 @@ static void gen_name(char *name)
 }
 
 
-BOOL torture_mangle(int dummy)
+BOOL torture_mangle(void)
 {
 	extern int torture_numops;
 	static struct smbcli_state *cli;

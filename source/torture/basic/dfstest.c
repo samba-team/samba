@@ -29,7 +29,7 @@ static const char *sockops="TCP_NODELAY";
 /*
  checks for correct DFS cluster support
  */
-BOOL torture_dfs_basic(int dummy)
+BOOL torture_dfs_basic(void)
 {
 	int current_server = 0;
 	char *fname[DFS_FILE_COUNT];
@@ -357,7 +357,7 @@ void dfs_list_fn(file_info *finfo, const char *name, void* parmsp)
 #define DFS_RANDOM_FILE_COUNT 10
 #define DFS_RANDOM_DIR_COUNT 3
 #define DFS_RANDOM_DIR_LEVELS 2  
-BOOL torture_dfs_random(int dummy)
+BOOL torture_dfs_random(void)
 {
 	char *fname[DFS_RANDOM_FILE_COUNT];
 	int file_server[DFS_RANDOM_FILE_COUNT];

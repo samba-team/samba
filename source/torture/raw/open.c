@@ -973,7 +973,7 @@ done:
 
 /* basic testing of all RAW_OPEN_* calls 
 */
-BOOL torture_raw_open(int dummy)
+BOOL torture_raw_open(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

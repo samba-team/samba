@@ -168,7 +168,7 @@ done:
 /* 
    basic testing of unlink calls
 */
-BOOL torture_raw_unlink(int dummy)
+BOOL torture_raw_unlink(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

@@ -254,7 +254,7 @@ static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 	test_scan_call(mem_ctx, iface, 2);
 }
 
-BOOL torture_rpc_autoidl(int dummy)
+BOOL torture_rpc_autoidl(void)
 {
 	TALLOC_CTX *mem_ctx;
 	const struct dcerpc_interface_table *iface;

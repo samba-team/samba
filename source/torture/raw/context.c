@@ -400,7 +400,7 @@ done:
 /* 
    basic testing of session/tree context calls
 */
-BOOL torture_raw_context(int dummy)
+BOOL torture_raw_context(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

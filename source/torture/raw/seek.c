@@ -231,7 +231,7 @@ done:
 /* 
    basic testing of seek calls
 */
-BOOL torture_raw_seek(int dummy)
+BOOL torture_raw_seek(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

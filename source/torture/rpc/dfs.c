@@ -130,7 +130,7 @@ static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-
+#if 0
 static BOOL test_Add(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -161,9 +161,9 @@ static BOOL test_Add(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return True;
 }
+#endif
 
-
-BOOL torture_rpc_dfs(int dummy)
+BOOL torture_rpc_dfs(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

@@ -83,7 +83,7 @@ static BOOL test_NetWkstaTransportEnum(struct dcerpc_pipe *p,
 
 
 
-BOOL torture_rpc_wkssvc(int dummy)
+BOOL torture_rpc_wkssvc(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

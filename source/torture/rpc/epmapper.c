@@ -248,7 +248,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_rpc_epmapper(int dummy)
+BOOL torture_rpc_epmapper(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

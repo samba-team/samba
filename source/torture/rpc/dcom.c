@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-BOOL torture_rpc_dcom(int dummy)
+BOOL torture_rpc_dcom(void)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
