@@ -108,18 +108,19 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	/* Ask LSA to convert the sid to a name */
 
-	if (open_policy_hnd() &&
+	if (!open_policy_hnd() ||
 	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
-				&num_names) == NT_STATUS_NOPROBLEMO) {
-
-		/* Converted OK */
-
-		fstrcpy(str, names[0]);
-
-		safe_free(names[0]);
-		safe_free(names);
-		safe_free(types);
+				&num_names) != NT_STATUS_NOPROBLEMO) {
+		return;
 	}
+
+	/* Converted OK */
+	
+	fstrcpy(str, names[0]);
+	
+	safe_free(names[0]);
+	safe_free(names);
+	safe_free(types);
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -130,14 +131,11 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	int num_sids;
 	BOOL result = True;
 	
-	/* Short cut */
-
 	if (strncmp(str, "S-", 2) == 0) {
-		result = string_to_sid(sid, str);
-		goto done;
+		return string_to_sid(sid, str);
 	}
 
-	if (open_policy_hnd() &&
+	if (!open_policy_hnd() ||
 	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
 				 &num_sids) != NT_STATUS_NOPROBLEMO) {
 		result = string_to_sid(sid, str);
@@ -712,7 +710,7 @@ struct cli_state *connect_one(char *share)
 static void usage(void)
 {
 	printf(
-"Usage: smbcacls //server1/share1 filename -U username [options]\n\
+"Usage: smbcacls //server1/share1 filename [options]\n\
 \n\
 \t-D <acls>               delete an acl\n\
 \t-M <acls>               modify an acl\n\
@@ -753,7 +751,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	dbf = stderr;
 
-	if (argc < 4 || argv[1][0] == '-') {
+	if (argc < 3 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
@@ -776,6 +774,14 @@ You can string acls together with spaces, commas or newlines\n\
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
+
+		if ((p=strchr(username,'%'))) {
+			*p = 0;
+			pstrcpy(password,p+1);
+			got_pass = True;
+			memset(strchr(getenv("USER"), '%') + 1, 'X',
+			       strlen(password));
+		}
 	}
 
 	seed = time(NULL);
@@ -848,10 +854,14 @@ You can string acls together with spaces, commas or newlines\n\
 		exit(1);
 	}
 
+	/* Make connection to server */
+
 	if (!test_args) {
 		cli = connect_one(share);
 		if (!cli) exit(1);
 	}
+
+	/* Perform requested action */
 
 	if (change_mode != REQUEST_NONE) {
 		owner_set(cli, change_mode, filename, owner_username);
