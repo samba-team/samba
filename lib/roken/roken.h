@@ -71,4 +71,8 @@ char *getstr(char *id, char **cpp);
 #include <pwd.h>
 struct passwd *k_getpwnam (char *user);
 
+#include <time.h>
+#include <sys/time.h>
+time_t tm2time (struct tm tm, int local);
+
 #endif /*  __ROKEN_H__ */
