@@ -133,7 +133,7 @@ extern des_cblock iv;
 #define USERNAME_SZ 16
 #define COMMAND_SZ 1024
 
-#define RSH_BUFSIZ 10240
+#define RSH_BUFSIZ (16 * 1024)
 
 #define PATH_RSH BINDIR "/rsh"
 
