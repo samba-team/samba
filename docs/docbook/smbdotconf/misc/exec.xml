@@ -1,0 +1,5 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="EXEC"/>exec (S)</term>
+		<listitem><para>This is a synonym for <link linkend="PREEXEC">
+		<parameter moreinfo="none">preexec</parameter></link>.</para></listitem>
+		</samba:parameter>

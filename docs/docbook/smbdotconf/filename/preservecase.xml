@@ -1,0 +1,13 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PRESERVECASE"/>preserve case (S)</term>
+		<listitem><para> This controls if new filenames are created
+		with the case that the client passes, or if they are forced to 
+		be the <link linkend="DEFAULTCASE"><parameter moreinfo="none">default case
+		</parameter></link>.</para>
+
+		<para>Default: <command moreinfo="none">preserve case = yes</command></para>
+
+		<para>See the section on <link linkend="NAMEMANGLINGSECT">NAME 
+		MANGLING</link> for a fuller discussion.</para>
+		</listitem>
+		</samba:parameter>

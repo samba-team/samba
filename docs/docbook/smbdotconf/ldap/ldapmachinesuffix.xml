@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LDAPMACHINESUFFIX"/>ldap machine suffix (G)</term>
+		<listitem><para>It specifies where machines should be 
+                added to the ldap tree.
+		</para>
+		
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</samba:parameter>

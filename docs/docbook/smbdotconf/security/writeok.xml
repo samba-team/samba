@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WRITEOK"/>write ok (S)</term>
+		<listitem><para>Inverted synonym for <link linkend="READONLY"><parameter moreinfo="none">
+		read only</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

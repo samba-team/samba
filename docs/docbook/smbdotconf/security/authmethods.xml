@@ -1,0 +1,16 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="AUTHMETHODS"/>auth methods (G)</term>
+		<listitem><para>This option allows the administrator to chose what
+                authentication methods <command moreinfo="none">smbd</command> will use when authenticating
+                a user.  This option defaults to sensible values based on <link linkend="SECURITY"><parameter moreinfo="none">
+		security</parameter></link>.
+
+                Each entry in the list attempts to authenticate the user in turn, until
+                the user authenticates.  In practice only one method will ever actually 
+                be able to complete the authentication.
+		</para>
+
+		<para>Default: <command moreinfo="none">auth methods = &lt;empty string&gt;</command></para>
+		<para>Example: <command moreinfo="none">auth methods = guest sam ntdomain</command></para>
+		</listitem>
+		</samba:parameter>

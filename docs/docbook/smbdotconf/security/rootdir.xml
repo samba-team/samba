@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="ROOTDIR"/>root dir (G)</term>
+		<listitem><para>Synonym for <link linkend="ROOTDIRECTORY">
+		<parameter moreinfo="none">root directory&quot;</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

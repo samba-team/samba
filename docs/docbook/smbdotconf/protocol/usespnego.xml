@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="USESPNEGO"/>use spnego (G)</term>
+		<listitem><para> This variable controls controls whether samba will try 
+		to use Simple and Protected NEGOciation (as specified by rfc2478) with 
+		WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism. 
+		Unless further issues are discovered with our SPNEGO
+		implementation, there is no reason this should ever be
+		disabled.</para>
+		<para>Default:  <emphasis>use spnego = yes</emphasis></para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="DISABLENETBIOS"/>disable netbios (G)</term>
+		<listitem><para>Enabling this parameter will disable netbios support
+		in Samba. Netbios is the only available form of browsing in 
+		all windows versions except for 2000 and XP. </para>
+
+		<para>Note that clients that only support netbios won't be able to 
+		see your samba server when netbios support is disabled.
+		</para>
+
+		<para>Default: <command moreinfo="none">disable netbios = no</command></para>
+		<para>Example: <command moreinfo="none">disable netbios = yes</command></para>
+		</listitem>
+		</samba:parameter>

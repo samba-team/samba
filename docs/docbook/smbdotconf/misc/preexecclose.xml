@@ -1,0 +1,9 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PREEXECCLOSE"/>preexec close (S)</term>
+		<listitem><para>This boolean option controls whether a non-zero 
+		return code from <link linkend="PREEXEC"><parameter moreinfo="none">preexec
+		</parameter></link> should close the service being connected to.</para>
+
+		<para>Default: <command moreinfo="none">preexec close = no</command></para>
+		</listitem>
+		</samba:parameter>

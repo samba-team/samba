@@ -1,0 +1,7 @@
+<!ELEMENT  parameter  (#PCDATA)                  >
+<!ATTLIST  parameter  name      CDATA  #REQUIRED >
+<!ATTLIST  parameter  context   CDATA  #REQUIRED >
+<!ATTLIST  parameter  basic     CDATA  #REQUIRED >
+<!ATTLIST  parameter  wizard    CDATA  #REQUIRED >
+<!ATTLIST  parameter  advanced  CDATA  #REQUIRED >
+<!ATTLIST  parameter  developer CDATA  #REQUIRED >

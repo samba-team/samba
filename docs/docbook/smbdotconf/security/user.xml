@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="USER"/>user (S)</term>
+		<listitem><para>Synonym for <link linkend="USERNAME"><parameter moreinfo="none">
+		username</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

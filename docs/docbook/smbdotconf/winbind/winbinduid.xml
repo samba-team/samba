@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WINBINDUID"/>winbind uid (G)</term>
+		<listitem><para>The winbind gid parameter specifies the range of group 
+		ids that are allocated by the <citerefentry><refentrytitle>winbindd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> daemon.  This range of ids should have no 
+		existing local or NIS users within it as strange conflicts can 
+		occur otherwise.</para>
+
+		<para>Default: <command moreinfo="none">winbind uid = &lt;empty string&gt;
+		</command></para>
+		
+		<para>Example: <command moreinfo="none">winbind uid = 10000-20000</command></para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,12 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="VFSPATH"/>vfs path (S)</term>
+		<listitem><para>This parameter specifies the directory
+		to look in for vfs modules. The name of every <command moreinfo="none">vfs object
+		</command> will be prepended by this directory
+		</para>
+
+		<para>Default: <command moreinfo="none">vfs path = </command></para>
+		<para>Example: <command moreinfo="none">vfs path = /usr/lib/samba/vfs</command></para>
+
+		</listitem>
+		</samba:parameter>

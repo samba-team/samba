@@ -1,0 +1,10 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="RESTRICTANONYMOUS"/>restrict anonymous (G)</term>
+		<listitem><para>This is a integer parameter, and
+		mirrors as much as possible the functinality the
+		<constant>RestrictAnonymous</constant>
+                registry key does on NT/Win2k.  </para>
+
+		<para>Default: <command moreinfo="none">restrict anonymous = 0</command></para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,5 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LOCKDIR"/>lock dir (G)</term>
+		<listitem><para>Synonym for <link linkend="LOCKDIRECTORY"><parameter moreinfo="none">
+		lock directory</parameter></link>.</para></listitem>
+		</samba:parameter>

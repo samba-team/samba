@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="TIMEOFFSET"/>time offset (G)</term>
+		<listitem><para>This parameter is a setting in minutes to add 
+		to the normal GMT to local time conversion. This is useful if 
+		you are serving a lot of PCs that have incorrect daylight 
+		saving time handling.</para>
+		
+		<para>Default: <command moreinfo="none">time offset = 0</command></para>
+		<para>Example: <command moreinfo="none">time offset = 60</command></para>
+		</listitem>
+		</samba:parameter>

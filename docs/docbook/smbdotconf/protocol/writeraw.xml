@@ -1,0 +1,9 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WRITERAW"/>write raw (G)</term>
+		<listitem><para>This parameter controls whether or not the server 
+		will support raw write SMB's when transferring data from clients. 
+		You should never need to change this parameter.</para>
+
+		<para>Default: <command moreinfo="none">write raw = yes</command></para>
+		</listitem>
+		</samba:parameter>

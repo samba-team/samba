@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="UNICODE"/>unicode (G)</term>
+		<listitem><para>Specifies whether Samba should try 
+		to use unicode on the wire by default. Note: This does NOT
+		mean that samba will assume that the unix machine uses unicode!
+		</para>
+
+		<para>Default: <command moreinfo="none">unicode = yes</command></para>
+
+		</listitem>
+		</samba:parameter>

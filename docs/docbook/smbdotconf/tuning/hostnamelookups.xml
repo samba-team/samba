@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="HOSTNAMELOOKUPS"/>hostname lookups (G)</term>
+		<listitem><para>Specifies whether samba should use (expensive)
+		hostname lookups or use the ip addresses instead. An example place
+		where hostname lookups are currently used is when checking 
+		the <command moreinfo="none">hosts deny</command> and <command moreinfo="none">hosts allow</command>.
+		</para>
+
+		<para>Default: <command moreinfo="none">hostname lookups = yes</command></para>
+
+		<para>Example: <command moreinfo="none">hostname lookups = no</command></para>
+
+		</listitem>
+		</samba:parameter>

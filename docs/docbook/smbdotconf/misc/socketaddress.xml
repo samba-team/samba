@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="SOCKETADDRESS"/>socket address (G)</term>
+		<listitem><para>This option allows you to control what 
+		address Samba will listen for connections on. This is used to 
+		support multiple virtual interfaces on the one server, each 
+		with a different configuration.</para>
+		
+		<para>By default Samba will accept connections on any 
+		address.</para>
+
+		<para>Example: <command moreinfo="none">socket address = 192.168.2.20</command>
+		</para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,10 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="SMBPORTS"/>smb ports (G)</term>
+		<listitem><para>Specifies which ports the server should listen on
+		for SMB traffic.
+		</para>
+
+		<para>Default: <command moreinfo="none">smb ports = 445 139</command></para>
+
+		</listitem>
+		</samba:parameter>

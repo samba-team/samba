@@ -1,0 +1,9 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="STATCACHESIZE"/>stat cache size (G)</term>
+		<listitem><para>This parameter determines the number of 
+		entries in the <parameter moreinfo="none">stat cache</parameter>.  You should 
+		never need to change this parameter.</para>
+		
+		<para>Default: <command moreinfo="none">stat cache size = 50</command></para>
+		</listitem>
+		</samba:parameter>

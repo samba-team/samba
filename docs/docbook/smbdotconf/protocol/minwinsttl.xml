@@ -1,0 +1,13 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="MINWINSTTL"/>min wins ttl (G)</term>
+		<listitem><para>This option tells <citerefentry><refentrytitle>nmbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry>
+		when acting as a WINS server (<link linkend="WINSSUPPORT"><parameter moreinfo="none">
+		wins support = yes</parameter></link>) what the minimum 'time to live' 
+		of NetBIOS names that <command moreinfo="none">nmbd</command> will grant will be (in 
+		seconds). You should never need to change this parameter.  The default 
+		is 6 hours (21600 seconds).</para>
+
+		<para>Default: <command moreinfo="none">min wins ttl = 21600</command></para>
+		</listitem>
+		</samba:parameter>

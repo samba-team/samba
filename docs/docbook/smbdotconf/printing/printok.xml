@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PRINTOK"/>print ok (S)</term>
+		<listitem><para>Synonym for <link linkend="PRINTABLE">
+		<parameter moreinfo="none">printable</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

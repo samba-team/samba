@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LANMANAUTH"/>lanman auth (G)</term>
+		<listitem><para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> will attempt to authenticate users 
+		using the LANMAN password hash.	If disabled, only clients which support NT 
+		password hashes (e.g. Windows NT/2000 clients, smbclient, etc... but not 
+		Windows 95/98 or the MS DOS network client) will be able to connect to the Samba host.</para>
+		
+		<para>Default : <command moreinfo="none">lanman auth = yes</command></para>
+		</listitem>
+		</samba:parameter>

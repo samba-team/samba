@@ -1,0 +1,42 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="SHUTDOWNSCRIPT"/>shutdown script (G)</term>
+		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+		This a full path name to a script called by
+		<ulink url="smbd.8.html"><command moreinfo="none">smbd(8)</command></ulink> that
+		should start a shutdown procedure.</para>
+
+		<para>This command will be run as the user connected to the
+		server.</para>
+
+		<para>%m %t %r %f parameters are expanded</para>
+		<para><parameter moreinfo="none">%m</parameter> will be substituted with the
+		shutdown message sent to the server.</para>
+		<para><parameter moreinfo="none">%t</parameter> will be substituted with the
+		number of seconds to wait before effectively starting the
+		shutdown procedure.</para>
+		<para><parameter moreinfo="none">%r</parameter> will be substituted with the
+		switch <emphasis>-r</emphasis>. It means reboot after shutdown
+		for NT.
+		</para>
+		<para><parameter moreinfo="none">%f</parameter> will be substituted with the
+		switch <emphasis>-f</emphasis>. It means force the shutdown
+		even if applications do not respond for NT.</para>
+
+		<para>Default: <emphasis>None</emphasis>.</para>
+		<para>Example: <command moreinfo="none">abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</command></para>
+		<para>Shutdown script example:
+<programlisting format="linespecific">
+#!/bin/bash
+		
+$time=0
+let &quot;time/60&quot;
+let &quot;time++&quot;
+
+/sbin/shutdown $3 $4 +$time $1 &amp;
+</programlisting>
+		Shutdown does not return so we need to launch it in background.
+		</para>
+
+		<para>See also <link linkend="ABORTSHUTDOWNSCRIPT"><parameter moreinfo="none">abort shutdown script</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

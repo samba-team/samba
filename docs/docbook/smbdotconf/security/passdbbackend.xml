@@ -1,0 +1,91 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PASSDBBACKEND"/>passdb backend (G)</term>
+		<listitem><para>This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
+                smbpasswd and tdbsam to be used without a recompile. 
+                Multiple backends can be specified, separated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+                Experimental backends must still be selected
+                (eg --with-tdbsam) at configure time.
+		</para>
+
+                <para>This parameter is in two parts, the backend's name, and a 'location'
+                string that has meaning only to that particular backed.  These are separated
+                by a : character.</para>
+
+                <para>Available backends can include:
+                <itemizedlist>
+			<listitem><para><command moreinfo="none">smbpasswd</command> - The default smbpasswd
+                        backend.  Takes a path to the smbpasswd file as an optional argument.</para></listitem>
+			
+			<listitem><para><command moreinfo="none">smbpasswd_nua</command> - The smbpasswd
+                        backend, but with support for 'not unix accounts'.  
+                        Takes a path to the smbpasswd file as an optional argument.</para>
+                        <para>See also <link linkend="NONUNIXACCOUNTRANGE">
+                        <parameter moreinfo="none">non unix account range</parameter></link></para></listitem>
+
+			<listitem><para><command moreinfo="none">tdbsam</command> - The TDB based password storage
+                        backend.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
+                        in the <link linkend="PRIVATEDIR">
+                        <parameter moreinfo="none">private dir</parameter></link> directory.</para></listitem>
+			
+			<listitem><para><command moreinfo="none">tdbsam_nua</command> - The TDB based password storage
+                        backend, with non unix account support.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
+                        in the <link linkend="PRIVATEDIR">
+                        <parameter moreinfo="none">private dir</parameter></link> directory.</para>
+                        <para>See also <link linkend="NONUNIXACCOUNTRANGE">
+                        <parameter moreinfo="none">non unix account range</parameter></link></para></listitem>
+			
+			<listitem><para><command moreinfo="none">ldapsam</command> - The LDAP based passdb 
+                        backend.  Takes an LDAP URL as an optional argument (defaults to 
+                        <command moreinfo="none">ldap://localhost</command>)</para></listitem>
+			
+			<listitem><para><command moreinfo="none">ldapsam_nua</command> - The LDAP based passdb 
+                        backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
+                        <command moreinfo="none">ldap://localhost</command>)</para>
+
+		        <para>Note:  In this module, any account without a matching POSIX account is regarded
+                        as 'non unix'.  </para>
+
+			<para>See also <link linkend="NONUNIXACCOUNTRANGE">
+                        <parameter moreinfo="none">non unix account
+                        range</parameter></link></para>
+	                
+		        <para>LDAP connections should be secured where
+                        possible.  This may be done using either
+                        Start-TLS (see <link linkend="LDAPSSL">
+                        <parameter moreinfo="none">ldap ssl</parameter></link>) or by
+                        specifying <parameter moreinfo="none">ldaps://</parameter> in
+                        the URL argument.  
+                        </para></listitem>
+			
+			<listitem><para><command moreinfo="none">nisplussam</command> - The NIS+ based passdb backend. Takes name NIS domain as an optional argument. Only works with sun NIS+ servers. </para></listitem>
+			
+			<listitem><para><command moreinfo="none">plugin</command> - Allows Samba to load an 
+                        arbitary passdb backend from the .so specified as a compulsary argument.
+                        </para>
+
+                        <para>Any characters after the (optional) second : are passed to the plugin
+                        for its own processing</para>
+                        </listitem>
+		
+			<listitem><para><command moreinfo="none">unixsam</command> - Allows samba to map all (other) available unix users</para>
+
+			<para>This backend uses the standard unix database for retrieving users. Users included 
+                        in this pdb are NOT listed in samba user listings and users included in this pdb won't be 
+                        able to login. The use of this backend is to always be able to display the owner of a file 
+                        on the samba server - even when the user doesn't have a 'real' samba account in one of the 
+                        other passdb backends.
+			</para>
+
+			<para>This backend should always be the last backend listed, since it contains all users in 
+                        the unix passdb and might 'override' mappings if specified earlier. It's meant to only return 
+                        accounts for users that aren't covered by the previous backends.</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>Default: <command moreinfo="none">passdb backend = smbpasswd unixsam</command></para>
+		<para>Example: <command moreinfo="none">passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd unixsam</command></para>
+		<para>Example: <command moreinfo="none">passdb backend = ldapsam_nua:ldaps://ldap.example.com unixsam</command></para>
+		<para>Example: <command moreinfo="none">passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb</command></para>
+		</listitem>
+		</samba:parameter>

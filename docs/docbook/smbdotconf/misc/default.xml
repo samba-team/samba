@@ -1,0 +1,5 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="DEFAULT"/>default (G)</term>
+		<listitem><para>A synonym for <link linkend="DEFAULTSERVICE"><parameter moreinfo="none">
+		default service</parameter></link>.</para></listitem>
+		</samba:parameter>

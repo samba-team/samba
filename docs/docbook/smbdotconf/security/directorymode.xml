@@ -1,0 +1,5 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="DIRECTORYMODE"/>directory mode (S)</term>
+		<listitem><para>Synonym for <link linkend="DIRECTORYMASK"><parameter moreinfo="none">
+		directory mask</parameter></link></para></listitem>
+		</samba:parameter>

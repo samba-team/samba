@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LOGFILE"/>log file (G)</term>
+		<listitem><para>This option allows you to override the name 
+		of the Samba log file (also known as the debug file).</para>
+
+		<para>This option takes the standard substitutions, allowing 
+		you to have separate log files for each user or machine.</para>
+
+		<para>Example: <command moreinfo="none">log file = /usr/local/samba/var/log.%m
+		</command></para></listitem>
+		</samba:parameter>

@@ -1,0 +1,12 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="DOMAINLOGONS"/>domain logons (G)</term>
+		<listitem><para>If set to <constant>yes</constant>, the Samba server will serve 
+		Windows 95/98 Domain logons for the <link linkend="WORKGROUP">
+		<parameter moreinfo="none">workgroup</parameter></link> it is in. Samba 2.2
+		has limited capability to act as a domain controller for Windows 
+		NT 4 Domains.  For more details on setting up this feature see 
+		the Samba-PDC-HOWTO included in the <filename moreinfo="none">htmldocs/</filename>
+		directory shipped with the source code.</para>
+		
+		<para>Default: <command moreinfo="none">domain logons = no</command></para></listitem>
+		</samba:parameter>
