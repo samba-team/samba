@@ -434,27 +434,26 @@ struct srvsvc_NetShareCtr1004 {
 	struct srvsvc_NetShare1004 *array;
 };
 
-union srvsvc_NetShareCtr {
+union srvsvc_NetShareUnion {
 /* [case(0)] */ struct srvsvc_NetShareCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetShareCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetShareCtr2 *ctr2;
 /* [case(501)] */ struct srvsvc_NetShareCtr501 *ctr501;
 /* [case(502)] */ struct srvsvc_NetShareCtr502 *ctr502;
-/* [case(1004)] */ struct srvsvc_NetShareCtr1004 *ctr1004;
 /* [case(default)] */ };
 
 struct srvsvc_NetShareEnumAll {
 	struct {
 		const char *server_unc;
 		uint32 level;
-		union srvsvc_NetShareCtr ctr;
-		uint32 preferred_len;
+		union srvsvc_NetShareUnion ctr;
+		uint32 max_buffer;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
 		uint32 level;
-		union srvsvc_NetShareCtr ctr;
+		union srvsvc_NetShareUnion ctr;
 		uint32 totalentries;
 		uint32 *resume_handle;
 		WERROR result;
@@ -783,14 +782,14 @@ struct srvsvc_NetShareEnum {
 	struct {
 		const char *server_unc;
 		uint32 level;
-		union srvsvc_NetShareCtr ctr;
+		union srvsvc_NetShareUnion ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
 		uint32 level;
-		union srvsvc_NetShareCtr ctr;
+		union srvsvc_NetShareUnion ctr;
 		uint32 totalentries;
 		uint32 *resume_handle;
 		WERROR result;
