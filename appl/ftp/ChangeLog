@@ -1,3 +1,7 @@
+2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftpd/ftpd.c: make sure argument to is* functions are unsigned
+	
 2003-04-06  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftpd/ftpd.8: s/kerberos/Kerberos/
