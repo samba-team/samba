@@ -1464,7 +1464,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 
 		DEBUG(4,("using default secdesc for %s\n", printername));
 
-		if ((*secdesc_ctr = construct_default_printer_sdb()))
+		if (!(*secdesc_ctr = construct_default_printer_sdb()))
 			return False;
 
 		return True;
