@@ -13,6 +13,7 @@ libkrb5_a_SOURCES = \
 	build_ap_req.c \
 	build_auth.c \
 	cache.c \
+	changepw.c \
 	checksum.c \
 	config_file.c \
 	constants.c \
