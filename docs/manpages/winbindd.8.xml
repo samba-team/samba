@@ -39,10 +39,11 @@
 	<para><command>winbindd</command> is a daemon that provides 
 	a number of services to the Name Service Switch capability found
 	in most modern C libraries, to arbitary applications via PAM
-	and <program>ntlm_auth</program> and to Samba itself.</para>
+	and <command>ntlm_auth</command> and to Samba itself.</para>
 
     <para>Even if winbind is not used for nsswitch, it still provides a
-    service to <program>smbd</program>, ntlm_auth and the PAM modules, by managing connections to
+    service to <command>smbd</command>, <command>ntlm_auth</command>
+    and the <command>pam_winbind.so</command> PAM module, by managing connections to
     domain controllers.  In this configuraiton the
     <smbconfoption><name>idmap uid</name></smbconfoption> and
     <smbconfoption><name>idmap gid</name></smbconfoption>
