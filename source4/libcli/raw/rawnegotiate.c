@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    SMB client negotiate context management functions
-   Copyright (C) Andrew Tridgell 1994-1998
+
+   Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
@@ -40,10 +42,11 @@ static const struct {
 	{PROTOCOL_NT1,"NT LM 0.12"},
 };
 
-/****************************************************************************
- Send a negprot command.
-****************************************************************************/
-struct smbcli_request *smb_negprot_send(struct smbcli_transport *transport, int maxprotocol)
+/*
+  Send a negprot command.
+*/
+struct smbcli_request *smb_raw_negotiate_send(struct smbcli_transport *transport, 
+					      int maxprotocol)
 {
 	struct smbcli_request *req;
 	int i;
@@ -82,18 +85,13 @@ struct smbcli_request *smb_negprot_send(struct smbcli_transport *transport, int 
 	return req;
 }
 
-/****************************************************************************
+/*
  Send a negprot command.
-****************************************************************************/
-NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport) 
+*/
+NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 {
-	struct smbcli_request *req;
+	struct smbcli_transport *transport = req->transport;
 	int protocol;
-
-	req = smb_negprot_send(transport, lp_maxprotocol());
-	if (!req) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	if (!smbcli_request_receive(req) ||
 	    smbcli_request_is_error(req)) {
@@ -182,4 +180,14 @@ NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport)
 
 failed:
 	return smbcli_request_destroy(req);
+}
+
+
+/*
+ Send a negprot command (sync interface)
+*/
+NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, int maxprotocol)
+{
+	struct smbcli_request *req = smb_raw_negotiate_send(transport, maxprotocol);
+	return smb_raw_negotiate_recv(req);
 }

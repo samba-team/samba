@@ -3045,85 +3045,20 @@ return a connection to a server
 static struct smbcli_state *do_connect(const char *server, const char *share)
 {
 	struct smbcli_state *c;
-	struct nmb_name called, calling;
-	const char *server_n;
-	fstring servicename;
-	char *sharename;
 	NTSTATUS status;
+
+	if (strncmp(share, "\\\\", 2) == 0 ||
+	    strncmp(share, "//", 2) == 0) {
+		smbcli_parse_unc(share, NULL, &server, &share);
+	}
 	
-	/* make a copy so we don't modify the global string 'service' */
-	fstrcpy(servicename, share);
-	sharename = servicename;
-	if (*sharename == '\\') {
-		server = sharename+2;
-		sharename = strchr_m(server,'\\');
-		if (!sharename) return NULL;
-		*sharename = 0;
-		sharename++;
-	}
-
-	asprintf(&sharename, "\\\\%s\\%s", server, sharename);
-
-	server_n = dest_ip?dest_ip:server;
-	
-	make_nmb_name(&calling, lp_netbios_name(), 0x0);
-	choose_called_name(&called, server, name_type);
-
- again:
-	/* have to open a new connection */
-	if (!(c=smbcli_state_init(NULL)) || !smbcli_socket_connect(c, server_n)) {
-		d_printf("Connection to %s failed\n", server_n);
+	status = smbcli_full_connection(NULL, &c, lp_netbios_name(), server,
+					share, NULL, username, domain, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
+			 server, share, nt_errstr(status));
 		return NULL;
 	}
-
-	if (!smbcli_transport_establish(c, &calling, &called)) {
-		char *p;
-		d_printf("session request to %s failed\n", 
-			 called.name);
-		smbcli_shutdown(c);
-		if ((p=strchr_m(called.name, '.'))) {
-			*p = 0;
-			goto again;
-		}
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (NT_STATUS_IS_ERR(smbcli_negprot(c))) {
-		d_printf("protocol negotiation failed\n");
-		smbcli_shutdown(c);
-		return NULL;
-	}
-
-	status = smbcli_session_setup(c, username, password, domain);
-	if (NT_STATUS_IS_ERR(status)) {
-		d_printf("authenticated session setup failed: %s\n", nt_errstr(status));
-		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0]) {
-			status = smbcli_session_setup(c, "", "", lp_workgroup());
-		}
-		if (NT_STATUS_IS_ERR(status)) {
-			d_printf("session setup failed: %s\n", nt_errstr(status));
-			smbcli_shutdown(c);
-			return NULL;
-		}
-		d_printf("Anonymous login successful\n");
-	}
-
-	DEBUG(4,(" session setup ok\n"));
-
-	if (NT_STATUS_IS_ERR(smbcli_send_tconX(c, sharename, "?????", password))) {
-		d_printf("tree connect failed: %s\n", smbcli_errstr(c->tree));
-		smbcli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
 
 	return c;
 }

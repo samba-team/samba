@@ -140,12 +140,12 @@ static void smbcli_transport_write_disable(struct smbcli_transport *transport)
 	transport->socket->event.fde->flags &= ~EVENT_FD_WRITE;
 }
 
-/****************************************************************************
-send a session request (if appropriate)
-****************************************************************************/
-BOOL smbcli_transport_connect(struct smbcli_transport *transport,
-			   struct nmb_name *calling, 
-			   struct nmb_name *called)
+/*
+  send a session request
+*/
+struct smbcli_request *smbcli_transport_connect_send(struct smbcli_transport *transport,
+						     struct nmb_name *calling, 
+						     struct nmb_name *called)
 {
 	uint8_t *p;
 	int len = NBT_HDR_SIZE;
@@ -155,13 +155,10 @@ BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 		transport->called = *called;
 	}
 
-	/* 445 doesn't have session request */
-	if (transport->socket->port == 445) {
-		return True;
-	}
-
   	/* allocate output buffer */
-	req = smbcli_request_setup_nonsmb(transport, NBT_HDR_SIZE + 2*nbt_mangled_name_len());
+	req = smbcli_request_setup_nonsmb(transport, 
+					  NBT_HDR_SIZE + 2*nbt_mangled_name_len());
+	if (req == NULL) return NULL;
 
 	/* put in the destination name */
 	p = req->out.buffer + NBT_HDR_SIZE;
@@ -176,15 +173,27 @@ BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 	_smb_setlen(req->out.buffer,len-4);
 	SCVAL(req->out.buffer,0,0x81);
 
-	if (!smbcli_request_send(req) ||
-	    !smbcli_request_receive(req)) {
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
+		return NULL;
+	}
+
+	return req;
+}
+
+/*
+  finish a smbcli_transport_connect()
+*/
+BOOL smbcli_transport_connect_recv(struct smbcli_request *req)
+{
+	if (!smbcli_request_receive(req)) {
 		smbcli_request_destroy(req);
 		return False;
 	}
-	
+
 	if (CVAL(req->in.buffer,0) != 0x82) {
-		transport->error.etype = ETYPE_NBT;
-		transport->error.e.nbt_error = CVAL(req->in.buffer,4);
+		req->transport->error.etype = ETYPE_NBT;
+		req->transport->error.e.nbt_error = CVAL(req->in.buffer,4);
 		smbcli_request_destroy(req);
 		return False;
 	}
@@ -193,6 +202,24 @@ BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 	return True;
 }
 
+
+/*
+  send a session request (if needed)
+*/
+BOOL smbcli_transport_connect(struct smbcli_transport *transport,
+			      struct nmb_name *calling, 
+			      struct nmb_name *called)
+{
+	struct smbcli_request *req;
+	
+	if (transport->socket->port == 445) {
+		return True;
+	}
+
+	req = smbcli_transport_connect_send(transport, 
+					    calling, called);
+	return smbcli_transport_connect_recv(req);
+}
 
 /****************************************************************************
 get next mid in sequence

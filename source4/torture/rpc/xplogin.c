@@ -75,7 +75,7 @@ static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 	}
 
 	/* negotiate protocol options with the server */
-	status = smb_raw_negotiate(transport);
+	status = smb_raw_negotiate(transport, lp_maxprotocol());
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(transport);
 		return NT_STATUS_UNSUCCESSFUL;

@@ -69,7 +69,6 @@ static struct smbcli_state *connect_one(char *share)
 {
 	struct smbcli_state *c;
 	fstring server;
-	uint_t flags = 0;
 	NTSTATUS status;
 
 	fstrcpy(server,share+2);
@@ -79,10 +78,10 @@ static struct smbcli_state *connect_one(char *share)
 	share++;
 
 	status = smbcli_full_connection(NULL, &c, "masktest",
-				     server, NULL, 
-				     share, "?????", 
-				     username, lp_workgroup(), 
-				     password, flags, NULL);
+					server, 
+					share, NULL,
+					username, lp_workgroup(), 
+					password);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
