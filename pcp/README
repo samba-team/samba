@@ -7,7 +7,7 @@ information about transaction activity from the smb daemon.
 
 Note:
 	This PMDA may be remade from source and hence requires 
-	a C compiler to be installed.
+	a C compiler and Perl to be installed.
 
 	Uses of make(1) may fail (without removing or clobbering files)
 	if the C compiler cannot be found.  This is most likely to
@@ -32,7 +32,7 @@ Installation
 
  +  # mkdir /var/pcp/pmdas/samba
  +  # cp * /var/pcp/pmdas/samba
- +  # cp ../source/includes/profile.h /var/pcp/pmdas/samba
+ +  # cp ../source/include/profile.h /var/pcp/pmdas/samba
  +  # cd /var/pcp/pmdas/samba
 
  +  Check that there is no clash in the Performance Metrics Domain
@@ -77,7 +77,7 @@ De-installation
 Making something happen
 =======================
 
-The application ./smbd updates the shared memory segment to add
+The application "smbd" updates the shared memory segment to add
 profile information about smbd. By default updating is disabled.
 To start updating of the shared memory segment you need to run the
 smbcontrol command to turn on profiling for one or more smbd processes
