@@ -248,7 +248,11 @@ static BOOL api_spoolss_rffpcnex(pipes_struct *p)
  * api_spoolss_rfnpcnex
  * ReplyFindNextPrinterChangeNotifyEx
  * called from the spoolss dispatcher
- *
+
+ * Note - this is the *ONLY* function that breaks the RPC call
+ * symmetry in all the other calls. We need to do this to fix
+ * the massive memory allocation problem with thousands of jobs...
+ * JRA.
  ********************************************************************/
 
 static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
@@ -269,9 +273,12 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 	r_u.status = _spoolss_rfnpcnex(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
+		safe_free(r_u.info.data);
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
 		return False;
 	}
+
+	safe_free(r_u.info.data);
 
 	return True;
 }

@@ -377,7 +377,6 @@ void talloc_destroy(TALLOC_CTX *t);
 size_t talloc_pool_size(TALLOC_CTX *t);
 void *talloc_zero(TALLOC_CTX *t, size_t size);
 void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size);
-void *talloc_realloc(TALLOC_CTX *t, void *p, size_t size);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -1862,12 +1861,12 @@ BOOL parse_lpq_entry(int snum,char *line,
 /*The following definitions come from  printing/nt_printing.c  */
 
 BOOL nt_printing_init(void);
-int get_ntforms(TALLOC_CTX *ctx, nt_forms_struct **list);
+int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-BOOL add_a_form(TALLOC_CTX *ctx, nt_forms_struct **list, const FORM *form, int *count);
+BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
-int get_ntdrivers(TALLOC_CTX *ctx, fstring **list, char *architecture, uint32 version);
+int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
 uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 							  uint32 level, struct current_user *user);
@@ -3566,6 +3565,7 @@ void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
+void free_pipe_context(pipes_struct *p);
 ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n);
 ssize_t read_from_pipe(pipes_struct *p, char *data, size_t n);
 BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
