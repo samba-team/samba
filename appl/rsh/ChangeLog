@@ -1,3 +1,7 @@
+2003-03-23  Assar Westerlund  <assar@kth.se>
+
+	* rsh.c (loop): only check errsock if it's valid
+
 2003-03-18  Love  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* rshd.c: do krb5_afslog when compling with afs support

@@ -1,3 +1,7 @@
+2003-03-23  Assar Westerlund  <assar@kth.se>
+
+	* ftpd/pathnames.h (_PATH_FTPUSERS): conditionalize
+
 2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftpd/ftpd.c (krb5_verify): always do krb5_afslog, remove setpag
