@@ -493,7 +493,7 @@ struct command_set commands[] =
 	/* maintenance */
 
 	{
-		"rpcclient",
+		"set",
 		cmd_set,
 		"run rpcclient inside rpcclient (change options etc.)",
 		{COMPL_NONE, COMPL_NONE}
@@ -1306,12 +1306,52 @@ static char *complete_cmd_null(char *text, int state)
 
 #endif /* HAVE_LIBREADLINE */
 
+static void set_user_password(struct user_credentials *u,
+				BOOL got_pass, char *password)
+{
+	/* set the password cache info */
+	if (got_pass)
+	{
+		if (password == NULL)
+		{
+			pwd_set_nullpwd(&(u->pwd));
+		}
+		else
+		{
+			/* generate 16 byte hashes */
+			pwd_make_lm_nt_16(&(u->pwd), password);
+		}
+	}
+	else 
+	{
+		pwd_read(&(u->pwd), "Enter Password:", True);
+	}
+}
+
 static void cmd_net(struct client_info *info, int argc, char *argv[])
 {
 	int opt;
 	BOOL net_use = False;
-	BOOL net_use_del = False;
-	BOOL net_use_add = False;
+	BOOL net_use_add = True;
+	BOOL force_close = False;
+	struct user_credentials u;
+	fstring dest_host;
+	fstring srv_name;
+	BOOL null_pwd = False;
+	BOOL got_pwd = False;
+	pstring password;
+	extern struct user_credentials *usr_creds;
+
+	copy_user_creds(&u, usr_creds);
+
+	pstrcpy(dest_host, cli_info.dest_host);
+	pstrcpy(u.user_name,optarg);
+
+	if (argc <= 1)
+	{
+		report(out_hnd, "net -S \\server [-U user%%pass] [-W domain] [-d] [-f]\n");
+		report(out_hnd, "net -u\n");
+	}
 
 	while ((opt = getopt(argc, argv, "udS:U:W:")) != EOF)
 	{
@@ -1323,14 +1363,72 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+			case 'S':
+			{
+				pstrcpy(dest_host, optarg);
+				break;
+			}
+
+			case 'U':
+			{
+				char *lp;
+				pstrcpy(u.user_name,optarg);
+				if ((lp=strchr(u.user_name,'%')))
+				{
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					memset(strchr(optarg,'%')+1,'X',
+					       strlen(password));
+					got_pwd = True;
+				}
+				if (u.user_name[0] == 0 && password[0] == 0)
+				{
+					null_pwd = True;
+				}
+				break;
+			}
+
+			case 'N':
+			{
+				null_pwd = True;
+			}
+			case 'W':
+			{
+				pstrcpy(u.domain,optarg);
+				break;
+			}
+
+			case 'd':
+			{
+				net_use_add = False;
+				break;
+			}
+
+			case 'f':
+			{
+				force_close = True;
+				break;
+			}
+
 			default:
 			{
-				report(out_hnd, "net -S \\server [-U user%%pass] [-W domain] [-d]\n");
+				report(out_hnd, "net -S \\server [-U user%%pass] [-W domain] [-d] [-f]\n");
 				report(out_hnd, "net -u\n");
 				break;
 			}
 		}
 	}
+
+	if (strnequal("\\\\", dest_host, 2))
+	{
+		fstrcpy(srv_name, dest_host);
+	}
+	else
+	{
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, dest_host);
+	}
+	strupper(srv_name);
 
 	if (net_use)
 	{
@@ -1361,28 +1459,60 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 			}
 		}
 	}
-}
-
-static void set_user_password(struct user_credentials *u,
-				BOOL got_pass, char *password)
-{
-	/* set the password cache info */
-	if (got_pass)
+	else if (net_use_add)
 	{
-		if (password == NULL)
+		if (null_pwd)
 		{
-			pwd_set_nullpwd(&(u->pwd));
+			set_user_password(&u, True, NULL);
 		}
 		else
 		{
-			/* generate 16 byte hashes */
-			pwd_make_lm_nt_16(&(u->pwd), password);
+			set_user_password(&u, got_pwd, password);
+		}
+
+		/* paranoia: destroy the local copy of the password */
+		bzero(password, sizeof(password)); 
+
+		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
+		                 srv_name, u.user_name, u.domain);
+		report(out_hnd, "Connection:\t");
+
+		if (cli_net_use_add(srv_name, &u) != NULL)
+		{
+			report(out_hnd, "OK\n");
+		}
+		else
+		{
+			report(out_hnd, "FAILED\n");
 		}
 	}
-	else 
+	else
 	{
-		pwd_read(&(u->pwd), "Enter Password:", True);
+		BOOL closed;
+		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
+		                 srv_name, u.user_name, u.domain);
+		report(out_hnd, "Connection:\t");
+
+		if (!cli_net_use_del(srv_name, &u, force_close, &closed))
+		{
+			report(out_hnd, ": Does not exist\n");
+		}
+		else if (force_close && closed)
+		{
+			report(out_hnd, ": Forcibly terminated\n");
+		}
+		else if (closed)
+		{
+			report(out_hnd, ": Terminated\n");
+		}
+		else
+		{
+			report(out_hnd, ": Unlinked\n");
+		}
 	}
+
+	/* paranoia: destroy the local copy of the password */
+	bzero(password, sizeof(password)); 
 }
 
 #define CMD_STR 0x1
