@@ -1,6 +1,7 @@
 Changes in release 0.2e:
 
  * support for having several databases
+ * new command `del_enctype' in kadmin
  * strptime (and new strftime) add to roken
  * more paranoia about finding libdb
  * bug fixes
