@@ -762,7 +762,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	fstring service;
 	fstring dev;
 	int snum = -1;
-	
+
 	fstrcpy(dev, pdev);
 
 	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */

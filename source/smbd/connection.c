@@ -172,7 +172,7 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 		crec.uid = conn->uid;
 		crec.gid = conn->gid;
 		safe_strcpy(crec.name,
-			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
+			    lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
