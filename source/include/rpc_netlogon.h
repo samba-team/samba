@@ -26,17 +26,16 @@
 
 
 /* NETLOGON pipe */
-#define NET_REQCHAL            0x04
-#define NET_SRVPWSET           0x06
 #define NET_SAMLOGON           0x02
 #define NET_SAMLOGOFF          0x03
+#define NET_REQCHAL            0x04
 #define NET_AUTH               0x05
-#define NET_AUTH2              0x0f
-#define NET_LOGON_CTRL2        0x0e
-#define NET_TRUST_DOM_LIST     0x13
-
-#define NET_SAM_SYNC           0x10
+#define NET_SRVPWSET           0x06
 #define NET_SAM_DELTAS         0x07
+#define NET_LOGON_CTRL2        0x0e
+#define NET_AUTH2              0x0f
+#define NET_SAM_SYNC           0x10
+#define NET_TRUST_DOM_LIST     0x13
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2

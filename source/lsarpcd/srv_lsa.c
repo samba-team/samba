@@ -33,29 +33,6 @@ extern int DEBUGLEVEL;
 extern fstring global_myworkgroup;
 
 /***************************************************************************
-make_dom_query
- ***************************************************************************/
-static void make_dom_query(DOM_QUERY * d_q, char *dom_name, DOM_SID *dom_sid)
-{
-	fstring sid_str;
-	int domlen = strlen(dom_name);
-
-	d_q->uni_dom_str_len = (domlen + 1) * 2;
-	d_q->uni_dom_max_len = domlen * 2;
-
-	d_q->buffer_dom_name = domlen != 0 ? 1 : 0;	/* domain buffer pointer */
-	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;	/* domain sid pointer */
-
-	/* this string is supposed to be character short */
-	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
-	d_q->uni_domain_name.uni_max_len++;
-
-	sid_to_string(sid_str, dom_sid);
-	make_dom_sid2(&(d_q->dom_sid), dom_sid);
-}
-
-
-/***************************************************************************
 make_reply_lookup_names
  ***************************************************************************/
 static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES * r_l,
@@ -227,20 +204,30 @@ static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
 	}
 
 	r_i.status = _lsa_query_info_pol(&q_i.pol, q_i.info_class,
-					 name, &sid);
+					 &r_i.dom);
 
-	if (r_i.status == 0x0)
+	if (r_i.status == NT_STATUS_NOPROBLEMO)
 	{
 		/* set up the LSA QUERY INFO response */
 
-		r_i.undoc_buffer = 0x1;
+		r_i.undoc_buffer = 1;
 		r_i.info_class = q_i.info_class;
-
-		make_dom_query(&r_i.dom.id5, name, &sid);
 	}
 
 	/* store the response in the SMB stream */
 	return lsa_io_r_query("", &r_i, rdata, 0);
+}
+
+/***************************************************************************
+api_lsa_set_info
+ ***************************************************************************/
+static BOOL api_lsa_set_info(prs_struct *data, prs_struct *rdata)
+{
+	LSA_Q_SET_INFO q_i;
+
+	ZERO_STRUCT(q_i);
+
+	return False;
 }
 
 /***************************************************************************
@@ -459,6 +446,7 @@ static const struct api_struct api_lsa_cmds[] = {
 	{"LSA_SETSECRET", LSA_SETSECRET, api_lsa_set_secret},
 	{"LSA_LOOKUPSIDS", LSA_LOOKUPSIDS, api_lsa_lookup_sids},
 	{"LSA_LOOKUPNAMES", LSA_LOOKUPNAMES, api_lsa_lookup_names},
+	{"LSA_SET_INFO", LSA_SET_INFO, api_lsa_set_info},
 	{NULL, 0, NULL}
 };
 

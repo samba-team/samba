@@ -437,16 +437,36 @@ uint32 _lsa_lookup_sids(const POLICY_HND * hnd,
 }
 
 /***************************************************************************
+make_dom_query
+ ***************************************************************************/
+static void make_dom_query(DOM_QUERY *d_q, const char *dom_name,
+			   const DOM_SID *dom_sid)
+{
+	fstring sid_str;
+	int domlen = strlen(dom_name);
+
+	d_q->uni_dom_str_len = (domlen + 1) * 2;
+	d_q->uni_dom_max_len = domlen * 2;
+
+	d_q->buffer_dom_name = domlen != 0 ? 1 : 0;	/* domain buffer pointer */
+	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;	/* domain sid pointer */
+
+	/* this string is supposed to be character short */
+	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
+	d_q->uni_domain_name.uni_max_len++;
+
+	sid_to_string(sid_str, dom_sid);
+	make_dom_sid2(&(d_q->dom_sid), dom_sid);
+}
+
+
+/***************************************************************************
 _lsa_query_info
  ***************************************************************************/
 uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
-			   fstring domain_name, DOM_SID * domain_sid)
+			   LSA_INFO_UNION *info)
 {
-	fstring name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
-	const DOM_SID *sid = NULL;
-
-	memset(name, 0, sizeof(name));
 
 	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
 	{
@@ -455,17 +475,29 @@ uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
 
 	switch (info_class)
 	{
+		case 0x02:
+		{
+			unsigned int i;
+			/* fake info: We audit everything. ;) */
+			info->id2.auditing_enabled = 1;
+			info->id2.count1 = 7;
+			info->id2.count2 = 7;
+			info->id2.auditsettings = g_new(uint32, 7);
+			for (i = 0; i < 7; i++)
+				info->id2.auditsettings[i] = 3;
+			break;
+		}
 		case 0x03:
 		{
 			extern pstring global_myworkgroup;
-			fstrcpy(name, global_myworkgroup);
-			sid = &global_member_sid;
+			make_dom_query(&info->id3, global_myworkgroup,
+				       &global_member_sid);
 			break;
 		}
 		case 0x05:
 		{
-			fstrcpy(name, global_sam_name);
-			sid = &global_sam_sid;
+			make_dom_query(&info->id3, global_sam_name,
+				       &global_sam_sid);
 			break;
 		}
 		default:
@@ -474,14 +506,6 @@ uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
 				  info_class));
 			status = NT_STATUS_INVALID_INFO_CLASS;
 		}
-	}
-	if (domain_sid && sid)
-	{
-		sid_copy(domain_sid, sid);
-	}
-	if (domain_name)
-	{
-		fstrcpy(domain_name, name);
 	}
 
 	return status;

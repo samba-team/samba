@@ -1326,7 +1326,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND * hnd,
 			DOM_R_REF * ref,
 			LSA_TRANS_NAME_ENUM * trn, uint32 * mapped_count);
 uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
-			   fstring domain_name, DOM_SID * domain_sid);
+			   LSA_INFO_UNION *info);
 uint32 _lsa_close(POLICY_HND * hnd);
 uint32 _lsa_set_secret(const POLICY_HND * hnd_secret,
 		       const STRING2 * val, uint32 unknown);
@@ -1782,6 +1782,8 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  nsswitch/winbindd.c  */
 
+void do_print_client_info(void);
+void do_flush_cache(void);
 int main(int argc, char **argv);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
@@ -1839,6 +1841,7 @@ struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_sid_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_uid(uid_t uid);
 struct winbindd_domain *find_domain_from_gid(gid_t gid);
+struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 

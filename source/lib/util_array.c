@@ -151,7 +151,7 @@ static char *Strdup(const char *name)
 {
 	if (name == NULL)
 	{
-		return name;
+		return NULL;
 	}
 	return strdup(name);
 }

@@ -91,6 +91,7 @@ enum SID_NAME_USE
 #define LSA_QUERYSECOBJECT     0x03
 #define LSA_OPENPOLICY         0x06
 #define LSA_QUERYINFOPOLICY    0x07
+#define LSA_SET_INFO           0x08
 #define LSA_ENUMTRUSTDOM       0x0d
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
@@ -207,6 +208,14 @@ typedef struct r_lsa_query_sec_obj_info
 
 } LSA_R_QUERY_SEC_OBJ;
 
+/* LSA_INFO_UNION */
+typedef union lsa_info_union
+{
+	DOM_QUERY_2 id2;
+	DOM_QUERY_3 id3;
+	DOM_QUERY_5 id5;
+} LSA_INFO_UNION;
+
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info
 {
@@ -221,17 +230,22 @@ typedef struct lsa_r_query_info
 	uint32 undoc_buffer; /* undocumented buffer pointer */
 	uint16 info_class; /* info class (same as info class in request) */
     
-	union
-	{
-		DOM_QUERY_2 id2;
-        	DOM_QUERY_3 id3;
-		DOM_QUERY_5 id5;
-
-	} dom;
+	LSA_INFO_UNION dom;
 
 	uint32 status; /* return code */
 
 } LSA_R_QUERY_INFO;
+
+
+/* LSA_Q_SET_INFO - LSA set info policy */
+typedef struct lsa_q_set_info
+{
+	POLICY_HND pol; /* policy handle */
+	uint16 info_class; /* info class */
+
+	LSA_INFO_UNION info;
+} LSA_Q_SET_INFO;
+
 
 /* LSA_Q_CREATE_SECRET - LSA Create Secret */
 typedef struct lsa_q_create_secret_info
