@@ -1222,6 +1222,8 @@ scrub_env(void)
 	"EDITOR=",
 	"PAGER=",
 	"PRINTER=",
+	"LOGNAME=",
+	"POSIXLY_CORRECT=",
 	NULL
     };
 
