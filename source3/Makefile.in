@@ -116,6 +116,8 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
+MODULES = bin/vfs_audit.so bin/vfs_recycle.so bin/vfs_netatalk.so
+
 ######################################################################
 # object file lists
 ######################################################################
@@ -227,6 +229,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 
 PDB_XML_OBJ = passdb/pdb_xml.o
 PDB_MYSQL_OBJ = passdb/pdb_mysql.o
+DEVEL_HELP_OBJ = modules/developer.o
 
 SAM_STATIC_MODULES = sam/sam_plugin.o sam/sam_skel.o sam/sam_ads.o
 
@@ -431,8 +434,9 @@ NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
-VFS_AUDIT_OBJ = vfs/audit.o
-VFS_RECYCLE_OBJ = vfs/recycle.o
+VFS_AUDIT_OBJ = modules/vfs_audit.o
+VFS_RECYCLE_OBJ = modules/vfs_recycle.o
+VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 
 LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
@@ -555,7 +559,9 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-everything: all libsmbclient debug2html smbfilter talloctort 
+modules: SHOWFLAGS $(MODULES)
+
+everything: all libsmbclient debug2html smbfilter talloctort
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -820,6 +826,11 @@ bin/pdb_mysql.@SHLIBEXT@: $(PDB_MYSQL_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PDB_MYSQL_OBJ) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
+bin/developer.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
 bin/pdb_xml.@SHLIBEXT@: $(PDB_XML_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PDB_XML_OBJ) @XML_LIBS@ \
@@ -833,6 +844,11 @@ bin/vfs_audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
 bin/vfs_recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
+bin/vfs_netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
