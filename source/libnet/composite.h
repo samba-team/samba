@@ -22,8 +22,6 @@
   composite function definitions
 */
 
-enum userinfo_stage { USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
-
 struct rpc_composite_userinfo {
 	struct {
 		struct policy_handle domain_handle;
@@ -33,11 +31,4 @@ struct rpc_composite_userinfo {
 	struct {
 		union samr_UserInfo info;
 	} out;
-};
-
-struct userinfo_state {
-	enum userinfo_stage stage;
-	struct dcerpc_pipe *pipe;
-	struct rpc_request *req;
-	struct rpc_composite_userinfo io;
 };
