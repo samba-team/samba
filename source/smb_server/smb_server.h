@@ -306,11 +306,7 @@ struct smbsrv_connection {
 		time_t last_smb_conf_reload;
 	} timers;
 
-	struct {
-		DATA_BLOB mac_key;
-		uint64_t next_seq_num;
-		enum smb_signing_state signing_state;
-	} signing;
+	struct smb_signing_context signing;
 
 	struct substitute_context substitute;
 
