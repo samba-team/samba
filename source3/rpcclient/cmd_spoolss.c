@@ -1654,7 +1654,7 @@ static WERROR cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
 	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS, 
+					     PRINTER_ALL_ACCESS, 
 					     servername, cli->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
