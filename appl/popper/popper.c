@@ -99,7 +99,7 @@ main (int argc, char **argv)
             /*  Otherwise assume NOOP and send an OK message to the client */
             else {
                 p.CurrentState = s->success_state;
-                pop_msg(&p,POP_SUCCESS,NULL);
+                pop_msg(&p,POP_SUCCESS,"");
             }
         }       
     }
