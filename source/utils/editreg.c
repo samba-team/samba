@@ -594,7 +594,26 @@ typedef struct sk_map_s {
   KEY_SEC_DESC *key_sec_desc;
 } SK_MAP;
 
-struct regf_struct_s {
+/*
+ * This structure keeps track of the output format of the registry
+ */
+#define REG_OUTBLK_HDR 1
+#define REG_OUTBLK_HBIN 2
+
+typedef struct hbin_blk_s {
+  int type, size;
+  struct hbin_blk_s *next;
+  char *data;                /* The data block                */
+  unsigned int file_offset;  /* Offset in file                */
+  unsigned int free_space;   /* Amount of free space in block */
+  unsigned int fsp_off;      /* Start of free space in block  */
+  int complete, stored;
+} HBIN_BLK;
+
+/*
+ * This structure keeps all the registry stuff in one place
+ */
+typedef struct regf_struct_s {
   int reg_type;
   char *regfile_name, *outfile_name;
   int fd;
@@ -607,9 +626,12 @@ struct regf_struct_s {
   SK_MAP *sk_map;
   char *owner_sid_str;
   SEC_DESC *def_sec_desc;
-};
-
-typedef struct regf_struct_s REGF;
+  /*
+   * These next pointers point to the blocks used to contain the 
+   * keys when we are preparing to write them to a file
+   */
+  HBIN_BLK *blk_head, *blk_tail, *free_space;
+} REGF;
 
 /*
  * An API for accessing/creating/destroying items above
@@ -2408,17 +2430,6 @@ int nt_load_registry(REGF *regf)
 }
 
 /*
- * These structures keep track of the output format of the registry
- */
-typedef struct hbin_blk_s {
-  struct hbin_blk_s *next;
-  unsigned int file_offset;  /* Offset in file                */
-  unsigned int free_space;   /* Amount of free space in block */
-  unsigned int fsp_off;      /* Start of free space in block  */
-  int complete, stored;
-} HBIN_BLK;
-
-/*
  * Allocate a new hbin block and link it to the others.
  */
 int nt_create_hbin_blk(REGF *regf)
@@ -2428,10 +2439,22 @@ int nt_create_hbin_blk(REGF *regf)
 }
 
 /*
+ * Allocate a unit of space ...
+ */
+void *nt_alloc_regf_space(REGF *regf, int size)
+{
+
+  return NULL;
+}
+
+/*
  * Store a KEY in the file ...
  *
  * We store this depth first, and defer storing the lf struct until
  * all the sub-keys have been stored.
+ * 
+ * We store the NK hdr, any SK header, class name, and VK structure, then
+ * recurse down the LF structures ... 
  */
 int nt_store_reg_key(REGF *regf, REG_KEY *key)
 {
@@ -2442,10 +2465,30 @@ int nt_store_reg_key(REGF *regf, REG_KEY *key)
 
 /*
  * Store the registry header ...
+ * We actually create the registry header block and link it to the chain
+ * of output blocks.
  */
-int nt_store_reg_header(REGF *regf){
+REGF_HDR *nt_get_reg_header(REGF *regf)
+{
+  HBIN_BLK *tmp = NULL;
+  
+  tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
+  if (!tmp) return 0;
 
-  return 0;
+  bzero(tmp, sizeof(HBIN_BLK));
+  tmp->type = REG_OUTBLK_HDR;
+  tmp->size = REGF_HDR_BLKSIZ;
+  tmp->data = malloc(REGF_HDR_BLKSIZ);
+  if (!tmp->data) goto error;
+
+  bzero(tmp->data, REGF_HDR_BLKSIZ);  /* Make it pristine, unlike Windows */
+  regf->blk_head = regf->blk_tail = tmp;
+
+  return (REGF_HDR *)tmp->data;
+
+ error:
+  if (tmp) free(tmp);
+  return NULL;
 }
 
 /*
@@ -2461,6 +2504,9 @@ int nt_store_reg_header(REGF *regf){
  */
 int nt_store_registry(REGF *regf)
 {
+  REGF_HDR *reg;
+
+  reg = nt_get_reg_header(regf);
 
   return 1;
 }
