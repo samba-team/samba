@@ -254,7 +254,7 @@ aix_setup(void)
  */
 static
 int
-k_afslog_file(char *file, char *krealm)
+k_afslog_file(char *file, char *krealm, uid_t uid)
 {
     FILE *f;
     char cell[64];
@@ -266,7 +266,7 @@ k_afslog_file(char *file, char *krealm)
 	char *nl = strchr(cell, '\n');
 	if (nl)
 	    *nl = 0;
-	err = k_afsklog(cell, krealm);
+	err = k_afsklog_uid(cell, krealm, uid);
     }
     fclose(f);
     return err;
@@ -274,24 +274,24 @@ k_afslog_file(char *file, char *krealm)
 
 static
 int
-k_afsklog_all_local_cells(char *krealm)
+k_afsklog_all_local_cells(char *krealm, uid_t uid)
 {
     int err = KFAILURE;
     char *p, home[MaxPathLen];
 
     if ((p = getenv("HOME"))) {
 	sprintf(home, "%s/.TheseCells", p);
-	err = k_afslog_file(home, krealm);
+	err = k_afslog_file(home, krealm, uid);
     }
-    if(k_afslog_file(_PATH_THESECELLS, krealm) == 0)
+    if(k_afslog_file(_PATH_THESECELLS, krealm, uid) == 0)
 	err = 0;
-    if(k_afslog_file(_PATH_THISCELL, krealm) == 0)
+    if(k_afslog_file(_PATH_THISCELL, krealm, uid) == 0)
 	err = 0;
     return err;
 }
 
 int
-k_afsklog(char *cell, char *krealm)
+k_afsklog_uid(char *cell, char *krealm, uid_t uid)
 {
   int k_errno;
   CREDENTIALS c;
@@ -302,7 +302,7 @@ k_afsklog(char *cell, char *krealm)
   char CELL[64];
 
   if (cell == 0 || cell[0] == 0)
-    return k_afsklog_all_local_cells (krealm);
+    return k_afsklog_all_local_cells (krealm, uid);
   foldup(CELL, cell);
 
   vl_realm = realm_of_cell(cell);
@@ -378,7 +378,7 @@ k_afsklog(char *cell, char *krealm)
        */
       ct.AuthHandle = c.kvno;
       memcpy (ct.HandShakeKey, c.session, sizeof(c.session));
-      ct.ViceId = getuid();	/* is this always valid? */
+      ct.ViceId = uid;	/* is this always valid? */
       ct.BeginTimestamp = 1 + c.issue_date;
       ct.EndTimestamp = krb_life_to_time(c.issue_date, c.lifetime);
 
@@ -424,6 +424,13 @@ k_afsklog(char *cell, char *krealm)
     }
   return k_errno;
 }
+
+int
+k_afsklog(char *cell, char *krealm)
+{
+  return k_afsklog_uid (cell, krealm, getuid());
+}
+
 
 #define NO_ENTRY_POINT		0
 #define SINGLE_ENTRY_POINT	1
