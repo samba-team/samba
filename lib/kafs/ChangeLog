@@ -1,3 +1,7 @@
+1999-08-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: ignore the comlicated aix construct if !krb4
+
 1999-07-26  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: set version to 1:0:1
