@@ -69,8 +69,6 @@ typedef u_int32_t krb5_flags;
 typedef void *krb5_pointer;
 typedef const void *krb5_const_pointer;
 
-typedef heim_octet_string krb5_data;
-
 struct krb5_crypto_data;
 typedef struct krb5_crypto_data *krb5_crypto;
 
@@ -79,6 +77,15 @@ typedef CKSUMTYPE krb5_cksumtype;
 typedef Checksum krb5_checksum;
 
 typedef ENCTYPE krb5_enctype;
+
+typedef heim_octet_string krb5_data;
+
+/* krb5_enc_data is a mit compat structure */
+typedef struct krb5_enc_data {
+    krb5_enctype enctype;
+    krb5_kvno kvno;
+    krb5_data ciphertext;
+} krb5_enc_data;
 
 /* alternative names */
 enum {
