@@ -180,9 +180,9 @@ NTSTATUS ndr_push_NTSTATUS(struct ndr_push *ndr, int ndr_flags, NTSTATUS status)
 	return ndr_push_uint32(ndr, ndr_flags, NT_STATUS_V(status));
 }
 
-void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS *r)
+void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS r)
 {
-	ndr->print(ndr, "%-25s: %s", name, nt_errstr(*r));
+	ndr->print(ndr, "%-25s: %s", name, nt_errstr(r));
 }
 
 /*
