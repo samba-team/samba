@@ -192,6 +192,7 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	uint32 len;
 	char *data;
 	prs_struct ps;
+	uint32 status;
 
 	char *in = msrpc->inbuf;
 	char *out = msrpc->outbuf;
@@ -223,58 +224,9 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 		DEBUG(0, ("write failed\n"));
 		return False;
 	}
-	if (msrpc->redirect)
-	{
-		struct msrpc_local msrpc_redir;
-		len = read_data(sock, (char*)&msrpc_redir, sizeof(msrpc_redir));
+	len = read_data(sock, (char*)&status, sizeof(status));
 
-		if (len != sizeof(msrpc_redir))
-		{
-			DEBUG(0, ("read failed\n"));
-			return False;
-		}
-
-		memcpy(msrpc, &msrpc_redir, sizeof(msrpc_redir));
-		msrpc->inbuf = in;
-		msrpc->outbuf = out;
-		msrpc->fd = sock;
-	}
-	else
-	{
-		uint32 status;
-		len = read_data(sock, (char*)&status, sizeof(status));
-
-		return len == sizeof(status) && status == 0x0;
-	}
-	return True;
-}
-
-static BOOL ncalrpc_l_init_redirect(struct msrpc_local *msrpc,
-				    const char *pipe_name)
-{
-	int sock;
-	fstring path;
-
-	slprintf(path, sizeof(path) - 1, "/tmp/.msrpc/.%s/agent", pipe_name);
-
-	sock = open_pipe_sock(path);
-
-	if (sock < 0)
-	{
-		return False;
-	}
-
-	msrpc->fd = sock;
-
-	if (!ncalrpc_l_authenticate(msrpc))
-	{
-		DEBUG(0, ("authenticate failed\n"));
-		close(msrpc->fd);
-		msrpc->fd = -1;
-		return False;
-	}
-
-	return True;
+	return len == sizeof(status) && status == 0x0;
 }
 
 BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
@@ -389,21 +341,6 @@ BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
 		return False;
 	}
 
-	if (msrpc->fd == -1 && msrpc->redirect)
-	{
-		if (ncalrpc_l_init_redirect(msrpc, pipe_name))
-		{
-			DEBUG(10,
-			      ("ncalrpc_l_establish_connection: redirected OK\n"));
-			return True;
-		}
-		else
-		{
-			DEBUG(10,
-			      ("redirect failed, attempt direct connection\n"));
-			msrpc->redirect = False;
-		}
-	}
 	if (msrpc->fd == -1)
 	{
 		if (!ncalrpc_l_connect(msrpc, pipe_name))

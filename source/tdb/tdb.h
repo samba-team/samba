@@ -60,6 +60,8 @@ typedef struct {
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
 		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOEXIST };
 
+typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
+
 #if STANDALONE
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);

@@ -77,7 +77,7 @@ BOOL print_backend_init(void)
 	/* handle a Samba upgrade */
 	tdb_writelock(tdb);
 	if (tdb_get_int(tdb, "INFO/version") != PRINT_DATABASE_VERSION) {
-		tdb_traverse(tdb, tdb_delete, NULL);
+		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
 		tdb_store_int(tdb, "INFO/version", PRINT_DATABASE_VERSION);
 	}
 	tdb_writeunlock(tdb);
@@ -276,7 +276,7 @@ static void print_queue_update(int snum)
 	char *path = lp_pathname(snum);
 	char *cmd = lp_lpqcommand(snum);
 	char **qlines;
-	pstring tmpfile;
+	pstring tmp_file;
 	int numlines, i, qcount;
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
@@ -285,15 +285,15 @@ static void print_queue_update(int snum)
 	fstring keystr;
 	TDB_DATA data, key;
  
-	slprintf(tmpfile, sizeof(tmpfile), "%s/smblpq.%d", path, local_pid);
+	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
-	unlink(tmpfile);
-	print_run_command(snum, cmd, tmpfile,
+	unlink(tmp_file);
+	print_run_command(snum, cmd, tmp_file,
 			  NULL, NULL, NULL, NULL);
 
 	numlines = 0;
-	qlines = file_lines_load(tmpfile, &numlines);
-	unlink(tmpfile);
+	qlines = file_lines_load(tmp_file, &numlines);
+	unlink(tmp_file);
 
 	/* turn the lpq output into a series of job structures */
 	qcount = 0;

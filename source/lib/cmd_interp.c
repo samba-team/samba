@@ -1013,7 +1013,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add(srv_name, &usr.ntc, True,
+		if (cli_net_use_add(srv_name, &usr.ntc, 
 				    info->reuse, &isnew) != NULL)
 		{
 			report(out_hnd, "OK\n");
@@ -1341,7 +1341,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add(srv_name, &usr.ntc, True, info->reuse,
+		if (cli_net_use_add(srv_name, &usr.ntc, info->reuse,
 					&isnew)
 		    != NULL)
 		{

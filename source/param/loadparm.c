@@ -1279,7 +1279,7 @@ static char *lp_user_string(const user_struct *vuser, const char *s)
 
   trim_string(ret, "\"", "\"");
 
-  standard_sub_vuser(vuser, ret);
+  standard_sub_vuser(ret, vuser);
   return(ret);
 }
 
@@ -3187,9 +3187,13 @@ static void set_default_server_announce_type(void)
 
 	switch (lp_announce_as())
 	{
-		case ANNOUNCE_AS_NT:
+		case ANNOUNCE_AS_NT_SERVER:
 		{
 			default_server_announce |= SV_TYPE_SERVER_NT;
+			/* fall through... */
+		}
+		case ANNOUNCE_AS_NT_WORKSTATION:
+		{
 			default_server_announce |= SV_TYPE_NT;
 			break;
 		}

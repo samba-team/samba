@@ -206,6 +206,7 @@ connection_struct *make_connection(char *service,char *user,
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+	int ret;
 	vuser_key key;
 
 	key.pid = getpid();
@@ -478,12 +479,12 @@ connection_struct *make_connection(char *service,char *user,
 				int i;
 				for (i = 0; gptr->gr_mem[i] != NULL; i++) {
 					if (strcmp(user,gptr->gr_mem[i]) == 0) {
-			conn->gid = gptr->gr_gid;
+						conn->gid = gptr->gr_gid;
 						DEBUG(3,("Forced group %s for member %s\n",gname,user));
 						break;
-		}
-	}
-		} else {
+					}
+				}
+			} else {
 				conn->gid = gptr->gr_gid;
 				DEBUG(3,("Forced group %s\n",gname));
 			}
@@ -495,10 +496,8 @@ connection_struct *make_connection(char *service,char *user,
 
 	{
 		pstring s;
-		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub(conn,vuser, s);
-		vuid_free_user_struct(vuser);
+		standard_sub_conn(conn,s);
 		string_set(&conn->connectpath,s);
 		DEBUG(3,("Connect path is %s\n",s));
 	}
@@ -530,14 +529,10 @@ connection_struct *make_connection(char *service,char *user,
 	} /* IS_IPC */
 	
 	/* execute any "root preexec = " line */
-	if (*lp_rootpreexec(SNUM(conn)))
-	{
-		BOOL ret;
+	if (*lp_rootpreexec(SNUM(conn))) {
 		pstring cmd;
-		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
-		standard_sub(conn,vuser, cmd);
-		vuid_free_user_struct(vuser);
+		standard_sub_conn(conn,cmd);
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL,False);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
@@ -613,14 +608,10 @@ connection_struct *make_connection(char *service,char *user,
 	add_session_user(user);
 		
 	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn)))
-	{
-		BOOL ret;
+	if (*lp_preexec(SNUM(conn))) {
 		pstring cmd;
-		user_struct *vuser = get_valid_user_struct(&key);
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub(conn,vuser, cmd);
-		vuid_free_user_struct(vuser);
+		standard_sub_conn(conn,cmd);
 		ret = smbrun(cmd,NULL,False);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
@@ -655,13 +646,13 @@ connection_struct *make_connection(char *service,char *user,
 	
 	/* Invoke VFS make connection hook */
 
-	if (conn->vfs_ops.connect) {
+        if (conn->vfs_ops.connect) {
             if (conn->vfs_ops.connect(conn->vfs_conn, service, user) < 0) {
-		return NULL;
-	    }
-	}
-	
-	return(conn);
+                return NULL;
+            }
+        }
+            
+        return(conn);
 }
 
 
@@ -670,8 +661,6 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	VUSER_KEY;
-
 	DirCacheFlush(SNUM(conn));
 
 	unbecome_user();
@@ -694,14 +683,14 @@ void close_cnum(connection_struct *conn, uint16 vuid)
             dlclose(conn->vfs_conn->dl_handle);  /* should we check return val? */
         }
 
-	    /* Free vfs_connection_struct */
+        /* Free vfs_connection_struct */
 	    
-	    if (conn->vfs_conn != NULL) {
-		if (conn->vfs_conn->groups != NULL) {
-		    free(conn->vfs_conn->groups);
-		}
-		free(conn->vfs_conn);
-	    }
+        if (conn->vfs_conn != NULL) {
+            if (conn->vfs_conn->groups != NULL) {
+                free(conn->vfs_conn->groups);
+            }
+            free(conn->vfs_conn);
+        }
 
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
@@ -715,26 +704,20 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
-	    become_user(conn, vuid))
-	{
-		user_struct *vuser = get_valid_user_struct(&key);
+	    become_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub(conn,vuser, cmd);
-		vuid_free_user_struct(vuser);
+		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL,False);
 		unbecome_user();
 	}
 
 	unbecome_user();
 	/* execute any "root postexec = " line */
-	if (*lp_rootpostexec(SNUM(conn)))
-	{
-		user_struct *vuser = get_valid_user_struct(&key);
+	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub(conn,vuser, cmd);
-		vuid_free_user_struct(vuser);
+		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL,False);
 	}
 	

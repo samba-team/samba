@@ -142,7 +142,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		con->type = MSRPC_LOCAL;
 		become_root(False);
 		con->msrpc.local = ncalrpc_l_use_add(pipe_name, user_key,
-						     True, reuse,
+						     reuse,
 						     &is_new_connection);
 		unbecome_root(False);
 	}
@@ -156,7 +156,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		con->type = MSRPC_SMB;
 		con->msrpc.smb =
 			ncacn_np_use_add(pipe_name, user_key, srv_name,
-					 ntc, True, reuse,
+					 ntc, reuse,
 					 &is_new_connection);
 
 		if (con->msrpc.smb == NULL)

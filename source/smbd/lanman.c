@@ -789,7 +789,6 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 		desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
   } else if(uLevel == 0) {
-		fill_printq_info(conn, snum, uLevel, &desc, count, queue,
 	}
 
 	*rdata_len = desc.usedlen;

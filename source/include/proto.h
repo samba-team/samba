@@ -428,11 +428,11 @@ const vuser_key *get_sec_ctx(void);
 
 /*The following definitions come from  lib/substitute.c  */
 
-void standard_sub_basic(char *str);
-void standard_sub_advanced(int snum, const user_struct *vuser, char *user, char *connectpath, gid_t gid, char *str);
-void standard_sub(connection_struct *conn, const user_struct *vuser, char *str);
+void standard_sub_conn(connection_struct *conn, char *str);
 void standard_sub_snum(int snum, char *str);
-void standard_sub_vuser(const user_struct * vuser, char *str);
+void standard_sub_basic(char *str);
+void standard_sub_vuser(char *str, user_struct *vuser);
+void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
 /*The following definitions come from  lib/surs.c  */
 
