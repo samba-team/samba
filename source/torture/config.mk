@@ -86,6 +86,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/autoidl.o \
 		torture/rpc/countcalls.o \
 		torture/rpc/testjoin.o \
+		torture/rpc/xplogin.o \
 		torture/rpc/schannel.o \
 		torture/rpc/netlogon.o \
 		torture/rpc/bind.o
