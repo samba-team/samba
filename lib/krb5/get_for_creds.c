@@ -63,6 +63,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     u_char buf[1024];
     krb5_data enc_data;
     int32_t sec, usec;
+    krb5_kdc_flags kdc_flags;
 
     out_creds = calloc(1, sizeof(*out_creds));
     if (out_creds == NULL)
@@ -100,9 +101,11 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	memcpy (addrs.val[n].address.data, *h, sizeof(struct in_addr));
     }
 
+    kdc_flags.i = flags;
+
     ret = krb5_get_kdc_cred (context,
 			     ccache,
-			     flags,
+			     kdc_flags,
 			     &addrs,
 			     NULL,
 			     in_creds,
