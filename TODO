@@ -6,10 +6,6 @@ $Id$
 
 automatically figure out if krb4 is installed
 
-* admin
-
-integrate with kadmin
-
 * appl
 
 more programs here
@@ -52,12 +48,7 @@ process_context_token, display_status, add_cred, inquire_cred_by_mech,
 export_sec_context, import_sec_context, inquire_names_for_mech, and
 inquire_mechs_for_name not implemented.
 
-get_mic, wrap: always uses the remote_subkey
-
 only DES MAC MD5 and DES implemented.
-
-wrap and unwrap always uses DES for sealing even if conf is not
-requested.
 
 minor_status is never set
 
