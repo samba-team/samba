@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,6 +60,9 @@ decode_type (const char *name, const Type *t)
     break;
   case TInteger:
     decode_primitive ("integer", name);
+    break;
+  case TUInteger:
+    decode_primitive ("unsigned", name);
     break;
   case TOctetString:
     decode_primitive ("octet_string", name);
@@ -283,6 +286,9 @@ generate_type_decode (const Symbol *s)
   switch (s->type->type) {
   case TInteger:
     fprintf (codefile, "return decode_integer (p, len, data, size);\n");
+    break;
+  case TUInteger:
+    fprintf (codefile, "return decode_unsigned (p, len, data, size);\n");
     break;
   case TOctetString:
     fprintf (codefile, "return decode_octet_string (p, len, data, size);\n");
