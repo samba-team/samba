@@ -1191,9 +1191,8 @@ again:
 	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
 			       password, strlen(password)+1, 
 			       domain)) {
-		if (!(flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK) 
-		    || cli_session_setup(cli, "", "", 0, 
-					 "", 0, domain)) {
+		if ((flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)
+		    && cli_session_setup(cli, "", "", 0, "", 0, domain)) {
 		} else {
 			nt_status = cli_nt_error(cli);
 			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));

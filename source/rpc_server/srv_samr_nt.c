@@ -727,8 +727,6 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	}
 
 	for (i = 0; i < num_entries; i++) {
-		int len = uni_temp_name.uni_str_len;
-		
 		pwd = disp_user_info[i+start_idx].sam;
 		temp_name = pdb_get_username(pwd);
 		init_unistr2(&uni_temp_name, temp_name, strlen(temp_name)+1);
@@ -743,7 +741,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		init_sam_entry(&sam[i], len, user_rid);
+		init_sam_entry(&sam[i], uni_temp_name.uni_str_len, user_rid);
 		copy_unistr2(&uni_name[i], &uni_temp_name);
 	}
 
