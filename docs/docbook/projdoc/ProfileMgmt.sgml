@@ -123,6 +123,63 @@ You can support profiles for both Win9X and WinNT clients by setting both the
 </programlisting></para>
 
 </sect3>
+<sect3>
+<title>Disabling Roaming Profile Support</title>
+
+<para>
+A question often asked is "How may I enforce use of local profiles?" or
+"How do I disable Roaming Profiles?"
+</para>
+
+<para>
+There are three ways of doing this:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	<command>In smb.conf:</command> affect the following settings and ALL clients
+	will be forced to use a local profile:
+	<programlisting>
+		logon home =
+		logon path =
+	</programlisting></para></listitem>
+
+	<listitem><para>
+	<command>MS Windows Registry:</command> by using the Microsoft Management Console
+	gpedit.msc to instruct your MS Windows XP machine to use only a local profile. This
+	of course modifies registry settings. The full path to the option is:
+	<programlisting>
+	Local Computer Policy\
+		Computer Configuration\
+			Administrative Templates\
+				System\
+					User Profiles\
+
+	Disable:	Only Allow Local User Profiles
+	Disable:	Prevent Roaming Profile Change from Propogating to the Server
+	</programlisting><para>
+	</listitem>
+
+	<listitem><para>
+	<command>Change of Profile Type:</command> From the start menu right click on the
+	MY Computer icon, select <emphasis>Properties</emphasis>, click on the "<emphasis>User Profiles</emphasis>
+	tab, select the profile you wish to change from Roaming type to Local, click <emphasis>Change Type</emphasis>.
+	</para></listitem>
+</itemizedlist>
+
+<para>
+Consult the MS Windows registry guide for your particular MS Windows version for more
+information about which registry keys to change to enforce use of only local user
+profiles.
+</para>
+
+<note><para>
+The specifics of how to convert a local profile to a roaming profile, or a roaming profile
+to a local one vary according to the version of MS Windows you are running. Consult the
+Microsoft MS Windows Resource Kit for your version of Windows for specific information.
+</para></note>
+
+</sect3>
 </sect2>
 
 <sect2>
@@ -885,7 +942,7 @@ The default entries are:
 	Common Desktop		%SystemRoot%\Profiles\All Users\Desktop
 	Common Programs		%SystemRoot%\Profiles\All Users\Programs
 	Common Start Menu	%SystemRoot%\Profiles\All Users\Start Menu
-	Common Startu	p	%SystemRoot%\Profiles\All Users\Start Menu\Progams\Startup
+	Common Startup		%SystemRoot%\Profiles\All Users\Start Menu\Progams\Startup
 </programlisting>
 </para>
 

@@ -56,15 +56,16 @@ In case samba can't figure out your ads server using your realm name, use the
 </programlisting></para>
 
 <para>Test your config by doing a <userinput>kinit
-<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and making sure that
-  your password is accepted by the Win2000 KDC. </para>
+<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and
+making sure that your password is accepted by the Win2000 KDC.
+</para>
 
 <note><para>The realm must be uppercase or you will get "Cannot find KDC for requested
 realm while getting initial credentials" error </para></note>
 
 <note><para>Time between the two servers must be synchronized.  You will get a
 "kinit(v5): Clock skew too great while getting initial credentials" if the time
-difference is more than five minutes. </para>
+difference is more than five minutes. </para></note>
 
 <para>
 You also must ensure that you can do a reverse DNS lookup on the IP
@@ -86,8 +87,7 @@ If all you want is kerberos support in &smbclient; then you can skip
 straight to <link linkend="ads-test-smbclient">Test with &smbclient;</link> now. 
 <link linkend="ads-create-machine-account">Creating a computer account</link> 
 and <link linkend="ads-test-server">testing your servers</link>
-is only needed if you want kerberos
-support for &smbd; and &winbindd;.
+is only needed if you want kerberos support for &smbd; and &winbindd;.
 </para>
 
 </sect1>
