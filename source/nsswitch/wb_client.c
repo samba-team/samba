@@ -619,8 +619,6 @@ BOOL winbind_delete_group( const char *group )
 }
 
 /***********************************************************************/
-#if 0	/* not needed currently since winbindd_acct was added -- jerry */
-
 /* Call winbindd to convert SID to uid. Do not allocate */
 
 BOOL winbind_sid_to_uid_query(uid_t *puid, const DOM_SID *sid)
@@ -690,8 +688,6 @@ BOOL winbind_sid_to_gid_query(gid_t *pgid, const DOM_SID *sid)
 
 	return (result == NSS_STATUS_SUCCESS);
 }
-
-#endif 	/* JERRY */
 
 /***********************************************************************/
 
