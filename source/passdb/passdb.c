@@ -514,121 +514,116 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	uint32 rid;
 	BOOL is_user;
 	SAM_ACCOUNT *sam_account = NULL;
-	BOOL found = False;
+	uid_t uid;
+	struct passwd *pass;
+	GROUP_MAP map;
+	
 
 	sid_peek_rid(sid, &rid);
-	is_user = pdb_rid_is_user(rid);
 	*psid_name_use = SID_NAME_UNKNOWN;
-
-	DEBUG(5,("local_lookup_sid: looking up %s RID %u.\n", is_user ? "user" :
-			"group", (unsigned int)rid));
-
-	if(is_user) {
-		if(rid == DOMAIN_USER_RID_ADMIN) {
-			char **admin_list = lp_admin_users(-1);
-			*psid_name_use = SID_NAME_USER;
-			if (admin_list) {
-				char *p = *admin_list;
-				if(!next_token(&p, name, NULL, sizeof(fstring)))
-					fstrcpy(name, "Administrator");
-			} else {
-				fstrcpy(name, "Administrator");
-			}
-		} else if (rid == DOMAIN_USER_RID_GUEST) {
-			char *p = lp_guestaccount();
-			*psid_name_use = SID_NAME_USER;
+	
+	DEBUG(5,("local_lookup_sid: looking up RID %u.\n", (unsigned int)rid));
+	
+	if (rid == DOMAIN_USER_RID_ADMIN) {
+		char **admin_list = lp_admin_users(-1);
+		*psid_name_use = SID_NAME_USER;
+		if (admin_list) {
+			char *p = *admin_list;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
-				fstrcpy(name, "Guest");
+				fstrcpy(name, "Administrator");
 		} else {
-			uid_t uid;
-			struct passwd *pass;
-			
-			/*
-			 * Don't try to convert the rid to a name if 
-			 * running in appliance mode
-			 */
-			if (lp_hide_local_users())
-				return False;
-
-			if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
-				return False;
-			}
-			
-			if (pdb_getsampwrid(sam_account, rid)) {
-				fstrcpy(name, pdb_get_username(sam_account));
-				*psid_name_use = SID_NAME_USER;
-				found = True;
-			}
-			
-			pdb_free_sam(&sam_account);
-			
-			if (found) {
-				return True;
-			}
-			
-			uid = fallback_pdb_user_rid_to_uid(rid);
-			pass = getpwuid_alloc(uid);
-			
-			*psid_name_use = SID_NAME_USER;
-			
-			DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
-				 pass ? "succeeded" : "failed" ));
-			
-			if(!pass) {
-				slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);
-				return True;
-			}
-			
-			fstrcpy(name, pass->pw_name);
-			
-			DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
-				 (unsigned int)rid ));
-			
-			passwd_free(&pass);
+			fstrcpy(name, "Administrator");
 		}
+		return True;
+
+	} else if (rid == DOMAIN_USER_RID_GUEST) {
+		char *p = lp_guestaccount();
+		*psid_name_use = SID_NAME_USER;
+		if(!next_token(&p, name, NULL, sizeof(fstring)))
+			fstrcpy(name, "Guest");
+		return True;
+
+	}
+
+	/*
+	 * Don't try to convert the rid to a name if 
+	 * running in appliance mode
+	 */
+
+	if (lp_hide_local_users())
+		return False;
 		
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
+		return False;
+	}
+		
+	if (pdb_getsampwrid(sam_account, rid)) {
+		fstrcpy(name, pdb_get_username(sam_account));
+		*psid_name_use = SID_NAME_USER;
+
+		pdb_free_sam(&sam_account);
+			
+		return True;
+	}
+		
+	pdb_free_sam(&sam_account);
+		
+	if (get_group_map_from_sid(*sid, &map, MAPPING_WITHOUT_PRIV)) {
+		if (map.gid!=-1) {
+			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
+			fstrcpy(name, map.nt_name);
+			*psid_name_use = map.sid_name_use;
+			return True;
+		}
+	}
+		
+	is_user = pdb_rid_is_user(rid);
+
+	DEBUG(5, ("assuming RID %u is a %s\n", (unsigned)rid, is_user ? "user" : "group"));
+
+	if (pdb_rid_is_user(rid)) {
+		uid = fallback_pdb_user_rid_to_uid(rid);
+		pass = getpwuid_alloc(uid);
+			
+		*psid_name_use = SID_NAME_USER;
+			
+		DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
+			 pass ? "succeeded" : "failed" ));
+			
+		if(!pass) {
+			slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);
+			return True;
+		}
+			
+		fstrcpy(name, pass->pw_name);
+			
+		DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
+			 (unsigned int)rid ));
+			
+		passwd_free(&pass);
+			
 	} else {
 		gid_t gid;
 		struct group *gr; 
-		GROUP_MAP map;
-		
-		/* 
-		 * Don't try to convert the rid to a name if running
-		 * in appliance mode
-		 */
-		
-		if (lp_hide_local_users()) 
-			return False;
-
-		/* check if it's a mapped group */
-		if (get_group_map_from_sid(*sid, &map, MAPPING_WITHOUT_PRIV)) {
-			if (map.gid!=-1) {
-				DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
-				fstrcpy(name, map.nt_name);
-				*psid_name_use = map.sid_name_use;
-				return True;
-			}
-		}
-		
+			
 		gid = pdb_group_rid_to_gid(rid);
 		gr = getgrgid(gid);
-
+			
 		*psid_name_use = SID_NAME_ALIAS;
-
+			
 		DEBUG(5,("local_lookup_sid: looking up gid %u %s\n", (unsigned int)gid,
-			gr ? "succeeded" : "failed" ));
-
+			 gr ? "succeeded" : "failed" ));
+			
 		if(!gr) {
 			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
 			return False;
 		}
-
+			
 		fstrcpy( name, gr->gr_name);
-
+			
 		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
-			(unsigned int)rid ));
+			 (unsigned int)rid ));
 	}
-
 	return True;
 }
 
@@ -643,7 +638,6 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	DOM_SID local_sid;
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
-	BOOL found = False;
 	
 	*psid_name_use = SID_NAME_UNKNOWN;
 
@@ -684,25 +678,23 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		*psid_name_use = SID_NAME_USER;
 		
 		sid_copy( psid, &local_sid);
-		found = True;
+		pdb_free_sam(&sam_account);
+		return True;
 	}
 
 	pdb_free_sam(&sam_account);
 
-	if (!found && (pass = Get_Pwnam(user))) {
+	if ((pass = Get_Pwnam(user))) {
 		sid_append_rid( &local_sid, fallback_pdb_uid_to_user_rid(pass->pw_uid));
 		*psid_name_use = SID_NAME_USER;
-		pdb_free_sam(&sam_account);
 
-	} else if (!found) {
+	} else {
 		/*
 		 * Maybe it was a group ?
 		 */
 		struct group *grp;
 		GROUP_MAP map;
 		
-		pdb_free_sam(&sam_account);
-
 		/* check if it's a mapped group */
 		if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
 			if (map.gid!=-1) {
@@ -754,27 +746,36 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	extern DOM_SID global_sam_sid;
 	struct passwd *pass;
 	SAM_ACCOUNT *sam_user = NULL;
+	fstring str; /* sid string buffer */
 
 	sid_copy(psid, &global_sam_sid);
 
-	if(!(pass = getpwuid_alloc(uid)))
-		return NULL;
+	if((pass = getpwuid_alloc(uid))) {
 
-	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+		if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+			passwd_free(&pass);
+			return NULL;
+		}
+		
+		if (pdb_getsampwnam(sam_user, pass->pw_name)) {
+			sid_append_rid(psid, pdb_get_user_rid(sam_user));
+		} else {
+			sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
+		}
+
+		DEBUG(10,("local_uid_to_sid: uid %u -> SID (%s) (%s).\n", 
+			  (unsigned)uid, sid_to_string( str, psid),
+			  pass->pw_name ));
+
 		passwd_free(&pass);
-		return NULL;
-	}
-	
-	if (!pdb_getsampwnam(sam_user, pass->pw_name)) {
 		pdb_free_sam(&sam_user);
-		return NULL;
+	
+	} else {
+		sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
+
+		DEBUG(10,("local_uid_to_sid: uid %u -> SID (%s) (unknown user).\n", 
+			  (unsigned)uid, sid_to_string( str, psid)));
 	}
-
-	passwd_free(&pass);
-
-	sid_append_rid(psid, pdb_get_user_rid(sam_user));
-
-	pdb_free_sam(&sam_user);
 
 	return psid;
 }
@@ -790,16 +791,12 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	DOM_SID dom_sid;
 	uint32 rid;
 	fstring str;
-	struct passwd *pass;
 	SAM_ACCOUNT *sam_user = NULL;
 
 	*name_type = SID_NAME_UNKNOWN;
 
 	sid_copy(&dom_sid, psid);
 	sid_split_rid(&dom_sid, &rid);
-
-	if (!pdb_rid_is_user(rid))
-		return False;
 
 	/*
 	 * We can only convert to a uid if this is our local
@@ -811,27 +808,25 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
 		return False;
 	
-	if (!pdb_getsampwrid(sam_user, rid)) {
-		pdb_free_sam(&sam_user);
-		return False;
+	if (pdb_getsampwrid(sam_user, rid)) {
+		*puid = pdb_get_uid(sam_user);
+		if (*puid == -1) {
+			pdb_free_sam(&sam_user);
+			return False;
+		}
+		DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
+			  (unsigned int)*puid, pdb_get_username(sam_user)));
+	} else {
+		if (pdb_rid_is_user(rid)) {
+			*puid = fallback_pdb_user_rid_to_uid(rid);
+			DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (non-passdb user).\n", sid_to_string( str, psid),
+				  (unsigned int)*puid));
+		} else {
+			pdb_free_sam(&sam_user);
+			return False;			
+		}
 	}
-	
-	*puid = pdb_get_uid(sam_user);
-	if (*puid == -1)
-		return False;
-
 	pdb_free_sam(&sam_user);
-
-	/*
-	 * Ensure this uid really does exist.
-	 */
-	if(!(pass = getpwuid_alloc(*puid)))
-		return False;
-
-	DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
-		(unsigned int)*puid, pass->pw_name ));
-
-	passwd_free(&pass);
 
 	*name_type = SID_NAME_USER;
 
@@ -887,9 +882,6 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	if (!sid_equal(&global_sam_sid, &dom_sid))
 		return False;
 
-	if (pdb_rid_is_user(rid))
-		return False;
-
 	if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
 		
 		/* the SID is in the mapping table but not mapped */
@@ -897,9 +889,12 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 			return False;
 
 		sid_peek_rid(&map.sid, &rid);
-		*pgid = rid;
+		*pgid = map.gid;
 		*name_type = map.sid_name_use;
 	} else {
+		if (pdb_rid_is_user(rid))
+			return False;
+
 		*pgid = pdb_group_rid_to_gid(rid);
 		*name_type = SID_NAME_ALIAS;
 	}
