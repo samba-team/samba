@@ -249,8 +249,8 @@ gss_auth(void *app_data, char *host)
 			   &msg_ctx,
 			   &status_string);
 	printf("Error importing name %s: %s\n", 
-	       name.value,
-	       (char*)status_string.value);
+	       (char *)name.value,
+	       (char *)status_string.value);
 	gss_release_buffer(&new_stat, &status_string);
 	return AUTH_ERROR;
     }
