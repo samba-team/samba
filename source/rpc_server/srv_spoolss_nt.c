@@ -4848,6 +4848,9 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	}
 
 	file_lines_free(qlines);
+
+	update_server_announce_as_printserver();
+
 	return True;
 }
 

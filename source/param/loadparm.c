@@ -1984,6 +1984,8 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
+	update_server_announce_as_printserver();
+
 	return (True);
 }
 
@@ -3355,6 +3357,13 @@ void lp_add_one_printer(char *name, char *comment)
 	}
 }
 
+/* Announce ourselves as a print server */
+
+void update_server_announce_as_printserver(void)
+{
+	default_server_announce |= SV_TYPE_PRINTQ_SERVER;	
+}
+
 /***************************************************************************
  Have we loaded a services file yet?
 ***************************************************************************/
@@ -3666,7 +3675,6 @@ static void set_default_server_announce_type(void)
 	default_server_announce |= SV_TYPE_WORKSTATION;
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
-	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
 
 	switch (lp_announce_as())
 	{
