@@ -1377,61 +1377,24 @@ static void api_samr_open_group( rpcsrv_struct *p, prs_struct *data, prs_struct 
    */
 
 /*******************************************************************
- samr_reply_lookup_domain
- ********************************************************************/
-static void samr_reply_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_LOOKUP_DOMAIN r_u;
-	fstring domain;
-
-	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
-
-	r_u.ptr_sid = 0;
-	r_u.status = 0x0;
-
-	/* find the connection policy handle */
-	if (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->connect_pol)) == -1)
-	{
-		r_u.status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (r_u.status == 0x0)
-        {
-		unistr2_to_ascii(domain, &(q_u->uni_domain), sizeof(domain));
-		DEBUG(5, ("Lookup Domain: %s\n", domain));
-
-		/* check it's one of ours */
-		if (strequal(domain, global_sam_name))
-		{
-			make_dom_sid2(&(r_u.dom_sid), &global_sam_sid);
-			r_u.ptr_sid = 1;
-		}
-		else if (strequal(domain, "BUILTIN"))
-		{
-			make_dom_sid2(&(r_u.dom_sid), &global_sid_S_1_5_20);
-			r_u.ptr_sid = 1;
-		}
-		else
-		{
-			r_u.status = NT_STATUS_NO_SUCH_DOMAIN;
-		}
-	}
-
-	/* store the response in the SMB stream */
-	samr_io_r_lookup_domain("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_samr_lookup_domain
  ********************************************************************/
 static void api_samr_lookup_domain( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_DOMAIN q_u;
+	SAMR_R_LOOKUP_DOMAIN r_u;
+	DOM_SID dom_sid;
+	uint32 status;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_lookup_domain("", &q_u, data, 0);
-	samr_reply_lookup_domain(&q_u, rdata);
+	status = _samr_lookup_domain(&q_u.connect_pol, &q_u.uni_domain, &dom_sid);
+	make_samr_r_lookup_domain(&r_u, &dom_sid, status);
+
+	/* store the response in the SMB stream */
+	samr_io_r_lookup_domain("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
