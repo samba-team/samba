@@ -529,6 +529,14 @@ struct name_record *search_for_name(struct subnet_record **d,
   
   if (*d == NULL) return NULL;
 
+  if (!n && (search & FIND_SELF)) {
+    if (!lp_wins_proxy())
+      DEBUG(3,("wins proxy not enabled - failing lookup\n"));
+    else
+      DEBUG(3,("FIND_SELF set - failing lookup\n"));
+    return NULL;
+  }
+
   /* now try DNS lookup. */
   if (!n)
     {

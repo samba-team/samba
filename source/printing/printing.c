@@ -945,7 +945,7 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 
   standard_sub(cnum,syscmd);
 
-  sprintf(outfile,"/tmp/lpq.%08x",str_checksum(syscmd));
+  sprintf(outfile,"%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
   
   if (!lpq_cache_reset[snum] && cachetime && !stat(outfile,&sbuf)) 
     {

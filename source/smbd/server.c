@@ -564,7 +564,7 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize)
       pstring syscmd;
       pstring outfile;
 	  
-      sprintf(outfile,"/tmp/dfree.smb.%d",(int)getpid());
+      sprintf(outfile,"%s/dfree.smb.%d",tmpdir(),(int)getpid());
       sprintf(syscmd,"%s %s",df_command,path);
       standard_sub_basic(syscmd);
 

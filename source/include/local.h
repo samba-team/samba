@@ -47,6 +47,7 @@
 #define LIST_SEP " \t,;:\n\r"
 
 #ifndef LOCKDIR
+/* this should have been set in the Makefile */
 #define LOCKDIR "/tmp/samba"
 #endif
 

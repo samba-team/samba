@@ -54,7 +54,7 @@ int trans_num = 0;
 */
 int case_default = CASE_LOWER;
 
-pstring debugf = "/tmp/log.samba";
+pstring debugf = "";
 int syslog_level;
 
 /* the following control case operations - they are put here so the
@@ -269,6 +269,21 @@ va_dcl
 
   return(0);
 }
+
+/****************************************************************************
+  find a suitable temporary directory. The result should be copied immediately
+  as it may be overwritten by a subsequent call
+  ****************************************************************************/
+char *tmpdir(void)
+{
+  char *p;
+  if ((p = getenv("TMPDIR"))) {
+    return p;
+  }
+  return "/tmp";
+}
+
+
 
 /****************************************************************************
 determine if a file descriptor is in fact a socket
