@@ -121,10 +121,11 @@ CFLAGS="$RPM_OPT_FLAGS" ./configure \
 	--with-swatdir=%{_datadir}/swat \
 	--with-libsmbclient \
 	--with-acl-support \
+	--with-shared-modules=idmap_rid \
 	--enable-cups=yes
 make showlayout
 make proto
-make %{?_smp_mflags} all nsswitch/libnss_wins.so debug2html 
+make %{?_smp_mflags} all modules nsswitch/libnss_wins.so debug2html 
 
 
 %install
@@ -355,6 +356,7 @@ fi
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so
 %{_libdir}/samba/charset/CP*.so
+%{_libdir}/samba/idmap/idmap*.so
 %{_includedir}/libsmbclient.h
 %{_bindir}/testparm
 %{_bindir}/testprns
