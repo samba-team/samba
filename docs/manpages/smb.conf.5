@@ -3373,6 +3373,14 @@ would use
 
 You can have as many mappings as you like in a username map file.
 
+You can map Windows usernames that have spaces in them by using double
+quotes around the name. For example:
+
+	tridge = "Andrew Tridgell"
+
+would map the windows username "Andrew Tridgell" to the unix username
+tridge.
+
 Note that the remapping is applied to all occurrences of
 usernames. Thus if you connect to "\e\eserver\efred" and "fred" is
 remapped to "mary" then you will actually be connecting to
