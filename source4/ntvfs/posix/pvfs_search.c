@@ -24,6 +24,7 @@
 #include "vfs_posix.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /* the state of a search started with pvfs_search_first() */
@@ -325,6 +326,11 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 		return STATUS_NO_MORE_FILES;
 	}
 
+	status = pvfs_access_check_parent(pvfs, req, name, SEC_DIR_TRAVERSE | SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* we initially make search a child of the request, then if we
 	   need to keep it long term we steal it for the private
 	   structure */
@@ -459,6 +465,11 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 
 	if (!name->has_wildcard && !name->exists) {
 		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	status = pvfs_access_check_parent(pvfs, req, name, SEC_DIR_TRAVERSE | SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* we initially make search a child of the request, then if we

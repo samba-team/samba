@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   resolve a wildcard rename pattern. This works on one component of the name
@@ -281,7 +281,7 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_access_check_create_nomask(pvfs, req, name2);
+	status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -360,7 +360,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 
 	switch (ren->ntrename.in.flags) {
 	case RENAME_FLAG_RENAME:
-		status = pvfs_access_check_create_nomask(pvfs, req, name2);
+		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -370,7 +370,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RENAME_FLAG_HARD_LINK:
-		status = pvfs_access_check_create_nomask(pvfs, req, name2);
+		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -380,7 +380,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RENAME_FLAG_COPY:
-		status = pvfs_access_check_create_nomask(pvfs, req, name2);
+		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
