@@ -3611,6 +3611,15 @@ static NTSTATUS ldapsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PAS
 }
 
 
+/**
+ * Looks up trust password by domain sid.
+ *
+ * @param methods passdb backend methods related to current context
+ * @param trust trust password structure used by password backend
+ * @param sid trust password's domain sid
+ * @return nt status code of operation
+ */
+
 static NTSTATUS ldapsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const DOM_SID *sid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
