@@ -1,3 +1,5 @@
+-- $Id$
+
 KERBEROS5 DEFINITIONS ::=
 BEGIN
 
@@ -360,9 +362,18 @@ sam-challenge		INTEGER ::= 12 -- (sam/otp)
 sam-response		INTEGER ::= 13 -- (sam/otp)
 pa-pk-as-req		INTEGER ::= 14 -- (pkinit)
 pa-pk-as-rep		INTEGER ::= 15 -- (pkinit)
-pa-pk-as-sign		INTEGER ::= 16 -- (pkinit)
-pa-pk-key-req		INTEGER ::= 17 -- (pkinit)
-pa-pk-key-rep		INTEGER ::= 18 -- (pkinit)
+
+-- these are deprecated
+-- pa-pk-as-sign		INTEGER ::= 16 -- (pkinit)
+-- pa-pk-key-req		INTEGER ::= 17 -- (pkinit)
+-- pa-pk-key-rep		INTEGER ::= 18 -- (pkinit)
+
+pa-use-specified-knvo	INTEGER ::= 20
+pa-sam-redirect		INTEGER ::= 21 -- (sam/otp)
+pa-get-from-typed-data	INTEGER ::= 22
+pa-sam-etype-info	INTEGER ::= 23
+
+
 -- checksumtypes
 
 CRC32 			INTEGER ::= 1
