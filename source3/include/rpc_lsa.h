@@ -96,7 +96,7 @@ typedef struct obj_attr_info
 typedef struct lsa_q_open_pol_info
 {
 	uint32 ptr;         /* undocumented buffer pointer */
-	uint16 system_name; /* system name BUG!!! (should be \\server!) */
+	uint16 system_name; /* 0x5c - system name */
 	LSA_OBJ_ATTR attr ; /* object attributes */
 
 	uint32 des_access; /* desired access attributes */
@@ -267,8 +267,8 @@ typedef struct lsa_trans_name_enum_info
 	uint32 ptr_trans_names;
 	uint32 num_entries2;
 	
-	LSA_TRANS_NAME name    [MAX_LOOKUP_SIDS]; /* translated names  */
-	UNISTR2        uni_name[MAX_LOOKUP_SIDS]; 
+	LSA_TRANS_NAME *name; /* translated names  */
+	UNISTR2 *uni_name;
 
 } LSA_TRANS_NAME_ENUM;
 
@@ -279,8 +279,8 @@ typedef struct lsa_sid_enum_info
 	uint32 ptr_sid_enum;
 	uint32 num_entries2;
 	
-	uint32   ptr_sid[MAX_LOOKUP_SIDS]; /* domain SID pointers to be looked up. */
-	DOM_SID2 sid    [MAX_LOOKUP_SIDS]; /* domain SIDs to be looked up. */
+	uint32 *ptr_sid; /* domain SID pointers to be looked up. */
+	DOM_SID2 *sid; /* domain SIDs to be looked up. */
 
 } LSA_SID_ENUM;
 
