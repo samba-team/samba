@@ -196,12 +196,12 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	ldb_set_debug_stderr(c);
 	hive->backend_data = c;
 
-	hive->root = talloc_zero_p(hive, struct registry_key);
-	talloc_set_destructor (hive->root, reg_close_ldb_key);
+	*k = talloc_zero_p(hive, struct registry_key);
+	talloc_set_destructor (*k, reg_close_ldb_key);
 	talloc_set_destructor (hive, ldb_close_hive);
-	hive->root->name = talloc_strdup(hive->root, "");
-	hive->root->backend_data = kd = talloc_zero_p(hive->root, struct ldb_key_data);
-	kd->dn = talloc_strdup(hive->root, "key=root");
+	(*k)->name = talloc_strdup(*k, "");
+	(*k)->backend_data = kd = talloc_zero_p(*k, struct ldb_key_data);
+	kd->dn = talloc_strdup(*k, "key=root");
 	
 
 	return WERR_OK;

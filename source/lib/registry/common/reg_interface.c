@@ -150,7 +150,7 @@ WERROR reg_get_hive(struct registry_context *ctx, uint32_t hkey, struct registry
 WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
 {
 	struct registry_hive *rethive;
-	struct registry_key *retkey;
+	struct registry_key *retkey = NULL;
 	struct reg_init_function_entry *entry;
 	WERROR werr;
 
@@ -173,16 +173,16 @@ WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, c
 
 	werr = entry->hive_functions->open_hive(rethive, &retkey);
 
-	rethive->root = retkey;
-
 	if(!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
-	
+
 	if(!retkey) {
 		DEBUG(0, ("Backend %s didn't provide root key!\n", backend));
 		return WERR_GENERAL_FAILURE;
 	}
+
+	rethive->root = retkey;
 
 	retkey->hive = rethive;
 	retkey->name = NULL;
