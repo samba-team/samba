@@ -11,37 +11,37 @@ krb5_build_ap_req (krb5_context context,
 {
   AP_REQ ap;
   Ticket t;
-  unsigned char buf[1024];
-  int len;
-
+  
   ap.pvno = 5;
   ap.msg_type = krb_ap_req;
   memset(&ap.ap_options, 0, sizeof(ap.ap_options));
-  if (ap_options & AP_OPTS_USE_SESSION_KEY)
-    ap.ap_options.use_session_key = 1;
-  if (ap_options & AP_OPTS_MUTUAL_REQUIRED)
-    ap.ap_options.mutual_required = 1;
+  ap.ap_options.use_session_key = (ap_options & AP_OPTS_USE_SESSION_KEY) > 0;
+  ap.ap_options.mutual_required = (ap_options & AP_OPTS_MUTUAL_REQUIRED) > 0;
   
   ap.ticket.tkt_vno = 5;
+#ifdef USE_ASN1_PRINCIPAL
+  copy_Realm(&cred->server->realm, &ap.ticket.realm);
+  copy_PrincipalName(&cred->server->name, &ap.ticket.sname);
+#else
   ap.ticket.realm = malloc(cred->server->realm.length + 1);
   strncpy(ap.ticket.realm, cred->server->realm.data,
 	  cred->server->realm.length);
   ap.ticket.realm[cred->server->realm.length] = '\0';
   krb5_principal2principalname(&ap.ticket.sname, cred->server);
+#endif
 
   decode_Ticket(cred->ticket.data, cred->ticket.length, &t);
-
-  ap.ticket.enc_part = t.enc_part;
+  copy_EncryptedData(&t.enc_part, &ap.ticket.enc_part);
+  free_Ticket(&t);
 
   ap.authenticator.etype = ap.ticket.enc_part.etype;
   ap.authenticator.kvno  = NULL;
   ap.authenticator.cipher = authenticator;
 
-  ret->length = encode_AP_REQ(buf + sizeof(buf) - 1, sizeof(buf), &ap);
-  free (ap.ticket.realm);
-
+  ret->length = length_AP_REQ(&ap);
   ret->data = malloc(ret->length);
-  memcpy (ret->data, buf + sizeof(buf) - ret->length, ret->length);
-
+  encode_AP_REQ(ret->data + ret->length - 1, ret->length, &ap);
+  free_AP_REQ(&ap);
+  
   return 0;
 }

@@ -107,7 +107,7 @@ krb5_string_to_key (char *str,
      p = s = malloc (len);
      if (p == NULL)
 	  return ENOMEM;
-     err = krb5_data_alloc (&key->contents, sizeof(des_cblock));
+     err = krb5_data_alloc (&key->keyvalue, sizeof(des_cblock));
      if (err) {
 	  free (p);
 	  return err;
@@ -138,9 +138,9 @@ krb5_string_to_key (char *str,
      des_set_odd_parity (&tempkey);
      if (des_is_weak_key (&tempkey))
 	 xor ((unsigned char *)&tempkey, (unsigned char*)"0x000x000x000x000x000x000x000xF0");
-     memcpy (key->contents.data, &tempkey, sizeof(tempkey));
+     memcpy (key->keyvalue.data, &tempkey, sizeof(tempkey));
      key->keytype = KEYTYPE_DES;
-     key->contents.length = sizeof(tempkey);
+     key->keyvalue.length = sizeof(tempkey);
      return 0;
 }
 
@@ -153,19 +153,31 @@ krb5_get_salt (krb5_principal princ,
     krb5_error_code err;
     char *p;
      
+#ifdef USE_ASN1_PRINCIPAL
+    len = strlen(princ->realm);
+    for (i = 0; i < princ->name.name_string.len; ++i)
+	len += strlen(princ->name.name_string.val[i]);
+#else
     len = princ->realm.length;
     for (i = 0; i < princ->ncomp; ++i)
 	len += princ->comp[i].length;
+#endif
     err = krb5_data_alloc (salt, len);
     if (err)
 	return err;
     p = salt->data;
+#ifdef USE_ASN1_PRINCIPAL
+    strcpy (p, princ->realm);
+    for (i = 0; i < princ->name.name_string.len; ++i) 
+	strcat (p, princ->name.name_string.val[i]);
+#else
     strncpy (p, princ->realm.data, princ->realm.length);
     p += princ->realm.length;
     for (i = 0; i < princ->ncomp; ++i) {
-	strncpy (p, princ->comp[i].data, princ->comp[i].length);
+	strcat (p, princ->comp[i].data, princ->comp[i].length);
 	p += princ->comp[i].length;
     }
+#endif
     return 0;
 }
 

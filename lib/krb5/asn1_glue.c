@@ -10,6 +10,9 @@ krb5_error_code
 krb5_principal2principalname (PrincipalName *p,
 			      krb5_principal from)
 {
+#ifdef USE_ASN1_PRINCIPAL
+    copy_PrincipalName(&from->name, p);
+#else
     int i;
 
     p->name_type = from->type;
@@ -21,6 +24,7 @@ krb5_principal2principalname (PrincipalName *p,
 	strncpy (p->name_string.val[i], from->comp[i].data, len);
 	p->name_string.val[i][len] = '\0';
     }
+#endif
     return 0;
 }
 
@@ -29,9 +33,12 @@ principalname2krb5_principal (krb5_principal *principal,
 			      PrincipalName from,
 			      char *realm)
 {
+    krb5_principal p = malloc(sizeof(*p));
+#ifdef USE_ASN1_PRINCIPAL
+    copy_PrincipalName(&from, &p->name);
+    p->realm = strdup(realm);
+#else
     int i;
-    krb5_principal p;
-    p = malloc (sizeof(*p));
     p->type = from.name_type;
     p->ncomp = from.name_string.len;
     p->comp = malloc (p->ncomp * sizeof(*p->comp));
@@ -42,6 +49,7 @@ principalname2krb5_principal (krb5_principal *principal,
     }
     p->realm.data = strdup(realm);
     p->realm.length = strlen(realm);
+#endif
     *principal = p;
     return 0;
 }

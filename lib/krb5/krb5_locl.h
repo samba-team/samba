@@ -55,7 +55,7 @@ krb5_getportbyname (const char *service,
 krb5_error_code
 krb5_sendto_kdc (krb5_context context,
 		 const krb5_data *send,
-		 const krb5_data *realm,
+		 const krb5_realm *realm,
 		 krb5_data *receive);
 
 krb5_error_code

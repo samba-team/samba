@@ -144,6 +144,34 @@ krb5_ret_data(krb5_storage *sp,
     return 0;
 }
 
+krb5_error_code
+krb5_store_string(krb5_storage *sp,
+		  char *s)
+{
+    krb5_data data;
+    data.length = strlen(s);
+    data.data = s;
+    return krb5_store_data(sp, data);
+}
+
+krb5_error_code
+krb5_ret_string(krb5_storage *sp,
+		char **string)
+{
+    int ret;
+    krb5_data data;
+    ret = krb5_ret_data(sp, &data);
+    if(ret)
+	return ret;
+    *string = realloc(data.data, data.length + 1);
+    if(*string == NULL){
+	free(data.data);
+	return ENOMEM;
+    }
+    (*string)[data.length] = 0;
+    return 0;
+}
+
 
 krb5_error_code
 krb5_store_principal(krb5_storage *sp,
@@ -151,6 +179,18 @@ krb5_store_principal(krb5_storage *sp,
 {
     int i;
     int ret;
+#ifdef USE_ASN1_PRINCIPAL
+    ret = krb5_store_int32(sp, p->name.name_type);
+    if(ret) return ret;
+    ret = krb5_store_int32(sp, p->name.name_string.len);
+    if(ret) return ret;
+    ret = krb5_store_string(sp, p->realm);
+    if(ret) return ret;
+    for(i = 0; i < p->name.name_string.len; i++){
+	ret = krb5_store_string(sp, p->name.name_string.val[i]);
+	if(ret) return ret;
+    }
+#else
     ret = krb5_store_int32(sp, p->type);
     if(ret) return ret;
     ret = krb5_store_int32(sp, p->ncomp);
@@ -161,6 +201,7 @@ krb5_store_principal(krb5_storage *sp,
 	ret = krb5_store_data(sp, p->comp[i]);
 	if(ret) return ret;
     }
+#endif
     return 0;
 }
 
@@ -171,15 +212,34 @@ krb5_ret_principal(krb5_storage *sp,
     int i;
     int ret;
     krb5_principal p;
-
-    p = ALLOC(1, krb5_principal_data);
+    int32_t type;
+    int32_t ncomp;
+    
+    p = calloc(1, sizeof(*p));
     if(p == NULL)
 	return ENOMEM;
 
-    if((ret = krb5_ret_int32(sp, &p->type)))
+    if((ret = krb5_ret_int32(sp, &type)))
 	return ret;
-    ret = krb5_ret_int32(sp, &p->ncomp);
+    if((ret = krb5_ret_int32(sp, &ncomp)))
+	return ret;
+#ifdef USE_ASN1_PRINCIPAL
+    p->name.name_type = type;
+    p->name.name_string.len = ncomp;
+    ret = krb5_ret_string(sp, &p->realm);
     if(ret) return ret;
+    p->name.name_string.val = calloc(ncomp, sizeof(*p->name.name_string.val));
+    if(p->name.name_string.val == NULL){
+	free(p->realm);
+	return ENOMEM;
+    }
+    for(i = 0; i < ncomp; i++){
+	ret = krb5_ret_string(sp, &p->name.name_string.val[i]);
+	if(ret) return ret; /* XXX */
+    }
+#else
+    p->type = type;
+    p->ncomp = ncomp;
     ret = krb5_ret_data(sp, &p->realm);
     if(ret) return ret;
     p->comp = ALLOC(p->ncomp, krb5_data);
@@ -190,6 +250,7 @@ krb5_ret_principal(krb5_storage *sp,
 	ret = krb5_ret_data(sp, &p->comp[i]);
 	if(ret) return ret;
     }
+#endif
     *princ = p;
     return 0;
 }
@@ -200,7 +261,7 @@ krb5_store_keyblock(krb5_storage *sp, krb5_keyblock p)
     int ret;
     ret =krb5_store_int32(sp, p.keytype);
     if(ret) return ret;
-    ret = krb5_store_data(sp, p.contents);
+    ret = krb5_store_data(sp, p.keyvalue);
     return ret;
 }
 
@@ -210,7 +271,7 @@ krb5_ret_keyblock(krb5_storage *sp, krb5_keyblock *p)
     int ret;
     ret = krb5_ret_int32(sp, (int32_t*)&p->keytype); /* keytype + etype */
     if(ret) return ret;
-    ret = krb5_ret_data(sp, &p->contents);
+    ret = krb5_ret_data(sp, &p->keyvalue);
     return ret;
 }
 

@@ -17,7 +17,11 @@ krb5_mk_error(krb5_principal princ,
     msg.msg_type = krb_error;
     msg.stime = time(0);
     msg.error_code = error_code;
+#ifdef USE_ASN1_PRINCIPAL
+    msg.realm = princ->realm;
+#else
     msg.realm = princ->realm.data;
+#endif
     krb5_principal2principalname(&msg.sname, princ);
     if (e_text)
 	msg.e_text = &e_text;

@@ -94,6 +94,11 @@ krb5_get_credentials (krb5_context context,
     */
     /* a.kdc_options */
 
+#ifdef USE_ASN1_PRINCIPAL
+    copy_Realm(&in_creds->server->realm, &a.req_body.realm);
+    a.req_body.sname = malloc(sizeof(*a.req_body.sname));
+    copy_PrincipalName(&in_creds->server->name, a.req_body.sname);
+#else
     a.req_body.realm = malloc(in_creds->server->realm.length + 1);
     strncpy (a.req_body.realm, in_creds->server->realm.data,
 	     in_creds->server->realm.length);
@@ -101,6 +106,7 @@ krb5_get_credentials (krb5_context context,
     
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname(a.req_body.sname, in_creds->server);
+#endif
     a.req_body.from = NULL;
     a.req_body.till = in_creds->times.endtime;
     a.req_body.rtime = NULL;
