@@ -1076,7 +1076,9 @@ static double create_procs(void (*fn)(void))
 			}
 
 			child_status[i] = getpid();
-			kill(getpid(), SIGSTOP);
+
+			while (child_status[i]) msleep(2);
+
 			fn();
 			_exit(0);
 		}
@@ -1100,7 +1102,7 @@ static double create_procs(void (*fn)(void))
 	start_timer();
 
 	for (i=0;i<nprocs;i++) {
-		kill(child_status[i], SIGCONT);
+		child_status[i] = 0;
 	}
 
 	printf("%d clients started\n", nprocs);
