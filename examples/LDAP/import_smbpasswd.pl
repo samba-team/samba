@@ -1,20 +1,20 @@
 #!/usr/bin/perl
 ##
-## Example script of how you could import and smbpasswd file into an LDAP
-## directory using the Mozilla PerLDAP module.
+## Example script of how you could import a smbpasswd file into an LDAP
+## directory 
 ##
 ## writen by jerry@samba.org
 ##
+## ported to Net::LDAP by dkrovich@slackworks.com
 
-use Mozilla::LDAP::Conn;
-use Mozilla::LDAP::Entry;
+use Net::LDAP;
 
 #################################################
 ## set these to a value appropriate for your site
 ##
 
-$DN="ou=people,dc=plainjoe,dc=org";
-$ROOTDN="cn=Manager,dc=plainjoe,dc=org";
+$DN="dc=samba,dc=my-domain,dc=com";
+$ROOTDN="cn=Manager,dc=my-domain,dc=com";
 $rootpw = "secret";
 $LDAPSERVER="localhost";
 
@@ -22,44 +22,87 @@ $LDAPSERVER="localhost";
 ## end local site variables
 #################################################
 
-$conn = new Mozilla::LDAP::Conn ("$LDAPSERVER", "389", $ROOTDN, $rootpw );
-die "Unable to connect to LDAP server $LDAPSERVER" unless $conn;
+$ldap = Net::LDAP->new($LDAPSERVER) or die "Unable to connect to LDAP server $LDAPSERVER";
 
+## Bind as $ROOTDN so you can do updates
+$mesg = $ldap->bind($ROOTDN, password => $rootpw);
 
 while ( $string = <STDIN> ) {
 	chop ($string);
 
-	## get the account information
+	## Get the account info from the smbpasswd file
 	@smbentry = split (/:/, $string);
 
-	## check for the existence of the posixAccount first
+	## Check for the existence of a system account
+	@getpwinfo = getpwnam($smbentry[0]);
+	if (! @getpwinfo ) {
+	    print STDERR "$smbentry[0] does not have a system account...  skipping\n";
+	    next;
+        }
 
-	## FIXME!!  Should do a getownam() and let the NSS modules lookup the account
-	## This way you can have a UNIX account in /etc/passwd and the smbpasswd i
-	## entry in LDAP.
-	$result = $conn->search ("$DN", "sub", "(&(uid=$smbentry[0])(objectclass=posixAccount))");
-	if ( ! $result ) {
-		print STDERR "uid=$smbentry[0] does not have a posixAccount entry in the directory!\n";
-		next;
-	}
+	## check and see if account info already exists in LDAP.
+        $result = $ldap->search ( base => "$DN",
+				  scope => "sub",
+				  filter => "(&(|(objectclass=posixAccount)(objectclass=sambaAccount))(uid=$smbentry[0]))"
+				);
 
-	print "Updating [" . $result->getDN() . "]\n";
+        ## If no LDAP entry exists, create one.
+	if ( $result->count == 0 ) {
+           $entry = $ldap->add ( dn => "uid=$smbentry[0]\,$DN",
+				 attrs => [
+				    uid => $smbentry[0],
+                                    uidNumber => @getpwinfo[2],
+				    lmPassword => $smbentry[2],
+				    ntPassword => $smbentry[3],
+                                    acctFlags => $smbentry[4],
+                                    pwdLastSet => substr($smbentry[5],4),
+                                    objectclass => [ 'top', 'sambaAccount', 'posixAccount']
+                                  ]
+				 );
+	   print "Adding [uid=" . $smbentry[0] . "," . $DN . "]\n";
 
-	## Do we need to add the 'objectclass: smbPasswordEntry' attribute?
-	if (! $result->hasValue("objectclass", "smbPasswordEntry")) {
-		$result->addValue("objectclass", "smbPasswordEntry");
-	}
-	
-	## Set other attribute values
-	$result->setValues ("lmPassword", $smbentry[2]);
-	$result->setValues ("ntPassword", $smbentry[3]);
-	$result->setValues ("acctFlags",  $smbentry[4]);
-	$result->setValues ("pwdLastSet", substr($smbentry[5],4));
+        ## Otherwise, supplement/update the existing entry.
+	} elsif ($result->count == 1) {
+	    # Put the search results into an entry object
+	    $entry = $result->shift_entry;
 
-	if (! $conn->update($result)) {
-		print "Error updating!\n";
-	}
+	    print "Updating [" . $entry->dn . "]\n";
+
+  	    ## Add the objectclass: sambaAccount attribute if it's not there
+	    @values = $entry->get_value( "objectclass" );
+	    $flag = 1;
+	    foreach $item (@values) {
+	       if ( lc($item) eq "sambaaccount" ) {
+		   print $item . "\n";
+		   $flag = 0;
+	       }
+	    }
+	    if ( $flag ) {
+	       $entry->add(objectclass => "sambaAccount");
+	    }
+
+	    ## Set the other attribute values
+	    $entry->replace(lmPassword => $smbentry[2],
+			    ntPassword => $smbentry[3],
+			    acctFlags  => $smbentry[4],
+			    pwdLastSet => substr($smbentry[5],4)
+			    );
+
+	    ## Apply changes to the LDAP server
+            $updatemesg = $entry->update($ldap);
+	    if ( $updatemesg->code )  {
+		print "Error updating $smbentry[0]!\n";
+	    }
+
+        ## If we get here, the LDAP search returned more than one value
+        ## which shouldn't happen under normal circumstances.
+	} else {
+	    print STDERR "LDAP search returned more than one entry for $smbentry[0]... skipping!\n";
+	    next;
+        }
 }
 
-$conn->close();
+$ldap->unbind();
 exit 0;
+
+
