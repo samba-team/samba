@@ -99,7 +99,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	a.in.server_name = NULL;
 	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
-	a.in.secure_challenge_type = 2;
+	a.in.secure_challenge_type = SEC_CHAN_BDC;
 	a.in.computer_name = lp_netbios_name();
 
 	printf("Testing ServerAuthenticate\n");
@@ -194,7 +194,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
-	r.in.secure_challenge_type = 2;
+	r.in.secure_challenge_type = SEC_CHAN_BDC;
 	r.in.computer_name = lp_netbios_name();
 
 	password = generate_random_str(8);
@@ -259,7 +259,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
 	r.in.database_id = 1;
-	r.in.sync_context = 1;
+	r.in.sync_context = 0;
 	r.in.preferredmaximumlength = (uint32)-1;
 
 	printf("Testing DatabaseSync\n");
