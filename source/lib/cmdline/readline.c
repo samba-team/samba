@@ -140,7 +140,7 @@ void smb_readline_ca_char(char c)
 /****************************************************************************
 history
 ****************************************************************************/
-int cmd_history(void)
+int cmd_history(const char **cmd_ptr)
 {
 #if defined(HAVE_LIBREADLINE)
 	HIST_ENTRY **hlist;
