@@ -1,5 +1,18 @@
 2000-03-04  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/krb5.h (krb5_get_init_creds_opt): add `anonymous' and
+	KRB5_GET_INIT_CREDS_OPT_ANONYMOUS
+	* lib/krb5/init_creds_pw.c (get_init_creds_common): set
+	request_anonymous flag appropriatly
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_set_anonymous):
+	add
+
+	* lib/krb5/get_in_tkt.c (_krb5_extract_ticket): new parameter to
+	determine whetever to ignore client name of not.  always copy
+	client name from kdc.  fix callers.
+
+	* kdc: add support for anonymous tickets
+
 	* kdc/string2key.8: add man-page for string2key
 
 2000-03-03  Assar Westerlund  <assar@sics.se>
