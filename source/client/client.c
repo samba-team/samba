@@ -2377,10 +2377,8 @@ static int do_message_op(void)
 	}
 
 	if (!process(base_directory)) {
-		close_sockets();
 		return(1);
 	}
-	close_sockets();
 
 	return(0);
 }
