@@ -559,7 +559,7 @@ void process_smb(char *inbuf, char *outbuf)
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_addr(Client) ) );
+			      client_connection_addr() ) );
 		  send_smb(Client,(char *)buf);
 		  exit_server("connection denied");
 	  }
@@ -779,7 +779,7 @@ void smbd_process(void)
     extern fstring remote_machine;
     extern fstring local_machine;
 
-    fstrcpy(remote_machine, dns_to_netbios_name(client_name(Client)));
+    fstrcpy(remote_machine, dns_to_netbios_name(client_connection_name()));
     fstrcpy(local_machine, global_myname);
     remote_machine[15] = 0;
     local_machine[15] = 0;

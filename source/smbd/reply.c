@@ -55,7 +55,7 @@ static void overflow_attack(int len)
 	  dbgtext( "ERROR: Invalid password length %d.\n", len );
 	  dbgtext( "Your machine may be under attack by someone " );
           dbgtext( "attempting to exploit an old bug.\n" );
-	  dbgtext( "Attack was from IP = %s.\n", client_addr(Client) );
+	  dbgtext( "Attack was from IP = %s.\n", client_connection_addr() );
           }
 	exit_server("possible attack");
 }

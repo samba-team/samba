@@ -766,6 +766,41 @@ connect_again:
 
 static BOOL global_client_name_done = False;
 static BOOL global_client_addr_done = False;
+static pstring client_name_buf;
+static fstring client_addr_buf;
+static int last_fd=-1;
+
+void set_client_connection_name(const char* name, int fd)
+{
+	global_client_name_done = True;
+	pstrcpy(client_name_buf, name);
+	last_fd = fd;
+}
+
+void set_client_connection_addr(const char* addr, int fd)
+{
+	global_client_addr_done = True;
+	pstrcpy(client_addr_buf, addr);
+	last_fd = fd;
+}
+
+char *client_connection_name(void)
+{
+	if (global_client_name_done)
+	{
+		return client_name_buf;
+	}
+	return client_name(Client);
+}
+
+char *client_connection_addr(void)
+{
+	if (global_client_addr_done)
+	{
+		return client_addr_buf;
+	}
+	return client_addr(Client);
+}
 
 void reset_globals_after_fork(void)
 {
@@ -791,25 +826,23 @@ char *client_name(int fd)
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
 	int     length = sizeof(sa);
-	static pstring name_buf;
 	struct hostent *hp;
-	static int last_fd=-1;
 	
 	if (global_client_name_done && last_fd == fd) 
-		return name_buf;
+		return client_name_buf;
 	
 	last_fd = fd;
 	global_client_name_done = False;
 	
-	pstrcpy(name_buf,"UNKNOWN");
+	pstrcpy(client_name_buf,"UNKNOWN");
 	
 	if (fd == -1) {
-		return name_buf;
+		return client_name_buf;
 	}
 	
 	if (getpeername(fd, &sa, &length) < 0) {
 		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return name_buf;
+		return client_name_buf;
 	}
 	
 	/* Look up the remote host name. */
@@ -817,16 +850,16 @@ char *client_name(int fd)
 				sizeof(sockin->sin_addr),
 				AF_INET)) == 0) {
 		DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr(fd)));
-		StrnCpy(name_buf,client_addr(fd),sizeof(name_buf) - 1);
+		StrnCpy(client_name_buf,client_addr(fd),sizeof(client_name_buf) - 1);
 	} else {
-		StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
-		if (!matchname(name_buf, sockin->sin_addr)) {
-			DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr(fd)));
-			pstrcpy(name_buf,"UNKNOWN");
+		StrnCpy(client_name_buf,(char *)hp->h_name,sizeof(client_name_buf) - 1);
+		if (!matchname(client_name_buf, sockin->sin_addr)) {
+			DEBUG(0,("Matchname failed on %s %s\n",client_name_buf,client_addr(fd)));
+			pstrcpy(client_name_buf,"UNKNOWN");
 		}
 	}
 	global_client_name_done = True;
-	return name_buf;
+	return client_name_buf;
 }
 
 /*******************************************************************
@@ -837,30 +870,28 @@ char *client_addr(int fd)
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
 	int     length = sizeof(sa);
-	static fstring addr_buf;
-	static int last_fd = -1;
 
 	if (global_client_addr_done && fd == last_fd) 
-		return addr_buf;
+		return client_addr_buf;
 
 	last_fd = fd;
 	global_client_addr_done = False;
 
-	fstrcpy(addr_buf,"0.0.0.0");
+	fstrcpy(client_addr_buf,"0.0.0.0");
 
 	if (fd == -1) {
-		return addr_buf;
+		return client_addr_buf;
 	}
 	
 	if (getpeername(fd, &sa, &length) < 0) {
 		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return addr_buf;
+		return client_addr_buf;
 	}
 	
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+	fstrcpy(client_addr_buf,(char *)inet_ntoa(sockin->sin_addr));
 	
 	global_client_addr_done = True;
-	return addr_buf;
+	return client_addr_buf;
 }
 
 /*******************************************************************

@@ -2179,9 +2179,9 @@ void standard_sub_basic(char *str)
 				break;
 			}
 			case 'N' : string_sub(p,"%N", automount_server(username)); break;
-			case 'I' : string_sub(p,"%I", client_addr(Client)); break;
+			case 'I' : string_sub(p,"%I", client_connection_addr()); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
-			case 'M' : string_sub(p,"%M", client_name(Client)); break;
+			case 'M' : string_sub(p,"%M", client_connection_name()); break;
 			case 'R' : string_sub(p,"%R", remote_proto); break;
 			case 'T' : string_sub(p,"%T", timestring()); break;
 			case 'U' : string_sub(p,"%U", username); break;

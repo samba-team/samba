@@ -207,7 +207,6 @@ connection_struct *make_connection(char *service,char *user,
 
 	snum = find_service(service);
 	if (snum < 0) {
-		extern int Client;
 		if (strequal(service,"IPC$")) {
 			DEBUG(3,("refusing IPC connection\n"));
 			*ecode = ERRnoipc;
@@ -215,7 +214,7 @@ connection_struct *make_connection(char *service,char *user,
 		}
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
-			 remote_machine, client_addr(Client), service));
+			 remote_machine, client_connection_addr(), service));
 		*ecode = ERRinvnetname;
 		return NULL;
 	}
@@ -337,7 +336,7 @@ connection_struct *make_connection(char *service,char *user,
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
-	safe_strcpy(conn->client_address, client_addr(Client), sizeof(conn->client_address)-1);
+	safe_strcpy(conn->client_address, client_connection_addr(), sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;
@@ -518,9 +517,8 @@ connection_struct *make_connection(char *service,char *user,
 	}
 	
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		extern int Client;
 		
-		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
+		dbgtext( "%s (%s) ", remote_machine, client_connection_addr() );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)));
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
@@ -581,13 +579,12 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	extern int Client;
 	DirCacheFlush(SNUM(conn));
 
 	unbecome_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
-				 remote_machine,client_addr(Client),
+				 remote_machine,client_connection_addr(),
 				 lp_servicename(SNUM(conn))));
 
 	if (conn->vfs_ops.disconnect != NULL) {

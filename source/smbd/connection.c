@@ -60,7 +60,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
-	extern int Client;
 
 	if (max_connections <= 0)
 		return(True);
@@ -95,7 +94,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	crec.start = time(NULL);
 	
 	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,conn?conn->client_address:client_addr(Client),sizeof(crec.addr)-1);
+	StrnCpy(crec.addr,conn?conn->client_address:client_connection_addr(),sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);

@@ -333,7 +333,7 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
      */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-	                  client_name(Client), client_addr(Client)))
+	                  client_connection_name(), client_connection_addr()))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", trust_acct));
 		return False;

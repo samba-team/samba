@@ -410,10 +410,26 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 ****************************************************************************/
 void msrpcd_process(int c, msrpc_pipes_struct *p)
 {
+    extern fstring remote_machine;
+    extern fstring local_machine;
+    extern pstring global_myname;
+
   max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   /* re-initialise the timezone */
   TimeInit();
+
+    fstrcpy(remote_machine, p->name);
+    fstrcpy(local_machine, global_myname);
+    local_machine[15] = 0;
+    strlower(remote_machine);
+    strlower(local_machine);
+
+    DEBUG(2, ("msrpc_process: client_name: %s my_name: %s\n",
+                         remote_machine, local_machine));
+
+    reload_services(True);
+    reopen_logs();
 
   while (True)
   {
