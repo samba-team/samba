@@ -28,7 +28,7 @@ make_proto () {
 	   perl $top/cf/make-proto.pl -o $2 -p $3 `perl -e '
 		do { 
 			$_ = <>; 
-		} until(/'$i'_.*SOURCES/); 
+		} until(/'$1'_.*SOURCES/); 
 		while(/\\\\\s*$/s){ 
 			$_ = $_ . <>;
 		} 
