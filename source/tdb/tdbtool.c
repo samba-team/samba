@@ -131,7 +131,7 @@ static void help(void)
 "\n");
 }
 
-static void terror(char *why)
+static void terror(const char *why)
 {
 	printf("%s\n", why);
 }
@@ -407,7 +407,7 @@ static void info_tdb(void)
 		printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
-static char *tdb_getline(char *prompt)
+static char *tdb_getline(const char *prompt)
 {
 	static char line[1024];
 	char *p;
