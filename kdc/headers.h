@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -85,15 +85,16 @@
 #include <base64.h>
 #include <parse_units.h>
 #include <krb5.h>
+#include <hdb.h>
 #include <hdb_err.h>
-#include <der.h>
+#include <der.h> /* copy_octet_string */
 
 #ifdef KRB4
 #include <krb.h>
 #include <prot.h>
+#define Principal Principal4
+#include <krb_db.h>
 #endif
-
-#include <hdb.h>
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
