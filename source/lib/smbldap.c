@@ -249,7 +249,7 @@ ATTRIB_MAP_ENTRY privilege_attr_list[] = {
 /*******************************************************************
  find the ldap password
 ******************************************************************/
-static BOOL fetch_ldap_pw(char **dn, char** pw)
+BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
 	size_t size;

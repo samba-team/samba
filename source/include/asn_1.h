@@ -46,6 +46,7 @@ typedef struct asn1_data {
 #define ASN1_OID 0x6
 #define ASN1_BOOLEAN 0x1
 #define ASN1_INTEGER 0x2
+#define ASN1_BITFIELD 0x3
 #define ASN1_ENUMERATED 0xa
 #define ASN1_SET 0x31
 

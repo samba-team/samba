@@ -217,4 +217,31 @@ struct ldap_message {
 	struct ldap_Control    *controls;
 };
 
+struct ldap_queue_entry {
+	struct ldap_queue_entry *next, *prev;
+	int msgid;
+	struct ldap_message *msg;
+};
+
+struct ldap_connection {
+	TALLOC_CTX *mem_ctx;
+	int sock;
+	int next_msgid;
+	char *host;
+	uint16 port;
+	BOOL ldaps;
+
+	const char *auth_dn;
+	const char *simple_pw;
+
+	/* Current outstanding search entry */
+	int searchid;
+
+	/* List for incoming search entries */
+	struct ldap_queue_entry *search_entries;
+
+	/* Outstanding LDAP requests that have not yet been replied to */
+	struct ldap_queue_entry *outstanding;
+};
+
 #endif

@@ -36,6 +36,7 @@
 
 struct ldap_idmap_state {
 	struct smbldap_state *smbldap_state;
+	struct ldap_connection *conn;
 	TALLOC_CTX *mem_ctx;
 };
 
@@ -118,6 +119,53 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
  safe to use, always check before use.  
 *********************************************************************/
 
+static NTSTATUS sid_in_use2(struct ldap_idmap_state *state, const DOM_SID *sid,
+			    const struct timeval *endtime, BOOL *in_use)
+{
+	fstring filter;
+	const char *sid_attr[] = {"sambaSID"};
+	struct ldap_message *msg = new_ldap_message();
+	struct ldap_message *entry;
+	struct ldap_SearchRequest *r;
+	NTSTATUS result;
+
+	if (msg == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	fstr_sprintf(filter, "(%s=%s)", "sambaSID", sid_string_static(sid));
+
+	r = &msg->r.SearchRequest;
+	msg->type = LDAP_TAG_SearchRequest;
+	r->basedn = lp_ldap_suffix();
+	r->scope = LDAP_SEARCH_SCOPE_SUB;
+	r->deref = LDAP_DEREFERENCE_NEVER;
+	r->timelimit = 0;
+	r->sizelimit = 0;
+	r->attributesonly = False;
+	r->filter = filter;
+	r->num_attributes = 1;
+	r->attributes = sid_attr;
+
+	if (!ldap_setsearchent(state->conn, msg, endtime)) {
+		result = ldap2nterror(ldap_error(state->conn));
+		goto done;
+	}
+
+	*in_use = False;
+
+	entry = ldap_getsearchent(state->conn, endtime);
+	if (entry != NULL) {
+		*in_use = True;
+		destroy_ldap_message(entry);
+	}
+
+	ldap_endsearchent(state->conn, endtime);
+
+ done:
+	destroy_ldap_message(msg);
+	return result;
+}
+
 static BOOL sid_in_use(struct ldap_idmap_state *state, 
 		       const DOM_SID *sid, int *error) 
 {
@@ -126,16 +174,18 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 	LDAPMessage *result = NULL;
 	int count;
 	int rc;
-	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
+	const char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
 
-	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID, sid_to_string(sid_string, sid));
+	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID,
+		 sid_to_string(sid_string, sid));
 
 	rc = smbldap_search_suffix(state->smbldap_state, 
 				   filter, sid_attr, &result);
 
 	if (rc != LDAP_SUCCESS)	{
 		char *ld_error = NULL;
-		ldap_get_option(state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		ldap_get_option(state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(2, ("Failed to check if sid %s is alredy in use: %s\n",
 			  sid_string, ld_error));
 		SAFE_FREE(ld_error);
@@ -144,7 +194,8 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 		return True;
 	}
 	
-	if ((count = ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
+	if ((count = ldap_count_entries(state->smbldap_state->ldap_struct,
+					result)) > 0) {
 		DEBUG(3, ("Sid %s already in use - trying next RID\n",
 			  sid_string));
 		ldap_msgfree(result);
@@ -729,6 +780,7 @@ static NTSTATUS verify_idpool( void )
 static NTSTATUS ldap_idmap_init( char *params )
 {
 	NTSTATUS nt_status;
+	char *dn, *pw;
 
 	ldap_state.mem_ctx = talloc_init("idmap_ldap");
 	if (!ldap_state.mem_ctx) {
@@ -742,6 +794,19 @@ static NTSTATUS ldap_idmap_init( char *params )
 		talloc_destroy(ldap_state.mem_ctx);
 		return nt_status;
 	}
+
+	ldap_state.conn = new_ldap_connection();
+
+	if (!fetch_ldap_pw(&dn, &pw))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	ldap_state.conn->auth_dn =
+		talloc_strdup(ldap_state.conn->mem_ctx, dn);
+	ldap_state.conn->simple_pw =
+		talloc_strdup(ldap_state.conn->mem_ctx, pw);
+
+	if (!ldap_connect(ldap_state.conn, params))
+		return NT_STATUS_UNSUCCESSFUL;
 
 	/* see if the idmap suffix and sub entries exists */
 	

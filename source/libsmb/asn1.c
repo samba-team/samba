@@ -305,16 +305,18 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	return !data->has_error;
 }
 
-static BOOL read_one_uint8(int sock, uint8 *result, ASN1_DATA *data)
+static BOOL read_one_uint8(int sock, uint8 *result, ASN1_DATA *data,
+			   const struct timeval *endtime)
 {
-	if (read(sock, result, 1) != 1)
+	if (read_data_until(sock, result, 1, endtime) != 1)
 		return False;
 
 	return asn1_write(data, result, 1);
 }
 
 /* Read a complete ASN sequence (ie LDAP result) from a socket */
-BOOL asn1_read_sequence(int sock, ASN1_DATA *data)
+BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
+			      const struct timeval *endtime)
 {
 	uint8 b;
 	size_t len;
@@ -322,7 +324,7 @@ BOOL asn1_read_sequence(int sock, ASN1_DATA *data)
 
 	ZERO_STRUCTP(data);
 
-	if (!read_one_uint8(sock, &b, data))
+	if (!read_one_uint8(sock, &b, data, endtime))
 		return False;
 
 	if (b != 0x30) {
@@ -330,16 +332,16 @@ BOOL asn1_read_sequence(int sock, ASN1_DATA *data)
 		return False;
 	}
 
-	if (!read_one_uint8(sock, &b, data))
+	if (!read_one_uint8(sock, &b, data, endtime))
 		return False;
 
 	if (b & 0x80) {
 		int n = b & 0x7f;
-		if (!read_one_uint8(sock, &b, data))
+		if (!read_one_uint8(sock, &b, data, endtime))
 			return False;
 		len = b;
 		while (n > 1) {
-			if (!read_one_uint8(sock, &b, data))
+			if (!read_one_uint8(sock, &b, data, endtime))
 				return False;
 			len = (len<<8) | b;
 			n--;
@@ -352,7 +354,7 @@ BOOL asn1_read_sequence(int sock, ASN1_DATA *data)
 	if (buf == NULL)
 		return False;
 
-	if (read_data(sock, buf, len) != len)
+	if (read_data_until(sock, buf, len, endtime) != len)
 		return False;
 
 	if (!asn1_write(data, buf, len))

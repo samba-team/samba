@@ -1049,7 +1049,7 @@ static int net_ads_password(int argc, const char **argv)
     }
 
     if (argv[1]) {
-	   new_password = (char *)argv[1];
+	    asprintf(&new_password, "%s", argv[1]);
     } else {
 	   asprintf(&prompt, "Enter new password for %s:", user);
 	   new_password = getpass(prompt);
@@ -1255,7 +1255,7 @@ int net_ads_help(int argc, const char **argv)
 static int net_ads_test(int argc, const char **argv)
 {
 	struct ldap_connection *conn;
-	struct ldap_message *msg;
+	struct ldap_message *msg, *result;
 
 	if (argc != 1) {
 		d_printf("usage: net ads test url\n");
@@ -1269,7 +1269,8 @@ static int net_ads_test(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!ldap_set_simple_creds(conn, "cn=admin,dc=samba,dc=org", "secret")) {
+	if (!ldap_set_simple_creds(conn, "cn=admin,dc=samba,dc=org",
+				   "secret")) {
 		d_printf("Could not set creds\n");
 		return -1;
 	}
@@ -1297,40 +1298,26 @@ static int net_ads_test(int argc, const char **argv)
 		msg->r.SearchRequest.attributes = attrs;
 	}
 
-	if (!ldap_send_msg(conn, msg)) {
-		d_printf("Could not send msg\n");
+	if (!ldap_setsearchent(conn, msg, NULL)) {
+		d_printf("Could not setsearchent\n");
 		return -1;
 	}
 
-	while (True) {
+	while ((result = ldap_getsearchent(conn, NULL)) != NULL) {
 
-		destroy_ldap_message(msg);
-		msg = new_ldap_message();
-
-		if (!ldap_receive_msg(conn, msg)) {
-			d_printf("Could not receive message\n");
-			return -1;
-		}
-
-		if (msg->type == LDAP_TAG_SearchResultEntry) {
-			struct ldap_SearchResEntry *r = &msg->r.SearchResultEntry;
-			int i;
-			d_printf("dn: %s\n", r->dn);
-			for (i=0; i<r->num_attributes; i++) {
-				int j;
-				d_printf(" %s\n", r->attributes[i].name);
-				for (j=0; j<r->attributes[i].num_values; j++) {
-					d_printf("  %s\n", r->attributes[i].values[j]);
-				}
+		struct ldap_SearchResEntry *r = &result->r.SearchResultEntry;
+		int i;
+		d_printf("dn: %s\n", r->dn);
+		for (i=0; i<r->num_attributes; i++) {
+			int j;
+			d_printf(" %s\n", r->attributes[i].name);
+			for (j=0; j<r->attributes[i].num_values; j++) {
+				d_printf("  %s\n", r->attributes[i].values[j]);
 			}
-			continue;
-		}
-
-		if (msg->type == LDAP_TAG_SearchResultDone) {
-			d_printf("Search Finished\n");
-			break;
 		}
 	}
+
+	ldap_endsearchent(conn, NULL);
 
 #if 0
 	{
@@ -1351,10 +1338,11 @@ static int net_ads_test(int argc, const char **argv)
 		msg->r.ModifyRequest.num_mods = 2;
 		msg->r.ModifyRequest.mods = mods;
 
-		if (!ldap_transaction(conn, msg, msg)) {
+		if ((result = ldap_transaction(conn, msg)) == NULL) {
 			d_printf("Could not modify\n");
 			return -1;
 		}
+		destroy_ldap_message(result);
 	}
 
 #endif
@@ -1378,7 +1366,7 @@ static int net_ads_test(int argc, const char **argv)
 		msg->r.AddRequest.num_attributes = 2;
 		msg->r.AddRequest.attributes = attribs;
 
-		if (!ldap_transaction(conn, msg, msg)) {
+		if ((result = ldap_transaction(conn, msg)) == NULL) {
 			d_printf("Could not add\n");
 		}
 	}
@@ -1386,7 +1374,7 @@ static int net_ads_test(int argc, const char **argv)
 	msg->type = LDAP_TAG_DelRequest;
 	msg->r.DelRequest.dn = "ou=team,dc=samba,dc=org";
 
-	if (!ldap_transaction(conn, msg, msg)) {
+	if ((result = ldap_transaction(conn, msg)) == NULL) {
 		d_printf("Could not delete\n");
 		return -1;
 	}
@@ -1397,7 +1385,7 @@ static int net_ads_test(int argc, const char **argv)
 	msg->r.ModifyDNRequest.deleteolddn = False;
 	msg->r.ModifyDNRequest.newsuperior = "ou=samba team,dc=samba,dc=org";
 
-	if (!ldap_transaction(conn, msg, msg)) {
+	if ((result = ldap_transaction(conn, msg)) == NULL) {
 		d_printf("Could not modrdn\n");
 		return -1;
 	}
@@ -1406,7 +1394,7 @@ static int net_ads_test(int argc, const char **argv)
 	msg->type = LDAP_TAG_AbandonRequest;
 	msg->messageid = 12345;
 
-	if (!ldap_send_msg(conn, msg)) {
+	if (!ldap_send_msg(conn, msg, NULL)) {
 		d_printf("Could not send abandon msg\n");
 	}
 
@@ -1415,7 +1403,7 @@ static int net_ads_test(int argc, const char **argv)
 	msg->r.CompareRequest.attribute = "uidNumber";
 	msg->r.CompareRequest.value = "2001";
 
-	if (!ldap_transaction(conn, msg, msg)) {
+	if ((result = ldap_transaction(conn, msg)) == NULL) {
 		d_printf("Could not modrdn\n");
 		return -1;
 	}
@@ -1440,7 +1428,7 @@ static int net_ads_test(int argc, const char **argv)
 		msg->r.ExtendedRequest.value.data = pwdchg.data;
 		msg->r.ExtendedRequest.value.length = pwdchg.length;
 
-		if (!ldap_transaction(conn, msg, msg)) {
+		if ((result = ldap_transaction(conn, msg)) == NULL) {
 			d_printf("Could not change pwd\n");
 			return -1;
 		}

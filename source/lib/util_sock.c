@@ -330,11 +330,29 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 	return (ssize_t)nread;
 }
 
+static BOOL timeout_until(struct timeval *timeout,
+			  const struct timeval *endtime)
+{
+	struct timeval now;
+
+	GetTimeOfDay(&now);
+
+	if ((now.tv_sec > endtime->tv_sec) ||
+	    ((now.tv_sec == endtime->tv_sec) &&
+	     (now.tv_usec > endtime->tv_usec)))
+		return False;
+
+	timeout->tv_sec = endtime->tv_sec - now.tv_sec;
+	timeout->tv_usec = endtime->tv_usec - now.tv_usec;
+	return True;
+}
+
 /****************************************************************************
  Read data from the client, reading exactly N bytes. 
 ****************************************************************************/
 
-ssize_t read_data(int fd,char *buffer,size_t N)
+ssize_t read_data_until(int fd,char *buffer,size_t N,
+			const struct timeval *endtime)
 {
 	ssize_t ret;
 	size_t total=0;  
@@ -342,6 +360,23 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 	smb_read_error = 0;
 
 	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set r_fds;
+			struct timeval timeout;
+			int res;
+
+			FD_ZERO(&r_fds);
+			FD_SET(fd, &r_fds);
+
+			if (!timeout_until(&timeout, endtime))
+				return -1;
+
+			res = sys_select(fd+1, &r_fds, NULL, NULL, &timeout);
+			if (res <= 0)
+				return -1;
+		}
+
 		ret = sys_read(fd,buffer + total,N - total);
 
 		if (ret == 0) {
@@ -358,6 +393,11 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 		total += ret;
 	}
 	return (ssize_t)total;
+}
+
+ssize_t read_data(int fd,char *buffer,size_t N)
+{
+	return read_data_until(fd, buffer, N, NULL);
 }
 
 /****************************************************************************
@@ -394,12 +434,30 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
  Write data to a fd.
 ****************************************************************************/
 
-ssize_t write_data(int fd,char *buffer,size_t N)
+ssize_t write_data_until(int fd,char *buffer,size_t N,
+			 const struct timeval *endtime)
 {
 	size_t total=0;
 	ssize_t ret;
 
 	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set w_fds;
+			struct timeval timeout;
+			int res;
+
+			FD_ZERO(&w_fds);
+			FD_SET(fd, &w_fds);
+
+			if (!timeout_until(&timeout, endtime))
+				return -1;
+
+			res = sys_select(fd+1, NULL, &w_fds, NULL, &timeout);
+			if (res <= 0)
+				return -1;
+		}
+
 		ret = sys_write(fd,buffer + total,N - total);
 
 		if (ret == -1) {
@@ -412,6 +470,11 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 		total += ret;
 	}
 	return (ssize_t)total;
+}
+
+ssize_t write_data(int fd,char *buffer,size_t N)
+{
+	return write_data_until(fd, buffer, N, NULL);
 }
 
 /****************************************************************************

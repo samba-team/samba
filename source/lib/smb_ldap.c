@@ -670,7 +670,6 @@ static BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 	return True;
 }
 				       
-
 BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 {
 	uint8 tag;
@@ -862,18 +861,6 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	return !data->has_error;
 }
 
-struct ldap_connection {
-	TALLOC_CTX *mem_ctx;
-	int sock;
-	int next_msgid;
-	char *host;
-	uint16 port;
-	BOOL ldaps;
-
-	const char *auth_dn;
-	const char *simple_pw;
-};
-
 static BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 				 char **host, uint16 *port, BOOL *ldaps)
 {
@@ -926,6 +913,9 @@ struct ldap_connection *new_ldap_connection(void)
 
 	result->mem_ctx = mem_ctx;
 	result->next_msgid = 1;
+	result->outstanding = NULL;
+	result->searchid = 0;
+	result->search_entries = NULL;
 	return result;
 }
 
@@ -981,50 +971,157 @@ void destroy_ldap_message(struct ldap_message *msg)
 	talloc_destroy(msg->mem_ctx);
 }
 
-BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg)
+BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
+		   const struct timeval *endtime)
 {
 	DATA_BLOB request;
 	BOOL result;
+	struct ldap_queue_entry *entry;
 
 	msg->messageid = conn->next_msgid++;
 
 	if (!ldap_encode(msg, &request))
 		return False;
 
-	result = (write_data(conn->sock, request.data,
-			     request.length) == request.length);
+	result = (write_data_until(conn->sock, request.data, request.length,
+				   endtime) == request.length);
 
 	data_blob_free(&request);
-	return result;
-}
 
-BOOL ldap_receive_msg(struct ldap_connection *conn, struct ldap_message *msg)
-{
-	struct asn1_data data;
-	BOOL result;
+	if (!result)
+		return result;
 
-	if (!asn1_read_sequence(conn->sock, &data))
+	/* abandon and unbind don't expect results */
+
+	if ((msg->type == LDAP_TAG_AbandonRequest) ||
+	    (msg->type == LDAP_TAG_UnbindRequest))
+		return True;
+
+	entry = malloc(sizeof(*entry));	
+
+	if (entry == NULL)
 		return False;
 
-	result = ldap_decode(&data, msg);
+	entry->msgid = msg->messageid;
+	entry->msg = NULL;
+	DLIST_ADD(conn->outstanding, entry);
 
-	asn1_free(&data);
-	return result;
+	return True;
 }
 
-BOOL ldap_transaction(struct ldap_connection *conn,
-		      struct ldap_message *request,
-		      struct ldap_message *response)
+BOOL ldap_receive_msg(struct ldap_connection *conn, struct ldap_message *msg,
+		      const struct timeval *endtime)
 {
-	if (!ldap_send_msg(conn, request))
+        struct asn1_data data;
+        BOOL result;
+
+        if (!asn1_read_sequence_until(conn->sock, &data, endtime))
+                return False;
+
+        result = ldap_decode(&data, msg);
+
+        asn1_free(&data);
+        return result;
+}
+
+static struct ldap_message *recv_from_queue(struct ldap_connection *conn,
+					    int msgid)
+{
+	struct ldap_queue_entry *e;
+
+	for (e = conn->outstanding; e != NULL; e = e->next) {
+
+		if (e->msgid == msgid) {
+			struct ldap_message *result = e->msg;
+			DLIST_REMOVE(conn->outstanding, e);
+			SAFE_FREE(e);
+			return result;
+		}
+	}
+
+	return NULL;
+}
+
+static void add_search_entry(struct ldap_connection *conn,
+			     struct ldap_message *msg)
+{
+	struct ldap_queue_entry *e = malloc(sizeof *e);
+	struct ldap_queue_entry *tmp;
+
+	if (e == NULL)
+		return;
+
+	e->msg = msg;
+	DLIST_ADD_END(conn->search_entries, e, tmp);
+	return;
+}
+
+static void fill_outstanding_request(struct ldap_connection *conn,
+				     struct ldap_message *msg)
+{
+	struct ldap_queue_entry *e;
+
+	for (e = conn->outstanding; e != NULL; e = e->next) {
+		if (e->msgid == msg->messageid) {
+			e->msg = msg;
+			return;
+		}
+	}
+
+	/* This reply has not been expected, destroy the incoming msg */
+	destroy_ldap_message(msg);
+	return;
+}
+
+struct ldap_message *ldap_receive(struct ldap_connection *conn, int msgid,
+				  const struct timeval *endtime)
+{
+	struct ldap_message *result = recv_from_queue(conn, msgid);
+
+	if (result != NULL)
+		return result;
+
+	while (True) {
+		struct asn1_data data;
+		result = new_ldap_message();
+		BOOL res;
+
+		if (!asn1_read_sequence_until(conn->sock, &data, endtime))
+			return NULL;
+
+		res = ldap_decode(&data, result);
+		asn1_free(&data);
+
+		if (!res)
+			return NULL;
+
+		if (result->messageid == msgid)
+			return result;
+
+		if (result->type == LDAP_TAG_SearchResultEntry) {
+			add_search_entry(conn, result);
+		} else {
+			fill_outstanding_request(conn, result);
+		}
+	}
+
+	return NULL;
+}
+
+struct ldap_message *ldap_transaction(struct ldap_connection *conn,
+				      struct ldap_message *request)
+{
+	if (!ldap_send_msg(conn, request, NULL))
 		return False;
-	return ldap_receive_msg(conn, response);
+
+	return ldap_receive(conn, request->messageid, NULL);
 }
 
 BOOL ldap_setup_connection(struct ldap_connection *conn,
 			   const char *url)
 {
 	struct ldap_message *msg = new_ldap_message();
+	struct ldap_message *response;
 	BOOL result;
 
 	if (msg == NULL)
@@ -1042,12 +1139,94 @@ BOOL ldap_setup_connection(struct ldap_connection *conn,
 	msg->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
 	msg->r.BindRequest.creds.password = conn->simple_pw;
 
-	if (!ldap_transaction(conn, msg, msg))
+	if ((response = ldap_transaction(conn, msg)) == NULL)
 		return False;
 
-	result = (msg->r.BindResponse.response.resultcode == 0);
+	result = (response->r.BindResponse.response.resultcode == 0);
 
+	destroy_ldap_message(msg);
+	destroy_ldap_message(response);
+	return result;
+}
+
+static BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
+				 const struct timeval *endtime)
+{
+	struct ldap_message *msg = new_ldap_message();
+	BOOL result;
+
+	if (msg == NULL)
+		return False;
+
+	msg->type = LDAP_TAG_AbandonRequest;
+	msg->r.AbandonRequest.messageid = msgid;
+
+	result = ldap_send_msg(conn, msg, endtime);
 	destroy_ldap_message(msg);
 	return result;
 }
 
+BOOL ldap_setsearchent(struct ldap_connection *conn, struct ldap_message *msg,
+		       const struct timeval *endtime)
+{
+	if ((conn->searchid != 0) &&
+	    (!ldap_abandon_message(conn, conn->searchid, endtime)))
+		return False;
+
+	conn->searchid = conn->next_msgid;
+	return ldap_send_msg(conn, msg, endtime);
+}
+
+struct ldap_message *ldap_getsearchent(struct ldap_connection *conn,
+				       const struct timeval *endtime)
+{
+	struct ldap_message *result;
+
+	if (conn->search_entries != NULL) {
+		struct ldap_queue_entry *e = conn->search_entries;
+
+		result = e->msg;
+		DLIST_REMOVE(conn->search_entries, e);
+		SAFE_FREE(e);
+		return result;
+	}
+
+	result = ldap_receive(conn, conn->searchid, endtime);
+
+	if (result->type == LDAP_TAG_SearchResultEntry)
+		return result;
+
+	if (result->type == LDAP_TAG_SearchResultDone) {
+		/* TODO: Handle Paged Results */
+		destroy_ldap_message(result);
+		return NULL;
+	}
+
+	/* TODO: Handle Search References here */
+	return NULL;
+}
+
+void ldap_endsearchent(struct ldap_connection *conn,
+		       const struct timeval *endtime)
+{
+	struct ldap_queue_entry *e;
+
+	e = conn->search_entries;
+
+	while (e != NULL) {
+		struct ldap_queue_entry *next = e->next;
+		DLIST_REMOVE(conn->search_entries, e);
+		SAFE_FREE(e);
+		e = next;
+	}
+}
+
+int ldap_error(struct ldap_connection *conn)
+{
+	return 0;
+}
+
+NTSTATUS ldap2nterror(int ldaperror)
+{
+	return NT_STATUS_OK;
+}
