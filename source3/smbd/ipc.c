@@ -531,6 +531,42 @@ static int check_printq_info(struct pack_desc* desc,
   return True;
 }
 
+/* turn a print job status into a on the wire status 
+   right now these are complete guesses - need to fill them in (tridge)
+*/
+static int printj_status(int v)
+{
+	switch (v) {
+	case LPQ_QUEUED:
+		return 0;
+	case LPQ_PAUSED:
+		return 1;
+	case LPQ_SPOOLING:
+		return 2;
+	case LPQ_PRINTING:
+		return 3;
+	}
+	return 4;
+}
+
+/* turn a print queue status into a on the wire status 
+   right now these are complete guesses - need to fill them in (tridge)
+*/
+static int printq_status(int v)
+{
+	switch (v) {
+	case LPQ_QUEUED:
+		return 0;
+	case LPQ_PAUSED:
+		return 1;
+	case LPQ_SPOOLING:
+		return 2;
+	case LPQ_PRINTING:
+		return 3;
+	}
+	return 4;
+}
+
 static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 			       struct pack_desc* desc,
 			       print_queue_struct* queue, int n)
@@ -548,7 +584,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
     PACKS(desc,"z","");		/* pszParms */
     PACKI(desc,"W",n+1);		/* uPosition */
-    PACKI(desc,"W",queue->status); /* fsStatus */
+    PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
     PACKS(desc,"z","");		/* pszStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
@@ -558,7 +594,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKI(desc,"W",queue->priority);		/* uPriority */
     PACKS(desc,"z",queue->user); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
-    PACKI(desc,"W",queue->status); /* fsStatus */
+    PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z","Samba");	/* pszComment */
@@ -702,7 +738,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
 		break;
 	case 51:
-		PACKI(desc,"K",status->status);
+		PACKI(desc,"K",printq_status(status->status));
 		break;
 	}
 
@@ -724,7 +760,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 			PACKI(desc,"W",LPSTAT_OK); /* status */
 		} else {
 			PACKS(desc,"z",status->message);
-			PACKI(desc,"W",status->status); /* status */
+			PACKI(desc,"W",printq_status(status->status)); /* status */
 		}
 		PACKI(desc,(uLevel == 1 ? "W" : "N"),count);
 	}
@@ -742,7 +778,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
 		} else {
 			PACKS(desc,"z",status->message); /* pszComment */
-			PACKI(desc,"W",status->status); /* fsStatus */
+			PACKI(desc,"W",printq_status(status->status)); /* fsStatus */
 		}
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
 		PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
