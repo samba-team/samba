@@ -36,7 +36,7 @@ static BOOL check_domain_match(char *user, char *domain)
    */
 
   if (!lp_allow_trusted_domains() &&
-      (!strequal(lp_workgroup(), domain) || strequal("", domain))) {
+      (strequal("", domain) || strequal(lp_workgroup(), domain) || is_netbios_alias_or_name(domain))) {
       DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
       return False;
   } else {

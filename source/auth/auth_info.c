@@ -25,9 +25,9 @@ const struct auth_init_function builtin_auth_init_functions[] = {
 	{ "guest", auth_init_guest },
 	{ "rhosts", auth_init_rhosts },
 	{ "hostsequiv", auth_init_hostsequiv },
-	{ "sam", auth_init_sam },
+	{ "sam", auth_init_sam },	
+	{ "samstrict", auth_init_samstrict },
 	{ "unix", auth_init_unix },
-	{ "local", auth_init_local },
 	{ "smbserver", auth_init_smbserver },
 	{ "ntdomain", auth_init_ntdomain },
 	{ "winbind", auth_init_winbind },
@@ -139,23 +139,33 @@ BOOL make_auth_info_subsystem(auth_authsupplied_info **auth_info)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = lp_list_make("guest ntdomain local");
+			auth_method_list = lp_list_make("guest samstrict ntdomain");
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
-			auth_method_list = lp_list_make("guest smbserver local");
+			auth_method_list = lp_list_make("guest samstrict smbserver");
 			break;
 		case SEC_USER:
-			DEBUG(5,("Making default auth method list for security=user\n"));
-			auth_method_list = lp_list_make("guest local");
+			if (lp_encrypted_passwords()) {	
+				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
+				auth_method_list = lp_list_make("guest sam");
+			} else {
+				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
+				auth_method_list = lp_list_make("guest unix");
+			}
 			break;
 		case SEC_SHARE:
-			DEBUG(5,("Making default auth method list for security=share\n"));
-			auth_method_list = lp_list_make("guest local");
+			if (lp_encrypted_passwords()) {
+				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = yes\n"));
+				auth_method_list = lp_list_make("guest sam");
+			} else {
+				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = no\n"));
+				auth_method_list = lp_list_make("guest unix");
+			}
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = lp_list_make("guest ads ntdomain local");
+			auth_method_list = lp_list_make("guest samstrict ads ntdomain");
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));

@@ -56,36 +56,6 @@ BOOL auth_init_guest(auth_methods **auth_method)
 }
 
 /****************************************************************************
- Check against either sam or unix, depending on encryption.
-****************************************************************************/
-
-static NTSTATUS check_local_security(void *my_private_data,
-			      const auth_usersupplied_info *user_info, 
-			      const auth_authsupplied_info *auth_info,
-			      auth_serversupplied_info **server_info)
-{
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-
-	if (user_info->encrypted) {
-		nt_status = check_sam_security(my_private_data, user_info, auth_info, server_info);
-	} else {
-		nt_status = check_unix_security(my_private_data, user_info, auth_info, server_info);
-	}
-	
-	return nt_status;
-}
-
-BOOL auth_init_local(auth_methods **auth_method) 
-{
-	if (!make_auth_methods(auth_method)) {
-		return False;
-	}
-
-	(*auth_method)->auth = check_local_security;
-	return True;
-}
-
-/****************************************************************************
  Return an error based on username
 ****************************************************************************/
 

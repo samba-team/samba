@@ -285,17 +285,6 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	NTSTATUS status;
 	struct passwd *pass;
 
-	/* 
-	 * Check that the requested domain is not our own machine name.
-	 * If it is, we should never check the PDC here, we use our own local
-	 * password file.
-	 */
-
-	if(strequal(user_info->domain.str, global_myname)) {
-		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
 	 * the challenge in local_challenge, and smb_ntpasswd points to
@@ -444,6 +433,22 @@ static NTSTATUS check_ntdomain_security(void *my_private_data,
 	char *p, *pserver;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
+
+	if (!user_info || !server_info || !auth_info) {
+		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	/* 
+	 * Check that the requested domain is not our own machine name.
+	 * If it is, we should never check the PDC here, we use our own local
+	 * password file.
+	 */
+
+	if(is_netbios_alias_or_name(user_info->domain.str)) {
+		DEBUG(3,("check_ntdomain_security: Requested domain was for this machine.\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
 
 	become_root();
 
