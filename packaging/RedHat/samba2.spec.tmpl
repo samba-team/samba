@@ -66,6 +66,9 @@ make -j${NUMCPU} all nsswitch/libnss_wins.so modules
 make -j${NUMCPU} debug2html
 make -j${NUMCPU} bin/smbspool
 
+# Remove some permission bits to avoid to many dependencies
+find examples docs -type f | xargs -r chmod -x
+
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
