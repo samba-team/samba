@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -76,14 +76,16 @@ void
 inaddr2str(struct in_addr addr, char *s, size_t len)
 {
   struct hostent *h;
-  char *p;
+  char **p;
 
   h = roken_gethostbyaddr ((const char *)&addr, sizeof(addr), AF_INET);
   if (h) {
     h = roken_gethostbyname (h->h_name);
     if(h)
-      while ((p = *(h->h_addr_list)++))
-	if (memcmp (p, &addr, sizeof(addr)) == 0) {
+      for(p = h->h_addr_list;
+	  *p;
+	  ++p)
+	if (memcmp (*p, &addr, sizeof(addr)) == 0) {
 	  strcpy_truncate (s, h->h_name, len);
 	  return;
 	}
