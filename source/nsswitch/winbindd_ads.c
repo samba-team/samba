@@ -93,10 +93,16 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	int rc;
+	char *ccache;
 
 	if (domain->private) {
 		return (ADS_STRUCT *)domain->private;
 	}
+
+	/* we don't want this to affect the users ccache */
+	ccache = lock_path("winbindd_ccache");
+	setenv("KRB5CCNAME", ccache, 1);
+	unlink(ccache);
 
 	ads = ads_init(NULL, NULL, NULL, NULL);
 	if (!ads) {
@@ -153,6 +159,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	*num_entries = 0;
 
 	DEBUG(3,("ads: query_user_list\n"));
 
@@ -244,6 +252,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	*num_entries = 0;
 
 	DEBUG(3,("ads: enum_dom_groups\n"));
 
@@ -513,6 +523,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DOM_SID sid;
 	char *sidstr;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	*num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
 
