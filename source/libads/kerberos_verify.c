@@ -64,7 +64,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 		}
 		/* Look for a CIFS ticket */
 		if (!StrnCaseCmp(princ_name, "cifs/", 5)) {
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
+			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.keyblock);
+#else
 			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.key);
+#endif
 
 			p_packet->length = ticket->length;
 			p_packet->data = (krb5_pointer)ticket->data;
@@ -73,7 +77,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 				krb5_free_unparsed_name(context, princ_name);
 				princ_name = NULL;
 				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
+					(unsigned int) kt_entry.keyblock.keytype));
+#else
 					(unsigned int) kt_entry.key.enctype));
+#endif
 				auth_ok = True;
 				break;
 			}
