@@ -1,3 +1,18 @@
+2003-10-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: make sure that the server realm and the krbtgt
+	second component are identical; get rpath from the capaths section
+
+	* kdc/kerberos5.c: change logic for when to check transited policy
+	to a tri-state model involving per principal flags (to be
+	implemented)
+
+	* kdc/kdc_locl.h: change enforce_transited_policy to a tri-state
+	variable
+
+	* kdc/config.c: change enforce_transited_policy to a tri-state
+	variable
+
 2003-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/transited.c (krb5_domain_x500_encode): always zero out
