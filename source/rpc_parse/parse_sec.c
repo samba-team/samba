@@ -594,6 +594,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
+	uint32 tmp_offset = 0;
 	SEC_DESC *psd;
 
 	if (ppsd == NULL)
@@ -650,9 +651,11 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd->off_owner_sid != 0) {
 
+		tmp_offset = ps->data_offset;
+		if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
+			return False;
+
 		if (UNMARSHALLING(ps)) {
-			if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
-				return False;
 			/* reading */
 			if((psd->owner_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->owner_sid))) == NULL)
 				return False;
@@ -660,43 +663,55 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
 			return False;
-	}
 
-	max_offset = MAX(max_offset, prs_offset(ps));
+		max_offset = MAX(max_offset, prs_offset(ps));
+
+		if (!prs_set_offset(ps,tmp_offset))
+			return False;
+	}
 
 	if (psd->off_grp_sid != 0) {
 
+		tmp_offset = ps->data_offset;
+		if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
+			return False;
+
 		if (UNMARSHALLING(ps)) {
 			/* reading */
-			if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
-				return False;
 			if((psd->grp_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->grp_sid))) == NULL)
 				return False;
 		}
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
+
+		max_offset = MAX(max_offset, prs_offset(ps));
+ 
+		if (!prs_set_offset(ps,tmp_offset))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, prs_offset(ps));
-
 	if ((psd->type & SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
+		tmp_offset = ps->data_offset;
 		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
 			return False;
+		max_offset = MAX(max_offset, prs_offset(ps));
+		if (!prs_set_offset(ps,tmp_offset))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, prs_offset(ps));
-
 	if ((psd->type & SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
+		tmp_offset = ps->data_offset;
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
 			return False;
+		max_offset = MAX(max_offset, prs_offset(ps));
+		if (!prs_set_offset(ps,tmp_offset))
+			return False;
 	}
-
-	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if(!prs_set_offset(ps, max_offset))
 		return False;
