@@ -49,6 +49,14 @@ static const fstring name_deadbeef = "<deadbeef>";
 
 static struct winbindd_domain *_domain_list;
 
+/**
+   When was the last scan of trusted domains done?
+   
+   0 == not ever
+*/
+
+static time_t last_trustdom_scan;
+
 struct winbindd_domain *domain_list(void)
 {
 	/* Initialise list */
@@ -83,6 +91,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
+	static const DOM_SID null_sid;
 	
 	/* ignore alt_name if we are not in an AD domain */
 	
@@ -100,6 +109,13 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		if (alternative_name && *alternative_name) {
 			if (strequal(alternative_name, domain->name) ||
 			    strequal(alternative_name, domain->alt_name)) {
+				return domain;
+			}
+		}
+		if (sid) {
+			if (sid_equal(sid, &null_sid) ) {
+				
+			} else if (sid_equal(sid, &domain->sid)) {
 				return domain;
 			}
 		}
@@ -134,12 +150,14 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		sid_copy(&domain->sid, sid);
 	}
 	
-	/* see if this is a native mode win2k domain */
+	/* set flags about native_mode, active_directory */
 	   
-	domain->native_mode = cm_check_for_native_mode_win2k( domain );
+	set_dc_type_and_flags( domain );
 	
-	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain->name,
-		domain->native_mode ? "native" : "mixed (or NT4)" ));
+	DEBUG(3,("add_trusted_domain: %s is an %s %s domain\n", domain->name,
+		 domain->active_directory ? "ADS" : "NT4", 
+		 domain->native_mode ? "native mode" : 
+		 ((domain->active_directory && !domain->native_mode) ? "mixed mode" : "")));
 
 	/* Link to domain list */
 	DLIST_ADD(_domain_list, domain);
@@ -157,13 +175,12 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 void rescan_trusted_domains( void )
 {
-	static time_t last_scan;
 	time_t now = time(NULL);
 	struct winbindd_domain *mydomain = NULL;
 	
 	/* see if the time has come... */
 	
-	if ( (now > last_scan) && ((now-last_scan) < WINBINDD_RESCAN_FREQ) )
+	if ( (now > last_trustdom_scan) && ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
 		return;
 		
 	if ( (mydomain = find_our_domain()) == NULL ) {
@@ -175,7 +192,7 @@ void rescan_trusted_domains( void )
 	
 	add_trusted_domains( mydomain );
 
-	last_scan = now;
+	last_trustdom_scan = now;
 	
 	return;	
 }
@@ -222,7 +239,7 @@ void add_trusted_domains( struct winbindd_domain *domain )
 		for(i = 0; i < num_domains; i++) {
 			DEBUG(10,("Found domain %s\n", names[i]));
 			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
-				domain->methods, &dom_sids[i]);
+					   domain->methods, &dom_sids[i]);
 					   
 			/* if the SID was empty, we better set it now */
 			
@@ -264,7 +281,7 @@ BOOL init_domain_list(void)
 	/* Free existing list */
 	free_domain_list();
 
-	/* Add ourselves as the first entry.  It *must* be the first entry */
+	/* Add ourselves as the first entry. */
 	
 	domain = add_trusted_domain( lp_workgroup(), lp_realm(), &cache_methods, NULL);
 	
@@ -287,7 +304,9 @@ BOOL init_domain_list(void)
 
 	/* do an initial scan for trusted domains */
 	add_trusted_domains(domain);
-
+	
+	/* avoid rescanning this right away */
+	last_trustdom_scan = time(NULL);
 	return True;
 }
 

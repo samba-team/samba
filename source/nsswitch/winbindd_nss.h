@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 8
+#define WINBIND_INTERFACE_VERSION 9
 
 /* Socket commands */
 
@@ -272,6 +272,7 @@ struct winbindd_response {
 			fstring alt_name;
 			fstring sid;
 			BOOL native_mode;
+			BOOL active_directory;
 			BOOL primary;
 			uint32 sequence_number;
 		} domain_info;

@@ -500,19 +500,22 @@ static void use_in_memory_ccache(void) {
  Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
 
-static NTSTATUS cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
+static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
 {
 	DATA_BLOB blob2, negTokenTarg;
 	DATA_BLOB session_key_krb5;
 	DATA_BLOB null_blob = data_blob(NULL, 0);
-	
+	int rc;
+
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(principal, 0, &session_key_krb5);
+	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5);
 
-	if (!negTokenTarg.data)
-		return NT_STATUS_UNSUCCESSFUL;
+	if (rc) {
+		DEBUG(1, ("spnego_gen_negTokenTarg failed: %s\n", error_message(rc)));
+		return ADS_ERROR_KRB5(rc);
+	}
 
 #if 0
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
@@ -531,10 +534,10 @@ static NTSTATUS cli_session_setup_kerberos(struct cli_state *cli, const char *pr
 
 	if (cli_is_error(cli)) {
 		if (NT_STATUS_IS_OK(cli_nt_error(cli))) {
-			return NT_STATUS_UNSUCCESSFUL;
+			return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		}
 	} 
-	return NT_STATUS_OK;
+	return ADS_ERROR_NT(cli_nt_error(cli));
 }
 #endif	/* HAVE_KRB5 */
 
@@ -661,7 +664,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
  Do a spnego encrypted session setup.
 ****************************************************************************/
 
-NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
+ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
 			      const char *pass, const char *domain)
 {
 	char *principal;
@@ -689,7 +692,7 @@ NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	   reply */
 	if (!spnego_parse_negTokenInit(blob, OIDs, &principal)) {
 		data_blob_free(&blob);
-		return NT_STATUS_INVALID_PARAMETER;
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 	data_blob_free(&blob);
 
@@ -719,7 +722,7 @@ NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			
 			if (ret){
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
-				return NT_STATUS_LOGON_FAILURE;
+				return ADS_ERROR_KRB5(ret);
 			}
 		}
 		
@@ -731,7 +734,7 @@ NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 ntlmssp:
 
-	return cli_session_setup_ntlmssp(cli, user, pass, domain);
+	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, user, pass, domain));
 }
 
 /****************************************************************************
@@ -812,9 +815,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 	/* if the server supports extended security then use SPNEGO */
 
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
-		NTSTATUS nt_status;
-		if (!NT_STATUS_IS_OK(nt_status = cli_session_setup_spnego(cli, user, pass, workgroup))) {
-			DEBUG(3, ("SPENGO login failed: %s\n", get_friendly_nt_error_msg(nt_status)));
+		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass, workgroup);
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(3, ("SPENGO login failed: %s\n", ads_errstr(status)));
 			return False;
 		}
 		return True;

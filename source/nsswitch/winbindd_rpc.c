@@ -950,7 +950,8 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
-	fstring level5_dom;
+	char *level5_dom;
+	DOM_SID *alloc_sid;
 	int retry;
 
 	DEBUG(3,("rpc: domain_sid\n"));
@@ -965,8 +966,16 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 			goto done;
 
 		result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
-					   &hnd->pol, 0x05, level5_dom, sid);
+					   &hnd->pol, 0x05, &level5_dom, &alloc_sid);
 	} while (!NT_STATUS_IS_OK(result) && (retry++ < 1) &&  hnd && hnd->cli && hnd->cli->fd == -1);
+
+	if (NT_STATUS_IS_OK(result)) {
+		if (alloc_sid) {
+			sid_copy(sid, alloc_sid);
+		} else {
+			result = NT_STATUS_NO_MEMORY;
+		}
+	}
 
 done:
 	talloc_destroy(mem_ctx);

@@ -935,6 +935,8 @@ int main(int argc, char **argv)
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
+	init_domain_list();
+
 	/* Loop waiting for requests */
 
 	process_loop();

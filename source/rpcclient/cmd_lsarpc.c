@@ -68,9 +68,13 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID dom_sid;
-	GUID dom_guid;
-	fstring sid_str, domain_name="", dns_name="", forest_name="";
+	DOM_SID *dom_sid;
+	GUID *dom_guid;
+	fstring sid_str;
+	char *domain_name = NULL;
+	char *dns_name = NULL;
+	char *forest_name = NULL;
+
 	uint32 info_class = 3;
 
 	if (argc > 2) {
@@ -91,8 +95,8 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 		result = cli_lsa_query_info_policy2(cli, mem_ctx, &pol,
-						    info_class, domain_name,
-						    dns_name, forest_name,
+						    info_class, &domain_name,
+						    &dns_name, &forest_name,
 						    &dom_guid, &dom_sid);
 		break;
 	default:
@@ -103,23 +107,23 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 		result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, 
-						   info_class, domain_name, 
+						   info_class, &domain_name, 
 						   &dom_sid);
 	}
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
+	
+	sid_to_string(sid_str, dom_sid);
 
-	sid_to_string(sid_str, &dom_sid);
-
-	if (domain_name[0])
+	if (domain_name)
 		printf("domain %s has sid %s\n", domain_name, sid_str);
 	else
 		printf("could not query info for level %d\n", info_class);
 
-	if (dns_name[0])
+	if (dns_name)
 		printf("domain dns name is %s\n", dns_name);
-	if (forest_name[0])
+	if (forest_name)
 		printf("forest name is %s\n", forest_name);
 
 	if (info_class == 12) {

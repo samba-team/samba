@@ -298,18 +298,20 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 
 	/* Display response */
 
-	d_printf("Name    : %s\n", response.data.domain_info.name);
-	d_printf("Alt_Name: %s\n", response.data.domain_info.alt_name);
+	d_printf("Name              : %s\n", response.data.domain_info.name);
+	d_printf("Alt_Name          : %s\n", response.data.domain_info.alt_name);
 
-	d_printf("SID     : %s\n", response.data.domain_info.sid);
+	d_printf("SID               : %s\n", response.data.domain_info.sid);
 
-	d_printf("Native  : %s\n",
+	d_printf("Active Directory  : %s\n",
+		 response.data.domain_info.active_directory ? "Yes" : "No");
+	d_printf("Native            : %s\n",
 		 response.data.domain_info.native_mode ? "Yes" : "No");
 
-	d_printf("Primary : %s\n",
+	d_printf("Primary           : %s\n",
 		 response.data.domain_info.primary ? "Yes" : "No");
 
-	d_printf("Sequence: %d\n", response.data.domain_info.sequence_number);
+	d_printf("Sequence          : %d\n", response.data.domain_info.sequence_number);
 
 	return True;
 }

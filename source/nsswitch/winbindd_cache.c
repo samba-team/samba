@@ -112,7 +112,9 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 				break;
 			}
 
-			if ( domain->native_mode ) {
+			/* if it have either of the indications of ADS, 
+			   use ads_methods */
+			if ( domain->active_directory || domain->native_mode ) {
 				domain->backend = &ads_methods;
 				break;
 			}
