@@ -1,5 +1,8 @@
 Fri May 29 00:05:04 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* getarg.c (mandoc_template): Put short and long options in
+ 	DESCRIPTION on the same line.
+
 	* getarg.c (arg_match_long): make sure you only get an exact match
  	if the strings are the same length
 
