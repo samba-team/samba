@@ -160,7 +160,10 @@ struct smb_passwd *iterate_getsmbpwnam(const char *name)
 
 uint32 getsamseqnum(void)
 {
-  return pwdb_ops->getsamseqnum();
+	if (pwdb_ops->getsamseqnum)
+		return pwdb_ops->getsamseqnum();
+
+	return (uint32) time(NULL);
 }
 
 /***************************************************************

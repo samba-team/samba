@@ -516,6 +516,8 @@ static BOOL ldap_modpw(struct smb_passwd *pwd, BOOL override)
 
 static struct smb_passdb_ops ldap_ops =
 {
+	NULL,
+
 	ldap_enumfirst,
 	ldap_enumclose,
 	ldap_getdbpos,

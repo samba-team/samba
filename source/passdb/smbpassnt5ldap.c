@@ -510,6 +510,8 @@ nt5ldapsmb_modpw (struct smb_passwd *pwd, BOOL override)
 
 static struct smb_passdb_ops nt5ldapsmb_ops =
 {
+	NULL,
+
 	nt5ldapsmb_enumfirst,
 	nt5ldapsmb_enumclose,
 	nt5ldapsmb_getdbpos,
