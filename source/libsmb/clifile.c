@@ -171,7 +171,7 @@ static mode_t unix_filetype_from_wire(uint32 wire_type)
  Do a POSIX getfacl (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_getfacl(struct cli_state *cli, const char *name, char **retbuf)
+BOOL cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf)
 {
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
@@ -211,6 +211,7 @@ BOOL cli_unix_getfacl(struct cli_state *cli, const char *name, char **retbuf)
 
 	SAFE_FREE(rparam);
 	*retbuf = rdata;
+	*prb_size = (size_t)data_len;
 
 	return True;
 }
