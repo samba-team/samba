@@ -304,8 +304,9 @@ gss_verify_mic_internal
 	break;
     default :
 #ifdef HAVE_GSSAPI_CFX
-	ret = verify_mic_cfx (minor_status, context_handle,
-			      message_buffer, token_buffer, qop_state, key);
+	ret = _gssapi_verify_mic_cfx (minor_status, context_handle,
+				      message_buffer, token_buffer, qop_state,
+				      key);
 #else
 	*minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
 	ret = GSS_S_FAILURE;

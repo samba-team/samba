@@ -467,9 +467,9 @@ OM_uint32 gss_wrap
       break;
   default :
 #ifdef HAVE_GSSAPI_CFX
-      ret = wrap_cfx (minor_status, context_handle, conf_req_flag,
-		      qop_req, input_message_buffer, conf_state,
-		      output_message_buffer, key);
+      ret = _gssapi_wrap_cfx (minor_status, context_handle, conf_req_flag,
+			      qop_req, input_message_buffer, conf_state,
+			      output_message_buffer, key);
 #else
       *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;

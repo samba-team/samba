@@ -93,7 +93,7 @@ wrap_length_cfx(krb5_crypto crypto,
     return 0;
 }
 
-OM_uint32 wrap_size_cfx(OM_uint32 *minor_status,
+OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 	    const gss_ctx_id_t context_handle,
 	    int conf_req_flag,
 	    gss_qop_t qop_req,
@@ -172,7 +172,7 @@ static krb5_error_code rrc_rotate(void *data, size_t len, u_int16_t rrc)
     return 0;
 }
 
-OM_uint32 wrap_cfx(OM_uint32 *minor_status,
+OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	   const gss_ctx_id_t context_handle,
 	   int conf_req_flag,
 	   gss_qop_t qop_req,
@@ -358,7 +358,7 @@ OM_uint32 wrap_cfx(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 unwrap_cfx(OM_uint32 *minor_status,
+OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	     const gss_ctx_id_t context_handle,
 	     const gss_buffer_t input_message_buffer,
 	     gss_buffer_t output_message_buffer,
@@ -571,7 +571,7 @@ OM_uint32 unwrap_cfx(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 mic_cfx(OM_uint32 *minor_status,
+OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 	  const gss_ctx_id_t context_handle,
 	  gss_qop_t qop_req,
 	  const gss_buffer_t message_buffer,
@@ -665,7 +665,7 @@ OM_uint32 mic_cfx(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 verify_mic_cfx(OM_uint32 *minor_status,
+OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	     const gss_ctx_id_t context_handle,
 	     const gss_buffer_t message_buffer,
 	     const gss_buffer_t token_buffer,

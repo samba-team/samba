@@ -62,43 +62,43 @@ typedef struct gss_cfx_delete_token_desc_struct {
 	u_char SND_SEQ[8];
 } gss_cfx_delete_token_desc, *gss_cfx_delete_token;
 
-OM_uint32 wrap_size_cfx(OM_uint32 *minor_status,
-			const gss_ctx_id_t context_handle,
-			int conf_req_flag,
-			gss_qop_t qop_req,
-			OM_uint32 req_output_size,
-			OM_uint32 *max_input_size,
-			krb5_keyblock *key);
+OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *,
+				const gss_ctx_id_t,
+				int,
+				gss_qop_t,
+				OM_uint32,
+				OM_uint32 *,
+				krb5_keyblock *);
 
-OM_uint32 wrap_cfx(OM_uint32 *minor_status,
-		   const gss_ctx_id_t context_handle,
-		   int conf_req_flag,
-		   gss_qop_t qop_req,
-		   const gss_buffer_t input_message_buffer,
-		   int *conf_state,
-		   gss_buffer_t output_message_buffer,
-		   krb5_keyblock *key);
+OM_uint32 _gssapi_wrap_cfx(OM_uint32 *,
+			   const gss_ctx_id_t,
+			   int,
+			   gss_qop_t,
+			   const gss_buffer_t,
+			   int *,
+			   gss_buffer_t,
+			   krb5_keyblock *);
 
-OM_uint32 unwrap_cfx(OM_uint32 *minor_status,
-		     const gss_ctx_id_t context_handle,
-		     const gss_buffer_t input_message_buffer,
-		     gss_buffer_t output_message_buffer,
-		     int *conf_state,
-		     gss_qop_t *qop_state,
-		     krb5_keyblock *key);
+OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *,
+			     const gss_ctx_id_t,
+			     const gss_buffer_t,
+			     gss_buffer_t,
+			     int *,
+			     gss_qop_t *,
+			     krb5_keyblock *);
 
-OM_uint32 mic_cfx(OM_uint32 *minor_status,
-		  const gss_ctx_id_t context_handle,
-		  gss_qop_t qop_req,
-		  const gss_buffer_t message_buffer,
-		  gss_buffer_t message_token,
-		  krb5_keyblock *key);
+OM_uint32 _gssapi_mic_cfx(OM_uint32 *,
+			  const gss_ctx_id_t,
+			  gss_qop_t,
+			  const gss_buffer_t,
+			  gss_buffer_t,
+			  krb5_keyblock *);
 
-OM_uint32 verify_mic_cfx(OM_uint32 *minor_status,
-			 const gss_ctx_id_t context_handle,
-			 const gss_buffer_t message_buffer,
-			 const gss_buffer_t token_buffer,
-			 gss_qop_t *qop_state,
-			 krb5_keyblock *key);
+OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *,
+				 const gss_ctx_id_t,
+				 const gss_buffer_t,
+				 const gss_buffer_t,
+				 gss_qop_t *,
+				 krb5_keyblock *);
 
 #endif /* GSSAPI_CFX_H_ */

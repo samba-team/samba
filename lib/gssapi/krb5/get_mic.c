@@ -293,8 +293,8 @@ OM_uint32 gss_get_mic
       break;
   default :
 #ifdef HAVE_GSSAPI_CFX
-      ret = mic_cfx (minor_status, context_handle, qop_req,
-		     message_buffer, message_token, key);
+      ret = _gssapi_mic_cfx (minor_status, context_handle, qop_req,
+			     message_buffer, message_token, key);
 #else
       *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;
