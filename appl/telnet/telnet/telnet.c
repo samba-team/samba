@@ -537,7 +537,7 @@ mklist(char *buf, char *name)
 			unknown[0] = name_unknown;
 		} else {
 			unknown[0] = name;
-			upcase(name);
+			strupr(name);
 		}
 	} else
 		unknown[0] = name_unknown;
@@ -690,7 +690,7 @@ gettermname()
 		} else {
 			if (tname && ((int)strlen(tname) <= 40)) {
 				unknown[0] = tname;
-				upcase(tname);
+				strupr(tname);
 			} else
 				unknown[0] = name_unknown;
 			tnamep = unknown;
