@@ -1009,7 +1009,12 @@ static int lock_record(TDB_CONTEXT *tdb, tdb_off off)
 {
 	return off ? tdb_brlock(tdb, off, F_RDLCK, F_SETLKW, 0) : 0;
 }
-/* write locks override our own fcntl readlocks, so check it here */
+/*
+  Write locks override our own fcntl readlocks, so check it here.
+  Note this is meant to be F_SETLK, *not* F_SETLKW, as it's not
+  an error to fail to get the lock here.
+*/
+ 
 static int write_lock_record(TDB_CONTEXT *tdb, tdb_off off)
 {
 	struct tdb_traverse_lock *i;
@@ -1018,6 +1023,12 @@ static int write_lock_record(TDB_CONTEXT *tdb, tdb_off off)
 			return -1;
 	return tdb_brlock(tdb, off, F_WRLCK, F_SETLK, 1);
 }
+
+/*
+  Note this is meant to be F_SETLK, *not* F_SETLKW, as it's not
+  an error to fail to get the lock here.
+*/
+
 static int write_unlock_record(TDB_CONTEXT *tdb, tdb_off off)
 {
 	return tdb_brlock(tdb, off, F_UNLCK, F_SETLK, 0);

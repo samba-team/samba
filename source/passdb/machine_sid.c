@@ -78,7 +78,7 @@ BOOL pdb_generate_sam_sid(void)
 		}
 	}
 
-	pstrcat(sid_file, "MACHINE.SID");
+	pstrcat(sid_file, "/MACHINE.SID");
     
 	if((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
 		DEBUG(0,("unable to open or create file %s. Error was %s\n",
