@@ -48,6 +48,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 	char *d = destname;
 	const char *s = srcname;
 	NTSTATUS ret = NT_STATUS_OK;
+	BOOL start_of_name_component = True;
 
 	while (*s) {
 		if (IS_DIRECTORY_SEP(*s)) {
@@ -58,100 +59,109 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 			while (IS_DIRECTORY_SEP(*s)) {
 				s++;
 			}
-			if ((s[0] == '.') && (s[1] == '\0')) {
-				ret = NT_STATUS_OBJECT_NAME_INVALID;
-				break;
-			}
 			if ((d != destname) && (*s != '\0')) {
 				/* We only care about non-leading or trailing '/' or '\\' */
 				*d++ = '/';
 			}
-		} else if ((s[0] == '.') && (s[1] == '.') && (IS_DIRECTORY_SEP(s[2]) || s[2] == '\0')) {
-			/* Uh oh - "../" or "..\\"  or "..\0" ! */
 
-			/*
-			 * No mb char starts with '.' so we're safe checking the directory separator here.
-			 */
+			start_of_name_component = True;
+			continue;
+		}
 
-			/* If we just added a '/', delete it. */
+		if (start_of_name_component) {
+			if ((s[0] == '.') && (s[1] == '.') && (IS_DIRECTORY_SEP(s[2]) || s[2] == '\0')) {
+				/* Uh oh - "/../" or "\\..\\"  or "/..\0" or "\\..\0" ! */
 
-			if ((d > destname) && (*(d-1) == '/')) {
-				*(d-1) = '\0';
-				if (d == (destname + 1)) {
+				/*
+				 * No mb char starts with '.' so we're safe checking the directory separator here.
+				 */
+
+				/* If  we just added a '/' - delete it */
+				if ((d > destname) && (*(d-1) == '/')) {
+					*(d-1) = '\0';
 					d--;
-				} else {
-					d -= 2;
 				}
-			}
-			/* Are we at the start ? Can't go back further if so. */
-			if (d == destname) {
-				ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-				break;
-			}
-			/* Go back one level... */
-			/* We know this is safe as '/' cannot be part of a mb sequence. */
-			/* NOTE - if this assumption is invalid we are not in good shape... */
-			while (d > destname) {
-				if (*d == '/')
+
+				/* Are we at the start ? Can't go back further if so. */
+				if (d <= destname) {
+					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 					break;
-				d--;
-			}
-			s += 3;
-		} else if ((s[0] == '.') && (s[1] == '\0')) {
-			if (s == srcname) {
-				ret = NT_STATUS_OBJECT_NAME_INVALID;
-				break;
-			}
-			*d++ = *s++;
-		} else if ((s[0] == '.') && IS_DIRECTORY_SEP(s[1])) {
-			/*
-			 * No mb char starts with '.' so we're safe checking the directory separator here.
-			 */
-
-			/* "./" or ".\\" fails with a different error depending on what is after it... */
-
-			if (s[2] == '\0') {
-				ret = NT_STATUS_OBJECT_NAME_INVALID;
-			} else {
-				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-			break;
-		} else {
-			if (!(*s & 0x80)) {
-				if (allow_wcard_names) {
-					*d++ = *s++;
-				} else {
-					switch (*s) {
-						case '*':
-						case '?':
-						case '<':
-						case '>':
-						case '"':
-							return NT_STATUS_OBJECT_NAME_INVALID;
-						default:
-							*d++ = *s++;
-							break;
-					}
 				}
-			} else {
-				switch(next_mb_char_size(s)) {
-					case 4:
-						*d++ = *s++;
-					case 3:
-						*d++ = *s++;
-					case 2:
-						*d++ = *s++;
-					case 1:
-						*d++ = *s++;
+				/* Go back one level... */
+				/* We know this is safe as '/' cannot be part of a mb sequence. */
+				/* NOTE - if this assumption is invalid we are not in good shape... */
+				/* Decrement d first as d points to the *next* char to write into. */
+				for (d--; d > destname; d--) {
+					if (*d == '/')
 						break;
-					default:
-						DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
-						*d = '\0';
-						return NT_STATUS_INVALID_PARAMETER;
 				}
+				s += 2; /* Else go past the .. */
+				/* We're still at the start of a name component, just the previous one. */
+				continue;
+
+			} else if ((s[0] == '.') && (s[1] == '\0')) {
+				/* Component of pathname can't be "." only. */
+				ret =  NT_STATUS_OBJECT_NAME_INVALID;
+				break;
+			} else if ((s[0] == '.') && IS_DIRECTORY_SEP(s[1])) {
+				/*
+				 * No mb char starts with '.' so we're safe checking the directory separator here.
+				 */
+
+				/* Component of pathname can't be ".\\ANYTHING". */
+
+				/* "/./" or "\\.\\" fails with a different error depending on what is after it... */
+
+				/* Eat multiple '/' or '\\' */
+				for (s++; IS_DIRECTORY_SEP(*s); s++) {
+					;	
+				}
+
+				if (*s == '\0') {
+					ret = NT_STATUS_OBJECT_NAME_INVALID;
+				} else {
+					ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				}
+				break;
 			}
 		}
+
+		if (!(*s & 0x80)) {
+			if (allow_wcard_names) {
+				*d++ = *s++;
+			} else {
+				switch (*s) {
+					case '*':
+					case '?':
+					case '<':
+					case '>':
+					case '"':
+						return NT_STATUS_OBJECT_NAME_INVALID;
+					default:
+						*d++ = *s++;
+						break;
+				}
+			}
+		} else {
+			switch(next_mb_char_size(s)) {
+				case 4:
+					*d++ = *s++;
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
+					*d = '\0';
+					return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		start_of_name_component = False;
 	}
+
 	*d = '\0';
 	return ret;
 }
