@@ -106,9 +106,9 @@ static void print_socket_options(int s)
 
 	for (; p->name != NULL; p++) {
 		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
-			DEBUG(3,("Could not test socket option %s.\n", p->name));
+			DEBUG(5,("Could not test socket option %s.\n", p->name));
 		} else {
-			DEBUG(3,("socket option %s = %d\n",p->name,value));
+			DEBUG(5,("socket option %s = %d\n",p->name,value));
 		}
 	}
  }
