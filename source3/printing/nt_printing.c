@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -391,6 +392,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	pstring old_name;
 	pstring new_name;
 	fstring user_name;
+	fstring null_pw;
 	connection_struct *conn;
 	pstring inbuf;
 	pstring outbuf;
@@ -410,16 +412,30 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
 	fstrcpy(user_name, uidtoname(user->uid));
-	if((smb_pass = getsmbpwnam(user_name)) == NULL) {
+	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
+
+	become_root();
+	smb_pass = getsmbpwnam(user_name);
+	if(smb_pass == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to get smbpasswd entry for user %s\n",
 				user_name ));
+		unbecome_root();
 		return False;
 	}
 
-	conn = make_connection("print$", uidtoname(user->uid), smb_pass->smb_nt_passwd, 24, "A:", user->vuid, &ecode);
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
+		unbecome_root();
+		return False;
+	}
+
+	if (!become_user(conn, conn->vuid)) {
+		DEBUG(0,("move_driver_to_download_area: Can't become user %s\n", user_name ));
+		unbecome_root();
 		return False;
 	}
 
@@ -445,6 +461,8 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 				old_name, new_name ));
+		close_cnum(conn, user->vuid);
+		unbecome_root();
 		return False;
 	}
 
@@ -453,6 +471,8 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 				old_name, new_name ));
+		close_cnum(conn, user->vuid);
+		unbecome_root();
 		return False;
 	}
 
@@ -461,6 +481,8 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 			old_name, new_name ));
+		close_cnum(conn, user->vuid);
+		unbecome_root();
 		return False;
 	}
 
@@ -469,6 +491,8 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 			old_name, new_name ));
+		close_cnum(conn, user->vuid);
+		unbecome_root();
 		return False;
 	}
 
@@ -476,15 +500,16 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		for (i=0; *driver->dependentfiles[i]; i++) {
 			slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
 			slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
-			if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
-				DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-					old_name, new_name ));
-				return False;
-			}
+			/*
+			 * We don't check the error returns here as several of these
+			 * files may have already been moved in the list above...
+			 */
+			rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
 		}
 	}
 
 	close_cnum(conn, user->vuid);
+	unbecome_root();
 
 	return True;
 }
@@ -699,7 +724,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf;
 	pstring key;
 	int i;
 	line[0] = '\0';

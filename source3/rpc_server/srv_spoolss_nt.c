@@ -2648,8 +2648,10 @@ uint32 status=0;
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
 	DEBUG(8,("construct_printer_driver_info_3: status: %d\n", status));
-	if (status != 0)
+	if (status != 0) {
+		free_a_printer(&printer,2);
 		return ERROR_UNKNOWN_PRINTER_DRIVER;
+	}
 
 	fill_printer_driver_info_3(info, driver, servername);
 
@@ -3764,7 +3766,6 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned)
 {
-	int i;
 	fstring *list = NULL;
 	fstring servername;
 	fstring architecture;
