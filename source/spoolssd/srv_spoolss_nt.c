@@ -2699,18 +2699,14 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_schedulejob(SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *rdata)
+uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid)
 {
-	SPOOL_R_SCHEDULEJOB r_u;
-	
-	status=0x0;
-
-	spoolss_io_r_schedulejob("",&r_u,rdata,0);		
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
