@@ -40,6 +40,16 @@ NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, struct echo_SourceData *
 
 NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
 {
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.s1));
+	if (r->in.s1) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->in.s1));
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_TestCall2(struct ndr_push *ndr, struct TestCall2 *r)
+{
 	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
 
 	return NT_STATUS_OK;
@@ -91,12 +101,28 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_echo_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct echo_ServerRole *r)
+NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
+{
+	uint32 _ptr_s2;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_s2));
+	if (_ptr_s2) {
+		NDR_ALLOC(ndr, r->out.s2);
+	} else {
+		r->out.s2 = NULL;
+	}
+	if (r->out.s2) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->out.s2));
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct echo_info1 *r)
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 2));
-	NDR_CHECK(ndr_pull_uint16(ndr, &r->role));
+	NDR_CHECK(ndr_pull_align(ndr, 1));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->v));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -104,14 +130,121 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_echo_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_PolicyInformation *r)
+NTSTATUS ndr_pull_echo_info2(struct ndr_pull *ndr, int ndr_flags, struct echo_info2 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 2));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->v));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_info3(struct ndr_pull *ndr, int ndr_flags, struct echo_info3 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->v));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_info4(struct ndr_pull *ndr, int ndr_flags, struct echo_info4 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->v));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_info5(struct ndr_pull *ndr, int ndr_flags, struct echo_info5 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->v1));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->v2));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_info6(struct ndr_pull *ndr, int ndr_flags, struct echo_info6 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->v1));
+	NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_BUFFERS, &r->info1));
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags, struct echo_info7 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->v1));
+	NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_SCALARS, &r->info4));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_BUFFERS, &r->info4));
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_Info *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
+	case 1: {
+	NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
+	break; }
+
+	case 2: {
+	NDR_CHECK(ndr_pull_echo_info2(ndr, NDR_SCALARS, &r->info2));
+	break; }
+
+	case 3: {
+	NDR_CHECK(ndr_pull_echo_info3(ndr, NDR_SCALARS, &r->info3));
+	break; }
+
+	case 4: {
+	NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_SCALARS, &r->info4));
+	break; }
+
+	case 5: {
+	NDR_CHECK(ndr_pull_echo_info5(ndr, NDR_SCALARS, &r->info5));
+	break; }
+
 	case 6: {
-	NDR_CHECK(ndr_pull_echo_ServerRole(ndr, NDR_SCALARS, &r->role));
+	NDR_CHECK(ndr_pull_echo_info6(ndr, NDR_SCALARS, &r->info6));
+	break; }
+
+	case 7: {
+	NDR_CHECK(ndr_pull_echo_info7(ndr, NDR_SCALARS, &r->info7));
 	break; }
 
 	default:
@@ -121,8 +254,32 @@ NTSTATUS ndr_pull_echo_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, ui
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {
+	case 1:
+		NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_BUFFERS, &r->info1));
+	break;
+
+	case 2:
+		NDR_CHECK(ndr_pull_echo_info2(ndr, NDR_BUFFERS, &r->info2));
+	break;
+
+	case 3:
+		NDR_CHECK(ndr_pull_echo_info3(ndr, NDR_BUFFERS, &r->info3));
+	break;
+
+	case 4:
+		NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_BUFFERS, &r->info4));
+	break;
+
+	case 5:
+		NDR_CHECK(ndr_pull_echo_info5(ndr, NDR_BUFFERS, &r->info5));
+	break;
+
 	case 6:
-		NDR_CHECK(ndr_pull_echo_ServerRole(ndr, NDR_BUFFERS, &r->role));
+		NDR_CHECK(ndr_pull_echo_info6(ndr, NDR_BUFFERS, &r->info6));
+	break;
+
+	case 7:
+		NDR_CHECK(ndr_pull_echo_info7(ndr, NDR_BUFFERS, &r->info7));
 	break;
 
 	default:
@@ -132,7 +289,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
+NTSTATUS ndr_pull_TestCall2(struct ndr_pull *ndr, struct TestCall2 *r)
 {
 	uint32 _ptr_info;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
@@ -143,10 +300,11 @@ NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
 	}
 	if (r->out.info) {
 	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_echo_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
+	NDR_CHECK(ndr_pull_echo_Info(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
 	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
 	}
+	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
@@ -246,27 +404,6 @@ void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name, int flag
 	ndr->depth--;
 }
 
-void ndr_print_echo_ServerRole(struct ndr_print *ndr, const char *name, struct echo_ServerRole *r)
-{
-	ndr_print_struct(ndr, name, "echo_ServerRole");
-	ndr->depth++;
-	ndr_print_uint16(ndr, "role", r->role);
-	ndr->depth--;
-}
-
-void ndr_print_echo_PolicyInformation(struct ndr_print *ndr, const char *name, uint16 level, union echo_PolicyInformation *r)
-{
-	ndr_print_union(ndr, name, level, "echo_PolicyInformation");
-	switch (level) {
-	case 6:
-	ndr_print_echo_ServerRole(ndr, "role", &r->role);
-	break;
-
-	default:
-		ndr_print_bad_level(ndr, name, level);
-	}
-}
-
 void ndr_print_TestCall(struct ndr_print *ndr, const char *name, int flags, struct TestCall *r)
 {
 	ndr_print_struct(ndr, name, "TestCall");
@@ -274,18 +411,144 @@ void ndr_print_TestCall(struct ndr_print *ndr, const char *name, int flags, stru
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "TestCall");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr_print_ptr(ndr, "s1", r->in.s1);
+	ndr->depth++;
+	if (r->in.s1) {
+		ndr_print_unistr(ndr, "s1", r->in.s1);
+	}
+	ndr->depth--;
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "TestCall");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "s2", r->out.s2);
+	ndr->depth++;
+	if (r->out.s2) {
+		ndr_print_unistr(ndr, "s2", r->out.s2);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, struct echo_info1 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info1");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "v", r->v);
+	ndr->depth--;
+}
+
+void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, struct echo_info2 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info2");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "v", r->v);
+	ndr->depth--;
+}
+
+void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, struct echo_info3 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info3");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "v", r->v);
+	ndr->depth--;
+}
+
+void ndr_print_echo_info4(struct ndr_print *ndr, const char *name, struct echo_info4 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info4");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "v", r->v);
+	ndr->depth--;
+}
+
+void ndr_print_echo_info5(struct ndr_print *ndr, const char *name, struct echo_info5 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info5");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "v1", r->v1);
+	ndr_print_HYPER_T(ndr, "v2", r->v2);
+	ndr->depth--;
+}
+
+void ndr_print_echo_info6(struct ndr_print *ndr, const char *name, struct echo_info6 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info6");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "v1", r->v1);
+	ndr_print_echo_info1(ndr, "info1", &r->info1);
+	ndr->depth--;
+}
+
+void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, struct echo_info7 *r)
+{
+	ndr_print_struct(ndr, name, "echo_info7");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "v1", r->v1);
+	ndr_print_echo_info4(ndr, "info4", &r->info4);
+	ndr->depth--;
+}
+
+void ndr_print_echo_Info(struct ndr_print *ndr, const char *name, uint16 level, union echo_Info *r)
+{
+	ndr_print_union(ndr, name, level, "echo_Info");
+	switch (level) {
+	case 1:
+	ndr_print_echo_info1(ndr, "info1", &r->info1);
+	break;
+
+	case 2:
+	ndr_print_echo_info2(ndr, "info2", &r->info2);
+	break;
+
+	case 3:
+	ndr_print_echo_info3(ndr, "info3", &r->info3);
+	break;
+
+	case 4:
+	ndr_print_echo_info4(ndr, "info4", &r->info4);
+	break;
+
+	case 5:
+	ndr_print_echo_info5(ndr, "info5", &r->info5);
+	break;
+
+	case 6:
+	ndr_print_echo_info6(ndr, "info6", &r->info6);
+	break;
+
+	case 7:
+	ndr_print_echo_info7(ndr, "info7", &r->info7);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+void ndr_print_TestCall2(struct ndr_print *ndr, const char *name, int flags, struct TestCall2 *r)
+{
+	ndr_print_struct(ndr, name, "TestCall2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "TestCall2");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "TestCall2");
+	ndr->depth++;
 	ndr_print_ptr(ndr, "info", r->out.info);
 	ndr->depth++;
 	if (r->out.info) {
-	ndr_print_echo_PolicyInformation(ndr, "info", r->in.level, r->out.info);
+	ndr_print_echo_Info(ndr, "info", r->in.level, r->out.info);
 	}
 	ndr->depth--;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;

@@ -102,3 +102,24 @@ NTSTATUS dcerpc_TestCall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct Test
 
 	return status;
 }
+
+NTSTATUS dcerpc_TestCall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct TestCall2 *r)
+{
+	NTSTATUS status;
+
+        if (p->flags & DCERPC_DEBUG_PRINT_IN) {
+		NDR_PRINT_IN_DEBUG(TestCall2, r);		
+	}
+
+	status = dcerpc_ndr_request(p, DCERPC_TESTCALL2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_TestCall2,
+				    (ndr_pull_fn_t) ndr_pull_TestCall2,
+				    r);
+
+        if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
+		NDR_PRINT_OUT_DEBUG(TestCall2, r);		
+	}
+	if (NT_STATUS_IS_OK(status)) status = r->out.result;
+
+	return status;
+}

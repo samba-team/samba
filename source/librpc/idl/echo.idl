@@ -25,7 +25,58 @@ interface rpcecho
 		[out,ref,size_is(len)] uint8 *data
 	);
 
-	void TestCall (
-		[in]  unistr *s
+
+	/* test strings */
+ 	void TestCall (
+		[in]       unistr *s1,
+		[out]      unistr *s2
+ 		);
+
+
+	/* test some alignment issues */
+	typedef struct {
+		uint8 v;
+	} echo_info1;
+
+	typedef struct {
+		uint16 v;
+	} echo_info2;
+
+	typedef struct {
+		uint32 v;
+	} echo_info3;
+
+	typedef struct {
+		HYPER_T v;
+	} echo_info4;
+
+	typedef struct {
+		uint8 v1;
+		HYPER_T v2;
+	} echo_info5;
+
+	typedef struct {
+		uint8 v1;
+		echo_info1 info1;
+	} echo_info6;
+
+	typedef struct {
+		uint8 v1;
+		echo_info4 info4;
+	} echo_info7;
+
+	typedef union {
+		[case(1)]  echo_info1 info1;
+		[case(2)]  echo_info2 info2;
+		[case(3)]  echo_info3 info3;
+		[case(4)]  echo_info4 info4;
+		[case(5)]  echo_info5 info5;
+		[case(6)]  echo_info6 info6;
+		[case(7)]  echo_info7 info7;
+	} echo_Info;
+
+	NTSTATUS TestCall2 (
+		     [in]                    uint16 level,
+		     [out,switch_is(level)]  echo_Info *info
 		);
 }
