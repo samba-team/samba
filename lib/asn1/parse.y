@@ -250,6 +250,7 @@ bitdecl		: IDENT '(' constant ')'
 		;
 
 constant	: CONSTANT	{ $$ = $1; }
+		| '-' CONSTANT	{ $$ = -$2; }
 		| IDENT	{
 				  Symbol *s = addsym($1);
 				  if(s->stype != SConstant)
