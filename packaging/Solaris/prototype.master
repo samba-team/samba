@@ -9,6 +9,7 @@ i pkginfo=./pkginfo
 i copyright=./copyright
 i request=./request
 i preremove=./preremove
+i postinstall=./postinstall
 i i.swat=./i.swat
 i r.swat=./r.swat
 #
@@ -79,6 +80,9 @@ f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/NT4_PlainPassword.reg
 f none samba/lib/regeditscripts/Win95_PlainPassword.reg=docs/Win95_PlainPassword.reg 0444 root other
 f none samba/lib/regeditscripts/Win98_PlainPassword.reg=docs/Win98_PlainPassword.reg 0444 root other
 f none samba/lib/regeditscripts/Win2000_PlainPassword.reg=docs/Win2000_PlainPassword.reg 0444 root other
+#
+# Random files 
+f none samba/docs/Samba-HOWTO-Collection.pdf=docs/Samba-HOWTO-Collection.pdf 0644 root other
 #
 # Static part of prototype file ends.
 #
