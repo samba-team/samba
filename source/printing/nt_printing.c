@@ -2145,7 +2145,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
  again:	
 	len = 0;
-	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "dddddddddddFFFFFPFFFFF",
+	len += tdb_pack(buf+len, buflen-len, *_dos_to_unix, "dddddddddddfffffPfffff",
 			info->attributes,
 			info->priority,
 			info->default_priority,
