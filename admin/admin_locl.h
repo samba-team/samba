@@ -83,6 +83,7 @@
 
 extern krb5_context context;
 extern char database[];
+extern HDB *db;
 
 #define DECL(X) int X(int, char **)
 
@@ -119,12 +120,6 @@ int set_password(hdb_entry *ent);
 
 time_t getlife(const char *prompt, const char *def);
 size_t putlife(time_t t, char *s, size_t len);
-
-/* misc.c */
-
-void set_master_key(EncryptionKey key);
-Key *unseal_key(Key *key);
-void seal_key(Key *key);
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
