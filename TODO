@@ -87,4 +87,7 @@ some simple way of handling the w2k situtation
 
 crypto: allow scather/gather creation of checksums
 
+verify_user: handle non-secure verification failing because of
+host->realm mapping
+
 ** lib/roken
