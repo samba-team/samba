@@ -493,6 +493,16 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 }
 
+/****************************************************************************
+ On new VC == 0, shutdown *all* old connections and users.
+****************************************************************************/
+
+static void setup_new_vc_session(void)
+{
+	DEBUG(2,("setup_new_vc_session: New VC == 0, closing all old resources.\n"));
+	conn_close_all();
+	invalidate_all_vuids();
+}
 
 /****************************************************************************
 reply to a session setup command
@@ -541,6 +551,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		}
 
+		if (SVAL(inbuf,smb_vwv4) == 0) {
+			setup_new_vc_session();
+		}
 		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
 	}
 
@@ -562,7 +575,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 		srvstr_pull_buf(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), STR_TERMINATE);
 		*domain = 0;
-  
+
 	} else {
 		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
 		uint16 passlen2 = SVAL(inbuf,smb_vwv8);
@@ -641,6 +654,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	}
 	
+	if (SVAL(inbuf,smb_vwv4) == 0) {
+		setup_new_vc_session();
+	}
+
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, get_remote_machine_name()));
 
 	if (*user) {
