@@ -117,8 +117,13 @@ del_enctype(int argc, char **argv)
 		docopy = 0;
 		break;
 	    }
-	if (docopy)
+	if (docopy) {
 	    new_key_data[j++] = *key;
+	} else {
+	    int16_t ignore;
+
+	    kadm5_free_key_data (kadm_handle, &ignore, key);
+	}
     }
 
     free (princ.key_data);
