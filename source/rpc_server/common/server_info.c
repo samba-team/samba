@@ -21,15 +21,20 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces
 */
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(-1, "server_info", "platform_id", 500);
+	enum srvsvc_PlatformId id;
+
+	id = lp_parm_int(-1, "server_info", "platform_id", PLATFORM_ID_NT);
+
+	return id;
 }
 
 const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc)
