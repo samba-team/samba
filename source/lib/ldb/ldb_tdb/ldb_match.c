@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include <fnmatch.h>
 #include "ldb/ldb_tdb/ldb_tdb.h"
 #include "ldb/include/ldb_parse.h"
 
