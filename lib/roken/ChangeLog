@@ -1,3 +1,12 @@
+2004-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse_time.3, parse_units.c: Change the behavior of the
+	parse_unit code to return the number of bytes needed to print the
+	whole string (minus the trailing '\0'), just like snprintf.  Idea
+	from bugreport from Gabriel Kihlman <gk@stacken.kth.se>.
+
+	* parse_time-test.c Makefile.am test-mem.c test-mem.h: test parse_time
+
 2004-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c: put dns_type_to_string and dns_string_to_type in the
