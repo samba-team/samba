@@ -152,7 +152,9 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	const struct passwd *pw;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
+#if 0
 		file_save("auth.dat", blob1.data, blob1.length);
+#endif
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -240,8 +242,6 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	DATA_BLOB blob1;
 	extern uint32 global_client_caps;
 	int ret;
-
-	chdir("/home/tridge");
 
 	if (global_client_caps == 0) {
 		global_client_caps = IVAL(inbuf,smb_vwv10);
