@@ -62,12 +62,12 @@ In this manual, names of sections and bindings will be given as strings
 separated by slashes (@samp{/}). The @samp{other-var} variable will thus
 be @samp{section1/a-subsection/other-var}.
 
-For in-depth information about the contents of the config file, refer to
+For in-depth information about the contents of the configuration file, refer to
 the @file{krb5.conf} manual page. Some of the more important sections
 are briefly described here.
 
 The @samp{libdefaults} section contains a list of library configuration
-parameters, such as the default realm and the timeout for kdc
+parameters, such as the default realm and the timeout for KDC
 responses. The @samp{realms} section contains information about specific
 realms, such as where they hide their KDC. This section serves the same
 purpose as the Kerberos 4 @file{krb.conf} file, but can contain more
@@ -75,7 +75,7 @@ information. Finally the @samp{domain_realm} section contains a list of
 mappings from domains to realms, equivalent to the Kerberos 4
 @file{krb.realms} file.
 
-To continue with the realm setup, you will have to create a config file,
+To continue with the realm setup, you will have to create a configuration file,
 with contents similar to the following.
 
 @example
@@ -92,14 +92,19 @@ with contents similar to the following.
 
 If you use a realm name equal to your domain name, you can omit the
 @samp{libdefaults}, and @samp{domain_realm}, sections. If you have a
-SRV-record for your realm, or your kerberos server has CNAME called
+SRV-record for your realm, or your Kerberos server has CNAME called
 @samp{kerberos.my.realm}, you can omit the @samp{realms} section too.
 
 @node Creating the database, keytabs, Configuration file, Setting up a realm
 @section Creating the database
 
-The database library will look for the database in @file{/var/heimdal},
-so you should probably create that directory.
+The database library will look for the database in the directory
+@file{/var/heimdal}, so you should probably create that directory.
+Make sure the directory have restrictive permissions.
+
+@example
+# mkdir /var/heimdal
+@end example
 
 The keys of all the principals are stored in the database.  If you
 choose to, these can be encrypted with a master key.  You do not have to
@@ -113,7 +118,7 @@ Master key:
 Verifying password - Master key: 
 @end example
 
-To initialise the database use the @code{kadmin} program, with the
+To initialize the database use the @code{kadmin} program, with the
 @samp{-l} option (to enable local database mode). First issue a
 @kbd{init MY.REALM} command. This will create the database and insert
 default principals for that realm. You can have more than one realm in
@@ -194,11 +199,11 @@ Version  Type             Principal
 
 Heimdal can be configured to support 524, Kerberos 4 or kaserver. All
 theses services are default turned off. Kerberos 4 support also
-depends on if Kerberos 4 support is compiled in with heimdal.
+depends on if Kerberos 4 support is compiled in with Heimdal.
 
 @subsection 524
 
-524 is a service that allows the kdc to convert Kerberos 5 tickets to
+524 is a service that allows the KDC to convert Kerberos 5 tickets to
 Kerberos 4 tickets for backward compatibility. See also Using 2b
 tokens with AFS in @xref{Things in search for a better place}.
 
@@ -225,7 +230,7 @@ Kerberos 4 can be turned on by adding this to the configuration file
 @subsection kaserver
 
 Kaserver is a Kerberos 4 that is used in AFS, the protocol have some
-features over plain Kerberos 4, but like kerberos 4 only use single
+features over plain Kerberos 4, but like Kerberos 4 only use single
 DES too.
 
 You should only enable Kerberos 4 support if you have a need for for
@@ -253,7 +258,7 @@ kerberos-adm stream     tcp     nowait  root /usr/heimdal/libexec/kadmind kadmin
 You might need to add @samp{kerberos-adm} to your @file{/etc/services}
 as 749/tcp.
 
-Access to the admin server is controlled by an acl-file, (default
+Access to the administration server is controlled by an acl-file, (default
 @file{/var/heimdal/kadmind.acl}.) The lines in the access file, has the
 following syntax:
 @smallexample
@@ -278,7 +283,7 @@ The patters are of the same type as those used in shell globbing, see
 In the example below @samp{lha/admin} can change every principal in the
 database. @samp{jimmy/admin} can only modify principals that belong to
 the realm @samp{E.KTH.SE}. @samp{mille/admin} is working at the
-helpdesk, so he should only be able to change the passwords for single
+help desk, so he should only be able to change the passwords for single
 component principals (ordinary users). He will not be able to change any
 @samp{/admin} principal.
 
@@ -357,8 +362,9 @@ to the slaves, running
 @pindex hpropd
 @code{hpropd} processes.
 
-Every slave needs a keytab with a principal,
-@samp{hprop/@var{hostname}}.  Add that with the
+Every slave needs a database directory, the master key (if it was used
+for the database) and a keytab with the principal
+@samp{hprop/@var{hostname}}.  Add the principal with the
 @pindex ktutil
 @code{ktutil} command and start
 @pindex hpropd
@@ -366,6 +372,7 @@ Every slave needs a keytab with a principal,
 
 @example
 slave# ktutil get -p foo/admin hprop/`hostname`
+slave# mkdir /var/heimdal
 slave# hpropd
 @end example
 
@@ -477,7 +484,7 @@ The syntax of @code{[kadmin]default_keys} is
 @samp{[etype:]salt-type[:salt-string]}. @samp{etype} is the encryption
 type (des, des3, arcfour), @code{salt-type} is the type of salt (pw-salt
 or afs3-salt), and the salt-string is the string that will be used as
-salt (remember that if the salt is appened/prepended, the empty salt ""
+salt (remember that if the salt is appended/prepended, the empty salt ""
 is the same thing as no salt at all).
 
 Common types of salting includes
