@@ -25,7 +25,7 @@
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>	
 		<arg choice="opt">-m</arg>	
 		<arg choice="opt">-j DOMAIN</arg>	
-		<arg choice="opt">-U username</arg>	
+		<arg choice="opt">-U username[%password]</arg>	
 		<arg choice="opt">-h</arg>	
 		<arg choice="opt">-s</arg>	
 		<arg choice="opt">username</arg>	
@@ -274,52 +274,68 @@
 		
 		
 		<varlistentry>
-		<term>-j DOMAIN</term>
-		<listitem><para>This option is used to add a Samba server 
-		into a Windows NT Domain, as a Domain member capable of authenticating 
-		user accounts to any Domain Controller in the same way as a Windows 
-		NT Server. See the <command>security = domain</command> option in 
-		the <filename>smb.conf(5)</filename> man page. </para>
+		<term>-j DOMAIN</term> <listitem><para>This option is used
+		to add a Samba server into a Windows NT Domain, as a Domain
+		member capable of authenticating user accounts to any
+		Domain Controller in the same way as a Windows NT
+		Server. See the <command>security = domain</command> option
+		in the <filename>smb.conf(5)</filename> man page. </para>
 		
-		<para>In order to be used in this way, the Administrator for 
-		the Windows NT Domain must have used the program "Server Manager 
-		for Domains" to add the primary NetBIOS name of  the Samba server 
-		as a member of the Domain. </para>
+                <para>The Samba server can be joined to the Windows NT
+                Domain in one of two ways.  The Administrator for the
+                domain can use the "Server Manager for Domains" program to
+                add the primary NetBIOS name of the Samba server as a
+                member of the Domain. </para>
 		
-		<para>After this has been done, to join the Domain invoke <command>
-		smbpasswd</command> with this parameter. smbpasswd will then 
-		look up the Primary Domain Controller for the Domain (found in 
-		the <filename>smb.conf</filename> file in the parameter 
-		<parameter>password server</parameter> and change the machine account 
-		password used to create the secure Domain communication.  This 
-		password is then stored by smbpasswd in a TDB, writeable only by root, 
-		called <filename>secrets.tdb</filename> </para>
+		<para>After this has been done, to join the Domain invoke
+		<command> smbpasswd</command> with this
+		parameter. smbpasswd will then look up the Primary Domain
+		Controller for the Domain (found in the
+		<filename>smb.conf</filename> file in the parameter
+		<parameter>password server</parameter> and change the
+		machine account password used to create the secure Domain
+		communication.  This password is then stored by smbpasswd
+		in a TDB, writeable only by root, called
+		<filename>secrets.tdb</filename> </para>
 		
 		<para>Once this operation has been performed the <filename>
-		smb.conf</filename> file may be updated to set the <command>
-		security = domain</command> option and all future logins
-		to the Samba server will be authenticated to the Windows NT 
-		PDC. </para>
+		smb.conf</filename> file may be updated to set the
+		<command> security = domain</command> option and all future
+		logins to the Samba server will be authenticated to the
+		Windows NT PDC. </para>
 		
-		<para>Note that even though the authentication is being 
-		done to the PDC all users accessing the Samba server must still 
-		have a valid UNIX account on that machine. </para>
+		<para>Note that even though the authentication is being
+		done to the PDC all users accessing the Samba server must
+		still have a valid UNIX account on that machine. </para>
 
+                <para>The second method for joining the domain is to
+                use the <parameter>-U</parameter> option in addition to the
+                <parameter>-j</parameter> to specify an administrator
+                username and optional password.  This method does not
+                require the use of the "Server Manager for Domains"
+                program.  This method is more secure as the machine account
+                password is set to a well known value before the member
+                server is joined to the domain.
 
-		<para>This option is only available when running smbpasswd as root. 
-		</para></listitem>
+		<para>This option is only available when running smbpasswd
+		as root.  </para></listitem>
 		</varlistentry>
 		
 		
 		
 		<varlistentry>
-		<term>-U username</term>
-		<listitem><para>This option may only be used in conjunction 
-		with the <parameter>-r</parameter> option. When changing
-		a password on a remote machine it allows the user to specify 
-		the user name on that machine whose password will be changed. It 
-		is present to allow users who have different user names on 
-		different systems to change these passwords. </para></listitem>
+		<term>-U username[%password]</term> <listitem><para>This
+		option may only be used in conjunction with the
+		<parameter>-r</parameter> or <parameter>-j</parameter>
+		options. When changing a password on a remote machine it
+		allows the user to specify the user name on that machine
+		whose password will be changed. It is present to allow
+		users who have different user names on different systems to
+		change these passwords. When changing the password on a
+		machine account using the <parameter>-j</parameter> option
+		the username and password of an administrator is specified
+		here.  Non-administrator users with the 'Add workstations
+		to domain' user right can also be used.</para></listitem>
 		</varlistentry>
 		
 		
