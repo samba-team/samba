@@ -141,9 +141,10 @@ o   J. Tournier <jerome.tournier@IDEALX.com>
     
     
 o   Jelmer Vernooij <jelmer@samba.org>
-    * Put functions for generating SQL queries in pdb_sql.c.
-    * Add pgSQL backend (based on patch by Hamish Friedlander).
-    * BUG 908: Fix -s option to smbcontrol.
+    * Put functions for generating SQL queries in pdb_sql.c
+    * Add pgSQL backend (based on patch by Hamish Friedlander)
+	* BUG 908: Fix -s option to smbcontrol.
+	* Add smbget utility - a wget-clone for the SMB/CIFS protocol
     
 
 

@@ -440,6 +440,8 @@ PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) lib/dummyroot.o
 
+SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ) $(SECRETS_OBJ)
+
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
 		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
@@ -740,7 +742,7 @@ dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@echo Compiling $*.c with @PICFLAGS@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
-@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
+@POBAD_CC@	-@mv $*.@PICSUFFIX@.o $@
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
@@ -863,6 +865,10 @@ bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(LDAP_LIBS)
+
+bin/smbget@EXEEXT@: $(SMBGET_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBGET_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@  $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
