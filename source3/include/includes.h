@@ -1073,6 +1073,23 @@ struct spwd { /* fake shadow password structure */
 #endif
 #endif
 
+/* This defines the name of the printcap file. It is MOST UNLIKELY that
+   this will change BUT! Specifying a file with the format of a printcap
+   file but containing only a subset of the printers actually in your real 
+   printcap file is a quick-n-dirty way to allow dynamic access to a subset
+   of available printers.
+*/
+#ifndef PRINTCAP_NAME
+#ifdef AIX
+#define PRINTCAP_NAME "/etc/qconfig"
+#elif defined(SYSV)
+#define PRINTCAP_NAME "lpstat"
+#else
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+#endif
+
+
 #ifdef USE_SYSV_IPC
 #include <sys/ipc.h>
 #include <sys/sem.h>
