@@ -124,9 +124,9 @@ TerminalWrite(char *buf, int n)
 }
 
 int
-TerminalRead(char *buf, int n)
+TerminalRead(unsigned char *buf, int n)
 {
-    return read(tin, buf, n);
+    return read(tin, (char*)buf, n);
 }
 
 /*
