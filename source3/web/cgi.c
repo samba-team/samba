@@ -46,43 +46,6 @@ static char *C_user;
 static BOOL inetd_server;
 static BOOL got_request;
 
-static void unescape(char *buf)
-{
-	char *p=buf;
-
-	while ((p=strchr_m(p,'+')))
-		*p = ' ';
-
-	p = buf;
-
-	while (p && *p && (p=strchr_m(p,'%'))) {
-		int c1 = p[1];
-		int c2 = p[2];
-
-		if (c1 >= '0' && c1 <= '9')
-			c1 = c1 - '0';
-		else if (c1 >= 'A' && c1 <= 'F')
-			c1 = 10 + c1 - 'A';
-		else if (c1 >= 'a' && c1 <= 'f')
-			c1 = 10 + c1 - 'a';
-		else {p++; continue;}
-
-		if (c2 >= '0' && c2 <= '9')
-			c2 = c2 - '0';
-		else if (c2 >= 'A' && c2 <= 'F')
-			c2 = 10 + c2 - 'A';
-		else if (c2 >= 'a' && c2 <= 'f')
-			c2 = 10 + c2 - 'a';
-		else {p++; continue;}
-			
-		*p = (c1<<4) | c2;
-
-		memmove(p+1, p+3, strlen(p+3)+1);
-		p++;
-	}
-}
-
-
 static char *grab_line(FILE *f, int *cl)
 {
 	char *ret = NULL;
@@ -167,8 +130,8 @@ void cgi_load_variables(void)
 			    !variables[num_variables].value)
 				continue;
 
-			unescape(variables[num_variables].value);
-			unescape(variables[num_variables].name);
+			rfc1738_unescape(variables[num_variables].value);
+			rfc1738_unescape(variables[num_variables].name);
 
 #ifdef DEBUG_COMMENTS
 			printf("<!== POST var %s has value \"%s\"  ==>\n",
@@ -198,8 +161,8 @@ void cgi_load_variables(void)
 			    !variables[num_variables].value)
 				continue;
 
-			unescape(variables[num_variables].value);
-			unescape(variables[num_variables].name);
+			rfc1738_unescape(variables[num_variables].value);
+			rfc1738_unescape(variables[num_variables].name);
 
 #ifdef DEBUG_COMMENTS
                         printf("<!== Commandline var %s has value \"%s\"  ==>\n",

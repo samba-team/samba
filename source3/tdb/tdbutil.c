@@ -74,6 +74,10 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
 		if (gotalarm) {
 			DEBUG(0,("tdb_chainlock_with_timeout: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb->name ));
+			/* TODO: If we time out waiting for a lock, it might
+			 * be nice to use F_GETLK to get the pid of the
+			 * process currently holding the lock and print that
+			 * as part of the debugging message. -- mbp */
 			return -1;
 		}
 	}
@@ -99,7 +103,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
-	
+
 	tdb_chainunlock(tdb, key);
 }
 
@@ -256,8 +260,8 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
-
-    return tdb_store(tdb, key, data, flags);
+	
+	return tdb_store(tdb, key, data, flags);
 }
 
 /****************************************************************************
@@ -269,7 +273,7 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
-    return tdb_fetch(tdb, key);
+	return tdb_fetch(tdb, key);
 }
 
 /****************************************************************************
@@ -280,7 +284,7 @@ int tdb_delete_by_string(TDB_CONTEXT *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
-    return tdb_delete(tdb, key);
+	return tdb_delete(tdb, key);
 }
 
 /****************************************************************************

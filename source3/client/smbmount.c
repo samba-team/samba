@@ -78,8 +78,12 @@ static void daemonize(void)
 			}
 			break;
 		}
+
 		/* If we get here - the child exited with some error status */
-		exit(status);
+		if (WIFSIGNALLED(status))
+			exit(128 + WTERMSIG(status));
+		else
+			exit(WEXITSTATUS(status));
 	}
 
 	signal( SIGTERM, SIG_DFL );

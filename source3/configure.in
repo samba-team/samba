@@ -509,11 +509,7 @@ fi
 
 ############################################
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
-AC_CHECK_FUNCS(dlopen)
-if test x"$ac_cv_func_dlopen" = x"no"; then
-    AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
-	AC_DEFINE(HAVE_DLOPEN,1,[Whether we have dlopen()])])
-fi
+AC_SEARCH_LIBS(dlopen, [dl])
 # dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
 
 ############################################
@@ -616,12 +612,8 @@ AC_FUNC_MEMCMP
 
 ###############################################
 # test for where we get crypt() from
-AC_CHECK_FUNCS(crypt)
-if test x"$ac_cv_func_crypt" = x"no"; then
-    AC_CHECK_LIB(crypt, crypt, [AUTHLIBS="$AUTHLIBS -lcrypt";
+AC_SEARCH_LIBS(crypt, [crypt], [AUTHLIBS="$AUTHLIBS -lcrypt";
 	AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
-fi
-
 
 ###############################################
 # Readline included by default unless explicitly asked not to
@@ -729,12 +721,9 @@ if test x"$ac_cv_func_connect" = x"no"; then
 fi
 
 ###############################################
-# test for where we get get_yp_default_domain() from
+# test for where we get yp_get_default_domain() from
+AC_SEARCH_LIBS(yp_get_default_domain, [nsl])
 AC_CHECK_FUNCS(yp_get_default_domain)
-if test x"$ac_cv_func_yp_get_default_domain" = x"no"; then
-	AC_CHECK_LIB(nsl, yp_get_default_domain, [LIBS="$LIBS -lnsl";
-	AC_DEFINE(HAVE_YP_GET_DEFAULT_DOMAIN,1,[Whether the system has yp_get_default_domain()])]) 
-fi
 
 # Check if we have execl, if not we need to compile smbrun.
 AC_CHECK_FUNCS(execl)
@@ -2827,20 +2816,21 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 		AC_CACHE_CHECK([for freebsd sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([\
 #include <sys/types.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/uio.h>],
 [\
-	int fromfd, tofd;
+	int fromfd, tofd, ret, total=0;
 	off_t offset, nwritten;
 	struct sf_hdtr hdr;
 	struct iovec hdtrl;
-	hdr->headers = &hdtrl;
-	hdr->hdr_cnt = 1;
-	hdr->trailers = NULL;
-	hdr->trl_cnt = 0;
+	hdr.headers = &hdtrl;
+	hdr.hdr_cnt = 1;
+	hdr.trailers = NULL;
+	hdr.trl_cnt = 0;
 	hdtrl.iov_base = NULL;
 	hdtrl.iov_len = 0;
-	int ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
+	ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
 ],
 samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 

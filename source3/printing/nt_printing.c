@@ -2738,9 +2738,14 @@ BOOL is_printer_published(int snum, GUID *guid)
 				   SPOOL_DSSPOOLER_KEY)) < 0)
 		return False;
 
-	ctr = &printer->info_2->data.keys[i].values;
+	if (!(ctr = &printer->info_2->data.keys[i].values)) {
+		return False;
+	}
 
-	guid_val = regval_ctr_getvalue(ctr, "objectGUID");
+	if (!(guid_val = regval_ctr_getvalue(ctr, "objectGUID"))) {
+		return False;
+	}
+
 	if (regval_size(guid_val) == sizeof(GUID))
 		memcpy(guid, regval_data_p(guid_val), sizeof(GUID));
 

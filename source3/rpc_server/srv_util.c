@@ -342,6 +342,7 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	DEBUG(0,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", user_name));
 	DEBUGADD(0,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
 
+
  done:
 	*pgids=gids;
 	*numgroups=cur_gid;

@@ -328,7 +328,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 		strncpy(finfo->short_name,finfo->name, sizeof(finfo->short_name)-1);
 		finfo->short_name[sizeof(finfo->short_name)-1] = '\0';
 	}
-	
+
 	return(DIR_STRUCT_SIZE);
 }
 

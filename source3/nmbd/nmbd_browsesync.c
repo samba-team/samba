@@ -333,7 +333,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  pstrcpy(userdata->data, work->work_group);
+  fstrcpy(userdata->data, work->work_group);
 
   node_status( subrec, &nmbname, answer_ip, 
                domain_master_node_status_success,
