@@ -3840,14 +3840,14 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
   pstring last_component;
   char *p;
 
-  DEBUG(5, ("is_in_path: %s\n", name));
+  DEBUG(8, ("is_in_path: %s\n", name));
 
   /* if we have no list it's obviously not in the path */
   if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) 
-        {
-    DEBUG(5,("is_in_path: no name list.\n"));
+  {
+    DEBUG(8,("is_in_path: no name list.\n"));
     return False;
-}
+  }
 
   /* Get the last component of the unix name. */
   p = strrchr(name, '/');
@@ -3861,7 +3861,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
       /* look for a wildcard match. */
       if (mask_match(last_component, namelist->name, case_sensitive, False))
       {
-         DEBUG(5,("is_in_path: mask match succeeded\n"));
+         DEBUG(8,("is_in_path: mask match succeeded\n"));
          return True;
       }
     }
@@ -3870,12 +3870,12 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
       if((case_sensitive && (strcmp(last_component, namelist->name) == 0))||
        (!case_sensitive && (StrCaseCmp(last_component, namelist->name) == 0)))
         {
-         DEBUG(5,("is_in_path: match succeeded\n"));
+         DEBUG(8,("is_in_path: match succeeded\n"));
          return True;
         }
     }
   }
-  DEBUG(5,("is_in_path: match not found\n"));
+  DEBUG(8,("is_in_path: match not found\n"));
  
   return False;
 }
