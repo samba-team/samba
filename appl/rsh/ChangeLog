@@ -1,3 +1,10 @@
+2000-07-02  Assar Westerlund  <assar@sics.se>
+
+	* rshd.c: DCE stuff from Ake Sandgren <ake@cs.umu.se>
+	do not call syslog with a variable as format string
+
+	* rsh_locl.h (_PATH_ETC_ENVIRONMENT): add
+
 2000-06-09  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (main): work-around for setuid and capabilities bug fixed

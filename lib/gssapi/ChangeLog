@@ -1,3 +1,8 @@
+2000-06-29  Assar Westerlund  <assar@sics.se>
+
+	* address_to_krb5addr.c (gss_address_to_krb5addr): actually use
+	`int' instead of `sa_family_t' for the address family.
+
 2000-06-21  Assar Westerlund  <assar@sics.se>
 
 	* add support for token delegation.  From Daniel Kouril

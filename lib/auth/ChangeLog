@@ -1,3 +1,7 @@
+2000-07-02  Assar Westerlund  <assar@sics.se>
+
+	* afskauthlib/verify.c: fixes for pag setting
+
 1999-12-30  Assar Westerlund  <assar@sics.se>
 
 	* sia/Makefile.am: try to link with shared libraries if we don't

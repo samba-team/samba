@@ -1,3 +1,25 @@
+2000-07-02  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab_keyfile.c (akf_add_entry): remove unused
+	variable
+
+	* kpasswd/kpasswd-generator.c: new test program
+	* kpasswd/Makefile.am: add kpasswd-generator
+
+	* include/Makefile.am (CLEANFILES): add rc4.h
+
+	* kuser/generate-requests.c: new test program
+	* kuser/Makefile.am (noinst_PROGRAMS): add generate-requests
+
+2000-07-01  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: add --enable-dce and related stuff
+	* appl/Makefile.am (SUBDIRS): add $(APPL_dce)
+
+2000-06-29  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos4.c (get_des_key): fix thinkos/typos
+
 2000-06-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* admin/purge.c: use parse_time to parse age

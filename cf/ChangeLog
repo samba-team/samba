@@ -1,3 +1,7 @@
+2000-07-02  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am.common (CP): set and use
+
 2000-04-05  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common (INCLUDE_openldap, LIB_openldap): add
