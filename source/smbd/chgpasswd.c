@@ -227,10 +227,10 @@ static int expect(int master,char *expected,char *buf)
 
 static void pwd_sub(char *buf)
 {
-  string_sub(buf,"\\n","\n");
-  string_sub(buf,"\\r","\r");
-  string_sub(buf,"\\s"," ");
-  string_sub(buf,"\\t","\t");
+	fstring_sub(buf,"\\n","\n");
+	fstring_sub(buf,"\\r","\r");
+	fstring_sub(buf,"\\s"," ");
+	fstring_sub(buf,"\\t","\t");
 }
 
 static void writestring(int fd,char *s)
@@ -447,13 +447,13 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
     }
   }
 
-  string_sub(passwordprogram,"%u",name);
-  all_string_sub(passwordprogram,"%o",oldpass);
-  all_string_sub(passwordprogram,"%n",newpass);
+  pstring_sub(passwordprogram,"%u",name);
+  all_string_sub(passwordprogram,"%o",oldpass,sizeof(pstring));
+  all_string_sub(passwordprogram,"%n",newpass,sizeof(pstring));
 
-  string_sub(chatsequence,"%u",name);
-  all_string_sub(chatsequence,"%o",oldpass);
-  all_string_sub(chatsequence,"%n",newpass);
+  pstring_sub(chatsequence,"%u",name);
+  all_string_sub(chatsequence,"%o",oldpass,sizeof(pstring));
+  all_string_sub(chatsequence,"%n",newpass,sizeof(pstring));
   return(chat_with_program(passwordprogram,name,chatsequence, as_root));
 }
 

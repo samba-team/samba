@@ -1064,8 +1064,9 @@ This routine looks for pattern in s and replaces it with
 insert. It may do multiple replacements.
 
 any of " ; ' or ` in the insert string are replaced with _
+if len==0 then no length check is performed
 ****************************************************************************/
-void string_sub(char *s,const char *pattern,const char *insert)
+void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
@@ -1079,6 +1080,12 @@ void string_sub(char *s,const char *pattern,const char *insert)
 	if (!*pattern) return;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
+		if (ls + (li-lp) >= len) {
+			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
+				 (int)(ls + (li-lp) - len),
+				 pattern, (int)len));
+			break;
+		}
 		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
@@ -1097,12 +1104,22 @@ void string_sub(char *s,const char *pattern,const char *insert)
 	}
 }
 
+void fstring_sub(char *s,const char *pattern,const char *insert)
+{
+	string_sub(s, pattern, insert, sizeof(fstring));
+}
+
+void pstring_sub(char *s,const char *pattern,const char *insert)
+{
+	string_sub(s, pattern, insert, sizeof(pstring));
+}
 
 /****************************************************************************
 similar to string_sub() but allows for any character to be substituted. 
 Use with caution!
+if len==0 then no length check is performed
 ****************************************************************************/
-void all_string_sub(char *s,const char *pattern,const char *insert)
+void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li;
@@ -1116,6 +1133,12 @@ void all_string_sub(char *s,const char *pattern,const char *insert)
 	if (!*pattern) return;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
+		if (len && ls + (li-lp) >= len) {
+			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
+				 (int)(ls + (li-lp) - len),
+				 pattern, (int)len));
+			break;
+		}
 		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
 		memcpy(p, insert, li);
 		s = p + li;
