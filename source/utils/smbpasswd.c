@@ -860,6 +860,13 @@ static int process_root(void)
 
 	if (joining_domain) {
 
+		/* smb.conf must specify both security = domain and encrypt passwords = yes */
+
+		if (!lp_encrypted_passwords() || lp_security() != SEC_DOMAIN) {
+			DEBUG(0,("ERROR: Must have both SECURITY = DOMAIN and ENCRYPT PASSWORDS = YES!\n"));
+			return 1;
+		} 
+
 		/* Are we joining by specifing an admin username and
 		   password? */
 
