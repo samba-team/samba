@@ -94,7 +94,7 @@ __asm__(".globl __fcntl; __fcntl = fcntl");
 __asm__(".globl __getdents; __getdents = getdents");
 #endif
 
- int getdents(unsigned int fd, struct dirent *dirp, unsigned int count)
+ int getdents(int fd, struct dirent *dirp, unsigned int count)
 {
 	if (smbw_fd(fd)) {
 		return smbw_getdents(fd, dirp, count);
@@ -188,6 +188,7 @@ __asm__(".globl __write; __write = write");
 }
 
 
+#ifdef LINUX
  int __fxstat(int vers, int fd, struct stat *st)
 {
 	struct kernel_stat kbuf;
@@ -249,6 +250,7 @@ __asm__(".globl __write; __write = write");
 		return -1;
 	}
 }
+#endif
 
 
  char *getcwd(char *buf, size_t size)
@@ -257,7 +259,7 @@ __asm__(".globl __write; __write = write");
 }
 
 
-
+#ifdef LINUX
  int __lxstat(int vers, const char *name, struct stat *st)
 {
 	struct kernel_stat kbuf;
@@ -319,7 +321,7 @@ __asm__(".globl __write; __write = write");
 		return -1;
 	}
 }
-
+#endif
 
 
  int mkdir(const char *name, mode_t mode)
@@ -343,6 +345,7 @@ __asm__(".globl __write; __write = write");
 }
 
 
+#ifdef LINUX
  int __xstat(int vers, const char *name, struct stat *st)
 {
 	struct kernel_stat kbuf;
@@ -404,10 +407,42 @@ __asm__(".globl __write; __write = write");
 		return -1;
 	}
 }
+#endif
 
  int stat(const char *name, struct stat *st)
 {
+#if HAVE___XSTAT
 	return __xstat(_STAT_VER, name, st);
+#else
+	if (smbw_path(name)) {
+		return smbw_stat(name, st);
+	}
+	return real_stat(name, st);
+#endif
+}
+
+ int lstat(const char *name, struct stat *st)
+{
+#if HAVE___LXSTAT
+	return __lxstat(_STAT_VER, name, st);
+#else
+	if (smbw_path(name)) {
+		return smbw_stat(name, st);
+	}
+	return real_lstat(name, st);
+#endif
+}
+
+ int fstat(int fd, struct stat *st)
+{
+#if HAVE___LXSTAT
+	return __fxstat(_STAT_VER, fd, st);
+#else
+	if (smbw_fd(fd)) {
+		return smbw_fstat(fd, st);
+	}
+	return real_fstat(fd, st);
+#endif
 }
 
 

@@ -28,38 +28,107 @@
 #define real_chown(fn, owner, group)	(syscall(SYS_chown,(fn),(owner),(group)))
 
 #define real_getdents(fd, dirp, count)	(syscall(SYS_getdents, (fd), (dirp), (count)))
-/* if needed define SYS_getdents so that getdents gets compiled */
-
 #define real_link(fn1, fn2)		(syscall(SYS_link, (fn1), (fn2)))
 
-#define real_lstat(fn, buf )		(syscall(SYS_lstat, (fn), (buf)))
 #define real_open(fn,flags,mode)	(syscall(SYS_open, (fn), (flags), (mode)))
-#define real_prev_lstat(fn, buf )	(syscall(SYS_prev_lstat, (fn), (buf)))
-#define real_prev_stat(fn, buf )	(syscall(SYS_prev_stat, (fn), (buf)))
 
-#ifdef linux
-#define real_readdir(dir)		(__readdir(dir))
+
+#ifdef HAVE__OPENDIR
+#define real_opendir(fn)            	(_opendir(fn))
+#elif HAVE___OPENDIR
 #define real_opendir(fn)            	(__opendir(fn))
-#define real_telldir(dir)            	(__telldir(dir))
-#define real_closedir(dir)            	(__closedir(dir))
-#define real_seekdir(dir, ofs)          (__seekdir(dir, ofs))
 #else
-#define real_readdir(dirp)		((struct dirent *)syscall(SYS_readdir,(dirp)))
 #define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
-/* if needed define SYS_readdir so that readdir gets compiled */
 #endif
+
+#ifdef HAVE__READDIR
+#define real_readdir(d)            	(_readdir(d))
+#elif HAVE___READDIR
+#define real_readdir(d)            	(__readdir(d))
+#else
+#define real_readdir(d)		(syscall(SYS_readdir,(d)))
+#endif
+
+#ifdef HAVE__TELLDIR
+#define real_telldir(d)            	(_telldir(d))
+#elif HAVE___TELLDIR
+#define real_telldir(d)            	(__telldir(d))
+#else
+#define real_telldir(d)		(syscall(SYS_telldir,(d)))
+#endif
+
+#ifdef HAVE__CLOSEDIR
+#define real_closedir(d)            	(_closedir(d))
+#elif HAVE___CLOSEDIR
+#define real_closedir(d)            	(__closedir(d))
+#else
+#define real_closedir(d)		(syscall(SYS_closedir,(d)))
+#endif
+
+#ifdef HAVE__SEEKDIR
+#define real_seekdir(d,l)            	(_seekdir(d,l))
+#elif HAVE___SEEKDIR
+#define real_seekdir(d)            	(__seekdir(d,l))
+#else
+#define real_seekdir(d,l)		(syscall(SYS_seekdir,(d),(l)))
+#endif
+
+#ifdef HAVE__DUP
+#define real_dup(d)            	(_dup(d))
+#elif HAVE___DUP
+#define real_dup(d)            	(__dup(d))
+#else
+#define real_dup(d)		(syscall(SYS_dup,(d)))
+#endif
+
+#ifdef HAVE__DUP2
+#define real_dup2(d1,d2)            	(_dup2(d1,d2))
+#elif HAVE___DUP2
+#define real_dup2(d1,d2)            	(__dup2(d1,d2))
+#else
+#define real_dup2(d1,d2)		(syscall(SYS_dup2,(d1),(d2)))
+#endif
+
+#ifdef HAVE__GETCWD
+#define real_getcwd(b,s)            	(_getcwd(b,s))
+#elif HAVE___GETCWD
+#define real_getcwd(b,s)            	(__getcwd(b,s))
+#else
+#define real_getcwd(b,s)		(syscall(SYS_getcwd,(b),(s)))
+#endif
+
+#ifdef HAVE__STAT
+#define real_stat(fn,st)            	(_stat(fn,st))
+#elif HAVE___STAT
+#define real_stat(fn,st)            	(__stat(fn,st))
+#else
+#define real_stat(fn,st)		(syscall(SYS_stat,(fn),(st)))
+#endif
+
+#ifdef HAVE__LSTAT
+#define real_lstat(fn,st)            	(_lstat(fn,st))
+#elif HAVE___LSTAT
+#define real_lstat(fn,st)            	(__lstat(fn,st))
+#else
+#define real_lstat(fn,st)		(syscall(SYS_lstat,(fn),(st)))
+#endif
+
+#ifdef HAVE__FSTAT
+#define real_fstat(fd,st)            	(_fstat(fd,st))
+#elif HAVE___FSTAT
+#define real_fstat(fd,st)            	(__fstat(fd,st))
+#else
+#define real_fstat(fd,st)		(syscall(SYS_fstat,(fd),(st)))
+#endif
+
 
 #define real_readlink(fn,buf,len)	(syscall(SYS_readlink, (fn), (buf), (len)))
 #define real_rename(fn1, fn2)		(syscall(SYS_rename, (fn1), (fn2)))
 #define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))
-#define real_stat(fn, buf )		(syscall(SYS_stat, (fn), (buf)))
-#define real_fstat(fd, buf )		(syscall(SYS_fstat, (fd), (buf)))
 #define real_read(fd, buf, count )	(syscall(SYS_read, (fd), (buf), (count)))
 #define real_lseek(fd, offset, whence)	(syscall(SYS_lseek, (fd), (offset), (whence)))
 #define real_write(fd, buf, count )	(syscall(SYS_write, (fd), (buf), (count)))
 #define real_close(fd)	                (syscall(SYS_close, (fd)))
-#define real_dup(fd)	                (syscall(SYS_dup, (fd)))
-#define real_dup2(fd1, fd2)             (syscall(SYS_dup2, (fd1), (fd2)))
 #define real_fchdir(fd)	                (syscall(SYS_fchdir, (fd)))
 #define real_fcntl(fd,cmd,arg)	        (syscall(SYS_fcntl, (fd), (cmd), (arg)))
 #define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))

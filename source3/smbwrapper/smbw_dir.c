@@ -31,6 +31,9 @@ extern int DEBUGLEVEL;
 
 extern int smbw_busy;
 
+#define DIRP_SIZE (sizeof(fstring) + 12)
+
+
 /***************************************************** 
 map a fd to a smbw_dir structure
 *******************************************************/
@@ -274,7 +277,7 @@ int smbw_dir_fstat(int fd, struct stat *st)
 
 	ZERO_STRUCTP(st);
 
-	smbw_setup_stat(st, "", dir->count*sizeof(struct dirent), aDIR);
+	smbw_setup_stat(st, "", dir->count*DIRP_SIZE, aDIR);
 
 	st->st_dev = dir->srv->dev;
 
@@ -307,7 +310,6 @@ int smbw_dir_close(int fd)
 	return 0;
 }
 
-
 /***************************************************** 
 a wrapper for getdents()
 *******************************************************/
@@ -326,24 +328,25 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 		smbw_busy--;
 		return -1;
 	}
+
+	DEBUG(4,("sizeof(*dirp)=%d\n", sizeof(*dirp)));
 	
-	while (count>=sizeof(*dirp) && (dir->offset < dir->count)) {
-		dirp->d_off = (dir->offset+1)*sizeof(*dirp);
-		dirp->d_reclen = sizeof(*dirp);
-		safe_strcpy(&dirp->d_name[0], dir->list[dir->offset].name, 
-			    sizeof(dirp->d_name)-1);
+	while (count>=DIRP_SIZE && (dir->offset < dir->count)) {
+		dirp->d_off = (dir->offset+1)*DIRP_SIZE;
+		dirp->d_reclen = DIRP_SIZE;
+		fstrcpy(&dirp->d_name[0], dir->list[dir->offset].name);
 		dirp->d_ino = smbw_inode(dir->list[dir->offset].name);
 		dir->offset++;
 		count -= dirp->d_reclen;
 		if (dir->offset == dir->count) {
 			dirp->d_off = -1;
 		}
-		dirp++;
+		dirp = (struct dirent *)(((char *)dirp) + DIRP_SIZE);
 		n++;
 	}
 
 	smbw_busy--;
-	return n*sizeof(*dirp);
+	return n*DIRP_SIZE;
 }
 
 
@@ -445,18 +448,18 @@ off_t smbw_dir_lseek(int fd, off_t offset, int whence)
 
 	switch (whence) {
 	case SEEK_SET:
-		dir->offset = offset/sizeof(struct dirent);
+		dir->offset = offset/DIRP_SIZE;
 		break;
 	case SEEK_CUR:
-		dir->offset += offset/sizeof(struct dirent);
+		dir->offset += offset/DIRP_SIZE;
 		break;
 	case SEEK_END:
-		dir->offset = (dir->count * sizeof(struct dirent)) + offset;
-		dir->offset /= sizeof(struct dirent);
+		dir->offset = (dir->count * DIRP_SIZE) + offset;
+		dir->offset /= DIRP_SIZE;
 		break;
 	}
 
-	ret = dir->offset * sizeof(struct dirent);
+	ret = dir->offset * DIRP_SIZE;
 
 	DEBUG(4,("   -> %d\n", (int)ret));
 
@@ -559,7 +562,7 @@ char *smbw_getcwd(char *buf, size_t size)
 	smbw_init();
 
 	if (smbw_busy) {
-		return __getcwd(buf, size);
+		return real_getcwd(buf, size);
 	}
 
 	smbw_busy++;
@@ -636,10 +639,11 @@ read one entry from a directory
 struct dirent *smbw_readdir(DIR *dirp)
 {
 	struct smbw_dir *d = (struct smbw_dir *)dirp;
-	static struct dirent de;
+	static char buf[DIRP_SIZE];
+	struct dirent *de = (struct dirent *)buf;
 
-	if (smbw_getdents(d->fd, &de, sizeof(struct dirent)) > 0) 
-		return &de;
+	if (smbw_getdents(d->fd, de, DIRP_SIZE) > 0) 
+		return de;
 
 	return NULL;
 }

@@ -219,7 +219,7 @@ SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ)
 
-PICOBJS = $(SMBWRAPPER_OBJ:%.o=%.p)
+PICOBJS = $(SMBWRAPPER_OBJ:%.o=%.po)
 
 ######################################################################
 # now the rules...
@@ -228,7 +228,7 @@ PICOBJS = $(SMBWRAPPER_OBJ:%.o=%.p)
 all : CHECK $(SPROGS) $(PROGS) 
 
 .SUFFIXES:
-.SUFFIXES: .c .o .h .p
+.SUFFIXES: .c .o .h .po
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
@@ -253,7 +253,7 @@ CHECK:
 # it will only work with GNU make, gcc and --enable-maintainer-mode
 
 
-.c.p: @MAINT@ .deps/.dummy obj-dirs
+.c.po: @MAINT@ .deps/.dummy obj-dirs
 	@echo Compiling $*.c with -fpic
 	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
 	   if test ! -d "$$dir"; then \
@@ -351,7 +351,7 @@ bin/smbtorture: $(SMBTORTURE_OBJ)
 
 smbwrapper/smbwrapper.so: $(PICOBJS)
 	@echo Linking $@
-	@$(LD) -shared -o $@ $(PICOBJS)
+	$(LD) -G -o $@ $(PICOBJS)
 
 install: installbin installman installscripts installcp installswat
 
@@ -396,7 +396,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o */*.p
+	-rm -f core */*~ *~ */*.o */*.po
 
 proto: 
 	@echo rebuilding include/proto.h

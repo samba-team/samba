@@ -21,14 +21,21 @@
 
 #include "config.h"
 
+#ifdef HAVE_SYSCALL_H
 #include <syscall.h>
+#elif HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#ifdef LINUX
 #include "kernel_stat.h"
+#endif
 #include "realcalls.h"
 
 int smbw_dirp(DIR *dirp);
