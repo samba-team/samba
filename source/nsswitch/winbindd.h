@@ -45,7 +45,8 @@ struct winbindd_cli_state {
 	BOOL privileged;                           /* Is the client 'privileged' */
 
 	BOOL send_to_background;
-	enum winbindd_result (*continuation)(struct winbindd_cli_state *cli);
+	enum winbindd_result (*continuation)(struct winbindd_cli_state *cli,
+					     pid_t dual_daemon);
 	void *continuation_private;
 
 	struct winbindd_request request;          /* Request from client */

@@ -230,7 +230,7 @@ static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
 		if (state->sock != *fd)
 			continue;
 
-		state->response.result = state->continuation(state);
+		state->response.result = state->continuation(state, src);
 
 		if (state->response.result == WINBINDD_PENDING) {
 			if (state->send_to_background) {
@@ -257,8 +257,8 @@ static struct dispatch_table cache_table[] = {
 	
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
-	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
+	{ WINBINDD_GETPWNAM, dual_request, "GETPWNAM" },
+	{ WINBINDD_GETPWUID, dual_request, "GETPWUID" },
 
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
@@ -269,8 +269,8 @@ static struct dispatch_table cache_table[] = {
 
 	/* Group functions */
 
-	{ WINBINDD_GETGRNAM, winbindd_getgrnam, "GETGRNAM" },
-	{ WINBINDD_GETGRGID, winbindd_getgrgid, "GETGRGID" },
+	{ WINBINDD_GETGRNAM, dual_request, "GETGRNAM" },
+	{ WINBINDD_GETGRGID, dual_request, "GETGRGID" },
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
 	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },

@@ -316,6 +316,11 @@ void do_dual_daemon(void)
 			}
 
 			winbind_process_packet(&state);
+
+			if (state.request.flags & WBFLAG_CACHE_RESPONSE)
+				cache_store_response(getpid(),
+						     &state.response);
+
 			message_send_pid(getppid(), MSG_WINBIND_FINISHED,
 					 &state.request.client_fd,
 					 sizeof(state.request.client_fd),

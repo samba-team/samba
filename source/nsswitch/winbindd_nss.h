@@ -159,6 +159,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_UNIX_NAME            0x0080
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
 #define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
+#define WBFLAG_CACHE_RESPONSE           0x0400
 
 /* Winbind request structure */
 

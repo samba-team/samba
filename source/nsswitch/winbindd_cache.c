@@ -1466,6 +1466,12 @@ static struct cache_entry *wcache_fetch_only(const char *format, ...)
 	return centry;
 }
 
+static enum winbindd_result
+cache_lookupsid_cont(struct winbindd_cli_state *state, pid_t dual)
+{
+	return cache_lookupsid(state);
+}
+
 enum winbindd_result cache_lookupsid(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
@@ -1508,7 +1514,7 @@ enum winbindd_result cache_lookupsid(struct winbindd_cli_state *state)
 		state->send_to_background = True;
 
 	if (centry == NULL) {
-		state->continuation = cache_lookupsid;
+		state->continuation = cache_lookupsid_cont;
 		return WINBINDD_PENDING;
 	}
 
@@ -1535,6 +1541,12 @@ enum winbindd_result cache_lookupsid(struct winbindd_cli_state *state)
 	talloc_destroy(mem_ctx);
 
 	return WINBINDD_OK;
+}
+
+static enum winbindd_result
+cache_lookupname_cont(struct winbindd_cli_state *state, pid_t dual)
+{
+	return cache_lookupname(state);
 }
 
 enum winbindd_result cache_lookupname(struct winbindd_cli_state *state)
@@ -1587,7 +1599,7 @@ enum winbindd_result cache_lookupname(struct winbindd_cli_state *state)
 		state->send_to_background = True;
 
 	if (centry == NULL) {
-		state->continuation = cache_lookupname;
+		state->continuation = cache_lookupname_cont;
 		return WINBINDD_PENDING;
 	}
 
@@ -1637,7 +1649,7 @@ struct list_entries_private {
 };
 
 static enum winbindd_result
-cache_list_users_next(struct winbindd_cli_state *state);
+cache_list_users_next(struct winbindd_cli_state *state, pid_t dual);
 
 enum winbindd_result cache_list_users(struct winbindd_cli_state *state)
 {
@@ -1657,11 +1669,11 @@ enum winbindd_result cache_list_users(struct winbindd_cli_state *state)
 	priv->extra_data = NULL;
 	priv->extra_data_len = 0;
 
-	return cache_list_users_next(state);
+	return cache_list_users_next(state, -1);
 }
 
 static enum winbindd_result
-cache_list_users_next(struct winbindd_cli_state *state)
+cache_list_users_next(struct winbindd_cli_state *state, pid_t dual)
 {
 	struct cache_entry *centry;
 	struct list_entries_private *priv =
@@ -1757,7 +1769,7 @@ cache_list_users_next(struct winbindd_cli_state *state)
 }	
 
 static enum winbindd_result
-cache_list_groups_next(struct winbindd_cli_state *state);
+cache_list_groups_next(struct winbindd_cli_state *state, pid_t dual);
 
 enum winbindd_result cache_list_groups(struct winbindd_cli_state *state)
 {
@@ -1777,11 +1789,11 @@ enum winbindd_result cache_list_groups(struct winbindd_cli_state *state)
 	priv->extra_data = NULL;
 	priv->extra_data_len = 0;
 
-	return cache_list_groups_next(state);
+	return cache_list_groups_next(state, -1);
 }
 
 static enum winbindd_result
-cache_list_groups_next(struct winbindd_cli_state *state)
+cache_list_groups_next(struct winbindd_cli_state *state, pid_t dual)
 {
 	struct cache_entry *centry;
 	struct list_entries_private *priv =
@@ -1875,6 +1887,12 @@ cache_list_groups_next(struct winbindd_cli_state *state)
 	goto next_domain;
 }	
 
+static enum winbindd_result
+cache_getusersids_cont(struct winbindd_cli_state *state, pid_t dual)
+{
+	return cache_getusersids(state);
+}
+
 enum winbindd_result cache_getusersids(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
@@ -1915,7 +1933,7 @@ enum winbindd_result cache_getusersids(struct winbindd_cli_state *state)
 		state->send_to_background = True;
 
 	if (centry == NULL) {
-		state->continuation = cache_getusersids;
+		state->continuation = cache_getusersids_cont;
 		return WINBINDD_PENDING;
 	}
 
@@ -1961,4 +1979,101 @@ enum winbindd_result cache_getusersids(struct winbindd_cli_state *state)
 	talloc_destroy(mem_ctx);
 
 	return WINBINDD_OK;
+}
+
+void cache_store_response(pid_t pid, struct winbindd_response *response)
+{
+	TDB_DATA key, data;
+	fstring key_str;
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+	data.dptr = (void *)response;
+	data.dsize = sizeof(*response);
+	if (tdb_store(wcache->tdb, key, data, TDB_REPLACE) == -1)
+		return;
+
+	if (response->length == sizeof(*response))
+		return;
+
+	/* There's extra data */
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+	data.dptr = response->extra_data;
+	data.dsize = response->length - sizeof(*response);
+	if (tdb_store(wcache->tdb, key, data, TDB_REPLACE) == 0)
+		return;
+
+	/* We could not store the extra data, make sure the tdb does not
+	 * contain a main record with wrong dangling extra data */
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+	tdb_delete(wcache->tdb, key);
+
+	return;
+}
+
+static BOOL cache_retrieve_response(pid_t pid,
+				    struct winbindd_response * response)
+{
+	TDB_DATA key, data;
+	fstring key_str;
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+
+	data = tdb_fetch(wcache->tdb, key);
+
+	if (data.dptr == NULL)
+		return False;
+
+	if (data.dsize != sizeof(*response))
+		return False;
+
+	memcpy(response, data.dptr, data.dsize);
+	SAFE_FREE(data.dptr);
+
+	if (response->length == sizeof(*response))
+		return True;
+
+	/* There's extra data */
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+
+	data = tdb_fetch(wcache->tdb, key);
+
+	if (data.dptr == NULL)
+		return False;
+
+	if (data.dsize != (response->length - sizeof(*response))) {
+		SAFE_FREE(data.dptr);
+		return False;
+	}
+
+	response->extra_data = data.dptr;
+	return True;
+}
+
+static enum winbindd_result dual_response(struct winbindd_cli_state *state,
+					  pid_t dual)
+{
+	if (!cache_retrieve_response(dual, &state->response))
+		return WINBINDD_ERROR;
+	return state->response.result;
+}
+
+enum winbindd_result dual_request(struct winbindd_cli_state *state)
+{
+	state->send_to_background = True;
+	state->request.flags |= WBFLAG_CACHE_RESPONSE;
+	state->continuation = dual_response;
+	return WINBINDD_PENDING;
 }
