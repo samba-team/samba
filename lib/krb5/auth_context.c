@@ -232,16 +232,6 @@ krb5_auth_getauthenticator(krb5_context context,
 
     copy_Authenticator(auth_context->authenticator,
 		       *authenticator);
-
-#if 0
-    copy_PrincipalName(&auth_context->authenticator->cname,
-		       &(*authenticator)->cname);
-    copy_Realm(&auth_context->authenticator->crealm,
-	       &(*authenticator)->crealm);
-    (*authenticator)->cusec = auth_context->authenticator->cusec;
-    (*authenticator)->ctime = auth_context->authenticator->ctime;
-    (*authenticator)->seq_number = auth_context->authenticator->seq_number; /* XXX */
-#endif
     return 0;
 }
 
