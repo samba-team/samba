@@ -159,7 +159,7 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *handle)
+			     struct policy_handle *handle, uint32_t base_acct_flags)
 {
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
@@ -168,6 +168,12 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_QueryUserInfo q0;
 	union samr_UserInfo u;
 	BOOL ret = True;
+
+	uint32_t user_extra_flags = 0;
+	if (base_acct_flags == ACB_NORMAL) {
+		/* Don't know what this is, but it is always here for users - you can't get rid of it */
+		user_extra_flags = 0x20000;
+	}
 
 	s.in.user_handle = handle;
 	s.in.info = &u;
@@ -198,8 +204,8 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 #define INT_EQUAL(i1, i2, field) \
 		if (i1 != i2) { \
-			printf("Failed to set %s to %u (line %d)\n", \
-			       #field, i2, __LINE__); \
+			printf("Failed to set %s to 0x%x - got 0x%x (line %d)\n", \
+			       #field, i2, i1, __LINE__); \
 			ret = False; \
 			break; \
 		}
@@ -228,7 +234,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		STRING_EQUAL(u.info ## lvl2.field2.name, value, field2); \
 	} while (0)
 
-#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2, value, fpval) do { \
+#define TEST_USERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value, fpval) do { \
 		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
@@ -250,12 +256,16 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		u.info ## lvl1.field1 = 0; \
 		TESTCALL(QueryUserInfo, q); \
 		u = *q.out.info; \
-		INT_EQUAL(u.info ## lvl1.field1, value, field1); \
+		INT_EQUAL(u.info ## lvl1.field1, exp_value, field1); \
 		q.in.level = lvl2; \
 		TESTCALL(QueryUserInfo, q) \
 		u = *q.out.info; \
-		INT_EQUAL(u.info ## lvl2.field2, value, field1); \
+		INT_EQUAL(u.info ## lvl2.field2, exp_value, field1); \
 	} while (0)
+
+#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2, value, fpval) do { \
+        TEST_USERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, value, fpval); \
+        } while (0)
 
 	q0.in.level = 12;
 	do { TESTCALL(QueryUserInfo, q0) } while (0);
@@ -317,6 +327,35 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(21, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], 4, 
 			  SAMR_FIELD_LOGON_HOURS);
 
+	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
+			  (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ), 
+			  (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
+			  0);
+	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
+			  (base_acct_flags  | ACB_DISABLED), 
+			  (base_acct_flags  | ACB_DISABLED | user_extra_flags), 
+			  0);
+	
+	/* Setting PWNOEXP clears the magic 0x20000 flag */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
+			  (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
+			  (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
+			  0);
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			  (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ), 
+			  (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
+			  0);
+
+	/* The 'autolock' flag doesn't stick - check this */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			  (base_acct_flags | ACB_DISABLED | ACB_AUTOLOCK), 
+			  (base_acct_flags | ACB_DISABLED | user_extra_flags), 
+			  0);
+	TEST_USERINFO_INT_EXP(21, acct_flags, 21, acct_flags, 
+			  (base_acct_flags | ACB_DISABLED), 
+			  (base_acct_flags | ACB_DISABLED | user_extra_flags), 
+			  SAMR_FIELD_ACCT_FLAGS);
+
 #if 0
 	/* these fail with win2003 - it appears you can't set the primary gid?
 	   the set succeeds, but the gid isn't changed. Very weird! */
@@ -331,9 +370,9 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 /*
   generate a random password for password change tests
 */
-static char *samr_rand_pass(TALLOC_CTX *mem_ctx)
+static char *samr_rand_pass(TALLOC_CTX *mem_ctx, int min_len)
 {
-	size_t len = 8 + (random() % 6);
+	size_t len = MAX(8, min_len) + (random() % 6);
 	char *s = generate_random_str(mem_ctx, len);
 	printf("Generated password '%s'\n", s);
 	return s;
@@ -347,7 +386,16 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	union samr_UserInfo u;
 	BOOL ret = True;
 	DATA_BLOB session_key;
-	char *newpass = samr_rand_pass(mem_ctx);
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	int policy_min_pw_len = 0;
+	pwp.in.user_handle = handle;
+
+	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_password_len;
+	}
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	s.in.user_handle = handle;
 	s.in.info = &u;
@@ -382,14 +430,24 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				struct policy_handle *handle, char **password)
+				struct policy_handle *handle, uint32 fields_present,
+				char **password)
 {
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	BOOL ret = True;
 	DATA_BLOB session_key;
-	char *newpass = samr_rand_pass(mem_ctx);
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	int policy_min_pw_len = 0;
+	pwp.in.user_handle = handle;
+
+	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_password_len;
+	}
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	s.in.user_handle = handle;
 	s.in.info = &u;
@@ -397,7 +455,7 @@ static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(u);
 
-	u.info23.info.fields_present = SAMR_FIELD_PASSWORD;
+	u.info23.info.fields_present = fields_present;
 
 	encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
 
@@ -435,8 +493,17 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8_t confounder[16];
-	char *newpass = samr_rand_pass(mem_ctx);	
+	char *newpass;
 	struct MD5Context ctx;
+	struct samr_GetUserPwInfo pwp;
+	int policy_min_pw_len = 0;
+	pwp.in.user_handle = handle;
+
+	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_password_len;
+	}
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	s.in.user_handle = handle;
 	s.in.info = &u;
@@ -477,7 +544,8 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				struct policy_handle *handle, char **password)
+				struct policy_handle *handle, uint32 fields_present,
+				char **password)
 {
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
@@ -485,9 +553,18 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-	uint8_t confounder[16];
-	char *newpass = samr_rand_pass(mem_ctx);	
 	struct MD5Context ctx;
+	uint8_t confounder[16];
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	int policy_min_pw_len = 0;
+	pwp.in.user_handle = handle;
+
+	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_password_len;
+	}
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	s.in.user_handle = handle;
 	s.in.info = &u;
@@ -495,7 +572,7 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(u);
 
-	u.info25.info.fields_present = SAMR_FIELD_PASSWORD;
+	u.info25.info.fields_present = fields_present;
 
 	encode_pw_buffer(u.info25.password.data, newpass, STR_UNICODE);
 
@@ -798,14 +875,24 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
 	struct policy_handle user_handle;
 	char *oldpass = *password;
-	char *newpass = samr_rand_pass(mem_ctx);	
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
+
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	int policy_min_pw_len = 0;
 
 	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_ACCOUNT_NAME, &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+	pwp.in.user_handle = &user_handle;
+
+	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_password_len;
+	}
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	printf("Testing ChangePasswordUser\n");
 
@@ -859,10 +946,24 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	struct samr_CryptPassword lm_pass;
 	struct samr_AsciiName server, account;
 	char *oldpass = *password;
-	char *newpass = samr_rand_pass(mem_ctx);	
+	char *newpass;
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
+	struct samr_GetDomPwInfo dom_pw_info;
+	int policy_min_pw_len = 0;
+
+	struct samr_Name domain_name;
+	domain_name.name = "";
+	dom_pw_info.in.name = &domain_name;
+
 	printf("Testing OemChangePasswordUser2\n");
+
+	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &dom_pw_info);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = dom_pw_info.out.info.min_password_len;
+	}
+
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	account.name = TEST_ACCOUNT_NAME;
@@ -901,11 +1002,25 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass = *password;
-	char *newpass = samr_rand_pass(mem_ctx);	
+	char *newpass;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
+	struct samr_GetDomPwInfo dom_pw_info;
+	int policy_min_pw_len = 0;
+
+	struct samr_Name domain_name;
+	domain_name.name = "";
+	dom_pw_info.in.name = &domain_name;
+
 	printf("Testing ChangePasswordUser2\n");
+
+	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &dom_pw_info);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = dom_pw_info.out.info.min_password_len;
+	}
+
+	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	init_samr_Name(&account, TEST_ACCOUNT_NAME);
@@ -945,7 +1060,9 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				     struct policy_handle *handle, char **password)
+				     struct policy_handle *handle, 
+				     int policy_min_pw_len,
+				     char **password)
 {
 	NTSTATUS status;
 	struct samr_ChangePasswordUser3 r;
@@ -954,7 +1071,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass = *password;
-	char *newpass = samr_rand_pass(mem_ctx);	
+	char *newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);	
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
@@ -987,7 +1104,18 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.password3 = NULL;
 
 	status = dcerpc_samr_ChangePasswordUser3(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) 
+	    && !policy_min_pw_len) {
+		if (r.out.dominfo) {
+			policy_min_pw_len = r.out.dominfo->min_password_len;
+		}
+		if (policy_min_pw_len) /* try again with the right min password length */ {
+			ret = test_ChangePasswordUser3(p, mem_ctx, handle, policy_min_pw_len, password);
+		} else {
+			printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
 		ret = False;
 	} else {
@@ -1133,7 +1261,7 @@ static BOOL test_TestPrivateFunctionsUser(struct dcerpc_pipe *p, TALLOC_CTX *mem
 
 
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			  struct policy_handle *handle)
+			  struct policy_handle *handle, uint32_t base_acct_flags)
 {
 	BOOL ret = True;
 
@@ -1149,7 +1277,7 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_SetUserInfo(p, mem_ctx, handle)) {
+	if (!test_SetUserInfo(p, mem_ctx, handle, base_acct_flags)) {
 		ret = False;
 	}	
 
@@ -1391,7 +1519,13 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, password)) {
+	/* we change passwords twice - this has the effect of verifying
+	   they were changed correctly for the final call */
+	if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, password)) {
+		ret = False;
+	}
+
+	if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, password)) {
 		ret = False;
 	}
 
@@ -1406,6 +1540,14 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_QueryUserInfo q;
 	uint32_t rid;
 	char *password = NULL;
+
+	int i;
+	const uint32 password_fields[] = {
+		SAMR_FIELD_PASSWORD,
+		SAMR_FIELD_PASSWORD2,
+		SAMR_FIELD_PASSWORD | SAMR_FIELD_PASSWORD2,
+		0
+	};
 
 	/* This call creates a 'normal' account - check that it really does */
 	const uint32_t acct_flags = ACB_NORMAL;
@@ -1458,7 +1600,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!test_user_ops(p, mem_ctx, user_handle)) {
+	if (!test_user_ops(p, mem_ctx, user_handle, acct_flags)) {
 		ret = False;
 	}
 
@@ -1466,28 +1608,35 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}	
 
-	if (!test_SetUserPass_23(p, mem_ctx, user_handle, &password)) {
-		ret = False;
-	}	
+	for (i = 0; password_fields[i]; i++) {
+		if (!test_SetUserPass_23(p, mem_ctx, user_handle, password_fields[i], &password)) {
+			ret = False;
+		}	
+		
+		/* check it was set right */
+		if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, &password)) {
+			ret = False;
+		}
+	}		
+
+	for (i = 0; password_fields[i]; i++) {
+		if (!test_SetUserPass_25(p, mem_ctx, user_handle, password_fields[i], &password)) {
+			ret = False;
+		}	
+		
+		/* check it was set right */
+		if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, &password)) {
+			ret = False;
+		}
+	}		
 
 	if (!test_SetUserPassEx(p, mem_ctx, user_handle, &password)) {
 		ret = False;
 	}	
 
-	if (!test_SetUserPass_25(p, mem_ctx, user_handle, &password)) {
-		ret = False;
-	}	
-
-	/* we change passwords twice - this has the effect of verifying
-	   they were changed correctly */
 	if (!test_ChangePassword(p, mem_ctx, domain_handle, &password)) {
 		ret = False;
 	}	
-
-	if (!test_ChangePassword(p, mem_ctx, domain_handle, &password)) {
-		ret = False;
-	}	
-
 
 	return ret;
 }
@@ -1563,7 +1712,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.out.access_granted = &access_granted;
 		r.out.rid = &rid;
 		
-		printf("Testing CreateUser2(%s)\n", r.in.account_name->name);
+		printf("Testing CreateUser2(%s, 0x%x)\n", r.in.account_name->name, acct_flags);
 		
 		status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
 		
@@ -1602,7 +1751,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				}
 			}
 		
-			if (!test_user_ops(p, mem_ctx, &user_handle)) {
+			if (!test_user_ops(p, mem_ctx, &user_handle, acct_flags)) {
 				ret = False;
 			}
 

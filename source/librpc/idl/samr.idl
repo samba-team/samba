@@ -678,10 +678,12 @@
 	const int SAMR_FIELD_PROFILE_PATH = 0x00000200;
 	const int SAMR_FIELD_WORKSTATION  = 0x00000400;
 	const int SAMR_FIELD_LOGON_HOURS  = 0x00002000;
+	const int SAMR_FIELD_ACCT_FLAGS   = 0x00100000;
 	const int SAMR_FIELD_CALLBACK     = 0x00200000;
 	const int SAMR_FIELD_COUNTRY_CODE = 0x00400000;
 	const int SAMR_FIELD_CODE_PAGE    = 0x00800000;
-	const int SAMR_FIELD_PASSWORD     = 0x03000000; /* 2 bits!? */
+	const int SAMR_FIELD_PASSWORD     = 0x01000000; /* either of these */
+	const int SAMR_FIELD_PASSWORD2    = 0x02000000; /* two bits seems to work */
 
 	typedef struct {
 		NTTIME last_logon;
