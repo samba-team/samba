@@ -558,6 +558,22 @@ BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+creates a BUFFER4 structure.
+********************************************************************/
+BOOL make_buffer4_str(BUFFER4 *str, const char *buf, int len)
+{
+	ZERO_STRUCTP(str);
+
+	/* set up string lengths. */
+	str->buf_len     = len * 2;
+
+	/* store the string (little endian buffer) */
+	ascii_to_unibuf((char*)str->buffer, buf, str->buf_len);
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes a BUFFER4 structure.
 ********************************************************************/
 BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)

@@ -238,3 +238,26 @@ void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen)
 
 	*dest = 0;
 }
+
+/*******************************************************************
+  Convert a buffer4 to space-separated ASCII.
+ ********************************************************************/
+void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen)
+{
+	char *destend;
+	const uchar *src;
+	size_t len;
+	register uint16 c;
+
+	src = str->buffer;
+	len = MIN(str->buf_len, maxlen);
+	destend = dest + len;
+
+	while (dest < destend)
+	{
+		c = *(src++);
+		*(dest++) = (char)c;
+	}
+
+	*dest = 0;
+}

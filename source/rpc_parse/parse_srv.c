@@ -423,7 +423,8 @@ BOOL make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL srv_io_sess_info0_str(char *desc,  SESS_INFO_0_STR *ss0, prs_struct *ps, int depth)
+static BOOL srv_io_sess_info0_str(char *desc,  SESS_INFO_0_STR *ss0, 
+const SESS_INFO_0 *si0, prs_struct *ps, int depth)
 {
 	if (ss0 == NULL) return False;
 
@@ -432,7 +433,7 @@ static BOOL srv_io_sess_info0_str(char *desc,  SESS_INFO_0_STR *ss0, prs_struct 
 
 	prs_align(ps);
 
-	smb_io_unistr2("", &(ss0->uni_name), True, ps, depth); 
+	smb_io_unistr2("", &(ss0->uni_name), si0->ptr_name, ps, depth); 
 
 	return True;
 }
@@ -505,7 +506,9 @@ static BOOL srv_io_srv_sess_info_0(char *desc,  SRV_SESS_INFO_0 *ss0, prs_struct
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
-			srv_io_sess_info0_str("", &(ss0->info_0_str[i]), ps, depth); 
+			srv_io_sess_info0_str("", &(ss0->info_0_str[i]),
+			                          &(ss0->info_0[i]),
+			                          ps, depth); 
 		}
 
 		prs_align(ps);
@@ -532,7 +535,9 @@ BOOL make_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL srv_io_sess_info1_str(char *desc,  SESS_INFO_1_STR *ss1, prs_struct *ps, int depth)
+static BOOL srv_io_sess_info1_str(char *desc,  SESS_INFO_1_STR *ss1,
+				SESS_INFO_1 *si1,
+				prs_struct *ps, int depth)
 {
 	if (ss1 == NULL) return False;
 
@@ -541,8 +546,8 @@ static BOOL srv_io_sess_info1_str(char *desc,  SESS_INFO_1_STR *ss1, prs_struct 
 
 	prs_align(ps);
 
-	smb_io_unistr2("", &(ss1->uni_name), True, ps, depth); 
-	smb_io_unistr2("", &(ss1->uni_user), True, ps, depth); 
+	smb_io_unistr2("", &(ss1->uni_name), si1->ptr_name, ps, depth); 
+	smb_io_unistr2("", &(ss1->uni_user), si1->ptr_user, ps, depth); 
 
 	return True;
 }
@@ -630,7 +635,9 @@ static BOOL srv_io_srv_sess_info_1(char *desc,  SRV_SESS_INFO_1 *ss1, prs_struct
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
-			srv_io_sess_info1_str("", &(ss1->info_1_str[i]), ps, depth); 
+			srv_io_sess_info1_str("", &(ss1->info_1_str[i]),
+			                      &(ss1->info_1[i]),
+			                      ps, depth); 
 		}
 
 		prs_align(ps);
@@ -860,7 +867,8 @@ BOOL make_srv_conn_info1_str(CONN_INFO_1_STR *ss1, char *usr_name, char *net_nam
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL srv_io_conn_info1_str(char *desc,  CONN_INFO_1_STR *ss1, prs_struct *ps, int depth)
+static BOOL srv_io_conn_info1_str(char *desc, CONN_INFO_1_STR *ss1,
+				CONN_INFO_1 *ci1, prs_struct *ps, int depth)
 {
 	if (ss1 == NULL) return False;
 
@@ -869,8 +877,8 @@ static BOOL srv_io_conn_info1_str(char *desc,  CONN_INFO_1_STR *ss1, prs_struct 
 
 	prs_align(ps);
 
-	smb_io_unistr2("", &(ss1->uni_usr_name), True, ps, depth); 
-	smb_io_unistr2("", &(ss1->uni_net_name), True, ps, depth); 
+	smb_io_unistr2("", &(ss1->uni_usr_name), ci1->ptr_usr_name, ps, depth); 
+	smb_io_unistr2("", &(ss1->uni_net_name), ci1->ptr_net_name, ps, depth); 
 
 	return True;
 }
@@ -958,7 +966,9 @@ static BOOL srv_io_srv_conn_info_1(char *desc,  SRV_CONN_INFO_1 *ss1, prs_struct
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
-			srv_io_conn_info1_str("", &(ss1->info_1_str[i]), ps, depth); 
+			srv_io_conn_info1_str("", &(ss1->info_1_str[i]),
+			                          &(ss1->info_1[i]),
+			                          ps, depth); 
 		}
 
 		prs_align(ps);
@@ -1087,6 +1097,252 @@ BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *p
 	if (((int)r_n->conn_level) != -1)
 	{
 		srv_io_srv_conn_ctr("conn_ctr", r_n->ctr, ps, depth);
+	}
+
+	prs_uint32("total_entries", ps, depth, &(r_n->total_entries));
+	smb_io_enum_hnd("enum_hnd", &(r_n->enum_hnd), ps, depth); 
+	prs_uint32("status     ", ps, depth, &(r_n->status));
+
+	return True;
+}
+
+/*******************************************************************
+ makes a TPRT_INFO_0_STR structure
+********************************************************************/
+BOOL make_srv_tprt_info0_str(TPRT_INFO_0_STR *tp0,
+				char *trans_name,
+				char *trans_addr, uint32 trans_addr_len,
+				char *addr_name)
+{
+	if (tp0 == NULL) return False;
+
+	DEBUG(5,("make_srv_tprt_info0_str\n"));
+
+	make_unistr2(&(tp0->uni_trans_name), trans_name, strlen(trans_name)+1);
+	make_buffer4_str(&(tp0->buf_trans_addr), trans_addr, trans_addr_len);
+	make_unistr2(&(tp0->uni_addr_name ), addr_name, strlen(addr_name)+1);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL srv_io_tprt_info0_str(char *desc,  TPRT_INFO_0_STR *tp0,
+				TPRT_INFO_0 *ti0,
+				prs_struct *ps, int depth)
+{
+	if (tp0 == NULL) return False;
+
+	prs_debug(ps, depth, desc, "srv_io_tprt_info0_str");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_unistr2("", &(tp0->uni_trans_name), ti0->ptr_trans_name, ps, depth); 
+	smb_io_buffer4("", &(tp0->buf_trans_addr), ti0->ptr_trans_addr, ps, depth); 
+	smb_io_unistr2("", &(tp0->uni_addr_name ), ti0->ptr_addr_name, ps, depth); 
+
+	return True;
+}
+
+/*******************************************************************
+ makes a TPRT_INFO_0 structure
+********************************************************************/
+BOOL make_srv_tprt_info0(TPRT_INFO_0 *tp0, 
+				uint32 num_vcs, uint32 trans_addr_len,
+				char *trans_name, char *trans_addr,
+				char *addr_name)
+{
+	if (tp0 == NULL) return False;
+
+	DEBUG(5,("make_srv_tprt_info0: %s %s\n", trans_name, addr_name));
+
+	tp0->num_vcs = num_vcs;
+	tp0->ptr_trans_name = trans_name != NULL ? 1 : 0;
+	tp0->ptr_trans_addr = trans_addr != NULL ? 1 : 0;
+	tp0->trans_addr_len = trans_addr_len;
+	tp0->ptr_addr_name  = addr_name  != NULL ? 1 : 0;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL srv_io_tprt_info0(char *desc,  TPRT_INFO_0 *tp0, prs_struct *ps, int depth)
+{
+	if (tp0 == NULL) return False;
+
+	prs_debug(ps, depth, desc, "srv_io_tprt_info0");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("num_vcs       ", ps, depth, &(tp0->num_vcs       ));
+	prs_uint32("ptr_trans_name", ps, depth, &(tp0->ptr_trans_name));
+	prs_uint32("ptr_trans_addr", ps, depth, &(tp0->ptr_trans_addr));
+	prs_uint32("trans_addr_len", ps, depth, &(tp0->trans_addr_len));
+	prs_uint32("ptr_addr_name ", ps, depth, &(tp0->ptr_addr_name ));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL srv_io_srv_tprt_info_0(char *desc,  SRV_TPRT_INFO_0 *tp0, prs_struct *ps, int depth)
+{
+	if (tp0 == NULL) return False;
+
+	prs_debug(ps, depth, desc, "srv_io_srv_tprt_info_0");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("num_entries_read", ps, depth, &(tp0->num_entries_read));
+	prs_uint32("ptr_tprt_info", ps, depth, &(tp0->ptr_tprt_info));
+
+	if (tp0->ptr_tprt_info != 0)
+	{
+		uint32 i;
+		uint32 num_entries = tp0->num_entries_read;
+		if (num_entries > MAX_TPRT_ENTRIES)
+		{
+			num_entries = MAX_TPRT_ENTRIES; /* report this! */
+		}
+
+		prs_uint32("num_entries_read2", ps, depth, &(tp0->num_entries_read2));
+
+		for (i = 0; i < num_entries; i++)
+		{
+			prs_grow(ps);
+			srv_io_tprt_info0("", &(tp0->info_0[i]), ps, depth); 
+		}
+
+		for (i = 0; i < num_entries; i++)
+		{
+			prs_grow(ps);
+			srv_io_tprt_info0_str("", &(tp0->info_0_str[i]),
+			                          &(tp0->info_0[i]),
+			                          ps, depth); 
+		}
+
+		prs_align(ps);
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL srv_io_srv_tprt_ctr(char *desc,  SRV_TPRT_INFO_CTR *ctr, prs_struct *ps, int depth)
+{
+	if (ctr == NULL) return False;
+
+	prs_debug(ps, depth, desc, "srv_io_srv_tprt_ctr");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("switch_value", ps, depth, &(ctr->switch_value));
+	prs_uint32("ptr_tprt_ctr", ps, depth, &(ctr->ptr_tprt_ctr));
+
+	if (ctr->ptr_tprt_ctr != 0)
+	{
+		switch (ctr->switch_value)
+		{
+			case 0:
+			{
+				srv_io_srv_tprt_info_0("", &(ctr->tprt.info0), ps, depth); 
+				break;
+			}
+			default:
+			{
+				DEBUG(5,("%s no transport info at switch_value %d\n",
+				         tab_depth(depth), ctr->switch_value));
+				break;
+			}
+		}
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n, 
+				char *srv_name, 
+				uint32 tprt_level, SRV_TPRT_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd)
+{
+	if (q_n == NULL || ctr == NULL || hnd == NULL) return False;
+
+	q_n->ctr = ctr;
+
+	DEBUG(5,("make_q_net_tprt_enum\n"));
+
+	make_buf_unistr2(&(q_n->uni_srv_name ), &(q_n->ptr_srv_name ), srv_name );
+
+	q_n->tprt_level    = tprt_level;
+	q_n->preferred_len = preferred_len;
+
+	memcpy(&(q_n->enum_hnd), hnd, sizeof(*hnd));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL srv_io_q_net_tprt_enum(char *desc,  SRV_Q_NET_TPRT_ENUM *q_n, prs_struct *ps, int depth)
+{
+	if (q_n == NULL) return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_tprt_enum");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr_srv_name ", ps, depth, &(q_n->ptr_srv_name));
+	smb_io_unistr2("", &(q_n->uni_srv_name), q_n->ptr_srv_name, ps, depth); 
+
+	prs_align(ps);
+
+	prs_uint32("tprt_level", ps, depth, &(q_n->tprt_level  ));
+	
+	if (((int)q_n->tprt_level) != -1)
+	{
+		srv_io_srv_tprt_ctr("tprt_ctr", q_n->ctr, ps, depth);
+	}
+
+	prs_uint32("preferred_len", ps, depth, &(q_n->preferred_len));
+
+	smb_io_enum_hnd("enum_hnd", &(q_n->enum_hnd), ps, depth); 
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL srv_io_r_net_tprt_enum(char *desc,  SRV_R_NET_TPRT_ENUM *r_n, prs_struct *ps, int depth)
+{
+	if (r_n == NULL) return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_tprt_enum");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("tprt_level", ps, depth, &(r_n->tprt_level));
+
+	if (((int)r_n->tprt_level) != -1)
+	{
+		srv_io_srv_tprt_ctr("tprt_ctr", r_n->ctr, ps, depth);
 	}
 
 	prs_uint32("total_entries", ps, depth, &(r_n->total_entries));
