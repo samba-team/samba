@@ -126,6 +126,13 @@ addresses, making the tickets valid from any address.
 Default ticket lifetime.
 .It Li renew_lifetime = Va time
 Default renewable ticket lifetime.
+.It Li encrypt = Va boolean
+Use encryption, when available.
+.It Li forward = Va boolean
+Forward credentials to remote host (for
+.Xr rsh 1 ,
+.Xr telnet 1 ,
+etc).
 .El
 .It Li [libdefaults]
 .Bl -tag -width "xxx" -offset indent
