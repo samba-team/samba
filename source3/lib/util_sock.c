@@ -1156,7 +1156,7 @@ the resulting file descriptors are symmetrical
 static int socketpair_tcp(int fd[2])
 {
 	int listener;
-	struct sockaddr sock;
+	struct sockaddr_in sock;
 	struct sockaddr_in sock2;
 	socklen_t socklen = sizeof(sock);
 	int connect_done = 0;
@@ -1177,11 +1177,13 @@ static int socketpair_tcp(int fd[2])
 
 	if (listen(listener, 1) != 0) goto failed;
 
-	if (getsockname(listener, &sock, &socklen) != 0) goto failed;
+	if (getsockname(listener, (struct sockaddr *)&sock, &socklen) != 0) goto failed;
 
 	if ((fd[1] = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
 
 	set_blocking(fd[1], 0);
+
+	sock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
 	if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) == -1) {
 		if (errno != EINPROGRESS) goto failed;
@@ -1189,7 +1191,7 @@ static int socketpair_tcp(int fd[2])
 		connect_done = 1;
 	}
 
-	if ((fd[0] = accept(listener, &sock, &socklen)) == -1) goto failed;
+	if ((fd[0] = accept(listener, (struct sockaddr *)&sock, &socklen)) == -1) goto failed;
 
 	close(listener);
 	if (connect_done == 0) {
@@ -1220,7 +1222,10 @@ attached to the original stderr
 int sock_exec(const char *prog)
 {
 	int fd[2];
-	if (socketpair_tcp(fd) != 0) return -1;
+	if (socketpair_tcp(fd) != 0) {
+		DEBUG(0,("socketpair_tcp failed (%s)\n", strerror(errno)));
+		return -1;
+	}
 	if (fork() == 0) {
 		close(fd[0]);
 		close(0);
