@@ -292,7 +292,7 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 	}
 
 	{
-		char foo[16];
+		fstring foo;
 		for (i = 0; i < 16; i++) sprintf(foo+i*2,"%02x ", dc->md4pw[i]);
 		DEBUG(4,("pass %s %s\n", mach_acct, foo));
 	}
