@@ -212,8 +212,8 @@ pop_init(POP *p,int argcount,char **argmessage)
     if(version_flag)
 	krb5_errx(p->context, 0, "%s", heimdal_version);
 
-    argc -= optind;
-    argv += optind;
+    argcount -= optind;
+    argmessage += optind;
 
     if (argc != 0) {
 	arg_printusage(args, num_args, "");
