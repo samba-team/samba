@@ -1208,6 +1208,12 @@ char *strchr_m(const char *src, char c)
 	smb_ucs2_t *p;
 	const char *s;
 
+	/* characters below 0x3F are guaranteed to not appear in
+	   non-initial position in multi-byte charsets */
+	if ((c & 0xC0) == 0) {
+		return strchr(s, c);
+	}
+
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
@@ -1237,6 +1243,12 @@ char *strchr_m(const char *src, char c)
 
 char *strrchr_m(const char *s, char c)
 {
+	/* characters below 0x3F are guaranteed to not appear in
+	   non-initial position in multi-byte charsets */
+	if ((c & 0xC0) == 0) {
+		return strrchr(s, c);
+	}
+
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
