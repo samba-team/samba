@@ -1,3 +1,7 @@
+Fri Dec 17 06:23:26 1999  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.2g
+
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: bump version to 6:2:1
