@@ -14,9 +14,7 @@ more programs here
 
 ** appl/rsh
 
-forwarding is not implemented at all.
-
-perhaps rsh and rshd should be able to handle `traditional'
+perhaps rsh and rshd should be able to handle the `traditional'
   rsh-protocol as well.
 
 ** appl/telnet
@@ -30,12 +28,6 @@ should test more stuff
 there's some room for improvement here.
 
 * kdc
-
-implement support for interoperability with kerberos V4.
-
-needs a configuration file.
-
-pre-authentication required per principal
 
 * kuser
 
@@ -116,8 +108,6 @@ probably leaks memory when errors occur
 should the sequence numbers be XORed?
 
 encryption and checksum type is still hardcoded in some places.
-
-postdated, renewable, and forwardable tickets are not supported.
 
 ** lib/roken
 
