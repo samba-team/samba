@@ -1,3 +1,17 @@
+2001-01-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: use krb5_get_init_creds_opt_set_default_flags
+
+	* lib/krb5/init_creds.c: new function
+	krb5_get_init_creds_opt_set_default_flags to set options from
+	krb5.conf
+
+	* lib/krb5/rd_cred.c: make this match the MIT function
+	
+	* lib/krb5/appdefault.c (krb5_appdefault_string): handle NULL
+	def_val
+	(krb5_appdefault_time): new function
+
 2001-01-03  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hpropd.c (main): handle EOF when reading from stdin
