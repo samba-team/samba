@@ -14,3 +14,4 @@ ARC	Owner			Contact				Purpose
 ---	-----			-------				-------
 .1	Plainjoe.org		Jerry Carter <jerry@samba.org>	Use for Plainjoe.org domain
 								and examples in O'Reilly LDAP book
+.2	Samba 2.2. Release	jerry@samba.org			schema for representing smbpasswd
