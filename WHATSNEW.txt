@@ -11,16 +11,16 @@ release:
 
 The following options have been added to Samba's configure script
 
-	--with-sendfile (enable experiemental sendfile support)
+	--with-sendfile (enable experimental sendfile support)
 
 
 Changes since 2.2.6pre2
 -----------------------
-1)  Merge in freelist unlock on error fix
+1)  Merge in free list unlock on error fix
 2)  Correctly fail opens with mismatching SYSTEM or HIDDEN attributes
     if we are mapping system or hidden
 3)  Fix bug with stat mode open being done on read-only open with truncate
-4)  Fix crashbug discovered where cli struct was being deallocated in a
+4)  Fix crash bug discovered where cli struct was being deallocated in a
     called function
 5)  Ensure we open UNIX fifo's non-blocking
 6)  Fix DeletePrinterDriver() (hopefully for the last time...yeah right....)
@@ -32,20 +32,20 @@ Changes since 2.2.6pre2
     encrypt passwords=yes when joining domain
 11) Added final Steve French patch for "required" attributes with old dir 
     listings
-12) Initialise user_rid value in WINBIND_USERINFO structure returned by 
+12) Initialize user_rid value in WINBIND_USERINFO structure returned by 
     the rpc version of query_user()
 13) Ensure we've failed a lock with a lock denied message before automatically 
     pushing it onto the	blocking queue
-14) Add experiemental --with-sendfile code
+14) Add experimental --with-sendfile code
 15) alignment fix in printing code merged from HEAD
 16) Merge fix for other sids in token from HEAD
 17) Merge winbindd with current (more advanced) state of play in APPLIANCE_HEAD
 18) fix smbclient / Win98 off by one bug
 19) Never, *ever* hold a mutex lock in the message database where there may be
     traversals being attempted
-20) Add LDAP hack for retrieving the SAM sequence number whe a member of a 
+20) Add LDAP hack for retrieving the SAM sequence number when a member of a 
     Windows 2000 native mode domain
-21) Fix race condition when changing a machine acount password as we were 
+21) Fix race condition when changing a machine account password as we were 
     no longer locking the secrets entry
 22) Allow '@' as a valid character in domain names
 23) remove jobs from the spool directory when using cups
@@ -58,7 +58,7 @@ Changes since 2.2.6pre2
 29) Make explicit the difference between a tdb key with no data attached, and 
     a non existent entry
 30) Ensure we register the 1c name on the unicast subnet.
-31) Fix inheritance problem when recusively setting ACLs on directories
+31) Fix inheritance problem when recursively setting ACLs on directories
 32) prevent ACL set on read-only share
 33) Ensure we never have more than MAX_PRINT_JOBS in a queue
 34) Added timeout to tdb_lock_bystring()
