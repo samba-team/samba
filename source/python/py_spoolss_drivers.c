@@ -78,7 +78,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		for (i = 0; i < num_drivers; i++) {
 			PyObject *value;
 			
-			py_from_DRIVER_INFO_1(&value, ctr.info1);
+			py_from_DRIVER_INFO_1(&value, &ctr.info1[i]);
 			PyList_SetItem(result, i, value);
 		}
 		
@@ -89,7 +89,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		for(i = 0; i < num_drivers; i++) {
 			PyObject *value;
 
-			py_from_DRIVER_INFO_2(&value, ctr.info2);
+			py_from_DRIVER_INFO_2(&value, &ctr.info2[i]);
 			PyList_SetItem(result, i, value);
 		}
 
@@ -100,7 +100,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		for(i = 0; i < num_drivers; i++) {
 			PyObject *value;
 
-			py_from_DRIVER_INFO_6(&value, ctr.info6);
+			py_from_DRIVER_INFO_6(&value, &ctr.info6[i]);
 			PyList_SetItem(result, i, value);
 		}
 
@@ -240,4 +240,28 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 
 	Py_INCREF(result);
 	return result;
+}
+
+PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
+				   PyObject *kw)
+{
+	return NULL;
+}
+
+PyObject *spoolss_addprinterdriverex(PyObject *self, PyObject *args,
+				     PyObject *kw)
+{
+	return NULL;
+}
+
+PyObject *spoolss_deleteprinterdriver(PyObject *self, PyObject *args,
+				      PyObject *kw)
+{
+	return NULL;
+}
+
+PyObject *spoolss_deleteprinterdriverex(PyObject *self, PyObject *args,
+					PyObject *kw)
+{
+	return NULL;
 }
