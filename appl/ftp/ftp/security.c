@@ -225,7 +225,7 @@ sec_read(int fd, void *data, int length)
     len = buffer_read(&in_buffer, data, length);
     length -= len;
     rx += len;
-    (char*)data += len;
+    data = (char*)data + len;
     
     while(length){
 	if(sec_get_data(fd, &in_buffer, data_prot) < 0)
@@ -238,7 +238,7 @@ sec_read(int fd, void *data, int length)
 	len = buffer_read(&in_buffer, data, length);
 	length -= len;
 	rx += len;
-	(char*)data += len;
+	data = (char*)data + len;
     }
     return rx;
 }
