@@ -2,7 +2,7 @@
                           August 28 2003
                   ==============================
 
-This is the second release candidate snapshot of Samba 3.0.0. A release 
+This is the third release candidate snapshot of Samba 3.0.0. A release 
 candidate implies that the code is very close to a final release, remember 
 that this is still a non-production release intended for testing purposes.  
 Use at your own risk. 
@@ -82,11 +82,74 @@ License.
 
 
 ######################################################################
-Changes since 3.0rc1
+Changes since 3.0rc2
 ####################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
+
+1)  Remove Perl module dependencies in generated RedHat 8/9 RPMS.
+2)  Update mount helper to take synonyms for file_mode and 
+    dir_mode (fmask and dmask).
+3)  Fix portability bug with log2pcaphex.
+4)  Use different algorithm to generate codepages source code which 
+    allows to take gaps into account thus making unnecessary 
+    extended [index] = value, syntax in to_ucs2 array (bug 380).
+5)  Fix comment strings to 43 bytes as per spec.
+6)  Fix pam_winbind compile bug on FreeBSD (bug 261).
+7)  Support for in-memory keytabs, which are needed to make heimdal 
+    work properly.  MIT does not support them, so this check will be 
+    used to decide whether to use them.  (partial fix for bug 372).
+8)  Disable rc4-hmac on broken heimdal setups.  
+9)  Correct bug in smbclient that resulted in errors when untarring
+    long filenames (bug 308).
+10) Improve autoconf checks for PAM header files and libs.
+11) Added fast path to convert_string() when dealing with 
+    ASCII -> ASCII, ucs2-le to ASCII and ASCII to ucs2-le with 
+    values <= 0x7F. 
+12) Quiet debug messages when we don't find a module and it is not
+    a critical error (bug 375).
+13) Fix UNIX passwd sync properly.
+14) Fix more transitive trust issues in winbindd (bug 305).
+15) Ensure that winbindd functions with 'disable netbios = yes'
+16) Store the real short domain name in secrets.tdb as soon as we
+    know it.  Also display an error message when joining an AD
+    domain and the 'workgroup' parameter has not been specified.
+17) Return 0 DFS links instead of -1 when dfs support is not enabled.
+18) Update LDAP schema for Netscape DS 4.x and Novell eDirectory 8.7
+19) Ensure that name types can be specified using name#type notation
+    in the 'net' command (bug 73).
+20) Add retry looks to ADS sequence number and domain SID lookups 
+    (bug 364).
+21) use a variant of alloc_sub_basic() for string lists such as 
+    'valid users', 'write list', and 'read list' (bug 397).
+22) Fix seg fault when winbindd receives an error from the AD server
+    in response to an LDAP search (bug 282).
+23) Update findsmb to use the new syntax for smbclient and nmblookup.
+24) Fix bug that prevented variables from being used in explicitly 
+    defined path in [homes].
+25) Only set SIDs when they're returned by the MySQL query 
+    (pdb_mysql.so).
+26) Include support for NTLMv2 key exchange.
+27) Revert default for 'client ntlmv2 auth' to off (bug 359).
+28) Fix crash in winbindd when the trust account password gets 
+    changed underneath us via 'net rpc changetrustpw' (bug 382).
+29) Use djb-algorithm string hash - faster than the tdb one we 
+    used to use.  Does not change on disk format or hashing location.
+30) Implements some kind of improved AFS support for Samba on
+    Linux with OpenAFS 1.2.10. './configure --with-fake-kaserver'
+    assumes that you have OpenAFS on your machine.
+31) When enumerating dfs shares loop from 0 to lp_numservices() instead 
+    of relying on lp_servicename(n) to return an empty string for 
+    invalid service numbers (bug 403).
+32) Fix crash bug in 'net rpc samdump' (bug 334).
+33) Fix crash bug in WINS NSS module (bug 299).
+34) Fix a few minor compile errors on HP-UX.
+
+
+
+Changes since 3.0rc1
+####################
 
 1)  Add levels 261 and 262 to search. Found using Samba4 tester.
 2)  Correct bad error return code in session setup reply
@@ -928,10 +991,10 @@ Examples
 Known Issues
 ############
 
-* The smbldap perl scripts for managing user entries in an LDAP
-  directory have not be updated to function with the Samba 3.0
-  schema changes.  This (or an equivalent solution) work is planned
-  to be completed prior to the stable 3.0.0 release.
+* There are several bugs currently logged against the 3.0 codebase
+  that affect the use of NT 4.0 GUI domain management tools when run
+  against a Samba 3.0 PDC.  This bugs should be released in an early 
+  3.0.x release.
 
 Please refer to https://bugzilla.samba.org/ for a current list of bugs 
 filed against the Samba 3.0 codebase.
@@ -950,6 +1013,6 @@ the problem then you will probably be ignored.
 
 A new bugzilla installation has been established to help support the 
 Samba 3.0 community of users.  This server, located at 
-https://bugzilla.samba.org/, will replace the existing jitterbug server 
-and the old http://bugs.samba.org now points to the new bugzilla server.
+https://bugzilla.samba.org/, has replaced the older jitterbug server 
+previously located at http://bugs.samba.org/.
 
