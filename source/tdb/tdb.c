@@ -1397,14 +1397,14 @@ static int tdb_already_open(dev_t device,
    try to call tdb_error or tdb_errname, just do strerror(errno).
 
    @param name may be NULL for internal databases. */
-TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
 	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL);
 }
 
 
-TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn)
 {
