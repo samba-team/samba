@@ -2020,7 +2020,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
  	}
  	
 	/* Get the user's SID */
-	sid_copy(&sid, (DOM_SID *) pdb_get_user_sid(sam_pass));
+	sid_copy(&sid, pdb_get_user_sid(sam_pass));
 	
 	/* associate the user's SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL) {

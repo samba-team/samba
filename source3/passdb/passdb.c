@@ -701,7 +701,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	}
 	
 	if (pdb_getsampwnam(sam_account, user)) {
-		sid_copy(psid, (DOM_SID *) pdb_get_user_sid(sam_account));
+		sid_copy(psid, pdb_get_user_sid(sam_account));
 		*psid_name_use = SID_NAME_USER;
 		
 		pdb_free_sam(&sam_account);
@@ -776,7 +776,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		}
 		
 		if (pdb_getsampwnam(sam_user, pass->pw_name)) {
-			sid_copy(psid, (DOM_SID *) pdb_get_user_sid(sam_user));
+			sid_copy(psid, pdb_get_user_sid(sam_user));
 		} else {
 			sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
 		}
