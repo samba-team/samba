@@ -45,7 +45,6 @@ install: all
 	$(MKINSTALLDIRS) $(libdir)
 	-if test "$(LIB)" != ""; then \
 	 $(INSTALL) -m 0555 $(LIB) $(libdir) ; \
-	 $(LN_S) $(libdir)/$(LIB) /usr/afsws/lib/afskauthlib.so
 	fi
 
 uninstall:
