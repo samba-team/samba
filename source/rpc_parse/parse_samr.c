@@ -2902,18 +2902,13 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_stru
 makes a SAMR_R_ENUM_DOM_GROUPS structure.
 ********************************************************************/
 BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
-		uint32 next_idx,
-		uint32 num_sam_entries, DOMAIN_GRP *grps, uint32 status)
+		uint32 next_idx, uint32 num_sam_entries)
 {
-	uint32 i;
-
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_enum_dom_groups\n"));
 
 	r_u->next_idx = next_idx;
-	r_u->sam = NULL;
-	r_u->uni_grp_name = NULL;
 
 	if (num_sam_entries != 0)
 	{
@@ -2921,26 +2916,6 @@ BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
-
-		r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
-		r_u->uni_grp_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_grp_name[0]));
-
-		if (r_u->sam == NULL || r_u->uni_grp_name == NULL)
-		{
-			DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOM_GROUPS\n"));
-			return False;
-		}
-
-		for (i = 0; i < num_sam_entries; i++)
-		{
-			int acct_name_len = strlen(grps[i].name);
-
-			make_sam_entry(&(r_u->sam[i]),
-			                acct_name_len,
-			                grps[i].rid);
-
-			make_unistr2(&(r_u->uni_grp_name[i]), grps[i].name, acct_name_len);
-		}
 
 		r_u->num_entries4 = num_sam_entries;
 	}
@@ -2950,8 +2925,6 @@ BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 	}
-
-	r_u->status = status;
 
 	return True;
 }
