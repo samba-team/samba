@@ -201,7 +201,7 @@ void dcesrv_sock_init(struct server_service *service, const struct model_ops *mo
 
 	/* Make sure the directory for NCALRPC exists */
 	if (!directory_exist(lp_ncalrpc_dir(), NULL)) {
-		mkdir(lp_ncalrpc_dir(), S_IWUSR | S_IRUSR | S_IXUSR);
+		mkdir(lp_ncalrpc_dir(), 0755);
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
