@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #fist version March 1998, Andrew Tridgell
 
 SWATDIR=$1
