@@ -23,16 +23,6 @@
 
 #ifdef HAVE_KRB5
 
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
-#define KRB5_KEY_TYPE(k)	((k)->keytype)
-#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
-#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#else
-#define	KRB5_KEY_TYPE(k)	((k)->enctype)
-#define KRB5_KEY_LENGTH(k)	((k)->length)
-#define KRB5_KEY_DATA(k)	((k)->contents)
-#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
-
 #ifndef HAVE_KRB5_SET_REAL_TIME
 /*
  * This function is not in the Heimdal mainline.
@@ -160,7 +150,8 @@
 }
 #endif
 
- void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt)
+void get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
+			     DATA_BLOB *auth_data, krb5_ticket *tkt)
 {
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
 	if (tkt->enc_part2)
@@ -286,12 +277,12 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
-static krb5_error_code ads_krb5_mk_req(krb5_context context, 
-				       krb5_auth_context *auth_context, 
-				       const krb5_flags ap_req_options,
-				       const char *principal,
-				       krb5_ccache ccache, 
-				       krb5_data *outbuf)
+ krb5_error_code ads_krb5_mk_req(krb5_context context, 
+				krb5_auth_context *auth_context, 
+				const krb5_flags ap_req_options,
+				const char *principal,
+				krb5_ccache ccache, 
+				krb5_data *outbuf)
 {
 	krb5_error_code 	  retval;
 	krb5_principal	  server;
@@ -374,111 +365,6 @@ cleanup_princ:
 	return retval;
 }
 
-/*
-  get a kerberos5 ticket for the given service 
-*/
-int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5)
-{
-	krb5_error_code retval;
-	krb5_data packet;
-	krb5_context context = NULL;
-	krb5_ccache ccdef = NULL;
-	krb5_auth_context auth_context = NULL;
-	krb5_enctype enc_types[] = {
-#ifdef ENCTYPE_ARCFOUR_HMAC
-		ENCTYPE_ARCFOUR_HMAC,
-#endif 
-		ENCTYPE_DES_CBC_MD5, 
-		ENCTYPE_DES_CBC_CRC, 
-		ENCTYPE_NULL};
-	
-	retval = krb5_init_context(&context);
-	if (retval) {
-		DEBUG(1,("krb5_init_context failed (%s)\n", 
-			 error_message(retval)));
-		goto failed;
-	}
-
-	if (time_offset != 0) {
-		krb5_set_real_time(context, time(NULL) + time_offset, 0);
-	}
-
-	if ((retval = krb5_cc_default(context, &ccdef))) {
-		DEBUG(1,("krb5_cc_default failed (%s)\n",
-			 error_message(retval)));
-		goto failed;
-	}
-
-	if ((retval = krb5_set_default_tgs_ktypes(context, enc_types))) {
-		DEBUG(1,("krb5_set_default_tgs_ktypes failed (%s)\n",
-			 error_message(retval)));
-		goto failed;
-	}
-
-	if ((retval = ads_krb5_mk_req(context, 
-					&auth_context, 
-					AP_OPTS_USE_SUBKEY, 
-					principal,
-					ccdef, &packet))) {
-		goto failed;
-	}
-
-	get_krb5_smb_session_key(context, auth_context, session_key_krb5, False);
-
-	*ticket = data_blob(packet.data, packet.length);
-
-/* Hmm, heimdal dooesn't have this - what's the correct call? */
-#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
- 	krb5_free_data_contents(context, &packet); 
-#endif
-
-failed:
-
-	if ( context ) {
-/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
- JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
-          SuSE 9.1 Pro 
-*/
-		if (ccdef)
-#if 0 /* redisabled by gd :) at least until any official heimdal version has it fixed. */
-			krb5_cc_close(context, ccdef);
-#endif
-		if (auth_context)
-			krb5_auth_con_free(context, auth_context);
-		krb5_free_context(context);
-	}
-		
-	return retval;
-}
-
- BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote)
- {
-	krb5_keyblock *skey;
-	krb5_error_code err;
-	BOOL ret = False;
-
-	memset(session_key, 0, 16);
-
-	if (remote)
-		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
-	else
-		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
-	if (err == 0 && skey != NULL) {
-		DEBUG(10, ("Got KRB5 session key of length %d\n",  KRB5_KEY_LENGTH(skey)));
-		*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
-		dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
-
-		ret = True;
-
-		krb5_free_keyblock(context, skey);
-	} else {
-		DEBUG(10, ("KRB5 error getting session key %d\n", err));
-	}
-
-	return ret;
- }
-
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
  const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i )
@@ -500,15 +386,6 @@ failed:
 #else
 #error UNKNOWN_KT_FREE_FUNCTION
 #endif
-}
-
-#else /* HAVE_KRB5 */
- /* this saves a few linking headaches */
-int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5) 
-{
-	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
-	 return 1;
 }
 
 #endif
