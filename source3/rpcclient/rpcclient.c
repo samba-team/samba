@@ -552,34 +552,37 @@ static void usage(void)
 	extern char 		*optarg;
 	extern int 		optind;
 	extern pstring 		global_myname;
-	int 			got_pass = 0;
+	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
 	int 			olddebug;
-	char			*cmdstr = "";
+	static char		*cmdstr = "";
 	struct cli_state	*cli;
 	fstring 		password="",
 				username="",
 				domain="",
 				server="";
-	char *opt_authfile=NULL,
-	     *opt_username=NULL,
-	     *opt_domain=NULL,
-	     *opt_configfile=NULL,
-	     *opt_logfile=NULL;
-	pstring logfile;
-	struct cmd_set **cmd_set;
-	struct in_addr server_ip;
-	NTSTATUS nt_status;
-	extern BOOL AllowDebugChange;
+	static char 		*opt_authfile=NULL,
+				*opt_username=NULL,
+				*opt_domain=NULL,
+				*opt_configfile=NULL,
+				*opt_logfile=NULL;
+	static int		opt_debuglevel;
+	pstring 		logfile;
+	struct cmd_set 		**cmd_set;
+	struct in_addr 		server_ip;
+	NTSTATUS 		nt_status;
+	extern BOOL 		AllowDebugChange;
 
+	/* make sure the vars that get altered (4th field) are in
+	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
 		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A'},
 		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's'},
 		{"nopass",	'N', POPT_ARG_NONE,	&got_pass},
-		{"debug",       'd', POPT_ARG_INT,	&DEBUGLEVEL},
-		{"debuglevel",  'd', POPT_ARG_INT,	&DEBUGLEVEL},
+		{"debug",       'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
+		{"debuglevel",  'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
 		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U'},
 		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W'},
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
@@ -631,6 +634,10 @@ static void usage(void)
 
 		case 's':
 			pstrcpy(dyn_CONFIGFILE, opt_configfile);
+			break;
+
+		case 'd':
+			DEBUGLEVEL = opt_debuglevel;
 			break;
 
 		case 'U': {
