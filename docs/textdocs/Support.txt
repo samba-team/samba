@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== Support.txt for Samba release 1.9.18alpha14 24 Dec 1997
 !==
 The Samba Consultants List
 ==========================
