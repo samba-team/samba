@@ -24,7 +24,7 @@
 		DS_ROLE_PRIMARY_DC             = 5
 	} dssetup_DsRole;
 
-	typedef bitmap {
+	typedef [bitmap32bit] bitmap {
 		DS_ROLE_PRIMARY_DS_RUNNING		= 0x00000001,
 		DS_ROLE_PRIMARY_DS_MIXED_MODE		= 0x00000002,
 		DS_ROLE_UPGRADE_IN_PROGRESS		= 0x00000004,
