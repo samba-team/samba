@@ -9,8 +9,9 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBSMB \
+		NDR_ALL \
 		LIBRPC
+# FIXME: ndrdump shouldn't have to depend on LIBRPC...
 # End BINARY ndrdump
 #################################
 
@@ -37,7 +38,6 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBSMB \
 		LIBRPC
 # End BINARY getntacl
 #################################
@@ -51,7 +51,6 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBSMB \
 		LIBRPC
 # End BINARY setntacl
 #################################
@@ -65,7 +64,8 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBSMB \
-		LIBRPC
+		LIBRPC \
+		NDR_XATTR \
+		NDR_SAMR
 # End BINARY setnttoken
 #################################

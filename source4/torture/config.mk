@@ -20,7 +20,7 @@ ADD_OBJ_FILES = \
 		torture/basic/delaywrite.o \
 		torture/basic/attr.o 
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB LIBRPC
+		LIBSMB 
 # End SUBSYSTEM TORTURE_BASIC
 #################################
 
@@ -97,7 +97,11 @@ ADD_OBJ_FILES = \
 		torture/rpc/samsync.o \
 		torture/rpc/bind.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB
+		NDR_ALL RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_OXIDRESOLVER \
+		RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
+		RPC_NDR_MGMT RPC_NDR_NETLOGON RPC_NDR_ATSVC RPC_NDR_DRSUAPI \
+		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_SPOOLSS \
+		RPC_NDR_SRVSVC RPC_NDR_WKSSVC
 # End SUBSYSTEM TORTURE_RPC
 #################################
 
