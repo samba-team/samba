@@ -128,20 +128,20 @@ static void creds_step(struct creds_CredentialState *creds)
 /*
   DES encrypt a 16 byte password buffer using the session key
 */
-void creds_des_encrypt(struct creds_CredentialState *creds, struct netr_Password *pass)
+void creds_des_encrypt(struct creds_CredentialState *creds, struct samr_Password *pass)
 {
-	struct netr_Password tmp;
-	des_crypt112_16(tmp.data, pass->data, creds->session_key, 1);
+	struct samr_Password tmp;
+	des_crypt112_16(tmp.hash, pass->hash, creds->session_key, 1);
 	*pass = tmp;
 }
 
 /*
   DES decrypt a 16 byte password buffer using the session key
 */
-void creds_des_decrypt(struct creds_CredentialState *creds, struct netr_Password *pass)
+void creds_des_decrypt(struct creds_CredentialState *creds, struct samr_Password *pass)
 {
-	struct netr_Password tmp;
-	des_crypt112_16(tmp.data, pass->data, creds->session_key, 0);
+	struct samr_Password tmp;
+	des_crypt112_16(tmp.hash, pass->hash, creds->session_key, 0);
 	*pass = tmp;
 }
 
