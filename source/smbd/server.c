@@ -3603,7 +3603,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   {
     pstring s;
     pstrcpy(s,lp_pathname(snum));
-    standard_sub(cnum,s,vuid);
+    standard_sub(cnum,s);
     string_set(&pcon->connectpath,s);
     DEBUG(3,("Connect path is %s\n",s));
   }
@@ -3623,14 +3623,14 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       /* check number of connections */
       if (!claim_connection(cnum,
 			    lp_servicename(SNUM(cnum)),
-			    lp_max_connections(SNUM(cnum)),False,vuid))
+			    lp_max_connections(SNUM(cnum)),False))
 	{
 	  DEBUG(1,("too many connections - rejected\n"));
 	  return(-8);
 	}  
 
       if (lp_status(SNUM(cnum)))
-	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection,vuid);
+	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
 
       first_connection = False;
     } /* IS_IPC */
@@ -3642,7 +3642,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       pstring cmd;
       pstrcpy(cmd,lp_rootpreexec(SNUM(cnum)));
-      standard_sub(cnum,cmd,vuid);
+      standard_sub(cnum,cmd);
       DEBUG(5,("cmd=%s\n",cmd));
       smbrun(cmd,NULL,False);
     }
@@ -3654,8 +3654,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       if (!IS_IPC(cnum)) {
 	yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
-			 lp_max_connections(SNUM(cnum)), vuid);
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS, vuid);
+			 lp_max_connections(SNUM(cnum)));
+	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
       }
       return(-1);
     }
@@ -3669,8 +3669,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       if (!IS_IPC(cnum)) {
 	yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
-			 lp_max_connections(SNUM(cnum)), vuid);
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS, vuid);
+			 lp_max_connections(SNUM(cnum)));
+	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
       }
       return(-5);      
     }
@@ -3696,7 +3696,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       pstring cmd;
       pstrcpy(cmd,lp_preexec(SNUM(cnum)));
-      standard_sub(cnum,cmd,vuid);
+      standard_sub(cnum,cmd);
       smbrun(cmd,NULL,False);
     }
   
@@ -4275,10 +4275,10 @@ void close_cnum(int cnum, uint16 vuid)
 
   yield_connection(cnum,
 		   lp_servicename(SNUM(cnum)),
-		   lp_max_connections(SNUM(cnum)), vuid);
+		   lp_max_connections(SNUM(cnum)));
 
   if (lp_status(SNUM(cnum)))
-    yield_connection(cnum,"STATUS.",MAXSTATUS, vuid);
+    yield_connection(cnum,"STATUS.",MAXSTATUS);
 
   close_open_files(cnum);
   dptr_closecnum(cnum);
@@ -4288,7 +4288,7 @@ void close_cnum(int cnum, uint16 vuid)
     {
       pstring cmd;
       strcpy(cmd,lp_postexec(SNUM(cnum)));
-      standard_sub(cnum,cmd,vuid);
+      standard_sub(cnum,cmd);
       smbrun(cmd,NULL,False);
       unbecome_user();
     }
@@ -4299,7 +4299,7 @@ void close_cnum(int cnum, uint16 vuid)
     {
       pstring cmd;
       strcpy(cmd,lp_rootpostexec(SNUM(cnum)));
-      standard_sub(cnum,cmd,vuid);
+      standard_sub(cnum,cmd);
       smbrun(cmd,NULL,False);
     }
 
@@ -4328,7 +4328,7 @@ void close_cnum(int cnum, uint16 vuid)
 /****************************************************************************
 simple routines to do connection counting
 ****************************************************************************/
-BOOL yield_connection(int cnum,char *name,int max_connections, uint16 vuid)
+BOOL yield_connection(int cnum,char *name,int max_connections)
 {
   struct connect_record crec;
   pstring fname;
@@ -4344,7 +4344,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections, uint16 vuid)
   bzero(&crec,sizeof(crec));
 
   pstrcpy(fname,lp_lockdir());
-  standard_sub(cnum,fname,vuid);
+  standard_sub(cnum,fname);
   trim_string(fname,"","/");
 
   strcat(fname,"/");
@@ -4401,7 +4401,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections, uint16 vuid)
 /****************************************************************************
 simple routines to do connection counting
 ****************************************************************************/
-BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear, uint16 vuid)
+BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 {
   struct connect_record crec;
   pstring fname;
@@ -4416,7 +4416,7 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear, uint16
   DEBUG(5,("trying claim %s %s %d\n",lp_lockdir(),name,max_connections));
 
   pstrcpy(fname,lp_lockdir());
-  standard_sub(cnum,fname,vuid);
+  standard_sub(cnum,fname);
   trim_string(fname,"","/");
 
   if (!directory_exist(fname,NULL))
@@ -4581,16 +4581,10 @@ void exit_server(char *reason)
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(int cnum,char *str,uint16 vuid)
+void standard_sub(int cnum,char *str)
 {
   if (VALID_CNUM(cnum)) {
     char *p, *s, *home;
-    struct passwd *pass;
-    char *username = sesssetup_user;
-    user_struct *vuser = get_valid_user_struct(vuid);
-
-    if(vuser != NULL)
-      pstrcpy( sesssetup_user, vuser->requested_name);
 
     for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p ) {
       switch (*(p+1)) {
@@ -4602,23 +4596,15 @@ void standard_sub(int cnum,char *str,uint16 vuid)
         case 'P' : string_sub(p,"%P",Connections[cnum].connectpath); break;
         case 'S' : string_sub(p,"%S",lp_servicename(Connections[cnum].service)); break;
         case 'g' : string_sub(p,"%g",gidtoname(Connections[cnum].gid)); break;
-        case 'G' :
-        {
-          if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
-            string_sub(p,"%G",gidtoname(pass->pw_gid));
-          else
-            p += 2;
-          break;
-        }
         case 'u' : string_sub(p,"%u",Connections[cnum].user); break;
-        case 'U' : string_sub(p,"%U", username); break;
 	/* 
          * Patch from jkf@soton.ac.uk
+         * Left the %N (NIS server name) in standard_sub_basic as it
+         * is a feature for logon servers, hence uses the username.
 	 * The %p (NIS server path) code is here as it is used
 	 * instead of the default "path =" string in [homes] and so
 	 * needs the service name, not the username. 
          */
-        case 'N' : string_sub(p,"%N", automount_server(username)); break;
 	case 'p' : string_sub(p,"%p",automount_path(lp_servicename(Connections[cnum].service))); break;
         case '\0' : p++; break; /* don't run off the end of the string */
         default  : p+=2; break;
@@ -4839,10 +4825,30 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	{
 	  int cnum = SVAL(inbuf,smb_tid);
 	  int flags = smb_messages[match].flags;
+          static uint16 last_session_tag = UID_FIELD_INVALID;
           /* In share mode security we must ignore the vuid. */
 	  uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
           /* Ensure this value is replaced in the incoming packet. */
           SSVAL(inbuf,smb_uid,session_tag);
+
+          /*
+           * Ensure the correct username is in sesssetup_user.
+           * This is a really ugly bugfix for problems with
+           * multiple session_setup_and_X's being done and
+           * allowing %U and %G substitutions to work correctly.
+           * There is a reason this code is done here, don't
+           * move it unless you know what you're doing... :-).
+           * JRA.
+           */
+          if(session_tag != last_session_tag ) {
+            user_struct *vuser = NULL;
+
+            last_session_tag = session_tag;
+            if(session_tag != UID_FIELD_INVALID)
+              vuser = get_valid_user_struct(session_tag);
+            if(vuser != NULL)
+              pstrcpy( sesssetup_user, vuser->requested_name);
+          }
 
 	  /* does this protocol need to be run as root? */
 	  if (!(flags & AS_USER))
