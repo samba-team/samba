@@ -1,3 +1,13 @@
+2001-03-12  Assar Westerlund  <assar@pdc.kth.se>
+
+	* lib/krb5/crypto.c (krb5_derive_key): new function, used by
+	derived-key-test.c
+	* lib/krb5/string-to-key-test.c: add new test vectors posted by
+	Ken Raeburn <raeburn@mit.edu> in <tx1bsra8919.fsf@raeburn.org> to
+	ietf-krb-wg@anl.gov
+	* lib/krb5/n-fold-test.c: more test vectors from same source
+	* lib/krb5/derived-key-test.c: more tests from same source
+
 2001-03-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h (krb5_enctype): remove trailing comma
