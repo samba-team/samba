@@ -35,6 +35,8 @@
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SID"
 
+#define SECRETS_LDAP_BIND_PW "SECRETS/LDAP_BIND_PW"
+
 /* Authenticated user info is stored in secrets.tdb under these keys */
 
 #define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"
