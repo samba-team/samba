@@ -1,3 +1,8 @@
+Tue Apr 13 18:38:05 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/kadm5/create_s.c (kadm5_s_create_principal): create v4 salts
+ 	for all DES keys
+
 Sun Apr 11 03:47:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/krb5/krb5.conf.5: update to reality
