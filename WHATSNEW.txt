@@ -1,71 +1,47 @@
-              WHATS NEW IN Samba 2.2.2:  3rd October 2001
-              ==========================================
+              WHATS NEW IN Samba 2.2.2: 13th October 2001
+              ===========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
-New/Changed parameters in 2.2.1
+New daemon included - winbindd
+------------------------------
+
+Samba 2.2.2 is the first release to include the winbind daemon.
+This code allows UNIX systems that implement the name service
+switch (nss) to be entered into a Windows NT/2000 domain and
+use the Domain controller for all user and group enumeration.
+
+This allows a Samba server added to a Windows domain to serve
+file and print services with *NO* local users needed in /etc/passwd
+and /etc/group - all users and groups are read directly from the
+Windows domain controller. In addition with pam_winbind which allows
+a PAM enabled UNIX system to use a Windows domain for authentication
+service this allows single sign on and account control across
+UNIX and Windows systems.
+
+The current version of winbindd shipped in 2.2.2 does have some
+memory leaks, which will be addressed for the next Samba release,
+so it is advisable to monitor the winbind process. This code is
+being used in production by several vendors, so the leaks are
+managable.
+
+For more information on using winbind, see the man pages for 
+winbindd and wbinfo.
+
+Note that winbindd is not installed by default.
+
+New/Changed parameters in 2.2.2
 -------------------------------
 
-Added parameters.
------------------
-
-ssl egd socket
-
-This variable is part of SSL-enabled Samba. This
-is only available if the SSL libraries have been compiled on your
-system and the configure option --with-ssl  was
-given at configure time.
-This option is used to define the location of the communiation socket of
-an EGD or PRNGD daemon, from which entropy can be retrieved. This option
-can be used instead of or together with the "ssl entropy file"
-directive. 255 bytes of entropy will be retrieved from the daemon.
-
-ssl entropy file
-
-This variable is part of SSL-enabled Samba. This
-is only available if the SSL libraries have been compiled on your
-system and the configure option --with-ssl  was
-given at configure time.
-This parameter is used to specify a file from which processes will
-read "random bytes" on startup.  In order to seed the internal pseudo
-random number generator, entropy must be provided. On system with a
-/dev/urandom device file, the processes
-will retrieve its entropy from the kernel. On systems without kernel
-entropy support, a file can be supplied that will be read on startup
-and that will be used to seed the PRNG.
-
-ssl entropy bytes
-
-This variable is part of SSL-enabled Samba. This
-is only available if the SSL libraries have been compiled on your
-system and the configure option --with-ssl  was
-given at configure time.
-This parameter is used to define the number of bytes which should
-be read from the "ssl entropy file" If a -1 is specified, the entire file will
-be read.
+Added/changed parameters.
+-------------------------
 
 strict allocate
-
-This is a boolean that controls the handling of
-disk space allocation in the server. When this is set to yes
-the server will change from UNIX behaviour of not committing real
-disk storage blocks when a file is extended to the Windows behaviour
-of actually forcing the disk system to allocate real storage blocks
-when a file is created or extended to be a given size. In UNIX
-terminology this means that Samba will stop creating sparse files.
-This can be slow on some systems.
-
 use mmap
 
-This global parameter determines if the tdb internals of Samba can
-depend on mmap working correctly on the running system. 
-Samba requires a coherent
-mmap/read-write system memory cache. Currently only HPUX does not have such a
-coherent cache, and so this parameter is set to false by
-default on HPUX. On all other systems this parameter should be left alone. This
-parameter is provided to help the Samba developers track down problems with
-the tdb internal code.
+New printing parameters.
+------------------------
 
 disable spoolss
 
@@ -90,41 +66,44 @@ will treat the print as a local printer and not a network printer
 connection.  This is much the same behavior that will occur
 when "disable spoolss = yes"
 
+New LDAP parameters.
+--------------------
+
+Samba 2.2.2 contains new code to maintain a Samba SAM database
+on a remote LDAP server. These parameters have been added as
+part of this code. These parameters are only available when Samba
+has been compiled with the --with-ldapsam option.
+Please see the smb.conf man page for details.
+
 ldap admin dn
-
-This parameter is only available if Samba has been
-configured to include the --with-ldapsam option
-at compile time. This option should be considered experimental and
-under active development.  This parameter defines the Distinguished
-Name (DN) name used by Samba to contact the ldap
-server when retreiving user account information. This
-parameter is used in conjunction with the admin dn password
-stored in the private/secrets.tdb file.
-This parameter was renamed from ldap root.
-
 ldap ssl
 
-This parameter is only available if Samba has been
-configured to include the --with-ldapsam option
-at compile time. This option should be considered experimental and
-under active development. This parameter s used to define whether or not 
-Samba should use SSL when connecting to the ldap server.
-This is NOT  related to Samba SSL support which is enabled by specifying the
---with-ssl option to the configure script.
+New SSL parameters.
+-------------------
 
+The SSL support in Samba has been fixed. These new parameters
+are part of the changes added. These parameters are only available
+when Samba has been compiled with the --with-ssl option. 
+Please see the smb.conf man page for details.
+
+ssl egd socket
+ssl entropy file
+ssl entropy bytes
+
+New winbindd parameters.
+------------------------
+
+These parameters are used by winbindd. See the man page for
+winbindd for details.
+
+winbind separator
+winbind uid
+winbind gid
+winbind cache time
 winbind enum users
-
-On large installations using winbindd it may be necessary to suppress 
-the enumeration of users through the setpwent(), getpwent() and 
-endpwent() group of system calls.  If the winbind enum users parameter 
-is false, calls to the getpwent system call will not return any data.
-
 winbind enum groups
-
-On large installations using winbindd it may be necessary to suppress 
-the enumeration of groups through the setgrent(), getgrent() and 
-endgrent() group of system calls.  If the winbind enum groups parameter 
-is false, calls to the getgrent() system call will not return any data.
+template homedir
+template shell
 
 Removed parameters.
 -------------------
@@ -133,8 +112,13 @@ share modes
 ldap root
 ldap root passwd
 
-Changes in 2.2.1
+Changes in 2.2.2
 -----------------
+
+
+
+
+
 
 
 Older release notes for Samba 2.2.x follow.
