@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1995, 1996 Kungliga Tekniska Högskolan (Royal Institute
- * of Technology, Stockholm, Sweden).
+ * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,9 @@
 #include <stdlib.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
 #endif
 #include <bits.h>
 
