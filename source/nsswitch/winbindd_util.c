@@ -176,6 +176,9 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 	time_t t;
 	BOOL result;
 
+	if (domain == NULL)
+		return False;
+		
 	/* Check we haven't checked too recently */
 
 	t = time(NULL);

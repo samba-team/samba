@@ -28,7 +28,11 @@
 static BOOL fill_grent(struct winbindd_gr *gr, char *gr_name,
 		       gid_t unix_gid)
 {
+	if (gr == NULL)
+		return False;
+		
 	/* Fill in uid/gid */
+	
 
 	gr->gr_gid = unix_gid;
     
@@ -71,7 +75,9 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	/* Lookup group members */
 
 	if (!winbindd_lookup_groupmem(domain, group_rid, &num_names, 
-				      &rid_mem, &names, &name_types)) {
+			&rid_mem, &names, &name_types)
+		|| !rid_mem ) 
+	{
 
 		DEBUG(1, ("fill_grent_mem(): could not lookup membership "
 			  "for group rid %d in domain %s\n", 
@@ -196,6 +202,11 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 	char *tmp, *gr_mem;
 	gid_t gid;
 	int extra_data_len, gr_mem_len;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getgrnam_from_group: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 	
 	DEBUG(3, ("[%5d]: getgrnam %s\n", state->pid,
 		  state->request.data.groupname));
@@ -293,6 +304,11 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	int extra_data_len, gr_mem_len;
 	char *gr_mem;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getgrnam_from_gid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+
 	/* Bug out if the gid isn't in the winbind range */
 
 	if ((state->request.data.gid < server_state.gid_low) ||
@@ -389,7 +405,10 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: setgrent\n", state->pid));
 
-	if (state == NULL) return WINBINDD_ERROR;
+	if (state == NULL) {
+		DEBUG(1,("winbindd_setgrent: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 	
 	/* Check user has enabled this */
 
@@ -440,9 +459,12 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 {
-	DEBUG(3, ("[%5d]: endgrent\n", state->pid));
+	if (state == NULL) {
+		DEBUG(1,("winbindd_endgrent: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
-	if (state == NULL) return WINBINDD_ERROR;
+	DEBUG(3, ("[%5d]: endgrent\n", state->pid));
 
 	free_getent_state(state->getgrent_state);
 	state->getgrent_state = NULL;
@@ -461,6 +483,9 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 {
 	uint32 status, num_entries;
 	struct acct_info *name_list = NULL;
+	
+	if (ent == NULL)
+		return False;
         
 	if (ent->got_all_sam_entries) {
 		return False;
@@ -552,9 +577,12 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	int num_groups, group_list_ndx = 0, i, gr_mem_list_len = 0;
 	char *sep, *new_extra_data, *gr_mem_list = NULL;
 
-	DEBUG(3, ("[%5d]: getgrent\n", state->pid));
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getgrent: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
-	if (state == NULL) return WINBINDD_ERROR;
+	DEBUG(3, ("[%5d]: getgrent\n", state->pid));
 
 	/* Check user has enabled this */
 
@@ -763,6 +791,11 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	int extra_data_len = 0, i;
 	void *sam_entries = NULL;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_list_groups: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+
 	DEBUG(3, ("[%5d]: list groups\n", state->pid));
 
         /* Enumerate over trusted domains */
@@ -896,10 +929,13 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	gid_t *gid_list;
 	int i;
 	
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getgroups: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+
 	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
-
-	if (state == NULL) return WINBINDD_ERROR;
 
 	/* Parse domain and username */
 
@@ -936,15 +972,20 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	if (!winbindd_lookup_usergroups(domain, user_rid, &num_groups,
-					&user_groups)) {
+	/* make sure call succeeded and user_groups is not NULL */
+	
+	if (!winbindd_lookup_usergroups(domain, user_rid, &num_groups,&user_groups)
+		|| !user_groups) {
 		return WINBINDD_ERROR;
 	}
 
 	/* Copy data back to client */
 
 	num_gids = 0;
-	gid_list = malloc(sizeof(gid_t) * num_groups);
+	if ((gid_list = malloc(sizeof(gid_t) * num_groups)) == NULL) {
+		DEBUG(0,("winbindd_getgroups: Malloc failed for gid_list!\n"));
+		return WINBINDD_ERROR;
+	}
 
 	if (state->response.extra_data) {
 		result = WINBINDD_ERROR;

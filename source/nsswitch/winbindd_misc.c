@@ -188,8 +188,7 @@ static uint32 check_passwordserver(char *trust_account, uchar trust_passwd[16])
 	return result;
 }
 
-enum winbindd_result winbindd_check_machine_acct(
-	struct winbindd_cli_state *state)
+enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
 	uint32 result = NT_STATUS_INTERNAL_ERROR;
 	uchar trust_passwd[16];
@@ -197,6 +196,11 @@ enum winbindd_result winbindd_check_machine_acct(
         BOOL use_dc_only = False;
         int num_retries = 0;
 	char *p;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_check_machine_acct: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
 	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
 
@@ -257,6 +261,11 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 	struct winbindd_domain *domain;
 	int total_entries = 0, extra_data_len = 0;
 	char *extra_data = NULL;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_list_trusted_domains: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
 	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 

@@ -33,6 +33,11 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	uint32 rid;
 	fstring name;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_lookupsid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+	
 	DEBUG(3, ("[%5d]: lookupsid %s\n", state->pid, 
 		  state->request.data.sid));
 
@@ -72,6 +77,11 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	enum SID_NAME_USE type;
 	fstring sid_str, name_domain, name_user, name;
 	DOM_SID sid;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_lookupname: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 	
 	DEBUG(3, ("winbindd_lookupname: [%5d]: lookupname %s\n", state->pid,
 		  state->request.data.name));
@@ -103,6 +113,11 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 	uint32 user_rid;
 	struct winbindd_domain *domain;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_sid_to_uid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
 	DEBUG(3, ("winbindd_sid_to_uid: [%5d]: sid to uid %s\n", state->pid,
 		  state->request.data.sid));
@@ -147,6 +162,11 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	uint32 group_rid;
 	struct winbindd_domain *domain;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_sid_to_gid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+
 	DEBUG(3, ("[%5d]: sid to gid %s\n", state->pid, 
 		  state->request.data.sid));
 
@@ -188,6 +208,11 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	uint32 user_rid;
 	DOM_SID sid;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_uid_to_sid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+
 	/* Bug out if the uid isn't in the winbind range */
 
 	if ((state->request.data.uid < server_state.uid_low ) ||
@@ -224,6 +249,11 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	uint32 group_rid;
 	DOM_SID sid;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_gid_to_sid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
 	/* Bug out if the gid isn't in the winbind range */
 

@@ -101,6 +101,11 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	DOM_SID user_sid;
 	fstring name_domain, name_user, name, gecos_name;
 	struct winbindd_domain *domain;
+
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getpwnam_from_user: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 	
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
 		  state->request.data.username));
@@ -199,6 +204,11 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	enum SID_NAME_USE name_type;
 	SAM_USERINFO_CTR user_info;
 	gid_t gid;
+	
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getpwnam_from_uid: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 	
 	/* Bug out if the uid isn't in the winbind range */
 
@@ -305,9 +315,13 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
     struct winbindd_domain *tmp;
 
-    DEBUG(3, ("[%5d]: setpwent\n", state->pid));
+	if (state == NULL) {
+		DEBUG(1,("winbindd_setpwent: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
 
-    if (state == NULL) return WINBINDD_ERROR;
+	DEBUG(3, ("[%5d]: setpwent\n", state->pid));
+
     
     /* Check user has enabled this */
 
@@ -357,9 +371,12 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
+	if (state == NULL) {
+		DEBUG(1,("winbindd_endpwent: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+    
     DEBUG(3, ("[%5d]: endpwent\n", state->pid));
-
-    if (state == NULL) return WINBINDD_ERROR;
 
     free_getent_state(state->getpwent_state);    
     state->getpwent_state = NULL;
@@ -498,9 +515,13 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	int num_users, user_list_ndx = 0, i;
 	char *sep;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_getpwent: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+	
 	DEBUG(3, ("[%5d]: getpwent\n", state->pid));
 
-	if (state == NULL) return WINBINDD_ERROR;
 
 	/* Check user has enabled this */
 
@@ -617,6 +638,11 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	char *extra_data = NULL;
 	int extra_data_len = 0;
 
+	if (state == NULL) {
+		DEBUG(1,("winbindd_list_users: *state == NULL!\n"));
+		return WINBINDD_ERROR;
+	}
+	
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
 
         /* Enumerate over trusted domains */
