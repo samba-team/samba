@@ -214,7 +214,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 	BOOL ret;
 
 	prs_struct rhdr;
-	uint16 assoc_gid;
+	uint16 assoc_gid = 0x0;
 
 	l->auth = NULL;
 
