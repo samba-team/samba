@@ -991,13 +991,13 @@ some platforms don't have strndup
  char *strndup(const char *s, size_t n)
 {
 	char *ret;
-	int i;
-	for (i=0;s[i] && i<n;i++) ;
-
-	ret = malloc(i+1);
+	
+	n = strnlen(s, n);
+	ret = malloc(n+1);
 	if (!ret) return NULL;
-	memcpy(ret, s, i);
-	ret[i] = 0;
+	memcpy(ret, s, n);
+	ret[n] = 0;
+
 	return ret;
 }
 #endif
