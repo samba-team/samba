@@ -130,10 +130,12 @@ krb4_adat(void *app_data, void *buf, size_t len)
     tkt.length = len;
 
     k_getsockinst(0, inst, sizeof(inst));
-    kerror = krb_rd_req(&tkt, "ftp", inst, 0, &auth_dat, "");
+    kerror = krb_rd_req(&tkt, "ftp", inst, 
+			his_addr.sin_addr.s_addr, &auth_dat, "");
     if(kerror == RD_AP_UNDEC){
 	k_getsockinst(0, inst, sizeof(inst));
-	kerror = krb_rd_req(&tkt, "rcmd", inst, 0, &auth_dat, "");
+	kerror = krb_rd_req(&tkt, "rcmd", inst, 
+			    his_addr.sin_addr.s_addr, &auth_dat, "");
     }
 
     if(kerror){
