@@ -1,5 +1,5 @@
-          WHATS NEW IN Samba 2.0.0 beta5
-          ==============================
+              WHATS NEW IN Samba 2.0.0
+              ========================
 
 This is a MAJOR new release of Samba, the UNIX based SMB/CIFS file 
 and print server for Windows systems.
