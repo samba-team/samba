@@ -318,7 +318,7 @@ static void usage(void)
 			break;
 
 		case 'a':
-			expression = "objectclass=*";
+			expression = "(|(objectclass=*)(dn=*))";
 			break;
 			
 		case 'h':
