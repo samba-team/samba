@@ -123,24 +123,6 @@ typedef struct {
 static hash_table stat_cache;
 
 /****************************************************************************
- Compare a pathname to a name in the stat cache - of a given length.
- Note - this code always checks that the next character in the pathname
- is either a '/' character, or a '\0' character - to ensure we only
- match *full* pathname components. Note we don't need to handle case
- here, if we're case insensitive the stat cache orig names are all upper
- case.
-*****************************************************************************/
-
-static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
-{
-  BOOL matched = (memcmp( stat_name, orig_name, len) == 0);
-  if(orig_name[len] != '/' && orig_name[len] != '\0')
-    return False;
-
-  return matched;
-}
-
-/****************************************************************************
  Add an entry into the stat cache.
 *****************************************************************************/
 
@@ -199,7 +181,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    * add it.
    */
 
-  if (hash_elem = hash_lookup(&stat_cache, orig_name)) {
+  if ((hash_elem = hash_lookup(&stat_cache, orig_name)) != NULL) {
     found_scp = (stat_cache_entry *)(hash_elem->value);
     if (strcmp((found_scp->names+found_scp->name_len+1), translated_path) == 0) {
       return;
@@ -242,7 +224,6 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
-  stat_cache_entry *longest_hit = NULL;
   char *trans_name;
   pstring chk_name;
   int namelen;

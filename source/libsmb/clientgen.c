@@ -3260,7 +3260,7 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
          * The name used was *SMBSERVER, don't bother with another name.
          */
 
-        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name %s \
+        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER<20> \
 with error %s.\n", desthost, cli_errstr(cli) ));
 	    cli_shutdown(cli);
 		return False;
