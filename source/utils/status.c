@@ -621,32 +621,34 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		d_printf("sessionid.tdb not initialised\n");
+	} else {
+		if (locks_only) goto locks;
+
+		d_printf("\nSamba version %s\n",VERSION);
+		d_printf("PID     Username      Group         Machine                        \n");
+		d_printf("-------------------------------------------------------------------\n");
+
+		tdb_traverse(tdb, traverse_sessionid, NULL);
+		tdb_close(tdb);
 	}
-
-	if (locks_only) goto locks;
-
-	d_printf("\nSamba version %s\n",VERSION);
-	d_printf("PID     Username      Group         Machine                        \n");
-	d_printf("-------------------------------------------------------------------\n");
-
-	tdb_traverse(tdb, traverse_sessionid, NULL);
-	tdb_close(tdb);
   
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		d_printf("connections.tdb not initialised\n");
-	}  else if (verbose) {
-		d_printf("Opened status file %s\n", fname);
+	}  else 
+		if (verbose) {
+			d_printf("Opened status file %s\n", fname);
+		}
+
+		if (brief) 
+			exit(0);
+		
+		d_printf("\nService      pid     machine       Connected at\n");
+		d_printf("-------------------------------------------------------\n");
+
+		tdb_traverse(tdb, traverse_fn1, NULL);
+		tdb_close(tdb);
 	}
-
-	if (brief) 
-		exit(0);
-	
-	d_printf("\nService      pid     machine       Connected at\n");
-	d_printf("-------------------------------------------------------\n");
-
-	tdb_traverse(tdb, traverse_fn1, NULL);
-	tdb_close(tdb);
 
  locks:
 	if (processes_only) exit(0);
