@@ -183,7 +183,7 @@ KDC-REQ-BODY ::=   SEQUENCE {
 KDC-REQ ::= SEQUENCE {
            pvno[1]               INTEGER,
            msg-type[2]           INTEGER,
-           padata[3]             SEQUENCE OF PA-DATA OPTIONAL,
+           padata[3]             METHOD-DATA OPTIONAL,
            req-body[4]           KDC-REQ-BODY
 }
 
@@ -201,7 +201,7 @@ PA-ENC-TS-ENC   ::= SEQUENCE {
 KDC-REP ::=   SEQUENCE {
               pvno[0]                    INTEGER,
               msg-type[1]                INTEGER,
-              padata[2]                  SEQUENCE OF PA-DATA OPTIONAL,
+              padata[2]                  METHOD-DATA OPTIONAL,
               crealm[3]                  Realm,
               cname[4]                   PrincipalName,
               ticket[5]                  Ticket,
@@ -374,3 +374,5 @@ rsa-md4 INTEGER ::= 2 --
 DOMAIN-X500-COMPRESS INTEGER ::= 1
 
 END
+
+-- etags -r '/\([A-Za-z][-A-Za-z0-9]*\).*::=/\1/' k5.asn1
