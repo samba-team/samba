@@ -119,7 +119,7 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 
 	DEBUG(10, ("Called for service %s (%d) as user %s\n", service, SNUM(conn), user));
 
-	if (!(ctx = talloc_init_named("recycle bin"))) {
+	if (!(ctx = talloc_init("recycle bin"))) {
 		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
 		return 0;
 	}

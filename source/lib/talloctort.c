@@ -29,7 +29,7 @@ int main(void)
 	TALLOC_CTX *ctx[NCTX];
 
 	for (i = 0; i < NCTX; i++) {
-		ctx[i] = talloc_init_named("torture(%d)", i);
+		ctx[i] = talloc_init("torture(%d)", i);
 	}
 
 	for (i = 0; i < NCTX; i++) {
