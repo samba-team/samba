@@ -145,7 +145,7 @@ static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
+static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_ports)
 {
 	int num_interfaces = iface_count();
 	int num_sockets = 0;
@@ -343,6 +343,9 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 					 strerror(errno)));
 				continue;
 			}
+
+			if (smbd_server_fd() != -1 && interactive)
+				return True;
 			
 			if (smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
@@ -809,7 +812,7 @@ static BOOL init_structs(void )
 	   start_background_queue(); 
 	*/
 
-	if (!open_sockets_smbd(is_daemon,ports))
+	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
 
 	/*
