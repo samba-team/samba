@@ -3014,7 +3014,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	/* check if the user exists before trying to remove it from the group */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwrid(sam_pass, rid)) {
-		DEBUG(5,("_samr_del_aliasmem:User %d doesn't exist.\n", sam_pass->username));
+		DEBUG(5,("_samr_del_aliasmem:User %s doesn't exist.\n", sam_pass->username));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3133,7 +3133,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	/* check if the user exists before trying to remove it from the group */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwrid(sam_pass, rid)) {
-		DEBUG(5,("User %d doesn't exist.\n", sam_pass->username));
+		DEBUG(5,("User %s doesn't exist.\n", sam_pass->username));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3181,7 +3181,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	/* check if the user exists before trying to delete */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwrid(sam_pass, rid)) {
-		DEBUG(5,("_samr_delete_dom_user:User %d doesn't exist.\n", sam_pass->username));
+		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", sam_pass->username));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
