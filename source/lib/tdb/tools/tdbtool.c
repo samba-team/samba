@@ -63,7 +63,7 @@ static TDB_CONTEXT *tdb;
 
 static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 
-static void print_asc(uint8_t *buf,int len)
+static void print_asc(unsigned char *buf,int len)
 {
 	int i;
 
@@ -77,7 +77,7 @@ static void print_asc(uint8_t *buf,int len)
 		printf("%c",isprint(buf[i])?buf[i]:'.');
 }
 
-static void print_data(uint8_t *buf,int len)
+static void print_data(unsigned char *buf,int len)
 {
 	int i=0;
 	if (len<=0) return;
