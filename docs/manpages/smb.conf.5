@@ -359,6 +359,8 @@ lock dir
 
 load printers
 
+local master
+
 lock directory
 
 log file
@@ -1288,8 +1290,19 @@ will be loaded for browsing by default.
 .B Example:
 	load printers = yes
 
+.SS local master (G)
+This option allows the nmbd to become a local master browser on a
+subnet. If set to False then nmbd will not attempt to become a local
+master browser on a subnet and will also lose in all browsing elections. 
+By default this value is set to true. Setting this value to true doesn't 
+mean that Samba will become the local master browser on a subnet, just 
+that the nmbd will participate in elections for local master browser.
+
+.B Default:
+	local master = yes
+
 .SS lock directory (G)
-This options specifies the directory where lock files will be placed.
+This option specifies the directory where lock files will be placed.
 The lock files are used to implement the "max connections" option.
 
 .B Default:
@@ -2126,10 +2139,11 @@ See also postexec
 .SS preferred master (G)
 This boolean parameter controls if Samba is a preferred master browser
 for its workgroup.
-On startup, samba will force an election, and it will have a slight
-advantage in winning the election.  It is recommended that this 
-parameter is used in conjunction with domain master = yes, so that samba 
-can guarantee becoming a domain master.  
+If this is set to true, on startup, samba will force an election, 
+and it will have a slight advantage in winning the election.  
+It is recommended that this parameter is used in conjunction 
+with domain master = yes, so that samba can guarantee becoming 
+a domain master.  
 
 Use this option with caution, because if there are several hosts
 (whether samba servers, Windows 95 or NT) that are preferred master
@@ -2141,7 +2155,7 @@ See
 .B os level = nn
 
 .B Default:
- 	preferred master = yes
+ 	preferred master = no
 
 .SS preload
 This is an alias for "auto services"
