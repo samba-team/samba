@@ -1643,6 +1643,7 @@ BOOL lp_restrict_anonymous(void);
 BOOL lp_lanman_auth(void);
 BOOL lp_host_msdfs(void);
 BOOL lp_kernel_oplocks(void);
+BOOL lp_enhanced_browsing(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
