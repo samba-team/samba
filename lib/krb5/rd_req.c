@@ -505,8 +505,13 @@ krb5_rd_req(krb5_context context,
 				  &keyblock);
 	if(ret)
 	    goto out;
+    } else {
+	ret = krb5_copy_keyblock(context,
+				 (*auth_context)->keyblock,
+				 &keyblock);
+	if (ret)
+	    goto out;
     }
-	
 
     ret = krb5_verify_ap_req(context,
 			     auth_context,
