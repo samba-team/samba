@@ -585,6 +585,7 @@ typedef struct {
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
+#include "mapping.h"
 #include "passdb.h"
 
 /*
