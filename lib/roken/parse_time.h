@@ -47,6 +47,9 @@ parse_time (const char *s, const char *def_unit);
 size_t
 unparse_time (int t, char *s, size_t len);
 
+size_t
+unparse_time_approx (int t, char *s, size_t len);
+
 void
 print_time_table (FILE *f);
 
