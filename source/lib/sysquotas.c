@@ -122,6 +122,7 @@ static int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_
 {
 	int ret = -1;
 	uint32 qflags = 0;
+	uint32 oldqflags = 0;
 	struct SYS_DQBLK D;
 	SMB_BIG_UINT bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
 
@@ -196,7 +197,17 @@ static int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_
 			DEBUG(0,("vfs_fs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
 				ret,errno,strerror(errno),id.uid,bdev));
 #else
-			ret = 0;
+			id.uid = getuid();
+
+			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (CADDR_T)&D))==0) {
+				oldqflags |= QUOTAS_DENY_DISK;
+			}
+
+			if (oldqflags == qflags) {
+				ret = 0;
+			} else {
+				ret = -1;
+			}
 #endif
 			break;
 #ifdef HAVE_GROUP_QUOTA
@@ -243,7 +254,17 @@ static int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_
 			DEBUG(0,("vfs_fs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
 				ret,errno,strerror(errno),id.gid,bdev));
 #else
-			ret = 0;
+			id.gid = getgid();
+
+			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (CADDR_T)&D))==0) {
+				oldqflags |= QUOTAS_DENY_DISK;
+			}
+
+			if (oldqflags == qflags) {
+				ret = 0;
+			} else {
+				ret = -1;
+			}
 #endif
 			break;
 #endif /* HAVE_GROUP_QUOTA */
