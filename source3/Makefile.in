@@ -548,8 +548,7 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSMB_OBJ) $(POPT_LIB_OBJ)
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-	@EXTRA_ALL_TARGETS@
+all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
