@@ -56,8 +56,8 @@ struct odb_entry {
 	uint16_t tid;
 	uint16_t fnum;
 	uint32_t share_access;
-	uint32_t desired_access;
 	uint32_t create_options;
+	uint32_t access_mask;
 };
 
 
@@ -143,4 +143,141 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(lck, odb_lock_destructor);
 	
 	return lck;
+}
+
+
+/*
+  determine if two odb_entry structures conflict
+*/
+static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
+{
+	uint32_t m1, m2;
+
+	m1 = e1->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA);
+	m2 = e2->share_access & 
+		(NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_READ);
+
+	if ((m1 & m2) != m1) {
+		return True;
+	}
+
+	m1 = e2->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA);
+	m2 = e1->share_access & 
+		(NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_READ);
+
+	if ((m1 & m2) != m1) {
+		return True;
+	}
+
+	return False;
+}
+
+/*
+  register an open file in the open files database. This implements the share_access
+  rules
+*/
+NTSTATUS odb_open_file(struct odb_lock *lck, uint16_t fnum, 
+		       uint32_t share_access, uint32_t create_options,
+		       uint32_t access_mask)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	struct odb_entry e;
+	char *tp;
+	int i, count;
+	struct odb_entry *elist;
+		
+	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+
+	e.server         = odb->server;
+	e.tid            = odb->tid;
+	e.fnum           = fnum;
+	e.share_access   = share_access;
+	e.create_options = create_options;
+	e.access_mask    = access_mask;
+
+	/* check the existing file opens to see if they
+	   conflict */
+	elist = (struct odb_entry *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(struct odb_entry);
+
+	for (i=0;i<count;i++) {
+		if (share_conflict(elist+i, &e)) {
+			if (dbuf.dptr) free(dbuf.dptr);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+	}
+
+	tp = Realloc(dbuf.dptr, (count+1) * sizeof(struct odb_entry));
+	if (tp == NULL) {
+		if (dbuf.dptr) free(dbuf.dptr);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dbuf.dptr = tp;
+	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
+
+	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
+	       &e, sizeof(struct odb_entry));
+
+	if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
+		free(dbuf.dptr);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	free(dbuf.dptr);
+	return NT_STATUS_OK;
+}
+
+
+/*
+  remove a opendb entry
+*/
+NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	struct odb_entry *elist;
+	int i, count;
+	NTSTATUS status;
+
+	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+
+	if (dbuf.dptr == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	elist = (struct odb_entry *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(struct odb_entry);
+
+	/* find the entry, and delete it */
+	for (i=0;i<count;i++) {
+		if (fnum == elist[i].fnum &&
+		    odb->server == elist[i].server &&
+		    odb->tid == elist[i].tid) {
+			if (i < count-1) {
+				memmove(elist+i, elist+i+1, count - (i+1));
+			}
+			break;
+		}
+	}
+
+	status = NT_STATUS_OK;
+
+	if (i == count) {
+		status = NT_STATUS_UNSUCCESSFUL;
+	} else if (count == 1) {
+		if (tdb_delete(odb->w->tdb, lck->key) != 0) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else {
+		dbuf.dsize = (count-1) * sizeof(struct odb_entry);
+		if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	free(dbuf.dptr);
+
+	return status;
 }
