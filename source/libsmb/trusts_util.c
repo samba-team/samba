@@ -69,6 +69,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	char *new_trust_passwd;
 	char *str;
 	NTSTATUS nt_status;
+	BOOL is_new_trust = False;
 	
 	/* Get trust password before updating it */
 	nt_status = pdb_init_trustpw_talloc(mem_ctx, &trust);
@@ -79,8 +80,8 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 
 	nt_status = pdb_gettrustpwnam(trust, domain);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Couldn't get trust password for domain [%s]\n", domain));
-		return nt_status;
+		DEBUG(3, ("Couldn't get trust password for domain [%s]\n", domain));
+		is_new_trust = True;
 	}
 		
 	/* Create a random machine account password */
@@ -92,9 +93,18 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	nt_status = just_change_the_password(cli, mem_ctx, orig_trust_passwd_hash,
 					     new_trust_passwd_hash, sec_channel_type);
 	
-	if (NT_STATUS_IS_OK(nt_status)) {
+	if (NT_STATUS_IS_OK(nt_status)) 
+	{
+		/* see if we are adding a new trust */
+
+		if ( is_new_trust ) {
+			trust->private.flags = PASS_SERVER_TRUST_NT;
+			pdb_set_tp_domain_name_c(trust, domain);
+		}
+
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
 			 timestring(False)));
+
 		/*
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
@@ -113,7 +123,11 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 		/* trust password flags (according to sec channel type) */
 		sec_channel_type = SCHANNEL_TYPE(trust->private.flags);
 		
-		nt_status = pdb_update_trust_passwd(trust);
+		if ( is_new_trust )
+			nt_status = pdb_add_trust_passwd(trust);
+		else
+			nt_status = pdb_update_trust_passwd(trust);
+
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Error when updating trust password for domain [%s]\n",
 				  domain));
