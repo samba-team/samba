@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -232,7 +232,8 @@ new_type (Typetype tt)
 {
   Type *t = malloc(sizeof(*t));
   if (t == NULL) {
-      error_message ("out of memory in malloc(%u)", sizeof(*t));
+      error_message ("out of memory in malloc(%lu)", 
+		     (unsigned long)sizeof(*t));
       exit (1);
   }
   t->type = tt;
