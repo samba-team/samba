@@ -4540,6 +4540,18 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 			param_index++;
 		}
 
+		/*
+		 * I think this is correct, it doesn't break APW and
+		 * allows Gerald's Win32 test programs to work correctly,
+		 * but may need altering.... JRA.
+		 */
+
+		if (param_index == 0) {
+			/* No parameters found. */
+			free_a_printer(&printer, 2);
+			return ERROR_NO_MORE_ITEMS;
+		}
+
 		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
 		*out_value_len=2*(1+biggest_valuesize);
 		*out_data_len=biggest_datasize;
