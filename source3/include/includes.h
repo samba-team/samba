@@ -1232,6 +1232,14 @@ int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
+/* Fix prototype problem with non-C99 compliant snprintf implementations, esp
+   HPUX 11.  Don't change the sense of this #if statement.  Read the comments
+   in lib/snprint.c if you think you need to.  See also bugzilla bug 174. */
+
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+#define snprintf smb_snprintf
+#endif
+
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
 
 int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
