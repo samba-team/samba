@@ -112,7 +112,7 @@ void print_file(connection_struct *conn, files_struct *file)
 
 	if (file_size(file->fsp_name) <= 0) {
 		DEBUG(3,("Discarding null print job %s\n",file->fsp_name));
-		sys_unlink(file->fsp_name);
+		dos_unlink(file->fsp_name);
 		return;
 	}
 
@@ -1033,7 +1033,7 @@ int get_printqueue(int snum,
 	fstring outfile;
 	pstring line;
 	FILE *f;
-	struct stat sbuf;
+	SMB_STRUCT_STAT sbuf;
 	BOOL dorun=True;
 	int cachetime = lp_lpqcachetime();
 	

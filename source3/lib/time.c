@@ -513,7 +513,7 @@ char *timestring(void )
   structure.
 ****************************************************************************/
 
-time_t get_create_time(struct stat *st,BOOL fake_dirs)
+time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 {
   time_t ret, ret1;
 

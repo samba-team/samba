@@ -138,7 +138,7 @@ fullpath(const char *p)
 
 /* Check whether user is allowed to mount on the specified mount point */
 static int
-mount_ok(struct stat *st)
+mount_ok(SMB_STRUCT_STAT *st)
 {
         if (!S_ISDIR(st->st_mode))
         {
@@ -165,7 +165,7 @@ main(int argc, char *argv[])
 	int fd, um;
 	unsigned int flags;
 	struct smb_mount_data data;
-	struct stat st;
+	SMB_STRUCT_STAT st;
 	struct mntent ment;
 
         progname = argv[0];

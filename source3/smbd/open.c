@@ -29,18 +29,18 @@ extern uint16 oplock_port;
 
 
 /****************************************************************************
-fd support routines - attempt to do a sys_open
+fd support routines - attempt to do a dos_open
 ****************************************************************************/
 static int fd_attempt_open(char *fname, int flags, int mode)
 {
-  int fd = sys_open(fname,flags,mode);
+  int fd = dos_open(fname,flags,mode);
 
   /* Fix for files ending in '.' */
   if((fd == -1) && (errno == ENOENT) &&
      (strchr(fname,'.')==NULL))
     {
       pstrcat(fname,".");
-      fd = sys_open(fname,flags,mode);
+      fd = dos_open(fname,flags,mode);
     }
 
 #if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
@@ -71,7 +71,7 @@ static int fd_attempt_open(char *fname, int flags, int mode)
           char tmp = p[max_len];
 
           p[max_len] = '\0';
-          if ((fd = sys_open(fname,flags,mode)) == -1)
+          if ((fd = dos_open(fname,flags,mode)) == -1)
             p[max_len] = tmp;
         }
     }
@@ -127,7 +127,7 @@ Save the already open fd (we cannot close due to POSIX file locking braindamage.
 ****************************************************************************/
 static void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
 {
-  int fd = sys_open( fname, O_RDWR, mode);
+  int fd = dos_open( fname, O_RDWR, mode);
 
   if(fd == -1)
     return;
@@ -266,11 +266,11 @@ static void check_for_pipe(char *fname)
 open a file
 ****************************************************************************/
 static void open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,int flags,int mode, struct stat *sbuf)
+		      char *fname1,int flags,int mode, SMB_STRUCT_STAT *sbuf)
 {
   extern struct current_user current_user;
   pstring fname;
-  struct stat statbuf;
+  SMB_STRUCT_STAT statbuf;
   file_fd_struct *fd_ptr;
   int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
@@ -324,7 +324,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
    * open fd table.
    */
   if(sbuf == 0) {
-    if(sys_stat(fname, &statbuf) < 0) {
+    if(dos_stat(fname, &statbuf) < 0) {
       if(errno != ENOENT) {
         DEBUG(3,("Error doing stat on file %s (%s)\n",
                  fname,strerror(errno)));
@@ -452,7 +452,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
       fd_attempt_close(fd_ptr);
       fsp->fd_ptr = 0;
       if(fd_ptr->ref_count == 0)
-        sys_unlink(fname);
+        dos_unlink(fname);
       errno = ENOSPC;
       return;
     }
@@ -591,7 +591,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   int flags=0;
   int flags2=0;
   int deny_mode = (share_mode>>4)&7;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   BOOL file_existed = file_exist(fname,&sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
@@ -856,14 +856,14 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, int unixmode, int *action)
 {
 	extern struct current_user current_user;
-	struct stat st;
+	SMB_STRUCT_STAT st;
 
 	if (smb_ofun & 0x10) {
 		/*
 		 * Create the directory.
 		 */
 
-		if(sys_mkdir(fname, unixmode) < 0) {
+		if(dos_mkdir(fname, unixmode) < 0) {
 			DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			return -1;
@@ -875,7 +875,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 		 * Check that it *was* a directory.
 		 */
 
-		if(sys_stat(fname, &st) < 0) {
+		if(dos_stat(fname, &st) < 0) {
 			DEBUG(0,("open_directory: unable to stat name = %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			return -1;
@@ -991,7 +991,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   int ret = False;
   share_mode_entry *old_shares = 0;
   int num_share_modes;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   int token;
   int pid = getpid();
   SMB_DEV_T dev;
@@ -1000,7 +1000,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   if(!lp_share_modes(SNUM(conn)))
     return True;
 
-  if (sys_stat(fname,&sbuf) == -1) return(True);
+  if (dos_stat(fname,&sbuf) == -1) return(True);
 
   dev = sbuf.st_dev;
   inode = sbuf.st_ino;

@@ -141,36 +141,36 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 
 
 /*******************************************************************
-just a unlink wrapper
+just a unlink wrapper that calls dos_to_unix.
 ********************************************************************/
-int sys_unlink(char *fname)
+int dos_unlink(char *fname)
 {
   return(unlink(dos_to_unix(fname,False)));
 }
 
 
 /*******************************************************************
-a simple open() wrapper
+a simple open() wrapper that calls dos_to_unix.
 ********************************************************************/
-int sys_open(char *fname,int flags,int mode)
+int dos_open(char *fname,int flags,int mode)
 {
   return(open(dos_to_unix(fname,False),flags,mode));
 }
 
 
 /*******************************************************************
-a simple opendir() wrapper
+a simple opendir() wrapper that calls dos_to_unix
 ********************************************************************/
-DIR *sys_opendir(char *dname)
+DIR *dos_opendir(char *dname)
 {
 	return(opendir(dos_to_unix(dname,False)));
 }
 
 
 /*******************************************************************
-and a stat() wrapper
+and a stat() wrapper that calls dos_to_unix.
 ********************************************************************/
-int sys_stat(char *fname,struct stat *sbuf)
+int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf)
 {
   return(stat(dos_to_unix(fname,False),sbuf));
 }
@@ -188,45 +188,45 @@ int sys_waitpid(pid_t pid,int *status,int options)
 }
 
 /*******************************************************************
-don't forget lstat()
+don't forget lstat() that calls dos_to_unix.
 ********************************************************************/
-int sys_lstat(char *fname,struct stat *sbuf)
+int dos_lstat(char *fname,struct stat *sbuf)
 {
   return(lstat(dos_to_unix(fname,False),sbuf));
 }
 
 
 /*******************************************************************
-mkdir() gets a wrapper
+mkdir() gets a wrapper that calls dos_to_unix.
 ********************************************************************/
-int sys_mkdir(char *dname,int mode)
+int dos_mkdir(char *dname,int mode)
 {
   return(mkdir(dos_to_unix(dname,False),mode));
 }
 
 
 /*******************************************************************
-do does rmdir()
+do does rmdir() - call dos_to_unix
 ********************************************************************/
-int sys_rmdir(char *dname)
+int dos_rmdir(char *dname)
 {
   return(rmdir(dos_to_unix(dname,False)));
 }
 
 
 /*******************************************************************
-I almost forgot chdir()
+I almost forgot chdir() - call dos_to_unix.
 ********************************************************************/
-int sys_chdir(char *dname)
+int dos_chdir(char *dname)
 {
   return(chdir(dos_to_unix(dname,False)));
 }
 
 
 /*******************************************************************
-now for utime()
+now for utime() - call dos_to_unix.
 ********************************************************************/
-int sys_utime(char *fname,struct utimbuf *times)
+int dos_utime(char *fname,struct utimbuf *times)
 {
   /* if the modtime is 0 or -1 then ignore the call and
      return success */
@@ -344,9 +344,9 @@ static int copy_reg(char *source, const char *dest)
 }
 
 /*******************************************************************
-for rename()
+for rename() - call dos_to_unix.
 ********************************************************************/
-int sys_rename(char *from, char *to)
+int dos_rename(char *from, char *to)
 {
     int rcode;  
     pstring zfrom, zto;
@@ -364,9 +364,9 @@ int sys_rename(char *from, char *to)
 }
 
 /*******************************************************************
-for chmod
+for chmod - call dos_to_unix.
 ********************************************************************/
-int sys_chmod(char *fname,int mode)
+int dos_chmod(char *fname,int mode)
 {
   return(chmod(dos_to_unix(fname,False),mode));
 }

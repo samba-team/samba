@@ -329,6 +329,17 @@
 #define SMB_INO_T uint32
 #endif
 
+/*
+ * Type for stat structure. This will
+ * soon change to a user defined type
+ * once we wrap stat(), fstat() and lstat()
+ * for 64 bit file sizes. JRA.
+ */
+
+#ifndef SMB_STRUCT_STAT
+#define SMB_STRUCT_STAT struct stat
+#endif
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif

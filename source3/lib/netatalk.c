@@ -82,7 +82,7 @@ int ntalk_mkresdir(const char *fname)
   char fdir[255];
   int i;
   int lastslash;
-  struct stat dirstats;
+  SMB_STRUCT_STAT dirstats;
   char appledouble[] = APPLEDOUBLE;
 
   /* find directory containing fname */

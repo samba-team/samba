@@ -901,7 +901,7 @@ BOOL pdb_generate_machine_sid(void)
 	char *p;
 	pstring sid_file;
 	fstring sid_string;
-	struct stat st;
+	SMB_STRUCT_STAT st;
 	uchar raw_sid_data[12];
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
@@ -911,7 +911,7 @@ BOOL pdb_generate_machine_sid(void)
 	}
 
 	if (!directory_exist(sid_file, NULL)) {
-		if (sys_mkdir(sid_file, 0700) != 0) {
+		if (dos_mkdir(sid_file, 0700) != 0) {
 			DEBUG(0,("generate_machine_sid: can't create private directory %s : %s\n",
 				 sid_file, strerror(errno)));
 			return False;

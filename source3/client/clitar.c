@@ -440,7 +440,7 @@ Write two zero blocks at end of file
 ****************************************************************************/
 static void dotareof(int f)
 {
-  struct stat stbuf;
+  SMB_STRUCT_STAT stbuf;
   /* Two zero blocks at end of file, write out full buffer */
 
   (void) dozerobuf(f, TBLOCK);
@@ -2462,10 +2462,10 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 	DEBUG(0,("Option N must be followed by valid file name\n"));
 	return 0;
       } else {
-	struct stat stbuf;
+	SMB_STRUCT_STAT stbuf;
 	extern time_t newer_than;
 	
-	if (sys_stat(argv[Optind], &stbuf) == 0) {
+	if (dos_stat(argv[Optind], &stbuf) == 0) {
 	  newer_than = stbuf.st_mtime;
 	  DEBUG(1,("Getting files newer than %s",
 		   asctime(LocalTime(&newer_than))));

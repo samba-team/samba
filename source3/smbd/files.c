@@ -117,7 +117,7 @@ files_struct *file_new(void )
 fd support routines - attempt to find an already open file by dev
 and inode - increments the ref_count of the returned file_fd_struct *.
 ****************************************************************************/
-file_fd_struct *fd_get_already_open(struct stat *sbuf)
+file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf)
 {
 	file_fd_struct *fd_ptr;
 

@@ -496,7 +496,7 @@ handle a file download
   ***************************************************************************/
 static void cgi_download(char *file)
 {
-	struct stat st;
+	SMB_STRUCT_STAT st;
 	char buf[1024];
 	int fd, l, i;
 	char *p;

@@ -191,7 +191,7 @@ static codepage_p load_client_codepage( int client_codepage )
   FILE *fp = NULL;
   unsigned int size;
   codepage_p cp_p = NULL;
-  struct stat st;
+  SMB_STRUCT_STAT st;
 
   DEBUG(5, ("load_client_codepage: loading codepage %d.\n", client_codepage));
 

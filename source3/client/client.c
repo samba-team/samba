@@ -1528,7 +1528,7 @@ static void do_mget(file_info *finfo)
 	  strlower(finfo->name);
 
 	if (!directory_exist(finfo->name,NULL) && 
-	    sys_mkdir(finfo->name,0777) != 0) 
+	    dos_mkdir(finfo->name,0777) != 0) 
 	  {
 	    DEBUG(0,("failed to create directory %s\n",CNV_LANG(finfo->name)));
 	    pstrcpy(cur_dir,saved_curdir);
@@ -1536,7 +1536,7 @@ static void do_mget(file_info *finfo)
 	    return;
 	  }
 
-	if (sys_chdir(finfo->name) != 0)
+	if (dos_chdir(finfo->name) != 0)
 	  {
 	    DEBUG(0,("failed to chdir to directory %s\n",CNV_LANG(finfo->name)));
 	    pstrcpy(cur_dir,saved_curdir);
@@ -1998,7 +1998,7 @@ static void cmd_put(char *dum_in, char *dum_out)
   dos_clean_name(rname);
 
   {
-    struct stat st;
+    SMB_STRUCT_STAT st;
     /* allow '-' to represent stdin
        jdblair, 24.jun.98 */
     if (!file_exist(lname,&st) &&
@@ -2060,7 +2060,7 @@ static void cmd_mput(char *dum_in, char *dum_out)
   
   while (next_token(NULL,p,NULL,sizeof(buf)))
     {
-      struct stat st;
+      SMB_STRUCT_STAT st;
       pstring cmd;
       pstring tmpname;
       FILE *f;
@@ -2816,10 +2816,10 @@ static void cmd_newer(char *dum_in, char *dum_out)
 {
   fstring buf;
   BOOL ok;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
 
   ok = next_token(NULL,buf,NULL,sizeof(buf));
-  if (ok && (sys_stat(buf,&sbuf) == 0))
+  if (ok && (dos_stat(buf,&sbuf) == 0))
     {
       newer_than = sbuf.st_mtime;
       DEBUG(1,("Getting files newer than %s",
@@ -2923,7 +2923,7 @@ static void cmd_lcd(char *dum_in, char *dum_out)
   pstring d;
 
   if (next_token(NULL,buf,NULL,sizeof(buf)))
-    sys_chdir(buf);
+    dos_chdir(buf);
   DEBUG(2,("the local directory is now %s\n",GetWd(d)));
 }
 

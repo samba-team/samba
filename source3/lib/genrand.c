@@ -56,7 +56,7 @@ static void do_filehash(char *fname, unsigned char *hash)
 
 static void do_dirrand(char *name, unsigned char *buf, int buf_len)
 {
-  void *dp = sys_opendir(name);
+  void *dp = dos_opendir(name);
   pstring fullname;
   int len_left;
   int fullname_len;
@@ -81,12 +81,12 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
     char *p;
 
     while ((p = readdirname(dp))) {           
-      struct stat st;
+      SMB_STRUCT_STAT st;
 
       if(strlen(p) <= len_left)
         pstrcpy(pos, p);
 
-      if(sys_stat(fullname,&st) == 0) {
+      if(dos_stat(fullname,&st) == 0) {
         SIVAL(buf, ((counter * 4)%(buf_len-4)), 
               IVAL(buf,((counter * 4)%(buf_len-4))) ^ st.st_atime);
         counter++;
