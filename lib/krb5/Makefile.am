@@ -85,7 +85,7 @@ libkrb5_a_SOURCES = \
 INCLUDES = $(INCLUDE_krb4)
 
 libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
-	../error/asn1_err.o ../error/hdb_err.o ../error/heim_err.o
+	../error/asn1_err.o ../error/heim_err.o
 
 man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3 \
 	krb5_425_conv_principal.3 krb5_build_principal.3 krb5_free_principal.3 \
