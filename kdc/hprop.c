@@ -169,7 +169,7 @@ kdb_prop(void *arg, Principal *p)
     return ret;
 }
 
-#endif
+#endif /* KRB4 */
 
 #ifndef KRB4
 static time_t
@@ -600,37 +600,38 @@ iterate (krb5_context context,
 	 int type,
 	 struct prop_data *pd)
 {
+    int ret;
+
     switch(type) {
     case HPROP_KRB4_DUMP:
-	v4_prop_dump(pd, database);
+	ret = v4_prop_dump(pd, database);
 	break;
 #ifdef KRB4
-    case HPROP_KRB4_DB: {
-	int e = kerb_db_iterate ((k_iter_proc_t)kdb_prop, pd);
-	if(e)
+    case HPROP_KRB4_DB:
+	ret = kerb_db_iterate ((k_iter_proc_t)kdb_prop, pd);
+	if(ret)
 	    krb5_errx(context, 1, "kerb_db_iterate: %s", 
-		      krb_get_err_text(e));
+		      krb_get_err_text(ret));
 	break;
-    }
 #ifdef KASERVER_DB
-    case HPROP_KASERVER: {
-	int e = ka_dump(pd, database, afs_cell);
-	if(e)
-	    krb5_errx(context, 1, "ka_dump: %s", krb_get_err_text(e));
+    case HPROP_KASERVER:
+	ret = ka_dump(pd, database, afs_cell);
+	if(ret)
+	    krb5_errx(context, 1, "ka_dump: %s", krb_get_err_text(ret));
 	break;
-    }
 #endif
 #endif /* KRB4 */
     case HPROP_MIT_DUMP:
-	mit_prop_dump(pd, database);
+	ret = mit_prop_dump(pd, database);
+	if (ret)
+	    krb5_errx(context, 1, "mit_prop_dump: %s",
+		      krb5_get_err_text(context, ret));
 	break;
-    case HPROP_HEIMDAL: {
-	krb5_error_code ret = hdb_foreach(context, db, HDB_F_DECRYPT,
-					  v5_prop, pd);
+    case HPROP_HEIMDAL:
+	ret = hdb_foreach(context, db, HDB_F_DECRYPT, v5_prop, pd);
 	if(ret)
 	    krb5_err(context, 1, ret, "hdb_foreach");
 	break;
-    }
     }
 }
 
@@ -794,7 +795,7 @@ main(int argc, char **argv)
     if(ka_db) {
 	if(type != 0)
 	    krb5_errx(context, 1, "more than one database type specified");
-	type = HPROP_KRB4_DB;
+	type = HPROP_KASERVER;
     }
 #endif
 #endif
