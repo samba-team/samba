@@ -580,7 +580,8 @@ static const struct ntlm_tests {
 	{test_plaintext_lm_broken, "Plaintext LM broken"},
 	{test_plaintext_nt_broken, "Plaintext NT broken"},
 	{test_plaintext_nt_only, "Plaintext NT only"},
-	{test_plaintext_lm_only, "Plaintext LM only"}
+	{test_plaintext_lm_only, "Plaintext LM only"},
+	{NULL, NULL}
 };
 
 BOOL diagnose_ntlm_auth(void)
