@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,7 +44,7 @@ OM_uint32 gss_release_cred
         return GSS_S_COMPLETE;
     }
 
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT ();
 
     if ((*cred_handle)->principal != NULL)
         krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);

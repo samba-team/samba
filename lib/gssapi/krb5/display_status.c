@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -117,7 +117,7 @@ OM_uint32 gss_display_status
 {
   char *buf;
 
-  gssapi_krb5_init ();
+  GSSAPI_KRB5_INIT ();
 
   *minor_status = 0;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,6 +49,14 @@ extern krb5_context gssapi_krb5_context;
 extern krb5_keytab gssapi_krb5_keytab;
 
 krb5_error_code gssapi_krb5_init (void);
+
+#define GSSAPI_KRB5_INIT() do {					\
+    krb5_error_code kret;					\
+    if((kret = gssapi_krb5_init ()) != 0) {	\
+	*minor_status = kret;					\
+	return GSS_S_FAILURE;					\
+    }								\
+} while (0)
 
 OM_uint32
 gssapi_krb5_create_8003_checksum (

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -55,7 +55,7 @@ gss_import_sec_context (
     int32_t flags;
     OM_uint32 minor;
 
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT ();
 
     sp = krb5_storage_from_mem (interprocess_token->value,
 				interprocess_token->length);

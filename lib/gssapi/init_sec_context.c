@@ -503,7 +503,7 @@ OM_uint32 gss_init_sec_context
             OM_uint32 * time_rec
            )
 {
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT ();
 
     if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
 	return init_auth (minor_status,

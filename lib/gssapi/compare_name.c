@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,8 @@ OM_uint32 gss_compare_name
             int * name_equal
            )
 {
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT();
+
     *name_equal = krb5_principal_compare (gssapi_krb5_context,
 					  name1, name2);
     return GSS_S_COMPLETE;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,31 +42,31 @@ OM_uint32 gss_display_name
             gss_OID * output_name_type
            )
 {
-  krb5_error_code kret;
-  char *buf;
-  size_t len;
+    krb5_error_code kret;
+    char *buf;
+    size_t len;
 
-  gssapi_krb5_init ();
-  kret = krb5_unparse_name (gssapi_krb5_context,
-			    input_name,
-			    &buf);
-  if (kret) {
-    *minor_status = kret;
-    gssapi_krb5_set_error_string ();
-    return GSS_S_FAILURE;
-  }
-  len = strlen (buf);
-  output_name_buffer->length = len;
-  output_name_buffer->value  = malloc(len + 1);
-  if (output_name_buffer->value == NULL) {
+    GSSAPI_KRB5_INIT ();
+    kret = krb5_unparse_name (gssapi_krb5_context,
+			      input_name,
+			      &buf);
+    if (kret) {
+	*minor_status = kret;
+	gssapi_krb5_set_error_string ();
+	return GSS_S_FAILURE;
+    }
+    len = strlen (buf);
+    output_name_buffer->length = len;
+    output_name_buffer->value  = malloc(len + 1);
+    if (output_name_buffer->value == NULL) {
+	free (buf);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    memcpy (output_name_buffer->value, buf, len);
+    ((char *)output_name_buffer->value)[len] = '\0';
     free (buf);
-    *minor_status = ENOMEM;
-    return GSS_S_FAILURE;
-  }
-  memcpy (output_name_buffer->value, buf, len);
-  ((char *)output_name_buffer->value)[len] = '\0';
-  free (buf);
-  if (output_name_type)
-      *output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
-  return GSS_S_COMPLETE;
+    if (output_name_type)
+	*output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
+    return GSS_S_COMPLETE;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,7 +51,7 @@ gss_export_sec_context (
     OM_uint32 minor;
     krb5_error_code kret;
 
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT ();
     if (!((*context_handle)->flags & GSS_C_TRANS_FLAG))
 	return GSS_S_UNAVAILABLE;
 

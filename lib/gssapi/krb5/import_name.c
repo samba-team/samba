@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -142,7 +142,7 @@ OM_uint32 gss_import_name
             gss_name_t * output_name
            )
 {
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT ();
 
     if (oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE))
 	return import_hostbased_name (minor_status,

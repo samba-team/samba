@@ -195,7 +195,7 @@ OM_uint32 gss_acquire_cred
     gss_cred_id_t handle;
     OM_uint32 ret;
 
-    gssapi_krb5_init ();
+    GSSAPI_KRB5_INIT ();
 
     *minor_status = 0;
     handle = (gss_cred_id_t)malloc(sizeof(*handle));
