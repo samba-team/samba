@@ -2740,13 +2740,16 @@ AC_ARG_WITH(pam_smbpass,
   yes)
     AC_MSG_RESULT(yes)
 
-# Conditions under which pam_smbpass should not be built.
+       # Conditions under which pam_smbpass should not be built.
 
        if test x$PICFLAG = x; then
-          AC_MSG_RESULT([No support for PIC code - disabling pam_smbpass])
+          AC_MSG_ERROR([No support for PIC code])
+       elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
+	  AC_MSG_ERROR([No security/pam_appl.h found])
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
-          AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
+          AC_MSG_ERROR([No libpam found])
        else
+	  AUTHLIBS="$AUTHLIBS -lpam"
           SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
        fi
     ;;
@@ -4110,6 +4113,7 @@ fi
 if test x"$with_ldap_support" != x"no"; then
    AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
 fi
+AC_MSG_RESULT([    AUTHLIBS = $AUTHLIBS])
 
 #################################################
 # final configure stuff
