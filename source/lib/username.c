@@ -82,40 +82,6 @@ char *get_user_home_dir(const char *user)
 	return(pass->pw_dir);      
 }
 
-/****************************************************************************
- Get a users service home directory.
-****************************************************************************/
-
-char *get_user_service_home_dir(const char *user)
-{
-	static struct passwd *pass;
-	int snum;
-
-	/* Ensure the user exists. */
-
-	pass = Get_Pwnam(user);
-
-	if (!pass)
-		return(NULL);
-
-	/* If a path is specified in [homes] then use it instead of the
-	   user's home directory from struct passwd. */
-
-	if ((snum = lp_servicenumber(HOMES_NAME)) != -1) {
-		static pstring home_dir;
-		
-		pstrcpy(home_dir, lp_pathname(snum));
-		standard_sub_home(snum, user, home_dir);
-
-		if (home_dir[0])
-			return home_dir;
-	}
-
-	/* Return home directory from struct passwd. */
-
-	return(pass->pw_dir);      
-}
-
 /*******************************************************************
  Map a username from a dos name to a unix name by looking in the username
  map. Note that this modifies the name in place.
