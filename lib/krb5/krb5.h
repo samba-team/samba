@@ -344,6 +344,7 @@ typedef krb5_config_binding krb5_config_section;
 
 typedef struct krb5_context_data {
     krb5_enctype *etypes;
+    krb5_enctype *etypes_des;
     char **default_realms;
     time_t max_skew;
     time_t kdc_timeout;
