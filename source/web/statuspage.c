@@ -71,15 +71,68 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 }
 
 
+/* kill off any connections chosen by the user */
+static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	struct connections_data crec;
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+
+	if (crec.cnum == -1 && process_exists(crec.pid)) {
+		char buf[30];
+		slprintf(buf,sizeof(buf)-1,"kill_%d", (int)crec.pid);
+		if (cgi_variable(buf)) {
+			kill_pid(crec.pid);
+		}
+	}
+	return 0;
+}
+
+/* traversal fn for showing machine connections */
+static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	struct connections_data crec;
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+	
+	if (crec.cnum != -1 || !process_exists(crec.pid)) return 0;
+
+	printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
+	       (int)crec.pid,
+	       crec.machine,crec.addr,
+	       tstring(crec.start));
+	if (geteuid() == 0) {
+		printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
+		       (int)crec.pid);
+	}
+	printf("</tr>\n");
+
+	return 0;
+}
+
+/* traversal fn for showing share connections */
+static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	struct connections_data crec;
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+
+	if (crec.cnum != -1 || !process_exists(crec.pid)) return 0;
+
+	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
+	       crec.name,uidtoname(crec.uid),
+	       gidtoname(crec.gid),(int)crec.pid,
+	       crec.machine,
+	       tstring(crec.start));
+	return 0;
+}
+
+
 /* show the current server status */
 void status_page(void)
 {
-	struct connect_record crec;
 	pstring fname;
-	FILE *f;
 	char *v;
 	int autorefresh=0;
 	int refresh_interval=30;
+	TDB_CONTEXT *tdb;
 
 	if (cgi_variable("smbd_restart")) {
 		if (smbd_running())
@@ -123,24 +176,10 @@ void status_page(void)
 	pstrcpy(fname,lp_lockdir());
 	standard_sub_basic(fname);
 	trim_string(fname,"","/");
-	pstrcat(fname,"/STATUS..LCK");
+	pstrcat(fname,"/connections.tdb");
 
-
-	f = sys_fopen(fname,"r");
-	if (f) {
-		while (!feof(f)) {
-			if (fread(&crec,sizeof(crec),1,f) != 1)	break;
-			if (crec.magic == 0x280267 && crec.cnum == -1 &&
-			    process_exists(crec.pid)) {
-				char buf[30];
-				slprintf(buf,sizeof(buf)-1,"kill_%d", (int)crec.pid);
-				if (cgi_variable(buf)) {
-					kill_pid(crec.pid);
-				}
-			}
-		}
-		fclose(f);
-	}
+	tdb = tdb_open(fname, 0, O_RDONLY, 0);
+	if (tdb) tdb_traverse(tdb, traverse_fn1);
 
 	printf("<H2>Server Status</H2>\n");
 
@@ -159,8 +198,7 @@ void status_page(void)
 
 	printf("<p>\n");
 
-	f = sys_fopen(fname,"r");
-	if (!f) {
+	if (!tdb) {
 		/* open failure either means no connections have been
                    made or status=no */
 		if (!lp_status(-1))
@@ -207,44 +245,15 @@ void status_page(void)
 	}
 	printf("</tr>\n");
 
-	while (f && !feof(f)) {
-		if (fread(&crec,sizeof(crec),1,f) != 1)
-			break;
-		if (crec.magic == 0x280267 && 
-		    crec.cnum == -1 &&
-		    process_exists(crec.pid)) {
-			printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
-			       (int)crec.pid,
-			       crec.machine,crec.addr,
-			       tstring(crec.start));
-			if (geteuid() == 0) {
-			    printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
-			       (int)crec.pid);
-			}
-			printf("</tr>\n");
-		}
-	}
+	if (tdb) tdb_traverse(tdb, traverse_fn2);
 
 	printf("</table><p>\n");
 
-	if (f) fseek(f, 0, SEEK_SET);
-	
 	printf("<p><h3>Active Shares</h3>\n");
 	printf("<table border=1>\n");
 	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
 
-	while (f && !feof(f)) {
-		if (fread(&crec,sizeof(crec),1,f) != 1)
-			break;
-		if (crec.cnum == -1) continue;
-		if (crec.magic == 0x280267 && process_exists(crec.pid)) {
-			printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
-			       crec.name,uidtoname(crec.uid),
-			       gidtoname(crec.gid),(int)crec.pid,
-			       crec.machine,
-			       tstring(crec.start));
-		}
-	}
+	if (tdb) tdb_traverse(tdb, traverse_fn3);
 
 	printf("</table><p>\n");
 
@@ -257,7 +266,7 @@ void status_page(void)
 	locking_end();
 	printf("</table>\n");
 
-	if (f) fclose(f);
+	tdb_close(tdb);
 
 	printf("</FORM>\n");
 

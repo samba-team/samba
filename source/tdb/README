@@ -11,7 +11,7 @@ Compilation
 -----------
 
 add HAVE_MMAP=1 to use mmap instead of read/write
-add TDB_DEBUG for verbose debug info
+add TDB_DEBUG=1 for verbose debug info
 add NOLOCK=1 to disable locking code
 
 Testing
@@ -20,6 +20,12 @@ Testing
 Compile tdbtest.c and link with gdbm for testing. tdbtest will perform
 identical operations via tdb and gdbm then make sure the result is the
 same
+
+Also included is tdbtool, which allows simple database manipulation
+on the commandline.
+
+tdbtest and tdbtool are not built as part of Samba, but are included
+for completeness.
 
 Interface
 ---------
@@ -31,3 +37,4 @@ The interface is very similar to gdbm except for the following:
 - no tdbm_reorganise() function
 - no tdbm_sync() function. No operations are cached in the library anyway
 - added a tdb_traverse() function for traversing the whole database
+

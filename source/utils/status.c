@@ -36,8 +36,6 @@
 
 #include "includes.h"
 
-struct connect_record crec;
-
 struct session_record{
   pid_t pid;
   uid_t uid;
@@ -50,12 +48,13 @@ extern int DEBUGLEVEL;
 extern FILE *dbf;
 
 static pstring Ucrit_username = "";                   /* added by OH */
-pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
-int            Ucrit_MaxPid=0;                        /* added by OH */
-unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
-
-int            shares_only = 0;            /* Added by RJS */
-int            locks_only  = 0;            /* Added by RJS */
+static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
+static int            Ucrit_MaxPid=0;                        /* added by OH */
+static unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
+static int verbose, brief;
+static int            shares_only = 0;            /* Added by RJS */
+static int            locks_only  = 0;            /* Added by RJS */
+static BOOL processes_only=False;
 
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
@@ -161,197 +160,198 @@ static int profile_dump(void)
 }
 
 
+static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	static pid_t last_pid;
+	struct session_record *ptr;
+	struct connections_data crec;
+	static int doneone;
+
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+
+	if (crec.cnum == -1) return 0;
+
+	if (!process_exists(crec.pid) || !Ucrit_checkUsername(uidtoname(crec.uid))) {
+		return 0;
+	}
+
+	if (brief) {
+		if (!doneone) {
+			printf("\nSamba version %s\n",VERSION);
+			printf("PID     Username  Machine                       Time logged in\n");
+			printf("-------------------------------------------------------------------\n");
+			doneone = 1;
+		}
+
+		ptr=srecs;
+		while (ptr!=NULL) {
+			if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) {
+				if (ptr->start > crec.start)
+					ptr->start=crec.start;
+				break;
+			}
+			ptr=ptr->next;
+		}
+		if (ptr==NULL) {
+			ptr=(struct session_record *) malloc(sizeof(struct session_record));
+			ptr->uid=crec.uid;
+			ptr->pid=crec.pid;
+			ptr->start=crec.start;
+			strncpy(ptr->machine,crec.machine,30);
+			ptr->machine[30]='\0';
+			ptr->next=srecs;
+			srecs=ptr;
+		}
+	} else {
+		if (!doneone) {
+			printf("\nSamba version %s\n",VERSION);
+			printf("Service      uid      gid      pid     machine\n");
+			printf("----------------------------------------------\n");
+			doneone = 1;
+		}
+
+		Ucrit_addPid(crec.pid);  
+		if (processes_only) {
+			if (last_pid != crec.pid)
+				printf("%d\n",(int)crec.pid);
+			last_pid = crec.pid; /* XXXX we can still get repeats, have to
+						add a sort at some time */
+		} else {
+			printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
+			       crec.name,uidtoname(crec.uid),gidtoname(crec.gid),(int)crec.pid,
+			       crec.machine,crec.addr,
+			       asctime(LocalTime(&crec.start)));
+		}
+	}
+
+	return 0;
+}
+
+
+
 
  int main(int argc, char *argv[])
 {
-  FILE *f;
-  pstring fname;
-  int c;
-  static pstring servicesf = CONFIGFILE;
-  extern char *optarg;
-  int verbose = 0, brief =0;
-  BOOL processes_only=False;
-  pid_t last_pid=(pid_t)0;
-  struct session_record *ptr;
-  int profile_only = 0;
+	pstring fname;
+	int c;
+	static pstring servicesf = CONFIGFILE;
+	extern char *optarg;
+	int profile_only = 0;
+	TDB_CONTEXT *tdb;
+	struct session_record *ptr;
 
-  TimeInit();
-  setup_logging(argv[0],True);
-
-  charset_initialise();
-
-  DEBUGLEVEL = 0;
-  dbf = stderr;
-
-  if (getuid() != geteuid()) {
-    printf("smbstatus should not be run setuid\n");
-    return(1);
-  }
-
-  while ((c = getopt(argc, argv, "pdLSs:u:bP")) != EOF) {
-    switch (c) {
-    case 'b':
-      brief = 1;
-      break;
-    case 'd':
-      verbose = 1;
-      break;
-    case 'L':
-      locks_only = 1;
-      break;
-    case 'p':
-      processes_only = 1;
-      break;
-    case 'P':
-      profile_only = 1;
-      break;
-    case 'S':
-      shares_only = 1;
-      break;
-    case 's':
-      pstrcpy(servicesf, optarg);
-      break;
-    case 'u':                                       /* added by OH */
-      Ucrit_addUsername(optarg);                    /* added by OH */
-      break;
-    default:
-      fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
-      return (-1);
-    }
-  }
-
-  if (!lp_load(servicesf,False,False,False)) {
-    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
-    return (-1);
-  }
-
-  if (verbose) {
-    printf("using configfile = %s\n", servicesf);
-    printf("lockdir = %s\n", *lp_lockdir() ? lp_lockdir() : "NULL");
-  }
-
-  if (profile_only) {
-	return profile_dump();
-  }
-
-  pstrcpy(fname,lp_lockdir());
-  standard_sub_basic(fname);
-  trim_string(fname,"","/");
-  pstrcat(fname,"/STATUS..LCK");
-
-  f = sys_fopen(fname,"r");
-  if (!f) {
-    printf("Couldn't open status file %s\n",fname);
-    if (!lp_status(-1))
-      printf("You need to have status=yes in your smb config file\n");
-    return(0);
-  }
-  else if (verbose) {
-    printf("Opened status file %s\n", fname);
-  }
-
-  if (!locks_only) {
-
-    if (!processes_only) {
-      printf("\nSamba version %s\n",VERSION);
-
-      if (brief)
-	{
-	  printf("PID     Username  Machine                       Time logged in\n");
-	  printf("-------------------------------------------------------------------\n");
+	TimeInit();
+	setup_logging(argv[0],True);
+	
+	charset_initialise();
+	
+	DEBUGLEVEL = 0;
+	dbf = stderr;
+	
+	if (getuid() != geteuid()) {
+		printf("smbstatus should not be run setuid\n");
+		return(1);
 	}
-      else
-	{
-	  printf("Service      uid      gid      pid     machine\n");
-	  printf("----------------------------------------------\n");
-	}
-    }
-
-    while (!feof(f))
-      {
-	if (fread(&crec,sizeof(crec),1,f) != 1)
-	  break;
-	if (crec.cnum == -1) continue;
-	if ( crec.magic == 0x280267 && process_exists(crec.pid) 
-	     && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
-	     )
-	  {
-	    if (brief)
-	      {
-		ptr=srecs;
-		while (ptr!=NULL)
-		  {
-		    if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) 
-		      {
-			if (ptr->start > crec.start)
-			  ptr->start=crec.start;
+	
+	while ((c = getopt(argc, argv, "pdLSs:u:bP")) != EOF) {
+		switch (c) {
+		case 'b':
+			brief = 1;
 			break;
-		      }
-		    ptr=ptr->next;
-		  }
-		if (ptr==NULL)
-		  {
-		    ptr=(struct session_record *) malloc(sizeof(struct session_record));
-		    ptr->uid=crec.uid;
-		    ptr->pid=crec.pid;
-		    ptr->start=crec.start;
-		    strncpy(ptr->machine,crec.machine,30);
-		    ptr->machine[30]='\0';
-		    ptr->next=srecs;
-		    srecs=ptr;
-		  }
-	      }
-	    else
-	      {
-		Ucrit_addPid(crec.pid);                                             /* added by OH */
-		if (processes_only) {
-		  if (last_pid != crec.pid)
-		    printf("%d\n",(int)crec.pid);
-		  last_pid = crec.pid; /* XXXX we can still get repeats, have to
-				    add a sort at some time */
+		case 'd':
+			verbose = 1;
+			break;
+		case 'L':
+			locks_only = 1;
+			break;
+		case 'p':
+			processes_only = 1;
+			break;
+		case 'P':
+			profile_only = 1;
+			break;
+		case 'S':
+			shares_only = 1;
+			break;
+		case 's':
+			pstrcpy(servicesf, optarg);
+			break;
+		case 'u':                                       /* added by OH */
+			Ucrit_addUsername(optarg);                    /* added by OH */
+			break;
+		default:
+			fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
+			return (-1);
 		}
-		else	  
-		  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-			 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),(int)crec.pid,
-			 crec.machine,crec.addr,
-			 asctime(LocalTime(&crec.start)));
-	      }
-	  }
-      }
-    fclose(f);
-  }
-  if (processes_only) exit(0);
+	}
+	
+	if (!lp_load(servicesf,False,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+		return (-1);
+	}
+	
+	if (verbose) {
+		printf("using configfile = %s\n", servicesf);
+		printf("lockdir = %s\n", *lp_lockdir() ? lp_lockdir() : "NULL");
+	}
+	
+	if (profile_only) {
+		return profile_dump();
+	}
+	
+	pstrcpy(fname,lp_lockdir());
+	standard_sub_basic(fname);
+	trim_string(fname,"","/");
+	pstrcat(fname,"/connections.tdb");
+
+	tdb = tdb_open(fname, 0, O_RDONLY, 0);
+	if (!tdb) {
+		printf("Couldn't open status file %s\n",fname);
+		if (!lp_status(-1))
+			printf("You need to have status=yes in your smb config file\n");
+		return(0);
+	}  else if (verbose) {
+		printf("Opened status file %s\n", fname);
+	}
+
+	if (locks_only) goto locks;
+
+	tdb_traverse(tdb, traverse_fn1);
+
+ locks:
+	if (processes_only) exit(0);
   
-  if (brief)
-  {
-    ptr=srecs;
-    while (ptr!=NULL)
-    {
-      printf("%-8d%-10.10s%-30.30s%s",(int)ptr->pid,uidtoname(ptr->uid),ptr->machine,asctime(LocalTime(&(ptr->start))));
-    ptr=ptr->next;
-    }
-    printf("\n");
-    exit(0);
-  }
+	if (brief)  {
+		ptr=srecs;
+		while (ptr!=NULL) {
+			printf("%-8d%-10.10s%-30.30s%s",
+			       (int)ptr->pid,uidtoname(ptr->uid),
+			       ptr->machine,
+			       asctime(LocalTime(&(ptr->start))));
+			ptr=ptr->next;
+		}
+		printf("\n");
+		exit(0);
+	}
 
-  printf("\n");
+	printf("\n");
 
-  if (!shares_only) {
-	  if (!locking_init(1)) {
-		  printf("Can't initialise shared memory - exiting\n");
-		  exit(1);
-	  }
+	if (!shares_only) {
+		if (!locking_init(1)) {
+			printf("Can't initialise shared memory - exiting\n");
+			exit(1);
+		}
+		
+		if (share_mode_forall(print_share_mode) <= 0)
+			printf("No locked files\n");
+		
+		printf("\n");
+		
+		share_status(stdout);
+		
+		locking_end();
+	}
 
-	  if (share_mode_forall(print_share_mode) <= 0)
-		  printf("No locked files\n");
-	  
-	  printf("\n");
-	  
-	  share_status(stdout);
-	  
-	  locking_end();
-  }
-
-  return (0);
+	return (0);
 }
 

@@ -2375,7 +2375,9 @@ void conn_free(connection_struct *conn);
 
 /*The following definitions come from  smbd/connection.c  */
 
+TDB_CONTEXT *open_db(char *name);
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections);
+int delete_dead(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf);
 BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear);
 
 /*The following definitions come from  smbd/dfree.c  */
@@ -2796,10 +2798,14 @@ int smbw_stat(const char *fname, struct stat *st);
 /*The following definitions come from  tdb/tdb.c  */
 
 int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
+TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
+TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
+TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
+TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
 int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);

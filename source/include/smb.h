@@ -839,19 +839,23 @@ struct passdb_ops {
 #endif
 };
 
-/* this is used for smbstatus */
+/* key and data in the connections database - used in smbstatus and smbd */
+struct connections_key {
+	pid_t pid;
+	int cnum;
+	fstring name;
+};
 
-struct connect_record
-{
-  int magic;
-  pid_t pid;
-  int cnum;
-  uid_t uid;
-  gid_t gid;
-  char name[24];
-  char addr[24];
-  char machine[128];
-  time_t start;
+struct connections_data {
+	int magic;
+	pid_t pid;
+	int cnum;
+	uid_t uid;
+	gid_t gid;
+	char name[24];
+	char addr[24];
+	char machine[128];
+	time_t start;
 };
 
 /* the following are used by loadparm for option lists */
