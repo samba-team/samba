@@ -329,6 +329,22 @@ void pidfile_create(char *name);
 
 char *rep_inet_ntoa(struct in_addr ip);
 
+/*The following definitions come from  lib/set_uid.c  */
+
+void init_uid(void);
+BOOL become_uid(uid_t uid);
+BOOL become_gid(gid_t gid);
+BOOL unbecome_to_initial_uid(void);
+BOOL become_id(uid_t uid,gid_t gid);
+void become_root(BOOL save_dir) ;
+void unbecome_root(BOOL restore_dir);
+
+/*The following definitions come from  lib/set_vuid.c  */
+
+void init_vuid(void);
+BOOL become_vuser(uint16 vuid);
+BOOL unbecome_vuser(void);
+
 /*The following definitions come from  lib/sids.c  */
 
 struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
@@ -735,6 +751,7 @@ uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
 				char *real_name,
 				BOOL guest, uchar user_sess_key[16]);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16]);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -4482,14 +4499,9 @@ int reply_trans2(connection_struct *conn,
 
 /*The following definitions come from  smbd/uid.c  */
 
-void init_uid(void);
 BOOL become_guest(void);
-BOOL become_vuser(uint16 vuid);
-BOOL unbecome_vuser(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void );
-void become_root(BOOL save_dir) ;
-void unbecome_root(BOOL restore_dir);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 

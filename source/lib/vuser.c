@@ -193,3 +193,23 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 				guest, user_sess_key);
 }
 
+/*******************************************************************
+check if a username is OK
+********************************************************************/
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum)
+{
+  int i;
+  for (i=0;i<cache->entries;i++)
+    if (cache->list[i] == vuser->uid) return(True);
+
+  if (!user_ok(vuser->name,snum)) return(False);
+
+  i = cache->entries % UID_CACHE_SIZE;
+  cache->list[i] = vuser->uid;
+
+  if (cache->entries < UID_CACHE_SIZE)
+    cache->entries++;
+
+  return(True);
+}
+

@@ -391,6 +391,7 @@ int msrpc_main(int argc,char *argv[])
 
 	dos_GetWd(OriginalDir);
 
+	init_vuid();
 	init_uid();
 
 	/* this is for people who can't start the program correctly */
