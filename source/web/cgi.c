@@ -18,15 +18,15 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <pwd.h>
+#include "includes.h"
+#include "smb.h"
 
 #define MAX_VARIABLES 10000
+
+/* set the expiry on fixed pages */
+#define EXPIRY_TIME (60*60*24*7)
+
+#define CGI_LOGGING 0
 
 #ifdef DEBUG_COMMENTS
 extern void print_title(char *fmt, ...);
@@ -524,12 +524,16 @@ static void cgi_download(char *file)
 	}
 	printf("HTTP/1.1 200 OK\r\n");
 	if ((p=strrchr(file,'.'))) {
-		if (strcmp(p,".gif")==0 || strcmp(p,".jpg")==0) {
+		if (strcmp(p,".gif")==0) {
 			printf("Content-Type: image/gif\r\n");
+		} else if (strcmp(p,".jpg")==0) {
+			printf("Content-Type: image/jpeg\r\n");
 		} else {
 			printf("Content-Type: text/html\r\n");
 		}
 	}
+	printf("Expires: %s\r\n", http_timestring(time(NULL)+EXPIRY_TIME));
+
 	printf("Content-Length: %d\r\n\r\n", (int)st.st_size);
 	while ((l=read(fd,buf,sizeof(buf)))>0) {
 		fwrite(buf, 1, l, stdout);
@@ -549,6 +553,11 @@ void cgi_setup(char *rootdir, int auth_required)
 	char line[1024];
 	char *url=NULL;
 	char *p;
+#if CGI_LOGGING
+	FILE *f = fopen("/tmp/cgi.log", "a");
+
+	fprintf(f,"\n[Date: %s]\n", http_timestring(time(NULL)));
+#endif
 
 	if (chdir(rootdir)) {
 		cgi_setup_error("400 Server Error", "",
@@ -563,6 +572,9 @@ void cgi_setup(char *rootdir, int auth_required)
 	/* we are a mini-web server. We need to read the request from stdin
 	   and handle authentication etc */
 	while (fgets(line, sizeof(line)-1, stdin)) {
+#if CGI_LOGGING
+		fputs(line, f);
+#endif
 		if (line[0] == '\r' || line[0] == '\n') break;
 		if (strncasecmp(line,"GET ", 4)==0) {
 			request_get = 1;
@@ -580,6 +592,9 @@ void cgi_setup(char *rootdir, int auth_required)
 		}
 		/* ignore all other requests! */
 	}
+#if CGI_LOGGING
+	fclose(f);
+#endif
 
 	if (auth_required && !authenticated) {
 		cgi_setup_error("401 Authorization Required", 
@@ -606,12 +621,12 @@ void cgi_setup(char *rootdir, int auth_required)
 		*p = 0;
 	}
 
-	if (strstr(url+1,"..")==0 && file_exist(url+1)) {
+	if (strstr(url+1,"..")==0 && file_exist(url+1, NULL)) {
 		cgi_download(url+1);
 	}
 
 	printf("HTTP/1.1 200 OK\r\nConnection: close\r\n");
-
+	printf("Date: %s\r\n", http_timestring(time(NULL)));
 	baseurl = url+1;
 }
 
