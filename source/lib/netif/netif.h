@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
 
+   structures for lib/netif/
+
    Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -18,34 +20,15 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
-union spoolss_PrinterInfo;
-union spoolss_FormInfo;
-union spoolss_JobInfo;
-union spoolss_DriverInfo;
-union spoolss_PortInfo;
+struct iface_struct {
+	char name[16];
+	struct in_addr ip;
+	struct in_addr netmask;
+};
 
-struct MULTI_QI;
-struct COSERVERINFO;
+#define MAX_INTERFACES 128
 
-
-struct epm_floor;
-struct epm_tower;
-
-struct drsuapi_DsCrackNames;
-
-struct samr_ChangePasswordUser;
-struct samr_OemChangePasswordUser2;
-struct samr_ChangePasswordUser3;
-struct samr_ChangePasswordUser2;
-struct samr_CryptPassword;
-struct samr_CryptPasswordEx;
-
-struct netr_SamInfo3;
-struct netr_Authenticator;
-
-struct iface_struct;

@@ -206,7 +206,7 @@ struct nmb_data
 {
   uint16_t nb_flags;         /* Netbios flags. */
   int num_ips;             /* Number of ip entries. */
-  struct in_addr *ip;      /* The ip list for this name. */
+  struct ipv4_addr *ip;      /* The ip list for this name. */
 
   enum name_source source; /* Where the name came from. */
 
@@ -214,7 +214,7 @@ struct nmb_data
   time_t refresh_time; /* The time the record should be refreshed. */
   
   uint64_t id;		/* unique id */
-  struct in_addr wins_ip;	/* the adress of the wins server this record comes from */
+  struct ipv4_addr wins_ip;	/* the adress of the wins server this record comes from */
 
   int wins_flags;		/* similar to the netbios flags but different ! */
 };
@@ -238,7 +238,7 @@ struct browse_cache_record
 #endif
   pstring        lmb_name;
   pstring        work_group;
-  struct in_addr ip;
+  struct ipv4_addr ip;
   time_t         sync_time;
   time_t         death_time; /* The time the record must be removed. */
   };
@@ -307,7 +307,7 @@ struct work_record
 
   /* Domain master browser info. Used for efficient syncs. */
   struct nmb_name dmb_name;
-  struct in_addr dmb_addr;
+  struct ipv4_addr dmb_addr;
 };
 
 /* typedefs needed to define copy & free functions for userdata. */
@@ -353,7 +353,7 @@ typedef void (*register_name_success_function)( struct subnet_record *,
                                                 struct nmb_name *,
                                                 uint16_t,
                                                 int,
-                                                struct in_addr);
+                                                struct ipv4_addr);
 typedef void (*register_name_fail_function)( struct subnet_record *,
                                              struct response_record *,
                                              struct nmb_name *);
@@ -361,7 +361,7 @@ typedef void (*register_name_fail_function)( struct subnet_record *,
 typedef void (*release_name_success_function)( struct subnet_record *,
                                                struct userdata_struct *, 
                                                struct nmb_name *,
-                                               struct in_addr);
+                                               struct ipv4_addr);
 typedef void (*release_name_fail_function)( struct subnet_record *,
                                             struct response_record *, 
                                             struct nmb_name *);
@@ -371,7 +371,7 @@ typedef void (*refresh_name_success_function)( struct subnet_record *,
                                                struct nmb_name *,
                                                uint16_t,
                                                int,
-                                               struct in_addr);
+                                               struct ipv4_addr);
 typedef void (*refresh_name_fail_function)( struct subnet_record *,
                                             struct response_record *,
                                             struct nmb_name *);
@@ -379,7 +379,7 @@ typedef void (*refresh_name_fail_function)( struct subnet_record *,
 typedef void (*query_name_success_function)( struct subnet_record *,
                                              struct userdata_struct *,
                                              struct nmb_name *,
-                                             struct in_addr,
+                                             struct ipv4_addr,
                                              struct res_rec *answers);
 
 typedef void (*query_name_fail_function)( struct subnet_record *,
@@ -390,7 +390,7 @@ typedef void (*query_name_fail_function)( struct subnet_record *,
 typedef void (*node_status_success_function)( struct subnet_record *,
                                               struct userdata_struct *,
                                               struct res_rec *,
-                                              struct in_addr);
+                                              struct ipv4_addr);
 typedef void (*node_status_fail_function)( struct subnet_record *,
                                            struct response_record *);
 
@@ -457,9 +457,9 @@ struct subnet_record
   BOOL namelist_changed;
   BOOL work_changed;
 
-  struct in_addr bcast_ip;
-  struct in_addr mask_ip;
-  struct in_addr myip;
+  struct ipv4_addr bcast_ip;
+  struct ipv4_addr mask_ip;
+  struct ipv4_addr myip;
   int nmb_sock;               /* socket to listen for unicast 137. */
   int dgram_sock;             /* socket to listen for unicast 138. */
 };
@@ -535,7 +535,7 @@ struct dgram_packet {
       BOOL more;
     } flags;
     int dgm_id;
-    struct in_addr source_ip;
+    struct ipv4_addr source_ip;
     int source_port;
     int dgm_length;
     int packet_offset;
@@ -554,7 +554,7 @@ struct packet_struct
   struct packet_struct *next;
   struct packet_struct *prev;
   BOOL locked;
-  struct in_addr ip;
+  struct ipv4_addr ip;
   int port;
   int fd;
   time_t timestamp;
@@ -642,8 +642,8 @@ typedef struct _WINS_RECORD {
 	int wins_flags;
 	uint64_t id;
 	int num_ips;
-	struct in_addr ip[25];
-	struct in_addr wins_ip;
+	struct ipv4_addr ip[25];
+	struct ipv4_addr wins_ip;
 } WINS_RECORD;
 
 /* To be removed. */

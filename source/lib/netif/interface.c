@@ -19,19 +19,21 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
+#include "lib/netif/netif.h"
 
 static struct iface_struct *probed_ifaces;
 static int total_probed;
 
-static struct in_addr allones_ip;
-struct in_addr loopback_ip;
+static struct ipv4_addr allones_ip;
+struct ipv4_addr loopback_ip;
 
 /* used for network interfaces */
 struct interface {
 	struct interface *next, *prev;
-	struct in_addr ip;
-	struct in_addr bcast;
-	struct in_addr nmask;
+	struct ipv4_addr ip;
+	struct ipv4_addr bcast;
+	struct ipv4_addr nmask;
 };
 
 static struct interface *local_interfaces;
@@ -40,17 +42,24 @@ static struct interface *local_interfaces;
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
 #define MKNETADDR(_IP, _NM) (_IP & _NM)
 
+static struct ipv4_addr tov4(struct in_addr in)
+{
+	struct ipv4_addr in2;
+	in2.s_addr = in.s_addr;
+	return in2;
+}
+
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
 static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(ip)) return local_interfaces;
+	if (is_zero_ip(tov4(ip))) return local_interfaces;
 
 	for (i=local_interfaces;i;i=i->next)
 		if (CheckMask) {
-			if (same_net(i->ip,ip,i->nmask)) return i;
+			if (same_net(i->ip,tov4(ip),i->nmask)) return i;
 		} else if ((i->ip).s_addr == ip.s_addr) return i;
 
 	return NULL;
@@ -78,15 +87,15 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 	
 	ZERO_STRUCTPN(iface);
 
-	iface->ip = ip;
-	iface->nmask = nmask;
+	iface->ip = tov4(ip);
+	iface->nmask = tov4(nmask);
 	iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
 
 	DLIST_ADD(local_interfaces, iface);
 
-	DEBUG(2,("added interface ip=%s ",inet_ntoa(iface->ip)));
-	DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
-	DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+	DEBUG(2,("added interface ip=%s ",sys_inet_ntoa(iface->ip)));
+	DEBUG(2,("bcast=%s ",sys_inet_ntoa(iface->bcast)));
+	DEBUG(2,("nmask=%s\n",sys_inet_ntoa(iface->nmask)));	     
 }
 
 
@@ -108,8 +117,8 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	char *p;
 	int i, added=0;
 
-    zero_ip(&ip);
-    zero_ip(&nmask);
+	ip.s_addr = 0;
+	nmask.s_addr = 0;
 	
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
@@ -124,7 +133,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (!p) {
-		ip = interpret_addr2(token);
+		ip.s_addr = interpret_addr2(token).s_addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
 			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
@@ -140,10 +149,10 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip = interpret_addr2(token);
+	ip.s_addr = interpret_addr2(token).s_addr;
 
 	if (strlen(p) > 2) {
-		nmask = interpret_addr2(p);
+		nmask.s_addr = interpret_addr2(p).s_addr;
 	} else {
 		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
 	}
@@ -152,7 +161,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr) ||
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
-			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
+			if (same_net(tov4(ip), tov4(probed_ifaces[i].ip), tov4(nmask))) {
 				add_interface(probed_ifaces[i].ip, nmask);
 				return;
 			}
@@ -257,7 +266,7 @@ BOOL interfaces_changed(void)
 /****************************************************************************
   check if an IP is one of mine
   **************************************************************************/
-BOOL ismyip(struct in_addr ip)
+BOOL ismyip(struct ipv4_addr ip)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next)
@@ -268,7 +277,7 @@ BOOL ismyip(struct in_addr ip)
 /****************************************************************************
   check if a packet is from a local (known) net
   **************************************************************************/
-BOOL is_local_net(struct in_addr from)
+BOOL is_local_net(struct ipv4_addr from)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
@@ -295,7 +304,7 @@ int iface_count(void)
 /****************************************************************************
   return IP of the Nth interface
   **************************************************************************/
-struct in_addr *iface_n_ip(int n)
+struct ipv4_addr *iface_n_ip(int n)
 {
 	struct interface *i;
   
@@ -309,7 +318,7 @@ struct in_addr *iface_n_ip(int n)
 /****************************************************************************
   return bcast of the Nth interface
   **************************************************************************/
-struct in_addr *iface_n_bcast(int n)
+struct ipv4_addr *iface_n_bcast(int n)
 {
 	struct interface *i;
   
@@ -326,16 +335,21 @@ struct in_addr *iface_n_bcast(int n)
    an appropriate interface they return the requested field of the
    first known interface. */
 
-struct in_addr *iface_ip(struct in_addr ip)
+struct ipv4_addr *iface_ip(struct ipv4_addr ip)
 {
-	struct interface *i = iface_find(ip, True);
+	struct in_addr in;
+	struct interface *i;
+	in.s_addr = ip.s_addr;
+	i = iface_find(in, True);
 	return(i ? &i->ip : &local_interfaces->ip);
 }
 
 /*
   return True if a IP is directly reachable on one of our interfaces
 */
-BOOL iface_local(struct in_addr ip)
+BOOL iface_local(struct ipv4_addr ip)
 {
-	return iface_find(ip, True) ? True : False;
+	struct in_addr in;
+	in.s_addr = ip.s_addr;
+	return iface_find(in, True) ? True : False;
 }

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 /*
    The idea is that this file will eventually have wrappers around all
@@ -533,3 +534,24 @@ int sys_dup2(int oldfd, int newfd)
 #endif
 }
 
+
+const char *sys_inet_ntoa(struct ipv4_addr in)
+{
+	struct in_addr in2;
+	in2.s_addr = in.s_addr;
+	return inet_ntoa(in2);
+}
+
+uint32_t sys_inet_addr(const char *s)
+{
+	return inet_addr(s);
+}
+
+struct ipv4_addr sys_inet_makeaddr(int net, int host)
+{
+	struct in_addr in;
+	struct ipv4_addr in2;
+	in = inet_makeaddr(net, host);
+	in2.s_addr = in.s_addr;
+	return in2;
+}

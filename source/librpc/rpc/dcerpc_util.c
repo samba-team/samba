@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 
 /*
@@ -385,9 +386,9 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		}
 
 		{
-         	struct in_addr in;
+			struct ipv4_addr in;
 			in.s_addr = htonl(floor->rhs.ip.address);
-            return talloc_strdup(mem_ctx, inet_ntoa(in));
+			return talloc_strdup(mem_ctx, sys_inet_ntoa(in));
 		}
 
 	case EPM_PROTOCOL_NCACN:

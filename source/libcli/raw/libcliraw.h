@@ -60,7 +60,7 @@ struct smbcli_negotiate {
 	
 /* this is the context for a SMB socket associated with the socket itself */
 struct smbcli_socket {
-	struct in_addr dest_ip;
+	struct ipv4_addr dest_ip;
 	/* dest hostname (which may or may not be a DNS name) */
 	char *hostname;
 

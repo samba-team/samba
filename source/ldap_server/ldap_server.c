@@ -34,11 +34,11 @@ static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, c
 */
 static void add_socket(struct server_service *service, 
 		       const struct model_ops *model_ops, 
-		       struct in_addr *ifip)
+		       struct ipv4_addr *ifip)
 {
 	struct server_socket *srv_sock;
 	uint16_t port = 389;
-	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
 
 	srv_sock = service_setup_socket(service, model_ops, "ipv4", ip_str, &port);
 
@@ -99,7 +99,7 @@ static void ldapsrv_init(struct server_service *service,
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
+			struct ipv4_addr *ifip = iface_n_ip(i);
 
 			if (ifip == NULL) {
 				DEBUG(0,("ldapsrv_init: interface %d has NULL "
@@ -110,7 +110,7 @@ static void ldapsrv_init(struct server_service *service,
 			add_socket(service, model_ops, ifip);
 		}
 	} else {
-		struct in_addr ifip;
+		struct ipv4_addr ifip;
 
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
 		ifip = interpret_addr2(lp_socket_address());

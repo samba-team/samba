@@ -197,7 +197,7 @@ char * parse_server(char * unc_name)
 	char * share;
 	char * ipaddress_string = NULL;
 	struct hostent * host_entry;
-	struct in_addr server_ipaddr;
+	struct ipv4_addr server_ipaddr;
 	int rc,j;
 	char temp[64];
 

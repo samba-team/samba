@@ -228,7 +228,7 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
  *         reallocated to new length
  **/
 
-char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
+char* ipstr_list_add(char** ipstr_list, const struct ipv4_addr *ip)
 {
 	char* new_ipstr = NULL;
 	
@@ -237,10 +237,10 @@ char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
 
 	/* attempt to convert ip to a string and append colon separator to it */
 	if (*ipstr_list) {
-		asprintf(&new_ipstr, "%s%s%s", *ipstr_list, IPSTR_LIST_SEP,inet_ntoa(*ip));
+		asprintf(&new_ipstr, "%s%s%s", *ipstr_list, IPSTR_LIST_SEP,sys_inet_ntoa(*ip));
 		SAFE_FREE(*ipstr_list);
 	} else {
-		asprintf(&new_ipstr, "%s", inet_ntoa(*ip));
+		asprintf(&new_ipstr, "%s", sys_inet_ntoa(*ip));
 	}
 	*ipstr_list = new_ipstr;
 	return *ipstr_list;
@@ -256,7 +256,7 @@ char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
  * @return pointer to allocated ip string
  **/
  
-char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_count)
+char* ipstr_list_make(char** ipstr_list, const struct ipv4_addr* ip_list, int ip_count)
 {
 	int i;
 	
@@ -283,7 +283,7 @@ char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_c
  * @return number of succesfully parsed addresses
  **/
  
-int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
+int ipstr_list_parse(const char* ipstr_list, struct ipv4_addr** ip_list)
 {
 	fstring token_str;
 	int count;
@@ -294,14 +294,14 @@ int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
 	     next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN);
 	     count++) {
 	     
-		struct in_addr addr;
+		struct ipv4_addr addr;
 
 		/* convert single token to ip address */
-		if ( (addr.s_addr = inet_addr(token_str)) == INADDR_NONE )
+		if ( (addr.s_addr = sys_inet_addr(token_str)) == INADDR_NONE )
 			break;
 		
 		/* prepare place for another in_addr structure */
-		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct in_addr));
+		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct ipv4_addr));
 		if (!*ip_list) return -1;
 		
 		(*ip_list)[count] = addr;

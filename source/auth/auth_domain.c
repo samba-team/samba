@@ -35,7 +35,7 @@ BOOL global_machine_password_needs_changing = False;
   the 'ADS server' smb.conf parameter, which is what we really want anyway
  */
 static NTSTATUS ads_resolve_dc(fstring remote_machine, 
-			       struct in_addr *dest_ip)
+			       struct ipv4_addr *dest_ip)
 {
 	ADS_STRUCT *ads;
 	ads = ads_init_simple();
@@ -76,10 +76,10 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
  */
 static NTSTATUS rpc_resolve_dc(const char *server, 
 			       fstring remote_machine, 
-			       struct in_addr *dest_ip)
+			       struct ipv4_addr *dest_ip)
 {
 	if (is_ipaddress(server)) {
-		struct in_addr to_ip = interpret_addr2(server);
+		struct ipv4_addr to_ip = interpret_addr2(server);
 
 		/* we need to know the machines netbios name - this is a lousy
 		   way to find it, but until we have a RPC call that does this
@@ -125,7 +125,7 @@ static NTSTATUS connect_to_domain_password_server(struct smbcli_state **cli,
 						  const uint8_t *trust_passwd,
 						  BOOL *retry)
 {
-	struct in_addr dest_ip;
+	struct ipv4_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
 	uint32_t neg_flags = 0x000001ff;
@@ -230,7 +230,7 @@ machine %s. Error was : %s.\n", remote_machine, smbcli_errstr(*cli)));
 
 static NTSTATUS attempt_connect_to_dc(struct smbcli_state **cli, 
 				      const char *domain, 
-				      struct in_addr *ip, 
+				      struct ipv4_addr *ip, 
 				      const char *setup_creds_as, 
 				      uint16_t sec_chan,
 				      const uint8_t *trust_passwd)
@@ -267,7 +267,7 @@ static NTSTATUS find_connect_dc(struct smbcli_state **cli,
 				 uint8_t *trust_passwd, 
 				 time_t last_change_time)
 {
-	struct in_addr dc_ip;
+	struct ipv4_addr dc_ip;
 	fstring srv_name;
 
 	if ( !rpc_find_dc(lp_workgroup(), srv_name, &dc_ip) ) {

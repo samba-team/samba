@@ -22,7 +22,7 @@
  
 typedef struct {
 	void *ld; /* the active ldap structure */
-	struct in_addr ldap_ip; /* the ip of the active connection, if any */
+	struct ipv4_addr ldap_ip; /* the ip of the active connection, if any */
 	time_t last_attempt; /* last attempt to reconnect */
 	int ldap_port;
 	

@@ -24,7 +24,7 @@
 static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)
 {
 	BOOL ret;
-	struct in_addr ip;
+	struct ipv4_addr ip;
 
 	if (is_ipaddress(r->generic.in.domain_name)) {
 		r->generic.out.pdc_name = r->generic.in.domain_name;
@@ -40,7 +40,7 @@ static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *
 		}
 	}
 
-	r->generic.out.pdc_name = talloc_strdup(mem_ctx, inet_ntoa(ip));
+	r->generic.out.pdc_name = talloc_strdup(mem_ctx, sys_inet_ntoa(ip));
 
 	return NT_STATUS_OK;
 }

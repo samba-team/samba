@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 static NTSTATUS ipv4_tcp_init(struct socket_context *sock)
 {
@@ -41,8 +42,8 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 				 uint32_t flags)
 {
 	struct sockaddr_in srv_addr;
-	struct in_addr my_ip;
-	struct in_addr srv_ip;
+	struct ipv4_addr my_ip;
+	struct ipv4_addr srv_ip;
 	int ret;
 
 	my_ip = interpret_addr2(my_address);
@@ -53,7 +54,7 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 		my_addr.sin_len		= sizeof(my_addr);
 #endif
-		my_addr.sin_addr	= my_ip;
+		my_addr.sin_addr.s_addr	= my_ip.s_addr;
 		my_addr.sin_port	= htons(my_port);
 		my_addr.sin_family	= PF_INET;
 		
@@ -69,7 +70,7 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 	srv_addr.sin_len	= sizeof(srv_addr);
 #endif
-	srv_addr.sin_addr	= srv_ip;
+	srv_addr.sin_addr.s_addr= srv_ip.s_addr;
 	srv_addr.sin_port	= htons(srv_port);
 	srv_addr.sin_family	= PF_INET;
 
@@ -95,7 +96,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 					int queue_size, uint32_t flags)
 {
 	struct sockaddr_in my_addr;
-	struct in_addr ip_addr;
+	struct ipv4_addr ip_addr;
 	int ret;
 
 	ip_addr = interpret_addr2(my_address);
@@ -104,7 +105,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 	my_addr.sin_len		= sizeof(my_addr);
 #endif
-	my_addr.sin_addr	= ip_addr;
+	my_addr.sin_addr.s_addr	= ip_addr.s_addr;
 	my_addr.sin_port	= htons(port);
 	my_addr.sin_family	= PF_INET;
 

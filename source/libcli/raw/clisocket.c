@@ -49,7 +49,7 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
   connect a smbcli_socket context to an IP/port pair
   if port is 0 then choose 445 then 139
 */
-BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int port)
+BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct ipv4_addr *ip, int port)
 {
 	NTSTATUS status;
 
@@ -71,7 +71,7 @@ BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int por
 	}
 	talloc_steal(sock, sock->sock);
 
-	status = socket_connect(sock->sock, NULL, 0, inet_ntoa(*ip), port, 0);
+	status = socket_connect(sock->sock, NULL, 0, sys_inet_ntoa(*ip), port, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(sock->sock);
 		sock->sock = NULL;
@@ -159,7 +159,7 @@ resolve a hostname and connect
 BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, int port)
 {
 	int name_type = 0x20;
-	struct in_addr ip;
+	struct ipv4_addr ip;
 	char *name, *p;
 	BOOL ret;
 

@@ -10,6 +10,16 @@ ADD_OBJ_FILES = \
 ##############################
 
 ##############################
+# Start SUBSYSTEM LIBNETIF
+[SUBSYSTEM::LIBNETIF]
+INIT_OBJ_FILES = \
+		lib/netif/interface.o
+ADD_OBJ_FILES = \
+		lib/netif/netif.o
+# End SUBSYSTEM LIBNETIF
+##############################
+
+##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
@@ -17,8 +27,6 @@ ADD_OBJ_FILES = \
 		lib/debug.o \
 		lib/fault.o \
 		lib/getsmbpass.o \
-		lib/interface.o \
-		lib/interfaces.o \
 		lib/pidfile.o \
 		lib/signal.o \
 		lib/system.o \
@@ -57,6 +65,6 @@ ADD_OBJ_FILES = \
 		lib/server_mutex.o \
 		lib/idtree.o
 REQUIRED_SUBSYSTEMS = \
-		LIBTDB CHARSET LIBREPLACE
+		LIBTDB CHARSET LIBREPLACE LIBNETIF
 # End SUBSYSTEM LIBBASIC
 ##############################

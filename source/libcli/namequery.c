@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 /* A netbios node status array element. */
 struct node_status {
@@ -83,7 +84,7 @@ do a NBT node status query on an open socket and return an array of
 structures holding the returned names or NULL if the query failed
 **************************************************************************/
 struct node_status *node_status_query(int fd,struct nmb_name *name,
-				      struct in_addr to_ip, int *num_names)
+				      struct ipv4_addr to_ip, int *num_names)
 {
 	BOOL found=False;
 	int retries = 2;
@@ -170,7 +171,7 @@ a servers name given its IP
 return the matched name in *name
 **************************************************************************/
 
-BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
+BOOL name_status_find(const char *q_name, int q_type, int type, struct ipv4_addr to_ip, char *name)
 {
 	struct node_status *status = NULL;
 	struct nmb_name nname;
@@ -184,7 +185,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	}
 
 	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
-		   q_type, inet_ntoa(to_ip)));
+		   q_type, sys_inet_ntoa(to_ip)));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1)
@@ -213,7 +214,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
 
 	if (result)
-		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
+		DEBUGADD(10, (", ip address is %s", sys_inet_ntoa(to_ip)));
 
 	DEBUG(10, ("\n"));	
 
@@ -224,14 +225,14 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 /*
   comparison function used by sort_ip_list
 */
-int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
+int ip_compare(struct ipv4_addr *ip1, struct ipv4_addr *ip2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();
 	int i;
 
 	for (i=0;i<num_interfaces;i++) {
-		struct in_addr ip;
+		struct ipv4_addr ip;
 		int bits1, bits2;
 		ip = *iface_n_bcast(i);
 		bits1 = matching_quad_bits((uint8_t *)&ip1->s_addr, (uint8_t *)&ip.s_addr);
@@ -256,13 +257,13 @@ int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
   are at the top. This prevents the problem where a WINS server returns an IP that
   is not reachable from our subnet as the first match
 */
-static void sort_ip_list(struct in_addr *iplist, int count)
+static void sort_ip_list(struct ipv4_addr *iplist, int count)
 {
 	if (count <= 1) {
 		return;
 	}
 
-	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
+	qsort(iplist, count, sizeof(struct ipv4_addr), QSORT_CAST ip_compare);	
 }
 
 
@@ -272,9 +273,9 @@ static void sort_ip_list(struct in_addr *iplist, int count)
  *count will be set to the number of addresses returned.
  *timed_out is set if we failed by timing out
 ****************************************************************************/
-struct in_addr *name_query(int fd,const char *name,int name_type, 
+struct ipv4_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count, int *flags,
+			   struct ipv4_addr to_ip, int *count, int *flags,
 			   BOOL *timed_out)
 {
 	BOOL found=False;
@@ -284,7 +285,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	struct packet_struct p;
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
-	struct in_addr *ip_list = NULL;
+	struct ipv4_addr *ip_list = NULL;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_query(%s#%02x): netbios is disabled\n", name, name_type));
@@ -333,7 +334,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	
 	while (1) {
 		struct timeval tval2;
-		struct in_addr *tmp_ip_list;
+		struct ipv4_addr *tmp_ip_list;
 		
 		GetTimeOfDay(&tval2);
 		if (TvalDiff(&tval,&tval2) > retry_time) {
@@ -398,7 +399,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 				continue;
 			}
 			
-			tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
+			tmp_ip_list = (struct ipv4_addr *)Realloc( ip_list, sizeof( ip_list[0] )
 								 * ( (*count) + nmb2->answers->rdlength/6 ) );
 			
 			if (!tmp_ip_list) {
@@ -409,10 +410,10 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			ip_list = tmp_ip_list;
 			
 			if (ip_list) {
-				DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
+				DEBUG(2,("Got a positive name query response from %s ( ", sys_inet_ntoa(p2->ip)));
 				for (i=0;i<nmb2->answers->rdlength/6;i++) {
 					putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-					DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
+					DEBUGADD(2,("%s ",sys_inet_ntoa(ip_list[(*count)])));
 					(*count)++;
 				}
 				DEBUGADD(2,(")\n"));
@@ -474,7 +475,7 @@ XFILE *startlmhosts(char *fname)
 *********************************************************/
 
 BOOL getlmhostsent( TALLOC_CTX *mem_ctx,
-		XFILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
+		XFILE *fp, pstring name, int *name_type, struct ipv4_addr *ipaddr)
 {
   pstring line;
 
@@ -571,7 +572,7 @@ void endlmhosts(XFILE *fp)
 *********************************************************/
 
 BOOL name_resolve_bcast(const char *name, int name_type,
-			struct in_addr **return_ip_list, int *return_count)
+			struct ipv4_addr **return_ip_list, int *return_count)
 {
 	int sock, i;
 	int num_interfaces = iface_count();
@@ -601,7 +602,7 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	 * the first successful match.
 	 */
 	for( i = num_interfaces-1; i >= 0; i--) {
-		struct in_addr sendto_ip;
+		struct ipv4_addr sendto_ip;
 		int flags;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_n_bcast(i);
@@ -621,11 +622,11 @@ BOOL name_resolve_bcast(const char *name, int name_type,
  Resolve via "wins" method.
 *********************************************************/
 BOOL resolve_wins(TALLOC_CTX *mem_ctx, const char *name, int name_type,
-		  struct in_addr **return_iplist, int *return_count)
+		  struct ipv4_addr **return_iplist, int *return_count)
 {
 	int sock, t, i;
 	char **wins_tags;
-	struct in_addr src_ip;
+	struct ipv4_addr src_ip;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n", name, name_type));
@@ -658,7 +659,7 @@ BOOL resolve_wins(TALLOC_CTX *mem_ctx, const char *name, int name_type,
 	for (t=0; wins_tags && wins_tags[t]; t++) {
 		int srv_count = wins_srv_count_tag(wins_tags[t]);
 		for (i=0; i<srv_count; i++) {
-			struct in_addr wins_ip;
+			struct ipv4_addr wins_ip;
 			int flags;
 			BOOL timed_out;
 
@@ -674,7 +675,7 @@ BOOL resolve_wins(TALLOC_CTX *mem_ctx, const char *name, int name_type,
 				continue;
 			}
 
-			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", inet_ntoa(wins_ip), wins_tags[t]));
+			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", sys_inet_ntoa(wins_ip), wins_tags[t]));
 
 			sock = open_socket_in(SOCK_DGRAM, 0, 3, src_ip.s_addr, True);
 			if (sock == -1) {
@@ -714,7 +715,7 @@ success:
 *********************************************************/
 
 static BOOL resolve_hosts(const char *name,
-                         struct in_addr **return_iplist, int *return_count)
+                         struct ipv4_addr **return_iplist, int *return_count)
 {
 	/*
 	 * "host" means do a localhost, or dns lookup.
@@ -727,9 +728,9 @@ static BOOL resolve_hosts(const char *name,
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-		struct in_addr return_ip;
+		struct ipv4_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+		*return_iplist = (struct ipv4_addr *)malloc(sizeof(struct ipv4_addr));
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
@@ -749,7 +750,7 @@ static BOOL resolve_hosts(const char *name,
 *********************************************************/
 
 static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int name_type,
-				  struct in_addr **return_iplist, int *return_count)
+				  struct ipv4_addr **return_iplist, int *return_count)
 {
   char *name_resolve_list;
   fstring tok;
@@ -758,7 +759,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
   BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
   BOOL is_address = is_ipaddress(name);
   BOOL result = False;
-  struct in_addr *nodupes_iplist;
+  struct ipv4_addr *nodupes_iplist;
   int i;
 
   *return_iplist = NULL;
@@ -767,7 +768,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
   DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
 
   if (allzeros || allones || is_address) {
-	*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+	*return_iplist = (struct ipv4_addr *)malloc(sizeof(struct ipv4_addr));
 	if(*return_iplist == NULL) {
 		DEBUG(3,("internal_resolve_name: malloc fail !\n"));
 		return False;
@@ -841,8 +842,8 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
      controllers including the PDC in iplist[1..n].  Iterating over
      the iplist when the PDC is down will cause two sets of timeouts. */
 
-  if (*return_count && (nodupes_iplist = (struct in_addr *)
-       malloc(sizeof(struct in_addr) * (*return_count)))) {
+  if (*return_count && (nodupes_iplist = (struct ipv4_addr *)
+       malloc(sizeof(struct ipv4_addr) * (*return_count)))) {
 	  int nodupes_count = 0;
 
 	  /* Iterate over return_iplist looking for duplicates */
@@ -879,7 +880,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
   /* Save in name cache */
   for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
     DEBUG(100, ("Storing name %s of type %d (ip: %s)\n", name,
-                name_type, inet_ntoa((*return_iplist)[i])));
+                name_type, sys_inet_ntoa((*return_iplist)[i])));
     
   namecache_store(mem_ctx, name, name_type, *return_count, *return_iplist);
 
@@ -889,7 +890,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
 	     *return_count));
 
   for (i = 0; i < *return_count; i++)
-	  DEBUGADD(10, ("%s ", inet_ntoa((*return_iplist)[i])));
+	  DEBUGADD(10, ("%s ", sys_inet_ntoa((*return_iplist)[i])));
 
   DEBUG(10, ("\n"));
 
@@ -902,9 +903,9 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
  or host name or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
 *********************************************************/
-BOOL resolve_name(TALLOC_CTX *mem_ctx, const char *name, struct in_addr *return_ip, int name_type)
+BOOL resolve_name(TALLOC_CTX *mem_ctx, const char *name, struct ipv4_addr *return_ip, int name_type)
 {
-	struct in_addr *ip_list = NULL;
+	struct ipv4_addr *ip_list = NULL;
 	int count = 0;
 
 	if (is_ipaddress(name)) {
@@ -916,7 +917,7 @@ BOOL resolve_name(TALLOC_CTX *mem_ctx, const char *name, struct in_addr *return_
 		int i;
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
-			char *ip_str = inet_ntoa(ip_list[i]);
+			const char *ip_str = sys_inet_ntoa(ip_list[i]);
 			if (ip_str &&
 			    strcmp(ip_str, "255.255.255.255") != 0 &&
 			    strcmp(ip_str, "0.0.0.0") != 0) {
@@ -934,9 +935,9 @@ BOOL resolve_name(TALLOC_CTX *mem_ctx, const char *name, struct in_addr *return_
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
 
-BOOL find_master_ip(TALLOC_CTX *mem_ctx, const char *group, struct in_addr *master_ip)
+BOOL find_master_ip(TALLOC_CTX *mem_ctx, const char *group, struct ipv4_addr *master_ip)
 {
-	struct in_addr *ip_list = NULL;
+	struct ipv4_addr *ip_list = NULL;
 	int count = 0;
 
 	if (lp_disable_netbios()) {
@@ -964,7 +965,7 @@ BOOL find_master_ip(TALLOC_CTX *mem_ctx, const char *group, struct in_addr *mast
 *********************************************************/
 
 BOOL lookup_dc_name(const char *srcname, const char *domain, 
-		    struct in_addr *dc_ip, char *ret_name)
+		    struct ipv4_addr *dc_ip, char *ret_name)
 {
 #if !defined(I_HATE_WINDOWS_REPLY_CODE)	
 	fstring dc_name;
@@ -1146,7 +1147,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 
 			DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
 				 nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
-				 inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
+				 sys_inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
 
 			if(SVAL(buf2,0) != QUERYFORPDC_R) {
 				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
@@ -1175,9 +1176,9 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
  for a domain.
 *********************************************************/
 
-BOOL get_pdc_ip(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr *ip)
+BOOL get_pdc_ip(TALLOC_CTX *mem_ctx, const char *domain, struct ipv4_addr *ip)
 {
-	struct in_addr *ip_list;
+	struct ipv4_addr *ip_list;
 	int count;
 	int i = 0;
 
@@ -1217,7 +1218,7 @@ BOOL get_pdc_ip(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr *ip)
  a domain.
 *********************************************************/
 
-BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr **ip_list, int *count, int *ordered)
+BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct ipv4_addr **ip_list, int *count, int *ordered)
 {
 
 	*ordered = False;
@@ -1230,8 +1231,8 @@ BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr **ip_li
 		fstring name;
 		int num_addresses = 0;
 		int  local_count, i, j;
-		struct in_addr *return_iplist = NULL;
-		struct in_addr *auto_ip_list = NULL;
+		struct ipv4_addr *return_iplist = NULL;
+		struct ipv4_addr *auto_ip_list = NULL;
 		BOOL done_auto_lookup = False;
 		int auto_count = 0;
 		
@@ -1266,7 +1267,7 @@ BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr **ip_li
 		if ( (num_addresses == 0) && !done_auto_lookup )
 			return internal_resolve_name(mem_ctx, domain, 0x1C, ip_list, count);
 
-		return_iplist = (struct in_addr *)malloc(num_addresses * sizeof(struct in_addr));
+		return_iplist = (struct ipv4_addr *)malloc(num_addresses * sizeof(struct ipv4_addr));
 
 		if (return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
@@ -1279,7 +1280,7 @@ BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr **ip_li
 		/* fill in the return list now with real IP's */
 				
 		while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) {
-			struct in_addr name_ip;
+			struct ipv4_addr name_ip;
 			
 			/* copy any addersses from the auto lookup */
 			

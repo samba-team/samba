@@ -26,7 +26,7 @@ extern BOOL AllowDebugChange;
 static BOOL give_flags = False;
 static BOOL use_bcast = True;
 static BOOL got_bcast = False;
-static struct in_addr bcast_addr;
+static struct ipv4_addr bcast_addr;
 static BOOL recursion_desired = False;
 static BOOL translate_addresses = False;
 static int ServerFD= -1;
@@ -119,7 +119,7 @@ static char *query_flags(int flags)
 /****************************************************************************
 do a node status query
 ****************************************************************************/
-static void do_node_status(int fd, const char *name, int type, struct in_addr ip)
+static void do_node_status(int fd, const char *name, int type, struct ipv4_addr ip)
 {
 	struct nmb_name nname;
 	int count, i, j;
@@ -151,7 +151,7 @@ send out one query
 static BOOL query_one(const char *lookup, uint_t lookup_type)
 {
 	int j, count, flags = 0;
-	struct in_addr *ip_list=NULL;
+	struct ipv4_addr *ip_list=NULL;
 
 	if (got_bcast) {
 		d_printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
@@ -159,7 +159,7 @@ static BOOL query_one(const char *lookup, uint_t lookup_type)
 				     use_bcast?True:recursion_desired,
 				     bcast_addr,&count, &flags, NULL);
 	} else {
-		struct in_addr *bcast;
+		struct ipv4_addr *bcast;
 		for (j=iface_count() - 1;
 		     !ip_list && j >= 0;
 		     j--) {
@@ -299,7 +299,7 @@ int main(int argc,char *argv[])
   for (i=optind;i<argc;i++)
   {
       char *p;
-      struct in_addr ip;
+      struct ipv4_addr ip;
 
       fstrcpy(lookup,argv[i]);
 

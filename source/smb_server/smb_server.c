@@ -728,11 +728,11 @@ static void smbsrv_exit(struct server_service *service, const char *reason)
 static void add_socket(struct server_service *service, 
 		       const struct model_ops *model_ops,
 		       struct socket_context *socket_ctx, 
-		       struct in_addr *ifip)
+		       struct ipv4_addr *ifip)
 {
 	const char **ports = lp_smb_ports();
 	int i;
-	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
 
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
@@ -759,7 +759,7 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
+			struct ipv4_addr *ifip = iface_n_ip(i);
 
 			if (ifip == NULL) {
 				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
@@ -769,7 +769,7 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 			add_socket(service, model_ops, NULL, ifip);
 		}
 	} else {
-		struct in_addr ifip;
+		struct ipv4_addr ifip;
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
 		ifip = interpret_addr2(lp_socket_address());
 		add_socket(service, model_ops, NULL, &ifip);

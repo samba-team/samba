@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
+#include "system/kerberos.h"
 
 #ifdef HAVE_KRB5
 
