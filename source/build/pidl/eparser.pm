@@ -630,6 +630,10 @@ sub RewriteC($$$)
         s/(u?)int(8|16|32) _level;/$1int$2_t _level;/smg;
         s/ndr_pull_([^\(]*)\(ndr,\ tree,\ hf_level,\ &_level\);
             /ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smgx;
+
+        # Set the end of a structure
+       
+        s/(ndr_pull_struct_end.*)/$1\tproto_item_set_end(tree->proto_tree, ndr->tvb, ndr->offset);\n/smg;
 				
 	pidl $_;
     }
