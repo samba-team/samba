@@ -246,7 +246,7 @@ static void reload_interfaces(time_t t)
 /**************************************************************************** **
   reload the services file
  **************************************************************************** */
-BOOL reload_services(BOOL test)
+static BOOL reload_services(BOOL test)
 {
   BOOL ret;
   extern fstring remote_machine;
