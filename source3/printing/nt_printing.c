@@ -353,6 +353,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	fstring           user_name;
 	fstring           null_pw;
 	files_struct      *fsp = NULL;
+	BOOL              bad_path;
 	SMB_STRUCT_STAT   st;
 	struct passwd *pass;
 	connection_struct *conn;
@@ -404,6 +405,9 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	/* Open the driver file (Portable Executable format) and determine the
 	 * deriver the cversion. */
 	slprintf(driverpath, sizeof(driverpath), "%s/%s", architecture, driverpath_in);
+
+	unix_convert(driverpath,conn,NULL,&bad_path,&st);
+
 	fsp = open_file_shared(conn, driverpath, &st,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
@@ -956,7 +960,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	files_struct    *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	SMB_STRUCT_STAT stat_buf;
-	
+	BOOL bad_path;
+
 	ZERO_STRUCT(st);
 	ZERO_STRUCT(stat_buf);
 	new_create_time = (time_t)0;
@@ -964,6 +969,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 
 	/* Get file version info (if available) for previous file (if it exists) */
 	pstrcpy(filepath, old_file);
+
+	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
@@ -994,6 +1001,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
+	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
+
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),

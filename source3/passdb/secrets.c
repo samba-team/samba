@@ -120,7 +120,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 /************************************************************************
 form a key for fetching a domain trust password
 ************************************************************************/
-static char *trust_keystr(char *domain)
+char *trust_keystr(char *domain)
 {
 	static fstring keystr;
 	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
@@ -137,8 +137,8 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 	struct machine_acct_pass *pass;
 	size_t size;
 
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
-	    size != sizeof(*pass)) return False;
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) || size != sizeof(*pass))
+		return False;
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
@@ -158,4 +158,13 @@ BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16])
 	memcpy(pass.hash, new_pwd, 16);
 
 	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
+}
+
+/************************************************************************
+ Routine to delete the trust account password file for a domain.
+************************************************************************/
+
+BOOL trust_password_delete(char *domain)
+{
+	return secrets_delete(trust_keystr(domain));
 }
