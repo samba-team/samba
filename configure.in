@@ -13,7 +13,7 @@ AC_SUBST(CANONICAL_HOST)
 
 case "$host" in 
 *-*-sunos4*)
-	sunos=2
+	sunos=4
 	;;
 *-*-solaris2*)
 	sunos=5
@@ -23,7 +23,7 @@ case "$host" in
 	;;
 esac
 if test "$sunos" != no; then
-	AC_DEFINE_UNQUOTED(SunOS, "$sunos", 
+	AC_DEFINE_UNQUOTED(SunOS, $sunos, 
 		[Define to what version of SunOS you are running.])
 fi
 
@@ -74,8 +74,8 @@ if test "$with_krb4"; then
 			[Define if krb_put_int takes four arguments.])
 	fi
 fi
-AM_CONDITIONAL(KRB4, test "$with_krb4")dnl
-AM_CONDITIONAL(KRB5, true)dnl
+AM_CONDITIONAL(KRB4, test "$with_krb4")
+AM_CONDITIONAL(KRB5, true)
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
 AM_CONDITIONAL(AIX, test "`uname`" = AIX)dnl
