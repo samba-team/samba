@@ -18,6 +18,8 @@
 * Cross realm::
 * Transit policy::
 * Setting up DNS::
+* Using LDAP to store the database::
+* Using Samba LDAP password database::
 @end menu
 
 A
@@ -631,7 +633,7 @@ client kerberos library and the KDC.
 @c To test the cross realm configuration, use:
 @c    kmumble transit-check client server transit-realms ...
 
-@node Setting up DNS, , Transit policy, Setting up a realm
+@node Setting up DNS, Using LDAP to store the database, Transit policy, Setting up a realm
 @section Setting up DNS
 @cindex Setting up DNS
 
@@ -692,3 +694,19 @@ _kerberos.it		TXT     "EXAMPLE.COM"
 _kerberos.srv		TXT     "EXAMPLE.COM"
 
 @end example
+
+@node Using LDAP to store the database, Using Samba LDAP password database, Setting up DNS, Setting up a realm
+@section Using LDAP to store the database
+@cindex Using the LDAP backend
+
+See @url{http://www.padl.com/Research/Heimdal.html} for more information.
+
+@node Using Samba LDAP password database, , Using LDAP to store the database, Setting up a realm
+@section Using Samba LDAP password database
+@cindex Samba
+
+Write text here.
+
+Note that the samba domain and the realm realm can have diffrent names
+since arcfour's string to key function principal/realm independent.
+
