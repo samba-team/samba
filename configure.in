@@ -67,6 +67,7 @@ if test "$with_krb4"; then
 	fi
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4")dnl
+AM_CONDITIONAL(KRB5, true)dnl
 AC_SUBST(LIB_krb4)dnl
 AC_SUBST(INCLUDE_krb4)dnl
 AM_CONDITIONAL(AIX, test "`uname`" = AIX)dnl
@@ -214,29 +215,7 @@ fi
 AC_SUBST(MAKE_X_PROGS_BIN)dnl
 AC_SUBST(MAKE_X_PROGS_LIBEXEC)dnl
 
-save_CFLAGS="$CFLAGS"
-CFLAGS="$X_CFLAGS $CFLAGS"
-save_LIBS="$LIBS"
-dnl LIBS="$X_LIBS $X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
-LIBS="$X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
-save_LDFLAGS="$LDFLAGS"
-LDFLAGS="$LDFLAGS $X_LIBS"
-
-AC_FIND_FUNC_NO_LIBS(XauReadAuth, Xau X11)
-ac_xxx="$LIBS"
-LIBS="$LIB_XauReadAuth $LIBS"
-AC_CHECK_FUNCS(XauWriteAuth)
-if test "$ac_cv_func_XauWriteAuth" != "yes"; then
-  XauWriteAuth_c=writeauth.c
-  XauWriteAuth_o=writeauth.o
-fi
-AC_SUBST(XauWriteAuth_c)dnl
-AC_SUBST(XauWriteAuth_o)dnl
-LIBS="$ac_xxx"
-
-CFLAGS=$save_CFLAGS
-LIBS=$save_LIBS
-LDFLAGS=$save_LDFLAGS
+AC_CHECK_XAU
 
 dnl AM_C_PROTOTYPES
 
