@@ -51,11 +51,11 @@ krb5_mk_safe(krb5_context context,
   KRB_SAFE s;
   int32_t sec, usec;
   KerberosTime sec2;
-  unsigned usec2;
+  int usec2;
   u_char *buf = NULL;
   size_t buf_size;
   size_t len;
-  unsigned tmp_seq;
+  int tmp_seq;
   krb5_crypto crypto;
 
   s.pvno = 5;
@@ -64,9 +64,9 @@ krb5_mk_safe(krb5_context context,
   s.safe_body.user_data = *userdata;
   krb5_us_timeofday (context, &sec, &usec);
 
-  sec2 = sec;
+  sec2                   = sec;
   s.safe_body.timestamp  = &sec2;
-  usec2 = usec2;
+  usec2                  = usec2;
   s.safe_body.usec       = &usec2;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
       tmp_seq = ++auth_context->local_seqnumber;

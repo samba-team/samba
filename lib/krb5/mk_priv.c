@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,11 +57,11 @@ krb5_mk_priv(krb5_context context,
   u_char *buf;
   size_t buf_size;
   size_t len;
-  unsigned tmp_seq;
+  int tmp_seq;
   krb5_keyblock *key;
   int32_t sec, usec;
   KerberosTime sec2;
-  unsigned usec2;
+  int usec2;
   krb5_crypto crypto;
 
   /* XXX - Is this right? */
@@ -76,10 +76,10 @@ krb5_mk_priv(krb5_context context,
   krb5_us_timeofday (context, &sec, &usec);
 
   part.user_data = *userdata;
-  sec2 = sec;
-  part.timestamp  = &sec2;
-  usec2 = usec;
-  part.usec       = &usec2;
+  sec2           = sec;
+  part.timestamp = &sec2;
+  usec2          = usec;
+  part.usec      = &usec2;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     tmp_seq = ++auth_context->local_seqnumber;
     part.seq_number = &tmp_seq;
