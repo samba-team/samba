@@ -19,7 +19,7 @@ add_dynamic_entries()
   # Check if make_smbcodepage exists
   if [ ! -f $DISTR_BASE/source/bin/make_smbcodepage ]; then
     echo "Could not find $DISTR_BASE/source/bin/make_smbcodepage to generate codepages.\n\
-     Please create the binaries before packaging." >&2
+Please create the binaries before packaging." >&2
     exit 1
   fi
 
@@ -115,7 +115,7 @@ then
 	# Try to guess the distribution base..
 	CURR_DIR=`pwd`
 	DISTR_BASE=`echo $CURR_DIR | sed 's|\(.*\)/packaging.*|\1|'`
-	echo "Assuming Samba distribution is rooted at $DISTR_BASE.."
+	echo "Assuming Samba build tree rooted at $DISTR_BASE.."
 else
 	DISTR_BASE=$1
 fi
@@ -142,6 +142,8 @@ cp static_prototype prototype
 
 # Add the dynamic part to the prototype file
 (add_dynamic_entries >> prototype)
+
+[ $? != 0 ] && exit 1
 
 # Create the package
 pkgmk -o -d /tmp -b $DISTR_BASE -f prototype
