@@ -1697,12 +1697,16 @@ static WERROR nt_value_by_index(REG_KEY *k, int n, REG_VAL **value)
 {
 	VL_TYPE *vl;
 	int val_off, vk_off;
+	int val_count;
 	VK_HDR *vk_hdr;
 	REGF *regf = k->handle->backend_data;
 	NK_HDR *nk_hdr = k->backend_data;
+	val_count = IVAL(&nk_hdr->val_cnt,0);
 	val_off = IVAL(&nk_hdr->val_off,0);
 	vl = (VL_TYPE *)LOCN(regf->base, val_off);
 	DEBUG(2, ("Val List Offset: %0X\n", val_off));
+	if(n < 0) return WERR_INVALID_PARAM;
+	if(n >= val_count) return WERR_NO_MORE_ITEMS;
 
 	vk_off = IVAL(&vl[n],0);
 	vk_hdr = (VK_HDR *)LOCN(regf->base, vk_off);
