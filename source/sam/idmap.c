@@ -145,31 +145,20 @@ BOOL idmap_init(const char *remote_backend)
 
 /**************************************************************************
  This is a rare operation, designed to allow an explicit mapping to be
- set up for a sid to a POSIX id. Usually called to set up mappings for groups.
+ set up for a sid to a POSIX id.
 **************************************************************************/
 
 NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
-	NTSTATUS ret;
+	struct idmap_methods *map = remote_map;
 
-	ret = cache_map->set_mapping(sid, id, id_type);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG (0, ("idmap_set_mapping: Error, unable to modify local cache!\n"));
-		DEBUGADD(0, ("Error: %s", nt_errstr(ret)));
-		return ret;
+	if (map == NULL) {
+		/* Ok, we don't have a authoritative remote
+			mapping. So update our local cache only. */
+		map = cache_map;
 	}
 
-	/* Being able to update the remote cache is seldomly right.
-	   Generally this is a forbidden operation. */
-	if (!(id_type & ID_CACHE_SAVE) && (remote_map != NULL)) {
-		ret = remote_map->set_mapping(sid, id, id_type);
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG (0, ("idmap_set_mapping: Error, unable to modify remote cache!\n"));
-			DEBUGADD(0, ("Error: %s", nt_errstr(ret)));
-		}
-	}
-
-	return ret;
+	return map->set_mapping(sid, id, id_type);
 }
 
 /**************************************************************************
@@ -182,25 +171,32 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 	int loc_type;
 
 	loc_type = *id_type;
+
 	if (remote_map) {
-		/* We have a central remote idmap so only look in cache not set. */
+		/* We have a central remote idmap so only look in
+                   cache, don't allocate */
 		loc_type |= ID_QUERY_ONLY;
 	}
+
 	ret = cache_map->get_id_from_sid(id, &loc_type, sid);
-	if (!NT_STATUS_IS_OK(ret)) {
-		if (remote_map) {
-			ret = remote_map->get_id_from_sid(id, id_type, sid);
-			if (!NT_STATUS_IS_OK(ret)) {
-				DEBUG(3, ("idmap_get_id_from_sid: error fetching id!\n"));
-				return ret;
-			} else {
-				/* The remote backend gave us a valid mapping, cache it. */
-				loc_type |= ID_CACHE_SAVE;
-				idmap_set_mapping(sid, *id, loc_type);
-			}
-		}
-	} else {
+
+	if (NT_STATUS_IS_OK(ret)) {
 		*id_type = loc_type & ID_TYPEMASK;
+		return NT_STATUS_OK;
+	}
+
+	if (remote_map == NULL) {
+		return ret;
+	}
+
+	/* Ok, the mapping was not in the cache, give the remote map a
+           second try. */
+
+	ret = remote_map->get_id_from_sid(id, id_type, sid);
+	
+	if (NT_STATUS_IS_OK(ret)) {
+		/* The remote backend gave us a valid mapping, cache it. */
+		ret = cache_map->set_mapping(sid, *id, *id_type);
 	}
 
 	return ret;
@@ -219,19 +215,22 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	if (remote_map) {
 		loc_type = id_type | ID_QUERY_ONLY;
 	}
+
 	ret = cache_map->get_sid_from_id(sid, id, loc_type);
-	if (!NT_STATUS_IS_OK(ret)) {
-		if (remote_map) {
-			ret = remote_map->get_sid_from_id(sid, id, id_type);
-			if (!NT_STATUS_IS_OK(ret)) {
-				DEBUG(3, ("idmap_get_sid_from_id: unable to fetch sid!\n"));
-				return ret;
-			} else {
-				/* The remote backend gave us a valid mapping, cache it. */
-				loc_type |= ID_CACHE_SAVE;
-				ret = cache_map->set_mapping(sid, id, loc_type);
-			}
-		}
+
+	if (NT_STATUS_IS_OK(ret))
+		return ret;
+
+	if (remote_map == NULL)
+		return ret;
+
+	/* We have a second chance, ask our authoritative backend */
+
+	ret = remote_map->get_sid_from_id(sid, id, id_type);
+
+	if (NT_STATUS_IS_OK(ret)) {
+		/* The remote backend gave us a valid mapping, cache it. */
+		ret = cache_map->set_mapping(sid, id, id_type);
 	}
 
 	return ret;
@@ -249,12 +248,14 @@ NTSTATUS idmap_close(void)
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("idmap_close: failed to close local tdb cache!\n"));
 	}
+	cache_map = NULL;
 
 	if (remote_map) {
 		ret = remote_map->close();
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(3, ("idmap_close: failed to close remote idmap repository!\n"));
 		}
+		remote_map = NULL;
 	}
 
 	return ret;
