@@ -1,4 +1,37 @@
+2004-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: move out the oid check from get_reply_key
+
+	* lib/krb5/pkinit.c: uniquify error messages
+	
+	* lib/krb5/init_creds_pw.c: make the pkinit nonce same os the
+	plain nonce for now
+
+	* lib/krb5/pkinit.c: more w2k compat from Luke Howard
+	<lukeh@padl.com> add RC2 support, clean up error messages
+	
+	* lib/krb5/pkinit.c: remove more dependency on
+	krb5_config->pkinit_flags
+
+	* lib/krb5/pkinit.c (_krb5_pk_convert_rep): convert microsoft
+	style answer to IETF, From Luke Howard <lukeh@padl.com>
+	(_krb5_pk_create_sign): ms handles NULL in param, so always send it
+	(_krb5_pk_mk_padata): look for [realms]REALM = { win2k_pkinit = bool }
+
+	* lib/krb5/pkinit.c (_krb5_pk_create_sign): always set the
+	digestAlgorithm to sha1 (both for SignerInfo and SignedData, add
+	new function _set_digest_alg to set it
+
 2004-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include/make_crypto.c: include rc2.h, and when I'm here, make
+	aes mandatory
+
+	* lib/krb5/krb5.h: add ENCTYPE_ARCFOUR_HMAC as compat glue for MIT
+	kerberos
+
+	* lib/krb5/crypto.c (krb5_crypto_init): clear return pointer on
+	failure
 
 	* lib/krb5/crypto.c (DES3_random_to_key): make it produce the
 	right result
