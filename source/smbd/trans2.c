@@ -1928,7 +1928,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       }
 
       if (ret == -1)
-        return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return allocate_space_error(inbuf, outbuf, errno);
 
       sbuf.st_size = size;
       break;

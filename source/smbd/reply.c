@@ -2442,8 +2442,32 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
 }
 
 /****************************************************************************
-  reply to a write
+ Return correct error for space allocation fail.
 ****************************************************************************/
+
+int allocate_space_error(char *inbuf,char *outbuf, int errno_val)
+{
+	errno = errno_val;
+	if (!(global_client_caps & CAP_STATUS32))
+		return (UNIXERROR(ERRHRD,ERRdiskfull));
+
+	/* Use more specific WNT/W2K error codes. */
+#ifdef EDQUOT
+	if (errno_val == ENOSPC || errno_val == EDQUOT) {
+#else
+	if (errno_val == ENOSPC) {
+#endif
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0,errno == ENOSPC ? NT_STATUS_DISK_FULL : NT_STATUS_QUOTA_EXCEEDED));
+	}
+
+	return (UNIXERROR(ERRHRD,ERRdiskfull));
+}
+
+/****************************************************************************
+ Reply to a write.
+****************************************************************************/
+
 int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize)
 {
   size_t numtowrite;
@@ -2479,6 +2503,11 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   if(numtowrite == 0) {
       /* This is actually an allocate call, not set EOF. JRA */
       nwritten = vfs_allocate_file_space(fsp, (SMB_OFF_T)startpos);
+      if (nwritten < 0) {
+        int ret = allocate_space_error(inbuf, outbuf, errno);
+        END_PROFILE(SMBwrite);
+		return ret;
+      }
   } else
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
