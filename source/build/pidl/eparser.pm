@@ -423,9 +423,9 @@ sub ParseStructPull($)
 
 	pidl "\tguint32 _offset, _length;\n";
 
-	for my $x (@{$struct->{ELEMENTS}}) {
-	    if (util::is_builtin_type($x->{TYPE})) {
-		pidl "\tg$x->{TYPE} elt_$x->{NAME};\n";
+	for my $e (@{$struct->{ELEMENTS}}) {
+	    if (util::is_builtin_type($e->{TYPE})) {
+		pidl "\tg$e->{TYPE} elt_$e->{NAME};\n";
 	    }
 	}
 
@@ -574,12 +574,12 @@ sub ParseEnumPull($)
 	my $name;
 	my $ndx = 0;
 
-	for my $x (@{$e->{ELEMENTS}}) {
-	    if ($x =~ /([a-zA-Z_]+)=([0-9]+)/) {
+	for my $e (@{$e->{ELEMENTS}}) {
+	    if ($e =~ /([a-zA-Z_]+)=([0-9]+)/) {
 		$name = $1;
 		$ndx = $2;
 	    } else {
-		$name = $x;
+		$name = $e;
 	    }
 	    pidl "#define $name $ndx\n";
 	    $ndx++;
