@@ -3099,8 +3099,7 @@ int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring d
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
-			      unix_mode(conn,aDIR,directory));
+    ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
   
   if (ret < 0)
   {

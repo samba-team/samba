@@ -186,7 +186,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
        * the write cache.
        */
 
-      if ((fsp->oplock_type == EXCLUSIVE_OPLOCK) && !wcp) {
+      if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !wcp) {
         setup_write_cache(fsp, st.st_size);
         wcp = fsp->wcp;
       } 
@@ -569,6 +569,9 @@ void delete_write_cache(files_struct *fsp)
   free(wcp);
 
   fsp->wcp = NULL;
+
+  DEBUG(10,("delete_write_cache: File %s deleted write cache\n", fsp->fsp_name ));
+
 }
 
 /****************************************************************************
@@ -603,6 +606,9 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 
   fsp->wcp = wcp;
   allocated_write_caches++;
+
+  DEBUG(10,("setup_write_cache: File %s allocated write cache size %u\n",
+		fsp->fsp_name, wcp->alloc_size ));
 
   return True;
 }

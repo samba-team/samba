@@ -3339,7 +3339,6 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 /*The following definitions come from  smbd/close.c  */
 
 #if OLD_NTDOMAIN
-void close_filestruct(files_struct *fsp);
 int close_file(files_struct *fsp, BOOL normal_close);
 #endif
 
@@ -3839,6 +3838,7 @@ int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
+int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 int vfs_unlink(connection_struct *conn, char *fname);
 int vfs_chmod(connection_struct *conn, char *fname,mode_t mode);
 int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid);
