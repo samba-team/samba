@@ -1957,7 +1957,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
 		if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd)) {
 			become_root();
-			if (change_lanman_password(hnd,pass2)) {
+			if (change_lanman_password(hnd,(uchar *)pass2)) {
 				SSVAL(*rparam,0,NERR_Success);
 			}
 			unbecome_root();

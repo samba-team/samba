@@ -91,8 +91,8 @@ static void calc_ntlmv2_hash(unsigned char hash[16], char digest[16],
 
 	MD5Init(&ctx3);
 	MD5Update(&ctx3, session_key.data, session_key.length);
-	MD5Update(&ctx3, constant, strlen(constant));
-	MD5Final(digest, &ctx3);
+	MD5Update(&ctx3, (const unsigned char *)constant, strlen(constant));
+	MD5Final((unsigned char *)digest, &ctx3);
 
 	calc_hash(hash, digest, 16);
 }
@@ -113,8 +113,8 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 		uchar digest[16];
 		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
-		hmac_md5_init_limK_to_64(ntlmssp_state->cli_sign_const, 16, &ctx);
-		hmac_md5_update(seq_num, 4, &ctx);
+		hmac_md5_init_limK_to_64((const unsigned char *)(ntlmssp_state->cli_sign_const), 16, &ctx);
+		hmac_md5_update((const unsigned char *)seq_num, 4, &ctx);
 		hmac_md5_update(data, length, &ctx);
 		hmac_md5_final(digest, &ctx);
 
@@ -132,7 +132,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 		}
 	} else {
 		uint32 crc;
-		crc = crc32_calc_buffer(data, length);
+		crc = crc32_calc_buffer((const char *)data, length);
 		if (!msrpc_gen(sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmssp_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -183,10 +183,10 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 	
 	if (memcmp(sig->data+sig->length - 8, local_sig.data+local_sig.length - 8, 8) != 0) {
 		DEBUG(5, ("BAD SIG: wanted signature of\n"));
-		dump_data(5, local_sig.data, local_sig.length);
+		dump_data(5, (const char *)local_sig.data, local_sig.length);
 		
 		DEBUG(5, ("BAD SIG: got signature of\n"));
-		dump_data(5, sig->data, sig->length);
+		dump_data(5, (const char *)(sig->data), sig->length);
 
 		DEBUG(0, ("NTLMSSP packet check failed due to invalid signature!\n"));
 		return NT_STATUS_ACCESS_DENIED;
@@ -216,8 +216,8 @@ NTSTATUS ntlmssp_client_seal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 		uchar digest[16];
 		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
-		hmac_md5_init_limK_to_64(ntlmssp_state->cli_sign_const, 16, &ctx);
-		hmac_md5_update(seq_num, 4, &ctx);
+		hmac_md5_init_limK_to_64((const unsigned char *)(ntlmssp_state->cli_sign_const), 16, &ctx);
+		hmac_md5_update((const unsigned char *)seq_num, 4, &ctx);
 		hmac_md5_update(data, length, &ctx);
 		hmac_md5_final(digest, &ctx);
 
@@ -236,7 +236,7 @@ NTSTATUS ntlmssp_client_seal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 		NTLMSSPcalc_ap(ntlmssp_state->cli_sign_hash,  sig->data+4, sig->length-4);
 	} else {
 		uint32 crc;
-		crc = crc32_calc_buffer(data, length);
+		crc = crc32_calc_buffer((const char *)data, length);
 		if (!msrpc_gen(sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmssp_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -335,7 +335,7 @@ NTSTATUS ntlmssp_client_sign_init(NTLMSSP_CLIENT_STATE *ntlmssp_state)
 		
 		DEBUG(5, ("NTLMSSP Sign/Seal - using LM KEY\n"));
 
-		calc_hash(ntlmssp_state->ntlmssp_hash, ntlmssp_state->session_key.data, 8);
+		calc_hash(ntlmssp_state->ntlmssp_hash, (const char *)(ntlmssp_state->session_key.data), 8);
 		dump_data_pw("NTLMSSP hash:\n", ntlmssp_state->ntlmssp_hash,
 			     sizeof(ntlmssp_state->ntlmssp_hash));
 	} else {
@@ -347,7 +347,7 @@ NTSTATUS ntlmssp_client_sign_init(NTLMSSP_CLIENT_STATE *ntlmssp_state)
 		
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NT KEY\n"));
 
-		calc_hash(ntlmssp_state->ntlmssp_hash, ntlmssp_state->session_key.data, 16);
+		calc_hash(ntlmssp_state->ntlmssp_hash, (const char *)(ntlmssp_state->session_key.data), 16);
 		dump_data_pw("NTLMSSP hash:\n", ntlmssp_state->ntlmssp_hash,
 			     sizeof(ntlmssp_state->ntlmssp_hash));
 	}

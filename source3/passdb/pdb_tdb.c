@@ -133,7 +133,7 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	}
   
   	/* unpack the buffer */
-	if (!init_sam_from_buffer(user, data.dptr, data.dsize)) {
+	if (!init_sam_from_buffer(user, (unsigned char *)data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
 		return nt_status;
@@ -213,7 +213,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT 
 	}
   
   	/* unpack the buffer */
-	if (!init_sam_from_buffer(user, data.dptr, data.dsize)) {
+	if (!init_sam_from_buffer(user, (unsigned char *)data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
 		tdb_close(pwd_tdb);
@@ -390,7 +390,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 		ret = False;
 		goto done;
 	}
-	data.dptr = buf;
+	data.dptr = (char *)buf;
 
 	fstrcpy(name, pdb_get_username(newpwd));
 	strlower_m(name);

@@ -76,7 +76,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	int rdrcnt,rprcnt;
+	unsigned int rdrcnt,rprcnt;
 	pstring param;
 
 	memset(param, 0, sizeof(param));
@@ -137,7 +137,7 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	int rdrcnt,rprcnt;
+	unsigned int rdrcnt,rprcnt;
 	pstring param;
 	int count = -1;
 
@@ -211,7 +211,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
-	int rdrcnt,rprcnt;
+	unsigned int rdrcnt,rprcnt;
 	char *p;
 	pstring param;
 	int uLevel = 1;
@@ -256,7 +256,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				const char *cmnt = comment_offset?(rdata+comment_offset):"";
 				pstring s1, s2;
 
-				if (comment_offset < 0 || comment_offset > rdrcnt) continue;
+				if (comment_offset < 0 || comment_offset > (int)rdrcnt) continue;
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
@@ -290,7 +290,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   unsigned int param_len = 0;
   char *rparam = NULL;
   char *rdata = NULL;
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   pstring dos_new_password;
 
   if (strlen(user) >= sizeof(fstring)-1) {

@@ -146,7 +146,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 				 &cliname,
 				 &domname)) {
 			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
-			dump_data(2, request.data, request.length);
+			dump_data(2, (const char *)request.data, request.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
@@ -282,7 +282,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &sess_key,
 			 &neg_flags)) {
 		DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
-		dump_data(2, request.data, request.length);
+		dump_data(2, (const char *)request.data, request.length);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -476,7 +476,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			 &server_domain_blob,
 			 &chal_flags)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#1)\n"));
-		dump_data(2, reply.data, reply.length);
+		dump_data(2, (const char *)reply.data, reply.length);
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -538,7 +538,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			 &unkn1, &unkn2,
 			 &struct_blob)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#2)\n"));
-		dump_data(2, reply.data, reply.length);
+		dump_data(2, (const char *)reply.data, reply.length);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

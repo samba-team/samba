@@ -1993,6 +1993,7 @@ to_hour (int hours, int meridian)
       abort ();
     }
   /* NOTREACHED */
+    return 0;
 }
 
 static int

@@ -153,7 +153,8 @@ int cli_NetGroupDelete(struct cli_state *cli, const char *group_name )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt, res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                    /* api number    */
 	    +sizeof(RAP_NetGroupDel_REQ) /* parm string   */
 	    +1                           /* no ret string */
@@ -204,7 +205,8 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt,res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                    /* api number    */
 	    +sizeof(RAP_NetGroupAdd_REQ) /* req string    */
 	    +sizeof(RAP_GROUP_INFO_L1)   /* return string */
@@ -272,7 +274,7 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
   
@@ -332,7 +334,8 @@ int cli_NetGroupDelUser(struct cli_state * cli, const char *group_name, const ch
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt,res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                        /* api number    */
 	    +sizeof(RAP_NetGroupDelUser_REQ) /* parm string   */
 	    +1                               /* no ret string */
@@ -390,7 +393,8 @@ int cli_NetGroupAddUser(struct cli_state * cli, const char *group_name, const ch
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt,res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                        /* api number    */
 	    +sizeof(RAP_NetGroupAddUser_REQ) /* parm string   */
 	    +1                               /* no ret string */
@@ -446,7 +450,7 @@ int cli_NetGroupGetUsers(struct cli_state * cli, const char *group_name, void (*
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   int res = -1;
   char param[WORDSIZE                        /* api number    */
 	    +sizeof(RAP_NetGroupGetUsers_REQ)/* parm string   */
@@ -501,7 +505,7 @@ int cli_NetUserGetGroups(struct cli_state * cli, const char *user_name, void (*f
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   int res = -1;
   char param[WORDSIZE                        /* api number    */
 	    +sizeof(RAP_NetUserGetGroups_REQ)/* parm string   */
@@ -560,7 +564,8 @@ int cli_NetUserDelete(struct cli_state *cli, const char * user_name )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt, res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                    /* api number    */
 	    +sizeof(RAP_NetGroupDel_REQ) /* parm string   */
 	    +1                           /* no ret string */
@@ -614,7 +619,8 @@ int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;                                          
-  int rdrcnt,rprcnt,res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                    /* api number    */
 	    +sizeof(RAP_NetUserAdd2_REQ) /* req string    */
 	    +sizeof(RAP_USER_INFO_L1)    /* data string   */
@@ -702,7 +708,7 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
 
@@ -770,7 +776,7 @@ int cli_NetFileClose(struct cli_state *cli, uint32 file_id )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char param[WORDSIZE                    /* api number    */
 	    +sizeof(RAP_WFileClose2_REQ) /* req string    */
 	    +1                           /* no ret string */
@@ -816,7 +822,8 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const c
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt, res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                      /* api number      */
 	    +sizeof(RAP_WFileGetInfo2_REQ) /* req string      */
 	    +sizeof(RAP_FILE_INFO_L3)      /* return string   */
@@ -893,7 +900,7 @@ int cli_NetFileEnum(struct cli_state *cli, char * user, char * base_path, void (
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char param[WORDSIZE                   /* api number      */
 	    +sizeof(RAP_WFileEnum2_REQ) /* req string      */
 	    +sizeof(RAP_FILE_INFO_L3)   /* return string   */
@@ -965,7 +972,8 @@ int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt,res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                  /* api number    */
 	    +sizeof(RAP_WShareAdd_REQ) /* req string    */
 	    +sizeof(RAP_SHARE_INFO_L2) /* return string */
@@ -1035,7 +1043,8 @@ int cli_NetShareDelete(struct cli_state *cli, const char * share_name )
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt, res;
+  unsigned int rdrcnt,rprcnt;
+  int res;
   char param[WORDSIZE                  /* api number    */
 	    +sizeof(RAP_WShareDel_REQ) /* req string    */
 	    +1                         /* no ret string */
@@ -1097,7 +1106,7 @@ BOOL cli_get_pdc_name(struct cli_state *cli, char *workgroup, char *pdc_name)
 {
   char *rparam = NULL;
   char *rdata = NULL;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char *p;
   char param[WORDSIZE                       /* api number    */
 	    +sizeof(RAP_NetServerEnum2_REQ) /* req string    */
@@ -1177,7 +1186,7 @@ BOOL cli_get_server_domain(struct cli_state *cli)
 {
   char *rparam = NULL;
   char *rdata = NULL;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char *p;
   char param[WORDSIZE                      /* api number    */
 	    +sizeof(RAP_WWkstaGetInfo_REQ) /* req string    */
@@ -1242,7 +1251,7 @@ BOOL cli_get_server_type(struct cli_state *cli, uint32 *pstype)
 {
   char *rparam = NULL;
   char *rdata = NULL;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char *p;
   char param[WORDSIZE                       /* api number    */
 	    +sizeof(RAP_WserverGetInfo_REQ) /* req string    */
@@ -1309,7 +1318,7 @@ BOOL cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
 {
   char *rparam = NULL;
   char *rdata = NULL;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char *p;
   char param[WORDSIZE                       /* api number    */
 	    +sizeof(RAP_NetServerEnum2_REQ) /* req string    */
@@ -1378,7 +1387,7 @@ BOOL cli_NetWkstaUserLogoff(struct cli_state *cli,char *user, char *workstation)
   char *rparam = NULL;
   char *rdata = NULL;
   char *p;
-  int rdrcnt,rprcnt;
+  unsigned int rdrcnt,rprcnt;
   char param[WORDSIZE                           /* api number    */
 	    +sizeof(RAP_NetWkstaUserLogoff_REQ) /* req string    */
 	    +sizeof(RAP_USER_LOGOFF_INFO_L1)    /* return string */
@@ -1436,7 +1445,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
 
@@ -1540,7 +1549,7 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
 
@@ -1639,7 +1648,7 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
   
@@ -1708,7 +1717,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
   memset(param, '\0', sizeof(param));
@@ -1784,7 +1793,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
   
 
@@ -1858,7 +1867,7 @@ int cli_NetSessionDel(struct cli_state *cli, const char *workstation)
   char *p;
   char *rparam = NULL;
   char *rdata = NULL;
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res;
 
   memset(param, '\0', sizeof(param));
@@ -1903,7 +1912,7 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier, void (*f
   char *p;
   char *rparam = NULL;
   char *rdata = NULL; 
-  int rprcnt, rdrcnt;
+  unsigned int rprcnt, rdrcnt;
   int res = -1;
 
   memset(param, '\0', sizeof(param));
