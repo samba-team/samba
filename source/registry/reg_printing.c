@@ -153,13 +153,13 @@ done:
  Caller is responsible for freeing memory to **subkey
  *********************************************************************/
  
-BOOL printing_subkey_specific( char *key, char** subkey, uint32 index )
+BOOL printing_subkey_specific( char *key, char** subkey, uint32 indx )
 {
 	char 		*path;
 	BOOL		top_level = False;
 	BOOL		result = False;
 	
-	DEBUG(10,("printing_subkey_specific: key=>[%s], index=>[%d]\n", key, index));
+	DEBUG(10,("printing_subkey_specific: key=>[%s], index=>[%d]\n", key, indx));
 	
 	path = trim_reg_path( key );
 	
@@ -174,18 +174,18 @@ BOOL printing_subkey_specific( char *key, char** subkey, uint32 index )
 	
 		/* make sure the index is in range */
 		
-		if ( !(index < MAX_TOP_LEVEL_KEYS) )
+		if ( !(indx < MAX_TOP_LEVEL_KEYS) )
 			goto done;
 
-		if ( !(*subkey = malloc( strlen(top_level_keys[index])+1 )) )
+		if ( !(*subkey = malloc( strlen(top_level_keys[indx])+1 )) )
 			goto done;
 			
-		strncpy( *subkey, top_level_keys[index], strlen(top_level_keys[index])+1 );
+		strncpy( *subkey, top_level_keys[indx], strlen(top_level_keys[indx])+1 );
 		
 		result = True;
 	}
 	else {
-		if ( handle_printing_subpath( path, subkey, index ) != -1 )
+		if ( handle_printing_subpath( path, subkey, indx ) != -1 )
 			result = True;
 	}
 	
