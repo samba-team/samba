@@ -4,7 +4,7 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_get_krbhst (krb5_context context,
-		 const krb5_data *realm,
+		 const krb5_realm *realm,
 		 char ***hostlist)
 {
      krb5_error_code err;
@@ -13,7 +13,11 @@ krb5_get_krbhst (krb5_context context,
 
      memset(buf, 0, sizeof(buf));
      strcpy(buf, "realms ");
+#ifdef USE_ASN1_PRINCIPAL
+     strcat(buf, *realm);
+#else
      strncat(buf, (char*)realm->data, realm->length);
+#endif
      strcat(buf, " kdc");
 
      err = krb5_get_config_tag (context->cf, buf, &val);
