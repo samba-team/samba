@@ -54,6 +54,10 @@ int main(int argc, char **argv)
     fprintf(f, "#ifndef __BITS_H__\n");
     fprintf(f, "#define __BITS_H__\n");
     fprintf(f, "\n");
+    fprintf(f, "/* For compatibility with various type definitions */\n");
+    fprintf(f, "#ifndef __BIT_TYPES_DEFINED__\n");
+    fprintf(f, "#define __BIT_TYPES_DEFINED__\n");
+    fprintf(f, "\n");
     for(i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++){
 	len = sizes[i];
 	BITSIZE(char);
@@ -79,6 +83,8 @@ int main(int argc, char **argv)
 	fprintf(f, "/* There is no %d bit type */\n", len);
 	break;
     }
+    fprintf(f, "\n");
+    fprintf(f, "#endif /* __BIT_TYPES_DEFINED__ */\n");
     fprintf(f, "\n");
     fprintf(f, "#endif /* __BITS_H__ */\n");
     return 0;
