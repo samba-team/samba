@@ -3552,14 +3552,14 @@ static void dump_a_service(service * pService, FILE * f)
 					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
 		}
+	}
 
-		if (pService->param_opt != NULL) {
-			data = pService->param_opt;
-			while(data) {
-				fprintf(f, "\t%s = %s\n", data->key, data->value);
-				data = data->next;
-			}
-        	}
+	if (pService->param_opt != NULL) {
+		data = pService->param_opt;
+		while(data) {
+			fprintf(f, "\t%s = %s\n", data->key, data->value);
+			data = data->next;
+		}
 	}
 }
 
