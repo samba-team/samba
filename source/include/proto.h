@@ -283,7 +283,6 @@ BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
-int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
@@ -304,7 +303,7 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 /*The following definitions come from  libsmb/clilist.c  */
 
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *));
+	     void (*fn)(file_info *, const char *, void *state), void *state);
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *));
 
@@ -423,9 +422,8 @@ BOOL deal_with_creds(uchar sess_key[8],
 
 /*The following definitions come from  libsmb/namequery.c  */
 
-struct node_status *name_status_query(int fd,struct nmb_name *name,
-				      struct in_addr to_ip, int *num_names);
-BOOL name_status_find(int type, struct in_addr to_ip, char *name);
+BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
+		 struct in_addr to_ip,char *master,char *rname);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
@@ -440,7 +438,7 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
                                 struct in_addr *ip);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
 BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name);
-BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count);
+BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count);
 
 /*The following definitions come from  libsmb/nmblib.c  */
 
@@ -549,24 +547,22 @@ int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
 SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_free( void *obj_p);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
-int sys_acl_free_text(char *text);
-int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
 SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_free( void *obj_p);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
-int sys_acl_free_text(char *text);
-int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 
 /*The following definitions come from  lib/system.c  */
 
@@ -764,7 +760,6 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
 
 /*The following definitions come from  lib/util_seaccess.c  */
 
-void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status);
 
@@ -1865,7 +1860,6 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
-void map_printer_permissions(SEC_DESC *sd);
 BOOL print_access_check(struct current_user *user, int snum, int access_type);
 BOOL print_time_access_check(int snum);
 #endif
