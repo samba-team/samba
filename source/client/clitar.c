@@ -98,6 +98,8 @@ BOOL tar_re_search=False;
 #ifdef HAVE_REGEX_H
 regex_t *preg;
 #endif
+/* Do not dump anything, just calculate sizes */
+BOOL dry_run=False;
 /* Dump files with System attribute */
 BOOL tar_system=True;
 /* Dump files with Hidden attribute */
@@ -374,6 +376,9 @@ static int dotarbuf(int f, char *b, int n)
 {
   int fail=1, writ=n;
 
+  if (dry_run) {
+    return writ;
+  }
   /* This routine and the next one should be the only ones that do write()s */
   if (tp + n >= tbufsiz)
     {
@@ -410,6 +415,9 @@ static void dozerobuf(int f, int n)
    * used to round files to nearest block
    * and to do tar EOFs */
 
+  if (dry_run)
+    return;
+  
   if (n+tp >= tbufsiz)
     {
       memset(tarbuf+tp, 0, tbufsiz-tp);
@@ -444,6 +452,9 @@ static void dotareof(int f)
 {
   SMB_STRUCT_STAT stbuf;
   /* Two zero blocks at end of file, write out full buffer */
+
+  if (dry_run)
+    return;
 
   (void) dozerobuf(f, TBLOCK);
   (void) dozerobuf(f, TBLOCK);
@@ -1034,7 +1045,17 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.ctime = def_finfo.ctime;
   }
 
-
+  if (dry_run)
+    {
+      DEBUG(3,("skipping file %s of size %d bytes\n",
+	       finfo.name,
+	       finfo.size));
+      shallitime=0;
+      ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
+      ntarf++;
+      return;
+    }
+    
   inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 
@@ -1403,7 +1424,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       int this_time;
 
       /* if shallitime is true then we didn't skip */
-      if (tar_reset) (void) do_setrattr(finfo.name, aARCH, ATTRRESET);
+      if (tar_reset && !dry_run)
+	(void) do_setrattr(finfo.name, aARCH, ATTRRESET);
       
       GetTimeOfDay(&tp_end);
       this_time = 
@@ -2381,7 +2403,7 @@ void cmd_tar(char *inbuf, char *outbuf)
 
   if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
-      DEBUG(0,("tar <c|x>[IXbga] <filename>\n"));
+      DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
       return;
     }
 
@@ -2618,6 +2640,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
    */
   tar_type='\0';
   tar_excl=True;
+  dry_run=False;
 
   while (*Optarg) 
     switch(*Optarg++) {
@@ -2688,6 +2711,15 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     case 'r':
       DEBUG(0, ("tar_re_search set\n"));
       tar_re_search = True;
+      break;
+    case 'n':
+      if (tar_type == 'c') {
+	DEBUG(0, ("dry_run set\n"));
+	dry_run = True;
+      } else {
+	DEBUG(0, ("n is only meaningful when creating a tar-file\n"));
+	return 0;
+      }
       break;
     default:
       DEBUG(0,("Unknown tar option\n"));
@@ -2779,6 +2811,14 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     /* Sets tar handle to either 0 or 1, as appropriate */
     tarhandle=(tar_type=='c');
   } else {
+    if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
+      {
+	if (!dry_run) {
+	  DEBUG(0,("Output is /dev/null, assuming dry_run"));
+	  dry_run = True;
+	}
+	tarhandle=-1;
+      } else
     if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY)) == -1)
 	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
       {
