@@ -560,6 +560,11 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	DATA_BLOB stub;
 	uint32 total_length;
 
+
+	if (!call->conn->iface) {
+		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
+	}
+
 	opnum = call->pkt.u.request.opnum;
 
 	if (opnum >= call->conn->iface->ndr->num_calls) {
