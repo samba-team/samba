@@ -147,6 +147,92 @@ char *validated_username(uint16 vuid)
   return(vuser->name);
 }
 
+
+/****************************************************************************
+Setup the groups a user belongs to.
+****************************************************************************/
+int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
+		 int **p_igroups, gid_t **p_groups,
+         int **p_attrs)
+{
+  if (-1 == initgroups(user,gid))
+    {
+      if (getuid() == 0)
+	{
+	  DEBUG(0,("Unable to initgroups!\n"));
+	  if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
+	    DEBUG(0,("This is probably a problem with the account %s\n",user));
+	}
+    }
+  else
+    {
+      int i,ngroups;
+      int *igroups;
+      int *attrs;
+      gid_t grp = 0;
+      ngroups = getgroups(0,&grp);
+      if (ngroups <= 0)
+        ngroups = 32;
+      igroups = (int *)malloc(sizeof(int)*ngroups);
+      attrs   = (int *)malloc(sizeof(int)*ngroups);
+      for (i=0;i<ngroups;i++)
+      {
+        attrs  [i] = 0x7; /* XXXX don't know what NT user attributes are yet! */
+        igroups[i] = 0x42424242;
+      }
+      ngroups = getgroups(ngroups,(gid_t *)igroups);
+
+      if (igroups[0] == 0x42424242)
+        ngroups = 0;
+
+      *p_ngroups = ngroups;
+      *p_attrs   = attrs;
+
+      /* The following bit of code is very strange. It is due to the
+         fact that some OSes use int* and some use gid_t* for
+         getgroups, and some (like SunOS) use both, one in prototypes,
+         and one in man pages and the actual code. Thus we detect it
+         dynamically using some very ugly code */
+      if (ngroups > 0)
+        {
+	  /* does getgroups return ints or gid_t ?? */
+	  static BOOL groups_use_ints = True;
+
+	  if (groups_use_ints && 
+	      ngroups == 1 && 
+	      SVAL(igroups,2) == 0x4242)
+	    groups_use_ints = False;
+	  
+          for (i=0;groups_use_ints && i<ngroups;i++)
+            if (igroups[i] == 0x42424242)
+    	      groups_use_ints = False;
+	      
+          if (groups_use_ints)
+          {
+    	      *p_igroups = igroups;
+    	      *p_groups = (gid_t *)igroups;	  
+          }
+          else
+          {
+	      gid_t *groups = (gid_t *)igroups;
+	      igroups = (int *)malloc(sizeof(int)*ngroups);
+	      for (i=0;i<ngroups;i++)
+          {
+	        igroups[i] = groups[i];
+          }
+	      *p_igroups = igroups;
+	      *p_groups = (gid_t *)groups;
+	    }
+	}
+      DEBUG(3,("%s is in %d groups\n",user,ngroups));
+      for (i=0;i<ngroups;i++)
+        DEBUG(3,("%d ",igroups[i]));
+      DEBUG(3,("\n"));
+    }
+  return 0;
+}
+
+
 /****************************************************************************
 register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
