@@ -2393,11 +2393,11 @@ void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 stub_type_len,
 				uint32 ptr);
 void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
-BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
+BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_NTLMSSP_VERIFIER *rav,
 				char *signature, uint32 msg_type);
-void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
+void make_rpc_auth_ntlmssp_verifier(RPC_AUTH_NTLMSSP_VERIFIER *rav,
 				char *signature, uint32 msg_type);
-void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
+void smb_io_rpc_auth_ntlmssp_verifier(char *desc, RPC_AUTH_NTLMSSP_VERIFIER *rav, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
 				fstring myname, fstring domain);

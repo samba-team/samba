@@ -408,7 +408,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	RPC_HDR_RB           hdr_rb;
 	RPC_HDR              hdr;
 	RPC_HDR_AUTH         hdr_auth;
-	RPC_AUTH_VERIFIER    auth_verifier;
+	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
 	RPC_AUTH_NTLMSSP_NEG ntlmssp_neg;
 
 	/* create the bind request RPC_HDR_RB */
@@ -425,10 +425,10 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 		smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rhdr_auth, 0);
 		mem_realloc_data(rhdr_auth->data, rhdr_auth->offset);
 
-		make_rpc_auth_verifier(&auth_verifier,
+		make_rpc_auth_ntlmssp_verifier(&auth_verifier,
 		                       "NTLMSSP", NTLMSSP_NEGOTIATE);
 
-		smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_req, 0);
+		smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, auth_req, 0);
 		mem_realloc_data(auth_req->data, auth_req->offset);
 
 		make_rpc_auth_ntlmssp_neg(&ntlmssp_neg,
@@ -493,19 +493,19 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[128];
 	size_t nt_owf_len;
-	RPC_HDR               hdr;
-	RPC_HDR_AUTHA         hdr_autha;
-	RPC_AUTH_VERIFIER     auth_verifier;
-	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
+	RPC_HDR                   hdr;
+	RPC_HDR_AUTHA             hdr_autha;
+	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
+	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
 
 	make_rpc_hdr_autha(&hdr_autha, 0x1630, 0x1630, 0x0a, 0x06, 0x00);
 	smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rhdr_autha, 0);
 	mem_realloc_data(rhdr_autha->data, rhdr_autha->offset);
 
-	make_rpc_auth_verifier(&auth_verifier,
+	make_rpc_auth_ntlmssp_verifier(&auth_verifier,
 			       "NTLMSSP", NTLMSSP_AUTH);
 
-	smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
+	smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
 	mem_realloc_data(auth_resp->data, auth_resp->offset);
 
 	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
@@ -876,10 +876,10 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, uint16 nt_pipe_fnum,
 	/* send data on \PIPE\.  receive a response */
 	if (rpc_api_pipe(cli, nt_pipe_fnum, 0x0026, NULL, &data, &rparam, &rdata))
 	{
-		RPC_HDR_BA   hdr_ba;
-		RPC_HDR_AUTH rhdr_auth;
-		RPC_AUTH_VERIFIER rhdr_verf;
-		RPC_AUTH_NTLMSSP_CHAL rhdr_chal;
+		RPC_HDR_BA                hdr_ba;
+		RPC_HDR_AUTH              rhdr_auth;
+		RPC_AUTH_NTLMSSP_VERIFIER rhdr_verf;
+		RPC_AUTH_NTLMSSP_CHAL     rhdr_chal;
 
 		DEBUG(5, ("rpc_api_pipe: return OK\n"));
 
@@ -904,7 +904,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, uint16 nt_pipe_fnum,
 
 		if (valid_ack && ntlmssp_auth)
 		{
-			smb_io_rpc_auth_verifier("", &rhdr_verf, &rdata, 0);
+			smb_io_rpc_auth_ntlmssp_verifier("", &rhdr_verf, &rdata, 0);
 			if (rdata.offset == 0) valid_ack = False;
 		}
 		if (valid_ack && ntlmssp_auth)
