@@ -114,7 +114,7 @@ krb5_verify_user(krb5_context context,
 	    /* */
 	    return ret;
 	}
-	krb5_free_data(context, &req);
+	krb5_data_free(&req);
     }
     return 0;
 }
