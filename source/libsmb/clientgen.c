@@ -452,18 +452,14 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *)
   p += 4;
 
   if (cli_api(cli, 
-              PTR_DIFF(p,param),
-              0, /* data count */ 
-              1024, /* mprcount */
-              BUFFER_SIZE, /* mdrcount */
-              &rprcnt, &rdrcnt,
-	      param,NULL,
-              &rparam,&rdata))
+              param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
+              NULL, 0, BUFFER_SIZE,            /* data, length, maxlen */
+              &rparam, &rprcnt,                /* return params, length */
+              &rdata, &rdrcnt))                /* return data, length */
     {
       int res = SVAL(rparam,0);
       int converter=SVAL(rparam,2);
       int i;
-      BOOL long_share_name=False;
       
       if (res == 0)
 	{
@@ -1465,7 +1461,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
    * for this area to make it harder to
    * decrypt. JRA.
    */
-  generate_random_buffer(data, sizeof(data), False);
+  generate_random_buffer((unsigned char *)data, sizeof(data), False);
   fstrcpy( &data[512 - new_pw_len], new_password);
   SIVAL(data, 512, new_pw_len);
 
