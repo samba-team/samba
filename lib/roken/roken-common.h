@@ -36,6 +36,14 @@
 #ifndef __ROKEN_COMMON_H__
 #define __ROKEN_COMMON_H__
 
+#ifdef __cplusplus
+#define ROKEN_CPP_START	extern "C" {
+#define ROKEN_CPP_END	}
+#else
+#define ROKEN_CPP_START
+#define ROKEN_CPP_END
+#endif
+
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xffffffff
 #endif
