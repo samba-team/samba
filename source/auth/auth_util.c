@@ -821,9 +821,12 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	sid_copy(&guest_sid, get_global_sam_sid());
 	sid_append_rid(&guest_sid, DOMAIN_USER_RID_GUEST);
 
+	become_root();
 	if (!pdb_getsampwsid(sampass, &guest_sid)) {
+		unbecome_root();
 		return NT_STATUS_NO_SUCH_USER;
 	}
+	unbecome_root();
 
 	nt_status = make_server_info_sam(server_info, sampass);
 
