@@ -1,6 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
+# we want to be compatibe with older versions of Samba
+AC_PREFIX_DEFAULT(/usr/local/samba)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
@@ -189,9 +191,18 @@ AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
 
+#
+# These next two checks are needed for DEC OSF1
+# but don't hurt anywhere else.
+#
 if test x"$ac_cv_func_putprpwnam" = x"no"; then
     AC_CHECK_LIB(security, putprpwnam, [LIBS="$LIBS -lsecurity";
       AC_DEFINE(HAVE_PUTPRPWNAM)])
+fi
+
+if test x"$ac_cv_func_set_auth_parameters" = x"no"; then
+    AC_CHECK_LIB(security, set_auth_parameters, [LIBS="$LIBS -lsecurity";
+      AC_DEFINE(HAVE_SET_AUTH_PARAMETERS)])
 fi
 
 # this bit needs to be modified for each OS that is suported by

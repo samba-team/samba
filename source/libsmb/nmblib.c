@@ -218,10 +218,11 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
 
   /* now the domain parts (if any) */
   n = 0;
-  while ((m=ubuf[offset])) {
+  while (ubuf[offset]) {
     /* we can have pointers within the domain part as well */
     if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret)) return(0);
 
+    m = ubuf[offset];
     if (!got_pointer) ret += m+1;
     if (n) name->scope[n++] = '.';
     if (m+2+offset>length || n+m+1>sizeof(name->scope)) return(0);
