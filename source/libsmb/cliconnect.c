@@ -702,7 +702,9 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
+#ifdef HAVE_KRB5
 	BOOL got_kerberos_mechanism = False;
+#endif
 	DATA_BLOB blob;
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
@@ -731,10 +733,12 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("got OID=%s\n", OIDs[i]));
+#ifdef HAVE_KRB5
 		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
 			got_kerberos_mechanism = True;
 		}
+#endif
 		free(OIDs[i]);
 	}
 	DEBUG(3,("got principal=%s\n", principal));

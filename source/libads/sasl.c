@@ -173,7 +173,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	DATA_BLOB blob;
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
+#ifdef HAVE_KRB5
 	BOOL got_kerberos_mechanism = False;
+#endif
 
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);
 
@@ -202,10 +204,12 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("ads_sasl_spnego_bind: got OID=%s\n", OIDs[i]));
+#ifdef HAVE_KRB5
 		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
 			got_kerberos_mechanism = True;
 		}
+#endif
 		free(OIDs[i]);
 	}
 	DEBUG(3,("ads_sasl_spnego_bind: got server principal name =%s\n", principal));
