@@ -269,13 +269,17 @@ static void cli_req_grow_data(struct cli_request *req, unsigned new_size)
 */
 BOOL cli_request_send(struct cli_request *req)
 {
+	uint_t ret;
+
 	if (IVAL(req->out.buffer, 0) == 0) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
 	cli_request_calculate_sign_mac(req);
 
-	if (req->out.size != cli_sock_write(req->transport->socket, req->out.buffer, req->out.size)) {
+	ret = cli_sock_write(req->transport->socket, req->out.buffer, req->out.size);
+
+	if (req->out.size != ret) {
 		req->transport->error.etype = ETYPE_SOCKET;
 		req->transport->error.e.socket_error = SOCKET_WRITE_ERROR;
 		DEBUG(0,("Error writing %d bytes to server - %s\n",
