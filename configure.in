@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
 AC_PREREQ(2.14.-1.1)dnl 2.14a
-AC_INIT(heimdal, 0.4e, heimdal-bugs@pdc.kth.se)
+AC_INIT(heimdal, 0.4d, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
 dnl Checks for programs.
