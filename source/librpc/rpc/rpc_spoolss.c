@@ -3,12 +3,12 @@
 #include "includes.h"
 
 
-NTSTATUS dcerpc_spoolss_00(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_00 *r)
+NTSTATUS dcerpc_spoolss_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_EnumPrinters *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_00, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_00,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_00,
+	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_ENUMPRINTERS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_spoolss_EnumPrinters,
+				    (ndr_pull_fn_t) ndr_pull_spoolss_EnumPrinters,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -409,12 +409,12 @@ NTSTATUS dcerpc_spoolss_1c(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct sp
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_spoolss_1d(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_1d *r)
+NTSTATUS dcerpc_spoolss_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_ClosePrinter *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_1D, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_1d,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_1d,
+	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_CLOSEPRINTER, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_spoolss_ClosePrinter,
+				    (ndr_pull_fn_t) ndr_pull_spoolss_ClosePrinter,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
