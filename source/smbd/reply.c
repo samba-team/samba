@@ -171,7 +171,7 @@ int reply_special(char *inbuf,char *outbuf)
 	int outsize = 4;
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
-	pstring name1,name2;
+	fstring name1,name2;
 	char name_type = 0;
 	
 	static BOOL already_got_session = False;

@@ -823,9 +823,37 @@ size_t push_ascii_pstring(void *dest, const char *src)
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
+/********************************************************************
+ Push an nstring - ensure null terminated. Written by
+ moriyama@miraclelinux.com (MORIYAMA Masayuki).
+********************************************************************/
+
 size_t push_ascii_nstring(void *dest, const char *src)
 {
-	return push_ascii(dest, src, sizeof(nstring), STR_TERMINATE);
+	size_t i, buffer_len, dest_len;
+	smb_ucs2_t *buffer;
+
+	buffer_len = push_ucs2_allocate(&buffer, src);
+	if (buffer_len == (size_t)-1) {
+		smb_panic("failed to create UCS2 buffer");
+	}
+
+	dest_len = 0;
+	for (i = 0; i < buffer_len; i++) {
+		unsigned char mb[10];
+		/* Convert one smb_ucs2_t character at a time. */
+		size_t mb_len = convert_string(CH_UCS2, CH_DOS, buffer+i, sizeof(smb_ucs2_t), mb, sizeof(mb), False);
+		if ((mb_len != (size_t)-1) && (dest_len + mb_len <= MAX_NETBIOSNAME_LEN - 1)) {
+			memcpy((char *)dest + dest_len, mb, mb_len);
+			dest_len += mb_len;
+		} else {
+			break;
+		}
+	}
+	((char *)dest)[dest_len] = '\0';
+
+	SAFE_FREE(buffer);
+	return dest_len;
 }
 
 /**
