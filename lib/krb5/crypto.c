@@ -2961,10 +2961,23 @@ static struct encryption_type enctype_des_pcbc_none = {
 };
 static unsigned des_ede3_cbc_num[] = { 1, 2, 840, 113549, 3, 7 };
 static heim_oid des_ede3_cbc_oid = kcrypto_oid_enc(des_ede3_cbc_num);
+static struct encryption_type enctype_des3_cbc_none_cms = {
+    ETYPE_DES3_CBC_NONE_CMS,
+    "des3-cbc-none-cms",
+    &des_ede3_cbc_oid,
+    8,
+    8,
+    0,
+    &keytype_des3_derived,
+    &checksum_none,
+    NULL,
+    F_PSEUDO|F_PADCMS,
+    DES3_CBC_encrypt,
+};
 static struct encryption_type enctype_des3_cbc_none = {
     ETYPE_DES3_CBC_NONE,
     "des3-cbc-none",
-    &des_ede3_cbc_oid,
+    NULL,
     8,
     8,
     0,
@@ -2986,7 +2999,7 @@ static struct encryption_type enctype_rc2_cbc_none = {
     &keytype_rc2,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_PADCMS,
     RC2_CBC_encrypt,
 };
 
@@ -3010,6 +3023,7 @@ static struct encryption_type *etypes[] = {
     &enctype_des_cfb64_none,
     &enctype_des_pcbc_none,
     &enctype_des3_cbc_none,
+    &enctype_des3_cbc_none_cms,
     &enctype_rc2_cbc_none
 };
 
@@ -3343,7 +3357,7 @@ encrypt_internal(krb5_context context,
     
     sz = et->confoundersize + checksum_sz + len;
     block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
-    if (et->flags & F_PADCMS) {
+    if ((et->flags & F_PADCMS) && et->padsize != 1) {
 	padsize = et->padsize - (sz % et->padsize);
 	if (padsize == et->padsize)
 	    block_sz += et->padsize;
@@ -3382,7 +3396,7 @@ encrypt_internal(krb5_context context,
 	goto fail;
     if (et->flags & F_PADCMS) {
 	int i;
-	q = p + len;
+	q = p + len + checksum_sz + et->confoundersize;
 	for (i = 0; i < padsize; i++)
 	    q[i] = padsize;
     }
