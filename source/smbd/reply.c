@@ -92,12 +92,12 @@ int reply_special(char *inbuf,char *outbuf)
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-		fstrcpy(remote_machine,name2);
+		alpha_strcpy(remote_machine,name2,sizeof(remote_machine)-1);
 		remote_machine[15] = 0;
 		trim_string(remote_machine," "," ");
 		strlower(remote_machine);
 
-		fstrcpy(local_machine,name1);
+		alpha_strcpy(local_machine,name1,sizeof(local_machine)-1);
 		len = strlen(local_machine);
 		if (len == 16) {
 			name_type = local_machine[15];

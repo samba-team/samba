@@ -316,7 +316,7 @@ BOOL reopen_logs( void )
 	if (lp_loaded() && (*lp_logfile()))
 		pstrcpy(fname, lp_logfile());
 
-	pstrcpy( debugf, fname );
+	alpha_strcpy( debugf, fname, sizeof(debugf)-1 );
 	if (append_log)
 		new_dbf = sys_fopen( debugf, "a" );
 	else
