@@ -7585,11 +7585,6 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-/* Disabled because it doesn't fix the bug I am looking at but it would be
-   a shame to throw away the code. -tpot */
-
-#if 0
-
 static void fill_printprocessordirectory_1(PRINTPROCESSOR_DIRECTORY_1 *info, char *name)
 {
 	init_unistr(&info->name, name);
@@ -7667,4 +7662,3 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	return WERR_ACCESS_DENIED;
 }
 
-#endif
