@@ -161,18 +161,28 @@ BOOL py_from_DEVICEMODE(PyObject **dict, DEVICEMODE *devmode)
 
 BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict)
 {
-	PyObject *obj;
+	PyObject *obj, *dict_copy = PyDict_Copy(dict);
+	BOOL result = False;
 
-	if (!to_struct(devmode, dict, py_DEVICEMODE))
-		return False;
+	if (!(obj = PyDict_GetItemString(dict_copy, "private")))
+		goto done;
 
-	if (!(obj = PyDict_GetItemString(dict, "private")))
-		return False;
+	if (!PyString_Check(obj))
+		goto done;
 
 	devmode->private = PyString_AsString(obj);
 	devmode->driverextra = PyString_Size(obj);
 
-	return True;
+	PyDict_DelItemString(dict_copy, "private");
+
+	if (!to_struct(devmode, dict_copy, py_DEVICEMODE))
+		goto done;
+
+	result = True;
+
+done:
+	Py_DECREF(dict_copy);
+	return result;
 }
 
 /*
@@ -204,12 +214,23 @@ BOOL py_from_PRINTER_INFO_1(PyObject **dict, PRINTER_INFO_1 *info)
 
 BOOL py_to_PRINTER_INFO_1(PRINTER_INFO_1 *info, PyObject *dict)
 {
-	PyObject *dict_copy = PyDict_Copy(dict);
-	BOOL result;
+	PyObject *obj, *dict_copy = PyDict_Copy(dict);
+	BOOL result = False;
+
+	if (!(obj = PyDict_GetItemString(dict_copy, "level")))
+		goto done;
+
+	if (!PyInt_Check(obj))
+		goto done;
 
 	PyDict_DelItemString(dict_copy, "level");
-	result = to_struct(info, dict_copy, py_PRINTER_INFO_1);
 
+	if (!to_struct(info, dict_copy, py_PRINTER_INFO_1))
+		goto done;
+
+	result = True;
+
+done:
 	Py_DECREF(dict_copy);
 	return result;
 }
@@ -248,26 +269,47 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info)
 BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
 			  TALLOC_CTX *mem_ctx)
 {
-	PyObject *obj;
+	PyObject *obj, *dict_copy = PyDict_Copy(dict);
+	BOOL result = False;
 
-	if (!to_struct(info, dict, py_PRINTER_INFO_2))
-		return False;
+	/* Convert security descriptor */
 
-	if (!(obj = PyDict_GetItemString(dict, "security_descriptor")))
-		return False;
+	if (!(obj = PyDict_GetItemString(dict_copy, "security_descriptor")))
+		goto done;
+
+	if (!PyDict_Check(obj))
+		goto done;
 
 	if (!py_to_SECDESC(&info->secdesc, obj, mem_ctx))
-		return False;
+		goto done;
 
-	if (!(obj = PyDict_GetItemString(dict, "device_mode")))
-		return False;
+	PyDict_DelItemString(dict_copy, "security_descriptor");
+
+	/* Convert device mode */
+
+	if (!(obj = PyDict_GetItemString(dict_copy, "device_mode")))
+		goto done;
+
+	if (!PyDict_Check(obj))
+		goto done;
 
 	info->devmode = talloc(mem_ctx, sizeof(DEVICEMODE));
 
 	if (!py_to_DEVICEMODE(info->devmode, obj))
-		return False;
+		goto done;
 
-	return True;
+	PyDict_DelItemString(dict_copy, "device_mode");
+
+	/* Convert remaining elements of dictionary */
+
+	if (!to_struct(info, dict_copy, py_PRINTER_INFO_2))
+		goto done;
+
+	result = True;
+
+done:
+	Py_DECREF(dict_copy);
+	return result;
 }
 
 /*
