@@ -409,8 +409,9 @@ cmd
 			lreply(0, " SIZE");
 			reply(211, "End");
 		}
-	| OPTS SP foo CRLF
+	| OPTS SP STRING CRLF
 		{
+			free ($3);
 			reply(501, "Bad options");
 		}
 
