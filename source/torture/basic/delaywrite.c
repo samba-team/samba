@@ -5,6 +5,7 @@
 
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Jeremy Allison 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -158,11 +159,31 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	   granularity (older systems may have that) */
 	sleep(3);
 
-	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
+	{
+		/* Try using setfileinfo instead of write to update write time. */
+		union smb_setfileinfo sfinfo;
+		time_t t_set = time(NULL);
+		sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFO;
+		sfinfo.basic_info.file.fnum = fnum1;
+		sfinfo.basic_info.in.create_time = finfo1.basic_info.out.create_time;
+		sfinfo.basic_info.in.access_time = finfo1.basic_info.out.access_time;
 
-	if (written != 1) {
-		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
-		return False;
+		/* I tried this with both + and - ve to see if it makes a different.
+		   It doesn't - once the filetime is set via setfileinfo it stays that way. */
+#if 1
+		unix_to_nt_time(&sfinfo.basic_info.in.write_time, t_set - 30000);
+#else
+		unix_to_nt_time(&sfinfo.basic_info.in.write_time, t_set + 30000);
+#endif
+		sfinfo.basic_info.in.change_time = finfo1.basic_info.out.change_time;
+		sfinfo.basic_info.in.attrib = finfo1.basic_info.out.attrib;
+
+		status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("sfileinfo failed: %s\n", nt_errstr(status)));
+			return False;
+		}
 	}
 
 	t = time(NULL);
@@ -193,6 +214,61 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 		ret = False;
 	}
 
+	/* Now try a write to see if the write time gets reset. */
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	
+	printf("Modified write time %s\n", 
+	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+
+
+	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
+
+	if (written != 1) {
+		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		return False;
+	}
+
+	t = time(NULL);
+
+	/* Once the time was set using setfileinfo then it stays set - writes
+	   don't have any effect. But make sure. */
+
+	while (time(NULL) < t+40) {
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = False;
+			break;
+		}
+		printf("write time %s\n", 
+		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+			printf("Server updated write_time after %d seconds\n",
+			       (int)(time(NULL) - t));
+			break;
+		}
+		sleep(1);
+		fflush(stdout);
+	}
+	
+	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
+		printf("Server did not update write time?!\n");
+	}
+
+	/* One more test to do. We should read the filetime via findfirst on the
+	   second connection to ensure it's the same. This is very easy for a Windows
+	   server but a bastard to get right on a POSIX server. JRA. */
 
 	if (cli2 != NULL) {
 		torture_close_connection(cli2);
