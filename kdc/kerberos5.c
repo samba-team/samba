@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -499,10 +499,19 @@ as_rep(KDC_REQ *req,
 	    
 	    ret = hdb_enctype2key(context, client, enc_data.etype, &pa_key);
 	    if(ret){
+		char *estr;
 		e_text = "No key matches pa-data";
 		ret = KRB5KDC_ERR_PREAUTH_FAILED;
-		kdc_log(5, "No client key matching pa-data -- %s", 
-			client_name);
+		if(krb5_enctype_to_string(context, enc_data.etype, &estr))
+		    estr = NULL;
+		if(estr == NULL)
+		    kdc_log(5, "No client key matching pa-data (%d) -- %s", 
+			    enc_data.etype, client_name);
+		else
+		    kdc_log(5, "No client key matching pa-data (%s) -- %s", 
+			    estr, client_name);
+		free(estr);
+		    
 		free_EncryptedData(&enc_data);
 		continue;
 	    }
