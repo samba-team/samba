@@ -1331,7 +1331,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   BOOL matched = False;
 
   /* special case - if it is exactly the same then it always matches! */
-  if (strcmp(str, regexp) == 0) return True;
+  if ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0) return True;
 
   /* Make local copies of str and regexp */
   pstrcpy(t_pattern,regexp);
