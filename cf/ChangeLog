@@ -1,3 +1,9 @@
+2004-02-11  Love  <lha@stacken.kth.se>
+
+	* test-package.m4: If there is a --with-PACKAGE=path but no
+	--with-PACKAGE-config, go seach for path/PACKEGE-config and use it
+	if it exists.  Inspired by Harald Barth <haba@pdc.kth.se>
+
 2003-09-03  Love  <lha@stacken.kth.se>
 
 	* crypto.m4: check for DES_, AES_, and if openssl UI_
