@@ -26,36 +26,47 @@ PyObject *spoolss_hnd_addform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *py_form, *py_form_name;
-	char *form_name;
+	PyObject *info;
 	FORM form;
-	int level = 1;
-	static char *kwlist[] = {"form", "level", NULL};
+	int level;
+	static char *kwlist[] = {"form", NULL};
 
 	/* Parse parameters */
-
+	
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!|i", kwlist, &PyDict_Type, &py_form, &level))
+		    args, kw, "O!", kwlist, &PyDict_Type, &info))
 		return NULL;
 	
 	/* Call rpc function */
-
-	if (!py_to_FORM(&form, py_form) ||
-	    !(py_form_name = PyDict_GetItemString(py_form, "name")) ||
-	    !(form_name = PyString_AsString(py_form_name))) {
+	
+	if (!py_to_FORM(&form, info)) {
 		PyErr_SetString(spoolss_error, "invalid form");
 		return NULL;
 	}
 
+	if (!get_level_value(info, &level)) {
+		PyErr_SetString(spoolss_error, "invalid info level");
+		return NULL;
+	}
+
+	if (level != 1) {
+		PyErr_SetString(spoolss_error, "unsupported info level");
+		return NULL;
+	}
+	
 	switch (level) {
-	case 1:
+	case 1: {
+		PyObject *obj = PyDict_GetItemString(info, "name");
+		char *form_name = PyString_AsString(obj);
+
 		init_unistr2(&form.name, form_name, strlen(form_name) + 1);
 		break;
+	}
 	default:
 		PyErr_SetString(spoolss_error, "unsupported info level");
 		return NULL;
 	}
-
+		
 	werror = cli_spoolss_addform(hnd->cli, hnd->mem_ctx, &hnd->pol,
 				     level, &form);
 
@@ -121,32 +132,39 @@ PyObject *spoolss_hnd_setform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *py_form, *py_form_name;
-	int level = 1;
-	static char *kwlist[] = {"form", "level", NULL};
-	char *form_name;
+	PyObject *info, *form_name;
+	int level;
+	static char *kwlist[] = { "form", NULL};
 	FORM form;
 
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!|i", kwlist, &PyDict_Type, &py_form,
-		    &level))
+		    args, kw, "O!|i", kwlist, &PyDict_Type, &info))
 		return NULL;
-	
+
+	if (!get_level_value(info, &level)) {
+		PyErr_SetString(spoolss_error, "invalid info level");
+		return NULL;
+	}
+
+	if (level != 1) {
+		PyErr_SetString(spoolss_error, "unsupported info level");
+		return NULL;
+	}
+
 	/* Call rpc function */
 
-	if (!py_to_FORM(&form, py_form) ||
-	    !(py_form_name = PyDict_GetItemString(py_form, "name")) ||
-	    !(form_name = PyString_AsString(py_form_name))) {
+	if (!py_to_FORM(&form, info)) {
 		PyErr_SetString(spoolss_error, "invalid form");
 		return NULL;
 	}
 
-	init_unistr2(&form.name, form_name, strlen(form_name) + 1);
+	form_name = PyDict_GetItemString(info, "name");
 
-	werror = cli_spoolss_setform(hnd->cli, hnd->mem_ctx, &hnd->pol,
-				     level, form_name, &form);
+	werror = cli_spoolss_setform(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, level, 
+		PyString_AsString(form_name), &form);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -163,7 +181,7 @@ PyObject *spoolss_hnd_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	static char *kwlist[] = {"form_name", "level", NULL};
+	static char *kwlist[] = {"form_name", NULL};
 	char *form_name;
 
 	/* Parse parameters */
