@@ -28,6 +28,7 @@ GtkTreeStore *store_keys;
 GtkListStore *store_vals;
 GtkWidget *tree_keys;
 GtkWidget *mainwin;
+GtkWidget *mnu_add_key, *mnu_add_value, *mnu_del_key, *mnu_del_value, *mnu_find;
 TALLOC_CTX *mem_ctx; /* FIXME: Split up */
 
 GtkWidget *save;
@@ -438,19 +439,28 @@ static void on_delete_activate                     (GtkMenuItem     *menuitem,
 static void on_add_key_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
+        GtkDialog *addwin = GTK_DIALOG(create_NewKeyDialog());
+        gtk_dialog_run(addwin);
 	/* FIXME */
+        gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
 static void on_add_value_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
+        GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog());
+        gtk_dialog_run(addwin);
 	/* FIXME */
+        gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
 static void on_find_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
+        GtkDialog *findwin = GTK_DIALOG(create_FindDialog());
+        gtk_dialog_run(findwin);
 	/* FIXME */
+        gtk_widget_destroy(GTK_WIDGET(findwin));
 }
 
 static void on_about_activate                      (GtkMenuItem     *menuitem,
@@ -472,7 +482,14 @@ gboolean on_key_activate(GtkTreeSelection *selection,
 	struct registry_value *val;
 	WERROR error;
 	GtkTreeIter parent;
-	if(path_currently_selected)return TRUE;
+
+	gtk_widget_set_sensitive(mnu_add_key, !path_currently_selected);
+	gtk_widget_set_sensitive(mnu_add_value, !path_currently_selected);
+	gtk_widget_set_sensitive(mnu_del_key, !path_currently_selected);
+	gtk_widget_set_sensitive(mnu_del_value, !path_currently_selected);
+	gtk_widget_set_sensitive(mnu_find, !path_currently_selected);
+
+	if(path_currently_selected) { return TRUE; }
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(store_keys), &parent, path);
 	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &parent, 1, &k, -1);
@@ -519,9 +536,6 @@ static GtkWidget* create_mainwin (void)
 	GtkWidget *quit;
 	GtkWidget *men_key;
 	GtkWidget *men_key_menu;
-	GtkWidget *delete;
-	GtkWidget *find;
-	GtkWidget *add_key, *add_value;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *curcol;
 	GtkWidget *help;
@@ -618,24 +632,31 @@ static GtkWidget* create_mainwin (void)
 	men_key_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (men_key), men_key_menu);
 
-	add_key = gtk_image_menu_item_new_with_mnemonic("Add _Subkey");
-	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (add_key), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
+	mnu_add_key = gtk_image_menu_item_new_with_mnemonic("Add _Subkey");
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (mnu_add_key), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
 
-	gtk_widget_set_sensitive(add_key, False);
-	gtk_container_add (GTK_CONTAINER (men_key_menu), add_key);
+	gtk_widget_set_sensitive(mnu_add_key, False);
+	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_add_key);
 
-	add_value = gtk_image_menu_item_new_with_mnemonic("Add _Value");
-	gtk_widget_set_sensitive(add_value, False);
-	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (add_value), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
-	gtk_container_add (GTK_CONTAINER (men_key_menu), add_value);
+	mnu_add_value = gtk_image_menu_item_new_with_mnemonic("Add _Value");
+	gtk_widget_set_sensitive(mnu_add_value, False);
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (mnu_add_value), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
+	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_add_value);
 
-	find = gtk_image_menu_item_new_from_stock ("gtk-find", accel_group);
-	gtk_widget_set_sensitive(find, False);
-	gtk_container_add (GTK_CONTAINER (men_key_menu), find);
+	mnu_find = gtk_image_menu_item_new_from_stock ("gtk-find", accel_group);
+	gtk_widget_set_sensitive(mnu_find, False);
+	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_find);
 
-	delete = gtk_image_menu_item_new_from_stock ("gtk-delete", accel_group);
-	gtk_widget_set_sensitive(delete, False);
-	gtk_container_add (GTK_CONTAINER (men_key_menu), delete);
+	mnu_del_key = gtk_image_menu_item_new_with_mnemonic ("Delete Key"); 
+	gtk_widget_set_sensitive(mnu_del_key, False);
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (mnu_del_value), gtk_image_new_from_stock ("gtk-delete", GTK_ICON_SIZE_MENU));
+	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_del_key);
+
+	mnu_del_value = gtk_image_menu_item_new_with_mnemonic ("Delete Value"); 
+	gtk_widget_set_sensitive(mnu_del_value, False);
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (mnu_del_value), gtk_image_new_from_stock ("gtk-delete", GTK_ICON_SIZE_MENU));
+	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_del_value);
+
 
 	help = gtk_menu_item_new_with_mnemonic ("_Help");
 	gtk_container_add (GTK_CONTAINER (menubar), help);
@@ -722,16 +743,16 @@ static GtkWidget* create_mainwin (void)
 	g_signal_connect ((gpointer) quit, "activate",
 					  G_CALLBACK (on_quit_activate),
 					  NULL);
-	g_signal_connect ((gpointer) add_key, "activate",
+	g_signal_connect ((gpointer) mnu_add_key, "activate",
 					  G_CALLBACK (on_add_key_activate),
 					  NULL);
-	g_signal_connect ((gpointer) add_value, "activate",
+	g_signal_connect ((gpointer) mnu_add_value, "activate",
 					  G_CALLBACK (on_add_value_activate),
 					  NULL);
-	g_signal_connect ((gpointer) find, "activate",
+	g_signal_connect ((gpointer) mnu_find, "activate",
 					  G_CALLBACK (on_find_activate),
 					  NULL);
-	g_signal_connect ((gpointer) delete, "activate",
+	g_signal_connect ((gpointer) mnu_del_key, "activate",
 					  G_CALLBACK (on_delete_activate),
 					  NULL);
 	g_signal_connect ((gpointer) about, "activate",
