@@ -24,7 +24,7 @@
 #include "system/iconv.h"
 #include "lib/crypto/crypto.h"
 
-static unsigned char s_box[258];
+static unsigned char hash[258];
 static uint32 counter;
 
 static BOOL done_reseed = False;
@@ -55,14 +55,58 @@ static void get_rand_reseed_data(int *reseed_data)
 }
 
 /**************************************************************** 
+ Setup the seed.
+*****************************************************************/
+
+static void seed_random_stream(unsigned char *seedval, size_t seedlen)
+{
+	unsigned char j = 0;
+	size_t ind;
+
+	for (ind = 0; ind < 256; ind++)
+		hash[ind] = (unsigned char)ind;
+
+	for( ind = 0; ind < 256; ind++) {
+		unsigned char tc;
+
+		j += (hash[ind] + seedval[ind%seedlen]);
+
+		tc = hash[ind];
+		hash[ind] = hash[j];
+		hash[j] = tc;
+	}
+
+	hash[256] = 0;
+	hash[257] = 0;
+}
+
+/**************************************************************** 
  Get datasize bytes worth of random data.
 *****************************************************************/
 
-static void get_random_stream(uint8_t sbox[258], unsigned char *data, size_t datasize)
+static void get_random_stream(unsigned char *data, size_t datasize)
 {
-	memset(data, '\0', datasize);
-	
-	arcfour_crypt_sbox(s_box, data, datasize);
+	unsigned char index_i = hash[256];
+	unsigned char index_j = hash[257];
+	size_t ind;
+
+	for( ind = 0; ind < datasize; ind++) {
+		unsigned char tc;
+		unsigned char t;
+
+		index_i++;
+		index_j += hash[index_i];
+
+		tc = hash[index_i];
+		hash[index_i] = hash[index_j];
+		hash[index_j] = tc;
+
+		t = hash[index_i] + hash[index_j];
+		data[ind] = hash[t];
+	}
+
+	hash[256] = index_i;
+	hash[257] = index_j;
 }
 
 /****************************************************************
@@ -103,7 +147,6 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 static int do_reseed(BOOL use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
-	DATA_BLOB seed_blob;
 	uint32 v1, v2; struct timeval tval; pid_t mypid;
 	int reseed_data = 0;
 
@@ -144,8 +187,7 @@ static int do_reseed(BOOL use_fd, int fd)
 			seed_inbuf[i] ^= ((char *)(&reseed_data))[i % sizeof(reseed_data)];
 	}
 
-	seed_blob = data_blob_const(seed_inbuf, sizeof(seed_inbuf));
-	arcfour_init(s_box, &seed_blob);
+	seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
 
 	return -1;
 }
@@ -189,7 +231,7 @@ void generate_random_buffer(uint8_t *out, int len)
 	while(len > 0) {
 		int copy_len = len > 16 ? 16 : len;
 
-		get_random_stream(s_box, md4_buf, sizeof(md4_buf));
+		get_random_stream(md4_buf, sizeof(md4_buf));
 		mdfour(tmp_buf, md4_buf, sizeof(md4_buf));
 		memcpy(p, tmp_buf, copy_len);
 		p += copy_len;
