@@ -43,11 +43,11 @@
 	<para>The pdbedit tool use the passdb modular interface and is
 	independent from the kind of users database used (currently there
 	are smbpasswd, ldap, nis+ and tdb based and more can be addedd
-	without changing the tool).<para>
+	without changing the tool).</para>
 
 	<para>There are five main ways to use pdbedit: adding a user account,
 	removing a user account, modifing a user account, listing user
-	accounts, importing users accounts.<para>
+	accounts, importing users accounts.</para>
 </refsect1>
 
 <refsect1>
@@ -126,8 +126,7 @@
 		It is <emphasis>required</emphasis> in add, remove and modify
 		operations and <emphasis>optional</emphasis> in list
 		operations.</para>
-		
-		</para></listitem>
+		</listitem>
 		</varlistentry>
 		
 
@@ -182,7 +181,7 @@
 		
 		
 		<varlistentry>
-		<term>-p profile<term>
+		<term>-p profile</term>
 		<listitem><para>This option can be used while adding or
 		modifing a user account. It will specify the user's profile
 		directory.</para>
