@@ -271,8 +271,6 @@ static void srv_io_srv_share_ctr(char *desc,  SRV_SHARE_INFO_CTR *ctr, prs_struc
 	prs_uint32("switch_value", ps, depth, &(ctr->switch_value));
 	prs_uint32("ptr_share_ctr", ps, depth, &(ctr->ptr_share_ctr));
 
-	return;
-
 	if (ctr->ptr_share_ctr != 0)
 	{
 		switch (ctr->switch_value)
