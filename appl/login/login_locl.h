@@ -98,6 +98,7 @@
 #endif
 #endif
 
+int   do_osfc2_magic(uid_t);
 char *clean_ttyname (char*);
 char *make_id (char*);
 void  prepare_utmp (struct utmp*, char*, const char*, const char*);
