@@ -35,15 +35,16 @@
 #include "includes.h"
 #endif
 
-#define TDB_VERSION (0x26011967 + 1)
+#define TDB_VERSION (0x26011967 + 2)
 #define TDB_MAGIC (0x26011999U)
 #define TDB_FREE_MAGIC (~TDB_MAGIC)
 #define TDB_ALIGN 4
 #define MIN_REC_SIZE (2*sizeof(struct list_struct) + TDB_ALIGN)
-#define DEFAULT_HASH_SIZE 128
+#define DEFAULT_HASH_SIZE 131
 #define TDB_PAGE_SIZE 0x2000
 #define TDB_LEN_MULTIPLIER 10
-#define FREELIST_TOP (sizeof(struct tdb_header))
+#define TDB_RESERVED 1024
+#define FREELIST_TOP (TDB_RESERVED + sizeof(struct tdb_header))
 
 #define LOCK_SET 1
 #define LOCK_CLEAR 0
@@ -497,6 +498,7 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	tdb_off offset;
 	int i, size = 0;
 	tdb_off buf[16];
+	char buf2[TDB_RESERVED];
 
         /* create the header */
         memset(&header, 0, sizeof(header));
@@ -513,6 +515,13 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
             tdb->ecode = TDB_ERR_IO;
             return -1;
         } else size += sizeof(header);
+
+	memset(buf2, 0, sizeof(buf2));
+        if (tdb->fd != -1 && write(tdb->fd, buf2, TDB_RESERVED) != 
+            TDB_RESERVED) {
+            tdb->ecode = TDB_ERR_IO;
+            return -1;
+        } else size += TDB_RESERVED;
 	
         /* the freelist and hash pointers */
         offset = 0;
