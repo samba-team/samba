@@ -63,7 +63,8 @@ static char *database = HDB_DEFAULT_DB;
 
 static void
 send_reply (int s,
-	    struct sockaddr_in *addr,
+	    struct sockaddr *sa,
+	    int sa_size,
 	    krb5_data *ap_rep,
 	    krb5_data *rest)
 {
@@ -88,8 +89,8 @@ send_reply (int s,
     *p++ = (ap_rep_len >> 0) & 0xFF;
 
     memset (&msghdr, 0, sizeof(msghdr));
-    msghdr.msg_name       = (void *)addr;
-    msghdr.msg_namelen    = sizeof(*addr);
+    msghdr.msg_name       = (void *)sa;
+    msghdr.msg_namelen    = sa_size;
     msghdr.msg_iov        = iov;
     msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
 #if 0
@@ -139,7 +140,8 @@ make_result (krb5_data *data,
 static void
 reply_error (krb5_principal server,
 	     int s,
-	     struct sockaddr_in *addr,
+	     struct sockaddr *sa,
+	     int sa_size,
 	     krb5_error_code error_code,
 	     u_int16_t result_code,
 	     const char *expl)
@@ -166,14 +168,15 @@ reply_error (krb5_principal server,
 		  krb5_get_err_text (context, ret));
 	return;
     }
-    send_reply (s, addr, NULL, &error_data);
+    send_reply (s, sa, sa_size, NULL, &error_data);
     krb5_data_free (&error_data);
 }
 
 static void
 reply_priv (krb5_auth_context auth_context,
 	    int s,
-	    struct sockaddr_in *addr,
+	    struct sockaddr *sa,
+	    int sa_size,
 	    u_int16_t result_code,
 	    const char *expl)
 {
@@ -207,7 +210,7 @@ reply_priv (krb5_auth_context auth_context,
 		  krb5_get_err_text (context, ret));
 	return;
     }
-    send_reply (s, addr, &ap_rep_data, &krb_priv_data);
+    send_reply (s, sa, sa_size, &ap_rep_data, &krb_priv_data);
     krb5_data_free (&ap_rep_data);
     krb5_data_free (&krb_priv_data);
 }
@@ -216,7 +219,8 @@ static void
 change (krb5_auth_context auth_context,
 	krb5_principal principal,
 	int s,
-	struct sockaddr_in *addr,
+	struct sockaddr *sa,
+	int sa_size,
 	krb5_data *pwd_data)
 {
     krb5_error_code ret;
@@ -235,7 +239,7 @@ change (krb5_auth_context auth_context,
     if (pwd_data->length < 6) {	/* XXX */
 	krb5_log (context, log_facility,
 		  KPASSWDD_LOG_ERR, "Password too short");
-	reply_priv (auth_context, s, addr, 4, "password too short");
+	reply_priv (auth_context, s, sa, sa_size, 4, "password too short");
 	return;
     }
 
@@ -243,7 +247,7 @@ change (krb5_auth_context auth_context,
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "hdb_open: %s", krb5_get_err_text(context, ret));
-	reply_priv (auth_context, s, addr, 2, "hdb_open failed");
+	reply_priv (auth_context, s, sa, sa_size, 2, "hdb_open failed");
 	return;
     }
 
@@ -255,7 +259,7 @@ change (krb5_auth_context auth_context,
     case HDB_ERR_NOENTRY:
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "not found in database");
-	reply_priv (auth_context, s, addr, 2,
+	reply_priv (auth_context, s, sa, sa_size, 2,
 		    "entry not found in database");
 	goto out;
     case 0:
@@ -263,7 +267,7 @@ change (krb5_auth_context auth_context,
     default :
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "dbfetch: %s", krb5_get_err_text(context, ret));
-	reply_priv (auth_context, s, addr, 2,
+	reply_priv (auth_context, s, sa, sa_size, 2,
 		    "db_fetch failed");
 	goto out;
     }
@@ -308,10 +312,10 @@ change (krb5_auth_context auth_context,
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "dbstore: %s", krb5_get_err_text (context, ret));
-	reply_priv (auth_context, s, addr, 2,
+	reply_priv (auth_context, s, sa, sa_size, 2,
 		    "db_store failed");
     } else {
-	reply_priv (auth_context, s, addr, 0, "password changed");
+	reply_priv (auth_context, s, sa, sa_size, 0, "password changed");
     }
 out:
     hdb_free_entry (context, &ent);
@@ -324,7 +328,8 @@ verify (krb5_auth_context *auth_context,
 	krb5_ticket **ticket,
 	krb5_data *out_data,
 	int s,
-	struct sockaddr_in *addr,
+	struct sockaddr *sa,
+	int sa_size,
 	u_char *msg,
 	size_t len)
 {
@@ -339,13 +344,13 @@ verify (krb5_auth_context *auth_context,
     if (pkt_len != len) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "Strange len: %d != %d", pkt_len, len);
-	reply_error (server, s, addr, 0, 1, "bad length");
+	reply_error (server, s, sa, sa_size, 0, 1, "bad length");
 	return 1;
     }
     if (pkt_ver != 0x0001) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "Bad version (%d)", pkt_ver);
-	reply_error (server, s, addr, 0, 1, "bad version");
+	reply_error (server, s, sa, sa_size, 0, 1, "bad version");
 	return 1;
     }
 
@@ -362,14 +367,14 @@ verify (krb5_auth_context *auth_context,
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR, "krb5_rd_req: %s",
 		  krb5_get_err_text(context, ret));
-	reply_error (server, s, addr, ret, 3, "rd_req failed");
+	reply_error (server, s, sa, sa_size, ret, 3, "rd_req failed");
 	return 1;
     }
 
     if (!(*ticket)->ticket.flags.initial) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "initial flag not set");
-	reply_error (server, s, addr, ret, 1,
+	reply_error (server, s, sa, sa_size, ret, 1,
 		     "initial flag not set");
 	goto out;
     }
@@ -385,7 +390,7 @@ verify (krb5_auth_context *auth_context,
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR, "krb5_rd_priv: %s",
 		  krb5_get_err_text(context, ret));
-	reply_error (server, s, addr, ret, 3, "rd_priv failed");
+	reply_error (server, s, sa, sa_size, ret, 3, "rd_priv failed");
 	goto out;
     }
     return 0;
@@ -397,8 +402,9 @@ out:
 static void
 process (krb5_principal server,
 	 int s,
-	 void *this_addr,
-	 struct sockaddr_in *other_addr,
+	 krb5_address *this_addr,
+	 struct sockaddr *sa,
+	 int sa_size,
 	 u_char *msg,
 	 int len)
 {
@@ -406,7 +412,7 @@ process (krb5_principal server,
     krb5_auth_context auth_context = NULL;
     krb5_data out_data;
     krb5_ticket *ticket;
-    krb5_address remote_addr, local_addr;
+    krb5_address other_addr;
 
     krb5_data_zero (&out_data);
 
@@ -421,18 +427,19 @@ process (krb5_principal server,
     krb5_auth_con_setflags (context, auth_context,
 			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
 
-    local_addr.addr_type       = AF_INET;
-    local_addr.address.length  = sizeof(other_addr->sin_addr);
-    local_addr.address.data    = this_addr;
-
-    remote_addr.addr_type      = AF_INET;
-    remote_addr.address.length = sizeof(other_addr->sin_addr);
-    remote_addr.address.data   = &other_addr->sin_addr;
+    ret = krb5_sockaddr2address (sa, &other_addr);
+    if (ret) {
+	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
+		  "krb5_sockaddr2address: %s",
+		  krb5_get_err_text(context, ret));
+	goto out;
+    }
 
     ret = krb5_auth_con_setaddrs (context,
 				  auth_context,
-				  &local_addr,
-				  &remote_addr);
+				  this_addr,
+				  &other_addr);
+    krb5_free_address (context, &other_addr);
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "krb5_auth_con_setaddr: %s",
@@ -441,11 +448,11 @@ process (krb5_principal server,
     }
 
     if (verify (&auth_context, server, &ticket, &out_data,
-		s, other_addr, msg, len) == 0) {
+		s, sa, sa_size, msg, len) == 0) {
 	change (auth_context,
 		ticket->client,
 		s,
-		other_addr,
+		sa, sa_size,
 		&out_data);
 	krb5_free_ticket (context, ticket);
 	free (ticket);
@@ -467,6 +474,15 @@ doit (int port)
     krb5_addresses addrs;
     unsigned n, i;
     fd_set real_fdset;
+    char *sa_buf;
+    int sa_max_size;
+    struct sockaddr *sa;
+
+    sa_max_size = krb5_max_sockaddr_size ();
+    sa_buf = malloc (sa_max_size);
+    if (sa_buf == NULL)
+	syslog_and_die ("out of memory");
+    sa = (struct sockaddr *)sa_buf;
 
     ret = krb5_get_default_realm (context, &realm);
     if (ret)
@@ -497,18 +513,15 @@ doit (int port)
     maxfd = 0;
     FD_ZERO(&real_fdset);
     for (i = 0; i < n; ++i) {
-	struct sockaddr_in addr;
+	int sa_size;
 
-	sockets[i] = socket (AF_INET, SOCK_DGRAM, 0);
+	krb5_addr2sockaddr (&addrs.val[i], sa, &sa_size, port);
+
+	sockets[i] = socket (sa->sa_family, SOCK_DGRAM, 0);
 	if (sockets[i] < 0)
 	    syslog_and_die ("socket: %m");
-	memset (&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	memcpy (&addr.sin_addr, addrs.val[i].address.data,
-		sizeof(addr.sin_addr));
-	addr.sin_port = port;
 
-	if (bind (sockets[i], (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	if (bind (sockets[i], sa, sa_size) < 0)
 	    syslog_and_die ("bind: %m");
 	maxfd = max (maxfd, sockets[i]);
 	FD_SET(sockets[i], &real_fdset);
@@ -526,25 +539,27 @@ doit (int port)
 		syslog_and_die ("select: %m");
 	for (i = 0; i < n; ++i)
 	    if (FD_ISSET(sockets[i], &fdset)) {
-		struct sockaddr_in other_addr;
 		u_char buf[BUFSIZ];
-		int addrlen = sizeof(other_addr);
+		int addrlen = sa_max_size;
 
 		ret = recvfrom (sockets[i], buf, sizeof(buf), 0,
-				(struct sockaddr *)&other_addr,
-				&addrlen);
+				sa, &addrlen);
 		if (ret < 0)
 		    if(errno == EINTR)
 			break;
 		    else
 			syslog_and_die ("recvfrom: %m");
+
 		process (server, sockets[i],
-			 addrs.val[i].address.data, &other_addr, buf, ret);
+			 &addrs.val[i],
+			 sa, addrlen,
+			 buf, ret);
 	    }
     }
     krb5_free_addresses (context, &addrs);
     krb5_free_principal (context, server);
     krb5_free_context (context);
+    free (sa_buf);
     return 0;
 }
 

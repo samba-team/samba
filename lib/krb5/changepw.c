@@ -43,12 +43,14 @@ RCSID("$Id$");
 static krb5_error_code
 get_kdc_address (krb5_context context,
 		 krb5_realm realm,
-		 struct sockaddr_in *addr)
+		 struct sockaddr *sa,
+		 int *sa_size)
 {
     krb5_error_code ret;
     struct hostent *hostent;
     char **hostlist;
     char *dot;
+    char *p;
 
     ret = krb5_get_krbhst (context,
 			   &realm,
@@ -56,22 +58,31 @@ get_kdc_address (krb5_context context,
     if (ret)
 	return ret;
 
-    dot = strchr (*hostlist, ':');
+    p = *hostlist;
+
+    dot = strchr (p, ':');
     if (dot)
 	*dot = '\0';
 
-    hostent = gethostbyname (*hostlist);
+#ifdef HAVE_GETHOSTBYNAME2
+    hostent = gethostbyname2 (p, AF_INET6);
+    if (hostent == NULL)
+	hostent = gethostbyname2 (p, AF_INET);
+#else
+    hostent = gethostbyname (p);
+#endif
     krb5_free_krbhst (context, hostlist);
-    if (hostent == 0)
+    if (hostent == NULL)
 	return h_errno;		/* XXX */
 
-    memset (addr, 0, sizeof(*addr));
-    addr->sin_family = AF_INET;
-    memcpy (&addr->sin_addr, hostent->h_addr_list[0], sizeof(addr->sin_addr));
-    addr->sin_port   = krb5_getportbyname (context, "kpasswd", "udp", 
-					   KPASSWD_PORT);
-
-    return 0;
+    return krb5_h_addr2sockaddr (hostent->h_addrtype,
+				 hostent->h_addr_list[0],
+				 sa,
+				 sa_size,
+				 krb5_getportbyname (context,
+						     "kpasswd",
+						     "udp",
+						     KPASSWD_PORT));
 }
 
 static krb5_error_code
@@ -79,7 +90,8 @@ send_request (krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_creds *creds,
 	      int sock,
-	      struct sockaddr_in addr,
+	      struct sockaddr *sa,
+	      int sa_size,
 	      char *passwd)
 {
     krb5_error_code ret;
@@ -126,8 +138,8 @@ send_request (krb5_context context,
     *p++ = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
-    msghdr.msg_name       = (void *)&addr;
-    msghdr.msg_namelen    = sizeof(addr);
+    msghdr.msg_name       = (void *)sa;
+    msghdr.msg_namelen    = sa_size;
     msghdr.msg_iov        = iov;
     msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
 #if 0
@@ -276,20 +288,31 @@ krb5_change_password (krb5_context	context,
     krb5_auth_context auth_context = NULL;
     krb5_creds cred;
     int sock;
-    struct sockaddr_in addr;
     int i;
-
-    sock = socket (AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0)
-	return errno;
-
-    ret = get_kdc_address (context, creds->client->realm, &addr);
-    if (ret)
-	return ret;
+    char *buf;
+    struct sockaddr *sa;
+    int sa_size;
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
 	return ret;
+
+    buf = malloc (krb5_max_sockaddr_size ());
+    if (buf == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    sa = (struct sockaddr *)buf;
+
+    ret = get_kdc_address (context, creds->client->realm, sa, &sa_size);
+    if (ret)
+	goto out;
+
+    sock = socket (sa->sa_family, SOCK_DGRAM, 0);
+    if (sock < 0) {
+	ret = errno;
+	goto out;
+    }
 
     krb5_auth_con_setflags (context, auth_context,
 			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
@@ -302,7 +325,8 @@ krb5_change_password (krb5_context	context,
 			    &auth_context,
 			    creds,
 			    sock,
-			    addr,
+			    sa,
+			    sa_size,
 			    newpw);
 	if (ret)
 	    goto out;
@@ -332,5 +356,6 @@ krb5_change_password (krb5_context	context,
 
 out:
     krb5_auth_con_free (context, auth_context);
+    free (buf);
     return ret;
 }
