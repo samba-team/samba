@@ -31,6 +31,22 @@ extern pstring global_myname;
 extern pstring username, password;
 extern pstring workgroup;
 
+struct table {
+	char *long_archi;
+	char *short_archi;
+};
+ 
+struct table archi_table[]= {
+
+	{"Windows 4.0",          "WIN40"    },
+	{"Windows NT x86",       "W32X86"   },
+	{"Windows NT R4000",     "W32MIPS"  },
+	{"Windows NT Alpha_AXP", "W32ALPHA" },
+	{"Windows NT PowerPC",   "W32PPC"   },
+	{NULL,                   ""         }
+};
+
+
 /**********************************************************************
  * dummy function  -- placeholder
   */
@@ -124,9 +140,9 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Enumerate printers */
+	/* Open the printer handle */
 	result = cli_spoolss_open_printer_ex (cli, printername, "", 
-				PRINTER_ACCESS_USE, server, user, &hnd);
+				MAXIMUM_ALLOWED_ACCESS, server, user, &hnd);
 
 	if (result == NT_STATUS_NOPROBLEMO) {
 		printf ("Printer %s opened successfully\n", printername);
@@ -285,12 +301,15 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 
 static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **argv)
 {
-	uint32 result = NT_STATUS_UNSUCCESSFUL, info_level = 1;
-	PRINTER_INFO_CTR ctr;
-	int returned;
+	uint32 			result = NT_STATUS_UNSUCCESSFUL, 
+				info_level = 1;
+	PRINTER_INFO_CTR	ctr;
+	int 			returned;
+	uint32			i;
 	
-	if (argc > 2) {
-		printf("Usage: enumprinters\n");
+	if (argc > 2) 
+	{
+		printf("Usage: enumprinters [level]\n");
 		return NT_STATUS_NOPROBLEMO;
 	}
 
@@ -313,16 +332,24 @@ static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **
 	if (result == NT_STATUS_NOPROBLEMO) {
 		switch(info_level) {
 		case 0:
-			display_print_info_0(ctr.printers_0);
+			for (i=0; i<returned; i++) {
+				display_print_info_0(&(ctr.printers_0[i]));
+			}
 			break;
 		case 1:
-			display_print_info_1(ctr.printers_1);
+			for (i=0; i<returned; i++) {
+				display_print_info_1(&(ctr.printers_1[i]));
+			}
 			break;
 		case 2:
-			display_print_info_2(ctr.printers_2);
+			for (i=0; i<returned; i++) {
+				display_print_info_2(&(ctr.printers_2[i]));
+			}
 			break;
 		case 3:
-			display_print_info_3(ctr.printers_3);
+			for (i=0; i<returned; i++) {
+				display_print_info_3(&(ctr.printers_3[i]));
+			}
 			break;
 		default:
 			printf("unknown info level %d\n", info_level);
@@ -368,11 +395,12 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 
 static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **argv)
 {
-	uint32 result = NT_STATUS_UNSUCCESSFUL, info_level = 1;
-	PORT_INFO_CTR ctr;
-	int returned;
+	uint32 			result = NT_STATUS_UNSUCCESSFUL, 
+				info_level = 1;
+	PORT_INFO_CTR 		ctr;
+	int 			returned;
 	
-	if (argc == 1 || argc < 2) {
+	if (argc > 2) {
 		printf("Usage: enumports [level]\n");
 		return NT_STATUS_NOPROBLEMO;
 	}
@@ -420,11 +448,13 @@ static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **arg
  */
 static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **argv)
 {
-	POLICY_HND pol;
-	uint32 result, info_level = 1;
-	BOOL opened_hnd = False;
+	POLICY_HND 	pol;
+	uint32 		result, 
+			info_level = 1;
+	BOOL 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
-	fstring printer_name, station_name;
+	fstring 	printername, 
+			servername;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s printername [level]\n", argv[0]);
@@ -438,17 +468,17 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	}
 
 	/* Open a printer handle */
-
 	if (argc == 3) {
 		info_level = atoi(argv[2]);
 	}
 
-	slprintf(printer_name, sizeof(fstring), "\\\\%s\\%s", server, argv[1]);
-
-	slprintf(station_name, sizeof(fstring), "\\\\%s", global_myname);
-
+	slprintf (printername, sizeof(fstring), "\\\\%s\\%s", server, argv[1]);
+	slprintf (servername, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (servername);
+	
+	/* get a printer handle */
 	if ((result = cli_spoolss_open_printer_ex(
-		cli, printer_name, "", MAXIMUM_ALLOWED_ACCESS, station_name,
+		cli, printername, "", MAXIMUM_ALLOWED_ACCESS, servername,
 		username, &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
@@ -490,6 +520,304 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	return result;
 }
 
+/****************************************************************************
+printer info level 0 display function
+****************************************************************************/
+static void display_print_driver_1(DRIVER_INFO_1 *i1)
+{
+	fstring name;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+
+	printf ("Printer Driver Info 1:\n");
+	printf ("\tDriver Name: [%s]\n\n", name);
+	
+	return;
+}
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_print_driver_2(DRIVER_INFO_2 *i1)
+{
+	fstring name;
+	fstring architecture;
+	fstring driverpath;
+	fstring datafile;
+	fstring configfile;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
+	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
+	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
+	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+
+	printf ("Printer Driver Info 2:\n");
+	printf ("\tVersion: [%x]\n", i1->version);
+	printf ("\tDriver Name: [%s]\n", name);
+	printf ("\tArchitecture: [%s]\n", architecture);
+	printf ("\tDriver Path: [%s]\n", driverpath);
+	printf ("\tDatafile: [%s]\n", datafile);
+	printf ("\tConfigfile: [%s]\n\n", configfile);
+
+	return;
+}
+
+/****************************************************************************
+printer info level 2 display function
+****************************************************************************/
+static void display_print_driver_3(DRIVER_INFO_3 *i1)
+{
+	fstring name;
+	fstring architecture;
+	fstring driverpath;
+	fstring datafile;
+	fstring configfile;
+	fstring helpfile;
+	fstring dependentfiles;
+	fstring monitorname;
+	fstring defaultdatatype;
+	
+	int length=0;
+	BOOL valid = True;
+	
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
+	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
+	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
+	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+	unistr_to_ascii(helpfile, i1->helpfile.buffer, sizeof(helpfile)-1);
+	
+	unistr_to_ascii(monitorname, i1->monitorname.buffer, sizeof(monitorname)-1);
+	unistr_to_ascii(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype)-1);
+
+	printf ("Printer Driver Info 3:\n");
+	printf ("\tVersion: [%x]\n", i1->version);
+	printf ("\tDriver Name: [%s]\n",name );
+	printf ("\tArchitecture: [%s]\n", architecture);
+	printf ("\tDriver Path: [%s]\n", driverpath);
+	printf ("\tDatafile: [%s]\n", datafile);
+	printf ("\tConfigfile: [%s]\n", configfile);
+	printf ("\tHelpfile: [%s]\n\n", helpfile);
+
+	while (valid)
+	{
+		unistr_to_ascii(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles)-1);
+		length+=strlen(dependentfiles)+1;
+		
+		if (strlen(dependentfiles) > 0)
+		{
+			printf ("\tDependentfiles: [%s]\n", dependentfiles);
+		}
+		else
+		{
+			valid = False;
+		}
+	}
+	
+	printf ("\n");
+
+	printf ("\tMonitorname: [%s]\n", monitorname);
+	printf ("\tDefaultdatatype: [%s]\n\n", defaultdatatype);
+
+	return;	
+}
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	uint32 		result, 
+			info_level = 3;
+	BOOL 		opened_hnd = False;
+	PRINTER_DRIVER_CTR 	ctr;
+	fstring 	printername, 
+			server, 
+			user;
+	uint32		i;
+
+	if ((argc == 1) || (argc > 3)) 
+	{
+		printf("Usage: %s <printername> [level]\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* get the arguments need to open the printer handle */
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+	fstrcpy  (user, cli->user_name);
+	fstrcpy  (printername, argv[1]);
+	if (argc == 3)
+		info_level = atoi(argv[2]);
+
+	/* Open a printer handle */
+	if ((result=cli_spoolss_open_printer_ex (cli, printername, "", 
+		    MAXIMUM_ALLOWED_ACCESS, server, user, &pol)) != NT_STATUS_NO_PROBLEMO) 
+	{
+		printf ("Error opening printer handle for %s!\n", printername);
+		return result;
+	}
+
+	opened_hnd = True;
+
+	/* loop through and print driver info level for each architecture */
+	for (i=0; archi_table[i].long_archi!=NULL; i++) 
+	{
+		result = cli_spoolss_getprinterdriver (cli, &pol, info_level, 
+				archi_table[i].long_archi, &ctr);
+				
+		switch (result)
+		{
+		case NT_STATUS_NO_PROBLEMO:
+			break;
+			
+		case ERROR_UNKNOWN_PRINTER_DRIVER:
+			continue;
+
+		default:
+			printf ("Error getting driver for %s [%s] - %s\n", printername,
+				archi_table[i].long_archi, get_nt_error_msg(result));
+			continue;
+		}
+
+			
+		printf ("\n[%s]\n", archi_table[i].long_archi);
+		switch (info_level) 
+		{
+			
+		case 1:
+			display_print_driver_1 (ctr.info1);
+			break;
+		case 2:
+			display_print_driver_2 (ctr.info2);
+			break;
+		case 3:
+			display_print_driver_3 (ctr.info3);
+			break;
+		default:
+			printf("unknown info level %d\n", info_level);
+			break;
+		}
+		
+	
+	}
+	
+
+	/* cleanup */
+	if (opened_hnd)
+		cli_spoolss_close_printer (cli, &pol);
+	cli_nt_session_close (cli);
+	
+	if (result==ERROR_UNKNOWN_PRINTER_DRIVER)
+		return NT_STATUS_NO_PROBLEMO;
+	else 
+		return result;
+		
+}
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 		result, 
+			info_level = 1;
+	PRINTER_DRIVER_CTR 	ctr;
+	fstring 	server;
+	uint32		i, j,
+			returned;
+
+	if (argc > 2) 
+	{
+		printf("Usage: enumdrivers [level]\n");
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* get the arguments need to open the printer handle */
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+	if (argc == 2)
+		info_level = atoi(argv[1]);
+
+
+	/* loop through and print driver info level for each architecture */
+	for (i=0; archi_table[i].long_archi!=NULL; i++) 
+	{
+		returned = 0;	
+		result = cli_spoolss_enumprinterdrivers (cli, info_level, 
+				archi_table[i].long_archi, &returned, &ctr);
+
+		if (returned == 0)
+			continue;
+			
+
+		if (result != NT_STATUS_NO_PROBLEMO)
+		{
+			printf ("Error getting driver for environment [%s] - %s\n",
+				archi_table[i].long_archi, get_nt_error_msg(result));
+			continue;
+		}
+		
+		printf ("\n[%s]\n", archi_table[i].long_archi);
+		switch (info_level) 
+		{
+			
+		case 1:
+			for (j=0; j < returned; j++) {
+				display_print_driver_1 (&(ctr.info1[j]));
+			}
+			break;
+		case 2:
+			for (j=0; j < returned; j++) {
+				display_print_driver_2 (&(ctr.info2[j]));
+			}
+			break;
+		case 3:
+			for (j=0; j < returned; j++) {
+				display_print_driver_3 (&(ctr.info3[j]));
+			}
+			break;
+		default:
+			printf("unknown info level %d\n", info_level);
+			break;
+		}
+	}
+	
+
+	/* cleanup */
+	cli_nt_session_close (cli);
+	
+	if (result==ERROR_UNKNOWN_PRINTER_DRIVER)
+		return NT_STATUS_NO_PROBLEMO;
+	else 
+		return result;
+		
+}
+
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -500,8 +828,9 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)" },
 	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
 	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
+	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	"Enumerate installed printer drivers" },
 	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)" },
-	{ "getdriver",		cmd_spoolss_not_implemented,	"Get print driver information (*)" },
+	{ "getdriver",		cmd_spoolss_getdriver,		"Get print driver information" },
 	{ "getdriverdir",	cmd_spoolss_not_implemented,	"Get print driver upload directory (*)" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
