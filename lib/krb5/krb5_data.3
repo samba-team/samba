@@ -86,7 +86,9 @@ resets the content of
 .Pp
 .Fn krb5_data_free
 free the data in
-.Fa p .
+.Fa p
+and reset the content of the structure with
+.Fn krb5_data_zero .
 .Pp
 .Fn krb5_free_data_contents
 works the same way as
