@@ -1643,6 +1643,7 @@ struct cnotify_fns {
 	void * (*register_notify)(connection_struct *conn, char *path, uint32 flags);
 	BOOL (*check_notify)(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *data, time_t t);
 	void (*remove_notify)(void *data);
+	int select_time;
 };
 
 

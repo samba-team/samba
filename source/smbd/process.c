@@ -836,21 +836,21 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
 static int setup_select_timeout(void)
 {
-  int change_notify_timeout = lp_change_notify_timeout() * 1000;
-  int select_timeout;
+	int select_timeout;
+	int t;
 
-  /*
-   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
-   * have removed any blocking locks. JRA.
-   */
+	/*
+	 * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
+	 * have removed any blocking locks. JRA.
+	 */
 
-  select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-                                              SMBD_SELECT_TIMEOUT*1000;
+	select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+		SMBD_SELECT_TIMEOUT*1000;
 
-  if (change_notifies_pending())
-    select_timeout = MIN(select_timeout, change_notify_timeout);
+	t = change_notify_timeout();
+	if (t != -1) select_timeout = MIN(select_timeout, t*1000);
 
-  return select_timeout;
+	return select_timeout;
 }
 
 /****************************************************************************

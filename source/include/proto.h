@@ -3254,7 +3254,7 @@ BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
 void remove_pending_change_notify_requests_by_mid(int mid);
 void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
-BOOL change_notifies_pending(void);
+int change_notify_timeout(void);
 BOOL process_pending_change_notify_queue(time_t t);
 BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, uint32 flags);
 BOOL init_change_notify(void);

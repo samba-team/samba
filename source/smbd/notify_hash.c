@@ -165,6 +165,7 @@ struct cnotify_fns *hash_notify_init(void)
 	cnotify.register_notify = hash_register_notify;
 	cnotify.check_notify = hash_check_notify;
 	cnotify.remove_notify = hash_remove_notify;
+	cnotify.select_time = lp_change_notify_timeout();
 
 	return &cnotify;
 }
