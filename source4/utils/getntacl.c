@@ -21,7 +21,16 @@
 */
 
 #include "includes.h"
-#include <attr/xattr.h>
+
+#ifdef HAVE_NO_ACLS
+
+int main(int argc, char **argv)
+{
+	printf("ACL support not compiled in.");
+	return 1;
+}
+
+#else
 
 /* Display a security descriptor in "psec" format which is as follows.
 
@@ -114,3 +123,5 @@ int main(int argc, char **argv)
 	print_psec(data, &sd);
 	return 0;
 }
+
+#endif /* HAVE_NO_ACLS */

@@ -21,7 +21,16 @@
 */
 
 #include "includes.h"
-#include <attr/xattr.h>
+
+#ifdef HAVE_NO_ACLS
+
+int main(int argc, char **argv)
+{
+	printf("ACL support not compiled in.");
+	return 1;
+}
+
+#else
 
 static void setntacl(char *filename, struct security_descriptor *sd)
 {
@@ -103,3 +112,5 @@ static void setntacl(char *filename, struct security_descriptor *sd)
 
 	return 0;
 }
+
+#endif /* HAVE_NO_ACLS */

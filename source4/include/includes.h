@@ -1057,5 +1057,16 @@ time_t timegm(struct tm *tm);
 #define VXFS_QUOTA
 #endif
 
+#if HAVE_SYS_ATTRIBUTES_H
+#include <sys/attributes.h>
+#endif
+
+/* mutually exclusive (SuSE 8.2) */
+#if HAVE_ATTR_XATTR_H
+#include <attr/xattr.h>
+#elif HAVE_SYS_XATTR_H
+#include <sys/xattr.h>
+#endif
+
 #endif /* _INCLUDES_H */
 
