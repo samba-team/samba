@@ -571,7 +571,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
          * If we found a connection and we're only allowed one share per
          * server...
          */
-        if (srv && *share != '\0' && context->internal->options.one_share_per_server) {
+        if (srv && *share != '\0' && context->options.one_share_per_server) {
 
                 /*
                  * ... then if there's no current connection to the share,
@@ -1932,9 +1932,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 		}
 
                 /* Determine how many local master browsers to query */
-                max_lmb_count = (context->internal->options.browse_max_lmb_count == 0
+                max_lmb_count = (context->options.browse_max_lmb_count == 0
                                  ? INT_MAX
-                                 : context->internal->options.browse_max_lmb_count);
+                                 : context->options.browse_max_lmb_count);
 
                 pstrcpy(u_info.username, user);
                 pstrcpy(u_info.password, password);
@@ -2216,7 +2216,7 @@ static void smbc_readdir_internal(SMBCCTX * context,
                                   struct smbc_dirent *src,
                                   int max_namebuf_len)
 {
-        if (context->internal->options.urlencode_readdir_entries) {
+        if (context->options.urlencode_readdir_entries) {
 
                 /* url-encode the name.  get back remaining buffer space */
                 max_namebuf_len =
@@ -4804,8 +4804,6 @@ SMBCCTX * smbc_new_context(void)
                 return NULL;
         }
 
-	context->flags = SMBCCTX_FLAG_CTXVER;
-
         ZERO_STRUCTP(context->internal);
 
         
@@ -4813,9 +4811,9 @@ SMBCCTX * smbc_new_context(void)
         context->debug            = 0;
         context->timeout          = 20000; /* 20 seconds */
 
-	context->internal->options.browse_max_lmb_count      = 3;    /* # LMBs to query */
-	context->internal->options.urlencode_readdir_entries = False;/* backward compat */
-	context->internal->options.one_share_per_server      = False;/* backward compat */
+	context->options.browse_max_lmb_count      = 3;    /* # LMBs to query */
+	context->options.urlencode_readdir_entries = False;/* backward compat */
+	context->options.one_share_per_server      = False;/* backward compat */
 
         context->open                              = smbc_open_ctx;
         context->creat                             = smbc_creat_ctx;
