@@ -71,6 +71,7 @@ static struct stot{
     DECL(KEY),
     DECL(SRV),
     DECL(NAPTR),
+    DECL(SSHFP),
     {NULL, 	0}
 };
 
@@ -323,6 +324,36 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	memcpy ((*rr)->u.cert->cert_data, p + 5, cert_len);
 	break;
     }
+    case T_SSHFP : {
+	size_t sshfp_len;
+	unsigned type;
+
+	if (size < 2) {
+	    free(*rr);
+	    return -1;
+	}
+
+	sshfp_len = size - 2;
+
+	type = p[1];
+
+	if (type != 1 && sshfp_len != 20) /* SHA-1 */ {
+	    free(*rr);
+	    return -1;
+	}
+
+	(*rr)->u.sshfp = malloc (sizeof(*(*rr)->u.sshfp) + sshfp_len - 1);
+	if ((*rr)->u.sshfp == NULL) {
+	    free(*rr);
+	    return -1;
+	}
+
+	(*rr)->u.sshfp->algorithm = p[0];
+	(*rr)->u.sshfp->type      = p[1];
+	(*rr)->u.sshfp->sshfp_len  = sshfp_len;
+	memcpy ((*rr)->u.sshfp->sshfp_data, p + 2, sshfp_len);
+	break;
+    }
     default:
 	(*rr)->u.data = (unsigned char*)malloc(size);
 	if(size != 0 && (*rr)->u.data == NULL) {
@@ -356,7 +387,23 @@ parse_reply(const unsigned char *data, size_t len)
     p = data;
 
     r->h.id = (p[0] << 8) | p[1];
-    r->h.misc = (p[2] << 8) | p[3];
+    r->h.flags = 0;
+    if (p[2] & 0x01)
+	r->h.flags |= rk_DNS_HEADER_RESPONSE_FLAG;
+    r->h.opcode = (p[2] >> 1) & 0xf;
+    if (p[2] & 0x20)
+	r->h.flags |= rk_DNS_HEADER_AUTHORITIVE_ANSWER;
+    if (p[2] & 0x40)
+	r->h.flags |= rk_DNS_HEADER_TRUNCATED_MESSAGE;
+    if (p[2] & 0x80)
+	r->h.flags |= rk_DNS_HEADER_RECURSION_DESIRED;
+    if (p[3] & 0x01)
+	r->h.flags |= rk_DNS_HEADER_RECURSION_AVAILABLE;
+    if (p[3] & 0x04)
+	r->h.flags |= rk_DNS_HEADER_AUTHORITIVE_ANSWER;
+    if (p[3] & 0x08)
+	r->h.flags |= rk_DNS_HEADER_CHECKING_DISABLED;
+    r->h.response_code = (p[3] >> 4) & 0xf;
     r->h.qdcount = (p[4] << 8) | p[5];
     r->h.ancount = (p[6] << 8) | p[7];
     r->h.nscount = (p[8] << 8) | p[9];
@@ -656,6 +703,18 @@ main(int argc, char **argv)
 
 	    printf ("flags %u, protocol %u, algorithm %u\n",
 		    key->flags, key->protocol, key->algorithm);
+	    break;
+	}
+	case T_SSHFP : {
+	    struct sshfp_record *sshfp = rr->u.sshfp;
+	    int i;
+
+	    printf ("alg %u type %u length %u data ",
+		    sshfp->algorithm, sshfp->type, sshfp->sshfp_len);
+	    for (i = 0; i < sshfp->sshfp_len; i++)
+		printf("%02X", sshfp->sshfp_data[i]);
+	    printf("\n");
+
 	    break;
 	}
 	default:
