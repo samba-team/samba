@@ -264,7 +264,9 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
 	static struct sam_passwd user;
 	struct passwd *pwfile;
-
+#if ARGH
+	uint32 status = 0x0;
+#endif
 	static pstring full_name;
 	static pstring home_dir;
 	static pstring home_drive;
@@ -298,8 +300,12 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 		user.smb_userid    = pw_buf->smb_userid;
 		user.smb_grpid     = pwfile->pw_gid;
 
+#if ARGH
+		status = lookup_user_rids(pw_buf->smb_name, &user.user_rid, &user.group_rid);
+#else
 		user.user_rid  = pwdb_uid_to_user_rid (user.smb_userid);
 		user.group_rid = pwdb_gid_to_group_rid(user.smb_grpid );
+#endif
 
 		pstrcpy(full_name    , pwfile->pw_gecos        );
 		pstrcpy(logon_script , lp_logon_script       ());
@@ -327,6 +333,13 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 		pstrcpy(acct_desc    , "");
 		pstrcpy(workstations , "");
 	}
+
+#if ARGH
+	if (status != 0x0)
+	{
+		return NULL;
+	}
+#endif
 
 	user.smb_name     = pw_buf->smb_name;
 	user.full_name    = full_name;
