@@ -25,9 +25,12 @@ libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h
 # install these?
 
 bin_PROGRAMS = mk_cmds
+noinst_PROGRAMS = slc
 
 mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l
 mk_cmds_LDADD = libsl.la $(LDADD)
+
+slc_SOURCES = slc-gram.y slc-lex.l slc.h
 
 ssincludedir = $(includedir)/ss
 ssinclude_HEADERS = ss.h
