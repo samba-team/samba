@@ -83,9 +83,9 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			printf("Bad data returned for len %d at offset %d\n", 
 			       len, i);
 			printf("in:\n");
-			dump_data(0, data_in, MIN(len, 16));
+			dump_data(0, data_in+i, MIN(len-i, 16));
 			printf("out:\n");
-			dump_data(0, data_out, MIN(len, 16));
+			dump_data(0, data_out+i, MIN(len-1, 16));
 			return False;
 		}
 	}
