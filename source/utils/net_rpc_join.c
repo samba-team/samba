@@ -141,7 +141,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) 
 		return 1;
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("net_rpc_join_newstyle"))) {
 		DEBUG(0, ("Could not initialise talloc context\n"));
 		goto done;
 	}

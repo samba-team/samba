@@ -677,7 +677,7 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	ads = ads_cached_connection(domain);
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
-	if (!(ctx = talloc_init_named("alternate_name"))) {
+	if (!(ctx = talloc_init("alternate_name"))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

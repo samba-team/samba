@@ -777,7 +777,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	struct cli_state *cli;
 
-	ctx=talloc_init();
+	ctx=talloc_init("main");
 
 	setlinebuf(stdout);
 

@@ -50,7 +50,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	if (fullname && *fullname) name = fullname;
 	else name = user;
 
-	if (!(ctx = talloc_init_named("ads_add_user_acct")))
+	if (!(ctx = talloc_init("ads_add_user_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	status = ADS_ERROR(LDAP_NO_MEMORY);
@@ -88,7 +88,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	char *new_dn;
 	const char *objectClass[] = {"top", "group", NULL};
 
-	if (!(ctx = talloc_init_named("ads_add_group_acct")))
+	if (!(ctx = talloc_init("ads_add_group_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	status = ADS_ERROR(LDAP_NO_MEMORY);

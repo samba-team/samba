@@ -776,7 +776,7 @@ static void notify_msg_ctr_init( SPOOLSS_NOTIFY_MSG_CTR *ctr )
 	if ( !ctr )
 		return;
 
-	ctr->ctx = talloc_init();
+	ctr->ctx = talloc_init("notify_msg_ctr_init %p", ctr);
 		
 	return;
 }

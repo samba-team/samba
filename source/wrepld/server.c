@@ -707,7 +707,7 @@ static void process(void)
 	}
 
 	/* Initialise the memory context */
-	mem_ctx=talloc_init_named("wins repl talloc ctx");
+	mem_ctx=talloc_init("wins repl talloc ctx");
 
 	/* initialise the global partners table */
 	partner_count=init_wins_partner_table();

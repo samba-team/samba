@@ -74,9 +74,9 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 			continue;
 		}
 
-		mem_ctx = talloc_init_named("auth_get_challenge for module %s", auth_method->name);
+		mem_ctx = talloc_init("auth_get_challenge for module %s", auth_method->name);
 		if (!mem_ctx) {
-			smb_panic("talloc_init_named() failed!");
+			smb_panic("talloc_init() failed!");
 		}
 		
 		challenge = auth_method->get_chal(auth_context, &auth_method->private_data, mem_ctx);
@@ -211,7 +211,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
-		mem_ctx = talloc_init_named("%s authentication for user %s\\%s", auth_method->name, 
+		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
 					    user_info->domain.str, user_info->smb_name.str);
 
 		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
@@ -290,7 +290,7 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 {
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init_named("authentication context");
+	mem_ctx = talloc_init("authentication context");
 	
 	*auth_context = talloc(mem_ctx, sizeof(**auth_context));
 	if (!*auth_context) {
