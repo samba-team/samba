@@ -1,3 +1,7 @@
+Sun Jun  1 23:45:33 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* admin/extkeytab.c: Merged with kdb_edit.
+
 Sun Jun  1 23:23:08 1997  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kdc.c: more support for ENC-TS-ENC
