@@ -138,7 +138,8 @@ reply_error (krb5_principal server,
 			 &e_data,
 			 NULL,
 			 server,
-			 0,
+			 NULL,
+			 NULL,
 			 &error_data);
     krb5_data_free (&e_data);
     if (ret) {
