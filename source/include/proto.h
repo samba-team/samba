@@ -2133,6 +2133,10 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations);
 BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial);
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd);
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd);
+BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn);
+BOOL pdb_set_unknown_5 (SAM_ACCOUNT *sampass, uint32 unkn);
+BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn);
+BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours);
 
 /*The following definitions come from  passdb/pdb_smbpasswd.c  */
 
