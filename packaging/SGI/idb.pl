@@ -10,6 +10,7 @@ $curdir = $ENV{"PWD"};
 open(IGNORES,"../../source/.cvsignore") || die "Unable to open .cvsignore file\n";
 while (<IGNORES>) {
   chop;
+  next if /cvs\.log/;
   $ignores{$_}++;
 }
 close IGNORES;
