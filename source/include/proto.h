@@ -2002,7 +2002,7 @@ BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int de
 void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
-				char sess_key[16],
+				char *sess_key,
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
 void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
