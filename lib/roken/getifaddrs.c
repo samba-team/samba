@@ -66,7 +66,6 @@ getifaddrs2(struct ifaddrs **ifap,
     size_t buf_size;
     char *buf;
     struct ifconf ifconf;
-    int num, j = 0;
     char *p;
     size_t sz;
     struct sockaddr sa_zero;
@@ -109,8 +108,6 @@ getifaddrs2(struct ifaddrs **ifap,
 	buf_size *= 2;
     }
 
-    num = ifconf.ifc_len / ifreq_sz;
-    j = 0;
     for (p = ifconf.ifc_buf;
 	 p < ifconf.ifc_buf + ifconf.ifc_len;
 	 p += sz) {
