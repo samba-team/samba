@@ -1828,9 +1828,9 @@ has the SO_KEEPALIVE attribute set on it (see <a href="smb.conf.5.html#socketopt
 options"</strong></a>). Basically you should only use this option
 if you strike difficulties.
 <p><br><strong>Default:</strong>
-<code>	keep alive = 0</code>
+<code>	keepalive = 0</code>
 <p><br><strong>Example:</strong>
-<code>	keep alive = 60</code>
+<code>	keepalive = 60</code>
 <p><br><a name="kerneloplocks"></a>
 <li><strong><strong>kernel oplocks (G)</strong></strong>
 <p><br>For UNIXs that support kernel based <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
@@ -2474,7 +2474,7 @@ never need to set this parameter.
 <p><br><strong>Default:</strong>
 <code>	max mux = 50</code>
 <p><br><a name="maxopenfiles"></a>
-<li><strong><strong>maxopenfiles (G)</strong></strong>
+<li><strong><strong>max open files (G)</strong></strong>
 <p><br>This parameter limits the maximum number of open files that one
 <a href="smbd.8.html"><strong>smbd</strong></a> file serving process may have open for
 a client at any one time. The default for this parameter is set
@@ -3356,13 +3356,13 @@ all the data has been read from disk.
 <p><br>This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
 greater than the other.
-<p><br>The default value is 2048, but very little experimentation has been
+<p><br>The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the
 best value will vary greatly between systems anyway. A value over
 65536 is pointless and will cause you to allocate memory
 unnecessarily.
 <p><br><strong>Default:</strong>
-<code>	read size = 2048</code>
+<code>	read size = 16384</code>
 <p><br><strong>Example:</strong>
 <code>	read size = 8192</code>
 <p><br><a name="remoteannounce"></a>

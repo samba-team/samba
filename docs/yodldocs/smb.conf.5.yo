@@ -2553,10 +2553,10 @@ options"))(socketoptions)). Basically you should only use this option
 if you strike difficulties.
 
   bf(Default:)
-tt(	keep alive = 0)
+tt(	keepalive = 0)
 
   bf(Example:)
-tt(	keep alive = 60)
+tt(	keepalive = 60)
 
 label(kerneloplocks)
 dit(bf(kernel oplocks (G)))
@@ -3451,7 +3451,7 @@ never need to set this parameter.
 tt(	max mux = 50)
 
 label(maxopenfiles)
-dit(bf(maxopenfiles (G)))
+dit(bf(max open files (G)))
 
 This parameter limits the maximum number of open files that one
 url(bf(smbd))(smbd.8.html) file serving process may have open for
@@ -4658,14 +4658,14 @@ This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
 greater than the other.
 
-The default value is 2048, but very little experimentation has been
+The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the
 best value will vary greatly between systems anyway. A value over
 65536 is pointless and will cause you to allocate memory
 unnecessarily.
 
   bf(Default:)
-tt(	read size = 2048)
+tt(	read size = 16384)
 
   bf(Example:)
 tt(	read size = 8192)

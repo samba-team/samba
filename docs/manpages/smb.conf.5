@@ -2762,10 +2762,10 @@ options"\fP)\&. Basically you should only use this option
 if you strike difficulties\&.
 .IP 
 \fBDefault:\fP
-\f(CW	keep alive = 0\fP
+\f(CW	keepalive = 0\fP
 .IP 
 \fBExample:\fP
-\f(CW	keep alive = 60\fP
+\f(CW	keepalive = 60\fP
 .IP 
 .IP "\fBkernel oplocks (G)\fP" 
 .IP 
@@ -3621,7 +3621,7 @@ never need to set this parameter\&.
 \fBDefault:\fP
 \f(CW	max mux = 50\fP
 .IP 
-.IP "\fBmaxopenfiles (G)\fP" 
+.IP "\fBmax open files (G)\fP" 
 .IP 
 This parameter limits the maximum number of open files that one
 \fBsmbd\fP file serving process may have open for
@@ -4797,14 +4797,14 @@ This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
 greater than the other\&.
 .IP 
-The default value is 2048, but very little experimentation has been
+The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the
 best value will vary greatly between systems anyway\&. A value over
 65536 is pointless and will cause you to allocate memory
 unnecessarily\&.
 .IP 
 \fBDefault:\fP
-\f(CW	read size = 2048\fP
+\f(CW	read size = 16384\fP
 .IP 
 \fBExample:\fP
 \f(CW	read size = 8192\fP

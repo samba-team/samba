@@ -876,7 +876,7 @@ static void init_globals(void)
   Globals.bReadRaw = True;
   Globals.bWriteRaw = True;
   Globals.bReadPrediction = False;
-  Globals.bReadbmpx = True;
+  Globals.bReadbmpx = False;
   Globals.bNullPasswords = False;
   Globals.bStripDot = False;
   Globals.syslog = 1;
