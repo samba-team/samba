@@ -35,7 +35,7 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 4
+#define PROF_SHM_VERSION 5
 
 /* time values in the following structure are in microseconds */
 
@@ -318,6 +318,56 @@ struct profile_stats {
 	unsigned NT_transact_rename_time;
 	unsigned NT_transact_query_security_desc_count;
 	unsigned NT_transact_query_security_desc_time;
+/* These are ACL manipulation calls */
+	unsigned get_nt_acl_count;
+	unsigned get_nt_acl_time;
+	unsigned fget_nt_acl_count;
+	unsigned fget_nt_acl_time;
+	unsigned set_nt_acl_count;
+	unsigned set_nt_acl_time;
+	unsigned fset_nt_acl_count;
+	unsigned fset_nt_acl_time;
+	unsigned chmod_acl_count;
+	unsigned chmod_acl_time;
+	unsigned fchmod_acl_count;
+	unsigned fchmod_acl_time;
+/* These are nmbd stats */
+	unsigned name_release_count;
+	unsigned name_release_time;
+	unsigned name_refresh_count;
+	unsigned name_refresh_time;
+	unsigned name_registration_count;
+	unsigned name_registration_time;
+	unsigned node_status_count;
+	unsigned node_status_time;
+	unsigned name_query_count;
+	unsigned name_query_time;
+	unsigned host_announce_count;
+	unsigned host_announce_time;
+	unsigned workgroup_announce_count;
+	unsigned workgroup_announce_time;
+	unsigned local_master_announce_count;
+	unsigned local_master_announce_time;
+	unsigned master_browser_announce_count;
+	unsigned master_browser_announce_time;
+	unsigned lm_host_announce_count;
+	unsigned lm_host_announce_time;
+	unsigned get_backup_list_count;
+	unsigned get_backup_list_time;
+	unsigned reset_browser_count;
+	unsigned reset_browser_time;
+	unsigned announce_request_count;
+	unsigned announce_request_time;
+	unsigned lm_announce_request_count;
+	unsigned lm_announce_request_time;
+	unsigned domain_logon_count;
+	unsigned domain_logon_time;
+	unsigned sync_browse_lists_count;
+	unsigned sync_browse_lists_time;
+	unsigned run_elections_count;
+	unsigned run_elections_time;
+	unsigned election_count;
+	unsigned election_time;
 };
 
 struct profile_header {
