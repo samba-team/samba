@@ -14,8 +14,8 @@ void kauth(int argc, char **argv)
     KTEXT_ST tkt;
     char *name;
     char *p;
+    int overbose;
 	
-
     if(argc > 2){
 	printf("usage: %s [principal]\n", argv[0]);
 	code = -1;
@@ -25,11 +25,16 @@ void kauth(int argc, char **argv)
 	name = argv[1];
     else
 	name = username;
+
+    overbose = verbose;
+    verbose = 0;
+
     ret = command("SITE KAUTH %s", name);
     if(ret != CONTINUE){
 	code = -1;
 	return;
     }
+    verbose = overbose;
     p = strstr(reply_string, "T=");
     if(!p){
 	printf("Bad reply from server.\n");
@@ -72,4 +77,17 @@ void kauth(int argc, char **argv)
 	return;
     }
     code = 0;
+}
+
+void klist(int argc, char **argv)
+{
+    int ret;
+    if(argc != 1){
+	printf("usage: %s\n", argv[0]);
+	code = -1;
+	return;
+    }
+    
+    ret = command("SITE KLIST");
+    code = (ret == COMPLETE);
 }

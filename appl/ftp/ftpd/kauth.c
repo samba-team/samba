@@ -20,6 +20,7 @@
 
 
 static KTEXT_ST cip;
+static unsigned int lifetime;
 static time_t local_time;
 
 static char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
@@ -41,7 +42,6 @@ store_ticket(KTEXT cip)
     char sname[SNAME_SZ];
     char sinst[INST_SZ];
     char srealm[REALM_SZ];
-    unsigned char lifetime;
     unsigned char kvno;
     KTEXT_ST tkt;
 
@@ -159,7 +159,7 @@ void kauth(char *principal, char *ticket)
 	}
 	if(k_hasafs())
 	    k_afsklog(0, 0);
-	reply(200, "OK");
+	reply(200, "Tickets will be destroyed on exit.");
 	return;
     }
     
@@ -173,4 +173,102 @@ void kauth(char *principal, char *ticket)
     reply(300, "P=%s%s%s@%s T=%s", name, *inst?".":"", inst, realm, p);
     free(p);
     memset(&cip, 0, sizeof(cip));
+}
+
+
+static char *
+short_date(int32_t dp)
+{
+    char *cp;
+    time_t t = (time_t)dp;
+
+    if (t == (time_t)(-1L)) return "***  Never  *** ";
+    cp = ctime(&t) + 4;
+    cp[15] = '\0';
+    return (cp);
+}
+
+void klist(void)
+{
+    int err;
+
+    char *file = tkt_string();
+
+    char name[ANAME_SZ];
+    char inst[INST_SZ];
+    char realm[REALM_SZ];
+
+    char buf1[128], buf2[128];
+    int header = 1;
+    CREDENTIALS c;
+
+    
+
+    err = tf_init(file, R_TKT_FIL);
+    if(err != KSUCCESS){
+	reply(500, "%s", krb_get_err_text(err));
+	return;
+    }
+    tf_close();
+
+    /* 
+     * We must find the realm of the ticket file here before calling
+     * tf_init because since the realm of the ticket file is not
+     * really stored in the principal section of the file, the
+     * routine we use must itself call tf_init and tf_close.
+     */
+    err = krb_get_tf_realm(file, realm);
+    if(err != KSUCCESS){
+	reply(500, "%s", krb_get_err_text(err));
+	return;
+    }
+
+    err = tf_init(file, R_TKT_FIL);
+    if(err != KSUCCESS){
+	reply(500, "%s", krb_get_err_text(err));
+	return;
+    }
+
+    err = tf_get_pname(name);
+    if(err != KSUCCESS){
+	reply(500, "%s", krb_get_err_text(err));
+	return;
+    }
+    err = tf_get_pinst(inst);
+    if(err != KSUCCESS){
+	reply(500, "%s", krb_get_err_text(err));
+	return;
+    }
+
+    /* 
+     * You may think that this is the obvious place to get the
+     * realm of the ticket file, but it can't be done here as the
+     * routine to do this must open the ticket file.  This is why 
+     * it was done before tf_init.
+     */
+       
+    if(inst[0])
+	lreply(200, "Principal: %s.%s@%s", name, inst, realm);
+    else
+	lreply(200, "Principal: %s@%s", name, realm);
+    while ((err = tf_get_cred(&c)) == KSUCCESS) {
+	if (header) {
+	    lreply(200, "%-15s  %-15s  %s",
+		   "  Issued", "  Expires", "  Principal (kvno)");
+	    header = 0;
+	}
+	strcpy(buf1, short_date(c.issue_date));
+	c.issue_date = krb_life_to_time(c.issue_date, c.lifetime);
+	if (time(0) < (unsigned long) c.issue_date)
+	    strcpy(buf2, short_date(c.issue_date));
+	else
+	    strcpy(buf2, ">>> Expired <<< ");
+	lreply(200, "%s  %s  %s%s%s%s%s (%d)", buf1, buf2,
+	       c.service, (c.instance[0] ? "." : ""), c.instance,
+	       (c.realm[0] ? "@" : ""), c.realm, c.kvno); 
+    }
+    if (header && err == EOF) {
+	lreply(200, "No tickets in file.");
+    }
+    reply(200, "");
 }

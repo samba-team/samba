@@ -138,7 +138,7 @@ static int	 yylex (void);
 	AUTH	ADAT	PROT	PBSZ	CCC	MIC
 	CONF	ENC
 
-	KAUTH
+	KAUTH	KLIST
 
 	LEXERR
 
@@ -526,6 +526,10 @@ cmd
 				kauth($5, NULL);
 			free($5);
 		}
+	| SITE SP KLIST CRLF
+		{
+			klist();
+		}
 	| STOU check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
@@ -900,6 +904,7 @@ struct tab sitetab[] = {
 	{ "HELP", HELP, OSTR, 1,	"[ <sp> <string> ]" },
 
 	{ "KAUTH", KAUTH, STR1, 1,	"<sp> principal [ <sp> ticket ]" },
+	{ "KLIST", KLIST, ARGS, 1,	"(show ticket file)" },
 	
 	{ NULL,   0,    0,    0,	0 }
 };

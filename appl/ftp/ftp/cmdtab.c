@@ -108,6 +108,8 @@ char	verbosehelp[] =	"toggle verbose mode";
 
 char	prothelp[] = 	"set protection level";
 char	kauthhelp[] = 	"get remote tokens";
+char	klisthelp[] =	"show remote tickets";
+char	aklog[] = 	"obtain remote AFS tokens";
 
 struct cmd cmdtab[] = {
 	{ "!",		shellhelp,	0,	0,	0,	shell },
@@ -185,6 +187,7 @@ struct cmd cmdtab[] = {
 
 	{ "prot", 	prothelp, 	0, 	1, 	0,	sec_prot },
 	{ "kauth", 	kauthhelp, 	0, 	1, 	0,	kauth },
+	{ "klist", 	klisthelp, 	0, 	1, 	0,	klist },
 	
 	{ 0 },
 };

@@ -8,6 +8,7 @@ void sec_status(void);
 void sec_prot(int, char**);
 
 void kauth(int, char **);
+void klist(int, char **);
 
 void krb4_quit(void);
 
