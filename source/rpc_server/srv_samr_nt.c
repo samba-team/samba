@@ -2319,7 +2319,7 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw(ctr->info.id24->pass, rid))
+			if (!set_user_info_pw((char *)(ctr->info.id24->pass), rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
