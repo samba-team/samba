@@ -1006,15 +1006,10 @@ static BOOL init_mangle_tdb(void)
 		slprintf(tdbfile, sizeof(tdbfile)-1, "%s/%s", lp_private_dir(), MANGLE_TDB_FILE_NAME);
 
 		/* Open tdb */
-		if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600)))
+		if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600)))
 		{
-			DEBUG(0, ("Unable to open Mangle TDB, trying create new!\n"));
-			/* create a new one if it does not exist */
-			if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600)))
-			{
-				DEBUG(0, ("Unable to create Mangle TDB (%s) !!!", tdbfile));
-				return False;
-			}
+			DEBUG(0, ("Unable to open Mangle TDB\n"));
+			return False;
 		}
 	}
 
@@ -1153,7 +1148,7 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	}
 	strupper_w(temp);
 	/* set search key */
-	pull_ucs2(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
+	ucs2_to_dos(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
 	SAFE_FREE(temp);
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
 	key.dptr = keystr;
@@ -1254,7 +1249,7 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 			snprintf(num, 7, "%d", c);
 			strncat_wa(temp, num, n);
 
-			pull_ucs2(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
+			ucs2_to_dos(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
 			if (strlen(mufname) > 8)
 			{
 				n++;
