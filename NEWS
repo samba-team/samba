@@ -1,6 +1,8 @@
 Changes in release 0.2a:
 
  * a new program verify_krb5_conf for checking your /etc/krb5.conf
+ * add 3DES keys when changing password
+ * support null keys in database
  * support multiple local realms
  * implement a keytab backend for AFS KeyFile's
  * implement a keytab backend for v4 srvtabs
