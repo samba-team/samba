@@ -1513,6 +1513,7 @@ int readstream(int p, char *ibuf, int bufsize)
 		ip = (struct iocblk *) (ibuf+1);
 
 		switch (ip->ioc_cmd) {
+#ifdef TCSETS
 		case TCSETS:
 		case TCSETSW:
 		case TCSETSF:
@@ -1522,6 +1523,7 @@ int readstream(int p, char *ibuf, int bufsize)
 			vstart = tsp->c_cc[VSTART];
 			ixon = tsp->c_iflag & IXON;
 			break;
+#endif
 #if 0
 		case TCSETA:
 		case TCSETAW:
