@@ -13,8 +13,10 @@
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
+CONFIG=/etc/samba/smb.conf
+
 # Check that smb.conf exists.
-[ -f /etc/samba/smb.conf ] || exit 0
+[ -f $CONFIG ] || exit 0
 
 # See how we were called.
 case "$1" in
@@ -22,6 +24,9 @@ case "$1" in
 	echo -n "Starting SMB services: "
 	daemon smbd -D 	
 	daemon nmbd -D 
+	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
+		daemon winbindd 
+	fi
 	echo
 	touch /var/lock/subsys/smb
 	;;
@@ -29,12 +34,16 @@ case "$1" in
 	echo -n "Shutting down SMB services: "
 	killproc smbd
 	killproc nmbd
+	if [ "`ps -ef | grep winbind | grep -v grep`" ]; then
+		killproc winbindd
+	fi
 	rm -f /var/lock/subsys/smb
 	echo ""
 	;;
   status)
 	status smbd
 	status nmbd
+	status winbindd
 	;;
   restart)
 	echo -n "Restarting SMB services: "
