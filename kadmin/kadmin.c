@@ -45,10 +45,13 @@ static char *realm;
 static char *admin_server;
 static int server_port = 0;
 static char *client_name;
+static char *keytab;
 
 static struct getargs args[] = {
     {	"principal", 	'p',	arg_string,	&client_name,
 	"principal to authenticate as" },
+    {   "keytab",	'K',	arg_string,	&keytab,
+   	"keytab for authentication pricipal" },
     { 
 	"config-file",	'c',	arg_string,	&config_file, 
 	"location of config file",	"file" 
@@ -278,6 +281,14 @@ main(int argc, char **argv)
 					     &conf, 0, 0, 
 					     &kadm_handle);
 	actual_cmds = commands;
+    } else if (keytab) {
+        ret = kadm5_c_init_with_skey_ctx(context,
+					 client_name,
+					 keytab,
+					 KADM5_ADMIN_SERVICE,
+                                         &conf, 0, 0,
+                                         &kadm_handle);
+        actual_cmds = commands + 4; /* XXX */
     } else {
 	ret = kadm5_c_init_with_password_ctx(context, 
 					     client_name,
