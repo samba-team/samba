@@ -1,5 +1,9 @@
 Fri Mar  6 00:21:53 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* roken_gethostby.c: Make `roken_gethostby_setup' take url-like
+ 	specification instead of split up versions. Makes it easier for
+ 	calling applications.
+
 	* roken_gethostby.c: Another miracle of the 20th century:
  	gethostby* over HTTP.
 
