@@ -95,6 +95,15 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 	}
 }
 
+NTSTATUS dcerpc_map_fault2ntstatus(uint32_t fault_code)
+{
+	switch (fault_code) {
+		case DCERPC_FAULT_LOGON_FAILURE:
+			return NT_STATUS_LOGON_FAILURE;
+	}
+
+	return NT_STATUS_NET_WRITE_FAULT;	
+}
 
 /* 
    parse a data blob into a dcerpc_packet structure. This handles both
@@ -617,7 +626,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	if (pkt.ptype == DCERPC_PKT_FAULT) {
 		DEBUG(5,("rpc fault 0x%x\n", pkt.u.fault.status));
 		p->last_fault_code = pkt.u.fault.status;
-		return NT_STATUS_NET_WRITE_FAULT;
+		return dcerpc_map_fault2ntstatus(pkt.u.fault.status);
 	}
 
 	if (pkt.ptype != DCERPC_PKT_RESPONSE) {
@@ -652,7 +661,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 		if (pkt.ptype == DCERPC_PKT_FAULT) {
 			p->last_fault_code = pkt.u.fault.status;
-			return NT_STATUS_NET_WRITE_FAULT;
+			return dcerpc_map_fault2ntstatus(pkt.u.fault.status);
 		}
 
 		if (pkt.ptype != DCERPC_PKT_RESPONSE) {
