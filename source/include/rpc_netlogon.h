@@ -44,6 +44,59 @@
 #define SEC_CHAN_BDC     6
 
 	
+/* NET_USER_INFO_2 */
+typedef struct net_user_info_2
+{
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home drive unicode string header */
+
+	uint16 logon_count;  /* logon count */
+	uint16 bad_pw_count; /* bad password count */
+
+	uint32 user_id;       /* User ID */
+	uint32 group_id;      /* Group ID */
+	uint32 num_groups;    /* num groups */
+	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
+	uint32 user_flgs;     /* user flags */
+
+	uint8 user_sess_key[16]; /* user session key */
+
+	UNIHDR hdr_logon_srv; /* logon server unicode string header */
+	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
+
+	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
+	uint8 padding[40];    /* expansion room */
+
+	UNISTR2 uni_user_name;    /* username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+
+	uint32 num_groups2;        /* num groups */
+	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+
+	UNISTR2 uni_logon_srv; /* logon server unicode string */
+	UNISTR2 uni_logon_dom; /* logon domain unicode string */
+
+	DOM_SID2 dom_sid;           /* domain SID */
+
+	uint32 auth_resp; /* 1 - Authoritative response */
+
+} NET_USER_INFO_2;
+
 /* NET_USER_INFO_3 */
 typedef struct net_user_info_3
 {
@@ -378,18 +431,30 @@ typedef struct net_q_sam_logon_info
 
 } NET_Q_SAM_LOGON;
 
+/* NET_USER_INFO_CTR */
+typedef struct net_user_info_ctr_info
+{
+	uint16 switch_value;
+	uint32 ptr_user_info;
+
+	union
+	{
+		NET_USER_INFO_2 *id2; /* auth-level 2 - AS/U user */
+		NET_USER_INFO_3 *id3; /* auth-level 3 - NT4.0+ user */
+		void *id;
+	} usr;
+
+} NET_USER_INFO_CTR;
+
 /* NET_R_SAM_LOGON */
 typedef struct net_r_sam_logon_info
 {
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-	uint16 switch_value; /* 3 - indicates type of USER INFO */
-	uint32 ptr_user_info;
+	uint32 buffer_creds; /* undocumented buffer pointer */
+	DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
 
-    NET_USER_INFO_3 *user;
+	NET_USER_INFO_CTR ctr;
 
-  uint32 status; /* return code */
+	uint32 status; /* return code */
 
 } NET_R_SAM_LOGON;
 

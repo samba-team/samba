@@ -1776,180 +1776,220 @@ BOOL lsa_io_r_close(char *desc, LSA_R_CLOSE * r_c, prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
-BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, 
-				const char* srv_name,
-				uint32 function_code,
-				uint32 query_level,
-				uint32 switch_value);
-BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth);
-BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, 
-				uint32 switch_value,
-				NETLOGON_INFO *logon_info,
-				uint32 status);
-BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth);
-BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
-BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth);
-BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				const char *logon_srv, const char *logon_clnt,
-				DOM_CHAL *clnt_chal);
-BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth);
-BOOL net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth);
-BOOL make_q_auth(NET_Q_AUTH *q_a,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal);
-BOOL net_io_q_auth(char *desc,  NET_Q_AUTH *q_a, prs_struct *ps, int depth);
-BOOL net_io_r_auth(char *desc,  NET_R_AUTH *r_a, prs_struct *ps, int depth);
-BOOL make_q_auth_2(NET_Q_AUTH_2 *q_a,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
-BOOL net_io_q_auth_2(char *desc,  NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth);
-BOOL net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth);
-BOOL make_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
-				const char *logon_srv, const char *acct_name, 
-                		uint16 sec_chan, const char *comp_name,
-				DOM_CRED *cred, char nt_cypher[16]);
-BOOL net_io_q_srv_pwset(char *desc,  NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth);
-BOOL net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth);
-BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low,
-				uint32 log_id_high,
-				const char *user_name,
-				const char *wksta_name,
-				const char sess_key[16],
-				const uchar lm_cypher[16],
-				const uchar nt_cypher[16]);
-BOOL make_id_info4(NET_ID_INFO_4 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
-				const char *general);
-BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
-				uint32 param_ctrl,
-				uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
-				const uchar lm_challenge[8],
-				const uchar *lm_chal_resp,
-				int lm_chal_len,
-				const uchar *nt_chal_resp,
-				int nt_chal_len);
-BOOL make_sam_info(DOM_SAM_INFO *sam,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred,
-				DOM_CRED *rtn_cred, uint16 logon_level,
-				NET_ID_INFO_CTR *ctr);
-BOOL make_net_user_info3W(NET_USER_INFO_3 *usr,
-
-	const NTTIME *logon_time,
-	const NTTIME *logoff_time,
-	const NTTIME *kickoff_time,
-	const NTTIME *pass_last_set_time,
-	const NTTIME *pass_can_change_time,
-	const NTTIME *pass_must_change_time,
-
-	const UNISTR2 *user_name, 
-	const UNISTR2 *full_name,
-	const UNISTR2 *log_scr,
-	const UNISTR2 *prof_path,
-	const UNISTR2 *home_dir,
-	const UNISTR2 *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	const DOM_GID *gids,
-	uint32 user_flgs,
-
-	const char sess_key[16],
-
-	const UNISTR2 *logon_srv,
-	const UNISTR2 *logon_dom,
-
-	const char *padding,
-
-	const DOM_SID *dom_sid,
-	const char *other_sids);
-BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
-
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *logon_script,
-	char *profile_path,
-	char *home_dir,
-	char *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	DOM_GID *gids,
-	uint32 user_flgs,
-
-	char sess_key[16],
-
-	char *logon_srv,
-	char *logon_dom,
-
-	char *padding,
-
-	DOM_SID *dom_sid,
-	char *other_sids);
-BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth);
-BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth);
-BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s, 
-			    const DOM_CRED *srv_creds,
-			    uint16 switch_value,
-			    NET_USER_INFO_3 *user_info,
-			    uint32 status);
-BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
-BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
-BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF *r_s, 
-			    const DOM_CRED *srv_cred,
-			    uint32 status);
-BOOL net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
-BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
-				const char *srv_name,
-				const char *cli_name,
-				DOM_CRED *cli_creds, uint32 database_id);
-BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth);
-BOOL make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid);
-BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info,
-				const UNISTR2 *user_name,
-				const UNISTR2 *full_name,
-				uint32 user_rid, uint32 group_rid,
-				const UNISTR2 *home_dir,
-				const UNISTR2 *dir_drive,
-				const UNISTR2 *log_scr,
-				const UNISTR2 *desc,
-				uint32 acb_info,
-				const UNISTR2 *prof_path,
-				const UNISTR2 *wkstas,
-				const UNISTR2 *unk_str,
-				const UNISTR2 *mung_dial);
-BOOL make_r_sam_sync(NET_R_SAM_SYNC *r_s, 
-			   const DOM_CRED *srv_cred,
-			   uint32 sync_context,
-			   uint32 num_deltas,
-			   uint32 num_deltas2,
-			   SAM_DELTA_HDR *hdr_deltas,
-			   SAM_DELTA_CTR *deltas,
-			   uint32 status);
+BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 * q_l,
+			const char *srv_name,
+			uint32 function_code,
+			uint32 query_level, uint32 switch_value);
+BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 * q_l,
+			  prs_struct * ps, int depth);
+BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 * r_l,
+			uint32 switch_value,
+			NETLOGON_INFO * logon_info, uint32 status);
+BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 * r_l,
+			  prs_struct * ps, int depth);
+BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST * r_t,
+			prs_struct * ps, int depth);
+BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST * q_l,
+			prs_struct * ps, int depth);
+BOOL make_q_req_chal(NET_Q_REQ_CHAL * q_c,
+		     const char *logon_srv, const char *logon_clnt,
+		     DOM_CHAL * clnt_chal);
+BOOL net_io_q_req_chal(char *desc, NET_Q_REQ_CHAL * q_c, prs_struct * ps,
+		       int depth);
+BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL * r_c, prs_struct * ps,
+		       int depth);
+BOOL make_q_auth(NET_Q_AUTH * q_a,
+		 const char *logon_srv, const char *acct_name,
+		 uint16 sec_chan, const char *comp_name, DOM_CHAL * clnt_chal);
+BOOL net_io_q_auth(char *desc, NET_Q_AUTH * q_a, prs_struct * ps, int depth);
+BOOL net_io_r_auth(char *desc, NET_R_AUTH * r_a, prs_struct * ps, int depth);
+BOOL make_q_auth_2(NET_Q_AUTH_2 * q_a,
+		   const char *logon_srv, const char *acct_name,
+		   uint16 sec_chan, const char *comp_name,
+		   DOM_CHAL * clnt_chal, uint32 clnt_flgs);
+BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 * q_a, prs_struct * ps,
+		     int depth);
+BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 * r_a, prs_struct * ps,
+		     int depth);
+BOOL make_q_srv_pwset(NET_Q_SRV_PWSET * q_s,
+		      const char *logon_srv, const char *acct_name,
+		      uint16 sec_chan, const char *comp_name,
+		      DOM_CRED * cred, char nt_cypher[16]);
+BOOL net_io_q_srv_pwset(char *desc, NET_Q_SRV_PWSET * q_s, prs_struct * ps,
+			int depth);
+BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET * r_s, prs_struct * ps,
+			int depth);
+BOOL make_id_info1(NET_ID_INFO_1 * id, const char *domain_name,
+		   uint32 param_ctrl,
+		   uint32 log_id_low,
+		   uint32 log_id_high,
+		   const char *user_name,
+		   const char *wksta_name,
+		   const char sess_key[16],
+		   const uchar lm_cypher[16], const uchar nt_cypher[16]);
+BOOL make_id_info4(NET_ID_INFO_4 * id, const char *domain_name,
+		   uint32 param_ctrl,
+		   uint32 log_id_low, uint32 log_id_high,
+		   const char *user_name, const char *wksta_name,
+		   const char *general);
+BOOL make_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
+		   uint32 param_ctrl,
+		   uint32 log_id_low, uint32 log_id_high,
+		   const char *user_name, const char *wksta_name,
+		   const uchar lm_challenge[8],
+		   const uchar * lm_chal_resp,
+		   int lm_chal_len,
+		   const uchar * nt_chal_resp, int nt_chal_len);
+BOOL make_sam_info(DOM_SAM_INFO * sam,
+		   const char *logon_srv, const char *comp_name,
+		   DOM_CRED * clnt_cred,
+		   DOM_CRED * rtn_cred, uint16 logon_level,
+		   NET_ID_INFO_CTR * ctr);
+BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
+			  const NTTIME * logon_time,
+			  const NTTIME * logoff_time,
+			  const NTTIME * kickoff_time,
+			  const NTTIME * pass_last_set_time,
+			  const NTTIME * pass_can_change_time,
+			  const NTTIME * pass_must_change_time,
+			  const UNISTR2 * user_name,
+			  const UNISTR2 * full_name,
+			  const UNISTR2 * log_scr,
+			  const UNISTR2 * prof_path,
+			  const UNISTR2 * home_dir,
+			  const UNISTR2 * dir_drive,
+			  uint16 logon_count,
+			  uint16 bad_pw_count,
+			  uint32 user_id,
+			  uint32 group_id,
+			  uint32 num_groups,
+			  const DOM_GID * gids,
+			  uint32 user_flgs,
+			  const char sess_key[16],
+			  const UNISTR2 * logon_srv,
+			  const UNISTR2 * logon_dom,
+			  const char *padding, const DOM_SID * dom_sid);
+BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
+			 NTTIME * logon_time,
+			 NTTIME * logoff_time,
+			 NTTIME * kickoff_time,
+			 NTTIME * pass_last_set_time,
+			 NTTIME * pass_can_change_time,
+			 NTTIME * pass_must_change_time,
+			 char *user_name,
+			 char *full_name,
+			 char *logon_script,
+			 char *profile_path,
+			 char *home_dir,
+			 char *dir_drive,
+			 uint16 logon_count,
+			 uint16 bad_pw_count,
+			 uint32 user_id,
+			 uint32 group_id,
+			 uint32 num_groups,
+			 DOM_GID * gids,
+			 uint32 user_flgs,
+			 char sess_key[16],
+			 char *logon_srv,
+			 char *logon_dom, char *padding, DOM_SID * dom_sid);
+BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
+		       int depth);
+BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
+			  const NTTIME * logon_time,
+			  const NTTIME * logoff_time,
+			  const NTTIME * kickoff_time,
+			  const NTTIME * pass_last_set_time,
+			  const NTTIME * pass_can_change_time,
+			  const NTTIME * pass_must_change_time,
+			  const UNISTR2 * user_name,
+			  const UNISTR2 * full_name,
+			  const UNISTR2 * log_scr,
+			  const UNISTR2 * prof_path,
+			  const UNISTR2 * home_dir,
+			  const UNISTR2 * dir_drive,
+			  uint16 logon_count,
+			  uint16 bad_pw_count,
+			  uint32 user_id,
+			  uint32 group_id,
+			  uint32 num_groups,
+			  const DOM_GID * gids,
+			  uint32 user_flgs,
+			  const char sess_key[16],
+			  const UNISTR2 * logon_srv,
+			  const UNISTR2 * logon_dom,
+			  const char *padding,
+			  const DOM_SID * dom_sid, const char *other_sids);
+BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
+			 NTTIME * logon_time,
+			 NTTIME * logoff_time,
+			 NTTIME * kickoff_time,
+			 NTTIME * pass_last_set_time,
+			 NTTIME * pass_can_change_time,
+			 NTTIME * pass_must_change_time,
+			 char *user_name,
+			 char *full_name,
+			 char *logon_script,
+			 char *profile_path,
+			 char *home_dir,
+			 char *dir_drive,
+			 uint16 logon_count,
+			 uint16 bad_pw_count,
+			 uint32 user_id,
+			 uint32 group_id,
+			 uint32 num_groups,
+			 DOM_GID * gids,
+			 uint32 user_flgs,
+			 char sess_key[16],
+			 char *logon_srv,
+			 char *logon_dom,
+			 char *padding, DOM_SID * dom_sid, char *other_sids);
+BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
+		       int depth);
+BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct * ps,
+			int depth);
+BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
+		      const DOM_CRED * srv_creds,
+		      uint16 switch_value,
+		      void *id, uint32 status);
+BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
+			  prs_struct * ps, int depth);
+void free_net_user_info_ctr(NET_USER_INFO_CTR * ctr);
+BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct * ps,
+			int depth);
+BOOL net_io_q_sam_logoff(char *desc, NET_Q_SAM_LOGOFF * q_l, prs_struct * ps,
+			 int depth);
+BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF * r_s,
+		       const DOM_CRED * srv_cred, uint32 status);
+BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF * r_l, prs_struct * ps,
+			 int depth);
+BOOL make_q_sam_sync(NET_Q_SAM_SYNC * q_s,
+		     const char *srv_name,
+		     const char *cli_name,
+		     DOM_CRED * cli_creds, uint32 database_id);
+BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct * ps,
+		       int depth);
+BOOL make_sam_delta_hdr(SAM_DELTA_HDR * delta, uint16 type, uint32 rid);
+BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
+			   const UNISTR2 * user_name,
+			   const UNISTR2 * full_name,
+			   uint32 user_rid, uint32 group_rid,
+			   const UNISTR2 * home_dir,
+			   const UNISTR2 * dir_drive,
+			   const UNISTR2 * log_scr,
+			   const UNISTR2 * desc,
+			   uint32 acb_info,
+			   const UNISTR2 * prof_path,
+			   const UNISTR2 * wkstas,
+			   const UNISTR2 * unk_str, const UNISTR2 * mung_dial);
+BOOL make_r_sam_sync(NET_R_SAM_SYNC * r_s,
+		     const DOM_CRED * srv_cred,
+		     uint32 sync_context,
+		     uint32 num_deltas,
+		     uint32 num_deltas2,
+		     SAM_DELTA_HDR * hdr_deltas,
+		     SAM_DELTA_CTR * deltas, uint32 status);
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
-				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
+		       NET_R_SAM_SYNC * r_s, prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 

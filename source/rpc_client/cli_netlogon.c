@@ -425,7 +425,7 @@ uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
   {
     NET_R_SAM_LOGON r_s;
 
-    r_s.user = user_info3;
+    r_s.ctr.usr.id3 = user_info3;
 
     net_io_r_sam_logon("", &r_s, &rbuf, 0);
 	status = (rbuf.offset == 0) ? 0xC0000000 | NT_STATUS_INVALID_PARAMETER : 0;
@@ -454,11 +454,11 @@ uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 	status = 0xC0000000 | NT_STATUS_LOGON_FAILURE;
     }
 
-    if (status == 0x0 && r_s.switch_value != 3)
+    if (status == 0x0 && r_s.ctr.switch_value != 3)
     {
       /* report different switch_value */
       DEBUG(5,("cli_net_sam_logon: switch_value of 3 expected %x\n",
-                   r_s.switch_value));
+                   r_s.ctr.switch_value));
 	status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
     }
   }
