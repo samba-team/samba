@@ -42,6 +42,7 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_build_ap_req (krb5_context context,
+		   krb5_enctype enctype,
 		   krb5_creds *cred,
 		   krb5_flags ap_options,
 		   krb5_data authenticator,
@@ -66,7 +67,7 @@ krb5_build_ap_req (krb5_context context,
   copy_EncryptedData(&t.enc_part, &ap.ticket.enc_part);
   free_Ticket(&t);
 
-  ap.authenticator.etype = ap.ticket.enc_part.etype;
+  ap.authenticator.etype = enctype;
   ap.authenticator.kvno  = NULL;
   ap.authenticator.cipher = authenticator;
 
