@@ -1,8 +1,8 @@
-                  WHATS NEW IN Samba 3.0.0 beta2
-                           July 1 2003
+                  WHATS NEW IN Samba 3.0.0 beta4
+                           July 16 2003
                   ==============================
 
-This is the second beta release of Samba 3.0.0. This is a 
+This is the third beta release of Samba 3.0.0. This is a 
 non-production release intended for testing purposes.  Use 
 at your own risk. 
 
@@ -51,7 +51,7 @@ Major new features:
 
 8)  New loadable RPC modules.
 
-9)  New dual-daemon winbindd support (-B) for better performance.
+9)  New dual-daemon winbindd support for better performance.
 
 10) Support for migrating from a Windows NT 4.0 domain to a Samba 
     domain and maintaining user, group and domain SIDs.
@@ -78,11 +78,72 @@ tasks (the current book is up to approximately 400 pages) and to
 refer to the various man pages for information on individual options.
 
 ######################################################################
-Changes since 3.0beta1
+Changes since 3.0beta2
 ######################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details
+
+1)  Added fix for Japanese case names in statcache code; 
+    these can change size on upper casing.
+2)  Correct issues with iconv detection in configure script
+    (support needed to find iconv libraries on FreeBSD).
+3)  Fix bug that caused a WINS server to be marked as dead
+    incorrectly (bug #190).
+4)  Removing additional deadlocks conditions that prevented 
+    winbindd from running on a Samba PDC (used for trust 
+    relationships).
+5)  Add support for searching for Active Directory for 
+    published printers (net ads printer search).
+6)  Separate UNIX username from DOMAIN\username in pipe 
+    credentials.
+7)  Auth modules now support returning NT_STATUS_NOT_IMPLEMENTED
+    for cases that they cannot handle.
+8)  Flush winbindd connection cache when the machine trust account
+    password is changed while a connection is open (bug #200).
+9)  Add support for 'OSVersion' server printer data string
+    (corrects problem with uploading printer drivers from 
+    WinXP clients).
+10) Numerous memory leak fixes.
+11) LDAP fixes ("passdb backend = ldapsam" & "idmap backend = ldap"):
+    - Store domain SID in LDAP directory.
+    - store idmap information in existing entries (use sambaSID=... 
+      if adding a new entry).
+12) Fix incorrect usage of primary group SID when looking up user 
+    groups (bug #109).
+13) Remove idmap_XX_to_XX calls from smbd.  Move back to the the
+    winbind_XXX and local_XXX calls used in 2.2.
+14) All uid/gid allocation must involve winbindd now
+    (we no attempt to map unknown SIDs to a UNIX identify).
+15) Add 'winbind trusted domains only' parameter to force a domain
+    member.  The server to use matching users names from /etc/passwd 
+    for its domain   (needed for domain member of a Samba domain).
+16) Rename 'idmap only' to 'enable rid algorithm' for better clarity 
+    (defaults to "yes").
+17) Add support for multi-byte statcache code (bug #185)
+18) Fix open mode race condition.
+19) Implement winbindd local account management functions.  Refer to
+    the "Winbind Changes" section for details.
+20) Move RID allocation functions into idmap backend.
+21) Fix parsing error that prevented publishing printers from a 
+    Samba server in an AD domain.
+22) Revive NTLMSSP support for named pipes.
+23) More SCHANNEL fixes.
+24) Correct SMB signing with NTLMSSP.
+25) Fix coherency bug in print handle/printer object caching code
+    that could cause XP clients to infinitely loop while updating 
+    their local printer cache.
+26) Make winbindd use its dual-daemon mode by default (use -Y to 
+    start as a single process).
+27) Add support to nmbd and winbindd for 'smbcontrol <pid> 
+    reload-config'.
+28) Correct problem with smbtar when dealing with files > 8Gb 
+    (bug #102).
+
+
+
+Changes since 3.0beta1
+######################
 
 1)  Rework our smb signing code again, this factors out some of 
     the common MAC calculation code, and now supports multiple 
@@ -308,8 +369,11 @@ New Parameters (new parameters have been grouped by function):
   -----------------------
   * idmap backend
   * idmap gid
-  * idmap only
   * idmap uid
+  * winbind enable local accounts
+  * winbind trusted domains only
+  * template primary group
+  * enable rid algorithm
 
   LDAP
   ----
@@ -355,8 +419,8 @@ account_policy		User policy settings			yes
 gencache		Generic caching db			no
 group_mapping		Mapping table from Windows		yes
 			groups/SID to unix groups	
-idmap			new ID map table from SIDS		yes
-			to UNIX uids/gids.
+winbindd_idmap		ID map table from SIDS to UNIX		yes
+			uids/gids.
 namecache		Name resolution cache entries		no
 netsamlogon_cache	Cache of NET_USER_INFO_3 structure	no
 			returned as part of a successful
@@ -463,8 +527,9 @@ Other new object classes and their uses include:
   
   * sambaDomain - domain information used to allocate rids 
     for users and groups as necessary.  The attributes are added
-    in 'ldap suffix' directory entry automatically apon first
-    connection to the directory.
+    in 'ldap suffix' directory entry automatically if 
+    an idmap uid/gid range has been set and the 'ldapsam'
+    passdb backend has been selected.
       
   * sambaGroupMapping - an object representing the 
     relationship between a posixGroup and a Windows
@@ -575,7 +640,78 @@ Now connect to the WINDOWS DC (e.g. CRYSTAL) as a Samba user:
    $ smbclient //crystal/netlogon -U root -W WINDOWS
    Password:
 
+######################################################################
+Changes in Winbind
+##################
 
+Beginning with Samba3.0.0beta3, winbindd has been given new account
+manage functionality equivalent to the 'add user script' family of
+smb.conf parameters.  The idmap design has also been changed to 
+centralize control of foreign SID lookups and matching to UNIX 
+uids and gids.
+
+
+Brief Description of Changes
+----------------------------
+
+1) The sid_to_uid() family of functions (smbd/uid.c) have been 
+   reverted to the 2.2.x design.  This means that when resolving a 
+   SID to a UID or similar mapping:
+
+        a) First consult winbindd
+        b) perform a local lookup only if winbindd fails to
+           return a successful answer
+
+   There are some variations to this, but these two rules generally
+   apply.
+
+2) All idmap lookups have been moved into winbindd.  This means that
+   a server must run winbindd (and support NSS) in order to achieve
+   any mappings of SID to dynamically allocated UNIX ids.  This was
+   a conscious design choice.
+
+3) New functions have been added to winbindd to emulate the 'add user 
+   script' family of smbd functions without requiring that external
+   scripts be defined.  This functionality is controlled by the 'winbind 
+   enable local accounts' smb.conf parameter (enabled by default).
+
+   However, this account management functionality is only supported 
+   in a local tdb (winbindd_idmap.tdb).  If these new UNIX accounts 
+   must be shared among multiple Samba servers (such as a PDC and BDCs), 
+   it will be necessary to define your own 'add user script', et. al.
+   programs that place the accounts/groups in some form of directory
+   such as NIS or LDAP.  This requirement was deemed beyond the scope
+   of winbind's account management functions.  Solutions for 
+   distributing UNIX system information have been deployed and tested 
+   for many years.  We saw no need to reinvent the wheel.
+
+4) A member of a Samba controlled domain running winbindd is now able 
+   to map domain users directly onto existing UNIX accounts while still
+   automatically creating accounts for trusted users and groups.  This
+   behavior is controlled by the 'winbind trusted domains only' smb.conf
+   parameter (disabled by default to provide 2.2.x winbind behavior).
+
+5) Group mapping support is wrapped in the local_XX_to_XX() functions
+   in smbd/uid.c.  The reason that group mappings are not included
+   in winbindd is because the purpose of Samba's group map is to
+   match any Windows SID with an existing UNIX group.  These UNIX
+   groups can be created by winbindd (see next section), but the
+   SID<->gid mapping is retreived by smbd, not winbindd.
+
+
+Examples
+--------
+
+* security = server running winbindd to allocate accounts on demand
+
+* Samba PDC running winbindd to handle the automatic creation of UNIX
+  identities for machine trust accounts
+
+* Automtically creating UNIX user and groups when migrating a Windows NT
+  4.0 PDC to a Samba PDC.  Winbindd must be running when executing
+  'net rpc vampire' for this to work.
+
+   
 ######################################################################
 Known Issues
 ############
