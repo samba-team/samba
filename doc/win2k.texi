@@ -127,8 +127,8 @@ You must also set:
 	default_etypes_des = des-cbc-crc
 @end example
 
-since Windows 2000 KDC have trouble understanding des-cbc-md5
-(@xref{Quirks of Windows 2000 KDC}.).
+since otherwise checksum types that are not understood by Windows 2000
+will be generated (@xref{Quirks of Windows 2000 KDC}.).
 
 @comment XXX Should add [kadmin]default_keys = des3:pw-salt des:pw-salt des:pw-salt: ?
 
