@@ -38,13 +38,15 @@
 
 #include "kdc_locl.h"
 #include <getarg.h>
+#include <parse_units.h>
 
 RCSID("$Id$");
 
 static char *config_file;
-int loglevel = -2;
-int require_preauth = 1;
+int require_preauth = -1;
 char *keyfile;
+char *max_request_str;
+size_t max_request;
 time_t kdc_warn_pwexpire;
 
 #ifdef KRB4
@@ -59,16 +61,16 @@ static struct getargs args[] = {
 	"location of config file",	"file" 
     },
     { 
-	"log-level",	0,	arg_integer,	&loglevel, 
-	"level of logging"
-    },
-    { 
 	"require-preauth",	'p',	arg_negative_flag, &require_preauth, 
 	"don't require pa-data in as-reqs"
     },
     { 
 	"key-file",	'k',	arg_string, &keyfile, 
 	"location of master key file", "file"
+    },
+    { 
+	"max-request",	0,	arg_string, &max_request, 
+	"max size for a kdc-request", "size"
     },
 #ifdef KRB4
     { 
@@ -82,6 +84,15 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 extern const char *krb5_config_get_string(krb5_config_section*, ...);
+
+struct units byte_units[] = {
+    { "megabyte", 1024 * 1024 },
+    { "mbyte", 1024 * 1024 },
+    { "kilobyte", 1024 },
+    { "kbyte", 1024 },
+    { "byte", 1 },
+    { NULL, 0 }
+};
 
 void
 configure(int argc, char **argv)
@@ -105,15 +116,6 @@ configure(int argc, char **argv)
     if(krb5_config_parse_file(config_file, &cf))
 	goto end;
     
-    if(loglevel == -2){
-	p = krb5_config_get_string (cf, 
-				    "kdc",
-				    "log-level",
-				    NULL);
-	if(p)
-	    loglevel = atoi(p);
-    }
-
     if(keyfile == NULL){
 	p = krb5_config_get_string (cf, 
 				    "kdc",
@@ -121,6 +123,19 @@ configure(int argc, char **argv)
 				    NULL);
 	if(p)
 	    keyfile = strdup(p);
+    }
+    
+    if(max_request_str){
+	max_request = parse_units(max_request_str, byte_units, NULL);
+    }
+
+    if(max_request == 0){
+	p = krb5_config_get_string (cf, 
+				    "kdc",
+				    "max-request",
+				    NULL);
+	if(p)
+	    max_request = parse_units(max_request_str, byte_units, NULL);
     }
     
     if(require_preauth == -1){
@@ -158,8 +173,8 @@ configure(int argc, char **argv)
     
     krb5_config_file_free (cf);
 end:
-    if(loglevel == -2)
-	loglevel = 0;
+    if(max_request == 0)
+	max_request = 64 * 1024;
     if(require_preauth == -1)
 	require_preauth = 1;
 #ifdef KRB4
