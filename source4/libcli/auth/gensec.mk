@@ -24,6 +24,16 @@ REQUIRED_SUBSYSTEMS = NDR_KRB5PAC EXT_LIB_KRB5
 ################################################
 
 ################################################
+# Start MODULE gensec_gssapi
+[MODULE::gensec_gssapi]
+SUBSYSTEM = GENSEC
+INIT_FUNCTION = gensec_gssapi_init
+INIT_OBJ_FILES = libcli/auth/gensec_gssapi.o 
+REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
+# End MODULE gensec_gssapi
+################################################
+
+################################################
 # Start MODULE gensec_spnego
 [MODULE::gensec_spnego]
 SUBSYSTEM = GENSEC

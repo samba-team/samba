@@ -42,6 +42,7 @@ struct spnego_state {
 	enum spnego_message_type expected_packet;
 	enum spnego_state_position state_position;
 	struct gensec_security *sub_sec_security;
+	BOOL no_response_expected;
 };
 
 
@@ -57,6 +58,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
+	spnego_state->no_response_expected = False;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -74,6 +76,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
+	spnego_state->no_response_expected = False;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -374,7 +377,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 	}
 	nt_status = gensec_update(spnego_state->sub_sec_security,
 				  out_mem_ctx, in, &unwrapped_out);
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (NT_STATUS_IS_OK(nt_status) || NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		struct spnego_data spnego_out;
 		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 		spnego_out.negTokenInit.mechTypes = mechTypes;
@@ -390,7 +393,12 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 		/* set next state */
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
-		return nt_status;
+		
+		if (NT_STATUS_IS_OK(nt_status)) {
+			spnego_state->no_response_expected = True;
+		}
+
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	} 
 	talloc_free(spnego_state->sub_sec_security);
 	spnego_state->sub_sec_security = NULL;
@@ -601,6 +609,10 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		/* set next state */
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			spnego_state->no_response_expected = True;
+		}
 		
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
@@ -672,10 +684,14 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		nt_status = gensec_update(spnego_state->sub_sec_security,
-					  out_mem_ctx, 
-					  spnego.negTokenTarg.responseToken, 
-					  &unwrapped_out);
+		if (spnego_state->no_response_expected) {
+			nt_status = NT_STATUS_OK;
+		} else {
+			nt_status = gensec_update(spnego_state->sub_sec_security,
+						  out_mem_ctx, 
+						  spnego.negTokenTarg.responseToken, 
+						  &unwrapped_out);
+		} 
 		
 		
 		if (NT_STATUS_IS_OK(nt_status) 
