@@ -96,6 +96,8 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     char *pass_old;
     char *pass_new;
 
+    NTSTATUS nt_status;
+
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
     in_client = True;
@@ -124,10 +126,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     }
 
     /* obtain user record */
-    pdb_init_sam(&sampass);
-    pdb_getsampwnam(sampass,user);
+    if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
+	    return nt_status_to_pam(nt_status);
+    }
 
-    if (sampass == NULL) {
+    if (!pdb_getsampwnam(sampass,user)) {
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );
         return PAM_USER_UNKNOWN;
     }
