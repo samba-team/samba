@@ -468,6 +468,7 @@ void debug_message_send(pid_t pid, const char *params_str)
 }
 
 
+#if 0
 /****************************************************************************
  Return current debug level.
 ****************************************************************************/
@@ -485,6 +486,7 @@ static void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 		DEBUG(0, ("debuglevel_message: error retrieving class levels!\n"));
 	}
 }
+#endif
 
 /****************************************************************************
 Init debugging (one time stuff)
