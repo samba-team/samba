@@ -1783,6 +1783,11 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		header.free = NULL;
 
 		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
+			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
+			if (errno == ENOSYS) {
+				goto normal_readbraw;
+			}
+
 			/*
 			 * Special hack for broken Linux with no working sendfile. If we
 			 * return EINTR we sent the header but not the rest of the data.
@@ -1807,6 +1812,8 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		}
 
 	}
+
+  normal_readbraw:
 
 #endif
 
@@ -2157,12 +2164,18 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		header.length = data - outbuf;
 		header.free = NULL;
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
+		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt)) == -1) {
+			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
+			if (errno == ENOSYS) {
+				goto normal_read;
+			}
+
 			/*
 			 * Special hack for broken Linux with no working sendfile. If we
 			 * return EINTR we sent the header but not the rest of the data.
 			 * Fake this up by doing read/write calls.
 			 */
+
 			if (errno == EINTR) {
 				/* Ensure we don't do this again. */
 				set_use_sendfile(SNUM(conn), False);
@@ -2174,7 +2187,10 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 						fsp->fsp_name, strerror(errno) ));
 					exit_server("send_file_readX: fake_sendfile failed");
 				}
-				return nread;
+				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
+					fsp->fnum, (int)smb_maxcnt, (int)(nread + (data - outbuf)) ) );
+				/* Returning -1 here means successful sendfile. */
+				return -1;
 			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
@@ -2184,6 +2200,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+		/* Returning -1 here means successful sendfile. */
 		return -1;
 	}
 
@@ -2208,6 +2225,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 		fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
+	/* Returning the number of bytes we want to send back - including header. */
 	return outsize;
 }
 
