@@ -3409,6 +3409,9 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 		if (*p2 == '?') {
 			*p2 = *p;
 			p2++;
+		} else if (*p2 == '*') {
+			pstrcpy(p2, p);
+			break;
 		} else {
 			p2++;
 		}
@@ -3422,6 +3425,9 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 		if (*p2 == '?') {
 			*p2 = *p;
 			p2++;
+		} else if (*p2 == '*') {
+			pstrcpy(p2, p);
+			break;
 		} else {
 			p2++;
 		}
@@ -3838,7 +3844,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				
 				if (sysdir_entry) {
 					error = NT_STATUS_OBJECT_NAME_INVALID;
-					continue;
+					break;
 				}
 
 				error = NT_STATUS_ACCESS_DENIED;
