@@ -1,18 +1,5 @@
 AC_INIT(entities/global.entities)
 
-AC_PATH_PROG(XSLTPROC, xsltproc)
-if test "x$XSLTPROC" = x; then
-   AC_MSG_ERROR("xsltproc is required")
-fi
-AC_PATH_PROG(PDFLATEX, pdflatex)
-if test "x$PDFLATEX" = x; then
-   AC_MSG_ERROR("pdflatex is required")
-fi
-AC_PATH_PROG(MAKEINDEX, makeindex)
-if test "x$MAKEINDEX" = x; then
-	AC_MSG_ERROR("makeindex is required")
-fi
-
 PAPERSIZE=""
 DUPLICATE_ULINKS=""
 
@@ -34,16 +21,6 @@ AC_ARG_WITH(fontsize,
 [ --with-fontsize	              Specify the fontsize in points (default: 10.5) ],
 [ test "$withval" && FONTSIZE="$withval" ])
 
-AC_PATH_PROG(RM, rm)
-AC_PATH_PROG(WGET, wget)
-AC_PATH_PROG(LATEX, latex)
-AC_PATH_PROG(DVIPS, dvips)
-AC_PATH_PROG(PNGTOPNM, pngtopnm)
-AC_PATH_PROG(PNMTOPS, pnmtops)
-AC_PATH_PROG(PERL, perl)
-AC_PATH_PROG(XMLTO, xmlto)
-AC_PATH_PROG(PLUCKERBUILD, plucker-build, [echo -e 'No plucker-build utility was found, ignoring following options:\n'])
-AC_PATH_PROG(EPSTOPDF, epstopdf)
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
@@ -51,5 +28,42 @@ AC_SUBST(PAPERSIZE)
 AC_SUBST(DUPLICATE_ULINKS)
 AC_SUBST(FONTSIZE)
 AC_SUBST(DOCROP)
+
+DOCS_TARGET_REQUIRE_PROGRAM(XSLTPROC, xsltproc, ALL)
+DOCS_TARGET_REQUIRE_PROGRAM(RM, rm, ALL)
+DOCS_TARGET_REQUIRE_PROGRAM(MAKEINDEX, makeindex, LATEX)
+DOCS_TARGET_REQUIRE_PROGRAM(WGET, wget, LATEX)
+DOCS_TARGET_REQUIRE_PROGRAM(PDFLATEX, pdflatex, PDF)
+DOCS_TARGET_REQUIRE_PROGRAM(EPSTOPDF, epstopdf, PDF)
+DOCS_TARGET_REQUIRE_PROGRAM(PNGTOPNM, pngtopnm, PS)
+DOCS_TARGET_REQUIRE_PROGRAM(PNMTOPS, pnmtops, PS)
+DOCS_TARGET_REQUIRE_PROGRAM(LATEX, latex, PS)
+DOCS_TARGET_REQUIRE_PROGRAM(DVIPS, dvips, PS)
+DOCS_TARGET_REQUIRE_PROGRAM(PLUCKERBUILD, plucker-build, PLUCKER)
+DOCS_TARGET_REQUIRE_PROGRAM(XMLTO, xmlto, TXT)
+DOCS_TARGET_REQUIRE_PROGRAM(PERL, perl, UNDOCUMENTED)
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([Summary:])
+AC_MSG_RESULT([--------------])
+
+
+DOCS_DEFINE_TARGET(ALL, [], [base requirements], [])
+DOCS_DEFINE_TARGET(LATEX, ALL, [LaTeX versions], [tex])
+DOCS_DEFINE_TARGET(PDF, LATEX, [PDF versions], [pdf])
+DOCS_DEFINE_TARGET(PS, LATEX, [PostScript versions], [ps])
+DOCS_DEFINE_TARGET(HTML, ALL, [HTML versions], [html])
+DOCS_DEFINE_TARGET(MANPAGES, ALL, [manpages], [manpages])
+DOCS_DEFINE_TARGET(PLUCKER, HTML, [plucker versions], [plucker])
+DOCS_DEFINE_TARGET(UNDOCUMENTED, MANPAGES, [list of undocumented options], [undocumented])
+DOCS_DEFINE_TARGET(TXT, ALL, [text versions], [txt])
+
+if test x"$TARGETS" = x; then 
+	AC_MSG_ERROR([You won't be able to build any of the docs])
+else 
+	AC_MSG_RESULT([You will be able to build: $TARGETS])
+fi
+
+AC_SUBST(TARGETS)
 
 AC_OUTPUT( Makefile settings.xsl )
