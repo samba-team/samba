@@ -1,3 +1,7 @@
+1999-12-14  Assar Westerlund  <assar@sics.se>
+
+	* del_enctype.c (usage): don't use arg_printusage
+
 1999-11-25  Assar Westerlund  <assar@sics.se>
 
 	* del_enctype.c (del_enctype): try not to leak memory
