@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 3.0
    Samba database functions
-   Copyright (C) Andrew Tridgell 1999
+   Copyright (C) Andrew Tridgell              1999-2000
+   Copyright (C) Luke Kenneth Casson Leighton      2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -600,6 +601,7 @@ char *tdb_error(TDB_CONTEXT *tdb)
 		{TDB_ERR_LOCK, "Locking error"},
 		{TDB_ERR_OOM, "Out of memory"},
 		{TDB_ERR_EXISTS, "Record exists"},
+		{TDB_ERR_NOEXIST, "Record does not exist"},
 		{-1, NULL}};
         if (tdb != NULL) {
             for (i=0;emap[i].estring;i++) {
@@ -1025,13 +1027,19 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
-	/* check for it existing */
+	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT && tdb_exists(tdb, key)) {
 		tdb->ecode = TDB_ERR_EXISTS;
 		return -1;
 	}
 
-	/* first try in-place update */
+	/* check for it _not_ existing, on modify. */
+	if (flag == TDB_MODIFY && !tdb_exists(tdb, key)) {
+		tdb->ecode = TDB_ERR_NOEXIST;
+		return -1;
+	}
+
+	/* first try in-place update, on modify or replace. */
 	if (flag != TDB_INSERT && tdb_update(tdb, key, dbuf) == 0) {
 		return 0;
 	}
