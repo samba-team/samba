@@ -564,10 +564,12 @@ dontoption(int option)
 		telopt_environ = TELOPT_OLD_ENVIRON;
 		break;
 #endif
+#if 0
 #ifdef ENCRYPTION
 	    case TELOPT_ENCRYPT:
 	      encrypt_not();
 	      break;
+#endif
 #endif
 	    }
 	    /* we always accept a DONT */
