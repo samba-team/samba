@@ -466,7 +466,7 @@ static int import_users (char *filename)
 				pdb_set_lanman_passwd(sam_pwent, NULL);
 				pdb_set_acct_ctrl(sam_pwent, pdb_get_acct_ctrl(sam_pwent) | ACB_PWNOTREQ);
 			} else {
-				if (!smbpasswd_gethexpwd((char *)p, smbpwd)) {
+				if (!pdb_gethexpwd((char *)p, smbpwd)) {
 					fprintf (stderr, "Error: malformed Lanman password entry at line %d (non hex chars)\n", line);
 					pdb_reset_sam (sam_pwent);
 					continue;
