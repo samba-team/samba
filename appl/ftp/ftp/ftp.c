@@ -586,7 +586,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	int (*closefunc) __P((FILE *));
 	sighand oldintr, oldintp;
 	long bytes = 0, hashbytes = HASHBYTES;
-	char *lmode, buf[BUFSIZ], *bufp;
+	char *lmode;
 
 	if (verbose && printnames) {
 		if (local && *local != '-')

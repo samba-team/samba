@@ -45,7 +45,6 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
      for (;;) {
 	  fd_set fdset;
 	  int ret;
-	  char buf[BUFSIZ];
 
 	  FD_ZERO(&fdset);
 	  FD_SET(fd1, &fdset);

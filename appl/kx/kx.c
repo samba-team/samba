@@ -123,7 +123,6 @@ passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
 static int
 doit (char *host, int passivep)
 {
-     int otherside;
      des_key_schedule schedule;
      des_cblock key;
      int rendez_vous;

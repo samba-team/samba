@@ -473,7 +473,7 @@ mput(int argc, char **argv)
 		return;
 	}
 	for (i = 1; i < argc; i++) {
-		char **cpp, **gargs;
+		char **cpp;
 		glob_t gl;
 		int flags;
 
@@ -1935,7 +1935,7 @@ restart(int argc, char **argv)
 	if (argc != 2)
 		printf("restart: offset not specified\n");
 	else {
-		restart_point = atol(argv[1]);
+		off_t restart_point = atol(argv[1]);
 		printf("restarting at %qd. %s\n", restart_point,
 		    "execute get, put or append to initiate transfer");
 	}

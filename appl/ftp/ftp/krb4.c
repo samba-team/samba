@@ -116,10 +116,8 @@ sec_prot_internal(int level)
 
 void sec_prot(int argc, char **argv)
 {
-    int s;
-    int ret;
-    char *p;
     int level = -1;
+
     if(argc != 2){
 	fprintf(stderr,
 		"usage: %s (clear | safe | confidential | private)\n",
@@ -134,7 +132,6 @@ void sec_prot(int argc, char **argv)
     }
     level = name_to_level(argv[1]);
     
-
     if(level == -1){
 	fprintf(stderr,
 		"usage: %s (clear | safe | confidential | private)\n",
@@ -384,13 +381,11 @@ int
 do_klogin(char *host)
 {
     int ret;
-    char *phost;
-    char *p, *q;
+    char *p;
     int len;
     char adat[1024];
     MSG_DAT msg_data;
     int checksum;
-    int tmp;
 
     int old_verbose = verbose;
 

@@ -43,7 +43,7 @@ main(int argc, char **argv)
 {
 	int ch, top;
 	struct passwd *pw = NULL;
-	char *cp, homedir[MaxPathLen];
+	char homedir[MaxPathLen];
 	struct servent *sp;
 
 	sp = getservbyname("ftp", "tcp");
