@@ -575,7 +575,7 @@ static BOOL test_realloc_child(void)
 		int count;
 		struct el2 {
 			const char *name;
-		} **list;
+		} **list, **list2, **list3;
 	} *el1;
 	struct el2 *el2;
 
@@ -587,11 +587,22 @@ static BOOL test_realloc_child(void)
 	el1->list = talloc(el1, struct el2 *);
 	el1->list[0] = talloc(el1->list, struct el2);
 	el1->list[0]->name = talloc_strdup(el1->list[0], "testing");
+
+	el1->list2 = talloc(el1, struct el2 *);
+	el1->list2[0] = talloc(el1->list2, struct el2);
+	el1->list2[0]->name = talloc_strdup(el1->list2[0], "testing2");
+
+	el1->list3 = talloc(el1, struct el2 *);
+	el1->list3[0] = talloc(el1->list3, struct el2);
+	el1->list3[0]->name = talloc_strdup(el1->list3[0], "testing2");
 	
 	el2 = talloc(el1->list, struct el2);
+	el2 = talloc(el1->list2, struct el2);
+	el2 = talloc(el1->list3, struct el2);
 
-	el1->list = talloc_realloc(el1, el1->list, struct el2 *, 2);
-	el1->list[1] = el2;
+	el1->list = talloc_realloc(el1, el1->list, struct el2 *, 100);
+	el1->list2 = talloc_realloc(el1, el1->list2, struct el2 *, 200);
+	el1->list3 = talloc_realloc(el1, el1->list3, struct el2 *, 300);
 
 	talloc_free(root);
 
