@@ -157,7 +157,9 @@ mandoc_template(struct getargs *args,
 	    printf("\n");
 	}
 	if(args[i].long_name){
-	    printf(".Fl -%s", args[i].long_name);
+	    printf(".Fl -%s%s",
+		   args[i].type == arg_negative_flag ? "no-" : "",
+		   args[i].long_name);
 	    print_arg(buf, sizeof(buf), 1, 1, args + i);
 	    printf("%s\n", buf);
 	}
