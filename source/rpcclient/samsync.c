@@ -217,8 +217,8 @@ static void decode_sam_deltas(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_
 				decode_sam_als_mem_info(a);
 				break;
 			}
-			case SAM_DELTA_DOM_INFO: {
-                		SAM_DELTA_DOM *a;
+			case SAM_DELTA_POLICY_INFO: {
+                		SAM_DELTA_POLICY *a;
 				a = &deltas[i].dom_info;
 				decode_sam_dom_info(a);
 				break;

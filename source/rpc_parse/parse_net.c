@@ -1779,7 +1779,7 @@ static BOOL net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR * delta,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_stamp(char *desc, SAM_DELTA_STAMP *info,
+static BOOL net_io_sam_delta_mod_count(char *desc, SAM_DELTA_MOD_COUNT *info,
                                    prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_delta_stamp");
@@ -2386,12 +2386,12 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_dom_info(char *desc, SAM_DELTA_DOM *info,
+static BOOL net_io_sam_policy_info(char *desc, SAM_DELTA_POLICY *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
 
-	prs_debug(ps, depth, desc, "net_io_sam_dom_info");
+	prs_debug(ps, depth, desc, "net_io_sam_policy_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2476,12 +2476,12 @@ static BOOL net_io_sam_dom_info(char *desc, SAM_DELTA_DOM *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_unk0e_info(char *desc, SAM_DELTA_UNK0E *info,
+static BOOL net_io_sam_trustdoms_info(char *desc, SAM_DELTA_TRUSTDOMS *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
 
-	prs_debug(ps, depth, desc, "net_io_sam_unk0e_info");
+	prs_debug(ps, depth, desc, "net_io_sam_trustdoms_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2524,12 +2524,12 @@ static BOOL net_io_sam_unk0e_info(char *desc, SAM_DELTA_UNK0E *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_unk12_info(char *desc, SAM_DELTA_UNK12 *info,
-				      prs_struct *ps, int depth)
+static BOOL net_io_sam_secret_info(char *desc, SAM_DELTA_SECRET *info,
+				   prs_struct *ps, int depth)
 {
 	int i;
 
-	prs_debug(ps, depth, desc, "net_io_sam_unk12_info");
+	prs_debug(ps, depth, desc, "net_io_sam_secret_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2707,8 +2707,8 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 
 	switch (type) {
                 /* Seen in sam deltas */
-                case SAM_DELTA_SAM_STAMP:
-                        if (!net_io_sam_delta_stamp("", &delta->stamp, ps, depth))
+                case SAM_DELTA_MODIFIED_COUNT:
+                        if (!net_io_sam_delta_mod_count("", &delta->mod_count, ps, depth))
                                 return False;
                         break;
 
@@ -2737,8 +2737,8 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
                                 return False;
 			break;
 
-		case SAM_DELTA_DOM_INFO:
-                        if (!net_io_sam_dom_info("", &delta->dom_info, ps, depth))
+		case SAM_DELTA_POLICY_INFO:
+                        if (!net_io_sam_policy_info("", &delta->policy_info, ps, depth))
                                 return False;
 			break;
 
@@ -2752,16 +2752,23 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
                                 return False;
 			break;
 
-		case SAM_DELTA_UNK0E_INFO:
-			if (!net_io_sam_unk0e_info("", &delta->unk0e_info, ps, depth))
+ 	        case SAM_DELTA_TRUST_DOMS:
+			if (!net_io_sam_trustdoms_info("", &delta->trustdoms_info, ps, depth))
                                 return False;
 			break;
 
-		case SAM_DELTA_UNK12_INFO:
-			if (!net_io_sam_unk12_info("", &delta->unk12_info, ps, depth))
+		case SAM_DELTA_SECRET_INFO:
+			if (!net_io_sam_secret_info("", &delta->secret_info, ps, depth))
                                 return False;
 			break;
 
+			/* These guys are not implemented yet */
+
+  	        case SAM_DELTA_RENAME_GROUP:
+	        case SAM_DELTA_RENAME_USER:
+	        case SAM_DELTA_RENAME_ALIAS:
+	        case SAM_DELTA_DELETE_GROUP:
+	        case SAM_DELTA_DELETE_USER:
 		default:
 			DEBUG(0, ("Replication error: Unknown delta type 0x%x\n", type));
 			break;

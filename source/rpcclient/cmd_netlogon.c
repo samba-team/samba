@@ -125,11 +125,10 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
                                           group->rids[j], group->attribs[j]);
                         break;
                 }
-                case SAM_DELTA_SAM_STAMP: {
-                        SAM_DELTA_STAMP *stamp = &deltas[i].stamp;
+                case SAM_DELTA_MODIFIED_COUNT: {
+                        SAM_DELTA_MOD_COUNT *mc = &deltas[i].mod_count;
 
-                        printf("sam sequence update: 0x%04x\n",
-                                  stamp->seqnum);
+                        printf("sam sequence update: 0x%04x\n", mc->seqnum);
                         break;
                 }                                  
                 default:
