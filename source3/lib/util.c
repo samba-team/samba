@@ -1962,7 +1962,7 @@ free a data blob and clear its contents
 void data_blob_clear_free(DATA_BLOB *d)
 {
 	if (d->data) {
-		memset((char *)&(d->data), 0, d->length);
+		memset(d->data, 0, d->length);
 	}
 	data_blob_free(d);
 }
