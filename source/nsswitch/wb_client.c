@@ -233,7 +233,70 @@ static BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
+/* Call winbindd to initialise group membership.  This is necessary for
+   some systems (i.e RH5.2) that do not have an initgroups function as part
+   of the nss extension.  In RH5.2 this is implemented using getgrent()
+   which can be amazingly inefficient as well as having problems with
+   username case. */
 
+int winbind_initgroups(char *user, gid_t gid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+	char *sep;
+
+	/* Call normal initgroups if we are a local user */
+
+	sep = lp_winbind_separator();
+
+	if (!strchr(user, *sep)) {
+		return initgroups(user, gid);
+	}
+
+	/* Call winbindd */
+
+	fstrcpy(request.data.username, user);
+
+	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+
+	if (result == NSS_STATUS_SUCCESS) {
+		int ngroups = response.data.num_entries, i;
+		gid_t *groups = (gid_t *)response.extra_data;
+		BOOL is_member = False;
+
+		/* Check to see if the passed gid is already in the list */
+
+		for (i = 0; i < ngroups; i++) {
+			if (groups[i] == gid) {
+				is_member = True;
+			}
+		}
+
+		/* Add group to list if necessary */
+
+		if (!is_member) {
+			groups = Realloc(groups, sizeof(gid_t) * ngroups + 1);
+			
+			if (!groups) {
+				errno = ENOMEM;
+				return -1;
+			}
+
+			groups[ngroups] = gid;
+			ngroups++;
+		}
+
+		/* Set the groups */
+
+		if (setgroups(ngroups, groups) == -1) {
+			errno = EPERM;
+			return -1;
+		}
+	}
+
+	return result;
+}
 
 /*****************************************************************
  *THE CANNONICAL* convert name to SID function.
