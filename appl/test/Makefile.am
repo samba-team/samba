@@ -1,6 +1,6 @@
 # $Id$
 
-AUTOHEADER_FLAGS = no-dependencies foreign
+AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include
 

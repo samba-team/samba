@@ -1,5 +1,5 @@
 # $Id$
 
-AUTOHEADER_FLAGS = no-dependencies foreign
+AUTOMAKE_OPTIONS = no-dependencies foreign
 
 SUBDIRS = libtelnet telnet telnetd
