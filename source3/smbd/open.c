@@ -230,7 +230,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->is_directory = False;
 	fsp->is_stat = False;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
 	fsp->wcp = NULL; /* Write cache pointer. */
 
@@ -1202,8 +1201,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	if(!fsp)
 		return NULL;
 
-	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
-
 	if (VALID_STAT(*psbuf))
 		got_stat = True;
 
@@ -1299,7 +1296,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->is_directory = True;
 	fsp->is_stat = False;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
 
 	if (delete_on_close) {
@@ -1335,8 +1331,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	if(!fsp)
 		return NULL;
 
-	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
-
 	DEBUG(5,("open_file_stat: 'opening' file %s\n", fname));
 
 	/*
@@ -1365,7 +1359,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->is_directory = False;
 	fsp->is_stat = True;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
 
 	conn->num_files_open++;
