@@ -30,6 +30,23 @@ extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
+extern PRIVS privs[];
+
+struct lsa_info {
+    DOM_SID sid;
+    uint32 access;
+};
+
+/*******************************************************************
+ Function to free the per handle data.
+ ********************************************************************/
+
+static void free_lsa_info(void *ptr)
+{
+	struct lsa_info *lsa = (struct lsa_info *)ptr;
+
+	safe_free(lsa);
+}
 
 /***************************************************************************
 Init dom_query
@@ -128,7 +145,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		/* Split name into domain and user component */
 
-		rpcstr_pull(full_name, &name[i], sizeof(full_name), -1, 0);
+		unistr2_to_ascii(full_name, &name[i], sizeof(full_name));
 		split_domain_name(full_name, dom_name, user);
 
 		/* Lookup name */
@@ -511,6 +528,116 @@ uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECR
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
+/***************************************************************************
+_lsa_enum_privs.
+ ***************************************************************************/
+
+uint32 _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIVS *r_u)
+{
+	uint32 i;
+
+	uint32 enum_context=q_u->enum_context;
+	LSA_PRIV_ENTRY *entry;
+	LSA_PRIV_ENTRY *entries;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (enum_context >= PRIV_ALL_INDEX)
+		return 0x8000001A;
+
+	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX-enum_context));
+	if (entries==NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	entry = entries;
+	for (i = 0; i < PRIV_ALL_INDEX-enum_context; i++, entry++) {
+		init_uni_hdr(&entry->hdr_name, strlen(privs[i+1-enum_context].priv));
+		init_unistr2(&entry->name, privs[i+1-enum_context].priv, strlen(privs[i+1-enum_context].priv) );
+		entry->luid_low = privs[i+1-enum_context].se_priv;
+		entry->luid_high = 1;
+	}
+
+	init_lsa_r_enum_privs(r_u, i+enum_context, PRIV_ALL_INDEX-enum_context, entries);
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+/***************************************************************************
+_lsa_priv_get_dispname.
+ ***************************************************************************/
+
+uint32 _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, LSA_R_PRIV_GET_DISPNAME *r_u)
+{
+	fstring name_asc;
+	fstring desc_asc;
+	int i;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
+
+	DEBUG(0,("_lsa_priv_get_dispname: %s", name_asc));
+
+	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
+		if ( strcmp(name_asc, privs[i].priv)) {
+			
+			fstrcpy(desc_asc, privs[i].description);
+		
+		}
+	}
+	DEBUG(0,(": %s\n", desc_asc));
+
+	init_uni_hdr(&r_u->hdr_desc, strlen(desc_asc));
+	init_unistr2(&r_u->desc, desc_asc, strlen(desc_asc) );
+
+	r_u->ptr_info=0xdeadbeef;
+	r_u->lang_id=q_u->lang_id;
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+/***************************************************************************
+_lsa_enum_accounts.
+ ***************************************************************************/
+
+uint32 _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENUM_ACCOUNTS *r_u)
+{
+	GROUP_MAP *map=NULL;
+	int num_entries=0;
+	LSA_SID_ENUM *sids=&r_u->sids;
+	int i=0,j=0;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* get the list of mapped groups (domain, local, builtin) */
+	if(!enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED))
+		return NT_STATUS_NOPROBLEMO;
+
+	sids->ptr_sid = (uint32 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(uint32));
+	sids->sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(DOM_SID2));
+
+	if (sids->ptr_sid==NULL || sids->sid==NULL) {
+		safe_free(map);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=q_u->enum_context, j=0; i<num_entries; i++) {
+		init_dom_sid2( &(*sids).sid[j],  &map[i].sid);
+		(*sids).ptr_sid[j]=1;
+		j++;
+	}
+
+	safe_free(map);
+
+	init_lsa_r_enum_accounts(r_u, j);
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+
 uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
   fstring username, domname;
@@ -539,4 +666,92 @@ uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R
   r_u->status = NT_STATUS_NO_PROBLEMO;
   
   return r_u->status;
+}
+
+/***************************************************************************
+ 
+ ***************************************************************************/
+
+uint32 _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
+{
+	struct lsa_info *info;
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* associate the user/group SID with the (unique) handle. */
+	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	info->sid = q_u->sid.sid;
+	info->access = q_u->access;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	return r_u->status;
+}
+
+/***************************************************************************
+ 
+ ***************************************************************************/
+
+uint32 _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
+{
+	struct lsa_info *info=NULL;
+	GROUP_MAP map;
+	int num_entries=0;
+	uint32 count=0;
+	int i=0;
+
+	LUID_ATTR *set=NULL;
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!get_group_map_from_sid(info->sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
+		if ( (map.privilege & privs[i].se_priv) == privs[i].se_priv) {
+			
+			set=(LUID_ATTR *)talloc_realloc(p->mem_ctx, set, (count+1)*sizeof(LUID_ATTR));
+
+			set[count].luid.low=privs[i].se_priv;
+			set[count].luid.high=1;
+			set[count].attr=0;
+			
+			count++;
+		
+		}
+	}
+
+	init_lsa_r_enum_privsaccount(r_u, set, count, 0);	
+
+	return r_u->status;
+}
+
+/***************************************************************************
+ 
+ ***************************************************************************/
+
+uint32 _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
+{
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	r_u->access=3;
+
+	return r_u->status;
 }
