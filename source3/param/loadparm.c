@@ -255,6 +255,7 @@ typedef struct
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
 	BOOL bUseSpnego;
+	BOOL bUnixExtensions;
 	int restrict_anonymous;
 }
 global;
@@ -328,6 +329,7 @@ typedef struct
 	int iPrinting;
 	int iOplockContentionLimit;
 	int iCSCPolicy;
+	int iBlock_size;
 	BOOL bAlternatePerm;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
@@ -445,6 +447,7 @@ static service sDefault = {
 	DEFAULT_PRINTING,	/* iPrinting */
 	2,			/* iOplockContentionLimit */
 	0,			/* iCSCPolicy */
+	1024,           /* iBlock_size */
 	False,			/* bAlternatePerm */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
@@ -796,10 +799,12 @@ static struct parm_struct parm_table[] = {
 	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, 0},
 	{"min wins ttl", P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl, NULL, NULL, 0},
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, 0},
+	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, 0},
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, 0},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
 	
+	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL, NULL, 0},
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, 0},
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, 0},
@@ -1302,6 +1307,7 @@ static void init_globals(void)
 #else
 	Globals.bUseMmap = True;
 #endif
+	Globals.bUnixExtensions = False;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
@@ -1565,6 +1571,7 @@ FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
 FN_GLOBAL_BOOL(lp_use_mmap, &Globals.bUseMmap)
+FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
 FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
@@ -1704,6 +1711,7 @@ FN_LOCAL_INTEGER(lp_printing, iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
+FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
