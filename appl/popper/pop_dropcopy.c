@@ -7,18 +7,28 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
- *  dropcopy:   Make a temporary copy of the user's mail drop and 
- *  save a stream pointer for it.
+/*
+ * Run as the user in `pwd'
  */
 
-void
+int
 changeuser(POP *p, struct passwd *pwd)
 {
-    /* Now we run as the user. */
-    if (pwd) {
-    	setuid(pwd->pw_uid);
-    	setgid(pwd->pw_gid);
+    if(setuid(pwd->pw_uid) < 0) {
+	pop_log (p, POP_PRIORITY,
+		 "Unable to change to uid %u: %s",
+		 (unsigned)pwd->pw_uid,
+		 strerror(errno));
+	return pop_msg (p, POP_FAILURE,
+			"Unable to change uid");
+    }
+    if(setgid(pwd->pw_gid) < 0) {
+	pop_log (p, POP_PRIORITY,
+		 "Unable to change to gid %u: %s",
+		 (unsigned)pwd->pw_gid,
+		 strerror(errno));
+	return pop_msg (p, POP_FAILURE,
+			"Unable to change gid");
     }
 #ifdef DEBUG
     if(p->debug)
@@ -26,7 +36,13 @@ changeuser(POP *p, struct passwd *pwd)
 	       (unsigned)getuid(),
 	       (unsigned)getgid());
 #endif /* DEBUG */
+    return POP_SUCCESS;
 }
+
+/* 
+ *  dropcopy:   Make a temporary copy of the user's mail drop and 
+ *  save a stream pointer for it.
+ */
 
 int
 pop_dropcopy(POP *p, struct passwd *pwp)
@@ -41,6 +57,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     long                    offset;                 /*  Old/New boundary */
     int                     nchar;                  /*  Bytes written/read */
     int                     tf_fd;                  /*  fd for temp file */
+    int			    ret;
 
     /*  Create a temporary maildrop into which to copy the updated maildrop */
     snprintf(p->temp_drop, sizeof(p->temp_drop), POP_DROP,p->user);
@@ -67,10 +84,8 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     }
 
     /* Now give this file to the user	*/
-    if (pwp) {
-    	chown(template,pwp->pw_uid, pwp->pw_gid);
-    }
-    chmod(template,0600);
+    chown(template, pwp->pw_uid, pwp->pw_gid);
+    chmod(template, 0600);
 
     /* Now link this file to the temporary maildrop.  If this fails it
      * is probably because the temporary maildrop already exists.  If so,
@@ -81,7 +96,9 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     fclose(tf);
     unlink(template);
 
-    changeuser(p, pwp);
+    ret = changeuser(p, pwp);
+    if (ret != POP_SUCCESS)
+	return ret;
 
     /* Open for append,  this solves the crash recovery problem */
     if ((dfd = open(p->temp_drop,O_RDWR|O_APPEND|O_CREAT,0600)) == -1){
