@@ -176,8 +176,10 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
+	TDB_DATA old_dbuf;
 	struct message_rec rec;
-	void *p;
+	char *ptr;
+	struct message_rec prec;
 
 	/*
 	 * Doing kill with a non-positive pid causes messages to be
@@ -194,78 +196,77 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 
 	kbuf = message_key_pid(pid);
 
-	/* lock the record for the destination */
-	tdb_chainlock(tdb, kbuf);
+	dbuf.dptr = (void *)malloc(len + sizeof(rec));
+	if (!dbuf.dptr)
+		return False;
 
-	dbuf = tdb_fetch(tdb, kbuf);
+	memcpy(dbuf.dptr, &rec, sizeof(rec));
+	if (len > 0)
+		memcpy((void *)((char*)dbuf.dptr+sizeof(rec)), buf, len);
 
-	if (!dbuf.dptr) {
-		/* its a new record */
-		p = (void *)malloc(len + sizeof(rec));
-		if (!p)
-			goto failed;
+	dbuf.dsize = len + sizeof(rec);
 
-		memcpy(p, &rec, sizeof(rec));
-		if (len > 0)
-			memcpy((void *)((char*)p+sizeof(rec)), buf, len);
+	if (duplicates_allowed) {
 
-		dbuf.dptr = p;
-		dbuf.dsize = len + sizeof(rec);
-		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-		SAFE_FREE(p);
-		goto ok;
+		/* If duplicates are allowed we can just append the message and return. */
+
+		/* lock the record for the destination */
+		tdb_chainlock(tdb, kbuf);
+		tdb_append(tdb, kbuf, dbuf);
+		tdb_chainunlock(tdb, kbuf);
+
+		SAFE_FREE(dbuf.dptr);
+		errno = 0;                    /* paranoia */
+		return message_notify(pid);
 	}
 
-	if (!duplicates_allowed) {
-		char *ptr;
-		struct message_rec prec;
-		
-		for(ptr = (char *)dbuf.dptr; ptr < dbuf.dptr + dbuf.dsize; ) {
-			/*
-			 * First check if the message header matches, then, if it's a non-zero
-			 * sized message, check if the data matches. If so it's a duplicate and
-			 * we can discard it. JRA.
-			 */
+	/* lock the record for the destination */
+	tdb_chainlock(tdb, kbuf);
+	old_dbuf = tdb_fetch(tdb, kbuf);
 
-			if (!memcmp(ptr, &rec, sizeof(rec))) {
-				if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
-					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
-					SAFE_FREE(dbuf.dptr);
-					tdb_chainunlock(tdb, kbuf);
-					return True;
-				}
+	if (!old_dbuf.dptr) {
+		/* its a new record */
+
+		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+		tdb_chainunlock(tdb, kbuf);
+
+		SAFE_FREE(dbuf.dptr);
+		errno = 0;                    /* paranoia */
+		return message_notify(pid);
+	}
+
+	/* Not a new record. Check for duplicates. */
+
+	for(ptr = (char *)old_dbuf.dptr; ptr < old_dbuf.dptr + old_dbuf.dsize; ) {
+		/*
+		 * First check if the message header matches, then, if it's a non-zero
+		 * sized message, check if the data matches. If so it's a duplicate and
+		 * we can discard it. JRA.
+		 */
+
+		if (!memcmp(ptr, &rec, sizeof(rec))) {
+			if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
+				tdb_chainunlock(tdb, kbuf);
+				DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
+				SAFE_FREE(dbuf.dptr);
+				SAFE_FREE(old_dbuf.dptr);
+				return True;
 			}
-			memcpy(&prec, ptr, sizeof(prec));
-			ptr += sizeof(rec) + prec.len;
 		}
+		memcpy(&prec, ptr, sizeof(prec));
+		ptr += sizeof(rec) + prec.len;
 	}
 
 	/* we're adding to an existing entry */
-	p = (void *)malloc(dbuf.dsize + len + sizeof(rec));
-	if (!p)
-		goto failed;
 
-	memcpy(p, dbuf.dptr, dbuf.dsize);
-	memcpy((void *)((char*)p+dbuf.dsize), &rec, sizeof(rec));
-	if (len > 0)
-		memcpy((void *)((char*)p+dbuf.dsize+sizeof(rec)), buf, len);
-
-	SAFE_FREE(dbuf.dptr);
-	dbuf.dptr = p;
-	dbuf.dsize += len + sizeof(rec);
-	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-	SAFE_FREE(dbuf.dptr);
-
- ok:
+	tdb_append(tdb, kbuf, dbuf);
 	tdb_chainunlock(tdb, kbuf);
+
+	SAFE_FREE(old_dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
+
 	errno = 0;                    /* paranoia */
 	return message_notify(pid);
-
- failed:
-	tdb_chainunlock(tdb, kbuf);
-	SAFE_FREE(dbuf.dptr);
-	errno = 0;                    /* paranoia */
-	return False;
 }
 
 /****************************************************************************
