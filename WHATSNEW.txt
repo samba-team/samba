@@ -27,9 +27,7 @@ Major new features:
     been almost completely rewritten. Most of the changes are internal,
     but the new auth system is also very configurable.
 
-4)  New filename mangling system. The filename mangling system has been
-    completely rewritten. An internal database now stores mangling maps
-    persistently. This needs lots of testing.
+4)  New default filename mangling system. 
 
 5)  A new "net" command has been added. It is somewhat similar to 
     the "net" command in windows. Eventually we plan to replace 
