@@ -980,6 +980,26 @@ so far:
 	</para></listitem>
 </itemizedlist>
 
+	<scet2>
+	<title>locking.trb error messages</title>
+
+	<para>
+	<screen>
+	> We are seeing lots of errors in the samba logs like:
+	>
+	>    tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
+	> 0x4d6f4b61 at offset=36116
+	>
+	> What do these mean?
+	</screen>
+	</para>
+
+	<para>
+	Corrupted tdb.  Stop all instancesd of smbd, delete locking.tdb, restart smbd.
+	</para>
+
+	</sect2>
+
 </sect1>
 
 <sect1>

@@ -448,4 +448,20 @@ example of what you would not want to see would be:
 		script to make Samba fit into that system.</para></note>
 	</sect2>
 </sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+I've compiled Samba-3 from the CVS and the two binaries (smbd and nmbd)
+are very large files (40 Mg and 20 Mg). I've the same result with
+--enable-shared  ?
+</para>
+
+<para>
+Answer: Strip the binaries (or dond't compile with -g).
+</para>
+
+</sect1>
+
 </chapter>

@@ -255,6 +255,39 @@ or that suffer regular outages. Network stability and integrity are key concerns
 distributed trusted domains.
 </para>
 
+	<sect2>
+	<title>Tell me about Trust Relationships using Samba</title>
+
+	<para>
+	Like many, I administer multiple LANs connected together using NT trust
+	relationships.  This was implemented about 4 years ago.  I now have the
+	occasion to consider performing this same task again, but this time, I
+	would like to implement it solely through samba - no Microsoft PDCs
+	anywhere.
+	</para>
+
+	<para>
+	I have read documentation on samba.org regarding NT-style trust
+	relationships and am now wondering, can I do what I want to?  I already
+	have successfully implemented 2 samba servers, but they are not PDCs.
+	They merely act as file servers.  I seem to remember, and it appears to
+	be true (according to samba.org) that trust relationships are a
+	challenge.
+	</para>
+
+	<para>
+	Please provide any helpful feedback that you may have.
+	</para>
+
+	<para>
+	These are almost complete in Samba 3.0 snapshots.  The main catch
+	is getting winbindd to be able to allocate uid/gid's for trusted
+	users/groups.  See the updated Samba HOWTO collection for more
+	details.
+	</para>
+
+	</sect2>
+
 </sect1>
 
 </chapter>
