@@ -2899,7 +2899,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
+	if (!decode_pw_buffer(id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2950,7 +2950,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(char *pass, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 {
 	uint32 len;
 	pstring plaintext_buf;
@@ -3096,7 +3096,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw((char *)ctr->info.id24->pass, pwd))
+			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
