@@ -13,6 +13,8 @@ simple_compile "getgrnam"
 
 set group_list [split [util_start "bin/wbinfo" "-g"] "\n"]
 
+verbose $group_list
+
 foreach {group} $group_list {
     set output [util_start "$srcdir/$subdir/getgrnam" "\"$group\"" ""]
 
