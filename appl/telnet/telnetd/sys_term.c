@@ -1058,10 +1058,10 @@ int login_tty(int t)
  * Clean the tty name.  Return a pointer to the cleaned version.
  */
 
-static const char *
-clean_ttyname (const char *tty)
+static char *
+clean_ttyname (char *tty)
 {
-  const char *res = tty;
+  char *res = tty;
 
   if (strncmp (res, _PATH_DEV, strlen(_PATH_DEV)) == 0)
     res += strlen(_PATH_DEV);

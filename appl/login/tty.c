@@ -44,10 +44,10 @@ RCSID("$Id$");
  * Clean the tty name.  Return a pointer to the cleaned version.
  */
 
-const char *
-clean_ttyname (const char *tty)
+char *
+clean_ttyname (char *tty)
 {
-  const char *res = tty;
+  char *res = tty;
 
   if (strncmp (res, _PATH_DEV, strlen(_PATH_DEV)) == 0)
     res += strlen(_PATH_DEV);
@@ -62,10 +62,10 @@ clean_ttyname (const char *tty)
  * Generate a name usable as an `ut_id', typically without `tty'.
  */
 
-const char *
-make_id (const char *tty)
+char *
+make_id (char *tty)
 {
-  const char *res = tty;
+  char *res = tty;
   
   if (strncmp (res, "pts/", 4) == 0)
     res += 4;
