@@ -1,8 +1,8 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   vfs initialisation and support functions
-   Copyright (C) Tim Potter 1992-1998
+   VFS initialisation and support functions
+   Copyright (C) Tim Potter 1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,61 +33,16 @@ struct vfs_syminfo {
     void *fptr;
 };
 
-struct vfs_ops dl_ops;
-
-struct vfs_syminfo vfs_syminfo[] = {
-
-    /* Global operations */
-
-    {"vfs_init",       &dl_ops.init},
-
-    /* Disk operations */
-
-    {"vfs_connect",    &dl_ops.connect},
-    {"vfs_disconnect", &dl_ops.disconnect},
-    {"vfs_disk_free",  &dl_ops.disk_free},
-
-    /* Directory operations */
-
-    {"vfs_opendir",    &dl_ops.opendir},
-    {"vfs_readdir",    &dl_ops.readdir},
-    {"vfs_mkdir",      &dl_ops.mkdir},
-    {"vfs_rmdir",      &dl_ops.rmdir},
-    {"vfs_closedir",   &dl_ops.closedir},
-
-    /* File operations */
-
-    {"vfs_open",       &dl_ops.open},
-    {"vfs_close",      &dl_ops.close},
-    {"vfs_read",       &dl_ops.read},
-    {"vfs_write",      &dl_ops.write},
-    {"vfs_lseek",      &dl_ops.lseek},
-    {"vfs_rename",     &dl_ops.rename},
-    {"vfs_sync",       &dl_ops.sync},
-    {"vfs_stat",       &dl_ops.stat},
-    {"vfs_fstat",      &dl_ops.fstat},
-    {"vfs_lstat",      &dl_ops.lstat},
-    {"vfs_lock",       &dl_ops.lock},
-    {"vfs_unlink",     &dl_ops.unlink},
-    {"vfs_chmod",      &dl_ops.chmod},
-    {"vfs_utime",      &dl_ops.utime},
-    
-    {NULL, 0}
-};
-
 /* Default vfs hooks.  WARNING: The order of these initialisers is
-   very important.  Change at your own peril. */
+   very important.  They must be in the same order as defined in
+   vfs.h.  Change at your own peril. */
 
 struct vfs_ops default_vfs_ops = {
 
-    /* Global operations */
-
-    NULL,                         /* init */
-
     /* Disk operations */        
 
-    NULL,                         /* connect */
-    NULL,                         /* disconnect */
+    vfswrap_dummy_connect,
+    vfswrap_dummy_disconnect,
     vfswrap_disk_free,
 
     /* Directory operations */
@@ -117,54 +72,24 @@ struct vfs_ops default_vfs_ops = {
 };
 
 /****************************************************************************
-  call vfs_init function of loadable module
-****************************************************************************/
-#ifdef HAVE_LIBDL
-BOOL do_vfs_init(char *vfs_object)
-{
-    void *handle, (*fptr)(void);
-
-    DEBUG(3, ("Calling vfs_init for module %s\n", vfs_object));
-
-    handle = dlopen(vfs_object, RTLD_NOW);
-    if (!handle) {
-	DEBUG(0, ("Error opening %s: %s\n", vfs_object, dlerror()));
-	return False;
-    }
-
-    fptr = dlsym(handle, "vfs_init");
-
-    /* Call initialisation function */
-
-    if (fptr != NULL) {
-	fptr();
-    }
-
-    dlclose(handle);
-
-    return True;
-}
-#endif
-
-/****************************************************************************
   initialise default vfs hooks
 ****************************************************************************/
 int vfs_init_default(connection_struct *conn)
 {
     DEBUG(3, ("Initialising default vfs hooks\n"));
 
-    bcopy(&default_vfs_ops, &conn->vfs_ops, sizeof(conn->vfs_ops));
-    return 0;
+    memcpy(&conn->vfs_ops, &default_vfs_ops, sizeof(conn->vfs_ops));
+    return True;
 }
 
 /****************************************************************************
   initialise custom vfs hooks
 ****************************************************************************/
 #ifdef HAVE_LIBDL
-int vfs_init_custom(connection_struct *conn)
+BOOL vfs_init_custom(connection_struct *conn)
 {
-    void *handle, *fptr;
-    int index;
+    void *handle;
+    struct vfs_ops *ops, *(*fptr)(void);
 
     DEBUG(3, ("Initialising custom vfs hooks from %s\n",
 	      lp_vfsobj(SNUM(conn))));
@@ -175,30 +100,118 @@ int vfs_init_custom(connection_struct *conn)
     if (!handle) {
 	DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)),
 		  dlerror()));
-	return -1;
+	return False;
     }
 
-    /* Read list of symbols */
+    /* Get handle on vfs_init() symbol */
 
-    for(index = 0; vfs_syminfo[index].name; index++) {
-	fptr = dlsym(handle, vfs_syminfo[index].name);
-	if (fptr == NULL) {
-	    DEBUG(0, ("Symbol %s not found in %s\n", vfs_syminfo[index].name,
-		      lp_vfsobj(SNUM(conn))));
-	    return -1;
-	}
-
-	*((void **)vfs_syminfo[index].fptr) = fptr;
+    fptr = dlsym(handle, "vfs_init");
+    if (fptr == NULL) {
+	DEBUG(0, ("No vfs_init() symbol found in %s\n", 
+		  lp_vfsobj(SNUM(conn))));
+	return False;
     }
 
-    /* Copy loaded symbols into connection struct */
-
-    bcopy(&dl_ops, &conn->vfs_ops, sizeof(dl_ops));
     dlclose(handle);
 
-    do_vfs_init(lp_vfsobj(SNUM(conn)));
+    /* Initialise vfs_ops and fill in unused operations with default
+       (disk based) ones.  There's probably a neater way to do this. */
 
-    return 0;
+    if ((ops = fptr()) == NULL) {
+	return False;
+    }
+
+    memcpy(&conn->vfs_ops, ops, sizeof(conn->vfs_ops));
+    
+    if (conn->vfs_ops.connect == NULL) {
+	conn->vfs_ops.connect = default_vfs_ops.connect;
+    }
+
+    if (conn->vfs_ops.disconnect == NULL) {
+	conn->vfs_ops.disconnect = default_vfs_ops.disconnect;
+    }
+
+    if (conn->vfs_ops.disk_free == NULL) {
+	conn->vfs_ops.disk_free = default_vfs_ops.disk_free;
+    }
+
+    if (conn->vfs_ops.opendir == NULL) {
+	conn->vfs_ops.opendir = default_vfs_ops.opendir;
+    }
+
+    if (conn->vfs_ops.readdir == NULL) {
+	conn->vfs_ops.readdir = default_vfs_ops.readdir;
+    }
+
+    if (conn->vfs_ops.mkdir == NULL) {
+	conn->vfs_ops.mkdir = default_vfs_ops.mkdir;
+    }
+
+    if (conn->vfs_ops.rmdir == NULL) {
+	conn->vfs_ops.rmdir = default_vfs_ops.rmdir;
+    }
+
+    if (conn->vfs_ops.closedir == NULL) {
+	conn->vfs_ops.closedir = default_vfs_ops.closedir;
+    }
+
+    if (conn->vfs_ops.open == NULL) {
+	conn->vfs_ops.open = default_vfs_ops.open;
+    }
+
+    if (conn->vfs_ops.close == NULL) {
+	conn->vfs_ops.close = default_vfs_ops.close;
+    }
+
+    if (conn->vfs_ops.read == NULL) {
+	conn->vfs_ops.read = default_vfs_ops.read;
+    }
+    
+    if (conn->vfs_ops.write == NULL) {
+	conn->vfs_ops.write = default_vfs_ops.write;
+    }
+    
+    if (conn->vfs_ops.lseek == NULL) {
+	conn->vfs_ops.lseek = default_vfs_ops.lseek;
+    }
+    
+    if (conn->vfs_ops.rename == NULL) {
+	conn->vfs_ops.rename = default_vfs_ops.rename;
+    }
+    
+    if (conn->vfs_ops.sync == NULL) {
+	conn->vfs_ops.sync = default_vfs_ops.sync;
+    }
+    
+    if (conn->vfs_ops.stat == NULL) {
+	conn->vfs_ops.stat = default_vfs_ops.stat;
+    }
+    
+    if (conn->vfs_ops.fstat == NULL) {
+	conn->vfs_ops.fstat = default_vfs_ops.fstat;
+    }
+    
+    if (conn->vfs_ops.lstat == NULL) {
+	conn->vfs_ops.lstat = default_vfs_ops.lstat;
+    }
+    
+    if (conn->vfs_ops.lock == NULL) {
+	conn->vfs_ops.lock = default_vfs_ops.lock;
+    }
+    
+    if (conn->vfs_ops.unlink == NULL) {
+	conn->vfs_ops.unlink = default_vfs_ops.unlink;
+    }
+    
+    if (conn->vfs_ops.chmod == NULL) {
+	conn->vfs_ops.chmod = default_vfs_ops.chmod;
+    }
+    
+    if (conn->vfs_ops.utime == NULL) {
+	conn->vfs_ops.utime = default_vfs_ops.utime;
+    }
+    
+    return True;
 }
 #endif
 
