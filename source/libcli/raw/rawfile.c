@@ -29,7 +29,6 @@
 	if (!req) return NULL; \
 } while (0)
 
-
 /****************************************************************************
  Rename a file - async interface
 ****************************************************************************/
@@ -426,6 +425,7 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 {
 	int len;
 	struct smbcli_request *req = NULL; 
+	BOOL bigoffset = False;
 
 	switch (parms->generic.level) {
 	case RAW_OPEN_T2OPEN:
@@ -507,6 +507,42 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 
 	case RAW_OPEN_NTTRANS_CREATE:
 		return smb_raw_nttrans_create_send(tree, parms);
+
+
+	case RAW_OPEN_OPENX_READX:
+		SETUP_REQUEST(SMBopenX, 15, 0);
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1), 0);
+		SSVAL(req->out.vwv, VWV(2), parms->openxreadx.in.flags);
+		SSVAL(req->out.vwv, VWV(3), parms->openxreadx.in.open_mode);
+		SSVAL(req->out.vwv, VWV(4), parms->openxreadx.in.search_attrs);
+		SSVAL(req->out.vwv, VWV(5), parms->openxreadx.in.file_attrs);
+		raw_push_dos_date3(tree->session->transport, 
+				  req->out.vwv, VWV(6), parms->openxreadx.in.write_time);
+		SSVAL(req->out.vwv, VWV(8), parms->openxreadx.in.open_func);
+		SIVAL(req->out.vwv, VWV(9), parms->openxreadx.in.size);
+		SIVAL(req->out.vwv, VWV(11),parms->openxreadx.in.timeout);
+		SIVAL(req->out.vwv, VWV(13),0);
+		smbcli_req_append_string(req, parms->openxreadx.in.fname, STR_TERMINATE);
+
+		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+			bigoffset = True;
+		}
+
+		smbcli_chained_request_setup(req, SMBreadX, bigoffset ? 12 : 10, 0);
+
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1), 0);
+		SSVAL(req->out.vwv, VWV(2), 0);
+		SIVAL(req->out.vwv, VWV(3), parms->openxreadx.in.offset);
+		SSVAL(req->out.vwv, VWV(5), parms->openxreadx.in.maxcnt & 0xFFFF);
+		SSVAL(req->out.vwv, VWV(6), parms->openxreadx.in.mincnt);
+		SIVAL(req->out.vwv, VWV(7), parms->openxreadx.in.maxcnt >> 16);
+		SSVAL(req->out.vwv, VWV(9), parms->openxreadx.in.remaining);
+		if (bigoffset) {
+			SIVAL(req->out.vwv, VWV(10),parms->openxreadx.in.offset>>32);
+		}
+		break;
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -522,6 +558,8 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 ****************************************************************************/
 NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
+	NTSTATUS status;
+
 	if (!smbcli_request_receive(req) ||
 	    smbcli_request_is_error(req)) {
 		goto failed;
@@ -602,6 +640,44 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 
 	case RAW_OPEN_NTTRANS_CREATE:
 		return smb_raw_nttrans_create_recv(req, mem_ctx, parms);
+
+	case RAW_OPEN_OPENX_READX:
+		SMBCLI_CHECK_MIN_WCT(req, 15);
+		parms->openxreadx.out.fnum = SVAL(req->in.vwv, VWV(2));
+		parms->openxreadx.out.attrib = SVAL(req->in.vwv, VWV(3));
+		parms->openxreadx.out.write_time = raw_pull_dos_date3(req->transport,
+								 req->in.vwv + VWV(4));
+		parms->openxreadx.out.size = IVAL(req->in.vwv, VWV(6));
+		parms->openxreadx.out.access = SVAL(req->in.vwv, VWV(8));
+		parms->openxreadx.out.ftype = SVAL(req->in.vwv, VWV(9));
+		parms->openxreadx.out.devstate = SVAL(req->in.vwv, VWV(10));
+		parms->openxreadx.out.action = SVAL(req->in.vwv, VWV(11));
+		parms->openxreadx.out.unique_fid = IVAL(req->in.vwv, VWV(12));
+		if (req->in.wct >= 19) {
+			parms->openxreadx.out.access_mask = IVAL(req->in.vwv, VWV(15));
+			parms->openxreadx.out.unknown =     IVAL(req->in.vwv, VWV(17));
+		} else {
+			parms->openxreadx.out.access_mask = 0;
+			parms->openxreadx.out.unknown = 0;
+		}
+
+		status = smbcli_chained_advance(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		SMBCLI_CHECK_WCT(req, 12);
+		parms->openxreadx.out.remaining       = SVAL(req->in.vwv, VWV(2));
+		parms->openxreadx.out.compaction_mode = SVAL(req->in.vwv, VWV(3));
+		parms->openxreadx.out.nread = SVAL(req->in.vwv, VWV(5));
+		if (parms->openxreadx.out.nread > 
+		    MAX(parms->openxreadx.in.mincnt, parms->openxreadx.in.maxcnt) ||
+		    !smbcli_raw_pull_data(req, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
+					  parms->openxreadx.out.nread, 
+					  parms->openxreadx.out.data)) {
+			req->status = NT_STATUS_BUFFER_TOO_SMALL;
+		}
+		break;
 	}
 
 failed:

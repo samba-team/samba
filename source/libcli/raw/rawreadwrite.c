@@ -27,7 +27,6 @@
 	if (!req) return NULL; \
 } while (0)
 
-
 /****************************************************************************
  low level read operation (async send)
 ****************************************************************************/
@@ -74,7 +73,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 			bigoffset = True;
 		}
 		SETUP_REQUEST(SMBreadX, bigoffset ? 12 : 10, 0);
-		SSVAL(req->out.vwv, VWV(0), 0xFF);
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
 		SSVAL(req->out.vwv, VWV(2), parms->readx.in.fnum);
 		SIVAL(req->out.vwv, VWV(3), parms->readx.in.offset);
@@ -228,7 +227,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 			bigoffset = True;
 		}
 		SETUP_REQUEST(SMBwriteX, bigoffset ? 14 : 12, parms->writex.in.count);
-		SSVAL(req->out.vwv, VWV(0), 0xFF);
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
 		SSVAL(req->out.vwv, VWV(2), parms->writex.in.fnum);
 		SIVAL(req->out.vwv, VWV(3), parms->writex.in.offset);

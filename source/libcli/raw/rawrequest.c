@@ -168,8 +168,8 @@ struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *sessi
   setup a request for tree based commands
 */
 struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
-				      uint8_t command, 
-				      uint_t wct, uint_t buflen)
+					    uint8_t command, 
+					    uint_t wct, uint_t buflen)
 {
 	struct smbcli_request *req;
 
@@ -180,6 +180,7 @@ struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
 	}
 	return req;
 }
+
 
 /*
   grow the allocation of the data buffer portion of a reply
@@ -243,6 +244,64 @@ static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
 
 	/* set the BCC to the new data size */
 	SSVAL(req->out.vwv, VWV(req->out.wct), new_size);
+}
+
+
+/*
+  setup a chained reply in req->out with the given word count and
+  initial data buffer size.
+*/
+NTSTATUS smbcli_chained_request_setup(struct smbcli_request *req,
+				      uint8_t command, 
+				      uint_t wct, uint_t buflen)
+{
+	uint_t new_size = 1 + (wct*2) + 2 + buflen;
+
+	SSVAL(req->out.vwv, VWV(0), command);
+	SSVAL(req->out.vwv, VWV(1), req->out.size - NBT_HDR_SIZE);
+
+	smbcli_req_grow_allocation(req, req->out.data_size + new_size);
+
+	req->out.vwv = req->out.buffer + req->out.size + 1;
+	SCVAL(req->out.vwv, -1, wct);
+	SSVAL(req->out.vwv, VWV(wct), buflen);
+
+	req->out.size += new_size;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  aadvance to the next chained reply in a request
+*/
+NTSTATUS smbcli_chained_advance(struct smbcli_request *req)
+{
+	uint8_t *buffer;
+
+	if (CVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	buffer = req->in.hdr + SVAL(req->in.vwv, VWV(1));
+
+	if (buffer + 3 > req->in.buffer + req->in.size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	req->in.vwv = buffer + 1;
+	req->in.wct = CVAL(buffer, 0);
+	if (buffer + 3 + req->in.wct*2 > req->in.buffer + req->in.size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	req->in.data = req->in.vwv + 2 + req->in.wct * 2;
+	req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
+
+	if (buffer + 3 + req->in.wct*2 + req->in.data_size > 
+	    req->in.buffer + req->in.size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
