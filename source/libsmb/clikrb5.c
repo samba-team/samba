@@ -367,7 +367,9 @@ failed:
 
  BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
  {
+#ifdef ENCTYPE_ARCFOUR_HMAC
 	krb5_keyblock *skey;
+#endif
 	BOOL ret = False;
 
 	memset(session_key, 0, 16);
