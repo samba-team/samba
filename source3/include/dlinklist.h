@@ -25,6 +25,7 @@
 
 /* hook into the front of the list */
 #define DLIST_ADD(list, p) \
+{ \
         if (!(list)) { \
 		(list) = (p); \
 		(p)->next = (p)->prev = NULL; \
@@ -33,18 +34,21 @@
 		(p)->next = (list); \
 		(p)->prev = NULL; \
 		(list) = (p); \
-	}
+	}\
+}
 
 
 /* remove an element from a list */
 #define DLIST_REMOVE(list, p) \
+{ \
 	if ((p) == (list)) { \
 		(list) = (p)->next; \
 		if (list) (list)->prev = NULL; \
 	} else { \
 		(p)->prev->next = (p)->next; \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
-	}
+	} \
+}
 
 /* promote an element to the top of the list */
 #define DLIST_PROMOTE(list, p) \
