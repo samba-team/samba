@@ -144,7 +144,7 @@ char *ace_to_str(SEC_ACE *ace)
 	return temp;
 }
 
-int str_to_ace(SEC_ACE *ace, char *ace_str)
+void str_to_ace(SEC_ACE *ace, char *ace_str)
 {
 	SEC_ACCESS sa;
 	DOM_SID sid;
@@ -232,7 +232,6 @@ int psec_getsec(char *printer)
 
 	for (i = 0; i < secdesc_ctr->sec->dacl->num_aces; i++) {
 		SEC_ACE *ace = &secdesc_ctr->sec->dacl->ace[i];
-		fstring sidstr;
 
 		sid_to_string(sidstr, &ace->sid);
 
@@ -324,8 +323,7 @@ int psec_setsec(char *printer)
 
 	/* Create security descriptor */
 
-	sd = make_sec_desc(SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE |
-			   SEC_DESC_DACL_PRESENT, 
+	sd = make_sec_desc(SEC_DESC_REVISION,
 			   has_user_sid ? &user_sid : NULL, 
 			   has_group_sid ? &group_sid : NULL,
 			   NULL, /* System ACL */
