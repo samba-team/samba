@@ -831,7 +831,7 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
  */
 void mangle_name_83( char *s)
   {
-  int csum = str_checksum(s);
+  int csum;
   char *p;
   char extension[4];
   char base[9];
@@ -853,7 +853,11 @@ void mangle_name_83( char *s)
       csum = str_checksum( s );
       *p = '.';
       }
+    else
+      csum = str_checksum(s);
     }
+  else
+    csum = str_checksum(s);
 
   strupper( s );
 
