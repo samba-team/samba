@@ -630,7 +630,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   time_t start_time;
   BOOL shutdown_server = False;
   BOOL oplock_timeout = False;
-  connection_struct *saved_conn;
+  connection_struct *saved_user_conn;
+  connection_struct *saved_fsp_conn;
   int saved_vuid;
   pstring saved_dir; 
   int timeout = (OPLOCK_BREAK_TIMEOUT * 1000);
@@ -734,9 +735,10 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    * Save the information we need to re-become the
    * user, then unbecome the user whilst we're doing this.
    */
-  saved_conn = fsp->conn;
+  saved_user_conn = current_user.conn;
   saved_vuid = current_user.vuid;
-  vfs_GetWd(saved_conn,saved_dir);
+  saved_fsp_conn = fsp->conn;
+  vfs_GetWd(saved_fsp_conn,saved_dir);
   unbecome_user();
   /* Save the chain fnum. */
   file_chain_save();
@@ -810,7 +812,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    * Go back to being the user who requested the oplock
    * break.
    */
-  if(!become_user(saved_conn, saved_vuid))
+  if((saved_user_conn != NULL) && (saved_vuid != UID_FIELD_INVALID) && !become_user(saved_user_conn, saved_vuid))
   {
     DEBUG( 0, ( "oplock_break: unable to re-become user!" ) );
     DEBUGADD( 0, ( "Shutting down server\n" ) );
@@ -818,7 +820,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
     exit_server("unable to re-become user");
   }
   /* Including the directory. */
-  vfs_ChDir(saved_conn,saved_dir);
+  vfs_ChDir(saved_fsp_conn,saved_dir);
 
   /* Restore the chain fnum. */
   file_chain_restore();
