@@ -241,7 +241,7 @@ read the completed sync info
  **********************************************************************/
 static void complete_sync(struct sync_record *s)
 {
-	FILE *f;
+	XFILE *f;
 	fstring server, type_str;
 	unsigned type;
 	pstring comment;
@@ -249,11 +249,11 @@ static void complete_sync(struct sync_record *s)
 	char *ptr;
 	int count=0;
 
-	f = sys_fopen(s->fname,"r");
+	f = x_fopen(s->fname,O_RDONLY, 0);
 
 	if (!f) return;
 	
-	while (!feof(f)) {
+	while (!x_feof(f)) {
 		
 		if (!fgets_slash(line,sizeof(pstring),f)) continue;
 		
@@ -272,7 +272,7 @@ static void complete_sync(struct sync_record *s)
 		count++;
 	}
 
-	fclose(f);
+	x_fclose(f);
 
 	unlink(s->fname);
 

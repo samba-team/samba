@@ -173,7 +173,7 @@ Load or create the WINS database.
 BOOL initialise_wins(void)
 {
   time_t time_now = time(NULL);
-  FILE *fp;
+  XFILE *fp;
   pstring line;
 
   if(!lp_we_are_a_wins_server())
@@ -181,14 +181,14 @@ BOOL initialise_wins(void)
 
   add_samba_names_to_subnet(wins_server_subnet);
 
-  if((fp = sys_fopen(lock_path(WINS_LIST),"r")) == NULL)
+  if((fp = x_fopen(lock_path(WINS_LIST),O_RDONLY, 0)) == NULL)
   {
     DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
            WINS_LIST, strerror(errno) ));
     return True;
   }
 
-  while (!feof(fp))
+  while (!x_feof(fp))
   {
     pstring name_str, ip_str, ttl_str, nb_flags_str;
     unsigned int num_ips;
@@ -219,7 +219,7 @@ BOOL initialise_wins(void)
 		version != WINS_VERSION ||
 		hash != wins_hash()) {
 		    DEBUG(0,("Discarding invalid wins.dat file [%s]\n",line));
-		    fclose(fp);
+		    x_fclose(fp);
 		    return True;
 	    }
 	    continue;
@@ -342,7 +342,7 @@ BOOL initialise_wins(void)
     free((char *)ip_list);
   } 
     
-  fclose(fp);
+  x_fclose(fp);
   return True;
 }
 

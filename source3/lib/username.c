@@ -56,7 +56,7 @@ BOOL map_username(char *user)
 {
   static BOOL initialised=False;
   static fstring last_from,last_to;
-  FILE *f;
+  XFILE *f;
   char *mapfile = lp_username_map();
   char *s;
   pstring buf;
@@ -82,7 +82,7 @@ BOOL map_username(char *user)
     return True;
   }
   
-  f = sys_fopen(mapfile,"r");
+  f = x_fopen(mapfile,O_RDONLY, 0);
   if (!f) {
     DEBUG(0,("can't open username map %s. Error %s\n",mapfile, strerror(errno) ));
     return False;
@@ -135,7 +135,7 @@ BOOL map_username(char *user)
       fstrcpy(last_to,user);
       if(return_if_mapped) {
       	lp_list_free (&dosuserlist);
-        fclose(f);
+        x_fclose(f);
         return True;
       }
     }
@@ -143,7 +143,7 @@ BOOL map_username(char *user)
     lp_list_free (&dosuserlist);
   }
 
-  fclose(f);
+  x_fclose(f);
 
   /*
    * Setup the last_from and last_to as an optimization so 

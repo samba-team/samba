@@ -36,7 +36,7 @@ void load_lmhosts_file(char *fname)
   pstring name;
   int name_type;
   struct in_addr ipaddr;
-  FILE *fp = startlmhosts( fname );
+  XFILE *fp = startlmhosts( fname );
 
   if (!fp) {
     DEBUG(2,("load_lmhosts_file: Can't open lmhosts file %s. Error was %s\n",
