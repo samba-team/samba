@@ -1675,11 +1675,14 @@ BOOL get_myname(char *my_name,struct in_addr *ip)
   *hostname = 0;
 
   /* get my host name */
-  if (gethostname(hostname, MAXHOSTNAMELEN) == -1) 
+  if (gethostname(hostname, sizeof(hostname)) == -1) 
     {
       DEBUG(0,("gethostname failed\n"));
       return False;
     } 
+
+  /* Ensure null termination. */
+  hostname[sizeof(hostname)-1] = '\0';
 
   /* get host info */
   if ((hp = Get_Hostbyname(hostname)) == 0) 
@@ -2349,12 +2352,12 @@ a readdir wrapper which just returns the file name
 ********************************************************************/
 char *readdirname(DIR *p)
 {
-	struct dirent *ptr;
+	SMB_STRUCT_DIRENT *ptr;
 	char *dname;
 
 	if (!p) return(NULL);
   
-	ptr = (struct dirent *)readdir(p);
+	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
 	if (!ptr) return(NULL);
 
 	dname = ptr->d_name;

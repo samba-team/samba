@@ -269,7 +269,7 @@ AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getau
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf )
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
-AC_CHECK_FUNCS(atexit grantpt dup2 lseek64 ftruncate64)
+AC_CHECK_FUNCS(atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid yp_get_default_domain getpwanam)
 AC_CHECK_FUNCS(srandom random srand rand setenv mmap64 strcasecmp)
 
@@ -487,6 +487,15 @@ main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit
 samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
 if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
     AC_DEFINE(HAVE_INO64_T)
+fi
+
+AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIRENT64,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <dirent.h>],
+[struct dirent64 de;],
+samba_cv_HAVE_STRUCT_DIRENT64=yes,samba_cv_HAVE_STRUCT_DIRENT64=no)])
+if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_DIRENT64)
 fi
 
 AC_CACHE_CHECK([for union semun],samba_cv_HAVE_UNION_SEMUN,[

@@ -152,6 +152,7 @@
 #undef HAVE_SHADOW_H
 #undef HAVE_MEMSET
 #undef HAVE_STRCASECMP
+#undef HAVE_STRUCT_DIRENT64
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

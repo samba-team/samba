@@ -175,6 +175,7 @@ int sys_creat(const char *path, mode_t mode);
 int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
 void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset);
+SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
 int sys_chown(const char *fname,uid_t uid,gid_t gid);

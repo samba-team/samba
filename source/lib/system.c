@@ -295,6 +295,19 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T of
 #endif /* HAVE_SHARED_MMAP */
 
 /*******************************************************************
+ A readdir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
+{
+#if defined(HAVE_READDIR64)
+  return readdir64(dirp);
+#else
+  return readdir(dirp);
+#endif
+}
+
+/*******************************************************************
 The wait() calls vary between systems
 ********************************************************************/
 

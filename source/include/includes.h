@@ -464,6 +464,18 @@
 #endif
 
 /*
+ * Type for dirent structure.
+ */
+
+#ifndef SMB_STRUCT_DIRENT
+#  if defined(HAVE_STRUCT_DIRENT64)
+#    define SMB_STRUCT_DIRENT struct dirent64
+#  else
+#    define SMB_STRUCT_DIRENT struct dirent
+#  endif
+#endif
+
+/*
  * Defines for 64 bit fcntl locks.
  */
 
