@@ -33,6 +33,11 @@ struct smb_basic_signing_context {
 
 static BOOL set_smb_signing_common(struct cli_state *cli) 
 {
+	if (!cli->sign_info.negotiated_smb_signing 
+	    && !cli->sign_info.mandetory_signing) {
+		return False;
+	}
+
 	if (cli->sign_info.doing_signing) {
 		return False;
 	}
@@ -40,7 +45,7 @@ static BOOL set_smb_signing_common(struct cli_state *cli)
 	if (cli->sign_info.free_signing_context)
 		cli->sign_info.free_signing_context(cli);
 
-	/* These calls are INCONPATIBLE with SMB signing */
+	/* These calls are INCOMPATIBLE with SMB signing */
 	cli->readbraw_supported = False;
 	cli->writebraw_supported = False;
 	
@@ -54,7 +59,7 @@ static BOOL set_smb_signing_common(struct cli_state *cli)
 static BOOL set_smb_signing_real_common(struct cli_state *cli) 
 {
 	if (cli->sign_info.mandetory_signing) {
-		DEBUG(5, ("Mandetory SMB signing enabled!\n"));
+		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
 		cli->sign_info.doing_signing = True;
 	}
 
@@ -70,6 +75,28 @@ static void mark_packet_signed(struct cli_state *cli)
 	flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 	SSVAL(cli->outbuf,smb_flg2, flags2);
 }
+
+static BOOL signing_good(struct cli_state *cli, BOOL good) 
+{
+	DEBUG(10, ("got SMB signature of\n"));
+	dump_data(10,&cli->outbuf[smb_ss_field] , 8);
+
+	if (good && !cli->sign_info.doing_signing) {
+		cli->sign_info.doing_signing = True;
+	}
+
+	if (!good) {
+		if (cli->sign_info.doing_signing) {
+			DEBUG(1, ("SMB signature check failed!\n"));
+			return False;
+		} else {
+			DEBUG(3, ("Server did not sign reply correctly\n"));
+			cli_free_signing_context(cli);
+			return False;
+		}
+	}
+	return True;
+}	
 
 /***********************************************************
  SMB signing - Simple implementation - calculate a MAC to send.
@@ -99,7 +126,7 @@ static void cli_simple_sign_outgoing_message(struct cli_state *cli)
 	MD5Update(&md5_ctx, cli->outbuf + 4, smb_len(cli->outbuf));
 	MD5Final(calc_md5_mac, &md5_ctx);
 
-	DEBUG(10, ("sent SMB signiture of\n"));
+	DEBUG(10, ("sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
@@ -130,7 +157,7 @@ static BOOL cli_simple_check_incoming_message(struct cli_state *cli)
 
 	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
 
-	DEBUG(10, ("got SMB signiture of\n"));
+	DEBUG(10, ("got SMB signature of\n"));
 	dump_data(10, server_sent_mac, 8);
 
 	SIVAL(cli->inbuf, smb_ss_field, data->reply_seq_num);
@@ -145,15 +172,7 @@ static BOOL cli_simple_check_incoming_message(struct cli_state *cli)
 
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 	
-	if (good && !cli->sign_info.doing_signing) {
-		cli->sign_info.doing_signing = True;
-	}
-
-	if (!good) {
-		DEBUG(1, ("SMB signiture check failed!\n"));
-	}
-
-	return good;
+	return signing_good(cli, good);
 }
 
 /***********************************************************
@@ -174,16 +193,16 @@ static void cli_simple_free_signing_context(struct cli_state *cli)
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 
-void cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
+BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
 	if (!set_smb_signing_common(cli)) {
-		return;
+		return False;
 	}
 
 	if (!set_smb_signing_real_common(cli)) {
-		return;
+		return False;
 	}
 
 	data = smb_xmalloc(sizeof(*data));
@@ -194,12 +213,105 @@ void cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	memcpy(&data->mac_key.data[0], user_session_key, 16);
 	memcpy(&data->mac_key.data[16],response.data, MIN(response.length, 40 - 16));
 
-	/* Initialise the sequence number */
+	/* Initialize the sequence number */
 	data->send_seq_num = 0;
 
 	cli->sign_info.sign_outgoing_message = cli_simple_sign_outgoing_message;
 	cli->sign_info.check_incoming_message = cli_simple_check_incoming_message;
 	cli->sign_info.free_signing_context = cli_simple_free_signing_context;
+
+	return True;
+}
+
+/***********************************************************
+ SMB signing - NTLMSSP implementation - calculate a MAC to send.
+************************************************************/
+
+static void cli_ntlmssp_sign_outgoing_message(struct cli_state *cli)
+{
+	NTSTATUS nt_status;
+	DATA_BLOB sig;
+	NTLMSSP_CLIENT_STATE *ntlmssp_state = cli->sign_info.signing_context;
+
+	/* mark the packet as signed - BEFORE we sign it...*/
+	mark_packet_signed(cli);
+	
+	nt_status = ntlmssp_client_sign_packet(ntlmssp_state, cli->outbuf + 4, 
+					       smb_len(cli->outbuf), &sig);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("NTLMSSP signing failed with %s\n", nt_errstr(nt_status)));
+		return;
+	}
+
+	DEBUG(10, ("sent SMB signature of\n"));
+	dump_data(10, sig.data, MIN(sig.length, 8));
+	memcpy(&cli->outbuf[smb_ss_field], sig.data, MIN(sig.length, 8));
+	
+	data_blob_free(&sig);
+}
+
+/***********************************************************
+ SMB signing - NTLMSSP implementation - check a MAC sent by server.
+************************************************************/
+
+static BOOL cli_ntlmssp_check_incoming_message(struct cli_state *cli)
+{
+	BOOL good;
+	NTSTATUS nt_status;
+	DATA_BLOB sig = data_blob(&cli->outbuf[smb_ss_field], 8);
+
+	NTLMSSP_CLIENT_STATE *ntlmssp_state = cli->sign_info.signing_context;
+
+	nt_status = ntlmssp_client_check_packet(ntlmssp_state, cli->outbuf + 4, 
+						smb_len(cli->outbuf), &sig);
+	
+	data_blob_free(&sig);
+	
+	good = NT_STATUS_IS_OK(nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5, ("NTLMSSP signing failed with %s\n", nt_errstr(nt_status)));
+	}
+
+	return signing_good(cli, good);
+}
+
+/***********************************************************
+ SMB signing - NTLMSSP implementation - free signing context
+************************************************************/
+
+static void cli_ntlmssp_free_signing_context(struct cli_state *cli)
+{
+	ntlmssp_client_end((NTLMSSP_CLIENT_STATE **)&cli->sign_info.signing_context);
+}
+
+/***********************************************************
+ SMB signing - NTLMSSP implementation - setup the MAC key.
+************************************************************/
+
+BOOL cli_ntlmssp_set_signing(struct cli_state *cli,
+			     NTLMSSP_CLIENT_STATE *ntlmssp_state)
+{
+	if (!set_smb_signing_common(cli)) {
+		return False;
+	}
+
+	if (!NT_STATUS_IS_OK(ntlmssp_client_sign_init(ntlmssp_state))) {
+		return False;
+	}
+
+	if (!set_smb_signing_real_common(cli)) {
+		return False;
+	}
+
+	cli->sign_info.signing_context = ntlmssp_state;
+	ntlmssp_state->ref_count++;
+
+	cli->sign_info.sign_outgoing_message = cli_ntlmssp_sign_outgoing_message;
+	cli->sign_info.check_incoming_message = cli_ntlmssp_check_incoming_message;
+	cli->sign_info.free_signing_context = cli_ntlmssp_free_signing_context;
+
+	return True;
 }
 
 /***********************************************************
@@ -210,7 +322,7 @@ static void cli_null_sign_outgoing_message(struct cli_state *cli)
 {
 	/* we can't zero out the sig, as we might be trying to send a
 	   session request - which is NBT-level, not SMB level and doesn't
-	   have the feild */
+	   have the field */
 	return;
 }
 
@@ -232,23 +344,24 @@ static void cli_null_free_signing_context(struct cli_state *cli)
 	return;
 }
 
-/***********************************************************
+/**
  SMB signing - NULL implementation - setup the MAC key.
-************************************************************/
 
-void cli_null_set_signing(struct cli_state *cli)
+ @note Used as an initialisation only - it will not correctly
+       shut down a real signing mechinism
+*/
+
+BOOL cli_null_set_signing(struct cli_state *cli)
 {
 	struct smb_basic_sign_data *data;
-
-	if (!set_smb_signing_common(cli)) {
-		return;
-	}
 
 	cli->sign_info.signing_context = NULL;
 	
 	cli->sign_info.sign_outgoing_message = cli_null_sign_outgoing_message;
 	cli->sign_info.check_incoming_message = cli_null_check_incoming_message;
 	cli->sign_info.free_signing_context = cli_null_free_signing_context;
+
+	return True;
 }
 
 /***********************************************************
@@ -257,7 +370,12 @@ void cli_null_set_signing(struct cli_state *cli)
 
 static void cli_temp_sign_outgoing_message(struct cli_state *cli)
 {
-	memcpy(&cli->outbuf[smb_ss_field], "SignRequest", 8);
+	/* mark the packet as signed - BEFORE we sign it...*/
+	mark_packet_signed(cli);
+
+	/* I wonder what BSRSPYL stands for - but this is what MS 
+	   actually sends! */
+	memcpy(&cli->outbuf[smb_ss_field], "BSRSPYL ", 8);
 	return;
 }
 
@@ -283,10 +401,10 @@ static void cli_temp_free_signing_context(struct cli_state *cli)
  SMB signing - NULL implementation - setup the MAC key.
 ************************************************************/
 
-void cli_temp_set_signing(struct cli_state *cli)
+BOOL cli_temp_set_signing(struct cli_state *cli)
 {
 	if (!set_smb_signing_common(cli)) {
-		return;
+		return False;
 	}
 
 	cli->sign_info.signing_context = NULL;
@@ -294,6 +412,8 @@ void cli_temp_set_signing(struct cli_state *cli)
 	cli->sign_info.sign_outgoing_message = cli_temp_sign_outgoing_message;
 	cli->sign_info.check_incoming_message = cli_temp_check_incoming_message;
 	cli->sign_info.free_signing_context = cli_temp_free_signing_context;
+
+	return True;
 }
 
 /**
@@ -309,7 +429,7 @@ void cli_free_signing_context(struct cli_state *cli)
 }
 
 /**
- * Sign a packet with the current mechinism
+ * Sign a packet with the current mechanism
  */
  
 void cli_caclulate_sign_mac(struct cli_state *cli)
@@ -318,7 +438,7 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 }
 
 /**
- * Check a packet with the current mechinism
+ * Check a packet with the current mechanism
  * @return False if we had an established signing connection
  *         which had a back checksum, True otherwise
  */

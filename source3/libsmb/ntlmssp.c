@@ -81,7 +81,7 @@ static const uint8 *get_challenge(struct ntlmssp_state *ntlmssp_state)
 
 /**
  * Determine correct target name flags for reply, given server role 
- * and negoitated falgs
+ * and negotiated flags
  * 
  * @param ntlmssp_state NTLMSSP State
  * @param neg_flags The flags from the packet
@@ -291,7 +291,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 /**
  * Create an NTLMSSP state machine
  * 
- * @param ntlmssp_state NTLMSSP State, allocated by this funciton
+ * @param ntlmssp_state NTLMSSP State, allocated by this function
  */
 
 NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
@@ -322,7 +322,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 /**
  * End an NTLMSSP state machine
  * 
- * @param ntlmssp_state NTLMSSP State, free()ed by this funciton
+ * @param ntlmssp_state NTLMSSP State, free()ed by this function
  */
 
 NTSTATUS ntlmssp_server_end(NTLMSSP_STATE **ntlmssp_state)
@@ -431,7 +431,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint8 datagram_sess_key[16];
 
-	ZERO_STRUCT(datagram_sess_key);
+	generate_random_buffer(datagram_sess_key, sizeof(datagram_sess_key), False);	
 
 	if (!msrpc_parse(&reply, "CdBd",
 			 "NTLMSSP",
@@ -508,8 +508,6 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		session_key = data_blob(NULL, 16);
 		SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 	}
-	
-	data_blob_free(&challenge_blob);
 
 	/* this generates the actual auth packet */
 	if (!msrpc_gen(next_request, auth_gen_string, 
@@ -520,7 +518,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		       ntlmssp_state->domain, 
 		       ntlmssp_state->user, 
 		       ntlmssp_state->get_global_myname(), 
-		       datagram_sess_key, 0,
+		       datagram_sess_key, 16,
 		       ntlmssp_state->neg_flags)) {
 		
 		data_blob_free(&lm_response);
@@ -529,9 +527,14 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data_blob_free(&lm_response);
-	data_blob_free(&nt_response);
+	data_blob_free(&ntlmssp_state->chal);
+	data_blob_free(&ntlmssp_state->lm_resp);
+	data_blob_free(&ntlmssp_state->nt_resp);
+	data_blob_free(&ntlmssp_state->session_key);
 
+	ntlmssp_state->chal = challenge_blob;
+	ntlmssp_state->lm_resp = lm_response;
+	ntlmssp_state->nt_resp = nt_response;
 	ntlmssp_state->session_key = session_key;
 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -558,9 +561,11 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_CLIENT_STATE **ntlmssp_state)
 	(*ntlmssp_state)->unicode = True;
 
 	(*ntlmssp_state)->neg_flags = 
-	       	NTLMSSP_NEGOTIATE_128 | 
+		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_REQUEST_TARGET;
+
+	(*ntlmssp_state)->ref_count = 1;
 
 	return NT_STATUS_OK;
 }
@@ -569,8 +574,16 @@ NTSTATUS ntlmssp_client_end(NTLMSSP_CLIENT_STATE **ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = (*ntlmssp_state)->mem_ctx;
 
-	data_blob_free(&(*ntlmssp_state)->session_key);
-	talloc_destroy(mem_ctx);
+	(*ntlmssp_state)->ref_count--;
+
+	if ((*ntlmssp_state)->ref_count == 0) {
+		data_blob_free(&(*ntlmssp_state)->chal);
+		data_blob_free(&(*ntlmssp_state)->lm_resp);
+		data_blob_free(&(*ntlmssp_state)->nt_resp);
+		data_blob_free(&(*ntlmssp_state)->session_key);
+		talloc_destroy(mem_ctx);
+	}
+
 	*ntlmssp_state = NULL;
 	return NT_STATUS_OK;
 }

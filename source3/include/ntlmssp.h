@@ -92,6 +92,8 @@ typedef struct ntlmssp_state
 typedef struct ntlmssp_client_state 
 {
 	TALLOC_CTX *mem_ctx;
+	unsigned int ref_count;
+
 	BOOL unicode;
 	BOOL use_ntlmv2;
 	char *user;
@@ -102,9 +104,30 @@ typedef struct ntlmssp_client_state
 	const char *(*get_global_myname)(void);
 	const char *(*get_domain)(void);
 
+	DATA_BLOB chal;
+ 	DATA_BLOB lm_resp;
+	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 	
 	uint32 neg_flags;
+	
+	/* SMB Signing */
+	
+	uint32 ntlmssp_seq_num;
+
+	/* ntlmv2 */
+	char cli_sign_const[16];
+	char cli_seal_const[16];
+	char srv_sign_const[16];
+	char srv_seal_const[16];
+
+	unsigned char cli_sign_hash[258];
+	unsigned char cli_seal_hash[258];
+	unsigned char srv_sign_hash[258];
+	unsigned char srv_seal_hash[258];
+
+	/* ntlmv1 */
+	unsigned char ntlmssp_hash[258];
 
 } NTLMSSP_CLIENT_STATE;
 
