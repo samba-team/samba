@@ -439,14 +439,14 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry,
 		/* Create argument list */
 
 		argv = (char **)malloc(sizeof(char *) * argc);
-                memset(argv, 0, sizeof(char *) * argc);
-
 		if (!argv) {
 			fprintf(stderr, "out of memory\n");
 			result = NT_STATUS_NO_MEMORY;
                         goto done;
 		}
 					
+                memset(argv, 0, sizeof(char *) * argc);
+
 		p = cmd;
 		argc = 0;
 					

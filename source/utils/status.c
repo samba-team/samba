@@ -535,6 +535,8 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		}
 		if (ptr==NULL) {
 			ptr=(struct session_record *) malloc(sizeof(struct session_record));
+			if (!ptr)
+				return 0;
 			ptr->uid=crec.uid;
 			ptr->pid=crec.pid;
 			ptr->start=crec.start;

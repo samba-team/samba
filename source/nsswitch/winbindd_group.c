@@ -976,6 +976,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	num_gids = 0;
 	gid_list = malloc(sizeof(gid_t) * num_groups);
+	if (gid_list == NULL)
+		goto done;
 
 	if (state->response.extra_data)
 		goto done;

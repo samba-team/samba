@@ -562,12 +562,11 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 #endif
 
 	smbc_file_table = malloc(SMBC_MAX_FD * sizeof(struct smbc_file *));
+	if (!smbc_file_table)
+		return ENOMEM;
 
 	for (p = 0; p < SMBC_MAX_FD; p++)
 		smbc_file_table[p] = NULL;
-
-	if (!smbc_file_table)
-		return ENOMEM;
 
 	return 0;  /* Success */
 
