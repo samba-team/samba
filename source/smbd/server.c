@@ -2774,7 +2774,7 @@ inode = %x).\n", fsp->name, fnum, dev, inode));
   {
     DEBUG(0,("oplock_break: global_oplocks_open < 0 (%d). PANIC ERROR\n",
               global_oplocks_open));
-    abort();
+    exit_server("oplock_break: global_oplocks_open < 0");
   }
 
   DEBUG(5,("oplock_break: returning success for fnum = %d, dev = %x, inode = %x. Current \

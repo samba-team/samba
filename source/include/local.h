@@ -159,7 +159,7 @@
 /* the directory to sit in when idle */
 /* #define IDLE_DIR "/" */
 
-/* Timout (in seconds) to wait for an oplock breal
+/* Timout (in seconds) to wait for an oplock break
    message to return. */
 
 #define OPLOCK_BREAK_TIMEOUT 30
