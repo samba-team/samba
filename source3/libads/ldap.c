@@ -338,7 +338,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  *  again when the entire search is complete 
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in utf8 or ascii
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -478,7 +478,7 @@ done:
  * all entries in a large search.
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -525,7 +525,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
  *  runs the function as each page is returned, using ads_process_results()
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in UTF-8 or ascii
  * @param fn Function which takes attr name, values list, and data_area
@@ -567,7 +567,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * Do a search with a timeout.
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
