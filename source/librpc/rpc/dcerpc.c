@@ -321,6 +321,10 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_ORPC) {
+		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+	}
+
 	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -883,10 +887,11 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	pkt.u.request.alloc_hint = remaining;
 	pkt.u.request.context_id = 0;
 	pkt.u.request.opnum = opnum;
+
 	if (object) {
-		pkt.object.object = *object;
+		pkt.u.request.object.object = *object;
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_ORPC;
-		printf("OBJECT: %s\n", GUID_string(NULL, object));
+		chunk_size -= ndr_size_GUID(0,object,0);
 	}
 
 	DLIST_ADD(p->pending, req);
