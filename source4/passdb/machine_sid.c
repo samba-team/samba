@@ -176,7 +176,7 @@ static BOOL pdb_generate_sam_sid(void)
 }   
 
 /* return our global_sam_sid */
-DOM_SID *get_global_sam_sid(void)
+struct sid_info *get_global_sam_sid(void)
 {
 	if (global_sam_sid != NULL)
 		return global_sam_sid;

@@ -44,7 +44,7 @@ NTSTATUS smb_load_module(const char *module_name)
 	 * want to use wildcards here? */
 	if(S_ISDIR(st.st_mode)) {
 		dir = opendir(module_name);
-		while(dirent = readdir(dir)) {
+		while ((dirent = readdir(dir))) {
 			smb_load_module(dirent->d_name);
 		}
 	}

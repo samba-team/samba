@@ -29,7 +29,7 @@ static unsigned total, collisions, failures;
 static BOOL test_one(struct cli_state *cli, const char *name)
 {
 	int fnum;
-	char *shortname;
+	const char *shortname;
 	fstring name2;
 	NTSTATUS status;
 	TDB_DATA data;

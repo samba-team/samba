@@ -1686,7 +1686,8 @@ static int cmd_allinfo(void)
 	finfo.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	if (NT_STATUS_IS_OK(status)) {
-		d_printf("\tfile_id         %.0f\n", finfo.internal_information.out.file_id);
+		d_printf("\tfile_id         %.0f\n", 
+			 (double)finfo.internal_information.out.file_id);
 	}
 
 	/* the EAs, if any */
@@ -2447,7 +2448,7 @@ static char **remote_completion(const char *text, int len)
 {
 	pstring dirmask;
 	int i;
-	completion_remote_t info = { "", NULL, 1, NULL, NULL, NULL };
+	completion_remote_t info = { "", NULL, 1, 0, NULL, 0 };
 
 	info.samelen = len;
 	info.text = text;
