@@ -205,6 +205,8 @@ krb5_to4 (krb5_ccache id)
 	krb5_error_code ret;
 	krb5_principal princ;
 
+	krb5_cc_clear_mcred(&mcred);
+
 	ret = krb5_cc_get_principal (context, id, &princ);
 	if (ret)
 	    return ret;
