@@ -32,6 +32,9 @@ sub _prepare_smb_build_h($)
 		my $DEFINE = ();
 		my $name = lc($NAME);
 
+		#
+		# Static modules
+		# 
 		$DEFINE->{COMMENT} = "SUBSYSTEM $NAME INIT";
 		$DEFINE->{KEY} = "static_init_$name";
 		$DEFINE->{VAL} = "do { \\\n";
@@ -39,6 +42,23 @@ sub _prepare_smb_build_h($)
 			$DEFINE->{VAL} .= "\t\t$subkey\_init(); \\\n";
 		}
 		$DEFINE->{VAL} .= "\t} while(0)";
+		
+		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
+
+	}
+
+	#
+	# Shared modules
+	#
+	foreach my $key (sort keys %{$CTX->{INPUT}{MODULES}}) {
+		next if ($CTX->{INPUT}{MODULES}{$key}{BUILD} ne "SHARED");
+
+		my $name = $CTX->{INPUT}{MODULES}{$key}{NAME};
+		my $DEFINE = ();
+		
+		$DEFINE->{COMMENT} = "$name is built shared";
+		$DEFINE->{KEY} = "$name\_init";
+		$DEFINE->{VAL} = "init_module";
 
 		push(@{$CTX->{OUTPUT}{SMB_BUILD_H}},$DEFINE);
 	}
