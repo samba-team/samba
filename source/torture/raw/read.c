@@ -192,6 +192,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	
 
 done:
+	cli_close(cli, fnum);
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
 	return ret;
