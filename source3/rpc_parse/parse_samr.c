@@ -596,6 +596,40 @@ static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
 /*******************************************************************
 inits a structure.
 ********************************************************************/
+void init_unk_info5(SAM_UNK_INFO_5 * u_5,char *server)
+{
+	int len_server = strlen(server);
+
+	init_uni_hdr(&u_5->hdr_server, len_server);
+
+	init_unistr2(&u_5->uni_server, server, len_server);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info5(char *desc, SAM_UNK_INFO_5 * u_5,
+			     prs_struct *ps, int depth)
+{
+	if (u_5 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info5");
+	depth++;
+
+	if(!smb_io_unihdr("hdr_server", &u_5->hdr_server, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_server", &u_5->uni_server, u_5->hdr_server.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			char *domain, char *server,
 			uint32 seq_num)
@@ -779,6 +813,10 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 			break;
 		case 0x06:
 			if(!sam_io_unk_info6("unk_inf6",&r_u->ctr->info.inf6, ps,depth))
+				return False;
+			break;
+		case 0x05:
+			if(!sam_io_unk_info5("unk_inf5",&r_u->ctr->info.inf5, ps,depth))
 				return False;
 			break;
 		case 0x03:
@@ -5930,6 +5968,42 @@ static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 	return True;
 }
 
+void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
+{
+	int 		len_munged_dial;
+	char*		munged_dial = pdb_get_munged_dial(pw);
+
+	len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
+	init_uni_hdr(&usr->hdr_munged_dial, len_munged_dial);
+	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
+
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_user_info20(char *desc, SAM_USER_INFO_20 *usr,
+			prs_struct *ps, int depth)
+{
+	if (usr == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_user_info20");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unihdr("hdr_munged_dial ", &usr->hdr_munged_dial, ps, depth))	/* wkstas user can log on from */
+		return False;
+
+	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial,usr->hdr_munged_dial.buffer, ps, depth))	/* worksations user can log on from */
+		return False;
+
+	return True;
+}
+
 /*******************************************************************
 inits a SAM_USERINFO_CTR structure.
 ********************************************************************/
@@ -6086,6 +6160,16 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR **ppctr,
 			return False;
 		}
 		ret = sam_io_user_info12("", ctr->info.id12, ps, depth);
+		break;
+	case 20:
+		if (UNMARSHALLING(ps))
+			ctr->info.id20 = (SAM_USER_INFO_20 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_20));
+
+		if (ctr->info.id20 == NULL) {
+			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+			return False;
+		}
+		ret = sam_io_user_info20("", ctr->info.id20, ps, depth);
 		break;
 	case 21:
 		if (UNMARSHALLING(ps))

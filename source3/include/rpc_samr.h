@@ -330,6 +330,15 @@ typedef struct sam_user_info_21
 } SAM_USER_INFO_21;
 
 
+/* SAM_USER_INFO_20 */
+typedef struct sam_user_info_20
+{
+	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
+
+	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
+
+} SAM_USER_INFO_20;
+
 /* SAM_USER_INFO_12 */
 typedef struct sam_user_info_12
 {
@@ -501,6 +510,13 @@ typedef struct sam_unknown_info_12_inf
 
 } SAM_UNK_INFO_12;
 
+typedef struct sam_unknown_info_5_inf
+{
+	UNIHDR hdr_server; /* server name unicode header */
+	UNISTR2 uni_server; /* server name unicode string */
+
+} SAM_UNK_INFO_5;
+
 typedef struct sam_unknown_info_2_inf
 {
 	uint32 unknown_0; /* 0x0000 0000 */
@@ -548,6 +564,7 @@ typedef struct sam_unknown_ctr_info
 		SAM_UNK_INFO_1 inf1;
 		SAM_UNK_INFO_2 inf2;
 		SAM_UNK_INFO_3 inf3;
+		SAM_UNK_INFO_5 inf5;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
 		SAM_UNK_INFO_12 inf12;
@@ -1189,6 +1206,7 @@ typedef struct sam_userinfo_ctr_info
 		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
 		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
 		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */
+		SAM_USER_INFO_20 *id20; /* auth-level 20 */
 		SAM_USER_INFO_21 *id21; /* auth-level 21 */
 		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
 		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
