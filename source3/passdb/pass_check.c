@@ -126,7 +126,7 @@ static struct pam_conv PAM_conversation = {
 };
 
 
-static BOOL pam_auth(char *this_user,char *password)
+static BOOL pam_auth(char *user,char *password)
 {
   pam_handle_t *pamh;
   int pam_error;
@@ -142,8 +142,8 @@ static BOOL pam_auth(char *this_user,char *password)
      pam_end(pamh, 0); return False; \
    }
   PAM_password = password;
-  PAM_username = this_user;
-  pam_error = pam_start("samba", this_user, &PAM_conversation, &pamh);
+  PAM_username = user;
+  pam_error = pam_start("samba", user, &PAM_conversation, &pamh);
   PAM_BAIL;
 /* Setting PAM_SILENT stops generation of error messages to syslog
  * to enable debugging on Red Hat Linux set:
@@ -170,7 +170,7 @@ static BOOL pam_auth(char *this_user,char *password)
 /*******************************************************************
 check on AFS authentication
 ********************************************************************/
-static BOOL afs_auth(char *this_user,char *password)
+static BOOL afs_auth(char *user,char *password)
 {
 	long password_expires = 0;
 	char *reason;
@@ -179,7 +179,7 @@ static BOOL afs_auth(char *this_user,char *password)
 	/* but since I can't find the old documentation... :-)               */
 	setpag();
 	if (ka_UserAuthenticateGeneral(KA_USERAUTH_VERSION+KA_USERAUTH_DOSETPAG,
-				       this_user,
+				       user,
 				       (char *) 0, /* instance */
 				       (char *) 0, /* cell */
 				       password,
@@ -215,7 +215,7 @@ int dcelogin_atmost_once = 0;
 /*******************************************************************
 check on a DCE/DFS authentication
 ********************************************************************/
-static BOOL dfs_auth(char *this_user,char *password)
+static BOOL dfs_auth(char *user,char *password)
 {
 	error_status_t err;
 	int err2;
@@ -317,13 +317,13 @@ static BOOL dfs_auth(char *this_user,char *password)
 		}
 	}
 
-	if (sec_login_setup_identity((unsigned char *)this_user,
+	if (sec_login_setup_identity((unsigned char *)user,
 				     sec_login_no_flags,
 				     &my_dce_sec_context,
 				     &err) == 0) {
 		dce_error_inq_text(err, dce_errstr, &err2);
 		DEBUG(0,("DCE Setup Identity for %s failed: %s\n",
-			 this_user,dce_errstr));
+			 user,dce_errstr));
 		return(False);
 	}
 
@@ -366,7 +366,7 @@ static BOOL dfs_auth(char *this_user,char *password)
 		return False;
 	}
  
-	if (sec_login_setup_identity((unsigned char *)this_user,
+	if (sec_login_setup_identity((unsigned char *)user,
 				     sec_login_no_flags,
 				     &my_dce_sec_context,
 				     &err) == 0) {
@@ -375,7 +375,7 @@ static BOOL dfs_auth(char *this_user,char *password)
 		setuid(0);
 		setgid(0);
 		DEBUG(0,("DCE Setup Identity for %s failed: %s\n",
-			 this_user,dce_errstr));
+			 user,dce_errstr));
 		return(False);
 	}
 
@@ -405,7 +405,7 @@ static BOOL dfs_auth(char *this_user,char *password)
 		setuid(0);
 		setgid(0);
 		DEBUG(0,("DCE Identity Validation failed for principal %s: %s\n",
-			 this_user,dce_errstr));
+			 user,dce_errstr));
 		
 		return(False);
 	}
@@ -429,7 +429,7 @@ static BOOL dfs_auth(char *this_user,char *password)
 	if (err != error_status_ok) {  
 		dce_error_inq_text(err, dce_errstr, &err2);
 		DEBUG(0,("DCE login failed for principal %s, cant set context: %s\n",
-			 this_user,dce_errstr));
+			 user,dce_errstr));
 		
 		sec_login_purge_context(&my_dce_sec_context, &err);
 		/* Go back to root, JRA. */
@@ -451,7 +451,7 @@ static BOOL dfs_auth(char *this_user,char *password)
 	}
 	
 	DEBUG(0,("DCE login succeeded for principal %s on pid %d\n",
-		 this_user, getpid()));
+		 user, getpid()));
 	
 	DEBUG(3,("DCE principal: %s\n"
 		 "          uid: %d\n"
@@ -501,7 +501,7 @@ void dfs_unlogin(void)
 /*******************************************************************
 check on Kerberos authentication
 ********************************************************************/
-static BOOL krb5_auth(char *this_user,char *password)
+static BOOL krb5_auth(char *user,char *password)
 {
 	krb5_data tgtname = {
 		0,
@@ -533,7 +533,7 @@ static BOOL krb5_auth(char *this_user,char *password)
 		return(False);
 	}
 	
-	if (retval = krb5_parse_name(kcontext, this_user, &kprinc)) {
+	if (retval = krb5_parse_name(kcontext, user, &kprinc)) {
 		return(False);
 	}
 
@@ -576,7 +576,7 @@ static BOOL krb5_auth(char *this_user,char *password)
 /*******************************************************************
 check on Kerberos authentication
 ********************************************************************/
-static BOOL krb4_auth(char *this_user,char *password)
+static BOOL krb4_auth(char *user,char *password)
 {
 	char realm[REALM_SZ];
 	char tkfile[MAXPATHLEN];
@@ -589,7 +589,7 @@ static BOOL krb4_auth(char *this_user,char *password)
 			getpid());
   
 	krb_set_tkt_string(tkfile);
-	if (krb_verify_user(this_user, "", realm,
+	if (krb_verify_user(user, "", realm,
 			    password, 0,
 			    "rmcd") == KSUCCESS) {
 		unlink(tkfile);
@@ -716,7 +716,7 @@ static BOOL password_check(char *password)
 	   - if HAVE_CRYPT is defined this is a potential security hole
 	   as it may authenticate via the crypt call when PAM
 	   settings say it should fail.
-	   if (pam_auth(this_user,password)) return(True);
+	   if (pam_auth(user,password)) return(True);
 	   Hence we make a direct return to avoid a second chance!!!
 	*/
 	return (pam_auth(this_user,password));
