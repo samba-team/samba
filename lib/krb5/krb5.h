@@ -36,6 +36,8 @@ typedef int32_t krb5_error_code;
 
 typedef int krb5_kvno;
 
+typedef u_int32_t krb5_flags;
+
 typedef void *krb5_pointer;
 typedef const void *krb5_const_pointer;
 
@@ -101,14 +103,25 @@ typedef struct krb5_keyblock{
   krb5_data contents;
 } krb5_keyblock;
 
-typedef struct krb5_context_data{
-    krb5_enctype *etypes;
-    char *default_realm;
-    k5_cfile *cf;
-    struct error_list *et_list;
-} krb5_context_data;
+struct krb5_cc_ops;
 
-typedef krb5_context_data *krb5_context;
+typedef struct krb5_ccache_data{
+    char *residual;
+    struct krb5_cc_ops *ops;
+    krb5_data data;
+}krb5_ccache_data;
+
+typedef struct krb5_cc_cursor{
+  int fd;
+}krb5_cc_cursor;
+
+typedef struct krb5_ccache_data *krb5_ccache;
+
+typedef struct krb5_context_data *krb5_context;
+
+typedef struct krb5_principal_data *krb5_principal;
+typedef const struct krb5_principal_data *krb5_const_principal;
+
 
 typedef time_t krb5_time;
 
@@ -119,6 +132,49 @@ typedef struct krb5_times{
   krb5_time renew_till;
 } krb5_times;
 
+
+typedef struct krb5_creds {
+    krb5_principal client;
+    krb5_principal server;
+    krb5_keyblock session;
+    krb5_times times;
+    krb5_data ticket;
+
+    krb5_data second_ticket; /* ? */
+    krb5_data authdata; /* ? */
+    krb5_addresses addresses;
+    
+} krb5_creds;
+
+typedef struct krb5_cc_ops{
+    char *prefix;
+    char* (*get_name)(krb5_context, krb5_ccache);
+    krb5_error_code (*resolve)(krb5_context, krb5_ccache *, const char *);
+    krb5_error_code (*gen_new)(krb5_context, krb5_ccache *);
+    krb5_error_code (*init)(krb5_context, krb5_ccache, krb5_principal);
+    krb5_error_code (*destroy)(krb5_context, krb5_ccache);
+    krb5_error_code (*close)(krb5_context, krb5_ccache);
+    krb5_error_code (*store)(krb5_context, krb5_ccache, krb5_creds*);
+    krb5_error_code (*retrieve)(krb5_context, krb5_ccache, 
+				krb5_flags, krb5_creds*, krb5_creds);
+    krb5_error_code (*get_princ)(krb5_context, krb5_ccache, krb5_principal*);
+    krb5_error_code (*get_first)(krb5_context, krb5_ccache, krb5_cc_cursor *);
+    krb5_error_code (*get_next)(krb5_context, krb5_ccache, 
+				krb5_cc_cursor*, krb5_creds*);
+    krb5_error_code (*end_get)(krb5_context, krb5_ccache, krb5_cc_cursor*);
+    krb5_error_code (*remove_cred)(krb5_context, krb5_ccache, 
+				   krb5_flags, krb5_creds*);
+    krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
+} krb5_cc_ops;
+
+typedef struct krb5_context_data{
+    krb5_enctype *etypes;
+    char *default_realm;
+    k5_cfile *cf;
+    struct error_list *et_list;
+    krb5_cc_ops *cc_ops;
+    int num_ops;
+} krb5_context_data;
 
 enum{
   KRB5_NT_UNKNOWNN	= 0,
@@ -135,9 +191,6 @@ typedef struct krb5_principal_data{
   krb5_data *comp;
   int ncomp;
 }krb5_principal_data;
-
-typedef krb5_principal_data *krb5_principal;
-typedef const krb5_principal_data *krb5_const_principal;
 
 typedef krb5_data krb5_realm;
 
@@ -157,18 +210,6 @@ typedef struct krb5_ticket {
 } krb5_ticket;
 
 
-typedef struct krb5_creds {
-    krb5_principal client;
-    krb5_principal server;
-    krb5_keyblock session;
-    krb5_times times;
-    krb5_data ticket;
-
-    krb5_data second_ticket; /* ? */
-    krb5_data authdata; /* ? */
-    krb5_addresses addresses;
-    
-} krb5_creds;
 
 
 typedef struct krb5_authenticator_data{
@@ -185,20 +226,9 @@ typedef struct krb5_rcache{
   int dummy;
 }krb5_rcache;
 
-typedef struct krb5_ccache_data{
-  int type;
-  krb5_data data;
-}krb5_ccache_data;
-
-typedef struct krb5_ccache_data *krb5_ccache;
-
 typedef struct krb5_fcache{
-  char *filename;
+    char *filename;
 }krb5_fcache;
-
-typedef struct krb5_cc_cursor{
-  int fd;
-}krb5_cc_cursor;
 
 typedef struct krb5_keytab_data {
   char *filename;
@@ -253,8 +283,6 @@ typedef struct krb5_auth_context_data{
   
 }krb5_auth_context_data, *krb5_auth_context;
 
-
-typedef u_int32_t krb5_flags;
 
 typedef struct {
   KDC_REP part1;
@@ -580,6 +608,13 @@ void
 krb5_princ_set_realm(krb5_context context,
 		     krb5_principal principal,
 		     krb5_data *realm);
+
+krb5_error_code
+krb5_principal_set_component(krb5_context, 
+			     krb5_principal, 
+			     int, 
+			     void*, 
+			     size_t);
 
 krb5_error_code
 krb5_build_principal(krb5_context context,
