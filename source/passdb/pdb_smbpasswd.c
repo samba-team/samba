@@ -251,6 +251,8 @@ static void endsmbfilepwent(void *vp, int *lock_depth)
 {
   FILE *fp = (FILE *)vp;
 
+  if (!fp)
+	return;
   pw_file_unlock(fileno(fp), lock_depth);
   fclose(fp);
   DEBUG(7, ("endsmbfilepwent_internal: closed password file.\n"));

@@ -127,7 +127,6 @@ static void kernel_remove_notify(void *datap)
 		BlockSignals(True, RT_SIGNAL_NOTIFY);
 		for (i = 0; i < signals_received; i++) {
 			if (fd == (int)fd_pending_array[i]) {
-				close(fd);
 				fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 				if (signals_received - i - 1) {
  					memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
@@ -138,6 +137,7 @@ static void kernel_remove_notify(void *datap)
 				break;
 			}
 		}
+		close(fd);
 		BlockSignals(False, RT_SIGNAL_NOTIFY);
 	}
 	SAFE_FREE(data);

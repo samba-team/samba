@@ -59,13 +59,10 @@ void E_md4hash(const uchar *passwd, uchar *p16)
 	int16 wpwd[129];
 	
 	/* Password cannot be longer than 128 characters */
-	len = strlen((const char *)passwd);
-	if(len > 128)
-		len = 128;
 	/* Password must be converted to NT unicode - null terminated. */
-	dos_struni2((char *)wpwd, (const char *)passwd, 256);
+	dos_struni2((char *)wpwd, (const char *)passwd, sizeof(wpwd));
 	/* Calculate length in bytes */
-	len = strlen_w((const smb_ucs2_t *)wpwd) * sizeof(int16);
+	len = strlen_w((const smb_ucs2_t *)wpwd) * sizeof(smb_ucs2_t);
 
 	mdfour(p16, (unsigned char *)wpwd, len);
 }
@@ -265,7 +262,7 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 	}
 	
 	uni_pw_len = byte_len/2;
-	pw = dos_unistrn2((uint16 *)(&in_buffer[512 - byte_len]), byte_len);
+	pw = dos_unistrn2((uint16 *)(&in_buffer[512 - byte_len]), uni_pw_len);
 	memcpy(passwd, pw, uni_pw_len);
 
 #ifdef DEBUG_PASSWORD

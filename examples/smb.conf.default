@@ -136,7 +136,7 @@
 
 	# When using encrypted passwords, Samba can synchronize the local
 	# UNIX password as well.  You will also need the "passwd chat" parameters
-	; unix passwword sync = yes
+	; unix password sync = yes
 
 	# how should smbd talk to the local system when changing a UNIX
 	# password?  See smb.conf(5) for details

@@ -31,10 +31,6 @@
 static pipes_struct *chain_p;
 static int pipes_open;
 
-#ifndef MAX_OPEN_PIPES
-#define MAX_OPEN_PIPES 2048
-#endif
-
 /*
  * Sometimes I can't decide if I hate Windows printer driver
  * writers more than I hate the Windows spooler service driver

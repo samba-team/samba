@@ -1558,12 +1558,14 @@ BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	/* Test if machine password is expired and need to be changed */
-	if (time(NULL) > last_change_time + lp_machine_password_timeout()) {
-		DEBUG(10,("domain_client_validate: machine account password needs changing. \
+	if (lp_machine_password_timeout()) {
+		if (time(NULL) > last_change_time + lp_machine_password_timeout()) {
+			DEBUG(10,("domain_client_validate: machine account password needs changing. \
 Last change time = (%u) %s. Machine password timeout = %u seconds\n",
-			(unsigned int)last_change_time, http_timestring(last_change_time),
-			(unsigned int)lp_machine_password_timeout() ));
-		global_machine_password_needs_changing = True;
+				(unsigned int)last_change_time, http_timestring(last_change_time),
+				(unsigned int)lp_machine_password_timeout() ));
+			global_machine_password_needs_changing = True;
+		}
 	}
 
 	/*

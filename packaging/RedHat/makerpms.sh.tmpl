@@ -30,6 +30,7 @@ GRPID=`id -g`
 VERSION='PVERSION'
 
 RPMVER=`rpm --version | awk '{print $3}'`
+RPM="rpm"
 echo The RPM Version on this machine is: $RPMVER
 
 case $RPMVER in
@@ -42,6 +43,12 @@ case $RPMVER in
        echo Building for RPM v3.x
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba.spec
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2-devel.spec > samba-devel.spec
+       ;;
+    4.1*)
+       echo Building for RPM v4.1
+       RPM="rpmbuild"
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba.spec
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2-devel.spec > samba-devel.spec
        ;;
     4*)
        echo Building for RPM v4.x
@@ -62,7 +69,7 @@ if [ z$1 = z"devel" ]; then
 	(cd ../../.. ; mv samba samba-${VERSION} )
 fi
 
-( cd ../../.. ; tar --exclude=CVS -czvf ${SRCDIR}/samba-${VERSION}.tar.gz samba-${VERSION} )
+( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
 
 cp -av samba.spec ${SPECDIR}
 cp -av samba-devel.spec ${SPECDIR}
@@ -72,11 +79,11 @@ if [ z$1 = "zdevel" ]; then
 	( cd ../../.. ; mv samba-${VERSION} samba )
 	echo Getting Ready to build Developmental Build
 	cd ${SPECDIR}
-	rpm -ba -v samba-devel.spec
+	${RPM} -ba -v samba-devel.spec
 else
 	echo Getting Ready to build release package
 	cd ${SPECDIR}
-	rpm -ba -v --clean --rmsource samba.spec
+	${RPM} -ba -v --clean --rmsource samba.spec
 fi
 
 echo Done.

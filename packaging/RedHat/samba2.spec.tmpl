@@ -4,7 +4,7 @@ Version: PVERSION
 Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
-Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
+Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
@@ -196,8 +196,10 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
         --prefix=%{prefix} \
         --localstatedir=/var
 make
+cd ../..
 
-
+# Remove some permission bits to avoid to many dependencies
+find examples docs -type f | xargs -r chmod -x
 
 %install
 rm -rf $RPM_BUILD_ROOT

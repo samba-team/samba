@@ -113,6 +113,8 @@ files_struct *file_new(connection_struct *conn)
 	files_used++;
 
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
+	SMB_ASSERT(fsp->fnum < 65536);
+
 	string_set(&fsp->fsp_name,"");
 	
 	DLIST_ADD(Files, fsp);
@@ -145,7 +147,7 @@ void file_close_conn(connection_struct *conn)
  Initialise file structures.
 ****************************************************************************/
 
-#define MAX_OPEN_FUDGEFACTOR 10
+#define MAX_OPEN_FUDGEFACTOR 20
 
 void file_init(void)
 {
@@ -161,10 +163,15 @@ void file_init(void)
 
 	real_max_open_files = real_lim - MAX_OPEN_FUDGEFACTOR;
 
+	if (real_max_open_files + FILE_HANDLE_OFFSET + MAX_OPEN_PIPES > 65536)
+		real_max_open_files = 65536 - FILE_HANDLE_OFFSET - MAX_OPEN_PIPES;
+
 	if(real_max_open_files != request_max_open_files) {
 		DEBUG(1,("file_init: Information only: requested %d \
 open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	}
+
+	SMB_ASSERT(real_max_open_files > 100);
 
 	file_bmap = bitmap_allocate(real_max_open_files);
 	

@@ -24,6 +24,7 @@
 /* these can be set by some functions to override the error codes */
 int unix_ERR_class=SMB_SUCCESS;
 int unix_ERR_code=0;
+NTSTATUS unix_ERR_ntstatus = NT_STATUS_OK;
 
 /* From lib/error.c */
 extern struct unix_error_map unix_dos_nt_errmap[];
@@ -59,8 +60,10 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 	if (unix_ERR_class != SMB_SUCCESS) {
 		eclass = unix_ERR_class;
 		ecode = unix_ERR_code;
+		ntstatus = unix_ERR_ntstatus;
 		unix_ERR_class = SMB_SUCCESS;
 		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
 	} else {
 		while (unix_dos_nt_errmap[i].dos_class != 0) {
 			if (unix_dos_nt_errmap[i].unix_error == errno) {

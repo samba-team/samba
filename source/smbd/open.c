@@ -407,6 +407,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 			fname ));
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRnoaccess;
+		unix_ERR_ntstatus = NT_STATUS_DELETE_PENDING;
 		return False;
 	}
 
@@ -699,11 +700,11 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 
 	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
 	if (lp_map_system(SNUM(conn))) {
-		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) != (new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
+		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && !(new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
 			return False;
 	}
 	if (lp_map_hidden(SNUM(conn))) {
-		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) != (new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
+		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && !(new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
 			return False;
 	}
 	return True;

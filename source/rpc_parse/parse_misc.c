@@ -688,9 +688,10 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 	if(!prs_uint32("buf_len", ps, depth, &buf5->buf_len))
 		return False;
 
-
-	if(!prs_buffer5(True, "buffer" , ps, depth, buf5))
-		return False;
+	if(buf5->buf_len) {
+		if(!prs_buffer5(True, "buffer" , ps, depth, buf5))
+			return False;
+	}
 
 	return True;
 }
@@ -884,7 +885,7 @@ BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, in
 }
 
 /*******************************************************************
- Inits a UNISTR2 structure.
+ Inits a UNISTR2 structure. len is in bytes.
 ********************************************************************/
 
 void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
