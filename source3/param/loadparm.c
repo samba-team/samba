@@ -1584,11 +1584,11 @@ static char *lp_string(const char *s)
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
 
-	tmpstr = alloc_sub_basic(current_user_info.smb_name, s);
+	tmpstr = alloc_sub_basic(get_current_username(), s);
 	if (trim_char(tmpstr, '\"', '\"')) {
 		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
-			tmpstr = alloc_sub_basic(current_user_info.smb_name,s);
+			tmpstr = alloc_sub_basic(get_current_username(),s);
 		}
 	}
 	ret = talloc_strdup(lp_talloc, tmpstr);
@@ -2694,23 +2694,15 @@ static void add_to_file_list(const char *fname, const char *subfname)
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	char *username;
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
-
-	/* get the username for substituion -- preference to the current_user_info */
-	if ( strlen( current_user_info.smb_name ) != 0 )
-		username = current_user_info.smb_name;
-	else
-		username = sub_get_smb_name();
-		
 
 	while (f) {
 		pstring n2;
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic( username, n2, sizeof(n2) );
+		standard_sub_basic( get_current_username(), n2, sizeof(n2) );
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -2744,7 +2736,7 @@ static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 
 	pstrcpy(netbios_name, pszParmValue);
 
-	standard_sub_basic(current_user_info.smb_name, netbios_name,sizeof(netbios_name));
+	standard_sub_basic(get_current_username(), netbios_name,sizeof(netbios_name));
 
 	ret = set_global_myname(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
@@ -2800,7 +2792,7 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(current_user_info.smb_name, fname,sizeof(fname));
+	standard_sub_basic(get_current_username(), fname,sizeof(fname));
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -3894,19 +3886,10 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	pstring n2;
 	BOOL bRetval;
 	param_opt_struct *data, *pdata;
-	char *username;
 
 	pstrcpy(n2, pszFname);
 	
-	/* get the username for substituion -- preference to the current_user_info */
-	
-	if ( strlen( current_user_info.smb_name ) != 0 ) {
-		username = current_user_info.smb_name;
-	} else {
-		username = sub_get_smb_name();
-	}
-
-	standard_sub_basic( username, n2,sizeof(n2) );
+	standard_sub_basic( get_current_username(), n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
 
@@ -4046,7 +4029,7 @@ int lp_servicenumber(const char *pszServiceName)
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(current_user_info.smb_name, serviceName,sizeof(serviceName));
+			standard_sub_basic(get_current_username(), serviceName,sizeof(serviceName));
 			if (strequal(serviceName, pszServiceName))
 				break;
 		}
