@@ -1269,6 +1269,14 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 #endif /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 }
 
+/********************************************************
+  Get the IP address list of the Local Master Browsers
+ ********************************************************/ 
+
+BOOL get_lmb_list(struct in_addr **ip_list, int *count)
+{
+    return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
+}
 
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
@@ -1319,12 +1327,4 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		return (*count != 0);
 	} else
 		return internal_resolve_name(group, name_type, ip_list, count);
-}
-
-/********************************************************
-  Get the IP address list of the Local Master Browsers
- ********************************************************/ 
-BOOL get_lmb_list(struct in_addr **ip_list, int *count)
-{
-    return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
 }
