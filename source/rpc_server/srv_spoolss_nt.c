@@ -1449,6 +1449,11 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_INVALID_ENVIRONMENT;
 	}
 		
+	/* if they said "Windows NT x86", then try for version 2 & 3 */
+	
+	if ( version == 2 )
+		version = DRIVER_ANY_VERSION;
+		
 	ZERO_STRUCT(info);
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
@@ -1460,7 +1465,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_PRINTER_DRIVER_IN_USE;
 	}
 
-	return delete_printer_driver(info.info_3);	 
+	return delete_printer_driver(info.info_3, NULL, version, False);
 }
 
 /********************************************************************
