@@ -113,9 +113,9 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 /*
   add a single DOS EA
 */
-static NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs, 
-					struct pvfs_filename *name,
-					int fd, struct ea_struct *ea)
+NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs, 
+				 struct pvfs_filename *name,
+				 int fd, struct ea_struct *ea)
 {
 	struct xattr_DosEAs *ealist = talloc_p(pvfs, struct xattr_DosEAs);
 	int i;

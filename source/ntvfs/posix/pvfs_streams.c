@@ -271,6 +271,11 @@ ssize_t pvfs_stream_write(struct pvfs_state *pvfs,
 	if (count == 0) {
 		return 0;
 	}
+	if (offset > XATTR_MAX_STREAM_SIZE) {
+		errno = ENOSPC;
+		return -1;
+	}
+
 	/* we have to load the existing stream, then modify, then save */
 	status = pvfs_xattr_load(pvfs, h, h->name->full_name, h->fd, XATTR_DOSSTREAM_PREFIX,
 				 h->name->stream_name, offset+count, &blob);
@@ -320,6 +325,11 @@ NTSTATUS pvfs_stream_truncate(struct pvfs_state *pvfs,
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
+
+	if (length > XATTR_MAX_STREAM_SIZE) {
+		return NT_STATUS_DISK_FULL;
+	}
+
 	/* we have to load the existing stream, then modify, then save */
 	status = pvfs_xattr_load(pvfs, name, name->full_name, fd, XATTR_DOSSTREAM_PREFIX,
 				 name->stream_name, length, &blob);

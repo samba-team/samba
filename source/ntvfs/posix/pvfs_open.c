@@ -429,6 +429,20 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	/* setup any EAs that were asked for */
+	if (io->ntcreatex.in.ea_list) {
+		int i;
+		for (i=0;i<io->ntcreatex.in.ea_list->num_eas;i++) {
+			status = pvfs_setfileinfo_ea_set(pvfs, name, fd, 
+							 &io->ntcreatex.in.ea_list->eas[i]);
+			if (!NT_STATUS_IS_OK(status)) {
+				idr_remove(pvfs->idtree_fnum, fnum);
+				close(fd);
+				return status;
+			}
+		}
+	}
+
 	/* form the lock context used for byte range locking and
 	   opendb locking */
 	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
@@ -792,7 +806,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* use the generic mapping code to avoid implementing all the
 	   different open calls. */
-	if (io->generic.level != RAW_OPEN_GENERIC) {
+	if (io->generic.level != RAW_OPEN_GENERIC &&
+	    io->generic.level != RAW_OPEN_NTTRANS_CREATE) {
 		return ntvfs_map_open(req, io, ntvfs);
 	}
 

@@ -122,7 +122,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 	*num_eas = 0;
 	*eas = NULL;
 
-	while (ofs < ea_size) {
+	while (ofs+6 < ea_size) {
 		uint_t len;
 		DATA_BLOB blob2;
 
