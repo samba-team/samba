@@ -304,7 +304,7 @@ compare_mtime(struct fileinfo *a, struct fileinfo *b)
 	return 1;
     if(b->filename == NULL)
 	return -1;
-    return a->st.st_mtime - b->st.st_mtime;
+    return b->st.st_mtime - a->st.st_mtime;
 }
 
 static int
@@ -314,7 +314,7 @@ compare_size(struct fileinfo *a, struct fileinfo *b)
 	return 1;
     if(b->filename == NULL)
 	return -1;
-    return a->st.st_size - b->st.st_size;
+    return b->st.st_size - a->st.st_size;
 }
 
 static void
