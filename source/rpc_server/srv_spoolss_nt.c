@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -1634,6 +1635,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	counter_printer_0 *session_counter;
 	uint32 global_counter;
 	struct tm *t;
+	time_t setup_time;
 
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
@@ -1684,7 +1686,8 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	printer->total_jobs = 0;
 	printer->total_bytes = 0;
 
-	t=gmtime(&ntprinter.info_2->setuptime);
+	t=gmtime(&setup_time);
+	ntprinter.info_2->setuptime = (uint32)setup_time; /* FIXME !! */
 
 	printer->year = t->tm_year+1900;
 	printer->month = t->tm_mon+1;
@@ -3754,7 +3757,7 @@ static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint
 	pstring path_old;
 	pstring path_new;
 	pstring short_archi;
-	int snum = snum = find_service("print$");
+	int snum = find_service("print$");
 	char *model = NULL;
 
 	*short_archi = '\0';
@@ -4437,4 +4440,5 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 		break;
 	}
 }
+#undef OLD_NTDOMAIN
 	
