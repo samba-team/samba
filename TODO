@@ -72,8 +72,6 @@ fix to use rpc?
 
 the replay cache is, in its current state, not very useful
 
-should the sequence numbers be XORed?
-
 OTP?
 
 make checksum/encryption type configuration more realm-specific.  make
@@ -88,3 +86,5 @@ figure out how forwardable/no-addresses and other init_creds related
 settings are supposed to be set in /etc/krb5.conf and how they are read
 
 ** lib/roken
+
+make snprintf handle str == NULL, sz = 0 correctly
