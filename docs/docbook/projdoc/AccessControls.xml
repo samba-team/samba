@@ -1250,6 +1250,17 @@ are examples taken from the mailing list in recent times.
 	</procedure>
 	</sect2>
 
+
+	<sect2>
+		<title>I have set <parameter>force user</parameter> and samba still makes <emphasis>root</emphasis> the owner of all the files
+			I touch!</title>
+		<para>
+			When you have a user in 'admin users', samba will always do file operations for
+			this user as <emphasis>root</emphasis>, even if <parameter>force user</parameter> has been set.
+		</para>
+	</sect2>
+	
+
 </sect1>
 
 </chapter>
