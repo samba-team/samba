@@ -534,7 +534,7 @@ main(int argc, char **argv)
 	else
 	    tty = ttyn;
     
-	if (login_access (pwd, remote_host ? remote_host : tty)) {
+	if (login_access (pwd, remote_host ? remote_host : tty) == 0) {
 	    fprintf(stderr, "Permission denied\n");
 	    if (remote_host)
 		syslog(LOG_NOTICE, "%s LOGIN REFUSED FROM %s",
