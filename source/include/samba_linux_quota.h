@@ -1,3 +1,5 @@
+#ifndef _SAMBA_LINUX_QUOTA_H_
+
 /*
    Unix SMB/Netbios implementation.
    Version 2.x
@@ -79,7 +81,12 @@ struct v1_dqstats {
 	u_int32_t free_dquots;
 	u_int32_t syncs;
 };                                                                               
-#endif _QUOTAIO_LINUX_V1
+
+#ifndef Q_V1_GETQUOTA
+#define Q_V1_GETQUOTA  0x300
+#endif
+
+#endif /* _QUOTAIO_LINUX_V1 */
 
 /*
  *
@@ -309,6 +316,10 @@ struct v2_dqstats {
 	u_int32_t version;
 };
 
+#ifndef Q_V2_GETQUOTA
+#define Q_V2_GETQUOTA  0x0D00
+#endif
+
 #endif /* _QUOTAIO_LINUX_V2 */
 
 #ifndef _QUOTAIO_LINUX_XFS
@@ -471,3 +482,9 @@ typedef struct fs_quota_stat {
 } fs_quota_stat_t;
 
 #endif /* _QUOTAIO_LINUX_XFS */
+
+#ifndef QUOTABLOCK_SIZE
+#define QUOTABLOCK_SIZE        1024
+#endif
+
+#endif /* _SAMBA_LINUX_QUOTA_H_ */

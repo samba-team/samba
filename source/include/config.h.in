@@ -125,6 +125,9 @@
 #undef WITH_SYSLOG
 #undef WITH_PROFILE
 #undef WITH_SSL
+#undef WITH_LDAP
+#undef WITH_NISPLUS
+#undef WITH_TDBPWD
 #undef WITH_PAM
 #undef WITH_PAM_SMBPASS
 #undef WITH_NISPLUS_HOME
@@ -230,7 +233,6 @@
 #undef WITH_LDAP_SAM
 #undef WITH_NISPLUS_SAM
 #undef WITH_SMBPASSWD_SAM
-#undef HAVE_LDAP_START_TLS_S
 #undef WITH_TDB_SAM
 #undef LINUX_QUOTAS_1
 #undef LINUX_QUOTAS_2
@@ -632,6 +634,9 @@
 
 /* Define if you have the innetgr function.  */
 #undef HAVE_INNETGR
+
+/* Define if you have the ldap_start_tls_s function.  */
+#undef HAVE_LDAP_START_TLS_S
 
 /* Define if you have the link function.  */
 #undef HAVE_LINK

@@ -42,28 +42,15 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
 #ifdef LINUX
 
 #include <sys/types.h>
-#include <asm/types.h>
+#include <mntent.h>
 
 /*
  * This shouldn't be neccessary - it should be /usr/include/sys/quota.h
- * Unfortunately, RH7.1 ships with a different quota system using struct mem_dqblk
- * rather than the struct dqblk defined in /usr/include/sys/quota.h.
- * This means we must include linux/quota.h to have a hope of working on
- * RH7.1 systems. And it also means this breaks if the kernel is upgraded
- * to a Linus 2.4.x (where x > the minor number shipped with RH7.1) until
- * Linus synchronises with the AC patches. Sometimes I *hate* Linux :-). JRA.
+ * So we include all the files has *should* be in the system into a large,
+ * grungy samba_linux_quoatas.h Sometimes I *hate* Linux :-). JRA.
  */
 
-#include <linux/quota.h>
-#ifdef HAVE_LINUX_XQM_H
-#include <linux/xqm.h>
-#endif
-
-#include <mntent.h>
-#include <linux/unistd.h>
-
-
-#define LINUX_QUOTAS_2
+#include "samba_linux_quota.h"
 
 typedef struct _LINUX_SMB_DISK_QUOTA {
 	SMB_BIG_UINT bsize;
@@ -82,7 +69,6 @@ typedef struct _LINUX_SMB_DISK_QUOTA {
 static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
 {
        int ret = -1;
-#ifdef HAVE_LINUX_XQM_H
        struct fs_disk_quota D;
        ZERO_STRUCT(D);
 
@@ -96,7 +82,6 @@ static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QU
        dp->isoftlimit = (SMB_BIG_UINT)D.d_ino_softlimit;
        dp->curinodes = (SMB_BIG_UINT)D.d_icount;
        dp->curblocks = (SMB_BIG_UINT)D.d_bcount;
-#endif
        return ret;
 }
 
@@ -104,21 +89,59 @@ static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QU
  Abstract out the old and new Linux quota get calls.
 ****************************************************************************/
 
-static int get_smb_linux_vfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
+static int get_smb_linux_v1_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
 {
+	struct v1_kern_dqblk D;
 	int ret;
-#ifdef LINUX_QUOTAS_1
-	struct dqblk D;
+
 	ZERO_STRUCT(D);
-	dp->bsize = (SMB_BIG_UINT)1024;
-#else /* LINUX_QUOTAS_2 */
-	struct mem_dqblk D;
-	ZERO_STRUCT(D);
-#ifndef QUOTABLOCK_SIZE
-#define QUOTABLOCK_SIZE 1024
-#endif
 	dp->bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
-#endif
+
+	if ((ret = quotactl(QCMD(Q_V1_GETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
+		return -1;
+
+	dp->softlimit = (SMB_BIG_UINT)D.dqb_bsoftlimit;
+	dp->hardlimit = (SMB_BIG_UINT)D.dqb_bhardlimit;
+	dp->ihardlimit = (SMB_BIG_UINT)D.dqb_ihardlimit;
+	dp->isoftlimit = (SMB_BIG_UINT)D.dqb_isoftlimit;
+	dp->curinodes = (SMB_BIG_UINT)D.dqb_curinodes;
+	dp->curblocks = (SMB_BIG_UINT)D.dqb_curblocks;
+
+	return 0;
+}
+
+static int get_smb_linux_v2_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
+{
+	struct v2_kern_dqblk D;
+	int ret;
+
+	ZERO_STRUCT(D);
+	dp->bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
+
+	if ((ret = quotactl(QCMD(Q_V2_GETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
+		return -1;
+
+	dp->softlimit = (SMB_BIG_UINT)D.dqb_bsoftlimit;
+	dp->hardlimit = (SMB_BIG_UINT)D.dqb_bhardlimit;
+	dp->ihardlimit = (SMB_BIG_UINT)D.dqb_ihardlimit;
+	dp->isoftlimit = (SMB_BIG_UINT)D.dqb_isoftlimit;
+	dp->curinodes = (SMB_BIG_UINT)D.dqb_curinodes;
+	dp->curblocks = ((SMB_BIG_UINT)D.dqb_curspace) / dp->bsize;
+
+	return 0;
+}
+
+/****************************************************************************
+ Brand-new generic quota interface.
+****************************************************************************/
+
+static int get_smb_linux_gen_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
+{
+	struct if_dqblk D;
+	int ret;
+
+	ZERO_STRUCT(D);
+	dp->bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
 
 	if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
 		return -1;
@@ -128,18 +151,13 @@ static int get_smb_linux_vfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QU
 	dp->ihardlimit = (SMB_BIG_UINT)D.dqb_ihardlimit;
 	dp->isoftlimit = (SMB_BIG_UINT)D.dqb_isoftlimit;
 	dp->curinodes = (SMB_BIG_UINT)D.dqb_curinodes;
-
-#ifdef LINUX_QUOTAS_1
-	dp->curblocks = (SMB_BIG_UINT)D.dqb_curblocks;
-#else /* LINUX_QUOTAS_2 */
-	dp->curblocks = ((SMB_BIG_UINT)D.dqb_curspace)/ dp->bsize;
-#endif
+	dp->curblocks = ((SMB_BIG_UINT)D.dqb_curspace) / dp->bsize;
 
 	return 0;
 }
 
 /****************************************************************************
-try to get the disk space from disk quotas (LINUX version)
+ Try to get the disk space from disk quotas (LINUX version).
 ****************************************************************************/
 
 BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
@@ -182,10 +200,18 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 	save_re_uid();
 	set_effective_uid(0);  
-	if (strcmp(mnt->mnt_type, "xfs") == 0)
+
+	if (strcmp(mnt->mnt_type, "xfs")) {
+		r=get_smb_linux_gen_quota(mnt->mnt_fsname, euser_id, &D);
+		if (r == -1) {
+			r=get_smb_linux_v2_quota(mnt->mnt_fsname, euser_id, &D);
+			if (r == -1)
+				r=get_smb_linux_v1_quota(mnt->mnt_fsname, euser_id, &D);
+		}
+	} else {
 		r=get_smb_linux_xfs_quota(mnt->mnt_fsname, euser_id, &D);
-	else
-		r=get_smb_linux_vfs_quota(mnt->mnt_fsname, euser_id, &D);
+	}
+
 	restore_re_uid();
 
 	/* Use softlimit to determine disk space, except when it has been exceeded */
