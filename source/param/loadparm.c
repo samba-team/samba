@@ -2407,6 +2407,8 @@ static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
 /*
   variable argument do parameter
 */
+static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
+
 static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...)
 {
 	char *s;
