@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -120,3 +120,41 @@ gss_krb5_compat_des3_mic(OM_uint32 *minor_status, gss_ctx_id_t ctx, int on)
 
     return 0;
 }
+
+/*
+ * For compatability with the Windows SPNEGO implementation, the
+ * default is to ignore the mechListMIC unless the initiator specified
+ * GSS_C_EXPECTING_MECH_LIST_MIC_FLAG, CFX or configured in krb5.conf
+ * with the option
+ * 	[gssapi]require_mechlist_mic=target-principal-pattern.
+ * The option is valid for both initiator and acceptor.
+ */
+OM_uint32
+_gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
+				 gss_ctx_id_t ctx,
+				 krb5_boolean *require_mic)
+{
+    OM_uint32 ret;
+    int is_cfx = 0;
+
+    if (ctx->flags & GSS_C_EXPECTING_MECH_LIST_MIC_FLAG) {
+	/* initiator insisted on mechListMIC */
+	*require_mic = TRUE;
+    } else {
+	gsskrb5_is_cfx(ctx, &is_cfx);
+	if (is_cfx) {
+	    /* CFX session key was used */
+	    *require_mic = TRUE;
+	} else {
+	    *require_mic = FALSE;
+	    ret = check_compat(minor_status, ctx->target, 
+			       "require_mechlist_mic",
+			       require_mic, TRUE);
+	    if (ret)
+		return ret;
+	}
+    }
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
+
