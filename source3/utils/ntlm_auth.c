@@ -735,7 +735,8 @@ enum {
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retreive LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_nt_key, OPT_NT_KEY, "Retreive NT session key"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
-		{ NULL, 0, 0, NULL, 0, NULL}
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 
 	/* Samba client initialisation */
