@@ -119,8 +119,11 @@ parse_keys(hdb_entry *ent, char *str)
 	key = ent->keys.val + ent->keys.len;
 	ent->keys.len++;
 	memset(key, 0, sizeof(*key));
-	sscanf(p, "%d", &tmp);
-	key->mkvno = tmp;
+	if(sscanf(p, "%d", &tmp) == 1) {
+	    key->mkvno = malloc(sizeof(*key->mkvno));
+	    *key->mkvno = tmp;
+	} else
+	    key->mkvno = NULL;
 	p = strsep(&str, ":");
 	sscanf(p, "%d", &tmp);
 	key->key.keytype = tmp;
@@ -307,7 +310,7 @@ doit(char *filename, int merge)
 	}
 #endif
 
-	db->store(context, db, 1, &ent);
+	db->store(context, db, HDB_F_REPLACE, &ent);
 	hdb_free_entry (context, &ent);
     }
     db->close(context, db);
