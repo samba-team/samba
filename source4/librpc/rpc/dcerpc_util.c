@@ -496,7 +496,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (username && username[0]) {
+	} else if (username && username[0] &&
+		   (binding->flags & (DCERPC_CONNECT|DCERPC_SIGN|DCERPC_SEAL))) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
