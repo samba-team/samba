@@ -164,8 +164,8 @@ static const struct {
 	{ "ncadg_ipx", NCADG_IPX, 2,
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_IPX },
 	},
-	{ "ncacn_spx", NCACN_SPX, 2,
-		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SPX },
+	{ "ncacn_spx", NCACN_SPX, 3,
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID },
 	},
 };
 
@@ -798,7 +798,6 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	struct epm_twr_t twr, *twr_r;
 	struct dcerpc_binding *epmapper_binding;
 	const struct dcerpc_interface_table *table = idl_iface_by_uuid(uuid);
-	struct cli_credentials *credentials;
 	int i;
 
 	/* First, check if there is a default endpoint specified in the IDL */
@@ -837,13 +836,11 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	epmapper_binding->endpoint = NULL;
 	epmapper_binding->authservice = NULL;
 	
-	credentials = talloc_zero(mem_ctx, struct cli_credentials);
-	cli_credentials_guess(credentials);
 	status = dcerpc_pipe_connect_b(&p,
 				       epmapper_binding,
 				       DCERPC_EPMAPPER_UUID,
 				       DCERPC_EPMAPPER_VERSION,
-				       credentials);
+				       NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

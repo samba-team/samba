@@ -45,6 +45,7 @@ struct _GtkRpcBindingDialog
 	GtkWidget *frame_credentials;
 	TALLOC_CTX *mem_ctx;
 	struct sam_pipe *sam_pipe;
+	struct cli_credentials *credentials;
 };
 
 typedef struct _GtkRpcBindingDialogClass GtkRpcBindingDialogClass;
@@ -62,14 +63,14 @@ struct _GtkRpcBindingDialogClass
 
 /* subsystem prototypes */
 GtkWidget *create_gtk_samba_about_dialog (const char *appname);
-void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status);
+void gtk_show_ntstatus(GtkWidget *win, const char *, NTSTATUS status);
 GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_pipe);
 GType gtk_rpc_binding_dialog_get_type (void);
 struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx);
 GtkWidget *gtk_select_host_dialog_new (struct sam_pipe *sam_pipe, BOOL nocredentials);
 const char *gtk_select_host_dialog_get_host (GtkSelectHostDialog *d);
 GType gtk_select_host_dialog_get_type (void);
-void gtk_show_werror(GtkWidget *win, WERROR err);
+void gtk_show_werror(GtkWidget *win, const char *, WERROR err);
 const char *gtk_rpc_binding_dialog_get_binding_string(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx);
 struct cli_credentials *gtk_rpc_binding_dialog_get_credentials(GtkRpcBindingDialog *d);
 const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d);

@@ -57,7 +57,7 @@ void update_userlist(void)
 
 	status = dcerpc_samr_EnumDomainUsers(sam_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "While enumerating domain users", status);
 		talloc_free(mem_ctx);
 		return;
 	}
@@ -135,7 +135,7 @@ static void connect_sam(void)
 					   );
 
 	if(!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "While connecting to SAMR interface", status);
 		sam_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
 		talloc_free(mem_ctx);
@@ -148,7 +148,7 @@ static void connect_sam(void)
 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "While running connect on SAMR", status);
 		sam_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
 		talloc_free(mem_ctx);
