@@ -298,7 +298,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "server", "info", "creds", NULL };
 	char *server, *errstr;
 	uint32 level;
-	PyObject *info, *result = NULL, *creds = NULL, *level_obj;
+	PyObject *info, *result = NULL, *creds = NULL;
 	WERROR werror;
 	TALLOC_CTX *mem_ctx;
 	struct cli_state *cli;
@@ -328,29 +328,16 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		goto done;
 	}
 
-	if ((level_obj = PyDict_GetItemString(info, "level"))) {
+	if (!get_level_value(info, &level)) {
+		PyErr_SetString(spoolss_error, "invalid info level");
+		return NULL;
+	}
 
-		if (!PyInt_Check(level_obj)) {
-			PyErr_SetString(spoolss_error, 
-					"level not an integer");
-			goto done;
-		}
-
-		level = PyInt_AsLong(level_obj);
-
-		/* Only level 2, 3 supported by NT */
-
-		if (level != 3) {
-			PyErr_SetString(spoolss_error,
-					"unsupported info level");
-			goto done;
-		}
-
-	} else {
-		PyErr_SetString(spoolss_error, "no info level present");
+	if (level != 3) {
+		PyErr_SetString(spoolss_error, "unsupported info level");
 		goto done;
 	}
-	
+
 	ZERO_STRUCT(ctr);
 	
 	switch(level) {
