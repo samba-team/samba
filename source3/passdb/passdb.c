@@ -411,6 +411,23 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 	return pdb_ops->getsam21pwrid(rid);
 }
 
+/************************************************************************
+ Routine to add a SAM entry to the smb passwd file.
+*************************************************************************/
+
+BOOL add_sam21pwd_entry(struct sam_passwd *pwd)
+{
+	return pdb_ops->add_sam21pwd_entry(pwd);
+}
+
+/************************************************************************
+ Routine to modify a SAM entry to the smb passwd file.
+*************************************************************************/
+
+BOOL mod_sam21pwd_entry(struct sam_passwd *pwd, BOOL override)
+{
+	return pdb_ops->mod_sam21pwd_entry(pwd, override);
+}
 
 /**********************************************************
  **********************************************************
@@ -519,6 +536,198 @@ struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
 	pw_buf.pass_last_set_time = user->pass_last_set_time;
 
 	return &pw_buf;
+}
+
+static void select_name(fstring *string, char **name, const UNISTR2 *from)
+{
+	if (from->buffer != 0)
+	{
+		unistr2_to_ascii(*string, from, sizeof(*string));
+		*name = *string;
+	}
+}
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
+{
+	static fstring smb_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	to->logon_time = nt_time_to_unix(&from->logon_time);
+	to->logoff_time = nt_time_to_unix(&from->logoff_time);
+	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
+	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
+	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
+	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
+
+	select_name(&smb_name    , &to->smb_name    , &from->uni_user_name   );
+	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
+	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
+	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
+	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
+	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
+	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
+	select_name(&workstations, &to->workstations, &from->uni_workstations);
+	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
+	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+
+	to->smb_userid = (uid_t)-1;
+	to->smb_grpid = (gid_t)-1;
+	to->user_rid = from->user_rid;
+	to->group_rid = from->group_rid;
+
+	to->smb_passwd = NULL;
+	to->smb_nt_passwd = NULL;
+
+	to->acct_ctrl = from->acb_info;
+	to->unknown_3 = from->unknown_3;
+
+	to->logon_divs = from->logon_divs;
+	to->hours_len = from->logon_hrs.len;
+	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+
+	to->unknown_5 = from->unknown_5;
+	to->unknown_6 = from->unknown_6;
+}
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
+{
+	static fstring smb_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	to->logon_time = nt_time_to_unix(&from->logon_time);
+	to->logoff_time = nt_time_to_unix(&from->logoff_time);
+	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
+	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
+	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
+	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
+
+	select_name(&smb_name    , &to->smb_name    , &from->uni_user_name   );
+	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
+	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
+	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
+	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
+	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
+	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
+	select_name(&workstations, &to->workstations, &from->uni_workstations);
+	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
+	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+
+	to->smb_userid = (uid_t)-1;
+	to->smb_grpid = (gid_t)-1;
+	to->user_rid = from->user_rid;
+	to->group_rid = from->group_rid;
+
+	to->smb_passwd = NULL;
+	to->smb_nt_passwd = NULL;
+
+	to->acct_ctrl = from->acb_info;
+	to->unknown_3 = from->unknown_3;
+
+	to->logon_divs = from->logon_divs;
+	to->hours_len = from->logon_hrs.len;
+	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+
+	to->unknown_5 = from->unknown_5;
+	to->unknown_6 = from->unknown_6;
+}
+
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
+{
+	static fstring smb_name="";
+	static fstring unix_name="";
+	static fstring full_name="";
+	static fstring home_dir="";
+	static fstring dir_drive="";
+	static fstring logon_script="";
+	static fstring profile_path="";
+	static fstring acct_desc="";
+	static fstring workstations="";
+	static fstring unknown_str="";
+	static fstring munged_dial="";
+
+	if (from == NULL || to == NULL) return;
+
+	memcpy(to, from, sizeof(*from));
+
+	if (from->smb_name != NULL) {
+		fstrcpy(smb_name  , from->smb_name);
+		to->smb_name = smb_name;
+	}
+	
+	if (from->full_name != NULL) {
+		fstrcpy(full_name, from->full_name);
+		to->full_name = full_name;
+	}
+
+	if (from->home_dir != NULL) {
+		fstrcpy(home_dir  , from->home_dir);
+		to->home_dir = home_dir;
+	}
+
+	if (from->dir_drive != NULL) {
+		fstrcpy(dir_drive  , from->dir_drive);
+		to->dir_drive = dir_drive;
+	}
+
+	if (from->logon_script != NULL) {
+		fstrcpy(logon_script  , from->logon_script);
+		to->logon_script = logon_script;
+	}
+
+	if (from->profile_path != NULL) {
+		fstrcpy(profile_path  , from->profile_path);
+		to->profile_path = profile_path;
+	}
+
+	if (from->acct_desc != NULL) {
+		fstrcpy(acct_desc  , from->acct_desc);
+		to->acct_desc = acct_desc;
+	}
+
+	if (from->workstations != NULL) {
+		fstrcpy(workstations  , from->workstations);
+		to->workstations = workstations;
+	}
+
+	if (from->unknown_str != NULL) {
+		fstrcpy(unknown_str  , from->unknown_str);
+		to->unknown_str = unknown_str;
+	}
+
+	if (from->munged_dial != NULL) {
+		fstrcpy(munged_dial  , from->munged_dial);
+		to->munged_dial = munged_dial;
+	}
 }
 
 /**********************************************************

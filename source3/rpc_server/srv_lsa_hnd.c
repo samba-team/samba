@@ -32,16 +32,15 @@ extern int DEBUGLEVEL;
 
 struct reg_info
 {
-    /* for use by \PIPE\winreg */
+	/* for use by \PIPE\winreg */
 	fstring name; /* name of registry key */
 };
 
 struct samr_info
 {
-    /* for use by the \PIPE\samr policy */
+	/* for use by the \PIPE\samr policy */
 	DOM_SID sid;
-    uint32 rid; /* relative id associated with the pol_hnd */
-    uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
+	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 };
 
 static struct policy
@@ -162,25 +161,6 @@ int find_lsa_policy_by_hnd(POLICY_HND *hnd)
 	return p?p->pnum:-1;
 }
 
-/****************************************************************************
-  set samr rid
-****************************************************************************/
-BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
-{
-	struct policy *p = find_lsa_policy(hnd);
-
-	if (p && p->open) {
-		DEBUG(3,("Setting policy device rid=%x pnum=%x\n",
-			 rid, p->pnum));
-
-		p->dev.samr.rid = rid;
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy rid=%x\n",rid));
-	return False;
-}
-
 
 /****************************************************************************
   set samr pol status.  absolutely no idea what this is.
@@ -230,8 +210,7 @@ BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 {
 	struct policy *p = find_lsa_policy(hnd);
 
-	if (p != NULL && p->open)
-	{
+	if (p != NULL && p->open) {
 		fstring sidstr;
 		memcpy(sid, &p->dev.samr.sid, sizeof(*sid));
 		DEBUG(3,("Getting policy sid=%s pnum=%x\n",
@@ -252,7 +231,7 @@ uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd)
 	struct policy *p = find_lsa_policy(hnd);
 
 	if (p && p->open) {
-		uint32 rid = p->dev.samr.rid;
+		uint32 rid = p->dev.samr.sid.sub_auths[p->dev.samr.sid.num_auths-1];
 		DEBUG(3,("Getting policy device rid=%x pnum=%x\n",
 		          rid, p->pnum));
 
