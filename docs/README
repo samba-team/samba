@@ -92,6 +92,10 @@ Add the following two lines to /etc/xml/catalog for db2latex:
 <rewriteURI uriStartString="http://db2latex.sourceforge.net/xsl/" rewritePrefix="/export/user/me/source/docbook/db2latex/xsl/"/>
 <rewriteURI uriStartString="http://docbook.sourceforge.net/release/xsl/current/" rewritePrefix="/export/user/me/source/docbook/docbook-xsl/"/>
 
+For the Pearson DTD, add something like:
+
+  <public publicId="-//Pearson//DTD Books//DE" uri="file:///home/jelmer/Xml_dtd_1.1/pearson.dtd"/>
+
 (of course, adapt /export/user/me/source/ to whatever path db2latex is 
  installed in...)
 
