@@ -323,6 +323,7 @@ extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
 extern struct cmd_set netlogon_commands[];
 extern struct cmd_set srvsvc_commands[];
+extern struct cmd_set dfs_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -331,6 +332,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	spoolss_commands,
 	netlogon_commands,
 	srvsvc_commands,
+	dfs_commands,
 	NULL
 };
 
