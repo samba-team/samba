@@ -484,7 +484,7 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
  Open the TDB passwd database for SAM account enumeration.
 ****************************************************************/
 
-static BOOL tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
+static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	
@@ -492,12 +492,12 @@ static BOOL tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 	if (!(tdb_state->passwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
 	{
 		DEBUG(0, ("Unable to open/create TDB passwd\n"));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	tdb_state->key = tdb_firstkey(tdb_state->passwd_tdb);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 static void close_tdb(struct tdbsam_privates *tdb_state) 
@@ -524,8 +524,9 @@ static void tdbsam_endsampwent(struct pdb_methods *my_methods)
  Get one SAM_ACCOUNT from the TDB (next in line)
 *****************************************************************/
 
-static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
+static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_DATA 	data;
 	char *prefix = USERPREFIX;
@@ -534,7 +535,7 @@ static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user
 
 	if (user==NULL) {
 		DEBUG(0,("pdb_get_sampwent: SAM_ACCOUNT is NULL.\n"));
-		return False;
+		return nt_status;
 	}
 
 	/* skip all non-USER entries (eg. RIDs) */
@@ -545,35 +546,36 @@ static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user
 	/* do we have an valid iteration pointer? */
 	if(tdb_state->passwd_tdb == NULL) {
 		DEBUG(0,("pdb_get_sampwent: Bad TDB Context pointer.\n"));
-		return False;
+		return nt_status;
 	}
 
 	data = tdb_fetch(tdb_state->passwd_tdb, tdb_state->key);
 	if (!data.dptr) {
 		DEBUG(5,("pdb_getsampwent: database entry not found.\n"));
-		return False;
+		return nt_status;
 	}
   
   	/* unpack the buffer */
 	if (!init_sam_from_buffer(tdb_state, user, data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
-		return False;
+		return nt_status;
 	}
 	SAFE_FREE(data.dptr);
 	
 	/* increment to next in line */
 	tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /******************************************************************
  Lookup a name in the SAM TDB
 ******************************************************************/
 
-static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *user, const char *sname)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
@@ -582,7 +584,7 @@ static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 
 	if (user==NULL) {
 		DEBUG(0,("pdb_getsampwnam: SAM_ACCOUNT is NULL.\n"));
-		return False;
+		return nt_status;
 	}
 
 	/* Data is stored in all lower-case */
@@ -596,7 +598,7 @@ static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	/* open the accounts TDB */
 	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
 		DEBUG(0, ("pdb_getsampwnam: Unable to open TDB passwd (%s)!\n", tdb_state->tdbsam_location));
-		return False;
+		return nt_status;
 	}
 
 	/* get the record */
@@ -606,7 +608,7 @@ static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		DEBUGADD(5, (" Key: %s\n", keystr));
 		tdb_close(pwd_tdb);
-		return False;
+		return nt_status;
 	}
   
   	/* unpack the buffer */
@@ -614,22 +616,23 @@ static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
 		tdb_close(pwd_tdb);
-		return False;
+		return nt_status;
 	}
 	SAFE_FREE(data.dptr);
 
 	/* no further use for database, close it now */
 	tdb_close(pwd_tdb);
 	
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
  Search by rid
  **************************************************************************/
 
-static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *user, uint32 rid)
+static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *user, uint32 rid)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 		*pwd_tdb;
 	TDB_DATA 		data, key;
@@ -638,7 +641,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	
 	if (user==NULL) {
 		DEBUG(0,("pdb_getsampwrid: SAM_ACCOUNT is NULL.\n"));
-		return False;
+		return nt_status;
 	}
 
 	/* set search key */
@@ -649,7 +652,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	/* open the accounts TDB */
 	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
 		DEBUG(0, ("pdb_getsampwrid: Unable to open TDB rid database!\n"));
-		return False;
+		return nt_status;
 	}
 
 	/* get the record */
@@ -658,7 +661,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 		DEBUG(5,("pdb_getsampwrid (TDB): error looking up RID %d by key %s.\n", rid, keystr));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
-		return False;
+		return nt_status;
 	}
 
 	fstrcpy (name, data.dptr);
@@ -669,11 +672,11 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	return tdbsam_getsampwnam (my_methods, user, name);
 }
 
-static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
+static NTSTATUS tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	return tdbsam_getsampwrid(my_methods, user, rid);
 }
 
@@ -681,8 +684,9 @@ static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * use
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_pass)
+static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_pass)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	key;
@@ -695,7 +699,7 @@ static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUN
 	/* open the TDB */
 	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR, 0600))) {
 		DEBUG(0, ("Unable to open TDB passwd!"));
-		return False;
+		return nt_status;
 	}
   
   	/* set the search key */
@@ -710,7 +714,7 @@ static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUN
 		DEBUG(5, ("Error deleting entry from tdb passwd database!\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close(pwd_tdb); 
-		return False;
+		return nt_status;
 	}	
 
 	/* delete also the RID key */
@@ -725,12 +729,12 @@ static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUN
 		DEBUG(5, ("Error deleting entry from tdb rid database!\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close(pwd_tdb); 
-		return False;
+		return nt_status;
 	}
 	
 	tdb_close(pwd_tdb);
 	
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -872,18 +876,24 @@ done:
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_update_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS tdbsam_update_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
 {
-	return (tdb_update_sam(my_methods, newpwd, TDB_MODIFY));
+	if (tdb_update_sam(my_methods, newpwd, TDB_MODIFY))
+		return NT_STATUS_OK;
+	else
+		return NT_STATUS_UNSUCCESSFUL;
 }
 
 /***************************************************************************
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
 {
-	return (tdb_update_sam(my_methods, newpwd, TDB_INSERT));
+	if (tdb_update_sam(my_methods, newpwd, TDB_INSERT))
+		return NT_STATUS_OK;
+	else
+		return NT_STATUS_UNSUCCESSFUL;
 }
 
 static void free_private_data(void **vp) 

@@ -83,16 +83,16 @@ typedef struct pdb_mysql_query {
 #define SET_DATA(data,methods) { \
 	if(!methods){ \
 		DEBUG(0, ("invalid methods!\n")); \
-			return False; \
+			return NT_STATUS_INVALID_PARAMETER; \
 	} \
 	data = (struct pdb_mysql_data *)methods->private_data; \
 		if(!data || !(data->handle)){ \
 			DEBUG(0, ("invalid handle!\n")); \
-				return False; \
+				return NT_STATUS_INVALID_HANDLE; \
 		} \
 }
 
-void pdb_mysql_int_field(struct pdb_methods *m,
+static void pdb_mysql_int_field(struct pdb_methods *m,
 					struct pdb_mysql_query *q, char *name, int value)
 {
 	if (!name || strchr(name, '\''))
@@ -110,21 +110,25 @@ void pdb_mysql_int_field(struct pdb_methods *m,
 	}
 }
 
-static BOOL pdb_mysql_string_field(struct pdb_methods *methods,
+static NTSTATUS pdb_mysql_string_field(struct pdb_methods *methods,
 					   struct pdb_mysql_query *q,
 					   char *name, const char *value)
 {
 	char *esc_value;
 	struct pdb_mysql_data *data;
+	char *tmp_value;
 
 	SET_DATA(data, methods);
 
 	if (!name || !value || !strcmp(value, "") || strchr(name, '\''))
-		return False;   /* This field shouldn't be set by module */
+		return NT_STATUS_INVALID_PARAMETER;   /* This field shouldn't be set by module */
 
 	esc_value = malloc(strlen(value) * 2 + 1);
-	mysql_real_escape_string(data->handle, esc_value, (char *) value,
-							 strlen(value));
+
+	tmp_value = smb_xstrdup(value);
+	mysql_real_escape_string(data->handle, esc_value, tmp_value,
+							 strlen(tmp_value));
+	SAFE_FREE(tmp_value);
 
 	if (q->update) {
 		q->part1 =
@@ -140,7 +144,7 @@ static BOOL pdb_mysql_string_field(struct pdb_methods *methods,
 
 	SAFE_FREE(esc_value);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 static char * config_value(pdb_mysql_data * data, char *name, char *default_value)
@@ -153,46 +157,46 @@ static char * config_value(pdb_mysql_data * data, char *name, char *default_valu
 
 static char * config_value_write(pdb_mysql_data * data, char *name, char *default_value) {
 	char *v = config_value(data, name, NULL);
-	char *write;
+	char *swrite;
 
 	if (!v)
 		return default_value;
 
-	write = strchr(v, ':');
+	swrite = strchr(v, ':');
 
 	/* Default to the same field as read field */
-	if (!write)
+	if (!swrite)
 		return v;
 
-	write++;
+	swrite++;
 
 	/* If the field is 0 chars long, we shouldn't write to it */
-	if (!strlen(write) || !strcmp(write, "NULL"))
+	if (!strlen(swrite) || !strcmp(swrite, "NULL"))
 		return NULL;
 
 	/* Otherwise, use the additionally specified */
-	return write;
+	return swrite;
 }
 
 static const char * config_value_read(pdb_mysql_data * data, char *name, char *default_value)
 {
 	char *v = config_value(data, name, NULL);
-	char *write;
+	char *swrite;
 
 	if (!v)
 		return default_value;
 
-	write = strchr(v, ':');
+	swrite = strchr(v, ':');
 
 	/* If no write is specified, there are no problems */
-	if (!write) {
+	if (!swrite) {
 		if (strlen(v) == 0)
 			return "NULL";
 		return v;
 	}
 
 	/* Otherwise, we have to cut the ':write_part' */
-	*write = '\0';
+	*swrite = '\0';
 	if (strlen(v) == 0)
 		return "NULL";
 
@@ -210,18 +214,17 @@ static long xatol(char *a)
 	return ret;
 }
 
-static BOOL row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
+static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 {
 	MYSQL_ROW row;
 	pstring temp;
 	unsigned int num_fields;
-	unsigned long *lengths;
 	DOM_SID sid;
 
 	num_fields = mysql_num_fields(r);
 	row = mysql_fetch_row(r);
 	if (!row)
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 
 	pdb_set_logon_time(u, xatol(row[0]), FALSE);
 	pdb_set_logoff_time(u, xatol(row[1]), FALSE);
@@ -269,10 +272,10 @@ static BOOL row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_unknown_5(u, xatol(row[29]));
 	pdb_set_unknown_6(u, xatol(row[30]));
 
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
 	struct pdb_mysql_data *data =
 		(struct pdb_mysql_data *) methods->private_data;
@@ -281,7 +284,7 @@ static BOOL mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 
 	if (!data || !(data->handle)) {
 		DEBUG(0, ("invalid handle!\n"));
-		return False;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	asprintf(&query,
@@ -355,7 +358,7 @@ static BOOL mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	if (ret) {
 		DEBUG(0,
 			   ("Error executing query: %s\n", mysql_error(data->handle)));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	data->pwent = mysql_store_result(data->handle);
@@ -363,14 +366,14 @@ static BOOL mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	if (data->pwent == NULL) {
 		DEBUG(0,
 			("Error storing results: %s\n", mysql_error(data->handle)));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	DEBUG(5,
 		("mysqlsam_setsampwent succeeded(%d results)!\n",
 				mysql_num_fields(data->pwent)));
 	
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************
@@ -399,7 +402,7 @@ static void mysqlsam_endsampwent(struct pdb_methods *methods)
   Get one SAM_ACCOUNT from the list (next in line)
  *****************************************************************/
 
-static BOOL mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
+static NTSTATUS mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
 {
 	struct pdb_mysql_data *data;
 
@@ -407,41 +410,46 @@ static BOOL mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user
 
 	if (data->pwent == NULL) {
 		DEBUG(0, ("invalid pwent\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return row_to_sam_account(data->pwent, user);
 }
 
-BOOL mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
+static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
 						 const char *field, const char *sname)
 {
 	char *esc_sname;
 	char *query;
-	int ret;
+	NTSTATUS ret;
 	MYSQL_RES *res;
+	int mysql_ret;
 	struct pdb_mysql_data *data;
+	char *tmp_sname;
 
 	SET_DATA(data, methods);
 
 	esc_sname = malloc(strlen(sname) * 2 + 1);
 	if (!esc_sname) {
-		DEBUG(0, ("Not enough memory available!\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY; 
 	}
 
 	DEBUG(5,
 		  ("mysqlsam_select_by_field: getting data where %s = %s(nonescaped)\n",
 		   field, sname));
 
+	tmp_sname = smb_xstrdup(sname);
+	
 	/* Escape sname */
-	mysql_real_escape_string(data->handle, esc_sname, (char *) sname,
-							 strlen(sname));
+	mysql_real_escape_string(data->handle, esc_sname, tmp_sname,
+							 strlen(tmp_sname));
+
+	SAFE_FREE(tmp_sname);
 
 	if (user == NULL) {
 		DEBUG(0, ("pdb_getsampwnam: SAM_ACCOUNT is NULL.\n"));
 		SAFE_FREE(esc_sname);
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	asprintf(&query,
@@ -511,22 +519,22 @@ BOOL mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
 	
 	SAFE_FREE(esc_sname);
 	
-	ret = mysql_query(data->handle, query);
+	mysql_ret = mysql_query(data->handle, query);
 	
 	SAFE_FREE(query);
 	
-	if (ret) {
+	if (mysql_ret) {
 		DEBUG(0,
 			("Error while executing MySQL query: %s\n",
 				mysql_error(data->handle)));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	res = mysql_store_result(data->handle);
 	if (res == NULL) {
 		DEBUG(0,
 			("Error storing results: %s\n", mysql_error(data->handle)));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	ret = row_to_sam_account(res, user);
@@ -539,7 +547,7 @@ BOOL mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
   Lookup a name in the SAM database
  ******************************************************************/
 
-static BOOL mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user,
+static NTSTATUS mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user,
 					 const char *sname)
 {
 	struct pdb_mysql_data *data;
@@ -548,8 +556,9 @@ static BOOL mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user
 
 	if (!sname) {
 		DEBUG(0, ("invalid name specified"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+
 	return mysqlsam_select_by_field(methods, user,
 			config_value_read(data, "username column",
 				CONFIG_USERNAME_DEFAULT), sname);
@@ -560,10 +569,9 @@ static BOOL mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user
   Search by sid
  **************************************************************************/
 
-static BOOL mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * user,
+static NTSTATUS mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * user,
 					 const DOM_SID * sid)
 {
-	BOOL ret = False;
 	struct pdb_mysql_data *data;
 	fstring sid_str;
 
@@ -571,19 +579,16 @@ static BOOL mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * user
 
 	sid_to_string(sid_str, sid);
 
-	ret =
-		mysqlsam_select_by_field(methods, user,
+	return mysqlsam_select_by_field(methods, user,
 			config_value_read(data, "user sid column",
 				CONFIG_USER_SID_DEFAULT), sid_str);
-
-	return ret;
 }
 
 /***************************************************************************
   Delete a SAM_ACCOUNT
  ****************************************************************************/
 
-static BOOL mysqlsam_delete_sam_account(struct pdb_methods *methods,
+static NTSTATUS mysqlsam_delete_sam_account(struct pdb_methods *methods,
 							SAM_ACCOUNT * sam_pass)
 {
 	const char *sname = pdb_get_username(sam_pass);
@@ -591,33 +596,39 @@ static BOOL mysqlsam_delete_sam_account(struct pdb_methods *methods,
 	char *query;
 	int ret;
 	struct pdb_mysql_data *data;
+	char *tmp_sname;
 
 	SET_DATA(data, methods);
 
 	if (!methods) {
 		DEBUG(0, ("invalid methods!\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	data = (struct pdb_mysql_data *) methods->private_data;
 	if (!data || !(data->handle)) {
 		DEBUG(0, ("invalid handle!\n"));
-		return False;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!sname) {
 		DEBUG(0, ("invalid name specified\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Escape sname */
 	esc = malloc(strlen(sname) * 2 + 1);
 	if (!esc) {
 		DEBUG(0, ("Can't allocate memory to store escaped name\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
-	mysql_real_escape_string(data->handle, esc, (char *) sname,
-							 strlen(sname));
+	
+	tmp_sname = smb_xstrdup(sname);
+	
+	mysql_real_escape_string(data->handle, esc, tmp_sname,
+							 strlen(tmp_sname));
+
+	SAFE_FREE(tmp_sname);
 
 	asprintf(&query, "DELETE FROM %s WHERE %s = '%s'",
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT),
@@ -634,14 +645,14 @@ static BOOL mysqlsam_delete_sam_account(struct pdb_methods *methods,
 		DEBUG(0,
 			  ("Error while executing query: %s\n",
 			   mysql_error(data->handle)));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(5, ("User '%s' deleted\n", sname));
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL mysqlsam_replace_sam_account(struct pdb_methods *methods,
+static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							 const SAM_ACCOUNT * newpwd, char isupdate)
 {
 	pstring temp;
@@ -652,13 +663,13 @@ static BOOL mysqlsam_replace_sam_account(struct pdb_methods *methods,
 
 	if (!methods) {
 		DEBUG(0, ("invalid methods!\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	data = (struct pdb_mysql_data *) methods->private_data;
 	if (data == NULL || data->handle == NULL) {
 		DEBUG(0, ("invalid handle!\n"));
-		return False;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	query.update = isupdate;
 
@@ -867,18 +878,18 @@ static BOOL mysqlsam_replace_sam_account(struct pdb_methods *methods,
 		DEBUG(0,
 			  ("Error executing %s, %s\n", query.part1,
 			   mysql_error(data->handle)));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	talloc_destroy(query.mem_ctx);
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL mysqlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * newpwd)
+static NTSTATUS mysqlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * newpwd)
 {
 	return mysqlsam_replace_sam_account(methods, newpwd, 0);
 }
 
-static BOOL mysqlsam_update_sam_account(struct pdb_methods *methods,
+static NTSTATUS mysqlsam_update_sam_account(struct pdb_methods *methods,
 							SAM_ACCOUNT * newpwd)
 {
 	return mysqlsam_replace_sam_account(methods, newpwd, 1);
@@ -931,7 +942,7 @@ NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 	data->location = smb_xstrdup(location);
 
 	DEBUG(1,
-		  ("Connecting to database server, host: %s, user: %s, password: %s, database: %s, port: %d\n",
+		  ("Connecting to database server, host: %s, user: %s, password: %s, database: %s, port: %ld\n",
 		   config_value(data, "mysql host", CONFIG_HOST_DEFAULT),
 		   config_value(data, "mysql user", CONFIG_USER_DEFAULT),
 		   config_value(data, "mysql password", CONFIG_PASS_DEFAULT),

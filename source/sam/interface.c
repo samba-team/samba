@@ -317,6 +317,7 @@ NTSTATUS context_sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOK
 
 	while (tmp_methods) {
 		if (strcmp(domain, tmp_methods->domain_name) == 0) {
+			(*domainsid) = (DOM_SID *)malloc(sizeof(DOM_SID));
 			sid_copy((*domainsid), &tmp_methods->domain_sid);
 			return NT_STATUS_OK;
 		}
@@ -904,7 +905,7 @@ void free_sam_context(SAM_CONTEXT **context)
 }
 
 /******************************************************************
-  Make a sam_methods from scratch
+  Make a backend_entry from scratch
  *******************************************************************/
  
 static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_backend_string)
@@ -1174,8 +1175,6 @@ NTSTATUS make_sam_context(SAM_CONTEXT **context)
 	ZERO_STRUCTP(*context);
 
 	(*context)->mem_ctx = mem_ctx;
-
-	/* FIXME */
 
 	(*context)->free_fn = free_sam_context;
 

@@ -177,49 +177,49 @@ SamrTestPrivateFunctionsUser
 			   SAMR_ACCESS_UNKNOWN_1 )            
 
 /* Access bits to Domain-objects */
-
-#define DOMAIN_ACCESS_LOOKUP_INFO_1  0x00000001
-#define DOMAIN_ACCESS_SET_INFO_1     0x00000002
-#define DOMAIN_ACCESS_LOOKUP_INFO_2  0x00000004
-#define DOMAIN_ACCESS_SET_INFO_2     0x00000008
-#define DOMAIN_ACCESS_CREATE_USER    0x00000010
-#define DOMAIN_ACCESS_CREATE_GROUP   0x00000020
-#define DOMAIN_ACCESS_CREATE_ALIAS   0x00000040
-#define DOMAIN_ACCESS_UNKNOWN_80     0x00000080
-#define DOMAIN_ACCESS_ENUM_ACCOUNTS  0x00000100
-#define DOMAIN_ACCESS_OPEN_ACCOUNT   0x00000200
-#define DOMAIN_ACCESS_SET_INFO_3     0x00000400
-
-#define DOMAIN_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
-                             DOMAIN_ACCESS_SET_INFO_3        | \
-			     DOMAIN_ACCESS_OPEN_ACCOUNT      | \
-			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
-			     DOMAIN_ACCESS_UNKNOWN_80        | \
-			     DOMAIN_ACCESS_CREATE_ALIAS      | \
-			     DOMAIN_ACCESS_CREATE_GROUP      | \
-			     DOMAIN_ACCESS_CREATE_USER       | \
-			     DOMAIN_ACCESS_SET_INFO_2        | \
-			     DOMAIN_ACCESS_LOOKUP_INFO_2     | \
-			     DOMAIN_ACCESS_SET_INFO_1        | \
-			     DOMAIN_ACCESS_LOOKUP_INFO_1 )
-			   
-#define DOMAIN_READ        ( STANDARD_RIGHTS_READ_ACCESS     | \
-                             DOMAIN_ACCESS_UNKNOWN_80        | \
-			     DOMAIN_ACCESS_LOOKUP_INFO_2 )
-
-#define DOMAIN_WRITE       ( STANDARD_RIGHTS_WRITE_ACCESS    | \
-                             DOMAIN_ACCESS_SET_INFO_3        | \
-			     DOMAIN_ACCESS_CREATE_ALIAS      | \
-			     DOMAIN_ACCESS_CREATE_GROUP      | \
-			     DOMAIN_ACCESS_CREATE_USER       | \
-			     DOMAIN_ACCESS_SET_INFO_2        | \
-			     DOMAIN_ACCESS_SET_INFO_1 )
-
-#define DOMAIN_EXECUTE     ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
-                             DOMAIN_ACCESS_OPEN_ACCOUNT      | \
-			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
-			     DOMAIN_ACCESS_LOOKUP_INFO_1 )            
-
+  
+#define DOMAIN_ACCESS_LOOKUP_INFO_1        0x000000001
+#define DOMAIN_ACCESS_SET_INFO_1           0x000000002
+#define DOMAIN_ACCESS_LOOKUP_INFO_2        0x000000004
+#define DOMAIN_ACCESS_SET_INFO_2           0x000000008
+#define DOMAIN_ACCESS_CREATE_USER          0x000000010
+#define DOMAIN_ACCESS_CREATE_GROUP         0x000000020
+#define DOMAIN_ACCESS_CREATE_ALIAS         0x000000040
+#define DOMAIN_ACCESS_LOOKUP_ALIAS_BY_MEM  0x000000080
+#define DOMAIN_ACCESS_ENUM_ACCOUNTS        0x000000100
+#define DOMAIN_ACCESS_OPEN_ACCOUNT         0x000000200
+#define DOMAIN_ACCESS_SET_INFO_3           0x000000400
+ 
+#define DOMAIN_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS   | \
+                             DOMAIN_ACCESS_SET_INFO_3          | \
+ 			     DOMAIN_ACCESS_OPEN_ACCOUNT        | \
+ 			     DOMAIN_ACCESS_ENUM_ACCOUNTS       | \
+ 			     DOMAIN_ACCESS_LOOKUP_ALIAS_BY_MEM | \
+ 			     DOMAIN_ACCESS_CREATE_ALIAS        | \
+ 			     DOMAIN_ACCESS_CREATE_GROUP        | \
+ 			     DOMAIN_ACCESS_CREATE_USER         | \
+ 			     DOMAIN_ACCESS_SET_INFO_2          | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_2       | \
+ 			     DOMAIN_ACCESS_SET_INFO_1          | \
+  			     DOMAIN_ACCESS_LOOKUP_INFO_1 )
+  			   
+#define DOMAIN_READ        ( STANDARD_RIGHTS_READ_ACCESS       | \
+                             DOMAIN_ACCESS_LOOKUP_ALIAS_BY_MEM | \
+  			     DOMAIN_ACCESS_LOOKUP_INFO_2 )
+  
+#define DOMAIN_WRITE       ( STANDARD_RIGHTS_WRITE_ACCESS      | \
+                             DOMAIN_ACCESS_SET_INFO_3          | \
+ 			     DOMAIN_ACCESS_CREATE_ALIAS        | \
+ 			     DOMAIN_ACCESS_CREATE_GROUP        | \
+ 			     DOMAIN_ACCESS_CREATE_USER         | \
+ 			     DOMAIN_ACCESS_SET_INFO_2          | \
+  			     DOMAIN_ACCESS_SET_INFO_1 )
+  
+#define DOMAIN_EXECUTE     ( STANDARD_RIGHTS_EXECUTE_ACCESS    | \
+                             DOMAIN_ACCESS_OPEN_ACCOUNT        | \
+ 			     DOMAIN_ACCESS_ENUM_ACCOUNTS       | \
+  			     DOMAIN_ACCESS_LOOKUP_INFO_1 )            
+  
 /* Access bits to User-objects */
 
 #define USER_ACCESS_GET_NAME_ETC     0x00000001
@@ -366,9 +366,13 @@ typedef struct sam_user_info_23
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* pointer to logon hours */
 
-	uint8 padding1[8];
-
 	uint32 unknown_5;     /* 0x0001 0000 */
+
+	uint8 padding1[6];
+		
+	uint8 passmustchange; /* 0x00 must change = 0x01 */
+
+	uint8 padding2;
 
 	uint8 pass[516];
 
@@ -487,7 +491,11 @@ typedef struct sam_user_info_21
 
 	uint32 unknown_5;     /* 0x0002 0000 */
 
-	uint8 padding1[8];
+	uint8 padding1[6];
+		
+	uint8 passmustchange; /* 0x00 must change = 0x01 */
+
+	uint8 padding2;
 
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
@@ -507,6 +515,8 @@ typedef struct sam_user_info_21
 
 } SAM_USER_INFO_21;
 
+#define PASS_MUST_CHANGE_AT_NEXT_LOGON	0x01
+#define PASS_DONT_CHANGE_AT_NEXT_LOGON	0x00
 
 /* SAM_USER_INFO_20 */
 typedef struct sam_user_info_20
