@@ -318,17 +318,6 @@ static void req_alias_info( const POLICY_HND *pol_dom,
 		free(rid_mem);
 		rid_mem = NULL;
 	}
-
-	if (ptr_sid != NULL)
-	{
-		free(ptr_sid);
-		ptr_sid = NULL;
-	}
-	if (als_sid != NULL)
-	{
-		free(als_sid);
-		als_sid = NULL;
-	}
 }
 
 /****************************************************************************

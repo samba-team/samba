@@ -1011,6 +1011,10 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 		prs_uint32(name, ps, depth, &data_size);
 		ps->offset = old_offset;
 	}
+	else
+	{
+		ps->offset = start_offset + (*data32);
+	}
 	return True;
 }
 
