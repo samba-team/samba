@@ -56,6 +56,7 @@
 
  */
 
+#include "includes.h"
 #include "winbindd.h"
 
 #undef DBGC_CLASS
