@@ -879,68 +879,59 @@ smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
 }
 
 /****************************************************************************
- splits out the front and back at a separator.
+ Splits out the front and back at a separator.
 ****************************************************************************/
+
 void split_at_last_component(char *path, char *front, char sep, char *back)
 {
 	char *p = strrchr_m(path, sep);
 
 	if (p != NULL)
-	{
 		*p = 0;
-	}
+
 	if (front != NULL)
-	{
 		pstrcpy(front, path);
-	}
-	if (p != NULL)
-	{
+
+	if (p != NULL) {
 		if (back != NULL)
-		{
 			pstrcpy(back, p+1);
-		}
 		*p = '\\';
-	}
-	else
-	{
+	} else {
 		if (back != NULL)
-		{
 			back[0] = 0;
-		}
 	}
 }
 
-
 /****************************************************************************
-write an octal as a string
+ Write an octal as a string.
 ****************************************************************************/
+
 char *octal_string(int i)
 {
 	static char ret[64];
-	if (i == -1) {
+	if (i == -1)
 		return "-1";
-	}
 	slprintf(ret, sizeof(ret)-1, "0%o", i);
 	return ret;
 }
 
 
 /****************************************************************************
-truncate a string at a specified length
+ Truncate a string at a specified length.
 ****************************************************************************/
+
 char *string_truncate(char *s, int length)
 {
-	if (s && strlen(s) > length) {
+	if (s && strlen(s) > length)
 		s[length] = 0;
-	}
 	return s;
 }
 
-
 /****************************************************************************
-strchr and strrchr_m are very hard to do on general multi-byte strings. 
-we convert via ucs2 for now
+ Strchr and strrchr_m are very hard to do on general multi-byte strings. 
+ We convert via ucs2 for now.
 ****************************************************************************/
+
 char *strchr_m(const char *s, char c)
 {
 	wpstring ws;
@@ -949,7 +940,8 @@ char *strchr_m(const char *s, char c)
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
-	if (!p) return NULL;
+	if (!p)
+		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
 	return (char *)(s+strlen(s2));
@@ -963,26 +955,29 @@ char *strrchr_m(const char *s, char c)
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
 	p = strrchr_w(ws, UCS2_CHAR(c));
-	if (!p) return NULL;
+	if (!p)
+		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
 	return (char *)(s+strlen(s2));
 }
 
 /*******************************************************************
-  convert a string to lower case
+ Convert a string to lower case.
 ********************************************************************/
+
 void strlower_m(char *s)
 {
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
-	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
-		*s++ = tolower((unsigned char)*s);
-	}
 
-	if (!*s) return;
+	while (*s && !(((unsigned char)s[0]) & 0x7F))
+		*s++ = tolower((unsigned char)*s);
+
+	if (!*s)
+		return;
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
@@ -990,8 +985,9 @@ void strlower_m(char *s)
 }
 
 /*******************************************************************
-  duplicate convert a string to lower case
+ Duplicate convert a string to lower case.
 ********************************************************************/
+
 char *strdup_lower(const char *s)
 {
 	char *t = strdup(s);
@@ -1004,19 +1000,21 @@ char *strdup_lower(const char *s)
 }
 
 /*******************************************************************
-  convert a string to upper case
+ Convert a string to upper case.
 ********************************************************************/
+
 void strupper_m(char *s)
 {
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
-	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
-		*s++ = toupper((unsigned char)*s);
-	}
 
-	if (!*s) return;
+	while (*s && !(((unsigned char)s[0]) & 0x7F))
+		*s++ = toupper((unsigned char)*s);
+
+	if (!*s)
+		return;
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
@@ -1024,8 +1022,9 @@ void strupper_m(char *s)
 }
 
 /*******************************************************************
-  convert a string to upper case
+ Convert a string to upper case.
 ********************************************************************/
+
 char *strdup_upper(const char *s)
 {
 	char *t = strdup(s);
@@ -1048,7 +1047,8 @@ char *binary_string(char *buf, int len)
 	int i, j;
 	const char *hex = "0123456789ABCDEF";
 	s = malloc(len * 3 + 1);
-	if (!s) return NULL;
+	if (!s)
+		return NULL;
 	for (j=i=0;i<len;i++) {
 		s[j] = '\\';
 		s[j+1] = hex[((unsigned char)buf[i]) >> 4];
@@ -1059,8 +1059,8 @@ char *binary_string(char *buf, int len)
 	return s;
 }
 
-
 /* Just a typesafety wrapper for snprintf into a pstring */
+
 int pstr_sprintf(pstring s, const char *fmt, ...)
 {
 	va_list ap;
@@ -1072,8 +1072,8 @@ int pstr_sprintf(pstring s, const char *fmt, ...)
 	return ret;
 }
 
-
 /* Just a typesafety wrapper for snprintf into a fstring */
+
 int fstr_sprintf(fstring s, const char *fmt, ...)
 {
 	va_list ap;
@@ -1085,18 +1085,19 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 	return ret;
 }
 
-
 #ifndef HAVE_STRNDUP
 /*******************************************************************
-some platforms don't have strndup
+ Some platforms don't have strndup.
 ********************************************************************/
+
  char *strndup(const char *s, size_t n)
 {
 	char *ret;
 	
 	n = strnlen(s, n);
 	ret = malloc(n+1);
-	if (!ret) return NULL;
+	if (!ret)
+		return NULL;
 	memcpy(ret, s, n);
 	ret[n] = 0;
 
@@ -1111,12 +1112,11 @@ some platforms don't have strnlen
  size_t strnlen(const char *s, size_t n)
 {
 	int i;
-	for (i=0; s[i] && i<n; i++) /* noop */ ;
+	for (i=0; s[i] && i<n; i++)
+		/* noop */ ;
 	return i;
 }
 #endif
-
-
 
 /***********************************************************
  List of Strings manipulation functions
@@ -1131,7 +1131,8 @@ char **str_list_make(const char *string)
 	int num, lsize;
 	pstring tok;
 	
-	if (!string || !*string) return NULL;
+	if (!string || !*string)
+		return NULL;
 	s = strdup(string);
 	if (!s) {
 		DEBUG(0,("str_list_make: Unable to allocate memory"));
@@ -1142,8 +1143,7 @@ char **str_list_make(const char *string)
 	list = NULL;
 	
 	str = s;
-	while (next_token(&str, tok, LIST_SEP, sizeof(tok)))
-	{		
+	while (next_token(&str, tok, LIST_SEP, sizeof(tok))) {		
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
@@ -1178,13 +1178,13 @@ BOOL str_list_copy(char ***dest, char **src)
 	int num, lsize;
 	
 	*dest = NULL;
-	if (!src) return False;
+	if (!src)
+		return False;
 	
 	num = lsize = 0;
 	list = NULL;
 		
-	while (src[num])
-	{
+	while (src[num]) {
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
@@ -1212,17 +1212,22 @@ BOOL str_list_copy(char ***dest, char **src)
 }
 
 /* return true if all the elemnts of the list matches exactly */
+
 BOOL str_list_compare(char **list1, char **list2)
 {
 	int num;
 	
-	if (!list1 || !list2) return (list1 == list2); 
+	if (!list1 || !list2)
+		return (list1 == list2); 
 	
 	for (num = 0; list1[num]; num++) {
-		if (!list2[num]) return False;
-		if (!strcsequal(list1[num], list2[num])) return False;
+		if (!list2[num])
+			return False;
+		if (!strcsequal(list1[num], list2[num]))
+			return False;
 	}
-	if (list2[num]) return False; /* if list2 has more elements than list1 fail */
+	if (list2[num])
+		return False; /* if list2 has more elements than list1 fail */
 	
 	return True;
 }
@@ -1231,9 +1236,11 @@ void str_list_free(char ***list)
 {
 	char **tlist;
 	
-	if (!list || !*list) return;
+	if (!list || !*list)
+		return;
 	tlist = *list;
-	for(; *tlist; tlist++) SAFE_FREE(*tlist);
+	for(; *tlist; tlist++)
+		SAFE_FREE(*tlist);
 	SAFE_FREE(*list);
 }
 
@@ -1242,25 +1249,25 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 	char *p, *s, *t;
 	ssize_t ls, lp, li, ld, i, d;
 
-	if (!list) return False;
-	if (!pattern) return False;
-	if (!insert) return False;
+	if (!list)
+		return False;
+	if (!pattern)
+		return False;
+	if (!insert)
+		return False;
 
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 	ld = li -lp;
 			
-	while (*list)
-	{
+	while (*list) {
 		s = *list;
 		ls = (ssize_t)strlen(s);
 
-		while ((p = strstr(s, pattern)))
-		{
+		while ((p = strstr(s, pattern))) {
 			t = *list;
 			d = p -t;
-			if (ld)
-			{
+			if (ld) {
 				t = (char *) malloc(ls +ld +1);
 				if (!t) {
 					DEBUG(0,("str_list_substitute: Unable to allocate memory"));
