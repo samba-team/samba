@@ -1172,7 +1172,7 @@ getdatasock(const char *mode)
 	/* anchor socket to avoid multi-homing problems */
 	socket_set_address_and_port (data_source,
 				     socket_get_address (ctrl_addr),
-				     0);
+				     socket_get_port (data_source));
 
 	for (tries = 1; ; tries++) {
 		if (bind(s, data_source,
