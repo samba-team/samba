@@ -95,12 +95,9 @@
 	</para></note>
 
 
-	<!--	<figure id="winbind_idmap"><title></title>
-	<mediaobject>
-	<imageobject role="latex"><imagedata fileref="howto/imagefiles/idmap_winbind_no_loop" scale="50" scalefit="1"/></imageobject>
-	<imageobject><imagedata fileref="howto/imagefiles/idmap_winbind_no_loop.png" scale="50" scalefit="1"/></imageobject>
-	</mediaobject>
-	</figure>-->
+	<image id="winbind_idmap">
+	<imagefile scale="50">idmap_winbind_no_loop</imagefile>
+	</image>
 
 </sect1>
 

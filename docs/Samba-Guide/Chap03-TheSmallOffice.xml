@@ -303,8 +303,8 @@
 	</para>
 
 	<image id="acct2net">
-		<description>Abmas Accounting &smbmdash; 52 User Network Topology</description>
-		<imagefile scale="100">acct2net.png</imagefile>
+		<imagedescription>Abmas Accounting &smbmdash; 52 User Network Topology</imagedescription>
+		<imagefile scale="100">acct2net</imagefile>
 	</image>
 
 	<procedure>

@@ -183,8 +183,8 @@
 		</para>
 
 		<image id="ch8-migration">
-			<description>Schematic Explaining the <command>net rpc vampire</command> Process</description>
-			<imagefile scale="80">ch8-migration.png</imagefile>
+			<imagedescription>Schematic Explaining the <command>net rpc vampire</command> Process</imagedescription>
+			<imagefile scale="80">ch8-migration</imagefile>
 		</image>
 
 		<para>
@@ -297,8 +297,8 @@
 		</para>
 
 		<image id="NT4DUM">
-			<description>View of Accounts in NT4 Domain User Manager</description>
-			<imagefile scale="50">UserMgrNT4.png</imagefile>
+			<imagedescription>View of Accounts in NT4 Domain User Manager</imagedescription>
+			<imagefile scale="50">UserMgrNT4</imagefile>
 		</image>
 
 	</sect2>
