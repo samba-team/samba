@@ -2170,7 +2170,7 @@ static void print_parameter(struct parm_struct *p,void *ptr, FILE *f)
 		break;
       
 	case P_OCTAL:
-		fprintf(f,"0%o",*(int *)ptr);
+		fprintf(f,"%s",octal_string(*(int *)ptr));
 		break;
       
 	case P_GSTRING:
