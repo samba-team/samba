@@ -44,6 +44,10 @@
 
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
+	* kdc/hprop.c (usage): clarify a tiny bit
+
+2001-07-19  Assar Westerlund  <assar@sics.se>
+
 	* Release 0.4c
 
 2001-07-19  Assar Westerlund  <assar@sics.se>
