@@ -34,7 +34,12 @@ KRB4LIB = $(LIB_krb4)
 version4_c = version4.c
 endif
 
-kadmind_SOURCES = kadmind.c server.c kadmin_locl.h $(version4_c)
+kadmind_SOURCES =				\
+	kadmind.c				\
+	server.c				\
+	kadmin_locl.h				\
+	$(version4_c)				\
+	kadm_conn.c
 
 EXTRA_kadmind_SOURCES = version4.c
 
