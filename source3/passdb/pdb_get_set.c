@@ -1064,6 +1064,7 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, const uint8 *hours, enum pdb_value_sta
 BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 {
 	uint32 expire;
+	uint32 min_age;
 
 	if (!sampass)
 		return False;
@@ -1082,6 +1083,16 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 			return False;
 	}
 	
+	if (!account_policy_get(AP_MIN_PASSWORD_AGE, &min_age) 
+	    || (min_age==(uint32)-1)) {
+		if (!pdb_set_pass_can_change_time (sampass, 0, PDB_CHANGED))
+			return False;
+	} else {
+		if (!pdb_set_pass_can_change_time (sampass, 
+						    pdb_get_pass_last_set_time(sampass)
+						    + min_age, PDB_CHANGED))
+			return False;
+	}
 	return True;
 }
 
