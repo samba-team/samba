@@ -13,7 +13,9 @@
 static Type *new_type (Typetype t);
 void yyerror (char *);
 
+#ifdef HAVE_STRUP
 char *strdup(char *);
+#endif
 
 static void append (Member *l, Member *r);
 
@@ -30,7 +32,6 @@ static void append (Member *l, Member *r);
 %token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS
 %token <name> IDENTIFIER 
 %token <constant> CONSTANT
-%token IDENTIFIER CONSTANT
 
 %type <constant> constant optional2
 %type <type> type
