@@ -94,16 +94,26 @@ krb5_mk_req_internal(krb5_context context,
   krb5_copy_keyblock(context, &in_creds->session, &ac->keyblock);
   
   if (in_data) {
-      krb5_crypto crypto;
-      krb5_crypto_init(context, ac->keyblock, 0, &crypto);
-      ret = krb5_create_checksum(context, 
-				 crypto,
-				 usage,
-				 in_data->data,
-				 in_data->length,
-				 &c);
+      if(ac->keyblock->keytype == ETYPE_DES_CBC_CRC) {
+	  /* this is to make DCE secd (and older MIT kdcs?) happy */
+	  ret = krb5_create_checksum(context, 
+				     NULL,
+				     CKSUMTYPE_RSA_MD4,
+				     in_data->data,
+				     in_data->length,
+				     &c);
+      } else {
+	  krb5_crypto crypto;
+	  krb5_crypto_init(context, ac->keyblock, 0, &crypto);
+	  ret = krb5_create_checksum(context, 
+				     crypto,
+				     usage,
+				     in_data->data,
+				     in_data->length,
+				     &c);
       
-      krb5_crypto_destroy(context, crypto);
+	  krb5_crypto_destroy(context, crypto);
+      }
       c_opt = &c;
   } else {
       c_opt = NULL;
