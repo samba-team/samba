@@ -169,67 +169,65 @@ static struct passwd *_Get_Pwnam(char *s)
 
 
 /****************************************************************************
- A wrapper for getpwnam() that tries with all lower and all upper case 
- if the initial name fails. Also tried with first letter capitalised
+ A wrapper for getpwnam().  The following variations are tried...
+    - in all lower case
+    - as transmitted IF a different case
+    - in all upper case IF that is different from the transmitted username
+    - using the lp_usernamelevel() for permutations
  Note that this can change user!
 ****************************************************************************/
 
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
-  fstring user2;
-  int last_char;
-  int usernamelevel = lp_usernamelevel();
+	fstring 	user2, orig_username;
+  	int 		usernamelevel = lp_usernamelevel();
+	struct 		passwd *ret;  
 
-  struct passwd *ret;  
+	if (!user || !(*user))
+		return(NULL);
 
-  if (!user || !(*user))
-    return(NULL);
+	/* make a few copies to work with */
+	fstrcpy(orig_username, user);
+	if (!allow_change) 
+	{
+		/* allow_change was False, so make a copy and temporarily
+		   assign the char* user to the temp copy */
+		fstrcpy(user2,user);
+		user = &user2[0];
+	}
 
-  StrnCpy(user2,user,sizeof(user2)-1);
+	/* try in all lower case first as this is the most
+	   common case on UNIX systems */
+	strlower(user);
+	ret = _Get_Pwnam(user);
+	if (ret)
+		return(ret);
+	
+	/* try as transmitted, but only if the original username
+	   gives us a different case */
+	if (strcmp(user, orig_username) != 0)
+	{
+		ret = _Get_Pwnam(orig_username);
+		if (ret)
+			return(ret);
+	}
 
-  if (!allow_change) {
-    user = &user2[0];
-  }
+	/* finally, try in all caps if that is a new case */
+	strupper(user);
+	if (strcmp(user, orig_username) != 0)
+	{
+		ret = _Get_Pwnam(user);
+		if (ret)
+			return(ret);
+	}
 
-  ret = _Get_Pwnam(user);
-  if (ret)
-    return(ret);
+	/* Try all combinations up to usernamelevel. */
+	strlower(user);
+	ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
+	if (ret)
+		return(ret);
 
-  strlower(user);
-  ret = _Get_Pwnam(user);
-  if (ret)
-    return(ret);
-
-  strupper(user);
-  ret = _Get_Pwnam(user);
-  if (ret)
-    return(ret);
-
-  /* Try with first letter capitalised. */
-  if (strlen(user) > 1)
-    strlower(user+1);  
-  ret = _Get_Pwnam(user);
-  if (ret)
-    return(ret);
-
-  /* try with last letter capitalised */
-  strlower(user);
-  last_char = strlen(user)-1;
-  user[last_char] = toupper(user[last_char]);
-  ret = _Get_Pwnam(user);
-  if (ret)
-    return(ret);
-
-  /* Try all combinations up to usernamelevel. */
-  strlower(user);
-  ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
-  if (ret)
-    return(ret);
-
-  if (allow_change)
-    fstrcpy(user,user2);
-
-  return(NULL);
+	return(NULL);
 }
 
 /****************************************************************************
