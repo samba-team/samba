@@ -1581,13 +1581,13 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
   int tmpfd;
   SMB_STRUCT_STAT sbuf;
-  char *p;
+  char *p, *s;
 
   START_PROFILE(SMBctemp);
 
   createmode = SVAL(inbuf,smb_vwv0);
   srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE);
-  pstrcat(fname,"/TMXXXXXX");
+  pstrcat(fname,"\\TMXXXXXX");
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1626,17 +1626,28 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
-  CVAL(smb_buf(outbuf),0) = 4;
-  p = smb_buf(outbuf) + 1;
-  p += srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
-  set_message_end(outbuf, p);
+
+  /* the returned filename is relative to the directory */
+  s = strrchr_m(fname, '/');
+  if (!s) {
+	  s = fname;
+  } else {
+	  s++;
+  }
+
+  p = smb_buf(outbuf);
+  SSVALS(p, 0, -1); /* what is this? not in spec */
+  SSVAL(p, 2, strlen(s));
+  p += 4;
+  p += srvstr_push(outbuf, p, s, -1, STR_ASCII);
+  outsize = set_message_end(outbuf, p);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+	  CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
   
-  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	  CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
   DEBUG( 2, ( "created temp file %s\n", fname ) );
   DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",

@@ -335,20 +335,21 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 /*******************************************************************
   setup only the byte count for a smb message
 ********************************************************************/
-void set_message_bcc(char *buf,int num_bytes)
+int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	return (smb_size + num_words*2 + num_bytes);
 }
 
 /*******************************************************************
   setup only the byte count for a smb message, using the end of the
   message as a marker
 ********************************************************************/
-void set_message_end(void *outbuf,void *end_ptr)
+int set_message_end(void *outbuf,void *end_ptr)
 {
-	set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
+	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************

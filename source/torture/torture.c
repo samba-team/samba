@@ -2639,6 +2639,7 @@ static BOOL run_opentest(int dummy)
 	char buf[20];
 	size_t fsize;
 	BOOL correct = True;
+	char *tmp_path;
 
 	printf("starting open test\n");
 	
@@ -2774,16 +2775,17 @@ static BOOL run_opentest(int dummy)
 
 
 	printf("testing ctemp\n");
-	{
-		char *tmp_path;
-		fnum1 = cli_ctemp(&cli1, "\\", &tmp_path);
-		if (fnum1 == -1) {
-			printf("ctemp failed (%s)\n", cli_errstr(&cli1));
-			return False;
-		}
-		printf("ctemp gave path %s\n", tmp_path);
-		cli_close(&cli1, fnum1);
-		cli_unlink(&cli1, tmp_path);
+	fnum1 = cli_ctemp(&cli1, "\\", &tmp_path);
+	if (fnum1 == -1) {
+		printf("ctemp failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+	printf("ctemp gave path %s\n", tmp_path);
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close of temp failed (%s)\n", cli_errstr(&cli1));
+	}
+	if (!cli_unlink(&cli1, tmp_path)) {
+		printf("unlink of temp failed (%s)\n", cli_errstr(&cli1));
 	}
 	
 	if (!torture_close_connection(&cli1)) {
