@@ -1,7 +1,7 @@
 Summary: SMB client and server
 Name: samba
 Version: 1.9.16p11
-Release: 2
+Release: 3
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.16p11.tar.gz
@@ -37,11 +37,11 @@ cd source
 cd ..
 for i in addtosmbpass mksmbpasswd.sh nmblookup smbclient smbpasswd smbrun smbstatus smbtar testparm testprn
 do
-	install -m755 -g 0 -o 0 source/$i /usr/bin
+	install -m755 -s -g 0 -o 0 source/$i /usr/bin
 done
 for i in smbd nmbd
 do
-	install -m755 -g 0 -o 0 source/$i /usr/sbin
+	install -m755 -s -g 0 -o 0 source/$i /usr/sbin
 done
 for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprn.1
 do
@@ -62,10 +62,6 @@ mkdir -p /home/samba
 mkdir -p /var/lock/samba
 chown root.nobody /home/samba
 chmod 775 /home/samba
-
-strip /usr/sbin/smbd /usr/bin/smbclient /usr/sbin/nmbd /usr/bin/testparm \
-	/usr/bin/testprns /usr/bin/smbrun /usr/bin/smbstatus \
-	/usr/bin/nmblookup /usr/bin/smbpasswd
 install -m 644 -o 0 -g 0 examples/redhat/samba.log /etc/logrotate.d/samba
 
 %post
