@@ -27,6 +27,9 @@ smb.conf file fixed.
 8). LPRng parsing code fix.
 9). Fix to try and return a 'best guess' of create time
 under UNIX (which doens't store such a file attribute).
+10). Added parameters to ~samba/examples/smb.conf.default file
+	- Remote announce, Remote browse sync, username map, filename
+	  case preservation ans sensitivity options.
 
 Bugfixes added since 1.9.18
 ---------------------------

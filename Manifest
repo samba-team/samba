@@ -17,7 +17,7 @@ docs		(Samba Documentation):
 	for each OS that Samba supports. However we are moving all this into
 	the new structure. For now, most people will be using UNIX_INSTALL.txt.
 
-	You pay close attention to all the files with a
+	You should pay close attention to all the files with a
 	.txt extension. Most problems can be solved by reference to the 
 	two files mentioned.
 

@@ -1008,7 +1008,7 @@ SYDNEY - AUSTRALIA
 John Terpstra - Aquasoft (jht@aquasoft.com.au)
 Business:  +612 9524 4040
 Home:      +612 9540 3154
-Mobile:    +612 414 334422  (aka 0414 334422)
+Mobile:    +614 1935 3637  (aka 0419 353637)
 Samba Experience: Member of Samba-Team. Long term contributor to Samba
                   Samba on BSD/OS, Solaris (Sparc & x86), ISC Unix, SCO Unix
                   NCR SVR4, Linux, UnixWare, IBM, HP, DEC, Others.
