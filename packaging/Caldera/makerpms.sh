@@ -5,7 +5,7 @@
 RPMDIR=`rpm --showrc | awk '/^rpmdir/ { print $3}'`
 SPECDIR=`rpm --showrc | awk '/^specdir/ { print $3}'`
 SRCDIR=`rpm --showrc | awk '/^sourcedir/ { print $3}'`
-VERSION=1.9.18p5
+VERSION=1.9.18p6
 
 cd $SRCDIR
 chown -R root.root samba-${VERSION}

@@ -1,7 +1,7 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.18p5
-Release: Caldera.6
+Version: 1.9.18p6
+Release: Caldera.1
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.18p4.tar.gz
