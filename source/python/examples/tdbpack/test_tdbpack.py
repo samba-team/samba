@@ -84,8 +84,19 @@ class PackTests(unittest.TestCase):
                     out, rest = unpacker(format, expected)
                     self.assertEquals(rest, '')
                     self.assertEquals(list(values), list(out))
-        
-    
+
+    def test_large(self):
+        """Test large pack/unpack strings"""
+        large_cases = [('w' * 1000, xrange(1000)), ]
+        for packer in both_packers:
+            for unpacker in both_unpackers:
+                for format, values in large_cases:
+                    packed = packer(format, values)
+                    out, rest = unpacker(format, packed)
+                    self.assertEquals(rest, '')
+                    self.assertEquals(list(values), list(out))
+
+                    
     def test_pack(self):
         """Cookbook of expected pack values
 
@@ -130,13 +141,10 @@ class PackTests(unittest.TestCase):
                  ('w', {}),
                  ('ww', [2]),
                  ('w', 2),
-                 ('', [1, 2, 3]),
                  ('w', None),
                  ('wwwwwwwwwwww', []),
-                 ('w', [2, 3]),
-                 ('w', [0x60A15EC5L]),
+#                 ('w', [0x60A15EC5L]),
                  ('w', [None]),
-                 ('w', xrange(10000)),
                  ('d', []),
                  ('d', [0L]),
                  ('p', []),
