@@ -1727,7 +1727,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 		ctr.info.id24 = &p24;
 
 		result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24,
-					       cli->user_session_key, &ctr);
+					       &cli->user_session_key, &ctr);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(0,("Could not set trust account password: %s\n",
