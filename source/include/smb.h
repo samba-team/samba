@@ -254,13 +254,6 @@ typedef uint32 WERROR;
  
 #define MAX_HOURS_LEN 32
 
-struct sam_disp_info
-{
-	uint32 user_rid;      /* Primary User ID */
-	char *smb_name;     /* username string */
-	char *full_name;    /* user's full name string */
-};
-
 typedef struct
 {
         uint32 pid;
