@@ -57,7 +57,7 @@ BOOL print_notify_messages_pending(void)
  Send the batched messages - on a per-printer basis.
 *******************************************************************/
 
-static void print_notify_send_messages_to_printer(const char *unix_printer)
+static void print_notify_send_messages_to_printer(const char *unix_printer, unsigned int timeout)
 {
 	char *buf;
 	struct notify_queue *pq, *pq_next;
@@ -110,14 +110,14 @@ static void print_notify_send_messages_to_printer(const char *unix_printer)
 		return;
 
 	for (i = 0; i < num_pids; i++)
-		message_send_pid(pid_list[i], MSG_PRINTER_NOTIFY2, buf, offset, True);
+		message_send_pid_with_timeout(pid_list[i], MSG_PRINTER_NOTIFY2, buf, offset, True, timeout);
 }
 
 /*******************************************************************
  Actually send the batched messages.
 *******************************************************************/
 
-void print_notify_send_messages(void)
+void print_notify_send_messages(unsigned int timeout)
 {
 	if (!print_notify_messages_pending())
 		return;
@@ -126,7 +126,7 @@ void print_notify_send_messages(void)
 		return;
 
 	while (print_notify_messages_pending())
-		print_notify_send_messages_to_printer(notify_queue_head->unix_printername);
+		print_notify_send_messages_to_printer(notify_queue_head->unix_printername, timeout);
 
 	talloc_destroy_pool(send_ctx);
 }

@@ -541,7 +541,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	/* check if we have any pending print notify messages */
 
 	if ( check_notify_msgs )
-		print_notify_send_messages();
+		print_notify_send_messages(0);
 
 	return (True);
 }

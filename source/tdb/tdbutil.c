@@ -38,7 +38,7 @@ static void gotalarm_sig(void)
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
 
-static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
+static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
 {
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
@@ -59,13 +59,22 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
 		alarm(0);
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
-			DEBUG(0,("tdb_chainlock_with_timeout: alarm (%u) timed out for key %s in tdb %s\n",
+			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb->name ));
 			return -1;
 		}
 	}
 
 	return ret;
+}
+
+/****************************************************************************
+ Write lock a chain. Return -1 if timeout or lock failed.
+****************************************************************************/
+
+int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
+{
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
 }
 
 /****************************************************************************
@@ -79,7 +88,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
 	key.dptr = keyval;
 	key.dsize = strlen(keyval)+1;
 	
-	return tdb_chainlock_with_timeout(tdb, key, timeout, F_WRLCK);
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
 }
 
 /****************************************************************************
@@ -107,7 +116,7 @@ int tdb_read_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
 	key.dptr = keyval;
 	key.dsize = strlen(keyval)+1;
 	
-	return tdb_chainlock_with_timeout(tdb, key, timeout, F_RDLCK);
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
 }
 
 /****************************************************************************

@@ -1228,7 +1228,7 @@ machine %s in domain %s.\n", global_myname_unix(), lp_workgroup_unix() ));
 
   /* Send any queued printer notify message to interested smbd's. */
 
-  print_notify_send_messages();
+  print_notify_send_messages(0);
 
   /*
    * Modify the select timeout depending upon
