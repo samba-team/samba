@@ -35,6 +35,17 @@ TDB_CONTEXT *conn_tdb_ctx(void)
 	return tdb;
 }
 
+static void make_conn_key(connection_struct *conn,char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
+{
+	ZERO_STRUCTP(pkey);
+	pkey->pid = sys_getpid();
+	pkey->cnum = conn?conn->cnum:-1;
+	fstrcpy(pkey->name, name);
+
+	pkbuf->dptr = (char *)pkey;
+	pkbuf->dsize = sizeof(*pkey);
+}
+
 /****************************************************************************
  Delete a connection record.
 ****************************************************************************/
@@ -49,13 +60,7 @@ BOOL yield_connection(connection_struct *conn,char *name)
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
-	ZERO_STRUCT(key);
-	key.pid = sys_getpid();
-	key.cnum = conn?conn->cnum:-1;
-	fstrcpy(key.name, name);
-
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	make_conn_key(conn, name, &kbuf, &key);
 
 	if (tdb_delete(tdb, kbuf) != 0) {
 		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
@@ -88,7 +93,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-    if (crec.cnum == -1)
+	if (crec.cnum == -1)
 		return 0;
 
 	/* If the pid was not found delete the entry from connections.tdb */
@@ -156,13 +161,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 	DEBUG(5,("claiming %s %d\n",name,max_connections));
 
-	ZERO_STRUCT(key);
-	key.pid = sys_getpid();
-	key.cnum = conn?conn->cnum:-1;
-	fstrcpy(key.name, name);
-
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	make_conn_key(conn, name, &kbuf, &key);
 
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
@@ -190,5 +189,47 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		return False;
 	}
 
+	return True;
+}
+
+BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
+{
+	struct connections_key key;
+	struct connections_data *pcrec;
+	TDB_DATA kbuf, dbuf;
+
+	if (!tdb)
+		return False;
+
+	DEBUG(10,("register_message_flags: %s flags 0x%x\n",
+		doreg ? "adding" : "removing",
+		(unsigned int)msg_flags ));
+
+	make_conn_key(NULL, "", &kbuf, &key);
+
+        dbuf = tdb_fetch(tdb, kbuf);
+        if (!dbuf.dptr) {
+		DEBUG(0,("register_message_flags: tdb_fetch failed\n"));
+		return False;
+	}
+
+	pcrec = (struct connections_data *)dbuf.dptr;
+	pcrec->bcast_msg_flags = msg_flags;
+	if (doreg)
+		pcrec->bcast_msg_flags |= msg_flags;
+	else
+		pcrec->bcast_msg_flags &= ~msg_flags;
+
+	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
+		DEBUG(0,("register_message_flags: tdb_store failed with error %s.\n",
+			tdb_errorstr(tdb) ));
+		SAFE_FREE(dbuf.dptr);
+		return False;
+	}
+
+	DEBUG(10,("register_message_flags: new flags 0x%x\n",
+		(unsigned int)pcrec->bcast_msg_flags ));
+
+	SAFE_FREE(dbuf.dptr);
 	return True;
 }

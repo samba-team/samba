@@ -220,6 +220,9 @@ static void free_printer_entry(void *ptr)
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
 
+	/* Tell the connections db we're not interested in printer notify messages. */
+	register_message_flags(False, FLAG_MSG_PRINTING);
+
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
 
@@ -728,8 +731,7 @@ static struct notify2_message_table job_notify_table[] = {
  back registered
  **********************************************************************/
 
-static void process_notify2_message(struct spoolss_notify_msg *msg, 
-				    TALLOC_CTX *mem_ctx)
+static void process_notify2_message(struct spoolss_notify_msg *msg, TALLOC_CTX *mem_ctx)
 {
 	Printer_entry *p;
 
@@ -837,8 +839,7 @@ done:
  Receive a notify2 message
  ********************************************************************/
 
-static void receive_notify2_message(int msg_type, pid_t src, void *buf, 
-				    size_t len)
+static void receive_notify2_message(void *buf, size_t len)
 {
 	struct spoolss_notify_msg msg;
 	int offset = 0;
@@ -880,6 +881,49 @@ static void receive_notify2_message(int msg_type, pid_t src, void *buf,
 		free(msg.notify.data);
 
 	talloc_destroy(mem_ctx);
+}
+
+/********************************************************************
+ Receive a notify2 message list
+ ********************************************************************/
+
+static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
+{
+	size_t msg_count, i;
+	char *buf = (char *)msg;
+	char *msg_ptr;
+
+	if (len < 4)
+		goto bad_msg;
+
+	msg_count = IVAL(buf, 0);
+	msg_ptr = buf + 4;
+
+	if (msg_count == 0)
+		goto bad_msg;
+
+	for (i = 0; i < msg_count; i++) {
+		size_t msg_len;
+
+		if (msg_ptr + 4 - buf > len)
+			goto bad_msg;
+
+		msg_len = IVAL(msg_ptr,0);
+		msg_ptr += 4;
+
+		if (msg_ptr + msg_len - buf > len)
+			goto bad_msg;
+		receive_notify2_message(msg_ptr, msg_len);
+		msg_ptr += msg_len;
+	}
+
+	DEBUG(10,("receive_notify2_message_list: processed %u messages\n",
+		(unsigned int)msg_count ));
+	return;
+
+  bad_msg:
+
+	DEBUG(0,("receive_notify2_message_list: bad message format !\n"));
 }
 
 /********************************************************************
@@ -2133,7 +2177,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 		if(!spoolss_connect_to_client(&notify_cli, unix_printer))
 			return False;
 			
-		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message);
+		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
 	}
 
 	smb_connections++;
@@ -2196,6 +2240,8 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 					&Printer->notify.client_hnd))
 		return WERR_SERVER_UNAVAILABLE;
 
+	/* Tell the connections db we're interested in printer notify messages. */
+	register_message_flags(True, FLAG_MSG_PRINTING);
 	Printer->notify.client_connected=True;
 
 	return WERR_OK;
@@ -5543,6 +5589,9 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 	if (Printer->notify.option)
 		free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
+
+	/* Tell the connections db we're not interested in printer notify messages. */
+	register_message_flags(False, FLAG_MSG_PRINTING);
 
 	return WERR_OK;
 }
