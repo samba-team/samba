@@ -35,6 +35,7 @@
 extern int DEBUGLEVEL;
 extern connection_struct Connections[];
 extern files_struct Files[];
+extern int Client;
 
 static struct share_ops *share_ops;
 
@@ -94,6 +95,154 @@ for fnum = %d, name = %s\n", blr->expire_time, fnum, Files[fnum].name ));
 }
 
 /****************************************************************************
+ Return a blocking lock success SMB.
+*****************************************************************************/
+
+void blocking_lock_reply_success(blocking_lock_record *blr)
+{
+  extern int chain_size;
+  extern int chain_fnum;
+  extern char *OutBuffer;
+  char *outbuf = OutBuffer;
+  int bufsize = BUFFER_SIZE;
+  char *inbuf = blr->inbuf;
+  int fnum = GETFNUM(inbuf,smb_vwv2);
+  int outsize = 0;
+
+  construct_reply_common(inbuf, outbuf);
+  set_message(outbuf,2,0,True);
+
+  /*
+   * As this message is a lockingX call we must handle
+   * any following chained message correctly.
+   * This is normally handled in construct_reply(),
+   * but as that calls switch_message, we can't use
+   * that here and must set up the chain info manually.
+   */
+
+  chain_fnum = fnum;
+  chain_size = 0;
+
+  outsize = chain_reply(inbuf,outbuf,blr->length,bufsize);
+
+  outsize += chain_size;
+
+  if(outsize > 4)
+    smb_setlen(outbuf,outsize - 4);
+
+  send_smb(Client,outbuf);
+}
+
+/****************************************************************************
+ Return a lock fail error. Undo all the locks we have obtained first.
+*****************************************************************************/
+
+void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecode)
+{
+  extern char *OutBuffer;
+  char *outbuf = OutBuffer;
+  int bufsize = BUFFER_SIZE;
+  char *inbuf = blr->inbuf;
+  int fnum = GETFNUM(inbuf,smb_vwv2);
+  uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
+  uint16 num_locks = SVAL(inbuf,smb_vwv7);
+  uint32 count, offset;
+  int cnum;
+  int lock_num = blr->lock_num;
+  char *data;
+  int i;
+
+  cnum = SVAL(inbuf,smb_tid);
+
+  data = smb_buf(inbuf) + 10*num_ulocks;
+
+  /* 
+   * Data now points at the beginning of the list
+   * of smb_lkrng structs.
+   */
+
+  for(i = blr->lock_num; i >= 0; i--) {
+    count = IVAL(data,SMB_LKLEN_OFFSET(i));
+    offset = IVAL(data,SMB_LKOFF_OFFSET(i));
+    do_unlock(fnum,cnum,count,offset,&dummy1,&dummy2);
+  }
+
+  construct_reply_common(inbuf, outbuf);
+  ERROR(eclass,ecode);
+  send_smb(Client,outbuf);
+}
+
+/****************************************************************************
+ Attempt to finish off getting all pending blocking locks.
+ Returns True if we want to be removed from the list.
+*****************************************************************************/
+
+BOOL blocking_lock_record_process(blocking_lock_record *blr)
+{
+  char *inbuf = blr->inbuf;
+  unsigned char locktype = CVAL(inbuf,smb_vwv3);
+  int fnum = GETFNUM(inbuf,smb_vwv2);
+  uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
+  uint16 num_locks = SVAL(inbuf,smb_vwv7);
+  uint32 count, offset;
+  int cnum;
+  int lock_num = blr->lock_num;
+  char *data;
+  int eclass=0;
+  uint32 ecode=0;
+
+  cnum = SVAL(inbuf,smb_tid);
+
+  data = smb_buf(inbuf) + 10*num_ulocks;
+
+  /* 
+   * Data now points at the beginning of the list
+   * of smb_lkrng structs.
+   */
+
+  for(; blr->lock_num < num_locks; blr->lock_num++) {
+    count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
+    offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
+    if(!do_lock(fnum,cnum,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
+                &eclass, &ecode))
+      break;
+  }
+
+  if(blr->lock_num == num_locks) {
+
+    /*
+     * Success - we got all the locks.
+     */
+
+    DEBUG(3,("blocking_lock_record_process fnum=%d cnum=%d type=%d num_locks=%d\n",
+          fnum, cnum, (unsigned int)locktype, num_locks) );
+
+    blocking_lock_reply_success(blr);
+    return True;
+
+  } else if((errno != EACCES) && (errno != EAGAIN)) {
+
+    /*
+     * We have other than a "can't get lock" POSIX
+     * error. Free any locks we had and return an error.
+     * Return True so we get dequeued.
+     */
+
+    blocking_lock_reply_error(blr, eclass, ecode);
+    return True;
+  }
+
+  /*
+   * Still can't get all the locks - keep waiting.
+   */
+
+  DEBUG(10,("blocking_lock_record_process: only got %d locks of %d needed for fnum = %d. \
+Waiting..\n", blr->lock_num, num_locks, fnum ));
+
+  return False;
+}
+
+/****************************************************************************
  Process the blocking lock queue. Note that this is only called as root.
 *****************************************************************************/
 
@@ -116,14 +265,18 @@ void process_blocking_lock_queue(time_t t)
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
                   SVAL(blr->inbuf,smb_uid);
 
-    if(blr->expire_time > t) {
+    DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
+          fnum, fsp->name ));
+
+    if((blr->expire_time != -1) && (blr->expire_time > t)) {
       /*
        * Lock expired - throw away all previously
        * obtained locks and return lock error.
        */
+      DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
+          fnum, fsp->name ));
 
-      blocking_lock_fail(blr);
-      blocking_lock_reply_error(blr);
+      blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
@@ -135,7 +288,7 @@ void process_blocking_lock_queue(time_t t)
       /*
        * Remove the entry and return an error to the client.
        */
-      blocking_lock_reply_error(blr);
+      blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
@@ -147,7 +300,7 @@ Error was %s.\n", cnum, strerror(errno) ));
       /*
        * Remove the entry and return an error to the client.
        */
-      blocking_lock_reply_error(blr);
+      blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       unbecome_user();
@@ -156,19 +309,26 @@ Error was %s.\n", cnum, strerror(errno) ));
 
     /*
      * Go through the remaining locks and try and obtain them.
-     * If we get them all then return success and delete this
-     * record.
+     * The call returns True if all locks were obtained successfully
+     * and False if we still need to wait.
      */
 
     if(blocking_lock_record_process(blr)) {
-      /*
-       * Success -
-     unbecome_user();
+      free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
+      blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      unbecome_user();
+      continue;
+    }
+
+    unbecome_user();
+
+    /*
      * Move to the next in the list.
      */
     prev = blr;
     blr = (blocking_lock_record *)ubi_slNext(blr);
   }
+}
 #endif /* JRATEST */
 
 /****************************************************************************
