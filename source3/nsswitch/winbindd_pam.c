@@ -65,7 +65,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	time_t last_change_time;
 	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli;
+        struct cli_state *cli = NULL;
 	uchar chal[8];
 	TALLOC_CTX *mem_ctx = NULL;
 	DATA_BLOB lm_resp;
@@ -128,7 +128,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
-		cli = NULL;
 		retry = False;
 	
 		/* Don't shut this down - it belongs to the connection cache code */
@@ -148,8 +147,17 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 							&info3);
 		attempts += 1;
 		
+		/* We have to try a second time as cm_get_netlogon_cli
+		   might not yet have noticed that the DC has killed
+		   our connection. */
+
+		if ( cli->fd == -1 ) {
+			retry = True;
+			continue;
+		} 
+		
 		/* if we get access denied, a possible cuase was that we had and open
-		   connection to the DC, but someone changed our machine accoutn password
+		   connection to the DC, but someone changed our machine account password
 		   out from underneath us using 'net rpc changetrustpw' */
 		   
 		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
@@ -158,12 +166,9 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 				name_domain));
 			winbindd_cm_flush();
 			retry = True;
+			cli = NULL;
 		} 
 		
-		/* We have to try a second time as cm_get_netlogon_cli
-		   might not yet have noticed that the DC has killed
-		   our connection. */
-
 	} while ( (attempts < 2) && retry );
         
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
@@ -206,7 +211,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	time_t last_change_time;
 	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli;
+        struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	char *user = NULL;
 	const char *domain = NULL;
@@ -301,7 +306,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
-		cli = NULL;
 		retry = False;
 
 		/* Don't shut this down - it belongs to the connection cache code */
@@ -323,8 +327,17 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 		attempts += 1;
 
-		/* if we get access denied, a possible cuase was that we had and open
-		   connection to the DC, but someone changed our machine accoutn password
+		/* We have to try a second time as cm_get_netlogon_cli
+		   might not yet have noticed that the DC has killed
+		   our connection. */
+
+		if ( cli->fd == -1 ) {
+			retry = True;
+			continue;
+		} 
+
+		/* if we get access denied, a possible cause was that we had and open
+		   connection to the DC, but someone changed our machine account password
 		   out from underneath us using 'net rpc changetrustpw' */
 		   
 		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
@@ -333,12 +346,9 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 				domain));
 			winbindd_cm_flush();
 			retry = True;
+			cli = NULL;
 		} 
 		
-		/* We have to try a second time as cm_get_netlogon_cli
-		   might not yet have noticed that the DC has killed
-		   our connection. */
-
 	} while ( (attempts < 2) && retry );
 
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
