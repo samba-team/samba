@@ -43,9 +43,10 @@ RCSID("$Id$");
 /* This is a bit XXX, but used quite many places */
 
 size_t
-k_put_int(void *buffer, unsiged long value, size_t size)
+k_put_int(void *buffer, unsigned long value, size_t size)
 {
-    unsiged char *p = buffer;
+    unsigned char *p = buffer;
+    int i;
     for (i = size - 1; i >= 0; i--) {
 	p[i] = value & 0xff;
 	value >>= 8;
@@ -54,10 +55,11 @@ k_put_int(void *buffer, unsiged long value, size_t size)
 }
 
 size_t
-k_get_int(void *buffer, unsiged long *value, size_t size)
+k_get_int(void *buffer, unsigned long *value, size_t size)
 {
-    unsiged char *p = buffer;
+    unsigned char *p = buffer;
     unsigned long v = 0;
+    int i;
     for (i = 0; i < size; i++)
 	v = (v << 8) + p[i];
     *value = v;
@@ -132,7 +134,7 @@ krb5_ret_int(krb5_storage *sp,
     return 0;
 }
 
-static krb5_error_code
+krb5_error_code
 krb5_ret_int32(krb5_storage *sp,
 	       int32_t *value)
 {
@@ -150,7 +152,13 @@ krb5_error_code
 krb5_ret_int16(krb5_storage *sp,
 	       int16_t *value)
 {
-    return krb5_ret_int(sp, value, 2);
+    int32_t v;
+    int ret;
+    ret =krb5_ret_int(sp, &v, 2);
+    if(ret)
+	return ret;
+    *value = v;
+    return 0;
 }
 
 krb5_error_code
