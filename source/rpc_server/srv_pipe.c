@@ -302,10 +302,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		rpcstr_pull(domain, ntlmssp_resp->domain, sizeof(fstring), ntlmssp_resp->hdr_domain.str_str_len*2, 0);
 		rpcstr_pull(wks, ntlmssp_resp->wks, sizeof(fstring), ntlmssp_resp->hdr_wks.str_str_len*2, 0);
 	} else {
-		/* What charset are these meant to be in? */
-		fstrcpy(user_name, ntlmssp_resp->user);
-		fstrcpy(domain, ntlmssp_resp->domain);
-		fstrcpy(wks, ntlmssp_resp->wks);
+		pull_ascii_fstring(user_name, ntlmssp_resp->user);
+		pull_ascii_fstring(domain, ntlmssp_resp->domain);
+		pull_ascii_fstring(wks, ntlmssp_resp->wks);
 	}
 
 	DEBUG(5,("user: %s domain: %s wks: %s\n", user_name, domain, wks));
