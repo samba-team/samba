@@ -53,6 +53,12 @@ do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
     unsigned char buf[MAX_KTXT_LEN + 4 * 4];
     size_t len;
     
+    if(!enable_524) {
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Rejected ticket conversion request from %s", from);
+	goto out;
+    }
+
     principalname2krb5_principal(&sprinc, t->sname, t->realm);
     krb5_unparse_name(context, sprinc, &spn);
     server = db_fetch(sprinc);
