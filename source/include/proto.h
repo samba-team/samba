@@ -608,8 +608,10 @@ size_t dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminat
 void unistr_to_dos(char *dest, const char *src, size_t len);
 char *skip_unibuf(char *src, size_t len);
 char *dos_unistrn2(uint16 *src, int len);
+char *rpc_unistrn2(uint16 *src, int len, BOOL endian);
 char *dos_unistr2(uint16 *src);
 char *dos_unistr2_to_str(UNISTR2 *str);
+char *rpc_unistr2_to_str(UNISTR2 *str, BOOL endian);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);

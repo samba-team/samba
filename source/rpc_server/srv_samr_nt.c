@@ -1201,7 +1201,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
         rid [i] = 0xffffffff;
         type[i] = SID_NAME_UNKNOWN;
 
-        fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len));
+        fstrcpy(name, rpc_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len, p->endian));
 
         if(sid_equal(&pol_sid, &global_sam_sid)) {
             DOM_SID sid;
@@ -1232,8 +1232,8 @@ uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_
 
     r_u->status = NT_STATUS_NOPROBLEMO;
 
-    fstrcpy(user_name, dos_unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
-    fstrcpy(wks      , dos_unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
+    fstrcpy(user_name, rpc_unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len, p->endian));
+    fstrcpy(wks      , rpc_unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len, p->endian));
 
     DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
@@ -1418,8 +1418,6 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
         DEBUG(4,("User 0x%x not found\n", user_rid));
         return False;
     }
-
-	samr_clear_sam_passwd(smb_pass);
 
     DEBUG(3,("User:[%s]\n", smb_pass->smb_name));
 
@@ -1759,7 +1757,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
        reply if the account already exists...
      */
 
-    fstrcpy(mach_acct, dos_unistrn2(user_account.buffer, user_account.uni_str_len));
+    fstrcpy(mach_acct, rpc_unistrn2(user_account.buffer, user_account.uni_str_len, p->endian));
     strlower(mach_acct);
 
     become_root();
