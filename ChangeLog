@@ -1,3 +1,8 @@
+2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: add roken/Makefile here, since it can't live in
+	rk_ROKEN
+
 2000-11-16  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: use the libtool -rpath, do not rely on ld

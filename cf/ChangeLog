@@ -1,3 +1,8 @@
+2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-frag.m4: don't use AC_CONFIG_FILES here, since it doesn't
+	work with automake
+
 2000-11-15  Assar Westerlund  <assar@sics.se>
 
 	* krb-readline.m4: link against the libtool-versions of
