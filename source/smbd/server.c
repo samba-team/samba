@@ -621,9 +621,7 @@ static void usage(char *pname)
 	d_printf("Usage: %s [-DaioPh?Vb] [-d debuglevel] [-l log basename] [-p port]\n", pname);
 	d_printf("       [-O socket options] [-s services file]\n");
 	d_printf("\t-D                    Become a daemon (default)\n");
-	d_printf("\t-a                    Append to log file (default)\n");
 	d_printf("\t-i                    Run interactive (not a daemon)\n" );
-	d_printf("\t-o                    Overwrite log file, don't append\n");
 	d_printf("\t-h                    Print usage\n");
 	d_printf("\t-?                    Print usage\n");
 	d_printf("\t-V                    Print version\n");
@@ -640,9 +638,8 @@ static void usage(char *pname)
  main program.
 ****************************************************************************/
 
- int main(int argc,char *argv[])
+ int main(int argc,const char *argv[])
 {
-	extern BOOL append_log;
 	extern BOOL AllowDebugChange;
 	extern char *optarg;
 	/* shall I run as a daemon */
@@ -652,80 +649,38 @@ static void usage(char *pname)
 	char *ports = NULL;
 	int opt;
 	pstring logfile;
+	poptContext pc;
+
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
+	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
+	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
+	{"port", 'p', POPT_ARG_STRING, ports, 0, "Listen on the specified ports"},
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug},
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile},
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options},
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base},
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+	{ NULL }
+	};
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
 
-	/* this is for people who can't start the program correctly */
-	while (argc > 1 && (*argv[1] != '-')) {
-		argv++;
-		argc--;
+	pc = poptGetContext("smbd", argc, argv, long_options, 0);
+	
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt)  {
+		case 'b':
+			build_options(True); /* Display output to screen as well as debug */ 
+			exit(0);
+			break;
+		}
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?bVaiof:")) )
-		switch (opt)  {
-		case 'O':
-			pstrcpy(user_socket_options,optarg);
-			break;
-
-		case 's':
-			pstrcpy(dyn_CONFIGFILE,optarg);
-			break;
-
-		case 'l':
-			specified_logfile = True;
-			pstr_sprintf(logfile, "%s/log.smbd", optarg);
-			lp_set_logfile(logfile);
-			break;
-
-		case 'a':
-			append_log = True;
-			break;
-
-		case 'i':
-			interactive = True;
-			break;
-
-		case 'o':
-			append_log = False;
-			break;
-
-		case 'D':
-			is_daemon = True;
-			break;
-
-		case 'd':
-			if (*optarg == 'A')
-				DEBUGLEVEL = 10000;
-			else
-				DEBUGLEVEL = atoi(optarg);
-			AllowDebugChange = False;
-			break;
-
-		case 'p':
-			ports = optarg;
-			break;
-
-		case 'h':
-		case '?':
-			usage(argv[0]);
-			exit(0);
-			break;
-
-		case 'V':
-			d_printf("Version %s\n",VERSION);
-			exit(0);
-			break;
-		case 'b':
-		        build_options(True); /* Display output to screen as well as debug */ 
-			exit(0);
-			break;
-		default:
-			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
-			usage(argv[0]);
-			exit(1);
-		}
+	poptFreeContext(pc);
 
 #ifdef HAVE_SETLUID
 	/* needed for SecureWare on SCO */
@@ -735,13 +690,6 @@ static void usage(char *pname)
 	sec_init();
 
 	load_case_tables();
-
-	append_log = True;
-
-	if(!specified_logfile) {
-		pstr_sprintf(logfile, "%s/log.smbd", dyn_LOGFILEBASE);
-		lp_set_logfile(logfile);
-	}
 
 	set_remote_machine_name("smbd");
 
