@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,6 +71,7 @@ krb5_addresses explicit_addresses;
 #ifdef KRB4
 char *v4_realm;
 int enable_v4 = -1;
+int enable_v4_cross_realm = -1;
 int enable_kaserver = -1;
 #endif
 
@@ -103,8 +104,12 @@ static struct getargs args[] = {
 	"don't respond to 524 requests" 
     },
 #ifdef KRB4
-    {	"kerberos4",	0, 	arg_negative_flag, &enable_v4,
-	"don't respond to kerberos 4 requests" 
+    {	"kerberos4",	0, 	arg_flag, &enable_v4,
+	"respond to kerberos 4 requests" 
+    },
+    {	"kerberos4-cross-realm",	0, 	arg_flag,
+	&enable_v4_cross_realm,
+	"respond to kerberos 4 requests from foreign realms" 
     },
     { 
 	"v4-realm",	'r',	arg_string, &v4_realm, 
@@ -333,8 +338,14 @@ configure(int argc, char **argv)
 
 #ifdef KRB4
     if(enable_v4 == -1)
-	enable_v4 = krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
+	enable_v4 = krb5_config_get_bool_default(context, NULL, FALSE, "kdc", 
 					 "enable-kerberos4", NULL);
+    if(enable_v4_cross_realm == -1)
+	enable_v4_cross_realm =
+	    krb5_config_get_bool_default(context, NULL,
+					 FALSE, "kdc", 
+					 "enable-kerberos4-cross-realm",
+					 NULL);
 #else
 #define enable_v4 0
 #endif
@@ -361,8 +372,11 @@ configure(int argc, char **argv)
 				    "kdc",
 				    "v4-realm",
 				    NULL);
-	if(p)
+	if(p != NULL) {
 	    v4_realm = strdup(p);
+	    if (v4_realm == NULL)
+		krb5_errx(context, 1, "out of memory");
+	}
     }
     if (enable_kaserver == -1)
 	enable_kaserver = krb5_config_get_bool_default(context, NULL, FALSE,
@@ -397,6 +411,8 @@ configure(int argc, char **argv)
 #ifdef KRB4
     if(v4_realm == NULL){
 	v4_realm = malloc(40); /* REALM_SZ */
+	if (v4_realm == NULL)
+	    krb5_errx(context, 1, "out of memory");
 	krb_get_lrealm(v4_realm, 1);
     }
 #endif
