@@ -126,6 +126,7 @@ Found 8 aliased levels
 */
 #define SMB_QFILEINFO_STANDARD                             1
 #define SMB_QFILEINFO_EA_SIZE                              2
+#define SMB_QFILEINFO_EA_LIST                              3
 #define SMB_QFILEINFO_ALL_EAS                              4
 #define SMB_QFILEINFO_IS_NAME_VALID                        6  /* only for QPATHINFO */
 #define SMB_QFILEINFO_BASIC_INFO	               0x101

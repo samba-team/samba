@@ -79,6 +79,12 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		parms->ea_size.out.ea_size =     IVAL(blob->data,             22);
 		return NT_STATUS_OK;
 
+	case RAW_FILEINFO_EA_LIST:
+		FINFO_CHECK_MIN_SIZE(4);
+		return ea_pull_list(blob, mem_ctx, 
+				    &parms->ea_list.out.num_eas,
+				    &parms->ea_list.out.eas);
+
 	case RAW_FILEINFO_ALL_EAS:
 		FINFO_CHECK_MIN_SIZE(4);
 		return ea_pull_list(blob, mem_ctx, 
@@ -280,7 +286,9 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
  Very raw query file info - returns param/data blobs - (async send)
 ****************************************************************************/
 static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tree,
-						      uint16_t fnum, uint16_t info_level)
+							 uint16_t fnum, 
+							 uint16_t info_level,
+							 DATA_BLOB data)
 {
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_QFILEINFO;
@@ -291,7 +299,7 @@ static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tre
 	tp.in.flags = 0; 
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
-	tp.in.data = data_blob(NULL, 0);
+	tp.in.data = data;
 	tp.in.max_param = 2;
 	tp.in.max_data = smb_raw_max_trans_data(tree, 2);
 	tp.in.setup = &setup;
@@ -332,8 +340,9 @@ static NTSTATUS smb_raw_fileinfo_blob_recv(struct smbcli_request *req,
  Very raw query path info - returns param/data blobs (async send)
 ****************************************************************************/
 static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tree,
-						      const char *fname,
-						      uint16_t info_level)
+							 const char *fname,
+							 uint16_t info_level,
+							 DATA_BLOB data)
 {
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_QPATHINFO;
@@ -344,7 +353,7 @@ static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tre
 	tp.in.flags = 0; 
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
-	tp.in.data = data_blob(NULL, 0);
+	tp.in.data = data;
 	tp.in.max_param = 2;
 	tp.in.max_data = smb_raw_max_trans_data(tree, 2);
 	tp.in.setup = &setup;
@@ -463,6 +472,9 @@ failed:
 struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
 					     union smb_fileinfo *parms)
 {
+	DATA_BLOB data;
+	struct smbcli_request *req;
+
 	/* pass off the non-trans2 level to specialised functions */
 	if (parms->generic.level == RAW_FILEINFO_GETATTRE) {
 		return smb_raw_getattrE_send(tree, parms);
@@ -474,9 +486,24 @@ struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
 		return NULL;
 	}
 
-	return smb_raw_fileinfo_blob_send(tree, 
-					  parms->generic.in.fnum,
-					  parms->generic.level);
+	data = data_blob(NULL, 0);
+
+	if (parms->generic.level == RAW_FILEINFO_EA_LIST) {
+		if (!ea_push_name_list(tree, 
+				       &data,
+				       parms->ea_list.in.num_names,
+				       parms->ea_list.in.ea_names)) {
+			return NULL;
+		}
+	}
+
+	req = smb_raw_fileinfo_blob_send(tree, 
+					 parms->generic.in.fnum,
+					 parms->generic.level, data);
+
+	data_blob_free(&data);
+
+	return req;
 }
 
 /****************************************************************************
@@ -525,6 +552,9 @@ NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree,
 struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 					  union smb_fileinfo *parms)
 {
+	DATA_BLOB data;
+	struct smbcli_request *req;
+
 	if (parms->generic.level == RAW_FILEINFO_GETATTR) {
 		return smb_raw_getattr_send(tree, parms);
 	}
@@ -532,8 +562,22 @@ struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 		return NULL;
 	}
 	
-	return smb_raw_pathinfo_blob_send(tree, parms->generic.in.fname,
-					  parms->generic.level);
+	data = data_blob(NULL, 0);
+
+	if (parms->generic.level == RAW_FILEINFO_EA_LIST) {
+		if (!ea_push_name_list(tree, 
+				       &data,
+				       parms->ea_list.in.num_names,
+				       parms->ea_list.in.ea_names)) {
+			return NULL;
+		}
+	}
+
+	req = smb_raw_pathinfo_blob_send(tree, parms->generic.in.fname,
+					 parms->generic.level, data);
+	data_blob_free(&data);
+
+	return req;
 }
 
 /****************************************************************************

@@ -313,6 +313,7 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_SEC_DESC,                  /* NT_TRANSACT_QUERY_SECURITY_DESC */
 		     RAW_FILEINFO_STANDARD                   = SMB_QFILEINFO_STANDARD,
 		     RAW_FILEINFO_EA_SIZE                    = SMB_QFILEINFO_EA_SIZE,
+		     RAW_FILEINFO_EA_LIST                    = SMB_QFILEINFO_EA_LIST,
 		     RAW_FILEINFO_ALL_EAS                    = SMB_QFILEINFO_ALL_EAS,
 		     RAW_FILEINFO_IS_NAME_VALID              = SMB_QFILEINFO_IS_NAME_VALID,
 		     RAW_FILEINFO_BASIC_INFO                 = SMB_QFILEINFO_BASIC_INFO, 
@@ -443,16 +444,30 @@ union smb_fileinfo {
 		} out;
 	} ea_size;
 
+	/* trans2 RAW_FILEINFO_EA_LIST interface */
+	struct {
+		enum smb_fileinfo_level level;
+		union smb_fileinfo_in file;
+
+		struct {
+			uint_t num_names;
+			struct ea_name {
+				WIRE_STRING name;
+			} *ea_names;	
+		} in;	
+
+		struct smb_ea_list {
+			uint_t num_eas;
+			struct ea_struct *eas;
+		} out;
+	} ea_list;
+
 	/* trans2 RAW_FILEINFO_ALL_EAS interface */
 	struct {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
-		struct smb_ea_list {
-			/* the ea_size is implied by the list */
-			uint_t num_eas;
-			struct ea_struct *eas;
-		} out;
+		struct smb_ea_list out;
 	} all_eas;
 
 	/* trans2 qpathinfo RAW_FILEINFO_IS_NAME_VALID interface 

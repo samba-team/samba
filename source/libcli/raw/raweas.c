@@ -37,6 +37,19 @@ uint_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
 }
 
 /*
+  work out how many bytes on the wire a ea name list will consume. 
+*/
+static uint_t ea_name_list_size(uint_t num_names, struct ea_name *eas)
+{
+	uint_t total = 4;
+	int i;
+	for (i=0;i<num_names;i++) {
+		total += 1 + strlen(eas[i].name.s) + 1;
+	}
+	return total;
+}
+
+/*
   work out how many bytes on the wire a chained ea list will consume.
   This assumes the names are strict ascii, which should be a
   reasonable assumption
@@ -242,4 +255,107 @@ NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob,
 }
 
 
+/*
+  pull a ea_name from a buffer. Return the number of bytes consumed
+*/
+static uint_t ea_pull_name(const DATA_BLOB *blob, 
+			   TALLOC_CTX *mem_ctx,
+			   struct ea_name *ea)
+{
+	uint8_t nlen;
 
+	if (blob->length < 2) {
+		return 0;
+	}
+
+	nlen = CVAL(blob->data, 0);
+
+	if (nlen+2 > blob->length) {
+		return 0;
+	}
+
+	ea->name.s = talloc_strndup(mem_ctx, (const char *)(blob->data+1), nlen);
+	ea->name.private_length = nlen;
+
+	return nlen+2;
+}
+
+
+/*
+  pull a ea_name list from a buffer
+*/
+NTSTATUS ea_pull_name_list(const DATA_BLOB *blob, 
+			   TALLOC_CTX *mem_ctx,
+			   uint_t *num_names, struct ea_name **ea_names)
+{
+	int n;
+	uint32_t ea_size, ofs;
+
+	if (blob->length < 4) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	ea_size = IVAL(blob->data, 0);
+	if (ea_size > blob->length) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ofs = 4;
+	n = 0;
+	*num_names = 0;
+	*ea_names = NULL;
+
+	while (ofs < ea_size) {
+		uint_t len;
+		DATA_BLOB blob2;
+
+		blob2.data = blob->data + ofs;
+		blob2.length = ea_size - ofs;
+
+		*ea_names = talloc_realloc_p(mem_ctx, *ea_names, struct ea_name, n+1);
+		if (! *ea_names) return NT_STATUS_NO_MEMORY;
+
+		len = ea_pull_name(&blob2, mem_ctx, &(*ea_names)[n]);
+		if (len == 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		ofs += len;
+		n++;
+	}
+
+	*num_names = n;
+
+	return NT_STATUS_OK;
+}
+
+
+/*
+  put a ea_name list into a data blob
+*/
+BOOL ea_push_name_list(TALLOC_CTX *mem_ctx,
+		       DATA_BLOB *data, uint_t num_names, struct ea_name *eas)
+{
+	int i;
+	uint32_t ea_size;
+	uint32_t off;
+
+	ea_size = ea_name_list_size(num_names, eas);
+
+	*data = data_blob_talloc(mem_ctx, NULL, ea_size);
+	if (data->data == NULL) {
+		return False;
+	}
+
+	SIVAL(data->data, 0, ea_size);
+	off = 4;
+
+	for (i=0;i<num_names;i++) {
+		uint_t nlen = strlen(eas[i].name.s);
+		SCVAL(data->data, off, nlen);
+		memcpy(data->data+off+1, eas[i].name.s, nlen+1);
+		off += 1+nlen+1;
+	}
+
+	return True;
+}
