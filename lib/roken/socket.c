@@ -63,7 +63,7 @@ RCSID("$Id$");
 #include <err.h>
 
 /*
- *
+ * Set `sa' to the unitialized address of address family `af'
  */
 
 void
@@ -97,7 +97,7 @@ socket_set_any (struct sockaddr *sa, int af)
 }
 
 /*
- * addresses
+ * set `sa' to (`ptr', `port')
  */
 
 void
@@ -130,6 +130,10 @@ socket_set_address_and_port (struct sockaddr *sa, const void *ptr, int port)
     }
 }
 
+/*
+ * Return the size of an address of the type in `sa'
+ */
+
 size_t
 socket_addr_size (const struct sockaddr *sa)
 {
@@ -146,6 +150,10 @@ socket_addr_size (const struct sockaddr *sa)
     }
 }
 
+/*
+ * Return the size of a `struct sockaddr' in `sa'.
+ */
+
 size_t
 socket_sockaddr_size (const struct sockaddr *sa)
 {
@@ -161,6 +169,10 @@ socket_sockaddr_size (const struct sockaddr *sa)
 	break;
     }
 }
+
+/*
+ * Return the binary address of `sa'.
+ */
 
 void *
 socket_get_address (struct sockaddr *sa)
@@ -182,17 +194,21 @@ socket_get_address (struct sockaddr *sa)
     }
 }
 
+/*
+ * Return the port number from `sa'.
+ */
+
 int
 socket_get_port (const struct sockaddr *sa)
 {
     switch (sa->sa_family) {
     case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
 	return sin->sin_port;
     }
 #ifdef HAVE_IPV6
     case AF_INET6 : {
-	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+	const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
 	return sin6->sin6_port;
     }
 #endif
@@ -201,6 +217,10 @@ socket_get_port (const struct sockaddr *sa)
 	break;
     }
 }
+
+/*
+ * Set the port in `sa' to `port'.
+ */
 
 void
 socket_set_port (struct sockaddr *sa, int port)
@@ -224,6 +244,10 @@ socket_set_port (struct sockaddr *sa, int port)
     }
 }
 
+/*
+ * Enable debug on `sock'.
+ */
+
 void
 socket_set_debug (int sock)
 {
@@ -235,6 +259,10 @@ socket_set_debug (int sock)
 #endif
 }
 
+/*
+ * Set the type-of-service of `sock' to `tos'.
+ */
+
 void
 socket_set_tos (int sock, int tos)
 {
@@ -243,6 +271,10 @@ socket_set_tos (int sock, int tos)
 	warn ("setsockopt TOS (ignored)");
 #endif
 }
+
+/*
+ * set the reuse of addresses on `sock' to `val'.
+ */
 
 void
 socket_set_reuseaddr (int sock, int val)
