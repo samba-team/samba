@@ -647,21 +647,7 @@ _gettermname()
 int
 terminaltypeok(char *s)
 {
-    char buf[1024];
-
-    if (terminaltype == NULL)
-	return(1);
-
-    /*
-     * tgetent() will return 1 if the type is known, and
-     * 0 if it is not known.  If it returns -1, it couldn't
-     * open the database.  But if we can't open the database,
-     * it won't help to say we failed, because we won't be
-     * able to verify anything else.  So, we treat -1 like 1.
-     */
-    if (tgetent(buf, s) == 0)
-	return(0);
-    return(1);
+    return 1;
 }
 
 
