@@ -471,6 +471,10 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 		ZERO_STRUCT(r_o);
 
 		r_o.data = sec_buf;
+		if (*sec_buf_size != 0)
+		{
+			sec_buf->sec = (SEC_DESC*)malloc(*sec_buf_size);
+		}
 		reg_io_r_get_key_sec("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 

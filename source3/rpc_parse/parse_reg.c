@@ -553,11 +553,17 @@ void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 
 	q_i->unknown = 0x7;
 
-	q_i->ptr = 1;
+	q_i->ptr = sec_buf != NULL ? 1 : 0;
 	q_i->data = sec_buf;
 
-	make_buf_hdr(&(q_i->hdr_sec), buf_len, 0);
-	make_sec_desc_buf(q_i->data, buf_len, 0);
+	if (sec_buf != NULL)
+	{
+		make_buf_hdr(&(q_i->hdr_sec), buf_len, 0);
+		q_i->data->max_len = buf_len;
+		q_i->data->undoc = 0;
+		q_i->data->len = 0;
+		q_i->data->sec = NULL;
+	}
 }
 
 /*******************************************************************
@@ -586,10 +592,11 @@ void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, i
 	}
 }
 
+#if 0
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
+ void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
 				uint32 buf_len, uint8 *buf,
 				uint32 status)
 {
@@ -601,6 +608,7 @@ void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol,
 
 	r_i->status = status; /* 0x0000 0000 or 0x0000 007a */
 }
+#endif 
 
 /*******************************************************************
 reads or writes a structure.

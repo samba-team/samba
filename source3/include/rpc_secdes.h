@@ -73,8 +73,7 @@ typedef struct security_acl_info
 /* SEC_DESC */
 typedef struct security_descriptor_info
 {
-	uint16 unknown_1; /* 0x0001 */
-	uint16 unknown_2; /* 0x8004 */
+	uint32 unknown_1; /* 0x8004 0001 */
 
 	uint32 off_owner_sid; /* offset to owner sid */
 	uint32 off_pnt_sid  ; /* offset to parent? sid */
@@ -94,7 +93,7 @@ typedef struct sec_desc_buf_info
 	uint32 undoc;
 	uint32 len;
 
-	SEC_DESC sec;
+	SEC_DESC *sec;
 
 } SEC_DESC_BUF;
 

@@ -303,13 +303,17 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
  prs_uint16 wrapper.  call this and it sets up a pointer to where the
  uint16 should be stored, or gets the size if reading
  ********************************************************************/
-BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *off_ptr)
+BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
 {
-	(*off_ptr) = ps->offset;
+	(*offset) = ps->io;
 	if (ps->io)
 	{
 		/* reading. */
 		return prs_uint16(name, ps, depth, data16);
+	}
+	else
+	{
+		ps->offset += sizeof(uint16);
 	}
 	return True;
 }
@@ -318,7 +322,7 @@ BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint3
  prs_uint16 wrapper.  call this and it retrospectively stores the size.
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
-BOOL prs_uint16_post(char *name, prs_struct *ps, int depth,
+BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 				uint32 ptr_uint16, uint32 start_offset)
 {
 	if (!ps->io)
@@ -330,6 +334,53 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth,
 		ps->offset = ptr_uint16;
 		prs_uint16(name, ps, depth, &data_size);
 		ps->offset = old_offset;
+	}
+	else
+	{
+		ps->offset = start_offset + (*data16);
+	}
+	return True;
+}
+
+/*******************************************************************
+ prs_uint32 wrapper.  call this and it sets up a pointer to where the
+ uint32 should be stored, or gets the size if reading
+ ********************************************************************/
+BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
+{
+	(*offset) = ps->io;
+	if (ps->io)
+	{
+		/* reading. */
+		return prs_uint32(name, ps, depth, data32);
+	}
+	else
+	{
+		ps->offset += sizeof(uint32);
+	}
+	return True;
+}
+
+/*******************************************************************
+ prs_uint32 wrapper.  call this and it retrospectively stores the size.
+ does nothing on reading, as that is already handled by ...._pre()
+ ********************************************************************/
+BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
+				uint32 ptr_uint32, uint32 start_offset)
+{
+	if (!ps->io)
+	{
+		/* storing: go back and do a retrospective job.  i hate this */
+		uint32 data_size = ps->offset - start_offset;
+		uint32 old_offset = ps->offset;
+
+		ps->offset = ptr_uint32;
+		prs_uint32(name, ps, depth, &data_size);
+		ps->offset = old_offset;
+	}
+	else
+	{
+		ps->offset = start_offset + (*data32);
 	}
 	return True;
 }

@@ -1610,9 +1610,12 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth);
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
 BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size);
-BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *off_ptr);
-BOOL prs_uint16_post(char *name, prs_struct *ps, int depth,
+BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
+BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 				uint32 ptr_uint16, uint32 start_offset);
+BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
+BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
+				uint32 ptr_uint32, uint32 start_offset);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
@@ -1653,9 +1656,6 @@ void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
 void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
 				uint32 buf_len, SEC_DESC_BUF *sec_buf);
 void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
-void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
-				uint32 buf_len, uint8 *buf,
-				uint32 status);
 void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
 void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
 				time_t unix_time, uint8 major, uint8 minor);
@@ -1924,7 +1924,6 @@ void sec_io_info(char *desc, SEC_INFO *t, prs_struct *ps, int depth);
 void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth);
 void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth);
 void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth);
-void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, uint32 buf_ptr);
 void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
