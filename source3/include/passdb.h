@@ -361,4 +361,6 @@ struct pdb_init_function_entry {
 	struct pdb_init_function_entry *prev, *next;
 };
 
+enum sql_search_field { SQL_SEARCH_NONE = 0, SQL_SEARCH_USER_SID = 1, SQL_SEARCH_USER_NAME = 2};
+
 #endif /* _PASSDB_H */
