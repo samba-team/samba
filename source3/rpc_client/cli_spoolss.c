@@ -414,7 +414,7 @@ uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_GETPRINTERDRIVER2: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_GETPRINTERDRIVER2: %s\n", get_nt_error_msg(r_o.status)));
 			}
 
 		        *needed=r_o.needed;
