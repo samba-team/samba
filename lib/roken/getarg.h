@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,7 +46,13 @@
 struct getargs{
     const char *long_name;
     char short_name;
-    enum { arg_integer, arg_string, arg_flag, arg_negative_flag, arg_strings } type;
+    enum { arg_integer, 
+	   arg_string, 
+	   arg_flag, 
+	   arg_negative_flag, 
+	   arg_strings,
+	   arg_double
+    } type;
     void *value;
     const char *help;
     const char *arg_help;

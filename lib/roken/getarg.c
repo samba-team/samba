@@ -70,9 +70,11 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
     if (arg->arg_help)
 	s = arg->arg_help;
     else if (arg->type == arg_integer)
-	s = "number";
+	s = "integer";
     else if (arg->type == arg_string)
 	s = "string";
+    else if (arg->type == arg_double)
+	s = "float";
     else
 	s = "<undefined>";
 
@@ -383,6 +385,14 @@ arg_match_long(struct getargs *args, size_t num_args,
 	}
 	return ARG_ERR_BAD_ARG;
     }
+    case arg_double:
+    {
+	double tmp;
+	if(sscanf(optarg + 1, "%lf", &tmp) != 1)
+	    return ARG_ERR_BAD_ARG;
+	*(double*)current->value = tmp;
+	return 0;
+    }
     default:
 	abort ();
     }
@@ -442,6 +452,12 @@ getarg(struct getargs *args, size_t num_args,
 			    goto out;
 			}else if(args[k].type == arg_strings){
 			    add_string((getarg_strings*)args[k].value, optarg);
+			    goto out;
+			} else if(args[k].type == arg_double){
+			    double tmp;
+			    if(sscanf(optarg, "%lf", &tmp) != 1)
+				return ARG_ERR_BAD_ARG;
+			    *(double*)args[k].value = tmp;
 			    goto out;
 			}
 			return ARG_ERR_BAD_ARG;
