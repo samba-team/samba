@@ -5,9 +5,9 @@ include $(top_srcdir)/Makefile.am.common
 INCLUDES += $(INCLUDE_krb4)
 
 if KRB4
-AFSPROGS = afslog
+AFSPROGS = afslog pagsh
 endif
-bin_PROGRAMS = $(AFSPROGS) pagsh
+bin_PROGRAMS = $(AFSPROGS)
 
 afslog_SOURCES = afslog.c
 
