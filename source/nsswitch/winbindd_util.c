@@ -169,18 +169,14 @@ static void winbindd_kill_connections(void)
 	}
 }
 
-BOOL establish_connections(void) 
+void establish_connections(void) 
 {
 	struct winbindd_domain *domain;
 	static time_t lastt;
 	time_t t;
 
 	t = time(NULL);
-	if (t - lastt < WINBINDD_ESTABLISH_LOOP) {
-		return server_state.pwdb_initialised &&
-			server_state.lsa_handle_open &&
-			rpc_hnd_ok(&server_state.lsa_handle);
-	}
+	if (t - lastt < WINBINDD_ESTABLISH_LOOP) return;
 	lastt = t;
 
 	/* maybe the connection died - if so then close up and restart */
@@ -194,12 +190,12 @@ BOOL establish_connections(void)
 		fstrcpy(server_state.controller, lp_passwordserver());
 		if (strcmp(server_state.controller,"*") == 0) {
 			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
-				return False;
+				return;
 			}
 		}
 
 		server_state.pwdb_initialised = pwdb_initialise(False);
-		if (!server_state.pwdb_initialised) return False;
+		if (!server_state.pwdb_initialised) return;
 	}
 
 	/* Open lsa handle if it isn't already open */
@@ -207,7 +203,7 @@ BOOL establish_connections(void)
 		server_state.lsa_handle_open =
 			lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
 					False, SEC_RIGHTS_MAXIMUM_ALLOWED);
-		if (!server_state.lsa_handle_open) return False;
+		if (!server_state.lsa_handle_open) return;
 
 		/* now we can talk to the server we can get some info */
 		get_trusted_domains();
@@ -218,8 +214,6 @@ BOOL establish_connections(void)
 			open_sam_handles(domain);
 		}
 	}
-
-	return True;
 }
 
 

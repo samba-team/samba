@@ -267,7 +267,7 @@ static void new_connection(int accept_sock)
         return;
     }
 
-    DEBUG(3,("accepted socket %d\n", sock));
+    DEBUG(6,("accepted socket %d\n", sock));
 
     /* Create new connection structure */
 
@@ -343,7 +343,7 @@ static void client_read(struct winbindd_cli_state *state)
     /* Read failed, kill client */
 
     if (n == -1 || n == 0) {
-	    DEBUG(3,("read failed on sock %d, pid %d: %s\n",
+	    DEBUG(5,("read failed on sock %d, pid %d: %s\n",
                 state->sock, state->pid, 
                 (n == -1) ? sys_errlist[errno] : "EOF"));
 
