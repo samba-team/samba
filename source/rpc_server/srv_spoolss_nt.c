@@ -4163,7 +4163,13 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	pi1 = p1->info_2;
 	pi2 = p2->info_2;
 
+	/* Don't check the attributes as we stomp on the value in
+	   check_printer_ok() anyway. */
+
+#if 0
 	PI_CHECK_INT(attributes);
+#endif
+
 	PI_CHECK_INT(priority);
 	PI_CHECK_INT(default_priority);
 	PI_CHECK_INT(starttime);
