@@ -365,11 +365,7 @@ functions for do_list_queue
  */
 static void reset_do_list_queue(void)
 {
-	if (do_list_queue)
-	{
-		free(do_list_queue);
-	}
-	do_list_queue = 0;
+	SAFE_FREE(do_list_queue);
 	do_list_queue_size = 0;
 	do_list_queue_start = 0;
 	do_list_queue_end = 0;
@@ -707,7 +703,7 @@ static void do_get(char *rname,char *lname)
                rname, (long)nread));
 	}
 
-	free(data);
+	SAFE_FREE(data);
 	
 	if (!cli_close(cli, fnum)) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli));
@@ -1044,13 +1040,13 @@ static void do_put(char *rname,char *lname)
 	if (!cli_close(cli, fnum)) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
 		x_fclose(f);
-		if (buf) free(buf);
+		SAFE_FREE(buf);
 		return;
 	}
 
 	
 	x_fclose(f);
-	if (buf) free(buf);
+	SAFE_FREE(buf);
 
 	{
 		struct timeval tp_end;
@@ -1138,8 +1134,8 @@ static void free_file_list (struct file_list * list)
 	{
 		tmp = list;
 		DLIST_REMOVE(list, list);
-		if (tmp->file_path) free(tmp->file_path);
-		free(tmp);
+		SAFE_FREE(tmp->file_path);
+		SAFE_FREE(tmp);
 	}
 }
 
@@ -1209,7 +1205,7 @@ static int file_find(struct file_list **list, const char *directory,
 				}
 				
 				if (ret == -1) {
-					free(path);
+					SAFE_FREE(path);
 					closedir(dir);
 					return -1;
 				}
@@ -1224,7 +1220,7 @@ static int file_find(struct file_list **list, const char *directory,
 			entry->isdir = isdir;
                         DLIST_ADD(*list, entry);
 		} else {
-			free(path);
+			SAFE_FREE(path);
 		}
         }
 
@@ -1260,7 +1256,7 @@ static void cmd_mput(void)
 		for (temp_list = file_list; temp_list; 
 		     temp_list = temp_list->next) {
 
-			if (lname) free(lname);
+			SAFE_FREE(lname);
 			if (asprintf(&lname, "%s/", temp_list->file_path) <= 0)
 				continue;
 			trim_string(lname, "./", "/");
@@ -1269,7 +1265,7 @@ static void cmd_mput(void)
 			if (temp_list->isdir) {
 				/* if (!recurse) continue; */
 				
-				if (quest) free(quest);
+				SAFE_FREE(quest);
 				asprintf(&quest, "Put directory %s? ", lname);
 				if (prompt && !yesno(quest)) { /* No */
 					/* Skip the directory */
@@ -1277,7 +1273,7 @@ static void cmd_mput(void)
 					if (!seek_list(temp_list, lname))
 						break;		    
 				} else { /* Yes */
-	      				if (rname) free(rname);
+	      				SAFE_FREE(rname);
 					asprintf(&rname, "%s%s", cur_dir, lname);
 					dos_format(rname);
 					if (!cli_chkpath(cli, rname) && 
@@ -1291,13 +1287,13 @@ static void cmd_mput(void)
 				}
 				continue;
 			} else {
-				if (quest) free(quest);
+				SAFE_FREE(quest);
 				asprintf(&quest,"Put file %s? ", lname);
 				if (prompt && !yesno(quest)) /* No */
 					continue;
 				
 				/* Yes */
-				if (rname) free(rname);
+				SAFE_FREE(rname);
 				asprintf(&rname, "%s%s", cur_dir, lname);
 			}
 
@@ -1306,9 +1302,9 @@ static void cmd_mput(void)
 			do_put(rname, lname);
 		}
 		free_file_list(file_list);
-		if (quest) free(quest);
-		if (lname) free(lname);
-		if (rname) free(rname);
+		SAFE_FREE(quest);
+		SAFE_FREE(lname);
+		SAFE_FREE(rname);
 	}
 }
 
@@ -1872,7 +1868,7 @@ static char **completion_fn(char *text, int start, int end)
 	}
 
 	if (count == 2) {
-		free(matches[0]);
+		SAFE_FREE(matches[0]);
 		matches[0] = strdup(matches[1]);
 	}
 	matches[count] = NULL;
@@ -2009,7 +2005,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 		d_printf("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(c));
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -2026,7 +2022,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 	if (!cli_negprot(c)) {
 		d_printf("protocol negotiation failed\n");
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -2046,7 +2042,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
 			cli_shutdown(c);
-			free(c);
+			SAFE_FREE(c);
 			return NULL;
 		}
 		d_printf("Anonymous login successful\n");
@@ -2071,7 +2067,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 			    password, strlen(password)+1)) {
 		d_printf("tree connect failed: %s\n", cli_errstr(c));
 		cli_shutdown(c);
-		free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
