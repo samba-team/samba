@@ -239,6 +239,49 @@ void standard_sub_snum(int snum, char *str);
 void standard_sub_vuser(char *str, user_struct *vuser);
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
+/*The following definitions come from  lib/sysacls.c  */
+
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+int sys_acl_free_text(char *text);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
+
 /*The following definitions come from  lib/system.c  */
 
 int sys_usleep(long usecs);
