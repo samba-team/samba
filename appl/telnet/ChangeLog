@@ -1,3 +1,8 @@
+Sat Nov 29 03:28:54 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* telnet/telnet.c: Change binary mode to do just that, and add a
+ 	eight-bit mode for just passing all characters.
+
 Sun Nov 16 04:37:02 1997  Assar Westerlund  <assar@sics.se>
 
 	* libtelnet/kerberos5.c (kerberos5_send): always ask for a session
