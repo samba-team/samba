@@ -56,7 +56,7 @@ static const char *charset_name(charset_t ch)
 {
 	const char *ret = NULL;
 
-	if (ch == CH_UCS2) ret = "UCS-2LE";
+	if (ch == CH_UCS2) ret = "UTF-16LE";
 	else if (ch == CH_UNIX) ret = lp_unix_charset();
 	else if (ch == CH_DOS) ret = lp_dos_charset();
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
@@ -116,10 +116,10 @@ void init_iconv(void)
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
 	if (!conv_handles[CH_UNIX][CH_UCS2])
-		conv_handles[CH_UNIX][CH_UCS2] = smb_iconv_open("UCS-2LE", "ASCII");
+		conv_handles[CH_UNIX][CH_UCS2] = smb_iconv_open(charset_name(CH_UCS2), "ASCII");
 
 	if (!conv_handles[CH_UCS2][CH_UNIX])
-		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", "UCS-2LE");
+		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", charset_name(CH_UCS2));
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
@@ -216,7 +216,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
  again:
 
-	retval = smb_iconv(descriptor, (char **)&inbuf, &i_len, &outbuf, &o_len);
+	retval = smb_iconv(descriptor, &inbuf, &i_len, &outbuf, &o_len);
 	if(retval==(size_t)-1) {
 	    	const char *reason="unknown error";
 		switch(errno) {
@@ -531,7 +531,7 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  again:
 
 	retval = smb_iconv(descriptor,
-			   (char **)&inbuf, &i_len,
+			   &inbuf, &i_len,
 			   &outbuf, &o_len);
 	if(retval == (size_t)-1) 		{
 	    	const char *reason="unknown error";
