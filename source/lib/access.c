@@ -286,11 +286,16 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 {
 	BOOL ret = False;
 	BOOL only_ip = False;
+	char	*deny = NULL;
+	char	*allow = NULL;
 	
-	if (deny_list) deny_list = strdup(deny_list);
-	if (allow_list) allow_list = strdup(allow_list);
+	
+	if (deny) 
+		deny = strdup(deny_list);
+	if (allow) 
+		allow = strdup(allow_list);
 
-	if ((!deny_list || *deny_list==0) && (!allow_list || *allow_list==0)) 
+	if ((!deny || *deny==0) && (!allow || *allow==0)) 
 	{
 		ret = True;
 	}
@@ -298,16 +303,16 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 	if (!ret) 
 	{
 		/* bypass gethostbyaddr() calls if the lists only contain IP addrs */
-		if (only_ipaddrs_in_list(allow_list) && only_ipaddrs_in_list(deny_list))
+		if (only_ipaddrs_in_list(allow) && only_ipaddrs_in_list(deny))
 		{
 			only_ip = True;
 			DEBUG (3, ("check_access: no hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, "", get_socket_addr(sock));
+			ret = allow_access(deny,allow, "", get_socket_addr(sock));
 		}
 		else
 		{
 			DEBUG (3, ("check_access: hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, get_socket_name(sock),
+			ret = allow_access(deny,allow, get_socket_name(sock),
 					   get_socket_addr(sock));
 		}
 		
@@ -325,8 +330,8 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 		}
 	}
 
-	if (deny_list) free(deny_list);
-	if (allow_list) free(allow_list);
+	if (deny) free(deny);
+	if (allow) free(allow);
 	
 	return(ret);
 }
