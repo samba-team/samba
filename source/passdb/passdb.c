@@ -1894,7 +1894,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	/* Change from V1 is addition of password history field. */
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		char *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
