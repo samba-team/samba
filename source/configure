@@ -45,8 +45,6 @@ ac_help="$ac_help
   --with-ssl     Include SSL support
   --without-ssl  Don't include SSL support (default)"
 ac_help="$ac_help
-  --with-sslinc=DIR Tells us where the SSL stuff is (default /usr/local/ssl)"
-ac_help="$ac_help
   --with-mmap     Include experimental MMAP support
   --without-mmap  Don't include MMAP support (default)"
 ac_help="$ac_help
@@ -1933,7 +1931,7 @@ else
 fi
 done
 
-for ac_hdr in sys/acl.h sys/cdefs.h glob.h
+for ac_hdr in sys/acl.h sys/cdefs.h glob.h mysql.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -8281,34 +8279,6 @@ if test "${with_ssl+set}" = set; then
     cat >> confdefs.h <<\EOF
 #define WITH_SSL 1
 EOF
-
-    CFLAGS="-I/usr/local/ssl/include $CFLAGS"
-
-    if test "${with_sslinc+set}" = set; then
-
-        withval="$with_sslinc"
-        case "$withval" in
-        yes|no)
-          echo "configure: warning: --with-sslinc called without argument - will
- use default" 1>&2
-          CFLAGS="-I/usr/local/ssl/include $CFLAGS"
-          LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
-          LIBS="-lssl -lcrypto $LIBS"
-        ;;
-        * )
-          CFLAGS="-I${withval}/include $CFLAGS"
-          LDFLAGS="-L${withval}/lib $LDFLAGS"
-          LIBS="-lssl -lcrypto $LIBS"
-        ;;
-        esac
-
-    else
-
-        CFLAGS="-I/usr/local/ssl/include $CFLAGS"
-        LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
-        LIBS="-lssl -lcrypto $LIBS"
-
-    fi
 
     ;;
   *)

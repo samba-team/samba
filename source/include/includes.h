@@ -330,6 +330,10 @@
 #endif
 #endif /* HAVE_NETGROUP */
 
+#if defined(HAVE_MYSQL_H)
+#include <mysql.h>
+#endif
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
