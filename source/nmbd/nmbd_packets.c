@@ -1637,16 +1637,31 @@ to IP %s on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip),
 on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), 
                  subrec->subnet_name));
 
-          /* Call the timeout function. This will deal with removing the
-             timed out packet. */
-          if(rrec->timeout_fn)
-            (*rrec->timeout_fn)(subrec, rrec);
-          else
+          /*
+           * Check the flag in this record to prevent recursion if we end
+           * up in this function again via the timeout function call.
+           */
+
+          if(!rrec->in_expiration_processing)
           {
-            /* We must remove the record ourself if there is
-               no timeout function. */
-            remove_response_record(subrec, rrec);
-          }
+
+            /*
+             * Set the recursion protection flag in this record.
+             */
+
+            rrec->in_expiration_processing = True;
+
+            /* Call the timeout function. This will deal with removing the
+               timed out packet. */
+            if(rrec->timeout_fn)
+              (*rrec->timeout_fn)(subrec, rrec);
+            else
+            {
+              /* We must remove the record ourself if there is
+                 no timeout function. */
+              remove_response_record(subrec, rrec);
+            }
+          } /* !rrec->in_expitation_processing */
         } /* rrec->repeat_count > 0 */
       } /* rrec->repeat_time <= t */
     } /* end for rrec */

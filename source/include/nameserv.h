@@ -369,6 +369,9 @@ struct response_record
   time_t repeat_time;
   time_t repeat_interval;
   int    repeat_count;
+
+  /* Recursion protection. */
+  BOOL in_expiration_processing;
 };
 
 /* A subnet structure. It contains a list of workgroups and netbios names. */
