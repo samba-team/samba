@@ -24,6 +24,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
+#define BASEDIR "\\unlinktest"
+
 /*
   This test checks that 
 
@@ -32,7 +34,7 @@
 BOOL torture_unlinktest(void)
 {
 	struct smbcli_state *cli;
-	const char *fname = "\\unlink.tst";
+	const char *fname = BASEDIR "\\unlink.tst";
 	int fnum;
 	BOOL correct = True;
 	union smb_open io;
@@ -44,7 +46,9 @@ BOOL torture_unlinktest(void)
 
 	printf("starting unlink test\n");
 
-	smbcli_unlink(cli->tree, fname);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
 
 	cli->session->pid = 1;
 
