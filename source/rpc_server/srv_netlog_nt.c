@@ -434,7 +434,8 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 	   not do, for various security-hole reasons).
 	 */
 
-	if (id2->hdr_lm_chal_resp.str_str_len == 24 &&
+	if (lp_lanman_auth() &&
+	    id2->hdr_lm_chal_resp.str_str_len == 24 &&
 		smb_password_check((char *)id2->lm_chal_resp.buffer,
 		                   smb_pass->smb_passwd,
 		                   id2->lm_chal))
@@ -541,6 +542,19 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
     
 	/* Validate password - if required. */
     
+	if (smb_pass->acct_ctrl & ACB_PWNOTREQ) {
+	  if (!lp_null_passwords()) {
+	    DEBUG(3,("Account for user %s has a null password and null passwords are NOT allowed",nt_username));
+	    return NT_STATUS_ACCOUNT_DISABLED;
+	  }
+	} 
+
+#ifdef WITH_PAM
+	if (!pam_accountcheck(nt_username)) {
+	  return NT_STATUS_ACCOUNT_DISABLED;
+	}
+#endif
+
 	if (!(smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
 		switch (q_u->sam_id.logon_level) {
 		case INTERACTIVE_LOGON_TYPE:

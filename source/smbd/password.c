@@ -574,6 +574,9 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
+
+  BOOL ret;
+
 	if ((pwlen == 0) && !lp_null_passwords()) {
 		DEBUG(4,("Null passwords not allowed.\n"));
 		return False;
@@ -590,8 +593,14 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 			return False;
 		}
 
-		return pass_check_smb(user, global_myworkgroup,
+		ret = pass_check_smb(user, global_myworkgroup,
 		                      challenge, (uchar *)password, (uchar *)password, pwd);
+#ifdef WITH_PAM
+		if (ret) {
+		  return pam_accountcheck(user);
+		}
+#endif
+		return ret;
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 
