@@ -46,9 +46,6 @@ BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_access");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	if(!prs_uint32("mask", ps, depth, &(t->mask)))
 		return False;
@@ -86,9 +83,6 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_ace");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	old_offset = prs_offset(ps);
 
@@ -102,9 +96,6 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 		return False;
 
 	if(!sec_io_access("info ", &psa->info, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_dom_sid("sid  ", &psa->trustee , ps, depth))
@@ -194,9 +185,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_acl");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	old_offset = prs_offset(ps);
 
@@ -225,9 +213,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		if(!sec_io_ace(tmp, &psa->ace[i], ps, depth))
 			return False;
 	}
-
-	if(!prs_align(ps))
-		return False;
 
 	if(!prs_uint16_post("size     ", ps, depth, &psa->size, offset_acl_size, old_offset))
 		return False;

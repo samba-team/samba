@@ -212,9 +212,6 @@ BOOL smb_io_dom_sid(char *desc, DOM_SID *sid, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "smb_io_dom_sid");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	if(!prs_uint8 ("sid_rev_num", ps, depth, &sid->sid_rev_num))
 		return False;
