@@ -262,8 +262,7 @@ interface ObjectRpcBaseTypes
 	typedef [public] struct 
 	{
 		uint32 size;
-		uint32 sizex;
-		[subcontext(4),align(1)] OBJREF obj;
+		[subcontext(4),align(4)] OBJREF obj;
 	} MInterfacePointer;
 }
 

@@ -28,7 +28,7 @@ struct IUnknown_QueryInterface;
 struct dcom_interface
 {
 	struct dcerpc_pipe *pipe;
-	struct GUID ipid; /* Appears in object field */
+	struct OBJREF object;
 };
 
 #endif /* _DCOM_H */
