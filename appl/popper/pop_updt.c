@@ -72,7 +72,7 @@ POP     *   p;
     }
 
     /*  Lock the user's real mail drop */
-    if ( flock(mfd,LOCK_EX) == -1 ) {
+    if ( k_flock(mfd, K_LOCK_EX) == -1 ) {
         (void)fclose(md) ;
         return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
             (errno < sys_nerr) ? sys_errlist[errno] : "");
