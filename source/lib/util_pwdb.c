@@ -81,7 +81,7 @@ uint32 lookup_wk_group_name(const char *group_name, const char *domain,
 	char *grp_name;
 	int i = -1; /* start do loop at -1 */
 	uint32 rid;
-	(*type) = SID_NAME_WKN_GRP;
+	(*type) = SID_NAME_DOM_GRP;
 
 	if (strequal(domain, global_sam_name))
 	{

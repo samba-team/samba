@@ -196,7 +196,7 @@ uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
 	uint32 rid;
 	DOM_SID tmp;
 
-	(*type) = SID_NAME_WKN_GRP;
+	(*type) = SID_NAME_DOM_GRP;
 
 	sid_copy(&tmp, sid);
 	sid_split_rid(&tmp, &rid);
