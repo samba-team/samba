@@ -769,12 +769,12 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("\nTesting OpenTrustedDomain and OpenTrustedDomainByName\n");
+	printf("\nTesting OpenTrustedDomain, OpenTrustedDomainByName and QueryInfoTrustedDomain\n");
 
 	for (i=0; i< domains.count; i++) {
 		struct lsa_OpenTrustedDomain trust;
 		struct lsa_OpenTrustedDomainByName trust_by_name;
-		struct policy_handle trust_handle;
+		struct policy_handle trustdom_handle;
 		struct policy_handle handle2;
 		struct lsa_Close c;
 		int levels [] = {1, 3, 6};
@@ -782,7 +782,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		trust.in.handle = handle;
 		trust.in.sid = domains.domains[i].sid;
 		trust.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-		trust.out.trustdom_handle = &trust_handle;
+		trust.out.trustdom_handle = &trustdom_handle;
 
 		status = dcerpc_lsa_OpenTrustedDomain(p, mem_ctx, &trust);
 
@@ -791,33 +791,33 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			return False;
 		}
 
-		c.in.handle = &trust_handle;
+		c.in.handle = &trustdom_handle;
 		c.out.handle = &handle2;
 		
-		for (j=1; j < ARRAY_SIZE(levels); j++) {
-			struct lsa_QueryInfoTrustedDomain q;
+		for (j=0; j < ARRAY_SIZE(levels); j++) {
+			struct lsa_QueryTrustedDomainInfo q;
 			union lsa_TrustedDomainInfo info;
-			q.in.trustdom_handle = &trust_handle;
+			q.in.trustdom_handle = &trustdom_handle;
 			q.in.level = levels[j];
 			q.out.info = &info;
-			status = dcerpc_lsa_QueryInfoTrustedDomain(p, mem_ctx, &q);
+			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("QueryInfoTrustedDomain level %d failed - %s\n", 
-				       j, nt_errstr(status));
+				printf("QueryTrustedDomainInfo level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
 				ret = False;
 			}
 		}
 		
 		status = dcerpc_lsa_Close(p, mem_ctx, &c);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Close of trusted doman failed - %s\n", nt_errstr(status));
+			printf("Close of trusted domain failed - %s\n", nt_errstr(status));
 			return False;
 		}
 
 		trust_by_name.in.handle = handle;
 		trust_by_name.in.name = domains.domains[i].name;
 		trust_by_name.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-		trust_by_name.out.trustdom_handle = &trust_handle;
+		trust_by_name.out.trustdom_handle = &trustdom_handle;
 		
 		status = dcerpc_lsa_OpenTrustedDomainByName(p, mem_ctx, &trust_by_name);
 
@@ -826,14 +826,61 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			return False;
 		}
 
-		c.in.handle = &trust_handle;
+		for (j=0; j < ARRAY_SIZE(levels); j++) {
+			struct lsa_QueryTrustedDomainInfo q;
+			union lsa_TrustedDomainInfo info;
+			q.in.trustdom_handle = &trustdom_handle;
+			q.in.level = levels[j];
+			q.out.info = &info;
+			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryTrustedDomainInfo level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
+				ret = False;
+			}
+		}
+		
+		c.in.handle = &trustdom_handle;
 		c.out.handle = &handle2;
 
 		status = dcerpc_lsa_Close(p, mem_ctx, &c);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Close of trusted doman failed - %s\n", nt_errstr(status));
+			printf("Close of trusted domain failed - %s\n", nt_errstr(status));
 			return False;
 		}
+
+		for (j=0; j < ARRAY_SIZE(levels); j++) {
+			struct lsa_QueryTrustedDomainInfoBySid q;
+			union lsa_TrustedDomainInfo info;
+			q.in.handle  = handle;
+			q.in.dom_sid = domains.domains[i].sid;
+			q.in.level   = levels[j];
+			q.out.info   = &info;
+			status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryTrustedDomainInfoBySid level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
+				ret = False;
+			}
+		}
+		
+		for (j=0; j < ARRAY_SIZE(levels); j++) {
+			struct lsa_QueryTrustedDomainInfoByName q;
+			union lsa_TrustedDomainInfo info;
+			q.in.handle         = handle;
+			q.in.trusted_domain = domains.domains[i].name;
+			q.in.level          = levels[j];
+			q.out.info          = &info;
+			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryTrustedDomainInfoByName level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
+				ret = False;
+			}
+		}
+		
+		
+
 	}
 
 	return ret;

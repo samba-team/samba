@@ -435,7 +435,7 @@
 	} lsa_TrustedDomainInfo;
 
 	/* Function:       0x1a */
-	NTSTATUS lsa_QueryInfoTrustedDomain(
+	NTSTATUS lsa_QueryTrustedDomainInfo(
 		[in,ref]     policy_handle *trustdom_handle,
 		[in]         uint16         level, 
 		[out,switch_is(level)] lsa_TrustedDomainInfo *info
@@ -544,7 +544,13 @@
 		);
 
 	/* Function:   0x27 */
-	NTSTATUS lsa_QueryTrustDomainInfo();
+	NTSTATUS lsa_QueryTrustedDomainInfoBySid(
+		[in,ref]               policy_handle         *handle,
+		[in,ref]               dom_sid2              *dom_sid,
+		[in]                   uint16                 level, 
+		[out,switch_is(level)] lsa_TrustedDomainInfo *info
+        );
+
 	/* Function:     0x28 */
 	NTSTATUS lsa_SetTrustDomainInfo();
 	/* Function:      0x29 */
@@ -581,7 +587,12 @@
 	NTSTATUS lsa_SetInfoPolicy2();
 
 	/* Function 0x30 */
-	NTSTATUS lsa_QueryTrustedDomainInfoByName();
+	NTSTATUS lsa_QueryTrustedDomainInfoByName(
+		[in,ref]               policy_handle         *handle,
+		[in]                   lsa_String             trusted_domain,
+		[in]                   uint16                 level, 
+		[out,switch_is(level)] lsa_TrustedDomainInfo *info
+		);
 
 	/* Function 0x31 */
 	NTSTATUS lsa_SetTrustedDomainInfoByName();
