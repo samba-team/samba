@@ -212,7 +212,6 @@ string_to_key_test(krb5_context context)
     krb5_salt salt;
     int i, val = 0;
     char iter[4];
-    char keyout[32];
 
     for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++) {
 
@@ -236,13 +235,14 @@ string_to_key_test(krb5_context context)
 		   i, keys[i].password, keys[i].salt);
 #endif
 
-	if (keys[i].keylen > sizeof(keyout))
-	    abort();
-
 #ifdef ENABLE_AES
 	if (keys[i].pbkdf2) {
-
 #ifdef HAVE_OPENSSL
+	    char keyout[32];
+
+	    if (keys[i].keylen > sizeof(keyout))
+		abort();
+
 	    PKCS5_PBKDF2_HMAC_SHA1(password.data, password.length,
 				   salt.saltvalue.data, salt.saltvalue.length,
 				   keys[i].iterations, 
