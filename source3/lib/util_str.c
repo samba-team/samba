@@ -826,7 +826,8 @@ return a new allocate unicode string.
 smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
 				const smb_ucs2_t *insert)
 {
-	smb_ucs2_t *r, *rp, *sp;
+	smb_ucs2_t *r, *rp;
+	const smb_ucs2_t *sp;
 	size_t	lr, lp, li, lt;
 
 	if (!insert || !pattern || !*pattern || !s) return NULL;
@@ -836,7 +837,7 @@ smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
 	li = (size_t)strlen_w(insert);
 
 	if (li > lp) {
-		smb_ucs2_t *st = s;
+		const smb_ucs2_t *st = s;
 		int ld = li - lp;
 		while ((sp = strstr_w(st, pattern))) {
 			st = sp + lp;
