@@ -202,14 +202,14 @@ LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/rawtrans.o libcli/raw/clioplock.o \
 	     libcli/raw/rawnegotiate.o libcli/raw/rawfsinfo.o \
 	     libcli/raw/rawfileinfo.o libcli/raw/rawnotify.o \
-	     libcli/raw/rawioctl.o \
+	     libcli/raw/rawioctl.o libcli/raw/rawdcerpc.o \
 	     $(LIBSAMBA_OBJ) $(LIBCLIUTIL_OBJ) \
 	     $(RPC_PARSE_OBJ1) $(LIBNTLMSSP_OBJ) $(LIBNMB_OBJ) $(KRBCLIENT_OBJ)
 
 LIBSMB_OBJ = libcli/clireadwrite.o libcli/cliconnect.o \
 	     libcli/clifile.o libcli/clilist.o libcli/clitrans2.o  \
 	     libcli/clisecdesc.o libcli/climessage.o \
-	     libcli/clideltree.o \
+	     libcli/clideltree.o libcli/clidcerpc.o \
 	     $(LIBRAW_OBJ)
 
 # LIBDFS_OBJ = libcli/clidfs.o
