@@ -5,6 +5,7 @@
 .Os HEIMDAL
 .Sh NAME
 .Nm krb5_425_conv_principal ,
+.Nm krb5_425_conv_principal_ext ,
 .Nm krb5_524_conv_principal
 .Nd Converts to and from version 4 principals
 
@@ -12,7 +13,10 @@
 .Fd #include <krb5.h>
 
 .Ft krb5_error_code
-.Fn krb5_425_conv_principal "krb5_context context" "const char *name" "const char *instance" "const char *realm" "krb5_principal *princ"
+.Fn krb5_425_conv_principal "krb5_context context" "const char *name" "const char *instance" "const char *realm" "krb5_principal *principal"
+
+.Ft krb5_error_code
+.Fn krb5_425_conv_principal_ext "krb5_context context" "const char *name" "const char *instance" "const char *realm" "krb5_boolean (*func)(krb5_context, krb5_principal)" "krb5_boolean resolve" "krb5_principal *principal"
 
 .Ft krb5_error_code
 .Fn krb5_524_conv_principal "krb5_context context" "const krb5_principal principal" "char *name" "char *instance" "char *realm"
@@ -31,37 +35,48 @@ question, while the instance of a version 4 principal will only
 contain the first component.  Because of these problems the conversion
 between principals will have to be site customized.
 .Pp
-.Fn krb5_425_conv_principal
+.Fn krb5_425_conv_principal_ext
 will try to convert a version 4 principal, given by
 .Fa name ,
 .Fa instance ,
 and
 .Fa realm ,
-to a version 5 principal. To do this it will look up the name in 
+to a version 5 principal. This can result in several possible
+principals, and if
+.Fa func
+is non-NULL, it will be called for each candidate principal.
+.Fa func
+should return true if the principal was
+.Dq good .
+To accomplish this, 
+.Fn krb5_425_conv_principal_ext 
+will look up the name in
 .Pa krb5.conf .
 It first looks in the 
 .Li v4_name_convert/host
-binding, which should contain a list of version 4 names whose instance
-should be treated as a hostname. This list can be specified for each
-realm (in the
+subsection, which should contain a list of version 4 names whose
+instance should be treated as a hostname. This list can be specified
+for each realm (in the
 .Li realms
 section), or in the
 .Li libdefaults
-section.  If the name is found the first component of the principal
-will be value of this binding. The instance is then first looked up in
+section.  If the name is found the resulting name of the principal
+will be the value of this binding. The instance is then first looked
+up in
 .Li v4_instance_convert 
 for the specified realm. If found the resulting value will be used as
-instance (this can be used for special cases). If not found you can
-optionally have the instance looked up (with
-.Fn gethostbyname ) .
-This is a time consuming, error prone, and unsafe operation, and it is
-not turned on by default. You can turn on this feature by setting
-.Li v4_instance_resolve 
-to true in the 
-.Li libdefaults 
-section. As a final fallback you can, for each realm, include a
-.Li default_realm
-that will be appended to the instance without further checks.
+instance (this can be used for special cases), no further attempts
+will be made to find a conversion if this fails (with
+.Fa func ) .
+If the
+.Fa resolve
+parameter is true, the instance will be looked up with
+.Fn gethostbyname .
+This can be a time consuming, error prone, and unsafe operation.  Next
+a list of hostnames will be created from the instance and the
+.Li v4_domains
+variable, which should contain a list of possible domains for the
+specific realm.
 .Pp
 On the other hand, if the name is not found in a
 .Li host
@@ -69,6 +84,20 @@ section, it is looked up in a
 .Li v4_name_convert/plain
 binding. If found here the name will be converted, but the instance
 will be untouched.
+.Pp
+.Fn krb5_425_conv_principal
+will call 
+.Fn krb5_425_conv_principal_ext
+with 
+.Dv NULL
+as 
+.Fa func ,
+and the value of
+.Li v4_instance_resolve
+(from the
+.Li libdefaults
+section) as
+.Fa resolve .
 .Pp
 .Fn krb5_524_conv_principal
 basically does the opposite of 
@@ -117,7 +146,7 @@ file that covers this case might look like:
 		v4_instance_convert = {
 			foo = foo.com
 		}
-		default_domain = foo.com
+		v4_domains = foo.com
 	}
 .Ed
 .Pp
@@ -137,7 +166,7 @@ other.a-host	\(-> other/a-host
 .Ed
 .Pp
 The first three are what you expect. If you remove the 
-.Dq default_domain ,
+.Dq v4_domains ,
 the fourth entry will result in an error (since the host
 .Dq other
 can't be found). Even if 
