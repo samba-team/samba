@@ -475,6 +475,7 @@ static struct api_cmd api_fd_commands[] =
 #if 1 /* DISABLED_IN_2_0 JRATEST */
     { "winreg",   "winreg",  api_reg_rpc },
 #endif
+    { "spoolss",  "spoolss", api_spoolss_rpc },
     { NULL,       NULL,      NULL }
 };
 
