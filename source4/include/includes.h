@@ -715,7 +715,6 @@ extern int errno;
 
 /* Lists, trees, caching, database... */
 #include "xfile.h"
-#include "intl.h"
 #include "dlinklist.h"
 #include "../tdb/tdb.h"
 #include "../tdb/spinlock.h"
@@ -740,8 +739,6 @@ extern int errno;
 
 #include "byteorder.h"
 
-#include "ntdomain.h"
-
 #include "msdfs.h"
 
 #include "md5.h"
@@ -752,8 +749,6 @@ extern int errno;
 #include "auth.h"
 #include "passdb.h"
 
-#include "session.h"
-
 #include "module.h"
 
 #include "asn_1.h"
@@ -763,8 +758,6 @@ extern int errno;
 #include "mangle.h"
 
 #include "nsswitch/winbind_client.h"
-
-#include "genparser.h"
 
 #include "mutex.h"
 

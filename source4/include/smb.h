@@ -236,9 +236,6 @@ typedef uint16 smb_ucs2_t;
 typedef smb_ucs2_t wpstring[PSTRING_LEN];
 typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
-/* This error code can go into the client smb_rw_error. */
-#define WRITE_ERROR 4
-
 #ifdef WORDS_BIGENDIAN
 #define UCS2_SHIFT 8
 #else
@@ -247,31 +244,6 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
 /* turn a 7 bit character into a ucs2 character */
 #define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
-
-/* pipe string names */
-#define PIPE_LANMAN   "\\PIPE\\LANMAN"
-#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
-#define PIPE_SAMR     "\\PIPE\\samr"
-#define PIPE_WINREG   "\\PIPE\\winreg"
-#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
-#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
-#define PIPE_NTLSA    "\\PIPE\\ntlsa"
-#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
-#define PIPE_LSASS    "\\PIPE\\lsass"
-#define PIPE_LSARPC   "\\PIPE\\lsarpc"
-#define PIPE_SPOOLSS  "\\PIPE\\spoolss"
-#define PIPE_NETDFS   "\\PIPE\\netdfs"
-
-#define PI_LSARPC		0
-#define PI_LSARPC_DS		1
-#define PI_SAMR			2
-#define PI_NETLOGON		3
-#define PI_SRVSVC		4
-#define PI_WKSSVC		5
-#define PI_WINREG		6
-#define PI_SPOOLSS		7
-#define PI_NETDFS		8
-#define PI_MAX_PIPES		9
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
@@ -344,49 +316,6 @@ typedef struct nt_user_token {
 	DOM_SID *user_sids;
 } NT_USER_TOKEN;
 
-/*** query a local group, get a list of these: shows who is in that group ***/
-
-/* local group member info */
-typedef struct local_grp_member_info
-{
-	DOM_SID sid    ; /* matches with name */
-	uint8   sid_use; /* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
-	fstring name   ; /* matches with sid: must be of the form "DOMAIN\account" */
-
-} LOCAL_GRP_MEMBER;
-
-/* enumerate these to get list of local groups */
-
-/* local group info */
-typedef struct local_grp_info
-{
-	fstring name;
-	fstring comment;
-
-} LOCAL_GRP;
-
-/*** enumerate these to get list of domain groups ***/
-
-/* domain group member info */
-typedef struct domain_grp_info
-{
-	fstring name;
-	fstring comment;
-	uint32  rid; /* group rid */
-	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
-
-} DOMAIN_GRP;
-
-/*** query a domain group, get a list of these: shows who is in that group ***/
-
-/* domain group info */
-typedef struct domain_grp_member_info
-{
-	fstring name;
-	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
-
-} DOMAIN_GRP_MEMBER;
-
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
 {
@@ -400,55 +329,11 @@ typedef struct data_blob {
 	void (*free)(struct data_blob *data_blob);
 } DATA_BLOB;
 
-/*
- * Structure used to keep directory state information around.
- * Used in NT change-notify code.
- */
-
-typedef struct
-{
-  time_t modify_time;
-  time_t status_time;
-} dir_status_struct;
-
-struct vuid_cache {
-  unsigned int entries;
-  uint16 list[VUID_CACHE_SIZE];
-};
-
-/* Include VFS stuff */
-
-#include "smb_acls.h"
 #include "enums.h"
 #include "events.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "smb_interfaces.h"
 #include "librpc/ndr/libndr.h"
-
-typedef struct smb_vfs_handle_struct
-{
-    void *data;
-    /* Handle on dlopen() call */
-    void *handle;
-    struct smb_vfs_handle_struct  *next, *prev;
-    
-} smb_vfs_handle_struct;
-
-struct current_user
-{
-	struct tcon_context *conn;
-	uint16 vuid;
-	uid_t uid;
-	gid_t gid;
-	int ngroups;
-	gid_t *groups;
-	NT_USER_TOKEN *nt_user_token;
-};
-
-/* Defines for the sent_oplock_break field above. */
-#define NO_BREAK_SENT 0
-#define EXCLUSIVE_BREAK_SENT 1
-#define LEVEL_II_BREAK_SENT 2
 
 typedef struct userdom_struct {
 	fstring smb_name; /* user name from the client */
@@ -456,6 +341,7 @@ typedef struct userdom_struct {
 	fstring full_name; /* to store full name (such as "Joe Bloggs") from gecos field of password file */
 	fstring domain; /* domain that the client specified */
 } userdom_struct;
+
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
@@ -1219,7 +1105,6 @@ struct pwd_info
 	uchar sess_key[16];
 };
 
-#include "rpc_creds.h"
 #include "rpc_misc.h"
 #include "rpc_secdes.h"
 
@@ -1254,15 +1139,12 @@ typedef struct user_struct
 
 } user_struct;
 
-
 struct unix_error_map {
 	int unix_error;
 	int dos_class;
 	int dos_code;
 	NTSTATUS nt_error;
 };
-
-#include "ntdomain.h"
 
 #include "client.h"
 

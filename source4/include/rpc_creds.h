@@ -20,6 +20,10 @@
 */
 
 
+#error SAMBA4 clean up
+#error this file should be (re)moved 
+#error and all unused stuff should go
+ 
 #ifndef _RPC_CREDS_H /* _RPC_CREDS_H */
 #define _RPC_CREDS_H 
 
