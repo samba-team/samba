@@ -204,7 +204,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			ps = va_arg(ap, char **);
+			ps = (const char **)va_arg(ap, char **);
 			if (len1 == 0 && len2 == 0) {
 				*ps = "";
 			} else {
@@ -238,7 +238,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			ps = va_arg(ap, char **);
+			ps = (const char **)va_arg(ap, char **);
 			/* make sure its in the right format - be strict */
 			if (len1 == 0 && len2 == 0) {
 				*ps = "";
