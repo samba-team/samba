@@ -890,6 +890,7 @@ void reply_read_and_X(struct smbsrv_request *req)
 	io->readx.in.offset        = IVAL(req->in.vwv, VWV(3));
 	io->readx.in.maxcnt        = SVAL(req->in.vwv, VWV(5));
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
+	io->readx.in.maxcnt       |= IVAL(req->in.vwv, VWV(7)) << 16;
 	io->readx.in.remaining     = SVAL(req->in.vwv, VWV(9));
 	
 	/* the 64 bit variant */
