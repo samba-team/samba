@@ -32,6 +32,7 @@
  */
 
 #include "iprop.h"
+#include "parse_time.h"
 
 RCSID("$Id$");
 
@@ -48,18 +49,157 @@ static char *op_names[] = {
 };
 
 static void
-print_entry(u_int32_t ver,
+print_entry(krb5_context context,
+	    u_int32_t ver,
 	    time_t timestamp,
 	    enum kadm_ops op,
 	    u_int32_t len,
 	    krb5_storage *sp)
 {
-    char *p = ctime(&timestamp);
-    p[strlen(p) - 1] = '\0';
+    char t[256];
+    u_int32_t mask;
+    hdb_entry ent;
+    krb5_principal source;
+    char *name1, *name2;
+    krb5_data data;
 
-    printf ("ver = %u, timestamp = %s, op = %d (%s), len = %u\n",
-	    ver, p, op, op_names[op], len);
-    sp->seek (sp, len, SEEK_CUR);
+    off_t end = sp->seek(sp, 0, SEEK_CUR) + len;
+    
+    krb5_error_code ret;
+
+    strftime(t, sizeof(t), "%Y-%m-%d %H:%M:%S", localtime(&timestamp));
+
+    if(op < kadm_get || op > kadm_get_princs) {
+	printf("unknown op: %d\n", op);
+	sp->seek(sp, end, SEEK_SET);
+	return;
+    }
+
+    printf ("%s: ver = %u, timestamp = %s, len = %u\n",
+	    op_names[op], ver, t, len);
+    switch(op) {
+    case kadm_delete:
+	krb5_ret_principal(sp, &source);
+	krb5_unparse_name(context, source, &name1);
+	printf("    %s\n", name1);
+	free(name1);
+	krb5_free_principal(context, source);
+	break;
+    case kadm_rename:
+	krb5_data_alloc(&data, len);
+	krb5_ret_principal(sp, &source);
+	sp->fetch(sp, data.data, data.length);
+	hdb_value2entry(context, &data, &ent);
+	krb5_unparse_name(context, source, &name1);
+	krb5_unparse_name(context, ent.principal, &name2);
+	printf("    %s -> %s\n", name1, name2);
+	free(name1);
+	free(name2);
+	krb5_free_principal(context, source);
+	hdb_free_entry(context, &ent);
+	break;
+    case kadm_create:
+	krb5_data_alloc(&data, len);
+	sp->fetch(sp, data.data, data.length);
+	ret = hdb_value2entry(context, &data, &ent);
+	if(ret)
+	    abort();
+	mask = ~0;
+	goto foo;
+    case kadm_modify:
+	krb5_data_alloc(&data, len);
+	krb5_ret_int32(sp, &mask);
+	sp->fetch(sp, data.data, data.length);
+	ret = hdb_value2entry(context, &data, &ent);
+	if(ret)
+	    abort();
+    foo:
+	if(ent.principal /* mask & KADM5_PRINCIPAL */) {
+	    krb5_unparse_name(context, ent.principal, &name1);
+	    printf("    principal = %s\n", name1);
+	    free(name1);
+	}
+	if(mask & KADM5_PRINC_EXPIRE_TIME) {
+	    if(ent.valid_end == NULL) {
+		strcpy(t, "never");
+	    } else {
+		strftime(t, sizeof(t), "%Y-%m-%d %H:%M:%S", 
+			 localtime(ent.valid_end));
+	    }
+	    printf("    expires = %s\n", t);
+	}
+	if(mask & KADM5_PW_EXPIRATION) {
+	    if(ent.valid_end == NULL) {
+		strcpy(t, "never");
+	    } else {
+		strftime(t, sizeof(t), "%Y-%m-%d %H:%M:%S", 
+			 localtime(ent.valid_end));
+	    }
+	    printf("    password exp = %s\n", t);
+	}
+	if(mask & KADM5_LAST_PWD_CHANGE) {
+	}
+	if(mask & KADM5_ATTRIBUTES) {
+	    unparse_flags(HDBFlags2int(ent.flags), 
+			  HDBFlags_units, t, sizeof(t));
+	    printf("    attributes = %s\n", t);
+	}
+	if(mask & KADM5_MAX_LIFE) {
+	    if(ent.max_life == NULL)
+		strcpy(t, "for ever");
+	    else
+		unparse_time(*ent.max_life, t, sizeof(t));
+	    printf("    max life = %s\n", t);
+	}
+	if(mask & KADM5_MAX_RLIFE) {
+	    if(ent.max_renew == NULL)
+		strcpy(t, "for ever");
+	    else
+		unparse_time(*ent.max_renew, t, sizeof(t));
+	    printf("    max rlife = %s\n", t);
+	}
+	if(mask & KADM5_MOD_TIME) {
+	    printf("    mod time\n");
+	}
+	if(mask & KADM5_MOD_NAME) {
+	    printf("    mod name\n");
+	}
+	if(mask & KADM5_KVNO) {
+	    printf("    kvno = %d\n", ent.kvno);
+	}
+	if(mask & KADM5_MKVNO) {
+	    printf("    mkvno\n");
+	}
+	if(mask & KADM5_AUX_ATTRIBUTES) {
+	    printf("    aux attributes\n");
+	}
+	if(mask & KADM5_POLICY) {
+	    printf("    policy\n");
+	}
+	if(mask & KADM5_POLICY_CLR) {
+	    printf("    mod time\n");
+	}
+	if(mask & KADM5_LAST_SUCCESS) {
+	    printf("    last success\n");
+	}
+	if(mask & KADM5_LAST_FAILED) {
+	    printf("    last failed\n");
+	}
+	if(mask & KADM5_FAIL_AUTH_COUNT) {
+	    printf("    fail auth count\n");
+	}
+	if(mask & KADM5_KEY_DATA) {
+	    printf("    key data\n");
+	}
+	if(mask & KADM5_TL_DATA) {
+	    printf("    tl data\n");
+	}
+	hdb_free_entry(context, &ent);
+	break;
+    default:
+	abort();
+    }
+    sp->seek(sp, end, SEEK_SET);
 }
 
 char *realm;
