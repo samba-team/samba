@@ -4759,7 +4759,7 @@ BOOL reset_stat_cache( void );
 
 /* The following definitions come from smbd/trans2.c  */
 
-SMB_OFF_T get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf);
+SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 time_t interpret_long_unix_date(char *p);
 NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
@@ -4805,7 +4805,7 @@ BOOL vfs_object_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT
 BOOL vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N);
-int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len);
+int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);
 char *vfs_readdirname(connection_struct *conn, void *p);

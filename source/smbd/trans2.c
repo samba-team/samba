@@ -35,15 +35,13 @@ extern pstring global_myname;
 /* given a stat buffer return the allocated size on disk, taking into
    account sparse files */
 
-SMB_OFF_T get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
-	SMB_OFF_T ret;
-#if defined(HAVE_STAT_ST_BLKSIZE) && defined(HAVE_STAT_ST_BLOCKS)
-	ret = sbuf->st_blksize * (SMB_OFF_T)sbuf->st_blocks;
-#elif defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	ret = (SMB_OFF_T)STAT_ST_BLOCKSIZE * (SMB_OFF_T)sbuf->st_blocks;
+	SMB_BIG_UINT ret;
+#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	ret = (SMB_BIG_UINT)STAT_ST_BLOCKSIZE * (SMB_BIG_UINT)sbuf->st_blocks;
 #else
-	ret = get_file_size(*sbuf);
+	ret = (SMB_BIG_UINT)get_file_size(*sbuf);
 #endif
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
@@ -475,7 +473,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	int prev_dirpos=0;
 	int mode=0;
 	SMB_OFF_T size = 0;
-	SMB_OFF_T allocation_size = 0;
+	SMB_BIG_UINT allocation_size = 0;
 	uint32 len;
 	time_t mdate=0, adate=0, cdate=0;
 	char *nameptr;
@@ -1619,7 +1617,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	uint16 info_level;
 	int mode=0;
 	SMB_OFF_T size=0;
-	SMB_OFF_T allocation_size = 0;
+	SMB_BIG_UINT allocation_size = 0;
 	unsigned int data_size;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
@@ -2522,14 +2520,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_SET_FILE_ALLOCATION_INFO:
 		{
 			int ret = -1;
-			SMB_OFF_T allocation_size;
+			SMB_BIG_UINT allocation_size;
 
 			if (total_data < 8)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-			allocation_size = IVAL(pdata,0);
+			allocation_size = (SMB_BIG_UINT)IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
-			allocation_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+			allocation_size |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
 			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
 				return ERROR_DOS(ERRDOS,ERRunknownlevel);

@@ -879,6 +879,7 @@ case "$host_os" in
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*freebsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -936,22 +937,32 @@ case "$host_os" in
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192)
 			;;
-		*qnx*) AC_DEFINE(QNX);;
+		*qnx*) AC_DEFINE(QNX)
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
 		*osf*) AC_DEFINE(OSF1)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-		*sco*) AC_DEFINE(SCO);;
+		*sco*) AC_DEFINE(SCO)
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
 		*unixware*) AC_DEFINE(UNIXWARE)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-KPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-		*next2*) AC_DEFINE(NEXT2);;
-		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
+		*next2*) AC_DEFINE(NEXT2)
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
+		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man])
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+			;;
 		*sysv4*)
 			case "$host" in
 				*-univel-*)     if [ test "$GCC" != yes ]; then
@@ -962,12 +973,14 @@ case "$host_os" in
 				;;
 				*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX);;
 			esac
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*sysv5*)
 			if [ test "$GCC" != yes ]; then
 				AC_DEFINE(HAVE_MEMSET)
 			fi
 			LDSHFLAGS="-G"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 esac
 AC_SUBST(DYNEXP)
