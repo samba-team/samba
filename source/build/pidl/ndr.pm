@@ -110,7 +110,8 @@ sub is_fixed_array($)
 sub is_conformant_array($)
 {
 	my $e = shift;
-	return defined($e->{CONFORMANT_SIZE});
+	return 1 if (util::has_property($e, "size_is"));
+	return 0;
 }
 
 # return 1 if this is a inline array
@@ -130,6 +131,17 @@ sub is_varying_array($)
 	my $e = shift;
 	return 1 if (util::has_property($e, "length_is"));
 	return 0;
+}
+
+sub is_surrounding_array($)
+{
+	my $e = shift;
+
+	return ($e->{POINTERS} == 0 
+		and defined $e->{ARRAY_LEN} 
+		and	$e->{ARRAY_LEN} eq "*"
+		and $e == $e->{PARENT}->{ELEMENTS}[-1] 
+		and $e->{PARENT}->{TYPE} ne "FUNCTION");
 }
 
 sub array_type($)
@@ -430,14 +442,15 @@ sub ParseArrayPush($$$)
 
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 
-	if (is_conformant_array($e) ) {
+	if (is_surrounding_array($e)) {
 		# the conformant size has already been pushed
 	} elsif (!is_inline_array($e)) {
 		# we need to emit the array size
 		pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
 	}
 
-	if (my $length = util::has_property($e, "length_is")) {
+	if (is_varying_array($e)) {
+		my $length = util::has_property($e, "length_is");
 		$length = ParseExpr($e, $length, $var_prefix);
 		pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));";
 		pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $length));";
@@ -478,8 +491,8 @@ sub CheckArraySizes($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	if (!is_conformant_array($e) && 
-	    util::has_property($e, "size_is")) {
+	if (!is_surrounding_array($e) && 
+		is_conformant_array($e)) {
 		my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 		pidl "if ($var_prefix$e->{NAME}) {";
 		indent;
@@ -489,14 +502,15 @@ sub CheckArraySizes($$)
 		pidl "}";
 	}
 
-	if (my $length = util::has_property($e, "length_is")) {
+	if (is_varying_array($e)) {
+		my $length = util::has_property($e, "length_is");
 		$length = ParseExpr($e, $length, $var_prefix);
 		pidl "if ($var_prefix$e->{NAME}) {";
 		indent;
 		check_null_pointer($length);
 		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)&$var_prefix$e->{NAME}, $length));";
 		deindent;
-		pidl "}";
+		pidl "}"
 	}
 }
 
@@ -513,7 +527,7 @@ sub ParseArrayPull($$$)
 
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
-	if (is_conformant_array($e)) {
+	if (is_conformant_array($e) and is_surrounding_array($e)) {
 		$alloc_size = $e->{CONFORMANT_SIZE};
 		check_null_pointer($size);
 		pidl "if ($size > $alloc_size) {";
@@ -964,7 +978,7 @@ sub ParseStructPush($)
 	# the wire before the structure (and even before the structure
 	# alignment)
 	my $e = $struct->{ELEMENTS}[-1];
-	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
+	if (is_conformant_array($e) and is_surrounding_array($e)) {
 		my $size = ParseExpr($e, util::array_size($e), "r->");
 		$e->{CONFORMANT_SIZE} = $size;
 		check_null_pointer($size);
@@ -1228,7 +1242,7 @@ sub ParseStructPull($)
 	# the wire before the structure (and even before the structure
 	# alignment)
 	my $e = $struct->{ELEMENTS}[-1];
-	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
+	if (is_conformant_array($e) and is_surrounding_array($e)) {
 		$conform_e = $e;
 	}
 
@@ -1238,7 +1252,6 @@ sub ParseStructPull($)
 	}
 
 	if (defined $conform_e) {
-		$conform_e = $e;
 		pidl "uint32_t _conformant_size;";
 		$conform_e->{CONFORMANT_SIZE} = "_conformant_size";
 	}
