@@ -135,13 +135,16 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break; \
 		}
 
-#define TEST_USERINFO_NAME(lvl1, field1, lvl2, field2, value) do { \
+#define TEST_USERINFO_NAME(lvl1, field1, lvl2, field2, value, fpval) do { \
 		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
 		u = *q.out.info; \
 		init_samr_Name(&u.info ## lvl1.field1, value); \
+		if (lvl1 == 21) { \
+			u.info21.fields_present = fpval; \
+		} \
 		TESTCALL(SetUserInfo, s) \
 		init_samr_Name(&u.info ## lvl1.field1, ""); \
 		TESTCALL(QueryUserInfo, q); \
@@ -153,13 +156,16 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		STRING_EQUAL(u.info ## lvl2.field2.name, value, field2); \
 	} while (0)
 
-#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2, value) do { \
+#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2, value, fpval) do { \
 		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
 		u = *q.out.info; \
 		u.info ## lvl1.field1 = value; \
+		if (lvl1 == 21) { \
+			u.info21.fields_present = fpval; \
+		} \
 		TESTCALL(SetUserInfo, s) \
 		u.info ## lvl1.field1 = 0; \
 		TESTCALL(QueryUserInfo, q); \
@@ -174,41 +180,51 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	q0.in.level = 12;
 	do { TESTCALL(QueryUserInfo, q0) } while (0);
 
-	TEST_USERINFO_NAME(2, comment,  1, comment, "xx2-1 comment");
-	TEST_USERINFO_NAME(2, comment, 21, comment, "xx2-21 comment");
+	TEST_USERINFO_NAME(2, comment,  1, comment, "xx2-1 comment", 0);
+	TEST_USERINFO_NAME(2, comment, 21, comment, "xx2-21 comment", 0);
+	TEST_USERINFO_NAME(21, comment, 21, comment, "xx21-21 comment", 0x00000020);
 
-	TEST_USERINFO_NAME(6, full_name,  1, full_name, "xx6-1 full_name");
-	TEST_USERINFO_NAME(6, full_name,  3, full_name, "xx6-3 full_name");
-	TEST_USERINFO_NAME(6, full_name,  5, full_name, "xx6-5 full_name");
-	TEST_USERINFO_NAME(6, full_name,  6, full_name, "xx6-6 full_name");
-	TEST_USERINFO_NAME(6, full_name,  8, full_name, "xx6-8 full_name");
-	TEST_USERINFO_NAME(6, full_name, 21, full_name, "xx6-21 full_name");
-	TEST_USERINFO_NAME(8, full_name, 21, full_name, "xx7-21 full_name");
+	TEST_USERINFO_NAME(6, full_name,  1, full_name, "xx6-1 full_name", 0);
+	TEST_USERINFO_NAME(6, full_name,  3, full_name, "xx6-3 full_name", 0);
+	TEST_USERINFO_NAME(6, full_name,  5, full_name, "xx6-5 full_name", 0);
+	TEST_USERINFO_NAME(6, full_name,  6, full_name, "xx6-6 full_name", 0);
+	TEST_USERINFO_NAME(6, full_name,  8, full_name, "xx6-8 full_name", 0);
+	TEST_USERINFO_NAME(6, full_name, 21, full_name, "xx6-21 full_name", 0);
+	TEST_USERINFO_NAME(8, full_name, 21, full_name, "xx8-21 full_name", 0);
+	TEST_USERINFO_NAME(21, full_name, 21, full_name, "xx21-21 full_name", 0x00000002);
 
-	TEST_USERINFO_NAME(11, logon_script, 3, logon_script, "xx11-3 logon_script");
-	TEST_USERINFO_NAME(11, logon_script, 5, logon_script, "xx11-5 logon_script");
-	TEST_USERINFO_NAME(11, logon_script, 21, logon_script, "xx11-21 logon_script");
+	TEST_USERINFO_NAME(11, logon_script, 3, logon_script, "xx11-3 logon_script", 0);
+	TEST_USERINFO_NAME(11, logon_script, 5, logon_script, "xx11-5 logon_script", 0);
+	TEST_USERINFO_NAME(11, logon_script, 21, logon_script, "xx11-21 logon_script", 0);
+	TEST_USERINFO_NAME(21, logon_script, 21, logon_script, "xx21-21 logon_script", 0x00000100);
 
-	TEST_USERINFO_NAME(12, profile,  3, profile, "xx12-3 profile");
-	TEST_USERINFO_NAME(12, profile,  5, profile, "xx12-5 profile");
-	TEST_USERINFO_NAME(12, profile, 21, profile, "xx12-21 profile");
+	TEST_USERINFO_NAME(12, profile,  3, profile, "xx12-3 profile", 0);
+	TEST_USERINFO_NAME(12, profile,  5, profile, "xx12-5 profile", 0);
+	TEST_USERINFO_NAME(12, profile, 21, profile, "xx12-21 profile", 0);
+	TEST_USERINFO_NAME(21, profile, 21, profile, "xx21-21 profile", 0x00000200);
 
-	TEST_USERINFO_NAME(13, description,  1, description, "xx13-1 description");
-	TEST_USERINFO_NAME(13, description,  5, description, "xx13-5 description");
-	TEST_USERINFO_NAME(13, description, 21, description, "xx13-21 description");
+	TEST_USERINFO_NAME(13, description,  1, description, "xx13-1 description", 0);
+	TEST_USERINFO_NAME(13, description,  5, description, "xx13-5 description", 0);
+	TEST_USERINFO_NAME(13, description, 21, description, "xx13-21 description", 0);
+	TEST_USERINFO_NAME(21, description, 21, description, "xx21-21 description", 0x00000010);
 
-	TEST_USERINFO_NAME(14, workstations,  3, workstations, "testworkstation3");
-	TEST_USERINFO_NAME(14, workstations,  5, workstations, "testworkstation5");
-	TEST_USERINFO_NAME(14, workstations, 21, workstations, "testworkstation21");
+	TEST_USERINFO_NAME(14, workstations,  3, workstations, "14workstation3", 0);
+	TEST_USERINFO_NAME(14, workstations,  5, workstations, "14workstation4", 0);
+	TEST_USERINFO_NAME(14, workstations, 21, workstations, "14workstation21", 0);
+	TEST_USERINFO_NAME(21, workstations, 21, workstations, "21workstation21", 0x00000400);
 
-	TEST_USERINFO_NAME(20, callback, 21, callback, "xx20-21 callback");
+	TEST_USERINFO_NAME(20, callback, 21, callback, "xx20-21 callback", 0);
+	TEST_USERINFO_NAME(21, callback, 21, callback, "xx21-21 callback", 0x00200000);
 
-	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__);
-	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__);
+	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
+	TEST_USERINFO_INT(21, country_code, 21, country_code, __LINE__, 0x00400000);
+	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__, 0);
+	TEST_USERINFO_INT(21, code_page, 21, code_page, __LINE__, 0x00800000);
 
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  3, logon_hours.bitmap[3], __LINE__);
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], __LINE__);
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  3, logon_hours.bitmap[3], __LINE__, 0);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], __LINE__, 0);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__, 0);
+	TEST_USERINFO_INT(21, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__, 0x00002000);
 
 #if 0
 	/* these fail with win2003 - it appears you can't set the primary gid?
