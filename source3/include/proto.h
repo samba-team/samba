@@ -2163,7 +2163,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_use.c  */
 
-void init_client_use(void);
+void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_addlist(char* servers,
 				const struct user_credentials *usr_creds);
