@@ -616,6 +616,8 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 	 */
 
 	if (global_client_caps & CAP_LEVEL_II_OPLOCKS) {
+		BOOL sign_state;
+
 		/*
 		 * If we are sending an oplock break due to an SMB sent
 		 * by our own client we ensure that we wait at leat
@@ -627,10 +629,16 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 		wait_before_sending_break(local_request);
 
 		/* Prepare the SMBlockingX message. */
-
 		prepare_break_message( outbuf, fsp, False);
+
+		/* Save the server smb signing state. */
+		sign_state = srv_oplock_set_signing(False);
+
 		if (!send_smb(smbd_server_fd(), outbuf))
 			exit_server("oplock_break_level2: send_smb failed.");
+
+		/* Restore the sign state to what it was. */
+		srv_oplock_set_signing(sign_state);
 	}
 
 	/*
