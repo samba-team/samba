@@ -16,6 +16,10 @@
 #include <sys/fcntl.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include <errno.h>
 
 static int sys_waitpid(pid_t pid,int *status,int options)
