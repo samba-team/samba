@@ -412,6 +412,13 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 		goto done;
 	}
 
+	status = gensec_set_target_service(conn->gensec, "ldap");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+			  nt_errstr(status)));
+		goto done;
+	}
+
 	status = gensec_start_mech_by_sasl_name(conn->gensec, "GSS-SPNEGO");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
