@@ -90,14 +90,23 @@ static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 {
 	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
 
-	d_q->uni_dom_max_len = domlen * 2;
-	d_q->uni_dom_str_len = domlen * 2;
+	/*
+	 * I'm not sure why this really odd combination of length
+	 * values works, but it does appear to. I need to look at
+	 * this *much* more closely - but at the moment leave alone
+	 * until it's understood. This allows a W2k client to join
+	 * a domain with both odd and even length names... JRA.
+	 */
 
-	d_q->buffer_dom_name = dom_name ? 1 : 0;
-	d_q->buffer_dom_sid  = dom_sid ? 1 : 0;
+	d_q->uni_dom_str_len = domlen ? ((domlen + 1) * 2) : 0;
+	d_q->uni_dom_max_len = domlen * 2;
+	d_q->buffer_dom_name = domlen != 0 ? 1 : 0; /* domain buffer pointer */
+	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;  /* domain sid pointer */
 
 	/* this string is supposed to be character short */
 	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
+	d_q->uni_domain_name.uni_max_len++;
+
 	if (dom_sid != NULL)
 		init_dom_sid2(&d_q->dom_sid, dom_sid);
 }
