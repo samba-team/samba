@@ -74,6 +74,8 @@ REGISTRY_HOOK* reghook_cache_find( char *keyname )
 	if ( !keyname )
 		return NULL;
 	
+	/* prepend the string with a '\' character */
+	
 	len = strlen( keyname );
 	if ( !(key = malloc( len + 2 )) ) {
 		DEBUG(0,("reghook_cache_find: malloc failed for string [%s] !?!?!\n",
@@ -84,6 +86,8 @@ REGISTRY_HOOK* reghook_cache_find( char *keyname )
 	*key = '\\';
 	strncpy( key+1, keyname, len+1);
 	
+	/* swap to a form understood by the SORTED_TREE */
+
 	string_sub( key, "\\", "/", 0 );
 		
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));

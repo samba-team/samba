@@ -60,7 +60,8 @@ BOOL init_registry( void )
 			return False;
 	}
 
-	reghook_dump_cache(20);
+	if ( DEBUGLEVEL >= 20 )
+		reghook_dump_cache(20);
 
 	return True;
 }

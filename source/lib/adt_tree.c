@@ -26,6 +26,33 @@
  for comparision of two children
  *************************************************************************/
 
+static BOOL trim_tree_keypath( char *path, char **base, char **new_path )
+{
+	char *p;
+	
+	*new_path = *base = NULL;
+	
+	if ( !path )
+		return False;
+	
+	*base = path;
+	
+	p = strchr( path, '/' );
+	
+	if ( p ) {
+		*p = '\0';
+		*new_path = p+1;
+	}
+	
+	return True;
+}
+
+ 
+/**************************************************************************
+ Initialize the tree's root.  The cmp_fn is a callback function used
+ for comparision of two children
+ *************************************************************************/
+
 SORTED_TREE* sorted_tree_init( void *data_p,
                                int (cmp_fn)(void*, void*),
                                void (free_fn)(void*) )
@@ -97,7 +124,7 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 {
 	TREE_NODE *infant = NULL;
 	TREE_NODE **siblings;
-	int i, result;
+	int i;
 	
 	if ( !(infant = (TREE_NODE*)malloc( sizeof(TREE_NODE) )) )
 		return NULL;
@@ -117,7 +144,7 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	/* first child */
 	
 	if ( node->num_children == 1 ) {
-		DEBUG(10,("sorted_tree_birth_child: First child of node [%s]! [%s]\n", 
+		DEBUG(11,("sorted_tree_birth_child: First child of node [%s]! [%s]\n", 
 			node->key ? node->key : "NULL", infant->key ));
 		node->children[0] = infant;
 	}
@@ -134,14 +161,15 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	
 		for ( i = node->num_children-1; i>=1; i-- )
 		{
-			DEBUG(10,("sorted_tree_birth_child: Looking for crib; infant -> [%s], child -> [%s]\n",
+			DEBUG(11,("sorted_tree_birth_child: Looking for crib; infant -> [%s], child -> [%s]\n",
 				infant->key, node->children[i-1]->key));
 			
 			/* the strings should never match assuming that we 
 			   have called sorted_tree_find_child() first */
 		
-			result = StrCaseCmp( infant->key, node->children[i-1]->key );
-			if ( result > 0 ) {
+			if ( StrCaseCmp( infant->key, node->children[i-1]->key ) > 0 ) {
+				DEBUG(11,("sorted_tree_birth_child: storing infant in i == [%d]\n", 
+					i));
 				node->children[i] = infant;
 				break;
 			}
@@ -150,8 +178,10 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 			
 			node->children[i] = node->children[i-1];
 		}
+
+		DEBUG(11,("sorted_tree_birth_child: Exiting loop (i == [%d])\n", i ));
 		
-		/* if we haven't found the correct clot yet, the child 
+		/* if we haven't found the correct slot yet, the child 
 		   will be first in the list */
 		   
 		if ( i == 0 )
@@ -160,6 +190,7 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 
 	return infant;
 }
+
 /**************************************************************************
  Find the next child given a key string
  *************************************************************************/
@@ -179,9 +210,12 @@ static TREE_NODE* sorted_tree_find_child( TREE_NODE *node, char* key )
 		return NULL;
 	}
 	
-	for ( i=0; i<(node->num_children); i++ )
-	{		   
-		result = StrCaseCmp( key, node->children[i]->key );
+	for ( i=0; i<node->num_children; i++ )
+	{	
+		DEBUG(11,("sorted_tree_find_child: child key => [%s]\n",
+			node->children[i]->key));
+			
+		result = StrCaseCmp( node->children[i]->key, key );
 		
 		if ( result == 0 )
 			next = node->children[i];
@@ -190,12 +224,12 @@ static TREE_NODE* sorted_tree_find_child( TREE_NODE *node, char* key )
 		   the list of children is sorted by key name 
 		   If result == 0, then we have a match         */
 		   
-		if ( !(result < 0) )
+		if ( result > 0 )
 			break;
 	}
 
-	DEBUG(11,("sorted_tree_find_child: Did %s find [%s]\n",
-		next ? "" : "not", key ));	
+	DEBUG(11,("sorted_tree_find_child: %s [%s]\n",
+		next ? "Found" : "Did not find", key ));	
 	
 	return next;
 }
@@ -346,7 +380,7 @@ void sorted_tree_print_keys( SORTED_TREE *tree, int debug )
 
 void* sorted_tree_find( SORTED_TREE *tree, char *key )
 {
-	char *keystr, *base, *str;
+	char *keystr, *base, *str, *p;
 	TREE_NODE *current;
 	void *result = NULL;
 	
@@ -370,7 +404,11 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 	
 	/* make a copy to play with */
 	
-	keystr = strdup( key );
+	if ( *key == '/' )
+		keystr = strdup( key+1 );
+	else
+		keystr = strdup( key );
+	
 	if ( !keystr ) {
 		DEBUG(0,("sorted_tree_find: strdup() failed on string [%s]!?!?!\n", key));
 		return NULL;
@@ -378,8 +416,7 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 
 	/* start breaking the path apart */
 	
-	base = keystr;
-	str  = keystr;
+	p = keystr;
 	current = tree->root;
 	
 	if ( tree->root->data_p )
@@ -388,25 +425,15 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 	do
 	{
 		/* break off the remaining part of the path */
-		
-		str = strchr( str, '/' );
-		if ( str )
-			*str = '\0';
+
+		trim_tree_keypath( p, &base, &str );
 			
-		DEBUG(11,("sorted_tree_find: [loop] key => [%s]\n", base));
+		DEBUG(11,("sorted_tree_find: [loop] base => [%s], new_path => [%s]\n", 
+			base, str));
 
 		/* iterate to the next child */
 		
 		current = sorted_tree_find_child( current, base );
-
-		/* setup the next part of the path */
-		
-		base = str;
-		if ( base ) {
-			*base = '/';
-			base++;
-			str = base;
-		}
 	
 		/* 
 		 * the idea is that the data_p for a parent should 
@@ -416,12 +443,16 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 		
 		if ( current && current->data_p )
 			result = current->data_p;
+
+		/* reset the path pointer 'p' to the remaining part of the key string */
+
+		p = str;
 	   
-	} while ( base && current );
+	} while ( str && current );
 	
 	/* result should be the data_p from the lowest match node in the tree */
 	if ( result )
-		DEBUG(10,("sorted_tree_find: Found data_p!\n"));
+		DEBUG(11,("sorted_tree_find: Found data_p!\n"));
 	
 	SAFE_FREE( keystr );
 	
