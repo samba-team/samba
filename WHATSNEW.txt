@@ -1,4 +1,4 @@
-          WHATS NEW IN 1.9.18p4 - March 25th 1998.
+          WHATS NEW IN 1.9.18p4 - March 27th 1998.
           ===========================================
 
 This is the latest stable release of Samba. This is the
@@ -124,6 +124,8 @@ of isalnum() - was causing gethostbyname to fail.
 17). Fix for 'hide files' bug not working correctly (bug
 in is_in_path function - fix from Steven Hartland 
 <steven_hartland@pa.press.net>.
+18). Fixed bug in smbclient where debug log level on the
+command line was being overridden by the log level in smb.conf.
 
 Bugfixes added since 1.9.18p2
 -----------------------------

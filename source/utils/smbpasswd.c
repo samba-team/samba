@@ -37,6 +37,35 @@ struct
   {0, NULL}
 };
 
+char *get_error_message(struct cli_state *cli)
+{
+  static fstring error_message;
+  int errclass;
+  int errnum;
+  int i;
+
+  /* 
+   * Errors are of two kinds - smb errors,
+   * dealt with by cli_errstr, and rap
+   * errors, whose error code is in cli.error.
+   */
+
+  cli_error(cli, &errclass, &errnum);
+  if(errclass != 0) 
+    return cli_errstr(cli);
+
+  sprintf(error_message, "code %d", cli->error);
+      
+  for(i = 0; pw_change_errmap[i].message != NULL; i++) {
+    if (pw_change_errmap[i].err == cli->error) {
+      fstrcpy( error_message, pw_change_errmap[i].message);
+      break;
+    }
+  }
+
+  return error_message;
+}
+
 static int gethexpwd(char *p, char *pwd)
 {
 	int i;
@@ -219,10 +248,10 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
-		fprintf(stderr, "Usage is : %s [-a] [username] [password]\n\
-%s: [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
+		fprintf(stderr, "Usage is : %s [-a] [-D DEBUGLEVEL] [username] [password]\n\
+%s: [-r machine] [-D DEBUGLEVEL] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
-		fprintf(stderr, "Usage is : %s [-h] [-r machine] [password]\n", name);
+		fprintf(stderr, "Usage is : %s [-h] [-D DEBUGLEVEL] [-r machine] [password]\n", name);
 	exit(1);
 }
 
@@ -230,6 +259,7 @@ int main(int argc, char **argv)
 {
   extern char *optarg;
   extern int optind;
+  extern int DEBUGLEVEL;
   char *prog_name;
   int             real_uid;
   struct passwd  *pwd;
@@ -291,13 +321,16 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "ahr:")) != EOF) {
+  while ((ch = getopt(argc, argv, "ahr:D:")) != EOF) {
     switch(ch) {
     case 'a':
       add_user = True;
       break;
     case 'r':
       remote_machine = optarg;
+      break;
+    case 'D':
+      DEBUGLEVEL = atoi(optarg);
       break;
     case 'h':
     default:
@@ -430,16 +463,18 @@ int main(int argc, char **argv)
               prog_name, remote_machine );
       exit(1);
     }
-  
+ 
+    cli.error = 0;
+ 
     if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
-      fprintf(stderr, "%s: unable to connect to SMB server on machine %s.\n",
-              prog_name, remote_machine );
+      fprintf(stderr, "%s: unable to connect to SMB server on machine %s. Error was : %s.\n",
+              prog_name, remote_machine, get_error_message(&cli) );
       exit(1);
     }
   
     if (!cli_session_request(&cli, remote_machine, 0x20, myname)) {
-      fprintf(stderr, "%s: machine %s rejected the session setup.\n",
-              prog_name, remote_machine );
+      fprintf(stderr, "%s: machine %s rejected the session request. Error was : %s.\n",
+              prog_name, remote_machine, get_error_message(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
@@ -447,40 +482,30 @@ int main(int argc, char **argv)
     cli.protocol = PROTOCOL_NT1;
 
     if (!cli_negprot(&cli)) {
-      fprintf(stderr, "%s: machine %s rejected the negotiate protocol.\n",        
-              prog_name, remote_machine );
+      fprintf(stderr, "%s: machine %s rejected the negotiate protocol. Error was : %s.\n",        
+              prog_name, remote_machine, get_error_message(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
   
     if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd),
                            "", 0, "")) {
-      fprintf(stderr, "%s: machine %s rejected the session setup.\n",        
-              prog_name, remote_machine );
+      fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",        
+              prog_name, remote_machine, get_error_message(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }               
 
     if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-      fprintf(stderr, "%s: machine %s rejected the tconX on the IPC$ share.\n",
-              prog_name, remote_machine );
+      fprintf(stderr, "%s: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
+              prog_name, remote_machine, get_error_message(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
 
     if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
-      fstring error_message;
-
-      sprintf(error_message, " with code %d", cli.error);
-      
-      for(i = 0; pw_change_errmap[i].message != NULL; i++) {
-        if (pw_change_errmap[i].err == cli.error) {
-          fstrcpy( error_message, pw_change_errmap[i].message);
-          break;
-        }
-      }
-      fprintf(stderr, "%s: machine %s rejected the password change: %s.\n",
-              prog_name, remote_machine, error_message );
+      fprintf(stderr, "%s: machine %s rejected the password change: Error was : %s.\n",
+              prog_name, remote_machine, get_error_message(&cli) );
       cli_shutdown(&cli);
       exit(1);
     }
