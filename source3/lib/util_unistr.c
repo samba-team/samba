@@ -72,6 +72,16 @@ int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
 	return pull_ucs2(NULL, dest, src, dest_len, src_len, flags|STR_UNICODE|STR_NOALIGN);
 }
 
+/* Copy a string from a unistr2 source to internal samba format
+   destination.  Use this instead of direct calls to rpcstr_pull() to avoid
+   having to determine whether the source string is null terminated. */
+
+int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
+{
+        return pull_ucs2(NULL, dest, src->buffer, sizeof(fstring),
+                         src->uni_str_len * 2, 0);
+}
+
 /* Converts a string from internal samba format to unicode
  */ 
 int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
