@@ -455,6 +455,8 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "resolving keytab");
     ret = sl_command(cmds, argc, argv);
+    if(ret == -1)
+	krb5_warnx (context, "unrecognized command: %s", argv[0]);
     krb5_kt_close(context, keytab);
     return ret;
 }

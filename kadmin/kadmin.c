@@ -268,10 +268,13 @@ main(int argc, char **argv)
     
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
-    if (argc != 0)
+    if (argc != 0) {
 	ret = sl_command (cmd, argc, argv);
-    else
+	if(ret == -1)
+	    krb5_warnx (context, "unrecognized command: %s", argv[0]);
+    } else
 	ret = sl_loop (cmd, "kadmin> ") != 0;
+
     kadm5_destroy(kadm_handle);
     krb5_config_file_free (cf);
     krb5_free_context(context);
