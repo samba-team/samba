@@ -129,7 +129,7 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
 	struct passwd *pwd;
 	pwd = getpwuid(st->st_uid);
 	if(pwd == NULL)
-	    asprintf(&file->user, "%d", st->st_uid);
+	    asprintf(&file->user, "%u", (unsigned)st->st_uid);
 	else
 	    file->user = strdup(pwd->pw_name);
     }
@@ -137,7 +137,7 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
 	struct group *grp;
 	grp = getgrgid(st->st_gid);
 	if(grp == NULL)
-	    asprintf(&file->group, "%d", st->st_gid);
+	    asprintf(&file->group, "%u", (unsigned)st->st_gid);
 	else
 	    file->group = strdup(grp->gr_name);
     }
@@ -281,9 +281,7 @@ log10(int num)
 static int
 lstat_file (const char *file, struct stat *sb)
 {
-    int ret;
-    const int maxsize = 2048;
-
+#ifdef KRB4
     if (k_hasafs() 
 	&& strcmp(file, ".")
 	&& strcmp(file, "..")) 
@@ -292,6 +290,8 @@ lstat_file (const char *file, struct stat *sb)
 	char               *last;
 	char               *path_bkp;
 	static ino_t	   ino_counter = 0, ino_last = 0;
+	int		   ret;
+	const int	   maxsize = 2048;
 	
 	path_bkp = strdup (file);
 	if (path_bkp == NULL)
@@ -348,9 +348,9 @@ lstat_file (const char *file, struct stat *sb)
 	sb->st_nlink = 3;
 
 	return 0;
-    } else {
-	return lstat (file, sb);
     }
+#endif /* KRB4 */
+    return lstat (file, sb);
 }
 
 static void
