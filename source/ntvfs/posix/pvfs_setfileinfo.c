@@ -301,6 +301,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		return pvfs_setfileinfo_rename(pvfs, req, h->name, 
 					       &info->rename_information.in);
 
+	case RAW_SFILEINFO_SEC_DESC:
+		return pvfs_acl_set(pvfs, req, h->name, h->fd, info);
+
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}

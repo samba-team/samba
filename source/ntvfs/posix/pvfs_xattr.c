@@ -348,6 +348,49 @@ NTSTATUS pvfs_streams_save(struct pvfs_state *pvfs, struct pvfs_filename *name, 
 				   (ndr_push_flags_fn_t)ndr_push_xattr_DosStreams);
 }
 
+
+/*
+  load the current ACL from extended attributes
+*/
+NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
+		       struct xattr_DosAcl *acl)
+{
+	NTSTATUS status;
+	ZERO_STRUCTP(acl);
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
+	status = pvfs_xattr_ndr_load(pvfs, acl, name->full_name, fd, 
+				     XATTR_DOSACL_NAME,
+				     acl, 
+				     (ndr_pull_flags_fn_t)ndr_pull_xattr_DosAcl);
+	return status;
+}
+
+/*
+  save the acl for a file into filesystem xattr
+*/
+NTSTATUS pvfs_acl_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
+		       struct xattr_DosAcl *acl)
+{
+	NTSTATUS status;
+	void *privs;
+
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
+
+	/* this xattr is in the "system" namespace, so we need
+	   admin privileges to set it */
+	privs = root_privileges();
+	status = pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
+				     XATTR_DOSACL_NAME, 
+				     acl, 
+				     (ndr_push_flags_fn_t)ndr_push_xattr_DosAcl);
+	talloc_free(privs);
+	return status;
+}
+
 /*
   create a zero length xattr with the given name
 */

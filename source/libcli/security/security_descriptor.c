@@ -108,7 +108,7 @@ NTSTATUS security_check_dacl(struct security_token *st,
   add an ACE to the DACL of a security_descriptor
 */
 NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd, 
-				      struct security_ace *ace)
+				      const struct security_ace *ace)
 {
 	if (sd->dacl == NULL) {
 		sd->dacl = talloc_p(sd, struct security_acl);

@@ -294,6 +294,10 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
 
+	if (req->session == NULL) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	*sec = save_unix_security(req);
 	if (*sec == NULL) {
 		return NT_STATUS_NO_MEMORY;
