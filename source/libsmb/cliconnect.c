@@ -544,7 +544,7 @@ static NTSTATUS cli_session_setup_kerberos(struct cli_state *cli, const char *pr
 ****************************************************************************/
 
 static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *user, 
-				      const char *pass, const char *workgroup)
+					  const char *pass, const char *domain)
 {
 	struct ntlmssp_state *ntlmssp_state;
 	NTSTATUS nt_status;
@@ -563,7 +563,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
 		return nt_status;
 	}
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, workgroup))) {
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
 		return nt_status;
 	}
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, pass))) {
@@ -662,7 +662,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 ****************************************************************************/
 
 NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
-			      const char *pass, const char *workgroup)
+			      const char *pass, const char *domain)
 {
 	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
@@ -723,7 +723,7 @@ NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			}
 		}
 		
-		return cli_session_setup_kerberos(cli, principal, workgroup);
+		return cli_session_setup_kerberos(cli, principal, domain);
 	}
 #endif
 
@@ -731,7 +731,7 @@ NTSTATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 ntlmssp:
 
-	return cli_session_setup_ntlmssp(cli, user, pass, workgroup);
+	return cli_session_setup_ntlmssp(cli, user, pass, domain);
 }
 
 /****************************************************************************
