@@ -48,7 +48,7 @@ accept_it (int s)
 {
     int s2;
 
-    s2 = accept(s, NULL, 0);
+    s2 = accept(s, NULL, NULL);
     if(s2 < 0)
 	err (1, "accept");
     close(s);
