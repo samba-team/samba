@@ -305,7 +305,7 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
  ********************************************************************/
 BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
 {
-	(*offset) = ps->io;
+	(*offset) = ps->offset;
 	if (ps->io)
 	{
 		/* reading. */
@@ -348,7 +348,7 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
  ********************************************************************/
 BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
 {
-	(*offset) = ps->io;
+	(*offset) = ps->offset;
 	if (ps->io)
 	{
 		/* reading. */

@@ -297,6 +297,43 @@ void make_buf_hdr(BUFHDR *hdr, int max_len, int len)
 }
 
 /*******************************************************************
+ prs_uint16 wrapper.  call this and it sets up a pointer to where the
+ uint16 should be stored, or gets the size if reading
+ ********************************************************************/
+void smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset)
+{
+	(*offset) = ps->offset;
+	if (ps->io)
+	{
+		/* reading. */
+		smb_io_hdrbuf(desc, hdr, ps, depth);
+	}
+	else
+	{
+		ps->offset += sizeof(uint32) * 2;
+	}
+}
+
+/*******************************************************************
+ smb_io_hdrbuf wrapper.  call this and it retrospectively stores the size.
+ does nothing on reading, as that is already handled by ...._pre()
+ ********************************************************************/
+void smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
+				uint32 ptr_hdrbuf, uint32 start_offset)
+{
+	if (!ps->io)
+	{
+		/* storing: go back and do a retrospective job.  i hate this */
+		int data_size = ps->offset - start_offset;
+		uint32 old_offset = ps->offset;
+
+		make_buf_hdr(hdr, data_size, data_size);
+		ps->offset = ptr_hdrbuf;
+		smb_io_hdrbuf(desc, hdr, ps, depth);
+		ps->offset = old_offset;
+	}
+}
+/*******************************************************************
 reads or writes a BUFHDR structure.
 ********************************************************************/
 void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth)

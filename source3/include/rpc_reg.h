@@ -108,7 +108,7 @@ typedef struct q_reg_set_key_sec_info
 
 	uint32 ptr;       /* pointer */
 	BUFHDR hdr_sec;    /* header for security data */
-	SEC_DESC_BUF *data;    /* security data */
+	SEC_DESC_BUF data;    /* security data */
 	
 } REG_Q_SET_KEY_SEC;
 

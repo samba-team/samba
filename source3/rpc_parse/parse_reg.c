@@ -544,6 +544,68 @@ void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 /*******************************************************************
 makes a structure.
 ********************************************************************/
+void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 buf_len, SEC_DESC *sec_desc)
+{
+	if (q_i == NULL) return;
+
+	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
+
+	q_i->unknown = 0x7;
+
+	q_i->ptr = 1;
+	make_buf_hdr(&(q_i->hdr_sec), buf_len, buf_len);
+	make_sec_desc_buf(&(q_i->data), buf_len, sec_desc);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_q_set_key_sec");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
+
+	prs_uint32("unknown", ps, depth, &(r_q->unknown));
+	prs_uint32("ptr    ", ps, depth, &(r_q->ptr    ));
+
+	if (r_q->ptr != 0)
+	{
+		uint32 hdr_offset;
+		uint32 old_offset;
+		smb_io_hdrbuf_pre("hdr_sec", &(r_q->hdr_sec), ps, depth, &hdr_offset);
+		old_offset = ps->offset;
+		sec_io_desc_buf("data   ", &(r_q->data   ), ps, depth);
+		prs_align(ps);
+		smb_io_hdrbuf_post("hdr_sec", &(r_q->hdr_sec), ps, depth, hdr_offset, old_offset);
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_r_get_key_sec");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("status", ps, depth, &(r_q->status));
+}
+
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
 void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
 				uint32 buf_len, SEC_DESC_BUF *sec_buf)
 {
