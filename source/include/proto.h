@@ -380,6 +380,8 @@ char *talloc_strdup(TALLOC_CTX *t, char *p);
 
 /*The following definitions come from  lib/time.c  */
 
+time_t get_time_t_min(void);
+time_t get_time_t_max(void);
 void GetTimeOfDay(struct timeval *tval);
 void TimeInit(void);
 int TimeDiff(time_t t);
@@ -2031,8 +2033,9 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 BOOL initialize_password_db(BOOL reload);
 BOOL pdb_init_sam(SAM_ACCOUNT **user);
-BOOL pdb_free_sam(SAM_ACCOUNT *user);
+BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd);
 BOOL pdb_reset_sam(SAM_ACCOUNT *user);
+BOOL pdb_free_sam(SAM_ACCOUNT *user);
 struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user);
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(const char *p);

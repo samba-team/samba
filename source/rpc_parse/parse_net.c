@@ -1262,6 +1262,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	usr->user_id = pdb_get_user_rid(sampw);
 	usr->group_id = pdb_get_group_rid(sampw);
 	usr->num_groups = num_groups+1;
+
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
@@ -1341,17 +1342,17 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if (usr->ptr_user_info == 0)
 		return True;
 
-	if(!smb_io_time("time", &usr->logon_time, ps, depth)) /* logon time */
+	if(!smb_io_time("logon time", &usr->logon_time, ps, depth)) /* logon time */
 		return False;
-	if(!smb_io_time("time", &usr->logoff_time, ps, depth)) /* logoff time */
+	if(!smb_io_time("logoff time", &usr->logoff_time, ps, depth)) /* logoff time */
 		return False;
-	if(!smb_io_time("time", &usr->kickoff_time, ps, depth)) /* kickoff time */
+	if(!smb_io_time("kickoff time", &usr->kickoff_time, ps, depth)) /* kickoff time */
 		return False;
-	if(!smb_io_time("time", &usr->pass_last_set_time, ps, depth)) /* password last set time */
+	if(!smb_io_time("last set time", &usr->pass_last_set_time, ps, depth)) /* password last set time */
 		return False;
-	if(!smb_io_time("time", &usr->pass_can_change_time , ps, depth)) /* password can change time */
+	if(!smb_io_time("can change time", &usr->pass_can_change_time , ps, depth)) /* password can change time */
 		return False;
-	if(!smb_io_time("time", &usr->pass_must_change_time, ps, depth)) /* password must change time */
+	if(!smb_io_time("must change time", &usr->pass_must_change_time, ps, depth)) /* password must change time */
 		return False;
 
 	if(!smb_io_unihdr("unihdr", &usr->hdr_user_name, ps, depth)) /* username unicode string header */
