@@ -59,8 +59,17 @@ ldap ssl
 
 winbind enum users
 
+On large installations using winbindd it may be necessary to suppress 
+the enumeration of users through the setpwent(), getpwent() and 
+endpwent() group of system calls.  If the winbind enum users parameter 
+is false, calls to the getpwent system call will not return any data.
+
 winbind enum groups
 
+On large installations using winbindd it may be necessary to suppress 
+the enumeration of groups through the setgrent(), getgrent() and 
+endgrent() group of system calls.  If the winbind enum groups parameter 
+is false, calls to the getgrent() system call will not return any data.
 
 Removed parameters.
 -------------------
