@@ -1,5 +1,5 @@
 # Copyright (c) 1997 Kungliga Tekniska Högskolan
-# (Royal Institute of Technology, Stockholm, Sweden). 
+ (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
 # $Id$
@@ -53,7 +53,6 @@ $1 == "error_table" || $1 == "et" {
 	print "#include <error.h>" > h_file
 	print "" > h_file
 	print "void initialize_" name "_error_table(struct error_table**);" > h_file
-	print "void destroy_" name "_error_table (struct error_table *);" > h_file
 	print "" > h_file
 	print "typedef enum " name "_error_number{" > h_file
 	print "\tERROR_TABLE_BASE_" name " = " base "," > h_file
