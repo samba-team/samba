@@ -1422,6 +1422,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
         return ERROR_DOS(ERRDOS,ERRnofids);
       }
       dptr_set_wcard(dptr_num, strdup(mask));
+      dptr_set_attr(dptr_num, dirtype);
+    } else {
+      dirtype = dptr_attr(dptr_num);
     }
 
     DEBUG(4,("dptr_num is %d\n",dptr_num));
