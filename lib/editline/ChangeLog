@@ -1,3 +1,7 @@
+2005-04-02  Love  <lha@kth.se>
+
+	* Makefile.am: "must set with '=' before using '+='"
+
 2005-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* editline.c: avoid const string and strict aliasing warnings
