@@ -764,7 +764,7 @@ static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low)
 		low, high, printer_name));
 
 	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, 8 + strlen(printer_name) + 1, 
-		False);
+		False, NULL);
 	
 	return True;
 }	
