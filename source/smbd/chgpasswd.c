@@ -52,7 +52,6 @@
 extern int DEBUGLEVEL;
 
 #if ALLOW_CHANGE_PASSWORD
-#define BUFSIZE 512
 
 static int findpty(char **slave)
 {
@@ -192,33 +191,53 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   return(True);
 }
 
-static int expect(int master,char *expected,char *buf)
+extern int smb_read_error;
+
+static int expect(int master, char *issue, char *expected)
 {
-  int n, m;
- 
-  n = 0;
-  buf[0] = 0;
-  while (1) {
-    if (n >= BUFSIZE-1) {
-      return False;
-    }
+	pstring buffer;
+	int attempts, timeout, nread, len;
+	BOOL match = False;
 
-    /* allow 4 seconds for some output to appear */
-    m = read_with_timeout(master, buf+n, 1, BUFSIZE-1-n, 4000);
-    if (m < 0) 
-      return False;
+	for (attempts = 0; attempts < 2; attempts++)
+	{
+		if (!strequal(issue, "."))
+		{
+			if (lp_passwd_chat_debug())
+				DEBUG(100, ("expect: sending [%s]\n", issue));
 
-    n += m;
-    buf[n] = 0;
+			write(master, issue, strlen(issue));
+		}
 
-    {
-      pstring s1,s2;
-      pstrcpy(s1,buf);
-      pstrcpy(s2,expected);
-      if (unix_do_match(s1, s2, False))
-	return(True);
-    }
-  }
+		if (strequal(expected, "."))
+			return True;
+
+		timeout = 2000;
+		nread = 0;
+		buffer[nread] = 0;
+
+		while ((len = read_with_timeout(master, buffer + nread, 1,
+				 sizeof(buffer) - nread - 1, timeout)) > 0)
+		{
+			nread += len;
+			buffer[nread] = 0;
+
+			if ((match = unix_do_match(buffer, expected, False)))
+				timeout = 200;
+		}
+
+		if (lp_passwd_chat_debug())
+			DEBUG(100, ("expect: expected [%s] received [%s]\n",
+				    expected, buffer));
+
+		if (match)
+			break;
+
+		if (smb_read_error != READ_TIMEOUT)
+			return False;
+	}
+
+	return match;
 }
 
 static void pwd_sub(char *buf)
@@ -229,54 +248,32 @@ static void pwd_sub(char *buf)
 	all_string_sub(buf,"\\t","\t",0);
 }
 
-static void writestring(int fd,char *s)
+static int talktochild(int master, char *seq)
 {
-  int l;
-  
-  l = strlen (s);
-  write (fd, s, l);
+	int count = 0;
+	fstring issue, expected;
+
+	fstrcpy(issue, ".");
+
+	while (next_token(&seq, expected, NULL, sizeof(expected)))
+	{
+		pwd_sub(expected);
+		count++;
+
+		if (!expect(master, issue, expected))
+		{
+			DEBUG(3,("Response %d incorrect\n", count));
+			return False;
+		}
+
+		if (!next_token(&seq, issue, NULL, sizeof(issue)))
+			fstrcpy(issue, ".");
+
+		pwd_sub(issue);
+	}
+
+	return (count > 0);
 }
-
-
-static int talktochild(int master, char *chatsequence)
-{
-  char buf[BUFSIZE];
-  int count=0;
-  char *ptr=chatsequence;
-  fstring chatbuf;
-
-  *buf = 0;
-  sleep(1);
-
-  while (next_token(&ptr,chatbuf,NULL,sizeof(chatbuf))) {
-    BOOL ok=True;
-    count++;
-    pwd_sub(chatbuf);
-    if (!strequal(chatbuf,"."))
-      ok = expect(master,chatbuf,buf);
-
-    if (lp_passwd_chat_debug())
-      DEBUG(100,("talktochild: chatbuf=[%s] responsebuf=[%s]\n",chatbuf,buf));
-
-    if (!ok) {
-      DEBUG(3,("response %d incorrect\n",count));
-      return(False);
-    }
-
-    if (!next_token(&ptr,chatbuf,NULL,sizeof(chatbuf))) break;
-    pwd_sub(chatbuf);
-    if (!strequal(chatbuf,"."))
-      writestring(master,chatbuf);
-
-    if (lp_passwd_chat_debug())
-      DEBUG(100,("talktochild: sendbuf=[%s]\n",chatbuf));
-  }
-
-  if (count<1) return(False);
-
-  return (True);
-}
-
 
 static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root)
 {
