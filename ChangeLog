@@ -1,3 +1,12 @@
+2002-04-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: use rk_DESTDIRS
+
+2002-04-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_verify_user.3: make it clear that _lrealm modifies
+	the principal
+
 2002-04-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/verify_init.c: fix typo in error string
