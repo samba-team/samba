@@ -1623,7 +1623,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	}
 
 	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("_srv_net_file_set_secdesc: Can't become connected user!\n"));
+		DEBUG(0,("_srv_net_file_query_secdesc: Can't become connected user!\n"));
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto error_exit;
 	}
