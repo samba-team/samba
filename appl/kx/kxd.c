@@ -210,11 +210,13 @@ doit(int sock)
      if (krb_net_read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
 	  return 1;
      if (passivep) {
+	  char tmp[16];
+
 	  localx = get_local_xsocket (&display_num);
 	  if (localx < 0)
 	       return 1;
-	  tmp = htonl(display_num);
-	  if (krb_net_write (sock, &tmp, sizeof(tmp)) != sizeof(tmp))
+	  sprintf (tmp, "%u", display_num);
+	  if (krb_net_write (sock, tmp, sizeof(tmp)) != sizeof(tmp))
 	       return 1;
 	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
 	  if (krb_net_write (sock, xauthfile, sizeof(xauthfile)) !=
