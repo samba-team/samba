@@ -942,103 +942,94 @@ static int skip_file(int skipsize)
 
 static int get_file(file_info2 finfo)
 {
-  int fnum = -1, pos = 0, dsize = 0, bpos = 0;
-  SMB_BIG_UINT rsize = 0;
+	int fnum = -1, pos = 0, dsize = 0, bpos = 0;
+	SMB_BIG_UINT rsize = 0;
 
-  DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
+	DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 
-  if (ensurepath(finfo.name) && 
-      (fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
-      DEBUG(0, ("abandoning restore\n"));
-      return(False);
-  }
+	if (ensurepath(finfo.name) && 
+			(fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
+		DEBUG(0, ("abandoning restore\n"));
+		return(False);
+	}
 
-  /* read the blocks from the tar file and write to the remote file */
+	/* read the blocks from the tar file and write to the remote file */
 
-  rsize = finfo.size;  /* This is how much to write */
+	rsize = finfo.size;  /* This is how much to write */
 
-  while (rsize > 0) {
+	while (rsize > 0) {
 
-    /* We can only write up to the end of the buffer */
+		/* We can only write up to the end of the buffer */
+		dsize = MIN(tbufsiz - (buffer_p - tarbuf) - bpos, 65520); /* Calculate the size to write */
+		dsize = MIN(dsize, rsize);  /* Should be only what is left */
+		DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
 
-    dsize = MIN(tbufsiz - (buffer_p - tarbuf) - bpos, 65520); /* Calculate the size to write */
-    dsize = MIN(dsize, rsize);  /* Should be only what is left */
-    DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
+		if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
+			DEBUG(0, ("Error writing remote file\n"));
+			return 0;
+		}
 
-    if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
-	    DEBUG(0, ("Error writing remote file\n"));
-	    return 0;
-    }
+		rsize -= dsize;
+		pos += dsize;
 
-    rsize -= dsize;
-    pos += dsize;
+		/* Now figure out how much to move in the buffer */
 
-    /* Now figure out how much to move in the buffer */
+		/* FIXME, we should skip more than one block at a time */
 
-    /* FIXME, we should skip more than one block at a time */
+		/* First, skip any initial part of the part written that is left over */
+		/* from the end of the first TBLOCK                                   */
 
-    /* First, skip any initial part of the part written that is left over */
-    /* from the end of the first TBLOCK                                   */
+		if ((bpos) && ((bpos + dsize) >= TBLOCK)) {
+			dsize -= (TBLOCK - bpos);  /* Get rid of the end of the first block */
+			bpos = 0;
 
-    if ((bpos) && ((bpos + dsize) >= TBLOCK)) {
+			if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {  /* and skip the block */
+				DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+				return False;
+			}
+		}
 
-      dsize -= (TBLOCK - bpos);  /* Get rid of the end of the first block */
-      bpos = 0;
+		/*
+		 * Bugfix from Bob Boehmer <boehmer@worldnet.att.net>.
+		 * If the file being extracted is an exact multiple of
+		 * TBLOCK bytes then we don't want to extract the next
+		 * block from the tarfile here, as it will be done in
+		 * the caller of get_file().
+		 */
 
-      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {  /* and skip the block */
-	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
-	return False;
+		while (((rsize != 0) && (dsize >= TBLOCK)) ||
+				((rsize == 0) && (dsize > TBLOCK))) {
 
-      }
+			if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
+				DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+				return False;
+			}
 
-    }
+			dsize -= TBLOCK;
+		}
+		bpos = dsize;
+	}
 
-    /*
-     * Bugfix from Bob Boehmer <boehmer@worldnet.att.net>.
-     * If the file being extracted is an exact multiple of
-     * TBLOCK bytes then we don't want to extract the next
-     * block from the tarfile here, as it will be done in
-     * the caller of get_file().
-     */
+	/* Now close the file ... */
 
-    while (((rsize != 0) && (dsize >= TBLOCK)) ||
-         ((rsize == 0) && (dsize > TBLOCK))) {
+	if (!cli_close(cli, fnum)) {
+		DEBUG(0, ("Error closing remote file\n"));
+		return(False);
+	}
 
-      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
-	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
-	return False;
-      }
+	/* Now we update the creation date ... */
+	DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-      dsize -= TBLOCK;
-    }
+	if (!cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime)) {
+		if (tar_real_noisy) {
+			DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
+			/*return(False); */ /* Ignore, as Win95 does not allow changes */
+		}
+	}
 
-    bpos = dsize;
-
-  }
-
-  /* Now close the file ... */
-
-  if (!cli_close(cli, fnum)) {
-	  DEBUG(0, ("Error closing remote file\n"));
-	  return(False);
-  }
-
-  /* Now we update the creation date ... */
-
-  DEBUG(5, ("Updating creation date on %s\n", finfo.name));
-
-  if (!cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime)) {
-	  if (tar_real_noisy) {
-		  DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
-		  /*return(False); */ /* Ignore, as Win95 does not allow changes */
-	  }
-  }
-
-  ntarf++;
-
-  DEBUG(0, ("restore tar file %s of size %.0f bytes\n", finfo.name, (double)finfo.size));
-  
-  return(True);
+	ntarf++;
+	DEBUG(0, ("restore tar file %s of size %.0f bytes\n", finfo.name, (double)finfo.size));
+	return(True);
 }
 
 /* Create a directory.  We just ensure that the path exists and return as there
@@ -1046,213 +1037,166 @@ static int get_file(file_info2 finfo)
 */
 static int get_dir(file_info2 finfo)
 {
+	DEBUG(0, ("restore directory %s\n", finfo.name));
 
-  DEBUG(0, ("restore directory %s\n", finfo.name));
-
-  if (!ensurepath(finfo.name)) {
-
-    DEBUG(0, ("Problems creating directory\n"));
-    return(False);
-
-  }
-
-  ntarf++;
-  return(True);
-
+	if (!ensurepath(finfo.name)) {
+		DEBUG(0, ("Problems creating directory\n"));
+		return(False);
+	}
+	ntarf++;
+	return(True);
 }
+
 /* Get a file with a long file name ... first file has file name, next file 
    has the data. We only want the long file name, as the loop in do_tarput
    will deal with the rest.
 */
 static char * get_longfilename(file_info2 finfo)
 {
-  int namesize = strlen(finfo.name) + strlen(cur_dir) + 2;
-  char *longname = malloc(namesize);
-  int offset = 0, left = finfo.size;
-  BOOL first = True;
+	int namesize = strlen(finfo.name) + strlen(cur_dir) + 2;
+	char *longname = malloc(namesize);
+	int offset = 0, left = finfo.size;
+	BOOL first = True;
 
-  DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
-  DEBUG(5, ("Len = %.0f\n", (double)finfo.size));
+	DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
+	DEBUG(5, ("Len = %.0f\n", (double)finfo.size));
 
-  if (longname == NULL) {
+	if (longname == NULL) {
+		DEBUG(0, ("could not allocate buffer of size %d for longname\n", namesize));
+		return(NULL);
+	}
 
-    DEBUG(0, ("could not allocate buffer of size %d for longname\n", 
-	      namesize));
-    return(NULL);
-  }
+	/* First, add cur_dir to the long file name */
 
-  /* First, add cur_dir to the long file name */
+	if (strlen(cur_dir) > 0) {
+		strncpy(longname, cur_dir, namesize);
+		offset = strlen(cur_dir);
+	}
 
-  if (strlen(cur_dir) > 0) {
-    strncpy(longname, cur_dir, namesize);
-    offset = strlen(cur_dir);
-  }
+	/* Loop through the blocks picking up the name */
 
-  /* Loop through the blocks picking up the name */
+	while (left > 0) {
+		if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+			DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			return(NULL);
+		}
 
-  while (left > 0) {
+		unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size), first--);
+		DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
 
-    if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+		offset += TBLOCK;
+		left -= TBLOCK;
+	}
 
-      DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
-      return(NULL);
-
-    }
-
-    unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size), first--);
-    DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
-
-    offset += TBLOCK;
-    left -= TBLOCK;
-
-  }
-
-  return(longname);
-
+	return(longname);
 }
 
 static void do_tarput(void)
 {
-  file_info2 finfo;
-  struct timeval tp_start;
-  char *longfilename = NULL, linkflag;
-  int skip = False;
+	file_info2 finfo;
+	struct timeval tp_start;
+	char *longfilename = NULL, linkflag;
+	int skip = False;
 
-  GetTimeOfDay(&tp_start);
+	GetTimeOfDay(&tp_start);
+	DEBUG(5, ("RJS do_tarput called ...\n"));
 
-  DEBUG(5, ("RJS do_tarput called ...\n"));
+	buffer_p = tarbuf + tbufsiz;  /* init this to force first read */
 
-  buffer_p = tarbuf + tbufsiz;  /* init this to force first read */
+	/* Now read through those files ... */
+	while (True) {
+		/* Get us to the next block, or the first block first time around */
+		if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+			DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			return;
+		}
 
-  /* Now read through those files ... */
+		DEBUG(5, ("Reading the next header ...\n"));
 
-  while (True) {
+		switch (readtarheader((union hblock *) buffer_p, &finfo, cur_dir)) {
+			case -2:    /* Hmm, not good, but not fatal */
+				DEBUG(0, ("Skipping %s...\n", finfo.name));
+				if ((next_block(tarbuf, &buffer_p, tbufsiz) <= 0) && !skip_file(finfo.size)) {
+					DEBUG(0, ("Short file, bailing out...\n"));
+					return;
+				}
+				break;
 
-    /* Get us to the next block, or the first block first time around */
+			case -1:
+				DEBUG(0, ("abandoning restore, -1 from read tar header\n"));
+				return;
 
-    if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+			case 0: /* chksum is zero - looks like an EOF */
+				DEBUG(0, ("tar: restored %d files and directories\n", ntarf));
+				return;        /* Hmmm, bad here ... */
 
-      DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			default: 
+				/* No action */
+				break;
+		}
 
-      return;
+		/* Now, do we have a long file name? */
+		if (longfilename != NULL) {
+			SAFE_FREE(finfo.name);   /* Free the space already allocated */
+			finfo.name = longfilename;
+			longfilename = NULL;
+		}
 
-    }
-
-    DEBUG(5, ("Reading the next header ...\n"));
-
-    switch (readtarheader((union hblock *) buffer_p, &finfo, cur_dir)) {
-
-    case -2:    /* Hmm, not good, but not fatal */
-      DEBUG(0, ("Skipping %s...\n", finfo.name));
-      if ((next_block(tarbuf, &buffer_p, tbufsiz) <= 0) &&
-          !skip_file(finfo.size)) {
-
-	DEBUG(0, ("Short file, bailing out...\n"));
-	return;
-
-      }
-
-      break;
-
-    case -1:
-      DEBUG(0, ("abandoning restore, -1 from read tar header\n"));
-      return;
-
-    case 0: /* chksum is zero - looks like an EOF */
-      DEBUG(0, ("tar: restored %d files and directories\n", ntarf));
-      return;        /* Hmmm, bad here ... */
-
-    default: 
-      /* No action */
-
-      break;
-
-    }
-
-    /* Now, do we have a long file name? */
-
-    if (longfilename != NULL) {
-
-      SAFE_FREE(finfo.name);   /* Free the space already allocated */
-      finfo.name = longfilename;
-      longfilename = NULL;
-
-    }
-
-    /* Well, now we have a header, process the file ...            */
-
-    /* Should we skip the file? We have the long name as well here */
-
-    skip = clipn &&
-      ((!tar_re_search && clipfind(cliplist, clipn, finfo.name) ^ tar_excl)
+		/* Well, now we have a header, process the file ...            */
+		/* Should we skip the file? We have the long name as well here */
+		skip = clipn && ((!tar_re_search && clipfind(cliplist, clipn, finfo.name) ^ tar_excl) ||
 #ifdef HAVE_REGEX_H
-      || (tar_re_search && !regexec(preg, finfo.name, 0, NULL, 0)));
+					(tar_re_search && !regexec(preg, finfo.name, 0, NULL, 0)));
 #else
-      || (tar_re_search && mask_match(finfo.name, cliplist[0], True)));
+					(tar_re_search && mask_match(finfo.name, cliplist[0], True)));
 #endif
 
-  DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, (cliplist?cliplist[0]:NULL), finfo.name));
+		DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, (cliplist?cliplist[0]:NULL), finfo.name));
+		if (skip) {
+			skip_file(finfo.size);
+			continue;
+		}
 
-  if (skip) {
+		/* We only get this far if we should process the file */
+		linkflag = ((union hblock *)buffer_p) -> dbuf.linkflag;
+		switch (linkflag) {
+			case '0':  /* Should use symbolic names--FIXME */
+				/* 
+				 * Skip to the next block first, so we can get the file, FIXME, should
+				 * be in get_file ...
+				 * The 'finfo.size != 0' fix is from Bob Boehmer <boehmer@worldnet.att.net>
+				 * Fixes bug where file size in tarfile is zero.
+				 */
+				if ((finfo.size != 0) && next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
+					DEBUG(0, ("Short file, bailing out...\n"));
+					return;
+				}
+				if (!get_file(finfo)) {
+					DEBUG(0, ("Abandoning restore\n"));
+					return;
+				}
+				break;
+			case '5':
+				if (!get_dir(finfo)) {
+					DEBUG(0, ("Abandoning restore \n"));
+					return;
+				}
+				break;
+			case 'L':
+				longfilename = get_longfilename(finfo);
+				if (!longfilename) {
+					DEBUG(0, ("abandoning restore\n"));
+					return;
+				}
+				DEBUG(5, ("Long file name: %s\n", longfilename));
+				break;
 
-    skip_file(finfo.size);
-    continue;
-
-  }
-
-    /* We only get this far if we should process the file */
-  linkflag = ((union hblock *)buffer_p) -> dbuf.linkflag;
-
-    switch (linkflag) {
-
-    case '0':  /* Should use symbolic names--FIXME */
-
-      /* 
-       * Skip to the next block first, so we can get the file, FIXME, should
-       * be in get_file ...
-       * The 'finfo.size != 0' fix is from Bob Boehmer <boehmer@worldnet.att.net>
-       * Fixes bug where file size in tarfile is zero.
-       */
-
-      if ((finfo.size != 0) && next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
-	DEBUG(0, ("Short file, bailing out...\n"));
-	return;
-      }
-      if (!get_file(finfo)) {
-	DEBUG(0, ("Abandoning restore\n"));
-	return;
-
-      }
-      break;
-
-    case '5':
-      if (!get_dir(finfo)) {
-	DEBUG(0, ("Abandoning restore \n"));
-	return;
-      }
-      break;
-
-    case 'L':
-      longfilename = get_longfilename(finfo);
-      if (!longfilename) {
-	DEBUG(0, ("abandoning restore\n"));
-	return;
-
-      }
-      DEBUG(5, ("Long file name: %s\n", longfilename));
-      break;
-
-    default:
-      skip_file(finfo.size);  /* Don't handle these yet */
-      break;
-
-    }
-
-  }
-
-
+			default:
+				skip_file(finfo.size);  /* Don't handle these yet */
+				break;
+		}
+	}
 }
-
 
 /*
  * samba interactive commands
@@ -1287,42 +1231,43 @@ int cmd_block(void)
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
+
 int cmd_tarmode(void)
 {
-  fstring buf;
+	fstring buf;
 
-  while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-    if (strequal(buf, "full"))
-      tar_inc=False;
-    else if (strequal(buf, "inc"))
-      tar_inc=True;
-    else if (strequal(buf, "reset"))
-      tar_reset=True;
-    else if (strequal(buf, "noreset"))
-      tar_reset=False;
-    else if (strequal(buf, "system"))
-      tar_system=True;
-    else if (strequal(buf, "nosystem"))
-      tar_system=False;
-    else if (strequal(buf, "hidden"))
-      tar_hidden=True;
-    else if (strequal(buf, "nohidden"))
-      tar_hidden=False;
-    else if (strequal(buf, "verbose") || strequal(buf, "noquiet"))
-      tar_noisy=True;
-    else if (strequal(buf, "quiet") || strequal(buf, "noverbose"))
-      tar_noisy=False;
-    else DEBUG(0, ("tarmode: unrecognised option %s\n", buf));
-  }
+	while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		if (strequal(buf, "full"))
+			tar_inc=False;
+		else if (strequal(buf, "inc"))
+			tar_inc=True;
+		else if (strequal(buf, "reset"))
+			tar_reset=True;
+		else if (strequal(buf, "noreset"))
+			tar_reset=False;
+		else if (strequal(buf, "system"))
+			tar_system=True;
+		else if (strequal(buf, "nosystem"))
+			tar_system=False;
+		else if (strequal(buf, "hidden"))
+			tar_hidden=True;
+		else if (strequal(buf, "nohidden"))
+			tar_hidden=False;
+		else if (strequal(buf, "verbose") || strequal(buf, "noquiet"))
+			tar_noisy=True;
+		else if (strequal(buf, "quiet") || strequal(buf, "noverbose"))
+			tar_noisy=False;
+		else
+			DEBUG(0, ("tarmode: unrecognised option %s\n", buf));
+	}
 
-  DEBUG(0, ("tarmode is now %s, %s, %s, %s, %s\n",
-	    tar_inc ? "incremental" : "full",
-	    tar_system ? "system" : "nosystem",
-	    tar_hidden ? "hidden" : "nohidden",
-	    tar_reset ? "reset" : "noreset",
-	    tar_noisy ? "verbose" : "quiet"));
-
-  return 0;
+	DEBUG(0, ("tarmode is now %s, %s, %s, %s, %s\n",
+			tar_inc ? "incremental" : "full",
+			tar_system ? "system" : "nosystem",
+			tar_hidden ? "hidden" : "nohidden",
+			tar_reset ? "reset" : "noreset",
+			tar_noisy ? "verbose" : "quiet"));
+	return 0;
 }
 
 /****************************************************************************
@@ -1331,56 +1276,61 @@ Feeble attrib command
 
 int cmd_setmode(void)
 {
-  char *q;
-  fstring buf;
-  pstring fname;
-  uint16 attra[2];
-  int direct=1;
+	char *q;
+	fstring buf;
+	pstring fname;
+	uint16 attra[2];
+	int direct=1;
 
-  attra[0] = attra[1] = 0;
+	attra[0] = attra[1] = 0;
 
-  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
-    {
-      DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
-      return 1;
-    }
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
+		return 1;
+	}
 
-  pstrcpy(fname, cur_dir);
-  pstrcat(fname, buf);
+	pstrcpy(fname, cur_dir);
+	pstrcat(fname, buf);
 
-  while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-    q=buf;
+	while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		q=buf;
 
-    while(*q)
-      switch (*q++) {
-      case '+': direct=1;
-	break;
-      case '-': direct=0;
-	break;
-      case 'r': attra[direct]|=aRONLY;
-	break;
-      case 'h': attra[direct]|=aHIDDEN;
-	break;
-      case 's': attra[direct]|=aSYSTEM;
-	break;
-      case 'a': attra[direct]|=aARCH;
-	break;
-      default: DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
-	return 1;
-      }
-  }
+		while(*q) {
+			switch (*q++) {
+				case '+':
+					direct=1;
+					break;
+				case '-':
+					direct=0;
+					break;
+				case 'r':
+					attra[direct]|=aRONLY;
+					break;
+				case 'h':
+					attra[direct]|=aHIDDEN;
+					break;
+				case 's':
+					attra[direct]|=aSYSTEM;
+					break;
+				case 'a':
+					attra[direct]|=aARCH;
+					break;
+				default:
+					DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
+					return 1;
+			}
+		}
+	}
 
-  if (attra[ATTRSET]==0 && attra[ATTRRESET]==0)
-    {
-      DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
-      return 1;
-    }
+	if (attra[ATTRSET]==0 && attra[ATTRRESET]==0) {
+		DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
+		return 1;
+	}
 
-  DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
-  do_setrattr(fname, attra[ATTRSET], ATTRSET);
-  do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
-
-  return 0;
+	DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
+	do_setrattr(fname, attra[ATTRSET], ATTRSET);
+	do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
+	return 0;
 }
 
 /****************************************************************************
@@ -1389,25 +1339,22 @@ Principal command for creating / extracting
 
 int cmd_tar(void)
 {
-  fstring buf;
-  char **argl;
-  int argcl;
+	fstring buf;
+	char **argl;
+	int argcl;
 
-  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
-    {
-      DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
-      return 1;
-    }
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
+		return 1;
+	}
 
-  argl=toktocliplist(&argcl, NULL);
-  if (!tar_parseargs(argcl, argl, buf, 0))
-    return 1;
+	argl=toktocliplist(&argcl, NULL);
+	if (!tar_parseargs(argcl, argl, buf, 0))
+		return 1;
 
-  process_tar();
-
-  SAFE_FREE(argl);
-
-  return 0;
+	process_tar();
+	SAFE_FREE(argl);
+	return 0;
 }
 
 /****************************************************************************
@@ -1416,84 +1363,84 @@ Command line (option) version
 
 int process_tar(void)
 {
-  initarbuf();
-  switch(tar_type) {
-  case 'x':
+	initarbuf();
+	switch(tar_type) {
+		case 'x':
 
 #if 0
-    do_tarput2();
+			do_tarput2();
 #else
-    do_tarput();
+			do_tarput();
 #endif
-    SAFE_FREE(tarbuf);
-    close(tarhandle);
-    break;
-  case 'r':
-  case 'c':
-    if (clipn && tar_excl) {
-      int i;
-      pstring tarmac;
+			SAFE_FREE(tarbuf);
+			close(tarhandle);
+			break;
+		case 'r':
+		case 'c':
+			if (clipn && tar_excl) {
+				int i;
+				pstring tarmac;
 
-      for (i=0; i<clipn; i++) {
-	DEBUG(5,("arg %d = %s\n", i, cliplist[i]));
+				for (i=0; i<clipn; i++) {
+					DEBUG(5,("arg %d = %s\n", i, cliplist[i]));
 
-	if (*(cliplist[i]+strlen(cliplist[i])-1)=='\\') {
-	  *(cliplist[i]+strlen(cliplist[i])-1)='\0';
-	}
+					if (*(cliplist[i]+strlen(cliplist[i])-1)=='\\') {
+						*(cliplist[i]+strlen(cliplist[i])-1)='\0';
+					}
 	
-	if (strrchr_m(cliplist[i], '\\')) {
-	  pstring saved_dir;
+					if (strrchr_m(cliplist[i], '\\')) {
+						pstring saved_dir;
 	  
-	  pstrcpy(saved_dir, cur_dir);
+						pstrcpy(saved_dir, cur_dir);
 	  
-	  if (*cliplist[i]=='\\') {
-	    pstrcpy(tarmac, cliplist[i]);
-	  } else {
-	    pstrcpy(tarmac, cur_dir);
-	    pstrcat(tarmac, cliplist[i]);
-	  }
-	  pstrcpy(cur_dir, tarmac);
-	  *(strrchr_m(cur_dir, '\\')+1)='\0';
+						if (*cliplist[i]=='\\') {
+							pstrcpy(tarmac, cliplist[i]);
+						} else {
+							pstrcpy(tarmac, cur_dir);
+							pstrcat(tarmac, cliplist[i]);
+						}
+						pstrcpy(cur_dir, tarmac);
+						*(strrchr_m(cur_dir, '\\')+1)='\0';
 
-	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
-	  do_list(tarmac,attribute,do_tar, False, True);
-	  pstrcpy(cur_dir,saved_dir);
-	} else {
-	  pstrcpy(tarmac, cur_dir);
-	  pstrcat(tarmac, cliplist[i]);
-	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
-	  do_list(tarmac,attribute,do_tar, False, True);
+						DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
+						do_list(tarmac,attribute,do_tar, False, True);
+						pstrcpy(cur_dir,saved_dir);
+					} else {
+						pstrcpy(tarmac, cur_dir);
+						pstrcat(tarmac, cliplist[i]);
+						DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
+						do_list(tarmac,attribute,do_tar, False, True);
+					}
+				}
+			} else {
+				pstring mask;
+				pstrcpy(mask,cur_dir);
+				DEBUG(5, ("process_tar, do_list with mask: %s\n", mask));
+				pstrcat(mask,"\\*");
+				do_list(mask,attribute,do_tar,False, True);
+			}
+    
+			if (ntarf)
+				dotareof(tarhandle);
+			close(tarhandle);
+			SAFE_FREE(tarbuf);
+    
+			DEBUG(0, ("tar: dumped %d files and directories\n", ntarf));
+			DEBUG(0, ("Total bytes written: %.0f\n", (double)ttarf));
+			break;
 	}
-      }
-    } else {
-      pstring mask;
-      pstrcpy(mask,cur_dir);
-      DEBUG(5, ("process_tar, do_list with mask: %s\n", mask));
-      pstrcat(mask,"\\*");
-      do_list(mask,attribute,do_tar,False, True);
-    }
-    
-    if (ntarf) dotareof(tarhandle);
-    close(tarhandle);
-    SAFE_FREE(tarbuf);
-    
-    DEBUG(0, ("tar: dumped %d files and directories\n", ntarf));
-    DEBUG(0, ("Total bytes written: %.0f\n", (double)ttarf));
-    break;
-  }
 
-  if (must_free_cliplist) {
-    int i;
-    for (i = 0; i < clipn; ++i) {
-      SAFE_FREE(cliplist[i]);
-    }
-    SAFE_FREE(cliplist);
-    cliplist = NULL;
-    clipn = 0;
-    must_free_cliplist = False;
-  }
-
-  return(0);
+	if (must_free_cliplist) {
+		int i;
+		for (i = 0; i < clipn; ++i) {
+			SAFE_FREE(cliplist[i]);
+		}
+		SAFE_FREE(cliplist);
+		cliplist = NULL;
+		clipn = 0;
+		must_free_cliplist = False;
+	}
+	return(0);
 }
 
 /****************************************************************************
@@ -1502,21 +1449,24 @@ Find a token (filename) in a clip list
 
 static int clipfind(char **aret, int ret, char *tok)
 {
-  if (aret==NULL) return 0;
+	if (aret==NULL)
+		return 0;
 
-  /* ignore leading slashes or dots in token */
-  while(strchr_m("/\\.", *tok)) tok++;
+	/* ignore leading slashes or dots in token */
+	while(strchr_m("/\\.", *tok))
+		tok++;
 
-  while(ret--) {
-    char *pkey=*aret++;
+	while(ret--) {
+		char *pkey=*aret++;
 
-    /* ignore leading slashes or dots in list */
-    while(strchr_m("/\\.", *pkey)) pkey++;
+		/* ignore leading slashes or dots in list */
+		while(strchr_m("/\\.", *pkey))
+			pkey++;
 
-    if (!strslashcmp(pkey, tok)) return 1;
-  }
-
-  return 0;
+		if (!strslashcmp(pkey, tok))
+			return 1;
+	}
+	return 0;
 }
 
 /****************************************************************************
@@ -1526,106 +1476,107 @@ accordingly.
 
 static int read_inclusion_file(char *filename)
 {
-  XFILE *inclusion = NULL;
-  char buf[MAXPATHLEN + 1];
-  char *inclusion_buffer = NULL;
-  int inclusion_buffer_size = 0;
-  int inclusion_buffer_sofar = 0;
-  char *p;
-  char *tmpstr;
-  int i;
-  int error = 0;
+	XFILE *inclusion = NULL;
+	char buf[MAXPATHLEN + 1];
+	char *inclusion_buffer = NULL;
+	int inclusion_buffer_size = 0;
+	int inclusion_buffer_sofar = 0;
+	char *p;
+	char *tmpstr;
+	int i;
+	int error = 0;
 
-  clipn = 0;
-  buf[MAXPATHLEN] = '\0'; /* guarantee null-termination */
-  if ((inclusion = x_fopen(filename, O_RDONLY, 0)) == NULL) {
-    /* XXX It would be better to include a reason for failure, but without
-     * autoconf, it's hard to use strerror, sys_errlist, etc.
-     */
-    DEBUG(0,("Unable to open inclusion file %s\n", filename));
-    return 0;
-  }
-
-  while ((! error) && (x_fgets(buf, sizeof(buf)-1, inclusion))) {
-    if (inclusion_buffer == NULL) {
-      inclusion_buffer_size = 1024;
-      if ((inclusion_buffer = malloc(inclusion_buffer_size)) == NULL) {
-	DEBUG(0,("failure allocating buffer to read inclusion file\n"));
-	error = 1;
-	break;
-      }
-    }
-    
-    if (buf[strlen(buf)-1] == '\n') {
-      buf[strlen(buf)-1] = '\0';
-    }
-    
-    if ((strlen(buf) + 1 + inclusion_buffer_sofar) >= inclusion_buffer_size) {
-      char *ib;
-      inclusion_buffer_size *= 2;
-      ib = Realloc(inclusion_buffer,inclusion_buffer_size);
-      if (! ib) {
-	DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n",
-		 inclusion_buffer_size));
-	error = 1;
-	break;
-      }
-      else inclusion_buffer = ib;
-    }
-    
-    safe_strcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);
-    inclusion_buffer_sofar += strlen(buf) + 1;
-    clipn++;
-  }
-  x_fclose(inclusion);
-
-  if (! error) {
-    /* Allocate an array of clipn + 1 char*'s for cliplist */
-    cliplist = malloc((clipn + 1) * sizeof(char *));
-    if (cliplist == NULL) {
-      DEBUG(0,("failure allocating memory for cliplist\n"));
-      error = 1;
-    } else {
-      cliplist[clipn] = NULL;
-      p = inclusion_buffer;
-      for (i = 0; (! error) && (i < clipn); i++) {
-	/* set current item to NULL so array will be null-terminated even if
-	 * malloc fails below. */
-	cliplist[i] = NULL;
-	if ((tmpstr = (char *)malloc(strlen(p)+1)) == NULL) {
-	  DEBUG(0, ("Could not allocate space for a cliplist item, # %i\n", i));
-	  error = 1;
-	} else {
-	  unfixtarname(tmpstr, p, strlen(p) + 1, True);
-	  cliplist[i] = tmpstr;
-	  if ((p = strchr_m(p, '\000')) == NULL) {
-	    DEBUG(0,("INTERNAL ERROR: inclusion_buffer is of unexpected contents.\n"));
-	    abort();
-	  }
+	clipn = 0;
+	buf[MAXPATHLEN] = '\0'; /* guarantee null-termination */
+	if ((inclusion = x_fopen(filename, O_RDONLY, 0)) == NULL) {
+		/* XXX It would be better to include a reason for failure, but without
+		 * autoconf, it's hard to use strerror, sys_errlist, etc.
+		 */
+		DEBUG(0,("Unable to open inclusion file %s\n", filename));
+		return 0;
 	}
-	++p;
-      }
-      must_free_cliplist = True;
-    }
-  }
 
-  SAFE_FREE(inclusion_buffer);
-  if (error) {
-    if (cliplist) {
-      char **pp;
-      /* We know cliplist is always null-terminated */
-      for (pp = cliplist; *pp; ++pp) {
-        SAFE_FREE(*pp);
-      }
-      SAFE_FREE(cliplist);
-      cliplist = NULL;
-      must_free_cliplist = False;
-    }
-    return 0;
-  }
+	while ((! error) && (x_fgets(buf, sizeof(buf)-1, inclusion))) {
+		if (inclusion_buffer == NULL) {
+			inclusion_buffer_size = 1024;
+			if ((inclusion_buffer = malloc(inclusion_buffer_size)) == NULL) {
+				DEBUG(0,("failure allocating buffer to read inclusion file\n"));
+				error = 1;
+				break;
+			}
+		}
+    
+		if (buf[strlen(buf)-1] == '\n') {
+			buf[strlen(buf)-1] = '\0';
+		}
+    
+		if ((strlen(buf) + 1 + inclusion_buffer_sofar) >= inclusion_buffer_size) {
+			char *ib;
+			inclusion_buffer_size *= 2;
+			ib = Realloc(inclusion_buffer,inclusion_buffer_size);
+			if (! ib) {
+				DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n",
+						inclusion_buffer_size));
+				error = 1;
+				break;
+			} else {
+				inclusion_buffer = ib;
+			}
+		}
+    
+		safe_strcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);
+		inclusion_buffer_sofar += strlen(buf) + 1;
+		clipn++;
+	}
+	x_fclose(inclusion);
+
+	if (! error) {
+		/* Allocate an array of clipn + 1 char*'s for cliplist */
+		cliplist = malloc((clipn + 1) * sizeof(char *));
+		if (cliplist == NULL) {
+			DEBUG(0,("failure allocating memory for cliplist\n"));
+			error = 1;
+		} else {
+			cliplist[clipn] = NULL;
+			p = inclusion_buffer;
+			for (i = 0; (! error) && (i < clipn); i++) {
+				/* set current item to NULL so array will be null-terminated even if
+						* malloc fails below. */
+				cliplist[i] = NULL;
+				if ((tmpstr = (char *)malloc(strlen(p)+1)) == NULL) {
+					DEBUG(0, ("Could not allocate space for a cliplist item, # %i\n", i));
+					error = 1;
+				} else {
+					unfixtarname(tmpstr, p, strlen(p) + 1, True);
+					cliplist[i] = tmpstr;
+					if ((p = strchr_m(p, '\000')) == NULL) {
+						DEBUG(0,("INTERNAL ERROR: inclusion_buffer is of unexpected contents.\n"));
+						abort();
+					}
+				}
+				++p;
+			}
+			must_free_cliplist = True;
+		}
+	}
+
+	SAFE_FREE(inclusion_buffer);
+	if (error) {
+		if (cliplist) {
+			char **pp;
+			/* We know cliplist is always null-terminated */
+			for (pp = cliplist; *pp; ++pp) {
+				SAFE_FREE(*pp);
+			}
+			SAFE_FREE(cliplist);
+			cliplist = NULL;
+			must_free_cliplist = False;
+		}
+		return 0;
+	}
   
-  /* cliplist and its elements are freed at the end of process_tar. */
-  return 1;
+	/* cliplist and its elements are freed at the end of process_tar. */
+	return 1;
 }
 
 /****************************************************************************
