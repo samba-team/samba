@@ -189,11 +189,7 @@ NTSTATUS sam_skel_get_groups_of_account(const struct sam_methods *sam_method, co
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-
-
-
-
-NTSTATUS sam_init(SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const char *location)
+NTSTATUS sam_init(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const char *location)
 {
 	NTSTATUS nt_status;
 
