@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    test suite for various RAP operations
    Copyright (C) Volker Lendecke 2004
+   Copyright (C) Tim Potter 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -183,8 +184,10 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 	trans.in.trans_name = "\\PIPE\\LANMAN";
 
 	NDR_CHECK(ndr_push_uint16(params, call->callno));
-	NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
-	NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->datadesc));
+	if (call->paramdesc)
+		NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
+	if (call->datadesc)
+		NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->datadesc));
 
 	param_blob = ndr_push_blob(call->ndr_push_param);
 	NDR_CHECK(ndr_push_bytes(params, param_blob.data,
@@ -444,4 +447,29 @@ BOOL torture_raw_rap(void)
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
 	return ret;
+}
+
+BOOL torture_rap_scan(void)
+{
+	struct smbcli_state *cli;
+	uint16 callno;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+	
+	for (callno = 0; callno < 0xffff; callno++) {
+		struct rap_call *call = new_rap_cli_call(callno);
+		NTSTATUS result;
+
+		result = rap_cli_do_call(cli, cli, call);
+
+		if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER))
+			printf("callno %d is RAP call\n", callno);
+
+		destroy_rap_call(call);
+	}
+
+	torture_close_connection(cli);
+	return True;
 }
