@@ -307,6 +307,10 @@ do_version4(unsigned char *buf,
 	}
 	
 	if(tgt->kvno != kvno){
+	    kdc_log(0, "tgs-req with old kvno %d (current %d) for "
+		    "krbtgt.%s@%s", kvno, tgt->kvno, realm, v4_realm);
+	    make_err_reply(reply, KDC_AUTH_EXP,
+			   "old krbtgt kvno used");
 	    goto out2;
 	}
 
