@@ -174,7 +174,7 @@ int find_service(fstring service)
 	/* just possibly it's a default service? */
 	if (iService < 0) {
 		char *pdefservice = lp_defaultservice();
-		if (pdefservice && *pdefservice && !strequal(pdefservice,service) && !strstr(service,"..")) {
+		if (pdefservice && *pdefservice && !strequal(pdefservice,service) && !strstr_m(service,"..")) {
 			/*
 			 * We need to do a local copy here as lp_defaultservice() 
 			 * returns one of the rotating lp_string buffers that
