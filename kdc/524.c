@@ -204,8 +204,7 @@ do_524(const Ticket *t, krb5_data *reply,
 
     ret = hdb_enctype2key(context, server, t->enc_part.etype, &skey);
     if(ret){
-	kdc_log(0, "No suitable key found for server (%s) from %s "
-		"when converting ticket from ", spn, from);
+	kdc_log(0, "No suitable key found for server (%s) from %s", spn, from);
 	goto out;
     }
     ret = krb5_crypto_init(context, &skey->key, 0, &crypto);
