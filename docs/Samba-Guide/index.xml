@@ -14,8 +14,8 @@
 		<authorgroup>
 			<author>&person.jht;</author>
 		</authorgroup>
-		<pubdate>February 23, 2004</pubdate>
-		<version>20040220</version>
+		<pubdate>October 23, 2004</pubdate>
+		<version>20041023</version>
 	</bookinfo>
 	<?latex \clearpage ?>
 	<para>boo</para>
