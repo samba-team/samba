@@ -150,8 +150,9 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	}
 	
 	/* set flags about native_mode, active_directory */
-	   
-	set_dc_type_and_flags( domain );
+
+	if (!domain->internal)
+		set_dc_type_and_flags( domain );
 	
 	DEBUG(3,("add_trusted_domain: %s is an %s %s domain\n", domain->name,
 		 domain->active_directory ? "ADS" : "NT4", 
@@ -303,6 +304,24 @@ BOOL init_domain_list(void)
 
 	/* do an initial scan for trusted domains */
 	add_trusted_domains(domain);
+
+	/* Add our local SAM domains */
+	{
+		DOM_SID sid;
+		extern struct winbindd_methods passdb_methods;
+		struct winbindd_domain *dom;
+
+		string_to_sid(&sid, "S-1-5-32");
+
+		dom = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
+					 &sid);
+		dom->internal = True;
+
+		dom = add_trusted_domain(get_global_sam_name(), NULL,
+					 &passdb_methods,
+					 get_global_sam_sid());
+		dom->internal = True;
+	}
 	
 	/* avoid rescanning this right away */
 	last_trustdom_scan = time(NULL);

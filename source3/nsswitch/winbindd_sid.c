@@ -30,10 +30,8 @@
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 {
-	extern DOM_SID global_sid_Builtin;
 	enum SID_NAME_USE type;
-	DOM_SID sid, tmp_sid;
-	uint32 rid;
+	DOM_SID sid;
 	fstring name;
 	fstring dom_name;
 
@@ -47,15 +45,6 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	/* Don't look up BUILTIN sids */
-
-	sid_copy(&tmp_sid, &sid);
-	sid_split_rid(&tmp_sid, &rid);
-
-	if (sid_equal(&tmp_sid, &global_sid_Builtin)) {
 		return WINBINDD_ERROR;
 	}
 
