@@ -12,16 +12,18 @@ details on exact updates.
 Common bugs fixed in 3.0.8 include:
 
   o Compile fixes for HP-UX
-  o Fixes for the printer publishing code used when 
-    joined to an AD domain.
+  o Fixes for the printer publishing code used when joined to 
+    an AD domain.
   o Incompatibilities with file system quotas.
-  o Several bugs in the spoolss printing code and print 
-    system backends.
-  o Inconsistencies in the username map functionality 
-    when configured on domain member servers.
+  o Several bugs in the spoolss printing code and print system 
+    backends.
+  o Inconsistencies in the username map functionality when 
+    configured on domain member servers.
   o Various compile warnings and errors on various platforms.
   o Fixes for kerberos interoperability with Windows 200x 
     domains when using DES keys.
+  o Fix for CAN-2004-0930 -- smbd remote DoS vulnerability.
+
   
 New features included in the 3.0.8 release are:
 
