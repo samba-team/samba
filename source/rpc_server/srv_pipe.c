@@ -68,7 +68,7 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 	{
 		return False;
 	}
-	(*rlen) = read(p->m->fd, (*rdata), (*rlen));
+	(*rlen) = read_data(p->m->fd, (*rdata), (*rlen));
 	if ((*rlen) < 0)
 	{
 		return False;
@@ -115,6 +115,6 @@ int read_pipe(pipes_struct *p, char *data, int n)
 		return -1;		
 	}
 
-	return read(p->m->fd, data, n);
+	return read_data(p->m->fd, data, n);
 }
 
