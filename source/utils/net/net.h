@@ -33,9 +33,9 @@ struct net_context {
 
 struct net_functable {
 	const char *name;
+	const char *desc;
 	int (*fn)(struct net_context *ctx, int argc, const char **argv);
 	int (*usage)(struct net_context *ctx, int argc, const char **argv);
-	int (*help)(struct net_context *ctx, int argc, const char **argv);
 };
 
 #endif /* _UTIL_NET_H */
