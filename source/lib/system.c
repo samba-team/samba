@@ -304,6 +304,9 @@ A wrapper for gethostbyname() that tries avoids looking up hostnames
 in the root domain, which can cause dial-on-demand links to come up for no
 apparent reason.
 ****************************************************************************/
+
+#include <resolv.h>
+
 struct hostent *sys_gethostbyname(const char *name)
 {
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
@@ -336,10 +339,20 @@ struct hostent *sys_gethostbyname(const char *name)
   slprintf(query, sizeof(query)-1, "%s%s", name, domain);
   return(gethostbyname(query));
 #else /* REDUCE_ROOT_DNS_LOOKUPS */
+
+  /* Set the DNS retransmission and retry settings to less generous
+     values.  The first lookup times out after RESOLV_RETRY seconds.
+     Subsequent retries have the previous timeout doubled. */
+  
+#define RESOLV_RETRANS 5	/* Seconds between retries */
+#define RESOLV_RETRY   2	/* Number of retries  */
+
+  _res.retrans = RESOLV_RETRANS;
+  _res.retry = RESOLV_RETRY;
+
   return(gethostbyname(name));
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
-
 
 #if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
 /**************************************************************************
