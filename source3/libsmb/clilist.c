@@ -205,7 +205,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,6,0); /* ff_resume_key */
 			/* NB. *DON'T* use continue here. If you do it seems that W2K and bretheren
 			   can miss filenames. Use last filename continue instead. JRA */
-			SSVAL(param,4,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
+			SSVAL(param,10,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
 					 STR_TERMINATE);
