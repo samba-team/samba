@@ -23,11 +23,33 @@
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef WITH_NISPLUS_HOME
+#ifdef BROKEN_NISPLUS_INCLUDE_FILES
+/*
+ * The following lines are needed due to buggy include files
+ * in Solaris 2.6 which define GROUP in both /usr/include/sys/acl.h and
+ * also in /usr/include/rpcsvc/nis.h. The definitions conflict. JRA.
+ * Also GROUP_OBJ is defined as 0x4 in /usr/include/sys/acl.h and as
+ * an enum in /usr/include/rpcsvc/nis.h.
+ */
+
+#if defined(GROUP)
+#undef GROUP
+#endif
+
+#if defined(GROUP_OBJ)
+#undef GROUP_OBJ
+#endif
+
+#endif /* BROKEN_NISPLUS_INCLUDE_FILES */
+
 #include <rpcsvc/nis.h>
-#else
+
+#else /* !WITH_NISPLUS_HOME */
+
 #include "rpcsvc/ypclnt.h"
-#endif
-#endif
+
+#endif /* WITH_NISPLUS_HOME */
+#endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
 #ifdef WITH_SSL
 #include <ssl.h>
@@ -1830,7 +1852,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr)
   int     i;
   
   if ((hp = Get_Hostbyname(remotehost)) == 0) {
-    DEBUG(0,("Get_Hostbyname(%s): lookup failure", remotehost));
+    DEBUG(0,("Get_Hostbyname(%s): lookup failure.\n", remotehost));
     return False;
   } 
 
@@ -1844,7 +1866,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr)
   
   if (strcasecmp(remotehost, hp->h_name)
       && strcasecmp(remotehost, "localhost")) {
-    DEBUG(0,("host name/name mismatch: %s != %s",
+    DEBUG(0,("host name/name mismatch: %s != %s\n",
 	     remotehost, hp->h_name));
     return False;
   }
@@ -1861,7 +1883,7 @@ BOOL matchname(char *remotehost,struct in_addr  addr)
    * it, but that could be dangerous, too.
    */
   
-  DEBUG(0,("host name/address mismatch: %s != %s",
+  DEBUG(0,("host name/address mismatch: %s != %s\n",
 	   inet_ntoa(addr), hp->h_name));
   return False;
 }
