@@ -1101,7 +1101,9 @@ Can't find printer handle we created for printer %s\n", name ));
 			printer_default->access_required = PRINTER_ACCESS_USE;
 		}
 
-		if (!print_access_check(&user, snum, printer_default->access_required)) {
+		/* check smb.conf parameters and the the sec_desc */
+		
+		if (!user_ok(uidtoname(user.uid), snum) || !print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
