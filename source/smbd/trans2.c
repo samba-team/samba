@@ -1180,6 +1180,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
 #endif /* Old code. */
 
       SIVAL(pdata,4,255); /* Max filename component length */
+      /* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
+         and will think we can't do long filenames */
       fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
       SIVAL(pdata,8,fstype_len);
       data_len = 12 + fstype_len;

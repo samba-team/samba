@@ -1003,11 +1003,11 @@ struct bitmap {
 /* Generic access masks & rights. */
 #define SPECIFIC_RIGHTS_MASK 0x00FFFFL
 #define STANDARD_RIGHTS_MASK 0xFF0000L
-#define DELETE_ACCESS        (1L<<16)
-#define READ_CONTROL_ACCESS  (1L<<17)
-#define WRITE_DAC_ACCESS     (1L<<18)
-#define WRITE_OWNER_ACCESS   (1L<<19)
-#define SYNCHRONIZE_ACCESS   (1L<<20)
+#define DELETE_ACCESS        (1L<<16) /* 0x00010000 */
+#define READ_CONTROL_ACCESS  (1L<<17) /* 0x00020000 */
+#define WRITE_DAC_ACCESS     (1L<<18) /* 0x00040000 */
+#define WRITE_OWNER_ACCESS   (1L<<19) /* 0x00080000 */
+#define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
 
 /* Combinations of standard masks. */
 #define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)
@@ -1016,12 +1016,12 @@ struct bitmap {
 #define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS)
 #define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS)
 
-#define SYSTEM_SECURITY_ACCESS (1L<<24)
-#define MAXIMUM_ALLOWED_ACCESS (1L<<25)
-#define GENERIC_ALL_ACCESS   (1<<28)
-#define GENERIC_EXECUTE_ACCESS  (1<<29)
-#define GENERIC_WRITE_ACCESS   (1<<30)
-#define GENERIC_READ_ACCESS   (((unsigned)1)<<31)
+#define SYSTEM_SECURITY_ACCESS (1L<<24)	          /* 0x01000000 */
+#define MAXIMUM_ALLOWED_ACCESS (1L<<25)	          /* 0x02000000 */
+#define GENERIC_ALL_ACCESS     (1<<28)            /* 0x10000000 */
+#define GENERIC_EXECUTE_ACCESS (1<<29)            /* 0x20000000 */
+#define GENERIC_WRITE_ACCESS   (1<<30)            /* 0x40000000 */
+#define GENERIC_READ_ACCESS   (((unsigned)1)<<31) /* 0x80000000 */
 
 /* Mapping of generic access rights for files to specific rights. */
 

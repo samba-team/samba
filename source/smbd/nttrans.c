@@ -395,7 +395,7 @@ static int map_create_disposition( uint32 create_disposition)
     return -1;
   }
 
-  DEBUG(10,("map_create_disposition: Mapped create_disposition %lx to %x\n",
+  DEBUG(10,("map_create_disposition: Mapped create_disposition 0x%lx to 0x%x\n",
         (unsigned long)create_disposition, ret ));
 
   return ret;
@@ -469,7 +469,7 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 		smb_open_mode = DOS_OPEN_RDONLY;
 
 	} else {
-      DEBUG(0,("map_share_mode: Incorrect value %lx for desired_access to file %s\n",
+      DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
              (unsigned long)desired_access, fname));
       return -1;
     }
@@ -483,7 +483,7 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 
   if(share_access & FILE_SHARE_DELETE) {
     smb_open_mode |= ALLOW_SHARE_DELETE;
-    DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = %x\n", smb_open_mode));
+    DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
   }
 
   /*
@@ -495,14 +495,14 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 
   if(desired_access & DELETE_ACCESS) {
     smb_open_mode |= DELETE_ACCESS_REQUESTED;
-    DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = %x\n", smb_open_mode));
+    DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
   }
 
   if (create_options & FILE_DELETE_ON_CLOSE) {
     /* Implicit delete access requested... */
     smb_open_mode |= DELETE_ACCESS_REQUESTED;
 	smb_open_mode |= DELETE_ON_CLOSE_FLAG;
-    DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = %x\n", smb_open_mode));
+    DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
   }
 
   /* Add in the requested share mode. */
@@ -528,8 +528,8 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
   if(file_attributes & FILE_FLAG_WRITE_THROUGH)
     smb_open_mode |= FILE_SYNC_OPENMODE;
 
-  DEBUG(10,("map_share_mode: Mapped desired access %lx, share access %lx, file attributes %lx \
-to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,
+  DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
+to open_mode 0x%x\n", (unsigned long)desired_access, (unsigned long)share_access,
                     (unsigned long)file_attributes, smb_open_mode ));
  
   return smb_open_mode;
