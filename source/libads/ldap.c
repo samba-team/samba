@@ -2526,7 +2526,7 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	int i;
 	void *res;
 	const char *attrs[] = {"servicePrincipalName", NULL};
-	int num_principals;
+	size_t num_principals;
 
 	(*workgroup) = NULL;
 

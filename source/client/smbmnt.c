@@ -162,7 +162,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 
 	slprintf(opts, sizeof(opts)-1,
 		 "version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
-		 data->uid, data->gid, data->file_mode, data->dir_mode,options);
+		 mount_uid, mount_gid, data->file_mode, data->dir_mode,options);
 	if (mount(share_name, ".", "smbfs", flags, data1) == 0)
 		return 0;
 	return mount(share_name, ".", "smbfs", flags, data2);
@@ -225,7 +225,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
                 return -1;
         }
 
-        data.uid = mount_uid;
+        data.uid = mount_uid;    // truncates to 16-bits here!!!
         data.gid = mount_gid;
         data.file_mode = (S_IRWXU|S_IRWXG|S_IRWXO) & mount_fmask;
         data.dir_mode  = (S_IRWXU|S_IRWXG|S_IRWXO) & mount_dmask;
