@@ -142,6 +142,9 @@ struct cli_state {
 	/* was this structure allocated by cli_initialise? If so, then
            free in cli_shutdown() */
 	BOOL allocated;
+
+	/* Name of the pipe we're talking to, if any */
+	fstring pipe_name;
 };
 
 #endif /* _CLIENT_H */
