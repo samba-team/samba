@@ -650,7 +650,6 @@
 		<listitem><para><link linkend="LOCALMASTER"><parameter>local master</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIR"><parameter>lock dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIRECTORY"><parameter>lock directory</parameter></link></para></listitem>
-		<listitem><para><link linkend="PIDDIR"><parameter>pid dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="PIDDIRECTORY"><parameter>pid directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGFILE"><parameter>log file</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGLEVEL"><parameter>log level</parameter></link></para></listitem>

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "24 April 2002" "" ""
+.TH "SMB.CONF" "5" "26 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -687,6 +687,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIlock directory\fR
+.TP 0.2i
+\(bu
+\fIpid directory\fR
 .TP 0.2i
 \(bu
 \fIlog file\fR
@@ -5107,6 +5110,14 @@ Note that this path will be based on  \fIroot dir\fR if one was specified.
 Default: \fBnone\fR
 
 Example: \fBpath = /home/fred\fR
+.TP
+\fBpid directory (G)\fR
+This option specifies the directory where pid 
+files will be placed. 
+
+Default: \fBpid directory = ${prefix}/var/locks\fR
+
+Example: \fBpid directory = /var/run/\fR
 .TP
 \fBposix locking (S)\fR
 The \fBsmbd(8)\fR
