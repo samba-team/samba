@@ -434,12 +434,12 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
   }
 
   string_sub(passwordprogram,"%u",name);
-  string_sub(passwordprogram,"%o",oldpass);
-  string_sub(passwordprogram,"%n",newpass);
+  all_string_sub(passwordprogram,"%o",oldpass);
+  all_string_sub(passwordprogram,"%n",newpass);
 
   string_sub(chatsequence,"%u",name);
-  string_sub(chatsequence,"%o",oldpass);
-  string_sub(chatsequence,"%n",newpass);
+  all_string_sub(chatsequence,"%o",oldpass);
+  all_string_sub(chatsequence,"%n",newpass);
   return(chat_with_program(passwordprogram,name,chatsequence, as_root));
 }
 
