@@ -170,6 +170,9 @@ struct acct_info
 	          uint32, const uint32*, char *const *const,\
 	          uint32*const)
 
+#define DOMAIN_FN(fn)\
+	void (*fn)(const char*)
+
 #define USER_FN(fn)\
 	void (*fn)(const char*, const DOM_SID*, uint32, const char*)
 #define USER_INFO_FN(fn)\

@@ -1952,6 +1952,11 @@ BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name);
 BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, uint16 switch_value,
 				SAM_UNK_CTR *ctr);
+uint32 samr_enum_domains(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol,
+				uint32 *start_idx, uint32 size,
+				struct acct_info **sam,
+				uint32 *num_sam_domains);
 uint32 samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
 				uint32 *start_idx, uint32 size,
@@ -2703,6 +2708,13 @@ BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_s
 BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		uint32 num_gids, DOM_GID *gid, uint32 status);
 BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
+BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e, POLICY_HND *pol,
+				uint32 start_idx, uint32 size);
+BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps, int depth);
+BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
+		uint32 next_idx,
+		uint32 num_sam_entries, char **doms, uint32 status);
+BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
 				uint32 start_idx, uint32 size);
 BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
@@ -3428,6 +3440,11 @@ BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 				uint32 **rid_mem,
 				char ***name,
 				uint32 **type);
+uint32 msrpc_sam_enum_domains(struct cli_state *cli,
+				const char* srv_name,
+				struct acct_info **sam,
+				uint32 *num_sam_entries,
+				DOMAIN_FN(dom_fn));
 uint32 msrpc_sam_enum_groups(struct cli_state *cli,
 				const char* domain,
 				const DOM_SID *sid1,
@@ -3469,6 +3486,7 @@ void cmd_sam_query_aliasmem(struct client_info *info);
 void cmd_sam_query_alias(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
 void cmd_sam_enum_groups(struct client_info *info);
+void cmd_sam_enum_domains(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 

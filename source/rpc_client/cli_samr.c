@@ -616,6 +616,108 @@ BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a SAMR enumerate Domains
+****************************************************************************/
+uint32 samr_enum_domains(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol,
+				uint32 *start_idx, uint32 size,
+				struct acct_info **sam,
+				uint32 *num_sam_domains)
+{
+	uint32 status = 0x0;
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_ENUM_DOMAINS q_e;
+
+	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
+
+	if (pol == NULL || num_sam_domains == NULL || sam == NULL)
+	{
+		return NT_STATUS_INVALID_PARAMETER | 0xC0000000;
+	}
+
+	/* create and send a MSRPC command with api SAMR_ENUM_DOMAINS */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_enum_domains(&q_e, pol, *start_idx, size);
+
+	/* turn parameters into data stream */
+	samr_io_q_enum_domains("", &q_e, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SAMR_ENUM_DOMAINS, &data, &rdata))
+	{
+		SAMR_R_ENUM_DOMAINS r_e;
+		BOOL p;
+
+		samr_io_r_enum_domains("", &r_e, &rdata, 0);
+
+		status = r_e.status;
+		p = rdata.offset != 0;
+		if (p && r_e.status != 0)
+		{
+			/* report error code */
+			DEBUG(4,("SAMR_R_ENUM_DOMAINS: %s\n", get_nt_error_msg(r_e.status)));
+			p = (r_e.status == STATUS_MORE_ENTRIES);
+		}
+
+		if (p)
+		{
+			uint32 i = (*num_sam_domains);
+			uint32 j = 0;
+			uint32 name_idx = 0;
+
+			(*num_sam_domains) += r_e.num_entries2;
+			(*sam) = (struct acct_info*) Realloc((*sam),
+			       sizeof(struct acct_info) * (*num_sam_domains));
+				    
+			if ((*sam) == NULL)
+			{
+				(*num_sam_domains) = 0;
+				i = 0;
+			}
+
+			for (j = 0; i < (*num_sam_domains) && j < r_e.num_entries2; j++, i++)
+			{
+				(*sam)[i].rid = r_e.sam[j].rid;
+				(*sam)[i].acct_name[0] = 0;
+				(*sam)[i].acct_desc[0] = 0;
+				if (r_e.sam[j].hdr_name.buffer)
+				{
+					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_dom_name[name_idx], sizeof((*sam)[i].acct_name)-1);
+					name_idx++;
+				}
+				DEBUG(5,("samr_enum_domains: idx: %4d rid: %8x acct: %s\n",
+				          i, (*sam)[i].rid, (*sam)[i].acct_name));
+			}
+			(*start_idx) = r_e.next_idx;
+		}
+		else if (status == 0x0)
+		{
+			status = NT_STATUS_INVALID_PARAMETER | 0xC0000000;
+		}
+
+		if (r_e.sam != NULL)
+		{
+			free(r_e.sam);
+		}
+		if (r_e.uni_dom_name != NULL)
+		{
+			free(r_e.uni_dom_name);
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return status;
+}
+
+/****************************************************************************
 do a SAMR enumerate groups
 ****************************************************************************/
 uint32 samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
