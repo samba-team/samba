@@ -235,7 +235,9 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 	BOOL got_policy_hnd = False;
 	DOM_SID *domain_sids;
 	char **domain_names;
-	int num_domains, enum_ctx = 0, i;
+	uint32 enum_ctx = 0;
+	uint32 num_domains;
+	int i;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);

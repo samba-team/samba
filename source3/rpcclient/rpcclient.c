@@ -436,11 +436,9 @@ static void usage(char *pname)
 {
 	extern char 		*optarg;
 	extern int 		optind;
-	struct in_addr 		dest_ip;
 	extern pstring 		global_myname;
 	BOOL 			got_pass = False;
 	BOOL 			interactive = True;
-	BOOL 			have_ip = False;
 	int 			opt;
 	int 			olddebug;
 	pstring 		cmdstr = "", 
@@ -468,7 +466,7 @@ static void usage(char *pname)
 	argv++;
 	argc--;
 
-	while ((opt = getopt(argc, argv, "A:s:Nd:I:U:W:c:l:")) != EOF) {
+	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:")) != EOF) {
 		switch (opt) {
 		case 'A':
 			/* only get the username, password, and domain from the file */
@@ -485,11 +483,6 @@ static void usage(char *pname)
 			DEBUGLEVEL = atoi(optarg);
 			break;
 
-		case 'I':
-			dest_ip = *interpret_addr2(optarg);
-			have_ip = True;
-			break;
-			
 		case 'l':
 			slprintf(debugf, sizeof(debugf) - 1, "%s.client", optarg);
 			interactive = False;
@@ -592,10 +585,9 @@ static void usage(char *pname)
 	if (cmdstr[0]) {
 		char 	*cmd;
 		char 	*p = cmdstr;
-		uint32 	result;
 
 		while((cmd=next_command(&p)) != NULL) {
-			result = process_cmd(&cli, cmd);
+			process_cmd(&cli, cmd);
 		}
 
 		return 0;
@@ -606,7 +598,6 @@ static void usage(char *pname)
 	while(1) {
 		pstring prompt, cmd;
 		char *line;
-		uint32 result;
 
 		ZERO_STRUCT(cmd);
 		
@@ -614,9 +605,8 @@ static void usage(char *pname)
 
 		line = smb_readline(prompt, NULL, NULL);
 
-		result = process_cmd(&cli, line);
+		process_cmd(&cli, line);
 	}
 	
 	return 0;
 }
-
