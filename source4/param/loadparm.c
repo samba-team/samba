@@ -78,6 +78,56 @@ static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
 static BOOL defaults_saved = False;
 
+
+#define FLAG_BASIC 	0x0001 /* fundamental options */
+#define FLAG_SHARE 	0x0002 /* file sharing options */
+#define FLAG_PRINT 	0x0004 /* printing options */
+#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
+#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
+#define FLAG_ADVANCED 	0x0020 /* Parameters that the wizard will operate on */
+#define FLAG_DEVELOPER 	0x0040 /* Parameters that the wizard will operate on */
+#define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
+#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
+#define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
+#define FLAG_CMDLINE    0x8000 /* this option was set from the command line */
+
+
+/* the following are used by loadparm for option lists */
+typedef enum
+{
+  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
+  P_STRING,P_USTRING,P_ENUM,P_SEP
+} parm_type;
+
+typedef enum
+{
+  P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
+} parm_class;
+
+struct enum_list {
+	int value;
+	const char *name;
+};
+
+struct parm_struct
+{
+	const char *label;
+	parm_type type;
+	parm_class class;
+	void *ptr;
+	BOOL (*special)(const char *, char **);
+	const struct enum_list *enum_list;
+	uint_t flags;
+	union {
+		BOOL bvalue;
+		int ivalue;
+		char *svalue;
+		char cvalue;
+		char **lvalue;
+	} def;
+};
+
+
 struct param_opt {
 	struct param_opt *prev, *next;
 	char *key;
@@ -465,33 +515,6 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
-/* 
-   Do you want session setups at user level security with a invalid
-   password to be rejected or allowed in as guest? WinNT rejects them
-   but it can be a pain as it means "net view" needs to use a password
-
-   You have 3 choices in the setting of map_to_guest:
-
-   "Never" means session setups with an invalid password
-   are rejected. This is the default.
-
-   "Bad User" means session setups with an invalid password
-   are rejected, unless the username does not exist, in which case it
-   is treated as a guest login
-
-   "Bad Password" means session setups with an invalid password
-   are treated as a guest login
-
-   Note that map_to_guest only has an effect in user or server
-   level security.
-*/
-
-static const struct enum_list enum_map_to_guest[] = {
-	{NEVER_MAP_TO_GUEST, "Never"},
-	{MAP_TO_GUEST_ON_BAD_USER, "Bad User"},
-	{MAP_TO_GUEST_ON_BAD_PASSWORD, "Bad Password"},
-	{-1, NULL}
-};
 
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
@@ -1375,26 +1398,6 @@ static BOOL lp_bool(const char *s)
 	return ret;
 }
 
-/*******************************************************************
-convenience routine to return enum parameters.
-********************************************************************/
-static int lp_enum(const char *s,const struct enum_list *_enum)
-{
-	int i;
-
-	if (!s || !_enum) {
-		DEBUG(0,("lp_enum(%s,enum): is called with NULL!\n",s));
-		return False;
-	}
-	
-	for (i=0; _enum[i].name; i++) {
-		if (strcasecmp(_enum[i].name,s)==0)
-			return _enum[i].value;
-	}
-
-	DEBUG(0,("lp_enum(%s,enum): value is not in enum_list!\n",s));
-	return (-1);
-}
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
@@ -1462,20 +1465,6 @@ BOOL lp_parm_bool(int lookup_service, const char *type, const char *option, BOOL
 		return lp_bool(value);
 
 	return default_v;
-}
-
-/* Return parametric option from a given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
-
-int lp_parm_enum(int lookup_service, const char *type, const char *option,
-		 const struct enum_list *_enum)
-{
-	const char *value = get_parametrics(lookup_service, type, option);
-	
-	if (value)
-		return lp_enum(value, _enum);
-
-	return (-1);
 }
 
 
@@ -2715,19 +2704,6 @@ static void dump_globals(FILE *f)
 		}
         }
 
-}
-
-/***************************************************************************
- Return True if a local parameter is currently set to the global default.
-***************************************************************************/
-
-BOOL lp_is_default(int snum, struct parm_struct *parm)
-{
-	int pdiff = PTR_DIFF(parm->ptr, &sDefault);
-
-	return equal_parameter(parm->type,
-			       ((char *)ServicePtrs[snum]) + pdiff,
-			       ((char *)&sDefault) + pdiff);
 }
 
 /***************************************************************************

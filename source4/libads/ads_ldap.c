@@ -28,7 +28,7 @@
 NTSTATUS ads_name_to_sid(ADS_STRUCT *ads,
 			 const char *name,
 			 DOM_SID *sid,
-			 enum SID_NAME_USE *type)
+			 enum samr_SidType *type)
 {
 	const char *attrs[] = {"objectSid", "sAMAccountType", NULL};
 	int count;
@@ -95,7 +95,7 @@ NTSTATUS ads_sid_to_name(ADS_STRUCT *ads,
 			 TALLOC_CTX *mem_ctx,
 			 const DOM_SID *sid,
 			 char **name,
-			 enum SID_NAME_USE *type)
+			 enum samr_SidType *type)
 {
 	const char *attrs[] = {"userPrincipalName", 
 			       "sAMAccountName",
