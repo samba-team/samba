@@ -103,6 +103,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 			       set, offset, strerror(errno));
 		}
 #endif
+		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 	return 0;
@@ -142,6 +143,7 @@ static int tdb_unlock(TDB_CONTEXT *tdb, int list)
 #if TDB_DEBUG
 		printf("not locked %d\n", list);
 #endif
+		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 	if (tdb->locked[list+1] == 1) {
@@ -191,7 +193,10 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 	if (offset <= tdb->map_size) return 0;
 
 	fstat(tdb->fd, &st);
-	if (st.st_size <= (ssize_t)tdb->map_size) return -1;
+	if (st.st_size <= (ssize_t)offset) {
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
 
 #if HAVE_MMAP
 	if (tdb->map_ptr) {
@@ -215,18 +220,15 @@ static int tdb_write(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 {
 	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to write beyond the end of the database! */
-#if TDB_DEBUG
-		printf("write error of length %u at offset %u (max %u)\n",
-		       len, offset, tdb->map_size);
-#endif
 		return -1;
 	}
 
 	if (tdb->map_ptr) {
 		memcpy(offset + (char *)tdb->map_ptr, buf, len);
 	} else {
-		lseek(tdb->fd, offset, SEEK_SET);
-		if (write(tdb->fd, buf, len) != (ssize_t)len) {
+		if (lseek(tdb->fd, offset, SEEK_SET) != offset ||
+		    write(tdb->fd, buf, len) != (ssize_t)len) {
+			tdb->ecode = TDB_ERR_IO;
 			return -1;
 		}
 	}
@@ -238,18 +240,15 @@ static int tdb_read(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 {
 	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to read beyond the end of the database! */
-#if TDB_DEBUG
-		printf("read error of length %u at offset %u (max %u)\n",
-		       len, offset, tdb->map_size);
-#endif
 		return -1;
 	}
 
 	if (tdb->map_ptr) {
 		memcpy(buf, offset + (char *)tdb->map_ptr, len);
 	} else {
-		lseek(tdb->fd, offset, SEEK_SET);
-		if (read(tdb->fd, buf, len) != (ssize_t)len) {
+		if (lseek(tdb->fd, offset, SEEK_SET) != offset ||
+		    read(tdb->fd, buf, len) != (ssize_t)len) {
+			tdb->ecode = TDB_ERR_IO;
 			return -1;
 		}
 	}
@@ -264,7 +263,10 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 
 	buf = (char *)malloc(len);
 
-	if (!buf) return NULL;
+	if (!buf) {
+		tdb->ecode = TDB_ERR_OOM;
+		return NULL;
+	}
 
 	if (tdb_read(tdb, offset, buf, len) == -1) {
 		free(buf);
@@ -301,13 +303,10 @@ static int rec_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 		printf("bad magic 0x%08x at offset %d\n",
 		       rec->magic, offset);
 #endif
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 	if (tdb_oob(tdb, rec->next) != 0) {
-#if TDB_DEBUG
-		printf("bad next %d at offset %d\n",
-		       rec->next, offset);
-#endif
 		return -1;
 	}
 	return 0;
@@ -476,6 +475,7 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	struct tdb_header header;
 	tdb_off offset;
 	int i;
+	tdb_off buf[16];
 
 	/* create the header */
 	memset(&header, 0, sizeof(header));
@@ -485,12 +485,25 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	lseek(tdb->fd, 0, SEEK_SET);
 	ftruncate(tdb->fd, 0);
 
-	if (write(tdb->fd, &header, sizeof(header)) != sizeof(header)) return -1;
-
+	if (write(tdb->fd, &header, sizeof(header)) != sizeof(header)) {
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
+	
 	/* the freelist and hash pointers */
 	offset = 0;
-	for (i=0;i<hash_size+1;i++) {
-		if (write(tdb->fd, &offset, sizeof(tdb_off)) != sizeof(tdb_off)) return -1;
+	memset(buf, 0, sizeof(buf));
+	for (i=0;(hash_size+1)-i >= 16; i += 16) {
+		if (write(tdb->fd, buf, sizeof(buf)) != sizeof(buf)) {
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+		}
+	}
+	for (;i<hash_size+1; i++) {
+		if (write(tdb->fd, buf, sizeof(tdb_off)) != sizeof(tdb_off)) {
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+		}
 	}
 
 #if TDB_DEBUG
@@ -540,6 +553,30 @@ static tdb_off tdb_find(TDB_CONTEXT *tdb, TDB_DATA key, unsigned int hash,
 	}
 	return 0;
 }
+
+/* 
+   return an error string for the last tdb error
+*/
+char *tdb_error(TDB_CONTEXT *tdb)
+{
+	int i;
+	static struct {
+		enum TDB_ERROR ecode;
+		char *estring;
+	} emap[] = {
+		{TDB_SUCCESS, "Success"},
+		{TDB_ERR_CORRUPT, "Corrupt database"},
+		{TDB_ERR_IO, "IO Error"},
+		{TDB_ERR_LOCK, "Locking error"},
+		{TDB_ERR_OOM, "Out of memory"},
+		{TDB_ERR_EXISTS, "Record exists"},
+		{-1, NULL}};
+	for (i=0;emap[i].estring;i++) {
+		if (tdb->ecode == emap[i].ecode) return emap[i].estring;
+	}
+	return "Invalid error code";
+}
+
 
 /* update an entry in place - this only works if the new data size
    is <= the old data size and the key exists.
@@ -900,6 +937,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	/* check for it existing */
 	if (flag == TDB_INSERT && tdb_exists(tdb, key)) {
+		tdb->ecode = TDB_ERR_EXISTS;
 		return -1;
 	}
 
@@ -941,7 +979,10 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	rec.magic = TDB_MAGIC;
 
 	p = (char *)malloc(sizeof(rec) + key.dsize + dbuf.dsize);
-	if (!p) goto fail;
+	if (!p) {
+		tdb->ecode = TDB_ERR_OOM;
+		goto fail;
+	}
 
 	memcpy(p, &rec, sizeof(rec));
 	memcpy(p+sizeof(rec), key.dptr, key.dsize);
@@ -988,7 +1029,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.name = NULL;
 	tdb.map_ptr = NULL;
 
-	if ((open_flags & O_ACCMODE) == O_WRONLY) goto fail;
+	if ((open_flags & O_ACCMODE) == O_WRONLY) {
+		goto fail;
+	}
 
 	if (hash_size == 0) hash_size = DEFAULT_HASH_SIZE;
 
@@ -997,7 +1040,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.read_only = ((open_flags & O_ACCMODE) == O_RDONLY);
 
 	tdb.fd = open(name, open_flags, mode);
-	if (tdb.fd == -1) goto fail;
+	if (tdb.fd == -1) {
+		goto fail;
+	}
 
 	/* ensure there is only one process initialising at once */
 	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_SET, F_WRLCK, F_SETLKW);
@@ -1033,7 +1078,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.name = (char *)strdup(name);
 	tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
 				   sizeof(tdb.locked[0]));
-	if (!tdb.locked) goto fail;
+	if (!tdb.locked) {
+		goto fail;
+	}
 	tdb.map_size = st.st_size;
 #if HAVE_MMAP
 	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
