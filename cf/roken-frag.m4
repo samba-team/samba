@@ -227,39 +227,17 @@ AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 #include <netdb.h>
 #endif],
 17)
-if test "$ac_cv_func_hstrerror" = yes; then
 AC_NEED_PROTO([
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif],
 hstrerror)
-fi
 
-dnl sigh, wish this could be done in a loop
-if test "$ac_cv_func_asprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-asprintf)dnl
-fi
-if test "$ac_cv_func_vasprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-vasprintf)dnl
-fi
-if test "$ac_cv_func_asnprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-asnprintf)dnl
-fi
-if test "$ac_cv_func_vasnprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-vasnprintf)dnl
-fi
+AC_FOREACH([rk_func], [asprintf vasprintf asnprintf vasnprintf],
+	[AC_NEED_PROTO([
+	#include <stdio.h>
+	#include <string.h>],
+	rk_func)])
 
 AC_FIND_FUNC_NO_LIBS(bswap16,,
 [#ifdef HAVE_SYS_BSWAP_H
@@ -364,6 +342,9 @@ AC_BROKEN([					\
 	warnx					\
 	writev					\
 ])
+
+AC_FOREACH([rk_func], [strndup strsep strtok_r],
+	[AC_NEED_PROTO([#include <string.h>], rk_func)])
 
 AC_BROKEN2(inet_aton,
 [#ifdef HAVE_SYS_TYPES_H
@@ -546,16 +527,6 @@ AC_NEED_PROTO([
 #endif
 ],
 crypt)
-
-AC_NEED_PROTO([
-#include <string.h>
-],
-strtok_r)
-
-AC_NEED_PROTO([
-#include <string.h>
-],
-strsep)
 
 dnl variables
 
