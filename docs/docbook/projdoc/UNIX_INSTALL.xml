@@ -212,15 +212,19 @@ The following questions and issues get raised on the samba mailing list over and
 <title>Why are so many smbd processes eating memory?</title>
 
 <para>
+<quote>
 Site that is running Samba on an AIX box. They are sharing out about 2 terabytes using samba.
 Samba was installed using smitty and the binaries. We seem to be experiencing a memory problem
 with this box.  When I do a <command>svmon -Pu</command> the monitoring program shows that &smbd; has several
 processes of smbd running:
+</quote>
 </para>
 
 <para>
+	<quote>
 Is samba suppose to start this many different smbd processes?  Or does it run as one smbd process?  Also
 is it normal for it to be taking up this much memory?
+</quote>
 </para>
 
 <para>
@@ -256,7 +260,7 @@ Inuse * 4096 = amount of memory being used by this process
 
 
 <para>
-<emphasis>ANSWER:</emphasis> Samba consists on three core programs:
+Samba consists on three core programs:
 &nmbd;, &smbd;, &winbindd;. &nmbd; is the name server message daemon,
 &smbd; is the server message daemon, &winbindd; is the daemon that
 handles communication with Domain Controllers.
@@ -279,6 +283,12 @@ run in "split mode" (in which case there will be two instances).
 </para>
 
 </sect2>
+
+	<sect2>
+	<title>I'm getting "open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested" in the logs</title>
+    <para>Your loopback device isn't working correctly. Make sure it's running.  </para>
+	</sect2>
+
 </sect1>
 
 </chapter>

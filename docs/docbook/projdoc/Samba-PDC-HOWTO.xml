@@ -903,5 +903,13 @@ Enable the user accounts with <userinput>smbpasswd -e <replaceable>username</rep
 </para>
 
 </sect2>
+
+<sect2>
+	<title>Until a few minutes after samba has started, clients get the error "Domain Controller Unavailable"</title>
+	<para>
+		A domain controller has to announce on the network who it is. This usually takes a while.
+	</para>
+</sect2>
+
 </sect1>
 </chapter>
