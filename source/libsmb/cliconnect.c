@@ -356,15 +356,13 @@ end:
 }
 
 /****************************************************************************
- Send a extended security session setup blob, returning a reply blob.
+ Send a extended security session setup blob
 ****************************************************************************/
 
-static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
+static BOOL cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
-	DATA_BLOB blob2 = data_blob(NULL, 0);
-	uint32 len;
 
 	capabilities |= CAP_EXTENDED_SECURITY;
 
@@ -389,7 +387,18 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
-	cli_send_smb(cli);
+	return cli_send_smb(cli);
+}
+
+/****************************************************************************
+ Send a extended security session setup blob, returning a reply blob.
+****************************************************************************/
+
+static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
+{
+	DATA_BLOB blob2 = data_blob(NULL, 0);
+	char *p;
+	size_t len;
 
 	if (!cli_receive_smb(cli))
 		return blob2;
@@ -416,6 +425,20 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), len, 0);
 
 	return blob2;
+}
+
+/****************************************************************************
+ Send a extended security session setup blob, returning a reply blob.
+****************************************************************************/
+
+static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
+{
+	DATA_BLOB blob2 = data_blob(NULL, 0);
+	if (!cli_session_setup_blob_send(cli, blob)) {
+		return blob2;
+	}
+		
+	return cli_session_setup_blob_receive(cli);
 }
 
 #ifdef HAVE_KRB5
@@ -471,6 +494,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	DATA_BLOB blob_in = data_blob(NULL, 0);
 	DATA_BLOB blob_out;
 
+	cli_temp_set_signing(cli);
+
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
 		return False;
 	}
@@ -501,8 +526,15 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 			}
 		
 			/* now send that blob on its way */
-			blob = cli_session_setup_blob(cli, msg1);
+			if (!cli_session_setup_blob_send(cli, msg1)) {
+				return False;
+			}
 			data_blob_free(&msg1);
+			
+			cli_ntlmssp_set_signing(cli, ntlmssp_state);
+			
+			blob = cli_session_setup_blob_receive(cli);
+
 			nt_status = cli_nt_error(cli);
 		}
 		
@@ -538,6 +570,9 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		set_cli_session_key(cli, ntlmssp_state->session_key);
 	}
+
+	/* we have a reference conter on ntlmssp_state, if we are signing
+	   then the state will be kept by the signing engine */
 
 	if (!NT_STATUS_IS_OK(ntlmssp_client_end(&ntlmssp_state))) {
 		return False;
