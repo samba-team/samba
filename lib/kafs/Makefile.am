@@ -41,7 +41,7 @@ AFSLIBS =
 DEPLIB_krb4  =
 endif # KRB4
 
-libkafs_la_LIBADD = ../krb5/libkrb5.la ../roken/libroken.la -lroken $(DEPLIB_krb4)
+libkafs_la_LIBADD = ../krb5/libkrb5.la ../roken/libroken.la $(DEPLIB_krb4)
 
 lib_LTLIBRARIES = $(AFSLIBS)
 libkafs_la_LDFLAGS = -version-info 2:4:2
