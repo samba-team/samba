@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 #include "system/wait.h"
 
 static void (*cont_fn)(void *);

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 
 #ifdef HAVE_LDAP
 
