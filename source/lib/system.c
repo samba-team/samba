@@ -536,3 +536,60 @@ int sys_getgroups(int setlen, gid_t *gidset)
   return ngroups;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
+
+/*
+ * We only wrap pw_name and pw_passwd for now as these
+ * are the only potentially modified fields.
+ */
+
+/**************************************************************************
+ Helper function for getpwnam/getpwuid wrappers.
+****************************************************************************/
+
+static struct passwd *setup_pwret(struct passwd *pass)
+{
+	static pstring pw_name;
+	static pstring pw_passwd;
+	static struct passwd pw_ret;
+
+	if (pass == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy((char *)&pw_ret, pass, sizeof(struct passwd));
+
+	if (pass->pw_name)
+	{
+		pw_name[0] = '\0';
+		pw_ret.pw_name = pw_name;
+		pstrcpy(pw_ret.pw_name, pass->pw_name);
+	}
+
+	if (pass->pw_passwd)
+	{
+		pw_passwd[0] = '\0';
+		pw_ret.pw_passwd = pw_passwd;
+		pstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
+	}
+
+	return &pw_ret;
+}
+
+/**************************************************************************
+ Wrapper for getpwnam(). Always returns a static that can be modified.
+****************************************************************************/
+
+struct passwd *sys_getpwnam(const char *name)
+{
+	return setup_pwret(getpwnam(name));
+}
+
+/**************************************************************************
+ Wrapper for getpwuid(). Always returns a static that can be modified.
+****************************************************************************/
+
+struct passwd *sys_getpwuid(uid_t uid)
+{
+	return setup_pwret(getpwuid(uid));
+}
