@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -68,10 +68,10 @@
 #include <getarg.h>
 
 extern krb5_context context;
-extern krb5_keytab keytab;
 
 extern int verbose_flag;
 extern char *keytab_string; 
+extern char keytab_buf[256];
 
 int kt_add (int argc, char **argv);
 int kt_change (int argc, char **argv);
