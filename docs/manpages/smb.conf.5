@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "16 April 2002" "" ""
+.TH "SMB.CONF" "5" "24 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -30,7 +30,7 @@ line represents either a comment, a section name or a parameter.
 Section and parameter names are not case sensitive.
 .PP
 Only the first equals sign in a parameter is significant. 
-Whitespace before or after the first equals sign is discarded. 
+Whitespace before or after the first equals sign is discarded.
 Leading, trailing and internal whitespace in section and parameter 
 names is irrelevant. Leading and trailing whitespace in a parameter 
 value is discarded. Internal whitespace within a parameter value 
@@ -70,7 +70,7 @@ client as an extension of their native file systems) or
 printable services (used by the client to access print services 
 on the host running the server).
 .PP
-Sections may be designated \fBguest\fR services, 
+Sections may be designated \fBguest\fR services,
 in which case no password is required to access them. A specified 
 UNIX \fBguest account\fR is used to define access
 privileges in this case.
@@ -384,7 +384,7 @@ protocol negotiation. It can be one of CORE, COREPLUS,
 LANMAN1, LANMAN2 or NT1.
 .TP
 \fB%d\fR
-The process id of the current server 
+The process id of the current server
 process.
 .TP
 \fB%a\fR
@@ -445,7 +445,7 @@ case that the client passes, or if they are forced to be the
 "default" case. Default \fByes\fR.
 .TP
 \fBshort preserve case = yes/no\fR
-controls if new files which conform to 8.3 syntax, 
+controls if new files which conform to 8.3 syntax,
 that is all in upper case and of suitable length, are created 
 upper case, or if they are forced to be the "default" 
 case. This option can be use with "preserve case = yes" 
@@ -779,6 +779,9 @@ each parameter for details. Note that some are synonyms.
 \fInt pipe support\fR
 .TP 0.2i
 \(bu
+\fInt status support\fR
+.TP 0.2i
+\(bu
 \fInull passwords\fR
 .TP 0.2i
 \(bu
@@ -1083,6 +1086,9 @@ each parameter for details. Note that some are synonyms.
 \fIcreate mode\fR
 .TP 0.2i
 \(bu
+\fIcsc policy\fR
+.TP 0.2i
+\(bu
 \fIdefault case\fR
 .TP 0.2i
 \(bu
@@ -1336,6 +1342,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIset directory\fR
+.TP 0.2i
+\(bu
+\fIshare modes\fR
 .TP 0.2i
 \(bu
 \fIshort preserve case\fR
@@ -1934,6 +1943,23 @@ Example: \fBcreate mask = 0775\fR
 .TP
 \fBcreate mode (S)\fR
 This is a synonym for \fI create mask\fR.
+.TP
+\fBcsc policy (S)\fR
+This stands for \fBclient-side caching 
+policy\fR, and specifies how clients capable of offline
+caching will cache the files in the share. The valid values
+are: manual, documents, programs, disable.
+
+These values correspond to those used on Windows
+servers.
+
+For example, shares containing roaming profiles can have
+offline caching disabled using \fBcsc policy = disable
+\fR\&.
+
+Default: \fBcsc policy = manual\fR
+
+Example: \fBcsc policy = programs\fR
 .TP
 \fBdeadtime (G)\fR
 The value of the parameter (a decimal integer) 
@@ -4491,6 +4517,18 @@ alone.
 
 Default: \fBnt pipe support = yes\fR
 .TP
+\fBnt status support (G)\fR
+This boolean parameter controls whether smbd(8)will negotiate NT specific status
+support with Windows NT/2k/XP clients. This is a developer
+debugging option and should be left alone.
+If this option is set to no then Samba offers
+exactly the same DOS error codes that versions prior to Samba 2.2.3
+reported.
+
+You should not need to ever disable this parameter.
+
+Default: \fBnt status support = yes\fR
+.TP
 \fBnull passwords (G)\fR
 Allow or disallow client access to accounts 
 that have null passwords. 
@@ -5910,6 +5948,29 @@ in the Digital Pathworks client. See the Pathworks documentation
 for details.
 
 Default: \fBset directory = no\fR
+.TP
+\fBshare modes (S)\fR
+This enables or disables the honoring of 
+the \fIshare modes\fR during a file open. These 
+modes are used by clients to gain exclusive read or write access 
+to a file.
+
+These open modes are not directly supported by UNIX, so
+they are simulated using shared memory, or lock files if your 
+UNIX doesn't support shared memory (almost all do).
+
+The share modes that are enabled by this option are 
+DENY_DOS, DENY_ALL,
+DENY_READ, DENY_WRITE,
+DENY_NONE and DENY_FCB.
+
+This option gives full share compatibility and enabled 
+by default.
+
+You should \fBNEVER\fR turn this parameter 
+off as many Windows applications will break if you do so.
+
+Default: \fBshare modes = yes\fR
 .TP
 \fBshort preserve case (S)\fR
 This boolean parameter controls if new files 

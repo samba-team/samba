@@ -41,7 +41,7 @@
 	<para>Section and parameter names are not case sensitive.</para>
 
 	<para>Only the first equals sign in a parameter is significant. 
-	Whitespace before or after the first equals sign is discarded. 
+	Whitespace before or after the first equals sign is discarded.
 	Leading, trailing and internal whitespace in section and parameter 
 	names is irrelevant. Leading and trailing whitespace in a parameter 
 	value is discarded. Internal whitespace within a parameter value 
@@ -84,7 +84,7 @@
 	printable services (used by the client to access print services 
 	on the host running the server).</para>
 	
-	<para>Sections may be designated <emphasis>guest</emphasis> services, 
+	<para>Sections may be designated <emphasis>guest</emphasis> services,
 	in which case no password is required to access them. A specified 
 	UNIX <emphasis>guest account</emphasis> is used to define access
 	privileges in this case.</para>
@@ -213,7 +213,7 @@
 		the [homes] section will hide the [homes] share but make
 		any auto home directories visible.</para>
 	</refsect2>
-	
+
 	<refsect2>
 		<title id="PRINTERSSECT">The [printers] section</title>
 		
@@ -433,7 +433,7 @@
 
 		<varlistentry>
 		<term>%d</term>
-		<listitem><para>The process id of the current server 
+		<listitem><para>The process id of the current server
 		process.</para></listitem>
 		</varlistentry>
 		
@@ -519,7 +519,7 @@
 
 		<varlistentry>
 		<term>short preserve case = yes/no</term>
-		<listitem><para>controls if new files which conform to 8.3 syntax, 
+		<listitem><para>controls if new files which conform to 8.3 syntax,
 		that is all in upper case and of suitable length, are created 
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
@@ -684,6 +684,7 @@
 		<listitem><para><link linkend="NISHOMEDIR"><parameter>nis homedir</parameter></link></para></listitem>
 		<listitem><para><link linkend="NONUNIXACCOUNTRANGE"><parameter>non unix account range</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTPIPESUPPORT"><parameter>nt pipe support</parameter></link></para></listitem>
+		<listitem><para><link linkend="NTSTATUSSUPPORT"><parameter>nt status support</parameter></link></para></listitem>
 		<listitem><para><link linkend="NULLPASSWORDS"><parameter>null passwords</parameter></link></para></listitem>
 		<listitem><para><link linkend="OBEYPAMRESTRICTIONS"><parameter>obey pam restrictions</parameter></link></para></listitem>
 		<listitem><para><link linkend="OPLOCKBREAKWAITTIME"><parameter>oplock break wait time</parameter></link></para></listitem>
@@ -797,6 +798,8 @@
 		<listitem><para><link linkend="COPY"><parameter>copy</parameter></link></para></listitem>
 		<listitem><para><link linkend="CREATEMASK"><parameter>create mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="CREATEMODE"><parameter>create mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="CSCPOLICY"><parameter>csc policy</parameter></link></para></listitem>
+		
 		<listitem><para><link linkend="DEFAULTCASE"><parameter>default case</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEFAULTDEVMODE"><parameter>default devmode</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEREADONLY"><parameter>delete readonly</parameter></link></para></listitem>
@@ -882,6 +885,7 @@
 		<listitem><para><link linkend="ROOTPREEXECCLOSE"><parameter>root preexec close</parameter></link></para></listitem>
 		<listitem><para><link linkend="SECURITYMASK"><parameter>security mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="SETDIRECTORY"><parameter>set directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="SHAREMODES"><parameter>share modes</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHORTPRESERVECASE"><parameter>short preserve case</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATUS"><parameter>status</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTALLOCATE"><parameter>strict allocate</parameter></link></para></listitem>
@@ -1157,6 +1161,7 @@
 		<para>Default: <command>algorithmic rid base = 1000</command></para>
 
 		<para>Example: <command>algorithmic rid base = 100000</command></para>
+		</listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -1591,6 +1596,24 @@
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term><anchor id="CSCPOLICY">csc policy (S)</term>
+		<listitem><para>This stands for <emphasis>client-side caching 
+		policy</emphasis>, and specifies how clients capable of offline
+		caching will cache the files in the share. The valid values
+		are: manual, documents, programs, disable.</para>
+
+		<para>These values correspond to those used on Windows
+		servers.</para>
+
+		<para>For example, shares containing roaming profiles can have
+		offline caching disabled using <command>csc policy = disable
+		</command>.</para>
+
+		<para>Default: <command>csc policy = manual</command></para>
+		<para>Example: <command>csc policy = programs</command></para>
+		</listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term><anchor id="DEADTIME">deadtime (G)</term>
@@ -4860,6 +4883,23 @@
 
 
 		<varlistentry>
+		<term><anchor id="NTSTATUSSUPPORT">nt status support (G)</term>
+		<listitem><para>This boolean parameter controls whether <ulink
+		url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific status
+		support with Windows NT/2k/XP clients. This is a developer
+		debugging option and should be left alone.
+	 	If this option is set to <constant>no</constant> then Samba offers
+		exactly the same DOS error codes that versions prior to Samba 2.2.3
+		reported.</para>
+
+		<para>You should not need to ever disable this parameter.</para>
+
+		<para>Default: <command>nt status support = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
 		<term><anchor id="NULLPASSWORDS">null passwords (G)</term>
 		<listitem><para>Allow or disallow client access to accounts 
 		that have null passwords. </para>
@@ -6644,6 +6684,33 @@
 		</varlistentry>
 
 
+
+		<varlistentry>
+		<term><anchor id="SHAREMODES">share modes (S)</term>
+		<listitem><para>This enables or disables the honoring of 
+		the <parameter>share modes</parameter> during a file open. These 
+		modes are used by clients to gain exclusive read or write access 
+		to a file.</para>
+
+		<para>These open modes are not directly supported by UNIX, so
+		they are simulated using shared memory, or lock files if your 
+		UNIX doesn't support shared memory (almost all do).</para>
+
+		<para>The share modes that are enabled by this option are 
+		<constant>DENY_DOS</constant>, <constant>DENY_ALL</constant>,
+		<constant>DENY_READ</constant>, <constant>DENY_WRITE</constant>,
+		<constant>DENY_NONE</constant> and <constant>DENY_FCB</constant>.
+		</para>
+
+		<para>This option gives full share compatibility and enabled 
+		by default.</para>
+
+		<para>You should <emphasis>NEVER</emphasis> turn this parameter 
+		off as many Windows applications will break if you do so.</para>
+
+		<para>Default: <command>share modes = yes</command></para>
+		</listitem>
+		</varlistentry>
 
 
 
