@@ -582,6 +582,17 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 #endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
 	/*
+	 * POSIX locks of length zero mean lock to end-of-file.
+	 * Win32 locks of length zero are point probes. Ignore
+	 * any Win32 locks of length zero. JRA.
+	 */
+
+	if (count == (SMB_OFF_T)0) {
+		DEBUG(10,("posix_lock_in_range: count = 0, ignoring.\n"));
+		return False;
+	}
+
+	/*
 	 * If the given offset was > max_positive_lock_offset then we cannot map this at all
 	 * ignore this lock.
 	 */
