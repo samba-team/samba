@@ -141,6 +141,17 @@ void cmd_sam_test(struct client_info *info)
 
 	fprintf(out_hnd, "SAM Encryption Test\n");
 
+	cli_nt_set_ntlmssp_flgs(smb_cli,
+		                    NTLMSSP_NEGOTIATE_UNICODE |
+		                    NTLMSSP_NEGOTIATE_OEM |
+		                    NTLMSSP_NEGOTIATE_SIGN |
+		                    NTLMSSP_NEGOTIATE_SEAL |
+		                    NTLMSSP_NEGOTIATE_LM_KEY |
+		                    NTLMSSP_NEGOTIATE_NTLM |
+		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+		                    NTLMSSP_NEGOTIATE_00001000 |
+		                    NTLMSSP_NEGOTIATE_00002000);
+
 	/* open SAMR session.  */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
@@ -527,9 +538,11 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	fstring alias_names [3];
 	uint32  num_als_usrs[3];
 
-	fstrcpy(sid   , info->dom.level5_sid);
-	fstrcpy(domain, info->dom.level5_dom);
-
+	fstrcpy(sid   , info->dom.level3_sid);
+	fstrcpy(domain, info->dom.level3_dom);
+#if 0
+	fstrcpy(sid   , "S-1-5-20");
+#endif
 	if (strlen(sid) == 0)
 	{
 		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");

@@ -490,6 +490,7 @@ typedef struct connection_struct
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
+
 } connection_struct;
 
 struct current_user
@@ -497,7 +498,7 @@ struct current_user
 	connection_struct *conn;
 	uint16 vuid;
 	uid_t uid;
-    gid_t gid;
+	gid_t gid;
 	int ngroups;
 	gid_t *groups;
 };

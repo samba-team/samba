@@ -85,6 +85,7 @@ typedef struct pipes_struct
 	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
 
 	BOOL ntlmssp_auth;
+	BOOL ntlmssp_validated;
 	unsigned char ntlmssp_hash[258];
 	fstring user_name;
 	fstring domain;

@@ -2357,6 +2357,7 @@ void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 	DEBUG(5,("make_q_connect\n"));
 
 	/* make PDC server name \\server */
+	q_u->ptr_srv_name = len_srv_name > 0 ? 1 : 0; 
 	make_unistr2(&(q_u->uni_srv_name), srv_name, len_srv_name);  
 
 	/* example values: 0x0000 0002 */
@@ -2748,6 +2749,18 @@ void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct
 
 	samr_io_enc_passwd("lm_newpass", &(q_u->lm_newpass), ps, depth); 
 	samr_io_enc_hash  ("lm_oldhash", &(q_u->lm_oldhash), ps, depth); 
+}
+
+/*******************************************************************
+makes a SAMR_R_CHGPASSWD_USER structure.
+********************************************************************/
+void make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_r_chgpasswd_user\n"));
+
+	r_u->status = status;
 }
 
 /*******************************************************************
