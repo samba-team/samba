@@ -100,7 +100,7 @@ static NTSTATUS tcp_full_request(struct dcerpc_pipe *p,
 /* 
    retrieve a secondary pdu from a pipe 
 */
-NTSTATUS tcp_secondary_request(struct dcerpc_pipe *p, 
+static NTSTATUS tcp_secondary_request(struct dcerpc_pipe *p, 
 			       TALLOC_CTX *mem_ctx,
 			       DATA_BLOB *blob)
 {
