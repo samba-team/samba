@@ -111,6 +111,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	if (lp_share_modes(SNUM(conn))) {
 		lock_share_entry(conn, dev, inode, &token);
 		del_share_mode(token, fsp);
+		unlock_share_entry(conn, dev, inode, token);
 	}
 
 	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
@@ -120,9 +121,6 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		last_reference = True;
 
     fsp->fd_ptr = NULL;
-
-	if (lp_share_modes(SNUM(conn)))
-		unlock_share_entry(conn, dev, inode, token);
 
 	/* NT uses smbclose to start a print - weird */
 	if (normal_close && fsp->print_file)

@@ -10251,7 +10251,7 @@ if test "${with_sambabook+set}" = set; then
   esac
   
 else
-  sambabook='install in ${prefix}/swat/using_samba'
+  sambabook='${prefix}/swat/using_samba'
    
    echo "$ac_t""$sambabook" 1>&6
 

@@ -1589,7 +1589,7 @@ AC_ARG_WITH(sambabook,
     ;;
   esac
   AC_SUBST(sambabook)],
-  [sambabook='install in ${prefix}/swat/using_samba'
+  [sambabook='${prefix}/swat/using_samba'
    AC_SUBST(sambabook)
    AC_MSG_RESULT($sambabook)]
 )
