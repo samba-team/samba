@@ -488,7 +488,72 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **rid_mem, char ***names, 
 				uint32 **name_types)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DOM_SID group_sid;
+	char *sidstr;
+	const char *attrs[] = {"sAMAccountName", "objectSid", "sAMAccountType", NULL};
+	int rc, count;
+	void *res, *msg;
+	ADS_STRUCT *ads;
+	char *exp;
+
+	*num_names = 0;
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(1,("ads_init failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ads_connect(ads);
+	if (rc) {
+		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	sid_from_rid(domain, group_rid, &group_sid);
+	sidstr = ads_sid_binstring(&group_sid);
+	/* search for all users who have that group sid as primary group or as member */
+	asprintf(&exp, "(&(objectclass=user)(|(primaryGroupID=%d)(memberOf=%s)))",
+		 group_rid, sidstr);
+	rc = ads_search(ads, &res, exp, attrs);
+	if (rc) {
+		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count == 0) {
+		return NT_STATUS_OK;
+	}
+
+	(*rid_mem) = talloc(mem_ctx, sizeof(uint32) * count);
+	(*name_types) = talloc(mem_ctx, sizeof(uint32) * count);
+	(*names) = talloc(mem_ctx, sizeof(char *) * count);
+
+	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+		uint32 atype, rid;
+		DOM_SID sid;
+
+		(*names)[*num_names] = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
+			continue;
+		}
+		(*name_types)[*num_names] = ads_atype_map(atype);
+		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
+			DEBUG(1,("No sid for %s !?\n", (*names)[*num_names]));
+			continue;
+		}
+		if (!sid_peek_rid(&sid, &rid)) {
+			DEBUG(1,("No rid for %s !?\n", (*names)[*num_names]));
+			continue;
+		}
+		(*rid_mem)[*num_names] = rid;
+		(*num_names)++;
+	}	
+
+	ads_destroy(&ads);
+
+	return NT_STATUS_OK;
 }
 
 /* the ADS backend methods are exposed via this structure */
