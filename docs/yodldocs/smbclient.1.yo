@@ -41,7 +41,7 @@ which may or may not be the same as the IP hostname of the machine
 running the server.
 
 The server name is looked up according to the url(bf(name resolve
-order))(smbclient.1.html#name_resolve_order) parameter in the smb.conf
+order))(smbclient.1.html#name resolve order) parameter in the smb.conf
 file, allowing an administrator to change the order and methods by
 which server names are looked up.
 
@@ -106,12 +106,14 @@ endit()
 
 If this parameter is not set then the name resolver order defined
 in the url(bf(smb.conf))(smb.conf.5.html) file parameter 
-url((bf(name resolve order))(smb.conf.5.html#name resolve order)
+url((bf(name resolve order)))(smb.conf.5.html#name resolve order)
 will be used.
 
 The default order is lmhosts, host, wins, bcast and without this
-parameter or any entry in the url(bf(smb.conf))(smb.conf.5.html) 
-file the name resolution methods will be attempted in this order.
+parameter or any entry in the url(bf("name resolve
+order"))(smb.conf.5.html#name resolve order) parameter of the
+url(bf(smb.conf))(smb.conf.5.html) file the name resolution methods
+will be attempted in this order.
 
 dit(bf(-M NetBIOS name)) This options allows you to send messages,
 using the "WinPopup" protocol, to another computer. Once a connection
@@ -135,8 +137,9 @@ will send the message in the file em(mymessage.txt) to the machine FRED.
 You may also find the bf(-U) and bf(-I) options useful, as they allow
 you to control the FROM and TO parts of the message.
 
-See the message command section of bf(smb.conf (5)) for a description
-of how to handle incoming WinPopup messages in Samba.
+See the url(bf(message command))(smb.conf.5.html#message command)
+parameter in the bf(smb.conf (5)) for a description of how to handle
+incoming WinPopup messages in Samba.
 
 Note: Copy WinPopup into the startup group on your WfWg PCs if you
 want them to always be able to receive messages.
@@ -316,9 +319,10 @@ it() NT1
 
 endit()
 
-dit(bf(-W WORKGROUP)) Override the default workgroup specified in
-smb.conf for this connection. This may be needed to connect to some
-servers.
+dit(bf(-W WORKGROUP)) Override the default workgroup specified in the
+url(bf(workgroup))(smb.conf.5.html#workgroup) parameter of the
+url(bf(smb.conf))(smb.conf.5.html) file for this connection. This may
+be needed to connect to some servers.
 
 label(minusT) dit(bf(-T tar options)) smbclient may be used to create
 bf(tar (1)) compatible backups of all the files on an SMB/CIFS

@@ -69,6 +69,10 @@ them to email(samba-bugs@samba.anu.edu.au). All codepage files in the
 Samba em(source/codepages) directory are compiled and installed when a
 em('make install') command is issued there.
 
+The client codepage used by the url(bf(smbd))(smbd.8.html) server is
+configured using the url(bf(client code page))(smb.conf.5.html#client
+code page) parameter in the url(bf(smb.conf))(smb.conf.5.html) file.
+
 label(FILES)
 manpagefiles()
 

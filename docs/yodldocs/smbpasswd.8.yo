@@ -229,6 +229,8 @@ This option is only available when running bf(smbpasswd) as root.
 label(minusU)
 dit(bf(-U username))
 
+HERE !!!!
+
 .RE
 .I username
 
