@@ -875,7 +875,7 @@ BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword)
 #else
 
 /* If PAM not used, no PAM restrictions on accounts. */
- uint32 smb_pam_accountcheck(char * user)
+ NTSTATUS smb_pam_accountcheck(char * user)
 {
 	return NT_STATUS_OK;
 }
