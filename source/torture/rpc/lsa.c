@@ -689,108 +689,113 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	DATA_BLOB blob1, blob2;
 	const char *secret1 = "abcdef12345699qwerty";
 	char *secret2;
-	char *secname;
+	char *secname[2];
+	int i;
 
-	printf("Testing CreateSecret\n");
 
-	asprintf(&secname, "torturesecret-%u", (uint_t)random());
+	secname[0] = talloc_asprintf(mem_ctx, "torturesecret-%u", (uint_t)random());
+	secname[1] = talloc_asprintf(mem_ctx, "G$torturesecret-%u", (uint_t)random());
 
-	init_lsa_String(&r.in.name, secname);
-
-	r.in.handle = handle;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.sec_handle = &sec_handle;
-
-	status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateSecret failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	r2.in.handle = handle;
-	r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r2.in.name = r.in.name;
-	r2.out.sec_handle = &sec_handle2;
-
-	printf("Testing OpenSecret\n");
-
-	status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenSecret failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-
-	status = dcerpc_fetch_session_key(p, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-
-	enc_key = sess_encrypt_string(secret1, &session_key);
-
-	r3.in.handle = &sec_handle;
-	r3.in.new_val = &buf1;
-	r3.in.old_val = NULL;
-	r3.in.new_val->data = enc_key.data;
-	r3.in.new_val->length = enc_key.length;
-	r3.in.new_val->size = enc_key.length;
-
-	printf("Testing SetSecret\n");
-
-	status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetSecret failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-
-	data_blob_free(&enc_key);
-
-	ZERO_STRUCT(new_mtime);
-	ZERO_STRUCT(old_mtime);
-
-	/* fetch the secret back again */
-	r4.in.handle = &sec_handle;
-	r4.in.new_val = &bufp1;
-	r4.in.new_mtime = &new_mtime;
-	r4.in.old_val = NULL;
-	r4.in.old_mtime = NULL;
-
-	bufp1.buf = NULL;
-
-	status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r4);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QuerySecret failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-
-	if (r4.out.new_val->buf == NULL) {
-		printf("No secret buffer returned\n");
-		ret = False;
-	} else {
-		blob1.data = r4.out.new_val->buf->data;
-		blob1.length = r4.out.new_val->buf->length;
-
-		blob2 = data_blob(NULL, blob1.length);
-
-		secret2 = sess_decrypt_string(&blob1, &session_key);
-
-		printf("returned secret '%s'\n", secret2);
-
-		if (strcmp(secret1, secret2) != 0) {
-			printf("Returned secret doesn't match\n");
+	for (i=0; i< 2; i++) {
+		printf("Testing CreateSecret of %s\n", secname[i]);
+		
+		init_lsa_String(&r.in.name, secname[i]);
+		
+		r.in.handle = handle;
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r.out.sec_handle = &sec_handle;
+		
+		status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("CreateSecret failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		
+		r2.in.handle = handle;
+		r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r2.in.name = r.in.name;
+		r2.out.sec_handle = &sec_handle2;
+		
+		printf("Testing OpenSecret\n");
+		
+		status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("OpenSecret failed - %s\n", nt_errstr(status));
 			ret = False;
 		}
-	}
-
-	if (!test_Delete(p, mem_ctx, &sec_handle)) {
-		ret = False;
-	}
-
-	d.in.handle = &sec_handle2;
-	status = dcerpc_lsa_Delete(p, mem_ctx, &d);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
-		printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
-		ret = False;
+		
+		status = dcerpc_fetch_session_key(p, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
+		enc_key = sess_encrypt_string(secret1, &session_key);
+		
+		r3.in.handle = &sec_handle;
+		r3.in.new_val = &buf1;
+		r3.in.old_val = NULL;
+		r3.in.new_val->data = enc_key.data;
+		r3.in.new_val->length = enc_key.length;
+		r3.in.new_val->size = enc_key.length;
+		
+		printf("Testing SetSecret\n");
+		
+		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("SetSecret failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
+		data_blob_free(&enc_key);
+		
+		ZERO_STRUCT(new_mtime);
+		ZERO_STRUCT(old_mtime);
+		
+		/* fetch the secret back again */
+		r4.in.handle = &sec_handle;
+		r4.in.new_val = &bufp1;
+		r4.in.new_mtime = &new_mtime;
+		r4.in.old_val = NULL;
+		r4.in.old_mtime = NULL;
+		
+		bufp1.buf = NULL;
+		
+		status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r4);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QuerySecret failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
+		if (r4.out.new_val->buf == NULL) {
+			printf("No secret buffer returned\n");
+			ret = False;
+		} else {
+			blob1.data = r4.out.new_val->buf->data;
+			blob1.length = r4.out.new_val->buf->length;
+			
+			blob2 = data_blob(NULL, blob1.length);
+			
+			secret2 = sess_decrypt_string(&blob1, &session_key);
+			
+			printf("returned secret '%s'\n", secret2);
+			
+			if (strcmp(secret1, secret2) != 0) {
+				printf("Returned secret doesn't match\n");
+				ret = False;
+			}
+		}
+		
+		if (!test_Delete(p, mem_ctx, &sec_handle)) {
+			ret = False;
+		}
+		
+		d.in.handle = &sec_handle2;
+		status = dcerpc_lsa_Delete(p, mem_ctx, &d);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+			printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
+			ret = False;
+		}
 	}
 
 	return ret;
