@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 EXTRA_DIST = krb5-config.1
 
-CLEANFILES = krb5-config
+CLEANFILES = krb5-config krb5-config.new
 
 bin_SCRIPTS = krb5-config
 
@@ -22,5 +22,6 @@ krb5-config: krb5-config.in
 		-e "s,@INCLUDE_des\@,$(INCLUDE_des),g" \
 		-e "s,@LIB_des_appl\@,$(LIB_des_appl),g" \
 		-e "s,@LIBS\@,$(LIBS),g" \
-		$(srcdir)/krb5-config.in > $@
+		$(srcdir)/krb5-config.in > $@.new
+	mv $@.new $@
 	chmod +x $@
