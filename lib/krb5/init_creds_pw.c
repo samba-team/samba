@@ -263,6 +263,8 @@ get_init_creds_common(krb5_context context,
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_SALT)
 	;			/* XXX */
+    if (options->flags & KRB5_GET_INIT_CREDS_OPT_ANONYMOUS)
+	flags->b.request_anonymous = options->anonymous;
     return 0;
 }
 
