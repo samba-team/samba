@@ -394,7 +394,12 @@
 		<term>%L</term>
 		<listitem><para>the NetBIOS name of the server. This allows you 
 		to change your config based on what the client calls you. Your 
-		server can have a "dual personality".</para></listitem>
+		server can have a "dual personality".</para>
+
+                <para>Note that this paramater is not available when Samba listens
+                on port 445, as clients no longer send this information </para>
+                </listitem>
+
 		</varlistentry>
 		
 		<varlistentry>
@@ -3244,11 +3249,11 @@
 		with Windows 2000. Note that due to Windows 2000 client redirector bugs
 		this requires Samba to be running on a 64-bit capable operating system such
 		as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
-		Windows 2000 clients. Defaults to off. Not as tested as some other Samba
+		Windows 2000 clients. Defaults to on. Not as tested as some other Samba
 		code paths.
 		</para>
 		
-		<para>Default : <command>large readwrite = no</command></para>
+		<para>Default : <command>large readwrite = yes</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -5065,8 +5070,57 @@
                 (eg --with-tdbsam) at configure time.
 		</para>
 
+                <para>This paramater is in two parts, the backend's name, and a 'location'
+                string that has meaning only to that particular backed.  These are separated
+                by a : character.</para>
+
+                <para>Available backends can include:
+                <itemizedlist>
+			<listitem><para><command>smbpasswd</command> - The default smbpasswd
+                        backend.  Takes a path to the smbpasswd file as an optional argument.</para></listitem>
+			
+			<listitem><para><command>smbpasswd_nua</command> - The smbpasswd
+                        backend, but with support for 'not unix accounts'.  
+                        Takes a path to the smbpasswd file as an optional argument.</para>
+                        <para>See also <link linkend="NONUNIXACCOUNTRANGE">
+                        <parameter>non unix account range</parameter></link></para></listitem>
+
+			<listitem><para><command>tdbsam</command> - The TDB based password storage
+                        backend.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
+                        in the <link linkend="PRIVATEDIR">
+                        <parameter>private dir</parameter></link> directory.</para></listitem>
+			
+			<listitem><para><command>tdbsam_nua</command> - The TDB based password storage
+                        backend, with non unix account support.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
+                        in the <link linkend="PRIVATEDIR">
+                        <parameter>private dir</parameter></link> directory.</para>
+                        <para>See also <link linkend="NONUNIXACCOUNTRANGE">
+                        <parameter>non unix account range</parameter></link></para></listitem>
+			
+			<listitem><para><command>ldapsam</command> - The LDAP based passdb 
+                        backend.  Takes an LDAP URL as an optional argument (defaults to 
+                        <command>ldap://localhost</command>)</para></listitem>
+			
+			<listitem><para><command>ldapsam_nua</command> - The LDAP based passdb 
+                        backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
+                        <command>ldap://localhost</command>)</para>
+                        <para>See also <link linkend="NONUNIXACCOUNTRANGE">
+                        <parameter>non unix account range</parameter></link></para></listitem>
+			
+			<listitem><para><command>plugin</command> - Allows Samba to load an 
+                        arbitary passdb backend from the .so specified as a compulsary argument.
+                        </para>
+
+                        <para>Any characters after the (optional) second : are passed to the plugin
+                        for its own processing</para>
+                        </listitem>
+			
+		</itemizedlist>
+
 		<para>Default: <command>passdb backend = smbpasswd</command></para>
-		<para>Example: <command>passdb backend = tdbsam</command></para>
+		<para>Example: <command>passdb backend = tdbsam:/etc/samba/private/passdb.tdb</command></para>
+		<para>Example: <command>passdb backend = ldapsam_nua:ldaps://ldap.example.com</command></para>
+		<para>Example: <command>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args</command></para>
 		</listitem>
 		</varlistentry>
 
