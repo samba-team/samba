@@ -480,3 +480,22 @@ char *timestring(void )
   return(TimeBuf);
 }
 
+/****************************************************************************
+  return the best approximation to a 'create time' under UNIX from a stat
+  structure.
+****************************************************************************/
+
+time_t get_create_time(struct stat *st)
+{
+  time_t ret = MIN(st->st_ctime, st->st_mtime);
+  time_t ret1 = MIN(ret, st->st_atime);
+
+  if(ret1 != (time_t)0)
+    return ret1;
+
+  /*
+   * One of ctime, mtime or atime was zero (probably atime).
+   * Just return MIN(ctime, mtime).
+   */
+  return ret;
+}
