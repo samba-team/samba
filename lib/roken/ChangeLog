@@ -1,3 +1,9 @@
+Sun Dec  6 19:53:21 1998  Assar Westerlund  <assar@sics.se>
+
+	* parse_units.c (parse_something): func is called with val == 0 if
+ 	no unit was given
+	(acc_flags, acc_units): update to new standard
+
 Thu Nov 26 17:09:47 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* resolve.c: some cleanup
