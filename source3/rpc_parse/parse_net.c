@@ -528,8 +528,8 @@ BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, i
 ********************************************************************/
 
 void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				char *logon_srv, char *logon_clnt,
-				DOM_CHAL *clnt_chal)
+		     const char *logon_srv, const char *logon_clnt,
+		     DOM_CHAL *clnt_chal)
 {
 	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
 
@@ -666,7 +666,7 @@ BOOL net_io_r_auth(char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
 ********************************************************************/
 
 void init_q_auth_2(NET_Q_AUTH_2 *q_a,
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
 	DEBUG(5,("init_q_auth_2: %d\n", __LINE__));
