@@ -1,5 +1,18 @@
 2002-04-30  Johan Danielsson  <joda@pdc.kth.se>
 
+	* krb-ipv6.m4: use AC_HELP_STRING; fix logic bug in AC_MSG_RESULT
+	call
+
+	* test-package.m4: use AC_HELP_STRING
+
+	* roken.m4: use AC_HELP_STRING
+
+	* osfc2.m4: use AC_HELP_STRING
+
+	* mips-abi.m4: use AC_HELP_STRING
+
+	* krb-bigendian.m4: use AC_HELP_STRING
+
 	* db.m4: rework this somewhat; check for db3/4 in subdirs, change
 	--with to --enable; it should really be possible to point it to
 	some directory --with-berkeley-db=/foo
