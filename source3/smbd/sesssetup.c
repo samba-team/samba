@@ -80,6 +80,11 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+#if 0
+	chdir("/home/tridge");
+	file_save("ticket.dat", ticket.data, ticket.length);
+#endif
+
 	packet.length = ticket.length;
 	packet.data = (krb5_pointer)ticket.data;
 
@@ -196,7 +201,8 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("Got OID %s\n", OIDs[i]));
-		if (strcmp(OID_KERBEROS5_OLD, OIDs[i]) == 0) {
+		if (strcmp(OID_KERBEROS5, OIDs[i]) == 0 ||
+		    strcmp(OID_KERBEROS5_OLD, OIDs[i]) == 0) {
 			got_kerberos = True;
 		}
 		free(OIDs[i]);
@@ -504,7 +510,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
 	START_PROFILE(SMBsesssetupX);
 	
-	if (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY) {
+	if (SVAL(inbuf, smb_wct) == 12) {
 		/* it's a SPNEGO session setup */
 		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
 	}
