@@ -198,7 +198,6 @@ parse_auth_level(char *str)
 static int debug_flag;
 static int interactive_flag;
 static char *guest_umask_string;
-static int logflag;
 static char *port_string;
 static char *umask_string;
 static char *auth_string;
@@ -213,7 +212,7 @@ struct getargs args[] = {
     { NULL, 'i', arg_flag, &interactive_flag, "don't assume stdin is a socket" },
     { NULL, 'p', arg_string, &port_string, "what port to listen to" },
     { NULL, 'g', arg_string, &guest_umask_string, "umask for guest logins" },
-    { NULL, 'l', arg_counter, &logflag, "log more stuff", "" },
+    { NULL, 'l', arg_counter, &logging, "log more stuff", "" },
     { NULL, 't', arg_integer, &ftpd_timeout, "initial timeout" },
     { NULL, 'T', arg_integer, &maxtimeout, "max timeout" },
     { NULL, 'u', arg_string, &umask_string, "umask for user logins" },
