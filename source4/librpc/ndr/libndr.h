@@ -162,7 +162,7 @@ enum ndr_err_code {
 };
 
 enum ndr_compression_alg {
-	NDR_COMPRESSION_ZLIB
+	NDR_COMPRESSION_MSZIP
 };
 
 /*
