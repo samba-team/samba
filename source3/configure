@@ -25,7 +25,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --disable-libtool-lock  avoid locking (might break parallel builds)"
 ac_help="$ac_help
-  --with-codepagedir=DIR     Where to put codepage files ($codepagedir)"
+  --with-codepagedir=DIR     Where to put codepage files (\$libdir/codepages)"
 ac_help="$ac_help
   --with-readline[=DIR]   Look for readline include/libs in DIR
   --without-readline      Don't include readline support"
