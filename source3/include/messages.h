@@ -40,5 +40,6 @@
 
 /* smbd messages */
 #define MSG_SMB_CONF_UPDATED 3001
+#define MSG_SMB_FORCE_TDIS   3002
 
 #endif
