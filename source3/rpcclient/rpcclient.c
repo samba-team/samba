@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-extern fstring debugf;
+extern pstring debugf;
 
 DOM_SID domain_sid;
 
