@@ -12,6 +12,12 @@ echo "* Har du uppdaterat versionsnummret? Detta är version $ver. *"
 echo "*                                                           *"
 echo "*************************************************************"
 
+ed configure.in << END
+/test -z
+s,^,#,
+w
+q
+END
 aclocal -I cf
 autoconf
 autoheader
