@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.0
 
    Printer security permission manipulation.
 
@@ -66,6 +65,8 @@
 #include "includes.h"
 
 TDB_CONTEXT *tdb;
+
+#if 0				/* Unused */
 
 /* ACE type conversions */
 
@@ -135,7 +136,7 @@ char *ace_to_str(SEC_ACE *ace)
 	static pstring temp;
 	fstring sidstr;
 
-	sid_to_string(sidstr, &ace->sid);
+	sid_to_string(sidstr, &ace->trustee);
 
 	slprintf(temp, sizeof(temp) - 1, "%s %d %s %s", 
 		 ace_type_to_str(ace->type), ace->flags,
@@ -155,6 +156,8 @@ void str_to_ace(SEC_ACE *ace, char *ace_str)
 	init_sec_ace(ace, &sid, type, sa, flags);
 }
 
+#endif /* unused */
+
 /* Get a printer security descriptor */
 
 int psec_getsec(char *printer)
@@ -169,11 +172,11 @@ int psec_getsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
+	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntprinters.tdb", LOCKDIR);
 	tdb = tdb_open(tdb_path, 0, 0, O_RDONLY, 0600);
 
 	if (!tdb) {
-		printf("psec: failed to open nt drivers database: %s\n",
+		printf("psec: failed to open nt printers database: %s\n",
 		       sys_errlist[errno]);
 		return 1;
 	}
@@ -233,7 +236,7 @@ int psec_getsec(char *printer)
 	for (i = 0; i < secdesc_ctr->sec->dacl->num_aces; i++) {
 		SEC_ACE *ace = &secdesc_ctr->sec->dacl->ace[i];
 
-		sid_to_string(sidstr, &ace->sid);
+		sid_to_string(sidstr, &ace->trustee);
 
 		printf("%d %d 0x%08x %s\n", ace->type, ace->flags,
 		       ace->info.mask, sidstr);
@@ -242,7 +245,6 @@ int psec_getsec(char *printer)
  done:
 	if (tdb) tdb_close(tdb);
 	if (mem_ctx) talloc_destroy(mem_ctx);
-	if (secdesc_ctr) free_sec_desc_buf(&secdesc_ctr);
 	prs_mem_free(&ps);
 
 	return result;
@@ -264,15 +266,23 @@ int psec_setsec(char *printer)
 	TALLOC_CTX *mem_ctx = NULL;
 	BOOL has_user_sid = False, has_group_sid = False;
 
+	/* Init memory */
+
 	ZERO_STRUCT(ps);
+
+	if (!(mem_ctx = talloc_init())) {
+		printf("memory allocation error\n");
+		result = 1;
+		goto done;
+	}
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
+	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntprinters.tdb", LOCKDIR);
 	tdb = tdb_open(tdb_path, 0, 0, O_RDWR, 0600);
 
 	if (!tdb) {
-		printf("psec: failed to open nt drivers database: %s\n",
+		printf("psec: failed to open nt printers database: %s\n",
 		       sys_errlist[errno]);
 		result = 1;
 		goto done;
@@ -318,36 +328,24 @@ int psec_setsec(char *printer)
 		num_aces++;
 	}
 
-	dacl = make_sec_acl(ACL_REVISION, num_aces, ace_list);
+	dacl = make_sec_acl(mem_ctx, ACL_REVISION, num_aces, ace_list);
 	free(ace_list);
 
 	/* Create security descriptor */
 
-	sd = make_sec_desc(SEC_DESC_REVISION,
+	sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION,
 			   has_user_sid ? &user_sid : NULL, 
 			   has_group_sid ? &group_sid : NULL,
 			   NULL, /* System ACL */
 			   dacl, /* Discretionary ACL */
 			   &size);
 
-	free_sec_acl(&dacl);
-
-	sdb = make_sec_desc_buf(size, sd);
-
-	free_sec_desc(&sd);
+	sdb = make_sec_desc_buf(mem_ctx, size, sd);
 
 	/* Write security descriptor to tdb */
 
-	mem_ctx = talloc_init();
-
-	if (!mem_ctx) {
-		printf("memory allocation error\n");
-		result = 1;
-		goto done;
-	}
-
 	prs_init(&ps, (uint32)sec_desc_size(sdb->sec) + 
-		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
+		 sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &sdb, &ps, 1)) {
 		printf("sec_io_desc_buf failed\n");
@@ -363,7 +361,6 @@ int psec_setsec(char *printer)
 
  done:
 	if (tdb) tdb_close(tdb);
-	if (sdb) free_sec_desc_buf(&sdb);
 	if (mem_ctx) talloc_destroy(mem_ctx);
 	prs_mem_free(&ps);
 
