@@ -322,33 +322,25 @@ static void fixtarname(char *tptr, char *fp, int l)
    * to lovely unix /'s :-} */
 
   *tptr++='.';
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    while (l > 0) {
-      if (is_shift_jis (*fp)) {
+
+  while (l > 0) {
+    int skip;
+    if((skip = skip_multibyte_char( *fp)) != 0) {
+      if (skip == 2) {
         *tptr++ = *fp++;
         *tptr++ = *fp++;
         l -= 2;
-      } else if (is_kana (*fp)) {
-        *tptr++ = *fp++;
-        l--;
-      } else if (*fp == '\\') {
-        *tptr++ = '/';
-        fp++;
-        l--;
-      } else {
+      } else if (skip == 1) {
         *tptr++ = *fp++;
         l--;
       }
-    }
-  }
-  else
-  {
-    while (l--)
-    {
-      *tptr=(*fp == '\\') ? '/' : *fp;
-      tptr++;
+    } else if (*fp == '\\') {
+      *tptr++ = '/';
       fp++;
+      l--;
+    } else {
+      *tptr++ = *fp++;
+      l--;
     }
   }
 }
@@ -1227,33 +1219,24 @@ static void unfixtarname(char *tptr, char *fp, int l)
   if (*fp == '.') fp++;
   if (*fp == '\\' || *fp == '/') fp++;
 
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    while (l > 0) {
-      if (is_shift_jis (*fp)) {
+  while (l > 0) {
+    int skip;
+    if(( skip = skip_multibyte_char( *fp )) != 0) {
+      if (skip == 2) {
         *tptr++ = *fp++;
         *tptr++ = *fp++;
         l -= 2;
-      } else if (is_kana (*fp)) {
-        *tptr++ = *fp++;
-        l--;
-      } else if (*fp == '/') {
-        *tptr++ = '\\';
-        fp++;
-        l--;
-      } else {
+      } else if (skip == 1) {
         *tptr++ = *fp++;
         l--;
       }
-    }
-  }
-  else
-  {
-    while (l--)
-    {
-      *tptr=(*fp == '/') ? '\\' : *fp;
-      tptr++;
+    } else if (*fp == '/') {
+      *tptr++ = '\\';
       fp++;
+      l--;
+    } else {
+      *tptr++ = *fp++;
+      l--;
     }
   }
 }
