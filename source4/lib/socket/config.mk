@@ -12,5 +12,7 @@ INIT_OBJ_FILES = \
 [SUBSYSTEM::SOCKET]
 INIT_OBJ_FILES = \
 		lib/socket/socket.o
+ADD_OBJ_FILES = \
+		lib/socket/access.o
 # End SUBSYSTEM SOCKET
 ################################################

@@ -293,6 +293,26 @@ static NTSTATUS ipv4_tcp_set_option(struct socket_context *sock, const char *opt
 	return NT_STATUS_OK;
 }
 
+static char *ipv4_tcp_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct sockaddr_in peer_addr;
+	socklen_t len = sizeof(peer_addr);
+	struct hostent *he;
+	int ret;
+
+	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
+	if (ret == -1) {
+		return NULL;
+	}
+
+	he = gethostbyaddr((char *)&peer_addr.sin_addr, sizeof(peer_addr.sin_addr), AF_INET);
+	if (he == NULL) {
+		return NULL;
+	}
+
+	return talloc_strdup(mem_ctx, he->h_name);
+}
+
 static char *ipv4_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	struct sockaddr_in peer_addr;
@@ -368,6 +388,7 @@ static const struct socket_ops ipv4_tcp_ops = {
 
 	.set_option	= ipv4_tcp_set_option,
 
+	.get_peer_name	= ipv4_tcp_get_peer_name,
 	.get_peer_addr	= ipv4_tcp_get_peer_addr,
 	.get_peer_port	= ipv4_tcp_get_peer_port,
 	.get_my_addr	= ipv4_tcp_get_my_addr,
