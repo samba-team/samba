@@ -30,7 +30,6 @@ REQUIRED_SUBSYSTEMS = \
 INIT_OBJ_FILES = \
 		smbd/server.o
 ADD_OBJ_FILES = \
-		smbd/process.o \
 		smbd/build_options.o \
 		smbd/rewrite.o
 REQUIRED_SUBSYSTEMS = \
