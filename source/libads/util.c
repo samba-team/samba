@@ -20,63 +20,67 @@
 
 #include "includes.h"
 
-#ifdef HAVE_KRB5
-
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal)
 {
-    char *tmp_password;
-    NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-    SAM_TRUST_PASSWD *trust = NULL;
-    char *password;
-    char *new_password;
-    char *service_principal;
-    ADS_STATUS ret;
-    uint32 sec_channel_type;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_TRUST_PASSWD *trust = NULL;
+	char *password = NULL;
+	char *new_password = NULL;
+	char *service_principal = NULL;
+	ADS_STATUS ret;
+	uint32 sec_channel_type;
 
-    nt_status = pdb_init_trustpw(&trust);
-    if (!NT_STATUS_IS_OK(nt_status)) {
-	    DEBUG(0, ("Could not init trust password\n"));
-	    return ADS_ERROR_SYSTEM(ENOMEM);
-    }
+	nt_status = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not init trust password\n"));
+		return ADS_ERROR_SYSTEM(ENOMEM);
+	}
     
-    nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
-    if (!NT_STATUS_IS_OK(nt_status) || !(trust->private.flags | PASS_MACHINE_TRUST_ADS)) {
-	    DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
-	    trust->free_fn(&trust);
-	    return ADS_ERROR_SYSTEM(ENOENT);
-    }
+	nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
+	if (!NT_STATUS_IS_OK(nt_status) || !(trust->private.flags | PASS_MACHINE_TRUST_ADS)) {
+		DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
+		trust->free_fn(&trust);
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
     
-    password = trust->private.pass.data;
-    sec_channel_type = SCHANNEL_TYPE(trust->private.flags);
+	password = trust->private.pass.data;
+	sec_channel_type = SCHANNEL_TYPE(trust->private.flags);
     
-    tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-    new_password = strdup(tmp_password);
+	new_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
     
-    asprintf(&service_principal, "HOST/%s", host_principal);
+	asprintf(&service_principal, "HOST/%s", host_principal);
 
-    ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
+	ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
 
-    if (!ADS_ERR_OK(ret)) goto failed;
+	if (!ADS_ERR_OK(ret)) {
+		goto failed;
+	}
 
-    pdb_set_tp_pass(trust, new_password, strlen(new_password) + 1);
-    trust->private.pass.data[trust->private.pass.length] = '\0';
-    pdb_set_tp_mod_time(trust, time(NULL));
+	pdb_set_tp_pass(trust, new_password, strlen(new_password) + 1);
+	trust->private.pass.data[trust->private.pass.length] = '\0';
+	pdb_set_tp_mod_time(trust, time(NULL));
 
-    nt_status = pdb_update_trust_passwd(trust);
-    if (!NT_STATUS_IS_OK(nt_status)) {
-	    DEBUG(1,("Failed to update trust password\n"));
-	    trust->free_fn(&trust);
-	    return ADS_ERROR_SYSTEM(EACCES);
-    }
+	nt_status = pdb_update_trust_passwd(trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1,("Failed to update trust password\n"));
+		ret = ADS_ERROR_SYSTEM(EACCES);
+		goto failed;
+	}
+
+	/* Determine if the KDC is salting keys for this principal in a
+	 * non-obvious way. */
+	if (!kerberos_derive_salting_principal(service_principal)) {
+		DEBUG(1,("Failed to determine correct salting principal for %s\n", service_principal));
+		ret = ADS_ERROR_SYSTEM(EACCES);
+		goto failed;
+	}
+
     
 failed:
-    SAFE_FREE(service_principal);
-    SAFE_FREE(new_password);
-    trust->free_fn(&trust);
+	SAFE_FREE(service_principal);
+	SAFE_FREE(new_password);
+	trust->free_fn(&trust);
 
-    return ret;
+	return ret;
 }
-
-
-
 #endif
