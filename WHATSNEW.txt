@@ -199,6 +199,8 @@ and UNIX character sets.
 51). Fix for timestamps being set incorrectly on copied files from
 Paul Eggert.
 52). Fix for parsing HP specific printer definitions in make_printerdef.
+53). Fix for smbclient doing an 'ls' on large directories from OS/2 servers
+from Christoph Pfisterer.
 
 Older release notes for Samba 2.0.x follow.
 
