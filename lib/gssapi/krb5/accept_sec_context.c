@@ -248,6 +248,10 @@ gss_accept_sec_context
 	goto failure;
     }
 
+    ret = _gss_DES3_get_mic_compat(minor_status, *context_handle);
+    if (ret)
+	goto failure;
+
     if (src_name != NULL) {
 	kret = krb5_copy_principal (gssapi_krb5_context,
 				    ticket->client,
