@@ -46,7 +46,7 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				token->mechTypes = 
-					realloc(token->mechTypes, (i + 1) *
+					realloc(token->mechTypes, (i + 2) *
 						sizeof(*token->mechTypes));
 				asn1_read_OID(asn1, token->mechTypes + i);
 			}
