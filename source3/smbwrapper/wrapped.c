@@ -544,7 +544,6 @@ __asm__(".globl _write; _write = write");
 	return real_opendir(name);
 }
 
-
  struct dirent *readdir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {
