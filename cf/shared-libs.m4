@@ -64,9 +64,10 @@ case "${host}" in
 	install_symlink_command='$(LN_S) -f $(LIB) $(DESTDIR)$(libdir)/$(LIBNAME).so.'"${SHLIB_SONAME}"';$(LN_S) -f $(LIB) $(DESTDIR)$(libdir)/$(LIBNAME).so'
 	install_symlink_command2='$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so.'"${SHLIB_SONAME}"';$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so'
 	;;
-*-*-freebsd3*)
+changequote(,)dnl
+*-*-freebsd[34]*)
+changequote([,])dnl
 	REAL_SHLIBEXT=so.$SHLIB_VERSION
-	LDSHARED='ld -Bshareable'
 	REAL_LD_FLAGS='-Wl,-R$(libdir)'
 	build_symlink_command='$(LN_S) -f [$][@] $(LIBNAME).so'
 	install_symlink_command='$(LN_S) -f $(LIB) $(DESTDIR)$(libdir)/$(LIBNAME).so'
