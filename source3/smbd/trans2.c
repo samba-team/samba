@@ -2051,7 +2051,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			pdata += 24;
 			pdata += 4; /* EA info */
-			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, 0);
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
