@@ -727,21 +727,15 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
     if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
 
     /* Honour _hide unreadable_ option */
-    if (conn && lp_hideunreadable(SNUM(conn)))
-    {
-      char *entry;
-      int ret;
+    if (conn && lp_hideunreadable(SNUM(conn))) {
+	    char *entry;
+	    int ret=0;
       
-      entry = (char *)malloc(PATH_MAX);
-      if (!entry) {
-        DEBUG(0,("Out of memory in OpenDir\n"));
-        conn->vfs_ops.closedir(conn,p);
-        return(NULL);
-      }
-      slprintf(entry, PATH_MAX, "%s/%s/%s", conn->origpath, name, n);
-      ret = user_can_read_file(conn, entry);
-      free(entry);
-      if (!ret) continue;
+	    if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+		    ret = user_can_read_file(conn, entry);
+		    free(entry);
+	    }
+	    if (!ret) continue;
     }
 
     if (used + l > dirp->mallocsize) {
