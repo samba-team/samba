@@ -613,16 +613,17 @@ static int init_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 {
 	char *ptr;
 	pstring s2;
-	int count;
+	int count = 0;
 
 	DEBUG(4,("init_dom_sid2s: %s\n", sids_str ? sids_str:""));
 
-	for (count = 0, ptr = sids_str; 
-	     next_token(&ptr, s2, NULL, sizeof(s2)) && count < max_sids; 
-	     count++) {
-                DOM_SID tmpsid;
-                string_to_sid(&tmpsid, s2);
-		init_dom_sid2(&sids[count], &tmpsid);
+	if(sids_str) {
+		for (count = 0, ptr = sids_str; 
+	   	  next_token(&ptr, s2, NULL, sizeof(s2)) && count < max_sids; count++) {
+			DOM_SID tmpsid;
+			string_to_sid(&tmpsid, s2);
+			init_dom_sid2(&sids[count], &tmpsid);
+		}
 	}
 
 	return count;
@@ -1020,6 +1021,8 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
+
+    memset(usr, '\0', sizeof(*usr));
 
 	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
