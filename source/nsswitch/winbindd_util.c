@@ -231,7 +231,7 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
                 struct winbindd_domain *tmp;
 
                 for (tmp = domain_list; tmp; tmp = tmp->next) {
-                        winbindd_kill_connections(domain);
+                        winbindd_kill_connections(tmp);
                 }
 
                 return;
