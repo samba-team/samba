@@ -14,6 +14,10 @@
 	used, the correct conditional needs to be found
 	from <tol@stacken.kth.se>
 
+2001-08-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* check-var.m4: AC_TR_CPP -> AS_TR_CPP to make autoconf 2.52 happy
+
 2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* krb-ipv6.m4: add test for non-existant in6addr_loopback in AIX
