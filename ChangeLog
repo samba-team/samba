@@ -1,5 +1,6 @@
 2000-02-06  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/krb5.h: add macros for accessing krb5_realm
 	* lib/krb5/time.c (krb5_timeofday): use `krb5_timestamp' instead
 	of `int32_t'
 
