@@ -4341,6 +4341,9 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	if(!prs_uint32("version", ps, depth, &il->version))
 		return False;
 #if 0
+	/*
+	 * Older build versions of W2K seem to need this. JRA.
+	 */
 	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
 		return False;
 #endif
