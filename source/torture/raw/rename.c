@@ -155,7 +155,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
-	io.ntrename.in.unknown = 0;
+	io.ntrename.in.cluster_size = 0;
 	io.ntrename.in.flags = RENAME_FLAG_RENAME;
 	
 	status = smb_raw_rename(cli->tree, &io);
@@ -282,29 +282,54 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
 	io.ntrename.in.flags = RENAME_FLAG_RENAME;
-	io.ntrename.in.unknown = 0xff;
+	io.ntrename.in.cluster_size = 0xff;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	fnum = create_directory_handle(cli, BASEDIR "\\testdir");
-	printf("Trying flags 0x102 fnum=%d\n", fnum);
+	printf("Trying RENAME_FLAG_MOVE_CLUSTER_INFORMATION\n");
 
 	io.ntrename.in.old_name = fname2;
 	io.ntrename.in.new_name = fname1;
 	io.ntrename.in.attrib = 0;
-	io.ntrename.in.flags = 0x102;
-	io.ntrename.in.unknown = fnum;
+	io.ntrename.in.flags = RENAME_FLAG_MOVE_CLUSTER_INFORMATION;
+	io.ntrename.in.cluster_size = 1;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
-	for (i=0;i<32;i++) {
-		io.ntrename.in.unknown = (1<<i);
+	io.ntrename.in.flags = RENAME_FLAG_COPY;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+#if 0
+	{
+		char buf[16384];
+		fnum = cli_open(cli, fname1, O_RDWR, DENY_NONE);
+		memset(buf, 1, sizeof(buf));
+		cli_write(cli, fnum, 0, buf, 0, sizeof(buf));
+		cli_close(cli, fnum);
+
+		fnum = cli_open(cli, fname2, O_RDWR, DENY_NONE);
+		memset(buf, 1, sizeof(buf));
+		cli_write(cli, fnum, 0, buf, 0, sizeof(buf)-1);
+		cli_close(cli, fnum);
+
+		torture_all_info(cli->tree, fname1);
+		torture_all_info(cli->tree, fname2);
+	}
+	
+
+	io.ntrename.in.flags = RENAME_FLAG_MOVE_CLUSTER_INFORMATION;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	for (i=0;i<20000;i++) {
+		io.ntrename.in.cluster_size = i;
 		status = smb_raw_rename(cli->tree, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-			printf("i=0x%x status=%s\n", i, nt_errstr(status));
+			printf("i=%d status=%s\n", i, nt_errstr(status));
 		}
-		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 	}
+#endif
 
 	printf("Checking other flags\n");
 
@@ -319,7 +344,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		io.ntrename.in.new_name = fname1;
 		io.ntrename.in.flags = i;
 		io.ntrename.in.attrib = 0;
-		io.ntrename.in.unknown = 0;
+		io.ntrename.in.cluster_size = 0;
 		status = smb_raw_rename(cli->tree, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			printf("flags=0x%x status=%s\n", i, nt_errstr(status));

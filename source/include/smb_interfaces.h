@@ -151,7 +151,7 @@ union smb_rename {
 		struct {
 			uint16 attrib;
 			uint16 flags; /* see RENAME_FLAG_* */
-			uint32 unknown;
+			uint32 cluster_size;
 			const char *old_name;
 			const char *new_name;
 		} in;

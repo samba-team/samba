@@ -963,8 +963,9 @@ size_t cli_blob_pull_string(struct cli_session *session,
 			    uint16 len_offset, uint16 str_offset, 
 			    unsigned flags)
 {
+	int extra;
 	dest->s = NULL;
-
+	
 	if (len_offset > blob->length-4) {
 		return 0;
 	}
@@ -973,19 +974,29 @@ size_t cli_blob_pull_string(struct cli_session *session,
 	} else {
 		dest->private_length = IVAL(blob->data, len_offset);
 	}
+	extra = 0;
 	dest->s = NULL;
 	if (!(flags & STR_ASCII) && 
 	    ((flags & STR_UNICODE) || 
 	     (session->transport->negotiate.capabilities & CAP_UNICODE))) {
+		int align = 0;
 		if ((str_offset&1) && !(flags & STR_NOALIGN)) {
-			str_offset++;
+			align = 1;
 		}
-		return cli_blob_pull_ucs2(mem_ctx, blob, &dest->s, 
-					  blob->data+str_offset, dest->private_length, flags);
+		if (flags & STR_LEN_NOTERM) {
+			extra = 2;
+		}
+		return align + extra + cli_blob_pull_ucs2(mem_ctx, blob, &dest->s, 
+							  blob->data+str_offset+align, 
+							  dest->private_length, flags);
 	}
 
-	return cli_blob_pull_ascii(mem_ctx, blob, &dest->s, 
-				   blob->data+str_offset, dest->private_length, flags);
+	if (flags & STR_LEN_NOTERM) {
+		extra = 1;
+	}
+
+	return extra + cli_blob_pull_ascii(mem_ctx, blob, &dest->s, 
+					   blob->data+str_offset, dest->private_length, flags);
 }
 
 /*

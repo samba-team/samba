@@ -757,7 +757,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct request_context *req,
 		blob2.data = blob->data+12;
 		blob2.length = MIN(blob->length, len);
 		trans2_pull_blob_string(req, &blob2, 0, 
-					&st->rename_information.in.new_name, 0);
+					&st->rename_information.in.new_name, STR_UNICODE);
 		return NT_STATUS_OK;
 	}
 
@@ -859,6 +859,7 @@ struct find_state {
 	struct smb_trans2 *trans;
 	enum search_level level;
 	uint16 last_entry_offset;
+	uint16 flags;
 };
 
 /*
@@ -866,20 +867,26 @@ struct find_state {
 */
 static void find_fill_info(struct request_context *req,
 			   struct smb_trans2 *trans, 
-			   enum search_level level,
+			   struct find_state *state,
 			   union smb_search_data *file)
 {
 	char *data;
 	uint_t ofs = trans->out.data.length;
 
-	switch (level) {
+	switch (state->level) {
 	case RAW_SEARCH_SEARCH:
 	case RAW_SEARCH_GENERIC:
 		/* handled elsewhere */
 		break;
 
 	case RAW_SEARCH_STANDARD:
-		trans2_grow_data(req, trans, ofs + 23);
+		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
+			trans2_grow_data(req, trans, ofs + 27);
+			SIVAL(trans->out.data.data, ofs, file->standard.resume_key);
+			ofs += 4;
+		} else {
+			trans2_grow_data(req, trans, ofs + 23);
+		}
 		data = trans->out.data.data + ofs;
 		put_dos_date2(data, 0, file->standard.create_time);
 		put_dos_date2(data, 4, file->standard.access_time);
@@ -892,7 +899,13 @@ static void find_fill_info(struct request_context *req,
 		break;
 
 	case RAW_SEARCH_EA_SIZE:
-		trans2_grow_data(req, trans, ofs + 27);
+		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
+			trans2_grow_data(req, trans, ofs + 31);
+			SIVAL(trans->out.data.data, ofs, file->ea_size.resume_key);
+			ofs += 4;
+		} else {
+			trans2_grow_data(req, trans, ofs + 27);
+		}
 		data = trans->out.data.data + ofs;
 		put_dos_date2(data, 0, file->ea_size.create_time);
 		put_dos_date2(data, 4, file->ea_size.access_time);
@@ -902,7 +915,7 @@ static void find_fill_info(struct request_context *req,
 		SSVAL(data, 20, file->ea_size.attrib);
 		SIVAL(data, 22, file->ea_size.ea_size);
 		trans2_append_data_string(req, trans, &file->ea_size.name, 
-					  ofs + 26, STR_LEN8BIT | STR_NOALIGN);
+					  ofs + 26, STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
 		break;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
@@ -1033,7 +1046,7 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 
 	old_length = trans->out.data.length;
 
-	find_fill_info(state->req, trans, state->level, file);
+	find_fill_info(state->req, trans, state, file);
 
 	/* see if we have gone beyond the user specified maximum */
 	if (trans->out.data.length > trans->in.max_data) {
@@ -1084,6 +1097,7 @@ static NTSTATUS trans2_findfirst(struct request_context *req, struct smb_trans2 
 	state.trans = trans;
 	state.level = search.t2ffirst.level;
 	state.last_entry_offset = 0;
+	state.flags = search.t2ffirst.in.flags;
 
 	/* setup for just a header in the reply */
 	trans2_setup_reply(req, trans, 10, 0, 0);
@@ -1143,6 +1157,7 @@ static NTSTATUS trans2_findnext(struct request_context *req, struct smb_trans2 *
 	state.trans = trans;
 	state.level = search.t2fnext.level;
 	state.last_entry_offset = 0;
+	state.flags = search.t2fnext.in.flags;
 
 	/* setup for just a header in the reply */
 	trans2_setup_reply(req, trans, 8, 0, 0);
