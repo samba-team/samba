@@ -7652,13 +7652,14 @@
 		<para>Note that the <parameter>case sensitive</parameter> option 
 		is applicable in vetoing files.</para>
 		
-		<para>One feature of the veto files parameter that it is important 
-		to be aware of, is that if a directory contains nothing but files 
-		that match the veto files parameter (which means that Windows/DOS 
-		clients cannot ever see them) is deleted, the veto files within 
-		that directory <emphasis>are automatically deleted</emphasis> along 
-		with it, if the user has UNIX permissions to do so.</para>
- 
+		<para>One feature of the veto files parameter that it
+		is important to be aware of is Samba's behaviour when
+		trying to delete a directory. If a directory that is
+		to be deleted contains nothing but veto files this
+		deletion will <emph>fail</emph> unless you also set
+		the <parameter>delete veto files</param> parameter to
+		<parameter>yes</parameter>.
+
 		<para>Setting this parameter will affect the performance 
 		of Samba, as it will be forced to check all files and directories 
 		for a match as they are scanned.</para>
