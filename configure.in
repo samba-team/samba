@@ -62,7 +62,7 @@ fi
 AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena)
 
 LIB_kdb=
-if test "$with_krb4"; then
+if test "$with_krb4" != "no"; then
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
 		LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
@@ -102,7 +102,7 @@ if test "$with_krb4"; then
 			[Define to two if your krb.h doesn't])
 	fi
 fi
-AM_CONDITIONAL(KRB4, test "$with_krb4")
+AM_CONDITIONAL(KRB4, test "$with_krb4" != "no")
 AM_CONDITIONAL(KRB5, true)
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
