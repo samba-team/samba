@@ -14,11 +14,13 @@ interface krb5pac
 	typedef struct {
 		NTTIME logon_time;
 		[flag(STR_SIZE2|STR_NOTERM|STR_BYTESIZE)] string account_name;
+		uint32 _pad;
 	} UNKNOWN_TYPE_10;
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint32 type;
-		uint8 signature[20];
+		uint8 signature[16];
+		uint32 _pad;
 	} PAC_SIGNATURE_DATA;
 
 	typedef struct {
