@@ -123,7 +123,11 @@ verify_krb5(struct passwd *pwd,
     krb5_ccache ccache;
     krb5_principal principal;
     
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret) {
+	syslog(LOG_AUTH|LOG_DEBUG, "krb5_init_context failed: %d", ret);
+	goto out;
+    }
 
     ret = krb5_parse_name (context, pwd->pw_name, &principal);
     if (ret) {
