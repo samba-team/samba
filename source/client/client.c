@@ -41,6 +41,7 @@ static pstring password;
 static pstring username;
 static pstring workgroup;
 static char *cmdstr;
+static BOOL got_user;
 static BOOL got_pass;
 static int io_bufsize = 64512;
 static BOOL use_kerberos;
@@ -2889,6 +2890,8 @@ static void remember_query_host(const char *arg,
 		case 'U':
 			{
 				char *lp;
+
+				got_user = True;
 				pstrcpy(username,optarg);
 				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
@@ -2985,7 +2988,6 @@ static void remember_query_host(const char *arg,
 		case 'k':
 #ifdef HAVE_KRB5
 			use_kerberos = True;
-			got_pass = True;
 #else
 			d_printf("No kerberos support compiled in\n");
 			exit(1);
@@ -2996,6 +2998,9 @@ static void remember_query_host(const char *arg,
 			exit(1);
 		}
 	}
+
+	if (use_kerberos && !got_user)
+			got_pass = True;
 
 	init_names();
 

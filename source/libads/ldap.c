@@ -1022,7 +1022,7 @@ char *ads_ou_string(const char *org_unit)
 static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, 
 				       const char *org_unit)
 {
-	ADS_STATUS ret;
+	ADS_STATUS ret, status;
 	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
 	char *ou_str;
 	TALLOC_CTX *ctx;
@@ -1089,9 +1089,21 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
 	ads_mod_str(ctx, &mods, "operatingSystemVersion", VERSION);
 
-	ads_gen_add(ads, new_dn, mods);
-	ret = ads_set_machine_sd(ads, hostname, new_dn);
+	ret = ads_gen_add(ads, new_dn, mods);
 
+	if (!ADS_ERR_OK(ret))
+		goto done;
+
+	/* Do not fail if we can't set security descriptor
+	 * it shouldn't be mandatory and probably we just 
+	 * don't have enough rights to do it.
+	 */
+	status = ads_set_machine_sd(ads, hostname, new_dn);
+
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("Warning: ads_set_machine_sd: %s\n",
+				ads_errstr(status)));
+	}
 done:
 	talloc_destroy(ctx);
 	return ret;
@@ -1406,7 +1418,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  **/
 ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 {
-	const char     *attrs[] = {"ntSecurityDescriptor", "objectSid", 0};
+	const char     *attrs[] = {"nTSecurityDescriptor", "objectSid", 0};
 	char           *exp     = 0;
 	size_t          sd_size = 0;
 	struct berval   bval = {0, NULL};
@@ -1422,6 +1434,10 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	DOM_SID     sid;
 	SEC_DESC   *psd = 0;
 	TALLOC_CTX *ctx = 0;	
+
+	/* Avoid segmentation fault in prs_mem_free if
+	 * we have to bail out before prs_init */
+	ps_wire.is_dynamic = False;
 
 	if (!ads) return ADS_ERROR(LDAP_SERVER_DOWN);
 

@@ -110,6 +110,11 @@ static int net_ads_info(int argc, const char **argv)
 	return 0;
 }
 
+static void use_in_memory_ccache() {
+	/* Use in-memory credentials cache so we do not interfere with
+	 * existing credentials */
+	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
+}
 
 static ADS_STRUCT *ads_startup(void)
 {
@@ -124,8 +129,10 @@ static ADS_STRUCT *ads_startup(void)
 		opt_user_name = "administrator";
 	}
 
-	if (opt_user_specified)
+	if (opt_user_specified) {
 		need_password = True;
+		use_in_memory_ccache();
+	}
 
 retry:
 	if (!opt_password && need_password) {
@@ -601,6 +608,8 @@ static int net_ads_join_ok(void)
  */
 int net_ads_testjoin(int argc, const char **argv)
 {
+	use_in_memory_ccache();
+
 	/* Display success or failure */
 	if (net_ads_join_ok() != 0) {
 		fprintf(stderr,"Join to domain is not valid\n");
@@ -878,7 +887,8 @@ static int net_ads_password(int argc, const char **argv)
 	(strchr(argv[0], '@') == NULL)) {
 	return net_ads_usage(argc, argv);
     }
-    
+
+    use_in_memory_ccache();    
     c = strchr(auth_principal, '@');
     realm = ++c;
 
@@ -924,6 +934,8 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     opt_user_name = user_name;
 
     opt_password = secrets_fetch_machine_password();
+
+    use_in_memory_ccache();
 
     if (!(ads = ads_startup())) {
 	    return -1;

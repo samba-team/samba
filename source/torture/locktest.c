@@ -24,6 +24,7 @@
 
 static fstring password[2];
 static fstring username[2];
+static int got_user;
 static int got_pass;
 static BOOL use_kerberos;
 static int numops = 1000;
@@ -602,13 +603,13 @@ static void usage(void)
 		case 'k':
 #ifdef HAVE_KRB5
 			use_kerberos = True;
-			got_pass = True;
 #else
 			d_printf("No kerberos support compiled in\n");
 			exit(1);
 #endif
 			break;
 		case 'U':
+			got_user = 1;
 			if (got_pass == 2) {
 				d_printf("Max of 2 usernames\n");
 				exit(1);
@@ -662,6 +663,8 @@ static void usage(void)
 			exit(1);
 		}
 	}
+
+	if(use_kerberos && !got_user) got_pass = True;
 
 	argc -= optind;
 	argv += optind;
