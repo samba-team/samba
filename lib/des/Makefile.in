@@ -121,8 +121,8 @@ speed.o: speed.c
 mdtest$(EXECSUFFIX): mdtest.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ mdtest.o -L. -ldes
 
-des_opts$(EXECSUFFIX): des_opts.o $(LIB)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ des_opts.o -L. -ldes
+des_opts$(EXECSUFFIX): des_opts.o set_key.o
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ des_opts.o set_key.o
 
 destest$(EXECSUFFIX): destest.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ destest.o -L. -ldes
