@@ -364,7 +364,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	SamOEMhashBlob(u.info24.password.data, 516, &session_key);
+	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
 
 	printf("Testing SetUserInfo level 24 (set password)\n");
 
@@ -408,7 +408,7 @@ static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	SamOEMhashBlob(u.info23.password.data, 516, &session_key);
+	arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
 
 	printf("Testing SetUserInfo level 23 (set password)\n");
 
@@ -459,7 +459,7 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	MD5Update(&ctx, session_key.data, session_key.length);
 	MD5Final(confounded_session_key.data, &ctx);
 
-	SamOEMhashBlob(u.info26.password.data, 516, &confounded_session_key);
+	arcfour_crypt_blob(u.info26.password.data, 516, &confounded_session_key);
 	memcpy(&u.info26.password.data[516], confounder, 16);
 
 	printf("Testing SetUserInfo level 26 (set password ex)\n");
@@ -513,7 +513,7 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	MD5Update(&ctx, session_key.data, session_key.length);
 	MD5Final(confounded_session_key.data, &ctx);
 
-	SamOEMhashBlob(u.info25.password.data, 516, &confounded_session_key);
+	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
 	memcpy(&u.info25.password.data[516], confounder, 16);
 
 	printf("Testing SetUserInfo level 25 (set password ex)\n");
@@ -810,7 +810,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
-	SamOEMhash(lm_pass.data, old_lm_hash, 516);
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	r.in.server = &server;
@@ -856,11 +856,11 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII|STR_TERMINATE);
-	SamOEMhash(lm_pass.data, old_lm_hash, 516);
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
-	SamOEMhash(nt_pass.data, old_nt_hash, 516);
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	r.in.server = &server;
@@ -909,11 +909,11 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
-	SamOEMhash(lm_pass.data, old_nt_hash, 516);
+	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
-	SamOEMhash(nt_pass.data, old_nt_hash, 516);
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	r.in.server = &server;

@@ -147,7 +147,7 @@ again:
 		return False;
 	}
 
-	SamOEMhashBlob(u.info24.password.data, 516, &session_key);
+	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
 
 	status = dcerpc_samr_SetUserInfo(join.p, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -274,7 +274,8 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3);
+	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3, 
+			  NETLOGON_NEG_AUTH2_FLAGS);
 
 	printf("Testing ServerAuthenticate\n");
 
@@ -335,7 +336,8 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3);
+	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3, 
+			  negotiate_flags);
 
 	printf("Testing ServerAuthenticate2\n");
 
@@ -374,6 +376,7 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
+
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
@@ -400,7 +403,8 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.out.negotiate_flags = &negotiate_flags;
 	a.out.rid = &rid;
 
-	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3);
+	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3,
+			  negotiate_flags);
 
 	printf("Testing ServerAuthenticate3\n");
 

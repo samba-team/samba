@@ -268,7 +268,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->cli_max_recv_frag = 0;
 	(*p)->handles = NULL;
 	(*p)->partial_input = data_blob(NULL, 0);
-	(*p)->auth_state.ntlmssp_state = NULL;
+	(*p)->auth_state.crypto_state = NULL;
 	(*p)->auth_state.auth_info = NULL;
 	(*p)->session_key = data_blob(NULL, 0);
 

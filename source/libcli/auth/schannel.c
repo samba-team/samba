@@ -35,7 +35,7 @@ static void netsec_deal_with_seq_num(struct schannel_state *state,
 
 	hmac_md5(state->session_key, zeros, sizeof(zeros), digest1);
 	hmac_md5(digest1, packet_digest, 8, sequence_key);
-	SamOEMhash(seq_num, sequence_key, 8);
+	arcfour_crypt(seq_num, sequence_key, 8);
 
 	state->seq_num++;
 }
@@ -113,8 +113,8 @@ NTSTATUS schannel_unseal_packet(struct schannel_state *state,
 	SIVAL(seq_num, 4, state->initiator?0:0x80);
 
 	netsec_get_sealing_key(state->session_key, seq_num, sealing_key);
-	SamOEMhash(confounder, sealing_key, 8);
-	SamOEMhash(data, sealing_key, length);
+	arcfour_crypt(confounder, sealing_key, 8);
+	arcfour_crypt(data, sealing_key, length);
 
 	schannel_digest(state->session_key, 
 			netsec_sig, confounder, 
@@ -204,8 +204,8 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 			data, length, digest_final);
 
 	netsec_get_sealing_key(state->session_key, seq_num, sealing_key);
-	SamOEMhash(confounder, sealing_key, 8);
-	SamOEMhash(data, sealing_key, length);
+	arcfour_crypt(confounder, sealing_key, 8);
+	arcfour_crypt(data, sealing_key, length);
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 

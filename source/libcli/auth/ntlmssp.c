@@ -792,9 +792,9 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 			dump_data_pw("KEY_EXCH session key (enc):\n", 
 				     ntlmssp_state->encrypted_session_key.data, 
 				     ntlmssp_state->encrypted_session_key.length);
-			SamOEMhash(ntlmssp_state->encrypted_session_key.data, 
-				   session_key.data, 
-				   ntlmssp_state->encrypted_session_key.length);
+			arcfour_crypt(ntlmssp_state->encrypted_session_key.data, 
+				      session_key.data, 
+				      ntlmssp_state->encrypted_session_key.length);
 			ntlmssp_state->session_key = data_blob_talloc(ntlmssp_state->mem_ctx, 
 								      ntlmssp_state->encrypted_session_key.data, 
 								      ntlmssp_state->encrypted_session_key.length);
@@ -1191,7 +1191,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		encrypted_session_key = data_blob_talloc(ntlmssp_state->mem_ctx, 
 							 client_session_key, sizeof(client_session_key));
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
-		SamOEMhash(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
+		arcfour_crypt(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
 		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		/* Mark the new session key as the 'real' session key */

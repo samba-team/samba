@@ -47,7 +47,7 @@ void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessi
 		}
 		memcpy(key, &session_key->data[k], 7);
 
-		smbhash(bout, bin, key, forward?1:0);
+		des_crypt56(bout, bin, key, forward?1:0);
 
 		memcpy(&out->data[i], bout, MIN(8, in->length-i));
 	}
