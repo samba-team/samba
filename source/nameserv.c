@@ -696,28 +696,6 @@ struct name_record *search_for_name(struct nmb_name *question,
   return n;
 }
 
-/* XXXX i think we should only do this if we are a WINS proxy
-		if (!n && bcast)
-		{
-		// now try look up the name at the primary domain controller
-			if (*lp_domain_controller())
-			{
-				struct in_addr dom_ip;
-				dom_ip = *interpret_addr2(lp_domain_controller());
-
-				if (!zero_ip(dom_ip))
-				{
-					struct in_addr found_ip;
-
-					// initiate a netbios query to the PDC
-					queue_netbios_packet(ClientNMB,NMB_QUERY,NAME_CONFIRM_QUERY,
-										question->name, question->name_type, 0,
-										False, True, dom_ip, id);
-					return;
-				}
-			}
-		}
-*/
 
 /***************************************************************************
 reply to a name query.

@@ -54,31 +54,33 @@ extern struct domain_record *domainlist;
   ******************************************************************/
 void check_master_browser(void)
 {
-	static time_t lastrun=0;
-	time_t t = time(NULL);
-	struct domain_record *d;
+  static time_t lastrun=0;
+  time_t t = time(NULL);
+  struct domain_record *d;
 
-	if (!lastrun) lastrun = t;
-	if (t < lastrun + 2*60) return;
-	lastrun = t;
+  if (!lastrun) lastrun = t;
+  if (t < lastrun + 2*60) return;
+  lastrun = t;
 
-	for (d = domainlist; d; d = d->next)
+  dump_workgroups();
+
+  for (d = domainlist; d; d = d->next)
+    {
+      struct work_record *work;
+
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		struct work_record *work;
+	  /* if we are not the browse master of a workgroup, and we can't
+	     find a browser on the subnet, do something about it. */
 
-		for (work = d->workgrouplist; work; work = work->next)
-		{
-			/* if we are not the browse master of a workgroup, and we can't
-			   find a browser on the subnet, do something about it. */
-
-			if (!AM_MASTER(work))
-			{
-				queue_netbios_packet(ClientNMB,NMB_QUERY,CHECK_MASTER,
-				                 work->work_group,0x1d,0,
-				                 True,False,d->bcast_ip);
-			}
-		}
+	  if (!AM_MASTER(work))
+	    {
+	      queue_netbios_packet(ClientNMB,NMB_QUERY,CHECK_MASTER,
+				   work->work_group,0x1d,0,
+				   True,False,d->bcast_ip);
+	    }
 	}
+    }
 }
 
 
@@ -87,32 +89,32 @@ void check_master_browser(void)
   ******************************************************************/
 void browser_gone(char *work_name, struct in_addr ip)
 {
-	struct domain_record *d = find_domain(ip);
-	struct work_record *work = find_workgroupstruct(d, work_name, False);
+  struct domain_record *d = find_domain(ip);
+  struct work_record *work = find_workgroupstruct(d, work_name, False);
 
-	if (!work || !d) return;
+  if (!work || !d) return;
 
-	DEBUG(2,("Forcing election on %s\n",work->work_group));
+  DEBUG(2,("Forcing election on %s\n",work->work_group));
 
-	if (strequal(work->work_group, lp_workgroup()) &&
-	   ip_equal(bcast_ip, d->bcast_ip))
-	{
-		/* we can attempt to become master browser */
-		work->needelection = True;
-	}
-	else
-	{
-		DEBUG(2,("no master browser for persistent entry %s %s\n",
-				  work->work_group, inet_ntoa(d->bcast_ip)));
-
-		/* XXXX oh dear. we are going to have problems here. the
-		   entry is a persistent one, there isn't anyone responsible
-		   for this workgroup up and running, yet we can't find it
-		   and we are going to continually have name_queries until
-		   a master browser is found for this workgroup on the
-		   remote subnet.
-		*/
-	}
+  if (strequal(work->work_group, lp_workgroup()) &&
+      ip_equal(bcast_ip, d->bcast_ip))
+    {
+      /* we can attempt to become master browser */
+      work->needelection = True;
+    }
+  else
+    {
+      DEBUG(2,("no master browser for persistent entry %s %s\n",
+	       work->work_group, inet_ntoa(d->bcast_ip)));
+      
+      /* XXXX oh dear. we are going to have problems here. the
+	 entry is a persistent one, there isn't anyone responsible
+	 for this workgroup up and running, yet we can't find it
+	 and we are going to continually have name_queries until
+	 a master browser is found for this workgroup on the
+	 remote subnet.
+	 */
+    }
 }
 /****************************************************************************
   send an election packet
