@@ -361,6 +361,7 @@ krb5_closelog(krb5_context context,
 krb5_error_code
 krb5_vlog(krb5_context context,
 	  krb5_log_facility *fac,
+	  int level,
 	  const char *fmt,
 	  va_list ap);
 
@@ -368,18 +369,21 @@ krb5_error_code
 krb5_vlog_msg(krb5_context context,
 	      krb5_log_facility *fac,
 	      char **reply,
+	      int level,
 	      const char *fmt,
 	      va_list ap);
 
 krb5_error_code
 krb5_log(krb5_context context,
 	 krb5_log_facility *fac,
+	 int level,
 	 const char *fmt,
 	 ...);
 
 krb5_error_code
 krb5_log_msg(krb5_context context,
 	     krb5_log_facility *fac,
+	     int level,
 	     char **reply,
 	     const char *fmt,
 	     ...);
@@ -1095,9 +1099,9 @@ typedef struct _krb5_verify_init_creds_opt {
 
 #define KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL	0x0001
 
-void krb5_verify_init_creds_opt_init(krb5_init_creds_opt *options);
-void krb5_verify_init_creds_opt_set_ap_req_nofail(krb5_init_creds_opt *options,
-						  int ap_req_nofail);
+void krb5_verify_init_creds_opt_init(krb5_verify_init_creds_opt*);
+void krb5_verify_init_creds_opt_set_ap_req_nofail(krb5_verify_init_creds_opt *,
+						  int);
 
 krb5_error_code
 krb5_verify_init_creds(krb5_context context,
