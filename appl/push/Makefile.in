@@ -87,7 +87,7 @@ push$(EXECSUFFIX): $(push_OBJECTS)
 	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(push_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 pfrom: pfrom.in
-	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/pfrom.in > $@
+	sed -e "s!%libexecdir%!$(libexecdir)!" $(srcdir)/pfrom.in > $@
 	chmod +x $@
 
 $(OBJECTS): ../../include/config.h
