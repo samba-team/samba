@@ -4368,7 +4368,7 @@ int smbc_getxattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_get(context, ctx, srv,
                                ipc_srv == NULL ? NULL : &ipc_srv->cli, 
-                               &pol, path, name, (const char *) value, size);
+                               &pol, path, name, (char *) value, size);
                 if (ret < 0 && errno == 0) {
                         errno = smbc_errno(context, &srv->cli);
                 }
