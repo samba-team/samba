@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
+   Copyright (C) 2003 by Anthony Liguori <aliguor@us.ibm.com>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,7 +57,8 @@ pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
  *
  * @sa lib_path() to get the path to a file inside the LIBDIR.
  **/
-pstring dyn_LIBDIR = LIBDIR;  
+pstring dyn_LIBDIR = LIBDIR;
+const fstring dyn_SHLIBEXT = SHLIBEXT;
 
 /**
  * @brief Directory holding lock files.

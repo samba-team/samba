@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001-2002
    Copyright (C) Simo Sorce 2001
+   Copyright (C) Anthony Liguori 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2180,6 +2181,17 @@ char *lib_path(const char *name)
 	static pstring fname;
 	snprintf(fname, sizeof(fname), "%s/%s", dyn_LIBDIR, name);
 	return fname;
+}
+
+/**
+ * @brief Returns the platform specific shared library extension.
+ *
+ * @retval Pointer to a static #fstring containing the extension.
+ **/
+
+const char *shlib_ext(void)
+{
+  return dyn_SHLIBEXT;
 }
 
 /*******************************************************************
