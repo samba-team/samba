@@ -799,7 +799,7 @@ static NTSTATUS svfs_search_first(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	search = talloc_zero(private, sizeof(struct search_state));
+	search = talloc_zero_p(private, struct search_state);
 	if (!search) {
 		return NT_STATUS_NO_MEMORY;
 	}
