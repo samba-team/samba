@@ -271,7 +271,6 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
 	struct samdb_context *samdb;
-	const char *dn;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 
@@ -440,7 +439,6 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	int result = 80;
 	struct samdb_context *samdb;
 	struct ldb_message **res;
-	struct ldb_context *ldb;
 	const char *attrs[1];
 	const char *errstr;
 	const char *dn;
