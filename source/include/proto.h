@@ -782,7 +782,8 @@ BOOL listen_for_packets(BOOL run_election);
 BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
                    char *srcname, int src_type,
                    char *dstname, int dest_type,
-                   struct in_addr dest_ip,struct in_addr src_ip);
+                   struct in_addr dest_ip,struct in_addr src_ip,
+		   int dest_port);
 
 /*The following definitions come from  nmbd/nmbd_processlogon.c  */
 

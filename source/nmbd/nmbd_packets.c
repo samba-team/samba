@@ -1875,13 +1875,12 @@ BOOL listen_for_packets(BOOL run_election)
 
 /****************************************************************************
   Construct and send a netbios DGRAM.
-  Note that this currently sends all packets to port 138.
 **************************************************************************/
-
 BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
                    char *srcname, int src_type,
                    char *dstname, int dest_type,
-                   struct in_addr dest_ip,struct in_addr src_ip)
+                   struct in_addr dest_ip,struct in_addr src_ip,
+		   int dest_port)
 {
   BOOL loopback_this_packet = False;
   struct packet_struct p;
@@ -1936,7 +1935,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
 
   p.ip = dest_ip;
-  p.port = DGRAM_PORT;
+  p.port = dest_port;
   p.fd = find_subnet_mailslot_fd_for_address( src_ip );
   p.timestamp = time(NULL);
   p.packet_type = DGRAM_PACKET;

@@ -122,7 +122,8 @@ Do not announce to ourselves.\n", work->work_group ));
 to %s for workgroup %s.\n", namestr(&work->dmb_name), work->work_group ));
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          global_myname, 0x0, work->dmb_name.name, 0x0, work->dmb_addr, FIRST_SUBNET->myip);
+		global_myname, 0x0, work->dmb_name.name, 0x0, 
+		work->dmb_addr, FIRST_SUBNET->myip, DGRAM_PORT);
 
 }
 

@@ -536,12 +536,12 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 /****************************************************************************
   Send a backup list response.
 *****************************************************************************/
-
 static void send_backup_list_response(struct subnet_record *subrec, 
-                             struct work_record *work,
-                             struct nmb_name *send_to_name,
-                             unsigned char max_number_requested,
-			     uint32 token, struct in_addr sendto_ip)
+				      struct work_record *work,
+				      struct nmb_name *send_to_name,
+				      unsigned char max_number_requested,
+				      uint32 token, struct in_addr sendto_ip,
+				      int port)
 {                     
   char outbuf[1024];
   char *p, *countptr, *nameptr;
@@ -610,7 +610,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
                 outbuf,PTR_DIFF(p,outbuf),
                 global_myname, 0, 
                 send_to_name->name,0,
-                sendto_ip, subrec->myip);
+                sendto_ip, subrec->myip, port);
 }
 
 /*******************************************************************
@@ -687,7 +687,7 @@ and I am not a local master browser.\n", workgroup_name));
   }
 
   send_backup_list_response(subrec, work, &dgram->source_name, 
-                            max_number_requested, token, p->ip);
+                            max_number_requested, token, p->ip, p->port);
 }
 
 /*******************************************************************

@@ -62,7 +62,7 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
   send_mailslot(False, BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
                 global_myname, 0,
                 workgroup_name, 0x1e,
-                subrec->bcast_ip, subrec->myip);
+                subrec->bcast_ip, subrec->myip, DGRAM_PORT);
 }
 
 /*******************************************************************
