@@ -417,7 +417,7 @@ struct smb_passwd *getsmbpwent(FILE *fp)
        */
       if(pw_buf.smb_name[strlen(pw_buf.smb_name) - 1] == '$') {
         pw_buf.acct_ctrl &= ~ACB_NORMAL;
-        pw_buf.acct_ctrl |= ACB_WSTRUST;
+        pw_buf.acct_ctrl |= ACB_SVRTRUST;
       }
     }
 

@@ -359,9 +359,27 @@ char *encode_acct_ctrl(uint16 acct_ctrl)
  machine account.
 ***********************************************************/
 
-int get_machine_uid(void)
+int get_new_machine_uid(void)
 {
-  return 65534;
+  int next_uid_start;
+  FILE *fp;
+  struct smb_passwd *smbpw;
+
+  if(sizeof(uid_t) == 2)
+    next_uid_start = 65533;
+
+  if(sizeof(uid_t) == 4)
+    next_uid_start = 0x7fffffff;
+
+  fp = startsmbpwent(False);
+  while((smbpw = getsmbpwent(fp)) != NULL) {
+    if(!(smbpw->acct_ctrl & ACB_SVRTRUST))
+      continue;
+
+    next_uid_start = MIN(next_uid_start, (smbpw->smb_userid-1));
+  }
+  endsmbpwent(fp);
+  return next_uid_start;
 }
 
 /*********************************************************
@@ -372,7 +390,7 @@ static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
 		fprintf(stderr, "Usage is : %s [-a] [-d] [-m] [-n] [username] [password]\n\
-%s: [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
+%s: [-R <name resolve order>] [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
 		fprintf(stderr, "Usage is : %s [-h] [-r machine] [password]\n", name);
 	exit(1);
@@ -450,7 +468,7 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "adhmnr:")) != EOF) {
+  while ((ch = getopt(argc, argv, "adhmnr:R:")) != EOF) {
     switch(ch) {
     case 'a':
       if(is_root)
@@ -476,6 +494,12 @@ int main(int argc, char **argv)
     case 'r':
       remote_machine = optarg;
       break;
+    case 'R':
+      if(is_root) {
+        lp_set_name_resolve_order(optarg);
+        break;
+      } else
+        usage(prog_name, is_root);
     case 'm':
       if(is_root)
         machine_account = True;
@@ -714,7 +738,7 @@ int main(int argc, char **argv)
     pwd->pw_gecos = "";
     pwd->pw_dir = machine_dir_name;
     pwd->pw_shell = "";
-    pwd->pw_uid = get_machine_uid();
+    pwd->pw_uid = get_new_machine_uid();
       
   }
 
