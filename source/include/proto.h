@@ -386,7 +386,7 @@ struct passwd *hashed_getpwnam(const char *name);
 char *uidtoname(uid_t uid);
 char *get_home_dir(char *user);
 BOOL map_username(char *user);
-struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+const struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  lib/util.c  */
