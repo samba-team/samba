@@ -109,13 +109,13 @@ static NTSTATUS parse_section(
 	while (entry) {
 		int o;
 
-		if (!smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, "sambaOptionName", option_name)) {
+		if (!smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, "sambaOptionName", option_name)) {
 			goto done;
 		}
 
 		option_value[0] = '\0';
 		for (o = 1; option_attr_list[o].name != NULL; o++) {
-			if (smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, option_attr_list[o].name, option_value)) {
+			if (smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, option_attr_list[o].name, option_value)) {
 				break;
 			}
 		}
@@ -198,7 +198,7 @@ static NTSTATUS ldap_config_load(
 
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 
-	if (!smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, "description", attr_text)) {
+	if (!smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, "description", attr_text)) {
 		DEBUG(0, ("ldap_config_load: no description field in %s object\n", LDAP_OBJ_SAMBA_CONFIG));
 	}
 
@@ -237,7 +237,7 @@ static NTSTATUS ldap_config_load(
 			if (!(temp = smbldap_get_dn(ldap_state.smbldap_state->ldap_struct, entry))) {
 				goto done;
 			}
-			if (!smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, "sambaShareName", attr_text)) {
+			if (!smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, "sambaShareName", attr_text)) {
 				goto done;
 			}
 			share_dn[i] = talloc_strdup(mem_ctx, temp);
