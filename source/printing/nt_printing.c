@@ -2952,6 +2952,33 @@ uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 }
 
 /****************************************************************************
+ Delete driver init data stored for a specified driver
+****************************************************************************/
+
+BOOL del_driver_init(char* drivername)
+{
+	pstring key;
+	TDB_DATA kbuf;
+
+	if (!drivername || !*drivername) {
+		DEBUG(3,("del_driver_init: No drivername specified!\n"));
+		return False;
+	}
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, drivername);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	
+	DEBUG(6,("del_driver_init: Removing driver init data for [%s]\n", drivername));
+
+	return (tdb_delete(tdb, kbuf) == 0);
+}
+
+
+
+/****************************************************************************
  Pack up the DEVMODE and specifics for a printer into a 'driver init' entry 
  in the tdb. Note: this is different from the driver entry and the printer
  entry. There should be a single driver init entry for each driver regardless

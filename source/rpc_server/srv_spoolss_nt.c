@@ -5990,9 +5990,14 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	 */
 	 
 	if (!srv_spoolss_drv_upgrade_printer(driver_name)) {
-		DEBUG(0,("_spoolss_addprinterdriver: Failed to send message about upgrading driver [%s]!\n",
+		DEBUG(3,("_spoolss_addprinterdriver: Failed to send message about upgrading driver [%s]!\n",
 			driver_name));
 	}
+	
+	/* delete existing driver init data */
+
+	if (!del_driver_init(driver_name))
+		DEBUG(3,("_spoolss_addprinterdriver: del_driver_init(%s) failed!\n", driver_name));
 
 done:
 	free_a_printer_driver(driver, level);
