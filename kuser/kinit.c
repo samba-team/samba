@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <pwd.h>
 #include <krb5.h>
+
 
 int
 main (int argc, char **argv)
@@ -20,9 +22,22 @@ main (int argc, char **argv)
   if (err)
     abort ();
 
-  err = krb5_parse_name (context, argv[1], &principal);
-  if (err)
-    abort ();
+  
+  if(argv[1]){
+      err = krb5_parse_name (context, argv[1], &principal);
+      if (err)
+	  abort ();
+      
+  }else{
+      char *realm;
+      struct passwd *pw;
+      krb5_get_lrealm(&realm);
+      pw = getpwuid(getuid());
+      krb5_build_principal(context, &principal, strlen(realm), realm,
+			   pw->pw_name, NULL);
+
+      free(realm);
+  }
 
   err = krb5_cc_initialize (context, ccache, principal);
   if (err)
