@@ -210,18 +210,21 @@ void smb_run_idle_events(time_t now)
 	struct smb_idle_list_ent *event = smb_idle_event_list;
 
 	while (event) {
+		struct smb_idle_list_ent *next = event->next;
 		time_t interval;
 
-		if (event->interval >= SMB_IDLE_EVENT_MIN_INTERVAL) {
+		if (event->interval <= 0) {
+			interval = SMB_IDLE_EVENT_DEFAULT_INTERVAL;
+		} else if (event->interval >= SMB_IDLE_EVENT_MIN_INTERVAL) {
 			interval = event->interval;
 		} else {
 			interval = SMB_IDLE_EVENT_MIN_INTERVAL;
 		}
 		if (now >(event->lastrun+interval)) {
-			event->fn(&event->data,&event->interval,now);
 			event->lastrun = now;
+			event->fn(&event->data,&event->interval,now);
 		}
-		event = event->next;
+		event = next;
 	}
 
 	return;
