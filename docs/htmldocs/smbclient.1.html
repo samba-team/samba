@@ -546,7 +546,7 @@ CLASS="CONSTANT"
 >If the password is not included in these environment
 		variables (using the %pass syntax), <B
 CLASS="COMMAND"
->rpcclient</B
+>smbclient</B
 > will look for 
 		a <TT
 CLASS="ENVAR"
@@ -579,7 +579,7 @@ CLASS="COMMAND"
 > command to be safe always allow 
 		<B
 CLASS="COMMAND"
->rpcclient</B
+>smbclient</B
 > to prompt for a password and type 
 		it in directly. </P
 ></DD
@@ -1449,11 +1449,20 @@ CLASS="ENVAR"
 	the password of the person using the client.  This information is 
 	used only if the protocol level is high enough to support 
 	session-level passwords. </P
+><P
+>The variable <TT
+CLASS="ENVAR"
+>LIBSMB_PROG</TT
+> may contain 
+	the path, executed with system(), which the client should connect 
+        to instead of connecting to a server.  This functionality is primarily
+        intended as a development aid, and works best when using a LMHOSTS 
+        file</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN489"
+NAME="AEN491"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -1491,7 +1500,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN499"
+NAME="AEN501"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -1507,7 +1516,7 @@ NAME="AEN499"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN503"
+NAME="AEN505"
 ></A
 ><H2
 >VERSION</H2
@@ -1518,7 +1527,7 @@ NAME="AEN503"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN506"
+NAME="AEN508"
 ></A
 ><H2
 >AUTHOR</H2

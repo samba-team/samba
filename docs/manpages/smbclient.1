@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCLIENT" "1" "22 June 2001" "" ""
+.TH "SMBCLIENT" "1" "09 July 2001" "" ""
 .SH NAME
 smbclient \- ftp-like client to access SMB/CIFS resources  on servers
 .SH SYNOPSIS
@@ -261,7 +261,7 @@ variables are not found, the username GUEST
 is used. 
 
 If the password is not included in these environment
-variables (using the %pass syntax), \fBrpcclient\fR will look for 
+variables (using the %pass syntax), \fBsmbclient\fR will look for 
 a \fBPASSWD\fR environment variable from which 
 to read the password. 
 
@@ -277,7 +277,7 @@ Be cautious about including passwords in scripts or in
 the \fBPASSWD\fR environment variable. Also, on 
 many systems the command line of a running process may be seen 
 via the \fBps\fR command to be safe always allow 
-\fBrpcclient\fR to prompt for a password and type 
+\fBsmbclient\fR to prompt for a password and type 
 it in directly. 
 .TP
 \fB-A filename\fR
@@ -722,6 +722,12 @@ The variable \fBPASSWD\fR may contain
 the password of the person using the client. This information is 
 used only if the protocol level is high enough to support 
 session-level passwords. 
+.PP
+The variable \fBLIBSMB_PROG\fR may contain 
+the path, executed with system(), which the client should connect 
+to instead of connecting to a server. This functionality is primarily
+intended as a development aid, and works best when using a LMHOSTS 
+file
 .SH "INSTALLATION"
 .PP
 The location of the client program is a matter for 

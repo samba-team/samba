@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "05 July 2001" "" ""
+.TH "SMB.CONF" "5" "09 July 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -617,6 +617,9 @@ each parameter for details. Note that some are synonyms.
 \fIhide local users\fR
 .TP 0.2i
 \(bu
+\fIhide unreadable\fR
+.TP 0.2i
+\(bu
 \fIhomedir map\fR
 .TP 0.2i
 \(bu
@@ -636,6 +639,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIlanman auth\fR
+.TP 0.2i
+\(bu
+\fIlarge readwrite\fR
 .TP 0.2i
 \(bu
 \fIlm announce\fR
@@ -2759,7 +2765,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory  security mode (S)\fR
+\fBforce directory\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -2984,6 +2990,12 @@ This parameter toggles the hiding of local UNIX
 users (root, wheel, floppy, etc) from remote clients.
 
 Default: \fBhide local users = no\fR
+.TP
+\fBhide unreadable(G)\fR
+This parameter prevents clients from seeing the
+existance of files that cannot be read. Defaults to off.
+
+Default: \fBhide unreadable = no\fR
 .TP
 \fBhomedir map (G)\fR
 If\fInis homedir
@@ -3287,6 +3299,17 @@ NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS
 network client) will be able to connect to the Samba host.
 
 Default : \fBlanman auth = yes\fR
+.TP
+\fBlarge readwrite(G)\fR
+This parameter determines whether or not smbd
+supports the new 64k streaming read and write varient SMB requests introduced
+with Windows 2000. Note that due to Windows 2000 client redirector bugs
+this requires Samba to be running on a 64-bit capable operating system such
+as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
+Windows 2000 clients. Defaults to off. Not as tested as some other Samba
+code paths.
+
+Default : \fBlarge readwrite = no\fR
 .TP
 \fBlevel2 oplocks (S)\fR
 This parameter controls whether Samba supports

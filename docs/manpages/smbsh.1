@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSH" "1" "22 June 2001" "" ""
+.TH "SMBSH" "1" "09 July 2001" "" ""
 .SH NAME
 smbsh \- Allows access to Windows NT filesystem  using UNIX commands
 .SH SYNOPSIS
@@ -19,7 +19,7 @@ shell that is dynamically linked in order for \fBsmbsh\fR
 to work correctly.
 .PP
 To use the \fBsmbsh\fR command, execute \fB smbsh\fR from the prompt and enter the username and password 
-that authenticate you to the machine running the Windows NT 
+that authenticates you to the machine running the Windows NT 
 operating system.
 .PP
 .sp
@@ -34,8 +34,10 @@ operating system.
 Any dynamically linked command you execute from 
 this shell will access the \fI/smb\fR directory 
 using the smb protocol. For example, the command \fBls /smb
-\fRwill show all the machines in your workgroup. The command 
-\fBls /smb/<machine-name>\fR will show the share 
+\fRwill show a list of workgroups. The command 
+\fBls /smb/MYGROUP \fR will show all the machines in 
+the workgroup MYGROUP. The command 
+\fBls /smb/MYGROUP/<machine-name>\fR will show the share 
 names for that machine. You could then, for example, use the \fB cd\fR command to change directories, \fBvi\fR to 
 edit files, and \fBrcp\fR to copy files.
 .SH "VERSION"
