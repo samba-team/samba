@@ -648,25 +648,34 @@ check if a username is valid
 ****************************************************************************/
 BOOL user_ok(char *user,int snum)
 {
-	pstring valid, invalid;
+	char **valid, **invalid;
 	BOOL ret;
 
-	StrnCpy(valid, lp_valid_users(snum), sizeof(pstring)-1);
-	StrnCpy(invalid, lp_invalid_users(snum), sizeof(pstring)-1);
+	valid = invalid = NULL;
+	ret = True;
 
-	pstring_sub(valid,"%S",lp_servicename(snum));
-	pstring_sub(invalid,"%S",lp_servicename(snum));
-	
-	ret = !user_in_list(user,invalid);
-	
-	if (ret && valid && *valid) {
-		ret = user_in_list(user,valid);
+	if (lp_invalid_users(snum)) {
+		lp_list_copy(&invalid, lp_invalid_users(snum));
+		if (invalid && lp_list_substitute(invalid, "%S", lp_servicename(snum))) {
+			ret = !user_in_list(user, invalid);
+		}
 	}
+	if (invalid) lp_list_free (&invalid);
+
+	if (ret && lp_valid_users(snum)) {
+		lp_list_copy(&valid, lp_valid_users(snum));
+		if (valid && lp_list_substitute(valid, "%S", lp_servicename(snum))) {
+			ret = user_in_list(user,valid);
+		}
+	}
+	if (valid) lp_list_free (&valid);
 
 	if (ret && lp_onlyuser(snum)) {
-		char *user_list = lp_username(snum);
-		pstring_sub(user_list,"%S",lp_servicename(snum));
-		ret = user_in_list(user,user_list);
+		char **user_list = lp_list_make (lp_username(snum));
+		if (user_list && lp_list_substitute(user_list, "%S", lp_servicename(snum))) {
+			ret = user_in_list(user, user_list);
+		}
+		if (user_list) lp_list_free (&user_list);
 	}
 
 	return(ret);

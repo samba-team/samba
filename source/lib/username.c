@@ -93,6 +93,7 @@ BOOL map_username(char *user)
   while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
     char *unixname = s;
     char *dosname = strchr_m(unixname,'=');
+    char **dosuserlist;
     BOOL return_if_mapped = False;
 
     if (!dosname)
@@ -120,17 +121,26 @@ BOOL map_username(char *user)
       }
     }
 
-    if (strchr_m(dosname,'*') || user_in_list(user,dosname)) {
+    dosuserlist = lp_list_make(dosname);
+    if (!dosuserlist) {
+    	DEBUG(0,("Unable to build user list\n"));
+	return False;
+    }
+
+    if (strchr_m(dosname,'*') || user_in_list(user, dosuserlist)) {
       DEBUG(3,("Mapped user %s to %s\n",user,unixname));
       mapped_user = True;
       fstrcpy(last_from,user);
       sscanf(unixname,"%s",user);
       fstrcpy(last_to,user);
-      if(return_if_mapped) { 
+      if(return_if_mapped) {
+      	lp_list_free (&dosuserlist);
         fclose(f);
         return True;
       }
     }
+    
+    lp_list_free (&dosuserlist);
   }
 
   fclose(f);
@@ -382,18 +392,18 @@ BOOL user_in_group_list(char *user,char *gname)
  and netgroup lists.
 ****************************************************************************/
 
-BOOL user_in_list(char *user,char *list)
+BOOL user_in_list(char *user,char **list)
 {
-  pstring tok;
-  char *p=list;
 
-  DEBUG(10,("user_in_list: checking user %s in list %s\n", user, list));
+  if (!list || !*list) return False;
 
-  while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
+  DEBUG(10,("user_in_list: checking user %s in list\n", user));
+
+  while (*list) {
     /*
      * Check raw username.
      */
-    if (strequal(user,tok))
+    if (strequal(user, *list))
       return(True);
 
     /*
@@ -401,24 +411,24 @@ BOOL user_in_list(char *user,char *list)
      * of UNIX and netgroups has been specified.
      */
 
-    if(*tok == '@') {
+    if(**list == '@') {
       /*
        * Old behaviour. Check netgroup list
        * followed by UNIX list.
        */
-      if(user_in_netgroup_list(user,&tok[1]))
+      if(user_in_netgroup_list(user, *list +1))
         return True;
-      if(user_in_group_list(user,&tok[1]))
+      if(user_in_group_list(user, *list +1))
         return True;
-    } else if (*tok == '+') {
+    } else if (**list == '+') {
 
-      if(tok[1] == '&') {
+      if((*(*list +1)) == '&') {
         /*
          * Search UNIX list followed by netgroup.
          */
-        if(user_in_group_list(user,&tok[2]))
+        if(user_in_group_list(user, *list +2))
           return True;
-        if(user_in_netgroup_list(user,&tok[2]))
+        if(user_in_netgroup_list(user, *list +2))
           return True;
 
       } else {
@@ -427,28 +437,30 @@ BOOL user_in_list(char *user,char *list)
          * Just search UNIX list.
          */
 
-        if(user_in_group_list(user,&tok[1]))
+        if(user_in_group_list(user, *list +1))
           return True;
       }
 
-    } else if (*tok == '&') {
+    } else if (**list == '&') {
 
-      if(tok[1] == '+') {
+      if(*(*list +1) == '+') {
         /*
          * Search netgroup list followed by UNIX list.
          */
-        if(user_in_netgroup_list(user,&tok[2]))
+        if(user_in_netgroup_list(user, *list +2))
           return True;
-        if(user_in_group_list(user,&tok[2]))
+        if(user_in_group_list(user, *list +2))
           return True;
       } else {
         /*
          * Just search netgroup list.
          */
-        if(user_in_netgroup_list(user,&tok[1]))
+        if(user_in_netgroup_list(user, *list +1))
           return True;
       }
     }
+    
+    list++;
   }
   return(False);
 }

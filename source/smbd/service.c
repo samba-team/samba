@@ -337,18 +337,23 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 
 	{
-		pstring list;
-		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
-		pstring_sub(list,"%S",service);
+		char **list;
 
-		if (user_in_list(user,list))
-			conn->read_only = True;
-		
-		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
-		pstring_sub(list,"%S",service);
-		
-		if (user_in_list(user,list))
-			conn->read_only = False;    
+		lp_list_copy(&list, lp_readlist(snum));
+		if(list && lp_list_substitute(list, "%S", service)) {
+			if (user_in_list(user, list))
+				conn->read_only = True;
+		}
+		else DEBUG(0, ("read list substitution failed readlist: 0x%x list: 0x%x\n", lp_readlist(snum), list));
+		if (list) lp_list_free(&list);
+
+		lp_list_copy(&list, lp_writelist(snum));
+		if(list && lp_list_substitute(list, "%S", service)) {
+			if (user_in_list(user, list))
+				conn->read_only = False;
+		}
+		else DEBUG(0, ("write list substitution failed writelist: 0x%x list: 0x%x\n", lp_writelist(snum), list));
+		if (list) lp_list_free(&list);
 	}
 
 	/* admin user check */
@@ -357,7 +362,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	   marked read_only. Changed as I don't think this is needed,
 	   but old code left in case there is a problem here.
 	*/
-	if (user_in_list(user,lp_admin_users(snum)) 
+	if (user_in_list(user, lp_admin_users(snum)) 
 #if 0
 	    && !conn->read_only
 #endif
