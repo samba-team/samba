@@ -75,9 +75,17 @@ make_err_reply(krb5_data *reply, int code, const char *msg)
 static krb5_boolean
 valid_princ(krb5_context context, krb5_principal princ)
 {
-    hdb_entry *ent = db_fetch(princ);
-    if(ent == NULL)
+    char *s;
+    hdb_entry *ent;
+    krb5_unparse_name(context, princ, &s);
+    ent = db_fetch(princ);
+    if(ent == NULL){
+	kdc_log(7, "Lookup %s failed", s);
+	free(s);
 	return 0;
+    }
+    kdc_log(7, "Lookup %s succeeded", s);
+    free(s);
     hdb_free_entry(context, ent);
     free(ent);
     return 1;
