@@ -267,7 +267,7 @@ BOOL torture_trans2_scan(void)
 	}
 	qfnum = smbcli_nt_create_full(cli->tree, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION", 
 				   NTCREATEX_FLAGS_EXTENDED, 
-				   SEC_RIGHTS_MAXIMUM_ALLOWED, 
+				   SEC_FLAG_MAXIMUM_ALLOWED, 
 				   0,
 				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
 				   NTCREATEX_DISP_OPEN, 

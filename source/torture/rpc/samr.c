@@ -796,7 +796,7 @@ static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.domain_handle = domain_handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.user_handle = user_handle;
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
@@ -1373,7 +1373,7 @@ static BOOL test_DeleteGroup_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.domain_handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.group_handle = &group_handle;
 	status = dcerpc_samr_OpenGroup(p, mem_ctx, &r);
@@ -1413,7 +1413,7 @@ static BOOL test_DeleteAlias_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.domain_handle = domain_handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.alias_handle = &alias_handle;
 	status = dcerpc_samr_OpenAlias(p, mem_ctx, &r);
@@ -1469,7 +1469,7 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	init_samr_String(&name, TEST_ALIASNAME);
 	r.in.domain_handle = domain_handle;
 	r.in.aliasname = &name;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.alias_handle = alias_handle;
 	r.out.rid = &rid;
 
@@ -1561,7 +1561,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.domain_handle = domain_handle;
 	r.in.account_name = &name;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.user_handle = user_handle;
 	r.out.rid = &rid;
 
@@ -1710,7 +1710,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.domain_handle = handle;
 		r.in.account_name = &name;
 		r.in.acct_flags = acct_flags;
-		r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		r.out.user_handle = &user_handle;
 		r.out.access_granted = &access_granted;
 		r.out.rid = &rid;
@@ -1977,7 +1977,7 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing OpenUser(%u)\n", rid);
 
 	r.in.domain_handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.user_handle = &user_handle;
 
@@ -2025,7 +2025,7 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing OpenGroup(%u)\n", rid);
 
 	r.in.domain_handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.group_handle = &group_handle;
 
@@ -2065,7 +2065,7 @@ static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing OpenAlias(%u)\n", rid);
 
 	r.in.domain_handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.alias_handle = &alias_handle;
 
@@ -2810,7 +2810,7 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.domain_handle = domain_handle;
 	r.in.name = &name;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.group_handle = group_handle;
 	r.out.rid = &rid;
 
@@ -2894,7 +2894,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing OpenDomain\n");
 
 	r.in.connect_handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.sid = sid;
 	r.out.domain_handle = &domain_handle;
 
@@ -3060,7 +3060,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing samr_Connect\n");
 
 	r.in.system_name = 0;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect(p, mem_ctx, &r);
@@ -3075,7 +3075,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing samr_Connect2\n");
 
 	r2.in.system_name = NULL;
-	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r2.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect2(p, mem_ctx, &r2);
@@ -3094,7 +3094,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r3.in.system_name = NULL;
 	r3.in.unknown = 0;
-	r3.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r3.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect3(p, mem_ctx, &r3);
@@ -3113,7 +3113,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r4.in.system_name = "";
 	r4.in.unknown = 0;
-	r4.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r4.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
@@ -3134,7 +3134,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	info.info1.unknown2 = 0;
 
 	r5.in.system_name = "";
-	r5.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r5.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r5.in.level = 1;
 	r5.in.info = &info;
 	r5.out.info = &info;

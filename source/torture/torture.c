@@ -893,7 +893,7 @@ static BOOL run_deferopen(struct smbcli_state *cli, int dummy)
 			struct timeval tv;
 			tv = timeval_current();
 			fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
-						     SEC_RIGHTS_FULL_CONTROL,
+						     SEC_RIGHTS_FILE_ALL,
 						     FILE_ATTRIBUTE_NORMAL, 
 						     NTCREATEX_SHARE_ACCESS_NONE,
 						     NTCREATEX_DISP_OPEN_IF, 0, 0);

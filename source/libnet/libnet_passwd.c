@@ -340,7 +340,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare samr_Connect */
 	ZERO_STRUCT(p_handle);
 	sc.in.system_name = NULL;
-	sc.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	sc.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	sc.out.connect_handle = &p_handle;
 
 	/* 2. do a samr_Connect to get a policy handle */
@@ -387,7 +387,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare samr_OpenDomain */
 	ZERO_STRUCT(d_handle);
 	od.in.connect_handle = &p_handle;
-	od.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	od.in.sid = ld.out.sid;
 	od.out.domain_handle = &d_handle;
 
@@ -449,7 +449,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare samr_OpenUser */
 	ZERO_STRUCT(u_handle);
 	ou.in.domain_handle = &d_handle;
-	ou.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	ou.in.rid = ln.out.rids.ids[0];
 	ou.out.user_handle = &u_handle;
 

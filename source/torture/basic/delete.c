@@ -49,7 +49,7 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 	
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SEC_RIGHTS_FULL_CONTROL,
+				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
 				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
@@ -84,7 +84,7 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 	
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SEC_RIGHTS_FULL_CONTROL,
+				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
@@ -128,7 +128,7 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SEC_RIGHTS_FULL_CONTROL,
+				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
@@ -535,7 +535,7 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SEC_RIGHTS_FULL_CONTROL,
+				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_READONLY, 
 				      NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
@@ -571,7 +571,7 @@ BOOL torture_test_delete(void)
 	/* test 12 - does having read only attribute still allow delete on close at time of open. */
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SEC_RIGHTS_FULL_CONTROL,
+				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_READONLY,
 				      NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
 				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);

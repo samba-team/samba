@@ -71,7 +71,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	    - Group
 	    - Everyone
 	 */
-	access_masks[0] = SEC_RIGHTS_FULL_CONTROL;
+	access_masks[0] = SEC_RIGHTS_FILE_ALL;
 	access_masks[1] = 0;
 	access_masks[2] = 0;
 	access_masks[3] = 0;

@@ -639,7 +639,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 	r4.in.system_name = talloc_asprintf(mem_ctx, "\\\\%s",
 					    dcerpc_server_name(p));
 	r4.in.unknown = 0;
-	r4.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r4.out.connect_handle = &connect_handle;
 
 	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
@@ -804,7 +804,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 	r4.in.system_name = talloc_asprintf(mem_ctx, "\\\\%s",
 					    dcerpc_server_name(p));
 	r4.in.unknown = 0;
-	r4.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r4.out.connect_handle = &connect_handle;
 
 	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);

@@ -80,7 +80,7 @@ static BOOL test_OpenSCManager(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struc
 	
 	r.in.MachineName = NULL;
 	r.in.DatabaseName = NULL;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = h;
 	
 	status = dcerpc_svcctl_OpenSCManagerW(p, mem_ctx, &r);

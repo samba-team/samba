@@ -527,7 +527,7 @@ static uint32_t gen_ntcreatex_flags(void)
 */
 static uint32_t gen_access_mask(void)
 {
-	if (gen_chance(50)) return SEC_RIGHTS_MAXIMUM_ALLOWED;
+	if (gen_chance(50)) return SEC_FLAG_MAXIMUM_ALLOWED;
 	if (gen_chance(20)) return SEC_FILE_ALL;
 	return gen_bits_mask(0xFFFFFFFF);
 }

@@ -694,7 +694,7 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
 	r.in.printer = NULL;
 	r.in.buffer = &blob;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;	
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;	
 	r.out.handle = &handle;
 
 	printf("\nTesting OpenPrinter(\\\\%s)\n", r.in.server);

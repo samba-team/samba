@@ -88,7 +88,7 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
-				     SEC_RIGHTS_FULL_CONTROL,
+				     SEC_RIGHTS_FILE_ALL,
 				     FILE_ATTRIBUTE_NORMAL,
 				     NTCREATEX_SHARE_ACCESS_DELETE|
 				     NTCREATEX_SHARE_ACCESS_READ|
