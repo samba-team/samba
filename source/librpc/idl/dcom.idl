@@ -270,7 +270,7 @@ interface ObjectRpcBaseTypes
 [
 	object,
 	uuid("00000000-0000-0000-C000-000000000046"),
-	helpstring("Base interface for most COM interfaces")
+	helpstring("Base interface for all COM interfaces")
 ]
 interface IUnknown
 {

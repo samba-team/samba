@@ -224,7 +224,7 @@ System Attendant Private Interface
 
 [
 	uuid("c840a7dc-42c0-1a10-b4b9-08002b2fe182"),
-	helpstring("Unknwon")
+	helpstring("Unknown")
 ] interface exchange_unknown
 {
 	void unknown_dummy();

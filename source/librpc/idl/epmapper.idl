@@ -13,6 +13,7 @@ http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: bindin
  version(3.0), 
  endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
 		  "ncalrpc:[EPMAPPER]", "ncacn_unix_stream:[/tmp/epmapper]"),
+ helpstring("EndPoint Mapper"),
  pointer_default(unique)
 ]
 interface epmapper
