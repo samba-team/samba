@@ -1281,7 +1281,7 @@ static BOOL ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (entry)
 	{
 		if (!init_sam_from_ldap(ldap_state, user, ldap_struct, entry)) {
-			DEBUG(1,("ldapsam_getsampwnam: init_sam_from_ldap failed!\n"));
+			DEBUG(1,("ldapsam_getsampwnam: init_sam_from_ldap failed for user '%s'!\n", sname));
 			ldap_msgfree(result);
 			ldap_unbind(ldap_struct);
 			return False;
