@@ -41,17 +41,17 @@
 RCSID("$Id$");
 
 int
-krb5_getportbyname (const char *service,
+krb5_getportbyname (krb5_context context,
+		    const char *service,
 		    const char *proto,
 		    int default_port)
 {
     struct servent *sp;
 
     if ((sp = getservbyname (service, proto)) == NULL) {
-	 fprintf (stderr, "%s/%s unknown service, "
-		  "using default port %d\n", service, proto,
-		  ntohs(default_port));
-	 return default_port;
+	krb5_warnx(context, "%s/%s unknown service, using default port %d", 
+		   service, proto, default_port);
+	 return htons(default_port);
     } else
 	 return sp->s_port;
 }
