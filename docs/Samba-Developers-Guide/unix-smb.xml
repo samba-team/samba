@@ -238,8 +238,8 @@ reasons. Please see the FAQ for details.
 <sect1>
 <title>Port numbers</title>
 <para>
-There is a convention that clients on sockets use high "unprivilaged"
-port numbers (>1000) and connect to servers on low "privilaged" port
+There is a convention that clients on sockets use high "unprivileged"
+port numbers (>1000) and connect to servers on low "privilegedg" port
 numbers. This is enforced in Unix as non-root users can't open a
 socket for listening on port numbers less than 1000.
 </para>
