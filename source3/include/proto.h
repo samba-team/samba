@@ -240,6 +240,23 @@ void standard_sub_snum(int snum, char *str);
 void standard_sub_vuser(char *str, user_struct *vuser);
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
+/*The following definitions come from  lib/sysacls.c  */
+
+int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_free( void *obj_p);
+int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_free( void *obj_p);
+
 /*The following definitions come from  lib/system.c  */
 
 int sys_usleep(long usecs);
@@ -1731,10 +1748,10 @@ BOOL pdb_delete_sam_account (char* username);
 BOOL pdb_setsampwent(BOOL update);
 void pdb_endsampwent(void);
 SAM_ACCOUNT* pdb_getsampwent(void);
-SAM_ACCOUNT* pdb_getsampwnam (char *name);
+SAM_ACCOUNT* pdb_getsampwnam (char *sname);
 SAM_ACCOUNT* pdb_getsampwuid (uid_t uid);
 SAM_ACCOUNT* pdb_getsampwrid (uint32 rid);
-BOOL pdb_delete_sam_account(char *name);
+BOOL pdb_delete_sam_account(char *sname);
 BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override);
 BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd);
 
@@ -3699,6 +3716,13 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 #endif
 
+/*The following definitions come from  smbd/posix_acls.c  */
+
+#if OLD_NTDOMAIN
+size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
+BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+#endif
+
 /*The following definitions come from  smbd/process.c  */
 
 #if OLD_NTDOMAIN
@@ -3864,13 +3888,6 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
 BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
 BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
-#endif
-
-/*The following definitions come from  smbd/unix_acls.c  */
-
-#if OLD_NTDOMAIN
-size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
-BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 #endif
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
