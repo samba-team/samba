@@ -2256,7 +2256,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 	int len = 0;
 	int extra_len = 0;
 	NT_DEVICEMODE devmode;
-
+	
 	ZERO_STRUCT(devmode);
 
 	len += tdb_unpack(buf+len, buflen-len, "p", nt_devmode);
@@ -3206,6 +3206,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 	int 		len = 0;
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
+	char adevice[MAXDEVICENAME];
 		
 	ZERO_STRUCT(info);
 
@@ -3266,6 +3267,10 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
 	}
+	
+	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
+	fstrcpy(info.devmode->devicename, adevice);	
+
 
 	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
 

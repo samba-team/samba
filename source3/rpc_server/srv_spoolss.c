@@ -141,7 +141,7 @@ static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u);
+	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u );
 
 	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
