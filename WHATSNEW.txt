@@ -27,7 +27,7 @@ Major new features:
     been almost completely rewritten. Most of the changes are internal,
     but the new auth system is also very configurable.
 
-4)  New default filename mangling system. 
+4)  New default filename mangling system.
 
 5)  A new "net" command has been added. It is somewhat similar to 
     the "net" command in windows. Eventually we plan to replace 
@@ -64,7 +64,7 @@ Plus lots of other improvements!
 Additional Documentation
 ------------------------
 
-Please refer to Samba documentation tree (including in the docs/ 
+Please refer to Samba documentation tree (included in the docs/ 
 subdirectory) for extensive explanations of installing, configuring
 and maintaining Samba 3.0 servers and clients.  It is advised to 
 begin with the Samba-HOWTO-Collection for overviews and specific 
@@ -80,7 +80,7 @@ Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details
 
 1)  Various memory leak fixes.
-2)  Provide full support SMB signing (server and client)
+2)  Provide full support for SMB signing (server and client)
 3)  Check for broken getgrouplist() in glibc.
 4)  Don't get stuck in an infinite loop listing directories 
     recursively if the server returns an empty directory name
@@ -88,7 +88,7 @@ details
 5)  Idle LDAP connections after 150 seconds.
 6)  Patched make uninstallmodules (bug 236).
 7)  Fix bug that caused smbd to return incomplete directory listings
-    when UNIX files contained MS wildcards characters.
+    when UNIX files contained MS wildcard characters.
 8)  Quiet default debug messages in command line tools.
 9)  Fixes to avoid panics on invalid multi-byte strings.
 10) Fix error messages when creating a new smbpasswd file (bug 198).
@@ -127,7 +127,7 @@ details
     connected user and not root.
 33) Fixed data corruption bug in byte-range locking (e.g. affected MS Excel).
 34) Support winbindd on FreeBSD is possible.
-35) Look at the only first OID in the security blob sent in the session 
+35) Look at only the first OID in the security blob sent in the session 
     setup request to determine the token type.
 36) Only push locks onto a blocking lock queue if the posix lock failed with 
     EACCES or EAGAIN (this means another lock conflicts). Else return an 
@@ -139,7 +139,7 @@ details
     mapping.
 40) Expand %g and %G in logon script, profile path, etc... during
     a domain logon (bug 208).
-41) Make sure smbclient client obeys '-s <config>'
+41) Make sure smbclient obeys '-s <config>'
 42) Added win2k3 shadow copy operations to VFS interface.
 43) Allow connections to samba domain member as SERVER\user (don't
     always default to DOMAIN\user).
@@ -148,14 +148,14 @@ details
 45) Remove delays in winbindd caused by invalid DNS lookups.
 46) Fix supplementary group memberships on systems with slightly 
     broken NSS implementations (bug 267).
-47) Correct issue that prevented smbclient from view shares on 
+47) Correct issue that prevented smbclient from viewing shares on 
     a win2k server when using a non-anonymous connection (bug 284).
 48) Add --domain=DOMAIN_NAME to wbinfo for limiting operations like 
     'wbinfo -u' to a single domain.  The '.' character represents 
     our domain.
 49) Fix group enumeration bug when using an LDAP directory for 
     storing group mappings.
-50) Default to use NTLMv2 if available.  Fallback to not using LM/NTLM
+50) Default to use NTLMv2 if available.  Fallback to not use LM/NTLM
     when the extended security capability bit is not set.
 51) Fix crash in 'wbinfo -a' when using extended characters in the 
     username (bug 269).
@@ -169,7 +169,7 @@ details
 56) Fix Query FS Info level 2.
 57) Allow enumeration of users and groups by win9x "file server" (bug 
     286).
-58) Create symlinks during instal for modules that support mutliple
+58) Create symlinks during install for modules that support mutliple
     functions (bug 91).
 59) More iconv detection fixes.
 60) Fix path length error in vfs_recycle module (bug 291).
