@@ -4626,6 +4626,44 @@ uint32 _srv_net_file_enum( const UNISTR2 *srv_name,
 
 msrpc_service_fns *get_service_fns(void);
 
+/*The following definitions come from  svcctld/srv_svcctl_nt.c  */
+
+uint32 _svc_close(POLICY_HND *pol);
+uint32 _svc_open_service(const POLICY_HND *scman_pol,
+				 const UNISTR2* uni_svc_name,
+				 uint32 des_access,
+				 POLICY_HND *pol);
+uint32 _svc_stop_service(const POLICY_HND *pol,
+				 uint32 unknown,
+				 uint32 *unknown0,
+				 uint32 *unknown1,
+				 uint32 *unknown2,
+				 uint32 *unknown3,
+				 uint32 *unknown4,
+				 uint32 *unknown5,
+				 uint32 *unknown6);
+uint32 _svc_start_service(const POLICY_HND *pol,
+				  uint32 argc,
+				  uint32 argc2,
+				  const UNISTR2 *argv);
+uint32 _svc_open_sc_man(const UNISTR2 *uni_srv_name,
+				const UNISTR2 *uni_db_name,
+				uint32 des_access,
+				POLICY_HND *pol);
+uint32 _svc_enum_svcs_status(const POLICY_HND *pol,
+				     uint32 service_type,
+				     uint32 service_state,
+				     uint32 *buf_size,
+				     ENUM_HND *resume_hnd,
+				     ENUM_SRVC_STATUS *svcs,
+				     uint32 *more_buf_size,
+				     uint32 *num_svcs);
+uint32 _svc_query_disp_name(const POLICY_HND *scman_pol,
+				    const UNISTR2 *uni_svc_name,
+				    uint32 buf_size,
+				    UNISTR2 *uni_disp_name,
+				    uint32 *pbuf_size);
+
 /*The following definitions come from  svcctld/svcctld.c  */
 
 msrpc_service_fns *get_service_fns(void);

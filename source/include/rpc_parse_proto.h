@@ -973,19 +973,15 @@ BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 /*The following definitions come from  rpc_parse/parse_svc.c  */
 
 BOOL make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
-				const char *server, const char *database,
-				uint32 des_access)  ;
+				    const char *server, const char *database,
+				    uint32 des_access);
 BOOL svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, int depth);
-BOOL make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
-				uint32 status)  ;
 BOOL svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth);
 BOOL make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
-				POLICY_HND *hnd,
-				const char *server,
-				uint32 des_access)  ;
+				     POLICY_HND *hnd,
+				     const char *server,
+				     uint32 des_access);
 BOOL svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth);
-BOOL make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
-				uint32 status)  ;
 BOOL svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth);
 BOOL make_svc_q_stop_service(SVC_Q_STOP_SERVICE *q_c, POLICY_HND *hnd,
 				uint32 unk);
@@ -1010,7 +1006,7 @@ BOOL make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
 BOOL svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_struct *ps, int depth);
 BOOL make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
 				ENUM_SRVC_STATUS *svcs, uint32 more_buf_size,
-				uint32 num_svcs, uint32 resume_hnd,
+				uint32 num_svcs, ENUM_HND *resume_hnd,
 				uint32 dos_status);
 BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_struct *ps, int depth);
 BOOL svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth);
@@ -1022,8 +1018,6 @@ BOOL make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c,
 				uint32 buf_size);
 BOOL svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth);
 BOOL svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct *ps, int depth);
-BOOL make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d, 
-				char *disp_name, uint32 status);
 BOOL svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct *ps, int depth);
 BOOL make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
