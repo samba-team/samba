@@ -144,8 +144,7 @@ int k_afs_cell_of_file __P((const char *path, char *cell, int len));
 #define KRB5_H_INCLUDED
 #endif
 
-void kafs_set_verbose __P((void (*kafs_verbose)(void *, const char *, int),
-			   void *));
+void kafs_set_verbose __P((void (*kafs_verbose)(void *, const char *), void *));
 int kafs_settoken_rxkad __P((const char *, struct ClearToken *,
 			     void *ticket, size_t ticket_len));
 #ifdef KRB_H_INCLUDED

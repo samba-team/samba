@@ -45,7 +45,7 @@ RCSID("$Id$");
 
 #define ToAsciiUpper(c) ((c) - 'a' + 'A')
 
-static void (*kafs_verbose)(void *, const char *, int);
+static void (*kafs_verbose)(void *, const char *);
 static void *kafs_verbose_ctx;
 
 void
@@ -60,7 +60,7 @@ _kafs_foldup(char *a, const char *b)
 }
 
 void
-kafs_set_verbose(void (*f)(void *, const char *, int), void *ctx)
+kafs_set_verbose(void (*f)(void *, const char *), void *ctx)
 {
     if (f) {
 	kafs_verbose = f;
@@ -374,7 +374,7 @@ _kafs_try_get_cred(kafs_data *data, const char *user, const char *cell,
 	asprintf(&str, "%s tried afs%s%s@%s -> %d",
 		 data->name, cell[0] == '\0' ? "" : "/", 
 		 cell, realm, ret);
-	(*kafs_verbose)(kafs_verbose_ctx, str, ret);
+	(*kafs_verbose)(kafs_verbose_ctx, str);
 	free(str);
     }
 
