@@ -47,7 +47,7 @@
 	<xi:include href="Chap10b-DomainAppsSupport.xml"/>
 	<xi:include href="Chap11-HighAvailability.xml"/>
 	<xi:include href="Chap12-Appendix.xml"/>
-	<?latex \include{gpl}?>
+	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
 	<xi:include href="glossary.xml"/>
 	<index/>
 </book>
