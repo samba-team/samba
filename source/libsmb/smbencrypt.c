@@ -226,19 +226,6 @@ void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
 #endif
 }
 
-BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode)
-{
-	encode_pw_buffer(data, passwd, (unicode?STR_UNICODE:STR_ASCII));
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("make_oem_passwd_hash\n"));
-	dump_data(100, data, 516);
-#endif
-	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
-
-	return True;
-}
-
 /* Does the md5 encryption from the Key Response for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uchar kr[16],
 			const DATA_BLOB *srv_chal,
