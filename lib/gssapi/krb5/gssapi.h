@@ -69,6 +69,7 @@ typedef struct gss_ctx_id_t_desc_struct {
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2, COMPAT_OLD_DES3 = 4 } more_flags;
   struct krb5_ticket *ticket;
+  time_t lifetime;
 } gss_ctx_id_t_desc;
 
 typedef gss_ctx_id_t_desc *gss_ctx_id_t;
