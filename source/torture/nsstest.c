@@ -262,10 +262,10 @@ static void nss_test_users(void)
 	while ((pwd = nss_getpwent())) {
 		printf("Testing user %s\n", pwd->pw_name);
 		printf("getpwent:   "); print_passwd(pwd);
-		pwd = nss_getpwnam(pwd->pw_name);
-		printf("getpwnam:   "); print_passwd(pwd);
 		pwd = nss_getpwuid(pwd->pw_uid);
 		printf("getpwuid:   "); print_passwd(pwd);
+		pwd = nss_getpwnam(pwd->pw_name);
+		printf("getpwnam:   "); print_passwd(pwd);
 		printf("initgroups: "); nss_test_initgroups(pwd->pw_name, pwd->pw_gid);
 		printf("\n");
 	}

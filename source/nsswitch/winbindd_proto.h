@@ -109,6 +109,11 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_rpc.c  */
 
+NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  DOM_SID *sid,
+				  char **name,
+				  enum SID_NAME_USE *type);
 
 /* The following definitions come from nsswitch/winbindd_sid.c  */
 

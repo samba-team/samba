@@ -64,7 +64,7 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	return NULL;
 }
 
-/* Given a domain name, return the struct winbindd domain info for it */
+/* Given a domain sid, return the struct winbindd domain info for it */
 
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 {
@@ -74,9 +74,8 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 		get_domain_info();
 
 	/* Search through list */
-
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (sid_equal(sid, &tmp->sid))
+		if (sid_compare_domain(sid, &tmp->sid) == 0)
 			return tmp;
 	}
 
@@ -429,10 +428,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 				 fstring name,
 				 enum SID_NAME_USE *type)
 {
-	int num_sids = 1, num_names = 0;
-	uint32 *types = NULL;
-	char **names;
-	CLI_POLICY_HND *hnd;
+	char *names;
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
 	BOOL rv = False;
@@ -459,29 +455,15 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 	if (!(mem_ctx = talloc_init()))
 		return False;
         
-	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-		goto done;
-        
-	result = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
-							num_sids, sid, &names, &types, 
-							&num_names);
+	result = domain->methods->sid_to_name(domain, mem_ctx, sid, &names, type);
 
 	/* Return name and type if successful */
         
 	if ((rv = NT_STATUS_IS_OK(result))) {
-                
-		/* Return name */
-                
-		if ((names != NULL) && (name != NULL))
-			fstrcpy(name, names[0]);
-                
-		/* Return name type */
+		fstrcpy(name, names);
 
-		if ((type != NULL) && (types != NULL))
-			*type = types[0];
-
-		store_sid_by_name_in_cache(domain, names[0], sid, types[0]);
-		store_name_by_sid_in_cache(domain, sid, names[0], types[0]);
+		store_sid_by_name_in_cache(domain, names, sid, *type);
+		store_name_by_sid_in_cache(domain, sid, names, *type);
 	} else {
 		/* OK, so we tried to look up a name in this sid, and
 		 * didn't find it.  Therefore add a negative cache
@@ -490,9 +472,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 		*type = SID_NAME_UNKNOWN;
 		fstrcpy(name, name_deadbeef);
 	}
-
         
- done:
 	talloc_destroy(mem_ctx);
 
 	return rv;
