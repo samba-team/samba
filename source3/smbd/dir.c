@@ -591,7 +591,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
   
   while (!found)
   {
-    BOOL filename_is_mask = False;
     dname = ReadDirName(conn->dirptr);
 
     DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
@@ -602,12 +601,21 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
       
     pstrcpy(filename,dname);      
 
-    if ((filename_is_mask = (strcmp(filename,mask) == 0)) ||
+    /* notice the special *.* handling. This appears to be the only difference
+       between the wildcard handling in this routine and in the trans2 routines.
+       see masktest for a demo
+    */
+    if ((strcmp(mask,"*.*") == 0) ||
+	mask_match(filename,mask,False) ||
         (name_map_mangle(filename,True,False,SNUM(conn)) &&
          mask_match(filename,mask,False)))
     {
       if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
         continue;
+
+      if (!is_8_3(filename, False)) {
+	      name_map_mangle(filename,True,False,SNUM(conn));
+      }
 
       pstrcpy(fname,filename);
       *path = 0;
@@ -631,17 +639,10 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
         continue;
       }
 
-      if (!filename_is_mask)
-      {
-        /* Now we can allow the mangled cache to be updated */
-        pstrcpy(filename,dname);
-        name_map_mangle(filename,True,True,SNUM(conn));
-      }
-
       *size = sbuf.st_size;
       *date = sbuf.st_mtime;
 
-      DEBUG(5,("get_dir_entry found %s fname=%s\n",pathreal,fname));
+      DEBUG(0,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
 	  
       found = True;
     }

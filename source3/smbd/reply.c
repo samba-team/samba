@@ -1265,9 +1265,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   /* dirtype &= ~aDIR; */
   
-  DEBUG(5,("reply_search: path=%s status_len=%d\n",path,status_len));
-
-  
   if (status_len == 0)
   {
     pstring dir2;
@@ -1306,15 +1303,12 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   else
   {
     memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
-    memcpy(mask,status+1,11);
-    mask[11] = 0;
     dirtype = CVAL(status,0) & 0x1F;
     conn->dirptr = dptr_fetch(status+12,&dptr_num);      
     if (!conn->dirptr)
       goto SearchEmpty;
     string_set(&conn->dirpath,dptr_path(dptr_num));
-    if (!case_sensitive)
-      strnorm(mask);
+    fstrcpy(mask, dptr_wcard(dptr_num));
   }
 
   /* turn strings of spaces into a . */  
@@ -1326,8 +1320,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       fstrcpy(ext,p+1);
       *p = 0;
       trim_string(mask,NULL," ");
-      pstrcat(mask,".");
-      pstrcat(mask,ext);
+      if (ext[0]) {
+	      pstrcat(mask,".");
+	      pstrcat(mask,ext);
+      }
     }
   }
 
@@ -1352,17 +1348,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     }
   }
 
-  if (!strchr(mask,'.') && strlen(mask)>8)
-  {
-    fstring tmp;
-    fstrcpy(tmp,&mask[8]);
-    mask[8] = '.';
-    mask[9] = 0;
-    pstrcat(mask,tmp);
-  }
-
-  DEBUG(5,("mask=%s directory=%s\n",mask,directory));
-  
   if (can_open)
   {
     p = smb_buf(outbuf) + 3;
@@ -1385,6 +1370,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
         }
         return(ERROR(ERRDOS,ERRnofids));
       }
+      dptr_set_wcard(dptr_num, mask);
     }
 
     DEBUG(4,("dptr_num is %d\n",dptr_num));
@@ -1419,8 +1405,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
             make_dir_struct(p,mask,fname,size,mode,date);
             dptr_fill(p+12,dptr_num);
             numentries++;
-          }
-          p += DIR_STRUCT_SIZE;
+	  }
+	  p += DIR_STRUCT_SIZE;
         }
       }
 	} /* if (ok ) */
