@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -72,7 +72,7 @@ krb5_mk_req_extended(krb5_context context,
          value specified by the user, but it's the easiest way to make
          the code use a compatible enctype */
       Ticket ticket;
-      int ticket_keytype;
+      krb5_keytype ticket_keytype;
 
       ret = decode_Ticket(in_creds->ticket.data, 
 			  in_creds->ticket.length, 
