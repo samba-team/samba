@@ -424,7 +424,7 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 		}
 
 		/* Unmarshall response */
-		if (new_spoolss_io_r_enumprinters("", &r, &rbuf, 0)) {
+		if (spoolss_io_r_enumprinters("", &r, &rbuf, 0)) {
 			needed = r.needed;
 		}
 		
@@ -496,7 +496,7 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 		}
 
 		/* Unmarshall response */
-		if (new_spoolss_io_r_enumports("", &r, &rbuf, 0)) {
+		if (spoolss_io_r_enumports("", &r, &rbuf, 0)) {
 			needed = r.needed;
 		}
 		
@@ -725,7 +725,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 		}
 
 		/* Unmarshall response */
-		if (new_spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0)) 
+		if (spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0)) 
 		{
 			needed = r.needed;
 		}

@@ -2500,11 +2500,11 @@ BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
  Read/write a BUFFER struct.
 ********************************************************************/  
 
-static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUFFER **pp_buffer)
+static BOOL spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUFFER **pp_buffer)
 {
 	NEW_BUFFER *buffer = *pp_buffer;
 
-	prs_debug(ps, depth, desc, "new_spoolss_io_buffer");
+	prs_debug(ps, depth, desc, "spoolss_io_buffer");
 	depth++;
 	
 	if (UNMARSHALLING(ps))
@@ -2588,7 +2588,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
  this is ok. This is an OPTIMIZATION and is not strictly neccessary.
 ********************************************************************/  
 
-void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
+void spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
 {
 	prs_switch_type(&src->prs, MARSHALL);
 	if(!prs_set_offset(&src->prs, 0))
@@ -3205,7 +3205,7 @@ BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
 	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if(!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if(!prs_align(ps))
@@ -3235,7 +3235,7 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3316,7 +3316,7 @@ BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3331,15 +3331,15 @@ BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct
  Parse a SPOOL_R_ENUMPRINTERS structure.
  ********************************************************************/
 
-BOOL new_spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "new_spoolss_io_r_enumprinters");
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinters");
 	depth++;
 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3371,7 +3371,7 @@ BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3404,7 +3404,7 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3559,7 +3559,7 @@ BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 	
-	if(!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if(!prs_align(ps))
@@ -3590,7 +3590,7 @@ BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int de
 	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 	
-	if(!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if(!prs_align(ps))
@@ -3613,7 +3613,7 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3675,7 +3675,7 @@ BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, in
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;	
 
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
@@ -3768,7 +3768,7 @@ BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int de
  Parse a SPOOL_R_ENUMPRINTERDRIVERS structure.
 ********************************************************************/  
 
-BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdrivers");
 	depth++;
@@ -3776,7 +3776,7 @@ BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3844,7 +3844,7 @@ BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3872,7 +3872,7 @@ BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, 
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;	
 	
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3886,15 +3886,15 @@ BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "new_spoolss_io_r_enumforms");
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumforms");
 	depth++;
 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3934,7 +3934,7 @@ BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int 
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;	
 	
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3948,15 +3948,15 @@ BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL new_spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "new_spoolss_io_r_getform");
+	prs_debug(ps, depth, desc, "spoolss_io_r_getform");
 	depth++;
 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -3975,15 +3975,15 @@ BOOL new_spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, 
  Parse a SPOOL_R_ENUMPORTS structure.
 ********************************************************************/  
 
-BOOL new_spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "new_spoolss_io_r_enumports");
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumports");
 	depth++;
 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -4022,7 +4022,7 @@ BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, 
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -4976,7 +4976,7 @@ BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q
 	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if(!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 		
 	if(!prs_align(ps))
@@ -5000,7 +5000,7 @@ BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5026,7 +5026,7 @@ BOOL spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5074,7 +5074,7 @@ BOOL spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if(!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5097,7 +5097,7 @@ BOOL spoolss_io_r_enumprintprocdatatypes(char *desc, SPOOL_R_ENUMPRINTPROCDATATY
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5145,7 +5145,7 @@ BOOL spoolss_io_q_enumprintprocdatatypes(char *desc, SPOOL_Q_ENUMPRINTPROCDATATY
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if(!new_spoolss_io_buffer("buffer", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("buffer", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5180,7 +5180,7 @@ BOOL spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, 
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 		
-	if(!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5203,7 +5203,7 @@ BOOL spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, 
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5582,7 +5582,7 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
 	if (!prs_align(ps))
 		return False;
 		
-	if (!new_spoolss_io_buffer("", ps, depth, &r_u->buffer))
+	if (!spoolss_io_buffer("", ps, depth, &r_u->buffer))
 		return False;
 
 	if (!prs_align(ps))
@@ -5616,7 +5616,7 @@ BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int de
 	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 	
-	if(!new_spoolss_io_buffer("", ps, depth, &q_u->buffer))
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
 		return False;
 
 	if(!prs_align(ps))

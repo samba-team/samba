@@ -307,8 +307,8 @@ static BOOL api_spoolss_enumprinters(pipes_struct *p)
 
 	r_u.status = _spoolss_enumprinters( p, &q_u, &r_u);
 
-	if (!new_spoolss_io_r_enumprinters("", &r_u, rdata, 0)) {
-		DEBUG(0,("new_spoolss_io_r_enumprinters: unable to marshall SPOOL_R_ENUMPRINTERS.\n"));
+	if (!spoolss_io_r_enumprinters("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_enumprinters: unable to marshall SPOOL_R_ENUMPRINTERS.\n"));
 		return False;
 	}
 
@@ -712,7 +712,7 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 	r_u.status = _spoolss_enumprinterdrivers(p, &q_u, &r_u);
 
-	if (!new_spoolss_io_r_enumprinterdrivers("",&r_u,rdata,0)) {
+	if (!spoolss_io_r_enumprinterdrivers("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_enumprinterdrivers: unable to marshall SPOOL_R_ENUMPRINTERDRIVERS.\n"));
 		return False;
 	}
@@ -740,8 +740,8 @@ static BOOL api_spoolss_getform(pipes_struct *p)
 
 	r_u.status = _spoolss_getform(p, &q_u, &r_u);
 
-	if (!new_spoolss_io_r_getform("",&r_u,rdata,0)) {
-		DEBUG(0,("new_spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
+	if (!spoolss_io_r_getform("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
 		return False;
 	}
 
@@ -766,10 +766,10 @@ static BOOL api_spoolss_enumforms(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _new_spoolss_enumforms(p, &q_u, &r_u);
+	r_u.status = _spoolss_enumforms(p, &q_u, &r_u);
 
-	if (!new_spoolss_io_r_enumforms("",&r_u,rdata,0)) {
-		DEBUG(0,("new_spoolss_io_r_enumforms: unable to marshall SPOOL_R_ENUMFORMS.\n"));
+	if (!spoolss_io_r_enumforms("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_enumforms: unable to marshall SPOOL_R_ENUMFORMS.\n"));
 		return False;
 	}
 
@@ -796,8 +796,8 @@ static BOOL api_spoolss_enumports(pipes_struct *p)
 
 	r_u.status = _spoolss_enumports(p, &q_u, &r_u);
 
-	if (!new_spoolss_io_r_enumports("",&r_u,rdata,0)) {
-		DEBUG(0,("new_spoolss_io_r_enumports: unable to marshall SPOOL_R_ENUMPORTS.\n"));
+	if (!spoolss_io_r_enumports("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_enumports: unable to marshall SPOOL_R_ENUMPORTS.\n"));
 		return False;
 	}
 
