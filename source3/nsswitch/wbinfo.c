@@ -789,8 +789,13 @@ static BOOL wbinfo_set_auth_user(char *username)
 	if (password) {
 		*password = 0;
 		password++;
-	} else
-		password = "";
+	} else {
+		char *thepass = getpass("Password: ");
+		if (thepass) {
+			password = thepass;	
+		} else
+			password = "";
+	}
 
 	/* Store or remove DOMAIN\username%password in secrets.tdb */
 
