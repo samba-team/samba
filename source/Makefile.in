@@ -294,8 +294,6 @@ RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
 
 RPC_ECHO_OBJ = rpc_server/srv_echo.o rpc_server/srv_echo_nt.o
 
-RPC_EPMAPPER_OBJ = rpc_server/srv_epmapper.o rpc_server/srv_epmapper_nt.o
-
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
 # this includes only the low level parse code, not stuff
