@@ -23,7 +23,7 @@
 
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 extern PRIVS privs[];
 
