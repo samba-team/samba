@@ -239,7 +239,7 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 DYNEXP=
 
 dnl Add modules that have to be built by default here
-default_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_recycle vfs_audit vfs_extd_audit vfs_fake_perms vfs_netatalk"
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
@@ -2432,23 +2432,6 @@ AC_ARG_WITH(ldapsam,
   AC_MSG_RESULT(no)
 )
 
-#################################################
-# check for a TDB password database
-AC_MSG_CHECKING(whether to use TDB SAM database)
-AC_ARG_WITH(tdbsam,
-[  --with-tdbsam           Include experimental TDB SAM support (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_TDB_SAM,1,[Whether to include experimental TDB SAM support])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 ########################################################################################
 ##
 ## END OF TESTS FOR SAM BACKENDS.  
@@ -3397,6 +3380,13 @@ SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), bin/server.so, AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), bin/domain.so, AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), bin/builtin.so, AUTH)
 SMB_SUBSYSTEM(AUTH)
+
+SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), bin/recycle.so, VFS)
+SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), bin/audit.so, VFS)
+SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), bin/extd_audit.so, VFS)
+SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), bin/fake_perms.so, VFS)
+SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK), bin/netatalk.so, VFS)
+SMB_SUBSYSTEM(VFS)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
