@@ -998,8 +998,7 @@ Before using any of the following options, please refer to the man page for &smb
 
 
 		<para>
-		The permissions field is displayed differently for files and directories, so I'll describe the way file permissions 
-		are displayed first.
+		The permissions field is displayed differently for files and directories, both are discussed here:
 		</para>
 
 		<sect3>
@@ -1008,7 +1007,7 @@ Before using any of the following options, please refer to the man page for &smb
 			<para>The standard UNIX user/group/world triplet and the corresponding <constant>read, write, execute</constant> permissions 
 			triplets are mapped by Samba into a three element NT ACL with the <quote>r</quote>, <quote>w</quote> and <quote>x</quote> bits mapped into the corresponding 
 			NT permissions. The UNIX world permissions are mapped into the global NT group <constant>Everyone</constant>, followed 
-			by the list of permissions allowed for UNIX world. The UNIX owner and group permissions are displayed as an NT 
+			by the list of permissions allowed for the UNIX world. The UNIX owner and group permissions are displayed as an NT 
 			<guiicon>user</guiicon> icon and an NT <guiicon>local group</guiicon> icon, respectively, followed by the list 
 			of permissions allowed for the UNIX user and group.</para>
 
@@ -1105,7 +1104,7 @@ Before using any of the following options, please refer to the man page for &smb
 
 		</para>
 
-		<para>Once a user clicks on <guibutton>OK</guibutton> to apply the 
+		<para>When a user clicks on <guibutton>OK</guibutton> to apply the 
 		permissions, Samba maps the given permissions into a user/group/world 
 		r/w/x triplet set, and then checks the changed permissions for a 
 		file against the bits set in the  
@@ -1195,6 +1194,80 @@ Before using any of the following options, please refer to the man page for &smb
 		attributes dialog, you should always press <guibutton>Cancel</guibutton> 
 		rather than <guibutton>OK</guibutton> to ensure that your changes 
 		are not overridden.</para>
+	</sect2>
+
+	<sect2>
+	<title>Windows NT/200X ACLS and POSIX ACLS &smbmdash; Limitations</title>
+
+	<para>
+	Windows administrators are familiar with simple ACL controls and they typically
+	consider that UNIX user/group/other (ugo) permissions are inadequate and not
+	sufficiently fine-grained.
+	</para>
+
+	<para>
+	Competing SMB implementations differ in how they handle Windows ACLs. Samba handles
+	Windows ACLs from the perspective of UNIX file system adminsitration and thus adopts
+	the limitations of POSIX ACLs. Therefore, where POSIX ACLs lack a capability of the
+	Windows NT/200X ACLs, the POSIX semantics and limitations are imposed on the Windows
+	administrator.
+	</para>
+
+	<para>
+	POSIX ACLs present an interesting challenge to the UNIX adminsitrator and therfore a
+	force a compromise to be applied to Windows ACLs administration. POSIX ACLs are not
+	covered by an official standard, rather the latest standard is a draft standard
+	1003.1e revision 17. This is the POSIX document on which the Samba implementation has
+	been implemented.
+	</para>
+
+	<para>
+	UNIX vendors differ in the manner in which POSIX ACLs are implemented. There are a
+	number of Linux file systems that support ACLs. Samba has to provide a way to make
+	transparent all the differences between the various implementations of POSIX ACLs.
+	The pressure for ACLs support in Samba has noticibly increased the pressure to
+	standardize ACLs support in the UNIX world.
+	</para>
+
+	<para>
+	Samba has to deal with the complicated matter of handling the challenge of the Windows
+	ACL that implements <emphasis>inheritance</emphasis>, a concept not anticipated by POSIX
+	ACLs as implemented in UNIX file systems. Samba provides support for <emphasis>masks</emphasis>
+	that permit normal ugo and ACLs functionality to be overrided. This further complicates
+	the way in which Windows ACLs must be implemented.
+	</para>
+
+	<para>
+	In examining POSIX ACLs we must consider the manner in which they operate for 
+	both files and directories. File ACLs have the following significance:
+<screen>
+# file: testfile &lt;- the file name
+# owner: jeremy  &lt;-- the file owner
+# group: users   &lt;-- the POSIX group owner
+user::rwx        &lt;-- perms for the file owner (user)
+user:tpot:r-x    &lt;-- perms for the additional user 'tpot'
+group::r--       &lt;-- perms for the file group owner (group)
+group:engrs:r--  &lt;-- perms for the additonal group 'engineers'
+mask:rwx         &lt;-- the mask that is 'ANDed' with groups
+other::---       &lt;-- perms applied to everyone else (other)
+</screen>
+	Directory ACLs have the following signficance:
+<screen>
+# file: testdir       &lt;-- the directory name
+# owner: jeremy       &lt;-- the directory owner
+# group: jeremy       &lt;-- the POSIX group owner
+user::rwx             &lt;-- directory perms for owner (user)
+group::rwx            &lt;-- directory perms for owning group (group)
+mask::rwx             &lt;-- the mask that is 'ANDed' with group perms
+other:r-x             &lt;-- perms applied to everyone else (other)
+default:user::rwx     &lt;-- inherited owner perms
+default:user:tpot:rwx &lt;-- inherited extra perms for user 'tpot'
+default:group::r-x    &lt;-- inherited group perms
+default:mask:rwx      &lt;-- inherited default mask
+default:other:---     &lt;-- inherited permissions for everyone (other)
+</screen>
+	</para>
+
 	</sect2>
 </sect1>
 
