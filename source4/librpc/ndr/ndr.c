@@ -555,9 +555,9 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 	ndr_pull_save(ndr, &save);
 	NDR_CHECK(ndr_pull_set_offset(ndr, ofs + ndr->ofs_list->offset));
 	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, ndr->data_size - ndr->offset));
-	if (size == 1) {
-		/* oh what a hack! */
-		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, (void *)&p));
+	/* strings must be allocated by the backend functions */
+	if (ndr->flags & LIBNDR_STRING_FLAGS) {
+		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, &p));
 	} else {
 		NDR_ALLOC_SIZE(ndr, p, size);
 		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, p));
