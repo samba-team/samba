@@ -780,7 +780,7 @@ static void globals_page(void)
 	unsigned int parm_filter = FLAG_BASIC;
 	int mode = 0;
 
-	d_printf("<H2>%s</H2>\n", _("Global Variables"));
+	d_printf("<H2>%s</H2>\n", _("Global Parameters"));
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
@@ -1320,6 +1320,8 @@ static void printers_page(void)
 	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
+
+	d_printf("hello \" there\n");
 
 	cgi_setup(dyn_SWATDIR, !demo_mode);
 
