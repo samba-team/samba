@@ -96,8 +96,10 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		flags = O_CREAT | O_TRUNC;
 		break;
 	case NTCREATEX_DISP_OPEN:
-	case NTCREATEX_DISP_OVERWRITE:
 		flags = 0;
+		break;
+	case NTCREATEX_DISP_OVERWRITE:
+		flags = O_TRUNC;
 		break;
 	case NTCREATEX_DISP_CREATE:
 		flags = O_CREAT | O_EXCL;
@@ -222,7 +224,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (close(f->fd) != 0) {
 		status = pvfs_map_errno(pvfs, errno);
 	} else {

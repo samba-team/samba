@@ -99,11 +99,47 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
+	printf("Trying 0xEEFFFFFF lock\n");
+	io.lock.level = RAW_LOCK_LOCK;
+	io.lock.in.fnum = fnum;
+	io.lock.in.count = 4000;
+	io.lock.in.offset = 0xEEFFFFFF;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	cli->session->pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	cli->session->pid--;
+	io.lock.level = RAW_LOCK_UNLOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	io.lock.level = RAW_LOCK_UNLOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying 0xEF000000 lock\n");
+	io.lock.level = RAW_LOCK_LOCK;
+	io.lock.in.fnum = fnum;
+	io.lock.in.count = 4000;
+	io.lock.in.offset = 0xEEFFFFFF;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	cli->session->pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	cli->session->pid--;
+	io.lock.level = RAW_LOCK_UNLOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	io.lock.level = RAW_LOCK_UNLOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
 	printf("Trying max lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
 	io.lock.in.fnum = fnum;
 	io.lock.in.count = 4000;
-	io.lock.in.offset = ~0;
+	io.lock.in.offset = 0xEF000000;
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	cli->session->pid++;

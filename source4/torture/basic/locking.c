@@ -76,6 +76,42 @@ BOOL torture_locktest1(int dummy)
 				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
+	if (NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK))) {
+		printf("lock2 succeeded! This is a locking bug\n");
+		return False;
+	} else {
+		if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+	}
+
+	if (NT_STATUS_IS_ERR(smbcli_lock(cli1->tree, fnum1, 5, 9, 0, WRITE_LOCK))) {
+		printf("lock1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		return False;
+	}
+
+	if (NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 5, 9, 0, WRITE_LOCK))) {
+		printf("lock2 succeeded! This is a locking bug\n");
+		return False;
+	} else {
+		if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+	}
+
+	if (NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK))) {
+		printf("lock2 succeeded! This is a locking bug\n");
+		return False;
+	} else {
+		if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+	}
+
+	if (NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK))) {
+		printf("lock2 succeeded! This is a locking bug\n");
+		return False;
+	} else {
+		if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+	}
 
 	lock_timeout = (6 + (random() % 20));
 	printf("Testing lock timeout with timeout=%u\n", lock_timeout);
@@ -768,21 +804,23 @@ BOOL torture_locktest7(int dummy)
 	memset(buf, 0, sizeof(buf));
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
-		printf("Failed to create file\n");
+		printf("Failed to create file (%s)\n", __location__);
 		goto fail;
 	}
 
 	cli1->session->pid = 1;
 
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli1->tree, fnum1, 130, 4, 0, READ_LOCK))) {
-		printf("Unable to apply read lock on range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("Unable to apply read lock on range 130:4, error was %s (%s)\n", 
+		       smbcli_errstr(cli1->tree), __location__);
 		goto fail;
 	} else {
 		printf("pid1 successfully locked range 130:4 for READ\n");
 	}
 
 	if (smbcli_read(cli1->tree, fnum1, buf, 130, 4) != 4) {
-		printf("pid1 unable to read the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("pid1 unable to read the range 130:4, error was %s (%s)\n", 
+		       smbcli_errstr(cli1->tree), __location__);
 		goto fail;
 	} else {
 		printf("pid1 successfully read the range 130:4\n");
@@ -791,11 +829,13 @@ BOOL torture_locktest7(int dummy)
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
 		printf("pid1 unable to write to the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
 		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
-			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n", 
+			       __location__);
 			goto fail;
 		}
 	} else {
-		printf("pid1 successfully wrote to the range 130:4 (should be denied)\n");
+		printf("pid1 successfully wrote to the range 130:4 (should be denied) (%s)\n", 
+		       __location__);
 		goto fail;
 	}
 
@@ -810,11 +850,13 @@ BOOL torture_locktest7(int dummy)
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
 		printf("pid2 unable to write to the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
 		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
-			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n",
+			       __location__);
 			goto fail;
 		}
 	} else {
-		printf("pid2 successfully wrote to the range 130:4 (should be denied)\n");
+		printf("pid2 successfully wrote to the range 130:4 (should be denied) (%s)\n", 
+		       __location__);
 		goto fail;
 	}
 
@@ -822,21 +864,24 @@ BOOL torture_locktest7(int dummy)
 	smbcli_unlock(cli1->tree, fnum1, 130, 4);
 
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli1->tree, fnum1, 130, 4, 0, WRITE_LOCK))) {
-		printf("Unable to apply write lock on range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("Unable to apply write lock on range 130:4, error was %s (%s)\n", 
+		       smbcli_errstr(cli1->tree), __location__);
 		goto fail;
 	} else {
 		printf("pid1 successfully locked range 130:4 for WRITE\n");
 	}
 
 	if (smbcli_read(cli1->tree, fnum1, buf, 130, 4) != 4) {
-		printf("pid1 unable to read the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("pid1 unable to read the range 130:4, error was %s (%s)\n", 
+		       smbcli_errstr(cli1->tree), __location__);
 		goto fail;
 	} else {
 		printf("pid1 successfully read the range 130:4\n");
 	}
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
-		printf("pid1 unable to write to the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("pid1 unable to write to the range 130:4, error was %s (%s)\n", 
+		       smbcli_errstr(cli1->tree), __location__);
 		goto fail;
 	} else {
 		printf("pid1 successfully wrote to the range 130:4\n");
@@ -845,24 +890,30 @@ BOOL torture_locktest7(int dummy)
 	cli1->session->pid = 2;
 
 	if (smbcli_read(cli1->tree, fnum1, buf, 130, 4) != 4) {
-		printf("pid2 unable to read the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("pid2 unable to read the range 130:4, error was %s\n", 
+		       smbcli_errstr(cli1->tree));
 		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
-			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n",
+			       __location__);
 			goto fail;
 		}
 	} else {
-		printf("pid2 successfully read the range 130:4 (should be denied)\n");
+		printf("pid2 successfully read the range 130:4 (should be denied) (%s)\n", 
+		       __location__);
 		goto fail;
 	}
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
-		printf("pid2 unable to write to the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
+		printf("pid2 unable to write to the range 130:4, error was %s\n", 
+		       smbcli_errstr(cli1->tree));
 		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
-			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n",
+			       __location__);
 			goto fail;
 		}
 	} else {
-		printf("pid2 successfully wrote to the range 130:4 (should be denied)\n");
+		printf("pid2 successfully wrote to the range 130:4 (should be denied) (%s)\n", 
+		       __location__);
 		goto fail;
 	}
 
@@ -871,7 +922,7 @@ BOOL torture_locktest7(int dummy)
 	fnum2 = smbcli_open(cli1->tree, fname, O_RDWR|O_TRUNC, DENY_NONE);
 
 	if (fnum2 == -1) {
-		printf("Unable to truncate locked file.\n");
+		printf("Unable to truncate locked file (%s)\n", __location__);
 		correct = False;
 		goto fail;
 	} else {
@@ -879,13 +930,13 @@ BOOL torture_locktest7(int dummy)
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_getatr(cli1->tree, fname, NULL, &size, NULL))) {
-		printf("getatr failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("getatr failed (%s) (%s)\n", smbcli_errstr(cli1->tree), __location__);
 		correct = False;
 		goto fail;
 	}
 
 	if (size != 0) {
-		printf("Unable to truncate locked file. Size was %u\n", size);
+		printf("Unable to truncate locked file. Size was %u (%s)\n", size, __location__);
 		correct = False;
 		goto fail;
 	}
