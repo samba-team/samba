@@ -875,6 +875,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 		free_nt_printer_param(&tofree);
 	}
 
+	safe_free(*info_ptr);
 	*info_ptr = NULL;
 }
 
@@ -1048,6 +1049,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 
 	nt_printing_getsec(sharename, &info.secdesc_buf);
 
+	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
 	
 	return 0;	

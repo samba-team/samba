@@ -1846,6 +1846,9 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 			goto fail;
 	}
 
+	free_nt_devicemode(&ntdevmode);
+	free_a_printer(&printer,2);
+
 	return devmode;
 
   fail:
@@ -2152,12 +2155,12 @@ static BOOL enum_all_printers_info_2(fstring servername, NEW_BUFFER *buffer, uin
 	
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_printer_info_2(&(printers[i]));
+		(*needed) += spoolss_size_printer_info_2(&printers[i]);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		for (i=0; i<*returned; i++) {
-			safe_free(printers[i].devmode->private);
-			safe_free(printers[i].devmode);
+			free_devmode(printers[i].devmode);
+			free_sec_desc(&printers[i].secdesc);
 		}
 		safe_free(printers);
 		return ERROR_INSUFFICIENT_BUFFER;
@@ -2381,7 +2384,7 @@ static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffe
 	*needed += spoolss_size_printer_info_2(printer);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(printer);
+		free_printer_info_2(printer);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
@@ -2389,9 +2392,7 @@ static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffe
 	new_smb_io_printer_info_2("", buffer, printer, 0);	
 	
 	/* clear memory */
-	safe_free(printer->devmode->private);
-	safe_free(printer->devmode);
-	safe_free(printer);
+	free_printer_info_2(printer);
 
 	if (*needed > offered) {
 		return ERROR_INSUFFICIENT_BUFFER;
@@ -3892,8 +3893,8 @@ static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint
 			break;
 	}
 
-	slprintf(path_old, sizeof(path_old)-1, "%s/%s/TMP_%u", lp_pathname(snum), short_archi,
-		(unsigned int)sys_getpid());
+	slprintf(path_old, sizeof(path_old)-1, "%s/%s/TMP_%s", lp_pathname(snum), short_archi,
+		client_addr());
 
 	/* Clean up any '/' and other characters in the model name. */
 	alpha_strcpy(model_name, model, sizeof(pstring));
@@ -3963,8 +3964,8 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	get_short_archi(short_archi, long_archi);
 		
 #ifdef RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s\\TMP_%u", global_myname, short_archi,
-		(unsigned int)sys_getpid());
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s\\TMP_%s", global_myname, short_archi,
+		client_addr());
 #else
 	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s",
 			global_myname, short_archi);
