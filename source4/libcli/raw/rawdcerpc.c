@@ -51,6 +51,7 @@ struct cli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blob)
 	return req;
 }
 
+
 NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p, 
 			 struct cli_request *req,
 			 TALLOC_CTX *mem_ctx,
@@ -58,14 +59,78 @@ NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p,
 {
 	struct smb_trans2 trans;
 	NTSTATUS status;
+	uint16 frag_length;
+	DATA_BLOB payload;
 
 	status = smb_raw_trans_recv(req, mem_ctx, &trans);
-	if (!NT_STATUS_IS_OK(status)) {
+	/* STATUS_BUFFER_OVERFLOW means that there is more data
+	   available via SMBreadX */
+	if (!NT_STATUS_IS_OK(status) && 
+	    !NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
 		return status;
 	}
 
+	payload = trans.out.data;
+
+	if (trans.out.data.length < 16 || 
+	    !NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+		goto done;
+	}
+
+	/* we might have recieved a partial fragment, in which case we
+	   need to pull the rest of it */
+	frag_length = SVAL(payload.data, 8);
+	if (frag_length <= payload.length) {
+		goto done;
+	}
+
+	/* make sure the payload can hold the whole fragment */
+	payload.data = talloc_realloc(mem_ctx, payload.data, frag_length);
+	if (!payload.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* the rest of the data is available via SMBreadX */
+	while (frag_length > payload.length) {
+		uint32 n;
+		union smb_read io;
+
+		n = frag_length - payload.length;
+		if (n > 0xFF00) {
+			n = 0xFF00;
+		}
+
+		io.generic.level = RAW_READ_READX;
+		io.readx.in.fnum = p->fnum;
+		io.readx.in.mincnt = n;
+		io.readx.in.maxcnt = n;
+		io.readx.in.offset = 0;
+		io.readx.in.remaining = 0;
+		io.readx.out.data = payload.data + payload.length;
+		status = smb_raw_read(p->tree, &io);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+			break;
+		}
+		
+		n = io.readx.out.nread;
+		if (n == 0) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			break;
+		}
+		
+		payload.length += n;
+
+		/* if the SMBreadX returns NT_STATUS_OK then there
+		   isn't any more data to be read */
+		if (NT_STATUS_IS_OK(status)) {
+			break;
+		}
+	}
+
+done:
 	if (blob) {
-		*blob = trans.out.data;
+		*blob = payload;
 	}
 
 	return status;
@@ -81,3 +146,75 @@ NTSTATUS dcerpc_raw_packet(struct dcerpc_pipe *p,
 	return dcerpc_raw_recv(p, req, mem_ctx, reply_blob);
 }
 	      
+
+/* 
+   retrieve a secondary pdu from a pipe 
+*/
+NTSTATUS dcerpc_raw_packet_secondary(struct dcerpc_pipe *p, 
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *blob)
+{
+	union smb_read io;
+	uint32 n = 0x2000;
+	uint32 frag_length;
+	NTSTATUS status;
+
+	*blob = data_blob_talloc(mem_ctx, NULL, n);
+	if (!blob->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io.generic.level = RAW_READ_READX;
+	io.readx.in.fnum = p->fnum;
+	io.readx.in.mincnt = n;
+	io.readx.in.maxcnt = n;
+	io.readx.in.offset = 0;
+	io.readx.in.remaining = 0;
+	io.readx.out.data = blob->data;
+
+	status = smb_raw_read(p->tree, &io);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+		return status;
+	}
+
+	blob->length = io.readx.out.nread;
+
+	if (blob->length < 16) {
+		return status;
+	}
+
+	frag_length = SVAL(blob->data, 8);
+	if (frag_length <= blob->length) {
+		return status;
+	}
+
+	blob->data = talloc_realloc(mem_ctx, blob->data, frag_length);
+	if (!blob->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	while (frag_length > blob->length &&
+	       NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+
+		n = frag_length - blob->length;
+		if (n > 0xFF00) {
+			n = 0xFF00;
+		}
+
+		io.readx.in.mincnt = n;
+		io.readx.in.maxcnt = n;
+		io.readx.out.data = blob->data + blob->length;
+		status = smb_raw_read(p->tree, &io);
+
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+			return status;
+		}
+		
+		n = io.readx.out.nread;
+		blob->length += n;
+	}
+
+	return status;
+}

@@ -69,7 +69,7 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					 &len_out,
 					 &data_out);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EchoData(%d) failed\n", len);
+		printf("EchoData(%d) failed - %s\n", len, nt_errstr(status));
 		return False;
 	}
 	printf("EchoData(%d) returned %d bytes\n", len, len_out);
@@ -92,7 +92,7 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	char *data_out;
-	int len = 100;
+	int len = 200000;
 	int len_out;
 
 	printf("\nTesting SourceData\n");
@@ -102,13 +102,14 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					   &len_out,
 					   &data_out);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("SourceData(%d) failed\n", len);
+		printf("SourceData(%d) failed - %s\n", len, nt_errstr(status));
 		return False;
 	}
 	printf("SourceData(%d) returned %d bytes\n", len, len_out);
 
 	for (i=0;i<len;i++) {
-		if (data_out[i] != (i & 0xFF)) {
+		unsigned char *v = (unsigned char *)data_out;
+		if (v[i] != (i & 0xFF)) {
 			printf("bad data 0x%x at %d\n", data_out[i], i);
 			return False;
 		}
@@ -138,7 +139,7 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					 len,
 					 data_in);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("SinkData(%d) failed\n", len);
+		printf("SinkData(%d) failed - %s\n", len, nt_errstr(status));
 		return False;
 	}
 
@@ -158,6 +159,11 @@ BOOL torture_rpc_echo(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	if (!test_sourcedata(p, mem_ctx)) {
+		ret = False;
+	}
+	return ret;
 
 	if (!test_addone(p, mem_ctx)) {
 		ret = False;
