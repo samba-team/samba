@@ -228,11 +228,16 @@ get_cred_cache(krb5_context context,
 	    client = default_client;
 	if(client == NULL) {
 	    char *user;
-	    struct passwd *pw;
-	    user = getlogin();
-	    if(user == NULL) {
-		pw = getpwuid(getuid());
-		user = pw->pw_name;
+
+	    user = getenv ("USERNAME");
+	    if (user == NULL) {
+		user = getlogin();
+		if(user == NULL) {
+		    struct passwd *pw = getpwuid(getuid());
+		    if (pw == NULL)
+			return KADM5_FAILURE;
+		    user = pw->pw_name;
+		}
 	    }
 	    if(user == NULL)
 		return KADM5_FAILURE;
