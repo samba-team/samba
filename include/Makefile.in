@@ -2,7 +2,7 @@ HEADERS = \
 	asn1.h asn1_err.h bits.h cache.h config_file.h \
 	des.h error.h getarg.h gssapi.h hdb.h hdb_asn1.h hdb_err.h \
 	heim_err.h keytab.h krb5.h krb5_err.h md4.h md5.h roken.h \
-	sha.h sl.h store.h parse_time.h parse_units.h
+	sha.h sl.h store.h parse_time.h parse_units.h otp.h
 
 MAYBE_HEADERS = \
 	err.h
@@ -125,6 +125,9 @@ roken.h:
 
 sl.h:
 	$(LN_S) $(top_srcdir)/lib/sl/sl.h .
+
+otp.h:
+	$(LN_S) $(top_srcdir)/lib/otp/otp.h .
 
 bits.h: bits
 	./bits bits.h
