@@ -1,3 +1,79 @@
+Sat Jan 30 13:43:02 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am: explicit rules for *.et files
+
+ 	* lib/kadm5/init_c.c (get_kadm_ticket): only remove creds if
+ 	krb5_get_credentials was succesful.
+ 	(get_new_cache): return better error codes and return earlier.
+ 	(get_cred_cache): only delete default_client if it's different
+ 	from client
+ 	(kadm5_c_init_with_context): return a more descriptive error.
+
+	* kdc/kerberos5.c (check_flags): handle NULL client or server
+
+	* lib/krb5/sendauth.c (krb5_sendauth): return the error in
+ 	`ret_error' iff != NULL
+
+	* lib/krb5/rd_error.c (krb5_free_error, krb5_free_error_contents):
+ 	new functions
+
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_extended): more
+ 	type-correctness
+
+	* lib/krb5/krb5.h (krb5_error): typedef to KRB_ERROR
+
+	* lib/krb5/init_creds_pw.c: KRB5_TGS_NAME: use
+
+	* lib/krb5/get_cred.c: KRB5_TGS_NAME: use
+
+ 	* lib/kafs/afskrb5.c (afslog_uid_int): update to changes
+
+	* lib/kadm5/rename_s.c (kadm5_s_rename_principal): call remove
+ 	instead of rename, but shouldn't this just call rename?
+
+ 	* lib/kadm5/get_s.c (kadm5_s_get_principal): always return an
+ 	error if the principal wasn't found.
+
+	* lib/hdb/ndbm.c (NDBM_seq): unseal key
+
+	* lib/hdb/db.c (DB_seq): unseal key
+
+	* lib/asn1/Makefile.am: added explicit rules for asn1_err.[ch]
+
+	* kdc/hprop.c (v4_prop): add krbtgt/THISREALM@OTHERREALM when
+ 	finding cross-realm tgts in the v4 database
+
+	* kadmin/mod.c (mod_entry): check the number of arguments.  check
+ 	that kadm5_get_principal worked.
+
+	* lib/krb5/keytab.c (fkt_remove_entry): remove KRB5_KT_NOTFOUND if
+ 	we weren't able to remove it.
+
+	* admin/ktutil.c: less drive-by-deleting.  From Love
+ 	<lha@e.kth.se>
+
+	* kdc/connect.c (parse_ports): copy the string before mishandling
+ 	it with strtok_r
+
+	* kdc/kerberos5.c (tgs_rep2): print the principal with mismatching
+ 	kvnos
+
+	* kadmin/kadmind.c (main): convert `debug_port' to network byte
+ 	order
+
+	* kadmin/kadmin.c: allow specification of port number.
+
+	* lib/kadm5/kadm5_locl.h (kadm5_client_context): add
+ 	`kadmind_port'.
+
+	* lib/kadm5/init_c.c (_kadm5_c_init_context): move up
+ 	initalize_kadm5_error_table_r.
+	allow specification of port number.
+	
+  	From Love <lha@stacken.kth.se>
+
+	* kuser/klist.c: add option -t | --test
+
 Sun Nov 29 01:56:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_addrs.c (krb5_get_all_server_addrs): add.  almost
