@@ -216,7 +216,7 @@ static int reply_nt1(char *outbuf)
   set_message(outbuf,17,data_len,True);
   pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
 
-  CVAL(outbuf,smb_vwv1) = secword;
+  SCVAL(outbuf,smb_vwv1,secword);
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
   if (doencrypt) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);

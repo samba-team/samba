@@ -641,7 +641,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,20,(uint32)allocation_size);
 			SSVAL(p,24,mode);
 			SIVAL(p,26,4);
-			CVAL(p,30) = strlen(fname);
+			SCVAL(p,30,strlen(fname));
 			pstrcpy(p+31, fname);
 			nameptr = p+31;
 			p += 31 + strlen(fname) + 1;
@@ -659,7 +659,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,16,(uint32)size);
 			SIVAL(p,20,(uint32)allocation_size);
 			SSVAL(p,24,mode);
-			CVAL(p,32) = strlen(fname);
+			SCVAL(p,32,strlen(fname));
 			pstrcpy(p + 33, fname);
 			nameptr = p+33;
 			p += 33 + strlen(fname) + 1;
@@ -1735,8 +1735,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		SOFF_T(pdata,0,allocation_size);
 		SOFF_T(pdata,8,size);
 		SIVAL(pdata,16,sbuf.st_nlink);
-		CVAL(pdata,20) = 0;
-		CVAL(pdata,21) = (mode&aDIR)?1:0;
+		SCVAL(pdata,20,0);
+		SCVAL(pdata,21,(mode&aDIR)?1:0);
 		break;
 
 	case SMB_FILE_EA_INFORMATION:
@@ -1804,8 +1804,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		SOFF_T(pdata,0,allocation_size);
 		SOFF_T(pdata,8,size);
 		SIVAL(pdata,16,sbuf.st_nlink);
-		CVAL(pdata,20) = delete_pending;
-		CVAL(pdata,21) = (mode&aDIR)?1:0;
+		SCVAL(pdata,20,delete_pending);
+		SCVAL(pdata,21,(mode&aDIR)?1:0);
 		pdata += 24;
 		SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
 		pdata += 8; /* index number */
@@ -1854,7 +1854,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	case SMB_FILE_DISPOSITION_INFORMATION:
 		data_size = 1;
-		CVAL(pdata,0) = delete_pending;
+		SCVAL(pdata,0,delete_pending);
 		break;
 
 	case SMB_FILE_POSITION_INFORMATION:

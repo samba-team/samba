@@ -918,11 +918,11 @@ void construct_reply_common(char *inbuf,char *outbuf)
   memset(outbuf,'\0',smb_size);
 
   set_message(outbuf,0,0,True);
-  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+  SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 
   memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf,smb_reh) = 0;
+  SCVAL(outbuf,smb_rcls,SMB_SUCCESS);
+  SCVAL(outbuf,smb_reh,0);
   SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
                                  means a reply */
   SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS);
@@ -953,7 +953,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   /* maybe its not chained */
   if (smb_com2 == 0xFF) {
-    CVAL(outbuf,smb_vwv0) = 0xFF;
+    SCVAL(outbuf,smb_vwv0,0xFF);
     return outsize;
   }
 
@@ -973,7 +973,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   /* we need to tell the client where the next part of the reply will be */
   SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
-  CVAL(outbuf,smb_vwv0) = smb_com2;
+  SCVAL(outbuf,smb_vwv0,smb_com2);
 
   /* remember how much the caller added to the chain, only counting stuff
      after the parameter words */
@@ -995,7 +995,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   memmove(inbuf2,inbuf,smb_wct);
 
   /* create the in buffer */
-  CVAL(inbuf2,smb_com) = smb_com2;
+  SCVAL(inbuf2,smb_com,smb_com2);
 
   /* create the out buffer */
   construct_reply_common(inbuf2, outbuf2);
@@ -1010,7 +1010,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   /* copy the new reply and request headers over the old ones, but
      preserve the smb_com field */
   memmove(orig_outbuf,outbuf2,smb_wct);
-  CVAL(orig_outbuf,smb_com) = smb_com1;
+  SCVAL(orig_outbuf,smb_com,smb_com1);
 
   /* restore the saved data, being careful not to overwrite any
    data from the reply header */

@@ -1525,7 +1525,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
   if (uLevel > 0)
     {
       int type;
-      CVAL(p,13) = 0;
+      SCVAL(p,13,0);
       type = STYPE_DISKTREE;
       if (lp_print_ok(snum)) type = STYPE_PRINTQ;
       if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
@@ -1703,16 +1703,16 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
     t = LocalTime(&unixdate);
 
     SIVAL(p,4,0);		/* msecs ? */
-    CVAL(p,8) = t->tm_hour;
-    CVAL(p,9) = t->tm_min;
-    CVAL(p,10) = t->tm_sec;
-    CVAL(p,11) = 0;		/* hundredths of seconds */
+    SCVAL(p,8,t->tm_hour);
+    SCVAL(p,9,t->tm_min);
+    SCVAL(p,10,t->tm_sec);
+    SCVAL(p,11,0);		/* hundredths of seconds */
     SSVALS(p,12,TimeDiff(unixdate)/60); /* timezone in minutes from GMT */
     SSVAL(p,14,10000);		/* timer interval in 0.0001 of sec */
-    CVAL(p,16) = t->tm_mday;
-    CVAL(p,17) = t->tm_mon + 1;
+    SCVAL(p,16,t->tm_mday);
+    SCVAL(p,17,t->tm_mon + 1);
     SSVAL(p,18,1900+t->tm_year);
-    CVAL(p,20) = t->tm_wday;
+    SCVAL(p,20,t->tm_wday);
   }
 
 

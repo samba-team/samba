@@ -128,7 +128,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_MasterAnnouncement;
+  SCVAL(p,0,ANN_MasterAnnouncement);
   p++;
 
   StrnCpy(p,global_myname,15);
