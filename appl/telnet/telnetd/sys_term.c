@@ -1894,97 +1894,103 @@ rmut (char *line)
  * clean up anything that needs to be cleaned up.
  */
 
+#ifdef PARENT_DOES_UTMP
+
 void
 cleanup(int sig)
 {
-#ifndef	PARENT_DOES_UTMP
-#ifndef HAVE_UTMPX_H
-    /* # if (BSD > 43) || defined(convex) */
+# ifdef	NEWINIT
+    shutdown(net, 2);
+    exit(1);
+# else	/* NEWINIT */
+#  ifdef CRAY
+    static int incleanup = 0;
+    register int t;
+    int child_status; /* status of child process as returned by waitpid */
+    int flags = WNOHANG|WUNTRACED;
+    
+    /*
+     * 1: Pick up the zombie, if we are being called
+     *    as the signal handler.
+     * 2: If we are a nested cleanup(), return.
+     * 3: Try to clean up TMPDIR.
+     * 4: Fill in utmp with shutdown of process.
+     * 5: Close down the network and pty connections.
+     * 6: Finish up the TMPDIR cleanup, if needed.
+     */
+    if (sig == SIGCHLD) {
+	while (waitpid(-1, &child_status, flags) > 0)
+	    ;	/* VOID */
+	/* Check if the child process was stopped
+	 * rather than exited.  We want cleanup only if
+	 * the child has died.
+	 */
+	if (WIFSTOPPED(child_status)) {
+	    return;
+	}
+    }
+    t = sigblock(sigmask(SIGCHLD));
+    if (incleanup) {
+		sigsetmask(t);
+		return;
+    }
+    incleanup = 1;
+    sigsetmask(t);
+#ifdef	UNICOS7x
+    if (secflag) {
+	/*
+	 *	We need to set ourselves back to a null
+	 *	label to clean up.
+	 */
+	
+	setulvl(sysv.sy_minlvl);
+	setucmp((long)0);
+    }
+#endif	/* UNICOS7x */
+    
+    t = cleantmp(&wtmp);
+    setutent();	/* just to make sure */
+#  endif /* CRAY */
+    rmut(line);
+    close(ourpty);
+    (void) shutdown(net, 2);
+#  ifdef CRAY
+    if (t == 0)
+	cleantmp(&wtmp);
+#  endif /* CRAY */
+    exit(1);
+# endif	/* NEWINT */
+}
+
+#else /* PARENT_DOES_UTMP */
+
+extern void rmut(void);
+
+void
+cleanup(int sig)
+{
+#if defined(HAVE_UTMPX_H) || !defined(HAVE_LOGWTMP)
+    rmut();
+#ifdef HAVE_VHANGUP
+    vhangup(); /* XXX */
+#endif
+#else
     char *p;
     
     p = line + sizeof("/dev/") - 1;
     if (logout(p))
 	logwtmp(p, "", "");
-    (void)chmod(line, 0666);
-    (void)chown(line, 0, 0);
+    chmod(line, 0666);
+    chown(line, 0, 0);
     *p = 'p';
-    (void)chmod(line, 0666);
-    (void)chown(line, 0, 0);
-    (void) shutdown(net, 2);
-    exit(1);
-# else
-    rmut();
-#ifdef HAVE_VHANGUP
-    vhangup();	/* XXX */
-#else
+    chmod(line, 0666);
+    chown(line, 0, 0);
 #endif
-	(void) shutdown(net, 2);
-	exit(1);
-# endif
-#else	/* PARENT_DOES_UTMP */
-# ifdef	NEWINIT
-	(void) shutdown(net, 2);
-	exit(1);
-# else	/* NEWINIT */
-#  ifdef CRAY
-	static int incleanup = 0;
-	register int t;
-	int child_status; /* status of child process as returned by waitpid */
-	int flags = WNOHANG|WUNTRACED;
-
-	/*
-	 * 1: Pick up the zombie, if we are being called
-	 *    as the signal handler.
-	 * 2: If we are a nested cleanup(), return.
-	 * 3: Try to clean up TMPDIR.
-	 * 4: Fill in utmp with shutdown of process.
-	 * 5: Close down the network and pty connections.
-	 * 6: Finish up the TMPDIR cleanup, if needed.
-	 */
-	if (sig == SIGCHLD) {
-		while (waitpid(-1, &child_status, flags) > 0)
-			;	/* VOID */
-		/* Check if the child process was stopped
-		 * rather than exited.  We want cleanup only if
-		 * the child has died.
-		 */
-		if (WIFSTOPPED(child_status)) {
-			return;
-		}
-	}
-	t = sigblock(sigmask(SIGCHLD));
-	if (incleanup) {
-		sigsetmask(t);
-		return;
-	}
-	incleanup = 1;
-	sigsetmask(t);
-#ifdef	UNICOS7x
-	if (secflag) {
-		/*
-		 *	We need to set ourselves back to a null
-		 *	label to clean up.
-		 */
-
-		setulvl(sysv.sy_minlvl);
-		setucmp((long)0);
-	}
-#endif	/* UNICOS7x */
-
-	t = cleantmp(&wtmp);
-	setutent();	/* just to make sure */
-#  endif /* CRAY */
-	rmut(line);
-	close(ourpty);
-	(void) shutdown(net, 2);
-#  ifdef CRAY
-	if (t == 0)
-		cleantmp(&wtmp);
-#  endif /* CRAY */
-	exit(1);
-# endif	/* NEWINT */
-#endif	/* PARENT_DOES_UTMP */
+    shutdown(net, 2);
+    exit(1);
 }
+
+#endif /* PARENT_DOES_UTMP */
 
 #if defined(PARENT_DOES_UTMP) && !defined(NEWINIT)
 /*
