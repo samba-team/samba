@@ -1502,6 +1502,7 @@ typedef struct
   int num_files_open;
   name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
   name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
+  name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */
 
 } connection_struct;
 
@@ -1680,6 +1681,7 @@ struct connect_record
 #define MAP_ARCHIVE(cnum)   (OPEN_CNUM(cnum) && lp_map_archive(SNUM(cnum)))
 #define IS_HIDDEN_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].hide_list))
 #define IS_VETO_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_list))
+#define IS_VETO_OPLOCK_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_oplock_list))
 
 #define SMBENCRYPT()       (lp_encrypted_passwords())
 
