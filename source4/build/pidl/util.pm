@@ -152,23 +152,7 @@ sub has_property($$)
 		return undef;
 	}
 
-	my($props) = $e->{PROPERTIES};
-
-	foreach my $d (@{$props}) {
-		if (ref($d) ne "HASH") {
-			if ($d eq $p) {
-				return 1;
-			}
-		} else {
-			foreach my $k (keys %{$d}) {
-				if ($k eq $p) {
-					return $d->{$k};
-				}
-			}
-		}
-	}
-
-	return undef;
+	return $e->{PROPERTIES}->{$p};
 }
 
 
@@ -176,20 +160,14 @@ sub is_scalar_type($)
 {
     my($type) = shift;
 
-    return 1, if ($type eq "uint32");
-    return 1, if ($type eq "long");
-    return 1, if ($type eq "short");
-    return 1, if ($type eq "char");
-    return 1, if ($type eq "uint8");
-    return 1, if ($type eq "uint16");
-    return 1, if ($type eq "NTTIME");
-    return 1, if ($type eq "time_t");
-    return 1, if ($type eq "error_status_t");
-    return 1, if ($type eq "boolean32");
-    return 1, if ($type eq "unsigned32");
-    return 1, if ($type eq "HYPER_T");
-    return 1, if ($type eq "wchar_t");
-    return 1, if ($type eq "DATA_BLOB");
+    if ($type =~ /uint\d+/) {
+	    return 1;
+    }
+    if ($type =~ /char|short|long|NTTIME|
+	time_t|error_status_t|boolean32|unsigned32|
+	HYPER_T|wchar_t|DATA_BLOB/x) {
+	    return 1;
+    }
 
     return 0;
 }
