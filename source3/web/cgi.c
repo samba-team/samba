@@ -297,7 +297,8 @@ handle a http authentication line
   ***************************************************************************/
 static BOOL cgi_handle_authorization(char *line)
 {
-	char *p, *user, *user_pass;
+	char *p;
+	fstring user, user_pass;
 	struct passwd *pass = NULL;
 
 	if (strncasecmp(line,"Basic ", 6)) {
@@ -314,9 +315,15 @@ static BOOL cgi_handle_authorization(char *line)
 		goto err;
 	}
 	*p = 0;
-	user = line;
-	user_pass = p+1;
-	
+
+	convert_string(CH_DISPLAY, CH_UNIX, 
+		       line, -1, 
+		       user, sizeof(user));
+
+	convert_string(CH_DISPLAY, CH_UNIX, 
+		       p+1, -1, 
+		       user_pass, sizeof(user_pass));
+
 	/*
 	 * Try and get the user from the UNIX password file.
 	 */
