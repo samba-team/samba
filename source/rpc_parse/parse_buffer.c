@@ -33,9 +33,6 @@
 **********************************************************************/
 void rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 {
-#if 0
-	buffer->ptr = (size != 0);
-#endif
 	buffer->size = size;
 	buffer->string_at_end = size;
 	prs_init(&buffer->prs, size, ctx, MARSHALL);
@@ -55,19 +52,6 @@ BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buff
 	if (UNMARSHALLING(ps)) {
 		buffer->size=0;
 		buffer->string_at_end=0;
-		
-#if 0 
-		if (buffer->ptr==0) {
-			/*
-			 * JRA. I'm not sure if the data in here is in big-endian format if
-			 * the client is big-endian. Leave as default (little endian) for now.
-			 */
-
-			if (!prs_init(&buffer->prs, 0, prs_get_mem_context(ps), UNMARSHALL))
-				return False;
-			return True;
-		}
-#endif
 		
 		if (!prs_uint32("size", ps, depth, &buffer->size))
 			return False;
@@ -96,15 +80,6 @@ BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buff
 	else {
 		BOOL ret = False;
 
-#if 0
-		/* writing */
-		if (buffer->ptr==0) {
-			/* We have finished with the data in buffer->prs - free it. */
-			prs_mem_free(&buffer->prs);
-			return True;
-		}
-#endif
-	
 		if (!prs_uint32("size", ps, depth, &buffer->size))
 			goto out;
 
