@@ -8,7 +8,9 @@ CLEANFILES = roken.h make-roken.c
 
 lib_LIBRARIES = libroken.a
 
-noinst_PROGRAMS = make-roken
+noinst_PROGRAMS = make-roken make-print-version
+
+make_print_version_LDADD = $(LIB_krb4)
 
 libroken_a_SOURCES =				\
 	base64.c				\
@@ -54,3 +56,8 @@ roken.h: make-roken
 
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
+
+print_version.o: print_version.h
+
+print_version.h: make-print-version
+	./make-print-version print_version.h

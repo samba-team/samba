@@ -172,6 +172,14 @@ make-roken$(EXECSUFFIX): make-roken.o
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
 
+print_version.o: print_version.h
+
+print_version.h: make-print-version$(EXESUFFIX)
+	@./make-print-version$(EXESUFFIX) print_version.h
+
+make-print-version$(EXECSUFFIX): make-print-version.o
+	$(CC) -o $@ make-print-version.o
+
 install-roken-h: roken.h
 	@if [ -f ../../include/roken.h ] && cmp -s ../../include/roken.h roken.h ; \
 	then :; else \
