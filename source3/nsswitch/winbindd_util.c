@@ -153,12 +153,17 @@ void rescan_trusted_domains(void)
 	static time_t last_scan;
 	time_t t = time(NULL);
 
+	/* trusted domains might be disabled */
+	if (!lp_allow_trusted_domains()) {
+		return;
+	}
+	
 	/* ony rescan every few minutes */
 	if ((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) {
 		return;
 	}
 	last_scan = t;
-	
+
 	DEBUG(1, ("scanning trusted domain list\n"));
 
 	if (!(mem_ctx = talloc_init_named("init_domain_list")))
