@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd December 16, 2000
+.Dd September 23, 2004
 .Dt KTUTIL 8
 .Os HEIMDAL
 .Sh NAME
@@ -155,10 +155,10 @@ to
 .It purge Xo
 .Op Fl -age= Ns Ar age
 .Xc
-Removes all old entries (for which there is a newer version) that are
-older than
+Removes all old versions of a key for which there is a newer version
+that is at least
 .Ar age
-(default one week).
+(default one week) old.
 .It srvconvert
 .It srv2keytab Xo
 .Op Fl s Ar srvtab
