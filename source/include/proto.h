@@ -675,7 +675,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
-int cli_nt_create(struct cli_state *cli, char *fname);
+int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
@@ -753,6 +753,11 @@ ssize_t cli_write(struct cli_state *cli,
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1);
 
+/*The following definitions come from  libsmb/clisecdesc.c  */
+
+SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd);
+BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
+
 /*The following definitions come from  libsmb/clitrans.c  */
 
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
@@ -764,6 +769,15 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 BOOL cli_receive_trans(struct cli_state *cli,int trans,
                               char **param, int *param_len,
                               char **data, int *data_len);
+BOOL cli_send_nt_trans(struct cli_state *cli, 
+		       int function, 
+		       int flags,
+		       uint16 *setup, int lsetup, int msetup,
+		       char *param, int lparam, int mparam,
+		       char *data, int ldata, int mdata);
+BOOL cli_receive_nt_trans(struct cli_state *cli,
+			  char **param, int *param_len,
+			  char **data, int *data_len);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -2765,7 +2779,7 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2);
 BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2);
 BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
 SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
-SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
+SEC_DESC *make_sec_desc(uint16 revision, 
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size);
 SEC_DESC *dup_sec_desc( SEC_DESC *src);
@@ -4030,7 +4044,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 int tdb_close(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_free_space(TDB_CONTEXT *tdb, tdb_len *free_space, tdb_len *tdb_size);
+void tdb_printfreelist(TDB_CONTEXT *tdb);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 

@@ -231,3 +231,203 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	
 	return(True);
 }
+
+
+
+
+/****************************************************************************
+  send a SMB nttrans request
+  ****************************************************************************/
+BOOL cli_send_nt_trans(struct cli_state *cli, 
+		       int function, 
+		       int flags,
+		       uint16 *setup, int lsetup, int msetup,
+		       char *param, int lparam, int mparam,
+		       char *data, int ldata, int mdata)
+{
+	int i;
+	int this_ldata,this_lparam;
+	int tot_data=0,tot_param=0;
+	char *outdata,*outparam;
+
+	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
+	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
+
+	memset(cli->outbuf,'\0',smb_size);
+	set_message(cli->outbuf,19+lsetup,0,True);
+	CVAL(cli->outbuf,smb_com) = SMBnttrans;
+	SSVAL(cli->outbuf,smb_tid, cli->cnum);
+	cli_setup_packet(cli);
+
+	outparam = smb_buf(cli->outbuf)+3;
+	outdata = outparam+this_lparam;
+
+	/* primary request */
+	SCVAL(cli->outbuf,smb_nt_MaxSetupCount,msetup);
+	SCVAL(cli->outbuf,smb_nt_Flags,flags);
+	SIVAL(cli->outbuf,smb_nt_TotalParameterCount, lparam);
+	SIVAL(cli->outbuf,smb_nt_TotalDataCount, ldata);
+	SIVAL(cli->outbuf,smb_nt_MaxParameterCount, mparam);
+	SIVAL(cli->outbuf,smb_nt_MaxDataCount, mdata);
+	SIVAL(cli->outbuf,smb_nt_ParameterCount, this_lparam);
+	SIVAL(cli->outbuf,smb_nt_ParameterOffset, smb_offset(outparam,cli->outbuf));
+	SIVAL(cli->outbuf,smb_nt_DataCount, this_ldata);
+	SIVAL(cli->outbuf,smb_nt_DataOffset, smb_offset(outdata,cli->outbuf));
+	SIVAL(cli->outbuf,smb_nt_SetupCount, lsetup);
+	SIVAL(cli->outbuf,smb_nt_Function, function);
+	for (i=0;i<lsetup;i++)		/* setup[] */
+		SSVAL(cli->outbuf,smb_nt_SetupStart+i*2,setup[i]);
+	
+	if (this_lparam)			/* param[] */
+		memcpy(outparam,param,this_lparam);
+	if (this_ldata)			/* data[] */
+		memcpy(outdata,data,this_ldata);
+
+	set_message(cli->outbuf,19+lsetup,		/* wcnt, bcc */
+		    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
+
+	show_msg(cli->outbuf);
+	cli_send_smb(cli);
+
+	if (this_ldata < ldata || this_lparam < lparam) {
+		/* receive interim response */
+		if (!cli_receive_smb(cli) || 
+		    CVAL(cli->inbuf,smb_rcls) != 0) {
+			return(False);
+		}      
+
+		tot_data = this_ldata;
+		tot_param = this_lparam;
+		
+		while (tot_data < ldata || tot_param < lparam)  {
+			this_lparam = MIN(lparam-tot_param,cli->max_xmit - 500); /* hack */
+			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
+
+			set_message(cli->outbuf,18,0,True);
+			CVAL(cli->outbuf,smb_com) = SMBnttranss;
+
+			/* XXX - these should probably be aligned */
+			outparam = smb_buf(cli->outbuf);
+			outdata = outparam+this_lparam;
+			
+			/* secondary request */
+			SIVAL(cli->outbuf,smb_nts_TotalParameterCount,lparam);
+			SIVAL(cli->outbuf,smb_nts_TotalDataCount,ldata);
+			SIVAL(cli->outbuf,smb_nts_ParameterCount,this_lparam);
+			SIVAL(cli->outbuf,smb_nts_ParameterOffset,smb_offset(outparam,cli->outbuf));
+			SIVAL(cli->outbuf,smb_nts_ParameterDisplacement,tot_param);
+			SIVAL(cli->outbuf,smb_nts_DataCount,this_ldata);
+			SIVAL(cli->outbuf,smb_nts_DataOffset,smb_offset(outdata,cli->outbuf));
+			SIVAL(cli->outbuf,smb_nts_DataDisplacement,tot_data);
+			if (this_lparam)			/* param[] */
+				memcpy(outparam,param+tot_param,this_lparam);
+			if (this_ldata)			/* data[] */
+				memcpy(outdata,data+tot_data,this_ldata);
+			set_message(cli->outbuf,18,
+				    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
+			
+			show_msg(cli->outbuf);
+			cli_send_smb(cli);
+			
+			tot_data += this_ldata;
+			tot_param += this_lparam;
+		}
+	}
+
+	return(True);
+}
+
+
+
+/****************************************************************************
+  receive a SMB nttrans response allocating the necessary memory
+  ****************************************************************************/
+BOOL cli_receive_nt_trans(struct cli_state *cli,
+			  char **param, int *param_len,
+			  char **data, int *data_len)
+{
+	int total_data=0;
+	int total_param=0;
+	int this_data,this_param;
+	uint8 eclass;
+	uint32 ecode;
+
+	*data_len = *param_len = 0;
+
+	if (!cli_receive_smb(cli))
+		return False;
+
+	show_msg(cli->inbuf);
+	
+	/* sanity check */
+	if (CVAL(cli->inbuf,smb_com) != SMBnttrans) {
+		DEBUG(0,("Expected SMBnttrans response, got command 0x%02x\n",
+			 CVAL(cli->inbuf,smb_com)));
+		return(False);
+	}
+
+	/*
+	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
+	 * to a trans call. This is not an error and should not
+	 * be treated as such.
+	 */
+	if (cli_error(cli, &eclass, &ecode, NULL)) {
+		if (cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+			return(False);
+	}
+
+	/* parse out the lengths */
+	total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
+	total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
+
+	/* allocate it */
+	*data = Realloc(*data,total_data);
+	*param = Realloc(*param,total_param);
+
+	while (1)  {
+		this_data = SVAL(cli->inbuf,smb_ntr_DataCount);
+		this_param = SVAL(cli->inbuf,smb_ntr_ParameterCount);
+
+		if (this_data + *data_len > total_data ||
+		    this_param + *param_len > total_param) {
+			DEBUG(1,("Data overflow in cli_receive_trans\n"));
+			return False;
+		}
+
+		if (this_data)
+			memcpy(*data + SVAL(cli->inbuf,smb_ntr_DataDisplacement),
+			       smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_ntr_DataOffset),
+			       this_data);
+		if (this_param)
+			memcpy(*param + SVAL(cli->inbuf,smb_ntr_ParameterDisplacement),
+			       smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_ntr_ParameterOffset),
+			       this_param);
+		*data_len += this_data;
+		*param_len += this_param;
+
+		/* parse out the total lengths again - they can shrink! */
+		total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
+		total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
+		
+		if (total_data <= *data_len && total_param <= *param_len)
+			break;
+		
+		if (!cli_receive_smb(cli))
+			return False;
+
+		show_msg(cli->inbuf);
+		
+		/* sanity check */
+		if (CVAL(cli->inbuf,smb_com) != SMBnttrans) {
+			DEBUG(0,("Expected SMBnttrans response, got command 0x%02x\n",
+				 CVAL(cli->inbuf,smb_com)));
+			return(False);
+		}
+		if (cli_error(cli, &eclass, &ecode, NULL)) {
+			if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+				return(False);
+		}
+	}
+	
+	return(True);
+}
