@@ -34,12 +34,11 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 {
 	struct smbcli_tree *tree;
 
-	tree = talloc_p(session, struct smbcli_tree);
+	tree = talloc_zero(session, struct smbcli_tree);
 	if (!tree) {
 		return NULL;
 	}
 
-	ZERO_STRUCTP(tree);
 	tree->session = talloc_reference(tree, session);
 
 	return tree;
@@ -48,7 +47,8 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 /****************************************************************************
  Send a tconX (async send)
 ****************************************************************************/
-struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, union smb_tcon *parms)
+struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, 
+					     union smb_tcon *parms)
 {
 	struct smbcli_request *req = NULL;
 
@@ -83,7 +83,8 @@ struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, union smb
 /****************************************************************************
  Send a tconX (async recv)
 ****************************************************************************/
-NTSTATUS smb_tree_connect_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
+NTSTATUS smb_tree_connect_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
+			       union smb_tcon *parms)
 {
 	uint8_t *p;
 
@@ -124,7 +125,8 @@ failed:
 /****************************************************************************
  Send a tconX (sync interface)
 ****************************************************************************/
-NTSTATUS smb_tree_connect(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
+NTSTATUS smb_tree_connect(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, 
+			  union smb_tcon *parms)
 {
 	struct smbcli_request *req = smb_tree_connect_send(tree, parms);
 	return smb_tree_connect_recv(req, mem_ctx, parms);
@@ -203,7 +205,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 
 
 	/* negotiate protocol options with the server */
-	status = smb_raw_negotiate(transport);
+	status = smb_raw_negotiate(transport, lp_maxprotocol());
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(transport);
 		return status;

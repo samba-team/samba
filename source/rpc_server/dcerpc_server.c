@@ -1172,8 +1172,6 @@ static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_s
 	struct dcesrv_context *dce_ctx;
 	int i;
 
-	DEBUG(1,("dcesrv_init\n"));
-
 	if (!endpoint_servers) {
 		DEBUG(0,("dcesrv_init_context: no endpoint servers configured\n"));
 		return NT_STATUS_INTERNAL_ERROR;

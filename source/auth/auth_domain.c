@@ -170,7 +170,7 @@ static NTSTATUS connect_to_domain_password_server(struct smbcli_state **cli,
 	
 	/* Attempt connection */
 	result = smbcli_full_connection(NULL, cli, lp_netbios_name(), remote_machine,
-				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
+					0, "IPC$", NULL, "", "", "");
 
 	if (!NT_STATUS_IS_OK(result)) {
 		release_server_mutex();
