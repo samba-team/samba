@@ -208,6 +208,7 @@ ifa_make_sockaddr(sa_family_t family,
 #endif
 }
 
+#ifndef IFA_NETMASK
 static struct sockaddr *
 ifa_make_sockaddr_mask(sa_family_t family, 
 		       struct sockaddr *sa, 
@@ -253,6 +254,7 @@ ifa_make_sockaddr_mask(sa_family_t family,
   }
   return sa;
 }
+#endif
 
 /* ====================================================================== */
 static int 
@@ -512,15 +514,17 @@ int getifaddrs(struct ifaddrs **ifap)
   for (build=0; build<=1; build++){
     struct ifaddrs *ifl = NULL, *ifa = NULL;
     struct nlmsghdr *nlh, *nlh0;
-    void *data = NULL, *xdata = NULL, *ifdata = NULL;
+    char *data = NULL, *xdata = NULL;
+    void *ifdata = NULL;
     char *ifname = NULL, **iflist = NULL;
     uint16_t *ifflist = NULL;
     struct rtmaddr_ifamap ifamap;
 
     if (build){
-      ifa = data = calloc(1,
-			  NLMSG_ALIGN(sizeof(struct ifaddrs[icnt]))
-			  + dlen + xlen + nlen);
+      data = calloc(1,
+		    NLMSG_ALIGN(sizeof(struct ifaddrs[icnt]))
+		    + dlen + xlen + nlen);
+      ifa = (struct ifaddrs *)data;
       ifdata = calloc(1, 
 		      NLMSG_ALIGN(sizeof(char *[max_ifindex+1]))
 		      + NLMSG_ALIGN(sizeof(uint16_t [max_ifindex+1])));
@@ -541,7 +545,7 @@ int getifaddrs(struct ifaddrs **ifap)
       xdata = data + dlen;
       ifname = xdata + xlen;
       iflist = ifdata;
-      ifflist = ((void *)iflist) + NLMSG_ALIGN(sizeof(char *[max_ifindex+1]));
+      ifflist = (uint16_t *)(((char *)iflist) + NLMSG_ALIGN(sizeof(char *[max_ifindex+1])));
     }
 
     for (nlm=nlmsg_list; nlm; nlm=nlm->nlm_next){
