@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -124,6 +124,8 @@ int krb_afslog_home __P((const char *cell, const char *realm,
 int krb_afslog_uid_home __P((const char *cell, const char *realm, uid_t uid,
 			     const char *homedir));
 
+int krb_realm_of_cell __P((const char *cell, char **realm));
+
 /* compat */
 #define k_afsklog krb_afslog
 #define k_afsklog_uid krb_afslog_uid
@@ -135,6 +137,8 @@ int k_pioctl __P((char *a_path,
 int k_unlog __P((void));
 int k_setpag __P((void));
 int k_afs_cell_of_file __P((const char *path, char *cell, int len));
+
+
 
 /* XXX */
 #ifdef KFAILURE
@@ -171,6 +175,9 @@ krb5_error_code krb5_afslog_home __P((krb5_context context,
 				      const char *cell,
 				      krb5_const_realm realm,
 				      const char *homedir));
+
+krb5_error_code krb5_realm_of_cell __P((const char *cell, char **realm));
+
 #endif
 
 
