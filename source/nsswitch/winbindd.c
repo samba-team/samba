@@ -205,8 +205,57 @@ static int create_sock(void)
     return sock;
 }
 
+struct dispatch_table {
+	enum winbindd_cmd cmd;
+	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
+};
+
+static struct dispatch_table dispatch_table[] = {
+	
+	/* User functions */
+
+	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user },
+	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid },
+	{ WINBINDD_SETPWENT, winbindd_setpwent },
+	{ WINBINDD_ENDPWENT, winbindd_endpwent },
+	{ WINBINDD_GETPWENT, winbindd_getpwent },
+
+	/* Group functions */
+
+	{ WINBINDD_GETGRNAM_FROM_GROUP, winbindd_getgrnam_from_group },
+	{ WINBINDD_GETGRNAM_FROM_GID, winbindd_getgrnam_from_gid },
+	{ WINBINDD_SETGRENT, winbindd_setgrent },
+	{ WINBINDD_ENDGRENT, winbindd_endgrent },
+	{ WINBINDD_GETGRENT, winbindd_getgrent },
+
+	/* PAM auth functions */
+
+	{ WINBINDD_PAM_AUTH, winbindd_pam_auth },
+	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok },
+        { WINBINDD_LIST_USERS, winbindd_list_users },
+        { WINBINDD_LIST_GROUPS, winbindd_list_groups },
+
+	/* SID related functions */
+
+	{ WINBINDD_LOOKUPSID, winbindd_lookupsid },
+	{ WINBINDD_LOOKUPNAME, winbindd_lookupname },
+
+	/* S*RS related functions */
+
+	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid },
+	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid },
+	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid },
+	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid },
+
+	/* End of list */
+
+	{ WINBINDD_NUM_CMDS, NULL }
+};
+
 static void process_request(struct winbindd_cli_state *state)
 {
+	struct dispatch_table *table = dispatch_table;
+
 	/* Process command */
 
 	state->response.result = WINBINDD_ERROR;
@@ -217,88 +266,11 @@ static void process_request(struct winbindd_cli_state *state)
 
 	if (!server_state.lsa_handle_open) return;
 
-	switch(state->request.cmd) {
-        
-		/* User functions */
-        
-	case WINBINDD_GETPWNAM_FROM_USER: 
-		state->response.result = winbindd_getpwnam_from_user(state);
-		break;
-        
-	case WINBINDD_GETPWNAM_FROM_UID:
-		state->response.result = winbindd_getpwnam_from_uid(state);
-		break;
-        
-	case WINBINDD_SETPWENT:
-		state->response.result = winbindd_setpwent(state);
-		break;
-        
-	case WINBINDD_ENDPWENT:
-		state->response.result = winbindd_endpwent(state);
-		break;
-        
-	case WINBINDD_GETPWENT:
-		state->response.result = winbindd_getpwent(state);
-		break;
-
-		/* Group functions */
-        
-	case WINBINDD_GETGRNAM_FROM_GROUP:
-		state->response.result = winbindd_getgrnam_from_group(state);
-		break;
-        
-	case WINBINDD_GETGRNAM_FROM_GID:
-		state->response.result = winbindd_getgrnam_from_gid(state);
-		break;
-        
-	case WINBINDD_SETGRENT:
-		state->response.result = winbindd_setgrent(state);
-		break;
-        
-	case WINBINDD_ENDGRENT:
-		state->response.result = winbindd_endgrent(state);
-		break;
-        
-	case WINBINDD_GETGRENT:
-		state->response.result = winbindd_getgrent(state);
-		break;
-
-		/* pam auth functions */
-
-	case WINBINDD_PAM_AUTH:
-		state->response.result = winbindd_pam_auth(state);
-		break;
-
-	case WINBINDD_PAM_CHAUTHTOK:
-		state->response.result = winbindd_pam_chauthtok(state);
-		break;
-
-                /* List users and groups without mapping unix ids */ 
-
-        case WINBINDD_LIST_USERS:
-                state->response.result = winbindd_list_users(state);
-                break;
-
-        case WINBINDD_LIST_GROUPS:
-                state->response.result = winbindd_list_groups(state);
-                break;
-
-		/* SID related functions */
-
-	case WINBINDD_LOOKUPSID:
-		state->response.result = winbindd_lookupsid(state);
-		break;
-
-	case WINBINDD_LOOKUPNAME:
-		state->response.result = winbindd_lookupname(state);
-		break;
-
-		/* Oops */
-        
-	default:
-		DEBUG(0, ("oops - unknown winbindd command %d\n", 
-			  state->request.cmd));
-		break;
+	for (table = dispatch_table; table->fn; table++) {
+		if (state->request.cmd == table->cmd) {
+			state->response.result = table->fn(state);
+			break;
+		}
 	}
 }
 
@@ -654,12 +626,13 @@ int main(int argc, char **argv)
 
 	TimeInit();
 	charset_initialise();
-	codepage_initialise(lp_client_code_page());
 
 	if (!lp_load(CONFIGFILE, True, False, False)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
+
+	codepage_initialise(lp_client_code_page());
 
 	if (!interactive) {
 		become_daemon();
@@ -670,7 +643,7 @@ int main(int argc, char **argv)
 
 	ZERO_STRUCT(server_state);
 
-    /* Winbind daemon initialisation */
+	/* Winbind daemon initialisation */
 	if (!winbindd_param_init()) {
 		return 1;
 	}
@@ -681,19 +654,19 @@ int main(int argc, char **argv)
 
 	winbindd_cache_init();
 
-    /* Setup signal handlers */
-
-	CatchSignal(SIGINT, termination_handler);         /* Exit on these sigs */
+	/* Setup signal handlers */
+	
+	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
 	CatchSignal(SIGQUIT, termination_handler);
 	CatchSignal(SIGTERM, termination_handler);
 
-	CatchSignal(SIGPIPE, SIG_IGN);                    /* Ignore sigpipe */
+	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
 
-	CatchSignal(SIGUSR1, sigusr1_handler);            /* Debugging sigs */
+	CatchSignal(SIGUSR1, sigusr1_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
-    /* Create UNIX domain socket */
-
+	/* Create UNIX domain socket */
+	
 	if ((accept_sock = create_sock()) == -1) {
 		DEBUG(0, ("failed to create socket\n"));
 		return 1;
