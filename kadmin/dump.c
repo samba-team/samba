@@ -65,10 +65,12 @@ dump(int argc, char **argv)
 	fprintf(f, " %s %s %d\n", 
 		p,
 		time2str(ent.expires),
-		ent.u.flags);
+		ent.flags.i);
 	free(p);
+	hdb_free_entry(context, &ent);
 	err = db->nextkey(context, db, &ent);
     }
     if(f != stdout)
 	fclose(f);
+    db->close(context, db);
 }

@@ -25,7 +25,7 @@ doit(char *principal, int mod)
     case KRB5_HDB_NOENTRY:
 	if(mod){
 	    fprintf(stderr, "Entry not found in database\n");
-	    return;
+	    goto out;
 	}else{
 	    krb5_realm *realm;
 	    
@@ -46,10 +46,12 @@ doit(char *principal, int mod)
 	    if(db->fetch(context, db, &def)){
 		/* XXX */
 	    }
+	    ent.flags.i = 0;
 	    ent.kvno = 0;
 	    ent.max_life = def.max_life;
 	    ent.max_renew = def.max_renew;
 	    ent.expires = def.expires;
+	    hdb_free_entry(context, &def);
 	    if(ent.expires)
 		ent.expires += time(NULL);
 	    break;
@@ -57,7 +59,7 @@ doit(char *principal, int mod)
     case 0:
 	if(!mod){
 	    warnx("Principal exists");
-	    return;
+	    goto out;
 	}
 	break;
     default:
@@ -93,6 +95,7 @@ doit(char *principal, int mod)
 	    krb5_get_salt(ent.principal, &salt);
 	    memset(&ent.keyblock, 0, sizeof(ent.keyblock));
 	    krb5_string_to_key(buf, &salt, &ent.keyblock);
+	    krb5_data_free(&salt);
 	}
 	ent.kvno++;
     }
@@ -120,6 +123,7 @@ doit(char *principal, int mod)
 	exit(1);
     }
     hdb_free_entry(context, &ent);
+out:
     db->close(context, db);
 }
 
