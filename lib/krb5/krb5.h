@@ -464,6 +464,13 @@ krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_kdc_rep **ret_as_reply);
 
 krb5_error_code
+krb5_mk_error(krb5_principal princ, 
+	      krb5_error_code error_code,
+	      char *e_text,
+	      krb5_data *e_data,
+	      krb5_data *err);
+
+krb5_error_code
 krb5_mk_req(krb5_context context,
 	    krb5_auth_context *auth_context,
 	    const krb5_flags ap_req_options,
