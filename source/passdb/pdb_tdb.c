@@ -23,9 +23,10 @@
 
 #ifdef WITH_TDBPWD
 
+#define PASSDB_FILE_NAME	"/passdb.tdb"
+#define RIDDB_FILE_NAME		"/riddb.tdb"
 #define TDB_FORMAT_STRING	"ddddddfffPPfPPPPffddBBwdwdBdd"
 #define USERPREFIX		"USER_"
-#define UIDPREFIX		"UID_"
 #define RIDPREFIX		"RID_"
 
 extern int 		DEBUGLEVEL;
@@ -283,14 +284,14 @@ static uint32 init_buffer_from_sam (BYTE **buf, SAM_ACCOUNT *sampass)
 }
 
 /***************************************************************
- Open the TDB account SAM fo renumeration.
+ Open the TDB passwd database for SAM account enumeration.
 ****************************************************************/
 BOOL pdb_setsampwent(BOOL update)
 {
 	pstring		tdbfile;
 	
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/passdb.tdb");
+	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* Open tdb passwd */
 	if (!(global_tdb_ent.passwd_tdb = tdb_open(tdbfile, 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
@@ -328,8 +329,10 @@ void pdb_endsampwent(void)
 *****************************************************************/
 SAM_ACCOUNT* pdb_getsampwent(void)
 {
-	TDB_DATA 			data;
-	struct passwd			*pw;
+	TDB_DATA 	data;
+	struct passwd	*pw;
+	uid_t		uid;
+	gid_t		gid;
 
 	/* do we have an valid interation pointer? */
 	if(global_tdb_ent.passwd_tdb == NULL) 
@@ -362,9 +365,18 @@ SAM_ACCOUNT* pdb_getsampwent(void)
 		          pdb_get_username(&global_sam_pass)));
 		return NULL;
 	}
-	
-	pdb_set_uid (&global_sam_pass, pw->pw_uid);
-	pdb_set_gid (&global_sam_pass, pw->pw_gid);
+
+	uid = pw->pw_uid;
+	gid = pw->pw_gid;
+	pdb_set_uid (&global_sam_pass, uid);
+	pdb_set_gid (&global_sam_pass, gid);
+
+	/* 21 days from present */
+	pdb_set_pass_must_change_time(&global_sam_pass, time(NULL)+1814400);	
+
+	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_logon_script(&global_sam_pass));
+	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_profile_path(&global_sam_pass));
+	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_homedir(&global_sam_pass));
 
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
@@ -377,17 +389,19 @@ SAM_ACCOUNT* pdb_getsampwent(void)
 ******************************************************************/
 SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 {
-	TDB_CONTEXT 		*pwd_tdb;
-	TDB_DATA 		data, key;
-	fstring 		keystr;
-	struct passwd		*pw;
-	pstring			tdbfile;
-	fstring			name;
+	TDB_CONTEXT 	*pwd_tdb;
+	TDB_DATA 	data, key;
+	fstring 	keystr;
+	struct passwd	*pw;
+	pstring		tdbfile;
+	fstring		name;
+	uid_t		uid;
+	gid_t		gid;
 	
 	fstrcpy (name, sname);
 	strlower (name);
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/passdb.tdb");
+	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
 	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
@@ -429,9 +443,18 @@ SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 		return NULL;
 	}
 	
-	pdb_set_uid (&global_sam_pass, pw->pw_uid);
-	pdb_set_gid (&global_sam_pass, pw->pw_gid);
+	uid = pw->pw_uid;
+	gid = pw->pw_gid;
+	pdb_set_uid (&global_sam_pass, uid);
+	pdb_set_gid (&global_sam_pass, gid);
 	
+	/* 21 days from present */
+	pdb_set_pass_must_change_time(&global_sam_pass, time(NULL)+1814400);	
+	
+	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_logon_script(&global_sam_pass));
+	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_profile_path(&global_sam_pass));
+	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_homedir(&global_sam_pass));
+
 	/* cleanup */
 	tdb_close (pwd_tdb);
 
@@ -440,52 +463,22 @@ SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 
 /***************************************************************************
  Search by uid
- 
- I now know what the 'T' stands for in TDB :-(  This is an unacceptable
- solution.  We need multiple indexes and transactional support.  I'm
- including this implementation only as an example.
  **************************************************************************/
 SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 {
-	SAM_ACCOUNT		*pw = NULL;
-	TDB_CONTEXT 		*pwd_tdb;
-	TDB_DATA 		data, key;
-	fstring 		keystr;
-	pstring			tdbfile;
-	fstring			name;
-	
-	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/uiddb.tdb");
-	
-	/* set search key */
-	slprintf(keystr, sizeof(keystr), "%s%.5u", UIDPREFIX, uid);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
+	struct passwd	*pw;
+	fstring		name;
 
-	/* open the accounts TDB */
-	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDONLY, 0600)))
+	pw = sys_getpwuid(uid);
+	if (pw == NULL)
 	{
-		DEBUG(0, ("pdb_getsampwuid: Unable to open TDB uid database!\n"));
-		return False;
-	}
-
-	/* get the record */
-	data = tdb_fetch (pwd_tdb, key);
-	if (!data.dptr)
-	{
-		DEBUG(5,("pdb_getsampwuid (TDB): error fetching database.\n"));
-		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		tdb_close (pwd_tdb);
+		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist!\n", uid));
 		return NULL;
 	}
+	fstrcpy (name, pw->pw_name);
 
-	fstrcpy (name, data.dptr);
+	return pdb_getsampwnam (name);
 
-	tdb_close (pwd_tdb);
-	
-	pw = pdb_getsampwnam (name);
-			
-	return pw;
 }
 
 /***************************************************************************
@@ -493,7 +486,6 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
  **************************************************************************/
 SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 {
-	SAM_ACCOUNT		*pw = NULL;
 	TDB_CONTEXT 		*pwd_tdb;
 	TDB_DATA 		data, key;
 	fstring 		keystr;
@@ -501,7 +493,7 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	fstring			name;
 	
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/riddb.tdb");
+	pstrcat (tdbfile, RIDDB_FILE_NAME);
 	
 	/* set search key */
 	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, rid);
@@ -529,10 +521,7 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	
 	tdb_close (pwd_tdb);
 	
-	pw = pdb_getsampwnam (name);
-			
-	return pw;
-
+	return pdb_getsampwnam (name);
 }
 
 
@@ -554,7 +543,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	strlower (name);
 	
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/passdb.tdb");
+	pstrcat (tdbfile, PASSDB_FILE_NAME);
 
 	/* open the TDB */
 	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
@@ -572,7 +561,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	data = tdb_fetch (pwd_tdb, key);
 	if (!data.dptr)
 	{
-		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
+		DEBUG(5,("pdb_delete_sam_account (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
 		return False;
@@ -587,7 +576,6 @@ BOOL pdb_delete_sam_account(char *sname)
 	}
 
 	pwd = sys_getpwnam(global_sam_pass.username);
-	uid = pwd->pw_uid;
 	rid = pdb_uid_to_user_rid (uid);
 
 	/* it's outaa here!  8^) */
@@ -601,33 +589,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	tdb_close(pwd_tdb);
 	
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/uiddb.tdb");
-
-	/* open the UID TDB */
-	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
-	{
-		DEBUG(0, ("Unable to open TDB uid file!"));
-		return False;
-	}	
-
-  	/* set the search key */
-	slprintf(keystr, sizeof(keystr), "%s%.5u", UIDPREFIX, uid);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
-
-	/* it's outaa here!  8^) */
-	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
-	{
-		DEBUG(5, ("Error deleting entry from tdb uid database!\n"));
-		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		tdb_close(pwd_tdb); 
-		return False;
-	}
-	
-	tdb_close(pwd_tdb);
-	
-	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/riddb.tdb");	
+	pstrcat (tdbfile, RIDDB_FILE_NAME);	
 	
 	/* open the RID TDB */
 	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
@@ -637,7 +599,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	}	
 
   	/* set the search key */
-	slprintf(keystr, sizeof(keystr), "%s%.8x", UIDPREFIX, rid);
+	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, rid);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 
@@ -669,7 +631,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	int		newtdb = FALSE;
 	
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/passdb.tdb");
+	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	if ( (!newpwd->uid) || (!newpwd->gid) )
 		DEBUG (0,("tdb_update_sam: Storing a SAM_ACCOUNT for [%s] with uid %d and gid %d!\n",
@@ -732,52 +694,15 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	/* cleanup */
 	tdb_close (pwd_tdb);
 	
-	/* setup UID/RID data */
+	/* setup RID data */
 	data.dsize = sizeof(fstring);
 	data.dptr = name;
 
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/uiddb.tdb");
-
-	/* setup the UID index key */
-	slprintf(keystr, sizeof(keystr), "%s%.5u", UIDPREFIX, pdb_get_uid(newpwd));
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
-	
-	/* open the account TDB uid file*/
-  	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
-	{
-     		DEBUG(0, ("tdb_update_sam: Unable to open TDB uid database!\n"));
-		if (newtdb == FALSE)
-			DEBUG(0, ("WARNING: uid database missing and passdb exist, check references integrity!\n"));
-		if (flag == TDB_INSERT)
-		{
-			DEBUG(0, ("Unable to open TDB uid file, trying create new!\n"));
-			if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
-			{
-				DEBUG(0, ("Unable to create TDB uid (uiddb.tdb) !!!\n"));
-				/* return False; */
-			}
-		}
-	}
-		
-	/* add the reference */
-	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
-	{
-		DEBUG(0, ("Unable to modify TDB uid database!"));
-		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		/* tdb_close (pwd_tdb);
-		return False; */
-	}
-	
-	/* cleanup */
-	tdb_close (pwd_tdb);
-
-	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, "/riddb.tdb");
+	pstrcat (tdbfile, RIDDB_FILE_NAME);
 
 	/* setup the RID index key */
-	slprintf(keystr, sizeof(keystr), "%s%.8x", UIDPREFIX, pdb_get_user_rid(newpwd));
+	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, pdb_get_user_rid(newpwd));
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 	
@@ -803,8 +728,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	{
 		DEBUG(0, ("Unable to modify TDB rid database!"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		/* tdb_close (pwd_tdb);
-		return False; */
+		tdb_close (pwd_tdb);
+		return False;
 	}
 	
 	/* cleanup */
