@@ -619,32 +619,6 @@ static BOOL wbinfo_ping(void)
         return result == NSS_STATUS_SUCCESS;
 }
 
-/* Print program usage */
-
-static void usage(void)
-{
-	d_printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
-               "| -[aA] user%%password\n");
-	d_printf("\t-u\t\t\tlists all domain users\n");
-	d_printf("\t-g\t\t\tlists all domain groups\n");
-	d_printf("\t-n name\t\t\tconverts name to sid\n");
-	d_printf("\t-s sid\t\t\tconverts sid to name\n");
-	d_printf("\t-N name\t\t\tconverts NetBIOS name to IP (WINS)\n");
-	d_printf("\t-I name\t\t\tconverts IP address to NetBIOS name (WINS)\n");
-	d_printf("\t-U uid\t\t\tconverts uid to sid\n");
-	d_printf("\t-G gid\t\t\tconverts gid to sid\n");
-	d_printf("\t-S sid\t\t\tconverts sid to uid\n");
-	d_printf("\t-Y sid\t\t\tconverts sid to gid\n");
-	d_printf("\t-t\t\t\tcheck shared secret\n");
-	d_printf("\t-m\t\t\tlist trusted domains\n");
-	d_printf("\t-r user\t\t\tget user groups\n");
-	d_printf("\t-a user%%password\tauthenticate user\n");
- 	d_printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
-	d_printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
-	d_printf("\t--sequence\t\tshow sequence numbers of all domains\n");
-	d_printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
-}
-
 /* Main program */
 
 enum {
@@ -664,28 +638,28 @@ int main(int argc, char **argv)
 	int result = 1;
 
 	struct poptOption long_options[] = {
+		POPT_AUTOHELP
 
 		/* longName, shortName, argInfo, argPtr, value, descrip, 
 		   argDesc */
 
-		{ "help", 'h', POPT_ARG_NONE, 0, 'h' },
-		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u' },
-		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g' },
-		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N' },
-		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I' },
-		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n' },
-		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's' },
-		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U' },
-		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G' },
-		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S' },
-		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y' },
-		{ "check-secret", 't', POPT_ARG_NONE, 0, 't' },
-		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm' },
-		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
-		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
- 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
-		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
-		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
+		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u', "Lists all domain users"},
+		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g', "Lists all domain groups" },
+		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP (WINS)" },
+		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name (WINS)" },
+		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid" },
+		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name" },
+		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" },
+		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid" },
+		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid" },
+		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid" },
+		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
+		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
+		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "show sequence numbers of all domains" },
+		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups" },
+ 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
+		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
+		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "'ping' winbindd to see if it is alive" },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -708,16 +682,16 @@ int main(int argc, char **argv)
 
 	load_interfaces();
 
-	/* Parse command line options */
-
-	if (argc == 1) {
-		usage();
-		return 1;
-	}
-
 	/* Parse options */
 
 	pc = poptGetContext("wbinfo", argc, (const char **)argv, long_options, 0);
+
+	/* Parse command line options */
+
+	if (argc == 1) {
+		poptPrintHelp(pc, stderr, 0);
+		return 1;
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		if (got_command) {
@@ -734,10 +708,6 @@ int main(int argc, char **argv)
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'h':
-			usage();
-			result = 0;
-			goto done;
 		case 'u':
 			if (!print_domain_users()) {
 				d_printf("Error looking up domain users\n");
@@ -859,7 +829,7 @@ int main(int argc, char **argv)
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");
-			usage();
+			poptPrintHelp(pc, stderr, 0);
 			goto done;
 		}
 	}
