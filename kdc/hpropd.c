@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -59,6 +59,8 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
     int ret;
     char *princ_name;
     Event *modifier;
+    krb5_realm *realms;
+    int cmp;
   
     ret = krb5_524_conv_principal(context, ent->principal,
 				  name, instance, realm);
@@ -69,7 +71,15 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
 	return -1;
     }
 
-    if (strcmp(context->default_realms[0], ent->principal->realm) != 0)
+    ret = krb5_get_default_realms (context, &realms);
+    if (ret) {
+	krb5_warn(context, ret, "krb5_get_default_realms");
+	return -1;
+    }
+
+    cmp = strcmp (realms[0], ent->principal->realm);
+    krb5_free_host_realm (context, realms);
+    if (cmp != 0)
         return -1;
 
     snprintf (buf, sizeof(buf), "%s %s ", name,
