@@ -17,7 +17,7 @@ sub ParseFunction($)
 	my $name = $fn->{NAME};
 	my $uname = uc $name;
 
-	if ($fn->{RETURN_TYPE} eq "void") {
+	if ($fn->{RETURN_TYPE} ne "NTSTATUS") {
 		$res .= "
 NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
 {
