@@ -398,7 +398,7 @@ build_auth_pack(krb5_context context,
     free(buf);
 
     if (ret == 0 && dh) {
-	DomainParameters *dp;
+	DomainParameters dp;
 	ASN1_INTEGER *dh_pub_key;
 	krb5_data buf;
 	size_t size;
@@ -411,42 +411,42 @@ build_auth_pack(krb5_context context,
 	if (ret)
 	    return ret;
 	
-	ALLOC(dp, 1);
-	if (dp == NULL)
-	    return ENOMEM;
+	memset(&dp, 0, sizeof(dp));
 
-	ret = BN_to_any(context, dh->p, &dp->p);
+	ret = BN_to_any(context, dh->p, &dp.p);
 	if (ret) {
-	    free_DomainParameters(dp);
+	    free_DomainParameters(&dp);
 	    return ret;
 	}
-	ret = BN_to_any(context, dh->g, &dp->g);
+	ret = BN_to_any(context, dh->g, &dp.g);
 	if (ret) {
-	    free_DomainParameters(dp);
+	    free_DomainParameters(&dp);
 	    return ret;
 	}
-	ret = BN_to_any(context, dh->q, &dp->q);
+	ret = BN_to_any(context, dh->q, &dp.q);
 	if (ret) {
-	    free_DomainParameters(dp);
+	    free_DomainParameters(&dp);
 	    return ret;
 	}
-	dp->j = NULL;
-	dp->validationParms = NULL;
+	dp.j = NULL;
+	dp.validationParms = NULL;
 
+#if 0
 	ALLOC(a->clientPublicValue->algorithm.parameters, 1);
 	if (a->clientPublicValue->algorithm.parameters == NULL) {
-	    free_DomainParameters(dp);
+	    free_DomainParameters(&dp);
 	    return ENOMEM;
-	}	    
+	}
+#endif
+	ASN1_MALLOC_ENCODE(DomainParameters,
+			   a->clientPublicValue->algorithm.parameters.data,
+			   a->clientPublicValue->algorithm.parameters.length,
+			   &dp, &size, ret);
+	free_DomainParameters(&dp);
 
-	ASN1_MALLOC_ENCODE(DomainParameters, 
-			   a->clientPublicValue->algorithm.parameters->data,
-			   a->clientPublicValue->algorithm.parameters->length,
-			   dp, &size, ret);
-	free_DomainParameters(dp);
 	if (ret)
 	    return ret;
-	if (size != a->clientPublicValue->algorithm.parameters->length)
+	if (size != a->clientPublicValue->algorithm.parameters.length)
 	    krb5_abortx(context, "Internal ASN1 encoder error");
 
 	dh_pub_key = BN_to_ASN1_INTEGER(dh->pub_key, NULL);
