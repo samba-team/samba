@@ -59,7 +59,7 @@ static void response_name_release(struct nmb_name *ans_name,
   
   DEBUG(4,("response name release received\n"));
   
-  if (nmb->header.rcode == 0 && nmb->answers->rdata)
+  if (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata)
   {
     /* IMPORTANT: see expire_netbios_response_entries() */
 
@@ -113,9 +113,9 @@ static void response_name_reg(struct nmb_name *ans_name,
    */
   if ( ((d != wins_subnet) && (nmb->header.rcode == 6) && strequal(myworkgroup, name) &&
          (type == 0x1b)) ||
-       (nmb->header.rcode == 0 && nmb->answers->rdata))
+       (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata))
 #else
-  if (nmb->header.rcode == 0 && nmb->answers->rdata)
+  if (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata)
 #endif
   {
     /* IMPORTANT: see expire_netbios_response_entries() */
@@ -154,7 +154,7 @@ static void response_server_check(struct nmb_name *ans_name,
        we sent to - rather than reading the response.
      */
 
-    if (nmb->header.rcode == 0 && nmb->answers->rdata)
+    if (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata)
       putip((char*)&send_ip,&nmb->answers->rdata[2]);
     else
       {
@@ -269,7 +269,8 @@ static void response_name_status_check(struct in_addr ip,
 	struct nmb_name name;
 	fstring serv_name;
 
-	if (interpret_node_status(d,nmb->answers->rdata,
+	if (nmb->answers && 
+	    interpret_node_status(d,nmb->answers->rdata,
 	                          &name,0x20,serv_name,ip,bcast))
 	{
 		if (*serv_name)
@@ -311,7 +312,7 @@ static void response_name_query_register(struct nmb_packet *nmb,
 		return;
 	}
 
-	if (nmb->header.rcode == 0 && nmb->answers->rdata)
+	if (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata)
     {
 		/* we had sent out a name query to the current owner
 		   of a name because someone else wanted it. now they
@@ -388,7 +389,7 @@ static void response_name_query_sync(struct nmb_packet *nmb,
       return;
     }
 
-  if (nmb->header.rcode == 0 && nmb->answers->rdata)
+  if (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata)
     {
       int nb_flags = nmb->answers->rdata[0];
       struct in_addr found_ip;
@@ -464,7 +465,7 @@ for %s\n", nmb->header.rcode == 0 ? "success" : "failure",
   /* Check the name is correct and ip address returned is our own. If it is then we
      just remove the response record.
    */
-  if (name_equal(&n->name, ans_name) && (nmb->header.rcode == 0) && (nmb->answers->rdata))
+  if (name_equal(&n->name, ans_name) && (nmb->header.rcode == 0) && nmb->answers && (nmb->answers->rdata))
   {
     struct in_addr found_ip;
 
@@ -576,7 +577,7 @@ static BOOL response_problem_check(struct response_record *n,
       { 
 	if (n->num_msgs > 1)
 	  {
-	    if (nmb->header.rcode == 0 && nmb->answers->rdata)
+	    if (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata)
 	      {
 		int nb_flags = nmb->answers->rdata[0];
 		
@@ -822,19 +823,17 @@ void response_netbios_packet(struct packet_struct *p)
       DEBUG(2,("expected on subnet %s. hmm.\n", inet_ntoa(d->bcast_ip)));
     }
   
-  if (nmb->answers == NULL)
-    {
-      /* hm. the packet received was a response, but with no answer. wierd! */
-      DEBUG(2,("NMB packet response from %s (bcast=%s) - UNKNOWN\n",
-	       inet_ntoa(p->ip), BOOLSTR(bcast)));
-      return;
-    }
+  if (nmb->answers == NULL) {
+	  /* if there is no name is the response then the name is the one
+	     we queried on */
+	  ans_name = &n->name;
+  } else {
+	  ans_name = &nmb->answers->rr_name;
+	  debug_rr_type(nmb->answers->rr_type);
+  }
 
-  ans_name = &nmb->answers->rr_name;
   DEBUG(3,("response for %s from %s(%d) (bcast=%s)\n",
 	   namestr(ans_name), inet_ntoa(p->ip), p->port, BOOLSTR(bcast)));
-  
-  debug_rr_type(nmb->answers->rr_type);
   
   n->num_msgs++; /* count number of responses received */
   n->repeat_count = 0; /* don't resend: see expire_netbios_packets() */
@@ -842,7 +841,7 @@ void response_netbios_packet(struct packet_struct *p)
   debug_state_type(n->state);
   
   /* problem checking: multiple responses etc */
-  if (response_problem_check(n, nmb, ans_name->name))
+  if (nmb->answers && response_problem_check(n, nmb, ans_name->name))
     return;
   
   /* now deal with the current state */
