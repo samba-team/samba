@@ -65,12 +65,11 @@ main(int argc, char **argv)
     fputs("#endif\n", f);
     fputs("#include <openssl/des.h>\n", f);
     fputs("#include <openssl/rc4.h>\n", f);
+    fputs("#include <openssl/rc2.h>\n", f);
     fputs("#include <openssl/md4.h>\n", f);
     fputs("#include <openssl/md5.h>\n", f);
     fputs("#include <openssl/sha.h>\n", f);
-#if ENABLE_AES
     fputs("#include <openssl/aes.h>\n", f);
-#endif    
     fputs("#include <openssl/ui.h>\n", f);
 #else
     fputs("#include <des.h>\n", f);
@@ -78,9 +77,8 @@ main(int argc, char **argv)
     fputs("#include <md5.h>\n", f);
     fputs("#include <sha.h>\n", f);
     fputs("#include <rc4.h>\n", f);
-#if ENABLE_AES
+    fputs("#include <rc2.h>\n", f);
     fputs("#include <aes.h>\n", f);
-#endif    
 #ifdef HAVE_OLD_HASH_NAMES
     fputs("\n", f);
     fputs("    typedef struct md4 MD4_CTX;\n", f);
