@@ -98,7 +98,7 @@ for fnum = %d, name = %s\n", blr->expire_time, fnum, Files[fnum].name ));
  Return a blocking lock success SMB.
 *****************************************************************************/
 
-void blocking_lock_reply_success(blocking_lock_record *blr)
+static void blocking_lock_reply_success(blocking_lock_record *blr)
 {
   extern int chain_size;
   extern int chain_fnum;
@@ -137,7 +137,7 @@ void blocking_lock_reply_success(blocking_lock_record *blr)
  Return a lock fail error. Undo all the locks we have obtained first.
 *****************************************************************************/
 
-void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecode)
+static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecode)
 {
   extern char *OutBuffer;
   char *outbuf = OutBuffer;
@@ -177,7 +177,7 @@ void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecod
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-BOOL blocking_lock_record_process(blocking_lock_record *blr)
+static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 {
   char *inbuf = blr->inbuf;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);

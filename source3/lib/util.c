@@ -2729,9 +2729,135 @@ BOOL string_sub(char *s,char *pattern,char *insert)
 }
 
 /*********************************************************
+* Recursive routine that is called by unix_mask_match.
+* Does the actual matching. This is the 'original code' 
+* used by the unix matcher.
+*********************************************************/
+static BOOL unix_do_match(char *str, char *regexp, int case_sig)
+{
+  char *p;
+
+  for( p = regexp; *p && *str; ) {
+    switch(*p) {
+    case '?':
+      str++; p++;
+      break;
+
+    case '*':
+      /* Look for a character matching 
+	 the one after the '*' */
+      p++;
+      if(!*p)
+	return True; /* Automatic match */
+      while(*str) {
+	while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
+	  str++;
+	if(do_match(str,p,case_sig))
+	  return True;
+	if(!*str)
+	  return False;
+	else
+	  str++;
+      }
+      return False;
+
+    default:
+      if(case_sig) {
+	if(*str != *p)
+	  return False;
+      } else {
+	if(toupper(*str) != toupper(*p))
+	  return False;
+      }
+      str++, p++;
+      break;
+    }
+  }
+  if(!*p && !*str)
+    return True;
+
+  if (!*p && str[0] == '.' && str[1] == 0)
+    return(True);
+  
+  if (!*str && *p == '?')
+    {
+      while (*p == '?') p++;
+      return(!*p);
+    }
+
+  if(!*str && (*p == '*' && p[1] == '\0'))
+    return True;
+  return False;
+}
+
+
+/*********************************************************
+* Routine to match a given string with a regexp - uses
+* simplified regexp that takes * and ? only. Case can be
+* significant or not.
+* This is the 'original code' used by the unix matcher.
+*********************************************************/
+
+static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
+{
+  char *p;
+  pstring p1, p2;
+  fstring ebase,eext,sbase,sext;
+
+  BOOL matched;
+
+  /* Make local copies of str and regexp */
+  StrnCpy(p1,regexp,sizeof(pstring)-1);
+  StrnCpy(p2,str,sizeof(pstring)-1);
+
+  if (!strchr(p2,'.')) {
+    pstrcat(p2,".");
+  }
+
+  /* Remove any *? and ** as they are meaningless */
+  for(p = p1; *p; p++)
+    while( *p == '*' && (p[1] == '?' ||p[1] == '*'))
+      (void)pstrcpy( &p[1], &p[2]);
+
+  if (strequal(p1,"*")) return(True);
+
+  DEBUG(8,("unix_mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
+
+  if (trans2) {
+    fstrcpy(ebase,p1);
+    fstrcpy(sbase,p2);
+  } else {
+    if ((p=strrchr(p1,'.'))) {
+      *p = 0;
+      fstrcpy(ebase,p1);
+      fstrcpy(eext,p+1);
+    } else {
+      fstrcpy(ebase,p1);
+      eext[0] = 0;
+    }
+
+  if (!strequal(p2,".") && !strequal(p2,"..") && (p=strrchr(p2,'.'))) {
+    *p = 0;
+    fstrcpy(sbase,p2);
+    fstrcpy(sext,p+1);
+  } else {
+    fstrcpy(sbase,p2);
+    fstrcpy(sext,"");
+  }
+  }
+
+  matched = do_match(sbase,ebase,case_sig) && 
+    (trans2 || do_match(sext,eext,case_sig));
+
+  DEBUG(8,("unix_mask_match returning %d\n", matched));
+
+  return matched;
+}
+
+/*********************************************************
 * Recursive routine that is called by mask_match.
 * Does the actual matching. Returns True if matched,
-* False if failed.
+* False if failed. This is the 'new' NT style matcher.
 *********************************************************/
 
 BOOL do_match(char *str, char *regexp, int case_sig)
@@ -2810,6 +2936,7 @@ BOOL do_match(char *str, char *regexp, int case_sig)
 * simplified regexp that takes * and ? only. Case can be
 * significant or not.
 * The 8.3 handling was rewritten by Ums Harald <Harald.Ums@pro-sieben.de>
+* This is the new 'NT style' matcher.
 *********************************************************/
 
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
@@ -4206,8 +4333,12 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
   {
     if(namelist->is_wild)
     {
-      /* look for a wildcard match. */
-      if (mask_match(last_component, namelist->name, case_sensitive, False))
+      /* 
+       * Look for a wildcard match. Use the old
+       * 'unix style' mask match, rather than the
+       * new NT one.
+       */
+      if (unix_mask_match(last_component, namelist->name, case_sensitive, False))
       {
          DEBUG(8,("is_in_path: mask match succeeded\n"));
          return True;
