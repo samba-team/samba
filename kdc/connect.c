@@ -142,15 +142,27 @@ process_request(unsigned char *buf,
 }
 
 static void
+addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
+{
+    switch(addr->sa_family){
+    case AF_INET:
+	strncpy(str, inet_ntoa(((struct sockaddr_in*)addr)->sin_addr), len);
+	break;
+    default:
+	snprintf(str, len, "<%d addr>", addr->sa_family);
+    }
+    str[len - 1] = 0;
+}
+
+static void
 do_request(void *buf, size_t len, 
 	   int socket, struct sockaddr *from, size_t from_len)
 {
     krb5_error_code ret;
     krb5_data reply;
     
-    char addr[128] = "<unknown address>";
-    if(from->sa_family == AF_INET)
-	strcpy(addr, inet_ntoa(((struct sockaddr_in*)from)->sin_addr));
+    char addr[128];
+    addr_to_string(from, from_len, addr, sizeof(addr));
     
     reply.length = 0;
     ret = process_request(buf, len, &reply, addr, from);
@@ -204,6 +216,7 @@ static void
 handle_tcp(struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
+    char addr[32];
     struct sockaddr_in from;
     int from_len = sizeof(from);
     size_t n;
@@ -237,6 +250,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	from_len = sizeof(from);
 	getpeername(d[index].s, (struct sockaddr*)&from, &from_len);
     }
+    addr_to_string((struct sockaddr*)&from, from_len, addr, sizeof(addr));
     if(d[index].size - d[index].len < n){
 	unsigned char *tmp;
 	d[index].size += 1024;
@@ -276,11 +290,12 @@ handle_tcp(struct descr *d, int index, int min_free)
 	p = strstr(s, "\r\n");
 	*p = 0;
 	p = NULL;
-	kdc_log(5, "HTTP request");
 	strtok_r(s, " \t", &p);
 	t = strtok_r(NULL, " \t", &p);
 	if(t == NULL){
-	    
+	    kdc_log(0, "Malformed HTTP request from %s", addr);
+	    clear_descr(d + index);
+	    return;
 	}
 	data = malloc(strlen(t));
 	len = base64_decode(t, data);
@@ -297,6 +312,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    write(d[index].s, msg, strlen(msg));
 	    free(data);
 	    clear_descr(d + index);
+	    kdc_log(0, "HTTP request from %s is non KDC request", addr);
 	    return;
 	}
 	{
