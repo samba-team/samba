@@ -64,6 +64,7 @@ static struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast)
   return find_subnet(ipgrp);
 }
 
+
 /****************************************************************************
   true if two netbios names are equal
 ****************************************************************************/
@@ -73,6 +74,7 @@ static BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2)
 
   return(strequal(n1->name,n2->name) && strequal(n1->scope,n2->scope));
 }
+
 
 /****************************************************************************
   add a netbios name into the namelist
@@ -97,6 +99,7 @@ static void add_name(struct subnet_record *d, struct name_record *n)
   n->next = NULL;
   n->prev = n2;
 }
+
 
 /****************************************************************************
   remove a name from the namelist. The pointer must be an element just 
@@ -1360,15 +1363,15 @@ void reply_name_query(struct packet_struct *p)
 
 
 /****************************************************************************
-  response from a name query server check. commands of type NAME_QUERY_MST_SRV_CHK,
+  response from a name query server check. states of type NAME_QUERY_MST_SRV_CHK,
   NAME_QUERY_SRV_CHK, and NAME_QUERY_FIND_MST dealt with here.
   ****************************************************************************/
 static void response_server_check(struct nmb_name *ans_name, 
 		struct response_record *n, struct subnet_record *d)
 {
-    /* issue another command: this time to do a name status check */
+    /* issue another state: this time to do a name status check */
 
-    enum cmd_type cmd = (n->cmd_type == NAME_QUERY_MST_SRV_CHK) ?
+    enum state_type cmd = (n->state == NAME_QUERY_MST_SRV_CHK) ?
 	      NAME_STATUS_MASTER_CHECK : NAME_STATUS_CHECK;
 
     /* initiate a name status check on the server that replied */
@@ -1379,7 +1382,7 @@ static void response_server_check(struct nmb_name *ans_name,
 }
 
 /****************************************************************************
-  response from a name status check. commands of type NAME_STATUS_MASTER_CHECK
+  response from a name status check. states of type NAME_STATUS_MASTER_CHECK
   and NAME_STATUS_CHECK dealt with here.
   ****************************************************************************/
 static void response_name_status_check(struct in_addr ip,
@@ -1397,7 +1400,7 @@ static void response_name_status_check(struct in_addr ip,
 	{
 		if (*serv_name)
 		{
-			sync_server(n->cmd_type,serv_name,
+			sync_server(n->state,serv_name,
 			            name.name,name.name_type, n->to_ip);
 		}
 	}
@@ -1410,7 +1413,7 @@ static void response_name_status_check(struct in_addr ip,
 
 /****************************************************************************
   response from a name query to sync browse lists or to update our netbios
-  entry. commands of type NAME_QUERY_SYNC and NAME_QUERY_CONFIRM 
+  entry. states of type NAME_QUERY_SYNC and NAME_QUERY_CONFIRM 
   ****************************************************************************/
 static void response_name_query_sync(struct nmb_packet *nmb, 
 		struct nmb_name *ans_name, BOOL bcast,
@@ -1419,7 +1422,7 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 	DEBUG(4, ("Name query at %s ip %s - ",
 		  namestr(&n->name), inet_ntoa(n->to_ip)));
 
-	if (!name_equal(n->name, ans_name))
+	if (!name_equal(&n->name, ans_name))
 	{
 		/* someone gave us the wrong name as a reply. oops. */
 		DEBUG(4,("unexpected name received: %s\n", namestr(ans_name)));
@@ -1433,17 +1436,17 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 
 		putip((char*)&found_ip,&nmb->answers->rdata[2]);
 
-		if (!ip_equal(n->ip, found_ip))
+		if (!ip_equal(n->to_ip, found_ip))
 		{
 			/* someone gave us the wrong ip as a reply. oops. */
-			DEBUG(4,("expected ip: %s\n", inet_ntoa(n->ip)));
+			DEBUG(4,("expected ip: %s\n", inet_ntoa(n->to_ip)));
 			DEBUG(4,("unexpected ip: %s\n", inet_ntoa(found_ip)));
 			return;
 		}
 
 		DEBUG(4, (" OK: %s\n", inet_ntoa(found_ip)));
 
-		if (n->cmd_type == NAME_QUERY_SYNC)
+		if (n->state == NAME_QUERY_SYNC)
 		{
 			struct work_record *work = NULL;
 			if ((work = find_workgroupstruct(d, ans_name->name, False)))
@@ -1465,7 +1468,7 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 	{
 		DEBUG(4, (" NEGATIVE RESPONSE!\n"));
 
-		if (n->cmd_type == NAME_QUERY_CONFIRM)
+		if (n->state == NAME_QUERY_CONFIRM)
 		{
 			/* XXXX remove_netbios_entry()? */
 			/* lots of things we ought to do, here. if we get here,
@@ -1473,7 +1476,7 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 			   reality. sort it out
              */
       		remove_netbios_name(d,n->name.name, n->name.name_type,
-								REGISTER,n->ip);
+								REGISTER,n->to_ip);
 		}
 	}
 }
@@ -1494,12 +1497,12 @@ static void debug_rr_type(int rr_type)
 }
 
 /****************************************************************************
-  report the response record nmbd command type
+  report the response record nmbd state
   ****************************************************************************/
-static void debug_cmd_type(int cmd_type)
+static void debug_state_type(int state)
 {
-  /* report the command type to help debugging */
-  switch (cmd_type)
+  /* report the state type to help debugging */
+  switch (state)
   {
     case NAME_QUERY_MST_SRV_CHK  : DEBUG(4,("MASTER_SVR_CHECK\n")); break;
     case NAME_QUERY_SRV_CHK      : DEBUG(4,("NAME_QUERY_SRV_CHK\n")); break;
@@ -1566,7 +1569,7 @@ static BOOL response_problem_check(struct response_record *n,
 					
                /* this may cause problems for some early versions of nmbd */
 
-               switch (n->cmd_type)
+               switch (n->state)
                {
     			case NAME_QUERY_MST_SRV_CHK:
                 case NAME_QUERY_SRV_CHK:
@@ -1609,7 +1612,7 @@ static BOOL response_problem_check(struct response_record *n,
 static BOOL response_compatible(struct response_record *n,
 			struct nmb_packet *nmb)
 {
-  switch (n->cmd_type)
+  switch (n->state)
   {
     case NAME_RELEASE:
     {
@@ -1659,7 +1662,7 @@ static BOOL response_compatible(struct response_record *n,
       
     default:
     {
-		DEBUG(0,("unknown command received in response_netbios_packet\n"));
+		DEBUG(0,("unknown state type received in response_netbios_packet\n"));
 		break;
     }
   }
@@ -1674,7 +1677,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 				struct response_record *n, struct nmb_packet *nmb,
 				BOOL bcast, struct nmb_name *ans_name)
 {
-  switch (n->cmd_type)
+  switch (n->state)
   {
     case NAME_RELEASE:
     {
@@ -1721,7 +1724,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 
     default:
     {
-		DEBUG(0,("unknown command received in response_netbios_packet\n"));
+		DEBUG(0,("unknown state type received in response_netbios_packet\n"));
 		break;
     }
   }
@@ -1776,17 +1779,17 @@ static void response_netbios_packet(struct packet_struct *p)
   n->num_msgs++; /* count number of responses received */
   n->repeat_count = 0; /* don't resend: see expire_netbios_packets() */
 
-  debug_cmd_type(n->cmd_type);
+  debug_state_type(n->state);
 
   /* problem checking: multiple responses etc */
   if (response_problem_check(n, nmb, qname))
     return;
 
-  /* now check whether the command has received the correct type of response*/
+  /* now check whether the state has received the correct type of response */
   if (!response_compatible(n, nmb))
     return;
 
-  /* now deal with the command */
+  /* now deal with the current state */
   response_process(d, p, n, nmb, bcast, ans_name);
 }
 

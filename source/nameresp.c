@@ -86,7 +86,7 @@ static void dead_netbios_entry(struct subnet_record *d,
   DEBUG(3,("Removing dead netbios entry for %s %s (num_msgs=%d)\n",
 	   inet_ntoa(n->to_ip), namestr(&n->name), n->num_msgs));
 
-  switch (n->cmd_type)
+  switch (n->state)
   {
     case NAME_QUERY_CONFIRM:
     {
@@ -384,10 +384,16 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   WINS server specified, the packet will NOT be sent.
   ****************************************************************************/
 void queue_netbios_pkt_wins(struct subnet_record *d,
-				int fd,int quest_type,enum cmd_type cmd,
+				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
 			    BOOL bcast,BOOL recurse,struct in_addr to_ip)
 {
+  /* XXXX note: please see rfc1001.txt section 10 for details on this
+     function: it is currently inappropriate to use this - it will do
+     for now - once there is a clarification of B, M and P nodes and
+     which one samba is supposed to be
+   */
+
   if ((!lp_wins_support()) && (*lp_wins_server()))
     {
       /* samba is not a WINS server, and we are using a WINS server */
@@ -409,7 +415,7 @@ void queue_netbios_pkt_wins(struct subnet_record *d,
 
   if (zero_ip(to_ip)) return;
 
-  queue_netbios_packet(d,fd, quest_type, cmd, 
+  queue_netbios_packet(d,fd, quest_type, state, 
 		       name, name_type, nb_flags, ttl,
 		       bcast, recurse, to_ip);
 }
@@ -418,7 +424,7 @@ void queue_netbios_pkt_wins(struct subnet_record *d,
   create a name query response record
   **************************************************************************/
 static struct response_record *
-make_response_queue_record(enum cmd_type cmd,int id,int fd,
+make_response_queue_record(enum state_type state,int id,int fd,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
 				BOOL bcast,BOOL recurse, struct in_addr ip)
 {
@@ -430,7 +436,7 @@ make_response_queue_record(enum cmd_type cmd,int id,int fd,
     return(NULL);
 
   n->response_id = id;
-  n->cmd_type = cmd;
+  n->state = state;
   n->fd = fd;
   n->quest_type = quest_type;
   make_nmb_name(&n->name, name, type, scope);
@@ -459,7 +465,7 @@ make_response_queue_record(enum cmd_type cmd,int id,int fd,
   complete lists across a wide area network
   ****************************************************************************/
 void queue_netbios_packet(struct subnet_record *d,
-			int fd,int quest_type,enum cmd_type cmd,char *name,
+			int fd,int quest_type,enum state_type state,char *name,
 			int name_type,int nb_flags, time_t ttl,
 			BOOL bcast,BOOL recurse, struct in_addr to_ip)
 {
@@ -475,7 +481,7 @@ void queue_netbios_packet(struct subnet_record *d,
 
   if (id == 0xffff) return;
   
-  if ((n = make_response_queue_record(cmd,id,fd,
+  if ((n = make_response_queue_record(state,id,fd,
 						quest_type,name,name_type,nb_flags,ttl,
 						bcast,recurse,to_ip)))
     {

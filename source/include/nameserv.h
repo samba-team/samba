@@ -24,7 +24,7 @@
 #define MAINTAIN_LIST    2
 #define ELECTION_VERSION 1
 
-#define MAX_DGRAM_SIZE (80*18+64)
+#define MAX_DGRAM_SIZE (576) /* tcp/ip datagram limit is 576 bytes */
 #define MIN_DGRAM_SIZE 12
 
 #define NMB_QUERY  0x20
@@ -36,6 +36,7 @@
 #define NMB_WAIT_ACK    0x07 /* see rfc1002.txt 4.2.17 */
 /* XXXX what about all the other types?? 0x1, 0x2, 0x3, 0x4, 0x8? */
 
+/* NetBIOS flags */
 #define NB_GROUP  0x80
 #define NB_PERM   0x02
 #define NB_ACTIVE 0x04
@@ -51,6 +52,7 @@
 #define NAME_POLL_REFRESH_TIME (5*60)
 #define NAME_POLL_INTERVAL 15
 
+/* NetBIOS flag identifier */
 #define NAME_PERMANENT(p) ((p) & NB_PERM)
 #define NAME_ACTIVE(p)    ((p) & NB_ACTIVE)
 #define NAME_CONFLICT(p)  ((p) & NB_CONFL)
@@ -62,12 +64,22 @@
 #define NAME_MFLAG(p)     (((p) & NB_FLGMSK) == NB_MFLAG)
 #define NAME__FLAG(p)     (((p) & NB_FLGMSK) == NB__FLAG)
 
+/* server type identifiers */
+#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
+#define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
+#define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
+
+/* microsoft browser NetBIOS name */
 #define MSBROWSE "\001\002__MSBROWSE__\002"
+
+/* mail slots */
+#define BROWSE_MAILSLOT    "\\MAILSLOT\\BROWSE"
+#define NET_LOGON_MAILSLOT "\\MAILSLOT\\NET\\NETLOGON"
 
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
-enum cmd_type
+enum state_type
 {
 	NAME_STATUS_MASTER_CHECK,
 	NAME_STATUS_CHECK,
@@ -161,7 +173,7 @@ struct response_record
   struct response_record *prev;
 
   uint16 response_id;
-  enum cmd_type cmd_type;
+  enum state_type state;
 
   int fd;
   int quest_type;
@@ -299,11 +311,6 @@ struct packet_struct
     struct dgram_packet dgram;
   } packet;
 };
-
-
-#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
-#define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
-#define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
 
 
 /* ids for netbios packet types */

@@ -45,12 +45,6 @@ extern struct in_addr ipzero;
 
 extern int workgroup_count; /* total number of workgroups we know about */
 
-/* this is our browse cache database */
-extern struct browse_cache_record *browserlist;
-
-/* this is our domain/workgroup/server database */
-extern struct interface *local_interfaces;
-
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
 
@@ -69,8 +63,6 @@ extern int  updatecount;
 #define DOMCTL_TYPE (SV_TYPE_DOMAIN_CTRL   )
 
 extern time_t StartupTime;
-
-#define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
 #define GET_TTL(ttl) ((ttl)?MIN(ttl,lp_max_ttl()):lp_max_ttl())
 
@@ -106,6 +98,11 @@ tell a server to become a backup browser
 **************************************************************************/
 void tell_become_backup(void)
 {
+  /* XXXX note: this function is currently unsuitable for use, as it
+     does not properly check that a server is in a fit state to become
+     a backup browser before asking it to be one.
+   */
+
   struct subnet_record *d;
   for (d = subnetlist; d; d = d->next)
     {
@@ -155,100 +152,246 @@ void tell_become_backup(void)
     }
 }
 
-/****************************************************************************
-find a server responsible for a workgroup, and sync browse lists
-**************************************************************************/
-static void start_sync_browse_entry(struct browse_cache_record *b)
-{                     
-  struct subnet_record *d;
+
+/*******************************************************************
+  same context: scope. should check name_type as well, and makes sure
+  we don't process messages from ourselves
+  ******************************************************************/
+BOOL same_context(struct dgram_packet *dgram)
+{
+  if (!strequal(dgram->dest_name  .scope,scope )) return(True);
+  if ( strequal(dgram->source_name.name ,myname)) return(True);
+  
+  return(False);
+}
+
+
+/*******************************************************************
+  am I listening on a name. XXXX check the type of name as well.
+  ******************************************************************/
+BOOL listening_name(struct work_record *work, struct nmb_name *n)
+{
+  if (strequal(n->name,myname) ||
+      strequal(n->name,work->work_group) ||
+      strequal(n->name,MSBROWSE))
+    {
+      return(True);
+    }
+  
+  return(False);
+}
+
+
+/*******************************************************************
+  process a domain announcement frame
+
+  Announce frames come in 3 types. Servers send host announcements
+  (command=1) to let the master browswer know they are
+  available. Master browsers send local master announcements
+  (command=15) to let other masters and backups that they are the
+  master. They also send domain announcements (command=12) to register
+  the domain
+
+  The comment field of domain announcements contains the master
+  browser name. The servertype is used by NetServerEnum to select
+  resources. We just have to pass it to smbd (via browser.dat) and let
+  the client choose using bit masks.
+  ******************************************************************/
+static void process_announce(struct packet_struct *p,int command,char *buf)
+{
+  struct dgram_packet *dgram = &p->packet.dgram;
+  struct in_addr ip = dgram->header.source_ip;
+  struct subnet_record *d = find_subnet(ip); 
+  int update_count = CVAL(buf,0);
+  int ttl = IVAL(buf,1)/1000;
+  char *name = buf+5;
+  int osmajor=CVAL(buf,21);
+  int osminor=CVAL(buf,22);
+  uint32 servertype = IVAL(buf,23);
+  char *comment = buf+31;
   struct work_record *work;
+  char *work_name;
+  char *serv_name = dgram->source_name.name;
+  BOOL add = False;
+
+  comment[43] = 0;
   
-  if (!(d = find_subnet(b->ip))) return;
+  DEBUG(4,("Announce(%d) %s(%x)",command,name,name[15]));
+  DEBUG(4,("%s count=%d ttl=%d OS=(%d,%d) type=%08x comment=%s\n",
+	   namestr(&dgram->dest_name),update_count,ttl,osmajor,osminor,
+	   servertype,comment));
+  
+  name[15] = 0;  
+  
+  if (dgram->dest_name.name_type == 0 && command == ANN_HostAnnouncement)
+    {
+      DEBUG(2,("Announce to nametype(0) not supported yet\n"));
+      return;
+    }
 
-  /* only sync if we are the master */
-  if (AM_MASTER(work)) {
+  if (command == ANN_DomainAnnouncement && 
+      ((!strequal(dgram->dest_name.name, MSBROWSE)) ||
+       dgram->dest_name.name_type != 0x1))
+    {
+      DEBUG(0,("Announce(%d) from %s should be __MSBROWSE__(1) not %s\n",
+		command, inet_ntoa(ip), namestr(&dgram->dest_name)));
+      return;
+    }
+  
+  if (same_context(dgram)) return;
+  
+  if (command == ANN_DomainAnnouncement) { 
+    /* XXXX if we are a master browser for the workgroup work_name,
+       then there is a local subnet configuration problem. only
+       we should be sending out such domain announcements, because
+       as the master browser, that is our job.
 
-      /* first check whether the group we intend to sync with exists. if it
-         doesn't, the server must have died. o dear. */
+       stop being a master browser, and force an election. this will
+       sort out the network problem. hopefully.
+     */
 
-      /* see response_netbios_packet() or expire_netbios_response_entries() */
-      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_SYNC,
-					   b->group,0x20,0,0,
-					   False,False,b->ip);
+    work_name = name;
+  } else {
+    work_name = dgram->dest_name.name;
   }
+
+  /* we need some way of finding out about new workgroups
+     that appear to be sending packets to us. The name_type checks make
+     sure we don't add host names as workgroups */
+  if (command == ANN_HostAnnouncement &&
+      (dgram->dest_name.name_type == 0x1d ||
+       dgram->dest_name.name_type == 0x1e))
+    add = True;
   
-  b->synced = True;
+  if (!(work = find_workgroupstruct(d, work_name,add)))
+    return;
+  
+  DEBUG(4, ("workgroup %s on %s\n", work->work_group, serv_name));
+  
+  ttl = GET_TTL(ttl);
+  
+  /* add them to our browse list */
+  add_server_entry(d,work,name,servertype,ttl,comment,True);
+  
+#if 0
+  /* the tell become backup code is broken, no great harm is done by
+     disabling it */
+  tell_become_backup();
+#endif
+
+  /* XXXX over-kill: i don't think we should really be doing this,
+     but it doesn't do much harm other than to add extra network
+     traffic. to be more precise, we should (possibly) only
+     sync browse lists with a host that sends an
+     ANN_LocalMasterAnnouncement or an ANN_DomainAnnouncement.
+     possibly.
+   */
+
+  /* get their browse list from them and add it to ours. */
+  add_browser_entry(serv_name,dgram->dest_name.name_type,
+		    work->work_group,30,ip);
 }
 
-
-/****************************************************************************
-search through browser list for an entry to sync with
-**************************************************************************/
-void do_browser_lists(void)
+/*******************************************************************
+  process a master announcement frame
+  ******************************************************************/
+static void process_master_announce(struct packet_struct *p,char *buf)
 {
-  struct browse_cache_record *b;
-  static time_t last = 0;
-  time_t t = time(NULL);
+  struct dgram_packet *dgram = &p->packet.dgram;
+  struct in_addr ip = dgram->header.source_ip;
+  struct subnet_record *d = find_subnet(ip);
+  struct subnet_record *mydomain = find_subnet(*iface_bcast(ip));
+  char *name = buf;
+  struct work_record *work;
+  name[15] = 0;
   
-  if (t-last < 20) return; /* don't do too many of these at once! */
-                           /* XXXX equally this period should not be too long
-                              the server may die in the intervening gap */
+  DEBUG(3,("Master Announce from %s (%s)\n",name,inet_ntoa(ip)));
   
-  last = t;
+  if (same_context(dgram)) return;
   
-  /* pick any entry in the list, preferably one whose time is up */
-  for (b = browserlist; b && b->next; b = b->next)
+  if (!d || !mydomain) return;
+  
+  if (!lp_domain_master()) return;
+  
+  for (work = mydomain->workgrouplist; work; work = work->next)
     {
-      if (b->sync_time < t && b->synced == False) break;
-    }
-  
-  if (b && !b->synced)
-    {
-    /* sync with the selected entry then remove some dead entries */
-    start_sync_browse_entry(b);
-      expire_browse_cache(t - 60);
-    }
-
-}
-
-
-/****************************************************************************
-find a server responsible for a workgroup, and sync browse lists
-control ends up back here via response_name_query.
-**************************************************************************/
-void sync_server(enum cmd_type cmd, char *serv_name, char *work_name, 
-		 int name_type,
-		 struct in_addr ip)
-{                     
-  add_browser_entry(serv_name, name_type, work_name, 0, ip);
-
-  if (cmd == NAME_QUERY_MST_SRV_CHK)
-    {
-      /* announce ourselves as a master browser to serv_name */
-      do_announce_request(myname, serv_name, ANN_MasterAnnouncement,
-			  0x20, 0, ip);
+      if (AM_MASTER(work))
+	{
+	  /* merge browse lists with them */
+	  add_browser_entry(name,0x1b, work->work_group,30,ip);
+	}
     }
 }
 
+/*******************************************************************
+  process a receive backup list request
+  
+  we receive a list of servers, and we attempt to locate them all on
+  our local subnet, and sync browse lists with them on the workgroup
+  they are said to be in.
 
-/****************************************************************************
-  add the default workgroup into my domain
-  **************************************************************************/
-void add_my_subnets(char *group)
+  XXXX NOTE: this function is in overdrive. it should not really do
+  half of what it actually does (it should pick _one_ name from the
+  list received and sync with it at regular intervals, rather than
+  sync with them all only once!)
+
+  ******************************************************************/
+static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 {
-  struct interface *i;
-
-  /* add or find domain on our local subnet, in the default workgroup */
-
-  if (*group == '*') return;
-
-	/* the coding choice is up to you, andrew: i can see why you don't want
-       global access to the local_interfaces structure: so it can't get
-       messed up! */
-    for (i = local_interfaces; i; i = i->next)
+  struct dgram_packet *dgram = &p->packet.dgram;
+  struct in_addr ip = dgram->header.source_ip;
+  int count = CVAL(buf,0);
+  int Index = IVAL(buf,1); /* caller's index representing workgroup */
+  char *buf1;
+  
+  DEBUG(3,("Receive Backup ack for %s from %s total=%d index=%d\n",
+	   namestr(&dgram->dest_name), inet_ntoa(ip),
+	   count, Index));
+  
+  if (same_context(dgram)) return;
+  
+  if (count <= 0) return;
+  
+  /* go through the list of servers attempting to sync browse lists */
+  for (buf1 = buf+5; *buf1 && count; buf1 = skip_string(buf1, 1), --count)
     {
-      add_subnet_entry(i->bcast,i->nmask,group, True, False);
-  }
+      struct in_addr back_ip;
+      struct subnet_record *d;
+      
+      DEBUG(4,("Searching for backup browser %s at %s...\n",
+	       buf1, inet_ntoa(ip)));
+      
+      /* XXXX assume name is a DNS name NOT a netbios name. a more complete
+	     approach is to use reply_name_query functionality to find the name */
+      back_ip = *interpret_addr2(buf1);
+      
+      if (zero_ip(back_ip))
+	{
+	  DEBUG(4,("Failed to find backup browser server using DNS\n"));
+	  continue;
+	}
+      
+      DEBUG(4,("Found browser server at %s\n", inet_ntoa(back_ip)));
+      
+      if ((d = find_subnet(back_ip)))
+	{
+	  struct subnet_record *d1;
+	  for (d1 = subnetlist; d1; d1 = d1->next)
+	    {
+	      struct work_record *work;
+	      for (work = d1->workgrouplist; work; work = work->next)
+		{
+		  if (work->token == Index)
+		    {
+		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
+					   work->work_group,0x1d,0,0,
+					   False,False,back_ip);
+		      return;
+		    }
+		}
+	    }
+	}
+    }
 }
 
 
@@ -287,7 +430,7 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
   bzero(outbuf,sizeof(outbuf));
   p = outbuf;
   
-  CVAL(p,0) = 10;    /* backup list response */
+  CVAL(p,0) = ANN_GetBackupListResp;    /* backup list response */
   p++;
   
   countptr = p; /* count pointer */
@@ -380,232 +523,14 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
     
   }
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      myname,theirname,0x20,0,ip,*iface_ip(ip));
+		      myname,theirname,0x20,0x0,ip,*iface_ip(ip));
 }
 
-
-/*******************************************************************
-  same context: scope. should check name_type as well, and makes sure
-  we don't process messages from ourselves
-  ******************************************************************/
-BOOL same_context(struct dgram_packet *dgram)
-{
-  if (!strequal(dgram->dest_name  .scope,scope )) return(True);
-  if ( strequal(dgram->source_name.name ,myname)) return(True);
-  
-  return(False);
-}
-
-
-/*******************************************************************
-  am I listening on a name. XXXX check the type of name as well.
-  ******************************************************************/
-BOOL listening_name(struct work_record *work, struct nmb_name *n)
-{
-  if (strequal(n->name,myname) ||
-      strequal(n->name,work->work_group) ||
-      strequal(n->name,MSBROWSE))
-    {
-      return(True);
-    }
-  
-  return(False);
-}
-
-
-/*******************************************************************
-  process a domain announcement frame
-
-  Announce frames come in 3 types. Servers send host announcements
-  (command=1) to let the master browswer know they are
-  available. Master browsers send local master announcements
-  (command=15) to let other masters and backups that they are the
-  master. They also send domain announcements (command=12) to register
-  the domain
-
-  The comment field of domain announcements contains the master
-  browser name. The servertype is used by NetServerEnum to select
-  resources. We just have to pass it to smbd (via browser.dat) and let
-  the client choose using bit masks.
-  ******************************************************************/
-static void process_announce(struct packet_struct *p,int command,char *buf)
-{
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip); 
-  int update_count = CVAL(buf,0);
-  int ttl = IVAL(buf,1)/1000;
-  char *name = buf+5;
-  int osmajor=CVAL(buf,21);
-  int osminor=CVAL(buf,22);
-  uint32 servertype = IVAL(buf,23);
-  char *comment = buf+31;
-  struct work_record *work;
-  char *work_name;
-  char *serv_name = dgram->source_name.name;
-  BOOL add = False;
-
-  comment[43] = 0;
-  
-  DEBUG(4,("Announce(%d) %s(%x)",command,name,name[15]));
-  DEBUG(4,("%s count=%d ttl=%d OS=(%d,%d) type=%08x comment=%s\n",
-	   namestr(&dgram->dest_name),update_count,ttl,osmajor,osminor,
-	   servertype,comment));
-  
-  name[15] = 0;  
-  
-  if (dgram->dest_name.name_type == 0 && command == ANN_HostAnnouncement)
-    {
-      DEBUG(2,("Announce to nametype(0) not supported yet\n"));
-      return;
-    }
-
-  if (command == ANN_DomainAnnouncement && 
-      ((!strequal(dgram->dest_name.name, MSBROWSE)) ||
-       dgram->dest_name.name_type != 0x1))
-    {
-      DEBUG(0,("Announce(%d) from %s should be __MSBROWSE__(1) not %s\n",
-		command, inet_ntoa(ip), namestr(&dgram->dest_name)));
-      return;
-    }
-  
-  if (same_context(dgram)) return;
-  
-  if (command == ANN_DomainAnnouncement) {
-    work_name = name;
-  } else {
-    work_name = dgram->dest_name.name;
-  }
-
-  /* we need some way of finding out about new workgroups
-     that appear to be sending packets to us. The name_type checks make
-     sure we don't add host names as workgroups */
-  if (command == ANN_HostAnnouncement &&
-      (dgram->dest_name.name_type == 0x1d ||
-       dgram->dest_name.name_type == 0x1e))
-    add = True;
-  
-  if (!(work = find_workgroupstruct(d, work_name,add)))
-    return;
-  
-  DEBUG(4, ("workgroup %s on %s\n", work->work_group, serv_name));
-  
-  ttl = GET_TTL(ttl);
-  
-  /* add them to our browse list */
-  add_server_entry(d,work,name,servertype,ttl,comment,True);
-  
-#if 0
-  /* the tell become backup code is broken, no great harm is done by
-     disabling it */
-  tell_become_backup();
-#endif
-
-  /* get their browse list from them and add it to ours. */
-  add_browser_entry(serv_name,dgram->dest_name.name_type,
-		    work->work_group,30,ip);
-}
-
-/*******************************************************************
-  process a master announcement frame
-  ******************************************************************/
-static void process_master_announce(struct packet_struct *p,char *buf)
-{
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip);
-  struct subnet_record *mydomain = find_subnet(*iface_bcast(ip));
-  char *name = buf;
-  struct work_record *work;
-  name[15] = 0;
-  
-  DEBUG(3,("Master Announce from %s (%s)\n",name,inet_ntoa(ip)));
-  
-  if (same_context(dgram)) return;
-  
-  if (!d || !mydomain) return;
-  
-  if (!lp_domain_master()) return;
-  
-  for (work = mydomain->workgrouplist; work; work = work->next)
-    {
-      if (AM_MASTER(work))
-	{
-	  /* merge browse lists with them */
-	  add_browser_entry(name,0x1b, work->work_group,30,ip);
-	}
-    }
-}
-
-/*******************************************************************
-  process a receive backup list request
-  
-  we receive a list of servers, and we attempt to locate them all on
-  our local subnet, and sync browse lists with them on the workgroup
-  they are said to be in.
-  ******************************************************************/
-static void process_rcv_backup_list(struct packet_struct *p,char *buf)
-{
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  int count = CVAL(buf,0);
-  int Index = IVAL(buf,1); /* caller's index representing workgroup */
-  char *buf1;
-  
-  DEBUG(3,("Receive Backup ack for %s from %s total=%d index=%d\n",
-	   namestr(&dgram->dest_name), inet_ntoa(ip),
-	   count, Index));
-  
-  if (same_context(dgram)) return;
-  
-  if (count <= 0) return;
-  
-  /* go through the list of servers attempting to sync browse lists */
-  for (buf1 = buf+5; *buf1 && count; buf1 = skip_string(buf1, 1), --count)
-    {
-      struct in_addr back_ip;
-      struct subnet_record *d;
-      
-      DEBUG(4,("Searching for backup browser %s at %s...\n",
-	       buf1, inet_ntoa(ip)));
-      
-      /* XXXX assume name is a DNS name NOT a netbios name. a more complete
-	 approach is to use reply_name_query functionality to find the name */
-      back_ip = *interpret_addr2(buf1);
-      
-      if (zero_ip(back_ip))
-	{
-	  DEBUG(4,("Failed to find backup browser server using DNS\n"));
-	  continue;
-	}
-      
-      DEBUG(4,("Found browser server at %s\n", inet_ntoa(back_ip)));
-      
-      if ((d = find_subnet(back_ip)))
-	{
-	  struct subnet_record *d1;
-	  for (d1 = subnetlist; d1; d1 = d1->next)
-	    {
-	      struct work_record *work;
-	      for (work = d1->workgrouplist; work; work = work->next)
-		{
-		  if (work->token == Index)
-		    {
-		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
-					   work->work_group,0x1d,0,0,
-					   False,False,back_ip);
-		      return;
-		    }
-		}
-	    }
-	}
-    }
-}
 
 /*******************************************************************
   process a send backup list request
 
-  A client send a backup list request to ask for a list of servers on
+  A client sends a backup list request to ask for a list of servers on
   the net that maintain server lists for a domain. A server is then
   chosen from this list to send NetServerEnum commands to to list
   available servers.
@@ -618,7 +543,7 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d; 
+  struct subnet_record *d;
   struct work_record *work;
 
   int count = CVAL(buf,0);
@@ -658,7 +583,7 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
   process a reset browser state
 
   diagnostic packet:
-  0x1 - stop being a master browser
+  0x1 - stop being a master browser and become a backup browser.
   0x2 - discard browse lists, stop being a master browser, try again.
   0x4 - stop being a master browser forever. no way. ain't gonna.
          
@@ -688,6 +613,10 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 	}
     }
   
+  /* XXXX documentation inconsistency: the above description does not
+     exactly tally with what is implemented for state & 0x2
+   */
+
   /* totally delete all servers and start afresh */
   if (state & 0x2)
     {
@@ -730,12 +659,23 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   
   if (strequal(dgram->source_name.name,myname)) return;
   
+  /* XXXX BUG or FEATURE?: need to ensure that we are a member of
+     this workgroup before announcing, particularly as we only
+     respond on local interfaces anyway.
+
+     if (strequal(dgram->dest_name, lp_workgroup()) return; ???
+   */
+
   if (!d) return;
   
   if (!d->my_interface) return;
   
   for (work = d->workgrouplist; work; work = work->next)
     {
+     /* XXXX BUG: the destination name type should also be checked,
+        not just the name. e.g if the name is WORKGROUP(0x1d) then
+        we should only respond if we own that name */
+    
       if (strequal(dgram->dest_name.name,work->work_group)) 
 	{
 	  work->needannounce = True;
@@ -743,89 +683,6 @@ static void process_announce_request(struct packet_struct *p,char *buf)
     }
 }
 
-
-/****************************************************************************
-   process a domain logon packet
-   **************************************************************************/
-void process_logon_packet(struct packet_struct *p,char *buf,int len)
-{
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip);
-  char *logname,*q;
-  char *reply_name;
-  BOOL add_slashes = False;
-  pstring outbuf;
-  int code,reply_code;
-  struct work_record *work;
-  
-  if (!d) return;
-  
-  if (!(work = find_workgroupstruct(d,dgram->dest_name.name, False))) 
-    return;
-  
-  if (!lp_domain_logons()) {
-    DEBUG(3,("No domain logons\n"));
-    return;
-  }
-  if (!listening_name(work, &dgram->dest_name))
-    {
-      DEBUG(4,("Not listening to that domain\n"));
-      return;
-    }
-  
-  code = SVAL(buf,0);
-  switch (code) {
-  case 0:    
-    {
-      char *machine = buf+2;
-      char *user = skip_string(machine,1);
-      logname = skip_string(user,1);
-      reply_code = 6;
-      reply_name = myname;
-      add_slashes = True;
-      DEBUG(3,("Domain login request from %s(%s) user=%s\n",
- 	       machine,inet_ntoa(p->ip),user));
-    }
-    break;
-  case 7:    
-    {
-      char *machine = buf+2;
-      logname = skip_string(machine,1);
-      reply_code = 7;
-      reply_name = lp_domain_controller();
-      if (!*reply_name) {
- 	DEBUG(3,("No domain controller configured\n"));
- 	return;
-      }
-      DEBUG(3,("GETDC request from %s(%s)\n",
- 	       machine,inet_ntoa(p->ip)));
-    }
-    break;
-  default:
-    DEBUG(3,("Unknown domain request %d\n",code));
-    return;
-  }
-  
-  bzero(outbuf,sizeof(outbuf));
-  q = outbuf;
-  SSVAL(q,0,reply_code);
-  q += 2;
-  if (add_slashes) {
-    strcpy(q,"\\\\");
-    q += 2;
-  }
-  StrnCpy(q,reply_name,16);
-  strupper(q);
-  q = skip_string(q,1);
-  SSVAL(q,0,0xFFFF);
-  q += 2;
-  
-  send_mailslot_reply(logname,ClientDGRAM,outbuf,PTR_DIFF(q,outbuf),
- 		      myname,&dgram->source_name.name[0],0x20,0,p->ip,
-		      *iface_ip(p->ip));  
-}
- 
 
 /****************************************************************************
 depending on what announce has been made, we are only going to
@@ -988,11 +845,16 @@ void process_dgram(struct packet_struct *p)
  
   if (len <= 0) return;
 
-   if (strequal(smb_buf(buf),"\\MAILSLOT\\BROWSE"))
-   {
+   /* datagram packet received for the browser mailslot */
+   if (strequal(smb_buf(buf),BROWSE_MAILSLOT)) {
      process_browse_packet(p,buf2,len);
-   } else if (strequal(smb_buf(buf),"\\MAILSLOT\\NET\\NETLOGON")) {
+     return;
+   }
+
+   /* datagram packet received for the domain log on mailslot */
+   if (strequal(smb_buf(buf),NET_LOGON_MAILSLOT)) {
      process_logon_packet(p,buf2,len);
+     return;
    }
 }
 
