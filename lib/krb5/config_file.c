@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,14 +36,46 @@ RCSID("$Id$");
 
 #ifndef HAVE_NETINFO
 
+/* Gaah! I want a portable funopen */
+struct fileptr {
+    const char *s;
+    FILE *f;
+};
+
+static char *
+config_fgets(char *str, size_t len, struct fileptr *ptr)
+{
+    /* XXX this is not correct, in that they don't do the same if the
+       line is longer than len */
+    if(ptr->f != NULL)
+	return fgets(str, len, ptr->f);
+    else {
+	/* this is almost strsep_copy */
+	const char *p;
+	ssize_t l;
+	if(*ptr->s == '\0')
+	    return NULL;
+	p = ptr->s + strcspn(ptr->s, "\n");
+	if(*p == '\n')
+	    p++;
+	l = min(len, p - ptr->s);
+	if(len > 0) {
+	    memcpy(str, ptr->s, l);
+	    str[l] = '\0';
+	}
+	ptr->s = p;
+	return str;
+    }
+}
+
 static krb5_error_code parse_section(char *p, krb5_config_section **s,
 				     krb5_config_section **res,
 				     const char **error_message);
-static krb5_error_code parse_binding(FILE *f, unsigned *lineno, char *p,
+static krb5_error_code parse_binding(struct fileptr *f, unsigned *lineno, char *p,
 				     krb5_config_binding **b,
 				     krb5_config_binding **parent,
 				     const char **error_message);
-static krb5_error_code parse_list(FILE *f, unsigned *lineno,
+static krb5_error_code parse_list(struct fileptr *f, unsigned *lineno,
 				  krb5_config_binding **parent,
 				  const char **error_message);
 
@@ -114,7 +146,7 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
  */
 
 static krb5_error_code
-parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
+parse_list(struct fileptr *f, unsigned *lineno, krb5_config_binding **parent,
 	   const char **error_message)
 {
     char buf[BUFSIZ];
@@ -122,7 +154,7 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
     krb5_config_binding *b = NULL;
     unsigned beg_lineno = *lineno;
 
-    while(fgets(buf, sizeof(buf), f) != NULL) {
+    while(config_fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
 
 	++*lineno;
@@ -153,7 +185,7 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
  */
 
 static krb5_error_code
-parse_binding(FILE *f, unsigned *lineno, char *p,
+parse_binding(struct fileptr *f, unsigned *lineno, char *p,
 	      krb5_config_binding **b, krb5_config_binding **parent,
 	      const char **error_message)
 {
@@ -209,26 +241,17 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
  */
 
 static krb5_error_code
-krb5_config_parse_file_debug (const char *fname,
-			      krb5_config_section **res,
-			      unsigned *lineno,
-			      const char **error_message)
+krb5_config_parse_debug (struct fileptr *f,
+			 krb5_config_section **res,
+			 unsigned *lineno,
+			 const char **error_message)
 {
-    FILE *f;
-    krb5_config_section *s;
-    krb5_config_binding *b;
+    krb5_config_section *s = NULL;
+    krb5_config_binding *b = NULL;
     char buf[BUFSIZ];
-    krb5_error_code ret = 0;
+    krb5_error_code ret;
 
-    s = NULL;
-    b = NULL;
-    *lineno = 0;
-    f = fopen (fname, "r");
-    if (f == NULL) {
-	*error_message = "cannot open file";
-	return ENOENT;
-    }
-    while (fgets(buf, sizeof(buf), f) != NULL) {
+    while (config_fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
 
 	++*lineno;
@@ -241,28 +264,43 @@ krb5_config_parse_file_debug (const char *fname,
 	    continue;
 	if (*p == '[') {
 	    ret = parse_section(p, &s, res, error_message);
-	    if (ret) {
-		goto out;
-	    }
+	    if (ret) 
+		return ret;
 	    b = NULL;
 	} else if (*p == '}') {
 	    *error_message = "unmatched }";
-	    ret = EINVAL;	/* XXX */
-	    goto out;
+	    return EINVAL;	/* XXX */
 	} else if(*p != '\0') {
 	    if (s == NULL) {
 		*error_message = "binding before section";
-		ret = EINVAL;
-		goto out;
+		return EINVAL;
 	    }
 	    ret = parse_binding(f, lineno, p, &b, &s->u.list, error_message);
 	    if (ret)
-		goto out;
+		return ret;
 	}
     }
-out:
-    fclose (f);
-    return ret;
+    return 0;
+}
+
+krb5_error_code
+krb5_config_parse_string_multi(krb5_context context,
+			       const char *string,
+			       krb5_config_section **res)
+{
+    const char *str;
+    unsigned lineno = 0;
+    krb5_error_code ret;
+    struct fileptr f;
+    f.f = NULL;
+    f.s = string;
+
+    ret = krb5_config_parse_debug (&f, res, &lineno, &str);
+    if (ret) {
+	krb5_set_error_string (context, "%s:%u: %s", "<constant>", lineno, str);
+	return ret;
+    }
+    return 0;
 }
 
 krb5_error_code
@@ -271,10 +309,19 @@ krb5_config_parse_file_multi (krb5_context context,
 			      krb5_config_section **res)
 {
     const char *str;
-    unsigned lineno;
+    unsigned lineno = 0;
     krb5_error_code ret;
+    struct fileptr f;
+    f.f = fopen(fname, "r");
+    f.s = NULL;
+    if(f.f == NULL) {
+	ret = errno;
+	krb5_set_error_string (context, "open %s: %s", fname, strerror(ret));
+	return ret;
+    }
 
-    ret = krb5_config_parse_file_debug (fname, res, &lineno, &str);
+    ret = krb5_config_parse_debug (&f, res, &lineno, &str);
+    fclose(f.f);
     if (ret) {
 	krb5_set_error_string (context, "%s:%u: %s", fname, lineno, str);
 	return ret;
