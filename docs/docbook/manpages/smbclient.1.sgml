@@ -38,6 +38,7 @@
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-T&lt;c|x&gt;IXFqgbNan</arg>
+		<arg choice="opt">-k</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -586,6 +587,14 @@ domain = &lt;value&gt;
 
 		<para>This is particularly useful in scripts and for printing stdin 
 		to the server, e.g. <command>-c 'print -'</command>. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-k</term>
+		<listitem><para>
+		Try to authenticate with kerberos. Only useful in 
+		an Active Directory environment.
+		</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
