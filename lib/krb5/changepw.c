@@ -52,7 +52,7 @@ get_kdc_address (krb5_context context,
 	return ret;
 
     port = ntohs(krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT));
-    error = roken_getaddrinfo_hostspec2(*hostlist, SOCK_STREAM, port, ai);
+    error = roken_getaddrinfo_hostspec2(*hostlist, SOCK_DGRAM, port, ai);
 
     krb5_free_krbhst (context, hostlist);
     if(error)
@@ -271,9 +271,6 @@ krb5_change_password (krb5_context	context,
     ret = get_kdc_address (context, creds->client->realm, &ai);
     if (ret)
 	goto out;
-
-    krb5_auth_con_setflags (context, auth_context,
-			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
 
     for (a = ai; a != NULL; a = a->ai_next) {
 	sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
