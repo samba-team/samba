@@ -443,7 +443,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1) 
-NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB) $(RPC_PARSE_OBJ2)
+NMBD_LIBS = $(RPC_PARSE_OBJ2) $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
@@ -613,7 +613,7 @@ SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
 
 CLIENT_OBJ = client/client.o client/clitar.o
-CLIENT_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(RPC_PARSE_OBJ2)
+CLIENT_LIBS = $(RPC_PARSE_OBJ2) $(SMBLIB) $(NMBLIB) $(SAMBALIB) 
 
 MOUNT_OBJ = client/smbmount.o client/clientutil.o \
               $(RPC_PARSE_OBJ2)
