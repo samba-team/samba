@@ -2067,6 +2067,7 @@ fi
 AC_MSG_RESULT($with_ads_support)
 
 FOUND_KRB5=no
+KRB5_LIBS=""
 if test x"$with_ads_support" = x"yes"; then
 
 ac_save_CFLAGS="$CFLAGS"
@@ -2230,15 +2231,15 @@ fi
   ########################################################
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
-  AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
+  AC_CHECK_LIB(krb5, krb5_mk_req_extended, [KRB5_LIBS="$LIBS -lkrb5";
+		KRB5_CFLAGS="$CFLAGS";
         AC_DEFINE(HAVE_KRB5,1,[Whether KRB5 is available])])
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
-  AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5";
+  AC_CHECK_LIB(gssapi_krb5, gss_display_status, [KRB5_LIBS="$KRB5_LIBS -lgssapi_krb5";
         AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 
-KRB5_LIBS="$LIBS"; KRB5_CFLAGS="$CFLAGS"
 LIBS="$ac_save_LIBS"; CFLAGS="$ac_save_CFLAGS"
 fi
 
