@@ -640,11 +640,11 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     	}
 
 	endsmbfilepwent(fp, &pw_file_lock_depth);
-	free(new_entry);
+	SAFE_FREE(new_entry);
 	return False;
   }
 
-  free(new_entry);
+  SAFE_FREE(new_entry);
   endsmbfilepwent(fp, &pw_file_lock_depth);
   return True;
 }
@@ -1121,11 +1121,11 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
       	unlink(pfile2);
 	endsmbfilepwent(fp, &pw_file_lock_depth);
 	endsmbfilepwent(fp_write, &pfile2_lockdepth);
-	free(new_entry);
+	SAFE_FREE(new_entry);
 	return False;
     }
 
-    free(new_entry);
+    SAFE_FREE(new_entry);
   }
 
   /*
