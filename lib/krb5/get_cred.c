@@ -190,7 +190,7 @@ krb5_get_kdc_cred(krb5_context context,
 		    krb5_get_err_text(context, error.error_code));
 	fprintf(stderr, " (code %d)\n", error.error_code);
 #endif
-	ret = error.error_code;
+	ret = error.error_code + KRB5KDC_ERR_NONE;
 	free_KRB_ERROR(&error);
     }else
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
