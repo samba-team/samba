@@ -196,10 +196,19 @@ NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base,
 	int i;
 	char *p = base;
 	NDR_CHECK(ndr_push_uint32(ndr, count));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	for (i=0;i<count;i++) {
-		NDR_CHECK(push_fn(ndr, ndr_flags, p));
+		NDR_CHECK(push_fn(ndr, NDR_SCALARS, p));
 		p += elsize;
 	}
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+buffers:
+	p = base;
+	for (i=0;i<count;i++) {
+		NDR_CHECK(push_fn(ndr, NDR_BUFFERS, p));
+		p += elsize;
+	}
+done:
 	return NT_STATUS_OK;
 }
 

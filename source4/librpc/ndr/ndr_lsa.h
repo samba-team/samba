@@ -66,3 +66,49 @@ struct lsa_EnumSids {
 
 };
 
+struct lsa_Name {
+	uint16 name_len;
+	uint16 name_size;
+	const char *name;
+};
+
+struct lsa_TranslatedName {
+	uint16 sid_type;
+	struct lsa_Name name;
+	uint32 sid_index;
+};
+
+struct lsa_TransNameArray {
+	uint32 count;
+	struct lsa_TranslatedName *names;
+};
+
+struct lsa_TrustInformation {
+	struct lsa_Name name;
+	struct dom_sid2 *sid;
+};
+
+struct lsa_RefDomainList {
+	uint32 count;
+	struct lsa_TrustInformation *domains;
+	uint32 max_count;
+};
+
+struct lsa_LookupSids {
+	struct {
+		struct policy_handle *handle;
+		struct lsa_SidArray *sids;
+		struct lsa_TransNameArray *names;
+		uint16 level;
+		uint32 *count;
+	} in;
+
+	struct {
+		struct lsa_RefDomainList *domains;
+		struct lsa_TransNameArray *names;
+		uint32 *count;
+		NTSTATUS result;
+	} out;
+
+};
+

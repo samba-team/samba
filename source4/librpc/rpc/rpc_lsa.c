@@ -148,3 +148,23 @@ NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 done:
 	return status;
 }
+
+/*
+  LookupSids interface
+*/
+NTSTATUS dcerpc_lsa_LookupSids(struct dcerpc_pipe *p,
+			       TALLOC_CTX *mem_ctx,
+			       struct lsa_LookupSids *r)
+{
+	NTSTATUS status;
+
+	status = dcerpc_ndr_request(p, LSA_LOOKUPSIDS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_LookupSids,
+				    (ndr_pull_fn_t) ndr_pull_lsa_LookupSids,
+				    r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	return r->out.result;
+}

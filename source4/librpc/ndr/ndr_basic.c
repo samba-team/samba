@@ -257,7 +257,7 @@ NTSTATUS ndr_pull_unistr(struct ndr_pull *ndr, const char **s)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	NDR_ALLOC_N(ndr, ws, (len1+1)*2);
-	NDR_CHECK(ndr_pull_bytes(ndr, ws, len1*2));
+	NDR_CHECK(ndr_pull_bytes(ndr, ws, len2*2));
 	SSVAL(ws, len1*2, 0);
 	SSVAL(ws, len2*2, 0);
 	pull_ucs2_talloc(ndr->mem_ctx, &as, (const smb_ucs2_t *)ws);
