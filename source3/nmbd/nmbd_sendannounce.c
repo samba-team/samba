@@ -430,7 +430,10 @@ This must *only* be called on shutdown.
 
 void announce_my_servers_removed(void)
 {
+  int announce_interval = lp_lm_interval();
+  int lm_announce = lp_lm_announce();
   struct subnet_record *subrec; 
+
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
     struct work_record *work;
@@ -447,6 +450,25 @@ void announce_my_servers_removed(void)
         if(AM_LOCAL_MASTER_BROWSER(work))
           send_local_master_announcement(subrec, work, servrec);
         send_host_announcement(subrec, work, servrec);
+
+
+        if ((announce_interval <= 0) || (lm_announce <= 0))
+        {
+          /* user absolutely does not want LM announcements to be sent. */
+          continue;
+        }
+
+        if ((lm_announce >= 2) && (!found_lm_clients))
+        {
+          /* has been set to 2 (Auto) but no LM clients detected (yet). */
+          continue;
+        }
+
+        /* 
+         * lm announce was set or we have seen lm announcements, so do
+         * a lm announcement of host removed.
+         */
+
         send_lm_host_announcement(subrec, work, servrec, 0);
       }
     }
