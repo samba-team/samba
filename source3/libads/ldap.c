@@ -1981,6 +1981,13 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
    for the domain, but there isn't a simple query to do this. Instead
    we look for the principle names on the DCs account and find one that has 
    the right form, then extract the netbios name of the domain from that
+
+   NOTE! better method is this:
+
+bin/net -Uadministrator%XXXXX ads search '(&(objectclass=crossref)(dnsroot=VNET3.HOME.SAMBA.ORG))'  nETBIOSName 
+
+but you need to force the bind path to match the configurationNamingContext from the rootDSE
+
 */
 ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **workgroup)
 {
