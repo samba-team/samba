@@ -3468,6 +3468,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	}
 
 	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	dos_to_unix(key, True);
 
 	if (tdb_prs_store(tdb, key, &ps)==0) {
 		status = 0;
@@ -3597,6 +3598,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	/* Fetch security descriptor from tdb */
 
 	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	dos_to_unix(key, True);
 
 	if (tdb_prs_fetch(tdb, key, &ps, mem_ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
