@@ -1414,8 +1414,14 @@ unsigned char *opt_replyend;
 void
 env_opt_start()
 {
-	if (opt_reply)
-		opt_reply = (unsigned char *)realloc(opt_reply, OPT_REPLY_SIZE);
+	if (opt_reply) {
+		void *tmp = realloc (opt_reply, OPT_REPLY_SIZE);
+		if (tmp != NULL) {
+			opt_reply = tmp;
+		} else {
+			free (opt_reply);
+			opt_reply = NULL;
+		}
 	else
 		opt_reply = (unsigned char *)malloc(OPT_REPLY_SIZE);
 	if (opt_reply == NULL) {
@@ -1464,14 +1470,16 @@ env_opt_add(unsigned char *ep)
 				strlen((char *)ep) + 6 > opt_replyend)
 	{
 		int len;
+		void *tmp;
 		opt_replyend += OPT_REPLY_SIZE;
 		len = opt_replyend - opt_reply;
-		opt_reply = (unsigned char *)realloc(opt_reply, len);
-		if (opt_reply == NULL) {
+		tmp = realloc(opt_reply, len);
+		if (tmp == NULL) {
 /*@*/			printf("env_opt_add: realloc() failed!!!\n");
 			opt_reply = opt_replyp = opt_replyend = NULL;
 			return;
 		}
+		opt_reply = tmp;
 		opt_replyp = opt_reply + len - (opt_replyend - opt_replyp);
 		opt_replyend = opt_reply + len;
 	}
