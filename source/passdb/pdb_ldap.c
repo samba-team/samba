@@ -76,7 +76,7 @@ extern BOOL sam_logon_in_ssb;
 static BOOL ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
-	int version, rc;
+	int version;
 	int tls;
 	uid_t uid = geteuid();
 	struct passwd* pass;
@@ -100,11 +100,11 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 		return False;
 	}
 
-	if (lp_ldap_ssl() == LDAP_SSL_ON && lp_ldap_port() == 389) {
-		port = 636;
-	}
-	else {
-		port = lp_ldap_port();
+	port = lp_ldap_port();
+	
+	/* remap default port is no SSL */
+	if ( (lp_ldap_ssl() == LDAP_SSL_OFF) && (lp_ldap_port() == 636) ) {
+		port = 389;
 	}
 
 	DEBUG(10,("Initializing connection to %s on port %d\n", 
