@@ -230,7 +230,7 @@ static int fill_grent(struct group *result,
 
     /* Terminate list */
 
-    (result->gr_mem)[gr->num_gr_mem] = NULL;
+    (result->gr_mem)[i] = NULL;
     
     return NSS_STATUS_SUCCESS;
 }
