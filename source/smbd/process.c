@@ -896,6 +896,9 @@ void smbd_process(void)
 	      last_keepalive = counter;
       }
 
+	/* close down all idle client-side MSRPC connections */
+	free_connections();
+
       /* check for connection timeouts */
       allidle = conn_idle_all(t, deadtime);
 

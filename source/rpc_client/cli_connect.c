@@ -86,6 +86,7 @@ static struct cli_connection* add_con_to_array(uint32 *len,
 }
 void free_connections(void)
 {
+	DEBUG(3,("free_connections: closing all MSRPC connections\n"));
 	free_con_array(num_cons, con_list);
 	free_cli_use();
 
