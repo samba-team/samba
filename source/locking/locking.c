@@ -82,8 +82,13 @@ BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type)
   if (!lp_locking(snum) || !lp_strict_locking(snum))
     return(False);
 
-  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,
-                    map_lock_type(fsp,lock_type)));
+  /*
+   * Note that most UNIX's can *test* for a write lock on
+   * a read-only fd, just not *set* a write lock on a read-only
+   * fd. So we don't need to use map_lock_type here.
+   */ 
+
+  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
 }
 
 
