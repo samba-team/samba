@@ -51,13 +51,14 @@ typedef struct {
 /* flags to tdb_store() */
 #define TDB_REPLACE 1
 #define TDB_INSERT 2
+#define TDB_MODIFY 3
 
 /* flags for tdb_open() */
 #define TDB_CLEAR_IF_FIRST 1
 
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
-		TDB_ERR_OOM, TDB_ERR_EXISTS};
+		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOEXIST };
 
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
 
