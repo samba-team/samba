@@ -158,3 +158,9 @@ void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
 
 	return newp;
 }
+
+/* strdup with a talloc */
+char *talloc_strdup(TALLOC_CTX *t, char *p)
+{
+	return talloc_memdup(t, p, strlen(p) + 1);
+}
