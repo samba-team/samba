@@ -1148,18 +1148,28 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 */
 NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 {
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
         uint32_t time_low;
         uint32_t time_mid, time_hi_and_version;
         uint32_t clock_seq[2];
         uint32_t node[6];
         int i;
 
-        if (11 != sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        if (11 == sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
                          &time_low, &time_mid, &time_hi_and_version, 
                          &clock_seq[0], &clock_seq[1],
                          &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
-                return NT_STATUS_INVALID_PARAMETER;
+                status = NT_STATUS_OK;
+	} else if (11 == sscanf(s, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+                         &time_low, &time_mid, &time_hi_and_version, 
+                         &clock_seq[0], &clock_seq[1],
+                         &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
+                status = NT_STATUS_OK;
         }
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	guid->time_low = time_low;
 	guid->time_mid = time_mid;
@@ -1180,6 +1190,19 @@ const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
 			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+			       guid->time_low, guid->time_mid,
+			       guid->time_hi_and_version,
+			       guid->clock_seq[0],
+			       guid->clock_seq[1],
+			       guid->node[0], guid->node[1],
+			       guid->node[2], guid->node[3],
+			       guid->node[4], guid->node[5]);
+}
+
+const char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+{
+	return talloc_asprintf(mem_ctx, 
+			       "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
 			       guid->time_low, guid->time_mid,
 			       guid->time_hi_and_version,
 			       guid->clock_seq[0],
