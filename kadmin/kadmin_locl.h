@@ -96,29 +96,10 @@
 #include <parse_time.h>
 #include <getarg.h>
 
+#include "kadmin-commands.h"
 
 extern krb5_context context;
 extern void * kadm_handle;
-
-#define DECL(X) int X(int, char **)
-
-DECL(add_new_key);
-DECL(cpw_entry);
-DECL(del_entry);
-DECL(del_enctype);
-DECL(exit_kadmin);
-DECL(ext_keytab);
-DECL(get_entry);
-DECL(get_privs);
-DECL(help);
-DECL(list_princs);
-DECL(mod_entry);
-DECL(rename_entry);
-DECL(init);
-DECL(dump);
-DECL(load);
-DECL(merge);
-DECL(password_quality);
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))

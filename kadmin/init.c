@@ -106,57 +106,29 @@ create_random_entry(krb5_principal princ,
     return ret;
 }
 
-static struct getargs args[] = {
-    { "realm-max-ticket-life",  0,	arg_string,	NULL,
-      "realm max ticket lifetime" },
-    { "realm-max-renewable-life",  0,	arg_string,	NULL,
-      "realm max renewable lifetime" },
-    { "help", 'h', arg_flag, NULL },
-};
-
-static int num_args = sizeof(args) / sizeof(args[0]);
-
-static void
-usage(void)
-{
-    arg_printusage (args, num_args, "init", "realm...");
-}
-
 int
-init(int argc, char **argv)
+init(struct init_options *opt, int argc, char **argv)
 {
     kadm5_ret_t ret;
     int i;
-    char *realm_max_life  = NULL;
-    char *realm_max_rlife = NULL;
-    int help_flag = 0;
     HDB *db;
-    int optind = 0;
     krb5_deltat max_life, max_rlife;
 
-    args[0].value = &realm_max_life;
-    args[1].value = &realm_max_rlife;
-    args[2].value = &help_flag;
-
-    if(getarg(args, num_args, argc, argv, &optind) || help_flag) {
-	usage();
+    if(argc == 0) {
+	printf("must have atleast one realm\n");
 	return 0;
     }
-
-    if(argc - optind < 1) {
-	usage();
-	return 0;
-    }
-
-    if (realm_max_life) {
-	if (str2deltat (realm_max_life, &max_life) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'", realm_max_life);
+    if (opt->realm_max_ticket_life_string) {
+	if (str2deltat (opt->realm_max_ticket_life_string, &max_life) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'", 
+			opt->realm_max_ticket_life_string);
 	    return 0;
 	}
     }
-    if (realm_max_rlife) {
-	if (str2deltat (realm_max_rlife, &max_rlife) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'", realm_max_rlife);
+    if (opt->realm_max_renewable_life_string) {
+	if (str2deltat (opt->realm_max_renewable_life_string, &max_rlife) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'", 
+			opt->realm_max_renewable_life_string);
 	    return 0;
 	}
     }
@@ -169,7 +141,7 @@ init(int argc, char **argv)
 	return 0;
     }
     db->hdb_close(context, db);
-    for(i = optind; i < argc; i++){
+    for(i = 0; i < argc; i++){
 	krb5_principal princ;
 	const char *realm = argv[i];
 
@@ -178,14 +150,14 @@ init(int argc, char **argv)
 				  KRB5_TGS_NAME, realm, NULL);
 	if(ret)
 	    return 0;
-	if (realm_max_life == NULL) {
+	if (opt->realm_max_ticket_life_string == NULL) {
 	    max_life = 0;
 	    if(edit_deltat ("Realm max ticket life", &max_life, NULL, 0)) {
 		krb5_free_principal(context, princ);
 		return 0;
 	    }
 	}
-	if (realm_max_rlife == NULL) {
+	if (opt->realm_max_renewable_life_string == NULL) {
 	    max_rlife = 0;
 	    if(edit_deltat("Realm max renewable ticket life", &max_rlife,
 			   NULL, 0)) {

@@ -1,0 +1,312 @@
+command = {
+	name = "stash"
+	name = "kstash"
+	option = {
+		long = "enctype"
+		short = "e"
+		type = "string"
+		help = "encryption type"
+		default = "des3-cbc-sha1"
+	}
+	option = {
+		long = "key-file"
+		short = "k"
+		type = "string"
+		argument = "file"
+		help = "master key file"
+	}
+	option = {
+		long = "convert-file"
+		type = "flag"
+		help = "just convert keyfile to new format"
+	}
+	option = {
+		long = "master-key-fd"
+		type = "integer"
+		argument = "fd"
+		help = "filedescriptor to read passphrase from"
+		default = "-1"
+	}
+	help = ""
+}
+command = {
+	name = "dump"
+	option = {
+		long = "decrypt"
+		short = "d"
+		type = "flag"
+		help = "decrypt keys"
+	}
+	argument = "[dump-file]"
+	help = "Dumps the database in a human readable format to the specified file, or the standard out."
+}
+
+command = {
+	name = "init"
+	option = {
+		long = "realm-max-ticket-life"
+		type = "string"
+		help = "realm max ticket lifetime"
+	}
+	option = {
+		long = "realm-max-renewable-life"
+		type = "string"
+		help = "realm max renewable lifetime"
+	}
+	argument = "realm..."
+	help = "Initializes the default principals for a realm. Creates the database if necessary."
+}
+command = {
+	name = "load"
+	argument = "file"
+	help = "Loads a previously dumped file."
+}
+command = {
+	name = "merge"
+	argument = "file"
+	help = "Merges the contents of a dump file into the database."
+}
+command = {
+	name = "add"
+	name = "add_new_key"
+	function = "add_new_key"
+	option = {
+		long = "random-key"
+		short = "r"
+		type = "flag"
+		help = "set random key"
+	}
+	option = {
+		long = "random-password"
+		type = "flag"
+		help = "set random password"
+	}
+	option = {
+		long = "password"
+		short = "p"
+		type = "string"
+		help = "principal's password"
+	}
+	option = {
+		long = "key"
+		type = "string"
+		help = "DES-key in hex"
+	}
+	option = {
+		long = "max-ticket-life"
+		type = "string"
+		argument ="lifetime"
+		help = "max ticket lifetime"
+	}
+	option = {
+		long = "max-renewable-life"
+		type = "string"
+		argument = "lifetime"
+		help = "max renewable life"
+	}
+	option = {
+		long = "attributes"
+		type = "string"
+		argument = "attributes"
+		help = "principal attributes"
+	}
+	option = {
+		long = "expiration-time"
+		type = "string"
+		argument = "time"
+		help = "principal expiration time"
+	}
+	option = {
+		long = "pw-expiration-time"
+		type = "string"
+		argument = "time"
+		help = "password expiration time"
+	}
+	option = {
+		long = "use-defaults"
+		type = "flag"
+		help = "use default values"
+	}
+	argument = "principal..."
+	help = "Adds a principal to the database."
+}
+command = {
+	name = "passwd"
+	name = "cpw"
+	name = "change_password"
+	function = "cpw_entry"
+	option = {
+		long = "random-key"
+		short = "r"
+		type = "flag"
+		help = "set random key"
+	}
+	option = {
+		long = "random-password"
+		type = "flag"
+		help = "set random password"
+	}
+	option = {
+		long = "password"
+		short = "p"
+		type = "string"
+		help = "princial's password"
+	}
+	option = {
+		long = "key"
+		type = "string"
+		help = "DES key in hex"
+	}
+	argument = "principal..."
+	help = "Changes the password of one or more principals matching the expressions."
+}
+command = {
+	name = "delete"
+	name = "del"
+	name = "del_entry"
+	function = "del_entry"
+	argument = "principal..."
+	help = "Deletes all principals matching the expressions."
+}
+command = {
+	name = "del_enctype"
+	argument = "principal enctype..."
+	help = "Delete all the mentioned enctypes for principal."
+}
+command = {
+	name = "ext_keytab"
+	option = {
+		long = "keytab"
+		short = "k"
+		type = "string"
+		help = "keytab to use"
+	}
+	argument = "principal..."
+	help = "Extracts the keys of all principals matching the expressions, and stores them in a keytab." 
+}
+command = {
+	name = "get"
+	name = "get_entry"
+	function = "get_entry"
+	option = {
+		long = "long"
+		short = "l"
+		type = "flag"
+		help = "long format"
+	}
+	option = {
+		long = "short"
+		short = "s"
+		type = "flag"
+		help = "short format"
+	}
+	option = {
+		long = "terse"
+		short = "t"
+		type = "flag"
+		help = "terse format"
+	}
+	argument = "principal..."
+	help = "Shows information about principals matching the expressions."
+}
+command = {
+	name = "rename"
+	function = "rename_entry"
+	argument = "from to"
+	help = "Renames a principal."
+}
+command = {
+	name = "modify"
+	function = "mod_entry"
+	option = {
+		long = "max-ticket-life"
+		type = "string"
+		argument ="lifetime"
+		help = "max ticket lifetime"
+	}
+	option = {
+		long = "max-renewable-life"
+		type = "string"
+		argument = "lifetime"
+		help = "max renewable life"
+	}
+	option = {
+		long = "attributes"
+		short = "a"
+		type = "string"
+		argument = "attributes"
+		help = "principal attributes"
+	}
+	option = {
+		long = "expiration-time"
+		type = "string"
+		argument = "time"
+		help = "principal expiration time"
+	}
+	option = {
+		long = "pw-expiration-time"
+		type = "string"
+		argument = "time"
+		help = "password expiration time"
+	}
+	option = {
+		long = "kvno"
+		type = "integer"
+		help = "key version number"
+	}
+	argument = "principal"
+	help = "Modifies some attributes of the specified principal."
+}
+command = {
+	name = "privileges"
+	name = "privs"
+	function = "get_privs"
+	help = "Shows which operations you are allowed to perform."
+}
+command = {
+	name = "list"
+	function = "list_princs"
+	option = {
+		long = "long"
+		short = "l"
+		type = "flag"
+		help = "long format"
+	}
+	option = {
+		long = "short"
+		short = "s"
+		type = "flag"
+		help = "short format"
+	}
+	option = {
+		long = "terse"
+		short = "t"
+		type = "flag"
+		help = "terse format"
+	}
+	argument = "principal..."
+	help = "Lists principals in a terse format. Equivalent to \"get -t\"." 
+}
+
+command = {
+	name = "password-quality"
+	name = "pwq"
+	function = "password_quality"
+	argument = "principal password"
+
+	help = "Try run the password quality function locally (not doing RPC out to server)."
+}
+
+command = {
+	name = "help"
+	name = "?"
+	argument = "[command]"
+	help = "Help! I need somebody."
+}
+
+command = {
+	name = "exit"
+	name = "quit"
+	function = "exit_kadmin"
+	help = "Quits."
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -81,91 +81,6 @@ static struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-static SL_cmd commands[] = {
-    /* commands that are only available with `-l' */
-    { 
-	"dump",		dump,		"dump [file]",
-	"Dumps the database in a human readable format to the\n"
-	"specified file, or the standard out." 
-    },
-    { 
-	"load",		load,		"load file",
-	"Loads a previously dumped file."
-    },
-    { 
-	"merge",	merge,		"merge file" ,
-	"Merges the contents of a dump file into the database."
-    },
-    { 
-	"init",		init,		"init realm...",
-	"Initializes the default principals for a realm.\n"
-	"Creates the database if necessary."
-    },
-    /* common commands */
-    { 
-	"add",	add_new_key, 	"add principal" ,
-	"Adds a principal to the database."
-    },
-    { "add_new_key"},
-    { "ank"},
-    { 
-	"passwd",	cpw_entry, 	"passwd expression..." ,
-	"Changes the password of one or more principals\n"
-	"matching the expressions."
-    },
-    { "change_password"},
-    { "cpw"},
-    { 
-	"delete",	del_entry, 	"delete expression...",
-	"Deletes all principals matching the expressions."
-    },
-    { "del_entry" },
-    { "del" },
-    {
-	"del_enctype",	del_enctype,	"del_enctype principal enctype...",
-	"Delete all the mentioned enctypes for principal."
-    },
-    { 
-	"ext_keytab",	ext_keytab, 	"ext_keytab expression...",
-	"Extracts the keys of all principals matching the expressions,\n"
-	"and stores them in a keytab." 
-    },
-    { 
-	"get",		get_entry, 	"get expression...",
-	"Shows information about principals matching the expressions."
-    },
-    { "get_entry" },
-    { 
-	"rename",	rename_entry, 	"rename source target",
-	"Renames `source' to `target'."
-    },
-    { 
-	"modify",	mod_entry, 	"modify principal",
-	"Modifies some attributes of the specified principal."
-    },
-    { 
-	"privileges",	get_privs,	"privileges",
-	"Shows which kinds of operations you are allowed to perform."
-    },
-    { "privs" },
-    { 
-	"password-quality",
-	password_quality, 
-	"password-quality principal password",
-	"Try run the password quality function locally "
-	"(not doing RPC out to server)."
-    },
-    { "pwq" },
-    { 
-	"list",		list_princs,	"list expression...", 
-	"Lists principals in a terse format. The same as `get -t'." 
-    },
-    { "help",		help, "help"},
-    { "?"},
-    { "exit",		exit_kadmin, "exit"},
-    { "quit" },
-    { NULL}
-};
 
 krb5_context context;
 void *kadm_handle;
@@ -173,14 +88,40 @@ void *kadm_handle;
 static SL_cmd *actual_cmds;
 
 int
-help(int argc, char **argv)
+help(void *opt, int argc, char **argv)
 {
-    sl_help(actual_cmds, argc, argv);
+    if(argc == 0) {
+	sl_help(actual_cmds, 1, argv - 1 /* XXX */);
+    } else {
+	SL_cmd *c = sl_match (actual_cmds, argv[0], 0);
+ 	if(c == NULL) {
+	    printf ("No such command: %s. "
+		    "Try \"help\" for a list of commands\n",
+		    argv[0]);
+	} else {
+	    if(c->func) {
+		char *fake[] = { argv[0], "--help", NULL };
+		(*c->func)(2, fake);
+		fprintf(stderr, "\n");
+	    }
+	    if(c->help && *c->help)
+		fprintf (stderr, "%s\n", c->help);
+	    if((++c)->name && c->func == NULL) {
+		int f = 0;
+		fprintf (stderr, "Synonyms:");
+		while (c->name && c->func == NULL) {
+		    fprintf (stderr, "%s%s", f ? ", " : " ", (c++)->name);
+		    f = 1;
+		}
+		fprintf (stderr, "\n");
+	    }
+	}
+    }
     return 0;
 }
 
 int
-exit_kadmin (int argc, char **argv)
+exit_kadmin (void *opt, int argc, char **argv)
 {
     return 1;
 }
@@ -193,30 +134,12 @@ usage(int ret)
 }
 
 int
-get_privs(int argc, char **argv)
+get_privs(void *opt, int argc, char **argv)
 {
     u_int32_t privs;
     char str[128];
     kadm5_ret_t ret;
     
-    int help_flag = 0;
-    struct getargs args[] = {
-	{ "help",	'h',	arg_flag,	NULL }
-    };
-    int num_args = sizeof(args) / sizeof(args[0]);
-    int optind = 0;
-
-    args[0].value = &help_flag;
-
-    if(getarg(args, num_args, argc, argv, &optind)) {
-	arg_printusage (args, num_args, "privileges", NULL);
-	return 0;
-    }
-    if(help_flag) {
-	arg_printusage (args, num_args, "privileges", NULL);
-	return 0;
-    }
-
     ret = kadm5_get_privs(kadm_handle, &privs);
     if(ret)
 	krb5_warn(context, ret, "kadm5_get_privs");
@@ -314,7 +237,7 @@ main(int argc, char **argv)
 					 KADM5_ADMIN_SERVICE,
                                          &conf, 0, 0,
                                          &kadm_handle);
-        actual_cmds = commands + 4; /* XXX */
+        actual_cmds = commands + 5; /* XXX */
     } else {
 	ret = kadm5_c_init_with_password_ctx(context, 
 					     client_name,

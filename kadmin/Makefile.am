@@ -8,6 +8,8 @@ sbin_PROGRAMS = kadmin
 
 libexec_PROGRAMS = kadmind
 
+SLC = $(top_builddir)/lib/sl/slc
+
 man_MANS = kadmin.8 kadmind.8
 
 noinst_PROGRAMS = add_random_users
@@ -25,10 +27,19 @@ kadmin_SOURCES =				\
 	load.c					\
 	mod.c					\
 	rename.c				\
+	stash.c					\
 	util.c					\
 	pw_quality.c				\
 	random_password.c			\
+	kadmin-commands.c			\
 	kadmin_locl.h
+
+$(kadmind_OBJECTS) $(kadmin_OBJECTS): kadmin-commands.h
+
+CLEANFILES = kadmin-commands.h kadmin-commands.c
+
+kadmin-commands.c kadmin-commands.h: kadmin-commands.in
+	$(SLC) $(srcdir)/kadmin-commands.in
 
 kadmind_SOURCES =				\
 	kadmind.c				\

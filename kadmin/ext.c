@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,18 +39,6 @@ struct ext_keytab_data {
     krb5_keytab keytab;
 };
 
-static struct getargs args[] = {
-    { "keytab",		'k',	arg_string,	NULL, "keytab to use" },
-};
-
-static int num_args = sizeof(args) / sizeof(args[0]);
-
-static void
-usage(void)
-{
-    arg_printusage(args, num_args, "ext", "principal...");
-}
-
 static int
 do_ext_keytab(krb5_principal principal, void *data)
 {
@@ -81,31 +69,21 @@ do_ext_keytab(krb5_principal principal, void *data)
 }
 
 int
-ext_keytab(int argc, char **argv)
+ext_keytab(struct ext_keytab_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     int i;
-    int optind = 0;
-    char *keytab = NULL;
     struct ext_keytab_data data;
-    
-    args[0].value = &keytab;
-    if(getarg(args, num_args, argc, argv, &optind)){
-	usage();
-	return 0;
-    }
-    if (keytab == NULL)
+
+    if (opt->keytab_string == NULL)
 	ret = krb5_kt_default(context, &data.keytab);
     else
-	ret = krb5_kt_resolve(context, keytab, &data.keytab);
+	ret = krb5_kt_resolve(context, opt->keytab_string, &data.keytab);
 
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_resolve");
 	return 0;
     }
-
-    argc -= optind;
-    argv += optind;
 
     for(i = 0; i < argc; i++) 
 	foreach_principal(argv[i], do_ext_keytab, "ext", &data);

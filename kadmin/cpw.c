@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,21 +41,6 @@ struct cpw_entry_data {
     char *password;
     krb5_key_data *key_data;
 };
-
-static struct getargs args[] = {
-    { "random-key",	'r',	arg_flag,	NULL, "set random key" },
-    { "random-password", 0,	arg_flag,	NULL, "set random password" },
-    { "password",	'p',	arg_string,	NULL, "princial's password" },
-    { "key",		 0,	arg_string,	NULL, "DES key in hex" }
-};
-
-static int num_args = sizeof(args) / sizeof(args[0]);
-
-static void
-usage(void)
-{
-    arg_printusage(args, num_args, "passwd", "principal...");
-}
 
 static int
 set_random_key (krb5_principal principal)
@@ -146,31 +131,18 @@ do_cpw_entry(krb5_principal principal, void *data)
 }
 
 int
-cpw_entry(int argc, char **argv)
+cpw_entry(struct passwd_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     int i;
-    int optind = 0;
     struct cpw_entry_data data;
     int num;
-    char *key_string;
     krb5_key_data key_data[3];
 
-    data.random_key      = 0;
-    data.random_password = 0;
-    data.password        = NULL;
+    data.random_key = opt->random_key_flag;
+    data.random_password = opt->random_password_flag;
+    data.password = opt->password_string;
     data.key_data	 = NULL;
-
-    key_string = NULL;
-
-    args[0].value = &data.random_key;
-    args[1].value = &data.random_password;
-    args[2].value = &data.password;
-    args[3].value = &key_string;
-    if(getarg(args, num_args, argc, argv, &optind)){
-	usage();
-	return 0;
-    }
 
     num = 0;
     if (data.random_key)
@@ -179,7 +151,7 @@ cpw_entry(int argc, char **argv)
 	++num;
     if (data.password)
 	++num;
-    if (key_string)
+    if (opt->key_string)
 	++num;
 
     if (num > 1) {
@@ -188,18 +160,15 @@ cpw_entry(int argc, char **argv)
 	return 0;
     }
 	
-    if (key_string) {
+    if (opt->key_string) {
 	const char *error;
 
-	if (parse_des_key (key_string, key_data, &error)) {
-	    printf ("failed parsing key `%s': %s\n", key_string, error);
+	if (parse_des_key (opt->key_string, key_data, &error)) {
+	    printf ("failed parsing key `%s': %s\n", opt->key_string, error);
 	    return 0;
 	}
 	data.key_data = key_data;
     }
-
-    argc -= optind;
-    argv += optind;
 
     for(i = 0; i < argc; i++)
 	ret = foreach_principal(argv[i], do_cpw_entry, "cpw", &data);

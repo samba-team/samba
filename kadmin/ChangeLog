@@ -121,6 +121,25 @@
 	change it own password to a key, since that password might violate
 	the password quality check.
 
+2002-12-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* util.c (get_response): print a newline if interrupted
+
+	* mod.c (mod_entry): check return value from edit_entry
+
+	* ank.c (add_one_principal): check return value from edit_entry
+
+	* ank.c (add_one_principal): don't continue if create_principal
+	fails
+
+	* init.c: check return value from edit_deltat
+
+	* init.c: add --help
+
+2002-10-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* version4.c: speling (from Tomas Olsson)
+
 2002-10-23  Assar Westerlund  <assar@kth.se>
 
 	* version4.c (decode_packet): check the length of the version

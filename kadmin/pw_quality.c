@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,53 +35,32 @@
 
 RCSID("$Id$");
 
-static struct getargs args[] = {
-    { "help", 'h', arg_flag, NULL }
-};
-
-static int num_args = sizeof(args) / sizeof(args[0]);
-
-static void
-usage(void)
-{
-    arg_printusage (args, num_args, "password-quality", "principal password");
-}
-
 int
-password_quality(int argc, char **argv)
+password_quality(void *opt, int argc, char **argv)
 {
-    int optind = 0;
-    int help_flag = 0;
-
     krb5_error_code ret;
-    krb5_principal princ;
+    krb5_principal principal;
     krb5_data pw_data;
     const char *s;
 
-    args[0].value = &help_flag;
-
-    if(getarg(args, num_args, argc, argv, &optind)) {
-	usage ();
-	return 0;
-    }
-    if(argc - optind != 2 || help_flag) {
-	usage ();
+    if(argc != 2) {
+	printf ("Usage: password-quality principal password\n");
 	return 0;
     }
 
-    ret = krb5_parse_name(context, argv[1], &princ);
+    ret = krb5_parse_name(context, argv[0], &principal);
     if(ret){
-	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[1]);
+	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[0]);
 	return 0;
     }
-    pw_data.data = argv[2];
-    pw_data.length = strlen(argv[2]);
+    pw_data.data = argv[1];
+    pw_data.length = strlen(argv[1]);
 
-    s = kadm5_check_password_quality (context, princ, &pw_data);
+    s = kadm5_check_password_quality (context, principal, &pw_data);
     if (s)
 	krb5_warnx(context, "kadm5_check_password_quality: %s", s);
 
-    krb5_free_principal(context, princ);
+    krb5_free_principal(context, principal);
 
     return 0;
 }

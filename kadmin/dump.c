@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,44 +37,29 @@
 RCSID("$Id$");
 
 int
-dump(int argc, char **argv)
+dump(struct dump_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     FILE *f;
     HDB *db = _kadm5_s_get_db(kadm_handle);
-    int decrypt = 0;
-    int optind = 0;
 
-    struct getargs args[] = {
-	{ "decrypt", 'd', arg_flag, NULL, "decrypt keys" }
-    };
-    args[0].value = &decrypt;
-
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind)) {
-	arg_printusage(args, sizeof(args) / sizeof(args[0]), "kadmin dump", 
-		       "[dump-file]");
-	return 0;
-    }
-
-    argc -= optind;
-    argv += optind;
-    if(argc < 1)
+    if(argc == 0)
 	f = stdout;
     else
 	f = fopen(argv[0], "w");
     
+    if(f == NULL)
+	krb5_warn(context, errno, "%s", argv[0]);
     ret = db->hdb_open(context, db, O_RDONLY, 0600);
-    if(ret){
+    if(ret) {
 	krb5_warn(context, ret, "hdb_open");
-	if(f != stdout)
-	    fclose(f);
-	return 0;
+	goto out;
     }
 
-    hdb_foreach(context, db, decrypt ? HDB_F_DECRYPT : 0, hdb_print_entry, f);
-
+    hdb_foreach(context, db, opt->decrypt_flag ? HDB_F_DECRYPT : 0, hdb_print_entry, f);
+    db->hdb_close(context, db);
+out:
     if(f != stdout)
 	fclose(f);
-    db->hdb_close(context, db);
     return 0;
 }

@@ -35,22 +35,13 @@
 
 RCSID("$Id$");
 
-struct mod_entry_data {
-    char *attr_str;
-    char *max_life_str;
-    char *max_rlife_str;
-    char *expiration_str;
-    char *pw_expiration_str;
-    int new_kvno;
-};
-
 static int
 do_mod_entry(krb5_principal principal, void *data)
 {
     krb5_error_code ret;
     kadm5_principal_ent_rec princ;
     int mask = 0;
-    struct mod_entry_data *e = data;
+    struct modify_options *e = data;
     
     memset (&princ, 0, sizeof(princ));
     ret = kadm5_get_principal(kadm_handle, principal, &princ,
@@ -61,20 +52,22 @@ do_mod_entry(krb5_principal principal, void *data)
     if(ret) 
 	return ret;
 
-    if(e->max_life_str || e->max_rlife_str || 
-       e->expiration_str || e->pw_expiration_str || e->attr_str || 
-       e->new_kvno != -1) {
+    if(e->max_ticket_life_string || 
+       e->max_renewable_life_string ||
+       e->expiration_time_string ||
+       e->pw_expiration_time_string ||
+       e->attributes_string ||
+       e->kvno_integer != -1) {
 	ret = set_entry(context, &princ, &mask, 
-			e->max_life_str, 
-			e->max_rlife_str, 
-			e->expiration_str, 
-			e->pw_expiration_str, 
-			e->attr_str);
-	if(e->new_kvno != -1) {
-	    princ.kvno = e->new_kvno;
+			e->max_ticket_life_string, 
+			e->max_renewable_life_string, 
+			e->expiration_time_string, 
+			e->pw_expiration_time_string, 
+			e->attributes_string);
+	if(e->kvno_integer != -1) {
+	    princ.kvno = e->kvno_integer;
 	    mask |= KADM5_KVNO;
 	}
-	
     } else
 	ret = edit_entry(&princ, &mask, NULL, 0);
     if(ret == 0) {
@@ -88,64 +81,18 @@ do_mod_entry(krb5_principal principal, void *data)
 }
 
 int
-mod_entry(int argc, char **argv)
+mod_entry(struct modify_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
-    int optind;
-
-    struct mod_entry_data data;
     int i;
 
-    struct getargs args[] = {
-	{"attributes",	'a',	arg_string, NULL, "Attributies",
-	 "attributes"},
-	{"max-ticket-life", 0,	arg_string, NULL, "max ticket lifetime",
-	 "lifetime"},
-	{"max-renewable-life",  0, arg_string,	NULL,
-	 "max renewable lifetime", "lifetime" },
-	{"expiration-time",	0,	arg_string, 
-	 NULL, "Expiration time", "time"},
-	{"pw-expiration-time",  0,	arg_string, 
-	 NULL, "Password expiration time", "time"},
-	{"kvno",  0,	arg_integer, 
-	 NULL, "Key version number", "number"},
-    };
-
-    i = 0;
-    data.attr_str = NULL;
-    args[i++].value = &data.attr_str;
-    data.max_life_str = NULL;
-    args[i++].value = &data.max_life_str;
-    data.max_rlife_str = NULL;
-    args[i++].value = &data.max_rlife_str;
-    data.expiration_str = NULL;
-    args[i++].value = &data.expiration_str;
-    data.pw_expiration_str = NULL;
-    args[i++].value = &data.pw_expiration_str;
-    data.new_kvno = -1;
-    args[i++].value = &data.new_kvno;
-
-    optind = 0;
-
-    if(getarg(args, sizeof(args) / sizeof(args[0]), 
-	      argc, argv, &optind)){
-	arg_printusage(args, 
-		       sizeof(args) / sizeof(args[0]), 
-		       "mod",
-		       "principal...");
-	return -1;
-    }
-    
-    argc -= optind;
-    argv += optind;
-    
     if (argc < 1) {
 	printf ("Usage: mod [options] principal\n");
 	return 0;
     }
 
     for(i = 0; i < argc; i++)
-	ret = foreach_principal(argv[i], do_mod_entry, "mod", &data);
+	ret = foreach_principal(argv[i], do_mod_entry, "mod", opt);
 
     return 0;
 }
