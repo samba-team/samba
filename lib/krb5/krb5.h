@@ -138,6 +138,8 @@ typedef AP_REQ krb5_ap_req;
 
 struct krb5_cc_ops;
 
+#define KRB5_DEFAULT_CCROOT "FILE:/tmp/krb5cc_"
+
 typedef struct krb5_ccache_data {
     char *residual;
     struct krb5_cc_ops *ops;
@@ -203,6 +205,8 @@ typedef union {
 #define KRB5_TC_DONT_MATCH_REALM	(1 << 31)
 #define KRB5_TC_MATCH_KEYTYPE		(1 << 30)
 
+typedef AuthorizationData krb5_authdata;
+
 typedef struct krb5_creds {
     krb5_principal client;
     krb5_principal server;
@@ -210,7 +214,7 @@ typedef struct krb5_creds {
     krb5_times times;
     krb5_data ticket;
     krb5_data second_ticket;
-    krb5_data authdata; /* huh? */
+    krb5_authdata authdata;
     krb5_addresses addresses;
     krb5_ticket_flags flags;
 } krb5_creds;
