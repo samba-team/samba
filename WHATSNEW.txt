@@ -1,6 +1,7 @@
-                   WHATS NEW IN Samba 3.0.2pre1
+                 =================================
+                 Release Notes for Samba 3.0.2pre1
                          January 6, 2004
-                  ===============================
+                 =================================
 
 This is a preview release of the Samba 3.0.2 code base and is
 provided for testing only.  This release is *not* intended for
@@ -10,6 +11,17 @@ There have been several bug fixes since the 3.0.1 release that
 we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
+
+Common bugs fixed in this preview release include:
+
+  o Joining a Samba domain from Pre-SP2 Windows 2000 clients.
+  o Logging onto a Samba domain from Windows XP clients.
+  o Problems with the %U and %u smb.conf variables in relation
+    to Windows 9x/ME clients.
+  o Kerberos failures due to an invalid in memory keytab 
+    detection test.
+  o Updates to the ntlm_auth tool.
+  o Fixes for various SMB signing errors.
 
 
 ######################################################################
@@ -119,6 +131,7 @@ o   Stefan Metzmacher <metze@metzemix.de>
     * Revert to 2.2 quota code because of so many broken quota files 
       out there.
 
+
 o   <ndb@theghet.to>
     * Allow an existing LDAP machine account to be re-used when 
       joining an AD domain.
@@ -131,6 +144,7 @@ o   James Peach <jpeach@sgi.com>
 
 o   Tim Potter <tpot@samba.org>
     * BUG 924: Fix typo in RW2 torture test.
+
 
 o   Richard Sharpe <shape@samba.org>
     * Small fixes to torture.c to cleanup the error handling 
