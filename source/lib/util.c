@@ -3607,7 +3607,7 @@ const struct passwd *map_nt_and_unix_username(const char *domain,
 	memset(nt_user, 0, sizeof(nt_user));
 	if (domain != NULL)
 	{
-		slprintf(nt_user, sizeof(nt_user)-1, "%s\\%s",
+		slprintf(nt_user, sizeof(fstring), "%s\\%s",
 			 domain, ntuser);
 	}
 	else
