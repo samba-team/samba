@@ -63,18 +63,26 @@ int kerberos_flag = 1;
 int csh_f_flag;
 int full_login;
 int env_flag;
-char *kerberos_instance;
+char *kerberos_instance = "root";
 int help_flag;
 int version_flag;
+char *cmd;
 
 struct getargs args[] = {
-    { "kerberos", 'K', arg_negative_flag, &kerberos_flag, "don't use kerberos" },
-    { NULL,	'f', arg_flag, &csh_f_flag, "don't read .cshrc" },
-    { "full",	'l', arg_flag, &full_login, "simulate full login" },
-    { NULL,	'm', arg_flag, &env_flag, "leave environment" },
-    { "instance",'i', arg_string, &kerberos_instance, "root instance to use" },
-    { "help", 	'h', arg_flag, &help_flag },
-    { "version", 0, arg_flag, &version_flag },
+    { "kerberos", 'K', arg_negative_flag, &kerberos_flag,
+      "don't use kerberos" },
+    { NULL,	  'f', arg_flag,	  &csh_f_flag,
+      "don't read .cshrc" },
+    { "full",	  'l', arg_flag,          &full_login,
+      "simulate full login" },
+    { NULL,	  'm', arg_flag,          &env_flag,
+      "leave environment unmodified" },
+    { "instance", 'i', arg_string,        &kerberos_instance,
+      "root instance to use" },
+    { "command",  'c', arg_string,        &cmd,
+      "command to execute" },
+    { "help", 	  'h', arg_flag,          &help_flag },
+    { "version",  0,   arg_flag,          &version_flag },
 };
 
 
@@ -108,7 +116,8 @@ make_info(struct passwd *pwd)
 }
 
 static int
-verify_krb5(struct passwd *login_info, struct passwd *su_info)
+verify_krb5(struct passwd *login_info, struct passwd *su_info,
+	    const char *kerberos_instance)
 {
 #ifdef KRB5
     krb5_context context;
@@ -124,14 +133,20 @@ verify_krb5(struct passwd *login_info, struct passwd *su_info)
 	return 1;
     }
 	
-    ret = krb5_make_principal(context, &p, NULL, 
-			      login_info->pw_name, "root", NULL);
+    if (strcmp (su_info->pw_name, "root") == 0)
+	ret = krb5_make_principal(context, &p, NULL, 
+				  login_info->pw_name,
+				  kerberos_instance,
+				  NULL);
+    else
+	ret = krb5_make_principal(context, &p, NULL, 
+				  login_info->pw_name,
+				  NULL);
     if(ret)
 	return 1;
 	
-	
     if(su_info->pw_uid != 0 || krb5_kuserok(context, p, su_info->pw_name)) {
-	ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
+	ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
 	if(ret) {
 #if 1
 	    krb5_warn(context, ret, "krb5_cc_gen_new");
@@ -142,16 +157,41 @@ verify_krb5(struct passwd *login_info, struct passwd *su_info)
 	if(ret) {
 	    krb5_cc_destroy(context, ccache);
 #if 1
-	    krb5_warn(context, ret, "krb5_verify_user");
+	    switch (ret) {
+	    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+	    case KRB5KRB_AP_ERR_MODIFIED:
+		krb5_warnx(context, "Password incorrect");
+	    default :
+		krb5_warn(context, ret, "krb5_verify_user");
+		break;
+	    }
 #endif
 	    return 1;
 	}
 	{
-	    char *s;
-	    asprintf(&s, "%s:%s", krb5_cc_get_type(context, ccache),
-		     krb5_cc_get_name(context, ccache));
-	    setenv("KRB5CCNAME", s, 1);
+	    krb5_ccache ccache2;
+	    char *cc_name;
+
+	    if (seteuid(su_info->pw_uid))
+		;
+	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache2);
+	    if (ret) {
+		if (seteuid (0))
+		    ;
+		krb5_cc_destroy(context, ccache);
+		return 1;
+	    }
+
+	    ret = krb5_cc_copy_cache(context, ccache, ccache2);
+	    if (seteuid(0))
+		;
+	    ret = krb5_cc_close(context, ccache2);
+
+	    asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
+		     krb5_cc_get_name(context, ccache2));
+	    setenv("KRB5CCNAME", cc_name, 1);
 	}
+	krb5_cc_destroy(context, ccache);
 	return 0;
     }
 #endif
@@ -231,7 +271,7 @@ main(int argc, char **argv)
     if(shell == NULL || *shell == '\0')
 	shell = _PATH_BSHELL;
     
-    if(ok == 0 && verify_krb5(login_info, su_info) == 0)
+    if(ok == 0 && verify_krb5(login_info, su_info, kerberos_instance) == 0)
 	ok++;
 
     if(ok == 0 && verify_unix(su_info) != 0) {
