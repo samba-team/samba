@@ -221,7 +221,10 @@ if you want to use <emphasis>server</emphasis> level security you must disable t
 </para></note>
 
 <sect3>
-<title>Example Configuration - Using MS Windows NT as an authentication server</title>
+<title>Example Configuration</title>
+<para><emphasis>
+Using MS Windows NT as an authentication server
+</emphasis></para>
 
 <para>
 This method involves the additions of the following parameters in the &smb.conf; file:
@@ -266,7 +269,10 @@ all authentication requests to be passed through to the domain controllers.
 </para>
 
 <sect3>
-<title>Example Configuration - Samba as a Domain Member Server</title>
+<title>Example Configuration</title>
+<para><emphasis>
+Samba as a Domain Member Server
+</emphasis></para>
 
 <para>
 This method involves addition of the following parameters in the &smb.conf; file:
@@ -452,4 +458,56 @@ passwords will eventually lead to user complaints and unhappiness.
 </para>
 
 </sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+We all make mistakes. It is Ok to make mistakes, so long as they are made in the right places
+and at the right time. A mistake that causes lost productivity is seldom tollerated. A mistake
+made in a developmental test lab is expected.
+</para>
+
+<para>
+Here we look at common mistakes and misapprehensions that have been the subject of discussions
+on the samba mailing lists. Many of these are avoidable by doing you homework before attempting
+a Samba implementation. Some are the result of misundertanding of the English language. The
+English language has many terms of phrase that are potentially vague and may be highly confusing
+to those for whom English is not their native tongue.
+</para>
+
+<sect2>
+<title>What makes Samba a SERVER?</title>
+
+<para>
+To some the nature of the samba <emphasis>security</emphasis> mode is very obvious, but entirely
+wrong all the same. It is assumed that <emphasis>security = server</emphasis> means that Samba
+will act as a server. Not so! See above - this setting means that samba will <emphasis>try</emphasis>
+to use another SMB server as it's source of user authentication alone.
+</para>
+
+</sect2>
+
+<sect2>
+<title>What makes Samba a Domain Controller?</title>
+
+<para>
+The &smb.conf; parameter <emphasis>security = domain</emphasis> does NOT really make Samba behave
+as a Domain Controller! This setting means we want samba to be a domain member!
+</para>
+
+</sect2>
+
+<sect2>
+<title>What makes Samba a Domain Member?</title>
+
+<para>
+Guess! So many others do. But whatever you do, do NOT think that <emphasis>security = user</emphasis>
+makes Samba act as a domain member. Read the manufacturers manual before the warranty expires!
+</para>
+
+</sect2>
+
+</sect1>
+
 </chapter>
