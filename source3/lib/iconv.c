@@ -75,8 +75,6 @@ size_t smb_iconv(smb_iconv_t cd,
 	}
 #endif
 
-	if (!inbuf || ! *inbuf || !outbuf || ! *outbuf) return 0;
-
 	/* in most cases we can go direct */
 	if (cd->direct) {
 		return cd->direct(inbuf, inbytesleft, outbuf, outbytesleft);
@@ -117,6 +115,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 
 	if (!charsets[from].name || !charsets[to].name) {
 #ifdef HAVE_NATIVE_ICONV
+		/* its not builtin - see if iconv() has it */
 		cd = iconv_open(tocode, fromcode);
 		if (!cd)
 #endif
@@ -134,7 +133,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	memset(ret, 0, sizeof(*ret));
 
 #ifdef HAVE_NATIVE_ICONV
-	/* see if we wil be using the native iconv */
+	/* see if we will be using the native iconv */
 	if (cd) {
 		ret->cd = cd;
 		return ret;
