@@ -41,6 +41,10 @@
 #ifndef __LIBASN1_H__
 #define __LIBASN1_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <errno.h>
 #include "asn1.h"
