@@ -30,21 +30,15 @@ import sys, string, os
 # method of adding setup commands and will also confuse people who are
 # familiar with the python Distutils module.
 
-samba_objs = ""
-if os.environ.has_key("PYTHON_OBJS"):
-    samba_objs = os.environ.get("PYTHON_OBJS")
+samba_objs = os.environ.get("PYTHON_OBJS", "")
 
-samba_cflags = ""
-if os.environ.has_key("PYTHON_CFLAGS"):
-    samba_cflags = os.environ.get("PYTHON_CFLAGS")
+samba_cflags = os.environ.get("PYTHON_CFLAGS", "")
 
-samba_srcdir = ""
-if os.environ.has_key("SRCDIR"):
-    samba_srcdir = os.environ.get("SRCDIR")
+samba_srcdir = os.environ.get("SRCDIR", "")
 
 # These variables are filled in by configure
 
-samba_libs = "@LIBS@"
+samba_libs = os.environ.get("LIBS", "")
 
 # Convert libs and objs from space separated strings to lists of strings
 # for distutils to digest.  Split "-l" prefix off library list.

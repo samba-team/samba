@@ -883,6 +883,7 @@ python_common_proto:
 
 python_ext: $(PYTHON_OBJS)
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py build
 
 # revert to the previously installed version
