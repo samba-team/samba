@@ -2231,7 +2231,7 @@ otp_parse_hex (OtpKey key, char *s)
 	      &is[0], &is[1], &is[2], &is[3], &is[4],
 	      &is[5], &is[6], &is[7]) != 8)
     return -1;
-  for (i = 0; i < sizeof(is); ++i)
+  for (i = 0; i < OTPKEYSIZE; ++i)
     key[i] = is[i];
   return 0;
 }
