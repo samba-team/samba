@@ -94,7 +94,7 @@ lex.lo: parse.h
 
 $(gen_files) asn1.h: asn1_files
 
-asn1_files: asn1_compile $(srcdir)/k5.asn1
+asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
 	./asn1_compile $(srcdir)/k5.asn1
 
 $(libasn1_la_OBJECTS): asn1.h asn1_err.h
