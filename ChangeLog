@@ -1,3 +1,13 @@
+2004-06-24  Love  <lha@stacken.kth.se>
+
+	* kdc/config.c: add enable_pkinit_princ_in_cert
+	
+	* kdc/kdc_locl.h: enable_pkinit_princ_in_cert
+	
+	* kdc/pkinit.c: Check certificate for Kerberos Principal in
+	OtherName of subjectAltName Based on patch from Mayur Patel
+	<patelm4@rpi.edu>
+
 2004-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/get_cred.c (init_tgs_req): if subkey not avaible, use
