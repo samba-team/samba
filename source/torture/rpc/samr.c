@@ -339,7 +339,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	s.in.level = 24;
 
 	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
-	u.info24.pw_len = 24;
+	u.info24.pw_len = strlen(newpass);
 
 	status = dcerpc_fetch_session_key(p, session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -926,8 +926,8 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				   struct policy_handle *handle, const char *name)
+BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle, const char *name)
 {
 	NTSTATUS status;
 	struct samr_DeleteUser d;
