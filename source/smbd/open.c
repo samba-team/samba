@@ -208,7 +208,7 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 	if (!fsp->can_write)
 		return -1;
 
-	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK)){
+	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK,True)){
 		errno = EACCES;
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRlock;

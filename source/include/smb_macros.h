@@ -131,6 +131,7 @@
 #define SMB_LPID_OFFSET(indx) (10 * (indx))
 #define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
 #define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
+#define SMB_LARGE_LPID_OFFSET(indx) (20 * (indx))
 #define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
 #define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))

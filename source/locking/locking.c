@@ -36,8 +36,7 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-int global_smbpid;
+uint16 global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
@@ -53,11 +52,14 @@ static const char *lock_type_name(enum brl_type lock_type)
 
 /****************************************************************************
  Utility function called to see if a file region is locked.
+ If check_self is True, then checks on our own fd with the same locking context
+ are still made. If check_self is False, then checks are not made on our own fd
+ with the same locking context are not made.
 ****************************************************************************/
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type)
+	       enum brl_type lock_type, BOOL check_self)
 {
 	int snum = SNUM(conn);
 	BOOL ret;
@@ -70,16 +72,24 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
 			     global_smbpid, sys_getpid(), conn->cnum, 
-			     offset, count, lock_type);
+			     offset, count, lock_type, check_self);
+
+	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
+			(double)offset, (double)count, ret ? "locked" : "unlocked",
+			fsp->fsp_name ));
 
 	/*
 	 * There is no lock held by an SMB daemon, check to
 	 * see if there is a POSIX lock from a UNIX or NFS process.
 	 */
 
-	if(!ret && lp_posix_locking(snum))
+	if(!ret && lp_posix_locking(snum)) {
 		ret = is_posix_locked(fsp, offset, count, lock_type);
 
+		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for file %s\n",
+				(double)offset, (double)count, ret ? "locked" : "unlocked",
+				fsp->fsp_name ));
+	}
 	return ret;
 }
 
@@ -87,7 +97,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-BOOL do_lock(files_struct *fsp,connection_struct *conn,
+BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode)
 {
@@ -96,18 +106,15 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(SNUM(conn)))
 		return(True);
 
-	if (count == 0) {
-		*eclass = ERRDOS;
-		*ecode = ERRnoaccess;
-		return False;
-	}
+	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
+
 	
 	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      global_smbpid, sys_getpid(), conn->cnum, 
+			      lock_pid, sys_getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 
@@ -127,7 +134,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								global_smbpid, sys_getpid(), conn->cnum, 
+								lock_pid, sys_getpid(), conn->cnum, 
 								offset, count);
 			}
 		}
@@ -145,7 +152,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-BOOL do_unlock(files_struct *fsp,connection_struct *conn,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode)
 {
@@ -156,7 +163,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
 		*eclass = ERRDOS;
-		*ecode = ERRlock;
+		*ecode = ERRbadfid;
 		return False;
 	}
 	
@@ -170,12 +177,12 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 */
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			global_smbpid, sys_getpid(), conn->cnum, offset, count);
+			lock_pid, sys_getpid(), conn->cnum, offset, count);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		*eclass = ERRDOS;
-		*ecode = ERRlock;
+		*ecode = ERRnotlocked;
 		return False;
 	}
 
@@ -221,7 +228,8 @@ BOOL locking_init(int read_only)
 {
 	brl_init(read_only);
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
 	tdb = tdb_open(lock_path("locking.tdb"), 
 		       0, TDB_CLEAR_IF_FIRST, 
@@ -249,7 +257,7 @@ BOOL locking_end(void)
 }
 
 /*******************************************************************
- form a static locking key for a dev/inode pair 
+ Form a static locking key for a dev/inode pair.
 ******************************************************************/
 static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
@@ -317,7 +325,8 @@ int get_share_modes(connection_struct *conn,
 	*shares = NULL;
 
 	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
-	if (!dbuf.dptr) return 0;
+	if (!dbuf.dptr)
+		return 0;
 
 	data = (struct locking_data *)dbuf.dptr;
 	ret = data->num_share_mode_entries;

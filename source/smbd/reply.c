@@ -2156,7 +2156,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
 
-  if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK))
+  if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK, False))
   {
     SMB_OFF_T size = fsp->size;
     SMB_OFF_T sizeneeded = startpos + maxcount;
@@ -2253,7 +2253,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
    * for a write lock. JRA.
    */
 
-  if(!do_lock( fsp, conn, (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
@@ -2313,7 +2313,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK, False)) {
     END_PROFILE(SMBread);
     return(ERROR(ERRDOS,ERRlock));	
   }
@@ -2390,7 +2390,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   }
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK, False)) {
     END_PROFILE(SMBreadX);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2451,7 +2451,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(inbuf,smb_com) = SMBwritec;
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK, False)) {
     END_PROFILE(SMBwritebraw);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2546,7 +2546,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK, False)) {
     END_PROFILE(SMBwriteunlock);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2567,7 +2567,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if(!do_unlock(fsp, conn, (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
+  if(!do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
     END_PROFILE(SMBwriteunlock);
     return(ERROR(eclass,ecode));
   }
@@ -2610,7 +2610,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK, False)) {
     END_PROFILE(SMBwrite);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2702,7 +2702,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
   }
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK, False)) {
     END_PROFILE(SMBwriteX);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2985,7 +2985,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK, False)) {
 		END_PROFILE(SMBwriteclose);
 		return(ERROR(ERRDOS,ERRlock));
 	}
@@ -3043,7 +3043,7 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
-	if (!do_lock(fsp, conn, count, offset, WRITE_LOCK, &eclass, &ecode)) {
+	if (!do_lock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &eclass, &ecode)) {
           if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
 	    /*
              * A blocking lock was requested. Package up
@@ -3082,7 +3082,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
   count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
   offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
-  if(!do_unlock(fsp, conn, count, offset, &eclass, &ecode)) {
+  if(!do_unlock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, &eclass, &ecode)) {
     END_PROFILE(SMBunlock);
     return (ERROR(eclass,ecode));
   }
@@ -4197,6 +4197,18 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 }
 
 /****************************************************************************
+ Get a lock pid, dealing with large count requests.
+****************************************************************************/
+ 
+uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format)
+{
+	if(!large_file_format)
+		return SVAL(data,SMB_LPID_OFFSET(data_offset));
+	else
+		return SVAL(data,SMB_LARGE_LPID_OFFSET(data_offset));
+}
+
+/****************************************************************************
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
@@ -4295,6 +4307,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   SMB_BIG_UINT count = 0, offset = 0;
+  uint16 lock_pid;
   int32 lock_timeout = IVAL(inbuf,smb_vwv4);
   int i;
   char *data;
@@ -4367,6 +4380,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
+    lock_pid = get_lock_pid( data, i, large_file_format);
     count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4381,7 +4395,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
 
-    if(!do_unlock(fsp,conn,count,offset, &eclass, &ecode)) {
+    if(!do_unlock(fsp,conn,lock_pid,count,offset, &eclass, &ecode)) {
       END_PROFILE(SMBlockingX);
       return ERROR(eclass,ecode);
     }
@@ -4411,7 +4425,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
 
-    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+    if(!do_lock(fsp,conn,lock_pid,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode)) {
       if((ecode == ERRlock) && (lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
         /*
@@ -4448,7 +4462,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
         return ERROR(ERRDOS,ERRnoaccess);
       }
  
-      do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
+      do_unlock(fsp,conn,lock_pid,count,offset,&dummy1,&dummy2);
     }
     END_PROFILE(SMBlockingX);
     return ERROR(eclass,ecode);
@@ -4505,7 +4519,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   tcount = maxcount;
   total_read = 0;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK, False)) {
     END_PROFILE(SMBreadBmpx);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -4571,7 +4585,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
      not an SMBwritebmpx - set this up now so we don't forget */
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK, False)) {
     END_PROFILE(SMBwriteBmpx);
     return(ERROR(ERRDOS,ERRlock));
   }

@@ -196,6 +196,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
+  uint16 lock_pid;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
@@ -219,6 +220,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
     uint32 dummy2;
     BOOL err;
 
+    lock_pid = get_lock_pid( data, i, large_file_format);
     count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -227,7 +229,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
      * request would never have been queued. JRA.
      */
 
-    do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
+    do_unlock(fsp,conn,lock_pid,count,offset,&dummy1,&dummy2);
   }
 
   generic_blocking_lock_error(blr, eclass, ecode);
@@ -280,7 +282,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
  
-  if(!do_lock( fsp, conn, (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, READ_LOCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, READ_LOCK, &eclass, &ecode)) {
     if((errno != EACCES) && (errno != EAGAIN)) {
       /*
        * We have other than a "can't get lock" POSIX
@@ -343,7 +345,7 @@ static BOOL process_lock(blocking_lock_record *blr)
   offset = IVAL(inbuf,smb_vwv3);
 
   errno = 0;
-  if (!do_lock(fsp, conn, (SMB_BIG_UINT)count, (SMB_BIG_UINT)offset, WRITE_LOCK, &eclass, &ecode)) {
+  if (!do_lock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, (SMB_BIG_UINT)offset, WRITE_LOCK, &eclass, &ecode)) {
     if((errno != EACCES) && (errno != EAGAIN)) {
 
       /*
@@ -392,6 +394,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
+  uint16 lock_pid;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
   int eclass=0;
@@ -407,6 +410,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   for(; blr->lock_num < num_locks; blr->lock_num++) {
     BOOL err;
 
+    lock_pid = get_lock_pid( data, blr->lock_num, large_file_format);
     count = get_lock_count( data, blr->lock_num, large_file_format);
     offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
 
@@ -415,7 +419,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
      * request would never have been queued. JRA.
      */
     errno = 0;
-    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+    if(!do_lock(fsp,conn,lock_pid,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode))
       break;
   }
