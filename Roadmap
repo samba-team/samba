@@ -1,21 +1,33 @@
-Copyright (C) 1997 - Samba-Team
+Copyright (C) 1997-1998 - Samba-Team
 
 The Samba-Team are committed to an agressive program to deliver quality
 controlled software to a well defined roadmap.
 
-The current Samba release 1.9.17 is called the "Browse Fix Release"
+The current Samba release 1.9.18 is called the "Oplock Release"
 The following development objectives are in place:
+----------------------------------------------------------------------------
+Please Note: Development of the 1.9.19 and 1.9.20 releases is presently
+	     well ahead of schedule. This means that the release program
+	     may very well change radically from what is outlined below.
+
+	     If present developments continue then 1.9.19 will feature
+	     improved authentication and security capabilities as well as
+	     the long promised GUI (Web) based management tools.
+
+	     This being the case, then version 2.0 may become the long
+	     awaited Windows NT Domain Controller Release and version 2.1
+	     will become the Directory Services update.
+
+	     Should 1.9.19 roll out ahead of schedule then there will
+	     likely be a delay of up to 6 months before the NT Domain
+	     Controller release will be ready for prime-time business use.
+----------------------------------------------------------------------------
 
 Version	/ Codename	Notes
 ------------------	----------------------------------------------------
-1.9.18 			This version will feature two main areas of improvement
-"Perf-Lock Release"	- introduction of OpLock support
-			- introduction of new browse list and WINS methods
-			- introduction of experimental NT Domain Authentication
-			  as a compile-time option only.
-
 1.9.19			An authentication update release to offer improved
-"Auth Code Release"	security and password synchronisation capabilities
+"Auth Code Release"	security and password synchronisation capabilities.
+                        Also, support for Windows NT specific SMB calls.
 
 1.9.20			Introduction of new managment tools
 "GUI Config Release"	Improved multi-language support.
