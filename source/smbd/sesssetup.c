@@ -325,6 +325,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	uint32 ntlmssp_command, neg_flags;
 	NTSTATUS nt_status;
 	int sess_vuid;
+	BOOL as_guest;
 
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
@@ -392,8 +393,9 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
-	sess_vuid = register_vuid(server_info, user);
+	as_guest = server_info->guest;
 
+	sess_vuid = register_vuid(server_info, user);
 	free_server_info(&server_info);
 
 	SAFE_FREE(user);
@@ -405,7 +407,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
 
-	if (server_info->guest) {
+	if (as_guest) {
 		SSVAL(outbuf,smb_vwv2,1);
 	}
 
