@@ -109,6 +109,7 @@ libkrb5_la_SOURCES =				\
 	set_default_realm.c			\
 	sock_principal.c			\
 	store.c					\
+	store-int.h				\
 	store_emem.c				\
 	store_fd.c				\
 	store_mem.c				\
@@ -127,10 +128,10 @@ libkrb5_la_LDFLAGS = -version-info 18:3:1
 $(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
 $(srcdir)/krb5-protos.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl -o krb5-protos.h $(libkrb5_la_SOURCES) || rm -f krb5-protos.h
+	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -o krb5-protos.h $(libkrb5_la_SOURCES) || rm -f krb5-protos.h
 
 $(srcdir)/krb5-private.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-private.h
+	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-private.h
 
 #libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
