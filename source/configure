@@ -12198,10 +12198,11 @@ echo "configure:12198: checking whether to compile winbind" >&5
 
 case "$host_os" in 
         *linux*|*solaris*)
-                WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PROGS)"
+                WINBIND_TARGETS="\$(WINBIND_PROGS)"
+		WINBIND_STARGETS="\$(WINBIND_SPROGS)"
 		case "$with_pam" in
 			yes)
-				WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PAM_PROGS)"
+				WINBIND_STARGETS="$WINBIND_STARGETS \$(WINBIND_PAM_PROGS)"
 			;;
 			*)
 		esac
@@ -12218,7 +12219,8 @@ if test "${with_winbind+set}" = set; then
   case "$withval" in
         no)
                 WINBIND_TARGETS=""
-                winbind_reason=""
+		WINBIND_STARGETS="" 
+	        winbind_reason=""
                 ;;
   esac 
 fi
@@ -12232,6 +12234,7 @@ fi
 
 
 
+
 #################################################
 # final configure stuff
 echo "checking configure summary"
@@ -12239,11 +12242,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 12243 "configure"
+#line 12246 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:12247: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:12250: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
@@ -12435,6 +12438,7 @@ s%@TERMLDFLAGS@%$TERMLDFLAGS%g
 s%@ROFF@%$ROFF%g
 s%@QUOTAOBJS@%$QUOTAOBJS%g
 s%@WINBIND_TARGETS@%$WINBIND_TARGETS%g
+s%@WINBIND_STARGETS@%$WINBIND_STARGETS%g
 s%@builddir@%$builddir%g
 
 CEOF

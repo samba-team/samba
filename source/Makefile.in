@@ -78,13 +78,15 @@ FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
 FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
 FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
-SPROGS = bin/smbd bin/nmbd bin/swat
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@
+WINBIND_PROGS = bin/wbinfo
+WINBIND_SPROGS = bin/winbindd nsswitch/libnss_winbind.so 
+WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
+
+SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@ @WINBIND_TARGETS@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
-WINBIND_PROGS = nsswitch/libnss_winbind.so bin/winbindd bin/wbinfo
-WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup @WINBIND_TARGETS@
+PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
 
 SCRIPTS = $(srcdir)/script/smbtar 
 
