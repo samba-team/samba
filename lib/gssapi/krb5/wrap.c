@@ -142,7 +142,7 @@ wrap_des
   p += 16;
 
   /* confounder + data + pad */
-  des_new_random_key((des_cblock*)p);
+  krb5_generate_random_block(p, 8);
   memcpy (p + 8, input_message_buffer->value,
 	  input_message_buffer->length);
   memset (p + 8 + input_message_buffer->length, padlength, padlength);
@@ -258,7 +258,7 @@ wrap_des3
   /* calculate checksum (the above + confounder + data + pad) */
 
   memcpy (p + 20, p - 8, 8);
-  des_new_random_key((des_cblock*)(p + 28));
+  krb5_generate_random_block(p + 28, 8);
   memcpy (p + 28 + 8, input_message_buffer->value,
 	  input_message_buffer->length);
   memset (p + 28 + 8 + input_message_buffer->length, padlength, padlength);
