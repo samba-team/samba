@@ -369,7 +369,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, 
+				  call->dce->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -377,7 +378,26 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
+	DLIST_ADD_END(call->dce->call_list, call, struct dcesrv_call_state *);
 
+	return NT_STATUS_OK;
+}
+
+
+/*
+  handle a auth3 request
+*/
+static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
+{
+	/* handle the auth3 in the auth code */
+	if (!dcesrv_auth_auth3(call)) {
+		return dcesrv_fault(call, DCERPC_FAULT_OTHER);
+	}
+
+	talloc_destroy(call->mem_ctx);
+
+	/* we don't send a reply to a auth3 request, except by a
+	   fault */
 	return NT_STATUS_OK;
 }
 
@@ -473,10 +493,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
-
-		status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		if (!dcesrv_auth_response(call, &rep->data, &pkt)) {
+			return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
 		}
 
 		SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
@@ -486,6 +504,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		stub.data += length;
 		stub.length -= length;
 	} while (stub.length != 0);
+
+	DLIST_ADD_END(call->dce->call_list, call, struct dcesrv_call_state *);
 
 	return NT_STATUS_OK;
 }
@@ -568,6 +588,13 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 
 	dce_partial_advance(dce, blob.length);
 
+	/* we have to check the signing here, before combining the
+	   pdus */
+	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
+	    !dcesrv_auth_request(call)) {
+		return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
+	}
+
 	/* see if this is a continued packet */
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
 		struct dcesrv_call_state *call2 = call;
@@ -623,6 +650,9 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 	case DCERPC_PKT_BIND:
 		status = dcesrv_bind(call);
 		break;
+	case DCERPC_PKT_AUTH3:
+		status = dcesrv_auth3(call);
+		break;
 	case DCERPC_PKT_REQUEST:
 		status = dcesrv_request(call);
 		break;
@@ -634,9 +664,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 	/* if we are going to be sending a reply then add
 	   it to the list of pending calls. We add it to the end to keep the call
 	   list in the order we will answer */
-	if (NT_STATUS_IS_OK(status)) {
-		DLIST_ADD_END(dce->call_list, call, struct dcesrv_call_state *);
-	} else {
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 	}
 

@@ -72,7 +72,7 @@ struct dcesrv_handle {
 
 /* hold the authentication state information */
 struct dcesrv_auth {
-	struct ntlmssp_state *ntlmssp_state;
+	struct auth_ntlmssp_state *ntlmssp_state;
 	struct dcerpc_auth *auth_info;
 };
 
