@@ -108,12 +108,9 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	if (!lp_locking(SNUM(conn)))
 		return(True);
 
-	if (count == 0) {
-		*eclass = ERRDOS;
-		*ecode = ERRnoaccess;
-		return False;
-	}
-	
+	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
+
+
 	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
