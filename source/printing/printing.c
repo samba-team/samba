@@ -846,6 +846,84 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   return(True);
 }
 
+/****************************************************************************
+parse a qstat line
+
+here is an example of "qstat -l -d qms" output under softq
+
+Queue qms: 2 jobs; daemon active (313); enabled; accepting;
+ job-ID   submission-time     pri     size owner      title 
+205980: H 98/03/09 13:04:05     0    15733 stephenf   chap1.ps
+206086:>  98/03/12 17:24:40     0      659 chris      -
+206087:   98/03/12 17:24:45     0     4876 chris      -
+Total:      21268 bytes in queue
+
+
+****************************************************************************/
+static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
+{
+  string tok[10];
+  int count=0;
+
+  /* mung all the ":"s to spaces*/
+  string_sub(line,":"," ");
+  
+  for (count=0; count<10 && next_token(&line,tok[count],NULL); count++) ;
+
+  /* we must get 9 tokens */
+  if (count < 9)
+    return(False);
+
+  /* the 1st and 7th columns must be integer */
+  if (!isdigit(*tok[0]) || !isdigit(*tok[6]))  return(False);
+  /* if the 2nd column is either '>' or 'H' then the 7th and 8th must be
+   * integer, else it's the 6th and 7th that must be
+   */
+  if (*tok[1] == 'H' || *tok[1] == '>')
+    {
+      if (!isdigit(*tok[7]))
+        return(False);
+      buf->status = *tok[1] == '>' ? LPQ_PRINTING : LPQ_PAUSED;
+      count = 1;
+    }
+  else
+    {
+      if (!isdigit(*tok[5]))
+        return(False);
+      buf->status = LPQ_QUEUED;
+      count = 0;
+    }
+	
+
+  buf->job = atoi(tok[0]);
+  buf->size = atoi(tok[count+6]);
+  buf->priority = atoi(tok[count+5]);
+  StrnCpy(buf->user,tok[count+7],sizeof(buf->user)-1);
+  StrnCpy(buf->file,tok[count+8],sizeof(buf->file)-1);
+  buf->time = time(NULL);		/* default case: take current time */
+  {
+    time_t jobtime;
+    struct tm *t;
+
+    t = localtime(&buf->time);
+    t->tm_mday = atoi(tok[count+2]+6);
+    t->tm_mon  = atoi(tok[count+2]+3);
+    switch (*tok[count+2])
+    {
+    case 7: case 8: case 9: t->tm_year = atoi(tok[count+2]) + 1900; break;
+    default:                t->tm_year = atoi(tok[count+2]) + 2000; break;
+    }
+
+    t->tm_hour = atoi(tok[count+3]);
+    t->tm_min = atoi(tok[count+4]);
+    t->tm_sec = atoi(tok[count+5]);
+    jobtime = mktime(t);
+    if (jobtime != (time_t)-1)
+      buf->time = jobtime; 
+  }
+
+  return(True);
+}
 
 
 char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
@@ -880,6 +958,9 @@ static BOOL parse_lpq_entry(int snum,char *line,
       break;
     case PRINT_PLP:
       ret = parse_lpq_plp(line,buf,first);
+      break;
+    case PRINT_SOFTQ:
+      ret = parse_lpq_softq(line,buf,first);
       break;
     default:
       ret = parse_lpq_bsd(line,buf,first);
