@@ -6,8 +6,8 @@
 
 /* The following definitions come from python/py_spoolss.c  */
 
-PyObject *new_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				POLICY_HND *pol);
+PyObject *new_spoolss_policy_hnd_object(struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx, POLICY_HND *pol);
 void initspoolss(void);
 
 /* The following definitions come from python/py_spoolss_drivers.c  */
@@ -66,14 +66,6 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_printers_conv.c  */
 
-BOOL py_from_SID(PyObject **obj, DOM_SID *sid);
-BOOL py_to_SID(DOM_SID *sid, PyObject *dict);
-BOOL py_from_ACE(PyObject **dict, SEC_ACE *ace);
-BOOL py_to_ACE(SEC_ACE *ace, PyObject *dict);
-BOOL py_from_ACL(PyObject **dict, SEC_ACL *acl);
-BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict);
-BOOL py_from_SECDESC(PyObject **dict, SEC_DESC *sd);
-BOOL py_to_SECDESC(SEC_DESC *sd, PyObject *dict);
 BOOL py_from_DEVICEMODE(PyObject **dict, DEVICEMODE *devmode);
 BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict);
 BOOL py_from_PRINTER_INFO_0(PyObject **dict, PRINTER_INFO_0 *info);
@@ -81,7 +73,8 @@ BOOL py_to_PRINTER_INFO_0(PRINTER_INFO_0 *info, PyObject *dict);
 BOOL py_from_PRINTER_INFO_1(PyObject **dict, PRINTER_INFO_1 *info);
 BOOL py_to_PRINTER_INFO_1(PRINTER_INFO_1 *info, PyObject *dict);
 BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info);
-BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict);
+BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
+			  TALLOC_CTX *mem_ctx);
 BOOL py_from_PRINTER_INFO_3(PyObject **dict, PRINTER_INFO_3 *info);
 BOOL py_to_PRINTER_INFO_3(PRINTER_INFO_3 *info, PyObject *dict);
 

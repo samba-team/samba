@@ -19,12 +19,12 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 /* The following definitions come from python/py_ntsec.c  */
 
 BOOL py_from_SID(PyObject **obj, DOM_SID *sid);
-BOOL py_to_SID(DOM_SID *sid, PyObject *dict);
+BOOL py_to_SID(DOM_SID *sid, PyObject *obj);
 BOOL py_from_ACE(PyObject **dict, SEC_ACE *ace);
 BOOL py_to_ACE(SEC_ACE *ace, PyObject *dict);
 BOOL py_from_ACL(PyObject **dict, SEC_ACL *acl);
-BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict);
+BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict, TALLOC_CTX *mem_ctx);
 BOOL py_from_SECDESC(PyObject **dict, SEC_DESC *sd);
-BOOL py_to_SECDESC(SEC_DESC *sd, PyObject *dict);
+BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx);
 
 #endif /*  _PY_COMMON_PROTO_H  */

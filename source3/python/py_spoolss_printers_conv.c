@@ -165,9 +165,7 @@ BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict)
 
 	to_struct(devmode, dict, py_DEVICEMODE);
 
-	obj = PyDict_GetItemString(dict, "private");
-
-	if (!obj)
+	if (!(obj = PyDict_GetItemString(dict, "private")))
 		return False;
 
 	devmode->private = PyString_AsString(obj);
@@ -225,9 +223,28 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info)
 	return True;
 }
 
-BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict)
+BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
+			  TALLOC_CTX *mem_ctx)
 {
-	return False;
+	PyObject *obj;
+
+	to_struct(info, dict, py_PRINTER_INFO_2);
+
+	if (!(obj = PyDict_GetItemString(dict, "security_descriptor")))
+		return False;
+
+	if (!py_to_SECDESC(&info->secdesc, obj, mem_ctx))
+		return False;
+
+	if (!(obj = PyDict_GetItemString(dict, "device_mode")))
+		return False;
+
+	info->devmode = talloc(mem_ctx, sizeof(DEVICEMODE));
+
+	if (!py_to_DEVICEMODE(info->devmode, obj))
+		return False;
+
+	return True;
 }
 
 /*

@@ -181,12 +181,8 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	uint32 level;
 	static char *kwlist[] = {"dict", NULL};
 	union {
-		PRINTER_INFO_0 printers_0;
-		PRINTER_INFO_1 printers_1;
 		PRINTER_INFO_2 printers_2;
 		PRINTER_INFO_3 printers_3;
-		PRINTER_INFO_4 printers_4;
-		PRINTER_INFO_5 printers_5;
 	} pinfo;
 
 	/* Parse parameters */
@@ -199,12 +195,22 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	if ((level_obj = PyDict_GetItemString(info, "level"))) {
 
-		if (!PyInt_Check(level_obj))
+		if (!PyInt_Check(level_obj)) {
+			DEBUG(0, ("** level not an integer\n"));
 			goto error;
+		}
 
 		level = PyInt_AsLong(level_obj);
 
+		/* Only level 2, 3 supported by NT */
+
+		if (level != 2 && level != 3) {
+			DEBUG(0, ("** unsupported info level\n"));
+			goto error;
+		}
+
 	} else {
+		DEBUG(0, ("** no level info\n"));
 	error:
 		PyErr_SetString(spoolss_error, "invalid info");
 		return NULL;
@@ -215,34 +221,14 @@ PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	ZERO_STRUCT(ctr);
 
 	switch (level) {
-	case 2: {
-		PyObject *devmode_obj;
-
+	case 2:
 		ctr.printers_2 = &pinfo.printers_2;
 
-		if (!py_to_PRINTER_INFO_2(&pinfo.printers_2, info))
+		if (!py_to_PRINTER_INFO_2(&pinfo.printers_2, info,
+					  hnd->mem_ctx))
 			goto error;
 
-#if 0
-		devmode_obj = PyDict_GetItemString(info, "device_mode");
-
-		pinfo.printers_2.devmode = talloc(
-			hnd->mem_ctx, sizeof(DEVICEMODE));
-
-		PyDEVICEMODE_AsDEVICEMODE(pinfo.printers_2.devmode, 
-					  devmode_obj);
-
-#else
-
-		/* FIXME: can we actually set the security descriptor using
-		   a setprinter level 2? */
-
-		pinfo.printers_2.secdesc = NULL;
-		pinfo.printers_2.secdesc = NULL;
-
-#endif
 		break;
-	}
 	default:
 		PyErr_SetString(spoolss_error, "unsupported info level");
 		return NULL;
