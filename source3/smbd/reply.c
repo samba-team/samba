@@ -1698,7 +1698,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	 * that is exclusively oplocked.
 	 */
 
-	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_use_sendfile(SNUM(conn)) ) {
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
