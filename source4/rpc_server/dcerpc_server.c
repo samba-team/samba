@@ -250,7 +250,7 @@ static NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
 }
 
 NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
-				  DATA_BLOB *session_key)
+				    DATA_BLOB *session_key)
 {
 	/* this took quite a few CPU cycles to find ... */
 	session_key->data = "SystemLibraryDTC";
@@ -831,6 +831,8 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 			call2->pkt.u.request.stub_and_verifier.length;
 
 		call->pkt.pfc_flags |= (call2->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST);
+
+		talloc_free(call2);
 	}
 
 	/* this may not be the last pdu in the chain - if its isn't then
