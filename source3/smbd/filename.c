@@ -150,7 +150,11 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
   stat_cache_entry *scp;
   pstring orig_name;
   pstring translated_path;
-  int namelen = strlen(orig_translated_path);
+  int namelen;
+
+  if (!lp_stat_cache()) return;
+
+  namelen = strlen(orig_translated_path);
 
   /*
    * Don't cache trivial valid directory entries.
@@ -235,8 +239,12 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
 {
   stat_cache_entry *scp;
   stat_cache_entry *longest_hit = NULL;
-  int namelen = strlen(name);
+  int namelen;
+
+  if (!lp_stat_cache()) return False;
  
+  namelen = strlen(name);
+
   *start = name;
   global_stat_cache_lookups++;
 

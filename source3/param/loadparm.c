@@ -228,6 +228,7 @@ typedef struct
   BOOL bOleLockingCompat;
   BOOL bTimestampLogs;
   BOOL bNTSmbSupport;
+  BOOL bStatCache;
 } global;
 
 static global Globals;
@@ -643,6 +644,7 @@ static struct parm_struct parm_table[] =
   {"map archive",      P_BOOL,    P_LOCAL,  &sDefault.bMap_archive,     NULL,   NULL,  FLAG_GLOBAL},
   {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL,   NULL,  FLAG_GLOBAL},
   {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL,   NULL,  FLAG_GLOBAL},
+  {"stat cache",       P_BOOL,    P_GLOBAL, &Globals.bStatCache,        NULL,   NULL,  0},
 
   {"Domain Options", P_SEP, P_SEPARATOR},
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL,   NULL,  0},
@@ -850,6 +852,7 @@ static void init_globals(void)
   Globals.bPasswdChatDebug = False;
   Globals.bOleLockingCompat = True;
   Globals.bNTSmbSupport = True; /* Do NT SMB's by default. */
+  Globals.bStatCache = True; /* use stat cache by default */
 
 #ifdef WITH_LDAP
   /* default values for ldap */
@@ -1135,6 +1138,7 @@ FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
+FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

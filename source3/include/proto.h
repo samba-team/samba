@@ -926,6 +926,7 @@ BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_ole_locking_compat(void);
 BOOL lp_nt_smb_support(void);
+BOOL lp_stat_cache(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
