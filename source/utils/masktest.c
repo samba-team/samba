@@ -419,6 +419,7 @@ static void usage(void)
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
+	extern BOOL AllowDebugChange;
 	int opt;
 	char *p;
 	int seed;
@@ -426,6 +427,8 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
+	AllowDebugChange = False;
+	DEBUGLEVEL = 0;
 	dbf = stderr;
 
 	if (argc < 2 || argv[1][0] == '-') {
@@ -444,10 +447,6 @@ static void usage(void)
 
 	TimeInit();
 	charset_initialise();
-	codepage_initialise(lp_client_code_page());
-
-	lp_load(servicesf,True,False,False);
-	load_interfaces();
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
@@ -455,8 +454,11 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:vE")) != EOF) {
+	while ((opt = getopt(argc, argv, "d:U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 		case 'E':
 			die_on_error = 1;
 			break;
@@ -502,6 +504,9 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
+	lp_load(servicesf,True,False,False);
+	load_interfaces();
+	codepage_initialise(lp_client_code_page());
 
 	cli = connect_one(share);
 	if (!cli) {
