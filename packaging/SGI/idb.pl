@@ -111,7 +111,7 @@ system("cp -f ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
-@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/sambalp","/smbprint"));
+@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/sambalp","/smbprint","bin/pdbedit","bin/tdbdump"));
 
 @nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs);
 
@@ -154,10 +154,10 @@ if ($PKG eq "samba_irix") {
   print IDB "f 0644 root sys usr/lib32/samba/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
 
   print IDB "d 0755 root sys usr/relnotes/samba_irix $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
-  print IDB "f 0644 root sys usr/relnotes/samba_irix/TC build/TC $PKG.man.relnotes\n";
-  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch1.z build/ch1.z $PKG.man.relnotes\n";
-  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch2.z build/ch2.z $PKG.man.relnotes\n";
-  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch3.z build/ch3.z $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/TC relnotes/TC $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch1.z relnotes/ch1.z $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch2.z relnotes/ch2.z $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch3.z relnotes/ch3.z $PKG.man.relnotes\n";
 }
 else {
   @copyfile = grep (/^COPY/,@allfiles);
