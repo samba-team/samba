@@ -42,6 +42,7 @@
 #define _OTP_H
 
 #include <stdlib.h>
+#include <time.h>
 
 enum {OTPKEYSIZE = 8};
 
@@ -76,6 +77,7 @@ typedef struct {
   char seed[17];
   OtpKey key;
   int challengep;
+  time_t lock_time;
   char *err;
 } OtpContext;
 
