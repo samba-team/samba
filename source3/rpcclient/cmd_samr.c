@@ -682,7 +682,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
 			for (i = 0; i < num_dom_groups; i++)
-				printf("group:[%s] rid:[0x%x]\n", 
+				printf("user:[%s] rid:[0x%x]\n", 
 				       dom_groups[i].acct_name,
 				       dom_groups[i].rid);
 		}
