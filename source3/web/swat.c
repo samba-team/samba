@@ -29,6 +29,7 @@
 #define GLOBALS_SNUM -1
 
 static pstring servicesf = CONFIGFILE;
+static BOOL demo_mode = False;
 
 /*
  * Password Management Globals
@@ -581,12 +582,17 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 			    char *old_passwd, char *new_passwd, 
 			    BOOL add_user, BOOL enable_user, BOOL disable_user)
 {
+	if (demo_mode) {
+		printf("password change in demo mode rejected\n<p>");
+		return False;
+	}
+	
 	if (remote_machine != NULL) {
 		return remote_password_change(remote_machine, user_name, old_passwd, new_passwd);
 	}
 
 	if(!initialize_password_db()) {
-		printf("Can't setup password database vectors.\n");
+		printf("Can't setup password database vectors.\n<p>");
 		return False;
 	}
 	
@@ -802,7 +808,6 @@ static void printers_page(void)
 	extern FILE *dbf;
 	int opt;
 	char *page;
-	int auth_required = 1;
 
 	/* just in case it goes wild ... */
 	alarm(300);
@@ -817,12 +822,12 @@ static void printers_page(void)
 			pstrcpy(servicesf,optarg);
 			break;	  
 		case 'a':
-			auth_required = 0;
+			demo_mode = True;
 			break;	  
 		}
 	}
 
-	cgi_setup(SWATDIR, auth_required);
+	cgi_setup(SWATDIR, !demo_mode);
 
 	print_header();
 	
@@ -840,7 +845,7 @@ static void printers_page(void)
 	page = cgi_pathinfo();
 
 	/* Root gets full functionality */
-	if (am_root() == True) {
+	if (demo_mode || am_root()) {
 		if (strcmp(page, "globals")==0) {
 			globals_page();
 		} else if (strcmp(page,"shares")==0) {
