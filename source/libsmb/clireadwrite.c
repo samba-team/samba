@@ -224,6 +224,14 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 {
 	char *p;
 
+	if (size > cli->bufsize) {
+		cli->outbuf = realloc(cli->outbuf, size + 1024);
+		cli->inbuf = realloc(cli->inbuf, size + 1024);
+		if (cli->outbuf == NULL || cli->inbuf == NULL)
+			return False;
+		cli->bufsize = size + 1024;
+	}
+
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
@@ -301,6 +309,7 @@ ssize_t cli_write(struct cli_state *cli,
 			break;
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
+		bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))>>16);
 	}
 
 	while (received < issued && cli_receive_smb(cli))
