@@ -517,12 +517,12 @@ construct_command (char **res, int argc, char **argv)
 }
 
 static char *
-print_addr (int af, const void *a)
+print_addr (const struct sockaddr_in *sin)
 {
     char addr_str[256];
     char *res;
 
-    inet_ntop (af, a, addr_str, sizeof(addr_str));
+    inet_ntop (AF_INET, &sin->sin_addr, addr_str, sizeof(addr_str));
     res = strdup(addr_str);
     if (res == NULL)
 	errx (1, "malloc: out of memory");
@@ -542,44 +542,39 @@ doit_broken (int argc,
 	     const char *cmd,
 	     size_t cmd_len)
 {
-    struct hostent *hostent = NULL;
-    struct sockaddr_storage addr_ss;
-    struct sockaddr *addr = (struct sockaddr *)&addr_ss;
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
     int error;
-    int af;
+    char portstr[NI_MAXSERV];
 
     if (priv_socket1 < 0) {
 	warnx ("unable to bind reserved port: is rsh setuid root?");
 	return 1;
     }
 
-#ifdef HAVE_IPV6    
-    if (hostent == NULL)
-	hostent = getipnodebyname (host, AF_INET6, 0, &error);
-#endif
-    if (hostent == NULL)
-	hostent = getipnodebyname (host, AF_INET, 0, &error);
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_family   = AF_INET;
 
-    if (hostent == NULL) {
-	warn("gethostbyname '%s' failed: %s", host, hstrerror(error));
+    snprintf (portstr, sizeof(portstr), "%u", htons(port));
+
+    error = getaddrinfo (host, portstr, &hints, &ai);
+    if (error) {
+	warnx ("%s: %s", host, gai_strerror(error));
 	return 1;
     }
-
-    af = addr->sa_family = hostent->h_addrtype;
-    socket_set_address_and_port (addr, hostent->h_addr_list[0], port);
-
-    if (connect(priv_socket1, addr, socket_sockaddr_size(addr)) < 0) {
-	char **h;
-
-	if (hostent->h_addr_list[1] == NULL) {
-	    freehostent (hostent);
+    
+    if (connect (priv_socket1, ai->ai_addr, ai->ai_addrlen) < 0) {
+	if (ai->ai_next == NULL) {
+	    freeaddrinfo (ai);
 	    return 1;
 	}
 
 	close(priv_socket1);
 	close(priv_socket2);
 
-	for(h = hostent->h_addr_list; *h != NULL; ++h) {
+	for (a = ai->ai_next; a != NULL; a = a->ai_next) {
 	    pid_t pid;
 
 	    pid = fork();
@@ -588,6 +583,7 @@ doit_broken (int argc,
 	    else if(pid == 0) {
 		char **new_argv;
 		int i = 0;
+		struct sockaddr_in *sin = (struct sockaddr_in *)a->ai_addr;
 
 		new_argv = malloc((argc + 2) * sizeof(*new_argv));
 		if (new_argv == NULL)
@@ -595,19 +591,19 @@ doit_broken (int argc,
 		new_argv[i] = argv[i];
 		++i;
 		if (optind == i)
-		    new_argv[i++] = print_addr (af, *h);
+		    new_argv[i++] = print_addr (sin);
 		new_argv[i++] = "-K";
 		for(; i <= argc; ++i)
 		    new_argv[i] = argv[i - 1];
 		if (optind > 1)
-		    new_argv[optind + 1] = print_addr(af, *h);
+		    new_argv[optind + 1] = print_addr(sin);
 		new_argv[argc + 1] = NULL;
 		execv(PATH_RSH, new_argv);
 		err(1, "execv(%s)", PATH_RSH);
 	    } else {
 		int status;
 
-		freehostent (hostent);
+		freeaddrinfo (ai);
 
 		while(waitpid(pid, &status, 0) < 0)
 		    ;
@@ -619,7 +615,7 @@ doit_broken (int argc,
     } else {
 	int ret;
 
-	freehostent (hostent);
+	freeaddrinfo (ai);
 
 	ret = proto (priv_socket1, priv_socket2,
 		     argv[optind],
@@ -644,56 +640,52 @@ doit (const char *hostname,
 		       const char *local_user, size_t cmd_len,
 		       const char *cmd))
 {
-    struct hostent *hostent = NULL;
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
     int error;
-    char **h;
-    int af;
+    char portstr[NI_MAXSERV];
+    int ret;
 
-#ifdef HAVE_IPV6    
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
-#endif
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
-    if (hostent == NULL)
-	errx (1, "gethostbyname '%s' failed: %s",
-	      hostname,
-	      hstrerror(error));
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
 
-    af = hostent->h_addrtype;
-    for (h = hostent->h_addr_list; *h != NULL; ++h) {
+    error = getaddrinfo (hostname, portstr, &hints, &ai);
+    if (error) {
+	errx (1, "%s: %s", hostname, gai_strerror(error));
+	return -1;
+    }
+    
+    for (a = ai; a != NULL; a = a->ai_next) {
 	int s;
-	struct sockaddr_storage addr_ss;
-	struct sockaddr *addr = (struct sockaddr *)&addr_ss;
 	int errsock;
-	struct sockaddr_storage erraddr_ss;
-	struct sockaddr *erraddr = (struct sockaddr *)&erraddr_ss;
-	int ret;
 
-	addr->sa_family = af;
-	socket_set_address_and_port (addr, *h, port);
-
-	s = socket (af, SOCK_STREAM, 0);
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
-	    err (1, "socket");
-	if (connect (s, addr, socket_sockaddr_size(addr)) < 0) {
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    warn ("connect(%s)", hostname);
 	    close (s);
 	    continue;
 	}
 	if (do_errsock) {
-	    errsock = socket (af, SOCK_STREAM, 0);
+	    struct addrinfo *ea;
+
+	    error = getaddrinfo (NULL, "0", a, &ea);
+	    if (error)
+		errx (1, "getaddrinfo: %s", gai_strerror(error));
+	    errsock = socket (ea->ai_family, ea->ai_socktype, ea->ai_protocol);
 	    if (errsock < 0)
 		err (1, "socket");
-	    socket_set_any (erraddr, af);
-
-	    if (bind (errsock, erraddr, socket_sockaddr_size(erraddr)) < 0)
+	    if (bind (errsock, ea->ai_addr, ea->ai_addrlen) < 0)
 		err (1, "bind");
+	    freeaddrinfo (ea);
 	} else
 	    errsock = -1;
     
-	freehostent (hostent);
+	freeaddrinfo (ai);
 	ret = proto (s, errsock,
 		     hostname,
 		     local_user, remote_user,
@@ -701,8 +693,9 @@ doit (const char *hostname,
 	close (s);
 	return ret;
     }
-    freehostent (hostent);
-    return 1;
+    warnx ("failed to contact %s", hostname);
+    freeaddrinfo (ai);
+    return -1;
 }
 
 #ifdef KRB4
