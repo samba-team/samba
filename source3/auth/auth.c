@@ -162,8 +162,8 @@ static BOOL check_domain_match(const char *user, const char *domain)
  * @param user_info Contains the user supplied components, including the passwords.
  *                  Must be created with make_user_info() or one of its wrappers.
  *
- * @param auth_info Supplies the challenges and some other data. 
- *                  Must be created with make_auth_info(), and the challenges should be 
+ * @param auth_context Supplies the challenges and some other data. 
+ *                  Must be created with make_auth_context(), and the challenges should be 
  *                  filled in, either at creation or by calling the challenge geneation 
  *                  function auth_get_challenge().  
  *
