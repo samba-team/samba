@@ -61,10 +61,9 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <roken.h>
 #include "extern.h"
 
-#include <roken.h>
 
 /* 
  * Special version of popen which avoids call to shell.  This ensures
