@@ -432,26 +432,23 @@ char *rep_inet_ntoa(struct in_addr ip)
 
 #ifndef HAVE_TIMEGM
 /*
-  see the timegm man page on linux
+  yes, I know this looks insane, but its really needed. The function in the 
+  Linux timegm() manpage does not work on solaris.
 */
  time_t timegm(struct tm *tm) 
 {
-	time_t ret;
-	char *tz;
-	char *tzvar;
-	
-	tz = getenv("TZ");
-	putenv("TZ=");
-	tzset();
-	ret = mktime(tm);
-	if (tz) {
-		asprintf(&tzvar, "TZ=%s", tz);
-		putenv(tzvar);
-		safe_free(tzvar);
-	} else {
-		putenv("TZ");
-	}
-	tzset();
-	return ret;
+	struct tm tm2, tm3;
+	time_t t;
+
+	tm2 = *tm;
+
+	t = mktime(&tm2);
+	tm3 = *localtime(&t);
+	tm2 = *tm;
+	tm2.tm_isdst = tm3.tm_isdst;
+	t = mktime(&tm2);
+	t -= TimeDiff(t);
+
+	return t;
 }
 #endif
