@@ -2071,7 +2071,7 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
-void prs_dump(char *name, int level, prs_struct *ps);
+void prs_dump(char *name, int v, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
@@ -2154,13 +2154,10 @@ void init_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 				uint32 sec_buf_size, SEC_DESC_BUF *psdb);
 BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
-void init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
-				time_t unix_time, uint8 major, uint8 minor);
+BOOL init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char* val_name);
 BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
-void init_reg_r_info(REG_R_INFO *r_r,
-				uint32 level, char *os_type,
-				uint32 unknown_0, uint32 unknown_1,
-				uint32 status);
+BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
+		     BUFFER2* buf, uint32 type, uint32 status);
 BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
 void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 				uint32 val_idx, uint32 max_val_len,
@@ -2725,6 +2722,8 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 BOOL create_next_pdu(pipes_struct *p);
 BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p);
 BOOL setup_fault_pdu(pipes_struct *p);
+BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
+					RPC_IFACE* transfer);
 BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
 BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in);
 BOOL api_pipe_request(pipes_struct *p);
