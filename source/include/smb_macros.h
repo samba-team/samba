@@ -86,25 +86,6 @@
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 
-/* 
- * Used by the stat cache code to check if a returned
- * stat structure is valid.
- */
-
-#define VALID_STAT(st) ((st).st_nlink != 0)  
-#define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_mode))
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
-#ifndef ABS
-#define ABS(a) ((a)>0?(a):(-(a)))
-#endif
-
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
@@ -132,35 +113,24 @@ true if two IP addresses are equal
 #define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
 #define ipv4_equal(ip1,ip2) ((ip1).addr == (ip2).addr)
 
-/*****************************************************************
- splits out the last subkey of a key
- *****************************************************************/  
-
-#define reg_get_subkey(full_keyname, key_name, subkey_name) \
-	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
-
-/****************************************************************************
- Used by dptr_zero.
-****************************************************************************/
-
-#define DPTR_MASK ((uint32_t)(((uint32_t)1)<<31))
-
-/****************************************************************************
- Return True if the offset is at zero.
-****************************************************************************/
-
-#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
-
 /*******************************************************************
 copy an IP address from one buffer to another
 ********************************************************************/
 
 #define putip(dest,src) memcpy(dest,src,4)
 
-/*******************************************************************
- Return True if a server has CIFS UNIX capabilities.
-********************************************************************/
 
-#define SERVER_HAS_UNIX_CIFS(c) (cli_state_has_unix_cifs(c))
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
+#ifndef MAX
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
+
+#ifndef ABS
+#define ABS(a) ((a)>0?(a):(-(a)))
+#endif
+
 
 #endif /* _SMB_MACROS_H */
