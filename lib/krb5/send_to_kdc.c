@@ -355,10 +355,8 @@ krb5_sendto (krb5_context context,
 		     break;
 		 }
 		 close (fd);
-		 if(ret == 0 && receive->length != 0) {
-		     freeaddrinfo(ai);
+		 if(ret == 0 && receive->length != 0)
 		     goto out;
-		 }
 	     }
 	 }
 	 krb5_krbhst_reset(context, handle);
