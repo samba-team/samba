@@ -41,22 +41,22 @@ void free_response(struct winbindd_response *response);
 
 static char *get_static(char **buffer, int *buflen, int len)
 {
-    char *result;
+	char *result;
 
-    /* Error check.  We return false if things aren't set up right, or
-       there isn't enough buffer space left. */
+	/* Error check.  We return false if things aren't set up right, or
+	   there isn't enough buffer space left. */
+	
+	if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
+		return NULL;
+	}
 
-    if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
-        return NULL;
-    }
+	/* Return an index into the static buffer */
 
-    /* Return an index into the static buffer */
+	result = *buffer;
+	*buffer += len;
+	*buflen -= len;
 
-    result = *buffer;
-    *buffer += len;
-    *buflen -= len;
-
-    return result;
+	return result;
 }
 
 /* I've copied the strtok() replacement function next_token() from
@@ -67,225 +67,213 @@ static char *last_ptr = NULL;
 
 BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
 {
-    char *s;
-    BOOL quoted;
-    size_t len=1;
+	char *s;
+	BOOL quoted;
+	size_t len=1;
     
-    if (!ptr) ptr = &last_ptr;
-    if (!ptr) return(False);
+	if (!ptr) ptr = &last_ptr;
+	if (!ptr) return(False);
     
-    s = *ptr;
+	s = *ptr;
     
-    /* default to simple separators */
-    if (!sep) sep = " \t\n\r";
+	/* default to simple separators */
+	if (!sep) sep = " \t\n\r";
     
-    /* find the first non sep char */
-    while(*s && strchr(sep,*s)) s++;
+	/* find the first non sep char */
+	while(*s && strchr(sep,*s)) s++;
     
-    /* nothing left? */
-    if (! *s) return(False);
+	/* nothing left? */
+	if (! *s) return(False);
     
-    /* copy over the token */
-    for (quoted = False; 
-         len < bufsize && *s && (quoted || !strchr(sep,*s)); 
-         s++) {
+	/* copy over the token */
+	for (quoted = False; 
+	     len < bufsize && *s && (quoted || !strchr(sep,*s)); 
+	     s++) {
 
-        if (*s == '\"') {
-            quoted = !quoted;
-        } else {
-            len++;
-            *buff++ = *s;
-        }
-    }
+		if (*s == '\"') {
+			quoted = !quoted;
+		} else {
+			len++;
+			*buff++ = *s;
+		}
+	}
     
-    *ptr = (*s) ? s+1 : s;  
-    *buff = 0;
-    last_ptr = *ptr;
+	*ptr = (*s) ? s+1 : s;  
+	*buff = 0;
+	last_ptr = *ptr;
   
-    return(True);
+	return(True);
 }
 
 /* Fill a pwent structure from a winbindd_response structure.  We use
    the static data passed to us by libc to put strings and stuff in.
-   Return errno = ERANGE and NSS_STATUS_TRYAGAIN if we run out of
-   memory. */
+   Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
 static enum nss_status fill_pwent(struct passwd *result,
 				  struct winbindd_response *response,
-				  char **buffer, int *buflen, int *errnop)
+				  char **buffer, int *buflen)
 {
-    struct winbindd_pw *pw = &response->data.pw;
+	struct winbindd_pw *pw = &response->data.pw;
 
-    /* User name */
+	/* User name */
 
-    if ((result->pw_name = 
-         get_static(buffer, buflen, strlen(pw->pw_name) + 1)) == NULL) {
+	if ((result->pw_name = 
+	     get_static(buffer, buflen, strlen(pw->pw_name) + 1)) == NULL) {
 
-        /* Out of memory */
+		/* Out of memory */
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-    strcpy(result->pw_name, pw->pw_name);
+	strcpy(result->pw_name, pw->pw_name);
 
-    /* Password */
+	/* Password */
 
-    if ((result->pw_passwd = 
-         get_static(buffer, buflen, strlen(pw->pw_passwd) + 1)) == NULL) {
+	if ((result->pw_passwd = 
+	     get_static(buffer, buflen, strlen(pw->pw_passwd) + 1)) == NULL) {
 
-        /* Out of memory */
+		/* Out of memory */
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-    strcpy(result->pw_passwd, pw->pw_passwd);
+	strcpy(result->pw_passwd, pw->pw_passwd);
         
-    /* [ug]id */
+	/* [ug]id */
 
-    result->pw_uid = pw->pw_uid;
-    result->pw_gid = pw->pw_gid;
+	result->pw_uid = pw->pw_uid;
+	result->pw_gid = pw->pw_gid;
 
-    /* GECOS */
+	/* GECOS */
 
-    if ((result->pw_gecos = 
-         get_static(buffer, buflen, strlen(pw->pw_gecos) + 1)) == NULL) {
+	if ((result->pw_gecos = 
+	     get_static(buffer, buflen, strlen(pw->pw_gecos) + 1)) == NULL) {
 
-        /* Out of memory */
+		/* Out of memory */
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-    strcpy(result->pw_gecos, pw->pw_gecos);
+	strcpy(result->pw_gecos, pw->pw_gecos);
+	
+	/* Home directory */
+	
+	if ((result->pw_dir = 
+	     get_static(buffer, buflen, strlen(pw->pw_dir) + 1)) == NULL) {
 
-    /* Home directory */
+		/* Out of memory */
 
-    if ((result->pw_dir = 
-         get_static(buffer, buflen, strlen(pw->pw_dir) + 1)) == NULL) {
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-        /* Out of memory */
+	strcpy(result->pw_dir, pw->pw_dir);
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+	/* Logon shell */
+	
+	if ((result->pw_shell = 
+	     get_static(buffer, buflen, strlen(pw->pw_shell) + 1)) == NULL) {
+		
+		/* Out of memory */
 
-    strcpy(result->pw_dir, pw->pw_dir);
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-    /* Logon shell */
+	strcpy(result->pw_shell, pw->pw_shell);
 
-    if ((result->pw_shell = 
-         get_static(buffer, buflen, strlen(pw->pw_shell) + 1)) == NULL) {
-
-        /* Out of memory */
-
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
-
-    strcpy(result->pw_shell, pw->pw_shell);
-
-    return NSS_STATUS_SUCCESS;
+	return NSS_STATUS_SUCCESS;
 }
 
 /* Fill a grent structure from a winbindd_response structure.  We use
    the static data passed to us by libc to put strings and stuff in.
-   Return errno = ERANGE and NSS_STATUS_TRYAGAIN if we run out of
-   memory. */
+   Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
 static int fill_grent(struct group *result, 
                       struct winbindd_response *response,
-                      char **buffer, int *buflen, int *errnop)
+                      char **buffer, int *buflen)
 {
-    struct winbindd_gr *gr = &response->data.gr;
-    char *tmp_data;
-    fstring name;
-    int i;
+	struct winbindd_gr *gr = &response->data.gr;
+	char *tmp_data;
+	fstring name;
+	int i;
 
-    /* Group name */
+	/* Group name */
 
-    if ((result->gr_name =
-         get_static(buffer, buflen, strlen(gr->gr_name) + 1)) == NULL) {
+	if ((result->gr_name =
+	     get_static(buffer, buflen, strlen(gr->gr_name) + 1)) == NULL) {
 
-        /* Out of memory */
+		/* Out of memory */
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-    strcpy(result->gr_name, gr->gr_name);
+	strcpy(result->gr_name, gr->gr_name);
 
-    /* Password */
+	/* Password */
 
-    if ((result->gr_passwd =
-         get_static(buffer, buflen, strlen(gr->gr_passwd) + 1)) == NULL) {
+	if ((result->gr_passwd =
+	     get_static(buffer, buflen, strlen(gr->gr_passwd) + 1)) == NULL) {
 
-        /* Out of memory */
+		/* Out of memory */
+		
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+	strcpy(result->gr_passwd, gr->gr_passwd);
 
-    strcpy(result->gr_passwd, gr->gr_passwd);
+	/* gid */
 
-    /* gid */
+	result->gr_gid = gr->gr_gid;
 
-    result->gr_gid = gr->gr_gid;
+	/* Group membership */
 
-    /* Group membership */
+	if ((gr->num_gr_mem < 0) || !response->extra_data) {
+		gr->num_gr_mem = 0;
+	}
 
-    if ((gr->num_gr_mem < 0) || !response->extra_data) {
-        gr->num_gr_mem = 0;
-    }
+	if ((result->gr_mem = 
+	     (char **)get_static(buffer, buflen, (gr->num_gr_mem + 1) * 
+				 sizeof(char *))) == NULL) {
 
-    if ((result->gr_mem = 
-         (char **)get_static(buffer, buflen, (gr->num_gr_mem + 1) * 
-                             sizeof(char *))) == NULL) {
+		/* Out of memory */
 
-        /* Out of memory */
+		return NSS_STATUS_TRYAGAIN;
+	}
 
-        *errnop = ERANGE;
-        return NSS_STATUS_TRYAGAIN;
-    }
+	if (gr->num_gr_mem == 0) {
 
-    if (gr->num_gr_mem == 0) {
+		/* Group is empty */
 
-        /* Group is empty */
+		*(result->gr_mem) = NULL;
+		return NSS_STATUS_SUCCESS;
+	}
 
-        *(result->gr_mem) = NULL;
-        return NSS_STATUS_SUCCESS;
-    }
+	/* Start looking at extra data */
 
-    /* Start looking at extra data */
+	i = 0;
+	tmp_data = response->extra_data;
 
-    i = 0;
-
-    tmp_data = response->extra_data;
-
-    while(next_token((char **)&tmp_data, name, ",", 
-		     sizeof(fstring))) {
+	while(next_token((char **)&tmp_data, name, ",", 
+			 sizeof(fstring))) {
         
-        /* Allocate space for member */
+		/* Allocate space for member */
         
-        if (((result->gr_mem)[i] = 
-             get_static(buffer, buflen, strlen(name) + 1)) == NULL) {
+		if (((result->gr_mem)[i] = 
+		     get_static(buffer, buflen, strlen(name) + 1)) == NULL) {
             
-            /* Out of memory */
+			/* Out of memory */
             
-            *errnop = ERANGE;
-            return NSS_STATUS_TRYAGAIN;
-        }        
+			return NSS_STATUS_TRYAGAIN;
+		}        
         
-        strcpy((result->gr_mem)[i], name);
-        i++;
-    }
+		strcpy((result->gr_mem)[i], name);
+		i++;
+	}
 
-    /* Terminate list */
+	/* Terminate list */
 
-    (result->gr_mem)[i] = NULL;
+	(result->gr_mem)[i] = NULL;
     
-    return NSS_STATUS_SUCCESS;
+	return NSS_STATUS_SUCCESS;
 }
 
 /*
@@ -315,13 +303,43 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	struct winbindd_response response;
+	static struct winbindd_response response;
+	static int keep_response;
 
-	ZERO_STRUCT(response);
+	/* If our static buffer needs to be expanded we are called again */
 
-	ret = generic_request(WINBINDD_GETPWENT, NULL, &response);
-	if (ret == NSS_STATUS_SUCCESS) {
-		ret = fill_pwent(result, &response, &buffer, &buflen, errnop);
+	if (!keep_response) {
+
+		/* Call for the first time */
+
+		ZERO_STRUCT(response);
+
+		ret = generic_request(WINBINDD_GETPWENT, NULL, &response);
+
+		if (ret == NSS_STATUS_SUCCESS) {
+			ret = fill_pwent(result, &response, &buffer, &buflen);
+
+			if (ret == NSS_STATUS_TRYAGAIN) {
+				keep_response = True;
+				*errnop = ERANGE;
+				return ret;
+			}
+		}
+
+	} else {
+
+		/* We've been called again */
+
+		ret = fill_pwent(result, &response, &buffer, &buflen);
+
+		if (ret == NSS_STATUS_TRYAGAIN) {
+			keep_response = True;
+			*errnop = ERANGE;
+			return ret;
+		}
+
+		keep_response = False;
+		*errnop = 0;
 	}
 
 	free_response(&response);
@@ -335,17 +353,48 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	struct winbindd_response response;
+	static struct winbindd_response response;
 	struct winbindd_request request;
-	
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
+	static int keep_response;
 
-	request.data.uid = uid;
+	/* If our static buffer needs to be expanded we are called again */
 
-	ret = generic_request(WINBINDD_GETPWNAM_FROM_UID, &request, &response);
-	if (ret == NSS_STATUS_SUCCESS) {
-		ret = fill_pwent(result, &response, &buffer, &buflen, errnop);
+	if (!keep_response) {
+
+		/* Call for the first time */
+
+		ZERO_STRUCT(response);
+		ZERO_STRUCT(request);
+
+		request.data.uid = uid;
+
+		ret = generic_request(WINBINDD_GETPWNAM_FROM_UID, &request, 
+				      &response);
+
+		if (ret == NSS_STATUS_SUCCESS) {
+			ret = fill_pwent(result, &response, &buffer, &buflen);
+
+			if (ret == NSS_STATUS_TRYAGAIN) {
+				keep_response = True;
+				*errnop = ERANGE;
+				return ret;
+			}
+		}
+
+	} else {
+
+		/* We've been called again */
+
+		ret = fill_pwent(result, &response, &buffer, &buflen);
+
+		if (ret == NSS_STATUS_TRYAGAIN) {
+			keep_response = True;
+			*errnop = ERANGE;
+			return ret;
+		}
+
+		keep_response = False;
+		*errnop = 0;
 	}
 
 	free_response(&response);
@@ -356,23 +405,55 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 enum nss_status
 _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
-                      size_t buflen, int *errnop)
+			size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	struct winbindd_response response;
+	static struct winbindd_response response;
 	struct winbindd_request request;
+	static int keep_response;
 
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
+	/* If our static buffer needs to be expanded we are called again */
 
-	strncpy(request.data.username, name, 
-		sizeof(request.data.username) - 1);
-	request.data.username[sizeof(request.data.username) - 1] = '\0';
+	if (!keep_response) {
 
-	ret = generic_request(WINBINDD_GETPWNAM_FROM_USER, &request, 
-			      &response);
-	if (ret == NSS_STATUS_SUCCESS) {
-		ret = fill_pwent(result, &response, &buffer, &buflen, errnop);
+		/* Call for the first time */
+
+		ZERO_STRUCT(response);
+		ZERO_STRUCT(request);
+
+		strncpy(request.data.username, name, 
+			sizeof(request.data.username) - 1);
+		request.data.username
+			[sizeof(request.data.username) - 1] = '\0';
+
+		ret = generic_request(WINBINDD_GETPWNAM_FROM_USER, &request, 
+				      &response);
+
+		if (ret == NSS_STATUS_SUCCESS) {
+			ret = fill_pwent(result, &response, &buffer,
+					 &buflen);
+
+			if (ret == NSS_STATUS_TRYAGAIN) {
+				keep_response = True;
+				*errnop = ERANGE;
+				return ret;
+			}
+		}
+
+	} else {
+
+		/* We've been called again */
+
+		ret = fill_pwent(result, &response, &buffer, &buflen);
+
+		if (ret == NSS_STATUS_TRYAGAIN) {
+			keep_response = True;
+			*errnop = ERANGE;
+			return ret;
+		}
+
+		keep_response = False;
+		*errnop = 0;
 	}
 
 	free_response(&response);
@@ -403,16 +484,46 @@ _nss_winbind_endgrent(void)
 
 enum nss_status
 _nss_winbind_getgrent_r(struct group *result,
-                      char *buffer, size_t buflen, int *errnop)
+			char *buffer, size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	struct winbindd_response response;
+	static struct winbindd_response response;
+	static int keep_response;
 
-	ZERO_STRUCT(response);
+	/* If our static buffer needs to be expanded we are called again */
 
-	ret = generic_request(WINBINDD_GETGRENT, NULL, &response);
-	if (ret == NSS_STATUS_SUCCESS) {
-		ret = fill_grent(result, &response, &buffer, &buflen, errnop);
+	if (!keep_response) {
+
+		/* Call for the first time */
+
+		ZERO_STRUCT(response);
+		
+		ret = generic_request(WINBINDD_GETGRENT, NULL, &response);
+
+		if (ret == NSS_STATUS_SUCCESS) {
+			ret = fill_grent(result, &response, &buffer, &buflen);
+
+			if (ret == NSS_STATUS_TRYAGAIN) {
+				keep_response = True;
+				*errnop = ERANGE;
+				return ret;
+			}
+		}
+
+	} else {
+		
+		/* We've been called again */
+
+		ret = fill_grent(result, &response, &buffer, &buflen);
+
+		if (ret == NSS_STATUS_TRYAGAIN) {
+			keep_response = True;
+			*errnop = ERANGE;
+			return ret;
+		}
+
+		keep_response = False;
+		*errnop = 0;            
 	}
 
 	free_response(&response);
@@ -427,20 +538,51 @@ _nss_winbind_getgrnam_r(const char *name,
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	struct winbindd_response response;
+	static struct winbindd_response response;
 	struct winbindd_request request;
+	static int keep_response;
+	
+	/* If our static buffer needs to be expanded we are called again */
+	
+	if (!keep_response) {
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+		/* Call for the first time */
 
-	strncpy(request.data.groupname, name, sizeof(request.data.groupname));
-	request.data.groupname[sizeof(request.data.groupname) - 1] = '\0';
+		ZERO_STRUCT(request);
+		ZERO_STRUCT(response);
 
-	ret = generic_request(WINBINDD_GETGRNAM_FROM_GROUP, &request, 
-			      &response);
+		strncpy(request.data.groupname, name, 
+			sizeof(request.data.groupname));
+		request.data.groupname
+			[sizeof(request.data.groupname) - 1] = '\0';
 
-	if (ret == NSS_STATUS_SUCCESS) {
-		ret = fill_grent(result, &response, &buffer, &buflen, errnop);
+		ret = generic_request(WINBINDD_GETGRNAM_FROM_GROUP, 
+				      &request, &response);
+
+		if (ret == NSS_STATUS_SUCCESS) {
+			ret = fill_grent(result, &response, &buffer, &buflen);
+
+			if (ret == NSS_STATUS_TRYAGAIN) {
+				keep_response = True;
+				*errnop = ERANGE;
+				return ret;
+			}
+		}
+
+	} else {
+		
+		/* We've been called again */
+		
+		ret = fill_grent(result, &response, &buffer, &buflen);
+		
+		if (ret == NSS_STATUS_TRYAGAIN) {
+			keep_response = True;
+			*errnop = ERANGE;
+			return ret;
+		}
+
+		keep_response = False;
+		*errnop = 0;
 	}
 
 	free_response(&response);
@@ -455,17 +597,48 @@ _nss_winbind_getgrgid_r(gid_t gid,
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	struct winbindd_response response;
+	static struct winbindd_response response;
 	struct winbindd_request request;
+	static int keep_response;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	/* If our static buffer needs to be expanded we are called again */
 
-	request.data.gid = gid;
+	if (!keep_response) {
 
-	ret = generic_request(WINBINDD_GETGRNAM_FROM_GID, &request, &response);
-	if (ret == NSS_STATUS_SUCCESS) {
-		ret = fill_grent(result, &response, &buffer, &buflen, errnop);
+		/* Call for the first time */
+
+		ZERO_STRUCT(request);
+		ZERO_STRUCT(response);
+
+		request.data.gid = gid;
+
+		ret = generic_request(WINBINDD_GETGRNAM_FROM_GID, &request, 
+				      &response);
+
+		if (ret == NSS_STATUS_SUCCESS) {
+			ret = fill_grent(result, &response, &buffer, &buflen);
+
+			if (ret == NSS_STATUS_TRYAGAIN) {
+				keep_response = True;
+				*errnop = ERANGE;
+				return ret;
+			}
+		}
+
+	} else {
+
+		/* We've been called again */
+
+		ret = fill_grent(result, &response, &buffer, &buflen);
+
+		if (ret == NSS_STATUS_TRYAGAIN) {
+			keep_response = True;
+			*errnop = ERANGE;
+			return ret;
+		}
+
+		keep_response = False;
+		*errnop = 0;
 	}
 
 	free_response(&response);
