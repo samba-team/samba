@@ -94,11 +94,16 @@ add_new_key(int argc, char **argv)
 	krb5_warn(context, ret, "kadm5_create_principal");
     if(rkey){
 	krb5_keyblock *new_keys;
-	int n_keys;
+	int n_keys, i;
 	ret = kadm5_randkey_principal(kadm_handle, princ_ent, 
 				      &new_keys, &n_keys);
-	if(ret)
+	if(ret){
 	    krb5_warn(context, ret, "kadm5_randkey_principal");
+	    n_keys = 0;
+	}
+	for(i = 0; i < n_keys; i++)
+	    krb5_free_keyblock_contents(context, &new_keys[i]);
+	free(new_keys);
 	kadm5_get_principal(kadm_handle, princ_ent, &princ, 
 			    KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
 	princ.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
