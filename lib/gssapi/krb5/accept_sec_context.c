@@ -40,7 +40,13 @@ krb5_keytab gssapi_krb5_keytab;
 OM_uint32
 gsskrb5_register_acceptor_identity (char *identity)
 {
+    krb5_error_code ret;
     char *p;
+
+    ret = gssapi_krb5_init();
+    if(ret)
+	return GSS_S_FAILURE;
+    
     if(gssapi_krb5_keytab != NULL) {
 	krb5_kt_close(gssapi_krb5_context, gssapi_krb5_keytab);
 	gssapi_krb5_keytab = NULL;
@@ -48,8 +54,10 @@ gsskrb5_register_acceptor_identity (char *identity)
     asprintf(&p, "FILE:%s", identity);
     if(p == NULL)
 	return GSS_S_FAILURE;
-    krb5_kt_resolve(gssapi_krb5_context, p, &gssapi_krb5_keytab);
+    ret = krb5_kt_resolve(gssapi_krb5_context, p, &gssapi_krb5_keytab);
     free(p);
+    if(ret)
+	return GSS_S_FAILURE;
     return GSS_S_COMPLETE;
 }
 
