@@ -91,25 +91,25 @@ krb5_error_from_rd_error(krb5_context context,
 	    krb5_set_error_string(context, "Client %s%s%s expired",
 				  creds ? "(" : "",
 				  creds ? clientname : "",
-				  creds ? "(" : "");
+				  creds ? ")" : "");
 	    break;
 	case KRB5KDC_ERR_SERVICE_EXP :
 	    krb5_set_error_string(context, "Server %s%s%s expired",
 				  creds ? "(" : "",
 				  creds ? servername : "",
-				  creds ? "(" : "");
+				  creds ? ")" : "");
 	    break;
 	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN :
 	    krb5_set_error_string(context, "Client %s%s%s unknown",
 				  creds ? "(" : "",
 				  creds ? clientname : "",
-				  creds ? "(" : "");
+				  creds ? ")" : "");
 	    break;
 	case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN :
 	    krb5_set_error_string(context, "Server %s%s%s unknown",
 				  creds ? "(" : "",
 				  creds ? servername : "",
-				  creds ? "(" : "");
+				  creds ? ")" : "");
 	    break;
 	default :
 	    krb5_clear_error_string(context);
