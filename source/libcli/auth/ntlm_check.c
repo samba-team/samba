@@ -326,10 +326,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				   so use it only if we otherwise allow LM authentication */
 
 				if (lp_lanman_auth() && lm_pw) {
-					uint8_t first_8_lm_hash[16];
-					memcpy(first_8_lm_hash, lm_pw, 8);
-					memset(first_8_lm_hash + 8, '\0', 8);
-					*lm_sess_key = data_blob(first_8_lm_hash, 16);
+					*lm_sess_key = data_blob(lm_pw, 8);
 				}
 				return NT_STATUS_OK;
 			} else {
@@ -367,11 +364,17 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		if (smb_pwd_check_ntlmv1(lm_response, 
 					 lm_pw, challenge,
 					 NULL)) {
-			uint8_t first_8_lm_hash[16];
-			memcpy(first_8_lm_hash, lm_pw, 8);
-			memset(first_8_lm_hash + 8, '\0', 8);
-			*user_sess_key = data_blob(first_8_lm_hash, 16);
-			*lm_sess_key = data_blob(first_8_lm_hash, 16);
+			/* The session key for this response is still very odd.  
+			   It not very secure, so use it only if we otherwise 
+			   allow LM authentication */
+
+			if (lp_lanman_auth() && lm_pw) {
+				uint8_t first_8_lm_hash[16];
+				memcpy(first_8_lm_hash, lm_pw, 8);
+				memset(first_8_lm_hash + 8, '\0', 8);
+				*user_sess_key = data_blob(first_8_lm_hash, 16);
+				*lm_sess_key = data_blob(lm_pw, 8);
+			}
 			return NT_STATUS_OK;
 		}
 	}
@@ -431,7 +434,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				memcpy(first_8_lm_hash, lm_pw, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
 				*user_sess_key = data_blob(first_8_lm_hash, 16);
-				*lm_sess_key = data_blob(first_8_lm_hash, 16);
+				*lm_sess_key = data_blob(lm_pw, 8);
 			}
 			return NT_STATUS_OK;
 		}
