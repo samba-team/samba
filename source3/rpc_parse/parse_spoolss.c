@@ -1541,10 +1541,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
 
 		/* read the sd */
-		*secdesc = g_new(SEC_DESC, 1);
-		if (*secdesc == NULL)
-			return False;
-		if (!sec_io_desc(desc, *secdesc, ps, depth))
+		if (!sec_io_desc(desc, secdesc, ps, depth))
 			return False;
 
 		prs_set_offset(ps, old_offset);
@@ -4747,8 +4744,7 @@ BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int de
 
 void free_devmode(DEVICEMODE *devmode)
 {
-	if (devmode!=NULL)
-	{
+	if (devmode!=NULL) {
 		if (devmode->private!=NULL)
 			free(devmode->private);
 		free(devmode);
@@ -4757,25 +4753,20 @@ void free_devmode(DEVICEMODE *devmode)
 
 void free_printer_info_3(PRINTER_INFO_3 *printer)
 {
-	if (printer!=NULL)
-	{
-		free_sec_desc(&printer->sec);
+	if (printer!=NULL) {
+		if (printer->sec != NULL)
+			free_sec_desc(&printer->sec);
 		free(printer);
 	}
 }
 
 void free_printer_info_2(PRINTER_INFO_2 *printer)
 {
-	if (printer!=NULL)
-	{
+	if (printer!=NULL) {
 		free_devmode(printer->devmode);
 		printer->devmode = NULL;
 		if (printer->secdesc != NULL)
-		{
-			free_sec_desc(printer->secdesc);
-			free(printer->secdesc);
-			printer->secdesc = NULL;
-		}
+			free_sec_desc(&printer->secdesc);
 		free(printer);
 	}
 }
@@ -4783,16 +4774,11 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 static PRINTER_INFO_2 *prt2_dup(const PRINTER_INFO_2* from)
 {
 	PRINTER_INFO_2 *copy = (PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
-	if (copy != NULL)
-	{
+	if (copy != NULL) {
 		if (from != NULL)
-		{
 			memcpy(copy, from, sizeof(*copy));
-		}
 		else
-		{
 			ZERO_STRUCTP(copy);
-		}
 	}
 	return copy;
 }

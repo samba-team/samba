@@ -353,20 +353,8 @@ static BOOL dfs_auth(char *user, char *password)
 
 	egid = getegid();
 
-	if (set_effective_gid(pw->pw_gid) != 0)
-	{
-		DEBUG(0, ("Can't set egid to %d (%s)\n",
-			  pw->pw_gid, strerror(errno)));
-		return False;
-	}
-
-	if (set_effective_uid(pw->pw_uid) != 0)
-	{
-		set_effective_gid(egid);
-		DEBUG(0, ("Can't set euid to %d (%s)\n",
-			  pw->pw_uid, strerror(errno)));
-		return False;
-	}
+	set_effective_gid(pw->pw_gid);
+	set_effective_uid(pw->pw_uid);
 
 	if (sec_login_setup_identity((unsigned char *)user,
 				     sec_login_no_flags,

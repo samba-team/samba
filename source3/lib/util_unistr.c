@@ -132,7 +132,7 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
  Pull a DOS codepage string out of a UNICODE array. len is in bytes.
 ********************************************************************/
 
-void unistr_to_dos(char *dest, char *src, size_t len)
+void unistr_to_dos(char *dest, const char *src, size_t len)
 {
 	char *destend = dest + len;
 

@@ -277,6 +277,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 			if ((pwd = getpwent()) == NULL) break;
 			user_name_len = strlen(pwd->pw_name);
 			pw_rid = pdb_uid_to_user_rid(pwd->pw_uid);
+			ZERO_STRUCTP(&pw_buf[(*num_entries)]);
 			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->pw_name, user_name_len);
 			init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
 			pw_buf[(*num_entries)].user_rid = pw_rid;
@@ -296,6 +297,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		while (((unmap_name = unmap_unixname(pwd->pw_name, mapped_idx)) != NULL) && 
 		        (*num_entries < max_num_entries)) {
 			user_name_len = strlen(unmap_name);
+			ZERO_STRUCTP(&pw_buf[(*num_entries)]);
 			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), unmap_name, user_name_len);
 			init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
 			pw_buf[(*num_entries)].user_rid = pw_rid;
@@ -661,6 +663,7 @@ static BOOL samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 
 	got_grps = True;
 	num_entries = 1;
+	ZERO_STRUCTP(&pass[0]);
 	init_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group));
 	pass[0].user_rid = DOMAIN_GROUP_RID_ADMINS;
 
@@ -788,8 +791,7 @@ static BOOL api_samr_enum_dom_aliases(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
-static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
-				prs_struct *rdata)
+static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u, prs_struct *rdata)
 {
 	SAMR_R_QUERY_DISPINFO r_e;
 	SAM_INFO_CTR ctr;

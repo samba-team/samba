@@ -35,10 +35,10 @@ static int generate_trn_id(void)
 	static int trn_id;
 
 	if (trn_id == 0) {
-		srandom(sys_getpid());
+		sys_srandom(sys_getpid());
 	}
 
-	trn_id = random();
+	trn_id = sys_random();
 
 	return trn_id % (unsigned)0x7FFF;
 }

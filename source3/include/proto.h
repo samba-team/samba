@@ -497,7 +497,7 @@ char *string_truncate(char *s, int length);
 int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
 void ascii_to_unistr(char *dest, const char *src, size_t maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
-void unistr_to_dos(char *dest, char *src, size_t len);
+void unistr_to_dos(char *dest, const char *src, size_t len);
 char *skip_unibuf(char *src, size_t len);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
@@ -1612,9 +1612,12 @@ void get_short_archi(char *short_archi, char *long_archi);
 uint32 del_a_printer(char *portname);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
+NT_DEVICEMODE *construct_nt_devicemode(void);
+NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode);
+void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
-uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring sharename);
-uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
+uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
+uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level, 
                             fstring printername, fstring architecture);
@@ -1623,9 +1626,8 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
 BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level, 
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
-void init_devicemode(NT_DEVICEMODE *nt_devmode);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
-uint32 nt_printing_getsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
+BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -1947,7 +1949,7 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
 void copy_unistr2(UNISTR2 *str, UNISTR2 *from);
 void init_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
-void init_unistr2(UNISTR2 *str, char *buf, int len);
+void init_unistr2(UNISTR2 *str, const char *buf, size_t len);
 BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
 void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth);
@@ -2430,7 +2432,7 @@ void free_sec_desc(SEC_DESC **ppsd);
 SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sec_desc_size);
 BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth);
-SEC_DESC_BUF *make_sec_desc_buf(int len, SEC_DESC *sec_desc);
+SEC_DESC_BUF *make_sec_desc_buf(size_t len, SEC_DESC *sec_desc);
 SEC_DESC_BUF *dup_sec_desc_buf(SEC_DESC_BUF *src);
 void free_sec_desc_buf(SEC_DESC_BUF **ppsdb);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth);
@@ -2820,8 +2822,8 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 				uint32 *buffer_written);
 uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
-			   const DEVMODE_CTR devmode_ctr,
-			   const SEC_DESC_BUF *secdesc_ctr,
+			   DEVMODE_CTR devmode_ctr,
+			   SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command);
 uint32 _spoolss_fcpn(const POLICY_HND *handle);
 uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,
@@ -3468,7 +3470,7 @@ void unbecome_root(BOOL restore_dir);
 
 #if OLD_NTDOMAIN
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
-BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *pdesc);
+BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 #endif
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
