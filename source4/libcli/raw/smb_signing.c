@@ -143,7 +143,7 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 {
 	BOOL good;
 	uint8_t calc_md5_mac[16];
-	uint8_t server_sent_mac[8];
+	uint8_t *server_sent_mac;
 	uint8_t sequence_buf[8];
 	struct MD5Context md5_ctx;
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
@@ -166,7 +166,7 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 		SIVAL(sequence_buf, 4, 0);
 		
 		/* get a copy of the server-sent mac */
-		memcpy(server_sent_mac, &in->hdr[HDR_SS_FIELD], sizeof(server_sent_mac));
+	        server_sent_mac = &in->hdr[HDR_SS_FIELD];
 		
 		/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
 		MD5Init(&md5_ctx);
