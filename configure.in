@@ -412,8 +412,6 @@ if test "$ac_cv_func_glob_working" != yes; then
 fi
 AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
 
-AC_CHECK_FUNC(cgetent, , LIBOBJS="$LIBOBJS getcap.o")
-
 dnl these should happen after tests for *snprintf
 
 AC_FIND_FUNC_NO_LIBS(dbopen, $berkeley_db)
@@ -425,7 +423,7 @@ if test "$LIB_dbopen" != "$LIB_dbm_firstkey"; then
 fi
 AC_SUBST(DBLIB)dnl
 
-AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf fcntl)
+AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf cgetent fcntl)
 AC_CHECK_FUNCS(getmsg getrlimit getspnam getspuid gettimeofday getuid)
 AC_CHECK_FUNCS(grantpt mktime ptsname rand random)
 AC_CHECK_FUNCS(revoke select setitimer setpcred setpgid)
@@ -434,6 +432,10 @@ AC_CHECK_FUNCS(setsid setsockopt sigaction strstr)
 AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 AC_CHECK_FUNCS(yp_get_default_domain)
+
+if test "$ac_cv_func_cgetent" = no; then
+	LIBOBJS="$LIBOBJS getcap.o"
+fi
 
 AC_FUNC_GETLOGIN
 
