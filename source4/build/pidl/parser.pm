@@ -415,7 +415,9 @@ sub ParseElementPushSwitch($$$$)
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
-		pidl "\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, $switch_var));\n";
+		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
+		pidl "\t\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, $switch_var));\n";
+		pidl "\t}\n";
 	}
 
 	my $sub_size = util::has_property($e, "subcontext");
