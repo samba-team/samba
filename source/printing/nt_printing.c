@@ -927,7 +927,6 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	int               cversion;
 	int               access_mode;
 	int               action;
-	NTSTATUS          nt_status;
 	pstring           driverpath;
 	fstring           user_name;
 	fstring           null_pw;
@@ -971,7 +970,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	if (conn == NULL) {
 		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
-		*perr = ntstatus_to_werror(nt_status);
+		*perr = W_ERROR(ecode);
 		return -1;
 	}
 
@@ -1259,7 +1258,6 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	pstring outbuf;
 	struct passwd *pass;
 	int ecode;
-	NTSTATUS nt_status;
 	int ver = 0;
 	int i;
 
@@ -1303,7 +1301,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
-		*perr = ntstatus_to_werror(nt_status);
+		*perr = W_ERROR(ecode);
 		return False;
 	}
 
