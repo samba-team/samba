@@ -200,7 +200,7 @@ uint32 _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 	/* message */
 	rpcstr_pull (message, unimsg.buffer, sizeof(message), unimsg.uni_str_len*2,0);
 		/* security check */
-	alpha_strcpy (chkmsg, message, NULL, sizeof(message);
+	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
 	/* timeout */
 	snprintf(timeout, sizeof(timeout), "%d", q_u->timeout);
 	/* reboot */
