@@ -57,6 +57,156 @@ ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_search_free\n");
 	return ldb_next_search_free(module, res);
 }
 
+
+/*
+  allocate a new id, attempting to do it atomically
+  return 0 on failure, the id on success
+*/
+static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+				   const char *dn, uint32_t *id)
+{
+	const char * const attrs[2] = { "nextRid", NULL };
+	struct ldb_message **res = NULL;
+	struct ldb_message msg;
+	int ret;
+	const char *str;
+	struct ldb_val vals[2];
+	struct ldb_message_element els[2];
+
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, "nextRid=*", attrs, &res);
+	if (ret != 1) {
+		if (res) ldb_search_free(ldb, res);
+		return -1;
+	}
+	str = ldb_msg_find_string(res[0], "nextRid", NULL);
+	if (str == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "attribute nextRid not found in %s\n", dn);
+		ldb_search_free(ldb, res);
+		return -1;
+	}
+	talloc_steal(mem_ctx, str);
+	ldb_search_free(ldb, res);
+
+	*id = strtol(str, NULL, 0);
+	if ((*id)+1 == 0) {
+		/* out of IDs ! */
+		return -1;
+	}
+
+	/* we do a delete and add as a single operation. That prevents
+	   a race */
+	ZERO_STRUCT(msg);
+	msg.dn = talloc_strdup(mem_ctx, dn);
+	if (!msg.dn) {
+		return -1;
+	}
+	msg.num_elements = 2;
+	msg.elements = els;
+
+	els[0].num_values = 1;
+	els[0].values = &vals[0];
+	els[0].flags = LDB_FLAG_MOD_DELETE;
+	els[0].name = talloc_strdup(mem_ctx, "nextRid");
+	if (!els[0].name) {
+		return -1;
+	}
+
+	els[1].num_values = 1;
+	els[1].values = &vals[1];
+	els[1].flags = LDB_FLAG_MOD_ADD;
+	els[1].name = els[0].name;
+
+	vals[0].data = talloc_asprintf(mem_ctx, "%u", *id);
+	if (!vals[0].data) {
+		return -1;
+	}
+	vals[0].length = strlen(vals[0].data);
+
+	vals[1].data = talloc_asprintf(mem_ctx, "%u", (*id)+1);
+	if (!vals[1].data) {
+		return -1;
+	}
+	vals[1].length = strlen(vals[1].data);
+
+	ret = ldb_modify(ldb, &msg);
+	if (ret != 0) {
+		return 1;
+	}
+
+	(*id)++;
+
+	return 0;
+}
+
+/* search the domain related to the provided dn
+   allocate a new RID for the domain
+   return the new sid string
+*/
+static char *samldb_get_new_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *obj_dn)
+{
+	const char * const attrs[2] = { "objectSid", NULL };
+	struct ldb_message **res = NULL;
+	const char *dom_dn, *dom_sid;
+	char *obj_sid;
+	uint32_t rid;
+	int ret, tries = 10;
+
+	/* get the domain component part of the provided dn */
+
+	/* FIXME: quick search here, I think we should use something like
+	   ldap_parse_dn here to be 100% sure we get the right domain dn */
+
+	/* FIXME: "dc=" is probably not utf8 safe either,
+	   we need a multibyte safe substring search function here */
+	
+	dom_dn = strstr(obj_dn, "dc=");
+	if (dom_dn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Invalid dn (%s)!\n", obj_dn);
+		return NULL;
+	}
+
+	/* find the domain sid */
+
+	ret = ldb_search(ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
+	if (ret != 1) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
+		if (res) ldb_search_free(ldb, res);
+		return NULL;
+	}
+
+	dom_sid = ldb_msg_find_string(res[0], "objectSid", NULL);
+	if (dom_sid == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
+		ldb_search_free(ldb, res);
+		return NULL;
+	}
+
+	talloc_steal(mem_ctx, dom_sid);
+	ldb_search_free(ldb, res);
+
+	/* allocate a new Rid for the domain */
+
+
+	/* we need to try multiple times to cope with two account
+	   creations at the same time */
+	while (tries--) {
+		ret = samldb_allocate_next_rid(ldb, mem_ctx, dom_dn, &rid);
+		if (ret != 1) {
+			break;
+		}
+	}
+	if (ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", dom_dn);
+		return NULL;
+	}
+
+	/* return the new object sid */
+
+	obj_sid = talloc_asprintf(mem_ctx, "%s-%u", dom_sid, rid);
+
+	return obj_sid;
+}
+
 static char *samldb_generate_samAccountName(const void *mem_ctx) {
 	char *name;
 
@@ -240,6 +390,21 @@ static struct ldb_message *samldb_manage_group_object(struct ldb_module *module,
 		}
 	}
 
+	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
+		char *sidstr;
+
+		if ((sidstr = samldb_get_new_sid(module->ldb, msg2, msg2->dn)) == NULL) {
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_manage_group_object: internal error! Can't generate new sid\n");
+			talloc_free(msg2);
+			return NULL;
+		}
+		
+		if ( ! samldb_add_attribute(msg2, "objectSid", sidstr)) {
+			talloc_free(msg2);
+			return NULL;
+		}
+	}
+
 	if ( ! samldb_find_or_add_attribute(msg2, "instanceType", NULL, "4")) {
 		return NULL;
 	}
@@ -257,10 +422,6 @@ static struct ldb_message *samldb_manage_group_object(struct ldb_module *module,
 	}
 
 	if ( ! samldb_find_or_add_attribute(msg2, "objectCategory", NULL, "foo")) { /* keep the schema module happy :) */
-		return NULL;
-	}
-
-	if ( ! samldb_find_or_add_attribute(msg2, "objectSid", NULL, "foo")) { /* keep the schema module happy :) */
 		return NULL;
 	}
 
@@ -353,6 +514,21 @@ static struct ldb_message *samldb_manage_user_object(struct ldb_module *module, 
 		}
 	}
 
+	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
+		char *sidstr;
+
+		if ((sidstr = samldb_get_new_sid(module->ldb, msg2, msg2->dn)) == NULL) {
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_manage_user_object: internal error! Can't generate new sid\n");
+			talloc_free(msg2);
+			return NULL;
+		}
+		
+		if ( ! samldb_add_attribute(msg2, "objectSid", sidstr)) {
+			talloc_free(msg2);
+			return NULL;
+		}
+	}
+
 	if ( ! samldb_find_or_add_attribute(msg2, "instanceType", NULL, "4")) {
 		talloc_free(msg2);
 		return NULL;
@@ -369,10 +545,6 @@ static struct ldb_message *samldb_manage_user_object(struct ldb_module *module, 
 	}
 
 	if ( ! samldb_find_or_add_attribute(msg2, "objectCategory", NULL, "foo")) { /* keep the schema module happy :) */
-		return NULL;
-	}
-
-	if ( ! samldb_find_or_add_attribute(msg2, "objectSid", NULL, "foo")) { /* keep the schema module happy :) */
 		return NULL;
 	}
 

@@ -36,10 +36,10 @@ user: computer
 template: userTemplate
 template: groupTemplate
 
+#Add modules to the list to activate them by default
+#beware often order is important
 dn: @MODULES
-@MODULE: timestamps
-# uncomment this if you want to enable schema checking
-#@MODULE: schema
+@LIST: timestamps
 
 ###############################
 # Domain Naming Context
