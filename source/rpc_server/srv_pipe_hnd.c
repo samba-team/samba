@@ -133,9 +133,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->rdata.offset = 0;
 	
 	p->file_offset     = 0;
+	p->prev_pdu_file_offset = 0;
 	p->hdr_offsets     = 0;
-	p->frag_len_left   = 0;
-	p->next_frag_start = 0;
 	
 	p->ntlmssp_validated = False;
 	p->ntlmssp_auth      = False;
@@ -230,13 +229,31 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 
 	DEBUG(6,("read_pipe: p: %p file_offset: %d file_pos: %d\n",
 		 p, p->file_offset, n));
-	DEBUG(6,("read_pipe: frag_len_left: %d next_frag_start: %d\n",
-		 p->frag_len_left, p->next_frag_start));
 
 	/* the read request starts from where the SMBtrans2 left off. */
-	data_pos     = p->file_offset - p->hdr_offsets;
-	data_hdr_pos = p->file_offset;
+	data_hdr_pos = p->file_offset - p->prev_pdu_file_offset;
+	data_pos     = data_hdr_pos - p->hdr_offsets;
 
+	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
+	{
+		/* intermediate fragment - possibility of another header */
+		
+		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d data_hdr_pos: %d\n",
+			 p->hdr.frag_len, data_pos, data_hdr_pos));
+		
+		if (data_hdr_pos == 0)
+		{
+			DEBUG(6,("read_pipe: next fragment header\n"));
+
+			/* this is subtracted from the total data bytes, later */
+			hdr_num = 0x18;
+			p->hdr_offsets += 0x18;
+
+			/* create and copy in a new header. */
+			create_rpc_reply(p, p->file_offset - p->hdr_offsets, p->rdata.offset);
+		}			
+	}
+	
 	len = mem_buf_len(p->rhdr.data);
 	num = len - (int)data_pos;
 	
@@ -249,55 +266,27 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		return 0;
 	}
 
-	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
-	{
-		/* intermediate fragment - possibility of another header */
-		
-		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d data_hdr_pos: %d\n",
-			 p->hdr.frag_len, data_pos, data_hdr_pos));
-		
-		if (data_hdr_pos == p->next_frag_start)
-		{
-			DEBUG(6,("read_pipe: next fragment header\n"));
-
-			/* this is subtracted from the total data bytes, later */
-			hdr_num = 0x18;
-
-			/* create and copy in a new header. */
-			create_rpc_reply(p, data_pos, p->rdata.offset);
-			mem_buf_copy(data, p->rhdr.data, 0, 0x18);
-			
-			data += 0x18;
-			p->hdr_offsets += 0x18;
-		}			
-	}
-	
 	if (num < hdr_num)
 	{
 		DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
 	}
 
-	DEBUG(6,("read_pipe: adjusted data_pos: %d num-hdr_num: %d\n",
-		 data_pos, num - hdr_num));
-	mem_buf_copy(data, p->rhdr.data, data_pos, num - hdr_num);
+	mem_buf_copy(data, p->rhdr.data, data_pos, num);
 	
 	data_pos += num;
 	data_hdr_pos += num;
+	p->file_offset  += num;
 	
 	if (hdr_num == 0x18 && num == 0x18)
 	{
 		DEBUG(6,("read_pipe: just header read\n"));
-
-		/* advance to the next fragment */
-		p->frag_len_left -= 0x18; 
 	}
-	else if (data_hdr_pos == p->next_frag_start)
+	else if (data_hdr_pos == p->hdr.frag_len)
 	{
 		DEBUG(6,("read_pipe: next fragment expected\n"));
+		p->prev_pdu_file_offset = p->file_offset;
 	}
 
-	p->file_offset  += num;
-	
 	return num;
 }
 

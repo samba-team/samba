@@ -97,10 +97,9 @@ typedef struct pipes_struct
 	fstring domain;
 	fstring wks;
 
-	uint32 file_offset;
-	uint32 hdr_offsets;
-	uint32 frag_len_left;
-	uint32 next_frag_start;
+	uint32 file_offset; /* Offset (including headers) into the data stream sent. */
+    uint32 prev_pdu_file_offset; /* Offset (including headers) where the last whole framgent sent. */
+	uint32 hdr_offsets; /* Total number of bytes in the headers sent (0x18 * number_of_headers_sent). */
 
 } pipes_struct;
 
