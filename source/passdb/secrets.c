@@ -131,7 +131,7 @@ char *trust_keystr(char *domain)
 	static fstring keystr;
 
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
-		 SECRETS_MACHINE_ACCT_PASS, keystr);
+		 SECRETS_MACHINE_ACCT_PASS, domain);
 
 	unix_to_dos(keystr);
 	strupper(keystr);
