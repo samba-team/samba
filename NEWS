@@ -2,8 +2,6 @@ Changes in release 0.2s:
 
  * add OpenLDAP support in hdb
 
- * fix sequence numbers in priv, safe messages
-
  * fix building problems with krb4 (krb_mk_req)
 
  * bug fixes
