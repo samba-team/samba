@@ -199,7 +199,7 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 	if ((offset <= tdb->map_size) || (tdb->fd == -1)) return 0;
 
 	fstat(tdb->fd, &st);
-	if (st.st_size <= (ssize_t)offset) {
+	if (st.st_size <= (size_t)offset) {
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
