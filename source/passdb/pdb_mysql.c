@@ -120,7 +120,7 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
 	struct pdb_mysql_data *data =
 		(struct pdb_mysql_data *) methods->private_data;

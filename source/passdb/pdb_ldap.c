@@ -1180,33 +1180,48 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
  Connect to LDAP server for password enumeration.
 *********************************************************************/
 
-static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
+static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint16 acb_mask)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
-	pstring filter;
+	pstring filter, suffix;
 	char **attr_list;
+	BOOL machine_mask = False, user_mask = False;
 
 	pstr_sprintf( filter, "(&%s%s)", lp_ldap_filter(), 
 		get_objclass_filter(ldap_state->schema_ver));
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
+	machine_mask 	= ((acb_mask != 0) && (acb_mask & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)));
+	user_mask 	= ((acb_mask != 0) && (acb_mask & ACB_NORMAL));
+
+	if (machine_mask) {
+		pstrcpy(suffix, lp_ldap_machine_suffix());
+	} else if (user_mask) {
+		pstrcpy(suffix, lp_ldap_user_suffix());
+	} else {
+		pstrcpy(suffix, lp_ldap_suffix());
+	}
+
+	DEBUG(10,("ldapsam_setsampwent: LDAP Query for acb_mask 0x%x will use suffix %s\n", 
+		acb_mask, suffix));
+
 	attr_list = get_userattr_list(ldap_state->schema_ver);
-	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, 
-				   attr_list, &ldap_state->result);
+	rc = smbldap_search(ldap_state->smbldap_state, suffix, LDAP_SCOPE_SUBTREE, filter, 
+			    attr_list, 0, &ldap_state->result);
 	free_attr_list( attr_list );
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("ldapsam_setsampwent: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_setsampwent: Query was: %s, %s\n", lp_ldap_suffix(), filter));
+		DEBUG(3, ("ldapsam_setsampwent: Query was: %s, %s\n", suffix, filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base!\n",
-		ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
-		ldap_state->result)));
+	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base %s\n",
+		ldap_count_entries(ldap_state->smbldap_state->ldap_struct, 
+		ldap_state->result), suffix));
 
 	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
 				 ldap_state->result);
