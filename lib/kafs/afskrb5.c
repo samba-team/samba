@@ -41,7 +41,10 @@ struct krb5_kafs_data {
     krb5_const_realm realm;
 };
 
-enum { KAFS_RXKAD_K5_KVNO = 256 };
+enum { 
+    KAFS_RXKAD_2B_KVNO = 213,
+    KAFS_RXKAD_K5_KVNO = 256
+};
 
 static int
 v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt, int local524)
@@ -60,7 +63,7 @@ v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt, int local524)
 	size_t buf_len;
 	size_t len;
 
-	kvno = 213;
+	kvno = KAFS_RXKAD_2B_KVNO;
 
 	ret = decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
 	if (ret)
@@ -111,16 +114,21 @@ v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt, int local524)
 static krb5_error_code
 v5_convert(krb5_context context, krb5_ccache id,
 	   krb5_creds *cred, uid_t uid, 
+	   const char *cell,
 	   struct kafs_token *kt)
 {
     krb5_error_code ret;
-    char *val;
+    char *c, *val;
 
-    krb5_appdefault_string (context, "libkafs", 
-			    krb5_principal_get_realm(context,
-						     cred->server),
+    c = strdup(cell);
+    if (c == NULL)
+	return ENOMEM;
+    strupr(c);
+    krb5_appdefault_string (context, "libkafs",
+			    c,
 			    "afs-use-524", "yes", &val);
-    
+    free(c);
+
     if (strcmp("no", val) == 0) {
 	ret = v5_to_kt(cred, uid, kt, 0);
     } else if (strcmp("local", val) == 0 || strcmp("2b", val) == 0) {
@@ -171,7 +179,8 @@ get_cred(kafs_data *data, const char *name, const char *inst,
     if(ret)
 	return ret;
 
-    ret = v5_convert(d->context, d->id, out_creds, uid, kt);
+    ret = v5_convert(d->context, d->id, out_creds, uid, 
+		     inst ? inst : realm, kt);
     krb5_free_creds(d->context, out_creds);
 
     return ret;
@@ -299,7 +308,7 @@ kafs_settoken5(krb5_context context, const char *cell, uid_t uid,
     struct kafs_token kt;
     int ret;
 
-    ret = v5_convert(context, NULL, cred, uid, &kt);
+    ret = v5_convert(context, NULL, cred, uid, cell, &kt);
     if (ret)
 	return ret;
 
