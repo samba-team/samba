@@ -2897,6 +2897,11 @@ WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const 
 	key_index = lookup_printerkey( &p2->data, key );
 	if ( key_index == -1 )
 		return WERR_OK;
+	
+	/* make sure the value exists so we can return the correct error code */
+	
+	if ( !regval_ctr_getvalue( &p2->data.keys[key_index].values, value ) )
+		return WERR_BADFILE;
 		
 	regval_ctr_delvalue( &p2->data.keys[key_index].values, value );
 	
