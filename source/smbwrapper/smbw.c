@@ -82,6 +82,8 @@ void smbw_init(void)
 
 	lp_load(servicesf,True,False,False);
 
+	charset_initialise();
+
 	get_myname(global_myname);
 
 	if ((p=smbw_getshared("DEBUG"))) {
