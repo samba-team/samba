@@ -610,7 +610,7 @@
 
 	/******************/
 	/* Function: 0x3e */
-	WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(
+	WERROR spoolss_RouterFindFirstPrinterChangeNotification(
 	);
 
 	/******************/
