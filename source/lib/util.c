@@ -4231,7 +4231,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
 
   /* Get the last component of the unix name. */
   p = strrchr(name, '/');
-  strncpy(last_component, p ? p : name, sizeof(last_component)-1);
+  strncpy(last_component, p ? ++p : name, sizeof(last_component)-1);
   last_component[sizeof(last_component)-1] = '\0'; 
 
   for(; namelist->name != NULL; namelist++)

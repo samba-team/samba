@@ -28,7 +28,7 @@
 
 #ifdef NTDOMAIN
 #error WARNING: remove this option (-DNTDOMAIN) from your [Mm]akefile.
-#error please read NTDOMAIN.txt with _this_ distribution.
+#error Please read NTDOMAIN.txt with _this_ distribution.
 #endif
 
 
