@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#ifdef NETGROUP
 #include "rpcsvc/ypclnt.h"
 #endif
 
@@ -94,6 +94,53 @@ static BOOL stdout_logging = False;
 
 static char *filename_dos(char *path,char *buf);
 
+#if defined(SIGUSR2)
+/**************************************************************************** **
+ catch a sigusr2 - decrease the debug log level.
+ **************************************************************************** */
+int sig_usr2(void)
+{  
+  BlockSignals( True, SIGUSR2);
+ 
+  DEBUGLEVEL--; 
+   
+  if(DEBUGLEVEL < 0) 
+    DEBUGLEVEL = 0; 
+
+  DEBUG( 0, ( "Got SIGUSR2 set debug level to %d.\n", DEBUGLEVEL ) );
+   
+  BlockSignals( False, SIGUSR2);
+#ifndef DONT_REINSTALL_SIG
+  signal(SIGUSR2, SIGNAL_CAST sig_usr2);
+#endif 
+  return(0);
+}  
+#endif /* SIGUSR1 */
+   
+#if defined(SIGUSR1)
+/**************************************************************************** **
+ catch a sigusr1 - increase the debug log level. 
+ **************************************************************************** */
+int sig_usr1(void)
+{
+  BlockSignals( True, SIGUSR1);
+ 
+  DEBUGLEVEL++;
+
+  if(DEBUGLEVEL > 10)
+    DEBUGLEVEL = 10;
+
+  DEBUG( 0, ( "Got SIGUSR1 set debug level to %d.\n", DEBUGLEVEL ) );
+
+  BlockSignals( False, SIGUSR1);
+#ifndef DONT_REINSTALL_SIG
+  signal(SIGUSR1, SIGNAL_CAST sig_usr1);
+#endif
+  return(0);
+}
+#endif /* SIGUSR1 */
+
+
 /*******************************************************************
   get ready for syslog stuff
   ******************************************************************/
@@ -104,8 +151,8 @@ void setup_logging(char *pname,BOOL interactive, BOOL stderr_logging)
     char *p = strrchr(pname,'/');
     if (p) pname = p+1;
 #ifdef LOG_DAEMON
-    openlog(pname, LOG_PID, LOG_DAEMON);
-#else /* LOG_DAEMON - for old systems that have no facility codes. */
+    openlog(pname, LOG_PID, SYSLOG_FACILITY);
+#else /* for old systems that have no facility codes. */
     openlog(pname, LOG_PID);
 #endif /* LOG_DAEMON */
   }
@@ -963,10 +1010,11 @@ int StrnCaseCmp(char *s, char *t, int n)
   else
 #endif /* KANJI_WIN95_COMPATIBILITY */
   {
-    while (n-- && *s && *t && toupper(*s) == toupper(*t))
+    while (n && *s && *t && toupper(*s) == toupper(*t))
     {
       s++;
       t++;
+      n--;
     }
 
     /* not run out of chars - strings are different lengths */
@@ -1203,7 +1251,7 @@ void show_msg(char *buf)
 
   if (DEBUGLEVEL < 10) return;
 
-  dump_data(10, (uchar*)smb_buf(buf), MIN(bcc, 512));
+  dump_data(10, smb_buf(buf), MIN(bcc, 512));
 }
 
 /*******************************************************************
@@ -2249,38 +2297,30 @@ int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align)
 
 /****************************************************************************
 read 4 bytes of a smb packet and return the smb length of the packet
-possibly store the result in the buffer
+store the result in the buffer
+This version of the function will return a length of zero on receiving
+a keepalive packet.
 ****************************************************************************/
-int read_smb_length(int fd,char *inbuf,int timeout)
+static int read_smb_length_return_keepalive(int fd,char *inbuf,int timeout)
 {
-  char *buffer;
-  char buf[4];
   int len=0, msg_type;
   BOOL ok=False;
-
-  if (inbuf)
-    buffer = inbuf;
-  else
-    buffer = buf;
 
   while (!ok)
     {
       if (timeout > 0)
-	ok = (read_with_timeout(fd,buffer,4,4,timeout) == 4);
+	ok = (read_with_timeout(fd,inbuf,4,4,timeout) == 4);
       else 
-	ok = (read_data(fd,buffer,4) == 4);
+	ok = (read_data(fd,inbuf,4) == 4);
 
       if (!ok)
 	return(-1);
 
-      len = smb_len(buffer);
-      msg_type = CVAL(buffer,0);
+      len = smb_len(inbuf);
+      msg_type = CVAL(inbuf,0);
 
       if (msg_type == 0x85) 
-	{
 	  DEBUG(5,("Got keepalive packet\n"));
-	  ok = False;
-	}
     }
 
   DEBUG(10,("got smb length of %d\n",len));
@@ -2288,12 +2328,37 @@ int read_smb_length(int fd,char *inbuf,int timeout)
   return(len);
 }
 
+/****************************************************************************
+read 4 bytes of a smb packet and return the smb length of the packet
+store the result in the buffer. This version of the function will
+never return a session keepalive (length of zero).
+****************************************************************************/
+int read_smb_length(int fd,char *inbuf,int timeout)
+{
+  int len;
 
+  for(;;)
+  {
+    len = read_smb_length_return_keepalive(fd, inbuf, timeout);
+
+    if(len < 0)
+      return len;
+
+    /* Ignore session keepalives. */
+    if(CVAL(inbuf,0) != 0x85)
+      break;
+  }
+
+  return len;
+}
 
 /****************************************************************************
   read an smb from a fd. Note that the buffer *MUST* be of size
   BUFFER_SIZE+SAFETY_MARGIN.
-The timeout is in milli seconds
+  The timeout is in milli seconds. 
+
+  This function will return on a
+  receipt of a session keepalive packet.
 ****************************************************************************/
 BOOL receive_smb(int fd,char *buffer, int timeout)
 {
@@ -2303,8 +2368,8 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
 
   bzero(buffer,smb_size + 100);
 
-  len = read_smb_length(fd,buffer,timeout);
-  if (len == -1)
+  len = read_smb_length_return_keepalive(fd,buffer,timeout);
+  if (len < 0)
     return(False);
 
   if (len > BUFFER_SIZE) {
@@ -2313,13 +2378,43 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
       exit(1);
   }
 
+  if(len > 0) {
   ret = read_data(fd,buffer+4,len);
   if (ret != len) {
     smb_read_error = READ_ERROR;
     return False;
   }
-
+  }
   return(True);
+}
+
+/****************************************************************************
+  read an smb from a fd ignoring all keepalive packets. Note that the buffer 
+  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
+  The timeout is in milli seconds
+
+  This is exactly the same as receive_smb except that it never returns
+  a session keepalive packet (just as receive_smb used to do).
+  receive_smb was changed to return keepalives as the oplock processing means this call
+  should never go into a blocking read.
+****************************************************************************/
+
+BOOL client_receive_smb(int fd,char *buffer, int timeout)
+{
+  BOOL ret;
+
+  for(;;)
+  {
+    ret = receive_smb(fd, buffer, timeout);
+
+    if(ret == False)
+      return ret;
+
+    /* Ignore session keepalive packets. */
+    if(CVAL(buffer,0) != 0x85)
+      break;
+  }
+  return ret;
 }
 
 /****************************************************************************
@@ -3267,7 +3362,7 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
   
   bzero((char *)&sock,sizeof(sock));
   memcpy((char *)&sock.sin_addr,(char *)hp->h_addr, hp->h_length);
-#if defined(__FreeBSD__) || defined(NETBSD) /* XXX not the right ifdef */
+#if defined(__FreeBSD__) || defined(NETBSD) || defined(__OpenBSD__) /* XXX not the right ifdef */
   sock.sin_len = sizeof(sock);
 #endif
   sock.sin_port = htons( port );
@@ -3551,6 +3646,10 @@ char *client_name(void)
 
   strcpy(name_buf,"UNKNOWN");
 
+  if (Client == -1) {
+	  return name_buf;
+  }
+
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
     return name_buf;
@@ -3589,6 +3688,10 @@ char *client_addr(void)
 
   strcpy(addr_buf,"0.0.0.0");
 
+  if (Client == -1) {
+	  return addr_buf;
+  }
+
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
     return addr_buf;
@@ -3614,55 +3717,11 @@ static char *get_home_dir(char *user)
 }
 
 
-/*******************************************************************
- get server name and server directory
- ******************************************************************/
-void get_home_server_and_dir(char *user_name,
-				char *server_name, char *server_dir)
-{
-	if (server_name)
-	{
-		/* set to default of local machine */
-		fstrcpy(server_name, local_machine);
-	}
-	if (server_dir)
-	{
-		char *home = get_home_dir(user_name);
-		if (home)
-		{
-			pstrcpy(server_dir, home);
-		}
-		else
-		{
-			server_dir[0] = 0;
-		}
-	}
-
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
-	if (server_name || server_dir)
-	{
-		pstring home_srv;
-		pstring home_dir;
-
-		automount_server_share(user_name, home_srv, home_dir);
-
-		if (server_name && *home_srv)
-		{
-			strcpy(server_name, home_srv);
-		}
-		if (server_dir && *home_dir)
-		{
-			pstrcpy(server_dir, home_dir);
-		}
-	}
-#endif
-}
-
-
 /*******************************************************************
  get server name and server directory
  ******************************************************************/
-void automount_server_share(char *user_name,
+static void automount_server_share(char *user_name,
 				char *server_name, char *server_dir)
 {
 	int nis_error;        /* returned by yp all functions */
@@ -3711,6 +3770,52 @@ void automount_server_share(char *user_name,
 	}
 
 	DEBUG(4,("Home server: %s dir: %s\n", server_name, server_dir));
+}
+#endif
+
+
+/*******************************************************************
+ get server name and server directory
+ ******************************************************************/
+void get_home_server_and_dir(char *user_name,
+				char *server_name, char *server_dir)
+{
+	if (server_name)
+	{
+		/* set to default of local machine */
+		fstrcpy(server_name, local_machine);
+	}
+	if (server_dir)
+	{
+		char *home = get_home_dir(user_name);
+		if (home)
+		{
+			pstrcpy(server_dir, home);
+		}
+		else
+		{
+			server_dir[0] = 0;
+		}
+	}
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+	if (server_name || server_dir)
+	{
+		pstring home_srv;
+		pstring home_dir;
+
+		automount_server_share(user_name, home_srv, home_dir);
+
+		if (server_name && *home_srv)
+		{
+			strcpy(server_name, home_srv);
+		}
+		if (server_dir && *home_dir)
+		{
+			pstrcpy(server_dir, home_dir);
+		}
+	}
+#endif
 }
 
 
@@ -3860,29 +3965,7 @@ check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 BOOL process_exists(int pid)
 {
-#ifdef LINUX
-  fstring s;
-  sprintf(s,"/proc/%d",pid);
-  return(directory_exist(s,NULL));
-#else
-  {
-    static BOOL tested=False;
-    static BOOL ok=False;
-    fstring s;
-    if (!tested) {
-      tested = True;
-      sprintf(s,"/proc/%05d",(int)getpid());
-      ok = file_exist(s,NULL);
-    }
-    if (ok) {
-      sprintf(s,"/proc/%05d",pid);
-      return(file_exist(s,NULL));
-    }
-  }
-
-  /* CGH 8/16/96 - added ESRCH test */
-  return(pid == getpid() || kill(pid,0) == 0 || errno != ESRCH);
-#endif
+	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
 
@@ -3936,7 +4019,7 @@ my own panic function - not suitable for general use
 ********************************************************************/
 void ajt_panic(void)
 {
-  system("/usr/bin/X11/xedit -display ljus:0 /tmp/ERROR_FAULT");
+  system("/usr/bin/X11/xedit -display solen:0 /tmp/ERROR_FAULT");
 }
 #endif
 

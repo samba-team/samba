@@ -625,14 +625,14 @@ BOOL add_smbpwd_entry(struct smb_passwd* pwd)
 	/* Static buffers we will return. */
 	static pstring  user_name;
 
-	char            linebuf[256];
-	char            readbuf[16 * 1024];
-	unsigned char   c;
-	unsigned char  *p;
-	long            linebuf_len;
-	FILE           *fp;
-	int             lockfd;
-	char           *pfile = lp_smb_passwd_file();
+	char  linebuf[256];
+	char  readbuf[16 * 1024];
+	uchar c;
+	char  *p;
+	long  linebuf_len;
+	FILE  *fp;
+	int   lockfd;
+	char  *pfile = lp_smb_passwd_file();
 
 	int i;
 	int wr_len;

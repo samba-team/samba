@@ -30,6 +30,8 @@ extern connection_struct Connections[];
 extern files_struct Files[];
 extern BOOL case_sensitive;
 extern int Client;
+extern int oplock_sock;
+extern int smb_read_error;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -644,29 +646,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
 
   dptr_num = dptr_create(cnum,directory, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
-    {
-      if(dptr_num == -2)
-      {
-        if((errno == ENOENT) && bad_path)
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-
-#if 0
-        /* Ugly - NT specific hack - maybe not needed ? (JRA) */
-        if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
-           (get_remote_arch() == RA_WINNT))
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbaddirectory;
-        }
-#endif
-
-        return (UNIXERROR(ERRDOS,ERRbadpath));
-      }
-      return(ERROR(ERRDOS,ERRbadpath));
-    }
+    return(ERROR(ERRDOS,ERRbadfile));
 
   /* convert the formatted masks */
   {
@@ -745,6 +725,14 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
       DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
       dptr_num = -1;
     }
+
+  /* 
+   * If there are no matching entries we must return ERRDOS/ERRbadfile - 
+   * from observation of NT.
+   */
+
+  if(numentries == 0)
+    return(ERROR(ERRDOS,ERRbadfile));
 
   /* At this point pdata points to numentries directory entries. */
 
@@ -1702,11 +1690,19 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
 
       while( num_data_sofar < total_data || num_params_sofar < total_params)
 	{
-	  if(!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
-	     CVAL(inbuf, smb_com) != SMBtranss2)
+          BOOL ret;
+
+          ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,
+                             SMB_SECONDARY_WAIT);
+
+	  if((ret && (CVAL(inbuf, smb_com) != SMBtranss2)) || !ret)
 	    {
 	      outsize = set_message(outbuf,0,0,True);
-	      DEBUG(2,("Invalid secondary trans2 packet\n"));
+              if(ret)
+                DEBUG(0,("reply_trans2: Invalid secondary trans2 packet\n"));
+              else
+                DEBUG(0,("reply_trans2: %s in getting secondary trans2 response.\n",
+                         (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 	      free(params);
 	      free(data);
 	      return(ERROR(ERRSRV,ERRerror));

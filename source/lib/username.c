@@ -68,11 +68,19 @@ void map_username(char *user)
   for (; (s=fgets_slash(NULL,80,f)); free(s)) {
     char *unixname = s;
     char *dosname = strchr(unixname,'=');
+    BOOL break_if_mapped = False;
 
     if (!dosname) continue;
     *dosname++ = 0;
 
     while (isspace(*unixname)) unixname++;
+    if ('!' == *unixname)
+    {
+      break_if_mapped = True;
+      unixname++;
+      while (*unixname && isspace(*unixname)) unixname++;
+    }
+    
     if (!*unixname || strchr("#;",*unixname)) continue;
 
     {
@@ -88,6 +96,10 @@ void map_username(char *user)
       StrnCpy(last_from,user,sizeof(last_from)-1);
       sscanf(unixname,"%s",user);
       StrnCpy(last_to,user,sizeof(last_to)-1);
+      if(break_if_mapped) { 
+        free(s);
+        break;
+      }
     }
   }
 

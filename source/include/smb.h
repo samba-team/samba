@@ -537,6 +537,7 @@ typedef struct
   BOOL print_file;
   BOOL modified;
   BOOL granted_oplock;
+  BOOL sent_oplock_break;
   char *name;
 } files_struct;
 
@@ -604,8 +605,11 @@ typedef struct
   time_t lastused;
   BOOL used;
   int num_files_open;
-  name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
-  name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
+
+  /* per-share lists of files: */
+  name_compare_entry *hide_list; /* ... to return as hidden. */
+  name_compare_entry *veto_list; /* ... to veto (never show). */
+  name_compare_entry *veto_oplock_list; /* ... to refuse oplocks on. */
 
 } connection_struct;
 
@@ -692,7 +696,7 @@ struct share_ops {
 	BOOL (*stop_mgmt)(void);
 	BOOL (*lock_entry)(int , uint32 , uint32 , int *);
 	BOOL (*unlock_entry)(int , uint32 , uint32 , int );
-	BOOL (*get_entries)(int , int , uint32 , uint32 , share_mode_entry **);
+	int  (*get_entries)(int , int , uint32 , uint32 , share_mode_entry **);
 	void (*del_entry)(int , int );
 	BOOL (*set_entry)(int , int , uint16 , uint16 );
 	BOOL (*remove_oplock)(int , int);
@@ -703,9 +707,9 @@ struct share_ops {
 /* each implementation of the shared memory code needs
    to support the following operations */
 struct shmem_ops {
-	BOOL (*close)( void );
-	int (*alloc)(int );
-	BOOL (*free)(int );
+	BOOL (*shm_close)( void );
+	int (*shm_alloc)(int );
+	BOOL (*shm_free)(int );
 	int (*get_userdef_off)(void);
 	void *(*offset2addr)(int );
 	int (*addr2offset)(void *addr);
@@ -772,6 +776,7 @@ struct connect_record
 #define MAP_ARCHIVE(cnum)   (OPEN_CNUM(cnum) && lp_map_archive(SNUM(cnum)))
 #define IS_HIDDEN_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].hide_list))
 #define IS_VETO_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_list))
+#define IS_VETO_OPLOCK_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_oplock_list))
 
 #define SMBENCRYPT()       (lp_encrypted_passwords())
 

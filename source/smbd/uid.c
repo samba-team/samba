@@ -222,10 +222,13 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
 
   snum = conn->service;
 
+  if((vuser != NULL) && !check_user_ok(conn, vuser, snum))
+    return False;
+
   if (conn->force_user || 
       lp_security() == SEC_SHARE ||
-      !(vuser) || (vuser->guest) ||
-      !check_user_ok(conn, vuser, snum))
+      !(vuser) || (vuser->guest)
+     )
   {
     uid = conn->uid;
     gid = conn->gid;

@@ -31,11 +31,12 @@
 #define GLOBALS_SNUM -2
 #define DEFAULTS_SNUM -1
 
+static pstring servicesf = CONFIGFILE;
+
 
 /* start the page with standard stuff */
 static void print_header(void)
 {
-	printf("Content-type: text/html\n\n");
 	printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
 	printf("<HTML>\n<HEAD>\n<TITLE>smb.conf</TITLE>\n</HEAD>\n<BODY>\n\n");
 }
@@ -45,15 +46,6 @@ static void print_header(void)
 static void print_footer(void)
 {
 	printf("\n</BODY>\n</HTML>\n");
-}
-
-/* setup persisant variables */
-static void set_persistent(char *name)
-{
-	char *p;
-	p = cgi_variable(name);
-	if (!p) return;
-	printf("<input type=hidden name=%s value=%s>\n", name, p);
 }
 
 /* display a servce, ready for editing */
@@ -119,29 +111,11 @@ static void show_services(void)
 }
 
 
-/* load the smb.conf file into loadparm. this also does the chroot
-   to the config directory. This must be called _BEFORE_ any client
-   supplied data is parsed */
+/* load the smb.conf file into loadparm. */
 static int load_config(void)
 {
-	static pstring servicesf = CONFIGFILE;
-	char *p;
-
-	p = strrchr(servicesf,'/');
-	if (!p) return 0;
-
-	*p = 0;
-
 	setuid(0);
-
-	if (chdir(servicesf) || chroot(servicesf)) {
-		printf("wsmbconf is not configured correctly\n");
-		return 0;
-	}
-
-	*p = '/';
-
-	if (!lp_load(p,False)) {
+	if (!lp_load(servicesf,False)) {
 		printf("<b>Can't load %s - using defaults</b><p>\n", 
 		       servicesf);
 	}
@@ -151,14 +125,9 @@ static int load_config(void)
 
 static int save_reload(void)
 {
-	static pstring servicesf = CONFIGFILE;
-	char *p;
 	FILE *f;
 
-	p = strrchr(servicesf,'/');
-	if (!p) return 0;
-
-	f = fopen(p,"w");
+	f = fopen(servicesf,"w");
 	if (!f) {
 		printf("failed to open %s for writing\n", servicesf);
 		return 0;
@@ -172,7 +141,7 @@ static int save_reload(void)
 
 	lp_killunused(NULL);
 
-	if (!lp_load(p,False)) {
+	if (!lp_load(servicesf,False)) {
                 printf("Can't reload %s\n", servicesf);
                 return 0;
         }
@@ -233,16 +202,33 @@ static void process_requests(void)
 
 int main(int argc, char *argv[])
 {
+	extern char *optarg;
+	extern int optind;
 	extern FILE *dbf;
+	int opt;
+
+	dbf = fopen("/dev/null", "w");
+
+	if (!dbf) dbf = stderr;
+
+	cgi_setup(WEB_ROOT);
+
+
+	while ((opt = getopt(argc, argv,"s:")) != EOF) {
+		switch (opt) {
+		case 's':
+			pstrcpy(servicesf,optarg);
+			break;	  
+		}
+	}
+
 
 	print_header();
-
-	dbf = stderr;
 
 	charset_initialise();
 
 	if (load_config()) {
-		cgi_load_variables();
+		cgi_load_variables(NULL);
 		process_requests();
 		show_services();
 	}
