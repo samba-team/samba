@@ -170,10 +170,13 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + len * sizeof(uint8);
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, data8s, len)
-	ps->offset += len;
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -184,10 +187,13 @@ BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *dat
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + len * sizeof(uint16);
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, data16s, len)
-	ps->offset += len * sizeof(uint16);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -198,10 +204,13 @@ BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *d
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + len * sizeof(uint32);
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, q, data32s, len)
-	ps->offset += len * sizeof(uint32);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -213,10 +222,13 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + str->buf_len;
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len)
-	ps->offset += str->buf_len;
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -228,10 +240,13 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + str->str_str_len * sizeof(uint8);
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->str_max_len)
-	ps->offset += str->str_str_len * sizeof(uint8);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -243,10 +258,13 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_str_len)
-	ps->offset += str->uni_str_len * sizeof(uint16);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -258,10 +276,13 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	int end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
+	char *e = mem_data(&(ps->data), end_offset-1);
+
+	if (q == NULL || e == NULL) return False;
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->str.buffer, str->uni_str_len)
-	ps->offset += str->uni_str_len * sizeof(uint16);
+	ps->offset = end_offset;
 
 	return True;
 }
@@ -271,17 +292,16 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
  ********************************************************************/
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
 	int i = -1;
-	uint8 *start = (uint8*)q;
-
-	if (q == NULL) return False;
+	uint8 *start = (uint8*)mem_data(&(ps->data), ps->offset);
 
 	do
 	{
+		char *q;
 		i++;
+		q = mem_data(&(ps->data), ps->offset + i*2);
+		if (q == NULL) return False;
 		RW_SVAL(ps->io, q, str->buffer[i],0);
-		q += 2;
 	}
 	while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
 		     (str->buffer[i] != 0));
@@ -304,15 +324,16 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
  ********************************************************************/
 BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	uint8 *start = (uint8*)q;
+	uint8 *start = (uint8*)mem_data(&(ps->data), ps->offset);
 	int i = -1; /* start off at zero after 1st i++ */
-
-	if (q == NULL) return False;
 
 	do
 	{
+		char *q;
 		i++;
+
+		q = mem_data(&(ps->data), ps->offset + i);
+		if (q == NULL) return False;
 
 		if (i < len || len == 0)
 		{
@@ -323,8 +344,6 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
 			uint8 dummy = 0;
 			RW_CVAL(ps->io, q, dummy,0);
 		}
-
-		q++;
 
 	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
 
