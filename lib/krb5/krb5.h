@@ -200,6 +200,7 @@ typedef union {
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1 << 31)
+#define KRB5_TC_MATCH_KEYTYPE		(1 << 30)
 
 typedef struct krb5_creds {
     krb5_principal client;
