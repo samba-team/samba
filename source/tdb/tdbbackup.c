@@ -57,6 +57,19 @@
 
 static int failed;
 
+static char *add_suffix(const char *name, const char *suffix)
+{
+	char *ret;
+	int len = strlen(name) + strlen(suffix) + 1;
+	ret = malloc(len);
+	if (!ret) {
+		fprintf(stderr,"Out of memory!\n");
+		exit(1);
+	}
+	snprintf(ret, len, "%s%s", name, suffix);
+	return ret;
+}
+
 static int copy_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	TDB_CONTEXT *tdb_new = (TDB_CONTEXT *)state;
@@ -84,11 +97,11 @@ static int backup_tdb(const char *old_name, const char *new_name)
 {
 	TDB_CONTEXT *tdb;
 	TDB_CONTEXT *tdb_new;
-	char *tmp_name = NULL;
+	char *tmp_name;
 	struct stat st;
 	int count1, count2;
 
-	asprintf(&tmp_name, "%s.tmp", new_name);
+	tmp_name = add_suffix(new_name, ".tmp");
 
 	/* stat the old tdb to find its permissions */
 	if (stat(old_name, &st) != 0) {
@@ -253,9 +266,9 @@ static void usage(void)
 
 	for (i=0; i<argc; i++) {
 		const char *fname = argv[i];
-		char *bak_name = NULL;
+		char *bak_name;
 
-		asprintf(&bak_name, "%s%s", fname, suffix);
+		bak_name = add_suffix(fname, suffix);
 
 		if (verify) {
 			if (verify_tdb(fname, bak_name) != 0) {
