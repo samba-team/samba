@@ -1,0 +1,69 @@
+@node Introduction, Tutorial, Top, Top
+@comment  node-name,  next,  previous,  up
+@chapter Introduction
+
+@quotation
+@strong{Caution:} this is beta quality software. If something doesn't
+work, it's probably because it doesn't. Don't be surprised if your
+computer suffers a melt-down.
+@end quotation
+
+@heading What is Heimdal?
+
+@sc{Heimdal} is a free implementation of Kerberos 5. The goals
+are to:
+
+@itemize @bullet
+@item
+have an implementation that can be freely used outside of the United
+States
+@item
+be protocol compatible with existing implementations and, if not in
+conflict, with RFC 1510 (and any future updated RFC)
+@item
+be somewhat compatible with the M.I.T Kerberos V5 API
+@end itemize
+
+This initial pre-version is mostly compatible with the M.I.T
+implementation, as well as DCE secd. The library is at least not totally
+different from the M.I.T @code{libkrb5}.
+
+@heading Status
+
+Heimdal has the following features (this does not mean any of this
+works):
+
+@itemize @bullet
+@item
+there is a complete library to encode/decode/whatever ASN.1 stuff
+@item
+a @code{libkrb5} library that should be possible to get to work with
+simple applications
+@item
+Eric Young's @file{libdes}
+@item
+@file{kinit}, @file{klist}, @file{kdestroy}
+@item
+@file{telnet}, @file{telnetd}
+@item
+@file{rsh}, @file{rshd}
+@item
+a simple KDC
+@item
+an even simpler @file{kdb_edit}
+@end itemize
+
+@heading Bug reports
+
+If you find bugs in this software, make sure it is a genuine bug and not
+just a part of the code that isn't implemented.
+
+Bug reports should be sent to @code{<heimdal-bugs@@pdc.kth.se>}. Please
+include information on what machine and operating system (including
+version) you are running, what you are trying to do, what happens, what
+you think should have happened, an example for us to repeat, the output
+you get when trying the example, and a patch for the problem if you have
+one. Please make any patches with @code{diff -u} or @code{diff -c}.
+
+Suggestions, comments and other non bug reports are welcome.  Send them
+to @code{<heimdal@@pdc.kth.se>}.
