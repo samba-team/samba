@@ -86,6 +86,7 @@
 #define VIOC_AFS_SYSNAME	_VICEIOCTL(38)
 #define VIOC_EXPORTAFS		_VICEIOCTL(39)
 #define VIOCGETCACHEPARAMS	_VICEIOCTL(40)
+#define VIOC_GCPAGS		_VICEIOCTL(48) 
 
 struct ViceIoctl {
   caddr_t in, out;
