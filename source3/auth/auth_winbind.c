@@ -23,6 +23,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 /* Prototypes from common.h */
 
 NSS_STATUS winbindd_request(int req_type, 

@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 /****************************************************************************
  Read the a hosts.equiv or .rhosts file and check if it
  allows this user from this machine.

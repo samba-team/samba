@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 /** List of various built-in authenticaion modules */
 
 const struct auth_init_function builtin_auth_init_functions[] = {

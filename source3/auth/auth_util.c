@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 extern fstring remote_machine;
 extern pstring global_myname;
 

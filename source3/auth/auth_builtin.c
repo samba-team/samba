@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 /**
  * Return a guest logon for guest users (username = "")
  *

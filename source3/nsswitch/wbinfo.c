@@ -25,6 +25,9 @@
 #include "winbindd.h"
 #include "debug.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Prototypes from common.h */
 
 NSS_STATUS winbindd_request(int req_type, 
