@@ -460,6 +460,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
+\fIafs username map\fR
+
+.TP
+\(bu
 \fIalgorithmic rid base\fR
 
 .TP
@@ -1104,10 +1108,6 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIstrip dot\fR
-
-.TP
-\(bu
 \fIsyslog\fR
 
 .TP
@@ -1264,6 +1264,10 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 .TP
 \(bu
 \fIadmin users\fR
+
+.TP
+\(bu
+\fIafs share\fR
 
 .TP
 \(bu
@@ -1942,6 +1946,31 @@ Example: \fBadmin users = jason\fR
 
 
 .TP
+afs share (S)
+This parameter controls whether special AFS features are enabled for this share\&. If enabled, it assumes that the directory exported via the \fIpath\fR parameter is a local AFS import\&. The special AFS features include the attempt to hand-craft an AFS token if you enabled --with-fake-kaserver in configure\&.
+
+
+Default: \fBafs share = no\fR
+
+
+Example: \fBafs share = yes\fR
+
+
+.TP
+afs username map (G)
+If you are using the fake kaserver AFS feature, you might want to hand-craft the usernames you are creating tokens for\&. For example this is necessary if you have users from several domain in your AFS Protection Database\&. One possible scheme to code users as DOMAIN+User as it is done by winbind with the + as a separator\&.
+
+
+The mapped user name must contain the cell name to log into, so without setting this parameter there will be no token\&.
+
+
+Default: \fBnone\fR
+
+
+Example: \fBafs username map = %u@afs.samba.org\fR
+
+
+.TP
 algorithmic rid base (G)
 This determines how Samba will use its algorithmic mapping from uids/gid to the RIDs needed to construct NT Security Identifiers\&.
 
@@ -2173,6 +2202,9 @@ This parameter determines whether or not \fBsmbclient\fR(8) will attempt to auth
 
 
 If enabled, only an NTLMv2 and LMv2 response (both much more secure than earlier versions) will be sent\&. Many servers (including NT4 < SP4, Win9x and Samba 2\&.2) are not compatible with NTLMv2\&.
+
+
+Similarly, if enabled, NTLMv1, \fBclient lanman auth\fR and \fBclient plaintext auth\fR authentication will be disabled\&. This also disables share-level authentication\&.
 
 
 If disabled, an NTLM response (and possibly a LANMAN response) will be sent by the client, depending on the value of \fBclient lanman auth\fR\&.
@@ -3226,7 +3258,7 @@ Example: \fBhomedir map = amd.homedir\fR
 
 .TP
 host msdfs (G)
-This boolean parameter is only available if Samba has been configured and compiled with the \fB --with-msdfs\fR option\&. If set to \fByes\fR, Samba will act as a Dfs server, and allow Dfs-aware clients to browse Dfs trees hosted on the server\&.
+If set to \fByes\fR, Samba will act as a Dfs server, and allow Dfs-aware clients to browse Dfs trees hosted on the server\&.
 
 
 See also the \fI msdfs root\fR share level parameter\&. For more information on setting up a Dfs tree on Samba, refer to ???\&.
@@ -3579,7 +3611,7 @@ This parameters specifies the suffix that is used when storing idmap mappings\&.
 Default: \fBnone\fR
 
 
-Example: \fBdc=samba,ou=Idmap\fR
+Example: \fBou=Idmap,dc=samba,dc=org\fR
 
 
 .TP
@@ -4584,7 +4616,7 @@ Example: \fBmsdfs proxy = \\\\otherserver\\someshare\fR
 
 .TP
 msdfs root (S)
-This boolean parameter is only available if Samba is configured and compiled with the \fB --with-msdfs\fR option\&. If set to \fByes\fR, Samba treats the share as a Dfs root and allows clients to browse the distributed file system tree rooted at the share directory\&. Dfs links are specified in the share directory by symbolic links of the form \fImsdfs:serverA\\\\shareA,serverB\\\\shareB\fR and so on\&. For more information on setting up a Dfs tree on Samba, refer to ???\&.
+If set to \fByes\fR, Samba treats the share as a Dfs root and allows clients to browse the distributed file system tree rooted at the share directory\&. Dfs links are specified in the share directory by symbolic links of the form \fImsdfs:serverA\\\\shareA,serverB\\\\shareB\fR and so on\&. For more information on setting up a Dfs tree on Samba, refer to ???\&.
 
 
 See also \fIhost msdfs\fR
@@ -6149,13 +6181,13 @@ Default: \fBstrict allocate = no\fR
 
 .TP
 strict locking (S)
-This is a boolean that controls the handling of file locking in the server\&. When this is set to \fByes\fR the server will check every read and write access for file locks, and deny access if locks exist\&. This can be slow on some systems\&.
+This is a boolean that controls the handling of file locking in the server\&. When this is set to \fByes\fR, the server will check every read and write access for file locks, and deny access if locks exist\&. This can be slow on some systems\&.
 
 
-When strict locking is \fBno\fR the server does file lock checks only when the client explicitly asks for them\&.
+When strict locking is disabled, the server performs file lock checks only when the client explicitly asks for them\&.
 
 
-Well-behaved clients always ask for lock checks when it is important, so in the vast majority of cases \fBstrict locking = no\fR is preferable\&.
+Well-behaved clients always ask for lock checks when it is important\&. So in the vast majority of cases, \fBstrict locking = no\fR is preferable\&.
 
 
 Default: \fBstrict locking = no\fR
@@ -6170,14 +6202,6 @@ See also the \fIsync always\fR parameter\&.
 
 
 Default: \fBstrict sync = no\fR
-
-
-.TP
-strip dot (G)
-This is a boolean that controls whether to strip trailing dots off UNIX filenames\&. This helps with some CDROMs that have filenames ending in a single dot\&.
-
-
-Default: \fBstrip dot = no\fR
 
 
 .TP

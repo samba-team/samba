@@ -4,55 +4,57 @@
 	&author.jerry;
 	&author.jelmer;
 	&author.dbannon;
+	&author.danshearer;
 	<pubdate>8 Apr 2003</pubdate>
 </chapterinfo>
 
-<title>Analysing and solving samba problems</title>
+<title>Analyzing and Solving Samba Problems</title>
 
 <para>
 There are many sources of information available in the form 
-of mailing lists, RFC's and documentation.  The docs that come 
-with the samba distribution contain very good explanations of 
+of mailing lists, RFCs and documentation. The documentation that comes
+with the Samba distribution contains good explanations of 
 general SMB topics such as browsing.</para> 
 	
 <sect1>
-<title>Diagnostics tools</title>
+<title>Diagnostics Tools</title>
 
 <para>With SMB networking, it is often not immediately clear what 
 the cause is of a certain problem. Samba itself provides rather 
 useful information, but in some cases you might have to fall back 
 to using a <emphasis>sniffer</emphasis>. A sniffer is a program that 
-listens on your LAN, analyses the data sent on it and displays it 
+listens on your LAN, analyzes the data sent on it and displays it 
 on the screen.</para>
 
 <sect2>
-<title>Debugging with Samba itself</title>
+<title>Debugging with Samba Itself</title>
 
-  <para>
-One of the best diagnostic tools for debugging problems is Samba itself.  
-You can use the <option>-d option</option> for both &smbd; and &nmbd; to specify what 
-<smbconfoption><name>debug level</name></smbconfoption> at which to run.  See the man pages on smbd, nmbd  and 
-smb.conf for more information on debugging options.  The debug 
+<para>
+One of the best diagnostic tools for debugging problems is Samba itself. 
+You can use the <option>-d option</option> for both &smbd; and &nmbd; to specify the 
+<smbconfoption><name>debug level</name></smbconfoption> at which to run. 
+See the man pages for <command>smbd, nmbd</command>  and 
+&smb.conf; for more information regarding debugging options. The debug 
 level can range from 1 (the default) to 10 (100 for debugging passwords).
 </para>
 	
 <para>
-Another helpful method of debugging is to compile samba using the 
-<userinput>gcc -g </userinput> flag.   This will include debug 
-information in the binaries and allow you to attach gdb to the 
-running smbd / nmbd process.  In order to attach gdb to an smbd 
+Another helpful method of debugging is to compile Samba using the 
+<command>gcc -g </command> flag. This will include debug information in the binaries and
+allow you to attach gdb to the running <command>smbd/nmbd</command> process. 
+To attach <command>gdb</command> to an <command>smbd</command> 
 process for an NT workstation, first get the workstation to make the 
 connection. Pressing ctrl-alt-delete and going down to the domain box 
-is sufficient (at least, on the first time you join the domain) to 
-generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation 
-maintains an open connection, and therefore there will be an smbd 
+is sufficient (at least, the first time you join the domain) to 
+generate a <parameter>LsaEnumTrustedDomains</parameter>. Thereafter, the workstation 
+maintains an open connection and there will be an smbd 
 process running (assuming that you haven't set a really short smbd 
-idle timeout)  So, in between pressing ctrl alt delete, and actually 
-typing in your password, you can attach gdb and continue.
+idle timeout). So, in between pressing <command>ctrl-alt-delete</command> and actually 
+typing in your password, you can attach <command>gdb</command> and continue.
 </para>
 
 <para>
-Some useful samba commands worth investigating:
+Some useful Samba commands worth investigating are:
 </para>
 	
 <screen>
@@ -65,10 +67,12 @@ Some useful samba commands worth investigating:
 <sect2>
 	<title>Tcpdump</title>
   
-<para><ulink url="http://www.tcpdump.org/">Tcpdump</ulink> was the first 
-unix sniffer with SMB support. It is a command-line utility and 
-nowadays, it's SMB support is somewhat less then that of ethereal 
-and tethereal.</para>
+<para>
+<ulink url="http://www.tcpdump.org/">Tcpdump</ulink> was the first 
+UNIX sniffer with SMB support. It is a command-line utility and 
+now, its SMB support is somewhat lagging that of <command>ethereal</command> 
+and <command>tethereal</command>.
+</para>
 
 </sect2>
 
@@ -77,18 +81,21 @@ and tethereal.</para>
 
 <para>
 <ulink url="http://www.ethereal.com/">Ethereal</ulink> is a graphical 
-sniffer, available for both unix (Gtk) and Windows. Ethereal's 
-SMB support is very good.</para>
+sniffer, available for both UNIX (Gtk) and Windows. Ethereal's 
+SMB support is quite good.</para>
 
-<para>For details on the use of ethereal, read the well-written 
-ethereal User Guide.</para>
+<para>For details on the use of <command>ethereal</command>, read the well-written 
+Ethereal User Guide.</para>
+
+<image id="ethereal1"><imagefile>ethereal1</imagefile><imagedescription>Starting a capture.</imagedescription></image>
 
 <para>
-Listen for data on ports 137, 138, 139 and 445. E.g. 
-use the filter <userinput>port 137 or port 138 or port 139 or port 445</userinput>.</para>
+Listen for data on ports 137, 138, 139, and 445. For example, use the filter <userinput>port 137, port 138, port 139, or port 445</userinput> as seen in <link linkend="ethereal1"/>.</para>
 
 <para>A console version of ethereal is available as well and is called 
 <command>tethereal</command>.</para>
+
+<image id="ethereal2"><imagefile>ethereal2</imagefile><imagedescription>Main ethereal data window.</imagedescription></image>
 
 </sect2>
 
@@ -96,92 +103,82 @@ use the filter <userinput>port 137 or port 138 or port 139 or port 445</userinpu
 <title>The Windows Network Monitor</title>
 	
 <para>
-For tracing things on the Microsoft Windows NT, Network Monitor 
-(aka. netmon) is available on the Microsoft Developer Network CD's, 
-the Windows NT Server install CD and the SMS CD's.  The version of 
-netmon that ships with SMS allows for dumping packets between any two 
-computers (i.e. placing the network interface in promiscuous mode).  
+For tracing things on Microsoft Windows NT, Network Monitor 
+(aka Netmon) is available on Microsoft Developer Network CDs, 
+the Windows NT Server install CD and the SMS CDs. The version of 
+Netmon that ships with SMS allows for dumping packets between any two 
+computers (i.e., placing the network interface in promiscuous mode). 
 The version on the NT Server install CD will only allow monitoring 
 of network traffic directed to the local NT box and broadcasts on the 
-local subnet.  Be aware that Ethereal can read and write netmon 
+local subnet. Be aware that Ethereal can read and write Netmon 
 formatted files.
 </para>
 
 <sect3>
-<title>Installing 'Network Monitor' on an NT Workstation</title>
+<title>Installing Network Monitor on an NT Workstation</title>
 
 <para>
-Installing netmon on an NT workstation requires a couple 
-of steps.  The following are for installing Netmon V4.00.349, which comes 
+Installing Netmon on an NT workstation requires a couple 
+of steps. The following are instructions for installing Netmon V4.00.349, which comes 
 with Microsoft Windows NT Server 4.0, on Microsoft Windows NT 
-Workstation 4.0.  The process should be similar for other versions of 
-Windows NT / Netmon.  You will need both the Microsoft Windows 
+Workstation 4.0. The process should be similar for other versions of 
+Windows NT version of Netmon. You will need both the Microsoft Windows 
 NT Server 4.0 Install CD and the Workstation 4.0 Install CD.
 </para> 
 
 <para>
 Initially you will need to install <application>Network Monitor Tools and Agent</application>
-on the NT Server.  To do this 
+on the NT Server to do this: 
 </para>
 
 <itemizedlist>
-	<listitem><para>Goto <guibutton>Start</guibutton> - <guibutton>Settings</guibutton> - <guibutton>Control Panel</guibutton> - 
-	<guibutton>Network</guibutton> - <guibutton>Services</guibutton> - <guibutton>Add</guibutton> </para></listitem>
+	<listitem><para>Go to <guibutton>Start</guibutton> -> <guibutton>Settings</guibutton> -> <guibutton>Control Panel</guibutton> -> 
+	<guibutton>Network</guibutton> -> <guibutton>Services</guibutton> -> <guibutton>Add</guibutton>.</para></listitem>
 	
-	<listitem><para>Select the <guilabel>Network Monitor Tools and Agent</guilabel> and 
-			click on <guibutton>OK</guibutton>.</para></listitem> 
+	<listitem><para>Select the <guilabel>Network Monitor Tools and Agent</guilabel> and click on <guibutton>OK</guibutton>.</para></listitem> 
 	
-	<listitem><para>Click <guibutton>OK</guibutton> on the Network Control Panel.
-	</para></listitem> 
+	<listitem><para>Click on <guibutton>OK</guibutton> on the Network Control Panel.</para></listitem> 
 	
-	<listitem><para>Insert the Windows NT Server 4.0 install CD 
-	when prompted.</para></listitem> 
+	<listitem><para>Insert the Windows NT Server 4.0 install CD when prompted.</para></listitem> 
 </itemizedlist>
 
 <para>
-At this point the Netmon files should exist in 
-<filename>%SYSTEMROOT%\System32\netmon\*.*</filename>.    
-Two subdirectories exist as well, <filename>parsers\</filename> 
-which contains the necessary DLL's for parsing the netmon packet 
-dump, and <filename>captures\</filename>.
+At this point, the Netmon files should exist in <filename>%SYSTEMROOT%\System32\netmon\*.*</filename>.   
+Two subdirectories exist as well, <filename>parsers\</filename> which contains the necessary DLLs
+for parsing the Netmon packet dump, and <filename>captures\</filename>.
 </para>
 
 <para>
-In order to install the Netmon tools on an NT Workstation, you will 
-first need to install the 'Network  Monitor Agent' from the Workstation 
-install CD.
+To install the Netmon tools on an NT Workstation, you will first need to install the 
+Network  Monitor Agent from the Workstation install CD.
 </para>
 
 <itemizedlist>
-	<listitem><para>Goto <guibutton>Start</guibutton> - <guibutton>Settings</guibutton> - <guibutton>Control Panel</guibutton> - 
-			<guibutton>Network</guibutton> - <guibutton>Services</guibutton> - <guibutton>Add</guibutton></para></listitem> 
+	<listitem><para>Go to <guibutton>Start</guibutton> -> <guibutton>Settings</guibutton> -> <guibutton>Control Panel</guibutton> -> 
+			<guibutton>Network</guibutton> -> <guibutton>Services</guibutton> -> <guibutton>Add</guibutton>.</para></listitem> 
 
-	<listitem><para>Select the <guilabel>Network Monitor Agent</guilabel> and click 
-			on <guibutton>OK</guibutton>.</para></listitem> 
+	<listitem><para>Select the <guilabel>Network Monitor Agent</guilabel>, click on <guibutton>OK</guibutton>.</para></listitem> 
 	
-	<listitem><para>Click <guibutton>OK</guibutton> on the Network Control Panel.
+	<listitem><para>Click on <guibutton>OK</guibutton> in the Network Control Panel.
 	</para></listitem> 
 	
-	<listitem><para>Insert the Windows NT Workstation 4.0 install 
-	CD when prompted.</para></listitem> 
+	<listitem><para>Insert the Windows NT Workstation 4.0 install CD when prompted.</para></listitem> 
 </itemizedlist>
 
 <para>
-Now copy the files from the NT Server in <filename>%SYSTEMROOT%\System32\netmon\*.*</filename>
-to <filename>%SYSTEMROOT%\System32\netmon\*.*</filename> on the Workstation and set 
-permissions as you deem appropriate for your site. You will need 
-administrative rights on the NT box to run netmon.
+Now copy the files from the NT Server in <filename>%SYSTEMROOT%\System32\netmon</filename>
+to <filename>%SYSTEMROOT%\System32\netmon</filename> on the Workstation and set permissions
+as you deem appropriate for your site. You will need administrative rights on the NT box to run Netmon.
 </para>
 
 </sect3>
 <sect3>
-<title>Installing 'Network Monitor' on an 9x Workstation</title>
+<title>Installing Network Monitor on Windows 9x/Me</title>
 <para>
-To install Netmon on a Windows 9x box install the network monitor agent 
-from the Windows 9x CD (<filename>\admin\nettools\netmon</filename>).  There is a readme 
-file located with the netmon driver files on the CD if you need 
-information on how to do this.  Copy the files from a working 
-Netmon installation.
+To install Netmon on Windows 9x/Me, install the Network Monitor Agent 
+from the Windows 9x/Me CD (<filename>\admin\nettools\netmon</filename>). 
+There is a readme file located with the Netmon driver files on the CD if you need 
+information on how to do this. Copy the files from a working Netmon installation.
 </para>
 </sect3>
 </sect2>
@@ -204,86 +201,90 @@ Netmon installation.
 </sect1>
 
 <sect1>
-<title>Getting help from the mailing lists</title>
+<title>Getting Mailing List Help</title>
 
 <para>
-There are a number of Samba related mailing lists. Go to <ulink 
+There are a number of Samba-related mailing lists. Go to <ulink 
 noescape="1" url="http://samba.org">http://samba.org</ulink>, click on your nearest mirror
-and then click on <command>Support</command> and then click on <command>
-Samba related mailing lists</command>.
+and then click on <command>Support</command> and next click on <command>
+Samba-related mailing lists</command>.
 </para>
 
 <para>
-For questions relating to Samba TNG go to
-<ulink noescape="1" url="http://www.samba-tng.org/">http://www.samba-tng.org/</ulink> 
-It has been requested that you don't post questions about Samba-TNG to the
-main stream Samba lists.</para>
- 
+For questions relating to Samba TNG, go to
+<ulink noescape="1" url="http://www.samba-tng.org/">http://www.samba-tng.org/.</ulink> 
+It has been requested that you do not post questions about Samba-TNG to the
+main-stream Samba lists.</para>
+
 <para>
-If you post a message to one of the lists please observe the following guide lines :
+If you do post a message to one of the lists, please observe the following guidelines :
 </para>
 
 <itemizedlist>
 
-<listitem><para>Always remember that the developers are volunteers, they are 
-not paid and they never guarantee to produce a particular feature at 
-a particular time. Any time lines are 'best guess' and nothing more.
-</para></listitem>
+	<listitem><para>Always remember that the developers are volunteers, they are
+	not paid and they never guarantee to produce a particular feature at 
+	a particular time. Any timelines are <quote>best guess</quote> and nothing more.
+	</para></listitem>
 
-<listitem><para>Always mention what version of samba you are using and what 
-operating system its running under. You should probably list the
-relevant sections of your &smb.conf; file, at least the options 
-in [global] that affect PDC support.</para></listitem>
+	<listitem><para>Always mention what version of Samba you are using and what 
+	operating system it's running under. You should list the relevant sections of
+	your &smb.conf; file, at least the options in <smbconfsection>[global]</smbconfsection>
+	that affect PDC support.
+	</para></listitem>
 
-<listitem><para>In addition to the version, if you obtained Samba via
-CVS mention the date when you last checked it out.</para></listitem>
+	<listitem><para>In addition to the version, if you obtained Samba via
+	CVS, mention the date when you last checked it out.</para></listitem>
 
-<listitem><para> Try and make your question clear and brief, lots of long, 
-convoluted questions get deleted before	they are completely read ! 
-Don't post html encoded messages (if you can select colour or font 
-size its html).</para></listitem>
+	<listitem><para> Try and make your questions clear and brief. Lots of long, 
+	convoluted questions get deleted before	they are completely read!
+	Do not post HTML encoded messages. Most people on mailing lists simply delete
+	them.
+	</para></listitem>
 
-<listitem><para> If you run one of those nifty 'I'm on holidays' things when 
-you are away, make sure its configured	to not answer mailing lists.
-</para></listitem> 
+	<listitem><para> If you run one of those nifty <quote>I'm on holidays</quote> things when
+	you are away, make sure its configured to not answer mailing list traffic. Auto-responses
+	to mailing lists really irritate the thousands of people who end up having to deal
+	with such bad netiquet bahavior.
+	</para></listitem> 
 
-<listitem><para> Don't cross post. Work out which is the best list to post to 
-and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
-Many people active on the lists subscribe to more 
-than one list and get annoyed to see the same message two or more times. 
-Often someone will see a message and thinking it would be better dealt 
-with on another, will forward it on for you.</para></listitem>
+	<listitem><para>Don't cross post. Work out which is the best list to post to 
+	and see what happens. Do not post to both samba-ntdom and samba-technical.
+	Many people active on the lists subscribe to more 
+	than one list and get annoyed to see the same message two or more times.
+	Often someone will see a message and thinking it would be better dealt 
+	with on another list, will forward it on for you.</para></listitem>
 
-<listitem><para>You might include <emphasis>partial</emphasis>
-log files written at a debug level set to as much as 20.  
-Please don't send the entire log but enough to give the context of the 
-error messages.</para></listitem>
+	<listitem><para>You might include <emphasis>partial</emphasis>
+	log files written at a debug level set to as much as 20. 
+	Please do not send the entire log but just enough to give the context of the
+	error messages.</para></listitem>
 
-<listitem><para>(Possibly) If you have a complete netmon trace ( from the opening of 
-the pipe to the error ) you can send the *.CAP file as well.</para></listitem> 
-    
-<listitem><para>Please think carefully before attaching a document to an email.
-Consider pasting the relevant parts into the body of the message. The samba
-mailing lists go to a huge number of people, do they all need a copy of your 
-smb.conf in their attach directory?</para></listitem>
+	<listitem><para>If you have a complete Netmon trace (from the opening of
+	the pipe to the error), you can send the *.CAP file as well.</para></listitem> 
+	    `
+	<listitem><para>Please think carefully before attaching a document to an email.
+	Consider pasting the relevant parts into the body of the message. The Samba
+	mailing lists go to a huge number of people. Do they all need a copy of your 
+	&smb.conf; in their attach directory?</para></listitem>
 
 </itemizedlist>
 
 </sect1>
 
 <sect1>
-<title>How to get off the mailing lists</title>
+<title>How to Get Off the Mailing Lists</title>
 
-<para>To have your name removed from a samba mailing list, go to the
-same place you went to to get on it. Go to <ulink 
-	noescape="1" url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
-click on your nearest mirror and then click on <command>Support</command> and 
-then click on <command> Samba related mailing lists</command>. 
+<para>To have your name removed from a Samba mailing list, go to the same
+place where you went to
+subscribe to it. Go to <ulink noescape="1" url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
+click on your nearest mirror, click on <command>Support</command> and 
+then click on<command> Samba related mailing lists</command>. 
 </para>
 
 <para>
-Please don't post messages to the list asking to be removed, you will just
-be referred to the above address (unless that process failed in some way...)
+Please do not post messages to the list asking to be removed. You will only
+be referred to the above address (unless that process failed in some way).
 </para>
 
 </sect1>

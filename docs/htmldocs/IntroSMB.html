@@ -1,5 +1,5 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 1. Introduction to Samba</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="introduction.html" title="Part I. General Installation"><link rel="next" href="install.html" title="Chapter 2. How to Install and Test SAMBA"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 1. Introduction to Samba</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="IntroSMB"></a>Chapter 1. Introduction to Samba</h2></div><div><div class="author"><h3 class="author"><span class="firstname">David</span> <span class="surname">Lechnyr</span></h3><div class="affiliation"><span class="orgname">Unofficial HOWTO<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:david@lechnyr.com">david@lechnyr.com</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">April 14, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="IntroSMB.html#id2817919">Background</a></dt><dt><a href="IntroSMB.html#id2817978">Terminology</a></dt><dt><a href="IntroSMB.html#id2818169">Related Projects</a></dt><dt><a href="IntroSMB.html#id2818237">SMB Methodology</a></dt><dt><a href="IntroSMB.html#id2818345">Epilogue</a></dt><dt><a href="IntroSMB.html#id2818430">Miscellaneous</a></dt></dl></div><p>&#8220;<span class="quote">
-&quot;If you understand what you're doing, you're not learning anything.&quot; 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 1. Introduction to Samba</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="introduction.html" title="Part I. General Installation"><link rel="next" href="install.html" title="Chapter 2. How to Install and Test SAMBA"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 1. Introduction to Samba</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="IntroSMB"></a>Chapter 1. Introduction to Samba</h2></div><div><div class="author"><h3 class="author"><span class="firstname">David</span> <span class="surname">Lechnyr</span></h3><div class="affiliation"><span class="orgname">Unofficial HOWTO<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:david@lechnyr.com">david@lechnyr.com</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">April 14, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="IntroSMB.html#id2875896">Background</a></dt><dt><a href="IntroSMB.html#id2875954">Terminology</a></dt><dt><a href="IntroSMB.html#id2876091">Related Projects</a></dt><dt><a href="IntroSMB.html#id2876169">SMB Methodology</a></dt><dt><a href="IntroSMB.html#id2876258">Epilogue</a></dt><dt><a href="IntroSMB.html#id2876344">Miscellaneous</a></dt></dl></div><p>&#8220;<span class="quote">
+"If you understand what you're doing, you're not learning anything." 
 -- Anonymous
 </span>&#8221;</p><p>
 Samba is a file and print server for Windows-based clients using TCP/IP as the underlying
@@ -7,7 +7,7 @@ transport protocol. In fact, it can support any SMB/CIFS-enabled client. One of 
 strengths is that you can use it to blend your mix of Windows and Linux machines together
 without requiring a separate Windows NT/2000/2003 Server.  Samba is actively being developed
 by a global team of about 30 active programmers and was originally developed by Andrew Tridgell.
-</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2817919"></a>Background</h2></div></div><div></div></div><p>
+</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2875896"></a>Background</h2></div></div><div></div></div><p>
 Once long ago, there was a buzzword referred to as DCE/RPC. This stood for Distributed
 Computing Environment/Remote Procedure Calls and conceptually was a good idea. It was
 originally developed by Apollo/HP as NCA 1.0 (Network Computing Architecture) and only
@@ -15,12 +15,12 @@ ran over UDP. When there was a need to run it over TCP so that it would be compa
 with DECnet 3.0, it was redesigned, submitted to The Open Group, and officially became
 known as DCE/RPC. Microsoft came along and decided, rather than pay $20 per seat to
 license this technology, to reimplement DCE/RPC themselves as MSRPC. From this, the
-concept continued in the form of SMB (Server Message Block, or the &quot;what&quot;) using the
-NetBIOS (Network Basic Input/Output System, or the &quot;how&quot;) compatibility layer. You can
+concept continued in the form of SMB (Server Message Block, or the "what") using the
+NetBIOS (Network Basic Input/Output System, or the "how") compatibility layer. You can
 run SMB (i.e., transport) over several different protocols; many different implementations
 arose as a result, including NBIPX (NetBIOS over IPX, NwLnkNb, or NWNBLink) and NBT
 (NetBIOS over TCP/IP, or NetBT). As the years passed, NBT became the most common form
-of implementation until the advance of &quot;Direct-Hosted TCP&quot; -- the Microsoft marketing
+of implementation until the advance of "Direct-Hosted TCP" -- the Microsoft marketing
 term for eliminating NetBIOS entirely and running SMB by itself across TCP port 445
 only. As of yet, direct-hosted TCP has yet to catch on.
 </p><p>
@@ -33,23 +33,23 @@ been dutifully waded through during the information-gathering stages of this pro
 are *still* many missing pieces... While often tedious, at least the way has been generously
 littered with occurrences of clapping hand to forehead and muttering 'crikey, what are they
 thinking?
-</em></span></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2817978"></a>Terminology</h2></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>
-	SMB: Acronym for &quot;Server Message Block&quot;. This is Microsoft's file and printer sharing protocol.
+</em></span></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2875954"></a>Terminology</h2></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>
+	SMB: Acronym for "Server Message Block". This is Microsoft's file and printer sharing protocol.
 	</p></li><li><p>
-	CIFS: Acronym for &quot;Common Internet File System&quot;. Around 1996, Microsoft apparently
-	decided that SMB needed the word &quot;Internet&quot; in it, so they changed it to CIFS.  
+	CIFS: Acronym for "Common Internet File System". Around 1996, Microsoft apparently
+	decided that SMB needed the word "Internet" in it, so they changed it to CIFS.  
 	</p></li><li><p>
 	Direct-Hosted: A method of providing file/printer sharing services over port 445/tcp
 	only using DNS for name resolution instead of WINS.
 	</p></li><li><p>
-	IPC: Acronym for &quot;Inter-Process Communication&quot;. A method to communicate specific
+	IPC: Acronym for "Inter-Process Communication". A method to communicate specific
 	information between programs.
 	</p></li><li><p>
 	Marshalling: - A method of serializing (i.e., sequential ordering of) variable data
 	suitable for transmission via a network connection or storing in a file. The source
 	data can be re-created using a similar process called unmarshalling.
 	</p></li><li><p>
-	NetBIOS: Acronym for &quot;Network Basic Input/Output System&quot;. This is not a protocol;
+	NetBIOS: Acronym for "Network Basic Input/Output System". This is not a protocol;
 	it is a method of communication across an existing protocol. This is a standard which
 	was originally developed for IBM by Sytek in 1983. To exaggerate the analogy a bit,
 	it can help to think of this in comparison your computer's BIOS -- it controls the
@@ -60,15 +60,15 @@ thinking?
 	brilliant people tend to interchange NetBIOS with terms like NetBEUI without a second
 	thought; this will cause no end (and no doubt) of confusion.
 	</p></li><li><p>
-	NetBEUI: Acronym for the &quot;NetBIOS Extended User Interface&quot;. Unlike NetBIOS, NetBEUI
+	NetBEUI: Acronym for the "NetBIOS Extended User Interface". Unlike NetBIOS, NetBEUI
 	is a protocol, not a standard. It is also not routable, so traffic on one side of a
 	router will be unable to communicate with the other side. Understanding NetBEUI is
 	not essential to deciphering SMB; however it helps to point out that it is not the
 	same as NetBIOS and to improve your score in trivia at parties. NetBEUI was originally
-	referred to by Microsoft as &quot;NBF&quot;, or &quot;The Windows NT NetBEUI Frame protocol driver&quot;.
+	referred to by Microsoft as "NBF", or "The Windows NT NetBEUI Frame protocol driver".
 	It is not often heard from these days.
 	</p></li><li><p>
-	NBT: Acronym for &quot;NetBIOS over TCP&quot;; also known as &quot;NetBT&quot;. Allows the continued use
+	NBT: Acronym for "NetBIOS over TCP"; also known as "NetBT". Allows the continued use
 	of NetBIOS traffic proxied over TCP/IP. As a result, NetBIOS names are made 
 	to IP addresses and NetBIOS name types are conceptually equivalent to TCP/IP ports.
 	This is how file and printer sharing are accomplished in Windows 95/98/ME. They 
@@ -82,8 +82,8 @@ thinking?
 	</p></li><li><p>
 	W3K: Acronym for Windows 2003 Server
 	</p></li></ul></div><p>If you plan on getting help, make sure to subscribe to the Samba Mailing List (available at 
-<a href="http://www.samba.org/" target="_top">http://www.samba.org</a>). 
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818169"></a>Related Projects</h2></div></div><div></div></div><p>
+<ulink url="http://www.samba.org/">http://www.samba.org</ulink>). 
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2876091"></a>Related Projects</h2></div></div><div></div></div><p>
 There are currently two network filesystem client projects for Linux that are directly
 related to Samba: SMBFS and CIFS VFS.  These are both available in the Linux kernel itself.
 </p><div class="itemizedlist"><ul type="disc"><li><p>
@@ -103,23 +103,23 @@ Again, it's important to note that these are implementations for client filesyst
 nothing to do with acting as a file and print server for SMB/CIFS clients.
 </p><p>
 There are other Open Source CIFS client implementations, such as the 
-<a href="http://jcifs.samba.org/" target="_top">jCIFS project</a>
+<ulink url="http://jcifs.samba.org/">jCIFS project</ulink>
 which provides an SMB client toolkit written in Java.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818237"></a>SMB Methodology</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2876169"></a>SMB Methodology</h2></div></div><div></div></div><p>
 Traditionally, SMB uses UDP port 137 (NetBIOS name service, or netbios-ns),
 UDP port 138 (NetBIOS datagram service, or netbios-dgm), and TCP port 139 (NetBIOS
 session service, or netbios-ssn). Anyone looking at their network with a good
 packet sniffer will be amazed at the amount of traffic generated by just opening
 up a single file. In general, SMB sessions are established in the following order:
 </p><div class="itemizedlist"><ul type="disc"><li><p>
-	&quot;TCP Connection&quot; - establish 3-way handshake (connection) to port 139/tcp
+	"TCP Connection" - establish 3-way handshake (connection) to port 139/tcp
     or 445/tcp.
 	</p></li><li><p>
-	&quot;NetBIOS Session Request&quot; - using the following &quot;Calling Names&quot;: The local
+	"NetBIOS Session Request" - using the following "Calling Names": The local
     machine's NetBIOS name plus the 16th character 0x00; The server's NetBIOS
     name plus the 16th character 0x20
 	</p></li><li><p>
-	&quot;SMB Negotiate Protocol&quot; - determine the protocol dialect to use, which will
+	"SMB Negotiate Protocol" - determine the protocol dialect to use, which will
     be one of the following: PC Network Program 1.0 (Core) - share level security
     mode only; Microsoft Networks 1.03 (Core Plus) - share level security
     mode only; Lanman1.0 (LAN Manager 1.0) - uses Challenge/Response
@@ -135,9 +135,9 @@ up a single file. In general, SMB sessions are established in the following orde
     to a service type (e.g., IPC$ named pipe)
 	</p></li></ul></div><p>
 A good way to examine this process in depth is to try out 
-<a href="http://www.securityfriday.com/ToolDownload/SWB/swb_doc.html" target="_top">SecurityFriday's SWB program</a>.
+<ulink url="http://www.securityfriday.com/ToolDownload/SWB/swb_doc.html">SecurityFriday's SWB program</ulink>.
 It allows you to walk through the establishment of a SMB/CIFS session step by step.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818345"></a>Epilogue</h2></div></div><div></div></div><p>&#8220;<span class="quote">
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2876258"></a>Epilogue</h2></div></div><div></div></div><p>&#8220;<span class="quote">
 What's fundamentally wrong is that nobody ever had any taste when they
 did it. Microsoft has been very much into making the user interface look good,
 but internally it's just a complete mess. And even people who program for Microsoft
@@ -161,14 +161,14 @@ halts in the middle of something that shouldn't be strange. Normally it works
 fine and then once in a blue moon for some completely unknown reason, it's dead,
 and nobody knows why. Not Microsoft, not the experienced user and certainly
 not the completely clueless user who probably sits there shivering thinking
-&quot;What did I do wrong?&quot; when they didn't do anything wrong at all.
+"What did I do wrong?" when they didn't do anything wrong at all.
 </span>&#8221;</p><p>&#8220;<span class="quote">
-That's what's really irritating to me.&quot;
+That's what's really irritating to me."
 </span>&#8221;</p><p>-- 
-<a href="http://hr.uoregon.edu/davidrl/boot.txt" target="_top">Linus Torvalds, from an interview with BOOT Magazine, Sept 1998</a>
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818430"></a>Miscellaneous</h2></div></div><div></div></div><p>
+<ulink url="http://hr.uoregon.edu/davidrl/boot.txt">Linus Torvalds, from an interview with BOOT Magazine, Sept 1998</ulink>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2876344"></a>Miscellaneous</h2></div></div><div></div></div><p>
 This chapter is Copyright 2003 David Lechnyr (david at lechnyr dot com).
 Permission is granted to copy, distribute and/or modify this document under the terms
 of the GNU Free Documentation License, Version 1.2 or any later version published by the Free
 Software Foundation. A copy of the license is available at http://www.gnu.org/licenses/fdl.txt.
-</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part I. General Installation </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. How to Install and Test SAMBA</td></tr></table></div></body></html>
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part I. General Installation </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. How to Install and Test SAMBA</td></tr></table></div></body></html>

@@ -11,7 +11,7 @@
 		</tt></i> is the NetBIOS name of the SMB/CIFS server 
 		offering the desired service and <i class="parameter"><tt>service</tt></i> 
 		is the name of the service offered.  Thus to connect to 
-		the service &quot;printer&quot; on the SMB/CIFS server &quot;smbserver&quot;,
+		the service "printer" on the SMB/CIFS server "smbserver",
 		you would use the servicename <tt class="filename">//smbserver/printer
 		</tt></p><p>Note that the server name required is NOT necessarily 
 		the IP (DNS) host name of the server !  The name required is 
@@ -39,7 +39,7 @@
 		</p></dd><dt><span class="term">-R &lt;name resolve order&gt;</span></dt><dd><p>This option is used by the programs in the Samba 
 		suite to determine what naming services and in what order to resolve 
 		host names to IP addresses. The option takes a space-separated 
-		string of different name resolution options.</p><p>The options are :&quot;lmhosts&quot;, &quot;host&quot;, &quot;wins&quot; and &quot;bcast&quot;. They 
+		string of different name resolution options.</p><p>The options are :"lmhosts", "host", "wins" and "bcast". They 
 		cause names to be resolved as follows:</p><div class="itemizedlist"><ul type="disc"><li><p><tt class="constant">lmhosts</tt>: Lookup an IP 
 			address in the Samba lmhosts file. If the line in lmhosts has 
 			no name type attached to the NetBIOS name (see 
@@ -65,7 +65,7 @@
 		this parameter or any entry in the <i class="parameter"><tt>name resolve order
 		</tt></i> parameter of the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file the name resolution
 		methods will be attempted in this order. </p></dd><dt><span class="term">-M NetBIOS name</span></dt><dd><p>This options allows you to send messages, using 
-		the &quot;WinPopup&quot; protocol, to another computer. Once a connection is 
+		the "WinPopup" protocol, to another computer. Once a connection is 
 		established you then type your message, pressing ^D (control-D) to 
 		end. </p><p>If the receiving computer is running WinPopup the user will 
 		receive the message and probably a beep. If they are not running 
@@ -86,7 +86,7 @@
 		TCP port number for an SMB/CIFS server is 139, which is the 
 		default. </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd><dt><span class="term">-I IP-address</span></dt><dd><p><i class="replaceable"><tt>IP address</tt></i> is the address of the server to connect to. 
-		It should be specified in standard &quot;a.b.c.d&quot; notation. </p><p>Normally the client would attempt to locate a named 
+		It should be specified in standard "a.b.c.d" notation. </p><p>Normally the client would attempt to locate a named 
 		SMB/CIFS server by looking it up via the NetBIOS name resolution 
 		mechanism described above in the <i class="parameter"><tt>name resolve order</tt></i> 
 		parameter above. Using this parameter will force the client
@@ -115,8 +115,8 @@
 		size when getting or putting a file from/to the server. The default 
 		is 65520 bytes. Setting this value smaller (to 1200 bytes) has been 
 		observed to speed up file transfers to and from a Win9x server. 
-		</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
-<b class="command">smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+		</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the program version number.
+</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
@@ -129,15 +129,15 @@ not specified is zero.</p><p>The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2797426"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2799422"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-N</span></dt><dd><p>If specified, this parameter suppresses the normal
 password prompt from the client to the user. This is useful when
@@ -170,7 +170,7 @@ via the <b class="command">ps</b> command.  To be safe always allow
 <b class="command">rpcclient</b> to prompt for a password and type
 it in directly. </p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a class="indexterm" name="id2797632"></a><i class="parameter"><tt>netbios name</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
+to setting the <a class="indexterm" name="id2802383"></a><i class="parameter"><tt>netbios name</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
 However, a command
 line setting will take precedence over settings in
 <tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
@@ -191,13 +191,13 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 		share. The secondary tar flags that can be given to this option 
 		are : </p><div class="itemizedlist"><ul type="disc"><li><p><i class="parameter"><tt>c</tt></i> - Create a tar file on UNIX. 
 			Must be followed by the name of a tar file, tape device
-			or &quot;-&quot; for standard output. If using standard output you must 
+			or "-" for standard output. If using standard output you must 
 			turn the log level to its lowest value -d0 to avoid corrupting 
 			your tar file. This flag is mutually exclusive with the 
 			<i class="parameter"><tt>x</tt></i> flag. </p></li><li><p><i class="parameter"><tt>x</tt></i> - Extract (restore) a local 
 			tar file back to a share. Unless the -D option is given, the tar 
 			files will be restored from the top level of the share. Must be 
-			followed by the name of the tar file, device or &quot;-&quot; for standard 
+			followed by the name of the tar file, device or "-" for standard 
 			input. Mutually exclusive with the <i class="parameter"><tt>c</tt></i> flag. 
 			Restored files have their creation times (mtime) set to the
 			date saved in the tar file. Directories currently do not get 
@@ -235,21 +235,21 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 		</p><p><span class="emphasis"><em>Tar Filenames</em></span></p><p>All file names can be given as DOS path names (with '\\' 
 		as the component separator) or as UNIX path names (with '/' as 
 		the component separator). </p><p><span class="emphasis"><em>Examples</em></span></p><p>Restore from tar file <tt class="filename">backup.tar</tt> into myshare on mypc 
-		(no password on share). </p><p><b class="command">smbclient //mypc/yshare &quot;&quot; -N -Tx backup.tar
+		(no password on share). </p><p><b class="command">smbclient //mypc/yshare "" -N -Tx backup.tar
 		</b></p><p>Restore everything except <tt class="filename">users/docs</tt>
-		</p><p><b class="command">smbclient //mypc/myshare &quot;&quot; -N -TXx backup.tar 
+		</p><p><b class="command">smbclient //mypc/myshare "" -N -TXx backup.tar 
 		users/docs</b></p><p>Create a tar file of the files beneath <tt class="filename">
-		users/docs</tt>. </p><p><b class="command">smbclient //mypc/myshare &quot;&quot; -N -Tc
+		users/docs</tt>. </p><p><b class="command">smbclient //mypc/myshare "" -N -Tc
 		backup.tar users/docs </b></p><p>Create the same tar file as above, but now use 
-		a DOS path name. </p><p><b class="command">smbclient //mypc/myshare &quot;&quot; -N -tc backup.tar 
+		a DOS path name. </p><p><b class="command">smbclient //mypc/myshare "" -N -tc backup.tar 
 		users\edocs </b></p><p>Create a tar file of all the files and directories in 
-		the share. </p><p><b class="command">smbclient //mypc/myshare &quot;&quot; -N -Tc backup.tar *
+		the share. </p><p><b class="command">smbclient //mypc/myshare "" -N -Tc backup.tar *
 		</b></p></dd><dt><span class="term">-D initial directory</span></dt><dd><p>Change to initial directory before starting. Probably 
 		only of any use with the tar -T option. </p></dd><dt><span class="term">-c command string</span></dt><dd><p>command string is a semicolon-separated list of 
 		commands to be executed instead of prompting from stdin. <i class="parameter"><tt>
 		-N</tt></i> is implied by <i class="parameter"><tt>-c</tt></i>.</p><p>This is particularly useful in scripts and for printing stdin 
 		to the server, e.g. <b class="command">-c 'print -'</b>. </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>OPERATIONS</h2><p>Once the client is running, the user is presented with 
-	a prompt : </p><p><tt class="prompt">smb:\&gt; </tt></p><p>The backslash (&quot;\\&quot;) indicates the current working directory 
+	a prompt : </p><p><tt class="prompt">smb:\&gt; </tt></p><p>The backslash ("\\") indicates the current working directory 
 	on the server, and will change if the current working directory 
 	is changed. </p><p>The prompt indicates that the client is ready and waiting to 
 	carry out a user command. Each command is a single word, optionally 
@@ -258,9 +258,9 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 	state otherwise. All commands are case-insensitive.  Parameters to 
 	commands may or may not be case sensitive, depending on the command. 
 	</p><p>You can specify file names which have spaces in them by quoting 
-	the name with double quotes, for example &quot;a long file name&quot;. </p><p>Parameters shown in square brackets (e.g., &quot;[parameter]&quot;) are 
+	the name with double quotes, for example "a long file name". </p><p>Parameters shown in square brackets (e.g., "[parameter]") are 
 	optional.  If not given, the command will use suitable defaults. Parameters 
-	shown in angle brackets (e.g., &quot;&lt;parameter&gt;&quot;) are required.
+	shown in angle brackets (e.g., "&lt;parameter&gt;") are required.
 	</p><p>Note that all commands operating on the server are actually 
 	performed by issuing a request to the server. Thus the behavior may 
 	vary from server to server, depending on how the server was implemented. 
@@ -271,7 +271,7 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 		command will execute a shell locally and run the specified shell 
 		command. If no command is specified, a local shell will be run. 
 		</p></dd><dt><span class="term">altname file</span></dt><dd><p>The client will request that the server return
-		the &quot;alternate&quot; name (the 8.3 name) for a file or directory.
+		the "alternate" name (the 8.3 name) for a file or directory.
 		</p></dd><dt><span class="term">cancel jobid0 [jobid1] ... [jobidN]</span></dt><dd><p>The client will request that the server cancel
 		the printjobs identified by the given numeric print job ids.
 		</p></dd><dt><span class="term">chmod file mode in octal</span></dt><dd><p>This command depends on the server supporting the CIFS
@@ -282,7 +282,7 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 		change the UNIX user and group ownership to the given decimal values. Note there is
 		currently no way to remotely look up the UNIX uid and gid values for a given name.
 		This may be addressed in future versions of the CIFS UNIX extensions.
-		</p></dd><dt><span class="term">cd [directory name]</span></dt><dd><p>If &quot;directory name&quot; is specified, the current 
+		</p></dd><dt><span class="term">cd [directory name]</span></dt><dd><p>If "directory name" is specified, the current 
 		working directory on the server will be changed to the directory 
 		specified. This operation will fail if for any reason the specified 
 		directory is inaccessible. </p><p>If no directory name is specified, the current working 
@@ -314,15 +314,15 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 		filters for directories rather than files when recursion is 
 		toggled ON. </p><p>The mask specified with the mask command is necessary 
 		to filter files within those directories. For example, if the
-		mask specified in an mget command is &quot;source*&quot; and the mask 
-		specified with the mask command is &quot;*.c&quot; and recursion is 
+		mask specified in an mget command is "source*" and the mask 
+		specified with the mask command is "*.c" and recursion is 
 		toggled ON, the mget command will retrieve all files matching 
-		&quot;*.c&quot; in all directories below and including all directories 
-		matching &quot;source*&quot; in the current working directory. </p><p>Note that the value for mask defaults to blank (equivalent 
-		to &quot;*&quot;) and remains so until the mask command is used to change it. 
+		"*.c" in all directories below and including all directories 
+		matching "source*" in the current working directory. </p><p>Note that the value for mask defaults to blank (equivalent 
+		to "*") and remains so until the mask command is used to change it. 
 		It retains the most recently specified value indefinitely. To 
 		avoid unexpected results it would be wise to change the value of 
-		mask back to &quot;*&quot; after using the mget or mput commands. </p></dd><dt><span class="term">md &lt;directory name&gt;</span></dt><dd><p>See the mkdir command. </p></dd><dt><span class="term">mget &lt;mask&gt;</span></dt><dd><p>Copy all files matching <i class="replaceable"><tt>mask</tt></i> from the server to 
+		mask back to "*" after using the mget or mput commands. </p></dd><dt><span class="term">md &lt;directory name&gt;</span></dt><dd><p>See the mkdir command. </p></dd><dt><span class="term">mget &lt;mask&gt;</span></dt><dd><p>Copy all files matching <i class="replaceable"><tt>mask</tt></i> from the server to 
 		the machine running the client. </p><p>Note that <i class="replaceable"><tt>mask</tt></i> is interpreted differently during recursive 
 		operation and non-recursive operation - refer to the recurse and 
 		mask commands for more information. Note that all transfers in 
@@ -364,7 +364,7 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 		</p></dd><dt><span class="term">tar &lt;c|x&gt;[IXbgNa]</span></dt><dd><p>Performs a tar operation - see the <i class="parameter"><tt>-T
 		</tt></i> command line option above. Behavior may be affected 
 		by the tarmode command (see below). Using g (incremental) and N 
-		(newer) will affect tarmode settings. Note that using the &quot;-&quot; option 
+		(newer) will affect tarmode settings. Note that using the "-" option 
 		with tar x may not work - use the command line option instead. 
 		</p></dd><dt><span class="term">blocksize &lt;blocksize&gt;</span></dt><dd><p>Blocksize. Must be followed by a valid (greater 
 		than zero) blocksize. Causes tar file to be written out in 
@@ -410,8 +410,8 @@ options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbcli
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
-	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
 	was done by Alexander Bokovoy.</p></div></div></body></html>
