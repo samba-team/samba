@@ -820,7 +820,7 @@ struct functable {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
-#include "nsswitch/nss.h"
+#include "nsswitch/winbind_nss.h"
 
 /* forward declaration from printing.h to get around 
    header file dependencies */

@@ -297,5 +297,3 @@ _nss_winbind_group_constr (const char* db_name,
 }
 
 #endif /* SUN_NSS */
-
-
