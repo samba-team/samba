@@ -176,7 +176,7 @@ krb5_verify(struct passwd *pwd, const char *password)
 }
 
 #ifdef KRB4
-static void
+static krb5_error_code
 krb5_to4 (krb5_ccache id)
 {
     if (krb5_config_get_bool(context, NULL,
@@ -191,7 +191,7 @@ krb5_to4 (krb5_ccache id)
 
 	ret = krb5_cc_get_principal (context, id, &princ);
 	if (ret)
-	    return;
+	    return ret;
 
 	ret = krb5_make_principal(context, &mcred.server,
 				  princ->realm,
@@ -216,6 +216,7 @@ krb5_to4 (krb5_ccache id)
 	}
 	krb5_free_principal(context, mcred.server);
     }
+    return 0;
 }
 #endif /* KRB4 */
 
