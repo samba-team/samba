@@ -1,5 +1,6 @@
 2000-05-24  Assar Westerlund  <assar@sics.se>
 
+	* ss.h (SS_ET_COMMAND_NOT_FOUND): add
 	* ss.c: check allocation and return some other error codes too
 
 2000-04-29  Assar Westerlund  <assar@sics.se>
