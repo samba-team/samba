@@ -40,6 +40,7 @@
 
 RCSID("$Id$");
 
+
 static kadm5_ret_t 
 kadm5_s_init_with_context(krb5_context context,
 			  const char *client_name, 
@@ -54,28 +55,22 @@ kadm5_s_init_with_context(krb5_context context,
     ret = _kadm5_s_init_context(&ctx, realm_params, context);
     if(ret)
 	return ret;
-    ret = hdb_create(ctx->context, &ctx->db, NULL);
+
+    assert(ctx->config.dbname != NULL);
+    assert(ctx->config.stash_file != NULL);
+    assert(ctx->config.acl_file != NULL);
+    assert(ctx->log_context.log_file != NULL);
+    assert(ctx->log_context.socket_name.sun_path[0] != '\0');
+
+    ret = hdb_create(ctx->context, &ctx->db, ctx->config.dbname);
     if(ret)
 	return ret;
     ret = hdb_set_master_keyfile (ctx->context, 
-				  ctx->db, NULL); /* XXX get from conf */
+				  ctx->db, ctx->config.stash_file);
     if(ret)
 	return ret;
 
-    ctx->acl_file = HDB_DB_DIR "/kadmind.acl";  /* XXX get from conf */
-    
-    ctx->log_context.log_file = HDB_DB_DIR "/log";
-
     ctx->log_context.log_fd   = -1;
-
-    {
-	struct sockaddr_un *un = &ctx->log_context.socket_name;
-
-	memset(un, 0, sizeof(*un));
-	un->sun_family = AF_UNIX;
-	strncpy (un->sun_path, KADM5_LOG_SIGNAL, sizeof(un->sun_path));
-	un->sun_path[sizeof(un->sun_path) - 1] = '\0';
-    }
 
     ctx->log_context.socket_fd = socket (AF_UNIX, SOCK_DGRAM, 0);
 
