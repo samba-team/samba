@@ -885,7 +885,7 @@ static void reg_key_list(const char *full_name,
 static void reg_val_list(const char *full_name,
 				const char* name,
 				uint32 type,
-				BUFFER2 *value)
+				const BUFFER2 *value)
 {
 	add_chars_to_array(&reg_list_len, &reg_name, name);
 }
@@ -944,12 +944,31 @@ static char *complete_samenum_usr(char *text, int state)
     
 	if (state == 0)
 	{
+		fstring srv_name;
+		fstring domain;
+		fstring sid;
+		DOM_SID sid1;
+		sid_copy(&sid1, &cli_info.dom.level5_sid);
+		sid_to_string(sid, &sid1);
+		fstrcpy(domain, cli_info.dom.level5_dom);
+
+		if (sid1.num_auths == 0)
+		{
+			return NULL;
+		}
+
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
 		free(sam);
 		sam = NULL;
 		num_usrs = 0;
 
 		/* Iterate all users */
-		if (msrpc_sam_enum_users(&cli_info, &sam, &num_usrs,
+		if (msrpc_sam_enum_users(smb_cli,
+		                   domain, &sid1, srv_name,
+		                   &sam, &num_usrs,
 		                   NULL, NULL, NULL, NULL) == 0)
 		{
 			return NULL;
@@ -981,12 +1000,31 @@ static char *complete_samenum_als(char *text, int state)
     
 	if (state == 0)
 	{
+		fstring srv_name;
+		fstring domain;
+		fstring sid;
+		DOM_SID sid1;
+		sid_copy(&sid1, &cli_info.dom.level5_sid);
+		sid_to_string(sid, &sid1);
+		fstrcpy(domain, cli_info.dom.level5_dom);
+
+		if (sid1.num_auths == 0)
+		{
+			return NULL;
+		}
+
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
 		free(sam);
 		sam = NULL;
 		num_als = 0;
 
 		/* Iterate all aliases */
-		if (msrpc_sam_enum_aliases(&cli_info, &sam, &num_als,
+		if (msrpc_sam_enum_aliases(smb_cli,
+		                   domain, &sid1, srv_name,
+		                   &sam, &num_als,
 		                   NULL, NULL, NULL) == 0)
 		{
 			return NULL;
@@ -1018,12 +1056,31 @@ static char *complete_samenum_grp(char *text, int state)
     
 	if (state == 0)
 	{
+		fstring srv_name;
+		fstring domain;
+		fstring sid;
+		DOM_SID sid1;
+		sid_copy(&sid1, &cli_info.dom.level5_sid);
+		sid_to_string(sid, &sid1);
+		fstrcpy(domain, cli_info.dom.level5_dom);
+
+		if (sid1.num_auths == 0)
+		{
+			return NULL;
+		}
+
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
 		free(sam);
 		sam = NULL;
 		num_grps = 0;
 
 		/* Iterate all groups */
-		if (msrpc_sam_enum_groups(&cli_info, &sam, &num_grps,
+		if (msrpc_sam_enum_groups(smb_cli,
+		                   domain, &sid1, srv_name,
+		                   &sam, &num_grps,
 		                   NULL, NULL, NULL) == 0)
 		{
 			return NULL;

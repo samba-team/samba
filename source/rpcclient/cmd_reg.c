@@ -108,7 +108,7 @@ static void reg_display_key_info(const char *full_name,
 static void reg_display_val_info(const char *full_name,
 				const char* name,
 				uint32 type,
-				BUFFER2 *value)
+				const BUFFER2 *const value)
 {
 	display_reg_value_info(out_hnd, ACTION_HEADER   , name, type, value);
 	display_reg_value_info(out_hnd, ACTION_ENUMERATE, name, type, value);

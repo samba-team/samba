@@ -179,7 +179,7 @@ BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
 /*******************************************************************
 creates a DOM_SID2 structure.
 ********************************************************************/
-BOOL make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid)
+BOOL make_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
 {
         sid_copy(&sid2->sid, sid);
 	sid2->num_auths = sid2->sid.num_auths;

@@ -150,28 +150,50 @@ struct acct_info
  * higher order functions for use with msrpc client code
  */
 
-#define ALIAS_FN(fn) void (*fn)(char*, DOM_SID*, uint32, char*)
-#define ALIAS_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, ALIAS_INFO_CTR *)
-#define ALIAS_MEM_FN(fn) void(*fn)(char*, DOM_SID*, uint32, char*, uint32, DOM_SID**, char**, uint8*)
+#define ALIAS_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32, const char*)
+#define ALIAS_INFO_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32, ALIAS_INFO_CTR *const)
+#define ALIAS_MEM_FN(fn)\
+	void(*fn)(const char*, const DOM_SID*, uint32, const char*,\
+	          uint32, DOM_SID *const *const, char *const *const,\
+	          uint8*const)
 
-#define GROUP_FN(fn) void (*fn)(char*, DOM_SID*, uint32, char*)
-#define GROUP_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, GROUP_INFO_CTR *)
-#define GROUP_MEM_FN(fn) void(*fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*)
+#define GROUP_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32, const char*)
+#define GROUP_INFO_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32, GROUP_INFO_CTR *const)
+#define GROUP_MEM_FN(fn)\
+	void(*fn)(const char*, const DOM_SID*, uint32, const char*,\
+	          uint32, const uint32*, char *const *const,\
+	          uint32*const)
 
-#define USER_FN(fn)      void (*fn)(char*, DOM_SID*, uint32, char*)
-#define USER_INFO_FN(fn) void (*fn)(char*, DOM_SID*, uint32, SAM_USER_INFO_21 *)
-#define USER_MEM_FN(fn)  void (*fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*)
+#define USER_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32, const char*)
+#define USER_INFO_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32,\
+	           SAM_USER_INFO_21 *const)
+#define USER_MEM_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint32, const char*,\
+	           uint32, const uint32*, char *const *const, uint32* const)
 
-#define REG_FN(fn)     void (*fn)(int, const char *, int)
-#define REG_KEY_FN(fn) void (*fn)(const char*, const char*, time_t)
-#define REG_VAL_FN(fn) void (*fn)(const char *, const char*, uint32, BUFFER2 *)
+#define REG_FN(fn)\
+	void (*fn)(int, const char *, int)
+#define REG_KEY_FN(fn)\
+	void (*fn)(const char*, const char*, time_t)
+#define REG_VAL_FN(fn)\
+	void (*fn)(const char *, const char*, uint32, const BUFFER2 *)
 
-#define SVC_QUERY_FN(fn) void (*fn)(QUERY_SERVICE_CONFIG *)
-#define SVC_INFO_FN(fn)  void (*fn)(ENUM_SRVC_STATUS *)
+#define SVC_QUERY_FN(fn)\
+	void (*fn)(const QUERY_SERVICE_CONFIG *)
+#define SVC_INFO_FN(fn)\
+	void (*fn)(const ENUM_SRVC_STATUS *)
 
-#define TPRT_INFO_FN(fn)  void (*fn)(SRV_TPRT_INFO_CTR *)
+#define TPRT_INFO_FN(fn)\
+	void (*fn)(const SRV_TPRT_INFO_CTR *)
 
-#define PRINT_INFO_FN(fn)  void (*fn)(const char*, uint32, uint32, void **)
+#define PRINT_INFO_FN(fn)\
+	void (*fn)(const char*, uint32, uint32, void  *const *const)
 
 #endif /* _NT_DOMAIN_H */
 
