@@ -60,7 +60,7 @@ int rtbl_format (rtbl_t, FILE*);
 
 unsigned int rtbl_get_flags (rtbl_t);
 
-int rtbl_new_row (rtbl_t); int rtbl_new_row(rtbl_t);
+int rtbl_new_row (rtbl_t);
 
 int rtbl_set_column_affix_by_id (rtbl_t, unsigned int, const char*, const char*);
 
