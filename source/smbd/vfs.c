@@ -368,7 +368,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 			}
 
 			DEBUG(10,("vfs_allocate_file_space: file %s, grow. wrote %.0f\n",
-					fsp->fsp_name, (double)current_len_to_write ));
+					fsp->fsp_name, (double)retlen ));
 
 			len_to_write -= retlen;
 		}
