@@ -678,6 +678,16 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   {
     p = mask;
     while (*p) {
+      if (*p == '<') {
+        pstring expnd;
+        if(p[1] != '"' && p[1] != '.') {
+          pstrcpy( expnd, p+1 );
+          *p++ = '*';
+          *p = '.';
+          safe_strcpy( p+1, expnd, p - mask - 1);
+        } else
+          *p = '*'; 
+      }
       if (*p == '<') *p = '*';
       if (*p == '>') *p = '?';
       if (*p == '"') *p = '.';
