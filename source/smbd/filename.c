@@ -292,7 +292,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       } else {
         pstring rest;
 
-		/* Stat failed - ensure we don't use it. */
+        /* Stat failed - ensure we don't use it. */
         ZERO_STRUCT(st);
         *rest = 0;
 
@@ -329,7 +329,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 	      
           /* 
            * Just the last part of the name doesn't exist.
-	       * We may need to strupper() or strlower() it in case
+           * We may need to strupper() or strlower() it in case
            * this conversion is being used for file creation 
            * purposes. If the filename is of mixed case then 
            * don't normalise it.
@@ -352,11 +352,14 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
         }
 
       /* 
-       * Restore the rest of the string.
+       * Restore the rest of the string. If the string was mangled the size
+       * may have changed.
        */
       if (end) {
-        pstrcpy(start+strlen(start)+1,rest);
         end = start + strlen(start);
+        pstrcat(start,"/");
+        pstrcat(start,rest);
+        *end = '\0';
       }
     } /* end else */
 
