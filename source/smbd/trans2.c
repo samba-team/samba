@@ -1545,6 +1545,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	BOOL delete_pending = False;
 	time_t c_time;
 
+	if (!params)
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+
 	if (tran_call == TRANSACT2_QFILEINFO) {
 		files_struct *fsp;
 
