@@ -697,3 +697,5 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	}
 	conn_free(conn);
 }
+
+

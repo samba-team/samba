@@ -693,6 +693,12 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     if (!(flags & AS_USER))
       unbecome_user();
 
+    /* does this protocol need a valid tree connection? */
+    if ((flags & AS_USER) && !conn) {
+	    return ERROR(ERRSRV, ERRinvnid);
+    }
+
+
     /* does this protocol need to be run as the connected user? */
     if ((flags & AS_USER) && !become_user(conn,session_tag)) {
       if (flags & AS_GUEST) 
@@ -1194,6 +1200,9 @@ void smbd_process(void)
 
 	/* re-initialise the timezone */
 	TimeInit();
+
+	/* register our message handlers */
+	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
 
 	while (True) {
 		int deadtime = lp_deadtime()*60;
