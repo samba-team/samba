@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include "trans2.h"
+#include "nterr.h"
 
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
@@ -371,7 +372,7 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 
 /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 /* identauth >= 2^32 can be detected because it will be specified in hex */
-static void init_dom_sid(DOM_SID *sid, char *domsid)
+static void make_dom_sid(DOM_SID *sid, char *domsid)
 {
 	int identauth;
 	char *p;
@@ -422,7 +423,7 @@ static void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
 	hdr->reserved     = 0;               /* reserved */
 }
 
-static void init_rpc_reply(char *inbuf, char *q, char *base, int data_len)
+static void make_rpc_reply(char *inbuf, char *q, char *base, int data_len)
 {
 	uint32 callid = RIVAL(inbuf, 12);
 	RPC_HDR hdr;
@@ -447,7 +448,14 @@ static int lsa_reply_open_policy(char *q, char *base)
 	return q - start; 
 }
 
-static void init_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
+static void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
+{
+	hdr->uni_max_len = max_len;
+	hdr->uni_str_len = len;
+	hdr->undoc       = terminate;
+}
+
+static void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
 {
 	/* set up string lengths. add one if string is not null-terminated */
 	str->uni_max_len = len + (terminate != 0 ? 1 : 0);
@@ -461,7 +469,7 @@ static void init_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
 	str->buffer[len] = (uint16)terminate;
 }
 
-static void init_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
+static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 {
 	int domlen = strlen(dom_name);
 
@@ -473,9 +481,9 @@ static void init_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 	d_q->buffer_dom_sid  = 0; /* domain sid pointer */
 
 	/* NOT null-terminated: 4-terminated instead! */
-	init_unistr2(&(d_q->uni_domain_name), dom_name, domlen, 4);
+	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen, 4);
 
-	init_dom_sid(&(d_q->dom_sid), dom_sid);
+	make_dom_sid(&(d_q->dom_sid), dom_sid);
 }
 
 static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
@@ -489,7 +497,7 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 	r_q.undoc_buffer = 1; /* not null */
 	r_q.info_class = q_q->info_class;
 
-	init_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+	make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
 
 	r_q.status = 0x0;
 
@@ -500,7 +508,7 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 	return q - start; 
 }
 
-static void init_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c, char chal[8], int status)
+static void make_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c, char chal[8], int status)
 {
 	memcpy(r_c->srv_chal.data, chal, sizeof(r_c->srv_chal.data));
 	r_c->status = status;
@@ -523,7 +531,7 @@ static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 
 	/* set up the LSA REQUEST CHALLENGE response */
 
-	init_lsa_r_req_chal(&r_c, chal, 0);
+	make_lsa_r_req_chal(&r_c, chal, 0);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_req_chal(False, &r_c, q, base, 4);
@@ -532,15 +540,15 @@ static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 	return q - start; 
 }
 
-static void init_lsa_chal(DOM_CHAL *cred, char resp_cred[8])
+static void make_lsa_chal(DOM_CHAL *cred, char resp_cred[8])
 {
 	memcpy(cred->data, resp_cred, sizeof(cred->data));
 }
 
-static void init_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
+static void make_lsa_r_auth_2(LSA_R_AUTH_2 *r_a,
                               char resp_cred[8], NEG_FLAGS *flgs, int status)
 {
-	init_lsa_chal(&(r_a->srv_chal), resp_cred);
+	make_lsa_chal(&(r_a->srv_chal), resp_cred);
 	memcpy(&(r_a->srv_flgs), flgs, sizeof(r_a->srv_flgs));
 	r_a->status = status;
 }
@@ -553,7 +561,7 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 
 	/* set up the LSA AUTH 2 response */
 
-	init_lsa_r_auth_2(&r_a, resp_cred, &(q_a->clnt_flgs), status);
+	make_lsa_r_auth_2(&r_a, resp_cred, &(q_a->clnt_flgs), status);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_auth_2(False, &r_a, q, base, 4);
@@ -562,17 +570,17 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	return q - start; 
 }
 
-static void init_lsa_dom_chal(DOM_CRED *cred, char srv_chal[8], UTIME srv_time)
+static void make_lsa_dom_chal(DOM_CRED *cred, char srv_chal[8], UTIME srv_time)
 {
-	init_lsa_chal(&(cred->challenge), srv_chal);
+	make_lsa_chal(&(cred->challenge), srv_chal);
 	cred->timestamp = srv_time;
 }
 	
 
-static void init_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
+static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
                               char srv_chal[8], UTIME srv_time, int status)
 {
-	init_lsa_dom_chal(&(r_a->srv_cred), srv_chal, srv_time);
+	make_lsa_dom_chal(&(r_a->srv_cred), srv_chal, srv_time);
 	r_a->status = status;
 }
 
@@ -584,7 +592,7 @@ static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 	LSA_R_SRV_PWSET r_s;
 
 	/* set up the LSA Server Password Set response */
-	init_lsa_r_srv_pwset(&r_s, srv_cred, srv_time, status);
+	make_lsa_r_srv_pwset(&r_s, srv_cred, srv_time, status);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4);
@@ -593,3 +601,159 @@ static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 	return q - start; 
 }
 
+static void make_lsa_user_info(LSA_USER_INFO *usr,
+
+	NTTIME *logon_time,
+	NTTIME *logoff_time,
+	NTTIME *kickoff_time,
+	NTTIME *pass_last_set_time,
+	NTTIME *pass_can_change_time,
+	NTTIME *pass_must_change_time,
+
+	char *user_name,
+	char *full_name,
+	char *logon_script,
+	char *profile_path,
+	char *home_dir,
+	char *dir_drive,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 user_id,
+	uint32 group_id,
+	uint32 num_groups,
+	DOM_GID *gids,
+	uint32 user_flgs,
+
+	char sess_key[16],
+
+	char *logon_srv,
+	char *logon_dom,
+
+	char *dom_sid,
+	char *other_sids) /* space-delimited set of SIDs */ 
+{
+	/* only cope with one "other" sid, right now. */
+	/* need to count the number of space-delimited sids */
+	int i;
+	int num_other_sids = other_sids != NULL ? 1 : 0;
+
+	int len_user_name    = strlen(user_name   );
+	int len_full_name    = strlen(full_name   );
+	int len_logon_script = strlen(logon_script);
+	int len_profile_path = strlen(profile_path);
+	int len_home_dir     = strlen(home_dir    );
+	int len_dir_drive    = strlen(dir_drive   );
+
+	int len_logon_srv    = strlen(logon_srv);
+	int len_logon_dom    = strlen(logon_dom);
+
+	usr->undoc_buffer = 1; /* yes, we're bothering to put USER_INFO data here */
+
+	usr->logon_time            = *logon_time;
+	usr->logoff_time           = *logoff_time;
+	usr->kickoff_time          = *kickoff_time;
+	usr->pass_last_set_time    = *pass_last_set_time;
+	usr->pass_can_change_time  = *pass_can_change_time;
+	usr->pass_must_change_time = *pass_must_change_time;
+
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   , len_user_name   , 4);
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   , len_full_name   , 4);
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script, len_logon_script, 4);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path, len_profile_path, 4);
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    , len_home_dir    , 4);
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   , len_dir_drive   , 4);
+
+	usr->logon_count = logon_count;
+	usr->bad_pw_count = bad_pw_count;
+
+	usr->user_id = user_id;
+	usr->group_id = group_id;
+	usr->num_groups = num_groups;
+	usr->buffer_groups = num_groups ? 1 : 0; /* yes, we're bothering to put group info in */
+	usr->user_flgs = user_flgs;
+
+	if (sess_key != NULL)
+	{
+		memcpy(usr->sess_key, sess_key, sizeof(usr->sess_key));
+	}
+	else
+	{
+		bzero(usr->sess_key, sizeof(usr->sess_key));
+	}
+
+	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv, len_logon_srv, 4);
+	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom, len_logon_dom, 4);
+
+	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
+
+	bzero(usr->padding, sizeof(usr->padding));
+
+	usr->num_other_sids = num_other_sids;
+	usr->buffer_other_sids = num_other_sids != 0 ? 1 : 0; 
+	
+	make_unistr2(&(usr->uni_user_name   ), user_name   , len_user_name   , 0);
+	make_unistr2(&(usr->uni_full_name   ), full_name   , len_full_name   , 0);
+	make_unistr2(&(usr->uni_logon_script), logon_script, len_logon_script, 0);
+	make_unistr2(&(usr->uni_profile_path), profile_path, len_profile_path, 0);
+	make_unistr2(&(usr->uni_home_dir    ), home_dir    , len_home_dir    , 0);
+	make_unistr2(&(usr->uni_dir_drive   ), dir_drive   , len_dir_drive   , 0);
+
+	usr->num_groups2 = num_groups;
+	for (i = 0; i < num_groups; i++)
+	{
+		usr->gids[i] = gids[i];
+	}
+
+	make_unistr2(&(usr->uni_logon_srv), logon_srv, len_logon_srv, 0);
+	make_unistr2(&(usr->uni_logon_dom), logon_dom, len_logon_dom, 0);
+
+	make_dom_sid(&(usr->dom_sid), dom_sid);
+	make_dom_sid(&(usr->other_sids[0]), other_sids);
+}
+
+
+static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
+				char srv_cred[8], UTIME srv_time,
+				LSA_USER_INFO *user_info)
+{
+	char *start = q;
+	LSA_R_SAM_LOGON r_s;
+
+	/* XXXX maybe we want to say 'no', reject the client's credentials */
+	r_s.buffer_creds = 1; /* yes, we have valid server credentials */
+	make_lsa_dom_chal(&(r_s.srv_creds), srv_cred, srv_time);
+
+	/* store the user information, if there is any. */
+	r_s.user = user_info;
+	r_s.buffer_user = user_info != NULL ? 1 : 0;
+	r_s.status = user_info != NULL ? 0 : (0xC000000|NT_STATUS_NO_SUCH_USER);
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_sam_logon(False, &r_s, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+
+static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
+				char srv_cred[8], UTIME srv_time,
+				uint32 status)
+{
+	char *start = q;
+	LSA_R_SAM_LOGOFF r_s;
+
+	/* XXXX maybe we want to say 'no', reject the client's credentials */
+	r_s.buffer_creds = 1; /* yes, we have valid server credentials */
+	make_lsa_dom_chal(&(r_s.srv_creds), srv_cred, srv_time);
+
+	r_s.status = status;
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_sam_logoff(False, &r_s, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}

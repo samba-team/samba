@@ -677,6 +677,7 @@ typedef struct lsa_r_srv_pwset_info
 } LSA_R_SRV_PWSET;
 
 #define LSA_MAX_GROUPS 32
+#define LSA_MAX_SIDS 32
 
 /* LSA_USER_INFO */
 typedef struct lsa_q_user_info
@@ -714,8 +715,8 @@ typedef struct lsa_q_user_info
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
 	char padding[40];    /* unused padding bytes? */
 
-	uint32 num_sids; /* 0 - num_sids */
-	uint32 buffer_sids; /* NULL - undocumented pointer to SIDs. */
+	uint32 num_other_sids; /* 0 - num_sids */
+	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
 	
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
@@ -730,8 +731,8 @@ typedef struct lsa_q_user_info
 	UNISTR2 uni_logon_srv; /* logon server unicode string */
 	UNISTR2 uni_logon_dom; /* logon domain unicode string */
 
-	DOM_SID undoc_dom_sids[2]; /* undocumented - domain SIDs */
 	DOM_SID dom_sid;           /* domain SID */
+	DOM_SID other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
 
 } LSA_USER_INFO;
 
@@ -750,7 +751,7 @@ typedef struct lsa_r_sam_logon_info
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
     uint32 buffer_user;
-    LSA_USER_INFO user;
+    LSA_USER_INFO *user;
 
     uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
 
