@@ -125,13 +125,19 @@ find_keys(hdb_entry *client,
 	  krb5_enctype *etypes,
 	  unsigned num_etypes)
 {
+    char unparse_name[] = "krb5_unparse_name failed";
     krb5_error_code ret;
+    char *name;
 
     if(client){
 	/* find client key */
 	ret = find_etype(client, etypes, num_etypes, ckey, cetype);
 	if (ret) {
-	    kdc_log(0, "Client has no support for etypes");
+	    if (krb5_unparse_name(context, client->principal, &name) != 0)
+		name = unparse_name;
+	    kdc_log(0, "Client (%s) has no support for etypes", name);
+	    if (name != unparse_name)
+		free(name);
 	    return ret;
 	}
     }
@@ -140,7 +146,11 @@ find_keys(hdb_entry *client,
 	/* find server key */
 	ret = find_etype(server, etypes, num_etypes, skey, setype);
 	if (ret) {
-	    kdc_log(0, "Server has no support for etypes");
+	    if (krb5_unparse_name(context, client->principal, &name) != 0)
+		name = unparse_name;
+	    kdc_log(0, "Server (%s) has no support for etypes", name);
+	    if (name != unparse_name)
+		free(name);
 	    return ret;
 	}
     }
