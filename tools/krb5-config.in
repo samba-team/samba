@@ -7,7 +7,7 @@ includedir=@includedir@
 for i in $*; do
   case $i in
   --help)
-    echo "usage: $0 [--ldflags] [--cflags]"
+    echo "usage: $0 [--libs] [--cflags]"
     exit 0
     ;;
   --version)
@@ -15,7 +15,7 @@ for i in $*; do
     echo "$Id$"
     exit 0
     ;;
-  --ldflags)
+  --libs)
     echo "-L${libdir} -lkrb5 -lasn1 -ldes -lroken @LIB_crypt@ @LIB_dbopen@ @LIBS@"
     exit 0
     ;;
