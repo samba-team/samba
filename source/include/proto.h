@@ -3895,8 +3895,9 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 				const DOM_SID *sid,
 				POLICY_HND *domain_pol);
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-				uint32 *unknown_0,
-				uint32 *unknown_1);
+				uint16 *unknown_0,
+				uint16 *unknown_1,
+				uint32 *unknown_2);
 uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf);
 uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
@@ -4086,8 +4087,9 @@ BOOL pwdbsam_initialise(void);
 /*The following definitions come from  samrd/srv_samr_usr_nt5ldap.c  */
 
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-				uint32 *unknown_0,
-				uint32 *unknown_1);
+				uint16 *unknown_0,
+				uint16 *unknown_1,
+				uint32 *unknown_2);
 uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf);
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
@@ -4115,7 +4117,9 @@ uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 
 BOOL tdb_lookup_user(TDB_CONTEXT * tdb, SAM_USER_INFO_21 * usr);
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-			       uint32 * unknown_0, uint32 * unknown_1);
+			       uint16 * unknown_0,
+			       uint16 *unknown_1,
+			       uint32 * unknown_2);
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 			      uint32 * num_groups, DOM_GID ** gids);
 uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,

@@ -285,10 +285,10 @@ typedef struct sam_user_info_21
 /* SAM_USER_INFO_12 */
 typedef struct sam_user_info_12
 {
-	uint16 acb_info; /* account control bits */
-
 	uint8 lm_pwd[16];    /* lm user passwords */
 	uint8 nt_pwd[16];    /* nt user passwords */
+
+	uint16 acb_info; /* account control bits */
 
 } SAM_USER_INFO_12;
 
@@ -376,8 +376,9 @@ SAMR_R_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 /* SAMR_R_GET_USRDOM_PWINFO */
 typedef struct r_samr_usrdom_pwinfo_info
 {
-	uint32 unknown_0; /* 0x0016 0000 */
-	uint32 unknown_1; /* 0x0000 0000 */
+	uint16 unknown_0; /* 0000 */
+	uint16 unknown_1; /* 0x0016 or 0x0015 */
+	uint32 unknown_2; /* 0x0000 0000 */
 	uint32 status; 
 
 } SAMR_R_GET_USRDOM_PWINFO;

@@ -414,7 +414,6 @@ BOOL samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps,
 BOOL samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO *q_u, POLICY_HND *user_pol);
 BOOL samr_io_q_get_usrdom_pwinfo(char *desc,  SAMR_Q_GET_USRDOM_PWINFO *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *q_u, uint32 status);
 BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ *q_u,
 				const POLICY_HND *user_pol, uint32 sec_info);

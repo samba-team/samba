@@ -323,23 +323,6 @@ BOOL samr_io_q_get_usrdom_pwinfo(char *desc,  SAMR_Q_GET_USRDOM_PWINFO *q_u, prs
 }
 
 /*******************************************************************
-makes a structure.
-********************************************************************/
-BOOL make_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *q_u, uint32 status)
-{
-	if (q_u == NULL) return False;
-
-	DEBUG(5,("samr_make_r_get_usrdom_pwinfo\n"));
-
-	q_u->unknown_0 = 0x00150000;
-	q_u->unknown_1 = 0x00000000;
-	q_u->status    = status;
-
-	return True;
-}
-
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs_struct *ps, int depth)
@@ -351,8 +334,9 @@ BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs
 
 	prs_align(ps);
 
-	prs_uint32("unknown_0", ps, depth, &(r_u->unknown_0));
-	prs_uint32("unknown_1", ps, depth, &(r_u->unknown_1));
+	prs_uint16("unknown_0", ps, depth, &(r_u->unknown_0));
+	prs_uint16("unknown_1", ps, depth, &(r_u->unknown_1));
+	prs_uint32("unknown_2", ps, depth, &(r_u->unknown_2));
 	prs_uint32("status   ", ps, depth, &(r_u->status   ));
 
 	return True;
@@ -4666,21 +4650,18 @@ BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int de
 
 	DEBUG(0,("possible security breach!\n"));
 
-	return False;
-#if 0
 	prs_debug(ps, depth, desc, "samr_io_r_user_info12");
 	depth++;
 
 	prs_align(ps);
 
-	prs_uint16("acb_info", ps, depth, &u->acb_info);
-	prs_align(ps);
-
 	prs_uint8s(False, "lm_pwd", ps, depth, u->lm_pwd, sizeof(u->lm_pwd));
 	prs_uint8s(False, "nt_pwd", ps, depth, u->nt_pwd, sizeof(u->nt_pwd));
 
+	prs_uint16("acb_info", ps, depth, &u->acb_info);
+	prs_align(ps);
+
 	return True;
-#endif
 }
 
 /*******************************************************************

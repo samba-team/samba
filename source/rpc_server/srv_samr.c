@@ -94,7 +94,8 @@ static BOOL api_samr_get_usrdom_pwinfo( rpcsrv_struct *p, prs_struct *data, prs_
 
 
 	r_u.status = _samr_get_usrdom_pwinfo(&q_u.user_pol,
-	                              &r_u.unknown_0, &r_u.unknown_1);
+	                              &r_u.unknown_0, &r_u.unknown_1,
+	                              &r_u.unknown_2);
 
 	return samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0);
 }

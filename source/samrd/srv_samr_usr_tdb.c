@@ -365,7 +365,9 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT * tdb,
  samr_reply_get_usrdom_pwinfo
  ********************************************************************/
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-			       uint32 * unknown_0, uint32 * unknown_1)
+			       uint16 * unknown_0,
+			       uint16 *unknown_1,
+			       uint32 * unknown_2)
 {
 	uint32 rid;
 	TDB_CONTEXT *tdb = NULL;
@@ -377,8 +379,9 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	*unknown_0 = 0x00150000;
-	*unknown_1 = 0x00000000;
+	*unknown_0 = 0x0000;
+	*unknown_1 = 0x1515;
+	*unknown_2 = 0x00000000;
 
 	DEBUG(5, ("samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
