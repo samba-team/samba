@@ -178,9 +178,13 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 								print_db_head->printer_name ));
 					return NULL;
 				}
-				ZERO_STRUCTP(p);
-				DLIST_PROMOTE(print_db_head, p);
 			}
+			ZERO_STRUCTP(p);
+			break;
+		}
+		if (p) {
+			DLIST_PROMOTE(print_db_head, p);
+			p = print_db_head;
 		}
 	}
        
