@@ -2183,6 +2183,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   SMB_STRUCT_STAT sbuf;
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
+  BOOL got_dacl = False;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2234,6 +2235,11 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
+  if (psd->dacl != NULL)
+    got_dacl = True;
+
+  free_sec_desc(&psd);
+
   /*
    * Get the current state of the file.
    */
@@ -2251,8 +2257,9 @@ security descriptor.\n"));
     else
       ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
 
-    if(ret != 0)
+    if(ret != 0) {
       return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
   }
 
   /*
@@ -2261,39 +2268,66 @@ security descriptor.\n"));
 
   if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
 
-      DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
-            fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+    DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
+          fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
 
-      if(dos_chown( fsp->fsp_name, user, grp) == -1) {
-        DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
-              fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+    if(dos_chown( fsp->fsp_name, user, grp) == -1) {
+      DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
+            fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+
+    /*
+     * Recheck the current state of the file, which may have changed.
+     * (suid/sgid bits, for instance)
+     */
+
+    if(fsp->is_directory) {
+      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
+    } else {
+
+      int ret;
+    
+      if(fsp->fd_ptr == NULL)
+        ret = dos_stat(fsp->fsp_name, &sbuf);
+      else
+        ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
+  
+      if(ret != 0)
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
   }
 
   /*
    * Only change security if we got a DACL.
    */
 
-  if((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl != NULL)) {
-
-    free_sec_desc(&psd);
+  if((security_info_sent & DACL_SECURITY_INFORMATION) && got_dacl) {
 
     /*
      * Check to see if we need to change anything.
+     * Enforce limits on modified bits.
      */
 
     if(fsp->is_directory) {
 
-      perms &= lp_dir_mode(SNUM(conn));
-      perms |= lp_force_dir_mode(SNUM(conn));
+      perms &= lp_dir_security_mask(SNUM(conn));
+      perms |= lp_force_dir_security_mode(SNUM(conn));
 
     } else {
 
-      perms &= lp_create_mode(SNUM(conn)); 
-      perms |= lp_force_create_mode(SNUM(conn));
+      perms &= lp_security_mask(SNUM(conn)); 
+      perms |= lp_force_security_mode(SNUM(conn));
 
     }
+
+    /*
+     * Preserve special bits.
+     */
+
+    perms |= (sbuf.st_mode & ~0777);
 
     /*
      * Do we need to chmod ?

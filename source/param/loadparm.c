@@ -294,8 +294,12 @@ typedef struct
   int  iMinPrintSpace;
   int  iCreate_mask;
   int  iCreate_force_mode;
+  int  iSecurity_mask;
+  int  iSecurity_force_mode;
   int  iDir_mask;
   int  iDir_force_mode;
+  int  iDir_Security_mask;
+  int  iDir_Security_force_mode;
   int  iMaxConnections;
   int  iDefaultCase;
   int  iPrinting;
@@ -390,8 +394,12 @@ static service sDefault =
   0,       /* iMinPrintSpace */
   0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
+  -1,      /* iSecurity_mask */
+  -1,      /* iSecurity_force_mode */
   0755,    /* iDir_mask */
   0000,    /* iDir_force_mode */
+  -1,      /* iDir_Security_mask */
+  -1,      /* iDir_Security_force_mode */
   0,       /* iMaxConnections */
   CASE_LOWER, /* iDefaultCase */
   DEFAULT_PRINTING, /* iPrinting */
@@ -574,9 +582,13 @@ static struct parm_struct parm_table[] =
   {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL,   NULL,  FLAG_GLOBAL},
   {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"security mask",    P_OCTAL,   P_LOCAL,  &sDefault.iSecurity_mask,   NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"force security mode",P_OCTAL, P_LOCAL,  &sDefault.iSecurity_force_mode,NULL,NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL,   NULL,  FLAG_GLOBAL},
-  {"force directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_force_mode,        NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"force directory mode",   P_OCTAL,P_LOCAL,&sDefault.iDir_force_mode, NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"directory security mask",P_OCTAL,P_LOCAL,&sDefault.iDir_Security_mask,NULL, NULL,  FLAG_GLOBAL|FLAG_SHARE},
+  {"force directory security mode",P_OCTAL, P_LOCAL,  &sDefault.iDir_Security_force_mode,NULL,NULL,FLAG_GLOBAL|FLAG_SHARE},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  FLAG_SHARE},
   {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL,   NULL,  0},
   {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
@@ -1339,10 +1351,14 @@ FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
 FN_LOCAL_BOOL(lp_mangle_locks,bMangleLocks)
 
-FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
+FN_LOCAL_INTEGER(lp_create_mask,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
-FN_LOCAL_INTEGER(lp_dir_mode,iDir_mask)
+FN_LOCAL_INTEGER(_lp_security_mask,iSecurity_mask)
+FN_LOCAL_INTEGER(_lp_force_security_mode,iSecurity_force_mode)
+FN_LOCAL_INTEGER(lp_dir_mask,iDir_mask)
 FN_LOCAL_INTEGER(lp_force_dir_mode,iDir_force_mode)
+FN_LOCAL_INTEGER(_lp_dir_security_mask,iDir_Security_mask)
+FN_LOCAL_INTEGER(_lp_force_dir_security_mode,iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
@@ -2786,4 +2802,41 @@ void lp_set_kernel_oplocks(BOOL val)
 BOOL lp_kernel_oplocks(void)
 {
   return kernel_oplocks_available;
+}
+
+/***********************************************************
+ Functions to return the current security masks/modes. If
+ set to -1 then return the create mask/mode instead.
+************************************************************/
+
+int lp_security_mask(int snum)
+{
+  int val = _lp_security_mask(snum);
+  if(val == -1)
+    return lp_create_mask(snum);
+  return val;
+}
+
+int lp_force_security_mode(int snum)
+{
+  int val = _lp_force_security_mode(snum);
+  if(val == -1)
+    return lp_force_create_mode(snum);
+  return val;
+}
+
+int lp_dir_security_mask(int snum)
+{
+  int val = _lp_dir_security_mask(snum);
+  if(val == -1)
+    return lp_dir_mask(snum);
+  return val;
+}
+
+int lp_force_dir_security_mode(int snum)
+{
+  int val = _lp_force_dir_security_mode(snum);
+  if(val == -1)
+    return lp_force_dir_mode(snum);
+  return val;
 }

@@ -1153,10 +1153,14 @@ BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
 BOOL lp_mangle_locks(int );
-int lp_create_mode(int );
+int lp_create_mask(int );
 int lp_force_create_mode(int );
-int lp_dir_mode(int );
+int _lp_security_mask(int );
+int _lp_force_security_mode(int );
+int lp_dir_mask(int );
 int lp_force_dir_mode(int );
+int _lp_dir_security_mask(int );
+int _lp_force_dir_security_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
@@ -1190,6 +1194,10 @@ int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 void lp_set_kernel_oplocks(BOOL val);
 BOOL lp_kernel_oplocks(void);
+int lp_security_mask(int snum);
+int lp_force_security_mode(int snum);
+int lp_dir_security_mask(int snum);
+int lp_force_dir_security_mode(int snum);
 
 /*The following definitions come from  param/params.c  */
 
