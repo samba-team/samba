@@ -197,7 +197,7 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);
-    unix_to_dos(p,True);
+	unix_to_dos(p,True);
 	p = skip_string(p,1);
 
 	cli_send_smb(cli);
