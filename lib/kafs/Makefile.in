@@ -80,8 +80,9 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
 
+# AIX: this almost works with gcc, but somehow it fails to use the
+# correct ld, use cc for now
 afslib.so: afslib.o
-	cc -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
-# gcc is unable to create afslib.so on AIX with all these strange switches
+	cc -o $@ -Wl,-bM:SRE,-bI:$(srcdir)/afsl.exp,-bE:$(srcdir)/afslib.exp,-bnoentry afslib.o
 
 $(OBJECTS): ../../config.h
