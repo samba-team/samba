@@ -20,7 +20,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 	
-	<para>This file is part of the <<ulink url="samba.7.html">
+	<para>This file is part of the <ulink url="samba.7.html">
 	Samba</ulink> suite.</para>
 
 	<para><filename>lmhosts</filename> is the <emphasis>Samba
