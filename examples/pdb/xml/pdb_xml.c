@@ -42,8 +42,7 @@ static char * iota(int a) {
 	return tmp;
 }
 
-BOOL
-parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
+BOOL parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 {
 	pstring temp;
 
@@ -72,8 +71,7 @@ parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 	return True;
 }
 
-BOOL
-parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
+BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 {
 	char *tmp;
 	DOM_SID sid;
@@ -242,8 +240,7 @@ typedef struct pdb_xml {
 	xmlNsPtr ns;
 } pdb_xml;
 
-xmlNodePtr
-parseSambaXMLFile(struct pdb_xml *data)
+xmlNodePtr parseSambaXMLFile(struct pdb_xml *data)
 {
 	xmlNodePtr cur;
 
@@ -290,8 +287,7 @@ parseSambaXMLFile(struct pdb_xml *data)
 	return cur;
 }
 
-static BOOL
-xmlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static BOOL xmlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
 	pdb_xml *data;
 
@@ -314,8 +310,7 @@ xmlsam_setsampwent(struct pdb_methods *methods, BOOL update)
   End enumeration of the passwd list.
  ****************************************************************/
 
-static void
-xmlsam_endsampwent(struct pdb_methods *methods)
+static void xmlsam_endsampwent(struct pdb_methods *methods)
 {
 	pdb_xml *data;
 
@@ -340,8 +335,7 @@ xmlsam_endsampwent(struct pdb_methods *methods)
   Get one SAM_ACCOUNT from the list (next in line)
  *****************************************************************/
 
-static BOOL
-xmlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
+static BOOL xmlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
 {
 	pdb_xml *data;
 
@@ -373,8 +367,7 @@ xmlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
   Adds an existing SAM_ACCOUNT
  ****************************************************************************/
 
-static BOOL
-xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
+static BOOL xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
 {
 	pstring temp;
 	fstring sid_str;
@@ -514,8 +507,7 @@ xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
 	return True;
 }
 
-NTSTATUS
-pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
+NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 		 const char *location)
 {
 	NTSTATUS nt_status;
