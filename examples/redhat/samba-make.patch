@@ -1,5 +1,5 @@
-*** samba-1.9.16p9/source/Makefile.orig	Thu Jan  2 15:46:46 1997
---- samba-1.9.16p9/source/Makefile	Thu Jan  2 15:59:09 1997
+*** samba-1.9.16p10/source/Makefile.orig
+--- samba-1.9.16p10/source/Makefile
 ***************
 *** 5,20 ****
   
