@@ -44,11 +44,11 @@ BOOL torture_multi_bind(int dummy)
 	struct dcerpc_binding b;
 	struct dcerpc_binding *binding;
 	const char *binding_string = lp_parm_string(-1, "torture", "binding");
-
 	TALLOC_CTX *mem_ctx;
-	mem_ctx = talloc_init("torture_multi_bind");
 	NTSTATUS status;
 	BOOL ret;
+
+	mem_ctx = talloc_init("torture_multi_bind");
 
 	status = dcerpc_parse_binding(mem_ctx, binding_string, &b);
 	if (!NT_STATUS_IS_OK(status)) {
