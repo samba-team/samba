@@ -5,7 +5,7 @@
 	<para>This controls what character is used as 
 	the <emphasis>magic</emphasis> character in <link linkend="NAMEMANGLINGSECT">name mangling</link>. The 
 	default is a '~' but this may interfere with some software. Use this option to set 
-	it to whatever you prefer.</para>
+	it to whatever you prefer. This is effective only when mangling method is hash.</para>
 
 	<para>Default: <command moreinfo="none">mangling char = ~</command></para>
 
