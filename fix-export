@@ -13,6 +13,12 @@ if test "$DATEDVERSION"; then
 w
 q
 END
+
+	error=WARN
+	exitcmd=:
+else
+    	error=ERROR
+	exitcmd=exit
 fi
 
 ver=`sed -n 's/AC_INIT([^,]*,\([^,]*\),.*/\1/p' configure.in`
@@ -44,9 +50,9 @@ find . -name Makefile.am | while read f; do
 		`grog -Tascii $x` > $y
 		perl -p -e 'exit 1 if (/NetBSD|FreeBSD|OpenBSD|Linux|OSF|Solaris/); exit 0;' $y
 		if [ $? != 0 ] ; then
-		    echo "ERROR: catfile $y contains operating sysstem"
+		    echo "$error: catfile $y contains operating system"
 		    head -1 $y
-		    exit 1
+		    $exitcmd
 		fi
 	done
 done
