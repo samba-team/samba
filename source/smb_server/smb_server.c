@@ -782,13 +782,10 @@ static void smbsrv_close(struct server_connection *conn, const char *reason)
 
 	DEBUG(5,("smbsrv_close: %s\n",reason));
 
-	close(conn->event.fde->fd);
-	event_remove_fd_all(conn->event.ctx, conn->socket->fde->fd);
-	event_remove_timed(conn->event.ctx, conn->event.idle);
-
 	conn_close_all(smb_conn);
 
 	talloc_destroy(smb_conn->mem_ctx);
+
 	return;
 }
 
