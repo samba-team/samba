@@ -482,8 +482,8 @@ MAKEDIR = || exec false; \
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
-	  -o $@ 
+	@@GCOV@ $(CC) -I. -I$(srcdir) $(FLAGS) -c $(builddir)/$< \
+	  -o $(builddir)/$@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 .c.po: 
@@ -779,7 +779,10 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
-realclean: clean
+gcovclean: clean
+	-rm -f */*.bb */*.bbg */*.da *.c.gcov */*.c.gcov
+
+realclean: clean gcovclean
 	-rm -f config.log $(PROGS) $(SPROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) bin/.dummy
 	-rm -f bin/*
 	-rmdir bin

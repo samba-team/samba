@@ -177,6 +177,81 @@ AC_ARG_ENABLE(debug,
     fi])
 
 
+#################################################
+# set gcov support - Support for gcc/gcov code coverage tool (default=no)
+AC_ARG_WITH(code-coverage,
+[  --with-code-coverage=DIR   build with gcc/gcov code coverage support (optional remote DIR)],
+[ ${CC-cc} -v >conftest.c 2>&1
+  AC_MSG_CHECKING(whether the C compiler supports code coverage)
+  ac_aw_gcc_ver=`grep 'gcc version' conftest.c`
+  rm -fr conftest.c
+  case "$ac_aw_gcc_ver" in
+    *"gcc version"*)
+      #
+      # We are using gcc. Now make sure its version 2.96 or greater.
+      #
+      ac_aw_gcc_ver=${ac_aw_gcc_ver##*gcc version }
+      ac_aw_gcc_ver=${ac_aw_gcc_ver%% *}
+      ac_aw_gcc_ver_major="${ac_aw_gcc_ver%.*}"
+      ac_aw_gcc_ver_minor="${ac_aw_gcc_ver#*.}"
+      ac_aw_gcc_ver=`expr $ac_aw_gcc_ver_major \* 100 + $ac_aw_gcc_ver_minor`
+      if test $ac_aw_gcc_ver -ge 296; then
+        AC_MSG_RESULT(yes)
+        #
+        # Due to a bug in gcc (doc is correct, but the code is wrong), you must run
+        # gcc in the dir where you want the *.da files to be written. See gcov *.da
+        # file format discussions "...path name is derived from the source path file
+        # name...". Actually, its derived from the working directory when gcc is run.
+        # This bug requires cd'ing to the dir, and forcing 'srcdir' OR fixing gcc.
+        #
+        if test x"$srcdir" = x"."; then
+          srcdir=`pwd`
+        fi
+        case "$withval" in
+          yes|no)
+          #
+          # Code coverage is local (default). The *.da files will be generated on
+          # program termination in the local source dir's. This uses the option with
+          # the form: --with-code-coverage
+          #
+            GCOV="cd \${@D};"
+          ;;
+          *)
+            #
+            # Code coverage is on a another system. The *.da files will be generated
+            # on program termination in a dir structure that looks like the local
+            # source dir's. Create links to those *.da files. The mount point is the
+            # DIR in --with-code-coverage=DIR.
+            #
+            GCOV="cd \${@D}; ln -fs $withval\$(builddir)/\${@D}/\${*F}.da;"
+          ;;
+        esac
+        #
+        # Although you can use optimization while collecting code coverage, it makes
+        # interpretation difficult. Its better to just turn it off.
+        #
+        CFLAGS="${CFLAGS%-O*}${CFLAGS#*-O}"
+        CFLAGS="-fprofile-arcs -ftest-coverage ${CFLAGS}"
+      else
+ 		    #
+        # Prior to gcc 2.96, *.da files are not properly locked during updates.
+       	#
+        AC_MSG_RESULT([no])
+        AC_MSG_ERROR([Unsupported gcc compiler - version 2.96 or greater required])
+      fi
+      ;;
+    *)
+      #
+      # Other compilers may support gcov like capabilities, but someone else will
+      # have to make them work.
+      #
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([Unsupported compiler - gcc version 2.96 or greater required])
+      ;;
+  esac],
+)
+AC_SUBST(GCOV)
+
 
 dnl Checks for programs.
 AC_PROG_CC
