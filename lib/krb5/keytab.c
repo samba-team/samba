@@ -66,12 +66,11 @@ krb5_kt_resolve(krb5_context context,
 {
     krb5_keytab k;
     int i;
-    const char *p = strchr(name, ':');
+    const char *type, *residual;
+    size_t type_len;
     krb5_error_code ret;
 
-    if(p == NULL) 
-	return KRB5_KT_UNKNOWN_TYPE;
-    
+    /* register default set of types */
     if(num_kt_types == 0) {
 	ret = krb5_kt_register(context, &fops);
 	if(ret) return ret;
@@ -79,8 +78,19 @@ krb5_kt_resolve(krb5_context context,
 	if(ret) return ret;
     }
     
+    residual = strchr(name, ':');
+    if(residual == NULL) {
+	type = "FILE";
+	type_len = strlen(type);
+	residual = name;
+    } else {
+	type = name;
+	type_len = residual - name;
+	residual++;
+    }
+    
     for(i = 0; i < num_kt_types; i++) {
-	if(strncmp(name, kt_types[i].prefix, p - name) == 0)
+	if(strncmp(type, kt_types[i].prefix, type_len) == 0)
 	    break;
     }
     if(i == num_kt_types)
@@ -89,29 +99,28 @@ krb5_kt_resolve(krb5_context context,
     ALLOC(k, 1);
     memcpy(k, &kt_types[i], sizeof(*k));
     k->data = NULL;
-    ret = (*k->resolve)(context, p + 1, k);
+    ret = (*k->resolve)(context, residual, k);
     if(ret) {
 	free(k);
 	k = NULL;
     }
     *id = k;
     return ret;
-    return 0;
 }
 
-#define KEYTAB_DEFAULT "FILE:/etc/krb5.keytab"
-
 krb5_error_code
-krb5_kt_default_name(krb5_context context, char *name, int namesize)
+krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
 {
-    strncpy (name, KEYTAB_DEFAULT, namesize);
+    strncpy(name, context->default_keytab, namesize);
+    if(strlen(context->default_keytab) >= namesize)
+	return KRB5_CONFIG_NOTENUFSPACE;
     return 0;
 }
 
 krb5_error_code
 krb5_kt_default(krb5_context context, krb5_keytab *id)
 {
-    return krb5_kt_resolve (context, KEYTAB_DEFAULT, id);
+    return krb5_kt_resolve (context, context->default_keytab, id);
 }
 
 krb5_error_code
