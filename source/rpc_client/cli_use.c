@@ -135,8 +135,10 @@ static struct cli_use *cli_find(const char *srv_name,
 		char *cli_name = NULL;
 		struct cli_use *c = clis[i];
 
-		if (c == NULL)
+		if (c == NULL || !c->cli->initialised)
+		{
 			continue;
+		}
 
 		cli_name = c->cli->desthost;
 

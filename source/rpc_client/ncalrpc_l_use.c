@@ -127,8 +127,10 @@ static struct ncalrpc_use *ncalrpc_l_find(const char *pipe_name,
 		char *cli_name = NULL;
 		struct ncalrpc_use *c = clis[i];
 
-		if (c == NULL)
+		if (c == NULL || !c->cli->initialised)
+		{
 			continue;
+		}
 
 		cli_name = c->cli->pipe_name;
 

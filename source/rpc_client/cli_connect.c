@@ -99,9 +99,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 	struct cli_connection *con = NULL;
 	BOOL is_new_connection = False;
 
-#if 0
 	vuser_key key;
-#endif
 
 	con = (struct cli_connection *)malloc(sizeof(*con));
 
@@ -154,6 +152,9 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			ncacn_np_use_add(pipe_name, user_key, srv_name,
 					 &con->usr_creds.ntc, True, reuse,
 					 &is_new_connection);
+		key = con->msrpc.smb->smb->nt.key;
+		con->msrpc.smb->smb->nt.key.pid = 0;
+		con->msrpc.smb->smb->nt.key.vuid = UID_FIELD_INVALID;
 	}
 
 	if (is_new_connection && con->msrpc.cli != NULL)
@@ -175,12 +176,10 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		return NULL;
 	}
 
-#if 0
 	if (con->type == MSRPC_SMB)
 	{
-		con->msrpc.smb->cli->smb->nt.key = key;
+		con->msrpc.smb->smb->nt.key = key;
 	}
-#endif
 	add_con_to_array(&num_cons, &con_list, con);
 	return con;
 }

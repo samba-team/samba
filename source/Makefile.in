@@ -110,7 +110,7 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
-PROGS3 = bin/regedit bin/samedit bin/svccontrol bin/cmdat
+PROGS3 = bin/regedit bin/samedit bin/svccontrol bin/cmdat bin/spoolss
 PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4) $(MPROGS) bin/nmblookup bin/make_printerdef 
@@ -539,6 +539,15 @@ RPCTORTURE_OBJ = lib/cmd_interp.o \
 		$(STUB_UID_OBJ)
 RPCTORTURE_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
+SPOOLCLIENT_OBJ = lib/cmd_interp.o \
+		rpcclient/spoolss.o \
+		rpcclient/spoolss_cmds.o \
+		rpcclient/display_spool.o \
+		rpcclient/cmd_spoolss.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+SPOOLCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
 RPCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/rpcclient.o \
 		rpcclient/svcctrl_cmds.o \
@@ -625,7 +634,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(SWAT_OBJ) $(CLIENT_OBJ) \
 		$(REGEDIT_OBJ) $(SVCCLIENT_OBJ) \
 		$(SAMCLIENT_OBJ) $(RPCCLIENT_OBJ) \
-		$(RPCTORTURE_OBJ) \
+		$(RPCTORTURE_OBJ) $(SPOOLCLIENT_OBJ) \
 		$(CMDCLIENT_OBJ) $(LSACLIENT_OBJ) \
 		$(EVTCLIENT_OBJ) $(NETCLIENT_OBJ) \
 		$(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
@@ -943,6 +952,10 @@ bin/lsa: $(LSACLIENT_LIBS) $(LSACLIENT_OBJ) bin/.dummy
 bin/rpctorture: $(RPCTORTURE_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(RPCTORTURE_OBJ) $(RPCTORTURE_LIBS) $(LIBS)
+
+bin/spoolss: $(SPOOLCLIENT_LIBS) $(SPOOLCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(SPOOLCLIENT_OBJ) $(SPOOLCLIENT_LIBS) $(LIBS)
 
 bin/rpcclient: $(RPCCLIENT_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@

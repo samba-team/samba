@@ -74,6 +74,7 @@ BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 		cli_net_use_del(srv_name, ntc, False, NULL);
 		return False;
 	}
+	fstrcpy(cli->pipe_name, pipe_name);
 	dump_data_pw("sess key:", cli->smb->nt.usr_sess_key, 16);
 	return True;
 }
@@ -89,8 +90,10 @@ static void ncacn_np_use_free(struct ncacn_np_use *cli)
 		{
 			ncacn_np_shutdown(cli->cli);
 		}
+		ZERO_STRUCTP(cli->cli);
 		free(cli->cli);
 	}
+	ZERO_STRUCTP(cli);
 	free(cli);
 }
 
@@ -173,8 +176,14 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		sv_name = &sv_name[2];
 	}
 
-	DEBUG(10, ("cli_find: %s %s %s\n",
+	DEBUG(10, ("cli_find: %s %s %s",
 		   srv_name, usr_creds->user_name, usr_creds->domain));
+
+	if (key != NULL)
+	{
+		DEBUG(10, ("[%d,%x]", key->pid, key->vuid));
+	}
+	DEBUG(10, ("\n"));
 
 	for (i = 0; i < num_msrpcs; i++)
 	{
@@ -184,8 +193,11 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 
 		char *ncacn_np_name = NULL;
 
-		if (c == NULL || c->cli == NULL || c->cli->smb == NULL)
+		if (c == NULL || c->cli == NULL || c->cli->smb == NULL ||
+		    !c->cli->initialised)
+		{
 			continue;
+		}
 
 		ncacn_np_name = c->cli->pipe_name;
 		cli_name = c->cli->smb->desthost;
@@ -350,6 +362,9 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	}
 	else
 	{
+		cli->cli->smb->nt.key.pid = getpid();
+		cli->cli->smb->nt.key.vuid = UID_FIELD_INVALID;
+#if 0
 		NET_USER_INFO_3 usr;
 		uid_t uid = getuid();
 		gid_t gid = getgid();
@@ -361,6 +376,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 		cli->cli->smb->nt.key.vuid =
 			register_vuid(cli->cli->smb->nt.key.pid, uid, gid,
 				      name, name, False, &usr);
+#endif
 	}
 
 	add_ncacn_np_to_array(&num_msrpcs, &msrpcs, cli);

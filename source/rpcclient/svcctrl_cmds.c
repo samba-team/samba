@@ -24,6 +24,54 @@
 #include "ntdomain.h"
 #include "rpcclient.h"
 
+extern struct client_info cli_info;
+
+char *complete_svcenum(char *text, int state)
+{
+	static uint32 i = 0;
+	static uint32 num_svcs = 0;
+	static ENUM_SRVC_STATUS *svc = NULL;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli_info.dest_host);
+	strupper(srv_name);
+
+
+	if (state == 0)
+	{
+		free(svc);
+		svc = NULL;
+		num_svcs = 0;
+
+		/* Iterate all users */
+		if (msrpc_svc_enum(srv_name, &svc, &num_svcs,
+				   NULL, NULL) == 0)
+		{
+			return NULL;
+		}
+
+		i = 0;
+	}
+
+	for (; i < num_svcs; i++)
+	{
+		fstring svc_name;
+		unistr_to_ascii(svc_name, svc[i].uni_srvc_name.buffer,
+				sizeof(svc_name) - 1);
+
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, svc_name, strlen(text)))
+		{
+			char *name = strdup(svc_name);
+			i++;
+			return name;
+		}
+	}
+
+	return NULL;
+}
+
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/

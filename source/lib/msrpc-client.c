@@ -431,4 +431,3 @@ BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
 
 	return True;
 }
-
