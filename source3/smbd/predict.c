@@ -28,11 +28,11 @@ extern int DEBUGLEVEL;
 /* variables used by the read prediction module */
 static int rp_fd = -1;
 static SMB_OFF_T rp_offset = 0;
-static int rp_length = 0;
-static int rp_alloced = 0;
+static ssize_t rp_length = 0;
+static ssize_t rp_alloced = 0;
 static int rp_predict_fd = -1;
 static SMB_OFF_T rp_predict_offset = 0;
-static int rp_predict_length = 0;
+static size_t rp_predict_length = 0;
 static int rp_timeout = 5;
 static time_t rp_time = 0;
 static char *rp_buffer = NULL;
@@ -42,10 +42,10 @@ extern time_t smb_last_time;
 /****************************************************************************
 handle read prediction on a file
 ****************************************************************************/
-int read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,int num)
+ssize_t read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num)
 {
-  int ret = 0;
-  int possible = rp_length - (offset - rp_offset);
+  ssize_t ret = 0;
+  ssize_t possible = rp_length - (offset - rp_offset);
 
   possible = MIN(possible,num);
 
@@ -97,7 +97,7 @@ pre-read some data
 ****************************************************************************/
 void do_read_prediction(void)
 {
-  static int readsize = 0;
+  static size_t readsize = 0;
 
   if (predict_skip) return;
 

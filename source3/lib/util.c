@@ -1787,9 +1787,9 @@ static int set_blocking(int fd, BOOL set)
 /****************************************************************************
 write to a socket
 ****************************************************************************/
-int write_socket(int fd,char *buf,int len)
+ssize_t write_socket(int fd,char *buf,size_t len)
 {
-  int ret=0;
+  ssize_t ret=0;
 
   if (passive)
     return(len);
@@ -1807,16 +1807,16 @@ int write_socket(int fd,char *buf,int len)
 /****************************************************************************
 read from a socket
 ****************************************************************************/
-int read_udp_socket(int fd,char *buf,int len)
+ssize_t read_udp_socket(int fd,char *buf,size_t len)
 {
-  int ret;
+  ssize_t ret;
   struct sockaddr_in sock;
   int socklen;
   
   socklen = sizeof(sock);
   bzero((char *)&sock,socklen);
   bzero((char *)&lastip,sizeof(lastip));
-  ret = recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+  ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
   if (ret <= 0) {
     DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
     return(0);
@@ -1835,13 +1835,15 @@ int read_udp_socket(int fd,char *buf,int len)
 read data from a device with a timout in msec.
 mincount = if timeout, minimum to read before returning
 maxcount = number to be read.
+time_out = timeout in milliseconds
 ****************************************************************************/
-int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
+
+ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
 {
   fd_set fds;
   int selrtn;
-  int readret;
-  int nread = 0;
+  ssize_t readret;
+  size_t nread = 0;
   struct timeval timeout;
 
   /* just checking .... */
@@ -1865,48 +1867,48 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
 #endif /* WITH_SSL */
 
       if (readret == 0) {
-	smb_read_error = READ_EOF;
-	return -1;
+        smb_read_error = READ_EOF;
+        return -1;
       }
 
       if (readret == -1) {
-	smb_read_error = READ_ERROR;
-	return -1;
+        smb_read_error = READ_ERROR;
+        return -1;
       }
       nread += readret;
     }
-    return(nread);
+    return((ssize_t)nread);
   }
   
   /* Most difficult - timeout read */
   /* If this is ever called on a disk file and 
-	 mincnt is greater then the filesize then
-	 system performance will suffer severely as 
-	 select always return true on disk files */
+     mincnt is greater then the filesize then
+     system performance will suffer severely as 
+     select always returns true on disk files */
 
   /* Set initial timeout */
   timeout.tv_sec = time_out / 1000;
   timeout.tv_usec = 1000 * (time_out % 1000);
 
-  for (nread=0; nread<mincnt; ) 
-    {      
-      FD_ZERO(&fds);
-      FD_SET(fd,&fds);
+  for (nread=0; nread < mincnt; ) 
+  {      
+    FD_ZERO(&fds);
+    FD_SET(fd,&fds);
       
-      selrtn = sys_select(fd+1,&fds,&timeout);
+    selrtn = sys_select(fd+1,&fds,&timeout);
 
-      /* Check if error */
-      if(selrtn == -1) {
-	/* something is wrong. Maybe the socket is dead? */
-	smb_read_error = READ_ERROR;
-	return -1;
-      }
+    /* Check if error */
+    if(selrtn == -1) {
+      /* something is wrong. Maybe the socket is dead? */
+      smb_read_error = READ_ERROR;
+      return -1;
+    }
       
-      /* Did we timeout ? */
-      if (selrtn == 0) {
-	smb_read_error = READ_TIMEOUT;
-	return -1;
-      }
+    /* Did we timeout ? */
+    if (selrtn == 0) {
+      smb_read_error = READ_TIMEOUT;
+      return -1;
+    }
       
 #ifdef WITH_SSL
     if(fd == sslFd){
@@ -1918,23 +1920,23 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
     readret = read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
-      if (readret == 0) {
-	/* we got EOF on the file descriptor */
-	smb_read_error = READ_EOF;
-	return -1;
-      }
-
-      if (readret == -1) {
-	/* the descriptor is probably dead */
-	smb_read_error = READ_ERROR;
-	return -1;
-      }
-      
-      nread += readret;
+    if (readret == 0) {
+      /* we got EOF on the file descriptor */
+      smb_read_error = READ_EOF;
+      return -1;
     }
 
+    if (readret == -1) {
+      /* the descriptor is probably dead */
+      smb_read_error = READ_ERROR;
+      return -1;
+    }
+      
+    nread += readret;
+  }
+
   /* Return the number we got */
-  return(nread);
+  return((ssize_t)nread);
 }
 
 /*******************************************************************
@@ -1965,10 +1967,10 @@ BOOL send_keepalive(int client)
 /****************************************************************************
   read data from the client, reading exactly N bytes. 
 ****************************************************************************/
-int read_data(int fd,char *buffer,int N)
+ssize_t read_data(int fd,char *buffer,size_t N)
 {
-  int  ret;
-  int total=0;  
+  ssize_t  ret;
+  size_t total=0;  
  
   smb_read_error = 0;
 
@@ -1996,17 +1998,17 @@ int read_data(int fd,char *buffer,int N)
     }
     total += ret;
   }
-  return total;
+  return (ssize_t)total;
 }
 
 
 /****************************************************************************
   write data to a fd 
 ****************************************************************************/
-int write_data(int fd,char *buffer,int N)
+ssize_t write_data(int fd,char *buffer,size_t N)
 {
-  int total=0;
-  int ret;
+  size_t total=0;
+  ssize_t ret;
 
   while (total < N)
   {
@@ -2025,7 +2027,7 @@ int write_data(int fd,char *buffer,int N)
 
     total += ret;
   }
-  return total;
+  return (ssize_t)total;
 }
 
 
@@ -2111,28 +2113,30 @@ read 4 bytes of a smb packet and return the smb length of the packet
 store the result in the buffer
 This version of the function will return a length of zero on receiving
 a keepalive packet.
+timeout is in milliseconds.
 ****************************************************************************/
-static int read_smb_length_return_keepalive(int fd,char *inbuf,int timeout)
+static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
 {
-  int len=0, msg_type;
-  BOOL ok=False;
+  ssize_t len=0;
+  int msg_type;
+  BOOL ok = False;
 
   while (!ok)
-    {
-      if (timeout > 0)
-	ok = (read_with_timeout(fd,inbuf,4,4,timeout) == 4);
-      else 
-	ok = (read_data(fd,inbuf,4) == 4);
+  {
+    if (timeout > 0)
+      ok = (read_with_timeout(fd,inbuf,4,4,timeout) == 4);
+    else 
+      ok = (read_data(fd,inbuf,4) == 4);
 
-      if (!ok)
-	return(-1);
+    if (!ok)
+      return(-1);
 
-      len = smb_len(inbuf);
-      msg_type = CVAL(inbuf,0);
+    len = smb_len(inbuf);
+    msg_type = CVAL(inbuf,0);
 
-      if (msg_type == 0x85) 
-        DEBUG(5,("Got keepalive packet\n"));
-    }
+    if (msg_type == 0x85) 
+      DEBUG(5,("Got keepalive packet\n"));
+  }
 
   DEBUG(10,("got smb length of %d\n",len));
 
@@ -2143,10 +2147,11 @@ static int read_smb_length_return_keepalive(int fd,char *inbuf,int timeout)
 read 4 bytes of a smb packet and return the smb length of the packet
 store the result in the buffer. This version of the function will
 never return a session keepalive (length of zero).
+timeout is in milliseconds.
 ****************************************************************************/
-int read_smb_length(int fd,char *inbuf,int timeout)
+ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 {
-  int len;
+  ssize_t len;
 
   for(;;)
   {
@@ -2166,14 +2171,13 @@ int read_smb_length(int fd,char *inbuf,int timeout)
 /****************************************************************************
   read an smb from a fd. Note that the buffer *MUST* be of size
   BUFFER_SIZE+SAFETY_MARGIN.
-  The timeout is in milli seconds. 
-
+  The timeout is in milliseconds. 
   This function will return on a
   receipt of a session keepalive packet.
 ****************************************************************************/
-BOOL receive_smb(int fd,char *buffer, int timeout)
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 {
-  int len,ret;
+  ssize_t len,ret;
 
   smb_read_error = 0;
 
@@ -2202,7 +2206,7 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
 /****************************************************************************
   read an smb from a fd ignoring all keepalive packets. Note that the buffer 
   *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
-  The timeout is in milli seconds
+  The timeout is in milliseconds
 
   This is exactly the same as receive_smb except that it never returns
   a session keepalive packet (just as receive_smb used to do).
@@ -2210,7 +2214,7 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
   should never go into a blocking read.
 ****************************************************************************/
 
-BOOL client_receive_smb(int fd,char *buffer, int timeout)
+BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 {
   BOOL ret;
 
@@ -2230,9 +2234,9 @@ BOOL client_receive_smb(int fd,char *buffer, int timeout)
 
 /****************************************************************************
   read a message from a udp fd.
-The timeout is in milli seconds
+The timeout is in milliseconds
 ****************************************************************************/
-BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
+BOOL receive_local_message(int fd, char *buffer, int buffer_len, unsigned int timeout)
 {
   struct sockaddr_in from;
   int fromlen = sizeof(from);
@@ -2451,22 +2455,22 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
 ****************************************************************************/
 BOOL send_smb(int fd,char *buffer)
 {
-  int len;
-  int ret,nwritten=0;
+  size_t len;
+  size_t nwritten=0;
+  ssize_t ret;
   len = smb_len(buffer) + 4;
 
   while (nwritten < len)
+  {
+    ret = write_socket(fd,buffer+nwritten,len - nwritten);
+    if (ret <= 0)
     {
-      ret = write_socket(fd,buffer+nwritten,len - nwritten);
-      if (ret <= 0)
-	{
-	  DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",len,ret));
-          close_sockets();
-	  exit(1);
-	}
-      nwritten += ret;
+      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",len,ret));
+      close_sockets();
+      exit(1);
     }
-
+    nwritten += ret;
+  }
 
   return True;
 }
@@ -2509,7 +2513,7 @@ int name_extract(char *buf,int ofs,char *name)
 return the total storage length of a mangled name
 ****************************************************************************/
 int name_len( char *s )
-  {
+{
   int len;
 
   /* If the two high bits of the byte are set, return 2. */
@@ -2523,7 +2527,7 @@ int name_len( char *s )
     }
 
   return( len );
-  } /* name_len */
+} /* name_len */
 
 /****************************************************************************
 send a single packet to a port on another machine
@@ -2601,16 +2605,15 @@ BOOL in_list(char *s,char *list,BOOL casesensitive)
 
   if (!list) return(False);
 
-  while (next_token(&p,tok,LIST_SEP,sizeof(tok)))
-    {
-      if (casesensitive) {
-	if (strcmp(tok,s) == 0)
-	  return(True);
-      } else {
-	if (StrCaseCmp(tok,s) == 0)
-	  return(True);
-      }
+  while (next_token(&p,tok,LIST_SEP,sizeof(tok))) {
+    if (casesensitive) {
+      if (strcmp(tok,s) == 0)
+        return(True);
+    } else {
+      if (StrCaseCmp(tok,s) == 0)
+        return(True);
     }
+  }
   return(False);
 }
 
@@ -3312,7 +3315,7 @@ static char *filename_dos(char *path,char *buf)
 /****************************************************************************
 expand a pointer to be a particular size
 ****************************************************************************/
-void *Realloc(void *p,int size)
+void *Realloc(void *p,size_t size)
 {
   void *ret=NULL;
 
@@ -4996,7 +4999,7 @@ int str_checksum(char *s)
 /*****************************************************************
 zero a memory area then free it. Used to catch bugs faster
 *****************************************************************/  
-void zero_free(void *p, int size)
+void zero_free(void *p, size_t size)
 {
 	memset(p, 0, size);
 	free(p);

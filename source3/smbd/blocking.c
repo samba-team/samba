@@ -195,11 +195,13 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   files_struct *fsp = blr->fsp;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-  uint32 count, offset;
+  SMB_OFF_T count, offset;
+  unsigned char locktype = CVAL(inbuf,smb_vwv3);
+  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
   int i;
 
-  data = smb_buf(inbuf) + 10*num_ulocks;
+  data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
 
   /* 
    * Data now points at the beginning of the list
@@ -209,8 +211,18 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   for(i = blr->lock_num; i >= 0; i--) {
     int dummy1;
     uint32 dummy2;
-    count = IVAL(data,SMB_LKLEN_OFFSET(i));
-    offset = IVAL(data,SMB_LKOFF_OFFSET(i));
+    if(!large_file_format) {
+      count = IVAL(data,SMB_LKLEN_OFFSET(i));
+      offset = IVAL(data,SMB_LKOFF_OFFSET(i));
+    }
+#ifdef LARGE_SMB_OFF_T
+    else {
+      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
+              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
+      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
+               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
+    }
+#endif
     do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
   }
 
@@ -248,10 +260,11 @@ static BOOL process_lockread(blocking_lock_record *blr)
 {
   char *outbuf = OutBuffer;
   char *inbuf = blr->inbuf;
-  int nread = -1;
+  ssize_t nread = -1;
   char *data;
   int outsize = 0;
-  uint32 startpos, numtoread;
+  SMB_OFF_T startpos;
+  size_t numtoread;
   int eclass;
   uint32 ecode;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
@@ -316,7 +329,7 @@ static BOOL process_lock(blocking_lock_record *blr)
   char *outbuf = OutBuffer;
   char *inbuf = blr->inbuf;
   int outsize;
-  uint32 count,offset;
+  SMB_OFF_T count,offset;
   int eclass;
   uint32 ecode;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
@@ -352,8 +365,8 @@ static BOOL process_lock(blocking_lock_record *blr)
    * Success - we got the lock.
    */
 
-  DEBUG(3,("process_lock : file=%s fnum=%d ofs=%d cnt=%d\n",
-       fsp->fsp_name, fsp->fnum, (int)offset, (int)count));
+  DEBUG(3,("process_lock : file=%s fnum=%d offset=%.0f count=%.0f\n",
+       fsp->fsp_name, fsp->fnum, (double)offset, (double)count));
 
   construct_reply_common(inbuf, outbuf);
   outsize = set_message(outbuf,0,0,True);
@@ -374,12 +387,13 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  uint32 count, offset;
+  SMB_OFF_T count, offset;
+  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
   int eclass=0;
   uint32 ecode=0;
 
-  data = smb_buf(inbuf) + 10*num_ulocks;
+  data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
 
   /* 
    * Data now points at the beginning of the list
@@ -387,8 +401,18 @@ static BOOL process_lockingX(blocking_lock_record *blr)
    */
 
   for(; blr->lock_num < num_locks; blr->lock_num++) {
-    count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
-    offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
+    if(!large_file_format) {
+      count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
+      offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
+    }
+#ifdef LARGE_SMB_OFF_T
+    else {
+      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(blr->lock_num))) << 32) |
+              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(blr->lock_num)));
+      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(blr->lock_num))) << 32) |
+               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(blr->lock_num)));
+    }
+#endif
     errno = 0;
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))

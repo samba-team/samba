@@ -139,25 +139,15 @@ static int shm_get_share_modes(connection_struct *conn,
   
   if(!found)
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(5,("get_share_modes no entry for file dev = %x ino = %.0f\n",
 	     (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(5,("get_share_modes no entry for file dev = %x ino = %lx\n",
-	     (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
     return (0);
   }
   
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(0,("ERROR: get_share_modes  Deleting old share mode v1 %d dev=%x ino=%.0f\n", 
 	     file_scanner_p->locking_version, (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(0,("ERROR: get_share_modes  Deleting old share mode v1 %d dev=%x ino=%lx\n", 
-	     file_scanner_p->locking_version, (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
 
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
@@ -214,13 +204,8 @@ static int shm_get_share_modes(connection_struct *conn,
       /* PARANOIA TEST */
       if(file_scanner_p->num_share_mode_entries < 0)
       {
-#ifdef LARGE_SMB_INO_T
         DEBUG(0,("PANIC ERROR: get_share_mode: entries=%d dev=%x ino=%.0f\n",
 		 file_scanner_p->num_share_mode_entries, (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-        DEBUG(0,("PANIC ERROR: get_share_mode: entries=%d dev=%x ino=%lx\n",
-		 file_scanner_p->num_share_mode_entries, (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
         return 0;
       }
 
@@ -251,13 +236,9 @@ static int shm_get_share_modes(connection_struct *conn,
   /* If no valid share mode entries were found then this record shouldn't exist ! */
   if(num_entries_copied == 0)
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(0,("get_share_modes: file with dev %x inode %.0f empty\n", 
 	     (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(0,("get_share_modes: file with dev %x inode %lx empty\n", 
-	     (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
+
     if(*old_shares)
       free((char *)*old_shares);
     *old_shares = 0;
@@ -269,13 +250,8 @@ static int shm_get_share_modes(connection_struct *conn,
     shmops->shm_free(shmops->addr2offset(file_scanner_p));
   }
 
-#ifdef LARGE_SMB_INO_T
   DEBUG(5,("get_share_modes: file with dev %x inode %.0f -> %d entries\n",
 	   (unsigned int)dev, (double)inode, num_entries_copied));
-#else /* LARGE_SMB_INO_T */
-  DEBUG(5,("get_share_modes: file with dev %x inode %lx -> %d entries\n",
-	   (unsigned int)dev, (unsigned long)inode, num_entries_copied));
-#endif /* LARGE_SMB_INO_T */
 
   return(num_entries_copied);
 }  
@@ -330,25 +306,15 @@ static void shm_del_share_mode(int token, files_struct *fsp)
     
   if(!found)
   {
-#ifdef LARGE_SMB_INO_T
      DEBUG(0,("ERROR: del_share_mode no entry for dev %x inode %.0f\n",
 	      (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-     DEBUG(0,("ERROR: del_share_mode no entry for dev %x inode %lx\n",
-	      (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
      return;
   }
   
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(0,("ERROR: del_share_modes Deleting old share mode v1 %d dev=%x ino=%.0f\n",
 	     file_scanner_p->locking_version, (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(0,("ERROR: del_share_modes Deleting old share mode v1 %d dev=%x ino=%lx\n",
-	     file_scanner_p->locking_version, (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
 
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
@@ -384,13 +350,8 @@ static void shm_del_share_mode(int token, files_struct *fsp)
     /* Decrement the number of entries in the record. */
     file_scanner_p->num_share_mode_entries -= 1;
 
-#ifdef LARGE_SMB_INO_T
     DEBUG(2,("del_share_modes Deleting share mode entry dev=%x ino=%.0f\n",
           (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(2,("del_share_modes Deleting share mode entry dev=%x ino=%lx\n",
-          (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
 
     if(entry_prev_p == entry_scanner_p)
       /* We are at start of list */
@@ -410,13 +371,8 @@ static void shm_del_share_mode(int token, files_struct *fsp)
     /* If we deleted the last share mode entry then remove the share mode record. */
     if(file_scanner_p->num_share_mode_entries == 0)
     {
-#ifdef LARGE_SMB_INO_T
       DEBUG(2,("del_share_modes num entries = 0, deleting share_mode dev=%x ino=%.0f\n", 
 	       (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-      DEBUG(2,("del_share_modes num entries = 0, deleting share_mode dev=%x ino=%lx\n", 
-	       (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
 
       if(file_prev_p == file_scanner_p)
         mode_array[hash_entry] = file_scanner_p->next_offset;
@@ -427,13 +383,8 @@ static void shm_del_share_mode(int token, files_struct *fsp)
   }
   else
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(0,("ERROR: del_share_modes No share mode dev=%x ino=%.0f\n", 
 	     (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(0,("ERROR: del_share_modes No share mode dev=%x ino=%lx\n", 
-	     (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
   }
 }
 
@@ -501,13 +452,8 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
 
     file_scanner_p = new_mode_p;
 
-#ifdef LARGE_SMB_INO_T
     DEBUG(3,("set_share_mode: Created share record for %s (dev %x inode %.0f)\n", 
 	     fsp->fsp_name, (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(3,("set_share_mode: Created share record for %s (dev %x inode %lx)\n", 
-	     fsp->fsp_name, (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
   }
  
   /* Now create the share mode entry */ 
@@ -601,25 +547,15 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
    
   if(!found)
   { 
-#ifdef LARGE_SMB_INO_T
      DEBUG(0,("ERROR:remove_share_oplock: no entry found for dev=%x ino=%.0f\n", 
 	      (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-     DEBUG(0,("ERROR:remove_share_oplock: no entry found for dev=%x ino=%lx\n", 
-	      (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
      return False;
   } 
 
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(0,("ERROR: remove_share_oplock: Deleting old share mode v1=%d dev=%x ino=%.0f\n",
 	     file_scanner_p->locking_version, (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(0,("ERROR: remove_share_oplock: Deleting old share mode v1=%d dev=%x ino=%lx\n",
-	     file_scanner_p->locking_version, (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
 
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
@@ -656,13 +592,8 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
 
   if(!found)
   {
-#ifdef LARGE_SMB_INO_T
     DEBUG(0,("ERROR: remove_share_oplock: No oplock granted. dev=%x ino=%.0f\n", 
 	     (unsigned int)dev, (double)inode));
-#else /* LARGE_SMB_INO_T */
-    DEBUG(0,("ERROR: remove_share_oplock: No oplock granted. dev=%x ino=%lx\n", 
-	     (unsigned int)dev, (unsigned long)inode));
-#endif /* LARGE_SMB_INO_T */
     return False;
   }
 

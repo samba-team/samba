@@ -458,7 +458,7 @@ typedef struct
 /* Structure used when SMBwritebmpx is active */
 typedef struct
 {
-  int   wr_total_written; /* So we know when to discard this */
+  size_t wr_total_written; /* So we know when to discard this */
   int32 wr_timeout;
   int32 wr_errclass;
   int32 wr_error; /* Cached errors */
@@ -1413,6 +1413,10 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 #define SMB_LPID_OFFSET(indx) (10 * (indx))
 #define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
 #define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
+#define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
+#define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
+#define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
+#define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
 /* Macro to cache an error in a write_bmpx_struct */
 #define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \

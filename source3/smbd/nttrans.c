@@ -890,12 +890,12 @@ static int call_nt_transact_create(connection_struct *conn,
     p += 8;
     SIVAL(p,0,fmode); /* File Attributes. */
     p += 12;
-#if OFF_T_IS_64_BITS
-      SIVAL(p,0, file_len & 0xFFFFFFFF);
-      SIVAL(p,4, (file_len >> 32));
-#else /* OFF_T_IS_64_BITS */
-      SIVAL(p,0,file_len);
-#endif /* OFF_T_IS_64_BITS */
+#ifdef LARGE_SMB_OFF_T
+    SIVAL(p,0, file_len & 0xFFFFFFFF);
+    SIVAL(p,4, (file_len >> 32));
+#else /* LARGE_SMB_OFF_T */
+    SIVAL(p,0,file_len);
+#endif /* LARGE_SMB_OFF_T */
   }
 
   /* Send the required number of replies */
