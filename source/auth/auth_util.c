@@ -592,6 +592,39 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	
 	debug_nt_user_token(DBGC_AUTH, 10, ptoken);
 	
+	if ((lp_log_nt_token_command() != NULL) &&
+	    (strlen(lp_log_nt_token_command()) > 0)) {
+		TALLOC_CTX *mem_ctx;
+		char *command;
+		fstring sidstr;
+		char *user_sidstr, *group_sidstr;
+
+		mem_ctx = talloc_init("setnttoken");
+		if (mem_ctx == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		sid_to_string(sidstr, &ptoken->user_sids[0]);
+		user_sidstr = talloc_strdup(mem_ctx, sidstr);
+
+		group_sidstr = talloc_strdup(mem_ctx, "");
+		for (i=1; i<ptoken->num_sids; i++) {
+			sid_to_string(sidstr, &ptoken->user_sids[i]);
+			group_sidstr = talloc_asprintf(mem_ctx, "%s %s",
+						       group_sidstr, sidstr);
+		}
+
+		command = strdup(lp_log_nt_token_command());
+		command = realloc_string_sub(command, "%s", user_sidstr);
+		command = realloc_string_sub(command, "%t", group_sidstr);
+		DEBUG(8, ("running command: [%s]\n", command));
+		if (smbrun(command, NULL) != 0) {
+			DEBUG(0, ("Could not log NT token\n"));
+			nt_status = NT_STATUS_ACCESS_DENIED;
+		}
+		talloc_destroy(mem_ctx);
+		SAFE_FREE(command);
+	}
+
 	*token = ptoken;
 
 	return nt_status;
