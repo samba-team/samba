@@ -287,7 +287,7 @@ getarg(struct getargs *args, size_t num_args,
 		if (k == num_args)
 		    return ARG_ERR_NO_MATCH;
 	    }
-	out:
+	out:;
 	}
     }
     *optind = i;
