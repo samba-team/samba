@@ -37,32 +37,39 @@
 #include "ldb/include/ldb_private.h"
 
 #define SCHEMA_FLAG_RESET	0
-#define SCHEMA_FLAG_MOD_MASK	0x03
-#define SCHEMA_FLAG_MOD_ADD	0x01
-#define SCHEMA_FLAG_MOD_REPLACE	0x02
-#define SCHEMA_FLAG_MOD_DELETE	0x03
-#define SCHEMA_FLAG_AUXCLASS 	0x10
-#define SCHEMA_FLAG_CHECKED  	0x20
+#define SCHEMA_FLAG_MOD_MASK	0x003
+#define SCHEMA_FLAG_MOD_ADD	0x001
+#define SCHEMA_FLAG_MOD_REPLACE	0x002
+#define SCHEMA_FLAG_MOD_DELETE	0x003
+#define SCHEMA_FLAG_AUXILIARY 	0x010
+#define SCHEMA_FLAG_ABSTRACT	0x020
+#define SCHEMA_FLAG_STRUCTURAL	0x040
+#define SCHEMA_FLAG_CHECKED  	0x100
 
+
+/* TODO: check attributes syntaxes
+	 check there's only one structrual class (or a chain of structural classes)
+*/
 
 struct private_data {
 	const char *error_string;
 };
 
-struct attribute_list {
+struct schema_attribute {
 	int flags;
 	char *name;
 };
 
+struct schema_attribute_list {
+	struct schema_attribute *attr;
+	int num;
+};
+
 struct schema_structures {
-	struct attribute_list *check_list;
-	struct attribute_list *objectclass_list;
-	struct attribute_list *must;
-	struct attribute_list *may;
-	int check_list_num;
-	int objectclass_list_num;
-	int must_num;
-	int may_num;
+	struct schema_attribute_list entry_attrs;
+	struct schema_attribute_list objectclasses;
+	struct schema_attribute_list required_attrs;
+	struct schema_attribute_list optional_attrs;
 };
 
 /* This function embedds the knowledge of aliased names.
@@ -87,139 +94,114 @@ static int schema_attr_cmp(const char *attr1, const char *attr2)
 	return ret;
 }
 
-struct attribute_list *schema_find_attribute(struct attribute_list *list, int attr_num, const char *attr_name)
+struct schema_attribute *schema_find_attribute(struct schema_attribute_list *list, const char *attr_name)
 {
 	unsigned int i;
-	for (i = 0; i < attr_num; i++) {
-		if (ldb_attr_cmp(list[i].name, attr_name) == 0) {
-			return &list[i];
+	for (i = 0; i < list->num; i++) {
+		if (ldb_attr_cmp(list->attr[i].name, attr_name) == 0) {
+			return &(list->attr[i]);
 		}
 	}
 	return NULL;
 }
 
-/* get objectclasses of dn */
-static int get_object_objectclasses(struct ldb_context *ldb, const char *dn, struct schema_structures *schema_struct)
-{
-	char *filter = talloc_asprintf(schema_struct, "dn=%s", dn);
-	const char *attrs[] = {"objectClass", NULL};
-	struct ldb_message **srch;
-	int i, j, ret;
-
-	schema_struct->objectclass_list = NULL;
-	schema_struct->objectclass_list_num = 0;
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, filter, attrs, &srch);
-	if (ret != 1) {
-		ldb_search_free(ldb, srch);
-		return -1;
-	}
-
-	for (i = 0; i < (*srch)->num_elements; i++) {
-		schema_struct->objectclass_list_num = (*srch)->elements[i].num_values;
-		schema_struct->objectclass_list = talloc_array(schema_struct,
-								 struct attribute_list,
-								 schema_struct->objectclass_list_num);
-		if (schema_struct->objectclass_list == NULL) {
-			ldb_search_free(ldb, srch);
-			return -1;
-		}
-		for (j = 0; j < schema_struct->objectclass_list_num; j++) {
-			schema_struct->objectclass_list[j].name = talloc_strndup(schema_struct->objectclass_list,
-									 (*srch)->elements[i].values[j].data,
-										 (*srch)->elements[i].values[j].length);
-			if (schema_struct->objectclass_list[j].name == NULL) {
-				ldb_search_free(ldb, srch);
-				return -1;
-			}
-			schema_struct->objectclass_list[j].flags = SCHEMA_FLAG_RESET;
-		}
-	}
-	ldb_search_free(ldb, srch);
-
-	return 0;
-}
-
 /* get all the attributes and objectclasses found in msg and put them in schema_structure
-   attributes go in the check_list structure for later checking
-   objectclasses go in the objectclass_list structure */
-static int get_check_list(struct ldb_module *module, struct schema_structures *schema_struct, const struct ldb_message *msg)
+   attributes go in the entry_attrs structure for later checking
+   objectclasses go in the objectclasses structure */
+static int get_msg_attributes(struct schema_structures *ss, const struct ldb_message *msg)
 {
-	int i, j, k;
+	int i, j, k, l;
 
-	schema_struct->objectclass_list = NULL;
-	schema_struct->objectclass_list_num = 0;
-	schema_struct->check_list_num = msg->num_elements;
-	schema_struct->check_list = talloc_array(schema_struct,
-						   struct attribute_list,
-						   schema_struct->check_list_num);
-	if (schema_struct->check_list == NULL) {
+	ss->entry_attrs.attr = talloc_realloc(ss, ss->entry_attrs.attr,
+					      struct schema_attribute,
+					      ss->entry_attrs.num + msg->num_elements);
+	if (ss->entry_attrs.attr == NULL) {
 		return -1;
 	}
-	for (i = 0, j = 0; i < msg->num_elements; i++) {
+
+	for (i = 0, j = ss->entry_attrs.num; i < msg->num_elements; i++) {
+
 		if (schema_attr_cmp(msg->elements[i].name, "objectclass") == 0) {
-			schema_struct->objectclass_list_num = msg->elements[i].num_values;
-			schema_struct->objectclass_list = talloc_array(schema_struct,
-									 struct attribute_list,
-									 schema_struct->objectclass_list_num);
-			if (schema_struct->objectclass_list == NULL) {
+
+			ss->objectclasses.attr = talloc_realloc(ss, ss->objectclasses.attr,
+								struct schema_attribute,
+								ss->objectclasses.num + msg->elements[i].num_values);
+			if (ss->objectclasses.attr == NULL) {
 				return -1;
 			}
-			for (k = 0; k < schema_struct->objectclass_list_num; k++) {
-				schema_struct->objectclass_list[k].name = talloc_strndup(schema_struct->objectclass_list,
-											 msg->elements[i].values[k].data,
-											 msg->elements[i].values[k].length);
-				if (schema_struct->objectclass_list[k].name == NULL) {
-					return -1;
-				}
-				schema_struct->objectclass_list[k].flags = msg->elements[i].flags;
+
+			for (k = 0, l = ss->objectclasses.num; k < msg->elements[i].num_values; k++) {
+				ss->objectclasses.attr[l].name = msg->elements[i].values[k].data;
+				ss->objectclasses.attr[l].flags = msg->elements[i].flags;
+				l++;
 			}
+			ss->objectclasses.num += msg->elements[i].num_values;
 		}
 
-		schema_struct->check_list[j].flags = msg->elements[i].flags;
-		schema_struct->check_list[j].name = talloc_strdup(schema_struct->check_list,
-								  msg->elements[i].name);
-		if (schema_struct->check_list[j].name == NULL) {
+		ss->entry_attrs.attr[j].flags = msg->elements[i].flags;
+		ss->entry_attrs.attr[j].name = talloc_reference(ss->entry_attrs.attr,
+							    msg->elements[i].name);
+		if (ss->entry_attrs.attr[j].name == NULL) {
 			return -1;
 		}
 		j++;
 	}
+	ss->entry_attrs.num += msg->num_elements;
 
 	return 0;
 }
 
-/* add all attributes in el avoiding duplicates in attribute_list */
-static int add_attribute_uniq(struct attribute_list **list, int *list_num, int flags, struct ldb_message_element *el, void *mem_ctx)
+static int get_entry_attributes(struct ldb_context *ldb, const char *dn, struct schema_structures *ss)
+{
+	char *filter = talloc_asprintf(ss, "dn=%s", dn);
+	struct ldb_message **srch;
+	int ret;
+
+	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &srch);
+	if (ret != 1) {
+		return ret;
+	}
+	talloc_steal(ss, srch);
+
+	ret = get_msg_attributes(ss, *srch);
+	if (ret != 0) {
+		ldb_search_free(ldb, srch);
+		return ret;
+	}
+
+	return 0;
+}
+
+/* add all attributes in el avoiding duplicates in schema_attribute_list */
+static int add_attribute_uniq(void *mem_ctx, struct schema_attribute_list *list, int flags, struct ldb_message_element *el)
 {
 	int i, j, vals;
 
 	vals = el->num_values;
-	*list = talloc_realloc(mem_ctx, *list, struct attribute_list, *list_num + vals);
-	if (list == 0) {
+	list->attr = talloc_realloc(mem_ctx, list->attr, struct schema_attribute, list->num + vals);
+	if (list->attr == NULL) {
 		return -1;
 	}
 	for (i = 0, j = 0; i < vals; i++) {
 		int c, found, len;
 
 		found = 0;
-		for (c = 0; c < *list_num; c++) {
-			len = strlen((*list)[c].name);
+		for (c = 0; c < list->num; c++) {
+			len = strlen(list->attr[c].name);
 			if (len == el->values[i].length) {
-				if (strncasecmp((*list)[c].name, el->values[i].data, len) == 0) {
+				if (schema_attr_cmp(list->attr[c].name, el->values[i].data) == 0) {
 					found = 1;
 					break;
 				}
 			}
 		}
 		if (!found) {
-			(*list)[j + *list_num].name = talloc_strndup(*list, el->values[i].data, el->values[i].length);
-			if ((*list)[j + *list_num].name == 0) {
-				return -1;
-			}
-			(*list)[j + *list_num].flags = flags;
+			list->attr[j + list->num].name = el->values[i].data;
+			list->attr[j + list->num].flags = flags;
 			j++;
 		}
 	}
-	*list_num += j;
+	list->num += j;
 
 	return 0;
 }
@@ -227,52 +209,52 @@ static int add_attribute_uniq(struct attribute_list **list, int *list_num, int f
 
 /* we need to get all attributes referenced by the entry objectclasses,
    recursively get parent objectlasses attributes */
-static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context *ldb, struct schema_structures *schema_struct)
+static int get_attr_list_recursive(struct ldb_module *module, struct schema_structures *schema_struct)
 {
 	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_message **srch;
 	int i, j;
 	int ret;
 
-	schema_struct->must = NULL;
-	schema_struct->may = NULL;
-	schema_struct->must_num = 0;
-	schema_struct->may_num = 0;
-	for (i = 0; i < schema_struct->objectclass_list_num; i++) {
+	for (i = 0; i < schema_struct->objectclasses.num; i++) {
 		char *filter;
 
-		if ((schema_struct->objectclass_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
+		if ((schema_struct->objectclasses.attr[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
 			continue;
 		}
-		filter = talloc_asprintf(schema_struct, "lDAPDisplayName=%s", schema_struct->objectclass_list[i].name);
+		filter = talloc_asprintf(schema_struct, "lDAPDisplayName=%s", schema_struct->objectclasses.attr[i].name);
 		if (filter == NULL) {
 			return -1;
 		}
 
-		ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &srch);
+		ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &srch);
+		if (ret != 1) {
+			return ret;
+		}
+		talloc_steal(schema_struct, srch);
 
 		if (ret <= 0) {
 			/* Schema DB Error: Error occurred retrieving Object Class Description */
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error retrieving Objectclass %s.\n", schema_struct->objectclass_list[i].name);
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error retrieving Objectclass %s.\n", schema_struct->objectclasses.attr[i].name);
 			data->error_string = "Internal error. Error retrieving schema objectclass";
 			return -1;
 		}
 		if (ret > 1) {
 			/* Schema DB Error: Too Many Records */
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Too many records found retrieving Objectclass %s.\n", schema_struct->objectclass_list[i].name);
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Too many records found retrieving Objectclass %s.\n", schema_struct->objectclasses.attr[i].name);
 			data->error_string = "Internal error. Too many records searching for schema objectclass";
 			return -1;
 		}
 
 		/* Add inherited classes eliminating duplicates */
-		/* fill in required and optional attribute lists */
+		/* fill in required_attrs and optional_attrs attribute lists */
 		for (j = 0; j < (*srch)->num_elements; j++) {
 			int is_aux, is_class;
 
 			is_aux = 0;
 			is_class = 0;
 			if (schema_attr_cmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
-				is_aux = SCHEMA_FLAG_AUXCLASS;
+				is_aux = SCHEMA_FLAG_AUXILIARY;
 				is_class = 1;
 			}
 			if (schema_attr_cmp((*srch)->elements[j].name, "subClassOf") == 0) {
@@ -280,22 +262,20 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 			}
 
 			if (is_class) {
-				if (add_attribute_uniq(&schema_struct->objectclass_list,
-							&schema_struct->objectclass_list_num,
+				if (add_attribute_uniq(schema_struct,
+							&schema_struct->objectclasses,
 							is_aux,
-							&(*srch)->elements[j],
-							schema_struct) != 0) {
+							&(*srch)->elements[j]) != 0) {
 					return -1;
 				}
 			} else {
 
 				if (schema_attr_cmp((*srch)->elements[j].name, "mustContain") == 0 ||
 					schema_attr_cmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
-					if (add_attribute_uniq(&schema_struct->must,
-								&schema_struct->must_num,
+					if (add_attribute_uniq(schema_struct,
+								&schema_struct->required_attrs,
 								SCHEMA_FLAG_RESET,
-								&(*srch)->elements[j],
-								schema_struct) != 0) {
+								&(*srch)->elements[j]) != 0) {
 						return -1;
 					}
 				}
@@ -303,18 +283,15 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 				if (schema_attr_cmp((*srch)->elements[j].name, "mayContain") == 0 ||
 				    schema_attr_cmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
 
-					if (add_attribute_uniq(&schema_struct->may,
-								&schema_struct->may_num,
+					if (add_attribute_uniq(schema_struct,
+								&schema_struct->optional_attrs,
 								SCHEMA_FLAG_RESET,
-								&(*srch)->elements[j],
-								schema_struct) != 0) {
+								&(*srch)->elements[j]) != 0) {
 						return -1;
 					}
 				}
 			}
 		}
-
-		ldb_search_free(ldb, srch);
 	}
 
 	return 0;
@@ -349,9 +326,9 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 	int ret;
 
 	/* First implementation:
-		Build up a list of required and optional attributes from each objectclass
-		Check all the required attributes are present and all the other attributes
-		are optional attributes
+		Build up a list of required_attrs and optional_attrs attributes from each objectclass
+		Check all the required_attrs attributes are present and all the other attributes
+		are optional_attrs attributes
 		Throw an error in case a check fail
 		Free all structures and commit the change
 	*/
@@ -360,36 +337,34 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		return ldb_next_add_record(module, msg);
 	}
 
-	entry_structs = talloc(module, struct schema_structures);
+	entry_structs = talloc_zero(module, struct schema_structures);
 	if (!entry_structs) {
 		return -1;
 	}
 
-	ret = get_check_list(module, entry_structs, msg);
+	ret = get_msg_attributes(entry_structs, msg);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
 	}
 
-	/* find all other objectclasses recursively */
-	ret = get_attr_list_recursive(module, module->ldb, entry_structs);
+	ret = get_attr_list_recursive(module, entry_structs);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
 	}
 
-	/* now check all required attributes are present */
-	for (i = 0; i < entry_structs->must_num; i++) {
-		struct attribute_list *attr;
+	/* now check all required_attrs attributes are present */
+	for (i = 0; i < entry_structs->required_attrs.num; i++) {
+		struct schema_attribute *attr;
 
-		attr = schema_find_attribute(entry_structs->check_list,
-					     entry_structs->check_list_num,
-					     entry_structs->must[i].name);
+		attr = schema_find_attribute(&entry_structs->entry_attrs,
+					     entry_structs->required_attrs.attr[i].name);
 
 		if (attr == NULL) { /* not found */
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
-				  "The required attribute %s is missing.\n",
-				  entry_structs->must[i].name);
+				  "The required_attrs attribute %s is missing.\n",
+				  entry_structs->required_attrs.attr[i].name);
 
 			data->error_string = "Objectclass violation, a required attribute is missing";
 			talloc_free(entry_structs);
@@ -400,20 +375,19 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		attr->flags = SCHEMA_FLAG_CHECKED;
 	}
 
-	/* now check all others atribs are at least optional */
-	for (i = 0; i < entry_structs->check_list_num; i++) {
+	/* now check all others atribs are at least optional_attrs */
+	for (i = 0; i < entry_structs->entry_attrs.num; i++) {
 
-		if (entry_structs->check_list[i].flags != SCHEMA_FLAG_CHECKED) {
-			struct attribute_list *attr;
+		if (entry_structs->entry_attrs.attr[i].flags != SCHEMA_FLAG_CHECKED) {
+			struct schema_attribute *attr;
 
-			attr = schema_find_attribute(entry_structs->may,
-						     entry_structs->may_num,
-						     entry_structs->check_list[i].name);
+			attr = schema_find_attribute(&entry_structs->optional_attrs,
+						     entry_structs->entry_attrs.attr[i].name);
 
 			if (attr == NULL) { /* not found */
 				ldb_debug(module->ldb, LDB_DEBUG_ERROR,
 					  "The attribute %s is not referenced by any objectclass.\n",
-					  entry_structs->check_list[i].name);
+					  entry_structs->entry_attrs.attr[i].name);
 
 				data->error_string = "Objectclass violation, an invalid attribute name was found";
 				talloc_free(entry_structs);
@@ -431,17 +405,17 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 static int schema_modify_record(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct private_data *data = (struct private_data *)module->private_data;
-	struct schema_structures *entry_structs, *modify_structs;
+	struct schema_structures *entry_structs;
 	unsigned int i;
 	int ret;
 
 	/* First implementation:
 		Retrieve the ldap entry and get the objectclasses,
 		add msg contained objectclasses if any.
-		Build up a list of required and optional attributes from each objectclass
-		Check all required one for the defined objectclass and all its parent
+		Build up a list of required_attrs and optional_attrs attributes from each objectclass
+		Check all required_attrs one for the defined objectclass and all its parent
 		objectclasses.
-		Check all other the attributes are optional or required.
+		Check all other the attributes are optional_attrs or required_attrs.
 		Throw an error in case a check fail.
 		Free all structures and commit the change.
 	*/
@@ -456,133 +430,65 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		return -1;
 	}
 
-	/* allocate modification entry structs */
-	modify_structs = talloc_zero(entry_structs, struct schema_structures);
-	if (!modify_structs) {
+	/* now search for the stored entry objectclasses and attributes*/
+	ret = get_entry_attributes(module->ldb, msg->dn, entry_structs);
+	if (ret != 0) {
 		talloc_free(entry_structs);
-		return -1;
+		return ret;
 	}
 
 	/* get list of values to modify */
-	ret = get_check_list(module, modify_structs, msg);
+	ret = get_msg_attributes(entry_structs, msg);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
 	}
 
-	/* find all modify objectclasses recursively if any objectclass is being added */
-	ret = get_attr_list_recursive(module, module->ldb, modify_structs);
+	ret = get_attr_list_recursive(module, entry_structs);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
 	}
 
-	/* now search for the original object objectclasses */
-	ret = get_object_objectclasses(module->ldb, msg->dn, entry_structs);
-	if (ret != 0) {
-		talloc_free(entry_structs);
-		return ret;
-	}
+	/* now check all required_attrs attributes are present */
+	for (i = 0; i < entry_structs->required_attrs.num; i++) {
+		struct schema_attribute *attr;
 
-	/* find all other objectclasses recursively */
-	ret = get_attr_list_recursive(module, module->ldb, entry_structs);
-	if (ret != 0) {
-		talloc_free(entry_structs);
-		return ret;
-	}
-
-	/* now check all entries are present either as required or optional atributes of entry objectclasses */
-	/* if they are required and we are going to delete them then throw an error */
-	/* just mark them if being proved valid attribs */
-	for (i = 0; i < modify_structs->check_list_num; i++) {
-		struct attribute_list *attr;
-
-		attr = schema_find_attribute(entry_structs->must,
-					     entry_structs->must_num,
-					     modify_structs->check_list[i].name);
-
-		if (attr == NULL) { /* not found */
-
-			attr = schema_find_attribute(entry_structs->may,
-						     entry_structs->may_num,
-						     modify_structs->check_list[i].name);
-
-			if (attr != NULL) { /* found*/
-				modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
-			}
-
-			break; /* not found, go on */
-		}
-
-		if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
-				  "Trying to delete the required attribute %s.\n",
-				  modify_structs->check_list[i].name);
-
-			data->error_string = "Objectclass violation: trying to delete a required attribute";
-			talloc_free(entry_structs);
-			return -1;
-		}
-
-		modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
-	}
-
-	/* now check all new objectclasses required attributes are present */
-	for (i = 0; i < modify_structs->must_num; i++) {
-		struct attribute_list *attr;
-
-		attr = schema_find_attribute(modify_structs->check_list,
-					     modify_structs->check_list_num,
-					     modify_structs->must[i].name);
-
+		attr = schema_find_attribute(&entry_structs->entry_attrs,
+					     entry_structs->required_attrs.attr[i].name);
 
 		if (attr == NULL) { /* not found */
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
-				  "The required attribute %s is missing.\n",
-				  modify_structs->must[i].name);
+				  "The required_attrs attribute %s is missing.\n",
+				  entry_structs->required_attrs.attr[i].name);
 
 			data->error_string = "Objectclass violation, a required attribute is missing";
 			talloc_free(entry_structs);
 			return -1;
 		}
 
-		if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
-				  "Trying to delete the required attribute %s.\n",
-				  modify_structs->must[i].name);
-
-			data->error_string = "Objectclass violation: trying to delete a required attribute";
-			talloc_free(entry_structs);
-			return -1;
-		}
-
-		attr->flags |= SCHEMA_FLAG_CHECKED;
+		/* mark the attribute as checked */
+		attr->flags = SCHEMA_FLAG_CHECKED;
 	}
 
-	/* now check all others attributes are at least optional */
-	for (i = 0; i < modify_structs->check_list_num; i++) {
+	/* now check all others atribs are at least optional_attrs */
+	for (i = 0; i < entry_structs->entry_attrs.num; i++) {
 
-		if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_CHECKED) == 0 &&
-		    (modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) != SCHEMA_FLAG_MOD_DELETE) {
-			struct attribute_list *attr;
+		if (entry_structs->entry_attrs.attr[i].flags != SCHEMA_FLAG_CHECKED) {
+			struct schema_attribute *attr;
 
-			attr = schema_find_attribute(modify_structs->may,
-						     modify_structs->may_num,
-						     modify_structs->check_list[i].name);
-
+			attr = schema_find_attribute(&entry_structs->optional_attrs,
+						     entry_structs->entry_attrs.attr[i].name);
 
 			if (attr == NULL) { /* not found */
 				ldb_debug(module->ldb, LDB_DEBUG_ERROR,
 					  "The attribute %s is not referenced by any objectclass.\n",
-					  modify_structs->check_list[i].name);
+					  entry_structs->entry_attrs.attr[i].name);
 
 				data->error_string = "Objectclass violation, an invalid attribute name was found";
 				talloc_free(entry_structs);
 				return -1;
 			}
-
-			modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
-
 		}
 	}
 
