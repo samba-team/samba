@@ -602,7 +602,7 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	}
 
 	if (p->netsec_auth_validated && !api_pipe_netsec_process(p, rpc_in_p)) {
-		DEBUG(0,("process_request_pdu: failed to do schannel processing.\n"));
+		DEBUG(3,("process_request_pdu: failed to do schannel processing.\n"));
 		set_incoming_fault(p);
 		return False;
 	}
