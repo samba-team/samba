@@ -46,7 +46,7 @@ endif # AIX
 lib_LIBRARIES = $(AFSLIBS)
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
-EXTRA_DATA = afslib.so
+# EXTRA_DATA = afslib.so
 
 CLEANFILES= $(AFS_EXTRA_LIBS)
 

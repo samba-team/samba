@@ -35,9 +35,14 @@ foo_DATA =					\
 	xdbm.h					\
 	@EXTRA_HDRS@
 
-EXTRA_DATA = err.h fnmatch.h glob.h
+# EXTRA_DATA = err.h
 
-CLEANFILES = $(foo_DATA) asn1.h asn1_err.h hdb_asn1.h hdb_err.h heim_err.h \
+noinst_HEADERS = @NOINST_HDRS@
+
+EXTRA_HEADERS = fnmatch.h glob.h
+
+CLEANFILES = $(foo_DATA) $(noinst_DATA) asn1.h asn1_err.h hdb_asn1.h \
+	hdb_err.h heim_err.h \
 	     krb5_err.h roken.h
 
 krb5-types.h: bits
