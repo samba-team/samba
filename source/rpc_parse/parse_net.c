@@ -1167,9 +1167,9 @@ BOOL make_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
-	make_str_hdr(&(id->hdr_nt_chal_resp), sizeof(nt_owf), nt_chal_len,
+	make_str_hdr(&(id->hdr_nt_chal_resp), nt_chal_len, nt_chal_len,
 		     nt_chal_resp != NULL ? 1 : 0);
-	make_str_hdr(&(id->hdr_lm_chal_resp), sizeof(lm_owf), lm_chal_len,
+	make_str_hdr(&(id->hdr_lm_chal_resp), lm_chal_len, lm_chal_len,
 		     lm_chal_resp != NULL ? 1 : 0);
 
 	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
