@@ -36,7 +36,6 @@
 /*****************************************************/
 
 #include <includes.h>
-#include <getopt.h>
 
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */
@@ -280,26 +279,6 @@ const char share_type[][6] = {
 #define MAXUSERS_USAGE    "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
 #define LONG_USAGE        "\t-l or --long\t\t\tDisplay full information\n"
 
-static struct option long_options[] =
-{
-    {"help", no_argument,NULL,'h'},
-    {"workgroup",required_argument,NULL,'w'},
-    {"myworkgroup",required_argument,NULL,'W'},
-    {"user",required_argument,NULL,'U'},
-    {"ipaddress",required_argument,NULL,'I'},
-    {"port",required_argument,NULL,'p'},
-    {"myname",required_argument,NULL,'n'},
-    {"conf",required_argument,NULL,'s'},
-    {"debug",required_argument,NULL,'d'},
-    {"server",required_argument,NULL,'S'},
-    {"comment",required_argument,NULL,'C'},
-    {"maxusers",required_argument,NULL,'M'},
-    {"flags", required_argument, NULL, 'M'},
-    {"jobid",required_argument,NULL,'j'},
-    {"long",no_argument,NULL,'l'},
-    { 0, 0, 0, 0}
-};
-
 #define ERRMSG_NOCONN_TARGET_SRVR	"\nUnable to connect to target server\n"
 #define ERRMSG_NOCONN_BROWSE_MSTR	"\nUnable to connect to browse master\n"
 #define ERRMSG_NOT_IMPLEMENTED		"\nNot implemented\n"
@@ -338,7 +317,7 @@ static pstring password;
 static pstring global_user_name;
 static pstring global_workgroup;
 static int port = SMB_PORT;
-static BOOL long_list_entries = False;
+static int long_list_entries = 0;
 static BOOL got_pass = False;
 static BOOL have_ip = False;
 struct in_addr dest_ip;
@@ -757,7 +736,7 @@ void server_usage(void)
   printf(CONF_USAGE);
 }
 		    
-int net_server(char * temp_workgroup, int subfunct, char * opt_parm)
+int net_server(char * temp_workgroup, int subfunct)
 {
   /* try to find master browser for our domain - if we fail try to find pdc */
   char our_workgroup[16];
@@ -1225,55 +1204,96 @@ int main(int argc,char *argv[])
   int func = 0;
   int subfunc = LIST_SF;
   int argc_new = 0;
-  char * argv_new[50];
-  pstring temp_arg;  /*  BB placeholder - need to delete */
-  static pstring servicesf = CONFIGFILE;
-  static fstring target_workgroup;
-  fstring comment = "";  /* BB fix so this can be parsed from user input */
-  int maxusers = -1;
-  int jobid = 0;
+  char ** argv_new;
+  poptContext pc;
+  static char *servicesf = CONFIGFILE;
+  static char *target_workgroup = NULL;
+  static char *comment = "";
+  static char *user_name = NULL;
+  static char *my_workgroup = NULL;
+  static char *requester_name = NULL;
+  static char *dest_host = NULL;
+  static int maxusers = -1;
+  static int flagsarg = -1;
+  static int jobid = 0;
+  static int debuglevel;
+  
+  static struct poptOption long_options[] = {
+    {"help",        'h', POPT_ARG_NONE,   0,     'h'},
+    {"workgroup",   'w', POPT_ARG_STRING, &target_workgroup},
+    {"myworkgroup", 'W', POPT_ARG_STRING, &my_workgroup},
+    {"user",        'U', POPT_ARG_STRING, &user_name, 'U'},
+    {"ipaddress",   'I', POPT_ARG_STRING, 0,     'I'},
+    {"port",        'p', POPT_ARG_INT,    &port},
+    {"myname",      'n', POPT_ARG_STRING, &requester_name},
+    {"conf",        's', POPT_ARG_STRING, &servicesf},
+    {"debug",       'd', POPT_ARG_INT,    &debuglevel, 'd'},
+    {"server",      'S', POPT_ARG_STRING, &dest_host},
+    {"comment",     'C', POPT_ARG_STRING, &comment},
+    {"maxusers",    'M', POPT_ARG_INT,    &maxusers},
+    {"flags",       'F', POPT_ARG_INT,    &flagsarg},
+    {"jobid",       'j', POPT_ARG_INT,    &jobid},
+    {"long",        'l', POPT_ARG_NONE,   &long_list_entries},
+    { 0, 0, 0, 0}
+  };
 
-  target_workgroup[0] = 0;
   got_pass = 0;
   dest_ip = ipzero;
-
+  host[0] = 0;
 
   dbf = x_stdout;
 
   setbuffer(stdout, NULL, 0);
 
-/*	charset_initialise(); */  /* BB do we need to add KANJI term_code processing? BB */
+  pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+		      POPT_CONTEXT_KEEP_FIRST);
 
-  for(i=0;i<argc;i++) {
-    if(argv[i][0] != '-') {
-      /* skip the misc. options while looking for parms */
-      argv_new[argc_new] = argv[i];
-      argc_new++;
-    } else {
-      if(strncmp(argv[i],"-s",2) == 0) {
-	/* preparse the location of smb.conf file before loading */ 
-	if(argv[i][2] != 0)
-	  pstrcpy(servicesf,&argv[i][2]);
-	else if(i+1 < argc) /* make sure that there is at least one more parm - the next parm must be the location of the conf file */
-	  pstrcpy(servicesf,&argv[i+1][0]);
-      }
-      if((argv[i][0] == '-') && (argv[i][2] == 0))
-      {
-          if((argv[i][1] != 'h') && (argv[i][1] != 'l')) i++; /* when retrieving the parms that are not preceeded by dashes - also skip the value of the parm (except for -h in which case there is no parm), not just the parm */
-      }
-      else if((argv[i][0] == '-') && (argv[i][1] == '-'))
-      {
-          if((argv[i][2] != 'h') && (argv[i][2] != 'l')) i++; /* when retrieving the parms that are not preceeded by dashes - also skip the value of the parm (except for -h in which case there is no parm), not just the parm */
-      }
+  while((opt = poptGetNextOpt(pc)) != -1) {
+    switch (opt) {
+      case 'h':
+        usage();
+	exit(0);
+	break;
+      case 'd':
+	DEBUGLEVEL=debuglevel;
+	break;
+      case 'I':
+	dest_ip = *interpret_addr2(poptGetOptArg(pc));
+	if(zero_ip(dest_ip))
+	  printf(ERRMSG_INVALID_IPADDRESS);
+	else
+	  have_ip = True;
+	break;
+      case 'U':
+	p = strchr(user_name,'%');
+	pstrcpy(global_user_name, user_name);
+	if (p) {
+	  *p = 0;
+	  pstrcpy(password,p+1);
+	  got_pass = 1;
+	}
+	break;
+      default:
+	printf(ERRMSG_INVALID_OPTION, (char)opt, opt);
+	usage();
     }
   }
 
+  lp_load(servicesf,True,False,False);
+
+  argv_new = poptGetArgs(pc);
+
+  for (i=0; i<argc; i++) {
+    if (argv_new[i] == NULL) {
+      argc_new = i;
+      break;
+    }
+  }
+		 
   if (argc_new < 2) {
     usage();
     return -1;
   }
-
-  lp_load(servicesf,True,False,False);
 
   func = get_func(argv_new[1]);
 
@@ -1339,85 +1359,20 @@ int main(int argc,char *argv[])
   }
   if (func == 0) return -1;
 
-  get_myname(global_requester_name);
+  if (requester_name)
+    pstrcpy(global_requester_name, requester_name);
+  else
+    get_myname(global_requester_name);
 
-  if (*global_user_name == 0 && getenv("LOGNAME")) {
+  if (user_name)
+    pstrcpy(global_user_name, user_name);
+  else if (getenv("LOGNAME"))
     pstrcpy(global_user_name,getenv("LOGNAME"));
-  }
-   
-  fstrcpy(global_workgroup, lp_workgroup());
-  host[0] = 0;
-/*	while ((opt = getopt(argc, argv, "hw:W:U:I:n:s:d:S:")) != EOF) */
-  while ((opt = getopt_long (argc, argv,"hw:W:U:I:p:n:s:d:S:C:M:j:l",long_options,NULL)) != EOF)  {	    
-    switch (opt) {   /* BB add -A for add or -D for delete ?*/
-      case 'd':
-	DEBUGLEVEL = atoi(optarg);
-	break;
-      case 'h':
-	usage();
-	exit(0);
-	break;
-      case 'S':   /* target server */
-	fstrcpy(host,optarg);
-	break;
-      case 's':
-	pstrcpy(servicesf, optarg);
-	break;
-      case 'n':
-	fstrcpy(global_requester_name, optarg);
-	break;
-      case 'I':
-	dest_ip = *interpret_addr2(optarg);
-	if(zero_ip(dest_ip))
-	  printf(ERRMSG_INVALID_IPADDRESS);
-	else
-	  have_ip = True;
-	break;
-      case 'U':
-	pstrcpy(global_user_name,optarg);
-	p = strchr(global_user_name,'%');
-	if (p) {
-	  *p = 0;
-	  pstrcpy(password, p+1);
-	  got_pass = 1;
-	}
-	break;
-      case 'p':
-	port = atoi(optarg);
-	break;
-      case 'W':
-	fstrcpy(global_workgroup,optarg);
-	break;
-      case 'w':
-	if((func == SERVERF) || (func == USERF) || (func == GROUPF) || (func == VALIDATEF) ) {
-	  fstrcpy(target_workgroup,optarg);
-	  break;
-	} else {
-	  printf(ERRMSG_TARGET_WG_NOT_VALID);
-	  break;
-	}
-      case 'C':
-        fstrcpy(comment, optarg);
-        if(subfunc != ADD_SF)
-             printf(ERRMSG_SPURIOUS_PARM, "C");
 
-	break;
-      case 'l':
-    	long_list_entries = True;
-        if(subfunc != LIST_SF)
-            printf(ERRMSG_SPURIOUS_PARM, "l");
-        break;
-      case 'M':
-	maxusers = atoi(optarg);
-	break;
-      case 'j':
-	jobid = atoi(optarg);
-	break;
-      default:
-	printf(ERRMSG_INVALID_OPTION, (char)opt, opt);
-	usage();
-    }
-  }
+  fstrcpy(global_workgroup, my_workgroup ? my_workgroup :lp_workgroup());
+
+  if (dest_host)
+    pstrcpy(host, dest_host);
 
   if((have_ip) && (host[0]))
     printf(ERRMSG_BOTH_SERVER_IPADDRESS);
@@ -1455,7 +1410,7 @@ int main(int argc,char *argv[])
 	rc = net_session(subfunc,argv_new[3]);
       break;
     case SERVERF:
-      rc = net_server(target_workgroup, subfunc, temp_arg);
+      rc = net_server(target_workgroup, subfunc);
       break;
     case DOMAINF:
       if(subfunc != LIST_SF)
@@ -1468,7 +1423,7 @@ int main(int argc,char *argv[])
       else if(argc_new == 3)
 	rc = net_user(subfunc,NULL, NULL, -1);
       else if(argc_new > 3)
-	rc = net_user(subfunc,argv_new[3], comment, maxusers /* overloaded for user flags */);
+	rc = net_user(subfunc,argv_new[3], comment, flagsarg);
       break;
     case GROUPF:
       if (argc_new == 2)
@@ -1489,7 +1444,7 @@ int main(int argc,char *argv[])
       }
       break;
     case VALIDATEF:
-      rc = net_validate(temp_arg);
+      rc = net_validate(global_user_name);
       break;
     case PRINTQF:
       if (argc_new <= 3)
