@@ -65,6 +65,8 @@ krb5_addresses explicit_addresses;
 
 #ifdef KRB4
 char *v4_realm;
+int enable_v4 = -1;
+int enable_524 = -1;
 #endif
 #ifdef KASERVER
 krb5_boolean enable_kaserver = -1;
@@ -94,6 +96,12 @@ static struct getargs args[] = {
 #endif
     { "enable-http", 'H', arg_flag, &enable_http, "turn on HTTP support" },
 #ifdef KRB4
+    {	"kerberos4",	0, 	arg_negative_flag, &enable_v4,
+	"don't respond to kerberos 4 requests" 
+    },
+    {	"524",		0, 	arg_negative_flag, &enable_524,
+	"don't respond to 524 requests" 
+    },
     { 
 	"v4-realm",	'r',	arg_string, &v4_realm, 
 	"realm to serve v4-requests for"
@@ -288,6 +296,15 @@ configure(int argc, char **argv)
 		add_one_address (*foo++, FALSE);
 	}
     }
+
+#ifdef KRB4
+    if(enable_v4 == -1)
+	enable_v4 = krb5_config_get_bool_default(context, cf, TRUE, "kdc", 
+					 "enable-kerberos4", NULL);
+    if(enable_524 == -1)
+	enable_524 = krb5_config_get_bool_default(context, cf, enable_v4, 
+						  "kdc", "enable-524", NULL);
+#endif
 
     if(enable_http == -1)
 	enable_http = krb5_config_get_bool(context, cf, "kdc", 

@@ -65,6 +65,8 @@ extern krb5_boolean allow_anonymous;
 
 #ifdef KRB4
 extern char *v4_realm;
+extern int enable_v4;
+extern int enable_524;
 #endif
 #ifdef KASERVER
 extern krb5_boolean enable_kaserver;
