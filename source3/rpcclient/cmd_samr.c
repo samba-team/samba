@@ -79,9 +79,9 @@ void cmd_sam_test(struct client_info *info)
 	new_passwd = (char*)getpass("New Password (ONCE: this is test code!):");
 
 	nt_lm_owf_gen(new_passwd, lm_newhash, nt_newhash);
-	pwd_get_lm_nt_16(&(smb_cli->pwd), lm_oldhash , nt_oldhash );
-	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash);
-	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash);
+	pwd_get_lm_nt_16(&(smb_cli->pwd), lm_oldhash, nt_oldhash );
+	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash, True);
+	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash, True);
 	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
 	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
 

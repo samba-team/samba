@@ -190,10 +190,9 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 #endif
 }
 
-
-BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16])
+BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16], BOOL unicode)
 {
-	int new_pw_len = strlen(passwd);
+	int new_pw_len = strlen(passwd) * (unicode ? 2 : 1);
 
 	if (new_pw_len > 512)
 	{
@@ -208,9 +207,20 @@ BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16])
 	 * decrypt. JRA.
 	 */
 	generate_random_buffer((unsigned char *)data, 516, False);
-	fstrcpy( &data[512 - new_pw_len], passwd);
+	if (unicode)
+	{
+		struni2( (uint16*)(&data[512 - new_pw_len]), passwd);
+	}
+	else
+	{
+		fstrcpy( &data[512 - new_pw_len], passwd);
+	}
 	SIVAL(data, 512, new_pw_len);
 
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("make_oem_passwd_hash\n"));
+	dump_data(100, data, 516);
+#endif
 	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
 }
 
