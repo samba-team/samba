@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -164,7 +164,8 @@ krb5_get_forwarded_creds (krb5_context	    context,
     size_t len;
     unsigned char *buf;
     size_t buf_size;
-    int32_t sec, usec;
+    krb5_timestamp sec;
+    int32_t usec;
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
     struct addrinfo *ai;
