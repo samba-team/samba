@@ -420,9 +420,9 @@ static GtkWidget*create_new_job_dialog (void)
 	gtk_table_attach (GTK_TABLE (table1), cal_day, 1, 2, 0, 1,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (GTK_FILL), 0, 0);
-	gtk_calendar_display_options (GTK_CALENDAR (cal_day),
-								  GTK_CALENDAR_SHOW_HEADING
-								  | GTK_CALENDAR_SHOW_DAY_NAMES);
+	gtk_calendar_set_display_options (GTK_CALENDAR (cal_day),
+					  GTK_CALENDAR_SHOW_HEADING
+					  | GTK_CALENDAR_SHOW_DAY_NAMES);
 
 	label3 = gtk_label_new ("Date");
 	gtk_table_attach (GTK_TABLE (table1), label3, 0, 1, 0, 1,

@@ -24,6 +24,8 @@
 
 #ifdef HAVE_GTK
 
+#define GTK_DISABLE_DEPRECATED
+
 #include <gtk/gtk.h>
 
 typedef struct _GtkSelectDomainDialog GtkSelectDomainDialog;
