@@ -595,7 +595,11 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 #ifdef WITH_PAM
 	become_root();
+#if 0	/* JERRY */
 	status = smb_pam_accountcheck(nt_username);
+#else
+	status = smb_pam_accountcheck(sam_pass->smb_name);
+#endif
 	unbecome_root();
 	if (status != NT_STATUS_NOPROBLEMO)
 		return status;
