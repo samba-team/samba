@@ -69,6 +69,7 @@ NTSTATUS dcerpc_$name(struct dcom_interface *d, TALLOC_CTX *mem_ctx, struct $nam
 	}
 	
 	";
+	$objarg = "d";
 	} else {
 	$res .= 
 "
@@ -77,10 +78,11 @@ NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *
 	struct rpc_request *req;
 	NTSTATUS status;
 	";
+	$objarg = "p";
 	}
 
 	$res .= "
-	req = dcerpc_$name\_send(p, mem_ctx, r);
+	req = dcerpc_$name\_send($objarg, mem_ctx, r);
 	if (req == NULL) return NT_STATUS_NO_MEMORY;
 
 	status = dcerpc_ndr_request_recv(req);

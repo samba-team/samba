@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-   DCOM standard objects
-   Copyright (C) Jelmer Vernooij					  2004.
+
+   definitions for marshalling/unmarshalling DCOM string arrays
+
+   Copyright (C) Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,31 +20,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _DCOM_H /* _DCOM_H */
-#define _DCOM_H 
-
-#include "librpc/ndr/ndr_dcom.h"
-
-struct IUnknown_AddRef;
-struct IUnknown_Release;
-struct IUnknown_QueryInterface;
-
-struct dcom_oxid_mapping;
-
-struct dcom_context 
+struct STRINGARRAY
 {
-	struct dcom_oxid_mapping *oxids;
-	const char *domain;
-	const char *user;
-	const char *password;
+	struct STRINGBINDING **stringbindings;
 };
 
-struct dcom_interface
+struct DUALSTRINGARRAY
 {
-	struct dcom_context *ctx;
-	struct dcerpc_pipe *pipe;
-	struct OBJREF *objref;
-	uint32_t private_references;
+	struct STRINGBINDING **stringbindings;
+	struct SECURITYBINDING **securitybindings;
 };
-
-#endif /* _DCOM_H */

@@ -162,20 +162,8 @@ interface ObjectRpcBaseTypes
 	typedef [public] struct 
 	{
 		uint16 wAuthnSvc; /* Cannot be zero. */
-		uint16 wAuthzSvc; /* Must not be zero. */
 		nstring PrincName; 
 	} 	SECURITYBINDING;
-
-
-	typedef [public] struct 
-	{
-		uint16 wNumEntries; /* Number of entries in array. */
-		uint16 wSecurityOffset; /* Offset of security info. */
-		/* The array contains two parts, a set of STRINGBINDINGs */
-		/* and a set of SECURITYBINDINGs. Each set is terminated by an */
-		/* extra zero. The shortest array contains four zeros. */
-		[size_is(wNumEntries)] uint16 aStringArray[];
-	} 	DUALSTRINGARRAY;
 
 	/* signature value for OBJREF (object reference, actually the */
 	/* marshaled form of a COM interface). */
@@ -218,14 +206,14 @@ interface ObjectRpcBaseTypes
 	typedef struct
 	{
 		STDOBJREF std; /* standard objref */
-		[flag(NDR_REMAINING)] DATA_BLOB saResAddr; /* resolver address */
+		STRINGARRAY saResAddr; /* resolver address */
 	} u_standard;
 
 	typedef struct
 	{
 		STDOBJREF std; /* standard objref */
 		GUID clsid; /* Clsid of handler code */
-		[flag(NDR_REMAINING)] DATA_BLOB saResAddr; /* resolver address */
+		STRINGARRAY saResAddr; /* resolver address */
 	} u_handler;
 
 	typedef struct

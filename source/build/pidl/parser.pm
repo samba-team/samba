@@ -162,10 +162,7 @@ sub struct_alignment
 	for my $e (@{$s->{ELEMENTS}}) {
 		my $a = 1;
 
-		if (util::has_property($e, "align")) 
-		{ 
-			$a = $e->{PROPERTIES}->{align};
-		} elsif (!util::need_wire_pointer($e)
+		if (!util::need_wire_pointer($e)
 		    && defined $structs{$e->{TYPE}}) {
 			if ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
 				$a = struct_alignment($structs{$e->{TYPE}}->{DATA});
