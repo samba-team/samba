@@ -16,7 +16,12 @@ foo = asn1_Key.x asn1_Event.x asn1_HDBFlags.x asn1_hdb_entry.x asn1_Salt.x
 CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
 
 noinst_PROGRAMS = convert_db
-LDADD = libhdb.la ../krb5/libkrb5.la ../asn1/libasn1.la ../des/libdes.la ../roken/libroken.la
+LDADD = libhdb.la \
+	../krb5/libkrb5.la \
+	../asn1/libasn1.la \
+	../des/libdes.la \
+	../roken/libroken.la \
+	$(DBLIB)
 
 lib_LTLIBRARIES = libhdb.la
 
