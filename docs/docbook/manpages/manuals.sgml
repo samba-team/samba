@@ -1,0 +1,49 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<chapter id="manpages">
+<title>Manpages</title>
+
+<sect1 id="commands">
+<title>Commands</title>
+&MAN-FINDSMB;
+&MAN-NMBLOOKUP;
+&MAN-RPCCLIENT;
+&MAN-SMBCACLS;
+&MAN-SMBCLIENT;
+&MAN-SMBCONTROL;
+&MAN-SMBSH;
+&MAN-SMBSTATUS;
+&MAN-SMBTAR;
+&MAN-TESTPARM;
+&MAN-TESTPRNS;
+&MAN-VFSTEST;
+&MAN-WBINFO;
+</sect1>
+
+<sect1 id="file-formats-and-conventions">
+<title>File formats and conventions</title>
+&MAN-LMHOSTS;
+&MAN-SMBCONF;
+&MAN-SMBPASSWDCONF;
+</sect1>
+
+<sect1 id="macro-packages-and-conventions">
+<title>Macro packages and conventions</title>
+&MAN-SAMBA;
+</sect1>
+
+<sect1 id="system-management-commands">
+<title>System management commands</title>
+&MAN-NET;
+&MAN-NMBD;
+&MAN-PDBEDIT;
+&MAN-SMBD;
+&MAN-SMBGROUPEDIT;
+&MAN-SMBMNT;
+&MAN-SMBMOUNT;
+&MAN-SMBPASSWD;
+&MAN-SMBSPOOL;
+&MAN-SMBUMOUNT;
+&MAN-SWAT;
+&MAN-WINBINDD;
+</sect1>
+</chapter>
