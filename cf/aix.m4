@@ -19,7 +19,7 @@ AM_CONDITIONAL(AIX4, test "$aix" = 4)
 
 
 AC_ARG_ENABLE(dynamic-afs,
-	AC_HELP_STRING([--disable-dynamic-afs],
+	AS_HELP_STRING([--disable-dynamic-afs],
 		[do not use loaded AFS library with AIX]))
 
 if test "$aix" != no; then

@@ -5,23 +5,23 @@ dnl			default locations, conditional, config-program)
 
 AC_DEFUN([rk_TEST_PACKAGE],[
 AC_ARG_WITH($1,
-	AC_HELP_STRING([--with-$1=dir],[use $1 in dir]))
+	AS_HELP_STRING([--with-$1=dir],[use $1 in dir]))
 AC_ARG_WITH($1-lib,
-	AC_HELP_STRING([--with-$1-lib=dir],[use $1 libraries in dir]),
+	AS_HELP_STRING([--with-$1-lib=dir],[use $1 libraries in dir]),
 [if test "$withval" = "yes" -o "$withval" = "no"; then
   AC_MSG_ERROR([No argument for --with-$1-lib])
 elif test "X$with_$1" = "X"; then
   with_$1=yes
 fi])
 AC_ARG_WITH($1-include,
-	AC_HELP_STRING([--with-$1-include=dir],[use $1 headers in dir]),
+	AS_HELP_STRING([--with-$1-include=dir],[use $1 headers in dir]),
 [if test "$withval" = "yes" -o "$withval" = "no"; then
   AC_MSG_ERROR([No argument for --with-$1-include])
 elif test "X$with_$1" = "X"; then
   with_$1=yes
 fi])
 AC_ARG_WITH($1-config,
-	AC_HELP_STRING([--with-$1-config=path],[config program for $1]))
+	AS_HELP_STRING([--with-$1-config=path],[config program for $1]))
 
 m4_ifval([$6],
 	m4_define([rk_pkgname], $6),

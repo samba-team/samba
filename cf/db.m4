@@ -4,7 +4,7 @@ dnl tests for various db libraries
 dnl
 AC_DEFUN([rk_DB],[
 AC_ARG_ENABLE(berkeley-db,
-                       AC_HELP_STRING([--disable-berkeley-db],
+                       AS_HELP_STRING([--disable-berkeley-db],
                                       [if you don't want berkeley db]),[
 ])
 

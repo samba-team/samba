@@ -8,7 +8,7 @@ if test "$PTHREADS_LIBS" = "" ; then
 fi
 
 AC_ARG_ENABLE(pthread-support,
-	AC_HELP_STRING([--enable-pthread-support],
+	AS_HELP_STRING([--enable-pthread-support],
 			[if you want thread safe libraries]),
 	[],[enable_pthread_support=maybe])
 if test "$enable_pthread_support" = maybe; then
