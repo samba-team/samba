@@ -110,7 +110,9 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	struct PAC_SIGNATURE_DATA *kdc_sig_ptr;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_DATA pac_data;
+#ifdef KRB5_DO_VERIFY_PAC
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
+#endif
 	int i;
 
 	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
@@ -325,7 +327,6 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			}
 		} else {
 			krb5_data in_data;
-			in_data.length = 0;
 			const char *hostname = gensec_get_target_hostname(gensec_security);
 			if (!hostname) {
 				DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
