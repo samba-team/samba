@@ -1,3 +1,8 @@
+Changes in release 0.2n:
+
+ * changed default timestamp format for log messages to extended ISO
+   8601 format (Y-M-DTH:M:S)
+
 Changes in release 0.2m:
 
  * handle glibc's getaddrinfo() that returns several ai_canonname
