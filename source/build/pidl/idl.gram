@@ -107,11 +107,12 @@ property: 'unique'
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'length_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'switch_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
+          | 'value' '(' anytext ')' {{ "$item[1]" => "$item{anytext}" }}
           | 'switch_type' '(' type ')' {{ "$item[1]" => $item{type} }}
 
 identifier: /[\w?]+/
 
-expression: /[\w?\/+*-]+/
+expression: /[\w.?\/+*-_]+/
 
 function : type identifier '(' <commit> element_list2 ');' 
 	 {{
@@ -132,7 +133,13 @@ type :
      | identifier { $item[1] }
      | <error>
 
-text: /[\w\s.?-]*/
+text: /[\w\s\..?-]*/
+
+anytext: call(s?) 
+	 {{ "$item[1][0]" }}
+
+call: expression '(' <commit> expression ')'
+	 {{ "$item[1]($item[4])" }}
 
 constant: /-?\d+/
 	  | '*'

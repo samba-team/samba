@@ -353,5 +353,10 @@ sub is_constant($)
 	return 0;
 }
 
+sub dump($)
+{
+	print Dumper shift;
+}
+
 1;
 
