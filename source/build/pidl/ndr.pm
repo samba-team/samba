@@ -535,11 +535,11 @@ sub ParseElementPushScalar($$$)
 	}
 
 	if (util::has_property($e, "relative")) {
-		pidl "\tNDR_CHECK(ndr_push_relative1(ndr, $var_prefix$e->{NAME}));\n";
+		pidl "\tNDR_CHECK(ndr_push_relative_ptr1(ndr, $var_prefix$e->{NAME}));\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
-		pidl "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
+		pidl "\tNDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));\n";
 	} elsif (need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
@@ -701,11 +701,11 @@ sub ParseElementPullScalar($$$)
 	if (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
-		pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
+		pidl "\tNDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));\n";
 		pidl "\tif (_ptr_$e->{NAME}) {\n";
 		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
 		if (util::has_property($e, "relative")) {
-			pidl "\t\tNDR_CHECK(ndr_pull_relative1(ndr, $var_prefix$e->{NAME}, _ptr_$e->{NAME}));\n";
+			pidl "\t\tNDR_CHECK(ndr_pull_relative_ptr1(ndr, $var_prefix$e->{NAME}, _ptr_$e->{NAME}));\n";
 		}
 		pidl "\t} else {\n";
 		pidl "\t\t$var_prefix$e->{NAME} = NULL;\n";
@@ -747,7 +747,7 @@ sub ParseElementPushBuffer($$$)
 	if (need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		if (util::has_property($e, "relative")) {
-			pidl "\t\tNDR_CHECK(ndr_push_relative2(ndr, $var_prefix$e->{NAME}));\n";
+			pidl "\t\tNDR_CHECK(ndr_push_relative_ptr2(ndr, $var_prefix$e->{NAME}));\n";
 		}
 	}
 	    
@@ -825,7 +825,7 @@ sub ParseElementPullBuffer($$$)
 		if (util::has_property($e, "relative")) {
 			pidl "\t\tstruct ndr_pull_save _relative_save;\n";
 			pidl "\t\tndr_pull_save(ndr, &_relative_save);\n";
-			pidl "\t\tNDR_CHECK(ndr_pull_relative2(ndr, $var_prefix$e->{NAME}));\n";
+			pidl "\t\tNDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_prefix$e->{NAME}));\n";
 		}
 	}
 	    
@@ -1585,7 +1585,7 @@ sub ParseFunctionElementPush($$)
 
 	if (util::array_size($e)) {
 		if (need_wire_pointer($e)) {
-			pidl "\tNDR_CHECK(ndr_push_ptr(ndr, r->$inout.$e->{NAME}));\n";
+			pidl "\tNDR_CHECK(ndr_push_unique_ptr(ndr, r->$inout.$e->{NAME}));\n";
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";
 			ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 			pidl "\t}\n";
@@ -1644,7 +1644,7 @@ sub ParseFunctionElementPull($$)
 
 	if (util::array_size($e)) {
 		if (need_wire_pointer($e)) {
-			pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
+			pidl "\tNDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));\n";
 			pidl "\tr->$inout.$e->{NAME} = NULL;\n";
 			pidl "\tif (_ptr_$e->{NAME}) {\n";
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
@@ -1936,7 +1936,9 @@ sub LoadInterface($)
 	my $x = shift;
 
 	if (not util::has_property($x, "pointer_default")) {
-		$x->{PROPERTIES}->{pointer_default} = "ptr";
+		# MIDL defaults to "ptr" in DCE compatible mode (/osf)
+		# and "unique" in Microsoft Extensions mode (default)
+		$x->{PROPERTIES}->{pointer_default} = "unique";
 	}
 
 	foreach my $d (@{$x->{DATA}}) {
@@ -1947,7 +1949,9 @@ sub LoadInterface($)
 			}
 		}
 		if ($d->{TYPE} eq "FUNCTION") {
-			CheckPointerTypes($d, $x->{PROPERTIES}->{pointer_default});
+			CheckPointerTypes($d, 
+				$x->{PROPERTIES}->{pointer_default}  # MIDL defaults to "ref"
+			);
 		}
 	}
 }
