@@ -18,6 +18,10 @@
 	* krb4.c (krb4_copy_encrypted): check that fds are not too large
 	to select on
 
+2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: use conditional for X
+
 2000-06-10  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: use INSTALL_SCRIPT for installing rxterm, rxtelnet,

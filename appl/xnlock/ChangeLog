@@ -6,6 +6,10 @@
 
 	* xnlock.c (main): handle krb5_init_context failure consistently
 
+2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: use conditional for X
+
 2000-04-09  Assar Westerlund  <assar@sics.se>
 
 	* xnlock.c (verfiy_krb5): get the v4-realm from the v5-ticket and
