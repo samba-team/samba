@@ -31,7 +31,7 @@
 /*
   parse a uint8
 */
-NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, uint8 *v)
+NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, uint8_t *v)
 {
 	NDR_PULL_NEED_BYTES(ndr, 1);
 	*v = CVAL(ndr->data, ndr->offset);
@@ -199,7 +199,7 @@ NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *da
 /*
   push a uint8
 */
-NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8 v)
+NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8_t v)
 {
 	NDR_PUSH_NEED_BYTES(ndr, 1);
 	SCVAL(ndr->data, ndr->offset, v);
@@ -678,7 +678,7 @@ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 	ndr->print(ndr, "%s: struct %s", name, type);
 }
 
-void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8 v)
+void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
 }
@@ -790,7 +790,7 @@ void ndr_print_array_uint16(struct ndr_print *ndr, const char *name,
 }
 
 void ndr_print_array_uint8(struct ndr_print *ndr, const char *name, 
-			   const uint8 *data, uint32_t count)
+			   const uint8_t *data, uint32_t count)
 {
 	int i;
 

@@ -46,7 +46,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	int i, n;
 	va_list ap;
 	char *s;
-	uint8 *b;
+	uint8_t *b;
 	int head_size=0, data_size=0;
 	int head_ofs, data_ofs;
 
@@ -70,12 +70,12 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			data_size += (str_charnum(s) * 2) + 4;
 			break;
 		case 'B':
-			b = va_arg(ap, uint8 *);
+			b = va_arg(ap, uint8_t *);
 			head_size += 8;
 			data_size += va_arg(ap, int);
 			break;
 		case 'b':
-			b = va_arg(ap, uint8 *);
+			b = va_arg(ap, uint8_t *);
 			head_size += va_arg(ap, int);
 			break;
 		case 'd':
@@ -131,7 +131,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			break;
 
 		case 'B':
-			b = va_arg(ap, uint8 *);
+			b = va_arg(ap, uint8_t *);
 			n = va_arg(ap, int);
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
@@ -145,7 +145,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			SIVAL(blob->data, head_ofs, n); head_ofs += 4;
 			break;
 		case 'b':
-			b = va_arg(ap, uint8 *);
+			b = va_arg(ap, uint8_t *);
 			n = va_arg(ap, int);
 			memcpy(blob->data + head_ofs, b, n);
 			head_ofs += n;
@@ -216,7 +216,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					/* if odd length and unicode */
 					return False;
 				}
-				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+				if (blob->data + ptr < (uint8_t *)ptr || blob->data + ptr < blob->data)
 					return False;
 
 				if (0 < len1) {
@@ -247,7 +247,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return False;
 				}
 
-				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+				if (blob->data + ptr < (uint8_t *)ptr || blob->data + ptr < blob->data)
 					return False;	
 
 				if (0 < len1) {
@@ -278,7 +278,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return False;
 				}
 
-				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+				if (blob->data + ptr < (uint8_t *)ptr || blob->data + ptr < blob->data)
 					return False;	
 			
 				*b = data_blob_talloc(mem_ctx, blob->data + ptr, len1);
@@ -289,7 +289,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			len1 = va_arg(ap, unsigned);
 			/* make sure its in the right format - be strict */
 			NEED_DATA(len1);
-			if (blob->data + head_ofs < (uint8 *)head_ofs || blob->data + head_ofs < blob->data)
+			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)
 				return False;	
 			
 			*b = data_blob_talloc(mem_ctx, blob->data + head_ofs, len1);
@@ -303,7 +303,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 		case 'C':
 			s = va_arg(ap, char *);
 
-			if (blob->data + head_ofs < (uint8 *)head_ofs || blob->data + head_ofs < blob->data)
+			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)
 				return False;	
 	
 			head_ofs += pull_string(NULL, p, blob->data+head_ofs, sizeof(p), 

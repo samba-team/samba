@@ -81,13 +81,13 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 			     const char *username,
 			     const char *password,
 			     int chan_type,
-			     uint8 new_session_key[8])
+			     uint8_t new_session_key[8])
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
-	uint8 mach_pwd[16];
+	uint8_t mach_pwd[16];
 	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
 	uint32_t negotiate_flags = 0;
@@ -160,10 +160,10 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 				       const char *uuid, unsigned version,
 				       const char *domain,
 				       const char *username,
-				       const uint8 session_key[8])
+				       const uint8_t session_key[8])
 {
 	NTSTATUS status;
-	uint8 full_session_key[16];
+	uint8_t full_session_key[16];
 	struct schannel_state *schannel_state;
 	const char *workgroup, *workstation;
 
@@ -261,7 +261,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 				   const char *password)
 {
 	NTSTATUS status;
-	uint8 session_key[8];
+	uint8_t session_key[8];
 
 	status = dcerpc_schannel_key(p, domain, username, password, 
 				     lp_server_role() == ROLE_DOMAIN_BDC? SEC_CHAN_BDC:SEC_CHAN_WKSTA,

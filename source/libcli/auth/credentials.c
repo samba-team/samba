@@ -31,11 +31,11 @@
 static void creds_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
-		       const uint8 machine_password[16])
+		       const uint8_t machine_password[16])
 {
 	struct netr_Credential time_cred;
 	uint32_t sum[2];
-	uint8 sum2[8];
+	uint8_t sum2[8];
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
@@ -144,7 +144,7 @@ next comes the client specific functions
 void creds_client_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
-		       const uint8 machine_password[16],
+		       const uint8_t machine_password[16],
 		       struct netr_Credential *initial_credential)
 {
 	creds->sequence = time(NULL);
@@ -197,7 +197,7 @@ next comes the server specific functions
 void creds_server_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
-		       const uint8 machine_password[16],
+		       const uint8_t machine_password[16],
 		       struct netr_Credential *initial_credential)
 {
 	creds_init(creds, client_challenge, server_challenge, machine_password);

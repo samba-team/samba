@@ -299,7 +299,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
 			      const char *smb_name, 
 			      const char *client_domain,
-			      const uint8 chal[8],
+			      const uint8_t chal[8],
 			      DATA_BLOB plaintext_password)
 {
 

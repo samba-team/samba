@@ -25,7 +25,7 @@
 /*
   send an oplock break request to a client
 */
-BOOL req_send_oplock_break(struct tcon_context *conn, uint16_t fnum, uint8 level)
+BOOL req_send_oplock_break(struct tcon_context *conn, uint16_t fnum, uint8_t level)
 {
 	struct request_context *req;
 
@@ -415,7 +415,7 @@ static const struct smb_message_struct
 /****************************************************************************
 return a string containing the function name of a SMB command
 ****************************************************************************/
-static const char *smb_fn_name(uint8 type)
+static const char *smb_fn_name(uint8_t type)
 {
 	const char *unknown_name = "SMBunknown";
 
@@ -550,7 +550,7 @@ static void switch_message(int type, struct request_context *req)
 ****************************************************************************/
 static void construct_reply(struct request_context *req)
 {
-	uint8 type = CVAL(req->in.hdr,HDR_COM);
+	uint8_t type = CVAL(req->in.hdr,HDR_COM);
 
 	/* see if its a special NBT packet */
 	if (CVAL(req->in.buffer,0) != 0) {

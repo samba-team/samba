@@ -27,7 +27,7 @@ struct cli_request *smb_raw_query_secdesc_send(struct cli_tree *tree,
 					       struct smb_query_secdesc *query)
 {
 	struct smb_nttrans nt;
-	uint8 params[8];
+	uint8_t params[8];
 
 	nt.in.max_setup = 0;
 	nt.in.max_param = 4;
@@ -108,7 +108,7 @@ struct cli_request *smb_raw_set_secdesc_send(struct cli_tree *tree,
 					     struct smb_set_secdesc *set)
 {
 	struct smb_nttrans nt;
-	uint8 params[8];
+	uint8_t params[8];
 	struct ndr_push *ndr;
 	struct cli_request *req;
 	NTSTATUS status;

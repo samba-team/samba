@@ -269,7 +269,7 @@ typedef struct time_info
 
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
-	uint8 *data;
+	uint8_t *data;
 	size_t length;
 	void (*free)(struct data_blob *data_blob);
 } DATA_BLOB;

@@ -68,7 +68,7 @@ uint_t ea_pull_struct(const DATA_BLOB *blob,
 		      TALLOC_CTX *mem_ctx,
 		      struct ea_struct *ea)
 {
-	uint8 nlen;
+	uint8_t nlen;
 	uint16_t vlen;
 
 	if (blob->length < 6) {

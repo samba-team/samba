@@ -292,7 +292,7 @@ void req_send_reply(struct request_context *req)
    construct and send an error packet with a forced DOS error code
    this is needed to match win2000 behaviour for some parts of the protocol
 */
-void req_reply_dos_error(struct request_context *req, uint8 eclass, uint16_t ecode)
+void req_reply_dos_error(struct request_context *req, uint8_t eclass, uint16_t ecode)
 {
 	/* if the basic packet hasn't been setup yet then do it now */
 	if (req->out.buffer == NULL) {
@@ -320,7 +320,7 @@ void req_reply_error(struct request_context *req, NTSTATUS status)
 
 	if (!lp_nt_status_support() || !(req->smb->negotiate.client_caps & CAP_STATUS32)) {
 		/* convert to DOS error codes */
-		uint8 eclass;
+		uint8_t eclass;
 		uint32_t ecode;
 		ntstatus_to_dos(status, &eclass, &ecode);
 		req_reply_dos_error(req, eclass, ecode);
@@ -395,7 +395,7 @@ size_t req_push_str(struct request_context *req, char *dest, const char *str, in
   return the number of bytes added
 */
 size_t req_append_bytes(struct request_context *req, 
-		const uint8 *bytes, size_t byte_len)
+		const uint8_t *bytes, size_t byte_len)
 {
 	req_grow_allocation(req, byte_len + req->out.data_size);
 	memcpy(req->out.data + req->out.data_size, bytes, byte_len);
@@ -407,7 +407,7 @@ size_t req_append_bytes(struct request_context *req,
   return the number of bytes added
 */
 size_t req_append_var_block(struct request_context *req, 
-		const uint8 *bytes, uint16_t byte_len)
+		const uint8_t *bytes, uint16_t byte_len)
 {
 	req_grow_allocation(req, byte_len + 3 + req->out.data_size);
 	SCVAL(req->out.data + req->out.data_size, 0, 5);

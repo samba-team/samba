@@ -26,7 +26,7 @@
   generate a negTokenInit packet given a GUID, a list of supported
   OIDs (the mechanisms) and a principal name string 
 */
-DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16], 
+DATA_BLOB spnego_gen_negTokenInit(uint8_t guid[16], 
 				  const char *OIDs[], 
 				  const char *principal)
 {
@@ -260,7 +260,7 @@ BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket, const uint8 tok_id[2])
+DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket, const uint8_t tok_id[2])
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
@@ -288,7 +288,7 @@ DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket, const uint8 tok_id[2])
 /*
   parse a krb5 GSS-API wrapper packet giving a ticket
 */
-BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
+BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8_t tok_id[2])
 {
 	BOOL ret;
 	ASN1_DATA data;
@@ -453,7 +453,7 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
-	uint8 negResult;
+	uint8_t negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		negResult = SPNEGO_NEG_RESULT_ACCEPT;
@@ -496,7 +496,7 @@ BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 				DATA_BLOB *auth)
 {
 	ASN1_DATA data;
-	uint8 negResult;
+	uint8_t negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		negResult = SPNEGO_NEG_RESULT_ACCEPT;
