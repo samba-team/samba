@@ -54,11 +54,11 @@ esac
 
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
-( cd ../../.. ; tar --exclude=CVS -cvf ${SRCDIR}/samba-${VERSION}.tar.gz samba-${VERSION} )
+( cd ../../.. ; tar --exclude=CVS -cvf ${SRCDIR}/samba-${VERSION}.tar samba-${VERSION} )
 ( cd ${SRCDIR}; bzip2 samba-$VERSION.tar )
 
 cp -av samba.spec ${SPECDIR}
-cp -a *.patch smb.* samba.log $SRCDIR
+cp -a *.patch.bz2 *.xpm.bz2 smb.* samba.xinetd samba.log $SRCDIR
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
