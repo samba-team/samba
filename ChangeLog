@@ -1,3 +1,10 @@
+2001-05-07  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_context_data): add error_string and
+	error_buf
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add error_string.c
+	* lib/krb5/error_string.c: new file
+
 2001-04-29  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c (tgs_rep2): return a reference to a krbtgt for
