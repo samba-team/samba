@@ -64,8 +64,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	fstring name_domain, name_user;
 	extern pstring global_myname;
 
-	DEBUG(1,("winbindd_pam_auth user=%s\n", 
-		 state->request.data.auth.user));
+	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
+		  state->request.data.auth.user));
 
 	/* Parse domain and username */
 	parse_domain_user(state->request.data.auth.user, name_domain, 
@@ -107,6 +107,9 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
     fstring domain, user;
     uchar nt_oldhash[16];
     uchar lm_oldhash[16];
+
+    DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
+	      state->request.data.chauthtok.user));
 
     /* Setup crap */
 
