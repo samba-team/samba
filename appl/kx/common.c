@@ -579,7 +579,6 @@ match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
 		    ai->ai_canonname,
 		    auth->address_length) == 0)
 	    return 0;
-    }
     return 1;
 }
 
