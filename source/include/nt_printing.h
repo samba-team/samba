@@ -434,4 +434,49 @@ typedef struct {
 	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
 } SPOOLSS_NOTIFY_MSG_CTR;
 
+#define PRINTER_HANDLE_IS_PRINTER	0
+#define PRINTER_HANDLE_IS_PRINTSERVER	1
+
+/* structure to store the printer handles */
+/* and a reference to what it's pointing to */
+/* and the notify info asked about */
+/* that's the central struct */
+typedef struct _Printer{
+	struct _Printer *prev, *next;
+	BOOL document_started;
+	BOOL page_started;
+	uint32 jobid; /* jobid in printing backend */
+	BOOL printer_type;
+	TALLOC_CTX *ctx;
+	union {
+	  	fstring handlename;
+		fstring printerservername;
+	} dev;
+	uint32 type;
+	uint32 access_granted;
+	struct {
+		uint32 flags;
+		uint32 options;
+		fstring localmachine;
+		uint32 printerlocal;
+		SPOOL_NOTIFY_OPTION *option;
+		POLICY_HND client_hnd;
+		BOOL client_connected;
+		uint32 change;
+		/* are we in a FindNextPrinterChangeNotify() call? */
+		BOOL fnpcn;
+	} notify;
+	struct {
+		fstring machine;
+		fstring user;
+	} client;
+	
+	/* devmode sent in the OpenPrinter() call */
+	NT_DEVICEMODE	*nt_devmode;
+	
+	/* cache the printer info */
+	NT_PRINTER_INFO_LEVEL *printer_info;
+	
+} Printer_entry;
+
 #endif /* NT_PRINTING_H_ */
