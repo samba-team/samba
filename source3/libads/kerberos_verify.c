@@ -3,7 +3,7 @@
    kerberos utility library
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
-   
+   Copyright (C) Luke Howard 2003   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@
   authorization_data if available 
 */
 NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket, 
-			   char **principal, DATA_BLOB *auth_data)
+			   char **principal, DATA_BLOB *auth_data,
+			   DATA_BLOB *ap_rep,
+			   uint8 session_key[16])
 {
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
@@ -122,9 +124,23 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	if (!auth_ok) {
 		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
-		SAFE_FREE(key);
 		return NT_STATUS_LOGON_FAILURE;
 	}
+
+	ret = krb5_mk_rep(context, auth_context, &packet);
+	if (ret) {
+		DEBUG(3,("Failed to generate mutual authentication reply (%s)\n",
+			error_message(ret)));
+		krb5_auth_con_free(context, auth_context);
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	*ap_rep = data_blob(packet.data, packet.length);
+	free(packet.data);
+
+	krb5_get_smb_session_key(context, auth_context, session_key);
+	DEBUG(0,("SMB session key (from ticket) follows:\n"));
+	dump_data(0, session_key, 16);
 
 #if 0
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
@@ -134,20 +150,24 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 #if 0
 	if (tkt->enc_part2) {
-		file_save("/tmp/authdata.dat", 
+		file_save("/tmp/authdata.dat",
 			  tkt->enc_part2->authorization_data[0]->contents,
 			  tkt->enc_part2->authorization_data[0]->length);
-	}
 #endif
 
 	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
 				     principal))) {
 		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
+		data_blob_free(auth_data);
+		data_blob_free(ap_rep);
+		krb5_auth_con_free(context, auth_context);
 		return NT_STATUS_LOGON_FAILURE;
 	}
+
+	krb5_auth_con_free(context, auth_context);
 
 	return NT_STATUS_OK;
 }
 
-#endif
+#endif /* HAVE_KRB5 */

@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1998-2001
    Copyright (C) Andrew Bartlett      2001
    Copyright (C) Jim McDonough        2002
+   Copyright (C) Luke Howard          2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -146,11 +147,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	int sess_vuid;
 	NTSTATUS ret;
 	DATA_BLOB auth_data;
+	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
 	ADS_STRUCT *ads;
+	uint8 session_key[16];
+	uint8 tok_id[2];
 	BOOL foreign = False;
 
-	if (!spnego_parse_krb5_wrap(*secblob, &ticket)) {
+	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -162,7 +166,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	ads->auth.realm = strdup(lp_realm());
 
-	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data);
+	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data, &ap_rep, session_key);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
 		ads_destroy(&ads);
@@ -177,6 +181,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!p) {
 		DEBUG(3,("Doesn't look like a valid principal\n"));
 		ads_destroy(&ads);
+		data_blob_free(&ap_rep);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -184,6 +189,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (strcasecmp(p+1, ads->auth.realm) != 0) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
+			data_blob_free(&ap_rep);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		foreign = True;
@@ -209,31 +215,51 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
+		data_blob_free(&ap_rep);
 		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
 	}
 
 	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
+		data_blob_free(&ap_rep);
 		return ERROR_NT(ret);
 	}
-	
+
+	/* Copy out the session key from the AP_REQ. */
+	memcpy(server_info->session_key, session_key, sizeof(session_key));
+
 	/* register_vuid keeps the server info */
 	sess_vuid = register_vuid(server_info, user);
 
 	free(user);
 
 	if (sess_vuid == -1) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		ret = NT_STATUS_LOGON_FAILURE;
+	} else {
+		set_message(outbuf,4,0,True);
+		SSVAL(outbuf, smb_vwv3, 0);
+			
+		if (server_info->guest) {
+			SSVAL(outbuf,smb_vwv2,1);
+		}
+		
+		SSVAL(outbuf, smb_uid, sess_vuid);
 	}
 
-	set_message(outbuf,4,0,True);
-	SSVAL(outbuf, smb_vwv3, 0);
-	add_signature(outbuf);
- 
-	SSVAL(outbuf,smb_uid,sess_vuid);
-	SSVAL(inbuf,smb_uid,sess_vuid);
-	
-	return chain_reply(inbuf,outbuf,length,bufsize);
+        /* wrap that up in a nice GSS-API wrapping */
+	if (NT_STATUS_IS_OK(ret)) {
+		ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_AP_REP);
+	} else {
+		ap_rep_wrapped = data_blob(NULL, 0);
+	}
+	response = spnego_gen_auth_response(&ap_rep_wrapped, ret, OID_KERBEROS5_OLD);
+	reply_sesssetup_blob(conn, outbuf, response, ret);
+
+	data_blob_free(&ap_rep);
+	data_blob_free(&ap_rep_wrapped);
+	data_blob_free(&response);
+
+	return -1; /* already replied */
 }
 #endif
 
@@ -280,7 +306,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 		}
 	}
 
-        response = spnego_gen_auth_response(ntlmssp_blob, nt_status);
+        response = spnego_gen_auth_response(ntlmssp_blob, nt_status, OID_NTLMSSP);
 	ret = reply_sesssetup_blob(conn, outbuf, response, nt_status);
 	data_blob_free(&response);
 

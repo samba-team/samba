@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Andrew Barteltt 2001-2003
+   Copyright (C) Andrew Bartlett 2001-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -3,6 +3,7 @@
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Jim McDonough   2002
+   Copyright (C) Luke Howard     2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -259,7 +260,7 @@ BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
+DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket, uint8 tok_id[2])
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
@@ -268,7 +269,8 @@ DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
 
 	asn1_push_tag(&data, ASN1_APPLICATION(0));
 	asn1_write_OID(&data, OID_KERBEROS5);
-	asn1_write_BOOLEAN(&data, 0);
+
+	asn1_write(&data, tok_id, 2);
 	asn1_write(&data, ticket.data, ticket.length);
 	asn1_pop_tag(&data);
 
@@ -286,7 +288,7 @@ DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
 /*
   parse a krb5 GSS-API wrapper packet giving a ticket
 */
-BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
+BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 {
 	BOOL ret;
 	ASN1_DATA data;
@@ -295,15 +297,15 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
 	asn1_load(&data, blob);
 	asn1_start_tag(&data, ASN1_APPLICATION(0));
 	asn1_check_OID(&data, OID_KERBEROS5);
-	asn1_check_BOOLEAN(&data, 0);
 
 	data_remaining = asn1_tag_remaining(&data);
 
-	if (data_remaining < 1) {
+	if (data_remaining < 3) {
 		data.has_error = True;
 	} else {
-		
-		*ticket = data_blob(data.data, data_remaining);
+		asn1_read(&data, tok_id, 2);
+		data_remaining -= 2;
+		*ticket = data_blob(NULL, data_remaining);
 		asn1_read(&data, ticket->data, ticket->length);
 	}
 
@@ -330,7 +332,7 @@ DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset)
 	tkt = krb5_get_ticket(principal, time_offset);
 
 	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(tkt);
+	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
 
 	/* and wrap that in a shiny SPNEGO wrapper */
 	targ = gen_negTokenTarg(krb_mechs, tkt_wrapped);
@@ -438,9 +440,10 @@ BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 }
 
 /*
-  generate a minimal SPNEGO NTLMSSP response packet.  Doesn't contain much.
+  generate a minimal SPNEGO response packet.  Doesn't contain much.
 */
-DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
+DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
+				   const char *mechOID)
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
@@ -462,13 +465,13 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	asn1_write_enumerated(&data, negResult);
 	asn1_pop_tag(&data);
 
-	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
+	if (reply->data != NULL) {
 		asn1_push_tag(&data,ASN1_CONTEXT(1));
-		asn1_write_OID(&data, OID_NTLMSSP);
+		asn1_write_OID(&data, mechOID);
 		asn1_pop_tag(&data);
 		
 		asn1_push_tag(&data,ASN1_CONTEXT(2));
-		asn1_write_OctetString(&data, ntlmssp_reply->data, ntlmssp_reply->length);
+		asn1_write_OctetString(&data, reply->data, reply->length);
 		asn1_pop_tag(&data);
 	}
 
