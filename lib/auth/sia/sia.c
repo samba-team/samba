@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -14,12 +14,7 @@
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
  * 
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *      This product includes software developed by the Kungliga Tekniska
- *      Högskolan and its contributors.
- * 
- * 4. Neither the name of the Institute nor the names of its contributors
+ * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  * 
@@ -36,84 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "sia_locl.h"
+
 RCSID("$Id$");
-#endif
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-#include <siad.h>
-#include <pwd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include <krb.h>
-#include <kafs.h>
-#include <kadm.h>
-#include <kadm_err.h>
-#include <roken.h>
-
-
-#ifndef POSIX_GETPWNAM_R
-
-/* These functions translate from the old Digital UNIX 3.x interface
- * to POSIX.1c.
- */
-
-static int
-posix_getpwnam_r(const char *name, struct passwd *pwd, 
-	   char *buffer, int len, struct passwd **result)
-{
-    int ret = getpwnam_r(name, pwd, buffer, len);
-    if(ret == 0)
-	*result = pwd;
-    else{
-	*result = NULL;
-	ret = _Geterrno();
-	if(ret == 0){
-	    ret = ERANGE;
-	    _Seterrno(ret);
-	}
-    }
-    return ret;
-}
-
-#define getpwnam_r posix_getpwnam_r
-
-static int
-posix_getpwuid_r(uid_t uid, struct passwd *pwd, 
-		 char *buffer, int len, struct passwd **result)
-{
-    int ret = getpwuid_r(uid, pwd, buffer, len);
-    if(ret == 0)
-	*result = pwd;
-    else{
-	*result = NULL;
-	ret = _Geterrno();
-	if(ret == 0){
-	    ret = ERANGE;
-	    _Seterrno(ret);
-	}
-    }
-    return ret;
-}
-
-#define getpwuid_r posix_getpwuid_r
-
-#endif /* POSIX_GETPWNAM_R */
-
-#ifndef DEBUG
-#define SIA_DEBUG(X)
-#else
-#define SIA_DEBUG(X) SIALOG X
-#endif
-
-struct state{
-    char ticket[MaxPathLen];
-    int valid;
-};
 
 int 
 siad_init(void)
@@ -136,6 +56,9 @@ siad_ses_init(SIAENTITY *entity, int pkgind)
     if(s == NULL)
 	return SIADFAIL;
     memset(s, 0, sizeof(*s));
+#ifdef SIA_KRB5
+    krb5_init_context(&s->context);
+#endif
     entity->mech[pkgind] = (int*)s;
     return SIADSUCCESS;
 }
@@ -144,7 +67,7 @@ static int
 setup_name(SIAENTITY *e, prompt_t *p)
 {
     SIA_DEBUG(("DEBUG", "setup_name"));
-    e->name = malloc(SIANAMEMIN+1);
+    e->name = malloc(SIANAMEMIN + 1);
     if(e->name == NULL){
 	SIA_DEBUG(("DEBUG", "failed to malloc %u bytes", SIANAMEMIN+1));
 	return SIADFAIL;
@@ -161,7 +84,7 @@ static int
 setup_password(SIAENTITY *e, prompt_t *p)
 {
     SIA_DEBUG(("DEBUG", "setup_password"));
-    e->password = malloc(SIAMXPASSWORD+1);
+    e->password = malloc(SIAMXPASSWORD + 1);
     if(e->password == NULL){
 	SIA_DEBUG(("DEBUG", "failed to malloc %u bytes", SIAMXPASSWORD+1));
 	return SIADFAIL;
@@ -175,6 +98,133 @@ setup_password(SIAENTITY *e, prompt_t *p)
 }
 
 
+#if defined(SIA_KRB4) && !defined(KRB_VERIFY_SECURE)
+#define KRB_VERIFY_SECURE 1
+#define KRB_VERIFY_NOT_SECURE 0
+#endif
+
+static int
+doauth(SIAENTITY *entity, int pkgind, char *name)
+{
+    struct passwd pw, *pwd;
+    char pwbuf[1024];
+    struct state *s = (struct state*)entity->mech[pkgind];
+#ifdef SIA_KRB5
+    char *realm;
+    krb5_principal principal;
+    krb5_ccache ccache;
+    krb5_error_code ret;
+#endif
+#ifdef SIA_KRB4
+    char realm[REALM_SZ];
+    char *toname, *toinst;
+    int ret;
+    struct passwd fpw, *fpwd;
+    char fpwbuf[1024];
+    int secure;
+#endif
+	
+    if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0){
+	SIA_DEBUG(("DEBUG", "failed to getpwnam(%s)", name));
+	return SIADFAIL;
+    }
+
+#ifdef SIA_KRB5
+    ret = krb5_get_default_realm(s->context, &realm);
+    krb5_build_principal(s->context, &principal, 
+			 strlen(realm),
+			 realm,
+			 entity->name,
+			 NULL);
+
+	
+    if(!krb5_kuserok(s->context, principal, entity->name))
+	return SIADFAIL;
+    sprintf(s->ticket, "FILE:/tmp/krb5_cc%d_%d", pwd->pw_uid, getpid());
+    ret = krb5_cc_resolve(s->context, s->ticket, &ccache);
+    if(ret)
+	return SIADFAIL;
+    ret = krb5_cc_initialize(s->context, ccache, principal);
+    if(ret)
+	return SIADFAIL;
+#endif
+	
+#ifdef SIA_KRB4
+    snprintf(s->ticket, sizeof(s->ticket),
+	     TKT_ROOT "%u_%u", (unsigned)pwd->pw_uid, (unsigned)getpid());
+    krb_get_lrealm(realm, 1);
+    toname = name;
+    toinst = "";
+    if(entity->authtype == SIA_A_SUAUTH){
+	uid_t ouid;
+#ifdef HAVE_SIAENTITY_OUID
+	ouid = entity->ouid;
+#else
+	ouid = getuid();
+#endif
+	if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0){
+	    SIA_DEBUG(("DEBUG", "failed to getpwuid(%u)", ouid));
+	    return SIADFAIL;
+	}
+	snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
+		 fpwd->pw_name, pwd->pw_name, getpid());
+	if(strcmp(pwd->pw_name, "root") == 0){
+	    toname = fpwd->pw_name;
+	    toinst = pwd->pw_name;
+	}
+    }
+    if(entity->authtype == SIA_A_REAUTH) 
+	snprintf(s->ticket, sizeof(s->ticket), "%s", tkt_string());
+    
+    krb_set_tkt_string(s->ticket);
+	
+    setuid(0); /* XXX fix for fix in tf_util.c */
+    if(krb_kuserok(toname, toinst, realm, name)){
+	SIA_DEBUG(("DEBUG", "%s.%s@%s is not allowed to login as %s", 
+		   toname, toinst, realm, name));
+	return SIADFAIL;
+    }
+#endif
+#ifdef SIA_KRB5
+    ret = krb5_verify_user(s->context, principal, ccache,
+			   entity->password, 1, NULL);
+    if(ret){
+	/* if this is most likely a local user (such as
+	   root), just silently return failure when the
+	   principal doesn't exist */
+	if(ret != KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN && 
+	   ret != KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN)
+	    SIALOG("WARNING", "krb5_verify_user(%s): %s", 
+		   entity->name, error_message(ret));
+	return SIADFAIL;
+    }
+#endif
+#ifdef SIA_KRB4
+    if (getuid () == 0)
+	secure = KRB_VERIFY_SECURE;
+    else
+	secure = KRB_VERIFY_NOT_SECURE;
+	
+    ret = krb_verify_user(toname, toinst, realm,
+			  entity->password, secure, NULL);
+    if(ret){
+	SIA_DEBUG(("DEBUG", "krb_verify_user: %s", krb_get_err_text(ret)));
+	if(ret != KDC_PR_UNKNOWN)
+	    /* since this is most likely a local user (such as
+	       root), just silently return failure when the
+	       principal doesn't exist */
+	    SIALOG("WARNING", "krb_verify_user(%s.%s): %s", 
+		   toname, toinst, krb_get_err_text(ret));
+	return SIADFAIL;
+    }
+#endif
+    if(sia_make_entity_pwd(pwd, entity) == SIAFAIL)
+	return SIADFAIL;
+    s->valid = 1;
+    return SIADSUCCESS;
+}
+
+
 static int 
 common_auth(sia_collect_func_t *collect, 
 	    SIAENTITY *entity, 
@@ -182,7 +232,6 @@ common_auth(sia_collect_func_t *collect,
 	    int pkgind)
 {
     prompt_t prompts[2], *pr;
-    char *toname, *toinst;
     char *name;
 
     SIA_DEBUG(("DEBUG", "common_auth"));
@@ -236,75 +285,7 @@ common_auth(sia_collect_func_t *collect,
 	return SIADFAIL;
     }
     
-    {
-	char realm[REALM_SZ];
-	int ret;
-	struct passwd pw, *pwd, fpw, *fpwd;
-	char pwbuf[1024], fpwbuf[1024];
-	struct state *s = (struct state*)entity->mech[pkgind];
-	int secure;
-	
-	if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0){
-	    SIA_DEBUG(("DEBUG", "failed to getpwnam(%s)", name));
-	    return SIADFAIL;
-	}
-	
-	snprintf(s->ticket, sizeof(s->ticket),
-		 TKT_ROOT "%u_%u", (unsigned)pwd->pw_uid, (unsigned)getpid());
-	krb_get_lrealm(realm, 1);
-	toname = name;
-	toinst = "";
-	if(entity->authtype == SIA_A_SUAUTH){
-	    uid_t ouid;
-#ifdef HAVE_SIAENTITY_OUID
-	    ouid = entity->ouid;
-#else
-	    ouid = getuid();
-#endif
-	    if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0){
-		SIA_DEBUG(("DEBUG", "failed to getpwuid(%u)", ouid));
-		return SIADFAIL;
-	    }
-	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
-		     fpwd->pw_name, pwd->pw_name, getpid());
-	    if(strcmp(pwd->pw_name, "root") == 0){
-		toname = fpwd->pw_name;
-		toinst = pwd->pw_name;
-	    }
-	}
-	if(entity->authtype == SIA_A_REAUTH) 
-	    snprintf(s->ticket, sizeof(s->ticket), "%s", tkt_string());
-    
-	krb_set_tkt_string(s->ticket);
-	
-	setuid(0); /* XXX fix for fix in tf_util.c */
-	if(krb_kuserok(toname, toinst, realm, name)){
-	    SIA_DEBUG(("DEBUG", "%s.%s@%s is not allowed to login as %s", 
-		       toname, toinst, realm, name));
-	    return SIADFAIL;
-	}
-	if (getuid () == 0)
-	    secure = KRB_VERIFY_SECURE;
-	else
-	    secure = KRB_VERIFY_NOT_SECURE;
-
-	ret = krb_verify_user(toname, toinst, realm,
-			      entity->password, secure, NULL);
-	if(ret){
-	    SIA_DEBUG(("DEBUG", "krb_verify_user: %s", krb_get_err_text(ret)));
-	    if(ret != KDC_PR_UNKNOWN)
-		/* since this is most likely a local user (such as
-                   root), just silently return failure when the
-                   principal doesn't exist */
-		SIALOG("WARNING", "krb_verify_user(%s.%s): %s", 
-		       toname, toinst, krb_get_err_text(ret));
-	    return SIADFAIL;
-	}
-	if(sia_make_entity_pwd(pwd, entity) == SIAFAIL)
-	    return SIADFAIL;
-	s->valid = 1;
-    }
-    return SIADSUCCESS;
+    return doauth(entity, pkgind, name);
 }
 
 
@@ -335,10 +316,19 @@ siad_ses_launch(sia_collect_func_t *collect,
     struct state *s = (struct state*)entity->mech[pkgind];
     SIA_DEBUG(("DEBUG", "siad_ses_launch"));
     if(s->valid){
+#ifdef SIA_KRB5
+	chown(s->ticket + sizeof("FILE:") - 1, 
+	      entity->pwd->pw_uid, 
+	      entity->pwd->pw_gid);
+	snprintf(env, sizeof(env), "KRB5CCNAME=%s", s->ticket);
+#endif
+#ifdef SIA_KRB4
 	chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
 	snprintf(env, sizeof(env), "KRBTKFILE=%s", s->ticket);
+#endif
 	putenv(env);
     }
+#ifdef KRB4
     if (k_hasafs()) {
 	char cell[64];
 	k_setpag();
@@ -346,6 +336,7 @@ siad_ses_launch(sia_collect_func_t *collect,
 	    krb_afslog(cell, 0);
 	krb_afslog_home(0, 0, entity->pwd->pw_dir);
     }
+#endif
     return SIADSUCCESS;
 }
 
@@ -353,8 +344,13 @@ int
 siad_ses_release(SIAENTITY *entity, int pkgind)
 {
     SIA_DEBUG(("DEBUG", "siad_ses_release"));
-    if(entity->mech[pkgind])
+    if(entity->mech[pkgind]){
+#ifdef SIA_KRB5
+	struct state *s = (struct state*)entity->mech[pkgind];
+	krb5_free_context(s->context);
+#endif
 	free(entity->mech[pkgind]);
+    }
     return SIADSUCCESS;
 }
 
@@ -369,7 +365,7 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	return SIADFAIL;
     if(entity->name == NULL)
 	return SIADFAIL;
-    if(entity->name[0] == 0) {
+    if(entity->name[0] == '\0') {
 	free(entity->name);
 	entity->name = strdup("root");
 	if (entity->name == NULL)
@@ -377,8 +373,6 @@ siad_ses_suauthent(sia_collect_func_t *collect,
     }
     return common_auth(collect, entity, siastat, pkgind);
 }
-
-/* The following functions returns the default fail */
 
 int
 siad_ses_reauthent (sia_collect_func_t *collect,
@@ -417,6 +411,18 @@ siad_chg_finger (sia_collect_func_t *collect,
     return SIADFAIL;
 }
 
+#ifdef SIA_KRB5
+int
+siad_chg_password (sia_collect_func_t *collect,
+		     const char *username, 
+		     int argc, 
+		     char *argv[])
+{
+    return SIADFAIL;
+}
+#endif
+
+#ifdef SIA_KRB4
 static void
 sia_message(sia_collect_func_t *collect, int rendition, 
 	    const char *title, const char *message)
@@ -568,6 +574,7 @@ again:
 	return SIADFAIL;
     return SIADSUCCESS;
 }
+#endif
 
 int
 siad_chg_shell (sia_collect_func_t *collect,
