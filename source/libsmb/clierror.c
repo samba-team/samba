@@ -175,6 +175,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
 		case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
 		case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
+		case NT_STATUS_PATH_NOT_COVERED: return ENOENT;
 		}
 
 		/* for all other cases - a default code */
