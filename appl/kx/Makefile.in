@@ -5,13 +5,16 @@ SHELL = /bin/sh
 srcdir = @srcdir@
 VPATH = @srcdir@
 
+XINCS = @X_CFLAGS@
+XLIBS = @X_LIBS@ -lXau @X_PRE_LIBS@ @X_EXTRA_LIBS@
+
 CC = @CC@
 AR = ar
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@
+CFLAGS = $(XINCS) @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
-LIBS = @LIBS@
+LIBS = $(XLIBS) @LIBS@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 prefix = @prefix@
