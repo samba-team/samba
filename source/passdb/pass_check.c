@@ -614,6 +614,7 @@ static char *osf1_bigcrypt(char *password,char *salt1)
 	
 	StrnCpy(salt,salt1,2);
 	StrnCpy(result,salt1,2);
+	result[2]='\0';
 
 	for (i=0; i<parts;i++) {
 		p1 = crypt(p2,salt);
