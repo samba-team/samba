@@ -62,14 +62,17 @@ for ln in $LANGS; do
 
 done
 
-# Install html documentation
+# Install html documentation (if html documentation tree is here)
 
-for f in $SRCDIR../docs/htmldocs/*.html; do
-      FNAME=$SWATDIR/help/`basename $f`
-      echo $FNAME
-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-      chmod 0644 $FNAME
-done
+if [ -d $SRCDIR../docs/htmldocs/ ]; then
+
+    for f in $SRCDIR../docs/htmldocs/*.html; do
+	FNAME=$SWATDIR/help/`basename $f`
+	echo $FNAME
+	cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+	chmod 0644 $FNAME
+    done
+fi
 
 # Install Using Samba book (but only if it is there)
 
