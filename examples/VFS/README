@@ -19,6 +19,12 @@ construction.  The following VFS modules are given:
 
 	recycle
 		Add a recycle bin facility to a samba share
+		Copy this to somewhere like /usr/local/samba/lib/recycle.so
+		and then add these options on a per-share basis to enable the
+		recycle bin :
+
+		        vfs object = /usr/local/samba/lib/recycle.so
+		        vfs module options= recycle=.recycle
 
 	block/
 
