@@ -59,6 +59,7 @@ libroken_la_SOURCES =		\
 	getnameinfo_verified.c	\
 	getprogname.c		\
 	h_errno.c		\
+	hex.c			\
 	hostent_find_fqdn.c	\
 	issuid.c		\
 	k_getpwnam.c		\
@@ -140,6 +141,7 @@ CLEANFILES += err.h fnmatch.h glob.h ifaddrs.h vis.h
 include_HEADERS = 				\
 	base64.h				\
 	getarg.h				\
+	hex.h					\
 	parse_bytes.h 				\
 	parse_time.h 				\
 	parse_units.h				\
