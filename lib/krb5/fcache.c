@@ -336,12 +336,17 @@ init_fcc (krb5_context context,
     int fd;
     int8_t pvno, tag;
     krb5_storage *sp;
+    krb5_error_code ret;
 
     fd = open(fcache->filename, O_RDONLY | O_BINARY);
     if(fd < 0)
 	return errno;
     sp = krb5_storage_from_fd(fd);
-    krb5_ret_int8(sp, &pvno);
+    ret = krb5_ret_int8(sp, &pvno);
+    if(ret == KRB5_CC_END)
+	return ENOENT;
+    if(ret)
+	return ret;
     if(pvno != 5) {
 	krb5_storage_free(sp);
 	close(fd);
