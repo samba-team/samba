@@ -75,7 +75,7 @@
 		[in,out] uint32 reserved,
 		[in] uint32 access_mask,
 		[in] uint32 sec_info,
-		[in] sec_desc_buf data,
+		[in] sec_desc_buf *sec_desc,
 		[in] uint32 reserved2
 	);
 

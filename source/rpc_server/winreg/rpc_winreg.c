@@ -41,6 +41,7 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 	struct _privatedata *data;
 	data = talloc(dc->mem_ctx, sizeof(struct _privatedata));
 	data->registry = reg_open("nt4", "/home/aurelia/jelmer/NTUSER.DAT", False);
+	if(!data->registry) return NT_STATUS_UNSUCCESSFUL;
 	dc->conn->private = data;
 	return NT_STATUS_OK;
 }
@@ -66,14 +67,15 @@ static NTSTATUS winreg_OpenHKCU(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		       struct winreg_OpenHKCU *r)
 {
 	struct _privatedata *data = dce_call->conn->private;
-	REG_KEY *k = reg_open_key(reg_get_root(data->registry), "\\HKEY_CURRENT_USER");
+	REG_KEY *root = reg_get_root(data->registry);
+	REG_KEY *k = reg_open_key(root, "\\HKEY_CURRENT_USER");
 
 	if(!k) {
 		r->out.result = WERR_BADFILE;
 	} else {
 		struct dcesrv_handle *h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
 		h->data = k;
-		r->out.handle = &(h->wire_handle);
+		r->out.handle = &h->wire_handle;
 	}
 
 	r->out.result = WERR_OK;
