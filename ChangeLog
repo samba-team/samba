@@ -1,3 +1,11 @@
+2003-01-16  Love  <lha@it.su.se>
+
+	* admin/get.c (kt_get): make getarg usage consistent with other
+	other parts of ktutil
+
+	* admin/copy.c (kt_copy): remove adding verbose_flag to args
+	struct, since it will overrun the args array (from Sumit Bose)
+	
 2003-01-15  Love  <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: write more about [realms] REALM = { kdc =
