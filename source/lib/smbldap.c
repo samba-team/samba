@@ -897,7 +897,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 		socklen_t len = sizeof(addr);
 		int sd;
 		if (ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_DESC, &sd) == 0 &&
-		    getpeername(sd, (struct sockaddr *) &addr, &len) < 0) {
+		    ((getpeername(sd, (struct sockaddr *) &addr, &len) < 0) || addr.sun_family == AF_LOCAL)) {
 		    	/* the other end has died. reopen. */
 		    	ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
 		    	ldap_state->ldap_struct = NULL;
@@ -971,8 +971,6 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	if (*rc != LDAP_SERVER_DOWN)
 		goto no_next;
 
-	now = time(NULL);
-
 	if (now >= endtime) {
 		smbldap_close(ldap_state);
 		*rc = LDAP_TIMEOUT;
@@ -995,7 +993,6 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 
 		*attempts += 1;
 
-		smbldap_close(ldap_state);
 		open_rc = smbldap_open(ldap_state);
 
 		if (open_rc == LDAP_SUCCESS) {
