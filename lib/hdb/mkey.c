@@ -293,7 +293,7 @@ find_master_key(Key *key, hdb_master_key mkey)
 }
 
 void
-_hdb_unseal_keys_int(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
+hdb_unseal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 {
     int i;
     krb5_error_code ret;
@@ -326,11 +326,11 @@ hdb_unseal_keys(krb5_context context, HDB *db, hdb_entry *ent)
 {
     if (db->master_key_set == 0)
 	return;
-    _hdb_unseal_keys_int(context, ent, db->master_key);
+    hdb_unseal_keys_mkey(context, ent, db->master_key);
 }
 
 void
-_hdb_seal_keys_int(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
+hdb_seal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 {
     int i;
     krb5_error_code ret;
@@ -364,7 +364,7 @@ hdb_seal_keys(krb5_context context, HDB *db, hdb_entry *ent)
     if (db->master_key_set == 0)
 	return;
     
-    _hdb_seal_keys_int(context, ent, db->master_key);
+    hdb_seal_keys_mkey(context, ent, db->master_key);
 }
 
 krb5_error_code
