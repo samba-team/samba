@@ -136,8 +136,6 @@ details:
     if a logon fails.
 
 
-
-
 Changes since 3.0beta3
 ######################
 
