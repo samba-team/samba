@@ -98,7 +98,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA/ ) {
+  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t/ ) {
     gotstart = 1;
   }
 

@@ -333,6 +333,16 @@ implemented */
 typedef char pstring[1024];
 typedef char fstring[128];
 
+/*
+ * SMB UCS2 (16-bit unicode) internal type.
+ */
+
+typedef uint16 smb_ucs2_t;
+
+/* ucs2 string types. */
+typedef smb_ucs2_t wpstring[1024];
+typedef smb_ucs2_t wfstring[128];
+
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
@@ -1791,11 +1801,5 @@ struct nmb_name {
 #define NEVER_MAP_TO_GUEST 0
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
-
-/*
- * SMB UCS2 (16-bit unicode) internal type.
- */
-
-typedef uint16 smb_ucs2_t;
 
 #endif /* _SMB_H */
