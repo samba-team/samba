@@ -109,8 +109,8 @@ struct nisplus_private_info {
 	char *location;
 };
 
-static char *make_nisname_from_user_rid (uint32 rid, char *pfile);
-static char *make_nisname_from_name (const char *user_name, char *pfile);
+static char *make_nisname_from_user_rid (uint32 rid, const char *pfile);
+static char *make_nisname_from_name (const char *user_name, const char *pfile);
 static void get_single_attribute (const nis_object * new_obj, int col,
 				  char *val, int len);;
 static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
@@ -139,14 +139,14 @@ static NTSTATUS nisplussam_setsampwent (struct pdb_methods *methods, BOOL update
 	if ((sp = strrchr (private->location, '/')))
 		safe_strcpy (pfiletmp, sp + 1, sizeof (pfiletmp) - 1);
 	else
-		safe_strcpy (pfiletmp, p, sizeof (pfiletmp) - 1);
+		safe_strcpy (pfiletmp, private->location, sizeof (pfiletmp) - 1);
 	safe_strcat (pfiletmp, ".org_dir",
 		     sizeof (pfiletmp) - strlen (pfiletmp) - 1);
 
 	pdb_endsampwent ();	/* just in case */
-	global_nisp_ent->result = nisp_get_nis_list (pfiletmp, 0);
-	global_nisp_ent->enum_entry = 0;
-	if (global_nisp_ent->result != NULL) 
+	private->result = nisp_get_nis_list (pfiletmp, 0);
+	private->enum_entry = 0;
+	if (private->result != NULL) 
 		return NT_STATUS_UNSUCCESSFUL;
 	else
 		return NT_STATUS_OK;
@@ -403,7 +403,7 @@ static NTSTATUS nisplussam_update_sam_account (struct pdb_methods *methods,
 	     nisp_get_nis_list (nisname,
 				MASTER_ONLY | FOLLOW_LINKS | FOLLOW_PATH |
 				EXPAND_NAME | HARD_LOOKUP))) {
-		return ne_status;
+		return nt_status;
 	}
 
 	if (result->status != NIS_SUCCESS || NIS_RES_NUMOBJ (result) <= 0) {
@@ -473,6 +473,8 @@ static NTSTATUS nisplussam_update_sam_account (struct pdb_methods *methods,
 static NTSTATUS nisplussam_add_sam_account (struct pdb_methods *methods,
 					SAM_ACCOUNT * newpwd)
 {
+	struct nisplus_private_info *private =
+		(struct nisplus_private_info *) methods->private_data;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int local_user = 0;
 	char *pfile;
@@ -670,7 +672,7 @@ static NTSTATUS nisplussam_add_sam_account (struct pdb_methods *methods,
 /***************************************************************
  make_nisname_from_user_rid
  ****************************************************************/
-static char *make_nisname_from_user_rid (uint32 rid, char *pfile)
+static char *make_nisname_from_user_rid (uint32 rid, const char *pfile)
 {
 	static pstring nisname;
 
@@ -685,7 +687,7 @@ static char *make_nisname_from_user_rid (uint32 rid, char *pfile)
 /***************************************************************
  make_nisname_from_name
  ****************************************************************/
-static char *make_nisname_from_name (const char *user_name, char *pfile)
+static char *make_nisname_from_name (const char *user_name, const char *pfile)
 {
 	static pstring nisname;
 
@@ -864,7 +866,7 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 	pdb_set_fullname (pw_buf, full_name, PDB_SET);
 
 	pdb_set_acct_ctrl (pw_buf, pdb_decode_acct_ctrl (ENTRY_VAL (obj,
-								    NPF_ACB), PDB_SET));
+								    NPF_ACB)), PDB_SET);
 
 	get_single_attribute (obj, NPF_ACCT_DESC, acct_desc,
 			      sizeof (pstring));
@@ -947,7 +949,7 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 	if (!(pdb_get_acct_ctrl (pw_buf) & ACB_PWNOTREQ) &&
 	    strncasecmp (ptr, "NO PASSWORD", 11)) {
 		if (strlen (ptr) != 32 || !pdb_gethexpwd (ptr, smbntpwd)) {
-			DEBUG (0, ("malformed NT pwd entry:\ %s.\n",
+			DEBUG (0, ("malformed NT pwd entry: %s.\n",
 				   pdb_get_username (pw_buf)));
 			return False;
 		}
@@ -1072,7 +1074,7 @@ static BOOL init_nisp_from_sam (nis_object * obj, const SAM_ACCOUNT * sampass,
 
 	slprintf (uid, sizeof (uid) - 1, "%u", fallback_pdb_user_rid_to_uid (u_rid));
 	slprintf (user_rid, sizeof (user_rid) - 1, "%u", u_rid);
-	slprintf (gid, sizeof (gid) - 1, "%u", fallback_pdb_group_rid_to_uid (g_rid));
+	slprintf (gid, sizeof (gid) - 1, "%u", pdb_group_rid_to_gid (g_rid));
 	slprintf (group_rid, sizeof (group_rid) - 1, "%u", g_rid);
 
 	acb = pdb_encode_acct_ctrl (pdb_get_acct_ctrl (sampass),
@@ -1486,7 +1488,10 @@ NTSTATUS pdb_init_nisplussam (PDB_CONTEXT * pdb_context,
 	struct nisplus_private_info *private = malloc (sizeof (struct nisplus_private_info));
 
 	ZERO_STRUCT(private);
-	p->location = talloc_strdup(pdb_context->mem_ctx, location);
+	if (location)
+		private->location = talloc_strdup(pdb_context->mem_ctx, location);
+	else
+		private->location = talloc_strdup(pdb_context->mem_ctx, lp_smb_passwd_file());
 
 	if (!NT_STATUS_IS_OK
 	    (nt_status =

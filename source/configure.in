@@ -2463,7 +2463,9 @@ AC_ARG_WITH(expsam,
       ;;
     nisplussam)
       ## pdb_nisplussam
+      if test x"$ac_cv_header_rpcsvc_nis_h" = x"yes"; then
 	  default_shared_modules="$default_shared_modules pdb_nisplussam"
+      fi
       ;;
     *)
       echo "Unknown module name \"$i\"!  Exiting..."
