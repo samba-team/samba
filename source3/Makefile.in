@@ -1251,8 +1251,8 @@ modules_clean:
 # afterwards.
 proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h \
-	include/tdbsam2_parse_info.h
+	client/client_proto.h utils/net_proto.h
+#	include/tdbsam2_parse_info.h
 
 delheaders:
 	@echo Removing prototype headers
@@ -1264,8 +1264,8 @@ delheaders:
 
 	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h \
 	            nsswitch/winbindd_proto.h web/swat_proto.h \
-		    client/client_proto.h utils/net_proto.h \
-		    include/tdbsam2_parse_info.h
+		    client/client_proto.h utils/net_proto.h
+#		    include/tdbsam2_parse_info.h
 
 include/proto.h:
 	@echo Building include/proto.h
@@ -1303,14 +1303,15 @@ utils/net_proto.h:
 	  -h _CLIENT_PROTO_H_ utils/net_proto.h \
 	  $(NET_OBJ1)
 
-include/tdbsam2_parse_info.h:
-	@if test -n "$(PERL)"; then \
-		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
-		-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
-		include/tdbsam2.h; \
-	else \
-		echo Unable to build $@, continuing; \
-	fi
+# not used yet an perl dependent
+#include/tdbsam2_parse_info.h:
+#	@if test -n "$(PERL)"; then \
+#		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
+#		-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
+#		include/tdbsam2.h; \
+#	else \
+#		echo Unable to build $@, continuing; \
+#	fi
 
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
@@ -1323,8 +1324,8 @@ headers:
 	$(MAKE) nsswitch/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
-	$(MAKE) utils/net_proto.h; \
-	$(MAKE) include/tdbsam2_parse_info.h
+	$(MAKE) utils/net_proto.h;
+#	$(MAKE) include/tdbsam2_parse_info.h
 
 proto: headers 
 
