@@ -1,3 +1,22 @@
+2001-05-10  Assar Westerlund  <assar@sics.se>
+
+	* kdc/config.c (configure): call free_getarg_strings
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): set error strings for
+	a few more errors
+
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm_int): make
+	`use_dns' parameter boolean
+
+	* lib/krb5/krb5.h (krb5_context_data): add default_keytab_modify
+	* lib/krb5/context.c (init_context_from_config_file): set
+	default_keytab_modify
+	* lib/krb5/krb5_locl.h (KEYTAB_DEFAULT): change to
+	ANY:FILE:/etc/krb5.keytab,krb4:/etc/srvtab
+	(KEYTAB_DEFAULT_MODIFY): add
+	* lib/krb5/keytab.c (krb5_kt_default_modify_name): add
+	(krb5_kt_resolve): set error string for failed keytab type
+
 2001-05-08  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/crypto.c (encryption_type): make field names more
