@@ -156,7 +156,6 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	fstring mufname;
 	smb_ucs2_t *pref, *ext, *retstr;
 	size_t long_len, ext_len, muf_len;
-	BOOL ret;
 
 	if (strlen_w(mangled) > 12) return NULL;
 	if (!strchr_w(mangled, UCS2_CHAR('~'))) return NULL;
@@ -272,7 +271,7 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 	if (!data.dptr) /* not found */
 	{
 		smb_ucs2_t temp[9];
-		size_t len, n, c, pos;
+		size_t c, pos;
 
 		if (tdb_error(mangle_tdb) != TDB_ERR_NOEXIST)
 		{
@@ -596,7 +595,7 @@ done:
 
 NTSTATUS is_8_3_w(const smb_ucs2_t *fname)
 {
-	smb_ucs2_t *pref = 0, *ext = 0, *p;
+	smb_ucs2_t *pref = 0, *ext = 0;
 	size_t plen;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
