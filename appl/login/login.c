@@ -186,7 +186,7 @@ do_login(struct passwd *pwd)
     }
     /* perhaps work some magic */
     if(do_osfc2_magic(pwd->pw_uid))
-	sleepexit(1);
+	exit(1);
 #if defined(HAVE_GETUDBNAM) && defined(HAVE_SETLIM)
     {
 	struct udb *udb;
