@@ -262,22 +262,22 @@ AC_FIND_FUNC_NO_LIBS(pidfile,util,
 #include <util.h>
 #endif],0)
 
-AC_FIND_FUNC_NO_LIBS(getaddrinfo,,
+AC_FIND_IF_NOT_BROKEN(getaddrinfo,,
 [#ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif],[0,0,0,0])
 
-AC_FIND_FUNC_NO_LIBS(getnameinfo,,
+AC_FIND_IF_NOT_BROKEN(getnameinfo,,
 [#ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif],[0,0,0,0,0,0,0])
 
-AC_FIND_FUNC_NO_LIBS(freeaddrinfo,,
+AC_FIND_IF_NOT_BROKEN(freeaddrinfo,,
 [#ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif],[0])
 
-AC_FIND_FUNC_NO_LIBS(gai_strerror,,
+AC_FIND_IF_NOT_BROKEN(gai_strerror,,
 [#ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif],[0])
