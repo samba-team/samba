@@ -244,6 +244,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 #if defined(SUNOS5)
 #include <sys/fs/ufs_quota.h>
 #include <sys/mnttab.h>
+#include <sys/mntent.h>
 #else /* defined(SUNOS4) */
 #include <ufs/quota.h>
 #include <mntent.h>
@@ -264,6 +265,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   int file;
   static struct mnttab mnt;
   static pstring name;
+  pstring devopt;
 #else /* SunOS4 */
   struct mntent *mnt;
   static pstring name;
@@ -272,7 +274,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   SMB_STRUCT_STAT sbuf;
   SMB_DEV_T devno ;
   static SMB_DEV_T devno_cached = 0 ;
-  int found ;
+  static int found ;
 
   euser_id = geteuid();
   
@@ -280,7 +282,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
     return(False) ;
   
   devno = sbuf.st_dev ;
-  DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%o\n", path,devno));
+  DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,devno));
   if ( devno != devno_cached ) {
     devno_cached = devno ;
 #if defined(SUNOS5)
@@ -288,12 +290,17 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
       return(False) ;
     
     found = False ;
+    slprintf(devopt, sizeof(devopt) - 1, "dev=%x", devno);
     while (getmntent(fd, &mnt) == 0) {
-      if ( sys_stat(mnt.mnt_mountp,&sbuf) == -1 )
-	continue ;
-      DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", 
-	       mnt.mnt_mountp,sbuf.st_dev));
-      if (sbuf.st_dev == devno) {
+      if( !hasmntopt(&mnt, devopt) )
+	continue;
+
+      DEBUG(5,("disk_quotas: testing \"%s\" %s\n", mnt.mnt_mountp,devopt));
+
+      /* quotas are only on vxfs, UFS or NFS, but nfs is not supported here */
+      if ( strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 || 
+           strcmp( mnt.mnt_fstype, "vxfs" ) == 0  )
+      { 
 	found = True ;
 	break ;
       }
@@ -322,9 +329,10 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
     endmntent(fd) ;
 #endif
     
-    if ( ! found )
-      return(False) ;
   }
+
+  if ( ! found )
+      return(False) ;
 
   save_re_uid();
   set_effective_uid(0);
