@@ -47,6 +47,7 @@ install: all
 	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
 
 uninstall:
+	rm -f $(libdir)/$(LIB)
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
