@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+/*
+ * Set the keys of `ent' to the string-to-key of `password'
+ */
+
 kadm5_ret_t
 _kadm5_set_keys(kadm5_server_context *context,
 		hdb_entry *ent, 
@@ -89,6 +93,9 @@ _kadm5_set_keys(kadm5_server_context *context,
     return ret;
 }
 
+/*
+ * Set the keys of `ent' to (`n_key_data', `key_data')
+ */
 
 kadm5_ret_t
 _kadm5_set_keys2(hdb_entry *ent, 
