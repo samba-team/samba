@@ -9312,7 +9312,14 @@ NAME="INHERITACLS"
 >inherit acls(S)</DT
 ><DD
 ><P
->		</P
+>This parameter can be used to ensure
+		that if default acls exist on parent directories,
+		they are always honored when creating a subdirectory.
+		The default behavior is to use the mode specified
+		when creating the directory.  Enabling this option
+		sets the mode to 0777, thus guaranteeing that 
+		default directory acls are propagated.
+		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -10919,8 +10926,8 @@ CLASS="COMMAND"
 		takes a printer name as its only parameter and outputs printer 
 		status information.</P
 ><P
->Currently eight styles of printer status information 
-		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+>Currently nine styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 		This covers most UNIX systems. You control which type is expected 
 		using the <TT
 CLASS="PARAMETER"
@@ -10954,7 +10961,15 @@ CLASS="PARAMETER"
 CLASS="ENVAR"
 >$PATH
 		</TT
-> may not be available to the server.</P
+> may not be available to the server.  When compiled with
+		the CUPS libraries, no <TT
+CLASS="PARAMETER"
+><I
+>lpq command</I
+></TT
+> is
+		needed because smbd will make a library call to obtain the 
+		print queue listing.</P
 ><P
 >See also the <A
 HREF="#PRINTING"
@@ -14371,6 +14386,25 @@ CLASS="COMMAND"
 >print command = lp -d%p -s %s; rm %s</B
 ></P
 ><P
+>For printing = CUPS :   If SAMBA is compiled against
+		libcups, then <A
+HREF="#PRINTING"
+>printcap = cups</A
+> 
+		uses the CUPS API to
+		submit jobs, etc.  Otherwise it maps to the System V
+		commands with the -oraw option for printing, i.e. it
+		uses <B
+CLASS="COMMAND"
+>lp -c -d%p -oraw; rm %s</B
+>.   
+		With <B
+CLASS="COMMAND"
+>printing = cups</B
+>,
+		and if SAMBA is compiled against libcups, any manually 
+		set print command will be ignored.</P
+><P
 >Example: <B
 CLASS="COMMAND"
 >print command = /usr/local/samba/bin/myprintscript
@@ -14465,7 +14499,18 @@ HREF="#AEN79"
 CLASS="COMMAND"
 >printcap name = cups
 		</B
->.</P
+>. This should be supplemented by an addtional setting 
+		<A
+HREF="#PRINTING"
+>printing = cups</A
+> in the [global] 
+		section.  <B
+CLASS="COMMAND"
+>printcap name = cups</B
+> will use the  
+		"dummy" printcap created by CUPS, as specified in your CUPS
+		configuration file.
+		</P
 ><P
 >On System V systems that use <B
 CLASS="COMMAND"
@@ -19373,7 +19418,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6126"
+NAME="AEN6133"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19403,7 +19448,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6132"
+NAME="AEN6139"
 ></A
 ><H2
 >VERSION</H2
@@ -19414,7 +19459,7 @@ NAME="AEN6132"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6135"
+NAME="AEN6142"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19493,7 +19538,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6155"
+NAME="AEN6162"
 ></A
 ><H2
 >AUTHOR</H2

@@ -3209,7 +3209,13 @@
 
 		<varlistentry>
 		<term><anchor id="INHERITACLS">inherit acls(S)</term>
-		<listitem><para>
+		<listitem><para>This parameter can be used to ensure
+		that if default acls exist on parent directories,
+		they are always honored when creating a subdirectory.
+		The default behavior is to use the mode specified
+		when creating the directory.  Enabling this option
+		sets the mode to 0777, thus guaranteeing that 
+		default directory acls are propagated.
 		</para>
 
 		<para>Default: <command>inherit acls = no</command>
@@ -4048,8 +4054,8 @@
 		takes a printer name as its only parameter and outputs printer 
 		status information.</para>
 
-		<para>Currently eight styles of printer status information 
-		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+		<para>Currently nine styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 		This covers most UNIX systems. You control which type is expected 
 		using the <parameter>printing =</parameter> option.</para>
 
@@ -4065,7 +4071,10 @@
 
 		<para>Note that it is good practice to include the absolute path 
 		in the <parameter>lpq command</parameter> as the <envar>$PATH
-		</envar> may not be available to the server.</para>
+		</envar> may not be available to the server.  When compiled with
+		the CUPS libraries, no <parameter>lpq command</parameter> is
+		needed because smbd will make a library call to obtain the 
+		print queue listing.</para>
 
 		<para>See also the <link linkend="PRINTING"><parameter>printing
 		</parameter></link> parameter.</para>
@@ -5812,6 +5821,17 @@
 		<para>For <command>printing = SOFTQ :</command></para>
 		<para><command>print command = lp -d%p -s %s; rm %s</command></para>
 
+		<para>For printing = CUPS :   If SAMBA is compiled against
+		libcups, then <link linkend="PRINTING">printcap = cups</link> 
+		uses the CUPS API to
+		submit jobs, etc.  Otherwise it maps to the System V
+		commands with the -oraw option for printing, i.e. it
+		uses <command>lp -c -d%p -oraw; rm %s</command>.   
+		With <command>printing = cups</command>,
+		and if SAMBA is compiled against libcups, any manually 
+		set print command will be ignored.</para>
+
+
 		<para>Example: <command>print command = /usr/local/samba/bin/myprintscript
 		%p %s</command></para>
 		</listitem>
@@ -5866,7 +5886,13 @@
 		why you might want to do this.</para>
 
 		<para>To use the CUPS printing interface set <command>printcap name = cups
-		</command>.</para>
+		</command>. This should be supplemented by an addtional setting 
+		<link linkend="PRINTING">printing = cups</link> in the [global] 
+		section.  <command>printcap name = cups</command> will use the  
+		"dummy" printcap created by CUPS, as specified in your CUPS
+		configuration file.
+		</para>
+
 		<para>On System V systems that use <command>lpstat</command> to 
 		list available printers you can use <command>printcap name = lpstat
 		</command> to automatically obtain lists of available printers. This 

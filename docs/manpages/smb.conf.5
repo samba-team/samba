@@ -3253,6 +3253,13 @@ Default: \fBno file included\fR
 Example: \fBinclude = /usr/local/samba/lib/admin_smb.conf
 \fR.TP
 \fBinherit acls(S)\fR
+This parameter can be used to ensure
+that if default acls exist on parent directories,
+they are always honored when creating a subdirectory.
+The default behavior is to use the mode specified
+when creating the directory. Enabling this option
+sets the mode to 0777, thus guaranteeing that 
+default directory acls are propagated.
 
 Default: \fBinherit acls = no\fR
 .TP
@@ -3886,8 +3893,8 @@ This command should be a program or script which
 takes a printer name as its only parameter and outputs printer 
 status information.
 
-Currently eight styles of printer status information 
-are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+Currently nine styles of printer status information 
+are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 This covers most UNIX systems. You control which type is expected 
 using the \fIprinting =\fR option.
 
@@ -3903,7 +3910,10 @@ command.
 
 Note that it is good practice to include the absolute path 
 in the \fIlpq command\fR as the \fB$PATH
-\fRmay not be available to the server.
+\fRmay not be available to the server. When compiled with
+the CUPS libraries, no \fIlpq command\fR is
+needed because smbd will make a library call to obtain the 
+print queue listing.
 
 See also the \fIprinting
 \fRparameter.
@@ -5303,6 +5313,16 @@ For \fBprinting = SOFTQ :\fR
 
 \fBprint command = lp -d%p -s %s; rm %s\fR
 
+For printing = CUPS : If SAMBA is compiled against
+libcups, then printcap = cups 
+uses the CUPS API to
+submit jobs, etc. Otherwise it maps to the System V
+commands with the -oraw option for printing, i.e. it
+uses \fBlp -c -d%p -oraw; rm %s\fR. 
+With \fBprinting = cups\fR,
+and if SAMBA is compiled against libcups, any manually 
+set print command will be ignored.
+
 Example: \fBprint command = /usr/local/samba/bin/myprintscript
 %p %s\fR
 .TP
@@ -5331,7 +5351,11 @@ compiled-in default printcap name used by the server (usually \fI /etc/printcap\
 why you might want to do this.
 
 To use the CUPS printing interface set \fBprintcap name = cups
-\fR\&.
+\fR\&. This should be supplemented by an addtional setting 
+printing = cups in the [global] 
+section. \fBprintcap name = cups\fR will use the 
+"dummy" printcap created by CUPS, as specified in your CUPS
+configuration file.
 
 On System V systems that use \fBlpstat\fR to 
 list available printers you can use \fBprintcap name = lpstat
