@@ -382,7 +382,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	if (delta->hdr_parameters.buffer) {
 		DATA_BLOB mung;
 		old_string = pdb_get_munged_dial(account);
-		mung.length = delta->uni_parameters.uni_str_len * 2;
+		mung.length = delta->hdr_parameters.uni_str_len;
 		mung.data = (uint8 *) delta->uni_parameters.buffer;
 		new_string = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
 
