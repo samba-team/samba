@@ -87,6 +87,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	struct dcerpc_pipe *p2;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
+	struct netr_Credential credentials1, credentials2, credentials3;
 	uint8_t mach_pwd[16];
 	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
@@ -109,7 +110,10 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	*/
 	r.in.server_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = workstation;
-	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
+	r.in.credentials = &credentials1;
+	r.out.credentials = &credentials2;
+
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p2, p->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -120,8 +124,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	  step 3 - authenticate on the netlogon pipe
 	*/
 	E_md4hash(password, mach_pwd);
-	creds_client_init(&creds, &r.in.credentials, &r.out.credentials, mach_pwd,
-			  &a.in.credentials);
+	creds_client_init(&creds, &credentials1, &credentials2, mach_pwd, &credentials3);
 
 	a.in.server_name = r.in.server_name;
 	a.in.username = talloc_asprintf(p->mem_ctx, "%s$", workstation);
@@ -129,12 +132,15 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	a.in.computer_name = workstation;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.credentials = &credentials3;
 
 	status = dcerpc_netr_ServerAuthenticate2(p2, p->mem_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!creds_client_check(&creds, &a.out.credentials)) {
+
+	if (!creds_client_check(&creds, a.out.credentials)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
