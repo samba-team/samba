@@ -1,3 +1,9 @@
+2005-02-21  Luke Howard  <lukeh@padl.com>
+
+	* init_sec_context.c: don't call krb5_get_credentials() with
+	  KRB5_TC_MATCH_KEYTYPE, it can lead to the credentials cache
+	  growing indefinitely as no key is found with KEYTYPE_NULL
+
 2005-01-05  Luke Howard  <lukeh@padl.com>
 
 	* 8003.c: use symbolic name for checksum type

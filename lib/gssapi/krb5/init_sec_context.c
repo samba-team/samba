@@ -293,10 +293,10 @@ init_auth
 	this_cred.times.endtime = ts + time_req;
     } else
 	this_cred.times.endtime   = 0;
-    this_cred.session.keytype = 0;
+    this_cred.session.keytype = KEYTYPE_NULL;
 
     kret = krb5_get_credentials (gssapi_krb5_context,
-				 KRB5_TC_MATCH_KEYTYPE,
+				 0,
 				 ccache,
 				 &this_cred,
 				 &cred);
