@@ -1,8 +1,11 @@
--cli8 -cbi0 -bli0 -bl -i8 -npsl -npcs -bbo -ncs 
+-cli8 -cbi0 -bli0 -bl -i8 -npsl -npcs -bbo -ncs -hnl
 -T BOOL
 -T pstring
 -T fstring
 -T tdb_len
 -T tdb_off
+-T uint32
+-T uint16
+-T uint8
 -T LDAPDB
 -T PLDAPDB
