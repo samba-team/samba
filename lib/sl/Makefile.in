@@ -14,7 +14,7 @@ LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 LN_S = @LN_S@
-DEFS = @DEFS@
+DEFS = @DEFS@ -DROKEN_RENAME
 CFLAGS = @CFLAGS@ @WFLAGS@
 WFLAGS = @WFLAGS@
 LD_FLAGS = @LD_FLAGS@
@@ -52,10 +52,13 @@ LDSHARED = @LDSHARED@
 PROGS = mk_cmds$(EXECSUFFIX)
 
 LIB_SOURCES = sl.c ss.c
+EXTRA_SOURCES = strtok_r.c
 
-SOURCES = $(LIB_SOURCES) make_cmds.c
+SOURCES = $(LIB_SOURCES) make_cmds.c $(EXTRA_SOURCES)
 
-LIB_OBJECTS = sl.o ss.o
+LIBADD = strtok_r.o
+
+LIB_OBJECTS = sl.o ss.o $(LIBADD)
 
 mk_cmds_OBJECTS = make_cmds.o parse.o lex.o
 
@@ -127,5 +130,8 @@ parse.h: $(srcdir)/parse.y
 lex.c: $(srcdir)/lex.l
 	$(LEX) $(srcdir)/lex.l
 	mv -f lex.yy.c lex.c
+
+strtok_r.c:
+	$(LN_S) $(srcdir)/../roken/strtok_r.c .
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean
