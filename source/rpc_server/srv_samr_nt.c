@@ -1764,7 +1764,7 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
 
 uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
 {
-    struct sam_passwd *sam_pass;
+    struct sam_passwd *sam_pass = NULL;
     fstring mach_acct;
     pstring err_str;
     pstring msg_str;
@@ -1829,7 +1829,6 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
          sizeof(err_str), msg_str, sizeof(msg_str)))
     {
         DEBUG(0, ("%s\n", err_str));
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_ACCESS_DENIED;
     }
 
@@ -1838,19 +1837,16 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     unbecome_root();
     if (sam_pass == NULL) {
         /* account doesn't exist: say so */
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_ACCESS_DENIED;
     }
 
     /* Get the domain SID stored in the domain policy */
     if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_INVALID_HANDLE;
     }
 
     /* append the user's RID to it */
     if(!sid_append_rid(&sid, sam_pass->user_rid)) {
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_NO_SUCH_USER;
     }
 
