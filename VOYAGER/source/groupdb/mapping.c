@@ -1535,33 +1535,38 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 /****************************************************************************
  These need to be redirected through pdb_interface.c
 ****************************************************************************/
-BOOL pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info)
+void pdb_get_dom_grp_info(fstring unix_name, struct dom_grp_info *info)
+{
+	GROUP_MAP map;
+	BOOL res;
+
+	fstrcpy(info->name, unix_name);
+	fstrcpy(info->desc, "");
+
+	become_root();
+	res = pdb_getgrnam(&map, unix_name);
+	unbecome_root();
+
+	if (res && (map.sid_name_use == SID_NAME_DOM_GRP)) {
+		fstrcpy(info->name, map.nt_name);
+		fstrcpy(info->desc, map.comment);
+	}
+}
+
+BOOL pdb_set_dom_grp_info(fstring unix_name, const struct dom_grp_info *info)
 {
 	GROUP_MAP map;
 	BOOL res;
 
 	become_root();
-	res = get_domain_group_from_sid(*sid, &map);
+	res = pdb_getgrnam(&map, unix_name);
 	unbecome_root();
 
-	if (!res)
+	if (!res || (map.sid_name_use != SID_NAME_DOM_GRP))
 		return False;
 
-	fstrcpy(info->acct_name, map.nt_name);
-	fstrcpy(info->acct_desc, map.comment);
-	sid_peek_rid(sid, &info->rid);
-	return True;
-}
-
-BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
-{
-	GROUP_MAP map;
-
-	if (!get_domain_group_from_sid(*sid, &map))
-		return False;
-
-	fstrcpy(map.nt_name, info->acct_name);
-	fstrcpy(map.comment, info->acct_desc);
+	fstrcpy(map.nt_name, info->name);
+	fstrcpy(map.comment, info->desc);
 
 	return pdb_update_group_mapping_entry(&map);
 }
