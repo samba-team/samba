@@ -1,5 +1,5 @@
 !==
-!== Speed.txt for Samba release 2.0.0beta5 31 Dec 1998
+!== Speed.txt for Samba release 2.0.0 15 Jan 1999
 !==
 Contributor:	Andrew Tridgell
 Date:		January 1995
