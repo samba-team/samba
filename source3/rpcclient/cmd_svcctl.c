@@ -46,10 +46,13 @@ void cmd_svc_enum(struct client_info *info)
 	BOOL res1 = True;
 	int i;
 	uint32 resume_hnd = 0;
+	uint32 buf_size = 0;
+	uint32 dos_error = 0;
 	ENUM_SRVC_STATUS *svcs = NULL;
+	uint32 num_svcs = 0;
 
 	POLICY_HND sc_man_pol;
-	fstring full_keyname;
+	
 	fstring srv_name;
 
 	fstrcpy(srv_name, "\\\\");
@@ -68,50 +71,38 @@ void cmd_svc_enum(struct client_info *info)
 
 	do
 	{
+		buf_size += 0x800;
+
 		/* enumerate services */
 		res1 = res ? do_svc_enum_svcs(smb_cli, fnum,
 		                        &sc_man_pol,
 		                        0x00000030, 0x00000003,
-		                        0x00000080, &resume_hnd, &svcs) : False;
+		                        &buf_size, &resume_hnd, &dos_error,
+		                        &svcs, &num_svcs) : False;
 
-	} while (resume_hnd != 0);
+	} while (dos_error == ERRmoredata);
+
+	if (res1 && dos_error == 0x0 && num_svcs > 0 && svcs != NULL)
+	{
+		fprintf(out_hnd,"Services\n");
+		fprintf(out_hnd,"--------\n");
+	}
+
+	for (i = 0; i < num_svcs && svcs != NULL; i++)
+	{
+		if (res1)
+		{
+			display_svc_info(out_hnd, ACTION_HEADER   , &svcs[i]);
+			display_svc_info(out_hnd, ACTION_ENUMERATE, &svcs[i]);
+			display_svc_info(out_hnd, ACTION_FOOTER   , &svcs[i]);
+		}
+	}
 
 	if (svcs != NULL)
 	{
 		free(svcs);
 	}
 
-#if 0
-	if (res1 && num_subkeys > 0)
-	{
-		fprintf(out_hnd,"Subkeys\n");
-		fprintf(out_hnd,"-------\n");
-	}
-
-	for (i = 0; i < num_subkeys; i++)
-	{
-		BOOL res2 = True;
-		/*
-		 * enumerate key
-		 */
-
-		/* enum key */
-		res2 = res2 ? do_svc_enum_key(smb_cli, fnum, &key_pol,
-					i, enum_name,
-					&enum_unk1, &enum_unk2,
-					&key_mod_time) : False;
-		
-		if (res2)
-		{
-			display_svc_key_info(out_hnd, ACTION_HEADER   , enum_name, key_mod_time);
-			display_svc_key_info(out_hnd, ACTION_ENUMERATE, enum_name, key_mod_time);
-			display_svc_key_info(out_hnd, ACTION_FOOTER   , enum_name, key_mod_time);
-		}
-
-	}
-
-	}
-#endif
 	res  = res  ? do_svc_close(smb_cli, fnum, &sc_man_pol) : False;
 
 	/* close the session */

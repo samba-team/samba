@@ -1535,6 +1535,30 @@ void display_reg_key_info(FILE *out_hnd, enum action_type action,
 	}
 }
 
+/****************************************************************************
+ display structure
+ ****************************************************************************/
+void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fprintf(out_hnd, "\t%s:",  unistr2(svc->uni_srvc_name   .buffer)); /* service name unicode string */
+			fprintf(out_hnd, "\t%s\n", unistr2(svc->uni_disp_name   .buffer)); /* display name unicode string */
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
 #if COPY_THIS_TEMPLATE
 /****************************************************************************
  display structure
