@@ -48,7 +48,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 /*
   disconnect from a share
 */
-static NTSTATUS pvfs_disconnect(struct tcon_context *tcon)
+static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon)
 {
 	return NT_STATUS_OK;
 }
