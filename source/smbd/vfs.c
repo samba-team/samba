@@ -897,7 +897,8 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 			}
 			default:
 				DEBUG(1,("reduce_name: couldn't get realpath for %s\n", fname));
-				errno = saved_errno;
+				/* Don't restore the saved errno. We need to return the error that
+				   realpath caused here as it was not one of the cases we handle. JRA. */
 				return False;
 		}
 	}
