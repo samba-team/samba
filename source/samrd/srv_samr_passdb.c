@@ -1487,11 +1487,12 @@ static BOOL make_samr_lookup_rids( uint32 num_names, char *const *name,
 /*******************************************************************
  samr_reply_lookup_rids
  ********************************************************************/
-uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
-					uint32 num_rids, const uint32 *rids,
-					uint32 *num_names,
-					UNIHDR **hdr_name, UNISTR2** uni_name,
-					uint32 **types)
+uint32 _samr_lookup_rids(const POLICY_HND *pol,
+				uint32 num_rids, uint32 flags,
+				const uint32 *rids,
+				uint32 *num_names,
+				UNIHDR **hdr_name, UNISTR2** uni_name,
+				uint32 **types)
 {
 	char **grp_names = NULL;
 	DOM_SID pol_sid;
