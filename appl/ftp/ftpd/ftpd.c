@@ -823,7 +823,9 @@ retrieve(char *cmd, char *name)
 		(void) sprintf(line, cmd, name), name = line;
 		fin = ftpd_popen(line, "r"), closefunc = ftpd_pclose;
 		st.st_size = -1;
+#ifdef HAVE_ST_BLKSIZE
 		st.st_blksize = BUFSIZ;
+#endif
 	}
 	if (fin == NULL) {
 		if (errno != 0) {
@@ -863,7 +865,11 @@ retrieve(char *cmd, char *name)
 	if (dout == NULL)
 		goto done;
 	set_buffer_size(fileno(dout), 0);
+#ifdef HAVE_ST_BLKSIZE
 	send_data(fin, dout, st.st_blksize);
+#else
+	send_data(fin, dout, BUFSIZ);
+#endif
 	(void) fclose(dout);
 	data = -1;
 	pdata = -1;
