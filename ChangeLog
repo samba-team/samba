@@ -1,3 +1,18 @@
+2003-06-17  Love  <lha@stacken.kth.se>
+
+	* lib/krb5/heim_threads.h: remove freebsd comment, don't use debug
+	pthread stubs by default
+
+	* lib/krb5/Makefile.am (man_MANS): drop krb5_free_addresses.3
+	
+	* lib/krb5/krb5_free_addresses.3: removed file, functions are
+	documented in krb5_address.3
+	
+	* lib/krb5/codec.c: add krb5_{de,en}code_ETYPE_INFO2
+	
+	* lib/krb5/crypto.c: add _krb5_AES_string_to_default_iterator add
+	krb5_string_to_key_salt_opaque() fix keylengh for keytype_aes256
+	
 2003-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: Point out that slave needs /var/heimdal
