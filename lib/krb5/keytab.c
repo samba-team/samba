@@ -379,28 +379,32 @@ krb5_kt_next_entry(krb5_context context,
   u_int32_t len;
   u_int32_t timestamp;
   int ret;
-  int8_t tmp;
+  int8_t tmp8;
+  int32_t tmp32;
 
-  ret = krb5_ret_int32(cursor->sp, &len);
+  ret = krb5_ret_int32(cursor->sp, &tmp32);
   if (ret)
     return ret;
+  len = tmp32;
   ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
   if (ret)
     return ret;
 #ifdef USE_ASN1_PRINCIPAL
-  ret = krb5_ret_int32(cursor->sp, &entry->principal->name.name_type);
+  ret = krb5_ret_int32(cursor->sp, &tmp32);
+  entry->principal->name.name_type = tmp32;
 #else
   ret = krb5_ret_int32(cursor->sp, &entry->principal->type);
 #endif
   if (ret)
     return ret;
-  ret = krb5_ret_int32(cursor->sp, &timestamp);
+  ret = krb5_ret_int32(cursor->sp, &tmp32);
+  timestamp = tmp32;
   if (ret)
     return ret;
-  ret = krb5_ret_int8(cursor->sp, &tmp);
+  ret = krb5_ret_int8(cursor->sp, &tmp8);
   if (ret)
     return ret;
-  entry->vno = tmp;
+  entry->vno = tmp8;
   ret = krb5_kt_ret_keyblock (cursor->sp, &entry->keyblock);
   if (ret)
     return ret;
