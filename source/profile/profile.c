@@ -34,6 +34,7 @@ static BOOL read_only;
 struct profile_struct *profile_p;
 
 BOOL do_profile_flag = False;
+BOOL do_profile_times = False;
 
 struct timeval profile_starttime;
 struct timeval profile_endtime;

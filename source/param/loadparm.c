@@ -135,6 +135,7 @@ typedef struct
 	char *szGroupnameMap;
 #endif				/* USING_GROUPNAME_MAP */
 	char *szCharacterSet;
+	char *szCodePageDir;
 	char *szLogonScript;
 	char *szLogonPath;
 	char *szLogonDrive;
@@ -548,6 +549,8 @@ static struct enum_list enum_printing[] = {
 	{PRINT_LPRNG, "lprng"},
 	{PRINT_SOFTQ, "softq"},
 	{PRINT_CUPS, "cups"},
+	{PRINT_LPRNT, "nt"},
+	{PRINT_LPROS2, "os2"},
 	{-1, NULL}
 };
 
@@ -627,6 +630,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"coding system", P_STRING, P_GLOBAL, &Globals.szCodingSystem, handle_coding_system, NULL, 0},
 	{"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page, handle_client_code_page, NULL, 0},
+	{"code page directory", P_STRING, P_GLOBAL, &Globals.szCodePageDir,   NULL,   NULL,  0},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
@@ -1003,6 +1007,8 @@ static void init_printer_values(void)
 	{
 		case PRINT_BSD:
 		case PRINT_AIX:
+		case PRINT_LPRNT:
+		case PRINT_LPROS2:
 			string_set(&sDefault.szLpqcommand, "lpq -P%p");
 			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
 			string_set(&sDefault.szPrintcommand,
@@ -1136,6 +1142,7 @@ static void init_globals(void)
 	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
 
 	string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
+	string_set(&Globals.szCodePageDir, CODEPAGEDIR);
 
 	Globals.bLoadPrinters = True;
 	Globals.bUseRhosts = False;
@@ -1384,6 +1391,7 @@ FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix);
@@ -2243,6 +2251,7 @@ static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
 	if (saved_character_set != NULL)
 		interpret_character_set(saved_character_set,
 					lp_client_code_page());
+ 	codepage_initialise(lp_client_code_page());
 	return (True);
 }
 

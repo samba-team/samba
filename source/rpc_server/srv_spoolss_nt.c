@@ -575,14 +575,21 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 		return ERROR_ACCESS_DENIED;
 	}
 		
-	/* Disallow MS AddPrinterWizard if access rights are insufficient OR
-	   if parameter disables it. The client tries an OpenPrinterEx with
-	   SERVER_ALL_ACCESS(0xf0003), which we force to fail. It then tries
-	   OpenPrinterEx with SERVER_READ(0x20002) which we allow. This lets
-	   it see any printers there, but does not show the MSAPW */
+	/* Disallow MS AddPrinterWizard if parameter disables it. A Win2k
+	   client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
+	   Then both Win2k and WinNT clients try an OpenPrinterEx with
+	   SERVER_ALL_ACCESS, which we force to fail. Then they try
+	   OpenPrinterEx with SERVER_READ which we allow. This lets the
+	   client view printer folder, but does not show the MSAPW.
+
+	   Note: this test needs code to check access rights here too. Jeremy
+	   could you look at this? */
+
 	if (handle_is_printserver(handle) &&
-		printer_default->access_required != (SERVER_READ) &&
-		!lp_ms_add_printer_wizard() ) {
+	    !lp_ms_add_printer_wizard()) {
+		if (printer_default->access_required == 0)
+			return NT_STATUS_NO_PROBLEMO;
+		else if (printer_default->access_required != (SERVER_READ))
 		return ERROR_ACCESS_DENIED;
 	}
 

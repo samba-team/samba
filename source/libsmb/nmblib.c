@@ -750,6 +750,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 {
   BOOL ret;
+  int i;
   struct sockaddr_in sock_out;
 
   /* set the address and port */
@@ -760,9 +761,16 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   
   DEBUG( 5, ( "Sending a packet of len %d to (%s) on port %d\n",
 	      len, inet_ntoa(ip), port ) );
+
+  /*
+   * Patch to fix asynch error notifications from Linux kernel.
+   */
 	
-  ret = (sendto(fd,buf,len,0,(struct sockaddr *)&sock_out,
-		sizeof(sock_out)) >= 0);
+  for (i = 0; i < 5; i++) {
+    ret = (sendto(fd,buf,len,0,(struct sockaddr *)&sock_out, sizeof(sock_out)) >= 0);
+    if (ret || errno != ECONNREFUSED)
+      break;
+  }
 
   if (!ret)
     DEBUG(0,("Packet send failed to %s(%d) ERRNO=%s\n",

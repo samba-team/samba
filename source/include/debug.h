@@ -40,12 +40,12 @@
 #ifdef HAVE_STDARG_H
 int  Debug1( char *, ... )
 #ifdef __GNUC__
-     __attribute__ ((format (printf, 1, 2)))
+     __attribute__ ((format (__printf__, 1, 2)))
 #endif
 ;
 BOOL dbgtext( char *, ... )
 #ifdef __GNUC__
-     __attribute__ ((format (printf, 1, 2)))
+     __attribute__ ((format (__printf__, 1, 2)))
 #endif
 ;
 #else

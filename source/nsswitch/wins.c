@@ -36,6 +36,7 @@ struct in_addr *lookup_backend(const char *name, int *count)
 	int fd;
 	static int initialised;
 	struct in_addr *ret;
+	char *p;
 	int j;
 
 	if (!initialised) {
@@ -55,8 +56,16 @@ struct in_addr *lookup_backend(const char *name, int *count)
 
 	set_socket_options(fd,"SO_BROADCAST");
 
-	if( !zero_ip( wins_ip ) ) {
-		ret = name_query( fd, name, 0x20, False, True, wins_src_ip(), count );
+/* The next four lines commented out by JHT
+   and replaced with the four lines following */
+/*	if( !zero_ip( wins_ip ) ) {
+ *		ret = name_query( fd, name, 0x20, False, True, wins_src_ip(), count );
+ *		goto out;
+ *	}
+ */
+	p = lp_wins_server();
+	if (p && *p) {
+		ret = name_query(fd,name,0x20,False,True, *interpret_addr2(p), count);
 		goto out;
 	}
 

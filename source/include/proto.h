@@ -268,7 +268,6 @@ pid_t sys_fork(void);
 pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
-int fcntl64(int fd, int cmd, struct flock * lock);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -1356,6 +1355,7 @@ char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_winbind_separator(void);
+char *lp_codepagedir(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
