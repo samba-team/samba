@@ -1963,7 +1963,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			pdb_set_user_sid_from_string(sampass, temp, PDB_SET);
 		}
 		
-		if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		if (get_single_attribute(ldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), temp)) 
 		{
 			pdb_set_group_sid_from_string(sampass, temp, PDB_SET);			
