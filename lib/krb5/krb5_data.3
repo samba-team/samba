@@ -38,6 +38,7 @@
 .Nm krb5_data
 .Nm krb5_data_zero
 .Nm krb5_data_free
+.Nm krb5_free_data_contents
 .Nm krb5_free_data
 .Nm krb5_data_alloc
 .Nm krb5_data_realloc
@@ -54,6 +55,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_data_zero "krb5_data *p"
 .Ft void
 .Fn krb5_data_free "krb5_data *p"
+.Ft void
+.Fn krb5_free_data_contents "krb5_context context" "krb5_data *p"
 .Ft void
 .Fn krb5_free_data "krb5_context context" "krb5_data *p"
 .Ft krb5_error_code
@@ -84,6 +87,12 @@ resets the content of
 .Fn krb5_data_free
 free the data in
 .Fa p .
+.Pp
+.Fn krb5_free_data_contents
+works the same way as
+.Fa krb5_data_free .
+The diffrence is that krb5_free_data_contents is more portable (exists
+in MIT api).
 .Pp
 .Fn krb5_free_data
 frees the data in

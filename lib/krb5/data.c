@@ -50,6 +50,12 @@ krb5_data_free(krb5_data *p)
     p->length = 0;
 }
 
+void 
+krb5_free_data_contents(krb5_context context, krb5_data *data)
+{
+    krb5_data_free(data);
+}
+
 void
 krb5_free_data(krb5_context context,
 	       krb5_data *p)
