@@ -3480,9 +3480,12 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u);
 BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status);
 BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
+BOOL samr_io_userinfo2_ctr(char *desc,  SAM_USERINFO2_CTR *ctr, prs_struct *ps, int depth);
+void free_samr_userinfo2_ctr(SAM_USERINFO2_CTR *ctr);
 BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 				POLICY_HND *hnd,
-				uint16 switch_value, void *info);
+				uint16 switch_value, 
+				SAM_USERINFO2_CTR *ctr);
 BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *ps, int depth);
 void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u);
 BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u,
@@ -4324,8 +4327,8 @@ uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
 uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
-uint32 _samr_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
-				prs_struct *rdata, uchar user_sess_key[16]);
+uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO2_CTR *ctr);
 uint32 _samr_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				prs_struct *rdata);
 uint32 _samr_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
@@ -4344,8 +4347,9 @@ uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				prs_struct *rdata);
 uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
 				prs_struct *rdata);
-uint32 _samr_lookup_domain(POLICY_HND *connect_pol, UNISTR2 *uni_domain,
-				   	DOM_SID *dom_sid);
+uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
+				const UNISTR2 *uni_domain,
+				DOM_SID *dom_sid);
 
 /*The following definitions come from  smbd/blocking.c  */
 

@@ -41,8 +41,6 @@
 					uint32 **type);
 	BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 					DOM_GID **gid);
-	BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
-					void* usr);
 	BOOL samr_close(  POLICY_HND *hnd);
 	BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 					uint32 *num_entries,
@@ -1520,7 +1518,7 @@ uint32 _samr_unknown_38(const UNISTR2 *uni_srv_name,
 /*******************************************************************
 makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
-static BOOL make_samr_lookup_rids( uint32 num_names, const fstring *name, 
+static BOOL make_samr_lookup_rids( uint32 num_names, char *const *name, 
 				UNIHDR **hdr_name, UNISTR2** uni_name)
 {
 	uint32 i;
@@ -1565,7 +1563,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 					UNIHDR **hdr_name, UNISTR2** uni_name,
 					uint32 **types)
 {
-	fstring grp_names[MAX_SAM_ENTRIES];
+	char **grp_names = NULL;
 	uint32 status     = 0;
 	DOM_SID pol_sid;
 	BOOL found_one = False;
@@ -1950,78 +1948,71 @@ uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr)
 {
 	uchar user_sess_key[16];
-	uint32 status = 0x0;
 	uint32 rid = 0x0;
 
 	DEBUG(5,("samr_reply_set_userinfo: %d\n", __LINE__));
 
 	/* search for the handle */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1))
+	if (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1)
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !cli_get_usr_sesskey(pol, user_sess_key))
+	if (!cli_get_usr_sesskey(pol, user_sess_key))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	/* find the user's rid */
-	if (status == 0x0 && (rid = get_policy_samr_rid(get_global_hnd_cache(), pol)) == 0xffffffff)
+	rid = get_policy_samr_rid(get_global_hnd_cache(), pol);
+	if (rid == 0xffffffff)
 	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	DEBUG(5,("samr_reply_set_userinfo: rid:0x%x\n", rid));
 
-	/* ok!  user info levels (there are lots: see MSDEV help), off we go... */
-	if (status == 0x0 && ctr == NULL)
+	if (ctr == NULL)
 	{
 		DEBUG(5,("samr_reply_set_userinfo: NULL info level\n"));
-		status = NT_STATUS_INVALID_INFO_CLASS;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if (status == 0x0)
+	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+	switch (switch_value)
 	{
-		switch (switch_value)
+		case 24:
 		{
-			case 24:
+			SAM_USER_INFO_24 *id24 = ctr->info.id24;
+			SamOEMhash(id24->pass, user_sess_key, True);
+			if (!set_user_info_24(id24, rid))
 			{
-				SAM_USER_INFO_24 *id24 = ctr->info.id24;
-				SamOEMhash(id24->pass, user_sess_key, True);
-				if (!set_user_info_24(id24, rid))
-				{
-					status = NT_STATUS_ACCESS_DENIED;
-				}
-				break;
+				return NT_STATUS_ACCESS_DENIED;
 			}
+			break;
+		}
 
-			case 23:
+		case 23:
+		{
+			SAM_USER_INFO_23 *id23 = ctr->info.id23;
+			SamOEMhash(id23->pass, user_sess_key, 1);
+			dump_data_pw("pass buff:\n", id23->pass, sizeof(id23->pass));
+			dbgflush();
+
+			if (!set_user_info_23(id23, rid))
 			{
-				SAM_USER_INFO_23 *id23 = ctr->info.id23;
-				SamOEMhash(id23->pass, user_sess_key, 1);
-				dump_data_pw("pass buff:\n", id23->pass, sizeof(id23->pass));
-				dbgflush();
-
-				if (!set_user_info_23(id23, rid))
-				{
-					status = NT_STATUS_ACCESS_DENIED;
-				}
-				break;
+				return NT_STATUS_ACCESS_DENIED;
 			}
+			break;
+		}
 
-			default:
-			{
-				status = NT_STATUS_INVALID_INFO_CLASS;
-
-				break;
-			}
+		default:
+		{
+			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
 
-	return status;
+	return 0x0;
 }
-
-#if 0
 
 /*******************************************************************
  set_user_info_16
@@ -2052,65 +2043,59 @@ static BOOL set_user_info_16(SAM_USER_INFO_16 *id16, uint32 rid)
 /*******************************************************************
  samr_reply_set_userinfo2
  ********************************************************************/
-uint32 _samr_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
-				prs_struct *rdata, uchar user_sess_key[16])
+uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO2_CTR *ctr)
 {
-	SAMR_R_SET_USERINFO2 r_u;
-
-	uint32 status = 0x0;
 	uint32 rid = 0x0;
 
 	DEBUG(5,("samr_reply_set_userinfo2: %d\n", __LINE__));
 
 	/* search for the handle */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(pol)) == -1))
+	if (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1)
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* find the user's rid */
-	if (status == 0x0 && (rid = get_policy_samr_rid(get_global_hnd_cache(), &(pol))) == 0xffffffff)
+	rid = get_policy_samr_rid(get_global_hnd_cache(), pol);
+	if (rid == 0xffffffff)
 	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	DEBUG(5,("samr_reply_set_userinfo2: rid:0x%x\n", rid));
 
-	/* ok!  user info levels (there are lots: see MSDEV help), off we go... */
-	if (status == 0x0 && info.id == NULL)
+	if (ctr == NULL)
 	{
 		DEBUG(5,("samr_reply_set_userinfo2: NULL info level\n"));
-		status = NT_STATUS_INVALID_INFO_CLASS;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if (status == 0x0)
-	{
-		switch (switch_value)
-		{
-			case 16:
-			{
-				SAM_USER_INFO_16 *id16 = info.id16;
-				status = set_user_info_16(id16, rid) ? 0 : (NT_STATUS_ACCESS_DENIED);
-				break;
-			}
-			default:
-			{
-				status = NT_STATUS_INVALID_INFO_CLASS;
+	ctr->switch_value = switch_value;
 
-				break;
+	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+	switch (switch_value)
+	{
+		case 16:
+		{
+			SAM_USER_INFO_16 *id16 = ctr->info.id16;
+			if (!set_user_info_16(id16, rid))
+			{
+				return NT_STATUS_ACCESS_DENIED;
 			}
+			break;
+		}
+		default:
+		{
+			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
 
-	make_samr_r_set_userinfo2(&r_u, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_set_userinfo2("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_reply_set_userinfo2: %d\n", __LINE__));
-
+	return 0x0;
 }
 
+
+#if 0
 
 
 /*******************************************************************

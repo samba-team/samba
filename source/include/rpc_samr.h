@@ -1162,12 +1162,10 @@ typedef struct r_samr_query_usergroup_info
 } SAMR_R_QUERY_USERGROUPS;
 
 
-/* SAMR_Q_SET_USERINFO2 - set sam info */
-typedef struct q_samr_set_user_info2
+/* SAM_USERINFO_CTR - sam user info */
+typedef struct sam_userinfo2_ctr_info
 {
-	POLICY_HND pol;          /* policy handle associated with user */
-	uint16 switch_value;      /* 0x0010 */
-	uint16 switch_value2;      /* 0x0010 */
+	uint16 switch_value;      
 
 	union
 	{
@@ -1175,6 +1173,16 @@ typedef struct q_samr_set_user_info2
 		void* id; /* to make typecasting easy */
 
 	} info;
+
+} SAM_USERINFO2_CTR;
+
+/* SAMR_Q_SET_USERINFO2 - set sam info */
+typedef struct q_samr_set_user_info2
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;      /* 0x0010 */
+
+	SAM_USERINFO2_CTR *ctr;
 
 } SAMR_Q_SET_USERINFO2;
 

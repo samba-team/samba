@@ -5746,12 +5746,70 @@ BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *p
 	return True;
 }
 
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_userinfo2_ctr(char *desc,  SAM_USERINFO2_CTR *ctr, prs_struct *ps, int depth)
+{
+	if (ctr == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_userinfo2_ctr");
+	depth++;
+
+	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
+	prs_align(ps);
+
+	switch (ctr->switch_value)
+	{
+		case 16:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_16*)Realloc(NULL,
+						 sizeof(*ctr->info.id16));
+			}
+			if (ctr->info.id == NULL)
+			{
+				DEBUG(2,("samr_io_q_query_userinfo2: info pointer not initialised\n"));
+				return False;
+			}
+			sam_io_user_info16("", ctr->info.id16, ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(2,("samr_io_userinfo2_ctr: unknown switch level\n"));
+			break;
+		}
+			
+	}
+
+	prs_align(ps);
+
+	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void free_samr_userinfo2_ctr(SAM_USERINFO2_CTR *ctr)
+{
+	if (ctr->info.id == NULL)
+	{
+		free(ctr->info.id);
+	}
+	ctr->info.id = NULL;
+}
+
 /*******************************************************************
 makes a SAMR_Q_SET_USERINFO2 structure.
 ********************************************************************/
 BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 				POLICY_HND *hnd,
-				uint16 switch_value, void *info)
+				uint16 switch_value, 
+				SAM_USERINFO2_CTR *ctr)
 {
 	if (q_u == NULL || hnd == NULL) return False;
 
@@ -5759,21 +5817,7 @@ BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 
 	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
 	q_u->switch_value  = switch_value;
-	q_u->switch_value2 = switch_value;
-	q_u->info.id = info;
-
-	switch (switch_value)
-	{
-		case 0x10:
-		{
-			break;
-		}
-		default:
-		{
-			DEBUG(4,("make_samr_q_set_userinfo2: unsupported switch level\n"));
-			return False;
-		}
-	}
+	q_u->ctr = ctr;
 
 	return True;
 }
@@ -5795,40 +5839,7 @@ BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *
 	prs_align(ps);
 
 	prs_uint16("switch_value ", ps, depth, &(q_u->switch_value )); 
-	prs_uint16("switch_value2", ps, depth, &(q_u->switch_value2)); 
-
-	prs_align(ps);
-
-	switch (q_u->switch_value)
-	{
-		case 0:
-		{
-			break;
-		}
-		case 16:
-		{
-			if (ps->io)
-			{
-				/* reading */
-				q_u->info.id = (SAM_USER_INFO_16*)Realloc(NULL,
-						 sizeof(*q_u->info.id16));
-			}
-			if (q_u->info.id == NULL)
-			{
-				DEBUG(2,("samr_io_q_query_userinfo2: info pointer not initialised\n"));
-				return False;
-			}
-			sam_io_user_info16("", q_u->info.id16, ps, depth);
-			break;
-		}
-		default:
-		{
-			DEBUG(2,("samr_io_q_query_userinfo2: unknown switch level\n"));
-			break;
-		}
-			
-	}
-	prs_align(ps);
+	samr_io_userinfo2_ctr("ctr", q_u->ctr, ps, depth);
 
 	if (!ps->io)
 	{
@@ -5844,11 +5855,7 @@ frees a structure.
 ********************************************************************/
 void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u)
 {
-	if (q_u->info.id == NULL)
-	{
-		free(q_u->info.id);
-	}
-	q_u->info.id = NULL;
+	free_samr_userinfo2_ctr(q_u->ctr);
 }
 
 /*******************************************************************
