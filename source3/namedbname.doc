@@ -72,7 +72,7 @@ is registered.
 
 this function is responsible for adding or updating a NetBIOS name
 in the database. into the local interface records, the only names
-that will be added are those of primary domain controllers and
+that will be added are those of domain master browsers and
 samba's own names. into the WINS records, all names are added.
 
 the name to be added / updated will be looked up in the records.

@@ -43,9 +43,8 @@ unique special browser names (either on your local subnet or with
 the WINS server) then you must stop being a master browser.
 
 this is a double fail-safe mechanism to ensure that there is only
-one master browser per workgroup per subnet (and one primary domain
-controller - domain master browser - per domain (workgroup) per
-wide area network).
+one master browser per workgroup per subnet (and one domain master
+browser - per domain (workgroup) per wide area network).
 
 (a wide area network is created when one or more servers on a
 broadcast-isolated subnet point to the same WINS server).
@@ -137,7 +136,7 @@ becoming non-master is done on a per-subnet basis.
   *************************************************************************/
 
 this function is responsible for slowly turning samba into a
-master browser or a domain master (primary domain controller).
+local master browser or a domain master browser.
 
 
 this is done in stages. note that this could take a while, 

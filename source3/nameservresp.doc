@@ -95,15 +95,15 @@ entry should be removed if we receive a negative response.
   response_name_status_check()
   *************************************************************************/
 
-this function receives responses to samba 'states' NAME_STATUS_CHECK
-and NAME_STATUS_MASTER_CHECK
+this function receives responses to samba 'states' NAME_STATUS_SRV_CHK
+and NAME_STATUS_DOM_SRV_CHK
 
-NAME_STATUS_MASTER_CHECK: name status a primary domain controller, 
+NAME_STATUS_DOM_SRV_CHK: name status a domain master browser
                           confirm its domain and then initiate syncing
                           its browse list.
 
-NAME_STATUS_CHECK: same as NAME_STATUS_MASTER_CHECK except the name status
-                   is issued to a master browser.
+NAME_STATUS_SRV_CHK: same as NAME_STATUS_DOM_SRV_CHK except the
+                     name status is issued to a master browser.
 
 if we don't know what workgroup a server is responsible for, but we
 know that there is a master browser at a certain ip, we can issue a
@@ -117,7 +117,7 @@ correct part of samba's workgroup - server database.
   response_server_check()
   *************************************************************************/
 
-this function receives responses to samba 'states' NAME_QUERY_MST_SRV_CHK,
+this function receives responses to samba 'states' NAME_QUERY_DOM_SRV_CHK,
 NAME_QUERY_SRV_CHK and NAME_QUERY_FIND_MST.
 
 NAME_QUERY_FIND_MST: issued as a broadcast when we wish to find out all
@@ -126,10 +126,10 @@ NAME_QUERY_FIND_MST: issued as a broadcast when we wish to find out all
                      issue a NAME_STATUS_MASTER_CHECK on any servers that
                      respond, which will initiate a sync browse lists.
 
-NAME_QUERY_MST_SRV_CHK: same as a NAME_QUERY_FIND_MST except this is sent
-                        to a primary domain controller.
+NAME_QUERY_DOM_SRV_CHK: same as a NAME_QUERY_FIND_MST except this is sent
+                        to a domain master browser.
 
-NAME_QUERY_SRV_CHK: same as a NAME_QUERY_MST_SRV_CHK except this is sent to
+NAME_QUERY_SRV_CHK: same as a NAME_QUERY_DOM_SRV_CHK except this is sent to
                     a master browser.
                         
 the purpose of each of these states is to do a broadcast name query, or
@@ -160,9 +160,9 @@ is added to samba's database.
 
 when a negative response is received, samba will remove the name
 from its database. if, however, the name is a browser type (0x1b is
-a primary domain controller type name; or 0x1d, which is a master
-browser type name) then it must also stop being a primary domain
-controller or master browser respectively, depending on what kind
+a domain master browser type name; or 0x1d, which is a local master
+browser type name) then it must also stop being a domain master
+browser or master browser respectively, depending on what kind
 of name was rejected.
 
 (when no response is received, then expire_netbios_response_entries()
