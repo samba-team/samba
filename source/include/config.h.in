@@ -536,6 +536,9 @@
 /* Define if you have the sigprocmask function.  */
 #undef HAVE_SIGPROCMASK
 
+/* Define if you have the snprintf function.  */
+#undef HAVE_SNPRINTF
+
 /* Define if you have the srand function.  */
 #undef HAVE_SRAND
 

@@ -3733,7 +3733,7 @@ else
 fi
 done
 
-for ac_func in memmove vsnprintf setsid glob strpbrk pipe crypt16 getauthuid
+for ac_func in memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3740: checking for $ac_func" >&5
