@@ -23,8 +23,9 @@
 
 #ifdef WITH_TDBPWD
 
+#define PDB_VERSION		"20010830"
 #define PASSDB_FILE_NAME	"/passdb.tdb"
-#define TDB_FORMAT_STRING	"BBBBBBBBBBBBBBBBBBddBBwdwdBdd"
+#define TDB_FORMAT_STRING	"ddddddBBBBBBBBBBBBddBBwdwdBdd"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
 
@@ -48,13 +49,16 @@ static struct tdb_enum_info 	global_tdb_ent;
 static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, 
 				  uint32 buflen)
 {
-	time_t	logon_time,
+
+	/* times are stored as 32bit integer
+	   take care on system with 64bit wide time_t
+	   --SSS */
+	uint32	logon_time,
 		logoff_time,
 		kickoff_time,
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
-	uint32	time_t_len;
 	char *username;
 	char *domain;
 	char *nt_username;
@@ -83,12 +87,12 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf,
 									
 	/* unpack the buffer into variables */
 	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
-		&time_t_len, &logon_time,
-		&time_t_len, &logoff_time,
-		&time_t_len, &kickoff_time,
-		&time_t_len, &pass_last_set_time,
-		&time_t_len, &pass_can_change_time,
-		&time_t_len, &pass_must_change_time,
+		&logon_time,
+		&logoff_time,
+		&kickoff_time,
+		&pass_last_set_time,
+		&pass_can_change_time,
+		&pass_must_change_time,
 		&username_len, &username,
 		&domain_len, &domain,
 		&nt_username_len, &nt_username,
@@ -161,7 +165,10 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
-	time_t	logon_time,
+	/* times are stored as 32bit integer
+	   take care on system with 64bit wide time_t
+	   --SSS */
+	uint32	logon_time,
 		logoff_time,
 		kickoff_time,
 		pass_last_set_time,
@@ -186,7 +193,6 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 
 	uint8		*lm_pw;
 	uint8		*nt_pw;
-	uint32	time_t_len = sizeof (time_t);
 	uint32	lm_pw_len = 16;
 	uint32	nt_pw_len = 16;
 
@@ -250,12 +256,12 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 		
 	/* one time to get the size needed */
 	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
-		time_t_len, &logon_time,
-		time_t_len, &logoff_time,
-		time_t_len, &kickoff_time,
-		time_t_len, &pass_last_set_time,
-		time_t_len, &pass_can_change_time,
-		time_t_len, &pass_must_change_time,
+		logon_time,
+		logoff_time,
+		kickoff_time,
+		pass_last_set_time,
+		pass_can_change_time,
+		pass_must_change_time,
 		username_len, username,
 		domain_len, domain,
 		nt_username_len, nt_username,
@@ -289,14 +295,13 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	}
 	
 	/* now for the real call to tdb_pack() */
-	/* one time to get the size needed */
 	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING,
-		time_t_len, &logon_time,
-		time_t_len, &logoff_time,
-		time_t_len, &kickoff_time,
-		time_t_len, &pass_last_set_time,
-		time_t_len, &pass_can_change_time,
-		time_t_len, &pass_must_change_time,
+		logon_time,
+		logoff_time,
+		kickoff_time,
+		pass_last_set_time,
+		pass_can_change_time,
+		pass_must_change_time,
 		username_len, username,
 		domain_len, domain,
 		nt_username_len, nt_username,
