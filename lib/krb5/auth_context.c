@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -67,20 +67,21 @@ krb5_error_code
 krb5_auth_con_free(krb5_context context,
 		   krb5_auth_context auth_context)
 {
-    krb5_free_authenticator(context, &auth_context->authenticator);
-    if(auth_context->local_address){
-	free_HostAddress(auth_context->local_address);
-	free(auth_context->local_address);
-    }
-    if(auth_context->remote_address){
-	free_HostAddress(auth_context->remote_address);
-	free(auth_context->remote_address);
-    }
-    if(auth_context->keyblock)
+    if (auth_context != NULL) {
+	krb5_free_authenticator(context, &auth_context->authenticator);
+	if(auth_context->local_address){
+	    free_HostAddress(auth_context->local_address);
+	    free(auth_context->local_address);
+	}
+	if(auth_context->remote_address){
+	    free_HostAddress(auth_context->remote_address);
+	    free(auth_context->remote_address);
+	}
 	krb5_free_keyblock(context, auth_context->keyblock);
-    krb5_free_keyblock(context, auth_context->remote_subkey);
-    krb5_free_keyblock(context, auth_context->local_subkey);
-    free (auth_context);
+	krb5_free_keyblock(context, auth_context->remote_subkey);
+	krb5_free_keyblock(context, auth_context->local_subkey);
+	free (auth_context);
+    }
     return 0;
 }
 
