@@ -160,12 +160,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	ads_destroy(&ads);
 
 	/* the password is good - let them in */
-	pw = smb_getpwnam(user,False);
+	pw = Get_Pwnam(user);
 	if (!pw && !strstr(user, lp_winbind_separator())) {
 		char *user2;
 		/* try it with a winbind domain prefix */
 		asprintf(&user2, "%s%s%s", lp_workgroup(), lp_winbind_separator(), user);
-		pw = smb_getpwnam(user2,False);
+		pw = Get_Pwnam(user2);
 		if (pw) {
 			free(user);
 			user = user2;
