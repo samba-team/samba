@@ -619,7 +619,8 @@ typedef struct krb5_verify_opt {
     const char *service;
 } krb5_verify_opt;
 
-#define KRB5_VERIFY_LREALMS 1
+#define KRB5_VERIFY_LREALMS		1
+#define KRB5_VERIFY_NO_ADDRESSES	2
 
 extern const krb5_cc_ops krb5_fcc_ops;
 extern const krb5_cc_ops krb5_mcc_ops;
@@ -653,6 +654,7 @@ typedef struct krb5_krbhst_info {
 	   KRB5_KRBHST_TCP,
 	   KRB5_KRBHST_HTTP } proto;
     unsigned short port;
+    unsigned short def_port;
     struct addrinfo *ai;
     struct krb5_krbhst_info *next;
     char hostname[1]; /* has to come last */
