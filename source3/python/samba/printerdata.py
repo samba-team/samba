@@ -15,8 +15,10 @@
 from samba import spoolss
 
 class printerdata:
-    def __init__(self, host, creds = {}):
-        self.hnd = spoolss.openprinter(host, creds = creds)
+    def __init__(self, host, creds = {}, access = 0x02000000):
+	# For read access, use MAXIMUM_ALLOWED_ACCESS = 0x02000000
+	# For write access, use PRINTER_ACCESS_ADMINISTER = 0x00000004
+        self.hnd = spoolss.openprinter(host, creds = creds, access = access)
 
     def keys(self):
         return self.hnd.enumprinterdata().keys()
@@ -30,10 +32,14 @@ class printerdata:
                                  "data": value})
         
 class printerdata_ex:
-    def __init__(self, host):
+    def __init__(self, host, creds = {}, access = 0x02000000):
+	# For read access, use MAXIMUM_ALLOWED_ACCESS = 0x02000000
+	# For write access, use PRINTER_ACCESS_ADMINISTER = 0x00000004
         self.host = host
         self.top_level_keys = ["PrinterDriverData", "DsSpooler", "DsDriver",
                                "DsUser"]
+	self.creds = creds
+	self.access = access
 
     def keys(self):
         return self.top_level_keys
@@ -45,8 +51,8 @@ class printerdata_ex:
         return 0
 
     class printerdata_ex_subkey:
-        def __init__(self, host, key):
-            self.hnd = spoolss.openprinter(host)
+        def __init__(self, host, key, creds, access):
+            self.hnd = spoolss.openprinter(host, creds, access)
             self.key = key
 
         def keys(self):
@@ -56,4 +62,4 @@ class printerdata_ex:
             return self.hnd.getprinterdataex(self.key, key)['data']
 
     def __getitem__(self, key):
-        return self.printerdata_ex_subkey(self.host, key)
+        return self.printerdata_ex_subkey(self.host, key, creds, access)
