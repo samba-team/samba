@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,12 +66,10 @@ krb5_rd_rep(krb5_context context,
     goto out;
   }
 
-  ret = krb5_decrypt (context,
-		      ap_rep.enc_part.cipher.data,
-		      ap_rep.enc_part.cipher.length,
-		      ap_rep.enc_part.etype,
-		      auth_context->keyblock,
-		      &data);
+  ret = krb5_decrypt_EncryptedData (context, 
+				    &ap_rep.enc_part,
+				    auth_context->keyblock,
+				    &data);
   if (ret)
       goto out;
 
@@ -80,12 +78,14 @@ krb5_rd_rep(krb5_context context,
     ret = ENOMEM;
     goto out;
   }
-  ret = decode_EncAPRepPart(data.data,
-			    data.length,
-			    *repl, 
-			    &len);
+  ret = krb5_decode_EncAPRepPart(context,
+				 data.data,
+				 data.length,
+				 *repl, 
+				 &len);
   if (ret)
       return ret;
+  
   if ((*repl)->ctime != auth_context->authenticator->ctime ||
       (*repl)->cusec != auth_context->authenticator->cusec) {
     ret = KRB5KRB_AP_ERR_MUT_FAIL;
