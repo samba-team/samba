@@ -3746,6 +3746,8 @@ static void usage(char *pname)
 	DEBUG(2,("%s changed root to %s\n",timestring(),lp_rootdir()));
     }
 
+  read_smbbrowse_conf(myhostname);
+
   process();
   close_sockets();
 

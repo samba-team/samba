@@ -27,6 +27,10 @@
 
    04 jul 96: lkcl@pires.co.uk
    created module namedbname containing name database functions
+
+   30 July 96: David.Chappell@mail.trincoll.edu
+   Expanded multiple workgroup domain master browser support.
+
 */
 
 #include "includes.h"
@@ -52,14 +56,14 @@ uint16 nb_type = 0; /* samba's NetBIOS name type */
   ****************************************************************************/
 void set_samba_nb_type(void)
 {
-	if (lp_wins_support() || (*lp_wins_server()))
-	{
-		nb_type = NB_MFLAG; /* samba is a 'hybrid' node type */
-	}
-	else
-	{
-		nb_type = NB_BFLAG; /* samba is broadcast-only node type */
-	}
+    if (lp_wins_support() || (*lp_wins_server()))
+    {
+        nb_type = NB_MFLAG; /* samba is a 'hybrid' node type */
+    }
+    else
+    {
+        nb_type = NB_BFLAG; /* samba is broadcast-only node type */
+    }
 }
 
 
@@ -69,7 +73,7 @@ void set_samba_nb_type(void)
 BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2)
 {
   return n1->name_type == n2->name_type &&
-		 strequal(n1->name ,n2->name ) &&
+         strequal(n1->name ,n2->name ) &&
          strequal(n1->scope,n2->scope);
 }
 
@@ -140,22 +144,22 @@ void remove_name(struct subnet_record *d, struct name_record *n)
   find a name in a namelist.
   **************************************************************************/
 struct name_record *find_name(struct name_record *n,
-			struct nmb_name *name,
-			int search)
+            struct nmb_name *name,
+            int search)
 {
-	struct name_record *ret;
+    struct name_record *ret;
   
-	for (ret = n; ret; ret = ret->next)
-	{
-		if (name_equal(&ret->name,name))
-		{
-			/* self search: self names only */
-			if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
-				continue;
-	  
-			return ret;
-		}
-	}
+    for (ret = n; ret; ret = ret->next)
+    {
+        if (name_equal(&ret->name,name))
+        {
+            /* self search: self names only */
+            if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
+                continue;
+      
+            return ret;
+        }
+    }
     return NULL;
 }
 
@@ -168,29 +172,31 @@ struct name_record *find_name(struct name_record *n,
   FIND_WINS - look for names in the WINS record
   **************************************************************************/
 struct name_record *find_name_search(struct subnet_record **d,
-			struct nmb_name *name,
-			int search, struct in_addr ip)
+            struct nmb_name *name,
+            int search, struct in_addr ip)
 {
-	if (d == NULL) return NULL; /* bad error! */
-	
-    if (search & FIND_LOCAL) {
-      if (*d != NULL) {
-	struct name_record *n = find_name((*d)->namelist, name, search);
-	DEBUG(4,("find_name on local: %s %s search %x\n",
-		 namestr(name),inet_ntoa(ip), search));
-	if (n) return n;
-      }
+    if (d == NULL) return NULL; /* bad error! */
+    
+    if (search & FIND_LOCAL)
+    {
+        if (*d != NULL)
+        {
+            struct name_record *n = find_name((*d)->namelist, name, search);
+            DEBUG(4,("find_name on local: %s %s search %x\n",
+                        namestr(name),inet_ntoa(ip), search));
+            if (n) return n;
+        }
     }
 
-    if (!(search & FIND_WINS)) return NULL;
+    if ((search & FIND_WINS) != FIND_WINS) return NULL;
 
     /* find WINS subnet record. */
     *d = find_subnet(ipgrp);
-    
+
     if (*d == NULL) return NULL;
-    
+
     DEBUG(4,("find_name on WINS: %s %s search %x\n",
-	     namestr(name),inet_ntoa(ip), search));
+                        namestr(name),inet_ntoa(ip), search));
     return find_name((*d)->namelist, name, search);
 }
 
@@ -228,20 +234,19 @@ void dump_names(void)
     {
       int i;
 
-	  DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
-	  DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
-      DEBUG(3,("%-19s TTL=%ld ",
-	       namestr(&n->name),
-	       n->death_time?n->death_time-t:0));
+      DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
+      DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
+      DEBUG(3,("%-19s TTL=%ld source=%d",
+           namestr(&n->name),
+           n->death_time?n->death_time-t:0, n->source));
 
         for (i = 0; i < n->num_ips; i++)
         {
-           DEBUG(3,("%15s NB=%2x source=%d",
-		    inet_ntoa(n->ip_flgs[i].ip),
-		    n->ip_flgs[i].nb_flags,n->source));
-
+           DEBUG(3,("%15s NB=%2x ",
+                        inet_ntoa(n->ip_flgs[i].ip),
+                        n->ip_flgs[i].nb_flags));
         }
-		DEBUG(3,("\n"));
+        DEBUG(3,("\n"));
 
       if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
       {
@@ -249,16 +254,16 @@ void dump_names(void)
          anything other than as a hexadecimal number :-) */
 
         fprintf(f, "%s#%02x %ld ",
-	       n->name.name,n->name.name_type, /* XXXX ignore scope for now */
-	       n->death_time);
+           n->name.name,n->name.name_type, /* XXXX ignore scope for now */
+           n->death_time);
 
         for (i = 0; i < n->num_ips; i++)
         {
            fprintf(f, "%s %2x ",
-						inet_ntoa(n->ip_flgs[i].ip),
-						n->ip_flgs[i].nb_flags);
+                        inet_ntoa(n->ip_flgs[i].ip),
+                        n->ip_flgs[i].nb_flags);
         }
-		fprintf(f, "\n");
+        fprintf(f, "\n");
       }
 
     }
@@ -307,12 +312,12 @@ void load_netbios_names(void)
       int type = 0;
       unsigned int nb_flags;
       time_t ttd;
-	  struct in_addr ipaddr;
+      struct in_addr ipaddr;
 
-	  enum name_source source;
+      enum name_source source;
 
       char *ptr;
-	  int count = 0;
+      int count = 0;
 
       char *p;
 
@@ -320,20 +325,20 @@ void load_netbios_names(void)
 
       if (*line == '#') continue;
 
-	ptr = line;
+    ptr = line;
 
-	if (next_token(&ptr,name_str    ,NULL)) ++count;
-	if (next_token(&ptr,ttd_str     ,NULL)) ++count;
-	if (next_token(&ptr,ip_str      ,NULL)) ++count;
-	if (next_token(&ptr,nb_flags_str,NULL)) ++count;
+    if (next_token(&ptr,name_str    ,NULL)) ++count;
+    if (next_token(&ptr,ttd_str     ,NULL)) ++count;
+    if (next_token(&ptr,ip_str      ,NULL)) ++count;
+    if (next_token(&ptr,nb_flags_str,NULL)) ++count;
 
-	if (count <= 0) continue;
+    if (count <= 0) continue;
 
-	if (count != 4) {
-	  DEBUG(0,("Ill formed wins line"));
-	  DEBUG(0,("[%s]: name#type abs_time ip nb_flags\n",line));
-	  continue;
-	}
+    if (count != 4) {
+      DEBUG(0,("Ill formed wins line"));
+      DEBUG(0,("[%s]: name#type abs_time ip nb_flags\n",line));
+      continue;
+    }
 
       /* netbios name. # divides the name from the type (hex): netbios#xx */
       strcpy(name,name_str);
@@ -341,15 +346,15 @@ void load_netbios_names(void)
       p = strchr(name,'#');
 
       if (p) {
-	    *p = 0;
-	    sscanf(p+1,"%x",&type);
+        *p = 0;
+        sscanf(p+1,"%x",&type);
       }
 
       /* decode the netbios flags (hex) and the time-to-die (seconds) */
-	  sscanf(nb_flags_str,"%x",&nb_flags);
-	  sscanf(ttd_str,"%ld",&ttd);
+      sscanf(nb_flags_str,"%x",&nb_flags);
+      sscanf(ttd_str,"%ld",&ttd);
 
-	  ipaddr = *interpret_addr2(ip_str);
+      ipaddr = *interpret_addr2(ip_str);
 
       if (ip_equal(ipaddr,ipzero)) {
          source = SELF;
@@ -360,7 +365,7 @@ void load_netbios_names(void)
       }
 
       DEBUG(4, ("add WINS line: %s#%02x %ld %s %2x\n",
-	       name,type, ttd, inet_ntoa(ipaddr), nb_flags));
+           name,type, ttd, inet_ntoa(ipaddr), nb_flags));
 
       /* add all entries that have 60 seconds or more to live */
       if (ttd - 60 > time(NULL) || ttd == 0)
@@ -380,8 +385,8 @@ void load_netbios_names(void)
   remove an entry from the name list
   ****************************************************************************/
 void remove_netbios_name(struct subnet_record *d,
-			char *name,int type, enum name_source source,
-			 struct in_addr ip)
+            char *name,int type, enum name_source source,
+             struct in_addr ip)
 {
   struct nmb_name nn;
   struct name_record *n;
@@ -405,9 +410,9 @@ void remove_netbios_name(struct subnet_record *d,
 
   ****************************************************************************/
 struct name_record *add_netbios_entry(struct subnet_record *d,
-		char *name, int type, int nb_flags, 
-		int ttl, enum name_source source, struct in_addr ip,
-		BOOL new_only,BOOL wins)
+        char *name, int type, int nb_flags, 
+        int ttl, enum name_source source, struct in_addr ip,
+        BOOL new_only,BOOL wins)
 {
   struct name_record *n;
   struct name_record *n2=NULL;
@@ -465,46 +470,61 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
   if (!n2) add_name(d,n);
 
   DEBUG(3,("Added netbios name %s at %s ttl=%d nb_flags=%2x\n",
-	        namestr(&n->name),inet_ntoa(ip),ttl,nb_flags));
+            namestr(&n->name),inet_ntoa(ip),ttl,nb_flags));
 
   return(n);
 }
 
 
 /*******************************************************************
-  expires old names in the namelist
-  ******************************************************************/
-void expire_names(time_t t)
-{
-	struct name_record *n;
-	struct name_record *next;
-	struct subnet_record *d;
+  expires or refreshes old names in the namelist
 
-	/* expire old names */
-	for (d = subnetlist; d; d = d->next)
-	{
-	  for (n = d->namelist; n; n = next)
-	    {
-	      next = n->next;
-	      if (n->death_time && n->death_time < t)
-		{
-		  if (n->source == SELF) {
-		    DEBUG(3,("not expiring SELF name %s\n", namestr(&n->name)));
-		    n->death_time += 300;
-		    continue;
-		  }
-		  DEBUG(3,("Removing dead name %s\n", namestr(&n->name)));
-		  
-		  if (n->prev) n->prev->next = n->next;
-		  if (n->next) n->next->prev = n->prev;
-		  
-		  if (d->namelist == n) d->namelist = n->next; 
-		  
-		  free(n->ip_flgs);
-		  free(n);
-		}
-	    }
-	}
+  if the name is a samba SELF name, it must be refreshed rather than
+  removed.
+  ******************************************************************/
+void check_expire_names(time_t t)
+{
+    struct name_record *n;
+    struct name_record *next;
+    struct subnet_record *d;
+
+    /* expire old names */
+    for (d = subnetlist; d; d = d->next)
+    {
+        for (n = d->namelist; n; n = next)
+        {
+            if (n->death_time && n->death_time < t)
+            {
+                if (n->source == SELF)
+                {
+                    /* refresh the samba name. if this refresh fails
+                       for any reason, it will be deleted.
+                     */
+                    DEBUG(3,("Refreshing SELF name %s\n", namestr(&n->name)));
+                    add_my_name_entry(d, -1, 
+                                    n->name.name, n->name.name_type,
+                                    n->ip_flgs[0].nb_flags);
+                    continue;
+                }         
+                
+                DEBUG(3,("Removing dead name %s\n", namestr(&n->name)));
+                              
+                next = n->next;
+                              
+                if (n->prev) n->prev->next = n->next;
+                if (n->next) n->next->prev = n->prev;
+                              
+                if (d->namelist == n) d->namelist = n->next; 
+                              
+                free(n->ip_flgs);
+                free(n);
+            }
+            else
+            {
+                next = n->next;
+            }
+        }
+    }
 }
 
 
@@ -512,8 +532,8 @@ void expire_names(time_t t)
   reply to a name query
   ****************************************************************************/
 struct name_record *search_for_name(struct subnet_record **d,
-					struct nmb_name *question,
-				    struct in_addr ip, int Time, int search)
+                    struct nmb_name *question,
+                    struct in_addr ip, int Time, int search)
 {
   int name_type = question->name_type;
   char *qname = question->name;
@@ -538,10 +558,10 @@ struct name_record *search_for_name(struct subnet_record **d,
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
       if (!dns_type && name_type != 0x1b)
-	{
-	  DEBUG(3,("types 0x20 0x1b 0x0 only: name not found\n"));
-	  return NULL;
-	}
+    {
+      DEBUG(3,("types 0x20 0x1b 0x0 only: name not found\n"));
+      return NULL;
+    }
       
       /* look it up with DNS */      
       a = interpret_addr(qname);
@@ -549,18 +569,18 @@ struct name_record *search_for_name(struct subnet_record **d,
       putip((char *)&dns_ip,(char *)&a);
       
       if (!a)
-	{
-	  /* no luck with DNS. We could possibly recurse here XXXX */
-	  DEBUG(3,("no recursion.\n"));
+    {
+      /* no luck with DNS. We could possibly recurse here XXXX */
+      DEBUG(3,("no recursion.\n"));
       /* add the fail to our WINS cache of names. give it 1 hour in the cache */
-	  add_netbios_entry(*d,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
-						True, True);
-	  return NULL;
-	}
+      add_netbios_entry(*d,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
+                        True, True);
+      return NULL;
+    }
       
       /* add it to our WINS cache of names. give it 2 hours in the cache */
       n = add_netbios_entry(*d,qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip,
-						True,True);
+                        True,True);
       
       /* failed to add it? yikes! */
       if (!n) return NULL;

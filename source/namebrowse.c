@@ -23,6 +23,9 @@
    14 jan 96: lkcl@pires.co.uk
    added multiple workgroup domain master support
 
+   30 July 96: David.Chappell@mail.trincoll.edu
+   Expanded multiple workgroup domain master browser support.
+
 */
 
 #include "includes.h"
@@ -71,21 +74,21 @@ void expire_browse_cache(time_t t)
   for (b = browserlist; b; b = nextb)
     {
       if (b->synced && b->sync_time < t)
-	{
-	  DEBUG(3,("Removing dead cached browser %s\n",b->name));
-	  nextb = b->next;
-	  
-	  if (b->prev) b->prev->next = b->next;
-	  if (b->next) b->next->prev = b->prev;
-	  
-	  if (browserlist == b) browserlist = b->next; 
-	  
-	  free(b);
-	}
+    {
+      DEBUG(3,("Removing dead cached browser %s\n",b->name));
+      nextb = b->next;
+      
+      if (b->prev) b->prev->next = b->next;
+      if (b->next) b->next->prev = b->prev;
+      
+      if (browserlist == b) browserlist = b->next; 
+      
+      free(b);
+    }
       else
-	{
-	  nextb = b->next;
-	}
+    {
+      nextb = b->next;
+    }
     }
 }
 
@@ -94,7 +97,7 @@ void expire_browse_cache(time_t t)
   add a browser entry
   ****************************************************************************/
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip, BOOL local)
+                          time_t ttl, struct in_addr ip, BOOL local)
 {
   BOOL newentry=False;
   
@@ -109,9 +112,9 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
   if (b && b->synced)
     {
       /* entries get left in the cache for a while. this stops sync'ing too
-	 often if the network is large */
+     often if the network is large */
       DEBUG(4, ("browser %s %s %s already sync'd at time %d\n",
-		b->name, b->group, inet_ntoa(b->ip), b->sync_time));
+        b->name, b->group, inet_ntoa(b->ip), b->sync_time));
       return NULL;
     }
   
@@ -146,12 +149,12 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
       add_browse_cache(b);
       
       DEBUG(3,("Added cache entry %s %s(%2x) %s ttl %d\n",
-	       wg, name, type, inet_ntoa(ip),ttl));
+           wg, name, type, inet_ntoa(ip),ttl));
     }
   else
     {
       DEBUG(3,("Updated cache entry %s %s(%2x) %s ttl %d\n",
-	       wg, name, type, inet_ntoa(ip),ttl));
+           wg, name, type, inet_ntoa(ip),ttl));
     }
   
   return(b);
@@ -166,23 +169,23 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
   struct subnet_record *d;
   struct work_record *work;
 
-  if (!(d = find_subnet(b->ip))) return;
-
+  if( (d = find_subnet(b->ip)) == (struct subnet_record *)NULL ) return;
+  
   if (!(work = find_workgroupstruct(d, b->group, False))) return;
-
+    
   /* only sync if we are the master */
   if (AM_MASTER(work)) {
-
+    
       /* first check whether the group we intend to sync with exists. if it
          doesn't, the server must have died. o dear. */
-
+    
       /* see response_netbios_packet() or expire_netbios_response_entries() */
       queue_netbios_packet(d,ClientNMB,NMB_QUERY,
                        b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
-					   b->group,0x20,0,0,0,NULL,NULL,
-					   False,False,b->ip,b->ip);
+                       work->token,b->group,0x20,0,0,0,NULL,NULL,
+                       False,False,b->ip,b->ip);
   }
-
+    
   b->synced = True;
 }
 

@@ -28,10 +28,12 @@
    04 jul 96: lkcl@pires.co.uk
    added system to become a master browser by stages.
 
+   30 July 96: David.Chappell@mail.trincoll.edu
+   Expanded multiple workgroup domain master browser support.
 
 */
 
-#include "includes.h"
+#include "includes.h"          
 
 extern int ClientNMB;
 extern int ClientDGRAM;
@@ -39,7 +41,6 @@ extern int ClientDGRAM;
 extern int DEBUGLEVEL;
 extern pstring scope;
 
-extern pstring myname;
 extern struct in_addr ipzero;
 extern struct in_addr ipgrp;
 
@@ -50,6 +51,9 @@ extern time_t StartupTime;
 extern struct subnet_record *subnetlist;
 
 extern uint16 nb_type; /* samba's NetBIOS name type */
+
+extern pstring myname;
+
 
 /*******************************************************************
   occasionally check to see if the master browser is around
@@ -68,22 +72,22 @@ void check_master_browser(void)
   dump_workgroups();
 
   for (d = subnetlist; d; d = d->next)
+  {
+    struct work_record *work;
+
+    for (work = d->workgrouplist; work; work = work->next)
     {
-      struct work_record *work;
+      /* if we are not the browse master of a workgroup, and we can't
+         find a browser on the subnet, do something about it. */
 
-      for (work = d->workgrouplist; work; work = work->next)
-	{
-	  /* if we are not the browse master of a workgroup, and we can't
-	     find a browser on the subnet, do something about it. */
-
-	  if (!AM_MASTER(work))
-	    {
-	      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
-				   work->work_group,0x1d,0,0,0,NULL,NULL,
-				   True,False,d->bcast_ip,d->bcast_ip);
-	    }
-	}
+      if (!AM_MASTER(work))
+      {
+          queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
+                   work->token, work->work_group,0x1d,0,0,0,NULL,NULL,
+                   True,False,d->bcast_ip,d->bcast_ip);
+      }
     }
+  }
 }
 
 
@@ -102,11 +106,11 @@ void browser_gone(char *work_name, struct in_addr ip)
   if (ip_equal(d->bcast_ip,ipgrp)) 
     return;
 
-  if (strequal(work->work_group, lp_workgroup()))
+  if (conf_should_local_master(work->token))
   {
 
       DEBUG(2,("Forcing election on %s %s\n",
-	       work->work_group,inet_ntoa(d->bcast_ip)));
+           work->work_group,inet_ntoa(d->bcast_ip)));
 
       /* we can attempt to become master browser */
       work->needelection = True;
@@ -114,10 +118,10 @@ void browser_gone(char *work_name, struct in_addr ip)
   else
   {
      /* local interfaces: force an election */
-    send_election(d, work->work_group, 0, 0, myname);
+    send_election(d, work->work_group, 0, 0, conf_browsing_alias(work->token));
 
      /* only removes workgroup completely on a local interface 
-        persistent lmhosts entries on a local interface _will_ be removed).
+        persistent lmhosts entries on a local interface _will_ be removed.
       */
      remove_workgroup(d, work,True);
   }
@@ -128,7 +132,7 @@ void browser_gone(char *work_name, struct in_addr ip)
   send an election packet
   **************************************************************************/
 void send_election(struct subnet_record *d, char *group,uint32 criterion,
-		   int timeup,char *name)
+           int timeup,char *name)
 {
   pstring outbuf;
   char *p;
@@ -136,7 +140,7 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
   if (!d) return;
   
   DEBUG(2,("Sending election to %s for workgroup %s\n",
-	   inet_ntoa(d->bcast_ip),group));	   
+       inet_ntoa(d->bcast_ip),group));     
 
   bzero(outbuf,sizeof(outbuf));
   p = outbuf;
@@ -152,7 +156,7 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
   p = skip_string(p,1);
   
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      name,group,0,0x1e,d->bcast_ip,*iface_ip(d->bcast_ip));
+              name,group,0,0x1e,d->bcast_ip,*iface_ip(d->bcast_ip));
 }
 
 
@@ -173,7 +177,7 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
     if (!(work = find_workgroupstruct(d, name, False))) return;
 
     if (ms_browser_name(name, name_type) ||
-        (AM_MASTER(work) && strequal(name, lp_workgroup()) == 0 &&
+        (AM_MASTER(work) && conf_should_workgroup_member(work->token) &&
          (name_type == 0x1d || name_type == 0x1b)))
     {
       int remove_type = 0;
@@ -184,7 +188,7 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
         remove_type = SV_TYPE_MASTER_BROWSER;
       if (name_type == 0x1b)
         remove_type = SV_TYPE_DOMAIN_MASTER;
-			
+            
       become_nonmaster(d, work, remove_type);
     }
 }
@@ -197,17 +201,20 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
   whether to proceed to the next stage in samba becoming a master browser.
 
   **************************************************************************/
-void name_register_work(struct subnet_record *d, char *name, int name_type,
-				int nb_flags, time_t ttl, struct in_addr ip, BOOL bcast)
+void name_register_work(struct subnet_record *d, int token,
+                char *name, int name_type,
+                struct nmb_ip *data, time_t ttl, struct in_addr ip, BOOL bcast)
 {
   enum name_source source = (ismyip(ip) || ip_equal(ip, ipzero)) ?
-								SELF : REGISTER;
+                                SELF : REGISTER;
 
   if (source == SELF)
   {
-    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
+    char *work_name = conf_workgroup_name(token);
+    struct work_record *work = find_workgroupstruct(d, work_name, False);
 
-    add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
+    add_netbios_entry(d,name,name_type,data->nb_flags,
+                      ttl,source,data->ip,True,!bcast);
 
     if (work)
     {
@@ -251,11 +258,23 @@ void become_master(struct subnet_record *d, struct work_record *work)
 {
   uint32 domain_type = SV_TYPE_DOMAIN_ENUM|DFLT_SERVER_TYPE|
     SV_TYPE_POTENTIAL_BROWSER;
+  pstring comment;
+
+  char *my_name   ;
+  char *my_comment;
 
   if (!work) return;
   
+  my_name    = conf_browsing_alias(work->token);
+  my_comment = conf_browsing_alias_comment(work->token);
+
+  my_name    = my_name    ? my_name    : myname;
+  my_comment = my_comment ? my_comment : lp_server_comment();
+
+  StrnCpy(comment, my_comment, 43);
+  
   DEBUG(2,("Becoming master for %s %s (currently at stage %d)\n",
-					work->work_group,inet_ntoa(d->bcast_ip),work->state));
+                    work->work_group,inet_ntoa(d->bcast_ip),work->state));
   
   switch (work->state)
   {
@@ -268,10 +287,10 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
       /* update our server status */
       work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
-      add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
+      add_server_entry(d,work,my_name,work->ServerType,0,comment,True);
 
       /* add special browser name */
-      add_my_name_entry(d,MSBROWSE        ,0x01,nb_type|NB_ACTIVE|NB_GROUP);
+      add_my_name_entry(d,work->token,MSBROWSE,0x01,nb_type|NB_ACTIVE|NB_GROUP);
 
       /* DON'T do anything else after calling add_my_name_entry() */
       return;
@@ -282,10 +301,11 @@ void become_master(struct subnet_record *d, struct work_record *work)
       work->state = MST_MSB; /* ... registering MSBROWSE was successful */
 
       /* add server entry on successful registration of MSBROWSE */
-      add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
+      add_server_entry(d,work,work->work_group,
+                       domain_type,0,conf_browsing_alias(work->token),True);
 
       /* add master name */
-      add_my_name_entry(d,work->work_group,0x1d,nb_type|NB_ACTIVE);
+      add_my_name_entry(d,work->token,work->work_group,0x1d,nb_type|NB_ACTIVE);
   
       /* DON'T do anything else after calling add_my_name_entry() */
       return;
@@ -297,7 +317,8 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
       /* update our server status */
       work->ServerType |= SV_TYPE_MASTER_BROWSER;
-      add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
+      add_server_entry(d,work,conf_browsing_alias(work->token),
+                       work->ServerType,0,comment,True);
 
       if (work->serverlist == NULL) /* no servers! */
       {
@@ -317,13 +338,14 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
    case MST_DOMAIN_NONE:
    {
-      if (lp_domain_master())
+      if (conf_should_domain_master(work->token))
       {
         work->state = MST_DOMAIN_MEM; /* ... become domain member */
         DEBUG(3,("domain first stage: register as domain member\n"));
 
         /* add domain member name */
-        add_my_name_entry(d,work->work_group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
+        add_my_name_entry(d,work->token,work->work_group,0x1e,
+                          nb_type|NB_ACTIVE|NB_GROUP);
 
         /* DON'T do anything else after calling add_my_name_entry() */
         return;
@@ -338,19 +360,20 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
    case MST_DOMAIN_MEM:
    {
-      if (lp_domain_master())
+      if (conf_should_domain_master(work->token))
       {
         work->state = MST_DOMAIN_TST; /* ... possibly become domain master */
         DEBUG(3,("domain second stage: register as domain master\n"));
 
         if (lp_domain_logons())
-	    {
+        {
           work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
-          add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
+          add_server_entry(d,work,my_name,work->ServerType,0,comment,True);
         }
 
         /* add domain master name */
-        add_my_name_entry(d,work->work_group,0x1b,nb_type|NB_ACTIVE         );
+        add_my_name_entry(d,work->token,work->work_group,0x1b,
+                          nb_type|NB_ACTIVE         );
 
         /* DON'T do anything else after calling add_my_name_entry() */
         return;
@@ -366,10 +389,10 @@ void become_master(struct subnet_record *d, struct work_record *work)
     case MST_DOMAIN_TST: /* while we were still a master browser... */
     {
       /* update our server status */
-      if (lp_domain_master())
+      if (conf_should_domain_master(work->token))
       {
         struct subnet_record *d1;
-		uint32 update_type = 0;
+        uint32 update_type = 0;
 
         DEBUG(3,("domain third stage: samba is now a domain master.\n"));
         work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
@@ -377,30 +400,30 @@ void become_master(struct subnet_record *d, struct work_record *work)
         update_type |= DFLT_SERVER_TYPE | SV_TYPE_DOMAIN_MASTER | 
 	  SV_TYPE_POTENTIAL_BROWSER;
 
-		work->ServerType |= update_type;
-		add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
+        work->ServerType |= update_type;
+        add_server_entry(d,work,my_name,work->ServerType,0,comment,True);
 
-		for (d1 = subnetlist; d1; d1 = d1->next)
-		{
-        	struct work_record *w;
-			if (ip_equal(d1->bcast_ip, d->bcast_ip)) continue;
+        for (d1 = subnetlist; d1; d1 = d1->next)
+        {
+            struct work_record *w;
+            if (ip_equal(d1->bcast_ip, d->bcast_ip)) continue;
 
-        	for (w = d1->workgrouplist; w; w = w->next)
-			{
-				struct server_record *s = find_server(w, myname);
-				if (strequal(w->work_group, work->work_group))
-				{
-					w->ServerType |= update_type;
-				}
-				if (s)
-				{
-					s->serv.type |= update_type;
-					DEBUG(4,("found server %s on %s: update to %8x\n",
-									s->serv.name, inet_ntoa(d1->bcast_ip),
-									s->serv.type));
-				}
-			}
-		}
+            for (w = d1->workgrouplist; w; w = w->next)
+            {
+                struct server_record *s = find_server(w, my_name);
+                if (strequal(w->work_group, work->work_group))
+                {
+                    w->ServerType |= update_type;
+                }
+                if (s)
+                {
+                    s->serv.type |= update_type;
+                    DEBUG(4,("found server %s on %s: update to %8x\n",
+                                    s->serv.name, inet_ntoa(d1->bcast_ip),
+                                    s->serv.type));
+                }
+            }
+        }
       }
   
       break;
@@ -421,10 +444,25 @@ void become_master(struct subnet_record *d, struct work_record *work)
   names, and tells the world that we are no longer a master browser.
   ******************************************************************/
 void become_nonmaster(struct subnet_record *d, struct work_record *work,
-				int remove_type)
+                int remove_type)
 {
   int new_server_type = work->ServerType;
 
+  pstring comment;
+
+  char *my_name   ;
+  char *my_comment;
+
+  if (!work) return;
+  
+  my_name    = conf_browsing_alias        (work->token);
+  my_comment = conf_browsing_alias_comment(work->token);
+
+  my_name    = my_name    ? my_name    : myname;
+  my_comment = my_comment ? my_comment : lp_server_comment();
+
+  StrnCpy(comment, my_comment, 43);
+  
   DEBUG(2,("Becoming non-master for %s\n",work->work_group));
   
   /* can only remove master or domain types with this function */
@@ -444,9 +482,7 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
     work->ElectionCriterion &= ~0x4;
     work->state = MST_NONE;
 
-	/* announce ourselves as no longer active as a master browser. */
-    announce_server(d, work, work->work_group, myname, 0, 0);
-    remove_name_entry(d,MSBROWSE        ,0x01);
+    remove_name_entry(d,work->token,MSBROWSE,0x01);
   }
   
   work->ServerType = new_server_type;
@@ -455,15 +491,21 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
   {
     if (work->state == MST_DOMAIN)
       work->state = MST_BROWSER;
-    remove_name_entry(d,work->work_group,0x1b);    
+    remove_name_entry(d,work->token,work->work_group,0x1b);
   }
 
   if (!(work->ServerType & SV_TYPE_MASTER_BROWSER))
   {
     if (work->state >= MST_BROWSER)
       work->state = MST_NONE;
-    remove_name_entry(d,work->work_group,0x1d);
+    remove_name_entry(d,work->token,work->work_group,0x1d);
   }
+
+  /* announce ourselves as no longer active as a master browser. */
+  announce_server(d,work,work->work_group,my_name,GET_TTL(0),work->ServerType);
+
+  /* update our internal records with our new server state */
+  add_server_entry(d, work, my_name, work->ServerType, 0, my_comment, True);
 }
 
 
@@ -486,25 +528,25 @@ void run_elections(void)
   {
     struct work_record *work;
     for (work = d->workgrouplist; work; work = work->next)
-	{
-	  if (work->RunningElection)
-	  {
-	    send_election(d,work->work_group, work->ElectionCriterion,
-			    t-StartupTime,myname);
-	      
-	    if (work->ElectionCount++ >= 4)
-		{
-		  /* I won! now what :-) */
-		  DEBUG(2,(">>> Won election on %s %s <<<\n",
-			   work->work_group,inet_ntoa(d->bcast_ip)));
-		  
-		  work->RunningElection = False;
-		  work->state = MST_NONE;
+    {
+      if (work->RunningElection)
+      {
+        send_election(d,work->work_group, work->ElectionCriterion,
+                t-StartupTime,conf_browsing_alias(work->token));
+          
+        if (work->ElectionCount++ >= 4)
+        {
+          /* I won! now what :-) */
+          DEBUG(2,(">>> Won election on %s %s <<<\n",
+               work->work_group,inet_ntoa(d->bcast_ip)));
+          
+          work->RunningElection = False;
+          work->state = MST_NONE;
 
-		  become_master(d, work);
-		}
-	  }
-	}
+          become_master(d, work);
+        }
+      }
+    }
   }
 }
 
@@ -513,7 +555,7 @@ void run_elections(void)
   work out if I win an election
   ******************************************************************/
 static BOOL win_election(struct work_record *work,int version,uint32 criterion,
-			 int timeup,char *name)
+             int timeup,char *name)
 {  
   int mytimeup = time(NULL) - StartupTime;
   uint32 mycriterion = work->ElectionCriterion;
@@ -533,7 +575,7 @@ static BOOL win_election(struct work_record *work,int version,uint32 criterion,
   if (timeup > mytimeup) return(False);
   if (timeup < mytimeup) return(True);
 
-  if (strcasecmp(myname,name) > 0) return(False);
+  if (strcasecmp(conf_browsing_alias(work->token),name) > 0) return(False);
   
   return(True);
 }
@@ -571,30 +613,38 @@ void process_election(struct packet_struct *p,char *buf)
   if (same_context(dgram)) return;
   
   for (work = d->workgrouplist; work; work = work->next)
-    {
-      if (!strequal(work->work_group, lp_workgroup()))
-	continue;
+  {
+    if (!conf_should_local_master(work->token)) continue;
 
-      if (win_election(work, version,criterion,timeup,name)) {
-	if (!work->RunningElection) {
-	  work->needelection = True;
-	  work->ElectionCount=0;
-	  work->state = MST_NONE;
-	}
-      } else {
-	work->needelection = False;
-	  
-	if (work->RunningElection || AM_MASTER(work)) {
-	  work->RunningElection = False;
-	  DEBUG(3,(">>> Lost election on %s %s <<<\n",
-		   work->work_group,inet_ntoa(d->bcast_ip)));
-	  if (AM_MASTER(work))
-	    become_nonmaster(d, work,
-			     SV_TYPE_MASTER_BROWSER|
-			     SV_TYPE_DOMAIN_MASTER);
-	}
-      }
+    if (win_election(work, version,criterion,timeup,name))
+    {
+        if (!work->RunningElection)
+        {
+          work->needelection = True;
+          work->ElectionCount=0;
+          work->state = MST_NONE;
+        }
     }
+    else
+    {
+        work->needelection = False;
+          
+        if (work->RunningElection || AM_MASTER(work))
+        {
+          work->RunningElection = False;
+          DEBUG(3,(">>> Lost election on %s %s <<<\n",
+               work->work_group,inet_ntoa(d->bcast_ip)));
+          
+          /* if we are the master then remove our masterly names */
+          if (AM_MASTER(work))
+          {
+              become_nonmaster(d, work,
+                    SV_TYPE_MASTER_BROWSER|
+                    SV_TYPE_DOMAIN_MASTER);
+          }
+        }
+    }
+  }
 }
 
 
@@ -615,18 +665,18 @@ BOOL check_elections(void)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
-	{
-	  run_any_election |= work->RunningElection;
-	  
-	  if (work->needelection && !work->RunningElection)
-	    {
-	      DEBUG(3,(">>> Starting election on %s %s <<<\n",
-		       work->work_group,inet_ntoa(d->bcast_ip)));
-	      work->ElectionCount = 0;
-	      work->RunningElection = True;
-	      work->needelection = False;
-	    }
-	}
+    {
+      run_any_election |= work->RunningElection;
+      
+      if (work->needelection && !work->RunningElection)
+        {
+          DEBUG(3,(">>> Starting election on %s %s <<<\n",
+               work->work_group,inet_ntoa(d->bcast_ip)));
+          work->ElectionCount = 0;
+          work->RunningElection = True;
+          work->needelection = False;
+        }
+    }
     }
   return run_any_election;
 }

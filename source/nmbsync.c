@@ -48,7 +48,7 @@ fudge for getpass function
 ****************************************************************************/
 char *getsmbpass(char *pass)
 {
-	return "dummy"; /* return anything: it should be ignored anyway */
+    return "dummy"; /* return anything: it should be ignored anyway */
 }
 
 /****************************************************************************
@@ -84,43 +84,46 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   p = skip_string(p,1);
   
   if (cli_call_api(PTR_DIFF(p,param),0, 8,10000,
-		   &rprcnt,&rdrcnt, param,NULL,
-		   &rparam,&rdata))
+           &rprcnt,&rdrcnt, param,NULL,
+           &rparam,&rdata))
     {
       int res = SVAL(rparam,0);
       int converter=SVAL(rparam,2);
       int i;
       
       if (res == 0)
-	{
-	  count=SVAL(rparam,4);
-	  p = rdata;
-	  
-	  for (i = 0;i < count;i++, p += 26)
-	    {
-	      char *sname = p;
-	      uint32 stype = IVAL(p,18);
-	      int comment_offset = IVAL(p,22) & 0xFFFF;
-	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-	      
-	      struct work_record *w = work;
-	      
-	      DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
-	      
-	      if (stype & SV_TYPE_DOMAIN_ENUM)
-		{
-		  /* creates workgroup on remote subnet */
-		  if ((w = find_workgroupstruct(d,sname,True)))
-		    {
-		      announce_request(w, d->bcast_ip);
-		    }
-		}
-	      
-          if (w)
-	        add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
-	    }
-	}
+    {
+      count=SVAL(rparam,4);
+      p = rdata;
+      
+      for (i = 0;i < count;i++, p += 26)
+        {
+          char *sname = p;
+          uint32 stype = IVAL(p,18);
+          int comment_offset = IVAL(p,22) & 0xFFFF;
+          char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+          
+          struct work_record *w = work;
+          
+          DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
+          
+        if (stype & SV_TYPE_DOMAIN_ENUM)
+        {
+          /* creates workgroup on remote subnet */
+          if ((w = find_workgroupstruct(d,sname,True)))
+            {
+              announce_request(w, d->bcast_ip);
+            }
+        }
+
+        if (w)
+        {
+          add_server_entry(d,w,sname,stype & ~SV_TYPE_LOCAL_LIST_ONLY,
+                           lp_max_ttl(),cmnt,False);
+        }
+      }
     }
+  }
   
   if (rparam) free(rparam);
   if (rdata) free(rdata);
@@ -136,7 +139,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   do a NetServerEnum and update our server and workgroup databases.
   ******************************************************************/
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
-		char *name, int nm_type, struct in_addr ip, BOOL local)
+        char *name, int nm_type, struct in_addr ip, BOOL local)
 {
   uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
@@ -151,7 +154,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
   got_pass = True;
   
   DEBUG(4,("sync browse lists with %s for %s %s\n",
-	    work->work_group, name, inet_ntoa(ip)));
+        work->work_group, name, inet_ntoa(ip)));
   
   strcpy(workgroup,work->work_group);
   strcpy(desthost,name);
@@ -170,11 +173,11 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
   if (cli_open_sockets(SMB_PORT))
     {
       if (cli_send_login(NULL,NULL,True,True))
-	{
-	  add_info(d, work, local_type|SV_TYPE_DOMAIN_ENUM);
-	  add_info(d, work, local_type|(SV_TYPE_ALL&
+    {
+      add_info(d, work, local_type|SV_TYPE_DOMAIN_ENUM);
+      add_info(d, work, local_type|(SV_TYPE_ALL&
                       ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY)));
-	}
+    }
       
       close_sockets();
     }
