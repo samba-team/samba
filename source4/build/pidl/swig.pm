@@ -47,14 +47,22 @@ sub ArrayFromPython($$)
     my($prefix) = shift;
     my($result) = "";
 
-    my($array_len) = $e->{ARRAY_LEN};
+    $result .= "/* " . Dumper($e) . " */\n";
 
-    if ($array_len eq "*") {
-	$array_len = util::has_property($e, "size_is");
+    my($size);
+
+    if (util::has_property($e, "size_is")) {
+	$size = util::has_property($e, "size_is");
+    } else {
+	$size = $e->{ARRAY_LEN};
     }
 
-    if (!util::is_constant($array_len)) {
-	$array_len = "s->$prefix$array_len";
+    if (util::has_property($e, "length_is")) {
+	$size = util::has_property($e, "length_is");
+    }
+
+    if (!util::is_constant($size)) {
+	$size = "s->$prefix$size";
     }
 
     my($type) = $e->{TYPE};
@@ -64,7 +72,7 @@ sub ArrayFromPython($$)
     }
 
     if (!util::is_constant($e->{ARRAY_LEN})) {
-	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, $array_len * sizeof($type));\n";
+	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, $size * sizeof($type));\n";
     }
 
     $result .= "\tif (!PyDict_GetItemString(obj, \"$e->{NAME}\")) {\n";
@@ -80,7 +88,7 @@ sub ArrayFromPython($$)
     $result .= "\t{\n";
 
     $result .= "\t\tint i;\n\n";
-    $result .= "\t\tfor (i = 0; i < $array_len; i++) {\n";
+    $result .= "\t\tfor (i = 0; i < $size; i++) {\n";
     if (util::is_scalar_type($e->{TYPE})) {
 	$result .= "\t\t\ts->$prefix$e->{NAME}\[i\] = $e->{TYPE}_from_python(PyList_GetItem(PyDict_GetItemString(obj, \"$e->{NAME}\"), i), \"$e->{NAME}\");\n";
     } else {
@@ -131,7 +139,11 @@ sub FieldFromPython($$)
 		$result .= "\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj, \"$e->{NAME}\");\n";
 	    }
 	} else {
-	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj, \"$e->{NAME}\");\n";
+	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
+		$result .= ArrayFromPython($e, $prefix);
+	    } else {
+		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj, \"$e->{NAME}\");\n";
+	    }
 	}
     }
 
@@ -207,8 +219,12 @@ sub FieldToPython($$)
 		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_to_python(s->$prefix$e->{NAME}));\n";
 	    }
 	} else {
-	    $result .= "\t// Pointer to scalar\n";
-	    $result .= DebugField($e);
+	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
+		$result .= ArrayToPython($e, $prefix);
+	    } else {
+		$result .= "\t// Pointer to scalar\n";
+		$result .= DebugField($e);
+	    }
 	}
     } else {
 	if ($e->{POINTERS} == 0) {
