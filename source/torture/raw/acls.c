@@ -333,6 +333,17 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &set);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	printf("check that sd has been mapped correctly\n");
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	if (!security_descriptor_equal(q.query_secdesc.out.sd, sd)) {
+		printf("security descriptors don't match!\n");
+		printf("got:\n");
+		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+		printf("expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+	}
+
 	printf("try open for write\n");
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
@@ -449,11 +460,13 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		uint32_t gen_bits;
 		uint32_t specific_bits;
 	} file_mappings[] = {
-		{ 0,                   0 },
-		{ SEC_GENERIC_READ,    SEC_RIGHTS_FILE_READ },
-		{ SEC_GENERIC_WRITE,   SEC_RIGHTS_FILE_WRITE },
-		{ SEC_GENERIC_EXECUTE, SEC_RIGHTS_FILE_EXECUTE },
-		{ SEC_GENERIC_ALL,     SEC_RIGHTS_FILE_ALL }
+		{ 0,                       0 },
+		{ SEC_GENERIC_READ,        SEC_RIGHTS_FILE_READ },
+		{ SEC_GENERIC_WRITE,       SEC_RIGHTS_FILE_WRITE },
+		{ SEC_GENERIC_EXECUTE,     SEC_RIGHTS_FILE_EXECUTE },
+		{ SEC_GENERIC_ALL,         SEC_RIGHTS_FILE_ALL },
+		{ SEC_FILE_READ_DATA,      SEC_FILE_READ_DATA },
+		{ SEC_FILE_READ_ATTRIBUTE, SEC_FILE_READ_ATTRIBUTE }
 	};
 	const struct {
 		uint32_t gen_bits;
@@ -586,7 +599,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
 
 
-	for (i=0;i<ARRAY_SIZE(file_mappings);i++) {
+	for (i=0;i<ARRAY_SIZE(dir_mappings);i++) {
 
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
