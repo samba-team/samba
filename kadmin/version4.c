@@ -459,7 +459,7 @@ kadm_ser_cpw(krb5_context context,
 	     krb5_storage *reply)
 {
     char key[8];
-    char *password;
+    char *password = NULL;
     krb5_error_code ret;
     
     krb5_warnx(context, "v4-compat %s: cpw %s",
@@ -915,7 +915,6 @@ handle_v4(krb5_context context,
     int first = 1;
     struct sockaddr_in admin_addr, client_addr;
     int addr_len;
-    krb5_error_code ret;
     krb5_data message, reply;
     ssize_t n;
 
