@@ -184,7 +184,7 @@ BOOL strcsequal(const char *s1,const char *s2)
 /***************************************************************************
 Do a case-insensitive, whitespace-ignoring string compare.
 ***************************************************************************/
-int strwicmp(char *psz1, char *psz2)
+int strwicmp(const char *psz1, const char *psz2)
 {
 	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
 	/* appropriate value. */
