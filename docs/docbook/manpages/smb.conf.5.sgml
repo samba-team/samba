@@ -744,6 +744,8 @@
 		<listitem><para><link linkend="UTMPDIRECTORY"><parameter>utmp directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="VALIDCHARS"><parameter>valid chars</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDCACHETIME"><parameter>winbind cache time</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDENUMUSERS"><parameter>winbind enum users</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDENUMGROUPS"><parameter>winbind enum groups</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDGID"><parameter>winbind gid</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDSEPARATOR"><parameter>winbind separator</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
@@ -7923,6 +7925,47 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="WINBINDENUMUSERS">winbind enum
+		users</term> <listitem><para>On large installations using
+		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
+		necessary to suppress the enumeration of users through the
+		<command> setpwent()</command>,
+		<command>getpwent()</command> and
+		<command>endpwent()</command> group of system calls.  If
+		the <parameter>winbind enum users</parameter> parameter is
+		false, calls to the <command>getpwent</command> system call
+		will not return any data. </para>
+
+		<para><emphasis>Warning:</emphasis> Turning off user
+		enumeration may cause some programs to behave oddly.  For
+		example, the finger program relies on having access to the
+		full user list when searching for matching
+		usernames. </para>
+
+		<para>Default: <command>winbind enum users = yes </command></para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term><anchor id="WINBINDENUMGROPS">winbind enum
+		groups</term> <listitem><para>On large installations using
+		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
+		necessary to suppress the enumeration of groups through the
+		<command> setgrent()</command>,
+		<command>getgrent()</command> and
+		<command>endgrent()</command> group of system calls.  If
+		the <parameter>winbind enum groups</parameter> parameter is
+		false, calls to the <command>getgrent()</command> system
+		call will not return any data. </para>
+
+		<para><emphasis>Warning:</emphasis> Turning off group
+		enumeration may cause some programs to behave oddly.
+		</para>
+
+		<para>Default: <command>winbind enum groups = no </command>
+		</para></listitem>
+		</varlistentry>
 
 	
 		<varlistentry>
