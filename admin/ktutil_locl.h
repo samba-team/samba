@@ -56,6 +56,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <roken.h>
 
 #include <krb5.h>
 
