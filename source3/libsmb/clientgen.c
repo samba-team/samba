@@ -328,6 +328,8 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_data=0;
 	int total_param=0;
 	int this_data,this_param;
+	uint8 eclass;
+	uint32 num;
 	
 	*data_len = *param_len = 0;
 
@@ -342,7 +344,8 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		return(False);
 	}
 
-	if (cli_error(cli, NULL, NULL))
+	/* DOS error "more data" is an acceptable error code */
+	if (cli_error(cli, &eclass, &num) && eclass != ERRDOS && num != ERRmoredata)
 	{
 		return(False);
 	}
@@ -393,7 +396,8 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (cli_error(cli, NULL, NULL))
+		/* DOS error "more data" is an acceptable error code */
+		if (cli_error(cli, &eclass, &num) && eclass != ERRDOS && num != ERRmoredata)
 		{
 			return(False);
 		}
