@@ -58,7 +58,7 @@ and the parameters within the section define the shares attributes.
 
 There are three special sections, link(bf([global]))(global),
 link(bf([homes]))(homes) and link(bf([printers]))(printers), which are
-described under link(bf('special sections'))(specialsections). The
+described under link(bf('special sections'))(SPECIALSECTIONS). The
 following notes apply to ordinary section descriptions.
 
 A share consists of a directory to which access is being given plus
@@ -122,7 +122,7 @@ dit(bf(The [global] section))
 
 Parameters in this section apply to the server as a whole, or are
 defaults for sections which do not specifically define certain
-items. See the notes under link(bf('Parameters'))(Parameters) for more
+items. See the notes under link(bf('PARAMETERS'))(PARAMETERS) for more
 information.
 
 label(homes)
@@ -511,7 +511,7 @@ it() link(bf(default service))(defaultservice)
 
 it() link(bf(dfree command))(dfreecommand)
 
-it() link(bf(dns proxy))(dns proxy)
+it() link(bf(dns proxy))(dnsproxy)
 
 it() link(bf(domain admin group))(domainadmingroup)
 
@@ -611,9 +611,7 @@ it() link(bf(netbios aliases))(netbiosaliases)
 
 it() link(bf(netbios name))(netbiosname)
 
-it() link(bf(networkstation user login))(networkstationuserlogin)
-
-it() link(bf(NIS homedir))(NIShomedir)
+it() link(bf(nis homedir))(nishomedir)
 
 it() link(bf(nt pipe support))(ntpipesupport)
 
@@ -957,13 +955,13 @@ it() link(bf(veto oplock files))(vetooplockfiles)
 
 it() link(bf(volume))(volume)
 
-it() link(bf(wide links))(wide links)
+it() link(bf(wide links))(widelinks)
 
 it() link(bf(writable))(writable)
 
-it() link(bf(write list))(write list)
+it() link(bf(write list))(writelist)
 
-it() link(bf(write ok))(write ok)
+it() link(bf(write ok))(writeok)
 
 it() link(bf(writeable))(writeable)
 
@@ -1132,26 +1130,30 @@ in slightly different ways.
 
 For name service it causes url(bf(nmbd))(nmbd.8.html) to bind to ports
 137 and 138 on the interfaces listed in the
-link(bf('interfaces'))(interfaces) parameter. nmbd also binds to the
-'all addresses' interface (0.0.0.0) on ports 137 and 138 for the
-purposes of reading broadcast messages. If this option is not set then
-nmbd will service name requests on all of these sockets. If bf("bind
-interfaces only") is set then nmbd will check the source address of
-any packets coming in on the broadcast sockets and discard any that
-don't match the broadcast addresses of the interfaces in the
+link(bf('interfaces'))(interfaces)
+parameter. url(bf(nmbd))(nmbd.8.html) also binds to the 'all
+addresses' interface (0.0.0.0) on ports 137 and 138 for the purposes
+of reading broadcast messages. If this option is not set then
+url(bf(nmbd))(nmbd.8.html) will service name requests on all of these
+sockets. If bf("bind interfaces only") is set then
+url(bf(nmbd))(nmbd.8.html) will check the source address of any
+packets coming in on the broadcast sockets and discard any that don't
+match the broadcast addresses of the interfaces in the
 link(bf('interfaces'))(interfaces) parameter list. As unicast packets
-are received on the other sockets it allows nmbd to refuse to serve
-names to machines that send packets that arrive through any interfaces
-not listed in the 'interfaces' list.  IP Source address spoofing does
-defeat this simple check, however so it must not be used seriously as
-a security feature for nmbd.
+are received on the other sockets it allows url(bf(nmbd))(nmbd.8.html)
+to refuse to serve names to machines that send packets that arrive
+through any interfaces not listed in the
+link(bf("interfaces"))(interfaces) list.  IP Source address spoofing
+does defeat this simple check, however so it must not be used
+seriously as a security feature for url(bf(nmbd))(nmbd.8.html).
 
-For file service it causes smbd to bind only to the interface list
-given in the link(bf('interfaces'))(interfaces) parameter. This
-restricts the networks that smbd will serve to packets coming in those
-interfaces.  Note that you should not use this parameter for machines
-that are serving PPP or other intermittant or non-broadcast network
-interfaces as it will not cope with non-permanent interfaces.
+For file service it causes url(bf(smbd))(smbd.8.html) to bind only to
+the interface list given in the link(bf('interfaces'))(interfaces)
+parameter. This restricts the networks that url(bf(smbd))(smbd.8.html)
+will serve to packets coming in those interfaces.  Note that you
+should not use this parameter for machines that are serving PPP or
+other intermittant or non-broadcast network interfaces as it will not
+cope with non-permanent interfaces.
 
 In addition, to change a users SMB password, the
 url(bf(smbpasswd))(smbpasswd.8.html) by default connects to the
@@ -1383,17 +1385,17 @@ The options are :
 
 startit()
 
-it() bf(SJIS))  Shift-JIS. Does no conversion of the incoming filename.
+it() bf(SJIS)  Shift-JIS. Does no conversion of the incoming filename.
 
-it() bf(JIS8, J8BB, J8BH, J8@B, J8@J, J8@H )) Convert from incoming
+it() bf(JIS8, J8BB, J8BH, J8@B, J8@J, J8@H ) Convert from incoming
 Shift-JIS to eight bit JIS code with different shift-in, shift out
 codes.
 
-it() bf(JIS7, J7BB, J7BH, J7@B, J7@J, J7@H )) Convert from incoming
+it() bf(JIS7, J7BB, J7BH, J7@B, J7@J, J7@H ) Convert from incoming
 Shift-JIS to seven bit JIS code with different shift-in, shift out
 codes.
 
-it() bf(JUNET, JUBB, JUBH, JU@B, JU@J, JU@H )) Convert from incoming
+it() bf(JUNET, JUBB, JUBH, JU@B, JU@J, JU@H ) Convert from incoming
 Shift-JIS to JUNET code with different shift-in, shift out codes.
 
 it() bf(EUC)  Convert an incoming Shift-JIS character to EUC code.
@@ -1460,7 +1462,7 @@ tt(	none)
   bf(Example:)
 tt(	copy = otherservice)
 
-label(createmode)
+label(createmask)
 dit(bf(create mask (S)))
 
 A synonym for this parameter is link(bf('create mode'))(createmode).
@@ -1524,7 +1526,8 @@ tt(	deadtime = 0)
   bf(Example:)
 tt(	deadtime = 15)
 
-label(debug timestamp (G))
+label(debugtimestamp)
+dit(bf(debug timestamp (G)))
 
 Samba2.0 debug log messages are timestamped by default. If you are
 running at a high link(bf("debug level"))(debuglevel) these timestamps
@@ -1776,7 +1779,7 @@ mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.anu.edu.au)
 
 label(domainadminusers) 
-dit(bf(domain admin users)
+dit(bf(domain admin users (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
@@ -1944,9 +1947,10 @@ url(bf(smbd))(smbd.8.html) must either have access to a local
 url(bf(smbpasswd (5)))(smbpasswd.5.html) file (see the
 url(bf(smbpasswd (8)))(smbpasswd.8.html) program for information on
 how to set up and maintain this file), or set the
-link(bf(security=))(security) parameter to either em("server") or
-em("domain") which causes url(bf(smbd))(smbd.8.html) to authenticate
-against another server.
+link(bf(security=))(security) parameter to either
+link(bf("server"))(securityequalserver) or
+link(bf("domain"))(securityequaldomain) which causes
+url(bf(smbd))(smbd.8.html) to authenticate against another server.
 
 label(exec)
 dit(bf(exec (S)))
@@ -2000,7 +2004,7 @@ When you set tt("fake oplocks = yes") url(bf(smbd))(smbd.8.html) will
 always grant oplock requests no matter how many clients are using the
 file.
 
-It is generally much better to use the real link(bf(oplock))(oplock)
+It is generally much better to use the real link(bf(oplocks))(oplocks)
 support rather than this parameter.
 
 If you enable this option on all read-only shares or shares that you
@@ -2034,7 +2038,7 @@ em(*always*) be set on a file created by Samba. This is done by
 bitwise 'OR'ing these bits onto the mode bits of a file that is being
 created. The default for this parameter is (in octel) 000. The modes
 in this parameter are bitwise 'OR'ed onto the file mode after the mask
-set in the link(bf("create mask"))(createmark) parameter is applied.
+set in the link(bf("create mask"))(createmask) parameter is applied.
 
 See also the parameter link(bf("create mask"))(createmask) for details
 on masking mode bits on created files.
@@ -2139,7 +2143,7 @@ link(bf(widelinks))(widelinks) parameter is set to False.
 tt(	getwd cache = No)
 
   bf(Example:)
-tt(	getwd cache = Yes
+tt(	getwd cache = Yes)
 
 label(group)
 dit(bf(group (S)))
@@ -2405,14 +2409,14 @@ tt(	keep alive = 60)
 label(kerneloplocks)
 dit(bf(kernel oplocks (G)))
 
-For UNIXs that support kernel based oplocks (currently only IRIX but
-hopefully also Linux and FreeBSD soon) this parameter allows the use
-of them to be turned on or off. 
+For UNIXs that support kernel based link(bf(oplocks))(oplocks)
+(currently only IRIX but hopefully also Linux and FreeBSD soon) this
+parameter allows the use of them to be turned on or off.
 
-Kernel oplocks support allows Samba oplocks to be broken whenever a
-local UNIX process or NFS operation accesses a file that
-url(bf(smbd))(smbd.8.html) has oplocked. This allows complete data
-consistancy between SMB/CIFS, NFS and local file access (and is a 
+Kernel oplocks support allows Samba link(bf(oplocks))(oplocks) to be
+broken whenever a local UNIX process or NFS operation accesses a file
+that url(bf(smbd))(smbd.8.html) has oplocked. This allows complete
+data consistancy between SMB/CIFS, NFS and local file access (and is a
 em(very) cool feature :-).
 
 This parameter defaults to em("On") on systems that have the support,
@@ -2587,6 +2591,11 @@ em(never) to become a local master browser.
 
   bf(Default:)
 tt(	local master = yes)
+
+label(lock dir)
+dit(bf(lock dir (G)))
+
+Synonym for link(bf("lock directory"))(lockdirectory).
 
 label(lockdirectory)
 dit(bf(lock directory (G)))
@@ -2920,19 +2929,19 @@ label(machinepasswordtimeout)
 dit(bf(machine password timeout (G)))
 
 If a Samba server is a member of an Windows NT Domain (see the
-link(bf("security=domain"))(security)) parameter) then periodically a
-running url(bf(smbd))(smbd.8.html) process will try and change the
-bf(MACHINE ACCOUNT PASWORD) stored in the file called
+link(bf("security=domain"))(securityequaldomain)) parameter) then
+periodically a running url(bf(smbd))(smbd.8.html) process will try and
+change the bf(MACHINE ACCOUNT PASWORD) stored in the file called
 tt(<Domain>.<Machine>.mac) where tt(<Domain>) is the name of the
 Domain we are a member of and tt<Machine> is the primary
 link(bf("NetBIOS name"))(netbiosname) of the machine
-url(bf(smbd))(smbd.8.html) is running on. This parameter specifies
-how often this password will be changed, in seconds. The default
-is one week (expressed in seconds), the same as a Windows NT
-Domain member server.
+url(bf(smbd))(smbd.8.html) is running on. This parameter specifies how
+often this password will be changed, in seconds. The default is one
+week (expressed in seconds), the same as a Windows NT Domain member
+server.
 
 See also url(bf(smbpasswd (8)))(smbpasswd.8.html), and the
-link(bf("security=domain"))(security)) parameter.
+link(bf("security=domain"))(securityequaldomain)) parameter.
 
   bf(Default:)
 tt(	machine password timeout = 604800)
@@ -3171,8 +3180,8 @@ label(maptoguest)
 dit(bf(map to guest (G)))
 
 This parameter is only useful in link(bf(security))(security) modes
-other than link(bf("security=share"))(security) - ie. user, server,
-and domain.
+other than link(bf("security=share"))(securityequalshare) - ie. user,
+server, and domain.
 
 This parameter can take three different values, which tell
 url(bf(smbd))(smbd.8.html) what to do with user login requests that
@@ -3883,14 +3892,15 @@ of Primary or Backup Domain controllers for the
 link(bf(Domain))(workgroup), as the Samba server is cryptographically
 in that domain, and will use crpytographically authenticated RPC calls
 to authenticate the user logging on. The advantage of using
-link(bf("security=domain"))(security) is that if you list several
-hosts in the bf("password server") option then
+link(bf("security=domain"))(securityequaldomain) is that if you list
+several hosts in the bf("password server") option then
 url(bf(smbd))(smbd.8.html) will try each in turn till it finds one
 that responds. This is useful in case your primary server goes down.
 
 If the link(bf("security"))(security) parameter is set to
-bf("server"), then there are different restrictions that
-link(bf("security=domain"))(security) doesn't suffer from:
+link(bf("server"))(securityequalserver), then there are different
+restrictions that link(bf("security=domain"))(securityequaldomain)
+doesn't suffer from:
 
 startit()
 
@@ -3899,14 +3909,15 @@ parameter, however if an url(bf(smbd))(smbd.8.html) makes a connection
 to a password server, and then the password server fails, no more
 users will be able to be authenticated from this
 url(bf(smbd))(smbd.8.html).  This is a restriction of the SMB/CIFS
-protocol when in link(bf("security=server"))(security) mode and cannot
-be fixed in Samba.
+protocol when in link(bf("security=server"))(securityequalserver) mode
+and cannot be fixed in Samba.
 
 it() If you are using a Windows NT server as your password server then
 you will have to ensure that your users are able to login from the
-Samba server, as when in link(bf("security=server"))(security) mode
-the network logon will appear to come from there rather than from the
-users workstation.
+Samba server, as when in
+link(bf("security=server"))(securityequalserver) mode the network
+logon will appear to come from there rather than from the users
+workstation.
 
 endit()
 
@@ -4095,7 +4106,7 @@ processed and (most importantly) not removed.
 Note that printing may fail on some UNIXes from the tt("nobody")
 account. If this happens then create an alternative guest account that
 can print and set the link(bf("guest account"))(guestaccount) in the
-link(bf("[global]")(global) section.
+link(bf("[global]"))(global) section.
 
 You can form quite complex print commands by realising that they are
 just passed to a shell. For example the following will log a print
@@ -4560,8 +4571,8 @@ label(revalidate)
 dit(bf(revalidate (S)))
 
 Note that this option only works with
-link(bf("security=share"))(security) and will be ignored if this is
-not the case.
+link(bf("security=share"))(securityequalshare) and will be ignored if
+this is not the case.
 
 This option controls whether Samba will allow a previously validated
 username/password pair to be used to attach to a share. Thus if you
@@ -4645,17 +4656,20 @@ negotiations with url(bf(smbd))(smbd.8.html) to turn share level
 security on or off. Clients decide based on this bit whether (and how)
 to transfer user and password information to the server.
 
-The default is bf("security=user"), as this is the most common setting
-needed when talking to Windows 98 and Windows NT.
+The default is link("security=user")(securityequaluser), as this is
+the most common setting needed when talking to Windows 98 and Windows
+NT.
 
-The alternatives are bf("security = share") or bf("security = server") or
-bf("security=domain").
+The alternatives are link(bf("security = share"))(securityequalshare),
+link(bf("security = server"))(securityequalserver) or
+link(bf("security=domain"))(securityequaldomain).
 
 em(*****NOTE THAT THIS DEFAULT IS DIFFERENT IN SAMBA2.0 THAN FOR
 PREVIOUS VERSIONS OF SAMBA *******).
 
-In previous versions of Samba the default was bf("security=share") mainly
-because that was the only option at one stage.
+In previous versions of Samba the default was
+link(bf("security=share"))(securityequalshare) mainly because that was
+the only option at one stage.
 
 There is a bug in WfWg that has relevence to this setting. When in
 user or server level security a WfWg client will totally ignore the
@@ -4668,10 +4682,11 @@ UNIX machine then you will want to use bf("security = user"). If you
 mostly use usernames that don't exist on the UNIX box then use
 bf("security = share").
 
-You should also use bf(security=share) if you want to be able to
-access any shares without a password (guest shares). This is commonly
-used for a shared printer server. It is more difficult to setup guest
-shares with bf(security=user), see the link(bf("map to
+You should also use link(bf(security=share))(securityequalshare) if
+you want to mainly setup shares without a password (guest
+shares). This is commonly used for a shared printer server. It is more
+difficult to setup guest shares with
+link(bf(security=user))(securityequaluser), see the link(bf("map to
 guest"))(maptoguest)parameter for details.
 
 It is possible to use url(bf(smbd))(smbd.8.html) in a em("hybred
@@ -4684,6 +4699,7 @@ The different settings will now be explained.
 
 startdit()
 
+label(securityequalshare)
 dit(bf("security=share")) When clients connect to a share level
 security server then need not log onto the server with a valid
 username and password before attempting to connect to a shared
@@ -4745,6 +4761,7 @@ which UNIX username will eventually be used in granting access.
 See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
 VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 
+label(securityequaluser)
 dit(bf("security=user"))
 
 This is the default security setting in Samba2.0. With user-level
@@ -4769,6 +4786,7 @@ doing this.
 See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
 VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 
+label(securityequalserver)
 dit(bf("security=server"))
 
 In this mode Samba will try to validate the username/password by
@@ -4779,10 +4797,10 @@ checking the UNIX password file, it must have a valid smbpasswd file
 to check users against. See the documentation file in the docs/
 directory ENCRYPTION.txt for details on how to set this up.
 
-em(Note) that from the clients point of view bf("security=server")
-is the same as bf("security=user"). It only affects how the server
-deals with the authentication, it does not in any way affect what the
-client sees.
+em(Note) that from the clients point of view bf("security=server") is
+the same as link(bf("security=user"))(securityequaluser). It only
+affects how the server deals with the authentication, it does not in
+any way affect what the client sees.
 
 em(Note) that the the name of the resource being requested is
 em(*not*) sent to the server until after the server has successfully
@@ -4798,6 +4816,7 @@ VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 See also the link(bf("password server"))(passwordserver) parameter.
 and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
 
+label(securityequaldomain)
 dit(bf("security=domain"))
 
 This mode will only work correctly if
@@ -4812,10 +4831,10 @@ em(Note) that a valid UNIX user must still exist as well as the
 account on the Domain Controller to allow Samba to have a valid
 UNIX account to map file access to.
 
-em(Note) that from the clients point of view bf("security=domain")
-is the same as bf("security=user"). It only affects how the server
-deals with the authentication, it does not in any way affect what the
-client sees.
+em(Note) that from the clients point of view bf("security=domain") is
+the same as link(bf("security=user"))(securityequaluser). It only
+affects how the server deals with the authentication, it does not in
+any way affect what the client sees.
 
 em(Note) that the the name of the resource being requested is
 em(*not*) sent to the server until after the server has successfully
@@ -5059,7 +5078,7 @@ tt(	socket options = TCP_NODELAY)
 tt(	socket options = IPTOS_LOWDELAY)
 
 label(ssl)
-dit(bf(ssl (G))
+dit(bf(ssl (G)))
 
 This variable is part of SSL-enabled Samba. This is only available if
 the SSL libraries have been compiled on your system and the configure
@@ -5100,7 +5119,7 @@ variable if you don't verify client certificates.
   bf(Default:)
 tt(	ssl CA certDir = /usr/local/ssl/certs)
 
-label(CA certFile)
+label(sslCAcertFile)
 dit(bf(ssl CA certFile (G)))
 
 This variable is part of SSL-enabled Samba. This is only available if
@@ -5284,7 +5303,8 @@ See later for how certificates and private keys are created.
   bf(Default:)
 tt(	ssl server cert = <empty string>)
 
-ssl server key  G
+label(sslserverkey)
+dit(bf(ssl server key (G)))
 
 This variable is part of SSL-enabled Samba. This is only available if
 the SSL libraries have been compiled on your system and the configure
@@ -5373,7 +5393,7 @@ tt(	strict locking = no)
   bf(Example:)
 tt(	strict locking = yes)
 
-label(strctsync)
+label(strictsync)
 dit(bf(strict sync (S)))
 
 Many Windows applications (including the Windows 98 explorer shell)
@@ -5581,6 +5601,11 @@ dit(bf(user (S)))
 
 Synonym for link(bf("username"))(username).
 
+label(users)
+dit(bf(users (S)))
+
+Synonym for link(bf("username"))(username).
+
 label(username)
 dit(bf(username (S)))
 
@@ -5609,7 +5634,7 @@ user that they log in as, so they cannot do anything that user cannot
 do.
 
 To restrict a service to a particular set of users you can use the
-link(bf("valid users="))(validuser) parameter.
+link(bf("valid users="))(validusers) parameter.
 
 If any of the usernames begin with a tt('@') then the name will be
 looked up first in the yp netgroups list (if Samba is compiled with
@@ -5968,19 +5993,19 @@ dit(bf(wins support (G)))
 This boolean controls if the url(bf(nmbd))(nmbd.8.html) process in
 Samba will act as a WINS server. You should not set this to true
 unless you have a multi-subnetted network and you wish a particular
-link(bf(nmbd))(nmbd.8.html) to be your WINS server. Note that you
+url(bf(nmbd))(nmbd.8.html) to be your WINS server. Note that you
 should em(*NEVER*) set this to true on more than one machine in your
 network.
 
   bf(Default:)
-link(	wins support = no)
+tt(	wins support = no)
 
 label(workgroup)
 dit(bf(workgroup (G)))
 
 This controls what workgroup your server will appear to be in when
-queried by clients. Note that this parameter also controlls the
-Domain name used with the link(bf("security=domain"))(security)
+queried by clients. Note that this parameter also controlls the Domain
+name used with the link(bf("security=domain"))(securityequaldomain)
 setting.
 
   bf(Default:)
