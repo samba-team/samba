@@ -399,24 +399,24 @@ int reply_ioctl(connection_struct *conn,
 	switch (ioctl_code)
 	{
 	    case IOCTL_QUERY_JOB_INFO:
-		replysize = 33;    // actually 32, but allow for alignment
+		replysize = 32;
 		break;
 	    default:
 		return(ERROR(ERRSRV,ERRnosupport));
 	}
 
-	outsize = set_message(outbuf,8,replysize,True);
-	SSVAL(outbuf,smb_vwv1,replysize); // Total data bytes returned
-	SSVAL(outbuf,smb_vwv5,replysize); // Data bytes this buffer
-	SSVAL(outbuf,smb_vwv6,52);        // Offset to data
-	p = smb_buf(outbuf) + 1;
+	outsize = set_message(outbuf,8,replysize+1,True);
+	SSVAL(outbuf,smb_vwv1,replysize); /* Total data bytes returned */
+	SSVAL(outbuf,smb_vwv5,replysize); /* Data bytes this buffer */
+	SSVAL(outbuf,smb_vwv6,52);        /* Offset to data */
+	p = smb_buf(outbuf) + 1;          /* Allow for alignment */
 
 	switch (ioctl_code)
 	{
 	    case IOCTL_QUERY_JOB_INFO:
-		SSVAL(p,0,1);                              // Job number
-		snprintf(p+2, 16, "%-15s", global_myname); // Our NetBIOS name
-		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); // Service name
+		SSVAL(p,0,1);                            /* Job number */
+		StrnCpy(p+2, global_myname, 15);         /* Our NetBIOS name */
+		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); /* Service name */
 		break;
 	}
 
