@@ -2098,17 +2098,22 @@ static void free_data_blob(DATA_BLOB *d)
 
 /*******************************************************************
  construct a data blob, must be freed with data_blob_free()
+ you can pass NULL for p and get a blank data blob
 *******************************************************************/
 DATA_BLOB data_blob(const void *p, size_t length)
 {
 	DATA_BLOB ret;
 
-	if (!p || !length) {
+	if (!length) {
 		ZERO_STRUCT(ret);
 		return ret;
 	}
 
-	ret.data = smb_xmemdup(p, length);
+	if (p) {
+		ret.data = smb_xmemdup(p, length);
+	} else {
+		ret.data = smb_xmalloc(length);
+	}
 	ret.length = length;
 	ret.free = free_data_blob;
 	return ret;

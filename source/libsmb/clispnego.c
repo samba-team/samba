@@ -486,9 +486,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	va_end(ap);
 
 	/* allocate the space, then scan the format again to fill in the values */
-	blob->data = malloc(head_size + data_size);
-	blob->length = head_size + data_size;
-	if (!blob->data) return False;
+	*blob = data_blob(NULL, head_size + data_size);
 
 	head_ofs = 0;
 	data_ofs = head_size;
