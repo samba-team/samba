@@ -42,6 +42,7 @@
 #include "rpc_srvsvc.h"
 #include "rpc_svcctl.h"
 #include "rpc_wkssvc.h"
+#include "rpc_atsvc.h"
 
 /* 
  * A bunch of stuff that was put into smb.h

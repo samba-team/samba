@@ -359,6 +359,7 @@ typedef char fstring[FSTRING_LEN];
 #define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
+#define PIPE_ATSVC    "\\PIPE\\atsvc"
 
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
