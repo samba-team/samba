@@ -245,6 +245,7 @@ struct smbc_server *smbc_server(char *server, char *share,
 	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
+	int tried_reverse = 0;
   
 	zero_ip(&ip);
 	ZERO_STRUCT(c);
@@ -318,6 +319,30 @@ struct smbc_server *smbc_server(char *server, char *share,
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
+		}
+		else {  /* Try one more time, but ensure we don't loop */
+
+		  /* Only try this if server is an IP address ... */
+
+		  if (is_ipaddress(server) && !tried_reverse) {
+		    fstring remote_name;
+		    struct in_addr rem_ip;
+
+		    if (!inet_aton(server, &rem_ip)) {
+		      DEBUG(4, ("Could not convert IP address %s to struct in_addr\n", server));
+		      errno = ENOENT;
+		      return NULL;
+		    }
+
+		    tried_reverse++; /* Yuck */
+
+		    if (name_status_find("*", 0, 0, rem_ip, remote_name)) {
+		      make_nmb_name(&called, remote_name, 0x20);
+		      goto again;
+		    }
+
+
+		  }
 		}
 		errno = ENOENT;
 		return NULL;
@@ -2243,6 +2268,10 @@ off_t smbc_telldir(int fd)
 
 	}
 
+	/*
+	 * This causes problems on some UNIXens ... wonder who is using
+	 * it ... FIXME.
+	 */
 	return (off_t) fe->dir_next;
 
 }
