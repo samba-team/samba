@@ -303,22 +303,30 @@ void dump_workgroups(BOOL force_write)
     if (subrec->workgrouplist)
     {
       struct work_record *work;
-	  
-      DEBUG(debuglevel,("dump_workgroups: dump workgroup on subnet %15s: ", subrec->subnet_name));
-      DEBUG(debuglevel,(" netmask=%15s:\n", inet_ntoa(subrec->mask_ip)));
+
+      if( DEBUGLVL( debuglevel ) )
+      {
+        dbgtext( "dump_workgroups()\n " );
+        dbgtext( "dump workgroup on subnet %15s: ", subrec->subnet_name );
+        dbgtext( "netmask=%15s:\n", inet_ntoa(subrec->mask_ip) );
+      }
 	  
       for (work = subrec->workgrouplist; work; work = work->next)
       {
-        DEBUG(debuglevel,("\t%s(%d) current master browser = %s\n", work->work_group, 
-                  work->token, 
-                  *work->local_master_browser_name ? work->local_master_browser_name : "UNKNOWN" ));
+        DEBUGADD( debuglevel, ( "\t%s(%d) current master browser = %s\n",
+                                work->work_group,
+                                work->token, 
+                               *work->local_master_browser_name
+                              ? work->local_master_browser_name : "UNKNOWN" ) );
         if (work->serverlist)
         {
           struct server_record *servrec;		  
           for (servrec = work->serverlist; servrec; servrec = servrec->next)
           {
-            DEBUG(debuglevel,("\t\t%s %8x (%s)\n",
-                  servrec->serv.name, servrec->serv.type, servrec->serv.comment));
+            DEBUGADD( debuglevel, ( "\t\t%s %8x (%s)\n",
+                                    servrec->serv.name,
+                                    servrec->serv.type,
+                                    servrec->serv.comment ) );
           }
         }
       }

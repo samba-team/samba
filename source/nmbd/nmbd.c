@@ -515,7 +515,7 @@ static BOOL init_structs(void)
 
   DEBUG( 5, ("Netbios name list:-\n") );
   for( n=0; my_netbios_names[n]; n++ )
-    DEBUG( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
+    DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
 
   return( True );
 } /* init_structs */
