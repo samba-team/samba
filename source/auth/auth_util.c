@@ -842,16 +842,16 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	return nt_status;
 }
 
+/***************************************************************************
+ Purely internal function for make_server_info_info3
+ Fill the sam account from getpwnam
+***************************************************************************/
 static NTSTATUS fill_sam_account(const char *domain,
 				 const char *username,
-				 const DOM_SID *user_sid,
-				 const DOM_SID *group_sid,
 				 SAM_ACCOUNT **sam_account)
 {
 	fstring dom_user;
 	struct passwd *passwd;
-	NTSTATUS result;
-	unid_t id;
 
 	fstr_sprintf(dom_user, "%s%s%s",
 		     domain, lp_winbind_separator(), username);
@@ -866,26 +866,7 @@ static NTSTATUS fill_sam_account(const char *domain,
 	if (passwd == NULL)
 		return NT_STATUS_NO_SUCH_USER;
 
-	result = pdb_init_sam_pw(sam_account, passwd);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	id.uid = passwd->pw_uid;
-	result = idmap_set_mapping(user_sid, id, ID_USERID);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	/* This is currently broken. We have two different sources of
-	   information for the primary group: The info3 and
-	   /etc/passwd. To make this work at all, the info3 sid is
-	   mapped to the user's primary group from /etc/passwd.
-	   This is broken, but it basically works. */
-
-	id.gid = passwd->pw_gid;
-	result = idmap_set_mapping(group_sid, id, ID_GROUPID);
-
-	return result;
+	return pdb_init_sam_pw(sam_account, passwd);
 }
 
 /***************************************************************************
@@ -959,7 +940,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 		nt_status = fill_sam_account(nt_domain,
 					     internal_username,
-					     &user_sid, &group_sid,
 					     &sam_account);
 
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
@@ -968,7 +948,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			auth_add_user_script(nt_domain, internal_username);
 			nt_status = fill_sam_account(nt_domain,
 						     internal_username,
-						     &user_sid, &group_sid,
 						     &sam_account);
 		}
 	}
