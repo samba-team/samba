@@ -3791,6 +3791,12 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
 
+/*The following definitions come from  rpc_server/srv_pipe_noauth.c  */
+
+
+/*The following definitions come from  rpc_server/srv_pipe_ntlmssp.c  */
+
+
 /*The following definitions come from  rpc_server/srv_pipe_srv.c  */
 
 void close_msrpc_command_processor(void);

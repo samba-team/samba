@@ -2257,11 +2257,16 @@ static void api_samr_set_userinfo2( rpcsrv_struct *p, prs_struct *data, prs_stru
 {
 	SAMR_Q_SET_USERINFO2 q_u;
 	uchar user_sess_key[16];
+
 	ZERO_STRUCT(q_u);
 
-	if (p->auth != NULL)
+	if (p->auth == NULL)
 	{
-		p->auth->api_user_sess_key(p, user_sess_key);
+		return;
+	}
+	if (!p->auth->api_user_sess_key(p, user_sess_key))
+	{
+		return;
 	}
 
 	samr_io_q_set_userinfo2("", &q_u, data, 0);
@@ -2362,9 +2367,13 @@ static void api_samr_set_userinfo( rpcsrv_struct *p, prs_struct *data, prs_struc
 
 	ZERO_STRUCT(q_u);
 
-	if (p->auth != NULL)
+	if (p->auth == NULL)
 	{
-		p->auth->api_user_sess_key(p, user_sess_key);
+		return;
+	}
+	if (!p->auth->api_user_sess_key(p, user_sess_key))
+	{
+		return;
 	}
 
 #ifdef DEBUG_PASSWORD
