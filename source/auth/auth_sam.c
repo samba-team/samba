@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "system/time.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
 
+   select system include wrappers
+
    Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -18,37 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
-union spoolss_PrinterInfo;
-union spoolss_FormInfo;
-union spoolss_JobInfo;
-union spoolss_DriverInfo;
-union spoolss_PortInfo;
-
-struct MULTI_QI;
-struct COSERVERINFO;
-
-
-struct epm_floor;
-struct epm_tower;
-
-struct drsuapi_DsCrackNames;
-
-struct samr_ChangePasswordUser;
-struct samr_OemChangePasswordUser2;
-struct samr_ChangePasswordUser3;
-struct samr_ChangePasswordUser2;
-struct samr_CryptPassword;
-struct samr_CryptPasswordEx;
-
-struct netr_SamInfo3;
-struct netr_Authenticator;
-
-struct iface_struct;
-
-struct tm;
-struct utimbuf;

@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "includes.h"
+#include "system/shmem.h"
 
 /**
  * The registry starts with a header that contains pointers to 

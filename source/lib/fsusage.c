@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 
 /* Return the number of TOSIZE-byte blocks used by

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "system/time.h"
 
 static fstring password;
 static fstring username;
