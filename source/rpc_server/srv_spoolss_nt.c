@@ -1575,8 +1575,6 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
 	if (option!=NULL)
 		safe_free(option->ctr.type);
 	
-	safe_free(option);
-
 	switch (Printer->printer_type) {
 		case PRINTER_HANDLE_IS_PRINTSERVER:
 			return printserver_notify_info(handle, info);
