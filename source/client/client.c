@@ -150,7 +150,7 @@ static int readfile(char *b, int size, int n, FILE *f)
 		return(fread(b,size,n,f));
   
 	i = 0;
-	while (i < (n - 1)) {
+	while (i < (n - 1) && (i < BUFFER_SIZE)) {
 		if ((c = getc(f)) == EOF) {
 			break;
 		}
