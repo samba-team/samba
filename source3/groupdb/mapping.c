@@ -662,6 +662,7 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	char *gr;
  
 	*num_uids = 0;
+	*uid=NULL;
 	
 	if ( (grp=getgrgid(gid)) == NULL)
 		return False;

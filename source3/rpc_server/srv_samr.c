@@ -1189,6 +1189,36 @@ static BOOL api_samr_set_groupinfo(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_samr_set_aliasinfo
+ ********************************************************************/
+
+static BOOL api_samr_set_aliasinfo(pipes_struct *p)
+{
+	SAMR_Q_SET_ALIASINFO q_u;
+	SAMR_R_SET_ALIASINFO r_u;
+
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!samr_io_q_set_aliasinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_set_aliasinfo: unable to unmarshall SAMR_Q_SET_ALIASINFO.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_set_aliasinfo(p, &q_u, &r_u);
+
+	if (!samr_io_r_set_aliasinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_set_aliasinfo: unable to marshall SAMR_R_SET_ALIASINFO.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
  api_samr_get_dom_pwinfo
  ********************************************************************/
 
@@ -1320,6 +1350,7 @@ static struct api_struct api_samr_cmds [] =
 	{"SAMR_QUERY_ALIASINFO"   , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
 	{"SAMR_QUERY_GROUPINFO"   , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
 	{"SAMR_SET_GROUPINFO"     , SAMR_SET_GROUPINFO    , api_samr_set_groupinfo    },
+	{"SAMR_SET_ALIASINFO"     , SAMR_SET_ALIASINFO    , api_samr_set_aliasinfo    },
 	{"SAMR_CREATE_USER"       , SAMR_CREATE_USER      , api_samr_create_user      },
 	{"SAMR_LOOKUP_RIDS"       , SAMR_LOOKUP_RIDS      , api_samr_lookup_rids      },
 	{"SAMR_GET_DOM_PWINFO"    , SAMR_GET_DOM_PWINFO   , api_samr_get_dom_pwinfo   },

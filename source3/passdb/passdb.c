@@ -507,7 +507,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 			DEBUG(5,("local_lookup_rid: found NT group %s mapped to Unix gid %u for rid %u\n",
 			          name, (unsigned int)map.gid, (unsigned int)rid ));
 
-			if(!getgrgid(gid))
+			if(!getgrgid(map.gid))
 				return False;
 			else
 				return True;
@@ -1521,7 +1521,7 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 	if (!sampass || !*pwd) return False;
 	
 	if (sampass->lm_pw!=NULL)
-		DEBUG(0,("pdb_set_nt_passwd: LM hash non NULL overwritting ?\n"));
+		DEBUG(0,("pdb_set_lanman_passwd: LM hash non NULL overwritting ?\n"));
 	else
 		sampass->lm_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
 	

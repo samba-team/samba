@@ -211,6 +211,8 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                   pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
 
 		(*num_entries)++;
+		
+		pdb_reset_sam(pwd);
 	}
 
 	pdb_endsampwent();
@@ -1411,6 +1413,8 @@ uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_U
 	if (!find_policy_by_hnd(p, &domain_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
+	pdb_init_sam(&sampass);
+
 	become_root();
 	ret=pdb_getsampwrid(sampass, user_rid);
 	unbecome_root();
@@ -1539,6 +1543,8 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
 		return False;
 	}
+
+	pdb_init_sam(&sampass);
 
 	become_root();
 	ret = pdb_getsampwrid(sampass, user_rid);
@@ -2520,8 +2526,8 @@ uint32 _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_
 
 	DEBUG(10, ("sid is %s\n", alias_sid_str));
 	sid = (DOM_SID2 *)talloc(p->mem_ctx, sizeof(DOM_SID2) * num_uids);	
-	if (sid == NULL) 
-		return NT_STATUS_NO_SUCH_ALIAS;
+	if (num_uids!=0 && sid == NULL) 
+		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_uids; i++) {
 		sid_copy(&temp_sid, &global_sam_sid);
@@ -2581,7 +2587,7 @@ uint32 _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_
 	rid=talloc(p->mem_ctx, sizeof(uint32)*num_uids);
 	attr=talloc(p->mem_ctx, sizeof(uint32)*num_uids);
 	
-	if (rid==NULL || attr==NULL)
+	if (num_uids!=0 && (rid==NULL || attr==NULL))
 		return NT_STATUS_NO_MEMORY;
 	
 	for (i=0; i<num_uids; i++) {
@@ -2859,10 +2865,6 @@ uint32 _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, SAM
 
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
 
-	/* add the group to the mapping table */
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, NULL, NULL, SE_PRIV_NONE))
-		return NT_STATUS_ACCESS_DENIED;
-
 	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -2871,6 +2873,10 @@ uint32 _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, SAM
 	sid_copy(&info->sid, &global_sam_sid);
 	sid_append_rid(&info->sid, r_u->rid);
 	sid_to_string(sid_string, &info->sid);
+
+	/* add the group to the mapping table */
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, name, NULL, SE_PRIV_NONE))
+		return NT_STATUS_ACCESS_DENIED;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
@@ -2890,7 +2896,7 @@ uint32 _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAMR_
 {
 	DOM_SID group_sid;
 	GROUP_MAP map;
-	uid_t *uid;
+	uid_t *uid=NULL;
 	int num_uids=0;
 	GROUP_INFO_CTR *ctr;
 
@@ -2951,6 +2957,40 @@ uint32 _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_SE
 			break;
 		case 4:
 			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment)-1);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if(!add_mapping_entry(&map, TDB_REPLACE))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+/*********************************************************************
+ _samr_set_groupinfo
+ 
+ update a domain group's comment.
+*********************************************************************/
+
+uint32 _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_SET_ALIASINFO *r_u)
+{
+	DOM_SID group_sid;
+	GROUP_MAP map;
+	ALIAS_INFO_CTR *ctr;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!get_local_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+	
+	ctr=&q_u->ctr;
+
+	switch (ctr->switch_value1) {
+		case 3:
+			unistr2_to_ascii(map.comment, &(ctr->alias.info3.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
