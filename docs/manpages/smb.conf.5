@@ -470,6 +470,10 @@ deny hosts
 
 directory
 
+directory mask
+
+directory mode
+
 dont descend
 
 exec
@@ -769,7 +773,7 @@ Note that Samba will or this value with 0700 as you must have at least
 user read, write and execute for Samba to work properly.
 
 .B Default:
- 	create mask = 0755
+ 	create mask = 0644
 
 .B Example:
  	create mask = 0775
@@ -919,6 +923,23 @@ path names on some systems.
 See
 .B path.
 
+.SS directory mask (S)
+A synonym for this parameter is 'directory mode'.
+
+This parameter is the octal modes which are used when converting DOS modes 
+to UNIX modes when creating UNIX directories.
+
+Note that Samba will or this value with 0700 as you must have at least
+user read, write and execute for Samba to work properly.
+
+.B Default:
+ 	directory mask = 0755
+
+.B Example:
+ 	directory mask = 0775
+.SS directory mode (S)
+See
+.B directory mask.
 .SS domain master (G)
 
 Enable WAN-wide browse list collation.  Local master browsers on 
