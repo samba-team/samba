@@ -559,6 +559,9 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
 		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
 	}
+	
+	if ( sec_channel_type == SEC_CHAN_DOMAIN )
+		snprintf(conn->cli->mach_acct, sizeof(conn->cli->mach_acct) - 1, "%s$", lp_workgroup());
 			
 	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	

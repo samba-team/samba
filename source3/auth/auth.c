@@ -269,9 +269,15 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		}
 
 		talloc_destroy(mem_ctx);
-
-		if (NT_STATUS_IS_OK(nt_status))
-			break;
+		
+		/* this sucks.  Somehow we have to know if an authentication module is 
+		   authoritative for a user.  Fixme!!!  --jerry */
+		
+		if ( NT_STATUS_IS_OK(nt_status) || 
+			NT_STATUS_V(nt_status) == NT_STATUS_V(NT_STATUS_WRONG_PASSWORD) )
+		{
+				break;			
+		}
 	}
 
 	if (NT_STATUS_IS_OK(nt_status)) {

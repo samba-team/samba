@@ -346,6 +346,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						   user_info->lm_resp, user_info->nt_resp, 
 						   &info3);
         
+	release_server_mutex();
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
@@ -386,7 +388,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	cli_nt_session_close(cli);
 	cli_ulogoff(cli);
 	cli_shutdown(cli);
-	release_server_mutex();
 	return nt_status;
 }
 

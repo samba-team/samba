@@ -1031,14 +1031,16 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* now that we have a SAM_ACCOUNT that looks real, make a server_info
-	   to wrap it in, and use pass it on down */
-
 	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info))) {
 		DEBUG(4, ("make_server_info failed!\n"));
 		pdb_free_sam(&sam_account);
 		return nt_status;
 	}
+
+	/* save this here to _net_sam_logon() doesn't fail (it assumes a 
+	   valid SAM_ACCOUNT) */
+		   
+	(*server_info)->sam_account = sam_account;
 
 	/* Fill in the unix info we found on the way */
 

@@ -235,11 +235,52 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
 		  domain, user));
-
-	if (lp_allow_trusted_domains() && (state->request.data.auth_crap.flags & WINBIND_PAM_CONTACT_TRUSTDOM)) {
+		  
+	/* check our role as a domain member first */
+	if ( lp_server_role() == ROLE_DOMAIN_MEMBER ) {
+		if ( !lp_allow_trusted_domains() && !strequal(domain, lp_workgroup()) ) {
+			DEBUG(5,("winbindd_pam_auth_crap: failing autghentication becuase of disallowed trust domains\n"));
+			result = NT_STATUS_LOGON_FAILURE;
+			goto done;
+		}
+		
 		contact_domain = domain;
-	} else {
-		contact_domain = lp_workgroup();
+
+		/*
+		 * Get the machine account password for the domain to contact.
+		 * This is either our own domain for a workstation, or possibly
+		 * any domain for a PDC with trusted domains.
+		 */
+
+		if (!secrets_fetch_trust_account_password (contact_domain,
+							   trust_passwd,
+							   &last_change_time,
+							   &sec_channel_type)) {
+			DEBUG(0, ("winbindd_pam_auth_crap: could not fetch trust account "
+				  "password for domain %s\n", contact_domain));
+			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			goto done;
+		}
+	}
+	else if ( lp_allow_trusted_domains() ) {
+		/* if we are not a domain member, then we must be a DC.  Must never 
+		   see a logon for our domain */
+		DOM_SID sid;
+		char *pwd;
+		contact_domain = domain;
+
+		if (!secrets_fetch_trusted_domain_password (contact_domain,
+							    &pwd, &sid,
+							    &last_change_time)) {
+			DEBUG(0, ("winbindd_pam_auth_crap: could not fetch trust account "
+				  "password for domain %s\n", contact_domain));
+			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			goto done;
+		}
+		sec_channel_type = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, trust_passwd);
+		SAFE_FREE(pwd);
+
 	}
 
 	if (*state->request.data.auth_crap.workstation) {
@@ -264,21 +305,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	lm_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
 	nt_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
 	
-	/*
-	 * Get the machine account password for the domain to contact.
-	 * This is either our own domain for a workstation, or possibly
-	 * any domain for a PDC with trusted domains.
-	 */
-
-	if (!secrets_fetch_trust_account_password (
-                contact_domain, trust_passwd, &last_change_time,
-		&sec_channel_type)) {
-		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
-                          "password for domain %s\n", contact_domain));
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		goto done;
-	}
-
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
