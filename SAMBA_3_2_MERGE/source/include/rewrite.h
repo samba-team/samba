@@ -303,6 +303,58 @@ typedef struct {
 	char *from_name, *to_name;
 } *smb_iconv_t;
 
+#define srvstr_push(base_ptr, dest, src, dest_len, flags) srvstr_push_fn(FUNCTION_MACRO, __LINE__, base_ptr, dest, src, dest_len, flags)
+
+/* Stuff from 3_0 trans2.h */
+
+#define l1_fdateCreation 0
+#define l1_fdateLastAccess 4
+#define l1_fdateLastWrite 8
+#define l1_cbFile 12
+#define l1_cbFileAlloc 16
+#define l1_attrFile 20
+#define l1_cchName 22
+#define l1_achName 23
+
+#define l2_fdateCreation 0
+#define l2_fdateLastAccess 4
+#define l2_fdateLastWrite 8
+#define l2_cbFile 12
+#define l2_cbFileAlloc 16
+#define l2_attrFile 20
+#define l2_cbList 22
+#define l2_cchName 26
+#define l2_achName 27
+
+#define l260_achName 94
+
+#define l1_idFileSystem 0
+#define l1_cSectorUnit 4
+#define l1_cUnit 8
+#define l1_cUnitAvail 12
+#define l1_cbSector 16
+
+#define l2_vol_fdateCreation 0
+#define l2_vol_cch 4
+#define l2_vol_szVolLabel 5
+
+#define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
+
+#define SMB_QUERY_FS_LABEL_INFO         0x101
+#define SMB_FS_LABEL_INFORMATION                        1002
+
+#define SMB_INFO_QUERY_EAS_FROM_LIST    3  /* only valid on query not set */
+#define SMB_INFO_QUERY_ALL_EAS          4  /* only valid on query not set */
+
+#define SMB_FILE_DISPOSITION_INFORMATION                1013
+#define SMB_FILE_ALLOCATION_INFORMATION                 1019
+#define SMB_FILE_END_OF_FILE_INFORMATION                1020
+
+#define SMB_QUERY_FILE_ALLOCATION_INFO  0x105
+#define SMB_QUERY_FILE_END_OF_FILEINFO  0x106
+
+#define SMB_QUERY_FILE_UNIX_LINK       0x201
+
 #include "popt_common.h"
 
 #endif /* _REWRITE_H */

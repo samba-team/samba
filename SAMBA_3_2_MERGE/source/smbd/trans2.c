@@ -75,15 +75,15 @@ static BOOL samba_private_attr_name(const char *unix_ea_name)
 
 struct ea_list {
 	struct ea_list *next, *prev;
-	struct ea_struct ea;
+	struct ea_struct_x ea;
 };
 
 /****************************************************************************
- Get one EA value. Fill in a struct ea_struct.
+ Get one EA value. Fill in a struct ea_struct_x.
 ****************************************************************************/
 
 static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
-				const char *fname, char *ea_name, struct ea_struct *pea)
+				const char *fname, char *ea_name, struct ea_struct_x *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -982,8 +982,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_INFO_STANDARD\n"));
+		case SMB_FIND_STANDARD:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_STANDARD\n"));
 			if(requires_resume_key) {
 				SIVAL(p,0,reskey);
 				p += 4;
@@ -1014,8 +1014,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += len;
 			break;
 
-		case SMB_INFO_QUERY_EA_SIZE:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_INFO_QUERY_EA_SIZE\n"));
+		case SMB_FIND_EA_SIZE:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_SIZE\n"));
 			if(requires_resume_key) {
 				SIVAL(p,0,reskey);
 				p += 4;
@@ -1051,8 +1051,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SCVAL(p,0,0); p += 1; /* Extra zero byte ? - why.. */
 			break;
 
-		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
+		case SMB_FIND_BOTH_DIRECTORY_INFO:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_BOTH_DIRECTORY_INFO\n"));
 			was_8_3 = mangle_is_8_3(fname, True);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
@@ -1095,8 +1095,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p = pdata + len;
 			break;
 
-		case SMB_FIND_FILE_DIRECTORY_INFO:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_DIRECTORY_INFO\n"));
+		case SMB_FIND_DIRECTORY_INFO:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1115,8 +1115,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p = pdata + len;
 			break;
       
-		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_FULL_DIRECTORY_INFO\n"));
+		case SMB_FIND_FULL_DIRECTORY_INFO:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FULL_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1142,8 +1142,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p = pdata + len;
 			break;
 
-		case SMB_FIND_FILE_NAMES_INFO:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_NAMES_INFO\n"));
+		case SMB_FIND_NAME_INFO:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_NAME_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			p += 4;
@@ -1362,12 +1362,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		info_level, max_data_bytes));
   
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
-		case SMB_FIND_FILE_DIRECTORY_INFO:
-		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-		case SMB_FIND_FILE_NAMES_INFO:
-		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+		case SMB_FIND_STANDARD:
+		case SMB_FIND_EA_SIZE:
+		case SMB_FIND_DIRECTORY_INFO:
+		case SMB_FIND_FULL_DIRECTORY_INFO:
+		case SMB_FIND_NAME_INFO:
+		case SMB_FIND_BOTH_DIRECTORY_INFO:
 		case SMB_FIND_ID_FULL_DIRECTORY_INFO:
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
@@ -1587,12 +1587,12 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		requires_resume_key, resume_key, resume_name, continue_bit, info_level));
 
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
-		case SMB_FIND_FILE_DIRECTORY_INFO:
-		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-		case SMB_FIND_FILE_NAMES_INFO:
-		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+		case SMB_FIND_STANDARD:
+		case SMB_FIND_EA_SIZE:
+		case SMB_FIND_DIRECTORY_INFO:
+		case SMB_FIND_FULL_DIRECTORY_INFO:
+		case SMB_FIND_NAME_INFO:
+		case SMB_FIND_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
 			if (!lp_unix_extensions())
@@ -1826,7 +1826,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	memset((char *)pdata,'\0',max_data_bytes + 1024);
 
 	switch (info_level) {
-		case SMB_INFO_ALLOCATION:
+		case SMB_QFS_ALLOCATION:
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
@@ -1859,7 +1859,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			break;
 		}
 
-		case SMB_INFO_VOLUME:
+		case SMB_QFS_VOLUME:
 			/* Return volume name */
 			/* 
 			 * Add volume serial number - hash of a combination of
@@ -1873,8 +1873,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 				(unsigned)st.st_ctime, len, vname));
 			break;
 
-		case SMB_QUERY_FS_ATTRIBUTE_INFO:
-		case SMB_FS_ATTRIBUTE_INFORMATION:
+		case SMB_QFS_ATTRIBUTE_INFO:
+		case SMB_QFS_ATTRIBUTE_INFORMATION:
 
 
 #if defined(HAVE_SYS_QUOTAS)
@@ -1900,8 +1900,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			SIVAL(pdata,0,len);
 			break;
 
-		case SMB_QUERY_FS_VOLUME_INFO:      
-		case SMB_FS_VOLUME_INFORMATION:
+		case SMB_QFS_VOLUME_INFO:      
+		case SMB_QFS_VOLUME_INFORMATION:
 
 			/* 
 			 * Add volume serial number - hash of a combination of
@@ -1917,8 +1917,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 				(int)strlen(vname),vname, lp_servicename(snum)));
 			break;
 
-		case SMB_QUERY_FS_SIZE_INFO:
-		case SMB_FS_SIZE_INFORMATION:
+		case SMB_QFS_SIZE_INFO:
+		case SMB_QFS_SIZE_INFORMATION:
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
@@ -1948,7 +1948,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			break;
 		}
 
-		case SMB_FS_FULL_SIZE_INFORMATION:
+		case SMB_QFS_FULL_SIZE_INFORMATION:
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
@@ -1979,8 +1979,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			break;
 		}
 
-		case SMB_QUERY_FS_DEVICE_INFO:
-		case SMB_FS_DEVICE_INFORMATION:
+		case SMB_QFS_DEVICE_INFO:
+		case SMB_QFS_DEVICE_INFORMATION:
 			data_len = 8;
 			SIVAL(pdata,0,0); /* dev type */
 			SIVAL(pdata,4,0); /* characteristics */
@@ -2058,7 +2058,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			break;
 		}
 #endif /* HAVE_SYS_QUOTAS */
-		case SMB_FS_OBJECTID_INFORMATION:
+		case SMB_QFS_OBJECTID_INFORMATION:
 			data_len = 64;
 			break;
 
@@ -2076,7 +2076,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)0)); /* No capabilities for now... */
 			break;
 
-		case SMB_MAC_QUERY_FS_INFO:
+		case SMB_QFS_MAC_FS_INFO:
 			/*
 			 * Thursby MAC extension... ONLY on NTFS filesystems
 			 * once we do streams then we don't need this
@@ -2356,7 +2356,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
-		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_INFO_IS_NAME_VALID)) {
+		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_QFILEINFO_IS_NAME_VALID)) {
 			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
@@ -2422,8 +2422,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	}
 
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_STANDARD\n"));
+		case SMB_FIND_STANDARD:
+			DEBUG(10,("call_trans2qfilepathinfo: SMB_FIND_STANDARD\n"));
 			data_size = 22;
 			put_dos_date2(pdata,l1_fdateCreation,c_time);
 			put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
@@ -2433,10 +2433,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SSVAL(pdata,l1_attrFile,mode);
 			break;
 
-		case SMB_INFO_QUERY_EA_SIZE:
+		case SMB_FIND_EA_SIZE:
 		{
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
-			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
+			DEBUG(10,("call_trans2qfilepathinfo: SMB_FIND_EA_SIZE\n"));
 			data_size = 26;
 			put_dos_date2(pdata,l1_fdateCreation,c_time);
 			put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
@@ -2448,7 +2448,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		case SMB_INFO_IS_NAME_VALID:
+		case SMB_QFILEINFO_IS_NAME_VALID:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_IS_NAME_VALID\n"));
 			if (tran_call == TRANSACT2_QFILEINFO) {
 				/* os/2 needs this ? really ?*/      
@@ -2469,16 +2469,16 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,20,mode);
 			break;
 
-		case SMB_INFO_QUERY_ALL_EAS:
+		case SMB_QFILEINFO_ALL_EAS:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 			/* We have data_size bytes to put EA's into. */
 			data_size = fill_ea_buffer(pdata, data_size, conn, fsp, fname);
 			break;
 
-		case SMB_FILE_BASIC_INFORMATION:
-		case SMB_QUERY_FILE_BASIC_INFO:
+		case SMB_QFILEINFO_BASIC_INFORMATION:
+		case SMB_QFILEINFO_BASIC_INFO:
 
-			if (info_level == SMB_QUERY_FILE_BASIC_INFO) {
+			if (info_level == SMB_QFILEINFO_BASIC_INFO) {
 				DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_BASIC_INFO\n"));
 				data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
 			} else {
@@ -2504,8 +2504,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 			break;
 
-		case SMB_FILE_STANDARD_INFORMATION:
-		case SMB_QUERY_FILE_STANDARD_INFO:
+		case SMB_QFILEINFO_STANDARD_INFORMATION:
+		case SMB_QFILEINFO_STANDARD_INFO:
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_STANDARD_INFORMATION\n"));
 			data_size = 24;
@@ -2519,8 +2519,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			break;
 
-		case SMB_FILE_EA_INFORMATION:
-		case SMB_QUERY_FILE_EA_INFO:
+		case SMB_QFILEINFO_EA_INFORMATION:
+		case SMB_QFILEINFO_EA_INFO:
 		{
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_EA_INFORMATION\n"));
@@ -2530,8 +2530,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		/* Get the 8.3 name - used if NT SMB was negotiated. */
-		case SMB_QUERY_FILE_ALT_NAME_INFO:
-		case SMB_FILE_ALTERNATE_NAME_INFORMATION:
+		case SMB_QFILEINFO_ALT_NAME_INFO:
+		case SMB_QFILEINFO_ALT_NAME_INFORMATION:
 		{
 			pstring short_name;
 
@@ -2547,7 +2547,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		case SMB_QUERY_FILE_NAME_INFO:
+		case SMB_QFILEINFO_NAME_INFO:
 			/*
 			  this must be *exactly* right for ACLs on mapped drives to work
 			 */
@@ -2571,8 +2571,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SOFF_T(pdata,0,file_size);
 			break;
 
-		case SMB_QUERY_FILE_ALL_INFO:
-		case SMB_FILE_ALL_INFORMATION:
+		case SMB_QFILEINFO_ALL_INFO:
+		case SMB_QFILEINFO_ALL_INFORMATION:
 		{
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
@@ -2599,7 +2599,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			data_size = PTR_DIFF(pdata,(*ppdata));
 			break;
 		}
-		case SMB_FILE_INTERNAL_INFORMATION:
+		case SMB_QFILEINFO_INTERNAL_INFORMATION:
 			/* This should be an index number - looks like
 			   dev/ino to me :-) 
 
@@ -2612,13 +2612,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			data_size = 8;
 			break;
 
-		case SMB_FILE_ACCESS_INFORMATION:
+		case SMB_QFILEINFO_ACCESS_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
 			SIVAL(pdata,0,desired_access);
 			data_size = 4;
 			break;
 
-		case SMB_FILE_NAME_INFORMATION:
+		case SMB_QFILEINFO_NAME_INFORMATION:
 			/* Pathname with leading '\'. */
 			{
 				size_t byte_len;
@@ -2635,19 +2635,19 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,0,delete_pending);
 			break;
 
-		case SMB_FILE_POSITION_INFORMATION:
+		case SMB_QFILEINFO_POSITION_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_POSITION_INFORMATION\n"));
 			data_size = 8;
 			SOFF_T(pdata,0,pos);
 			break;
 
-		case SMB_FILE_MODE_INFORMATION:
+		case SMB_QFILEINFO_MODE_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_MODE_INFORMATION\n"));
 			SIVAL(pdata,0,mode);
 			data_size = 4;
 			break;
 
-		case SMB_FILE_ALIGNMENT_INFORMATION:
+		case SMB_QFILEINFO_ALIGNMENT_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALIGNMENT_INFORMATION\n"));
 			SIVAL(pdata,0,0); /* No alignment needed. */
 			data_size = 4;
@@ -2661,7 +2661,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		 */
 		case SMB_QUERY_FILE_STREAM_INFO:
 #endif
-		case SMB_FILE_STREAM_INFORMATION:
+		case SMB_QFILEINFO_STREAM_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_STREAM_INFORMATION\n"));
 			if (mode & aDIR) {
 				data_size = 0;
@@ -2676,8 +2676,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			}
 			break;
 
-		case SMB_QUERY_COMPRESSION_INFO:
-		case SMB_FILE_COMPRESSION_INFORMATION:
+		case SMB_QFILEINFO_COMPRESSION_INFO:
+		case SMB_QFILEINFO_COMPRESSION_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_COMPRESSION_INFORMATION\n"));
 			SOFF_T(pdata,0,file_size);
 			SIVAL(pdata,8,0); /* ??? */
@@ -2685,7 +2685,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			data_size = 16;
 			break;
 
-		case SMB_FILE_NETWORK_OPEN_INFORMATION:
+		case SMB_QFILEINFO_NETWORK_OPEN_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_NETWORK_OPEN_INFORMATION\n"));
 			put_long_date(pdata,c_time);
 			put_long_date(pdata+8,sbuf.st_atime);
@@ -2698,7 +2698,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			data_size = 56;
 			break;
 
-		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
+		case SMB_QFILEINFO_ATTRIBUTE_TAG_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n"));
 			SIVAL(pdata,0,mode);
 			SIVAL(pdata,4,0);
@@ -2709,7 +2709,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		 * CIFS UNIX Extensions.
 		 */
 
-		case SMB_QUERY_FILE_UNIX_BASIC:
+		case SMB_QFS_UNIX_INFO:
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC\n"));
 			DEBUG(4,("call_trans2qfilepathinfo: st_mode=%o\n",(int)sbuf.st_mode));
@@ -2767,7 +2767,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 			break;
 
-		case SMB_QUERY_FILE_UNIX_LINK:
+		case SMB_QFILEINFO_UNIX_LINK:
 			{
 				pstring buffer;
 
@@ -3005,7 +3005,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			/*
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
-			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
+			if ((info_level == SMB_SFILEINFO_DISPOSITION_INFO) && CVAL(pdata,0)) {
 				fsp->share_mode = FILE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
@@ -3094,7 +3094,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)SMB_GID_NO_CHANGE;
 
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
+		case SMB_FIND_STANDARD:
 		{
 			if (total_data < 12)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
@@ -3106,7 +3106,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		case SMB_INFO_SET_EA:
+		case SMB_SFILEINFO_EA_SET:
 			status = set_ea(conn, fsp, fname, pdata, total_data);
 			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
 				return ERROR_NT(status);
@@ -3136,8 +3136,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			dosmode = IVAL(pdata,24);
 			break;
 
-		case SMB_SET_FILE_BASIC_INFO:
-		case SMB_FILE_BASIC_INFORMATION:
+		case SMB_SFILEINFO_BASIC_INFO:
+		case SMB_SFILEINFO_BASIC_INFORMATION:
 		{
 			/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
 			time_t write_time;
@@ -3170,7 +3170,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		case SMB_FILE_ALLOCATION_INFORMATION:
-		case SMB_SET_FILE_ALLOCATION_INFO:
+		case SMB_SFILEINFO_ALLOCATION_INFO:
 		{
 			int ret = -1;
 			SMB_BIG_UINT allocation_size;
@@ -3246,7 +3246,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		case SMB_FILE_END_OF_FILE_INFORMATION:
-		case SMB_SET_FILE_END_OF_FILE_INFO:
+		case SMB_SFILEINFO_END_OF_FILE_INFO:
 		{
 			if (total_data < 8)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
@@ -3263,7 +3263,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		case SMB_FILE_DISPOSITION_INFORMATION:
-		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
+		case SMB_SFILEINFO_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
 			BOOL delete_on_close;
 
@@ -3292,7 +3292,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		case SMB_FILE_POSITION_INFORMATION:
+		case SMB_SFILEINFO_POSITION_INFORMATION:
 		{
 			SMB_BIG_UINT position_information;
 
@@ -3317,7 +3317,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		 * CIFS UNIX extensions.
 		 */
 
-		case SMB_SET_FILE_UNIX_BASIC:
+		case SMB_SFILEINFO_UNIX_BASIC:
 		{
 			uint32 raw_unixmode;
 
@@ -3440,7 +3440,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			break;
 		}
 
-		case SMB_SET_FILE_UNIX_LINK:
+		case SMB_SFILEINFO_UNIX_LINK:
 		{
 			pstring link_target;
 			char *newname = fname;
@@ -3488,7 +3488,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			return(-1);
 		}
 
-		case SMB_SET_FILE_UNIX_HLINK:
+		case SMB_SFILEINFO_UNIX_HLINK:
 		{
 			pstring oldname;
 			char *newname = fname;
@@ -3512,7 +3512,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			return(-1);
 		}
 
-		case SMB_FILE_RENAME_INFORMATION:
+		case SMB_SFILEINFO_RENAME_INFORMATION:
 		{
 			BOOL overwrite;
 			uint32 root_fid;
@@ -3588,8 +3588,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 	DEBUG(6,("dosmode: %x\n"  , dosmode));
 
-	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
-		(info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
+	if(!((info_level == SMB_SFILEINFO_END_OF_FILE_INFO) ||
+		(info_level == SMB_SFILEINFO_ALLOCATION_INFO) ||
 		(info_level == SMB_FILE_ALLOCATION_INFORMATION) ||
 		(info_level == SMB_FILE_END_OF_FILE_INFORMATION))) {
 

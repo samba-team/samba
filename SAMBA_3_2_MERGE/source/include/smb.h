@@ -1749,13 +1749,11 @@ typedef struct smb_sign_info_x {
 	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
 } smb_sign_info_x;
 
-#if 0 
-struct ea_struct {
+struct ea_struct_x {
 	uint8 flags;
 	char *name;
 	DATA_BLOB value;
 };
-#endif
 
 /* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
