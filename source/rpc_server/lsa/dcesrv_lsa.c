@@ -464,7 +464,8 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	state = h->data;
 
-	ret = samdb_search(state->sam_ctx, mem_ctx, state->builtin_dn, &res, attrs, "objectClass=group");
+	ret = samdb_search(state->sam_ctx, mem_ctx, state->builtin_dn, &res, attrs, 
+			   "privilege=*");
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
