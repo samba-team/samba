@@ -1135,6 +1135,10 @@ BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
 
+
+        while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
+          str++;
+
   for( p = regexp; *p && *str; ) {
     switch(*p) {
     case '?':
@@ -1229,21 +1233,16 @@ BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
 * This is the 'original code' used by the unix matcher.
 *********************************************************/
 
-static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
+static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
   pstring p1, p2;
   fstring ebase,eext,sbase,sext;
-
   BOOL matched;
 
   /* Make local copies of str and regexp */
   StrnCpy(p1,regexp,sizeof(pstring)-1);
   StrnCpy(p2,str,sizeof(pstring)-1);
-
-  if (!strchr(p2,'.')) {
-    pstrcat(p2,".");
-  }
 
   /* Remove any *? and ** as they are meaningless */
   for(p = p1; *p; p++)
@@ -1254,31 +1253,10 @@ static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 
   DEBUG(8,("unix_mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
 
-  if (trans2) {
-    fstrcpy(ebase,p1);
-    fstrcpy(sbase,p2);
-  } else {
-    if ((p=strrchr(p1,'.'))) {
-      *p = 0;
-      fstrcpy(ebase,p1);
-      fstrcpy(eext,p+1);
-    } else {
-      fstrcpy(ebase,p1);
-      eext[0] = 0;
-    }
+  fstrcpy(ebase,p1);
+  fstrcpy(sbase,p2);
 
-  if (!strequal(p2,".") && !strequal(p2,"..") && (p=strrchr(p2,'.'))) {
-    *p = 0;
-    fstrcpy(sbase,p2);
-    fstrcpy(sext,p+1);
-  } else {
-    fstrcpy(sbase,p2);
-    fstrcpy(sext,"");
-  }
-  }
-
-  matched = unix_do_match(sbase,ebase,case_sig) && 
-    (trans2 || unix_do_match(sext,eext,case_sig));
+  matched = unix_do_match(sbase,ebase,case_sig);
 
   DEBUG(8,("unix_mask_match returning %d\n", matched));
 
@@ -2593,7 +2571,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
        * 'unix style' mask match, rather than the
        * new NT one.
        */
-      if (unix_mask_match(last_component, namelist->name, case_sensitive, False))
+      if (unix_mask_match(last_component, namelist->name, case_sensitive))
       {
          DEBUG(8,("is_in_path: mask match succeeded\n"));
          return True;
