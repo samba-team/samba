@@ -1319,11 +1319,6 @@ static BOOL api_spoolss_enumprinterdataex(pipes_struct *p)
 /****************************************************************************
 ****************************************************************************/
 
-/* Disabled because it doesn't fix the bug I am looking at but it would be
-   a shame to throw away the code. -tpot */
-
-#if 0
-
 static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 {
 	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q_u;
@@ -1348,8 +1343,6 @@ static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 	
 	return True;
 }
-
-#endif
 
 /*******************************************************************
 \pipe\spoolss commands
