@@ -1128,35 +1128,68 @@ BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
       break;
 
     case '*':
-      /* Look for a character matching 
-	 the one after the '*' */
+      /*
+       * Look for a character matching 
+       * the one after the '*'.
+       */
       p++;
       if(!*p)
-	return True; /* Automatic match */
+        return True; /* Automatic match */
       while(*str) {
-	while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
-	  str++;
-	if(unix_do_match(str,p,case_sig))
-	  return True;
-	if(!*str)
-	  return False;
-	else
-	  str++;
+        /*
+         * Patch from weidel@multichart.de. In the case of the regexp
+         * '*XX*' we want to ensure there are at least 2 'X' characters
+         * in the filename after the '*' for a match to be made.
+         */
+
+        {
+          int matchcount=0;
+
+          /*
+           * Eat all the characters that match, but count how many there were.
+           */
+
+          while(*str && (case_sig ? (*p == *str) : (toupper(*p)==toupper(*str)))) {
+            str++;
+            matchcount++;
+          }
+
+          /*
+           * Now check that if the regexp had n identical characters that
+           * matchcount had at least that many matches.
+           */
+
+          while (( *(p+1) && (case_sig ? (*(p+1) == *p) : (toupper(*(p+1))==toupper(*p))))) {
+            p++;
+            matchcount--;
+          }
+          if ( matchcount <= 0 ) {
+            return False;
+          }
+        }
+        str--; /* We've eaten the match char after the '*' */
+        if(unix_do_match(str,p,case_sig))
+          return True;
+        if(!*str)
+          return False;
+        else
+          str++;
       }
       return False;
 
     default:
       if(case_sig) {
-	if(*str != *p)
-	  return False;
+        if(*str != *p)
+          return False;
       } else {
-	if(toupper(*str) != toupper(*p))
-	  return False;
+        if(toupper(*str) != toupper(*p))
+          return False;
       }
       str++, p++;
       break;
     }
   }
+
   if(!*p && !*str)
     return True;
 
@@ -1268,10 +1301,38 @@ static BOOL do_match(char *str, char *regexp, int case_sig, BOOL win9x_semantics
       while(*str) {
         while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
           str++;
-        /* Now eat all characters that match, as
-           we want the *last* character to match. */
-        while(*str && (case_sig ? (*p == *str) : (toupper(*p)==toupper(*str))))
-          str++;
+
+        /*
+         * Patch from weidel@multichart.de. In the case of the regexp
+         * '*XX*' we want to ensure there are at least 2 'X' characters
+         * in the filename after the '*' for a match to be made.
+         */
+
+        {
+          int matchcount=0;
+
+          /*
+           * Eat all the characters that match, but count how many there were.
+           */
+
+          while(*str && (case_sig ? (*p == *str) : (toupper(*p)==toupper(*str)))) {
+            str++;
+            matchcount++;
+          }
+
+          /*
+           * Now check that if the regexp had n identical characters that
+           * matchcount had at least that many matches.
+           */
+
+          while (( *(p+1) && (case_sig ? (*(p+1) == *p) : (toupper(*(p+1))==toupper(*p))))) {
+            p++;
+            matchcount--;
+          }
+          if ( matchcount <= 0 ) {
+            return False;
+          }
+        }
         str--; /* We've eaten the match char after the '*' */
         if(do_match(str,p,case_sig,win9x_semantics)) {
           return True;
