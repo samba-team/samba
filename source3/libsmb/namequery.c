@@ -25,8 +25,9 @@
 BOOL global_in_nmbd = False;
 
 /****************************************************************************
-generate a random trn_id
+ Generate a random trn_id.
 ****************************************************************************/
+
 static int generate_trn_id(void)
 {
 	static int trn_id;
@@ -40,10 +41,10 @@ static int generate_trn_id(void)
 	return trn_id % (unsigned)0x7FFF;
 }
 
-
 /****************************************************************************
- parse a node status response into an array of structures
+ Parse a node status response into an array of structures.
 ****************************************************************************/
+
 static struct node_status *parse_node_status(char *p, int *num_names)
 {
 	struct node_status *ret;
@@ -51,7 +52,8 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 
 	*num_names = CVAL(p,0);
 
-	if (*num_names == 0) return NULL;
+	if (*num_names == 0)
+		return NULL;
 
 	ret = (struct node_status *)malloc(sizeof(struct node_status)* (*num_names));
 	if (!ret) return NULL;
@@ -71,9 +73,10 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 
 
 /****************************************************************************
-do a NBT node status query on an open socket and return an array of
-structures holding the returned names or NULL if the query failed
+ Do a NBT node status query on an open socket and return an array of
+ structures holding the returned names or NULL if the query failed.
 **************************************************************************/
+
 struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
@@ -155,11 +158,9 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 	return NULL;
 }
 
-
 /****************************************************************************
-find the first type XX name in a node status reply - used for finding
-a servers name given its IP
-return the matched name in *name
+ Find the first type XX name in a node status reply - used for finding
+ a servers name given its IP. Return the matched name in *name.
 **************************************************************************/
 
 BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
@@ -177,6 +178,11 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 
 	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
 		   q_type, inet_ntoa(to_ip)));
+
+	/* Check the cache first. */
+
+	if (namecache_status_fetch(q_name, q_type, type, to_ip, name))
+		return True;
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1)
@@ -197,6 +203,10 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 		goto done;
 
 	pull_ascii(name, status[i].name, 16, 15, STR_TERMINATE);
+
+	/* Store the result in the cache. */
+	namecache_status_store(q_name, q_type, type, to_ip, name);
+
 	result = True;
 
  done:
@@ -205,17 +215,17 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
 
 	if (result)
-		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
+		DEBUGADD(10, (", name %s ip address is %s", name, inet_ntoa(to_ip)));
 
 	DEBUG(10, ("\n"));	
 
 	return result;
 }
 
-
 /*
   comparison function used by sort_ip_list
 */
+
 int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 {
 	int max_bits1=0, max_bits2=0;
@@ -248,6 +258,7 @@ int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
   are at the top. This prevents the problem where a WINS server returns an IP that
   is not reachable from our subnet as the first match
 */
+
 static void sort_ip_list(struct in_addr *iplist, int count)
 {
 	if (count <= 1) {
@@ -257,13 +268,13 @@ static void sort_ip_list(struct in_addr *iplist, int count)
 	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
 }
 
-
 /****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
  *timed_out is set if we failed by timing out
 ****************************************************************************/
+
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count, int *flags,
@@ -611,6 +622,7 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 /********************************************************
  Resolve via "wins" method.
 *********************************************************/
+
 BOOL resolve_wins(const char *name, int name_type,
 		  struct in_addr **return_iplist, int *return_count)
 {
@@ -1377,4 +1389,3 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 	
 	return internal_resolve_name(domain, 0x1C, ip_list, count);
 }
-
