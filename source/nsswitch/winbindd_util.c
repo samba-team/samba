@@ -167,11 +167,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		sid_copy(&domain->sid, sid);
 	}
 	
-	DEBUG(3,("add_trusted_domain: %s is an %s %s domain\n", domain->name,
-		 domain->active_directory ? "ADS" : "NT4", 
-		 domain->native_mode ? "native mode" : 
-		 ((domain->active_directory && !domain->native_mode) ? "mixed mode" : "")));
-
 	/* Link to domain list */
 	DLIST_ADD(_domain_list, domain);
         
