@@ -1628,7 +1628,7 @@ sub ParseTypedefNdrSize($)
 
 	return unless needed::is_needed("ndr_size_$t->{NAME}");
 
-	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN}($t);
+	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN}->($t);
 }
 
 #####################################################################
