@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -136,8 +136,10 @@ add_one_principal (const char *name,
     }
     
     ret = kadm5_create_principal(kadm_handle, &princ, mask, password);
-    if(ret)
+    if(ret) {
 	krb5_warn(context, ret, "kadm5_create_principal");
+	goto out;
+    }
     if(rand_key) {
 	krb5_keyblock *new_keys;
 	int n_keys, i;
