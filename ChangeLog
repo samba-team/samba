@@ -1,3 +1,26 @@
+2003-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* make-release: when fixing a valid cvs tag from release name
+	replace all number. to number- for all non-overlapping matches
+	
+2003-05-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/Makefile.am: gen_files += asn1_ETYPE_INFO2.x and
+	asn1_ETYPE_INFO2_ENTRY.x
+	(libasn1_la_LDFLAGS): set version to 6:1:1
+
+	* doc/Makefile.am: add apps.texi
+	
+	* doc/setup.texi: add move forward link to applications
+	
+	* doc/heimdal.texi: add applications
+	
+	* doc/misc.texi: move afs stuff to applications add link to
+	applications
+	
+	* doc/apps.texi: text about applications using kerberos
+	move afs text here
+	
 2003-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: add cross realm text
