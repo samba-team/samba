@@ -493,7 +493,7 @@ static void usage(char *pname)
   signal(SIGHUP ,SIGNAL_CAST sig_hup);
   signal(SIGTERM,SIGNAL_CAST sig_term);
 
-  while ((opt = getopt(argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:")) != EOF)
+  while ((opt = getopt(argc, argv, "as:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:")) != EOF)
     {
       switch (opt)
 	{
@@ -524,6 +524,12 @@ static void usage(char *pname)
 	  pstrcpy(scope,optarg);
 	  strupper(scope);
 	  break;
+	case 'a':
+		{
+			extern BOOL append_log;
+			append_log = !append_log;
+		}
+		break;
 	case 'D':
 	  is_daemon = True;
 	  break;
