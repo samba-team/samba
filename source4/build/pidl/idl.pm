@@ -546,7 +546,7 @@ sub new {
 		}
 	},
 	{#State 7
-		DEFAULT => -65
+		DEFAULT => -67
 	},
 	{#State 8
 		ACTIONS => {
@@ -578,7 +578,7 @@ sub new {
 			'CONSTANT' => 23,
 			'TEXT' => 17
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'listtext' => 21,
@@ -613,13 +613,13 @@ sub new {
 		}
 	},
 	{#State 17
-		DEFAULT => -67
+		DEFAULT => -69
 	},
 	{#State 18
-		DEFAULT => -53
+		DEFAULT => -55
 	},
 	{#State 19
-		DEFAULT => -55
+		DEFAULT => -57
 	},
 	{#State 20
 		ACTIONS => {
@@ -642,10 +642,10 @@ sub new {
 		}
 	},
 	{#State 22
-		DEFAULT => -54
+		DEFAULT => -56
 	},
 	{#State 23
-		DEFAULT => -66
+		DEFAULT => -68
 	},
 	{#State 24
 		DEFAULT => -47
@@ -674,7 +674,7 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
@@ -688,7 +688,7 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
@@ -702,7 +702,7 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
@@ -716,7 +716,7 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
@@ -730,7 +730,7 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
@@ -744,12 +744,13 @@ sub new {
 			'CONSTANT' => 23,
 			'TEXT' => 17
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
 			'anytext' => 51,
-			'constant' => 22
+			'constant' => 22,
+			'commalisttext' => 52
 		}
 	},
 	{#State 33
@@ -758,11 +759,11 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 52,
+			'anytext' => 53,
 			'constant' => 22
 		}
 	},
@@ -772,11 +773,11 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 53,
+			'anytext' => 54,
 			'constant' => 22
 		}
 	},
@@ -786,11 +787,11 @@ sub new {
 			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 54,
+			'anytext' => 55,
 			'constant' => 22
 		}
 	},
@@ -800,11 +801,11 @@ sub new {
 			'CONSTANT' => 23,
 			'TEXT' => 17
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 55,
+			'anytext' => 56,
 			'constant' => 22
 		}
 	},
@@ -814,17 +815,17 @@ sub new {
 	{#State 38
 		ACTIONS => {
 			'IDENTIFIER' => 7,
-			"enum" => 56,
-			'void' => 57
+			"enum" => 57,
+			'void' => 58
 		},
 		DEFAULT => -44,
 		GOTOS => {
-			'identifier' => 59,
-			'struct' => 60,
-			'enum' => 61,
-			'type' => 62,
-			'union' => 63,
-			'property_list' => 58
+			'identifier' => 60,
+			'struct' => 61,
+			'enum' => 62,
+			'type' => 63,
+			'union' => 64,
+			'property_list' => 59
 		}
 	},
 	{#State 39
@@ -832,7 +833,7 @@ sub new {
 	},
 	{#State 40
 		ACTIONS => {
-			"}" => 64,
+			"}" => 65,
 			"typedef" => 38,
 			"const" => 44
 		},
@@ -841,25 +842,25 @@ sub new {
 			'const' => 43,
 			'function' => 39,
 			'typedef' => 45,
-			'definition' => 65,
+			'definition' => 66,
 			'property_list' => 41
 		}
 	},
 	{#State 41
 		ACTIONS => {
 			'IDENTIFIER' => 7,
-			"enum" => 56,
+			"enum" => 57,
 			"[" => 5,
-			'void' => 57
+			'void' => 58
 		},
 		DEFAULT => -44,
 		GOTOS => {
-			'identifier' => 59,
-			'struct' => 60,
-			'enum' => 61,
-			'type' => 66,
-			'union' => 63,
-			'property_list' => 58
+			'identifier' => 60,
+			'struct' => 61,
+			'enum' => 62,
+			'type' => 67,
+			'union' => 64,
+			'property_list' => 59
 		}
 	},
 	{#State 42
@@ -873,26 +874,26 @@ sub new {
 			'IDENTIFIER' => 7
 		},
 		GOTOS => {
-			'identifier' => 67
+			'identifier' => 68
 		}
 	},
 	{#State 45
 		DEFAULT => -10
 	},
 	{#State 46
-		DEFAULT => -56
+		DEFAULT => -58
 	},
 	{#State 47
-		DEFAULT => -63
+		DEFAULT => -65
 	},
 	{#State 48
-		DEFAULT => -61
+		DEFAULT => -63
 	},
 	{#State 49
-		DEFAULT => -62
+		DEFAULT => -64
 	},
 	{#State 50
-		DEFAULT => -60
+		DEFAULT => -62
 	},
 	{#State 51
 		ACTIONS => {
@@ -904,20 +905,26 @@ sub new {
 			"|" => 31,
 			"*" => 33,
 			"." => 34,
-			")" => 68,
 			">" => 35
-		}
+		},
+		DEFAULT => -52
 	},
 	{#State 52
-		DEFAULT => -58
+		ACTIONS => {
+			"," => 69,
+			")" => 70
+		}
 	},
 	{#State 53
-		DEFAULT => -57
+		DEFAULT => -60
 	},
 	{#State 54
 		DEFAULT => -59
 	},
 	{#State 55
+		DEFAULT => -61
+	},
+	{#State 56
 		ACTIONS => {
 			"-" => 27,
 			"+" => 28,
@@ -931,56 +938,31 @@ sub new {
 		},
 		DEFAULT => -51
 	},
-	{#State 56
-		ACTIONS => {
-			"{" => 69
-		}
-	},
 	{#State 57
-		DEFAULT => -18
+		ACTIONS => {
+			"{" => 71
+		}
 	},
 	{#State 58
-		ACTIONS => {
-			"union" => 70,
-			"[" => 5,
-			"struct" => 71
-		}
+		DEFAULT => -18
 	},
 	{#State 59
-		DEFAULT => -17
+		ACTIONS => {
+			"union" => 72,
+			"[" => 5,
+			"struct" => 73
+		}
 	},
 	{#State 60
-		DEFAULT => -14
+		DEFAULT => -17
 	},
 	{#State 61
-		DEFAULT => -16
+		DEFAULT => -14
 	},
 	{#State 62
-		ACTIONS => {
-			'IDENTIFIER' => 7
-		},
-		GOTOS => {
-			'identifier' => 72
-		}
+		DEFAULT => -16
 	},
 	{#State 63
-		DEFAULT => -15
-	},
-	{#State 64
-		DEFAULT => -3
-	},
-	{#State 65
-		DEFAULT => -7
-	},
-	{#State 66
-		ACTIONS => {
-			'IDENTIFIER' => 7
-		},
-		GOTOS => {
-			'identifier' => 73
-		}
-	},
-	{#State 67
 		ACTIONS => {
 			'IDENTIFIER' => 7
 		},
@@ -988,249 +970,302 @@ sub new {
 			'identifier' => 74
 		}
 	},
-	{#State 68
+	{#State 64
+		DEFAULT => -15
+	},
+	{#State 65
+		DEFAULT => -3
+	},
+	{#State 66
+		DEFAULT => -7
+	},
+	{#State 67
 		ACTIONS => {
-			'CONSTANT' => 23,
-			'TEXT' => 17,
 			'IDENTIFIER' => 7
 		},
-		DEFAULT => -52,
 		GOTOS => {
-			'identifier' => 18,
-			'text' => 19,
-			'anytext' => 75,
-			'constant' => 22
+			'identifier' => 75
+		}
+	},
+	{#State 68
+		ACTIONS => {
+			'IDENTIFIER' => 7
+		},
+		GOTOS => {
+			'identifier' => 76
 		}
 	},
 	{#State 69
-		ACTIONS => {
-			'IDENTIFIER' => 7
-		},
-		GOTOS => {
-			'identifier' => 76,
-			'enum_element' => 77,
-			'enum_elements' => 78
-		}
-	},
-	{#State 70
-		ACTIONS => {
-			"{" => 79
-		}
-	},
-	{#State 71
-		ACTIONS => {
-			"{" => 80
-		}
-	},
-	{#State 72
-		ACTIONS => {
-			"[" => 82
-		},
-		DEFAULT => -41,
-		GOTOS => {
-			'array_len' => 81
-		}
-	},
-	{#State 73
-		ACTIONS => {
-			"(" => 83
-		}
-	},
-	{#State 74
-		ACTIONS => {
-			"=" => 84
-		}
-	},
-	{#State 75
-		DEFAULT => -64
-	},
-	{#State 76
-		ACTIONS => {
-			"=" => 85
-		},
-		DEFAULT => -22
-	},
-	{#State 77
-		DEFAULT => -20
-	},
-	{#State 78
-		ACTIONS => {
-			"}" => 86,
-			"," => 87
-		}
-	},
-	{#State 79
-		ACTIONS => {
-			"[" => 90
-		},
-		GOTOS => {
-			'union_elements' => 88,
-			'union_element' => 89
-		}
-	},
-	{#State 80
-		DEFAULT => -35,
-		GOTOS => {
-			'element_list1' => 91
-		}
-	},
-	{#State 81
-		ACTIONS => {
-			";" => 92
-		}
-	},
-	{#State 82
-		ACTIONS => {
-			'IDENTIFIER' => 7,
-			'CONSTANT' => 23,
-			'TEXT' => 17,
-			"]" => 94
-		},
-		DEFAULT => -52,
-		GOTOS => {
-			'identifier' => 18,
-			'text' => 19,
-			'anytext' => 93,
-			'constant' => 22
-		}
-	},
-	{#State 83
-		ACTIONS => {
-			"void" => 97,
-			"," => -37,
-			")" => -37
-		},
-		DEFAULT => -44,
-		GOTOS => {
-			'base_element' => 95,
-			'element_list2' => 98,
-			'property_list' => 96
-		}
-	},
-	{#State 84
 		ACTIONS => {
 			'IDENTIFIER' => 7,
 			'CONSTANT' => 23,
 			'TEXT' => 17
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 99,
+			'anytext' => 77,
 			'constant' => 22
+		}
+	},
+	{#State 70
+		ACTIONS => {
+			'CONSTANT' => 23,
+			'TEXT' => 17,
+			'IDENTIFIER' => 7
+		},
+		DEFAULT => -54,
+		GOTOS => {
+			'identifier' => 18,
+			'text' => 19,
+			'anytext' => 78,
+			'constant' => 22
+		}
+	},
+	{#State 71
+		ACTIONS => {
+			'IDENTIFIER' => 7
+		},
+		GOTOS => {
+			'identifier' => 79,
+			'enum_element' => 80,
+			'enum_elements' => 81
+		}
+	},
+	{#State 72
+		ACTIONS => {
+			"{" => 82
+		}
+	},
+	{#State 73
+		ACTIONS => {
+			"{" => 83
+		}
+	},
+	{#State 74
+		ACTIONS => {
+			"[" => 85
+		},
+		DEFAULT => -41,
+		GOTOS => {
+			'array_len' => 84
+		}
+	},
+	{#State 75
+		ACTIONS => {
+			"(" => 86
+		}
+	},
+	{#State 76
+		ACTIONS => {
+			"=" => 87
+		}
+	},
+	{#State 77
+		ACTIONS => {
+			"-" => 27,
+			"+" => 28,
+			"&" => 29,
+			"/" => 30,
+			"(" => 32,
+			"|" => 31,
+			"*" => 33,
+			"." => 34,
+			">" => 35
+		},
+		DEFAULT => -53
+	},
+	{#State 78
+		DEFAULT => -66
+	},
+	{#State 79
+		ACTIONS => {
+			"=" => 88
+		},
+		DEFAULT => -22
+	},
+	{#State 80
+		DEFAULT => -20
+	},
+	{#State 81
+		ACTIONS => {
+			"}" => 89,
+			"," => 90
+		}
+	},
+	{#State 82
+		ACTIONS => {
+			"[" => 93
+		},
+		GOTOS => {
+			'union_elements' => 91,
+			'union_element' => 92
+		}
+	},
+	{#State 83
+		DEFAULT => -35,
+		GOTOS => {
+			'element_list1' => 94
+		}
+	},
+	{#State 84
+		ACTIONS => {
+			";" => 95
 		}
 	},
 	{#State 85
 		ACTIONS => {
 			'IDENTIFIER' => 7,
 			'CONSTANT' => 23,
-			'TEXT' => 17
+			'TEXT' => 17,
+			"]" => 97
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 100,
+			'anytext' => 96,
 			'constant' => 22
 		}
 	},
 	{#State 86
-		DEFAULT => -19
+		ACTIONS => {
+			"void" => 100,
+			"," => -37,
+			")" => -37
+		},
+		DEFAULT => -44,
+		GOTOS => {
+			'base_element' => 98,
+			'element_list2' => 101,
+			'property_list' => 99
+		}
 	},
 	{#State 87
 		ACTIONS => {
-			'IDENTIFIER' => 7
+			'IDENTIFIER' => 7,
+			'CONSTANT' => 23,
+			'TEXT' => 17
 		},
+		DEFAULT => -54,
 		GOTOS => {
-			'identifier' => 76,
-			'enum_element' => 101
+			'identifier' => 18,
+			'text' => 19,
+			'anytext' => 102,
+			'constant' => 22
 		}
 	},
 	{#State 88
 		ACTIONS => {
-			"}" => 102,
-			"[" => 90
+			'IDENTIFIER' => 7,
+			'CONSTANT' => 23,
+			'TEXT' => 17
 		},
+		DEFAULT => -54,
 		GOTOS => {
-			'union_element' => 103
+			'identifier' => 18,
+			'text' => 19,
+			'anytext' => 103,
+			'constant' => 22
 		}
 	},
 	{#State 89
-		DEFAULT => -26
+		DEFAULT => -19
 	},
 	{#State 90
 		ACTIONS => {
-			"case" => 104,
-			"default" => 105
+			'IDENTIFIER' => 7
+		},
+		GOTOS => {
+			'identifier' => 79,
+			'enum_element' => 104
 		}
 	},
 	{#State 91
 		ACTIONS => {
-			"}" => 106
+			"}" => 105,
+			"[" => 93
 		},
-		DEFAULT => -44,
 		GOTOS => {
-			'base_element' => 107,
-			'property_list' => 96
+			'union_element' => 106
 		}
 	},
 	{#State 92
-		DEFAULT => -13
+		DEFAULT => -26
 	},
 	{#State 93
 		ACTIONS => {
-			"-" => 27,
-			"+" => 28,
-			"&" => 29,
-			"/" => 30,
-			"(" => 32,
-			"|" => 31,
-			"*" => 33,
-			"." => 34,
-			"]" => 108,
-			">" => 35
+			"case" => 107,
+			"default" => 108
 		}
 	},
 	{#State 94
-		DEFAULT => -42
-	},
-	{#State 95
-		DEFAULT => -39
-	},
-	{#State 96
 		ACTIONS => {
-			'IDENTIFIER' => 7,
-			"enum" => 56,
-			"[" => 5,
-			'void' => 57
+			"}" => 109
 		},
 		DEFAULT => -44,
 		GOTOS => {
-			'identifier' => 59,
-			'struct' => 60,
-			'enum' => 61,
-			'type' => 109,
-			'union' => 63,
-			'property_list' => 58
+			'base_element' => 110,
+			'property_list' => 99
+		}
+	},
+	{#State 95
+		DEFAULT => -13
+	},
+	{#State 96
+		ACTIONS => {
+			"-" => 27,
+			"+" => 28,
+			"&" => 29,
+			"/" => 30,
+			"(" => 32,
+			"|" => 31,
+			"*" => 33,
+			"." => 34,
+			"]" => 111,
+			">" => 35
 		}
 	},
 	{#State 97
-		DEFAULT => -38
+		DEFAULT => -42
 	},
 	{#State 98
-		ACTIONS => {
-			"," => 110,
-			")" => 111
-		}
+		DEFAULT => -39
 	},
 	{#State 99
+		ACTIONS => {
+			'IDENTIFIER' => 7,
+			"enum" => 57,
+			"[" => 5,
+			'void' => 58
+		},
+		DEFAULT => -44,
+		GOTOS => {
+			'identifier' => 60,
+			'struct' => 61,
+			'enum' => 62,
+			'type' => 112,
+			'union' => 64,
+			'property_list' => 59
+		}
+	},
+	{#State 100
+		DEFAULT => -38
+	},
+	{#State 101
+		ACTIONS => {
+			"," => 113,
+			")" => 114
+		}
+	},
+	{#State 102
 		ACTIONS => {
 			"-" => 27,
 			"|" => 31,
 			"(" => 32,
 			"*" => 33,
-			";" => 112,
+			";" => 115,
 			"+" => 28,
 			"&" => 29,
 			"/" => 30,
@@ -1238,7 +1273,7 @@ sub new {
 			">" => 35
 		}
 	},
-	{#State 100
+	{#State 103
 		ACTIONS => {
 			"-" => 27,
 			"+" => 28,
@@ -1252,100 +1287,100 @@ sub new {
 		},
 		DEFAULT => -23
 	},
-	{#State 101
+	{#State 104
 		DEFAULT => -21
 	},
-	{#State 102
+	{#State 105
 		DEFAULT => -25
 	},
-	{#State 103
-		DEFAULT => -27
-	},
-	{#State 104
-		ACTIONS => {
-			"(" => 113
-		}
-	},
-	{#State 105
-		ACTIONS => {
-			"]" => 114
-		}
-	},
 	{#State 106
-		DEFAULT => -24
+		DEFAULT => -27
 	},
 	{#State 107
 		ACTIONS => {
-			";" => 115
+			"(" => 116
 		}
 	},
 	{#State 108
-		DEFAULT => -43
+		ACTIONS => {
+			"]" => 117
+		}
 	},
 	{#State 109
-		DEFAULT => -33,
-		GOTOS => {
-			'pointers' => 116
-		}
+		DEFAULT => -24
 	},
 	{#State 110
-		DEFAULT => -44,
-		GOTOS => {
-			'base_element' => 117,
-			'property_list' => 96
-		}
-	},
-	{#State 111
 		ACTIONS => {
 			";" => 118
 		}
 	},
+	{#State 111
+		DEFAULT => -43
+	},
 	{#State 112
-		DEFAULT => -11
+		DEFAULT => -33,
+		GOTOS => {
+			'pointers' => 119
+		}
 	},
 	{#State 113
+		DEFAULT => -44,
+		GOTOS => {
+			'base_element' => 120,
+			'property_list' => 99
+		}
+	},
+	{#State 114
+		ACTIONS => {
+			";" => 121
+		}
+	},
+	{#State 115
+		DEFAULT => -11
+	},
+	{#State 116
 		ACTIONS => {
 			'IDENTIFIER' => 7,
 			'CONSTANT' => 23,
 			'TEXT' => 17
 		},
-		DEFAULT => -52,
+		DEFAULT => -54,
 		GOTOS => {
 			'identifier' => 18,
 			'text' => 19,
-			'anytext' => 119,
+			'anytext' => 122,
 			'constant' => 22
 		}
 	},
-	{#State 114
+	{#State 117
 		ACTIONS => {
-			";" => 120
+			";" => 123
 		},
 		DEFAULT => -44,
 		GOTOS => {
-			'base_element' => 121,
-			'property_list' => 96
+			'base_element' => 124,
+			'property_list' => 99
 		}
-	},
-	{#State 115
-		DEFAULT => -36
-	},
-	{#State 116
-		ACTIONS => {
-			'IDENTIFIER' => 7,
-			"*" => 123
-		},
-		GOTOS => {
-			'identifier' => 122
-		}
-	},
-	{#State 117
-		DEFAULT => -40
 	},
 	{#State 118
-		DEFAULT => -12
+		DEFAULT => -36
 	},
 	{#State 119
+		ACTIONS => {
+			'IDENTIFIER' => 7,
+			"*" => 126
+		},
+		GOTOS => {
+			'identifier' => 125
+		}
+	},
+	{#State 120
+		DEFAULT => -40
+	},
+	{#State 121
+		DEFAULT => -12
+	},
+	{#State 122
 		ACTIONS => {
 			"-" => 27,
 			"+" => 28,
@@ -1355,60 +1390,60 @@ sub new {
 			"|" => 31,
 			"*" => 33,
 			"." => 34,
-			")" => 124,
+			")" => 127,
 			">" => 35
 		}
 	},
-	{#State 120
-		DEFAULT => -31
-	},
-	{#State 121
-		ACTIONS => {
-			";" => 125
-		}
-	},
-	{#State 122
-		ACTIONS => {
-			"[" => 82
-		},
-		DEFAULT => -41,
-		GOTOS => {
-			'array_len' => 126
-		}
-	},
 	{#State 123
-		DEFAULT => -34
+		DEFAULT => -31
 	},
 	{#State 124
 		ACTIONS => {
-			"]" => 127
+			";" => 128
 		}
 	},
 	{#State 125
-		DEFAULT => -30
+		ACTIONS => {
+			"[" => 85
+		},
+		DEFAULT => -41,
+		GOTOS => {
+			'array_len' => 129
+		}
 	},
 	{#State 126
-		DEFAULT => -32
+		DEFAULT => -34
 	},
 	{#State 127
 		ACTIONS => {
-			";" => 128
-		},
-		DEFAULT => -44,
-		GOTOS => {
-			'base_element' => 129,
-			'property_list' => 96
+			"]" => 130
 		}
 	},
 	{#State 128
-		DEFAULT => -29
+		DEFAULT => -30
 	},
 	{#State 129
-		ACTIONS => {
-			";" => 130
-		}
+		DEFAULT => -32
 	},
 	{#State 130
+		ACTIONS => {
+			";" => 131
+		},
+		DEFAULT => -44,
+		GOTOS => {
+			'base_element' => 132,
+			'property_list' => 99
+		}
+	},
+	{#State 131
+		DEFAULT => -29
+	},
+	{#State 132
+		ACTIONS => {
+			";" => 133
+		}
+	},
+	{#State 133
 		DEFAULT => -28
 	}
 ],
@@ -1731,84 +1766,93 @@ sub
 { "$_[1] $_[3]" }
 	],
 	[#Rule 52
-		 'anytext', 0,
-sub
-#line 201 "build/pidl/idl.yp"
-{ "" }
+		 'commalisttext', 1, undef
 	],
 	[#Rule 53
-		 'anytext', 1, undef
+		 'commalisttext', 3,
+sub
+#line 202 "build/pidl/idl.yp"
+{ "$_[1],$_[3]" }
 	],
 	[#Rule 54
-		 'anytext', 1, undef
+		 'anytext', 0,
+sub
+#line 206 "build/pidl/idl.yp"
+{ "" }
 	],
 	[#Rule 55
 		 'anytext', 1, undef
 	],
 	[#Rule 56
-		 'anytext', 3,
-sub
-#line 203 "build/pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
+		 'anytext', 1, undef
 	],
 	[#Rule 57
-		 'anytext', 3,
-sub
-#line 204 "build/pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
+		 'anytext', 1, undef
 	],
 	[#Rule 58
-		 'anytext', 3,
-sub
-#line 205 "build/pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
-	],
-	[#Rule 59
-		 'anytext', 3,
-sub
-#line 206 "build/pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
-	],
-	[#Rule 60
-		 'anytext', 3,
-sub
-#line 207 "build/pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
-	],
-	[#Rule 61
 		 'anytext', 3,
 sub
 #line 208 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 62
+	[#Rule 59
 		 'anytext', 3,
 sub
 #line 209 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 63
+	[#Rule 60
 		 'anytext', 3,
 sub
 #line 210 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 64
-		 'anytext', 5,
+	[#Rule 61
+		 'anytext', 3,
 sub
 #line 211 "build/pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
+{ "$_[1]$_[2]$_[3]" }
+	],
+	[#Rule 62
+		 'anytext', 3,
+sub
+#line 212 "build/pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
+	],
+	[#Rule 63
+		 'anytext', 3,
+sub
+#line 213 "build/pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
+	],
+	[#Rule 64
+		 'anytext', 3,
+sub
+#line 214 "build/pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 65
-		 'identifier', 1, undef
+		 'anytext', 3,
+sub
+#line 215 "build/pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 66
-		 'constant', 1, undef
+		 'anytext', 5,
+sub
+#line 216 "build/pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 	],
 	[#Rule 67
+		 'identifier', 1, undef
+	],
+	[#Rule 68
+		 'constant', 1, undef
+	],
+	[#Rule 69
 		 'text', 1,
 sub
-#line 220 "build/pidl/idl.yp"
+#line 225 "build/pidl/idl.yp"
 { "\"$_[1]\"" }
 	]
 ],
@@ -1816,7 +1860,7 @@ sub
     bless($self,$class);
 }
 
-#line 226 "build/pidl/idl.yp"
+#line 231 "build/pidl/idl.yp"
 
 
 use util;
