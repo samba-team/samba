@@ -198,7 +198,7 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
   winreg_EnumValue 
 */
 static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_EnumValue *r)
+			       struct winreg_EnumValue *r)
 {
 	struct dcesrv_handle *h;
 	struct registry_key *key;
@@ -217,13 +217,11 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	
 	r->out.type = &value->data_type;
 	r->out.name_out.name = value->name;
-	r->out.value_out = talloc_p(mem_ctx, struct EnumValueOut);
-	r->out.value_out->offset = 0;
-	r->out.value_out->buffer = data_blob_talloc(mem_ctx, value->data_blk, value->data_len);
-	r->out.value_len1 = r->in.value_len1;
-	r->out.value_len2 = r->in.value_len2;
+	r->out.value = value->data_blk;
+	r->out.size = talloc_p(mem_ctx, uint32_t);
+	r->out.length = r->out.size;
+	*r->out.size = value->data_len;
 	
-
 	return WERR_OK;
 }
 
