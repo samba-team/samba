@@ -515,7 +515,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 			
 			(*domains)[idx - start_idx] = dom;
 			
-			DEBUG(18, ("Secret record is in required range.\n
+			DEBUG(18, ("Secret record is in required range.\n \
 				   start_idx = %d, max_num_domains = %d. Added to returned array.\n",
 				   start_idx, max_num_domains));
 
@@ -531,7 +531,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 				status = NT_STATUS_OK;
 			}
 		} else {
-			DEBUG(18, ("Secret is outside the required range.\n
+			DEBUG(18, ("Secret is outside the required range.\n \
 				   start_idx = %d, max_num_domains = %d. Not added to returned array\n",
 				   start_idx, max_num_domains));
 		}
