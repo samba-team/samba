@@ -762,23 +762,35 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			PICFLAG="-fPIC"
-		;;
+			;;
 		*solaris*) AC_DEFINE(SUNOS5)
-				;;
+			BLDSHARED="true"
+			LDSHFLAGS="-Wl,-h,\$@.so -G"
+			if test "${ac_cv_prog_CC}" = "gcc"; then
+				PICFLAG="-fPIC"
+			else
+				PICFLAG="-KPIC"
+				POBAD_CC=""
+				PICSUFFIX="po.o"
+			fi
+			;;
 		*sunos*) AC_DEFINE(SUNOS4)
-		;;
+			BLDSHARED="true"
+			LDSHFLAGS="-Wl,-h,\$@ -G"
+			PICFLAG="-KPIC"   # Is this correct for SunOS
+			;;
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
-		;;
+			;;
 		*irix*) AC_DEFINE(IRIX)
 			case "$host_os" in
 			*irix6*) AC_DEFINE(IRIX6)
 			;;
 			esac
 			ATTEMPT_WRAP32_BUILD=yes
-		;;
+			;;
 		*aix*) AC_DEFINE(AIX)
 			# AIX is too ugly for now
-		;;
+			;;
 		*hpux*) AC_DEFINE(HPUX)
 			SHLIBEXT="sl"
 			# Use special PIC flags for the native HP-UX compiler.
@@ -786,7 +798,7 @@ case "$host_os" in
 				LDSHFLAGS="-b"
 				PICFLAG="+z"
 			fi
-		;;
+			;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1);;
 		*sco*) AC_DEFINE(SCO);;

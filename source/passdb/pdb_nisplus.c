@@ -375,7 +375,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   if (!(pdb_get_acct_ctrl(pw_buf) & ACB_PWNOTREQ) &&
       strncasecmp(ptr, "NO PASSWORD", 11)) {
     if (strlen(ptr) != 32 || !pdb_gethexpwd(ptr, smbntpwd)) {
-      DEBUG(0, ("malformed NT pwd entry:
+      DEBUG(0, ("malformed NT pwd entry:\
  uid = %d.\n",
 		pdb_get_uid(pw_buf)));
       return False;
