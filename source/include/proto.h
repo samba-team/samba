@@ -4958,7 +4958,15 @@ uint32 _spoolss_getprinterdriverdirectory( const UNISTR2 *name,
 				uint32 level,
 				DRIVER_DIRECTORY_CTR *ctr,
 				uint32 *offered);
-uint32 _spoolss_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, 
+				uint32 idx,
+				uint32 *valuesize,
+				UNISTR *uni_value,
+				uint32 *realvaluesize,
+				uint32 *type,
+				uint32 *datasize,
+				uint8  **data,
+				uint32 *realdatasize);
 uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata);
 uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata);
 uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata);

@@ -864,112 +864,30 @@ static void api_spoolss_getprinterdriverdirectory(rpcsrv_struct *p, prs_struct *
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMPRINTERDATA r_u;
-	NT_PRINTER_INFO_LEVEL printer;
-	
-	uint32 type;
-	fstring value;
-	uint8 *data = NULL;
-	
-	uint32 param_index;
-	uint32 biggest_valuesize;
-	uint32 biggest_datasize;
-	uint32 data_len;
-	
-	int pnum = find_printer_index_by_hnd(&(q_u->handle));
-	int snum;
-	
-	DEBUG(5,("spoolss_reply_enumprinterdata\n"));
-
-	if (OPEN_HANDLE(pnum))
-	{
-		get_printer_snum(&(q_u->handle), &snum);
-		get_a_printer(&printer, 2, lp_servicename(snum));
-
-		/* The NT machine wants to know the biggest size of value and data */	
-		if ( (q_u->valuesize == 0) && (q_u->datasize == 0) )
-		{
-			DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
-			
-			r_u.valuesize = 0;
-			r_u.realvaluesize = 0;
-			r_u.type = 0;
-			r_u.datasize = 0;
-			r_u.realdatasize = 0;
-			r_u.status = 0;
-			
-			param_index = 0;
-			biggest_valuesize = 0;
-			biggest_datasize = 0;
-			
-			while (get_specific_param_by_index(printer, 2, param_index, value, &data, &type, &data_len))
-			{
-				if (strlen(value) > biggest_valuesize) biggest_valuesize = strlen(value);
-				if (data_len  > biggest_datasize)  biggest_datasize = data_len;
-
-				param_index++;
-			}
-			
-			/* I wrote it, I didn't designed the protocol */
-			if (biggest_valuesize!= 0)
-			{
-				SIVAL(&(r_u.value),0, 2*(biggest_valuesize+1) );
-			}
-			r_u.data = (uint8 *)malloc(4*sizeof(uint8));
-			SIVAL(r_u.data, 0, biggest_datasize );
-		}
-		else
-		{
-			/* 
-			 * the value len is wrong in NT sp3
-			 * that's the number of bytes not the number of unicode chars
-			 */
-			 
-			r_u.valuesize = q_u->valuesize;
-			r_u.datasize = q_u->datasize;
-
-			if (get_specific_param_by_index(printer, 2, q_u->index, value, &data, &type, &data_len))
-			{
-				make_unistr(&(r_u.value), value);
-				r_u.data = data;
-				
-				r_u.type = type;
-
-				/* the length are in bytes including leading NULL */
-				r_u.realvaluesize = 2*(strlen(value)+1);
-				r_u.realdatasize = data_len;
-				
-				r_u.status = 0;
-			}
-			else
-			{
-				r_u.valuesize = 0;
-				r_u.realvaluesize = 0;
-				r_u.datasize = 0;
-				r_u.realdatasize = 0;
-				r_u.type = 0;
-				r_u.status = 0x0103; /* ERROR_NO_MORE_ITEMS */
-			}		
-		}
-		
-		free_a_printer(printer, 2);
-	}
-	spoolss_io_r_enumprinterdata("", &r_u, rdata, 0);
-	if (r_u.data!= NULL) free(r_u.data);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_enumprinterdata(rpcsrv_struct *p, prs_struct *data,
                                                   prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERDATA q_u;
+	SPOOL_R_ENUMPRINTERDATA r_u;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_enumprinterdata("", &q_u, data, 0);
-	
-	spoolss_reply_enumprinterdata(&q_u, rdata);
+	r_u.valuesize = q_u.valuesize;
+	r_u.datasize = q_u.datasize;
+
+	r_u.status = _spoolss_enumprinterdata(&q_u.handle,
+				q_u.index,/* in */
+				&r_u.valuesize,/* in out */
+				&r_u.value,/* out */
+				&r_u.realvaluesize,/* out */
+				&r_u.type,/* out */
+				&r_u.datasize,/* in out */
+				&r_u.data,/* out */
+				&r_u.realdatasize);/* out */
+	spoolss_io_r_enumprinterdata("", &r_u, rdata, 0);
+	safe_free(r_u.data);
 }
 
 /****************************************************************************

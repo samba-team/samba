@@ -3058,105 +3058,117 @@ uint32 _spoolss_getprinterdriverdirectory( const UNISTR2 *name,
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata)
+uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, 
+				uint32 idx,
+				uint32 *valuesize,
+				UNISTR *uni_value,
+				uint32 *realvaluesize,
+				uint32 *type,
+				uint32 *datasize,
+				uint8  **data,
+				uint32 *realdatasize)
 {
-	SPOOL_R_ENUMPRINTERDATA r_u;
 	NT_PRINTER_INFO_LEVEL printer;
 	
-	uint32 type;
 	fstring value;
-	uint8 *data=NULL;
 	
 	uint32 param_index;
 	uint32 biggest_valuesize;
 	uint32 biggest_datasize;
 	uint32 data_len;
+	uint32 status = 0x0;
 	
 	int pnum = find_printer_index_by_hnd(handle);
 	int snum;
-	
+
+	ZERO_STRUCT(printer);
+	(*data)=NULL;
+
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
-	if (OPEN_HANDLE(pnum))
+	if (!OPEN_HANDLE(pnum))
 	{
-		get_printer_snum(handle, &snum);
-		get_a_printer(&printer, 2, lp_servicename(snum));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	if (!get_printer_snum(handle, &snum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
 
-		/* The NT machine wants to know the biggest size of value and data */	
-		if ( (valuesize==0) && (datasize==0) )
+	if (status != 0x0)
+	{
+		return status;
+	}
+
+	/* The NT machine wants to know the biggest size of value and data */	
+	if ( ((*valuesize)==0) && ((*datasize)==0) )
+	{
+		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
+		
+		(*valuesize)=0;
+		(*realvaluesize)=0;
+		(*type)=0;
+		(*datasize)=0;
+		(*realdatasize)=0;
+		status=0;
+		
+		param_index=0;
+		biggest_valuesize=0;
+		biggest_datasize=0;
+		
+		while (get_specific_param_by_index(printer, 2, param_index, value, data, type, &data_len))
 		{
-			DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
-			
-			valuesize=0;
-			realvaluesize=0;
-			type=0;
-			datasize=0;
-			realdatasize=0;
-			status=0;
-			
-			param_index=0;
-			biggest_valuesize=0;
-			biggest_datasize=0;
-			
-			while (get_specific_param_by_index(printer, 2, param_index, value, &data, &type, &data_len))
-			{
-				if (strlen(value) > biggest_valuesize) biggest_valuesize=strlen(value);
-				if (data_len  > biggest_datasize)  biggest_datasize=data_len;
+			if (strlen(value) > biggest_valuesize) biggest_valuesize=strlen(value);
+			if (data_len  > biggest_datasize)  biggest_datasize=data_len;
 
-				param_index++;
-			}
+			param_index++;
+		}
+		
+		/* I wrote it, I didn't designed the protocol */
+		if (biggest_valuesize!=0)
+		{
+			SIVAL(&(value),0, 2*(biggest_valuesize+1) );
+		}
+		(*data)=(uint8 *)malloc(4*sizeof(uint8));
+		SIVAL((*data), 0, biggest_datasize );
+	}
+	else
+	{
+		/* 
+		 * the value len is wrong in NT sp3
+		 * that's the number of bytes not the number of unicode chars
+		 */
+		 
+		if (get_specific_param_by_index(printer, 2, idx, value, data, type, &data_len))
+		{
+			make_unistr(uni_value, value);
 			
-			/* I wrote it, I didn't designed the protocol */
-			if (biggest_valuesize!=0)
-			{
-				SIVAL(&(value),0, 2*(biggest_valuesize+1) );
-			}
-			data=(uint8 *)malloc(4*sizeof(uint8));
-			SIVAL(data, 0, biggest_datasize );
+			/* the length are in bytes including leading NULL */
+			(*realvaluesize)=2*(strlen(value)+1);
+			(*realdatasize)=data_len;
+			
+			status=0;
 		}
 		else
 		{
-			/* 
-			 * the value len is wrong in NT sp3
-			 * that's the number of bytes not the number of unicode chars
-			 */
-			 
-			valuesize=valuesize;
-			datasize=datasize;
-
-			if (get_specific_param_by_index(printer, 2, index, value, &data, &type, &data_len))
-			{
-				make_unistr(&(value), value);
-				data=data;
-				
-				type=type;
-
-				/* the length are in bytes including leading NULL */
-				realvaluesize=2*(strlen(value)+1);
-				realdatasize=data_len;
-				
-				status=0;
-			}
-			else
-			{
-				valuesize=0;
-				realvaluesize=0;
-				datasize=0;
-				realdatasize=0;
-				type=0;
-				status=0x0103; /* ERROR_NO_MORE_ITEMS */
-			}		
-		}
-		
-		free_a_printer(printer, 2);
+			(*valuesize)=0;
+			(*realvaluesize)=0;
+			(*datasize)=0;
+			(*realdatasize)=0;
+			(*type)=0;
+			status=0x0103; /* ERROR_NO_MORE_ITEMS */
+		}		
 	}
-	spoolss_io_r_enumprinterdata("", &r_u, rdata, 0);
-	if (data!=NULL) free(data);
+	
+	free_a_printer(printer, 2);
+
+	return status;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
