@@ -116,8 +116,9 @@ em(/usr/samba/var/log.nmb) or em(/var/log/log.nmb).
 label(minusn)
 dit(bf(-n primary NetBIOS name)) This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical to
-setting the bf(NetBIOS name) parameter in the smb.conf file
-but will override the setting in the smb.conf file.
+setting the url(bf(NetBIOS name))(smb.conf.5.html#netbiosname) parameter
+in the url(bf(smb.conf))(smb.conf.5.html) file
+but will override the setting in the url(bf(smb.conf))(smb.conf.5.html) file.
 
 label(minusp)
 dit(bf(-p UDP port number)) UDP port number is a positive integer value.
@@ -132,7 +133,7 @@ set at build time, typically as em(/usr/local/samba/lib/smb.conf), but
 this may be changed when Samba is autoconfigured.
 
 The file specified contains the configuration details required by the
-server.  See bf(smb.conf (5)) for more information.
+server. See url(bf(smb.conf (5)))(smb.conf.5.html) for more information.
 
 label(minusi)
 dit(bf(-i scope)) This specifies a NetBIOS scope that the server will use
@@ -168,17 +169,32 @@ This is the default location of the em(smb.conf) server configuration
 file. Other common places that systems install this file are
 em(/usr/samba/lib/smb.conf) and em(/etc/smb.conf).
 
+When run as a bf(WINS) server (see the url(bf(wins support))(smb.conf.5.html#winssupport)
+parameter in the url(bf(smb.conf (5)))(smb.conf.5.html) man page), bf(nmbd) will
+store the WINS database in the file tt(wins.dat) in the tt(var/locks) directory
+configured under wherever Samba was configured to install itself.
+
+If bf(nmbd) is acting as a bf(browse master) (see the url(bf(local master))(smb.conf.5.html#localmaster)
+parameter in the url(bf(smb.conf (5)))(smb.conf.5.html) man page), bf(nmbd) will
+store the browsing database in the file tt(browse.dat) in the tt(var/locks) directory
+configured under wherever Samba was configured to install itself.
+
 label(SIGNALS)
 manpagesection(SIGNALS)
+
+To shut down an nmbd process it is recommended that SIGKILL (-9)
+em(NOT) be used, except as a last resort, as this may leave the name
+database in an inconsistant state. The correct way to terminate
+nmbd is to send it a SIGTERM (-15) signal and wait for it to die on
+its own.
 
 nmbd will accept SIGHUP, which will cause it to dump out it's
 namelists into the file namelist.debug in the
 em(/usr/local/samba/var/locks) directory (or the em(var/locks)
 directory configured under wherever Samba was configured to install
 itself). This will also cause nmbd to dump out it's server database in
-the log.nmb file.  Also new in version 1.9.18 and above is the ability
-to raise the debug log level of nmbd by sending it a SIGUSR1 (tt(kill
--USR1 <nmbd-pid>)) and to lower the nmbd log level by sending it a
+the log.nmb file. In addition, the the debug log level of nmbd may be raised
+by sending it a SIGUSR1 (tt(kill -USR1 <nmbd-pid>)) and lowered by sending it a
 SIGUSR2 (tt(kill -USR2 <nmbd-pid>)). This is to allow transient
 problems to be diagnosed, whilst still running at a normally low log
 level.
