@@ -69,6 +69,7 @@ typedef struct echo_q_sink_data
 
 typedef struct echo_r_sink_data
 {
+	int dummy;		/* unused */
 } ECHO_R_SINK_DATA;
 
 #endif  
