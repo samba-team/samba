@@ -1089,7 +1089,7 @@ static char * get_longfilename(file_info2 finfo)
   BOOL first = True;
 
   DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
-  DEBUG(5, ("Len = %d\n", (int)finfo.size));
+  DEBUG(5, ("Len = %.0f\n", (double)finfo.size));
 
   if (longname == NULL) {
 
