@@ -2234,7 +2234,7 @@ Display the contents of the global structure.
 static void dump_globals(FILE *f)
 {
 	int i;
-	fprintf(f, "[global]\n");
+	fprintf(f, "# Global parameters\n");
 	
 	for (i=0;parm_table[i].label;i++)
 		if (parm_table[i].class == P_GLOBAL &&

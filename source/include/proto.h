@@ -296,6 +296,8 @@ char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
+void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
+BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -1311,6 +1313,12 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL do_lsa_open_policy(struct cli_state *cli,
 			char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
+BOOL do_lsa_lookup_sids(struct cli_state *cli,
+			POLICY_HND *hnd,
+			int num_sids,
+			DOM_SID **sids,
+			char ***names,
+			int *num_names);
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
@@ -1336,8 +1344,123 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
 
+/*The following definitions come from  rpc_client/cli_reg.c  */
+
+BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
+				POLICY_HND *reg_hnd);
+BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
+BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
+BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd);
+BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *class, uint32 *class_len,
+				uint32 *num_subkeys, uint32 *max_subkeylen,
+				uint32 *max_subkeysize, uint32 *num_values,
+				uint32 *max_valnamelen, uint32 *max_valbufsize,
+				uint32 *sec_desc, NTTIME *mod_time);
+BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
+BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
+				char *type, uint32 *unk_0, uint32 *unk_1);
+BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd, SEC_DESC_BUF *sec_desc_buf);
+BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd, uint32 *sec_buf_size, SEC_DESC_BUF **ppsec_desc_buf);
+BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
+BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name);
+BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, char *key_class,
+				SEC_ACCESS *sam_access,
+				POLICY_HND *key);
+BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
+				int key_index, char *key_name,
+				uint32 *unk_1, uint32 *unk_2,
+				time_t *mod_time);
+BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
+				char *val_name, uint32 type, BUFFER3 *data);
+BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
+				int val_index, int max_valnamelen, int max_valbufsize,
+				fstring val_name,
+				uint32 *val_type, BUFFER2 *value);
+BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, uint32 unk_0,
+				POLICY_HND *key_hnd);
+BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
+
+/*The following definitions come from  rpc_client/cli_samr.c  */
+
+BOOL get_samr_query_usergroups(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain, uint32 user_rid,
+				uint32 *num_groups, DOM_GID *gid);
+BOOL get_samr_query_userinfo(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 user_rid, SAM_USER_INFO_21 *usr);
+BOOL do_samr_chgpasswd_user(struct cli_state *cli,
+		char *srv_name, char *user_name,
+		char nt_newpass[516], uchar nt_oldhash[16],
+		char lm_newpass[516], uchar lm_oldhash[16]);
+BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
+BOOL do_samr_query_dom_info(struct cli_state *cli, 
+				POLICY_HND *domain_pol, uint16 switch_value);
+BOOL do_samr_enum_dom_users(struct cli_state *cli, 
+				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
+				uint16 acb_mask, uint16 unk_1, uint32 size,
+				struct acct_info **sam,
+				int *num_sam_users);
+BOOL do_samr_connect(struct cli_state *cli, 
+				char *srv_name, uint32 unknown_0,
+				POLICY_HND *connect_pol);
+BOOL do_samr_open_user(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
+				POLICY_HND *user_pol);
+BOOL do_samr_open_domain(struct cli_state *cli, 
+				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
+				POLICY_HND *domain_pol);
+BOOL do_samr_query_unknown_12(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
+				uint32 *num_aliases,
+				fstring als_names    [MAX_LOOKUP_SIDS],
+				uint32  num_als_users[MAX_LOOKUP_SIDS]);
+BOOL do_samr_query_usergroups(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
+BOOL do_samr_query_userinfo(struct cli_state *cli, 
+				POLICY_HND *pol, uint16 switch_value, void* usr);
+BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
+
+/*The following definitions come from  rpc_client/cli_srvsvc.c  */
+
+BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
+			char *server_name, 
+			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_get_info(struct cli_state *cli,
+			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
+
+/*The following definitions come from  rpc_client/cli_wkssvc.c  */
+
+BOOL do_wks_query_info(struct cli_state *cli, 
+			char *server_name, uint32 switch_value,
+			WKS_INFO_100 *wks100);
+
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
+void make_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
+			uint32 sid_name_use, char *name, uint32 idx);
 void make_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
 				uint32 unknown);
 void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
@@ -1361,6 +1484,14 @@ void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
                            uint32 status);
 void lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 void lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
+void make_lsa_sid_enum(LSA_SID_ENUM *sen, int num_entries, DOM_SID **sids);
+void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
+				int num_sids, DOM_SID **sids,
+				uint16 level);
+void lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
+void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
+void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth);
+void lsa_io_r_lookup_rids(char *desc,  LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, int depth);
 void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 void lsa_io_q_close(char *desc,  LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 void lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
@@ -1536,6 +1667,77 @@ BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint3
 BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
 
+/*The following definitions come from  rpc_parse/parse_reg.c  */
+
+void make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
+				uint16 unknown_0, uint32 level);
+void reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
+void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth);
+void make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol);
+void reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
+				char *name, char *class, SEC_ACCESS *sam_access,
+				SEC_DESC_BUF *sec_buf);
+void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
+				char *name);
+void reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth);
+void reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth);
+void make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
+				char *name);
+void reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
+				uint32 max_class_len);
+void reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd);
+void reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth);
+void reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth);
+void make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
+				uint16 unknown_0, uint32 level);
+void reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth);
+void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth);
+void make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
+void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
+void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
+void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, SEC_DESC_BUF *sec_desc_buf);
+void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 sec_buf_size, SEC_DESC_BUF *psdb);
+void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
+				time_t unix_time, uint8 major, uint8 minor);
+void reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
+void make_reg_r_info(REG_R_INFO *r_r,
+				uint32 level, char *os_type,
+				uint32 unknown_0, uint32 unknown_1,
+				uint32 status);
+void reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
+void make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
+				uint32 val_idx, uint32 max_val_len,
+				uint32 max_buf_len);
+void reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth);
+void reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth);
+void make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
+				char *val_name, uint32 type,
+				BUFFER3 *val);
+void reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth);
+void reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth);
+void make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx);
+void reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth);
+void reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth);
+void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
+				char *key_name, uint32 unk);
+void reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth);
+void make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
+				POLICY_HND *pol, uint32 status);
+void reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth);
+
 /*The following definitions come from  rpc_parse/parse_rpc.c  */
 
 void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
@@ -1589,6 +1791,186 @@ void make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
 				uint32 ver, uint32 crc32, uint32 seq_num);
 void smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);
 
+/*The following definitions come from  rpc_parse/parse_samr.c  */
+
+void make_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
+void samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
+void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
+void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
+				POLICY_HND *connect_pol, uint32 rid,
+				DOM_SID *sid);
+void samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
+void samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol);
+void samr_io_q_unknown_2c(char *desc,  SAMR_Q_UNKNOWN_2C *q_u, prs_struct *ps, int depth);
+void make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status);
+void samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
+				POLICY_HND *user_pol, uint16 switch_value);
+void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
+void make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
+				POLICY_HND *domain_pol, uint16 switch_value);
+void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
+void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
+void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
+void make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
+				uint16 switch_value, SAM_UNK_CTR *ctr,
+				uint32 status);
+void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_struct *ps, int depth);
+void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid);
+void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
+				uint16 unknown_2, uint16 unknown_3,
+				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
+				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS],
+				uint32 status);
+void samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
+				uint16 req_num_entries, uint16 unk_0,
+				uint16 acb_mask, uint16 unk_1, uint32 size);
+void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
+void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
+		uint16 total_num_entries, uint16 unk_0,
+		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status);
+void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol, uint32 size);
+void samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_struct *ps, int depth);
+void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
+		uint32 num_sam_entries, SAM_USER_INFO_21 grps[MAX_SAM_ENTRIES],
+		uint32 status);
+void samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
+				uint16 switch_level, uint32 start_idx, uint32 size);
+void samr_io_q_query_dispinfo(char *desc,  SAMR_Q_QUERY_DISPINFO *q_e, prs_struct *ps, int depth);
+void make_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
+		uint32 start_idx, uint32 num_sam_entries,
+		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
+void make_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
+		uint32 start_idx, uint32 num_sam_entries,
+		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
+void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
+		uint16 switch_level, SAM_INFO_CTR *ctr, uint32 status);
+void samr_io_r_query_dispinfo(char *desc,  SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
+				uint16 switch_level, uint32 start_idx, uint32 size);
+void samr_io_q_enum_dom_groups(char *desc,  SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
+void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
+		uint32 start_idx, uint32 num_sam_entries,
+		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES],
+		uint32 status);
+void samr_io_r_enum_dom_groups(char *desc,  SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
+				POLICY_HND *pol,
+				uint16 switch_level);
+void samr_io_q_query_aliasinfo(char *desc,  SAMR_Q_QUERY_ALIASINFO *q_e, prs_struct *ps, int depth);
+void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
+		uint16 switch_value, char *acct_desc,
+		uint32 status);
+void samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_struct *ps, int depth);
+void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, int depth);
+void make_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
+		uint32 num_rids, uint32 *rid, uint32 status);
+void samr_io_r_lookup_ids(char *desc,  SAMR_R_LOOKUP_IDS *r_u, prs_struct *ps, int depth);
+void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
+void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
+		uint32 num_rids, uint32 *rid, uint32 status);
+void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
+void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, int depth);
+void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
+		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
+		uint32 status);
+void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, int depth);
+void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
+				POLICY_HND *pol,
+				uint32 unk_0, uint32 rid);
+void samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
+void samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
+				POLICY_HND *hnd);
+void samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
+void make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
+		uint32 num_gids, DOM_GID *gid, uint32 status);
+void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
+				POLICY_HND *hnd, uint16 switch_value);
+void samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
+void make_sam_user_info10(SAM_USER_INFO_10 *usr,
+				uint32 acb_info);
+void sam_io_user_info10(char *desc,  SAM_USER_INFO_10 *usr, prs_struct *ps, int depth);
+void make_sam_user_info11(SAM_USER_INFO_11 *usr,
+				NTTIME *expiry,
+				char *mach_acct,
+				uint32 rid_user,
+				uint32 rid_group,
+				uint16 acct_ctrl);
+void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
+void make_sam_user_info21(SAM_USER_INFO_21 *usr,
+
+	NTTIME *logon_time,
+	NTTIME *logoff_time,
+	NTTIME *kickoff_time,
+	NTTIME *pass_last_set_time,
+	NTTIME *pass_can_change_time,
+	NTTIME *pass_must_change_time,
+
+	char *user_name,
+	char *full_name,
+	char *home_dir,
+	char *dir_drive,
+	char *logon_script,
+	char *profile_path,
+	char *description,
+	char *workstations,
+	char *unknown_str,
+	char *munged_dial,
+
+	uint32 user_rid,
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	LOGON_HRS *hrs,
+	uint32 unknown_5,
+	uint32 unknown_6);
+void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
+				uint16 switch_value, void *info, uint32 status);
+void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
+void samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth);
+void samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth);
+void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
+				char *srv_name, uint32 unknown_0);
+void samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
+void samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
+void make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
+void samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *ps, int depth);
+void samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
+void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
+				uint32 unknown_0, uint32 rid);
+void samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
+void samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+		POLICY_HND *pol, uint32 rid,
+		uint32 num_gids, uint32 *gid);
+void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name);
+void samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
+void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u);
+void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
+void make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512]);
+void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
+void make_enc_hash(SAMR_ENC_HASH *hsh, uchar hash[16]);
+void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
+void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
+				char *dest_host, char *user_name,
+				char nt_newpass[516], uchar nt_oldhash[16],
+				char lm_newpass[516], uchar lm_oldhash[16]);
+void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
+void make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
+void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
+
 /*The following definitions come from  rpc_parse/parse_sec.c  */
 
 void init_sec_access(SEC_ACCESS *t, uint32 mask);
@@ -1630,6 +2012,44 @@ void make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 				ENUM_HND *hnd);
 void srv_io_q_net_share_enum(char *desc,  SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth);
 void srv_io_r_net_share_enum(char *desc,  SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
+void make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
+void make_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
+void make_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user);
+void make_srv_sess_info1(SESS_INFO_1 *ss1, 
+				char *name, char *user,
+				uint32 num_opens, uint32 open_time, uint32 idle_time,
+				uint32 user_flags);
+void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
+void srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *ps, int depth);
+void srv_io_r_net_sess_enum(char *desc,  SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps, int depth);
+void make_srv_conn_info0(CONN_INFO_0 *ss0, uint32 id);
+void make_srv_conn_info1_str(CONN_INFO_1_STR *ss1, char *usr_name, char *net_name);
+void make_srv_conn_info1(CONN_INFO_1 *ss1, 
+				uint32 id, uint32 type,
+				uint32 num_opens, uint32 num_users, uint32 open_time,
+				char *usr_name, char *net_name);
+void make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 conn_level, SRV_CONN_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
+void srv_io_q_net_conn_enum(char *desc,  SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps, int depth);
+void srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *ps, int depth);
+void make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name);
+void make_srv_file_info3(FILE_INFO_3 *fl3,
+				uint32 id, uint32 perms, uint32 num_locks,
+				char *path_name, char *user_name);
+void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
+void srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps, int depth);
+void srv_io_r_net_file_enum(char *desc,  SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth);
 void make_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
 				uint32 ver_major, uint32 ver_minor,
 				uint32 srv_type, char *comment);
@@ -1708,6 +2128,14 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
 
+/*The following definitions come from  rpc_server/srv_reg.c  */
+
+BOOL api_reg_rpc(pipes_struct *p, prs_struct *data);
+
+/*The following definitions come from  rpc_server/srv_samr.c  */
+
+BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
+
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
 BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
@@ -1726,6 +2154,113 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid);
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
 BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
+
+/*The following definitions come from  rpcclient/cmd_lsarpc.c  */
+
+void cmd_lsa_query_info(struct client_info *info);
+void cmd_lsa_lookup_sids(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_netlogon.c  */
+
+void cmd_netlogon_login_test(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_reg.c  */
+
+void cmd_reg_enum(struct client_info *info);
+void cmd_reg_query_key(struct client_info *info);
+void cmd_reg_create_val(struct client_info *info);
+void cmd_reg_delete_val(struct client_info *info);
+void cmd_reg_delete_key(struct client_info *info);
+void cmd_reg_create_key(struct client_info *info);
+void cmd_reg_test_key_sec(struct client_info *info);
+void cmd_reg_get_key_sec(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_samr.c  */
+
+void cmd_sam_ntchange_pwd(struct client_info *info);
+void cmd_sam_test(struct client_info *info);
+void cmd_sam_enum_users(struct client_info *info);
+void cmd_sam_query_user(struct client_info *info);
+void cmd_sam_query_groups(struct client_info *info);
+void cmd_sam_enum_aliases(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_srvsvc.c  */
+
+void cmd_srv_query_info(struct client_info *info);
+void cmd_srv_enum_conn(struct client_info *info);
+void cmd_srv_enum_shares(struct client_info *info);
+void cmd_srv_enum_sess(struct client_info *info);
+void cmd_srv_enum_files(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_wkssvc.c  */
+
+void cmd_wks_query_info(struct client_info *info);
+
+/*The following definitions come from  rpcclient/display.c  */
+
+char *get_file_mode_str(uint32 share_mode);
+char *get_file_oplock_str(uint32 op_type);
+char *get_share_type_str(uint32 type);
+char *get_server_type_str(uint32 type);
+void display_srv_info_101(FILE *out_hnd, enum action_type action,
+		SRV_INFO_101 *sv101);
+void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *sv102);
+void display_srv_info_ctr(FILE *out_hnd, enum action_type action,SRV_INFO_CTR *ctr);
+void display_conn_info_0(FILE *out_hnd, enum action_type action,
+		CONN_INFO_0 *info0);
+void display_conn_info_1(FILE *out_hnd, enum action_type action,
+		CONN_INFO_1 *info1, CONN_INFO_1_STR *str1);
+void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action,
+				SRV_CONN_INFO_0 *ctr);
+void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
+				SRV_CONN_INFO_1 *ctr);
+void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_CONN_INFO_CTR *ctr);
+void display_share_info_1(FILE *out_hnd, enum action_type action,
+		SH_INFO_1 *info1, SH_INFO_1_STR *str1);
+void display_share_info_2(FILE *out_hnd, enum action_type action,
+		SH_INFO_2 *info2, SH_INFO_2_STR *str2);
+void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SHARE_INFO_1 *ctr);
+void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SHARE_INFO_2 *ctr);
+void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SHARE_INFO_CTR *ctr);
+void display_file_info_3(FILE *out_hnd, enum action_type action,
+		FILE_INFO_3 *info3, FILE_INFO_3_STR *str3);
+void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
+				SRV_FILE_INFO_3 *ctr);
+void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_FILE_INFO_CTR *ctr);
+void display_server(FILE *out_hnd, enum action_type action,
+				char *sname, uint32 type, char *comment);
+void display_share(FILE *out_hnd, enum action_type action,
+				char *sname, uint32 type, char *comment);
+void display_share2(FILE *out_hnd, enum action_type action,
+				char *sname, uint32 type, char *comment,
+				uint32 perms, uint32 max_uses, uint32 num_uses,
+				char *path, char *passwd);
+void display_name(FILE *out_hnd, enum action_type action,
+				char *sname);
+void display_group_rid_info(FILE *out_hnd, enum action_type action,
+				uint32 num_gids, DOM_GID *gid);
+void display_alias_name_info(FILE *out_hnd, enum action_type action,
+				uint32 num_aliases, fstring *alias_name, uint32 *num_als_usrs);
+void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *usr);
+char *get_sec_mask_str(uint32 type);
+void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info);
+void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace);
+void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl);
+void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec);
+char *get_reg_val_type_str(uint32 type);
+void display_reg_value_info(FILE *out_hnd, enum action_type action,
+				char *val_name, uint32 val_type, BUFFER2 *value);
+void display_reg_key_info(FILE *out_hnd, enum action_type action,
+				char *key_name, time_t key_mod_time);
+
+/*The following definitions come from  rpcclient/rpcclient.c  */
+
+void rpcclient_init(void);
 
 /*The following definitions come from  smbd/blocking.c  */
 

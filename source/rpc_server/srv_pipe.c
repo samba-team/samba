@@ -340,8 +340,11 @@ struct api_cmd
 static struct api_cmd api_fd_commands[] =
 {
     { "lsarpc",   "lsass",   api_ntlsa_rpc },
+    { "samr",     "lsass",   api_samr_rpc },
     { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
+    { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
     { "NETLOGON", "lsass",   api_netlog_rpc },
+    { "winreg",   "winreg",  api_reg_rpc },
     { NULL,       NULL,      NULL }
 };
 

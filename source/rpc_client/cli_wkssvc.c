@@ -22,4 +22,69 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* removed in SAMBA_2_0 branch. */
+
+#ifdef SYSLOG
+#undef SYSLOG
+#endif
+
+#include "includes.h"
+
+extern int DEBUGLEVEL;
+
+/****************************************************************************
+do a WKS Open Policy
+****************************************************************************/
+BOOL do_wks_query_info(struct cli_state *cli, 
+			char *server_name, uint32 switch_value,
+			WKS_INFO_100 *wks100)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	WKS_Q_QUERY_INFO q_o;
+	BOOL valid_info = False;
+
+	if (server_name == 0 || wks100 == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api WKS_QUERY_INFO */
+
+	DEBUG(4,("WKS Query Info\n"));
+
+	/* store the parameters */
+	make_wks_q_query_info(&q_o, server_name, switch_value);
+
+	/* turn parameters into data stream */
+	wks_io_q_query_info("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, WKS_QUERY_INFO, &buf, &rbuf))
+	{
+		WKS_R_QUERY_INFO r_o;
+		BOOL p;
+
+		r_o.wks100 = wks100;
+
+		wks_io_r_query_info("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("WKS_R_QUERY_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_info = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_info;
+}
+

@@ -99,6 +99,115 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a LSA Lookup SIDs
+****************************************************************************/
+BOOL do_lsa_lookup_sids(struct cli_state *cli,
+			POLICY_HND *hnd,
+			int num_sids,
+			DOM_SID **sids,
+			char ***names,
+			int *num_names)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_LOOKUP_SIDS q_l;
+	BOOL valid_response = False;
+
+	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_LOOKUP_SIDS */
+
+	DEBUG(4,("LSA Lookup SIDs\n"));
+
+	/* store the parameters */
+	make_q_lookup_sids(&q_l, hnd, num_sids, sids, 1);
+
+	/* turn parameters into data stream */
+	lsa_io_q_lookup_sids("", &q_l, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &buf, &rbuf))
+	{
+		LSA_R_LOOKUP_SIDS r_l;
+		DOM_R_REF ref;
+		LSA_TRANS_NAME_ENUM t_names;
+		BOOL p;
+
+		r_l.dom_ref = &ref;
+		r_l.names   = &t_names;
+
+		lsa_io_r_lookup_sids("", &r_l, &rbuf, 0);
+		p = rbuf.offset != 0;
+		
+		if (p && r_l.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			if (t_names.ptr_trans_names != 0 && ref.undoc_buffer != 0)
+			{
+				valid_response = True;
+			}
+		}
+
+		if (num_names != NULL && valid_response)
+		{
+			(*num_names) = t_names.num_entries;
+		}
+		if (valid_response)
+		{
+			int i;
+			for (i = 0; i < t_names.num_entries; i++)
+			{
+				if (t_names.name[i].domain_idx >= ref.num_ref_doms_1)
+				{
+					DEBUG(0,("LSA_LOOKUP_SIDS: domain index out of bounds\n"));
+					valid_response = False;
+					break;
+				}
+			}
+		}
+
+		if (names != NULL && valid_response && t_names.num_entries != 0)
+		{
+			(*names) = (char**)malloc((*num_names) * sizeof(char*));
+		}
+
+		if (names != NULL && (*names) != NULL)
+		{
+			int i;
+			/* take each name, construct a \DOMAIN\name string */
+			for (i = 0; i < (*num_names); i++)
+			{
+				fstring name;
+				fstring dom_name;
+				fstring full_name;
+				uint32 dom_idx = t_names.name[i].domain_idx;
+				fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
+				fstrcpy(name    , unistr2(t_names.uni_name[i].buffer));
+				
+				slprintf(full_name, sizeof(full_name)-1, "\\%s\\%s",
+				         dom_name, name);
+
+				(*names)[i] = strdup(full_name);
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_response;
+}
+
+/****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
