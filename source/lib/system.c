@@ -166,8 +166,8 @@ int sys_usleep(long usecs)
   /*
    * Fake it with select...
    */
-  tval.tv_secs = 0;
-  tval_tv_usecs = usecs/1000;
+  tval.tv_sec = 0;
+  tval.tv_usec = usecs/1000;
   select(0,NULL,NULL,NULL,&tval);
   return 0;
 #endif /* HAVE_USLEEP */
