@@ -902,6 +902,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 		if (q == NULL)
 		{
 			ps->error = True;
+			DEBUG(10,("%s\n", str));
 			prs_debug_out(ps, "_prs_string error", 5);
 			return False;
 		}
@@ -918,10 +919,9 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 
 	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
 
-	DEBUG(200,("_prs_string: string %s len %d max %d\n",
-			str, len, max_buf_size));
-
 	ps->offset += i+1;
+
+	DEBUG(10,("%s\n", str));
 
 	return True;
 }

@@ -1970,7 +1970,9 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
+uint32 cli_nt_setup_creds( const char* srv_name,
+				const char* domain,
+				const char* myhostname,
 				const char* trust_acct,
 				unsigned char trust_pwd[16],
 				uint16 sec_chan);
@@ -2000,7 +2002,9 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr);
-BOOL net_sam_sync(const char* srv_name, const char* myhostname,
+BOOL net_sam_sync(const char* srv_name,
+				const char* domain,
+				const char* myhostname,
 				const char* trust_acct,
 				uchar trust_passwd[16],
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
@@ -2050,7 +2054,7 @@ uint32 cli_net_auth2(const char *srv_name,
 				const char *trust_acct, 
 				const char *acct_name, 
 				uint16 sec_chan, 
-				uint32 neg_flags, DOM_CHAL *srv_chal);
+				uint32 *neg_flags, DOM_CHAL *srv_chal);
 uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
 				DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(const char* srv_name,
@@ -2104,6 +2108,9 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name,
 		uint16* fnum);
 void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
+
+/*The following definitions come from  rpc_client/cli_pipe_netsec.c  */
+
 
 /*The following definitions come from  rpc_client/cli_pipe_noauth.c  */
 
@@ -2873,6 +2880,23 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
 			   char *acct_desc, uint32 acb_info, char *profile);
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_parse/parse_netsec.c  */
+
+BOOL rpc_hdr_netsec_auth_chk(RPC_HDR_AUTH *rai);
+BOOL make_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG *neg,
+				fstring domain,
+				fstring myname);
+BOOL smb_io_rpc_auth_netsec_neg(char *desc, RPC_AUTH_NETSEC_NEG *neg, prs_struct *ps, int depth);
+BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP *rsp);
+BOOL smb_io_rpc_auth_netsec_resp(char *desc, RPC_AUTH_NETSEC_RESP *rsp, prs_struct *ps, int depth);
+BOOL rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk);
+BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk,
+				uchar sig[8],
+				uchar data1[8],
+				uchar data3[8],
+				uchar data8[8]);
+BOOL smb_io_rpc_auth_netsec_chk(char *desc, RPC_AUTH_NETSEC_CHK *chk, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
@@ -4682,6 +4706,7 @@ BOOL reload_services(BOOL test);
 
 /*The following definitions come from  svcctld/svcctld.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 

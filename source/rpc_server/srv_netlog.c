@@ -154,7 +154,7 @@ static void net_reply_auth_2(NET_Q_AUTH_2 *q_a, prs_struct *rdata,
 	NET_R_AUTH_2 r_a;
 	NEG_FLAGS srv_flgs;
 
-	srv_flgs.neg_flags = 0x000001ff;
+	srv_flgs.neg_flags = 0x400001ff;
 
 	/* set up the LSA AUTH 2 response */
 

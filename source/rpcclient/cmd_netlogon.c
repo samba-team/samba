@@ -141,7 +141,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 
-	res = res ? cli_nt_setup_creds(srv_name, info->myhostname,
+	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
 	                               trust_acct, 
 	                               trust_passwd, SEC_CHAN_WKSTA) == 0x0 : False;
 
@@ -191,11 +191,19 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	uchar trust_passwd[16];
 	fstring inter_dom_acct;
+	fstring domain;
 
 	fstring srv_name;
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
+
+	fstrcpy(domain, usr_creds->ntc.domain);
+
+	if (domain[0] == 0)
+	{
+		fstrcpy(domain, info->dom.level3_dom);
+	}
 
 	if (argc < 2)
 	{
@@ -212,7 +220,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 
 	res = res ? trust_get_passwd(trust_passwd, usr_creds->ntc.domain, nt_trust_dom) : False;
 
-	res = res ? cli_nt_setup_creds(srv_name,
+	res = res ? cli_nt_setup_creds(srv_name, domain,
 	                               info->myhostname, inter_dom_acct,
 	                               trust_passwd, 
 	                               SEC_CHAN_DOMAIN) == 0x0 : False;
@@ -234,6 +242,7 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	uchar trust_passwd[16];
 	fstring srv_name;
 	fstring trust_acct;
+	fstring domain;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -242,13 +251,20 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
+	fstrcpy(domain, usr_creds->ntc.domain);
+
+	if (domain[0] == 0)
+	{
+		fstrcpy(domain, info->dom.level3_dom);
+	}
+
 	if (!trust_get_passwd(trust_passwd, usr_creds->ntc.domain, info->myhostname))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;
 	}
 
-	if (net_sam_sync(srv_name, info->myhostname,
+	if (net_sam_sync(srv_name, domain, info->myhostname,
 		trust_acct, trust_passwd,
 	    hdr_deltas, deltas, &num))
 	{

@@ -88,9 +88,20 @@ typedef struct parse_struct
 
 } prs_struct;
 
+typedef struct netsec_auth_struct
+{
+	HMACMD5Context    ctx2;
+	struct MD5Context ctx3;
+	HMACMD5Context    ctx4;
+
+	unsigned char netsec_hash[258];
+	uint32 seq_num;
+
+} netsec_auth_struct;
+
 typedef struct ntlmssp_auth_struct
 {
-	RPC_AUTH_NTLMSSP_CHAL     ntlmssp_chal;
+	RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
 
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;

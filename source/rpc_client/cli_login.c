@@ -29,7 +29,9 @@ extern int DEBUGLEVEL;
 Initialize domain session credentials.
 ****************************************************************************/
 
-uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
+uint32 cli_nt_setup_creds( const char* srv_name,
+				const char* domain,
+				const char* myhostname,
 				const char* trust_acct,
 				unsigned char trust_pwd[16],
 				uint16 sec_chan)
@@ -40,6 +42,7 @@ uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
 	UTIME zerotime;
 	uint8 sess_key[16];
 	DOM_CRED clnt_cred;
+	uint32 neg_flags = 0x400001ff;
 
 	/******************* Request Challenge ********************/
 
@@ -74,14 +77,29 @@ uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
 	 * Send client auth-2 challenge.
 	 * Receive an auth-2 challenge response and check it.
 	 */
-
 	ret = cli_net_auth2(srv_name, trust_acct, myhostname,
-	                    sec_chan, 0x000001ff, &srv_chal);
+	                    sec_chan, &neg_flags, &srv_chal);
 	if (ret != 0x0)
 	{
 		DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed.  status: %x\n", ret));
 	}
 
+	if (ret == 0x0 && IS_BITS_SET_ALL(neg_flags, 0x40000000))
+	{
+		extern cli_auth_fns cli_netsec_fns;
+		struct cli_connection *con = NULL;
+		struct netsec_creds creds;
+
+		safe_strcpy(creds.domain, domain    , sizeof(creds.myname)-1);
+		safe_strcpy(creds.myname, myhostname, sizeof(creds.myname)-1);
+		
+		if (!cli_connection_init_auth(srv_name, PIPE_NETLOGON, &con,
+		                            &cli_netsec_fns,
+		                            (void*)&creds))
+		{
+			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		}
+	}
 	return ret;
 }
 
@@ -278,7 +296,9 @@ BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
 /****************************************************************************
 NT SAM database sync
 ****************************************************************************/
-BOOL net_sam_sync(const char* srv_name, const char* myhostname,
+BOOL net_sam_sync(const char* srv_name,
+				const char* domain,
+				const char* myhostname,
 				const char* trust_acct,
 				uchar trust_passwd[16],
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
@@ -292,7 +312,7 @@ BOOL net_sam_sync(const char* srv_name, const char* myhostname,
 	DEBUG(5,("Attempting SAM sync with PDC: %s\n",
 		srv_name));
 
-	res = res ? cli_nt_setup_creds( srv_name, myhostname,
+	res = res ? cli_nt_setup_creds( srv_name, domain, myhostname,
 	                               trust_acct, 
 	                               trust_passwd, SEC_CHAN_BDC) == 0x0 : False;
 

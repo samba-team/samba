@@ -1812,6 +1812,13 @@ struct msrpc_state
 	char *outbuf;
 };
 
+typedef struct netsec_creds
+{
+	fstring domain;
+	fstring myname;
+
+} netsec_creds;
+
 #include "client.h"
 #include "rpcclient.h"
 

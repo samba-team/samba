@@ -116,7 +116,7 @@ uint32 cli_net_auth2(const char *srv_name,
 				const char *trust_acct, 
 				const char *acct_name, 
 				uint16 sec_chan, 
-				uint32 neg_flags, DOM_CHAL *srv_chal)
+				uint32 *neg_flags, DOM_CHAL *srv_chal)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -144,13 +144,13 @@ uint32 cli_net_auth2(const char *srv_name,
 
 	DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s neg: %x\n",
 	          srv_name, trust_acct, sec_chan, acct_name,
-	          neg_flags));
+	          *neg_flags));
 
 	cli_con_get_cli_cred(con, &clnt_cred);
 
 	/* store the parameters */
 	make_q_auth_2(&q_a, srv_name, trust_acct, sec_chan, acct_name,
-	              &clnt_cred.challenge, neg_flags);
+	              &clnt_cred.challenge, *neg_flags);
 
 	/* turn parameters into data stream */
 	net_io_q_auth_2("", &q_a,  &buf, 0);
@@ -192,6 +192,10 @@ with bad credential (bad trust account password ?).\n", srv_name));
 			}
 		}
 
+		if (status == 0x0)
+		{
+			(*neg_flags) = r_a.srv_flgs.neg_flags;
+		}
 #if 0
 		/*
 		 * Try commenting this out to see if this makes the connect
@@ -214,7 +218,8 @@ with bad credential (bad trust account password ?).\n", srv_name));
 		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(5,("cli_net_auth2 status: %x\n", status));
+	DEBUG(5,("cli_net_auth2 neg_flags: %x status: %x\n",
+	          (*neg_flags), status));
 
 	prs_free_data(&rbuf);
 	prs_free_data(&buf );

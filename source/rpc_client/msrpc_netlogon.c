@@ -98,7 +98,7 @@ static uint32 domain_client_validate( char *user, char *domain,
 	* Now start the NT Domain stuff :-).
 	*/
 
-	status = cli_nt_setup_creds(srv_name, global_myname, trust_acct,
+	status = cli_nt_setup_creds(srv_name, domain, global_myname, trust_acct,
 	                      trust_passwd, acct_type);
 	if (status != 0x0)
 	{
