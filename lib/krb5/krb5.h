@@ -456,6 +456,11 @@ krb5_auth_con_setaddrs(krb5_context context,
 		       krb5_address *remote_addr);
 
 krb5_error_code
+krb5_auth_con_setaddrs_from_fd (krb5_context context,
+				krb5_auth_context auth_context,
+				int fd);
+
+krb5_error_code
 krb5_auth_con_getaddrs(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_address **local_addr,
@@ -945,6 +950,13 @@ krb5_sname_to_principal (krb5_context context,
 			 const char *sname,
 			 int32_t type,
 			 krb5_principal *ret_princ);
+
+krb5_error_code
+krb5_sock_to_principal (krb5_context context,
+			int sock,
+			const char *sname,
+			int32_t type,
+			krb5_principal *ret_princ);
 
 krb5_error_code
 krb5_get_krbhst (krb5_context context,
