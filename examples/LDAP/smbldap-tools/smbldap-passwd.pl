@@ -1,8 +1,6 @@
 #!/usr/bin/perl
 
 # LDAP to unix password sync script for samba
-# $Id: smbldap-passwd.pl,v 1.1.2.1 2002/06/04 22:25:39 jerry Exp $
-
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #

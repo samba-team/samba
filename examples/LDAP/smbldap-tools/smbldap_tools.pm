@@ -3,8 +3,6 @@ use strict;
 package smbldap_tools;
 use smbldap_conf;
 
-# $Id: smbldap_tools.pm,v 1.1.2.1 2002/06/04 22:25:39 jerry Exp $
-#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #

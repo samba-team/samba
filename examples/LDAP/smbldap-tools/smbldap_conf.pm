@@ -2,8 +2,6 @@
 use strict;
 package smbldap_conf;
 
-# $Id: smbldap_conf.pm,v 1.1.2.1 2002/06/04 22:25:39 jerry Exp $
-#
 # smbldap-tools.conf : Q & D configuration file for smbldap-tools
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
