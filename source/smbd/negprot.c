@@ -412,7 +412,16 @@ int reply_negprot(connection_struct *conn,
 	char *p;
 	int bcc = SVAL(smb_buf(inbuf),-2);
 	int arch = ARCH_ALL;
+
+	static BOOL done_negprot = False;
+
 	START_PROFILE(SMBnegprot);
+
+	if (done_negprot) {
+		END_PROFILE(SMBnegprot);
+		exit_server("multiple negprot's are not permitted");
+	}
+	done_negprot = True;
 
 	p = smb_buf(inbuf)+1;
 	while (p < (smb_buf(inbuf) + bcc)) { 

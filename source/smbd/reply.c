@@ -57,6 +57,8 @@ int reply_special(char *inbuf,char *outbuf)
 	int len;
 	char name_type = 0;
 	
+	static BOOL already_got_session = False;
+
 	*name1 = *name2 = 0;
 	
 	memset(outbuf,'\0',smb_size);
@@ -65,6 +67,11 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	switch (msg_type) {
 	case 0x81: /* session request */
+		
+		if (already_got_session) {
+			exit_server("multiple session request not permitted");
+		}
+		
 		SCVAL(outbuf,0,0x82);
 		SCVAL(outbuf,3,0);
 		if (name_len(inbuf+4) > 50 || 
@@ -115,6 +122,7 @@ int reply_special(char *inbuf,char *outbuf)
 
 		claim_connection(NULL,"",MAXSTATUS,True);
 
+		already_got_session = True;
 		break;
 		
 	case 0x89: /* session keepalive request 
@@ -148,7 +156,8 @@ int reply_special(char *inbuf,char *outbuf)
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	pstring service;
+	char *service;
+	pstring service_buf;
 	pstring password;
 	pstring dev;
 	int outsize = 0;
@@ -160,17 +169,19 @@ int reply_tcon(connection_struct *conn,
 	
 	START_PROFILE(SMBtcon);
 
-	*service = *password = *dev = 0;
+	*service_buf = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, service, p, sizeof(service), STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, service_buf, p, sizeof(service), STR_TERMINATE) + 1;
 	pwlen = srvstr_pull_buf(inbuf, password, p, sizeof(password), STR_TERMINATE) + 1;
 	p += pwlen;
 	p += srvstr_pull_buf(inbuf, dev, p, sizeof(dev), STR_TERMINATE) + 1;
 
-	p = strrchr_m(service,'\\');
+	p = strrchr_m(service_buf,'\\');
 	if (p) {
-		pstrcpy(service, p+1);
+		service = p+1;
+	} else {
+		service = service_buf;
 	}
 
 	password_blob = data_blob(password, pwlen+1);
