@@ -669,13 +669,11 @@ static BOOL string_init(char **dest,const char *src)
 		}
 		*dest = null_string;
 	} else {
-		(*dest) = (char *)malloc(l+1);
+		(*dest) = strdup(src);
 		if ((*dest) == NULL) {
 			DEBUG(0,("Out of memory in string_init\n"));
 			return False;
 		}
-
-		pstrcpy(*dest,src);
 	}
 	return(True);
 }
