@@ -143,7 +143,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	SEC_DESC *ret;
 	unsigned sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
-	SEC_ACL *dacl=NULL, *sacl=NULL;
+	SEC_ACL *dacl=NULL;
 	int revision=1;
 	int type=0x8004;
 
@@ -175,29 +175,19 @@ static SEC_DESC *sec_desc_parse(char *str)
 			}
 		}
 
-		if (strncmp(tok,"DACL:", 5) == 0) {
+		if (strncmp(tok,"ACL:", 4) == 0) {
 			SEC_ACE ace;
-			if (!parse_ace(&ace, tok+5) || 
+			if (!parse_ace(&ace, tok+4) || 
 			    !add_ace(&dacl, &ace)) {
-				printf("Failed to parse DACL\n");
-				return NULL;
-			}
-		}
-
-		if (strncmp(tok,"SACL:", 5) == 0) {
-			SEC_ACE ace;
-			if (!parse_ace(&ace, tok+5) || 
-			    !add_ace(&sacl, &ace)) {
-				printf("Failed to parse SACL\n");
+				printf("Failed to parse ACL\n");
 				return NULL;
 			}
 		}
 	}
 
 	ret = make_sec_desc(revision, owner_sid, grp_sid, 
-			    sacl, dacl, &sd_size);
+			    NULL, dacl, &sd_size);
 
-	free_sec_acl(&sacl);
 	free_sec_acl(&dacl);
 	if (grp_sid) free(grp_sid);
 	if (owner_sid) free(owner_sid);
@@ -235,12 +225,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 	/* Print aces */
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 		SEC_ACE *ace = &sd->dacl->ace[i];
-		fprintf(f, "DACL:");
-		print_ace(f, ace);
-	}
-	for (i = 0; sd->sacl && i < sd->sacl->num_aces; i++) {
-		SEC_ACE *ace = &sd->sacl->ace[i];
-		fprintf(f, "SACL:");
+		fprintf(f, "ACL:");
 		print_ace(f, ace);
 	}
 
@@ -322,25 +307,6 @@ static void cacl_set(struct cli_state *cli, char *filename,
 				}
 			}
 		}
-		for (i=0;sd->sacl && i<sd->sacl->num_aces;i++) {
-			for (j=0;old->sacl && j<old->sacl->num_aces;j++) {
-				if (sec_ace_equal(&sd->sacl->ace[i],
-						  &old->sacl->ace[j])) {
-					if (j != old->sacl->num_aces-1) {
-						old->sacl->ace[j] = old->sacl->ace[j+1];
-					}
-					old->sacl->num_aces--;
-					if (old->sacl->num_aces == 0) {
-						free(old->sacl->ace);
-						old->sacl->ace=NULL;
-						free(old->sacl);
-						old->sacl = NULL;
-						old->off_sacl = 0;
-					}
-					break;
-				}
-			}
-		}
 		break;
 
 	case ACL_MODIFY:
@@ -352,22 +318,11 @@ static void cacl_set(struct cli_state *cli, char *filename,
 				}
 			}
 		}
-		for (i=0;sd->sacl && i<sd->sacl->num_aces;i++) {
-			for (j=0;old->sacl && j<old->sacl->num_aces;j++) {
-				if (sid_equal(&sd->sacl->ace[i].sid,
-					      &old->sacl->ace[j].sid)) {
-					old->sacl->ace[j] = sd->sacl->ace[i];
-				}
-			}
-		}
 		break;
 
 	case ACL_ADD:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
 			add_ace(&old->dacl, &sd->dacl->ace[i]);
-		}
-		for (i=0;sd->sacl && i<sd->sacl->num_aces;i++) {
-			add_ace(&old->sacl, &sd->sacl->ace[i]);
 		}
 		break;
 
@@ -383,7 +338,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	}
 
 	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
-			   old->sacl, old->dacl, &sd_size);
+			   NULL, old->dacl, &sd_size);
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed\n");
