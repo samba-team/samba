@@ -253,7 +253,7 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	ret = krb_verify_user(toname, toinst, realm, entity->password, 1, NULL);
 	if(ret){
 	    SIALOG("WARNING", "krb_verify_user(%s.%s): %s", toname, toinst, 
-		   krb_get_err_text(ret);
+		   krb_get_err_text(ret));
 	    return SIADFAIL;
 	}
     }
