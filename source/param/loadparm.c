@@ -1335,8 +1335,8 @@ static void init_globals(void)
 	Globals.paranoid_server_security = True;
 	Globals.bEncryptPasswords = True;
 	Globals.bUpdateEncrypt = False;
-	Globals.clientSchannel = Auto;
-	Globals.serverSchannel = Auto;
+	Globals.clientSchannel = False;
+	Globals.serverSchannel = False;
 	Globals.bReadRaw = True;
 	Globals.bWriteRaw = True;
 	Globals.bReadPrediction = False;
