@@ -293,12 +293,12 @@ enum RPC_PKT_TYPE
 
 #define SAMR_CLOSE          0x01
 #define SAMR_OPEN_SECRET    0x07
-#define SAMR_LOOKUPNAMES    0x11
+#define SAMR_LOOKUP_RIDS    0x11
 #define SAMR_UNKNOWN_3      0x03
 #define SAMR_UNKNOWN_22     0x22
 #define SAMR_UNKNOWN_24     0x24
 #define SAMR_UNKNOWN_34     0x34
-#define SAMR_UNKNOWN_39     0x39
+#define SAMR_OPEN_POLICY    0x39
 
 #define LSA_OPENPOLICY      0x2c
 #define LSA_QUERYINFOPOLICY 0x07
@@ -423,15 +423,25 @@ typedef struct domsid2_info
 
 } DOM_SID2;
 
-/* DOM_RID2 - domain RID structure */
+/* DOM_RID2 - domain RID structure for ntlsa pipe */
 typedef struct domrid2_info
 {
   uint32 type; /* value is 5 */
-  uint32 undoc; /* value is 5 */
+  uint32 undoc; /* value is non-zero */
   uint32 rid;
   uint32 rid_idx; /* don't know what this is */
 
 } DOM_RID2;
+
+/* DOM_RID3 - domain RID structure for samr pipe */
+typedef struct domrid3_info
+{
+  uint32 rid;        /* domain-relative (to a SID) id */
+  uint32 type1;      /* value is 0x1 */
+  uint32 ptr_type;   /* undocumented pointer */
+  uint32 type2;      /* value is 0x1 */
+
+} DOM_RID3;
 
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info
@@ -841,7 +851,7 @@ typedef struct lsa_q_lookup_rids
 
 } LSA_Q_LOOKUP_RIDS;
 
-/* LSA_R_LOOKUP_RIDS - response to LSA Lookup Names */
+/* LSA_R_LOOKUP_RIDS - response to LSA Lookup RIDs by name */
 typedef struct lsa_r_lookup_rids
 {
     DOM_R_REF dom_ref; /* domain reference info */
@@ -1151,37 +1161,43 @@ typedef struct r_samr_open_secret_info
 } SAMR_R_OPEN_SECRET;
 
 
-/* SAMR_Q_UNKNOWN_11 - probably a "read SAM entry" */
-typedef struct q_samr_unknown_11_info
+/****************************************************************************
+SAMR_Q_LOOKUP_RIDS - do a conversion (only one!) from name to RID.
+
+the policy handle allocated by an "samr open secret" call is associated
+with a SID.  this policy handle is what is queried here, *not* the SID
+itself.  the response to the lookup rids is relative to this SID.
+*****************************************************************************/
+/* SAMR_Q_LOOKUP_RIDS - probably a "read SAM entry" */
+typedef struct q_samr_lookup_names_info
 {
     LSA_POL_HND pol;             /* policy handle */
 
-	uint32 switch_value1;         /* 1          - switch value? */
-	uint32 unknown_0;             /* 0x0000 03E8 - 32 bit unknown */
-	uint32 unknown_1;             /* 0          - 32 bit unknown */
-	uint32 switch_value2;         /* 1          - switch value? */
+	uint32 num_rids1;            /* 1          - number of rids being looked up */
+	uint32 rid;                  /* 0000 03e8  - RID of the server being queried? */
+	uint32 ptr;                  /* 0          - 32 bit unknown */
+	uint32 num_rids2;            /* 1          - number of rids being looked up */
 
 	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
 	UNISTR2 uni_mach_acct;       /* unicode machine account name */
 
-} SAMR_Q_UNKNOWN_11;
+} SAMR_Q_LOOKUP_RIDS;
 
 
-/* SAMR_R_UNKNOWN_11 - probably an open */
-typedef struct r_samr_unknown_11_info
+/* SAMR_R_LOOKUP_RIDS - probably an open */
+typedef struct r_samr_lookup_names_info
 {
-	uint32 switch_value1;       /* 1 - switch value? */
-	uint32 ptr_0;               /* pointer */
-	uint32 switch_value2;       /* 1 - switch value? */
-	uint32 unknown_0;           /* 0x000003e8 - 32 bit unknown */
-	uint32 switch_value3;       /* 1 - switch value? */
-	uint32 ptr_1;               /* pointer */
-	uint32 switch_value4;       /* 1 - switch value? */
-	uint32 switch_value5;       /* 1 - switch value? */
+	uint32 num_entries;
+	uint32 undoc_buffer; /* undocumented buffer pointer */
 
-	uint32 status;         /* return status - 0x99: user exists */
+	uint32 num_entries2; 
+	DOM_RID3 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
 
-} SAMR_R_UNKNOWN_11;
+	uint32 num_entries3; 
+
+	uint32 status; /* return code */
+
+} SAMR_R_LOOKUP_RIDS;
 
 
 /* SAMR_Q_UNKNOWN_22 - probably an open */
@@ -1279,24 +1295,24 @@ typedef struct r_samr_unknown_32_info
 } SAMR_R_UNKNOWN_32;
 
 
-/* SAMR_Q_UNKNOWN_39 - probably an open */
-typedef struct q_samr_unknown_39_info
+/* SAMR_Q_OPEN_POLICY - probably an open */
+typedef struct q_samr_open_policy_info
 {
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
 
 	uint32 unknown_0;            /* 32 bit unknown */
 
-} SAMR_Q_UNKNOWN_39;
+} SAMR_Q_OPEN_POLICY;
 
 
-/* SAMR_R_UNKNOWN_39 - probably an open */
-typedef struct r_samr_unknown_39_info
+/* SAMR_R_OPEN_POLICY - probably an open */
+typedef struct r_samr_open_policy_info
 {
     LSA_POL_HND pol;       /* policy handle */
 	uint32 status;             /* return status */
 
-} SAMR_R_UNKNOWN_39;
+} SAMR_R_OPEN_POLICY;
 
 
 /* WKS_Q_UNKNOWN_0 - probably a capabilities request */
