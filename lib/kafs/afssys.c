@@ -51,16 +51,6 @@ static int (*Setpag)(void);
 #include "dlfcn.h"
 
 static int
-isSuid()
-{
-    int uid = getuid();
-    int gid = getgid();
-    int euid = getegid();
-    int egid = getegid();
-    return (uid != euid) || (gid != egid);
-}
-
-static int
 aix_setup(void)
 {
 #ifdef STATIC_AFS_SYSCALLS
@@ -72,7 +62,7 @@ aix_setup(void)
     /*
      * If we are root or running setuid don't trust AFSLIBPATH!
      */
-    if (getuid() != 0 && !isSuid() && (p = getenv("AFSLIBPATH")) != NULL)
+    if (getuid() != 0 && !issuid() && (p = getenv("AFSLIBPATH")) != NULL)
 	snprintf(path, sizeof(path), "%s", p);
     else
 	snprintf(path, sizeof(path), "%s/afslib.so", LIBDIR);
