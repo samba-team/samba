@@ -63,6 +63,7 @@
 
 #undef HAVE_VOLATILE
 #undef HAVE_BROKEN_READDIR
+#undef HAVE_C99_VSNPRINTF
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
 #undef HAVE_OFF64_T
@@ -432,6 +433,9 @@
 /* Define if you have the _write function.  */
 #undef HAVE__WRITE
 
+/* Define if you have the asprintf function.  */
+#undef HAVE_ASPRINTF
+
 /* Define if you have the atexit function.  */
 #undef HAVE_ATEXIT
 
@@ -719,6 +723,9 @@
 
 /* Define if you have the utimes function.  */
 #undef HAVE_UTIMES
+
+/* Define if you have the vasprintf function.  */
+#undef HAVE_VASPRINTF
 
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF

@@ -188,10 +188,6 @@ void CatchSignal(int signum,void (*handler)(int ));
 void CatchChild(void);
 void CatchChildLeaveStatus(void);
 
-/*The following definitions come from  lib/slprintf.c  */
-
-int vslprintf(char *str, int n, char *format, va_list ap);
-
 /*The following definitions come from  lib/smbrun.c  */
 
 int smbrun(char *cmd, int *outfd);

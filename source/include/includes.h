@@ -54,6 +54,13 @@
 #endif
 #endif
 
+/* use gcc attribute to check printf fns */
+#ifdef __GNUC__
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
 #ifdef RELIANTUNIX
 /*
  * <unistd.h> has to be included before any other to get
@@ -991,6 +998,20 @@ extern int DEBUGLEVEL;
 #ifndef RTLD_NOW
 #define RTLD_NOW 0
 #endif
+
+/* add varargs prototypes with printf checking */
+int fdprintf(int , char *, ...) PRINTF_ATTRIBUTE(2,3);
+#ifndef HAVE_SNPRINTF
+int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+#ifndef HAVE_ASPRINTF
+int asprintf(char **,char *, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
+/* we used to use these fns, but now we have good replacements
+   for snprintf and vsnprintf */
+#define slprintf snprintf
+#define vslprintf vsnprintf
 
 #endif /* _INCLUDES_H */
 
