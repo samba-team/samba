@@ -59,16 +59,17 @@ static SL_cmd commands[] = {
 krb5_context context;
 char *database = HDB_DEFAULT_DB;
 
-void
+int
 help(int argc, char **argv)
 {
     sl_help(commands, argc, argv);
+    return 0;
 }
 
-void
+int
 exit_kdb_edit (int argc, char **argv)
 {
-    exit (0);
+    return 1;
 }
 
 int

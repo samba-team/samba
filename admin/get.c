@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-void
+int
 get_entry(int argc, char **argv)
 {
     HDB *db;
@@ -49,14 +49,14 @@ get_entry(int argc, char **argv)
     
     if(argc != 2){
 	fprintf(stderr, "Usage: get_entry principal\n");
-	return;
+	return 0;
     }
 	
     krb5_parse_name(context, argv[1], &ent.principal);
     
     if((err = hdb_open(context, &db, database, O_RDONLY, 0600))){
 	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, err));
-	return;
+	return 0;
     }
     
     err = db->fetch(context, db, &ent);
@@ -86,4 +86,5 @@ get_entry(int argc, char **argv)
     }
     memset(&ent, 0, sizeof(ent));
     db->close(context, db);
+    return 0;
 }

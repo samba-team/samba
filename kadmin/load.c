@@ -144,7 +144,7 @@ doit(char *filename, int merge)
     fclose(f);
 }
 
-void
+int
 load(int argc, char **argv)
 {
     if(argc < 2){
@@ -152,9 +152,10 @@ load(int argc, char **argv)
 	return;
     }
     doit(argv[1], 0);
+    return 0;
 }
 
-void
+int
 merge(int argc, char **argv)
 {
     if(argc < 2){
@@ -162,4 +163,5 @@ merge(int argc, char **argv)
 	return;
     }
     doit(argv[1], 1);
+    return 0;
 }

@@ -66,7 +66,7 @@ key2str(krb5_keyblock *key)
     return s;
 }
 
-void
+int
 dump(int argc, char **argv)
 {
     HDB *db;
@@ -86,7 +86,7 @@ dump(int argc, char **argv)
 	warnx("hdb_open: %s", krb5_get_err_text(context, err));
 	if(f != stdout)
 	    fclose(f);
-	return;
+	return 0;
     }
     err = db->firstkey(context, db, &ent);
     while(err == 0){
@@ -111,4 +111,5 @@ dump(int argc, char **argv)
     if(f != stdout)
 	fclose(f);
     db->close(context, db);
+    return 0;
 }

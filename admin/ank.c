@@ -150,7 +150,7 @@ out:
 }
 
 
-void
+int
 add_new_key(int argc, char **argv)
 {
     if(argc != 2){
@@ -159,9 +159,10 @@ add_new_key(int argc, char **argv)
     }
 
     doit(argv[1], 0);
+    return 0;
 }
 
-void
+int
 mod_entry(int argc, char **argv)
 {
     if(argc != 2){
@@ -170,4 +171,5 @@ mod_entry(int argc, char **argv)
     }
 
     doit(argv[1], 1);
+    return 0;
 }

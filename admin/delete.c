@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-void
+int
 del_entry(int argc, char **argv)
 {
     HDB *db;
@@ -49,14 +49,14 @@ del_entry(int argc, char **argv)
     
     if(argc != 2){
 	warnx("Usage: del_entry principal");
-	return;
+	return 0;
     }
 	
     krb5_parse_name(context, argv[1], &ent.principal);
     
     if((err = hdb_open(context, &db, database, O_RDWR, 0600))){
 	warnx("hdb_open: %s", krb5_get_err_text(context, err));
-	return;
+	return 0;
     }
     
     err = db->delete(context, db, &ent);
@@ -71,4 +71,5 @@ del_entry(int argc, char **argv)
     krb5_free_principal (context, ent.principal);
     memset(&ent, 0, sizeof(ent));
     db->close(context, db);
+    return 0;
 }

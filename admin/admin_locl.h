@@ -75,7 +75,7 @@
 extern krb5_context context;
 extern char *database;
 
-#define DECL(X) void X(int, char **)
+#define DECL(X) int X(int, char **)
 
 DECL(get_entry);
 DECL(load);

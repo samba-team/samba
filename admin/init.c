@@ -65,7 +65,7 @@ get_time(const char *prompt, time_t def)
 }
 
 
-void
+int
 init(int argc, char **argv)
 {
     HDB *db;
@@ -86,7 +86,7 @@ init(int argc, char **argv)
     err = hdb_open(context, &db, database, O_RDWR | O_CREAT, 0600);
     if(err){
 	warnx("hdb_open: %s", krb5_get_err_text(context, err));
-	return;
+	return 0;
     }
     memset(&ent, 0, sizeof(ent));
     for(i = 1; i < argc; i++){
@@ -106,7 +106,7 @@ init(int argc, char **argv)
 	default:
 	    warnx("hdb_fetch: %s", krb5_get_err_text(context, err));
 	    db->close(context, db);
-	    return;
+	    return 0;
 	}
 	
 	max_life = get_time("Realm max ticket life", max_life);
@@ -159,4 +159,5 @@ init(int argc, char **argv)
 	hdb_free_entry(context, &ent);
     }
     db->close(context, db);
+    return 0;
 }

@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-void 
+int 
 ext_keytab(int argc, char **argv)
 {
     HDB *db;
@@ -53,14 +53,14 @@ ext_keytab(int argc, char **argv)
     
     if(argc != 2){
 	warnx("Usage: ext_keytab principal\n");
-	return;
+	return 0;
     }
 	
     
     ret = hdb_open(context, &db, database, O_RDONLY, 0600);
     if(ret){
 	warnx("%s", krb5_get_err_text(context, ret));
-	return;
+	return 0;
     }
 
     ret = krb5_parse_name (context, argv[1], &ent.principal);
@@ -105,4 +105,5 @@ cleanup2:
     hdb_free_entry (context, &ent);
 cleanup1:
     db->close (context, db);
+    return 0;
 }
