@@ -424,10 +424,10 @@ creates a STRING2 structure.
 ********************************************************************/
 void make_string2(STRING2 *str, char *buf, int len)
 {
-	/* set up string lengths. add one if string is not null-terminated */
-	str->str_max_len = len+1;
+	/* set up string lengths. */
+	str->str_max_len = len;
 	str->undoc       = 0;
-	str->str_str_len = len+1;
+	str->str_str_len = len;
 
 	/* store the string */
 	memcpy(str->buffer, buf, len);
