@@ -3,7 +3,6 @@
 
 # name:			mount.smb  --  interface between mount and smbmount
 # author:		Ch. L. Spiel (cspiel@physik.tu-muenchen.de)
-# $Id: mount.smb,v 1.1 1998/04/13 12:31:10 jht Exp $
 
 # bash version:		1.14.7(1)
 # mount version:	2.7i
