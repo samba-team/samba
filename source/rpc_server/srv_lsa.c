@@ -393,6 +393,37 @@ static BOOL api_lsa_unk_get_connuser(pipes_struct *p)
 }
 
 /***************************************************************************
+ api_lsa_create_user
+ ***************************************************************************/
+
+static BOOL api_lsa_create_account(pipes_struct *p)
+{
+	LSA_Q_CREATEACCOUNT q_u;
+	LSA_R_CREATEACCOUNT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_create_account("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_create_account: failed to unmarshall LSA_Q_CREATEACCOUNT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_create_account(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_create_account("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_create_account: Failed to marshall LSA_R_CREATEACCOUNT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
  api_lsa_open_user
  ***************************************************************************/
 
@@ -659,6 +690,7 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
 	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
 	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
+	{ "LSA_CREATEACCOUNT"   , LSA_CREATEACCOUNT   , api_lsa_create_account   },
 	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
 	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
 	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },

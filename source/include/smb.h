@@ -281,6 +281,11 @@ typedef struct sid_info
 
 } DOM_SID;
 
+typedef struct sid_list {
+	uint32 count;
+	DOM_SID *list;
+} SID_LIST;
+
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
@@ -297,6 +302,7 @@ typedef struct sid_info
 typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
+	PRIVILEGE_SET privileges;
 } NT_USER_TOKEN;
 
 /*** query a local group, get a list of these: shows who is in that group ***/

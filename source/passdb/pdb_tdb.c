@@ -2,7 +2,7 @@
  * Unix SMB/CIFS implementation. 
  * SMB parameters and setup
  * Copyright (C) Andrew Tridgell   1992-1998
- * Copyright (C) Simo Sorce        2000-2002
+ * Copyright (C) Simo Sorce        2000-2003
  * Copyright (C) Gerald Carter     2000
  * Copyright (C) Jeremy Allison    2001
  * Copyright (C) Andrew Bartlett   2002
@@ -42,6 +42,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
+#define PRIVPREFIX		"PRIV_"
 #define tdbsamver_t 	int32
 
 struct tdbsam_privates {
@@ -703,6 +704,18 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
+
+
+
+/**
+ * Init tdbsam backend
+ *
+ * @param pdb_context initialised passdb context
+ * @param pdb_method backend methods structure to be filled with function pointers
+ * @param location the backend tdb file location
+ *
+ * @return nt_status code
+ **/
 
 static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
