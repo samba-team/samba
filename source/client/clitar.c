@@ -1357,9 +1357,8 @@ int cmd_tar(void)
 	if (!tar_parseargs(argcl, argl, buf, 0))
 		return 1;
 
-	process_tar();
 	SAFE_FREE(argl);
-	return 0;
+	return process_tar();
 }
 
 /****************************************************************************
@@ -1368,6 +1367,7 @@ Command line (option) version
 
 int process_tar(void)
 {
+	int rc = 0;
 	initarbuf();
 	switch(tar_type) {
 		case 'x':
@@ -1445,7 +1445,7 @@ int process_tar(void)
 		clipn = 0;
 		must_free_cliplist = False;
 	}
-	return(0);
+	return rc;
 }
 
 /****************************************************************************
