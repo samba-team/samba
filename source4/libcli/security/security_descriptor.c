@@ -65,45 +65,6 @@ struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 	return nsd;
 }
 
-NTSTATUS security_check_dacl(struct security_token *st, 
-			     struct security_descriptor *sd, 
-			     uint32 access_mask)
-{
-	size_t i,y;
-	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-
-	DEBUG(1, ("security_check_dacl(): sorry untested yet\n"));
-	return status;
-
-	if (!sd->dacl) {
-		return NT_STATUS_INVALID_ACL;
-	}
-
-	for (i=0; i < st->num_sids; i++) {
-		for (y=0; y < sd->dacl->num_aces; y++) {
-			if (dom_sid_equal(&st->sids[i], &sd->dacl->aces[y].trustee)) {
-				switch (sd->dacl->aces[y].type) {
-					case SEC_ACE_TYPE_ACCESS_ALLOWED:
-						if (access_mask & sd->dacl->aces[y].access_mask) {
-							status = NT_STATUS_OK;
-						}
-						break;
-					case SEC_ACE_TYPE_ACCESS_DENIED:
-						if (access_mask & sd->dacl->aces[y].access_mask) {
-							return NT_STATUS_ACCESS_DENIED;
-						}
-						break;
-					default:
-						return NT_STATUS_INVALID_ACL;
-				}
-			}
-		}
-	}
-
-	return status;
-}
-
-
 /*
   add an ACE to the DACL of a security_descriptor
 */
