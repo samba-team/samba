@@ -1253,6 +1253,10 @@ typedef struct spool_r_enumprinterdrivers
 }
 SPOOL_R_ENUMPRINTERDRIVERS;
 
+#define FORM_USER    0
+#define FORM_BUILTIN 1
+#define FORM_PRINTER 2
+
 typedef struct spool_form_1
 {
 	uint32 flag;
@@ -1759,7 +1763,7 @@ typedef struct spool_q_addform
 {
 	POLICY_HND handle;
 	uint32 level;
-	uint32 level2;
+	uint32 level2;		/* This should really be part of the FORM structure */
 	FORM form;
 }
 SPOOL_Q_ADDFORM;
