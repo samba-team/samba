@@ -40,6 +40,16 @@
 
 RCSID("$Id$");
 
+static void
+append_hex(char *str, krb5_data *data)
+{
+    int i;
+    char *p = malloc(data->length * 2 + 1);
+    for(i = 0; i < data->length; i++)
+	sprintf(p + 2 * i, "%02x", ((u_char*)data->data)[i]);
+    strcat(str, p);
+    free(p);
+}
 
 int
 hdb_entry2string(hdb_entry *ent, char **str)
@@ -60,12 +70,12 @@ hdb_entry2string(hdb_entry *ent, char **str)
 		 ent->keys.val[i].key.keytype);
 	strcat(buf, p);
 	free(p);
-	for(j = 0; j < ent->keys.val[i].key.keyvalue.length; j++){
-	    asprintf(&p, "%02x", 
-		     ((unsigned char*)ent->keys.val[i].key.keyvalue.data)[j]);
-	    strcat(buf, p);
-	    free(p);
-	}
+	append_hex(buf, &ent->keys.val[i].key.keyvalue);
+	strcat(buf, ":");
+	if(ent->keys.val[i].salt)
+	    append_hex(buf, ent->keys.val[i].salt);
+	else
+	    strcat(buf, "-");
     }
     strcat(buf, " ");
     event2string(&ent->created_by, &p);
