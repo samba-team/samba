@@ -31,6 +31,7 @@
 #define real_link(fn1, fn2)		(syscall(SYS_link, (fn1), (fn2)))
 
 #define real_open(fn,flags,mode)	(syscall(SYS_open, (fn), (flags), (mode)))
+#define real_open64(fn,flags,mode)	(syscall(SYS_open64, (fn), (flags), (mode)))
 
 
 #ifdef HAVE__OPENDIR
@@ -176,12 +177,6 @@
 #define real_llseek(fd,ofs,whence)            	(__llseek(fd,ofs,whence))
 #endif
 
-
-#ifdef HAVE__OPEN64
-#define real_open64(fn,fl,m)            	(_open64(fn,fl,m))
-#elif HAVE___OPEN64
-#define real_open64(fn,fl,m)            	(__open64(fn,fl,m))
-#endif
 
 #ifdef HAVE__PREAD
 #define real_pread(fd,buf,size,ofs)            	(_pread(fd,buf,size,ofs))
