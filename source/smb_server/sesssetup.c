@@ -45,7 +45,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 
-	TALLOC_CTX *mem_ctx = talloc_init("NT1 session setup");
+	TALLOC_CTX *mem_ctx = talloc_named(req, 0, "NT1 session setup");
 	char *remote_machine;
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -62,20 +62,23 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 					      remote_machine,
 					      sess->old.in.password,
 					      data_blob(NULL, 0));
-	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = req->smb_conn->negotiate.auth_context->check_ntlm_password(req->smb_conn->negotiate.auth_context, 
-								       user_info, 
-								       &server_info);
+									    user_info, 
+									    mem_ctx, 
+									    &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return nt_status_squash(status);
 	}
 
 	/* This references server_info into session_info */
 	status = make_session_info(req, server_info, &session_info);
+	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
@@ -105,6 +108,11 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
+	TALLOC_CTX *mem_ctx = talloc_named(req, 0, "NT1 session setup");
+	
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (!req->smb_conn->negotiate.done_sesssetup) {
 		req->smb_conn->negotiate.max_send = sess->nt1.in.bufsize;
@@ -123,18 +131,16 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		status = make_auth_context_subsystem(req->smb_conn, &auth_context);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(mem_ctx);
 			return status;
 		}
 		
 		status = auth_context->check_ntlm_password(auth_context, 
 							   user_info, 
+							   mem_ctx,
 							   &server_info);
 	} else {
-		TALLOC_CTX *mem_ctx = talloc_init("NT1 session setup");
 		char *remote_machine;
-		if (!mem_ctx) {
-			return NT_STATUS_NO_MEMORY;
-		}
 		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
 		status = make_user_info_for_reply_enc(req->smb_conn,
 						      &user_info, 
@@ -142,8 +148,8 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 						      remote_machine,
 						      sess->nt1.in.password1,
 						      sess->nt1.in.password2);
-		talloc_free(mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		
@@ -151,22 +157,25 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 			.auth_context->check_ntlm_password(req->smb_conn->negotiate
 							   .auth_context, 
 							   user_info, 
+							   req,
 							   &server_info);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return nt_status_squash(status);
 	}
 
 	/* This references server_info into session_info */
-	status = make_session_info(req, server_info, &session_info);
+	status = make_session_info(mem_ctx, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return nt_status_squash(status);
 	}
-	talloc_free(server_info);
 
 	sess->nt1.out.action = 0;
 	sess->nt1.out.vuid = smbsrv_register_session(req->smb_conn, session_info, NULL);
+	talloc_free(mem_ctx);
 	if (sess->nt1.out.vuid == UID_FIELD_INVALID) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
