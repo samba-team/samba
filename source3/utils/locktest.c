@@ -45,8 +45,8 @@ static BOOL use_oplocks;
 #define UNLOCK_PCT 55
 #define RANGE_MULTIPLE 1
 #define NSERVERS 2
-#define NCONNECTIONS 6
-#define NFILES 4
+#define NCONNECTIONS 2
+#define NFILES 2
 #define LOCK_TIMEOUT 0
 
 #define NASTY_POSIX_LOCK_HACK 0
@@ -99,7 +99,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 static void show_locks(void)
 {
 	brl_forall(print_brl);
-	system("cat /proc/locks");
+	/* system("cat /proc/locks"); */
 }
 
 
