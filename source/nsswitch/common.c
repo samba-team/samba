@@ -279,6 +279,17 @@ int read_reply(struct winbindd_response *response)
     return result1 + result2;
 }
 
+/* Free a response structure */
+
+void free_response(struct winbindd_response *response)
+{
+	/* Free any allocated extra_data */
+
+	if (response && response->extra_data) {
+		free(response->extra_data);
+	}
+}
+
 /* Handle simple types of requests */
 
 enum nss_status generic_request(int req_type, 
@@ -314,15 +325,4 @@ enum nss_status generic_request(int req_type,
 	}
 	
 	return NSS_STATUS_SUCCESS;
-}
-
-/* Free a response structure */
-
-void free_response(struct winbindd_response *response)
-{
-	/* Free any allocated extra_data */
-
-	if (response && response->extra_data) {
-		free(response->extra_data);
-	}
 }
