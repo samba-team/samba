@@ -1045,11 +1045,13 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		DEBUG(4,
 		      ("Unable to locate user [%s] count=%d\n", sname,
 		       count));
+		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (count > 1) {
 		DEBUG(1,
 		      ("Duplicate entries for this user [%s] Failing. count=%d\n", sname,
 		       count));
+		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -1522,7 +1524,6 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 		
 		rc = smbldap_search_suffix(ldap_state->smbldap_state, 
 					   filter, attr_list, &result);
-		free_attr_list( attr_list );
 			
 		if ( rc != LDAP_SUCCESS ) {
 			free_attr_list( attr_list );
@@ -1551,6 +1552,8 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 		}
 	}
 	
+	free_attr_list( attr_list );
+
 	if (num_result == 0) {
 		/* Check if we need to add an entry */
 		DEBUG(3,("Adding new user\n"));
@@ -1765,12 +1768,14 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
 
 	if (count < 1) {
 		DEBUG(4, ("Did not find group\n"));
+		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
 	if (count > 1) {
 		DEBUG(1, ("Duplicate entries for filter %s: count=%d\n",
 			  filter, count));
+		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
