@@ -1,6 +1,7 @@
 2000-07-22  Assar Westerlund  <assar@sics.se>
 
-	* gssapi.h (gss_mech_krb5): define to be compatible with MIT api
+	* gssapi.h: update OID for GSS_C_NT_HOSTBASED_SERVICE and other
+	details from rfc2744
 
 2000-06-29  Assar Westerlund  <assar@sics.se>
 
