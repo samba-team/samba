@@ -1624,7 +1624,7 @@ extern int chain_size;
 
 #define KERNEL_OPLOCK_CAPABILITY 0x1
 
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
 /*
  * Oplock break command code sent via the kernel interface.
  *
@@ -1641,7 +1641,7 @@ extern int chain_size;
 #define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 
 #define CMD_REPLY 0x8000
 

@@ -30,7 +30,7 @@ static int oplock_sock = -1;
 uint16 global_oplock_port = 0;
 static int oplock_pipe_read = -1;
 
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
 static int oplock_pipe_write = -1;
 #endif
 
@@ -59,7 +59,7 @@ int32 get_number_of_exclusive_open_oplocks(void)
 
 BOOL setup_kernel_oplock_pipe(void)
 {
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
   if(lp_kernel_oplocks()) {
     int pfd[2];
 
@@ -72,7 +72,7 @@ BOOL setup_kernel_oplock_pipe(void)
     oplock_pipe_read = pfd[0];
     oplock_pipe_write = pfd[1];
   }
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
   return True;
 }
 
@@ -164,7 +164,7 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
     }
   }
 
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
   if(FD_ISSET(oplock_pipe_read,fds)) {
     /*
      * Deal with the kernel <--> smbd
@@ -231,7 +231,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 
     return True;
   }
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 
   /*
    * From here down we deal with the smbd <--> smbd
@@ -279,7 +279,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 
 static BOOL set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
   if(lp_kernel_oplocks()) {
 
     if(fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
@@ -300,7 +300,7 @@ inode = %.0f. Another process had the file open.\n",
           fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode));
 
   }
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
   return True;
 }
 
@@ -334,7 +334,7 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 
 static void release_kernel_oplock(files_struct *fsp)
 {
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
 
   if(lp_kernel_oplocks())
   {
@@ -365,7 +365,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
       }
     }
   }
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 }
 
 
@@ -508,7 +508,7 @@ BOOL process_local_message(char *buffer, int buf_size)
 
   switch(break_cmd_type)
   {
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
     case KERNEL_OPLOCK_BREAK_CMD:
       /* Ensure that the msg length is correct. */
       if(msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN)
@@ -527,7 +527,7 @@ should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
 file dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode));
       }
       break;
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 
     case OPLOCK_BREAK_CMD:
     case LEVEL_II_OPLOCK_BREAK_CMD:
@@ -1238,7 +1238,7 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
     reply_msg_start = &op_break_reply[OPBRK_CMD_HEADER_LEN];
 
 
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
     if((reply_msg_len != OPLOCK_BREAK_MSG_LEN) && (reply_msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN))
 #else
     if(reply_msg_len != OPLOCK_BREAK_MSG_LEN)
@@ -1335,7 +1335,7 @@ void check_kernel_oplocks(void)
   done = True;
   lp_set_kernel_oplocks(False);
 
-#if defined(HAVE_KERNEL_OPLOCKS)
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
   {
     int fd;
     int pfd[2];
@@ -1391,7 +1391,7 @@ Disabling kernel oplock support.\n", strerror(errno) ));
           lp_kernel_oplocks() ? "True" : "False" ));
 
   }
-#endif /* HAVE_KERNEL_OPLOCKS */
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
 }
 
 #undef OLD_NTDOMAIN
