@@ -489,7 +489,7 @@ uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
 		}
 		case 0x03:
 		{
-			extern pstring global_myworkgroup;
+			extern fstring global_myworkgroup;
 			make_dom_query(&info->id3, global_myworkgroup,
 				       &global_member_sid);
 			break;

@@ -21,7 +21,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 extern int DEBUGLEVEL;
 
 /*

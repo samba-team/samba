@@ -27,7 +27,7 @@
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 
 /*********************************************************
  Change the domain password on the PDC.
