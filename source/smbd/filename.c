@@ -26,8 +26,7 @@
 
 #include "includes.h"
 
-static BOOL scan_directory(const char *path, char *name,size_t maxlength,
-			   connection_struct *conn,BOOL docache);
+static BOOL scan_directory(connection_struct *conn, const char *path, char *name,size_t maxlength);
 
 /****************************************************************************
  Check if two filenames are equal.
@@ -278,10 +277,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			 */
 
 			if (ms_has_wild(start) || 
-			    !scan_directory(dirpath, start, 
-					    sizeof(pstring) - 1 - (start - name), 
-					    conn, 
-					    end?True:False)) {
+			    !scan_directory(conn, dirpath, start, sizeof(pstring) - 1 - (start - name))) {
 				if (end) {
 					/*
 					 * An intermediate part of the name can't be found.
@@ -446,8 +442,7 @@ BOOL check_name(pstring name,connection_struct *conn)
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static BOOL scan_directory(const char *path, char *name, size_t maxlength, 
-			   connection_struct *conn,BOOL docache)
+static BOOL scan_directory(connection_struct *conn, const char *path, char *name, size_t maxlength)
 {
 	void *cur_dir;
 	const char *dname;
@@ -458,11 +453,6 @@ static BOOL scan_directory(const char *path, char *name, size_t maxlength,
 	/* handle null paths */
 	if (*path == 0)
 		path = ".";
-
-	if (docache && (dname = DirCacheCheck(path,name,SNUM(conn)))) {
-		safe_strcpy(name, dname, maxlength);	
-		return(True);
-	}      
 
 	/*
 	 * The incoming name can be mangled, and if we de-mangle it
@@ -501,8 +491,6 @@ static BOOL scan_directory(const char *path, char *name, size_t maxlength,
 
 		if ((mangled && mangled_equal(name,dname,SNUM(conn))) || fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
-			if (docache)
-				DirCacheAdd(path,name,dname,SNUM(conn));
 			safe_strcpy(name, dname, maxlength);
 			CloseDir(cur_dir);
 			return(True);
