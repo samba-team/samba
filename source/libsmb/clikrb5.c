@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple kerberos5 routines for active directory
    Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Luke Howard 2002
+   Copyright (C) Luke Howard 2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,16 @@
 #include "includes.h"
 
 #ifdef HAVE_KRB5
+
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#else
+#define	KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
 #ifndef HAVE_KRB5_SET_REAL_TIME
 /*
@@ -124,7 +134,7 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 	return krb5_get_default_in_tkt_etypes(context, enctypes);
 }
 #else
- __ERROR_XX_UNKNOWN_GET_ENCTYPES_FUNCTIONS
+#error UNKNOWN_GET_ENCTYPES_FUNCTIONS
 #endif
 
  void free_kerberos_etypes(krb5_context context, 
@@ -305,12 +315,12 @@ DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
 	DATA_BLOB ret;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
-		ENCTYPE_ARCFOUR_HMAC, 
-#endif
-				    ENCTYPE_DES_CBC_MD5, 
-				    ENCTYPE_DES_CBC_CRC, 
-				    ENCTYPE_NULL};
-
+		ENCTYPE_ARCFOUR_HMAC,
+#endif 
+		ENCTYPE_DES_CBC_MD5, 
+		ENCTYPE_DES_CBC_CRC, 
+		ENCTYPE_NULL};
+	
 	retval = krb5_init_context(&context);
 	if (retval) {
 		DEBUG(1,("krb5_init_context failed (%s)\n", 
@@ -355,11 +365,39 @@ failed:
 	return data_blob(NULL, 0);
 }
 
+BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
+ {
+	krb5_keyblock *skey;
+	BOOL ret = False;
+
+	memset(session_key, 0, 16);
+
+#ifdef ENCTYPE_ARCFOUR_HMAC
+	if (krb5_auth_con_getremotesubkey(context, auth_context, &skey) == 0 && skey != NULL) {
+		if (KRB5_KEY_TYPE(skey) ==
+		    ENCTYPE_ARCFOUR_HMAC
+		    && KRB5_KEY_LENGTH(skey) == 16) {
+			memcpy(session_key, KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+			ret = True;
+		}
+		krb5_free_keyblock(context, skey);
+	}
+#endif /* ENCTYPE_ARCFOUR_HMAC */
+
+	return ret;
+ }
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
- DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
+DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);
+ }
+
+BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context ac, uint8 session_key[16])
+ {
+	DEBUG(0,("NO KERBEROS SUPPORT\n"));
+	memset(session_key, 0, 16);
+	return False;
  }
 #endif
