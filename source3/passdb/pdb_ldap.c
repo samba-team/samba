@@ -64,7 +64,7 @@ struct ldapsam_privates {
 	LDAPMessage *entry;
 	int index;
 	
-	/* retrive-once info */
+	/* retrieve-once info */
 	const char *uri;
 	
 	BOOL permit_non_unix_accounts;
@@ -425,19 +425,22 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 /*******************************************************************
  run the search by name.
 ******************************************************************/
-static int ldapsam_search_one_user (struct ldapsam_privates *ldap_state, LDAP * ldap_struct, const char *filter, LDAPMessage ** result)
+static int ldapsam_search_one_user (LDAP * ldap_struct, const char *filter,
+				    LDAPMessage ** result)
 {
 	int scope = LDAP_SCOPE_SUBTREE;
 	int rc;
 
 	DEBUG(2, ("ldapsam_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, filter, (char **)attr, 0, result);
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, filter,
+			   (char **)attr, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
 		DEBUG(0,("ldapsam_search_one_user: Problem during the LDAP search: %s\n", 
 			ldap_err2string (rc)));
-		DEBUG(3,("ldapsam_search_one_user: Query was: %s, %s\n", lp_ldap_suffix(), 
+		DEBUG(3,("ldapsam_search_one_user: Query was: %s, %s\n",
+			 lp_ldap_suffix(), 
 			filter));
 	}
 	
@@ -447,8 +450,9 @@ static int ldapsam_search_one_user (struct ldapsam_privates *ldap_state, LDAP * 
 /*******************************************************************
  run the search by name.
 ******************************************************************/
-static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state, LDAP * ldap_struct, const char *user,
-			     LDAPMessage ** result)
+static int ldapsam_search_one_user_by_name (LDAP * ldap_struct,
+					    const char *user,
+					    LDAPMessage ** result)
 {
 	pstring filter;
 	
@@ -464,14 +468,13 @@ static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state,
 	 */
 	all_string_sub(filter, "%u", user, sizeof(pstring));
 
-	return ldapsam_search_one_user(ldap_state, ldap_struct, filter, result);
+	return ldapsam_search_one_user(ldap_struct, filter, result);
 }
 
 /*******************************************************************
  run the search by uid.
 ******************************************************************/
-static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state, 
-					  LDAP * ldap_struct, int uid,
+static int ldapsam_search_one_user_by_uid(LDAP * ldap_struct, int uid,
 					  LDAPMessage ** result)
 {
 	struct passwd *user;
@@ -490,14 +493,13 @@ static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state,
 
 	passwd_free(&user);
 
-	return ldapsam_search_one_user(ldap_state, ldap_struct, filter, result);
+	return ldapsam_search_one_user(ldap_struct, filter, result);
 }
 
 /*******************************************************************
  run the search by rid.
 ******************************************************************/
-static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state, 
-					   LDAP * ldap_struct, uint32 rid,
+static int ldapsam_search_one_user_by_rid (LDAP * ldap_struct, uint32 rid,
 					   LDAPMessage ** result)
 {
 	pstring filter;
@@ -506,10 +508,10 @@ static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state,
 	/* check if the user rid exsists, if not, try searching on the uid */
 	
 	snprintf(filter, sizeof(filter) - 1, "rid=%i", rid);
-	rc = ldapsam_search_one_user(ldap_state, ldap_struct, filter, result);
+	rc = ldapsam_search_one_user(ldap_struct, filter, result);
 	
 	if (rc != LDAP_SUCCESS)
-		rc = ldapsam_search_one_user_by_uid(ldap_state, ldap_struct, 
+		rc = ldapsam_search_one_user_by_uid(ldap_struct, 
 						    fallback_pdb_user_rid_to_uid(rid), 
 						    result);
 
@@ -1080,7 +1082,7 @@ static uint32 check_nua_rid_is_avail(struct ldapsam_privates *ldap_state, uint32
 		return 0;
 	}
 
-	if (ldapsam_search_one_user_by_rid(ldap_state, ldap_struct, final_rid, &result) != LDAP_SUCCESS) {
+	if (ldapsam_search_one_user_by_rid(ldap_struct, final_rid, &result) != LDAP_SUCCESS) {
 		DEBUG(0, ("Cannot allocate NUA RID %d (0x%x), as the confirmation search failed!\n", final_rid, final_rid));
 		ldap_msgfree(result);
 		return 0;
@@ -1321,7 +1323,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		ldap_unbind(ldap_struct);
 		return ret;
 	}
-	if (ldapsam_search_one_user_by_name(ldap_state, ldap_struct, sname, &result) != LDAP_SUCCESS) {
+	if (ldapsam_search_one_user_by_name(ldap_struct, sname, &result) != LDAP_SUCCESS) {
 		ldap_unbind(ldap_struct);
 		return ret;
 	}
@@ -1368,7 +1370,7 @@ static NTSTATUS ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		ldap_unbind(ldap_struct);
 		return ret;
 	}
-	if (ldapsam_search_one_user_by_rid(ldap_state, ldap_struct, rid, &result) != LDAP_SUCCESS) {
+	if (ldapsam_search_one_user_by_rid(ldap_struct, rid, &result) != LDAP_SUCCESS) {
 		ldap_unbind(ldap_struct);
 		return ret;
 	}
@@ -1408,7 +1410,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 }	
 
 /********************************************************************
-Do the actual modification - also change a plaittext passord if 
+Do the actual modification - also change a plaintext passord if 
 it it set.
 **********************************************************************/
 
@@ -1536,7 +1538,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 		return ret;
 	}
 
-	rc = ldapsam_search_one_user_by_name(ldap_state, ldap_struct, sname, &result);
+	rc = ldapsam_search_one_user_by_name(ldap_struct, sname, &result);
 	if (ldap_count_entries (ldap_struct, result) == 0) {
 		DEBUG (0, ("User doesn't exit!\n"));
 		ldap_msgfree (result);
@@ -1600,7 +1602,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		return ret;
 	}
 
-	rc = ldapsam_search_one_user_by_name(ldap_state, ldap_struct,
+	rc = ldapsam_search_one_user_by_name(ldap_struct,
 					     pdb_get_username(newpwd), &result);
 
 	if (ldap_count_entries(ldap_struct, result) == 0) {
@@ -1661,7 +1663,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 		return ret;
 	}
 
-	rc = ldapsam_search_one_user_by_name (ldap_state, ldap_struct, username, &result);
+	rc = ldapsam_search_one_user_by_name (ldap_struct, username, &result);
 
 	if (ldap_count_entries(ldap_struct, result) != 0) {
 		DEBUG(0,("User already in the base, with samba properties\n"));
@@ -1672,7 +1674,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	ldap_msgfree(result);
 
 	slprintf (filter, sizeof (filter) - 1, "uid=%s", username);
-	rc = ldapsam_search_one_user(ldap_state, ldap_struct, filter, &result);
+	rc = ldapsam_search_one_user(ldap_struct, filter, &result);
 	num_result = ldap_count_entries(ldap_struct, result);
 	
 	if (num_result > 1) {
