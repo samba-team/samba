@@ -195,21 +195,22 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 				int max_num_entries,
 				uint16 acb_mask)
 {
-#if 0 /* appliance */
 	static struct passwd *pwd = NULL;
 	static uint32 pw_rid;
 	static BOOL orig_done = False;
 	static int current_idx = 0;
 	static int mapped_idx = 0;
 	char *sep;
-#endif /* appliance */
 
 	DEBUG(5, ("get_passwd_entries: retrieving a list of UNIX users\n"));
 
 	(*num_entries) = 0;
 	(*total_entries) = 0;
 
-#if 0 /* appliance */
+	/* Skip all this stuff if we're in appliance mode */
+
+	if (lp_hide_local_users()) goto done;
+
 	if (pw_buf == NULL) return False;
 
 	if (current_idx == 0) {
@@ -340,7 +341,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		mapped_idx = 0;
 	}
 
-#endif /* appliance */
+ done:
 	return (*num_entries) > 0;
 }
 
@@ -741,9 +742,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	DOM_SID sid;
 	fstring sid_str;
 	fstring sam_sid_str;
-#if 0 /* appliance */
 	struct group *grp;
-#endif /* appliance */
 
 	ZERO_STRUCT(r_e);
 
@@ -761,21 +760,23 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	/* well-known aliases */
 	if (strequal(sid_str, "S-1-5-32"))
 	{
-#if 0 /* appliance */
 		char *name;
-		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
+
+		while (!lp_hide_local_users() &&
+		       num_entries < MAX_SAM_ENTRIES && 
+		       ((name = builtin_alias_rids[num_entries].name) != NULL))
 		{
 			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
 			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
 			num_entries++;
 		}
-#endif /* appliance */
 	}
 	else if (strequal(sid_str, sam_sid_str))
 	{
-#if 0 /* appliance */
 		char *name;
 		char *sep;
+
+		if (lp_hide_local_users()) goto done;
 
 		sep = lp_winbind_separator();
 
@@ -801,7 +802,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		}
 
 		endgrent();
-#endif /* appliance */
+	done:
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);

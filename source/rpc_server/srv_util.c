@@ -192,11 +192,10 @@ void get_domain_user_groups(char *domain_groups, char *user)
 	}
 }
 
-
 /*******************************************************************
- lookup_group_name
+ Look up a local (domain) rid and return a name and type.
  ********************************************************************/
-uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
+uint32 local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 {
 	int i = 0; 
 	(*type) = SID_NAME_DOM_GRP;
@@ -220,9 +219,9 @@ uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 }
 
 /*******************************************************************
- lookup_alias_name
+ Look up a local alias rid and return a name and type.
  ********************************************************************/
-uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
+uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 {
 	int i = 0; 
 	(*type) = SID_NAME_WKN_GRP;
@@ -246,9 +245,9 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 }
 
 /*******************************************************************
- lookup_user_name
+ Look up a local user rid and return a name and type.
  ********************************************************************/
-uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
+uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 {
 	struct sam_disp_info *disp_info;
 	int i = 0;
@@ -286,9 +285,9 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 }
 
 /*******************************************************************
- lookup_group_rid
+ Look up a local (domain) group name and return a rid
  ********************************************************************/
-uint32 lookup_group_rid(char *group_name, uint32 *rid)
+uint32 local_lookup_group_rid(char *group_name, uint32 *rid)
 {
 	char *grp_name;
 	int i = -1; /* start do loop at -1 */
@@ -305,9 +304,9 @@ uint32 lookup_group_rid(char *group_name, uint32 *rid)
 }
 
 /*******************************************************************
- lookup_alias_rid
+ Look up a local (BUILTIN) alias name and return a rid
  ********************************************************************/
-uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
+uint32 local_lookup_alias_rid(char *alias_name, uint32 *rid)
 {
 	char *als_name;
 	int i = -1; /* start do loop at -1 */
@@ -324,9 +323,9 @@ uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
 }
 
 /*******************************************************************
- lookup_user_rid
+ Look up a local user name and return a rid
  ********************************************************************/
-uint32 lookup_user_rid(char *user_name, uint32 *rid)
+uint32 local_lookup_user_rid(char *user_name, uint32 *rid)
 {
 	struct sam_passwd *sam_pass;
 	(*rid) = 0;

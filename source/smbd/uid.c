@@ -267,25 +267,49 @@ BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	extern pstring global_myname;
 	fstring sid;
+	char *sep = lp_winbind_separator();
 
 	if (!winbind_lookup_name(name, psid, name_type)) {
 		BOOL ret;
 
-		DEBUG(10,("lookup_name: winbind lookup for %s failed - trying local\n", name ));
+		DEBUG(10, ("lookup_name: winbind lookup for %s failed - trying local\n", name));
 
-		ret = local_lookup_name(global_myname, name, psid, name_type);
-		if (ret)
-			DEBUG(10,("lookup_name : (local) %s -> SID %s (type %u)\n",
-				name, sid_to_string(sid,psid),
-				(unsigned int)*name_type ));
-		else
-			DEBUG(10,("lookup name : (local) %s failed.\n",
-					name ));
+		/* If we are looking up a domain user, make sure it is
+		   for the local machine only */
+
+		if (strchr(name, sep[0]) || strchr(name, '\\')) {
+			fstring domain, username;
+
+			split_domain_name(name, domain, username);
+
+			if (strcasecmp(global_myname, domain) != 0) {
+				DEBUG(5, ("domain %s is not local\n", domain));
+				return False;
+			}
+
+			ret = local_lookup_name(domain, username, psid, 
+						name_type);
+		} else {
+
+			ret = local_lookup_name(global_myname, name, psid, 
+						name_type);
+		}
+
+		if (ret) {
+			DEBUG(10,
+			      ("lookup_name: (local) %s -> SID %s (type %u)\n",
+			       name, sid_to_string(sid,psid),
+			       (unsigned int)*name_type ));
+		} else {
+			DEBUG(10,("lookup name: (local) %s failed.\n", name));
+		}
+
 		return ret;
 	}
 
-	DEBUG(10,("lookup_name (winbindd): %s -> SID %s (type %u)\n",
-		name, sid_to_string(sid,psid), (unsigned int)*name_type ));
+		DEBUG(10,("lookup_name (winbindd): %s -> SID %s (type %u)\n",
+			  name, sid_to_string(sid, psid), 
+			  (unsigned int)*name_type));
 	return True;
 }
 
