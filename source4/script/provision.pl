@@ -8,7 +8,7 @@ my $realm = "bludom.tridgell.net";
 my $domain = "BLUDOM";
 my $dnsname = "$hostname.$realm";
 
-my $basedn = "DC=" . join(",DN=", split(/\./, $realm));
+my $basedn = "DC=" . join(",DC=", split(/\./, $realm));
 
 # return the current NTTIME as an integer
 sub nttime()
