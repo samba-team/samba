@@ -26,6 +26,7 @@
 <!ENTITY SecuringSamba SYSTEM "securing-samba.sgml">
 <!ENTITY Compiling SYSTEM "Compiling.sgml">
 <!ENTITY unicode SYSTEM "unicode.sgml">
+<!ENTITY CUPS SYSTEM "CUPS-printing.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -112,6 +113,7 @@ part each cover one specific feature.</para>
 &Samba-PAM;
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
+&CUPS;
 &WINBIND;
 &BROWSING;
 &VFS;
