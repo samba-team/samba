@@ -128,7 +128,7 @@ usage(int ret)
 }
 
 static void
-get_dbinfo(krb5_config_section *cf)
+get_dbinfo(void)
 {
     const krb5_config_binding *top_binding = NULL;
     const krb5_config_binding *db_binding;
@@ -141,7 +141,7 @@ get_dbinfo(krb5_config_section *cf)
     databases = NULL;
     dt = &databases;
     while((db_binding = (const krb5_config_binding *)
-	   krb5_config_get_next(context, cf, &top_binding, 
+	   krb5_config_get_next(context, NULL, &top_binding, 
 				krb5_config_list, 
 				"kdc", 
 				"database",
@@ -225,7 +225,6 @@ add_one_address (const char *str, int first)
 void
 configure(int argc, char **argv)
 {
-    krb5_config_section *cf = NULL;
     int optind = 0;
     int e;
     const char *p;
@@ -247,13 +246,28 @@ configure(int argc, char **argv)
     if (argc != 0)
 	usage(1);
     
-    if(config_file == NULL)
-	config_file = _PATH_KDC_CONF;
-    
-    if(krb5_config_parse_file(context, config_file, &cf))
-	cf = NULL;
-    
-    get_dbinfo(cf);
+    {
+	krb5_error_code ret;
+	char **files;
+	char *tmp;
+	if(config_file == NULL)
+	    config_file = _PATH_KDC_CONF;
+	asprintf(&tmp, "%s:%s", config_file, krb5_config_file);
+	if(tmp == NULL)
+	    krb5_errx(context, 1, "out of memory");
+	    
+	krb5_config_file = tmp;
+
+	ret = krb5_get_default_config_files(&files);
+	if(ret) 
+	    krb5_err(context, 1, ret, "reading configuration files");
+	ret = krb5_set_config_files(context, files);
+	krb5_free_config_files(files);
+	if(ret) 
+	    krb5_err(context, 1, ret, "reading configuration files");
+    }
+
+    get_dbinfo();
     
     if(max_request_str){
 	max_request = parse_bytes(max_request_str, NULL);
@@ -261,7 +275,7 @@ configure(int argc, char **argv)
 
     if(max_request == 0){
 	p = krb5_config_get_string (context,
-				    cf, 
+				    NULL,
 				    "kdc",
 				    "max-request",
 				    NULL);
@@ -270,11 +284,11 @@ configure(int argc, char **argv)
     }
     
     if(require_preauth == -1)
-	require_preauth = krb5_config_get_bool(context, cf, "kdc", 
+	require_preauth = krb5_config_get_bool(context, NULL, "kdc", 
 					       "require-preauth", NULL);
 
     if(port_str == NULL){
-	p = krb5_config_get_string(context, cf, "kdc", "ports", NULL);
+	p = krb5_config_get_string(context, NULL, "kdc", "ports", NULL);
 	if (p != NULL)
 	    port_str = strdup(p);
     }
@@ -288,7 +302,7 @@ configure(int argc, char **argv)
 	    add_one_address (addresses_str.strings[i], i == 0);
 	free_getarg_strings (&addresses_str);
     } else {
-	char **foo = krb5_config_get_strings (context, cf,
+	char **foo = krb5_config_get_strings (context, NULL,
 					      "kdc", "addresses", NULL);
 
 	if (foo != NULL) {
@@ -300,29 +314,29 @@ configure(int argc, char **argv)
 
 #ifdef KRB4
     if(enable_v4 == -1)
-	enable_v4 = krb5_config_get_bool_default(context, cf, TRUE, "kdc", 
+	enable_v4 = krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
 					 "enable-kerberos4", NULL);
     if(enable_524 == -1)
-	enable_524 = krb5_config_get_bool_default(context, cf, enable_v4, 
+	enable_524 = krb5_config_get_bool_default(context, NULL, enable_v4, 
 						  "kdc", "enable-524", NULL);
 #endif
 
     if(enable_http == -1)
-	enable_http = krb5_config_get_bool(context, cf, "kdc", 
+	enable_http = krb5_config_get_bool(context, NULL, "kdc", 
 					   "enable-http", NULL);
     check_ticket_addresses = 
-	krb5_config_get_bool_default(context, cf, TRUE, "kdc", 
+	krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
 				     "check-ticket-addresses", NULL);
     allow_null_ticket_addresses = 
-	krb5_config_get_bool_default(context, cf, TRUE, "kdc", 
+	krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
 				     "allow-null-ticket-addresses", NULL);
 
     allow_anonymous = 
-	krb5_config_get_bool(context, cf, "kdc", 
+	krb5_config_get_bool(context, NULL, "kdc", 
 			     "allow-anonymous", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
-	p = krb5_config_get_string (context, cf, 
+	p = krb5_config_get_string (context, NULL, 
 				    "kdc",
 				    "v4-realm",
 				    NULL);
@@ -330,23 +344,21 @@ configure(int argc, char **argv)
 	    v4_realm = strdup(p);
     }
     if (enable_kaserver == -1)
-	enable_kaserver = krb5_config_get_bool_default(context, cf, FALSE,
+	enable_kaserver = krb5_config_get_bool_default(context, NULL, FALSE,
 						       "kdc",
 						       "enable-kaserver",
 						       NULL);
 #endif
 
-    encode_as_rep_as_tgs_rep = krb5_config_get_bool(context, cf, "kdc", 
+    encode_as_rep_as_tgs_rep = krb5_config_get_bool(context, NULL, "kdc", 
 						    "encode_as_rep_as_tgs_rep", 
 						    NULL);
 
-    kdc_warn_pwexpire = krb5_config_get_time (context, cf,
+    kdc_warn_pwexpire = krb5_config_get_time (context, NULL,
 					      "kdc",
 					      "kdc_warn_pwexpire",
 					      NULL);
-    kdc_openlog(cf);
-    if(cf)
-	krb5_config_file_free (context, cf);
+    kdc_openlog();
     if(max_request == 0)
 	max_request = 64 * 1024;
     if(require_preauth == -1)
