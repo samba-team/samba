@@ -157,10 +157,10 @@ details
     our domain.
 49) Fix group enumeration bug when using an LDAP directory for 
     storing group mappings.
-50) Fallback to not using NTLMv2 when the extended security 
-    capability bit is not set.
-51) Fix crash in 'wbinfo -a' when using extended characters in the username
-    (bug 269).
+50) Default to use NTLMv2 if available.  Fallback to not using LM/NTLM
+    when the extended security capability bit is not set.
+51) Fix crash in 'wbinfo -a' when using extended characters in the 
+    username (bug 269).
 52) Fix multi-byte strupper() panics (bug 205).
 53) Add vfs_readonly VFS module.
 54) Make sure to initialize the sambaNextUserRid and sambaNextGroupRid
@@ -482,6 +482,7 @@ New Parameters (new parameters have been grouped by function):
   * ntlm auth
   * paranoid server security
   * server schannel
+  * server signing
   * smb ports
   * use spnego
 
@@ -614,6 +615,14 @@ aware of when moving to Samba 3.0.
   2) Inclusion of new 'security = ads' option for integration 
      with an Active Directory domain using the native Windows
      Kerberos 5 and LDAP protocols.
+
+     MIT kerberos 1.3.1 supports the ARCFOUR-HMAC-MD5 encryption 
+     type which is neccessary for servers on which the 
+     administrator password has not been changed, or kerberos-enabled 
+     SMB connections to servers that require Kerberos SMB signing.
+     Besides this one difference, either MIT or Heimdal Kerberos
+     distributions are usable by Samba 3.0.
+     
 
 Samba 3.0 also includes the possibility of setting up chains
 of authentication methods (auth methods) and account storage 
