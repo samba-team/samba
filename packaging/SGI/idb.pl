@@ -210,7 +210,7 @@ while (@catman) {
   $nextfile = shift @catman;
   ($file = $nextfile) =~ s/^packaging\/SGI\/catman\///;
   ($dirnum = $file) =~ s/^[\D]*//;
-  $dirnum =~ s/\.Z//;
+  $dirnum =~ s/\.z//;
   if ($dirnum ne $olddirnum) {
     print IDB "d 0755 root sys usr/share/catman/u_man/cat$dirnum packaging/SGI samba.man.manpages\n";
     $olddirnum = $dirnum;
