@@ -3355,7 +3355,6 @@ static void wait_keyboard(char *buffer)
 ****************************************************************************/
 static BOOL process(char *base_directory)
 {
-  extern FILE *dbf;
   pstring line;
   char *cmd;
 
