@@ -225,6 +225,7 @@ void standard_sub_basic(char *str)
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s, *home;
+	struct passwd *pw;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
 		int l = sizeof(pstring) - (int)(p-str);
@@ -232,8 +233,8 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		switch (*(p+1)) {
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
-			if ((home = get_user_home_dir(user))) {
-				string_sub(p,"%H",home, l);
+			if ((pw=Get_Pwnam(user, False)) != NULL) {
+				string_sub(p,"%H",pw->pw_dir, l);
 			} else {
 				p += 2;
 			}
