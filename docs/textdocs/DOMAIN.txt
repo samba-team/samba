@@ -1,5 +1,5 @@
 !==
-!== DOMAIN.txt for Samba release TNG-prealpha 28 Feb 2000
+!== DOMAIN.txt for Samba release TNG-prealpha 04 Mar 2000
 !==
 Contributor:	Samba Team
 Updated:	December 4, 1998 (John H Terpstra)

@@ -1,5 +1,5 @@
 !==
-!== LDAP.txt for Samba release TNG-prealpha 28 Feb 2000
+!== LDAP.txt for Samba release TNG-prealpha 04 Mar 2000
 !==
 
 TITLE INFORMATION: LDAP Support in Samba 
