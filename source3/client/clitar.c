@@ -376,8 +376,7 @@ Compare two strings in a slash insensitive way, allowing s1 to match s2
 if s1 is an "initial" string (up to directory marker).  Thus, if s2 is 
 a file in any subdirectory of s1, declare a match.
 ***************************************************************************/
-static
-int strslashcmp(char *s1, char *s2)
+static int strslashcmp(char *s1, char *s2)
 {
   char *s1_0=s1;
 
