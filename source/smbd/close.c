@@ -123,7 +123,6 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	size_t share_entry_count = 0;
 	BOOL delete_on_close = False;
 	connection_struct *conn = fsp->conn;
-	time_t pending_modtime = fsp->pending_modtime;
 	int err = 0;
 	int err1 = 0;
 

@@ -997,7 +997,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 	 */
 	string_set(&fsp->fsp_name,fname);
 	fsp->wbmpx_ptr = NULL;
-    fsp->wcp = NULL; /* Write cache pointer. */
+	fsp->wcp = NULL; /* Write cache pointer. */
 
 	conn->num_files_open++;
 
@@ -1052,7 +1052,7 @@ int close_file_fchmod(files_struct *fsp)
 ****************************************************************************/
 
 files_struct *open_directory(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action)
+		SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action)
 {
 	extern struct current_user current_user;
 	BOOL got_stat = False;
