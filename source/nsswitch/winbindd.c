@@ -597,6 +597,7 @@ static void process_loop(int accept_sock)
 		/* Free up temporary memory */
 
 		lp_talloc_free();
+		main_loop_talloc_free();
 
 		/* Initialise fd lists for select() */
 
