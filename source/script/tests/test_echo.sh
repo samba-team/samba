@@ -24,7 +24,7 @@ testit() {
    rm -f test.$$;
 }
 
-for transport in ncacn_np ncacn_ip_tcp; do
+for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
  for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
         "--option=ntlmssp_client:ntlm2=yes" \
