@@ -188,9 +188,9 @@ sub _fetch_var_from_config_mk($$$)
 	}
 
 	if (defined($result->{$section}{$key})) {
-		$val = $result->{$section}{$key}{VAL};
+		$val = strtrim($result->{$section}{$key}{VAL});
 	} elsif (defined($result->{DEFAULT}{$key})) {
-		$val = $result->{DEFAULT}{$key}{VAL};
+		$val = strtrim($result->{DEFAULT}{$key}{VAL});
 	}
 
 	return $val;

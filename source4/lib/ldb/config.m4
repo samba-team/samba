@@ -8,6 +8,12 @@ SMB_MODULE_MK(libldb_tdb,LIBLDB,STATIC,lib/ldb/config.mk)
 
 SMB_SUBSYSTEM_MK(LIBLDB,lib/ldb/config.mk)
 
+if test x"$experimental" = x"yes"; then
+	SMB_LIBRARY_ENABLE(libldb,YES)
+fi
+
+SMB_LIBRARY_MK(libldb,lib/ldb/config.mk)
+
 SMB_BINARY_MK(ldbadd,lib/ldb/config.mk)
 
 SMB_BINARY_MK(ldbdel,lib/ldb/config.mk)
