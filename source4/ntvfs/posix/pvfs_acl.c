@@ -68,17 +68,11 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 				 struct xattr_NTACL *acl)
 {
 	struct security_descriptor *sd;
-	int i;
-	struct security_ace ace;
 	NTSTATUS status;
-	const char *sid_names[] = {
-		SID_BUILTIN_ADMINISTRATORS,
-		SID_CREATOR_OWNER,
-		SID_CREATOR_GROUP,
-		SID_WORLD
-	};
-	uint32_t access_masks[4];
+	struct security_ace aces[4];
 	mode_t mode;
+	struct dom_sid *sid;
+	int i;
 
 	sd = security_descriptor_initialise(req);
 	if (sd == NULL) {
@@ -103,15 +97,15 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	    - Group
 	    - Everyone
 	 */
-	access_masks[0] = SEC_RIGHTS_FILE_ALL;
-	access_masks[1] = 0;
-	access_masks[2] = 0;
-	access_masks[3] = 0;
+	aces[0].access_mask = SEC_RIGHTS_FILE_ALL;
+	aces[1].access_mask = 0;
+	aces[2].access_mask = 0;
+	aces[3].access_mask = 0;
 
 	mode = name->st.st_mode;
 
 	if (mode & S_IRUSR) {
-		access_masks[1] |= 
+		aces[1].access_mask |= 
 			SEC_FILE_READ_DATA | 
 			SEC_FILE_READ_EA |
 			SEC_FILE_READ_ATTRIBUTE |
@@ -120,7 +114,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 			SEC_STD_READ_CONTROL;
 	}
 	if (mode & S_IWUSR) {
-		access_masks[1] |= 
+		aces[1].access_mask |= 
 			SEC_FILE_WRITE_DATA | 
 			SEC_FILE_APPEND_DATA |
 			SEC_FILE_WRITE_EA |
@@ -129,7 +123,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 
 	if (mode & S_IRGRP) {
-		access_masks[2] |= 
+		aces[2].access_mask |= 
 			SEC_FILE_READ_DATA | 
 			SEC_FILE_READ_EA |
 			SEC_FILE_READ_ATTRIBUTE |
@@ -138,7 +132,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 			SEC_STD_READ_CONTROL;
 	}
 	if (mode & S_IWGRP) {
-		access_masks[2] |= 
+		aces[2].access_mask |= 
 			SEC_FILE_WRITE_DATA | 
 			SEC_FILE_APPEND_DATA |
 			SEC_FILE_WRITE_EA |
@@ -146,7 +140,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 
 	if (mode & S_IROTH) {
-		access_masks[3] |= 
+		aces[3].access_mask |= 
 			SEC_FILE_READ_DATA | 
 			SEC_FILE_READ_EA |
 			SEC_FILE_READ_ATTRIBUTE |
@@ -155,31 +149,37 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 			SEC_STD_READ_CONTROL;
 	}
 	if (mode & S_IWOTH) {
-		access_masks[3] |= 
+		aces[3].access_mask |= 
 			SEC_FILE_WRITE_DATA | 
 			SEC_FILE_APPEND_DATA |
 			SEC_FILE_WRITE_EA |
 			SEC_FILE_WRITE_ATTRIBUTE;
 	}
 
-	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	ace.flags = 0;
+	sid = dom_sid_parse_talloc(sd, SID_BUILTIN_ADMINISTRATORS);
+	if (sid == NULL) return NT_STATUS_NO_MEMORY;
 
-	for (i=0;i<ARRAY_SIZE(sid_names);i++) {
-		struct dom_sid *sid;
+	aces[0].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	aces[0].flags = 0;
+	aces[0].trustee = *sid;
 
-		ace.access_mask = access_masks[i];
+	aces[1].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	aces[1].flags = 0;
+	aces[1].trustee = *sd->owner_sid;
 
-		sid = dom_sid_parse_talloc(sd, sid_names[i]);
-		if (sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		ace.trustee = *sid;
+	aces[2].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	aces[2].flags = 0;
+	aces[2].trustee = *sd->group_sid;
 
-		status = security_descriptor_dacl_add(sd, &ace);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	sid = dom_sid_parse_talloc(sd, SID_WORLD);
+	if (sid == NULL) return NT_STATUS_NO_MEMORY;
+
+	aces[3].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	aces[3].flags = 0;
+	aces[3].trustee = *sid;
+
+	for (i=0;i<4;i++) {
+		security_descriptor_dacl_add(sd, &aces[i]);
 	}
 	
 	acl->version = 1;
