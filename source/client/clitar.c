@@ -87,9 +87,6 @@ static BOOL tar_reset=False;
 static BOOL tar_excl=True;
 /* use regular expressions for search on file names */
 static BOOL tar_re_search=False;
-#ifdef HAVE_REGEX_H
-regex_t *preg;
-#endif
 /* Do not dump anything, just calculate sizes */
 static BOOL dry_run=False;
 /* Dump files with System attribute */
@@ -797,11 +794,7 @@ static void do_tar(file_info *finfo)
 		DEBUG(5, ("...tar_re_search: %d\n", tar_re_search));
 
 		if ((!tar_re_search && clipfind(cliplist, clipn, exclaim)) ||
-#ifdef HAVE_REGEX_H
-				(tar_re_search && !regexec(preg, exclaim, 0, NULL, 0))) {
-#else
 				(tar_re_search && mask_match_list(exclaim, cliplist, clipn, True))) {
-#endif
 			DEBUG(3,("Skipping file %s\n", exclaim));
 			return;
 		}
@@ -1150,11 +1143,7 @@ static void do_tarput(void)
 		/* Well, now we have a header, process the file ...            */
 		/* Should we skip the file? We have the long name as well here */
 		skip = clipn && ((!tar_re_search && clipfind(cliplist, clipn, finfo.name) ^ tar_excl) ||
-#ifdef HAVE_REGEX_H
-					(tar_re_search && !regexec(preg, finfo.name, 0, NULL, 0)));
-#else
 					(tar_re_search && mask_match_list(finfo.name, cliplist, clipn, True)));
-#endif
 
 		DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, (cliplist?cliplist[0]:NULL), finfo.name));
 		if (skip) {
@@ -1748,25 +1737,6 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 	}
 
 	if (Optind+1<argc && tar_re_search) {  /* Doing regular expression seaches */
-#ifdef HAVE_REGEX_H
-		int errcode;
-
-		if ((preg = (regex_t *)SMB_MALLOC(65536)) == NULL) {
-
-			DEBUG(0, ("Could not allocate buffer for regular expression search\n"));
-			return;
-		}
-
-		if (errcode = regcomp(preg, argv[Optind + 1], REG_EXTENDED)) {
-			char errstr[1024];
-			size_t errlen;
-
-			errlen = regerror(errcode, preg, errstr, sizeof(errstr) - 1);
-			DEBUG(0, ("Could not compile pattern buffer for re search: %s\n%s\n", argv[Optind + 1], errstr));
-			return;
-		}
-#endif
-
 		clipn=argc-Optind-1;
 		cliplist=argv+Optind+1;
 		newOptind += clipn;
