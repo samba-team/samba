@@ -220,7 +220,7 @@ fold(const unsigned char *str, size_t len, unsigned char *out)
     memset(key, 0, sizeof(key));
     for(i = 0; i < lcm; i += size)
 	add1(key, tmp + i, size);
-
+    free(tmp);
     memcpy(out, key, size);
 }
 
@@ -258,14 +258,6 @@ DES3_string_to_key(const unsigned char *str, size_t len, des_cblock *keys)
  * encryption key.  It is compatible with the original Andrew authentication
  * service password database.
  */
-
-static void
-mklower(char *s)
-{
-    for (; *s; s++)
-        if ('A' <= *s && *s <= 'Z')
-            *s = *s - 'A' + 'a';
-}
 
 /*
  * Short passwords, i.e 8 characters or less.
