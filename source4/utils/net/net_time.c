@@ -78,9 +78,3 @@ int net_time_usage(struct net_context *ctx, int argc, const char **argv)
 	d_printf("net time <server> [options]\n");
 	return 0;	
 }
-
-int net_time_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("Displays remote server's time.\n");
-	return 0;	
-}

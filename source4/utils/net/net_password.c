@@ -29,6 +29,13 @@
  * Code for Changing and setting a password
  */
 
+static int net_password_change_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("net_password_change_usage: TODO\n");
+	return 0;	
+}
+
+
 static int net_password_change(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
@@ -72,17 +79,13 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	return 0;
 }
 
-static int net_password_change_usage(struct net_context *ctx, int argc, const char **argv)
+
+static int net_password_set_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_password_change_usage: TODO\n");
+	d_printf("net_password_set_usage: TODO\n");
 	return 0;	
 }
 
-static int net_password_change_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_password_change_help: TODO\n");
-	return 0;	
-}
 
 static int net_password_set(struct net_context *ctx, int argc, const char **argv)
 {
@@ -98,7 +101,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 
 	switch (argc) {
 		case 0: /* no args -> fail */
-			return net_password_usage(ctx, argc, argv);
+			return net_password_set_usage(ctx, argc, argv);
 		case 1: /* only DOM\\user; prompt for password */
 			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
 			break;
@@ -152,22 +155,10 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	return 0;
 }
 
-static int net_password_set_usage(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_password_set_usage: TODO\n");
-	return 0;	
-}
-
-static int net_password_set_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_password_set_help: TODO\n");
-	return 0;	
-}
 
 static const struct net_functable net_password_functable[] = {
-	{"change", net_password_change, net_password_change_usage,  net_password_change_help},
-	{"set", net_password_set, net_password_set_usage,  net_password_set_help},
-	{"help", net_password_help, net_password_help, net_password_help},
+	{"change", "change password (old password required)\n", net_password_change, net_password_change_usage },
+	{"set", "set password\n", net_password_set, net_password_set_usage },
 	{NULL, NULL}
 };
 
@@ -179,13 +170,5 @@ int net_password(struct net_context *ctx, int argc, const char **argv)
 int net_password_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("net password <command> [options]\n");
-	return 0;	
-}
-
-int net_password_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("Account password handling:\n");
-	d_printf("\tchange\t\tchanges password (old password required)\n");
-	d_printf("\tset\t\tsets password\n");
 	return 0;	
 }
