@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -37,9 +37,6 @@
  */
 
 /* $Id$ */
-
-/* THIS IS NOT (yet) A PUBLIC INTERFACE */
-
 
 #ifndef __RESOLVE_H__
 #define __RESOLVE_H__
@@ -91,8 +88,7 @@ struct resource_record{
     struct resource_record *next;
 };
 
-
-#ifndef HAVE_ARPA_NAMESER_H /* XXX */
+#ifndef T_A /* XXX if <arpa/nameser.h> isn't included */
 typedef int HEADER; /* will never be used */
 #endif
 
