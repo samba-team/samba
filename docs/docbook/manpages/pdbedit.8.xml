@@ -87,7 +87,7 @@ samba:45:Test User
 		It causes pdbedit to list the users in the database, printing
 		out the account fields in a descriptive format.</para>
 
-		<para>Example: <command>pdbedit -l -v</command></para>
+		<para>Example: <command>pdbedit -L -v</command></para>
 		<para><screen>
 ---------------
 username:       sorce
