@@ -3862,14 +3862,13 @@ char *vfswrap_getwd(char *path);
 int vfswrap_utime(char *path, struct utimbuf *times);
 int vfswrap_ftruncate(int fd, SMB_OFF_T offset);
 BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-size_t vfswrap_get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
-BOOL vfswrap_set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs.c  */
 
 int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st);
+int vfs_fstat(connection_struct *conn, int fd, SMB_STRUCT_STAT *st);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 int vfs_unlink(connection_struct *conn, char *fname);
