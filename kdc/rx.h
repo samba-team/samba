@@ -36,6 +36,8 @@
  * SUCH DAMAGE. 
  */
 
+/* $Id$ */
+
 /* header of a RPC packet */
 
 enum rx_header_type {
