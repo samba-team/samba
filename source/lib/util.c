@@ -3274,7 +3274,9 @@ char *get_trusted_serverlist(const char* domain)
 	static pstring srv_list;
 	char *trusted_list = lp_trusted_domains();
 
-	if (strequal(lp_workgroup(), domain))
+	if (domain == NULL ||
+	    strequal(domain, "") ||
+	    strequal(lp_workgroup(), domain))
 	{
 		DEBUG(10,("local domain server list: %s\n", server_list));
 		pstrcpy(srv_list, lp_passwordserver());

@@ -188,6 +188,11 @@ uint32 check_domain_security(char *orig_user, char *domain,
 		return False;
 	}
 
+	if (domain == NULL || strequal(domain, ""))
+	{
+		domain = global_myworkgroup;
+	}
+
 	if (lp_security() == SEC_USER ||
 	    (lp_security() == SEC_DOMAIN &&
 	     strequal(domain, global_myworkgroup)))

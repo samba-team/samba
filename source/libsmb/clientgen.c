@@ -3883,7 +3883,11 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 BOOL get_any_dc_name(const char *domain, char *srv_name)
 {
 	struct cli_state cli;
-	char *servers = get_trusted_serverlist(domain);
+	char *servers;
+
+	DEBUG(10,("get_any_dc_name: domain %s\n", domain));
+
+	servers = get_trusted_serverlist(domain);
 
 	if (servers[0] == 0)
 	{
