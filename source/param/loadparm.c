@@ -1310,18 +1310,18 @@ static void init_globals(void)
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
-	string_set(&Globals.unix_charset, "UTF8");
+	string_set(&Globals.unix_charset, DEFAULT_UNIX_CHARSET);
 
 #if defined(HAVE_NL_LANGINFO) && defined(CODESET)
 	/* If the system supports nl_langinfo(), try to grab the value
 	   from the user's locale */
 	string_set(&Globals.display_charset, "LOCALE");
 #else
-	string_set(&Globals.display_charset, "ASCII");
+	string_set(&Globals.display_charset, DEFAULT_DISPLAY_CHARSET);
 #endif
 
 	/* Use codepage 850 as a default for the dos character set */
-	string_set(&Globals.dos_charset, "CP850");
+	string_set(&Globals.dos_charset, DEFAULT_DOS_CHARSET);
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
