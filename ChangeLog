@@ -1,5 +1,7 @@
 2001-06-24  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/store_fd.c (krb5_storage_from_fd): check malloc returns
+
 	* lib/krb5/keytab_any.c (any_resolve); improving parsing of ANY:
 	(any_start_seq_get): remove a double free
 	(any_next_entry): iterate over all (sub) keytabs and avoid leave data
