@@ -31,6 +31,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      struct hostent *hostent;
      int s;
      u_char b;
+     char tmp[16];
 
      hostent = gethostbyname (host);
      if (hostent == NULL) {
@@ -88,13 +89,12 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 	  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	  return -1;
      }
-     if (read (s, &display_num, sizeof(display_num)) !=
-	 sizeof(display_num)) {
-	  fprintf (stderr, "%s: read: %s\n", prog,
-		   strerror(errno));
+     
+     if (krb_net_read (s, tmp, sizeof(tmp)) != sizeof(tmp)) {
+	  fprintf (stderr, "%s: read %s\n", prog, strerror(errno));
 	  return -1;
      }
-     display_num = ntohl(display_num);
+     sscanf (tmp, "%u", &display_num);
      if (read (s, xauthfile, sizeof(xauthfile)) != sizeof(xauthfile)) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
 		   strerror(errno));
