@@ -339,7 +339,7 @@ static void response_name_query_register(struct nmb_packet *nmb,
 	}
 
 	/* register the old or the new owners' ip */
-	add_name_respond(d, n->fd, n->response_id,&n->name,n->nb_flags,
+	add_name_respond(d, n->fd, d->myip, n->response_id,&n->name,n->nb_flags,
 					GET_TTL(0), register_ip,
 					new_owner, n->reply_to_ip);
 }
@@ -434,7 +434,7 @@ static void debug_rr_type(int rr_type)
 /****************************************************************************
   report the response record nmbd state
   ****************************************************************************/
-static void debug_state_type(int state)
+void debug_state_type(int state)
 {
   /* report the state type to help debugging */
   switch (state)

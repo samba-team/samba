@@ -40,6 +40,40 @@ extern struct in_addr ipgrp;
 
 static uint16 name_trn_id=0;
 
+
+/***************************************************************************
+  updates the unique transaction identifier
+  **************************************************************************/
+void debug_browse_data(char *outbuf, int len)
+{
+    int i,j;
+    for (i = 0; i < len; i+= 16)
+      {
+	DEBUG(4, ("%3x char ", i));
+	
+	for (j = 0; j < 16; j++)
+	  {
+	    unsigned char x = outbuf[i+j];
+	    if (x < 32 || x > 127) x = '.';
+	    
+	    if (i+j >= len) break;
+	    DEBUG(4, ("%c", x));
+	  }
+	
+	DEBUG(4, (" hex ", i));
+	
+	for (j = 0; j < 16; j++)
+	  {
+	    if (i+j >= len) break;
+	    DEBUG(4, (" %02x", outbuf[i+j]));
+	  }
+	
+	DEBUG(4, ("\n"));
+      }
+    
+}
+
+
 /***************************************************************************
   updates the unique transaction identifier
   **************************************************************************/
@@ -138,7 +172,7 @@ void initiate_netbios_packet(uint16 *id,
   reply to a netbios name packet 
   ****************************************************************************/
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode,int opcode, BOOL recurse,
+				int rcode, int rcv_code, int opcode, BOOL recurse,
 				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
 				char *data,int len)
 {
@@ -150,7 +184,7 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   
   p = *p1;
 
-  switch (rr_type)
+  switch (rcv_code)
   {
     case NMB_STATUS:
 	{
@@ -538,6 +572,10 @@ BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
   p.fd = ClientDGRAM;
   p.timestamp = time(NULL);
   p.packet_type = DGRAM_PACKET;
+
+  DEBUG(4,("send mailslot %s from %s %s", mailslot,
+                    inet_ntoa(src_ip),namestr(&dgram->source_name)));
+  DEBUG(4,("to %s %s\n", inet_ntoa(dest_ip),namestr(&dgram->dest_name)));
 
   return(send_packet(&p));
 }

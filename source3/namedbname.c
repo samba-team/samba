@@ -120,7 +120,7 @@ void remove_name(struct subnet_record *d, struct name_record *n)
   **************************************************************************/
 struct name_record *find_name(struct name_record *n,
 			struct nmb_name *name,
-			int search, struct in_addr ip)
+			int search)
 {
 	struct name_record *ret;
   
@@ -132,12 +132,7 @@ struct name_record *find_name(struct name_record *n,
 			if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
 				continue;
 	  
-			/* zero ip is either samba's ip or a way of finding a
-			   name without needing to know the ip address */
-			if (zero_ip(ip) || ip_equal(ip, ret->ip))
-			{
-				return ret;
-			}
+			return ret;
 		}
 	}
     return NULL;
@@ -161,7 +156,9 @@ struct name_record *find_name_search(struct subnet_record **d,
 	{
 		if (*d != NULL)
         {
-			return find_name((*d)->namelist, name, search, ip);
+			DEBUG(4,("find_name on local: %s %s search %x\n",
+						namestr(name),inet_ntoa(ip), search));
+			return find_name((*d)->namelist, name, search);
 		}
         else
         {
@@ -180,7 +177,9 @@ struct name_record *find_name_search(struct subnet_record **d,
 
 	if (*d == NULL) return NULL;
 
-	return find_name((*d)->namelist, name, search, ip);
+	DEBUG(4,("find_name on WINS: %s %s search %x\n",
+						namestr(name),inet_ntoa(ip), search));
+	return find_name((*d)->namelist, name, search);
 }
 
 

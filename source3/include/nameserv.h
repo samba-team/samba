@@ -85,7 +85,17 @@
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
-enum master_state { MST_NONE, MST_WON, MST_MSB, MST_BROWSER, MST_DOMAIN };
+enum master_state
+{
+   MST_NONE,
+   MST_WON,
+   MST_MSB,
+   MST_BROWSER,
+   MST_DOMAIN_NONE,
+   MST_DOMAIN_MEM,
+   MST_DOMAIN_TST,
+   MST_DOMAIN
+};
 
 enum state_type
 {

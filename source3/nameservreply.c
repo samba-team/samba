@@ -42,7 +42,8 @@ extern struct in_addr ipgrp;
 /****************************************************************************
   add a netbios entry. respond to the (possibly new) owner.
   **************************************************************************/
-void add_name_respond(struct subnet_record *d, int fd, uint16 response_id,
+void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
+				uint16 response_id,
 				struct nmb_name *name,
 				int nb_flags, int ttl, struct in_addr register_ip,
 				BOOL new_owner, struct in_addr reply_to_ip)
@@ -52,7 +53,7 @@ void add_name_respond(struct subnet_record *d, int fd, uint16 response_id,
 						nb_flags,ttl,REGISTER,register_ip,False,True);
 
 	/* reply yes or no to the host that requested the name */
-	send_name_response(fd, response_id, NMB_REG,
+	send_name_response(fd,from_ip, response_id, NMB_REG,
 				new_owner, True,
 				name, nb_flags, ttl, reply_to_ip);
 }
@@ -60,7 +61,7 @@ void add_name_respond(struct subnet_record *d, int fd, uint16 response_id,
 /****************************************************************************
 send a registration / release response: pos/neg
 **************************************************************************/
-void send_name_response(int fd,
+void send_name_response(int fd, struct in_addr from_ip,
 				int name_trn_id, int opcode, BOOL success, BOOL recurse,
 				struct nmb_name *reply_name, int nb_flags, int ttl,
 				struct in_addr ip)
@@ -85,14 +86,14 @@ void send_name_response(int fd,
   rdata[1] = 0;
   putip(&rdata[2],(char *)&ip);
   
-  p.ip = ip;
+  p.ip = from_ip;
   p.port = NMB_PORT;
   p.fd = fd;
   p.timestamp = time(NULL);
   p.packet_type = NMB_PACKET;
 
   reply_netbios_packet(&p,name_trn_id,
-		       rcode,opcode,recurse,
+		       rcode,opcode,opcode,recurse,
 		       reply_name, 0x20, 0x1,
 		       ttl, 
 		       rdata, 6);
@@ -145,7 +146,7 @@ void reply_name_release(struct packet_struct *p)
   if (bcast) return;
   
   /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
-  send_name_response(p->fd, nmb->header.name_trn_id, NMB_REL,
+  send_name_response(p->fd,p->ip, nmb->header.name_trn_id, NMB_REL,
 						success, False,
 						&nmb->question.question_name, nb_flags, 0, ip);
 }
@@ -285,7 +286,7 @@ void reply_name_reg(struct packet_struct *p)
 
     /* send WAIT ACKNOWLEDGEMENT see rfc1002.txt 4.2.16 */
     reply_netbios_packet(p,nmb->header.name_trn_id,
-		       0,NMB_WAIT_ACK,False,
+		       0,NMB_WAIT_ACK,NMB_WAIT_ACK,False,
 		       reply_name, 0x0a, 0x01,
 		       15*1000, /* 15 seconds long enough to wait? */
 		       rdata, 2);
@@ -302,7 +303,7 @@ void reply_name_reg(struct packet_struct *p)
        or an END-NODE CHALLENGE REGISTRATION RESPONSE see rfc1002.txt 4.2.7
      */
 
-  	send_name_response(p->fd, nmb->header.name_trn_id, NMB_REG,
+  	send_name_response(p->fd,p->ip, nmb->header.name_trn_id, NMB_REG,
 						success, True,
 						reply_name, nb_flags, ttl, ip);
   }
@@ -322,6 +323,7 @@ void reply_name_status(struct packet_struct *p)
   int names_added;
   struct name_record *n;
   struct subnet_record *d = NULL;
+  int search = FIND_SELF;
 
   BOOL bcast = nmb->header.nm_flags.bcast;
   
@@ -335,9 +337,13 @@ void reply_name_status(struct packet_struct *p)
   DEBUG(3,("Name status for name %s %s\n",
 	   namestr(&nmb->question.question_name), inet_ntoa(p->ip)));
   
+  if (bcast)
+    search |= FIND_WINS;
+  else
+    search |= FIND_LOCAL;
+
   n = find_name_search(&d, &nmb->question.question_name,
-				FIND_SELF|FIND_LOCAL,
-				p->ip);
+				search, p->ip);
   
   if (!n) return;
   
@@ -396,7 +402,7 @@ void reply_name_status(struct packet_struct *p)
   
   /* Send a POSITIVE NAME STATUS RESPONSE */
   reply_netbios_packet(p,nmb->header.name_trn_id,
-			   0,0,True,
+			   0,NMB_STATUS,0,True,
 		       &nmb->question.question_name,
 		       nmb->question.question_type,
 		       nmb->question.question_class,
@@ -452,15 +458,26 @@ void reply_name_query(struct packet_struct *p)
   if (name_type == 0x1b)
   {
     /* even if it's a broadcast, we don't ignore queries for PDC names */
-    search |= FIND_WINS;
-    search &= ~FIND_SELF;
+    search = FIND_WINS;
   }
 
-  if (!(d = find_req_subnet(p->ip, bcast)))
+  if (search | FIND_LOCAL)
   {
-    DEBUG(3,("name query: bcast %s not known\n",
-				  inet_ntoa(p->ip)));
-    success = False;
+    if (!(d = find_req_subnet(p->ip, bcast)))
+    {
+      DEBUG(3,("name query: bcast %s not known\n",
+				    inet_ntoa(p->ip)));
+      success = False;
+    }
+  }
+  else
+  {
+    if (!(d = find_subnet(ipgrp)))
+    {
+      DEBUG(3,("name query: wins search %s not known\n",
+				    inet_ntoa(p->ip)));
+      success = False;
+    }
   }
 
   DEBUG(3,("Name query "));
@@ -492,7 +509,7 @@ void reply_name_query(struct packet_struct *p)
          another WINS server if the name is not in our database, or we are
          not a WINS server ourselves
        */
-      ttl = n->death_time - p->timestamp;
+      ttl = n->death_time ? n->death_time - p->timestamp : GET_TTL(0);
       retip = n->ip;
       nb_flags = n->nb_flags;
   }
@@ -524,7 +541,7 @@ void reply_name_query(struct packet_struct *p)
   }
   
   reply_netbios_packet(p,nmb->header.name_trn_id,
-			   rcode,0,True,
+			   rcode,NMB_QUERY,0,True,
 		       &nmb->question.question_name,
 		       nmb->question.question_type,
 		       nmb->question.question_class,

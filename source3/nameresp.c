@@ -45,6 +45,8 @@ static void dead_netbios_entry(struct subnet_record *d,
   DEBUG(3,("Removing dead netbios entry for %s %s (num_msgs=%d)\n",
 	   inet_ntoa(n->send_ip), namestr(&n->name), n->num_msgs));
 
+  debug_state_type(n->state);
+
   switch (n->state)
   {
     case NAME_QUERY_CONFIRM:
@@ -113,7 +115,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 		   wanted the unique name and tell them that they can have it
 		 */
 
-		add_name_respond(d,n->fd, n->response_id ,&n->name,
+		add_name_respond(d,n->fd,d->myip, n->response_id ,&n->name,
 						n->nb_flags, GET_TTL(0),
 						n->reply_to_ip, False, n->reply_to_ip);
 
@@ -140,7 +142,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 		/* IMPORTANT: see response_name_reg() */
 
 		name_register_work(d,n->name.name,n->name.name_type,
-				n->nb_flags, n->ttl, n->send_ip, n->bcast);
+				n->nb_flags, n->ttl, n->reply_to_ip, n->bcast);
 	  }
 	  else
 	  {

@@ -3585,7 +3585,7 @@ static void server_info()
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-static BOOL list_servers()
+static BOOL list_servers(char *wk_grp)
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -3600,7 +3600,7 @@ static BOOL list_servers()
   p = param;
   SSVAL(p,0,0x68); /* api number */
   p += 2;
-  strcpy(p,"WrLehDO");
+  strcpy(p,"WrLehDz");
   p = skip_string(p,1);
 
   strcpy(p,"B16BBDz");
@@ -3614,6 +3614,11 @@ static BOOL list_servers()
   p += 4;
 
   SIVAL(p,0,SV_TYPE_ALL);
+
+  p += 4;
+
+  strcpy(p, wk_grp);
+  p = skip_string(p,1);
 
   if (call_api(PTR_DIFF(p+4,param),0,
 	       8,10000,
@@ -3638,9 +3643,10 @@ static BOOL list_servers()
 	for (i=0;i<count;i++) {
 	  char *sname = p2;
 	  int comment_offset = IVAL(p2,22) & 0xFFFF;
-	  printf("\t%-16.16s     %s\n",
+	  uint32 stype = IVAL(p2,18);
+	  printf("\t%-16.16s     %s %8x\n",
 		 sname,
-		 comment_offset?rdata+comment_offset-converter:"");
+		 comment_offset?rdata+comment_offset-converter:"", stype);
 
 	  ok=True;
 	  p2 += 26;
@@ -3651,7 +3657,7 @@ static BOOL list_servers()
   if (rparam) {free(rparam); rparam = NULL;}
   if (rdata) {free(rdata); rdata = NULL;}
 
-  SIVAL(p,0,SV_TYPE_DOMAIN_ENUM);
+  SIVAL(p,0,0x7fffffff);
 
   if (call_api(PTR_DIFF(p+4,param),0,
 	       8,10000,
@@ -3676,9 +3682,10 @@ static BOOL list_servers()
 	for (i=0;i<count;i++) {
 	  char *sname = p2;
 	  int comment_offset = IVAL(p2,22) & 0xFFFF;
-	  printf("\t%-16.16s     %s\n",
+	  uint32 stype =IVAL(p2,18);
+	  printf("\t%-16.16s     %s %8x\n",
 		 sname,
-		 comment_offset?rdata+comment_offset-converter:"");
+		 comment_offset?rdata+comment_offset-converter:"",stype);
 	  
 	  ok=True;
 	  p2 += 26;
@@ -4391,9 +4398,9 @@ static void usage(char *pname)
 	    sleep(1);
 	    browse_host(True);
 	  }
-	  if (!list_servers()) {
+	  if (!list_servers(workgroup)) {
 	    sleep(1);
-	    list_servers();
+	    list_servers(workgroup);
 	  }
 
 	  send_logout();

@@ -41,6 +41,7 @@ extern pstring scope;
 
 extern pstring myname;
 extern struct in_addr ipzero;
+extern struct in_addr ipgrp;
 
 /* machine comment for host announcements */
 extern  pstring ServerComment;
@@ -201,21 +202,27 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
 void name_register_work(struct subnet_record *d, char *name, int name_type,
 				int nb_flags, time_t ttl, struct in_addr ip, BOOL bcast)
 {
-  enum name_source source = ismyip(ip) ? SELF : REGISTER;
+  enum name_source source = (ismyip(ip) || ip_equal(ip, ipzero)) ?
+								SELF : REGISTER;
 
   if (source == SELF)
   {
     struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
 
-    if (work && work->state != MST_NONE)
+    add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
+
+    if (work)
     {
-      /* samba is in the process of working towards master browser-ness.
-         initiate the next stage.
-       */
-      become_master(d, work);
+      if (work->state != MST_NONE)
+      {
+        /* samba is in the process of working towards master browser-ness.
+           initiate the next stage.
+         */
+        become_master(d, work);
+        return;
+      }
     }
   }
-  add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
 }
 
 
@@ -248,8 +255,8 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
   if (!work) return;
   
-  DEBUG(2,("Becoming master for %s (currently at stage %d)\n",
-					work->work_group,work->state));
+  DEBUG(2,("Becoming master for %s %s (currently at stage %d)\n",
+					work->work_group,inet_ntoa(d->bcast_ip),work->state));
   
   switch (work->state)
   {
@@ -298,10 +305,50 @@ void become_master(struct subnet_record *d, struct work_record *work)
         /* ask all servers on our local net to announce to us */
         announce_request(work, d->bcast_ip);
       }
+      break;
+   }
 
+   case MST_BROWSER:
+   {
+      /* don't have to do anything: just report success */
+      DEBUG(3,("3rd stage: become master browser!\n"));
+
+      break;
+   }
+
+   case MST_DOMAIN_NONE:
+   {
       if (lp_domain_master())
       {
-        DEBUG(3,("third stage: register as domain master\n"));
+        work->state = MST_DOMAIN_MEM; /* ... become domain member */
+        DEBUG(3,("domain first stage: register as domain member\n"));
+
+        /* add domain member name */
+        add_my_name_entry(d,work->work_group,0x1e,NB_ACTIVE         );
+
+        /* DON'T do anything else after calling add_my_name_entry() */
+        return;
+      }
+      else
+      {
+        DEBUG(4,("samba not configured as a domain master.\n"));
+      }
+  
+      break;
+   }
+
+   case MST_DOMAIN_MEM:
+   {
+      if (lp_domain_master())
+      {
+        work->state = MST_DOMAIN_TST; /* ... possibly become domain master */
+        DEBUG(3,("domain second stage: register as domain master\n"));
+
+        if (lp_domain_logons())
+	    {
+          work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
+          add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+        }
 
         /* add domain master name */
         add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
@@ -311,34 +358,62 @@ void become_master(struct subnet_record *d, struct work_record *work)
       }
       else
       {
-        DEBUG(3,("samba not configured as a domain master: no third stage.\n"));
+        DEBUG(4,("samba not configured as a domain master.\n"));
       }
   
       break;
     }
-    case MST_BROWSER: /* while we were still a master browser... */
+
+    case MST_DOMAIN_TST: /* while we were still a master browser... */
     {
       /* update our server status */
       if (lp_domain_master())
       {
-        DEBUG(3,("fourth stage: samba is now a domain master.\n"));
+        struct subnet_record *d1;
+		uint32 update_type = 0;
+
+        DEBUG(3,("domain third stage: samba is now a domain master.\n"));
         work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
 
-        work->ServerType |= SV_TYPE_DOMAIN_MASTER;
+        update_type |= SV_TYPE_DOMAIN_MASTER;
       
         if (lp_domain_logons())
 	    {
-	      work->ServerType |= SV_TYPE_DOMAIN_CTRL;
-	      work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
+	      update_type |= SV_TYPE_DOMAIN_CTRL;
 	    }
+
+		work->ServerType |= update_type;
         add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+
+		for (d1 = subnetlist; d1; d1 = d1->next)
+		{
+        	struct work_record *w;
+			if (ip_equal(d1->bcast_ip, d->bcast_ip)) continue;
+
+        	for (w = d1->workgrouplist; w; w = w->next)
+			{
+				struct server_record *s = find_server(w, myname);
+				if (strequal(w->work_group, work->work_group))
+				{
+					w->ServerType |= update_type;
+				}
+				if (s)
+				{
+					s->serv.type |= update_type;
+					DEBUG(4,("found server %s on %s: update to %8x\n",
+									s->serv.name, inet_ntoa(d1->bcast_ip),
+									s->serv.type));
+				}
+			}
+		}
       }
   
       break;
     }
+
     case MST_DOMAIN:
     {
-      /* nothing else to become, at the moment: we are top-dog. */
+      /* don't have to do anything: just report success */
       DEBUG(3,("fifth stage: there isn't one yet!\n"));
       break;
     }
@@ -414,16 +489,16 @@ void run_elections(void)
   lastime = t;
   
   for (d = subnetlist; d; d = d->next)
-    {
-      struct work_record *work;
-      for (work = d->workgrouplist; work; work = work->next)
+  {
+    struct work_record *work;
+    for (work = d->workgrouplist; work; work = work->next)
 	{
 	  if (work->RunningElection)
-	    {
-	      send_election(d,work->work_group, work->ElectionCriterion,
+	  {
+	    send_election(d,work->work_group, work->ElectionCriterion,
 			    t-StartupTime,myname);
 	      
-	      if (work->ElectionCount++ >= 4)
+	    if (work->ElectionCount++ >= 4)
 		{
 		  /* I won! now what :-) */
 		  DEBUG(2,(">>> Won election on %s %s <<<\n",
@@ -434,9 +509,9 @@ void run_elections(void)
 
 		  become_master(d, work);
 		}
-	    }
+	  }
 	}
-    }
+  }
 }
 
 
