@@ -508,7 +508,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 	
 	
-	DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",
+	DEBUG(3,("trans <%s> data=%u params=%u setup=%u\n",
 		 name,tdscnt,tpscnt,suwcnt));
 	
 	/*
