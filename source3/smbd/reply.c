@@ -534,11 +534,12 @@ int reply_chkpth(char *inbuf,char *outbuf)
   int cnum,mode;
   pstring name;
   BOOL ok = False;
-  
+  BOOL bad_path = False;
+ 
   cnum = SVAL(inbuf,smb_tid);
   
   strcpy(name,smb_buf(inbuf) + 1);
-  unix_convert(name,cnum,0);
+  unix_convert(name,cnum,0,&bad_path);
 
   mode = SVAL(inbuf,smb_vwv0);
 
@@ -546,8 +547,20 @@ int reply_chkpth(char *inbuf,char *outbuf)
     ok = directory_exist(name,NULL);
 
   if (!ok)
+  {
+    /* We special case this - as when a Windows machine
+       is parsing a path is steps through the components
+       one at a time - if a component fails it expects
+       ERRbadpath, not ERRbadfile.
+     */
+    if(errno == ENOENT)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRbadpath));
-  
+  }
+ 
   outsize = set_message(outbuf,0,0,True);
   
   DEBUG(3,("%s chkpth %s cnum=%d mode=%d\n",timestring(),name,cnum,mode));
@@ -569,11 +582,12 @@ int reply_getatr(char *inbuf,char *outbuf)
   int mode=0;
   uint32 size=0;
   time_t mtime=0;
-  
+  BOOL bad_path = False;
+ 
   cnum = SVAL(inbuf,smb_tid);
 
   strcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
 
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
@@ -587,23 +601,31 @@ int reply_getatr(char *inbuf,char *outbuf)
     }
   else
     if (check_name(fname,cnum))
+    {
+      if (sys_stat(fname,&sbuf) == 0)
       {
-	if (sys_stat(fname,&sbuf) == 0)
-	  {
-	    mode = dos_mode(cnum,fname,&sbuf);
-	    size = sbuf.st_size;
-	    mtime = sbuf.st_mtime;
-	    if (mode & aDIR)
-	      size = 0;
-	    ok = True;
-	  }
-	else
-	  DEBUG(3,("stat of %s failed (%s)\n",fname,strerror(errno)));
+        mode = dos_mode(cnum,fname,&sbuf);
+        size = sbuf.st_size;
+        mtime = sbuf.st_mtime;
+        if (mode & aDIR)
+          size = 0;
+        ok = True;
+      }
+      else
+        DEBUG(3,("stat of %s failed (%s)\n",fname,strerror(errno)));
     }
   
   if (!ok)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
+
     return(UNIXERROR(ERRDOS,ERRbadfile));
-  
+  }
+ 
   outsize = set_message(outbuf,10,0,True);
 
   SSVAL(outbuf,smb_vwv0,mode);
@@ -635,11 +657,12 @@ int reply_setatr(char *inbuf,char *outbuf)
   BOOL ok=False;
   int mode;
   time_t mtime;
-  
+  BOOL bad_path = False;
+ 
   cnum = SVAL(inbuf,smb_tid);
   
   strcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
 
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
@@ -652,8 +675,16 @@ int reply_setatr(char *inbuf,char *outbuf)
     ok = set_filetime(fname,mtime);
   
   if (!ok)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
+
     return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
+  }
+ 
   outsize = set_message(outbuf,0,0,True);
   
   DEBUG(3,("%s setatr name=%s mode=%d\n",timestring(),fname,mode));
@@ -715,6 +746,7 @@ int reply_search(char *inbuf,char *outbuf)
   BOOL check_descend = False;
   BOOL expect_close = False;
   BOOL can_open = True;
+  BOOL bad_path = False;
 
   *mask = *directory = *fname = 0;
 
@@ -742,26 +774,32 @@ int reply_search(char *inbuf,char *outbuf)
 
       strcpy(directory,smb_buf(inbuf)+1);
       strcpy(dir2,smb_buf(inbuf)+1);
-      unix_convert(directory,cnum,0);
+      unix_convert(directory,cnum,0,&bad_path);
       unix_format(dir2);
 
       if (!check_name(directory,cnum))
-	can_open = False;
+        can_open = False;
 
       p = strrchr(dir2,'/');
       if (p == NULL) 
-	{strcpy(mask,dir2);*dir2 = 0;}
+      {
+        strcpy(mask,dir2);
+        *dir2 = 0;
+      }
       else
-	{*p = 0;strcpy(mask,p+1);}
+      {
+        *p = 0;
+        strcpy(mask,p+1);
+      }
 
       p = strrchr(directory,'/');
       if (!p) 
-	*directory = 0;
+        *directory = 0;
       else
-	*p = 0;
+        *p = 0;
 
       if (strlen(directory) == 0)
-	strcpy(directory,"./");
+        strcpy(directory,"./");
       bzero(status,21);
       CVAL(status,0) = dirtype;
     }
@@ -827,7 +865,14 @@ int reply_search(char *inbuf,char *outbuf)
 	  if (dptr_num < 0)
         {
           if(dptr_num == -2)
+          {
+            if((errno == ENOENT) && bad_path)
+            {
+              unix_ERR_class = ERRDOS;
+              unix_ERR_code = ERRbadpath;
+            }
             return (UNIXERROR(ERRDOS,ERRnofids));
+          }
           return(ERROR(ERRDOS,ERRnofids));
         }
 	}
@@ -974,27 +1019,42 @@ int reply_open(char *inbuf,char *outbuf)
   int unixmode;
   int rmode=0;
   struct stat sbuf;
-  
+  BOOL bad_path = False;
+ 
   cnum = SVAL(inbuf,smb_tid);
 
   share_mode = SVAL(inbuf,smb_vwv0);
 
   strcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
 
   if (!check_name(fname,cnum))
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
+  }
+ 
   unixmode = unix_mode(cnum,aARCH);
       
   open_file_shared(fnum,cnum,fname,share_mode,3,unixmode,&rmode,NULL);
 
   if (!Files[fnum].open)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
@@ -1047,6 +1107,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int size=0,fmode=0,mtime=0,rmode=0;
   struct stat sbuf;
   int smb_action = 0;
+  BOOL bad_path = False;
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(cnum))
@@ -1055,14 +1116,21 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* XXXX we need to handle passed times, sattr and flags */
 
   strcpy(fname,smb_buf(inbuf));
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
 
   if (!check_name(fname,cnum))
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   unixmode = unix_mode(cnum,smb_attr | aARCH);
       
@@ -1070,7 +1138,14 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		   &rmode,&smb_action);
       
   if (!Files[fnum].open)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
@@ -1147,13 +1222,14 @@ int reply_mknew(char *inbuf,char *outbuf)
   int createmode;
   mode_t unixmode;
   int ofun = 0;
+  BOOL bad_path = False;
  
   com = SVAL(inbuf,smb_com);
   cnum = SVAL(inbuf,smb_tid);
 
   createmode = SVAL(inbuf,smb_vwv0);
   strcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
 
   if (createmode & aVOLID)
     {
@@ -1167,7 +1243,14 @@ int reply_mknew(char *inbuf,char *outbuf)
     return(ERROR(ERRSRV,ERRnofids));
 
   if (!check_name(fname,cnum))
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   if(com == SMBmknew)
   {
@@ -1184,8 +1267,15 @@ int reply_mknew(char *inbuf,char *outbuf)
   open_file_shared(fnum,cnum,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, NULL, NULL);
   
   if (!Files[fnum].open)
+  {
+    if((errno == ENOENT) && bad_path) 
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
+  }
+ 
   outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,fnum);
 
@@ -1212,11 +1302,12 @@ int reply_ctemp(char *inbuf,char *outbuf)
   int outsize = 0;
   int createmode;
   mode_t unixmode;
-  
+  BOOL bad_path = False;
+ 
   cnum = SVAL(inbuf,smb_tid);
   createmode = SVAL(inbuf,smb_vwv0);
   sprintf(fname,"%s/TMXXXXXX",smb_buf(inbuf)+1);
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
   
   unixmode = unix_mode(cnum,createmode);
   
@@ -1225,7 +1316,14 @@ int reply_ctemp(char *inbuf,char *outbuf)
     return(ERROR(ERRSRV,ERRnofids));
 
   if (!check_name(fname,cnum))
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   strcpy(fname2,(char *)mktemp(fname));
 
@@ -1234,7 +1332,14 @@ int reply_ctemp(char *inbuf,char *outbuf)
   open_file_shared(fnum,cnum,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, NULL, NULL);
 
   if (!Files[fnum].open)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   outsize = set_message(outbuf,1,2 + strlen(fname2),True);
   SSVAL(outbuf,smb_vwv0,fnum);
@@ -1290,6 +1395,7 @@ int reply_unlink(char *inbuf,char *outbuf)
   int error = ERRnoaccess;
   BOOL has_wild;
   BOOL exists=False;
+  BOOL bad_path = False;
 
   *directory = *mask = 0;
 
@@ -1300,7 +1406,7 @@ int reply_unlink(char *inbuf,char *outbuf)
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  unix_convert(name,cnum,0);
+  unix_convert(name,cnum,0,&bad_path);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -1362,7 +1468,14 @@ int reply_unlink(char *inbuf,char *outbuf)
     if (exists)
       return(ERROR(ERRDOS,error));
     else
+    {
+      if((errno == ENOENT) && bad_path)
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
       return(UNIXERROR(ERRDOS,error));
+    }
   }
   
   outsize = set_message(outbuf,0,0,True);
@@ -2415,17 +2528,25 @@ int reply_mkdir(char *inbuf,char *outbuf)
   pstring directory;
   int cnum;
   int outsize,ret= -1;
-  
+  BOOL bad_path = False;
+ 
   strcpy(directory,smb_buf(inbuf) + 1);
   cnum = SVAL(inbuf,smb_tid);
-  unix_convert(directory,cnum,0);
+  unix_convert(directory,cnum,0,&bad_path);
   
   if (check_name(directory,cnum))
     ret = sys_mkdir(directory,unix_mode(cnum,aDIR));
   
   if (ret < 0)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
+  }
+ 
   outsize = set_message(outbuf,0,0,True);
   
   DEBUG(3,("%s mkdir %s cnum=%d ret=%d\n",timestring(),directory,cnum,ret));
@@ -2443,10 +2564,11 @@ int reply_rmdir(char *inbuf,char *outbuf)
   int cnum;
   int outsize = 0;
   BOOL ok = False;
-  
+  BOOL bad_path = False;
+
   cnum = SVAL(inbuf,smb_tid);
   strcpy(directory,smb_buf(inbuf) + 1);
-  unix_convert(directory,cnum,0);
+  unix_convert(directory,cnum,0,&bad_path);
   
   if (check_name(directory,cnum))
     {
@@ -2524,8 +2646,15 @@ int reply_rmdir(char *inbuf,char *outbuf)
     }
   
   if (!ok)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRbadpath));
-  
+  }
+ 
   outsize = set_message(outbuf,0,0,True);
   
   DEBUG(3,("%s rmdir %s\n",timestring(),directory));
@@ -2629,6 +2758,8 @@ int reply_mv(char *inbuf,char *outbuf)
   int error = ERRnoaccess;
   BOOL has_wild;
   BOOL exists=False;
+  BOOL bad_path1 = False;
+  BOOL bad_path2 = False;
 
   *directory = *mask = 0;
 
@@ -2639,8 +2770,8 @@ int reply_mv(char *inbuf,char *outbuf)
    
   DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
    
-  unix_convert(name,cnum,0);
-  unix_convert(newname,cnum,newname_last_component);
+  unix_convert(name,cnum,0,&bad_path1);
+  unix_convert(newname,cnum,newname_last_component,&bad_path2);
 
   /*
    * Split the old name into directory and last component
@@ -2775,7 +2906,14 @@ int reply_mv(char *inbuf,char *outbuf)
     if (exists)
       return(ERROR(ERRDOS,error));
     else
+    {
+      if((errno == ENOENT) && (bad_path1 || bad_path2))
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
       return(UNIXERROR(ERRDOS,error));
+    }
   }
   
   outsize = set_message(outbuf,0,0,True);
@@ -2865,6 +3003,8 @@ int reply_copy(char *inbuf,char *outbuf)
   int ofun = SVAL(inbuf,smb_vwv1);
   int flags = SVAL(inbuf,smb_vwv2);
   BOOL target_is_directory=False;
+  BOOL bad_path1 = False;
+  BOOL bad_path2 = False;
 
   *directory = *mask = 0;
 
@@ -2881,8 +3021,8 @@ int reply_copy(char *inbuf,char *outbuf)
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  unix_convert(name,cnum,0);
-  unix_convert(newname,cnum,0);
+  unix_convert(name,cnum,0,&bad_path1);
+  unix_convert(newname,cnum,0,&bad_path2);
 
   target_is_directory = directory_exist(newname,NULL);
 
@@ -2960,7 +3100,14 @@ int reply_copy(char *inbuf,char *outbuf)
     if (exists)
       return(ERROR(ERRDOS,error));
     else
+    {
+      if((errno == ENOENT) && (bad_path1 || bad_path2))
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
       return(UNIXERROR(ERRDOS,error));
+    }
   }
   
   outsize = set_message(outbuf,1,0,True);

@@ -84,6 +84,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   struct stat sbuf;
   int smb_action = 0;
   int i;
+  BOOL bad_path = False;
 
   /* XXXX we need to handle passed times, sattr and flags */
   strcpy(fname,smb_buf(inbuf));
@@ -114,7 +115,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   Connections[cnum].read_only = 0;
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
   if (fnum < 0)
@@ -129,7 +130,15 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		   &rmode,&smb_action);
       
   if (!Files[fnum].open)
+  {
+    /* Change the error code if bad_path was set. */
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);

@@ -184,6 +184,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   int32 inode = 0;
   struct stat sbuf;
   int smb_action = 0;
+  BOOL bad_path = False;
 
   StrnCpy(fname,pname,namelen);
 
@@ -192,14 +193,21 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
 
   /* XXXX we need to handle passed times, sattr and flags */
 
-  unix_convert(fname,cnum,0);
+  unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
 
   if (!check_name(fname,cnum))
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   unixmode = unix_mode(cnum,open_attr | aARCH);
       
@@ -208,7 +216,14 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
 		   &rmode,&smb_action);
       
   if (!Files[fnum].open)
+  {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
@@ -559,6 +574,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   BOOL dont_descend = False;
   BOOL out_of_space = False;
   int space_remaining;
+  BOOL bad_path = False;
 
   *directory = *mask = 0;
 
@@ -586,8 +602,13 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
 
   DEBUG(5,("path=%s\n",directory));
 
-  unix_convert(directory,cnum,0);
+  unix_convert(directory,cnum,0,&bad_path);
   if(!check_name(directory,cnum)) {
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
@@ -616,7 +637,14 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   if (dptr_num < 0)
     {
       if(dptr_num == -2)
+      {
+        if((errno == ENOENT) && bad_path)
+        {
+          unix_ERR_class = ERRDOS;
+          unix_ERR_code = ERRbadpath;
+        }
         return (UNIXERROR(ERRDOS,ERRbadpath));
+      }
       return(ERROR(ERRDOS,ERRbadpath));
     }
 
@@ -1012,7 +1040,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
   char *fname;
   char *p;
   int l,pos;
-
+  BOOL bad_path = False;
 
   if (tran_call == TRANSACT2_QFILEINFO) {
     int16 fnum = SVALS(params,0);
@@ -1032,9 +1060,14 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     info_level = SVAL(params,0);
     fname = &fname1[0];
     strcpy(fname,&params[6]);
-    unix_convert(fname,cnum,0);
+    unix_convert(fname,cnum,0,&bad_path);
     if (!check_name(fname,cnum) || sys_stat(fname,&sbuf)) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+      if((errno == ENOENT) && bad_path)
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }
     pos = 0;
@@ -1212,6 +1245,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
   pstring fname1;
   char *fname;
   int fd = -1;
+  BOOL bad_path = False;
 
   if (!CAN_WRITE(cnum))
     return(ERROR(ERRSRV,ERRaccess));
@@ -1235,13 +1269,25 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     info_level = SVAL(params,0);    
     fname = fname1;
     strcpy(fname,&params[6]);
-    unix_convert(fname,cnum,0);
+    unix_convert(fname,cnum,0,&bad_path);
     if(!check_name(fname, cnum))
-      return(ERROR(ERRDOS,ERRbadpath));
-    
+    {
+      if((errno == ENOENT) && bad_path)
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
+      return(UNIXERROR(ERRDOS,ERRbadpath));
+    }
+ 
     if(sys_stat(fname,&st)!=0) {
       DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
-      return(ERROR(ERRDOS,ERRbadpath));
+      if((errno == ENOENT) && bad_path)
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
+      return(UNIXERROR(ERRDOS,ERRbadpath));
     }    
   }
 
@@ -1396,6 +1442,7 @@ static int call_trans2mkdir(char *inbuf, char *outbuf, int length, int bufsize,
   char *params = *pparams;
   pstring directory;
   int ret = -1;
+  BOOL bad_path = False;
 
   if (!CAN_WRITE(cnum))
     return(ERROR(ERRSRV,ERRaccess));
@@ -1404,13 +1451,18 @@ static int call_trans2mkdir(char *inbuf, char *outbuf, int length, int bufsize,
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-  unix_convert(directory,cnum,0);
+  unix_convert(directory,cnum,0,&bad_path);
   if (check_name(directory,cnum))
     ret = sys_mkdir(directory,unix_mode(cnum,aDIR));
   
   if(ret < 0)
     {
       DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
+      if((errno == ENOENT) && bad_path)
+      {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
 

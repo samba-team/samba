@@ -755,12 +755,17 @@ time_t file_modtime(char *fname)
 BOOL directory_exist(char *dname,struct stat *st)
 {
   struct stat st2;
+  BOOL ret;
+
   if (!st) st = &st2;
 
   if (sys_stat(dname,st) != 0) 
     return(False);
 
-  return(S_ISDIR(st->st_mode));
+  ret = S_ISDIR(st->st_mode);
+  if(!ret)
+    errno = ENOTDIR;
+  return ret;
 }
 
 /*******************************************************************
