@@ -374,16 +374,13 @@ static NTSTATUS api_Unsupported(struct smbsrv_request *req,
 	return NT_STATUS_OK;
 }
 
-#define RAP_NetShareEnum 0
-#define RAP_NetServerEnum2 104
-
 static const struct
 {
 	const char *name;
 	int id;
 	NTSTATUS (*fn)(struct smbsrv_request *req, struct rap_call *call);
 } api_commands[] = {
-	{"NetShareEnum", RAP_NetShareEnum, _rap_netshareenum },
+	{"NetShareEnum", RAP_WshareEnum, _rap_netshareenum },
 	{"NetServerEnum2", RAP_NetServerEnum2, _rap_netserverenum2 },
 	{NULL, -1, api_Unsupported}
 };
