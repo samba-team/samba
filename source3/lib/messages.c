@@ -315,7 +315,9 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 
 	kbuf = message_key_pid(sys_getpid());
 
-	tdb_chainlock(tdb, kbuf);
+	if (tdb_chainlock(tdb, kbuf) == -1)
+		return False;
+
 	dbuf = tdb_fetch(tdb, kbuf);
 	/*
 	 * Replace with an empty record to keep the allocated
