@@ -159,51 +159,76 @@ void module_path_get_name(const char *path, pstring name)
  * the registered funtions are run periodically
  * and maybe shutdown idle connections (e.g. to an LDAP server)
  ***************************************************************************/
-static smb_idle_event_struct *smb_idle_event_list = NULL;
-NTSTATUS smb_register_idle_event(smb_idle_event_struct *idle_event)
+static smb_event_id_t smb_idle_event_id = 1;
+
+struct smb_idle_list_ent {
+	struct smb_idle_list_ent *prev,*next;
+	smb_event_id_t id;
+	smb_idle_event_fn *fn;
+	void *data;
+	time_t interval;
+	time_t lastrun;
+};
+
+static struct smb_idle_list_ent *smb_idle_event_list = NULL;
+
+smb_event_id_t smb_register_idle_event(smb_idle_event_fn *fn, void *data, time_t interval)
 {
-	if (!idle_event) {
-		return NT_STATUS_INVALID_PARAMETER;
+	struct smb_idle_list_ent *event;
+
+	if (!fn) {	
+		return SMB_EVENT_ID_INVALID;
 	}
 
-	idle_event->last_run = 0;
+	event = (struct smb_idle_list_ent *)malloc(sizeof(struct smb_idle_list_ent));
+	if (!event) {
+		DEBUG(0,("malloc() failed!\n"));
+		return SMB_EVENT_ID_INVALID;
+	}
+	event->fn = fn;
+	event->data = data;
+	event->interval = interval;
+	event->lastrun = 0;
+	event->id = smb_idle_event_id++;
 
-	DLIST_ADD(smb_idle_event_list,idle_event);
+	DLIST_ADD(smb_idle_event_list,event);
 
-	return NT_STATUS_OK;
+	return event->id;
 }
 
-NTSTATUS smb_unregister_idle_event(smb_idle_event_struct *idle_event)
+BOOL smb_unregister_idle_event(smb_event_id_t id)
 {
-	if (!idle_event) {
-		return NT_STATUS_INVALID_PARAMETER;
+	struct smb_idle_list_ent *event = smb_idle_event_list;
+	
+	while(event) {
+		if (event->id == id) {
+			DLIST_REMOVE(smb_idle_event_list,event);
+			SAFE_FREE(event);
+			return True;
+		}
+		event = event->next;
 	}
-
-	DLIST_REMOVE(smb_idle_event_list,idle_event);
-
-	return NT_STATUS_OK;
+	
+	return False;
 }
 
 void smb_run_idle_events(time_t now)
 {
-	smb_idle_event_struct *tmp_event = smb_idle_event_list;
+	struct smb_idle_list_ent *event = smb_idle_event_list;
 
-	while (tmp_event) {
+	while (event) {
 		time_t interval;
 
-		if (tmp_event->fn) {
-			if (tmp_event->interval >= SMB_IDLE_EVENT_MIN_INTERVAL) {
-				interval = tmp_event->interval;
-			} else {
-				interval = SMB_IDLE_EVENT_DEFAULT_INTERVAL;
-			}
-			if (now >(tmp_event->last_run+interval)) {
-				tmp_event->fn(&tmp_event,now);
-				tmp_event->last_run = now;
-			}
+		if (event->interval >= SMB_IDLE_EVENT_MIN_INTERVAL) {
+			interval = event->interval;
+		} else {
+			interval = SMB_IDLE_EVENT_MIN_INTERVAL;
 		}
-
-		tmp_event = tmp_event->next;
+		if (now >(event->lastrun+interval)) {
+			event->fn(&event->data,&event->interval,now);
+			event->lastrun = now;
+		}
+		event = event->next;
 	}
 
 	return;
@@ -212,46 +237,73 @@ void smb_run_idle_events(time_t now)
 /***************************************************************************
  * This Function registers a exit event
  *
- * the registered funtions are run on exit()
+ * the registered functions are run on exit()
  * and maybe shutdown idle connections (e.g. to an LDAP server)
  ***************************************************************************/
-static smb_exit_event_struct *smb_exit_event_list = NULL;
-NTSTATUS smb_register_exit_event(smb_exit_event_struct *exit_event)
+
+struct smb_exit_list_ent {
+	struct smb_exit_list_ent *prev,*next;
+	smb_event_id_t id;
+	smb_exit_event_fn *fn;
+	void *data;
+};
+
+static struct smb_exit_list_ent *smb_exit_event_list = NULL;
+
+smb_event_id_t smb_register_exit_event(smb_exit_event_fn *fn, void *data)
 {
-	if (!exit_event) {
-		return NT_STATUS_INVALID_PARAMETER;
+	struct smb_exit_list_ent *event;
+	static smb_event_id_t smb_exit_event_id = 1;
+
+	if (!fn) {	
+		return SMB_EVENT_ID_INVALID;
 	}
 
-	DLIST_ADD(smb_exit_event_list,exit_event);
+	event = (struct smb_exit_list_ent *)malloc(sizeof(struct smb_exit_list_ent));
+	if (!event) {
+		DEBUG(0,("malloc() failed!\n"));
+		return SMB_EVENT_ID_INVALID;
+	}
+	event->fn = fn;
+	event->data = data;
+	event->id = smb_exit_event_id++;
 
-	return NT_STATUS_OK;
+	DLIST_ADD(smb_exit_event_list,event);
+
+	return event->id;
 }
 
-NTSTATUS smb_unregister_exit_event(smb_exit_event_struct *exit_event)
+BOOL smb_unregister_exit_event(smb_event_id_t id)
 {
-	if (!exit_event) {
-		return NT_STATUS_INVALID_PARAMETER;
+	struct smb_exit_list_ent *event = smb_exit_event_list;
+	
+	while(event) {
+		if (event->id == id) {
+			DLIST_REMOVE(smb_exit_event_list,event);
+			SAFE_FREE(event);
+			return True;
+		}
+		event = event->next;
 	}
-
-	DLIST_REMOVE(smb_exit_event_list,exit_event);
-
-	return NT_STATUS_OK;
+	
+	return False;
 }
 
 void smb_run_exit_events(void)
 {
-	smb_exit_event_struct *tmp_event = smb_exit_event_list;
+	struct smb_exit_list_ent *event = smb_exit_event_list;
+	struct smb_exit_list_ent *tmp = NULL;
 
-	while (tmp_event) {
-		if (tmp_event->fn) {
-			tmp_event->fn(&tmp_event);
-		}
-		tmp_event = tmp_event->next;
+	while (event) {
+		event->fn(&event->data);
+		tmp = event;
+		event = event->next;
+		/* exit event should only run one time :-)*/
+		SAFE_FREE(tmp);
 	}
 
-	/* run exit_events only once */
+	/* the list is empty now...*/
 	smb_exit_event_list = NULL;
 
 	return;
 }
-

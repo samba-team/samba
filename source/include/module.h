@@ -24,21 +24,15 @@
 /* Module support */
 typedef NTSTATUS (init_module_function) (void);
 
+
+typedef int smb_event_id_t;
+#define SMB_EVENT_ID_INVALID	(-1)
+
 #define SMB_IDLE_EVENT_DEFAULT_INTERVAL	180
 #define SMB_IDLE_EVENT_MIN_INTERVAL	30
 
-typedef struct smb_idle_event_struct {
-	struct smb_idle_event_struct *prev,*next;
-	time_t interval;
-	time_t last_run;
-	void *data;
-	void (*fn)(struct smb_idle_event_struct **event, time_t now);
-} smb_idle_event_struct;
+typedef void (smb_idle_event_fn)(void **data,time_t *interval,time_t now);
 
-typedef struct smb_exit_event_struct {
-	struct smb_exit_event_struct *prev,*next;
-	void *data;
-	void (*fn)(struct smb_exit_event_struct **event);
-} smb_exit_event_struct;
+typedef void (smb_exit_event_fn)(void **data);
 
 #endif /* _MODULE_H */
