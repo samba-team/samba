@@ -524,7 +524,7 @@ static NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method
 		return nt_status;
 	}
 
-	(*pdb_method)->name = "xml";
+	(*pdb_method)->name = "xmlsam";
 
 	(*pdb_method)->setsampwent = xmlsam_setsampwent;
 	(*pdb_method)->endsampwent = xmlsam_endsampwent;

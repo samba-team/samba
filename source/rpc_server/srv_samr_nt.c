@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jeremy Allison               2001-2002,
- *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001,
  *  Copyright (C) Anthony Liguori                   2002,
  *  Copyright (C) Jim McDonough                     2002.
  *
@@ -920,7 +920,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		struct sys_grent *grp;
 		struct passwd *pw;
 		gid_t winbind_gid_low, winbind_gid_high;
-		BOOL winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
@@ -2811,8 +2811,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 	copy_id23_to_sam_passwd(pwd, id23);
  
 	/* if it's a trust account, don't update /etc/passwd */
-	if ( (!IS_SAM_UNIX_USER(pwd)) ||
-		( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+	if (    ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
 		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
 		( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
 		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
@@ -2873,8 +2872,7 @@ static BOOL set_user_info_pw(char *pass, DOM_SID *sid)
 	}
  
 	/* if it's a trust account, don't update /etc/passwd */
-	if ( (!IS_SAM_UNIX_USER(pwd)) ||
-		( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
 		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
 		( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
 		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
@@ -3389,9 +3387,9 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
-	uid = pdb_get_uid(sam_user);
-	if (uid == -1) {
+
+	/* check a real user exist before we run the script to add a user to a group */
+	if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3401,7 +3399,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
-
+	
 	if ((grp=getgrgid(map.gid)) == NULL) {
 		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -3550,18 +3548,6 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	uid = pdb_get_uid(sam_user);
-	if (uid == -1) {
-		pdb_free_sam(&sam_user);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	pdb_free_sam(&sam_user);
-
-	if ((pwd=getpwuid_alloc(uid)) == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
 	if ((grp=getgrgid(map.gid)) == NULL) {
 		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_GROUP;

@@ -98,11 +98,6 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	name_domain = state->request.data.name.dom_name;
 	name_user = state->request.data.name.name;
 
-	/* fail if we are a PDC and this is our domain; should be done by passdb */
-	
-	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( name_domain, lp_workgroup()) )
-		return WINBINDD_ERROR;
-		
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
@@ -142,7 +137,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	}
 
 	/* Find uid for this sid and return it */
-	if (!winbindd_idmap_get_uid_from_sid(&sid, &state->response.data.uid)) {
+	if (NT_STATUS_IS_ERR(sid_to_uid(&sid, &(state->response.data.uid)))) {
 		DEBUG(1, ("Could not get uid for sid %s\n",
 			  state->request.data.sid));
 		return WINBINDD_ERROR;
@@ -171,7 +166,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	}
 
 	/* Find gid for this sid and return it */
-	if (!winbindd_idmap_get_gid_from_sid(&sid, &state->response.data.gid)) {
+	if (NT_STATUS_IS_ERR(sid_to_gid(&sid, &(state->response.data.gid)))) {
 		DEBUG(1, ("Could not get gid for sid %s\n",
 			  state->request.data.sid));
 		return WINBINDD_ERROR;
@@ -197,7 +192,7 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 		  state->request.data.uid));
 
 	/* Lookup rid for this uid */
-	if (!winbindd_idmap_get_sid_from_uid(state->request.data.uid, &sid)) {
+	if (NT_STATUS_IS_ERR(uid_to_sid(&sid, state->request.data.uid))) {
 		DEBUG(1, ("Could not convert uid %d to rid\n",
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -226,7 +221,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 		  state->request.data.gid));
 
 	/* Lookup sid for this uid */
-	if (!winbindd_idmap_get_sid_from_gid(state->request.data.gid, &sid)) {
+	if (NT_STATUS_IS_ERR(gid_to_sid(&sid, state->request.data.gid))) {
 		DEBUG(1, ("Could not convert gid %d to sid\n",
 			  state->request.data.gid));
 		return WINBINDD_ERROR;

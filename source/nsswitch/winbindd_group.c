@@ -193,8 +193,8 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	enum SID_NAME_USE name_type;
 	fstring name_domain, name_group;
 	char *tmp, *gr_mem;
-	gid_t gid;
 	int gr_mem_len;
+	gid_t gid;
 	
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
@@ -208,11 +208,6 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	tmp = state->request.data.groupname;
 	if (!parse_domain_user(tmp, name_domain, name_group))
-		return WINBINDD_ERROR;
-
-	/* fail if we are a PDC and this is our domain; should be done by passdb */
-	
-	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( domain->name, lp_workgroup()) )
 		return WINBINDD_ERROR;
 
 	/* Get info for the domain */
@@ -238,7 +233,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (!winbindd_idmap_get_gid_from_sid(&group_sid, &gid)) {
+	if (NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &gid))) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
 		return WINBINDD_ERROR;
 	}
@@ -283,8 +278,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	/* Get rid from gid */
-
-	if (!winbindd_idmap_get_sid_from_gid(state->request.data.gid, &group_sid)) {
+	if (NT_STATUS_IS_ERR(uid_to_sid(&group_sid, state->request.data.gid))) {
 		DEBUG(1, ("could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
@@ -409,9 +403,6 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	struct winbindd_domain *domain;
         
 	if (ent->got_sam_entries)
-		return False;
-		
-	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp(lp_workgroup(), ent->domain_name))
 		return False;
 
 	if (!(mem_ctx = talloc_init("get_sam_group_entries(%s)",
@@ -598,9 +589,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!winbindd_idmap_get_gid_from_sid(
-			    &group_sid,
-			    &group_gid)) {
+		if (NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &group_gid))) {
 			
 			DEBUG(1, ("could not look up gid for group %s\n", 
 				  name_list[ent->sam_entry_index].acct_name));
@@ -749,11 +738,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		struct getent_state groups;
-		
-		/* fail if we are a PDC and this is our domain; should be done by passdb */
-	
-		if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( domain->name, lp_workgroup()) )
-			continue;
 
 		ZERO_STRUCT(groups);
 
@@ -846,11 +830,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			  name_user))
 		goto done;
 
-	/* fail if we are a PDC and this is our domain; should be done by passdb */
-	
-	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( name_domain, lp_workgroup()) )
-		return WINBINDD_ERROR;
-		
 	/* Get info for the domain */
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
@@ -887,16 +866,16 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 
 	for (i = 0; i < num_groups; i++) {
-		if (!winbindd_idmap_get_gid_from_sid(
-			    user_gids[i], 
-			    &gid_list[num_gids])) {
+		gid_t gid;
+		
+		if (NT_STATUS_IS_ERR(sid_to_gid(user_gids[i], &gid))) {
 			fstring sid_string;
 
 			DEBUG(1, ("unable to convert group sid %s to gid\n", 
 				  sid_to_string(sid_string, user_gids[i])));
 			continue;
 		}
-			
+		gid_list[num_gids] = gid;
 		num_gids++;
 	}
 

@@ -122,12 +122,6 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
 		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		printf ("Account Flags:        %s\n", pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent), NEW_PW_FORMAT_SPACE_PADDED_LEN));
-		
-		if (IS_SAM_UNIX_USER(sam_pwent)) {
-			uid = pdb_get_uid(sam_pwent);
-			gid = pdb_get_gid(sam_pwent);
-			printf ("User ID/Group ID:     %d/%d\n", uid, gid);
-		}
 		printf ("User SID:             %s\n",
 			sid_string_static(pdb_get_user_sid(sam_pwent)));
 		printf ("Primary Group SID:    %s\n",
@@ -161,35 +155,25 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		printf ("Password must change: %s\n", tmp ? http_timestring(tmp) : "0");
 		
 	} else if (smbpwdstyle) {
-		if (IS_SAM_UNIX_USER(sam_pwent)) {
-			char lm_passwd[33];
-			char nt_passwd[33];
+		char lm_passwd[33];
+		char nt_passwd[33];
 
-			uid = pdb_get_uid(sam_pwent);
-			pdb_sethexpwd(lm_passwd, 
-				      pdb_get_lanman_passwd(sam_pwent), 
-				      pdb_get_acct_ctrl(sam_pwent));
-			pdb_sethexpwd(nt_passwd, 
-				      pdb_get_nt_passwd(sam_pwent), 
-				      pdb_get_acct_ctrl(sam_pwent));
+		uid = -1;
+		sid_to_uid(pdb_get_user_sid(sam_pwent), &uid);
+		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
+		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 			
-			printf("%s:%d:%s:%s:%s:LCT-%08X:\n",
-			       pdb_get_username(sam_pwent),
-			       uid,
-			       lm_passwd,
-			       nt_passwd,
-			       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
-			       (uint32)pdb_get_pass_last_set_time(sam_pwent));
-		} else {
-			fprintf(stderr, "Can't output in smbpasswd format, no uid on this record.\n");
-		}
+		printf("%s:%d:%s:%s:%s:LCT-%08X:\n",
+		       pdb_get_username(sam_pwent),
+		       uid,
+		       lm_passwd,
+		       nt_passwd,
+		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
+		       (uint32)pdb_get_pass_last_set_time(sam_pwent));
 	} else {
-		if (IS_SAM_UNIX_USER(sam_pwent)) {
-			printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), pdb_get_uid(sam_pwent), 
-				pdb_get_fullname(sam_pwent));
-		} else {	
-			printf ("%s:(null):%s\n", pdb_get_username(sam_pwent), pdb_get_fullname(sam_pwent));
-		}
+		uid = -1;
+		sid_to_uid(pdb_get_user_sid(sam_pwent), &uid);
+		printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), uid,	pdb_get_fullname(sam_pwent));
 	}
 
 	return 0;	
@@ -583,8 +567,8 @@ int main (int argc, char **argv)
 		{"drive",	'D', POPT_ARG_STRING, &home_drive, 0, "set home drive", NULL},
 		{"script",	'S', POPT_ARG_STRING, &logon_script, 0, "set logon script", NULL},
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
-		{"user-SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
-		{"group-SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
+		{"user SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
+		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
 		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
@@ -624,6 +608,12 @@ int main (int argc, char **argv)
 	}
 
 	if (!init_names())
+		exit(1);
+
+	if (!idmap_init())
+		exit(1);
+
+	if (!idmap_init_wellknown_sids())
 		exit(1);
 
 	setparms =	(backend ? BIT_BACKEND : 0) +

@@ -478,6 +478,12 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	if (!name) {
 		DEBUG(1, ("NULL username specfied to chgpasswd()!\n"));
 	}
+	
+	pass = Get_Pwnam(name);
+	if (!pass) {
+		DEBUG(1, ("Username does not exist in system passwd!\n"));
+		return False;
+	}
 
 	if (!oldpass) {
 		oldpass = "";
@@ -528,8 +534,6 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 		}
 	}
 	
-	pass = Get_Pwnam(name);
-
 #ifdef WITH_PAM
 	if (lp_pam_password_change()) {
 		BOOL ret;
@@ -983,9 +987,8 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	 * to touch the unix db unless we have admin permission.
 	 */
 	
-	if(lp_unix_password_sync() && IS_SAM_UNIX_USER(hnd) 
-	   && !chgpasswd(pdb_get_username(hnd),
-			 old_passwd, new_passwd, False)) {
+	if(lp_unix_password_sync() &&
+		!chgpasswd(pdb_get_username(hnd), old_passwd, new_passwd, False)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

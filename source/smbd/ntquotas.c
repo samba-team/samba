@@ -74,7 +74,6 @@ int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 	int ret;
 	SMB_DISK_QUOTA D;
 	unid_t id;
-	enum SID_NAME_USE sid_use = SID_NAME_USE_NONE;
 
 	ZERO_STRUCT(D);
 
@@ -85,7 +84,7 @@ int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 
 	id.uid = -1;
 
-	if (psid && !sid_to_uid(psid, &id.uid, &sid_use)) {
+	if (psid && NT_STATUS_IS_ERR(sid_to_uid(psid, &id.uid))) {
 		DEBUG(0,("sid_to_uid: failed, SID[%s]\n",
 			sid_string_static(psid)));	
 	}
@@ -113,7 +112,6 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 	int ret;
 	SMB_DISK_QUOTA D;
 	unid_t id;
-	enum SID_NAME_USE sid_use = SID_NAME_USE_NONE;
 	ZERO_STRUCT(D);
 
 	if (!fsp||!fsp->conn||!qt)
@@ -133,7 +131,7 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 	D.isoftlimit = limit_blk2inodes(D.softlimit);
 	D.ihardlimit = limit_blk2inodes(D.hardlimit);
 
-	if (psid && !sid_to_uid(psid, &id.uid, &sid_use)) {
+	if (psid && NT_STATUS_IS_ERR(sid_to_uid(psid, &id.uid))) {
 		DEBUG(0,("sid_to_uid: failed, SID[%s]\n",
 			sid_string_static(psid)));	
 	}
@@ -187,7 +185,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 			continue;
 		}
 
-		if (uid_to_sid(&sid,usr->pw_uid)==NULL) {
+		if (NT_STATUS_IS_ERR(uid_to_sid(&sid, usr->pw_uid))) {
 			DEBUG(0,("uid_to_sid failed for %d\n",usr->pw_uid));
 			continue;
 		}

@@ -1780,7 +1780,6 @@ static int call_nt_transact_ioctl(connection_struct *conn,
 		   
 		DOM_SID sid;
 		uid_t uid;
-		enum SID_NAME_USE sid_use = 0;
 		size_t sid_len=SID_MAX_SIZE;
 		
 		DEBUG(1,("FSCTL_FIND_FILES_BY_SID: fnum=%d control=0x%08x\n",fnum,control));
@@ -1792,10 +1791,9 @@ static int call_nt_transact_ioctl(connection_struct *conn,
 		sid_parse(pdata+4,sid_len,&sid);
 		DEBUGADD(2,("SID: %s\n",sid_string_static(&sid)));
 
-		if (!sid_to_uid(&sid, &uid, &sid_use)
-			||sid_use!=SID_NAME_USER) {
-			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_use: %d\n",
-				sid_string_static(&sid),sid_use));
+		if (NT_STATUS_IS_ERR(sid_to_uid(&sid, &uid))) {
+			DEBUG(0,("sid_to_uid: failed, sid[%s]\n",
+				sid_string_static(&sid)));
 			uid = (-1);
 		}
 		

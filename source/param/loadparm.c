@@ -8,6 +8,7 @@
    Copyright (C) Simo Sorce 2001
    Copyright (C) Alexander Bokovoy 2002
    Copyright (C) Stefan (metze) Metzmacher 2002
+   Copyright (C) Anthony Liguori 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -163,10 +164,11 @@ typedef struct
 	BOOL bUtmp;
 #endif
 	char *szSourceEnv;
-	char *szWinbindUID;
-	char *szWinbindGID;
+	char *szIdmapUID;
+	char *szIdmapGID;
+	BOOL *bIdmapOnly;
 	char *szNonUnixAccountRange;
-	BOOL bAlgorithmicRidBase;
+	int AlgorithmicRidBase;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
@@ -174,6 +176,7 @@ typedef struct
 	BOOL bWinbindEnumGroups;
 	BOOL bWinbindUseDefaultDomain;
 	char *szWinbindBackend;
+	char *szIdmapBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -550,8 +553,8 @@ static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
 static BOOL handle_source_env(const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
-static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
-static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
+static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr);
+static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
 static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
@@ -759,7 +762,7 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.bAlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_HIDE | FLAG_DEVELOPER},
@@ -1113,8 +1116,12 @@ static struct parm_struct parm_table[] = {
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"idmap only", P_BOOL, P_GLOBAL, &Globals.bIdmapOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_HIDE},
+	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_HIDE},
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1122,7 +1129,6 @@ static struct parm_struct parm_table[] = {
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind backend", P_STRING, P_GLOBAL, &Globals.szWinbindBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -1311,7 +1317,7 @@ static void init_globals(void)
 	string_set(&Globals.szNameResolveOrder, "lmhosts wins host bcast");
 	string_set(&Globals.szPasswordServer, "*");
 
-	Globals.bAlgorithmicRidBase = BASE_RID;
+	Globals.AlgorithmicRidBase = BASE_RID;
 
 	Globals.bLoadPrinters = True;
 	Globals.mangled_stack = 50;
@@ -1458,7 +1464,7 @@ static void init_globals(void)
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
 
-	string_set(&Globals.szWinbindBackend, "tdb");
+	Globals.bIdmapOnly = False;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
@@ -1636,7 +1642,9 @@ FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
-FN_GLOBAL_STRING(lp_winbind_backend, &Globals.szWinbindBackend)
+
+FN_GLOBAL_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
+FN_GLOBAL_BOOL(lp_idmap_only, &Globals.bIdmapOnly)
 
 #ifdef WITH_LDAP_SAMCONFIG
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
@@ -1847,7 +1855,7 @@ FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
-FN_GLOBAL_BOOL(lp_algorithmic_rid_base, &Globals.bAlgorithmicRidBase)
+FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_BOOL(lp_client_signing, &Globals.client_signing)
 
@@ -2839,55 +2847,55 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
- Handle winbind uid and gid allocation parameters.  The format of these
+ Handle idmap/non unix account uid and gid allocation parameters.  The format of these
  parameters is:
 
  [global]
 
-        winbind uid = 1000-1999
-        winbind gid = 700-899
+        idmap uid = 1000-1999
+        idmap gid = 700-899
 
  We only do simple parsing checks here.  The strings are parsed into useful
- structures in the winbind daemon code.
+ structures in the idmap daemon code.
 
 ***************************************************************************/
 
-/* Some lp_ routines to return winbind [ug]id information */
+/* Some lp_ routines to return idmap [ug]id information */
 
-static uid_t winbind_uid_low, winbind_uid_high;
-static gid_t winbind_gid_low, winbind_gid_high;
+static uid_t idmap_uid_low, idmap_uid_high;
+static gid_t idmap_gid_low, idmap_gid_high;
 
-BOOL lp_winbind_uid(uid_t *low, uid_t *high)
+BOOL lp_idmap_uid(uid_t *low, uid_t *high)
 {
-        if (winbind_uid_low == 0 || winbind_uid_high == 0)
+        if (idmap_uid_low == 0 || idmap_uid_high == 0)
                 return False;
 
         if (low)
-                *low = winbind_uid_low;
+                *low = idmap_uid_low;
 
         if (high)
-                *high = winbind_uid_high;
+                *high = idmap_uid_high;
 
         return True;
 }
 
-BOOL lp_winbind_gid(gid_t *low, gid_t *high)
+BOOL lp_idmap_gid(gid_t *low, gid_t *high)
 {
-        if (winbind_gid_low == 0 || winbind_gid_high == 0)
+        if (idmap_gid_low == 0 || idmap_gid_high == 0)
                 return False;
 
         if (low)
-                *low = winbind_gid_low;
+                *low = idmap_gid_low;
 
         if (high)
-                *high = winbind_gid_high;
+                *high = idmap_gid_high;
 
         return True;
 }
 
-/* Do some simple checks on "winbind [ug]id" parameter values */
+/* Do some simple checks on "idmap [ug]id" parameter values */
 
-static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
+static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2898,13 +2906,13 @@ static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
 
 	string_set(ptr, pszParmValue);
 
-        winbind_uid_low = low;
-        winbind_uid_high = high;
+        idmap_uid_low = low;
+        idmap_uid_high = high;
 
 	return True;
 }
 
-static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
+static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2915,8 +2923,8 @@ static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 
 	string_set(ptr, pszParmValue);
 
-        winbind_gid_low = low;
-        winbind_gid_high = high;
+        idmap_gid_low = low;
+        idmap_gid_high = high;
 
 	return True;
 }
@@ -3800,7 +3808,18 @@ static void set_server_role(void)
 				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
 			break;
 		case SEC_SERVER:
+			if (lp_domain_logons())
+				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
+			server_role = ROLE_DOMAIN_MEMBER;
+			break;
 		case SEC_DOMAIN:
+			if (lp_domain_logons()) {
+				DEBUG(1, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
+				server_role = ROLE_DOMAIN_BDC;
+				break;
+			}
+			server_role = ROLE_DOMAIN_MEMBER;
+			break;
 		case SEC_ADS:
 			if (lp_domain_logons()) {
 				server_role = ROLE_DOMAIN_PDC;

@@ -443,7 +443,6 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
-	enum SID_NAME_USE sid_type;
 
 	*puser = (uid_t)-1;
 	*pgrp = (gid_t)-1;
@@ -469,7 +468,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
-		if (!sid_to_uid( &owner_sid, puser, &sid_type)) {
+		if (NT_STATUS_IS_ERR(sid_to_uid(&owner_sid, puser))) {
 #if ACL_FORCE_UNMAPPABLE
 			/* this allows take ownership to work reasonably */
 			extern struct current_user current_user;
@@ -489,7 +488,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
-		if (!sid_to_gid( &grp_sid, pgrp, &sid_type)) {
+		if (NT_STATUS_IS_ERR(sid_to_gid( &grp_sid, pgrp))) {
 #if ACL_FORCE_UNMAPPABLE
 			/* this allows take group ownership to work reasonably */
 			extern struct current_user current_user;
@@ -938,7 +937,6 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 	}
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		enum SID_NAME_USE sid_type;
 		SEC_ACE *psa = &dacl->ace[i];
 
 		/*
@@ -1003,10 +1001,10 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 			if (nt4_compatible_acls())
 				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid, &sid_type)) {
+		} else if (NT_STATUS_IS_OK(sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid))) {
 			current_ace->owner_type = GID_ACE;
 			current_ace->type = SMB_ACL_GROUP;
-		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid, &sid_type)) {
+		} else if (NT_STATUS_IS_OK(sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid))) {
 			current_ace->owner_type = UID_ACE;
 			current_ace->type = SMB_ACL_USER;
 		} else {
