@@ -198,7 +198,7 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 }
 
 
-static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
+static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOOL all_machines)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	DISP_USER_INFO *pwd_array = NULL;
@@ -221,10 +221,19 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 	for (; (NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, &pwd))) 
 		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
 		
-		if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
-			pdb_free_sam(&pwd);
-			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
-			continue;
+		if (all_machines) {
+			if (!((pdb_get_acct_ctrl(pwd) & ACB_WSTRUST) 
+			      || (pdb_get_acct_ctrl(pwd) & ACB_SVRTRUST))) {
+				DEBUG(5,("load_sampwd_entries: '%s' is not a machine account - ACB: %x - skipping\n", pdb_get_username(pwd), acb_mask));
+				pdb_free_sam(&pwd);
+				continue;
+			}
+		} else {
+			if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
+				pdb_free_sam(&pwd);
+				DEBUG(5,(" acb_mask %x reject\n", acb_mask));
+				continue;
+			}
 		}
 
 		/* Realloc some memory for the array of ptr to the SAM_ACCOUNT structs */
@@ -746,7 +755,7 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	r_u->status=load_sampwd_entries(info, q_u->acb_mask);
+	r_u->status=load_sampwd_entries(info, q_u->acb_mask, False);
 	unbecome_root();
 	
 	if (!NT_STATUS_IS_OK(r_u->status))
@@ -1100,7 +1109,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 {
 	struct samr_info *info = NULL;
 	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
-	uint16 acb_mask;
 	
 	uint32 max_entries=q_u->max_entries;
 	uint32 enum_context=q_u->start_idx;
@@ -1152,19 +1160,13 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	 */
 
 	/* Get what we need from the password database */
-
-	if (q_u->switch_level==2)
-		acb_mask = ACB_WSTRUST;
-	else
-		acb_mask = ACB_NORMAL;
-
-	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
 		case 0x1:
 		case 0x2:
 		case 0x4:
 			become_root();		
-			r_u->status=load_sampwd_entries(info, acb_mask);
+			/* Level 2 is for all machines, otherwise only 'normal' users */
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL, q_u->switch_level==2);
 			unbecome_root();
 			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
@@ -2083,7 +2085,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			break;
 		case 0x02:
 			become_root();		
-			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL, False);
 			unbecome_root();
 			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
@@ -4247,10 +4249,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			break;
 		case 0x02:
 			become_root();		
-			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
+			r_u->status=load_sampwd_entries(info, ACB_NORMAL, False);
 			unbecome_root();
 			if (!NT_STATUS_IS_OK(r_u->status)) {
-				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
+				DEBUG(5, ("_samr_unknown_2e: load_sampwd_entries failed\n"));
 				return r_u->status;
 			}
 			num_users=info->disp_info.num_user_account;
@@ -4258,7 +4260,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			
 			r_u->status=load_group_domain_entries(info, get_global_sam_sid());
 			if (NT_STATUS_IS_ERR(r_u->status)) {
-				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
+				DEBUG(5, ("_samr_unknown_2e: load_group_domain_entries failed\n"));
 				return r_u->status;
 			}
 			num_groups=info->disp_info.num_group_account;
