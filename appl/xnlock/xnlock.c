@@ -603,9 +603,9 @@ verify_krb5(const char *password)
 	    }
 	    krb5_free_principal(context, mcred.server);
 	}
+#endif
 	if (k_hasafs())
 	    krb5_afslog(context, id, NULL, NULL);
-#endif
 	return 0;
     }
     if (ret != KRB5KRB_AP_ERR_MODIFIED)

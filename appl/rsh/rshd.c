@@ -68,9 +68,7 @@ static int do_kerberos = 0;
 #define DO_KRB5 4
 static int do_vacuous = 0;
 static int do_log = 1;
-#ifdef KRB4
 static int do_newpag = 1;
-#endif
 static int do_addr_verify = 0;
 static int do_keepalive = 1;
 static int do_version;
@@ -864,16 +862,17 @@ doit (void)
 	    fatal (s, "net_write", "write failed");
     }
 
-#ifdef KRB4
+#if defined(KRB4) || defined(KRB5)
     if(k_hasafs()) {
 	char cell[64];
 
 	if(do_newpag)
 	    k_setpag();
+#ifdef KRB4
 	if (k_afs_cell_of_file (pwd->pw_dir, cell, sizeof(cell)) == 0)
 	    krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
-
 	krb_afslog_uid_home(NULL, NULL, pwd->pw_uid, pwd->pw_dir);
+#endif
 
 #ifdef KRB5
 	/* XXX */
@@ -883,14 +882,17 @@ doit (void)
 
 	   status = krb5_cc_resolve (context, tkfile, &ccache);
 	   if (!status) {
-	       krb5_afslog_uid_home(context,ccache,NULL,NULL,
+	       if (k_afs_cell_of_file (pwd->pw_dir, cell, sizeof(cell)) == 0)
+		   krb5_afslog_uid_home(context, ccache, cell, NULL,
+					pwd->pw_uid, pwd->pw_dir);
+	       krb5_afslog_uid_home(context, ccache, NULL, NULL,
 				    pwd->pw_uid, pwd->pw_dir);
 	       krb5_cc_close (context, ccache);
 	   }
        }
 #endif /* KRB5 */
     }
-#endif /* KRB4 */
+#endif /* KRB5 || KRB4 */
     execle (pwd->pw_shell, pwd->pw_shell, "-c", cmd, NULL, env);
     err(1, "exec %s", pwd->pw_shell);
 }
