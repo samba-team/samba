@@ -596,3 +596,12 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
   return ret;
 }
 
+/****************************************************************************
+initialise an NTTIME to -1, which means "unknown" or "don't expire"
+****************************************************************************/
+
+void init_nt_time(NTTIME *nt)
+{
+	nt->high = 0x7FFFFFFF;
+	nt->low = 0xFFFFFFFF;
+}
