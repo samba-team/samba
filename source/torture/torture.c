@@ -45,12 +45,12 @@ static struct timeval tp1,tp2;
 
 void start_timer(void)
 {
-	gettimeofday(&tp1,NULL);
+	GetTimeOfDay(&tp1
 }
 
 double end_timer(void)
 {
-	gettimeofday(&tp2,NULL);
+	GetTimeOfDay(&tp2);
 	return((tp2.tv_sec - tp1.tv_sec) + 
 	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
 }

@@ -514,10 +514,10 @@ static BOOL sys_utmp_fill(struct utmp *u,
  *	But note that we do the more precise ut_tv as the final assignment.
  */
 #if defined(HAVE_UT_UT_TIME)
-	gettimeofday(&timeval, NULL);
+	GetTimeOfDay(&timeval);
 	u->ut_time = timeval.tv_sec;
 #elif defined(HAVE_UT_UT_TV)
-	gettimeofday(&timeval, NULL);
+	GetTimeOfDay(&timeval);
 	u->ut_tv = timeval;
 #else
 #error "with-utmp must have UT_TIME or UT_TV"
