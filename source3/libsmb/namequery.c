@@ -64,6 +64,8 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 		ret[i].type = CVAL(p,15);
 		ret[i].flags = p[16];
 		p += 18;
+		DEBUG(10, ("%s#%02x: flags = 0x%02x\n", ret[i].name, 
+			   ret[i].type, ret[i].flags));
 	}
 	return ret;
 }
