@@ -212,7 +212,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUGADD(5,("%02x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PSVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
@@ -220,7 +220,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUGADD(5,("%04x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PIVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
@@ -228,7 +228,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
     if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUGADD(5,("%08x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
