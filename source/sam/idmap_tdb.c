@@ -316,8 +316,8 @@ static NTSTATUS db_idmap_init(void)
 
 	/* Create high water marks for group and user id */
 	if (!lp_idmap_uid(&idmap_state.uid_low, &idmap_state.uid_high)) {
-		DEBUG(0, ("idmap uid range missing or invalid\n"));
-		DEBUGADD(0, ("idmap will be unable to map foreign SIDs\n"));
+		DEBUG(1, ("idmap uid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
 	} else {
 		if (tdb_fetch_int32(idmap_tdb, HWM_USER) == -1) {
 			if (tdb_store_int32(idmap_tdb, HWM_USER, idmap_state.uid_low) == -1) {
@@ -328,8 +328,8 @@ static NTSTATUS db_idmap_init(void)
 	}
 
 	if (!lp_idmap_gid(&idmap_state.gid_low, &idmap_state.gid_high)) {
-		DEBUG(0, ("idmap gid range missing or invalid\n"));
-		DEBUGADD(0, ("idmap will be unable to map foreign SIDs\n"));
+		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
 	} else {
 		if (tdb_fetch_int32(idmap_tdb, HWM_GROUP) == -1) {
 			if (tdb_store_int32(idmap_tdb, HWM_GROUP, idmap_state.gid_low) == -1) {
