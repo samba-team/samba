@@ -84,6 +84,11 @@ char    **      argmessage;
                 trace_file_name = optarg;
                 break;
 
+            /*  Timeout value passed.  Default changed */
+            case 'T':
+                pop_timeout = atoi(optarg);
+                break;
+
             /*  Unknown option received */
             default:
                 errflag++;

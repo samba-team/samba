@@ -88,6 +88,8 @@ POP     *   p;
 		strcat(tmpbuf, "\n");
 		if (strlen(tmpbuf) < MAXMSGLINELEN) {
 		    pop_sendline (p,tmpbuf);
+		    if (hangup)
+			return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
 		    return_path_sent++;
 		}
 	    }
@@ -107,6 +109,8 @@ POP     *   p;
             end of the header.  sendline() converts this to a NULL, 
             so that's what we look for. */
         if (*buffer == 0) break;
+        if (hangup)
+          return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
     }
     /*  Send the message body */
     while (fgets(buffer,MAXMSGLINELEN,p->drop)) {
@@ -115,6 +119,8 @@ POP     *   p;
         /*  Decrement the lines sent (for a TOP command) */
         if (msg_lines >= 0 && msg_lines-- == 0) break;
         pop_sendline(p,buffer);
+        if (hangup)
+          return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
     }
     /*  "." signals the end of a multi-line transmission */
     (void)fputs(".\r\n",p->output);

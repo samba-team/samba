@@ -75,8 +75,13 @@
 #define POP_SUCCESS     1
 #define POP_FAILURE     0
 #define POP_TERMINATE   '.'
+#define POP_TIMEOUT     120     /* timeout connection after this many secs */
 
 extern int              errno;
+
+extern int              pop_timeout;
+
+extern int              hangup;
 
 #define pop_command         pop_parm[0]     /*  POP command is first token */
 #define pop_subcommand      pop_parm[1]     /*  POP XTND subcommand is the 

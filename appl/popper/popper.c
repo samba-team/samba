@@ -11,9 +11,51 @@ static char SccsId[] = "@(#)@(#)popper.c	2.1  2.1 3/18/91";
 
 #include <stdio.h>
 #include <sys/types.h>
+#include <signal.h>
+#include <setjmp.h>
 #include "popper.h"
 
 extern  state_table *   pop_get_command();
+
+int hangup = FALSE ;
+
+static int
+catchSIGHUP()
+{
+    hangup = TRUE ;
+
+    /* This should not be a problem on BSD systems */
+    signal(SIGHUP,  (void *)catchSIGHUP);
+    signal(SIGPIPE,  (void *)catchSIGHUP);
+}
+
+int     pop_timeout = POP_TIMEOUT;
+
+jmp_buf env;
+
+static int
+ring()
+{
+  longjmp(env,1);
+}
+  
+/*
+ * fgets, but with a timeout
+ */
+static char *
+tgets(char *str, int size, FILE *fp, int timeout)
+{
+  int ring();
+  (void) signal(SIGALRM, (void *)ring);
+  alarm(timeout);
+  if (setjmp(env))
+    str = NULL;
+  else
+    str = fgets(str,size,fp);
+  alarm(0);
+  signal(SIGALRM,SIG_DFL);
+  return(str);
+}
 
 /* 
  *  popper: Handle a Post Office Protocol version 3 session
@@ -25,6 +67,9 @@ char    **  argv;
     POP                 p;
     state_table     *   s;
     char                message[MAXLINELEN];
+
+    (void) signal(SIGHUP,(void *)catchSIGHUP);
+    (void) signal(SIGPIPE,(void *)catchSIGHUP);
 
     /*  Start things rolling */
     pop_init(&p,argc,argv);
@@ -40,11 +85,16 @@ char    **  argv;
         until the client quits or an error occurs. */
 
     for (p.CurrentState=auth1;p.CurrentState!=halt&&p.CurrentState!=error;) {
-
-        /*  Obtain a line from the client */
-        if (fgets(message,MAXLINELEN,p.input) == NULL) {
+        if (hangup) {
+            pop_msg(&p,POP_FAILURE,"POP hangup",p.myhost);
+            if (p.CurrentState > auth2 && !pop_updt(&p))
+                pop_msg(&p,POP_FAILURE,"POP mailbox update failed.",p.myhost);
             p.CurrentState = error;
-            pop_msg(&p,POP_FAILURE,"POP server at %s signing off.",p.myhost);
+        } else if (tgets(message,MAXLINELEN,p.input,pop_timeout) == NULL) {
+	    pop_msg(&p,POP_FAILURE,"POP timeout",p.myhost);
+	    if (p.CurrentState > auth2 && !pop_updt(&p))
+                pop_msg(&p,POP_FAILURE,"POP mailbox update failed!",p.myhost);
+            p.CurrentState = error;
         }
         else {
             /*  Search for the command in the command/state table */
