@@ -220,8 +220,17 @@ void build_options(BOOL screen)
 #ifdef HAVE_CUPS_LANGUAGE_H
        output(screen,"   HAVE_CUPS_LANGUAGE_H\n");
 #endif
-#ifdef HAVE_LIBDL
-       output(screen,"   HAVE_LIBDL\n");
+#ifdef HAVE_DLOPEN
+       output(screen,"   HAVE_DLOPEN\n");
+#endif
+#ifdef HAVE_DLCLOSE
+       output(screen,"   HAVE_DLCLOSE\n");
+#endif
+#ifdef HAVE_DLSYM
+       output(screen,"   HAVE_DLSYM\n");
+#endif
+#ifdef HAVE_DLERROR
+       output(screen,"   HAVE_DLERROR\n");
 #endif
 #ifdef HAVE_UNIXSOCKET
        output(screen,"   HAVE_UNIXSOCKET\n");

@@ -1002,9 +1002,9 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define DEFAULT_SOCKET_OPTIONS ""
 #endif
 
-/* Load header file for libdl stuff */
+/* Load header file for dynamic linking stuff */
 
-#ifdef HAVE_LIBDL
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 

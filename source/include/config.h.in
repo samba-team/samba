@@ -190,7 +190,10 @@
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
-#undef HAVE_LIBDL
+#undef HAVE_DLOPEN
+#undef HAVE_DLCLOSE
+#undef HAVE_DLSYM
+#undef HAVE_DLERROR
 #undef SYSCONF_SC_NGROUPS_MAX
 #undef HAVE_UT_UT_NAME
 #undef HAVE_UT_UT_USER
@@ -877,6 +880,9 @@
 
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
+
+/* Define if you have the <dlfcn.h> header file.  */
+#undef HAVE_DLFCN_H
 
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
