@@ -45,6 +45,8 @@
 
 #include <hdb_asn1.h>
 
+enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
+
 typedef struct HDB{
     void *db;
 
@@ -54,6 +56,9 @@ typedef struct HDB{
     krb5_error_code (*delete)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*firstkey)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*nextkey)(krb5_context, struct HDB*, hdb_entry*);
+    krb5_error_code (*lock)(krb5_context, struct HDB*, int operation);
+    krb5_error_code (*unlock)(krb5_context, struct HDB*);
+    krb5_error_code (*_get)(krb5_context, struct HDB*, krb5_data, krb5_data*);
 }HDB;
 
 void hdb_free_entry(krb5_context, hdb_entry*);
