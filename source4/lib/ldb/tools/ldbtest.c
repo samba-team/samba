@@ -34,6 +34,8 @@
 
 #include "includes.h"
 
+static const char *ldb_url;
+
 static struct timeval tp1,tp2;
 
 static void start_timer(void)
@@ -270,6 +272,84 @@ static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 }
 
 
+/*
+      2) Store an @indexlist record
+
+      3) Store a record that contains fields that should be index according
+to @index
+
+      4) disconnection from database
+
+      5) connect to same database
+
+      6) search for record added in step 3 using a search key that should
+be indexed
+*/
+static void start_test_index(struct ldb_context **ldb)
+{
+	struct ldb_message msg;
+	struct ldb_message_element el[1];
+	struct ldb_val val[1];
+	struct ldb_message **res;
+	int ret;
+
+	printf("Starting index test\n");
+
+	msg.dn = strdup("@INDEXLIST");
+	msg.num_elements = 1;
+	msg.elements = el;
+
+	el[0].flags = 0;
+	el[0].name = strdup("@IDXATTR");
+	el[0].num_values = 1;
+	el[0].values = val;
+	
+	val[0].data = strdup("test");
+	val[0].length = strlen(val[0].data);
+
+	if (ldb_add(*ldb, &msg) != 0) {
+		printf("Add of %s failed - %s\n", msg.dn, ldb_errstring(*ldb));
+		exit(1);
+	}
+
+	msg.dn = strdup("test1");
+	el[0].name = strdup("test");
+	val[0].data = strdup("foo");
+	val[0].length = strlen(val[0].data);
+
+	if (ldb_add(*ldb, &msg) != 0) {
+		printf("Add of %s failed - %s\n", msg.dn, ldb_errstring(*ldb));
+		exit(1);
+	}
+
+	if (ldb_close(*ldb) != 0) {
+		printf("ldb_close failed - %s\n", ldb_errstring(*ldb));
+		exit(1);
+	}
+
+	*ldb = ldb_connect(ldb_url, 0, NULL);
+
+	if (!*ldb) {
+		perror("ldb_connect");
+		exit(1);
+	}
+
+	ret = ldb_search(*ldb, NULL, LDB_SCOPE_SUBTREE, "test=foo", NULL, &res);
+	if (ret != 1) {
+		printf("Should have found 1 record - found %d\n", ret);
+		exit(1);
+	}
+
+	if (ldb_delete(*ldb, "test1") != 0 ||
+	    ldb_delete(*ldb, "@INDEXLIST") != 0) {
+		printf("cleanup failed - %s\n", ldb_errstring(*ldb));
+		exit(1);
+	}
+
+	printf("Finished index test\n");
+}
+
+
 static void usage(void)
 {
 	printf("Usage: ldbtest <options>\n");
@@ -285,7 +365,6 @@ static void usage(void)
  int main(int argc, char * const argv[])
 {
 	struct ldb_context *ldb;
-	const char *ldb_url;
 	int opt;
 	int nrecords = 5000;
 	int nsearches = 2000;
@@ -331,6 +410,8 @@ static void usage(void)
 	ldb_set_debug_stderr(ldb);
 
 	srandom(1);
+
+	start_test_index(&ldb);
 
 	start_test(ldb, nrecords, nsearches);
 
