@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern struct in_addr ipzero;
-
 /* users from session setup */
 static pstring session_users="";
 

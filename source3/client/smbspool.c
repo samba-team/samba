@@ -29,7 +29,6 @@
  */
 
 extern BOOL		in_client;	/* Boolean for client library */
-extern struct in_addr	ipzero;		/* Any address */
 
 
 /*
@@ -285,7 +284,7 @@ smb_connect(char *workgroup,		/* I - Workgroup */
 
   get_myname(myname);  
 
-  ip = ipzero;
+  zero_ip(&ip);
 
   make_nmb_name(&calling, myname, 0x0);
   make_nmb_name(&called, server, 0x20);

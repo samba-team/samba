@@ -209,11 +209,11 @@ struct in_addr wins_srv_ip( void )
     if( now >= entry->mourning )        /* Found a live one. */
       {
       /* If we don't have the IP, look it up. */
-      if( zero_ip( entry->ip_addr ) )
+      if( is_zero_ip( entry->ip_addr ) )
         entry->ip_addr = *interpret_addr2( entry->server );
 
       /* If we still don't have the IP then kill it, else return it. */
-      if( zero_ip( entry->ip_addr ) )
+      if( is_zero_ip( entry->ip_addr ) )
         entry->mourning = now + NECROMANCYCLE;
       else
         return( entry->ip_addr );
@@ -278,7 +278,7 @@ void wins_srv_died( struct in_addr boothill_ip )
   {
   list_entry *entry;
 
-  if( zero_ip( boothill_ip ) )
+  if( is_zero_ip( boothill_ip ) )
     {
     DEBUG( 4, ("wins_srv_died(): Invalid request to mark zero IP down.\n") );
     return;

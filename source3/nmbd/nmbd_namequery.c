@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern struct in_addr ipzero;
-
 /****************************************************************************
  Deal with a response packet when querying a name.
 ****************************************************************************/
@@ -38,7 +36,9 @@ static void query_name_response( struct subnet_record   *subrec,
   BOOL success = False;
   struct nmb_name *question_name = 
                            &rrec->packet->packet.nmb.question.question_name;
-  struct in_addr answer_ip = ipzero;
+  struct in_addr answer_ip;
+
+  zero_ip(&answer_ip);
 
   /* Ensure we don't retry the query but leave the response record cleanup
      to the timeout code. We may get more answer responses in which case

@@ -690,7 +690,6 @@ struct cli_state *connect_one(char *share)
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 	extern pstring global_myname;
 
 	fstrcpy(server,share+2);
@@ -699,13 +698,13 @@ struct cli_state *connect_one(char *share)
 	*share = 0;
 	share++;
 
-	ip = ipzero;
+        zero_ip(&ip);
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
-	ip = ipzero;
+        zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server, &ip)) {

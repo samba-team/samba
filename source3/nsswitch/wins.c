@@ -88,13 +88,13 @@ struct in_addr *lookup_backend(const char *name, int *count)
 
 /* The next four lines commented out by JHT
    and replaced with the four lines following */
-/*	if( !zero_ip( wins_ip ) ) {
+/*	if( !is_zero_ip( wins_ip ) ) {
  *		ret = name_query( fd, name, 0x20, False, True, wins_src_ip(), count );
  *		goto out;
  *	}
  */
 	p = wins_srv_ip();
-	if( !zero_ip(p) ) {
+	if( !is_zero_ip(p) ) {
 		ret = name_query(fd,name,0x20,False,True, p, count);
 		goto out;
 	}

@@ -972,12 +972,11 @@ open the client sockets
 ****************************************************************************/
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
-	extern struct in_addr ipzero;
 	extern pstring user_socket_options;
 
 	fstrcpy(cli->desthost, host);
 	
-	if (!ip || ip_equal(*ip, ipzero)) {
+	if (!ip || is_zero_ip(*ip)) {
                 if (!resolve_name( cli->desthost, &cli->dest_ip, 0x20)) {
                         return False;
                 }

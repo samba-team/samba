@@ -94,10 +94,11 @@ static struct cli_state *get_ipc_connect(char *server,
                                          struct user_auth_info *user_info)
 {
         struct nmb_name calling, called;
-        extern struct in_addr ipzero;
-        struct in_addr server_ip = ipzero;
+        struct in_addr server_ip;
         struct cli_state *cli;
         pstring myname;
+
+        zero_ip(&server_ip);
 
         get_myname(myname);
 
