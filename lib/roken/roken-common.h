@@ -121,7 +121,7 @@
 #define SIG_ERR ((RETSIGTYPE (*)())-1)
 #endif
 
-#if !defined(__GNUC__) && !defined(__attribute__)
+#ifndef HAVE___ATTRIBUTE__
 #define __attribute__(x)
 #endif
 
