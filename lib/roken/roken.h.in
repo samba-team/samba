@@ -295,4 +295,8 @@ extern int optind;
 extern int opterr;
 #endif
 
+#ifdef NEED___PROGNAME_DECLARATION
+extern const char *__progname;
+#endif
+
 #endif /*  __ROKEN_H__ */
