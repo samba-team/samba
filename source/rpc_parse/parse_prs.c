@@ -101,6 +101,7 @@ BOOL prs_copy(prs_struct *ps, const prs_struct *from)
 {
 	int len = prs_buf_len(from);
 	CHECK_STRUCT(ps);
+	CHECK_STRUCT(from);
 	prs_init(ps, len, from->align, from->io);
 	if (len != 0)
 	{
@@ -374,6 +375,14 @@ char *prs_data(const prs_struct *buf, uint32 offset)
 void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next)
 {
 	CHECK_STRUCT(ps);
+	if (next != NULL)
+	{
+		CHECK_STRUCT(next);
+	}
+	if (prev != NULL)
+	{
+		CHECK_STRUCT(prev);
+	}
 	ps->start = prev != NULL ? prev->end : 0;
 	ps->end   = ps->start + ps->offset;
 
@@ -395,6 +404,7 @@ void prs_align(prs_struct *ps)
 	if (ps->align != 0 && mod != 0)
 	{
 		ps->offset += ps->align - mod;
+		prs_grow(ps, ps->offset);
 	}
 }
 
@@ -751,7 +761,7 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
 		return False;
 	}
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->str_max_len)
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->str_str_len)
 	ps->offset = end_offset;
 
 	return True;
@@ -842,8 +852,8 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	{
 		char *q;
 		i++;
-		prs_grow(ps, ps->offset + i*2);
-		q = prs_data(ps, ps->offset + i*2);
+		prs_grow(ps, ps->offset + (i+1)*2);
+		q = prs_data(ps, ps->offset + (i+1)*2);
 		if (q == NULL) 
 		{
 			ps->error = True;
@@ -889,8 +899,8 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 		char *q;
 		i++;
 
-		prs_grow(ps, ps->offset + i);
-		q = prs_data(ps, ps->offset + i);
+		prs_grow(ps, ps->offset + i+1);
+		q = prs_data(ps, ps->offset + i+1);
 		if (q == NULL)
 		{
 			ps->error = True;
