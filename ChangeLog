@@ -1,5 +1,21 @@
+2004-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/k5.asn1: ETYPE_DIGEST_MD5_NONE, ETYPE_CRAM_MD5_NONE:
+	private use, lukeh@padl.com
+
+2004-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_init_context.3: add krb5_context to so its added
+	as manpage-link too
+
 2004-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/fcache.c (fcc_remove_cred): simplistic implementation,
+	XXX add locking
+
+	* kuser/kdestroy.c: add --credential argument that just remove one
+	credential entry out of the cache specified
+	
 	* kdc/pkinit.c: replace the krb5.conf configuration option that
 	describes the mapping between principals and subject names with a
 	file, default /var/heimdal/pki-mapping. XXX this should be pushed
