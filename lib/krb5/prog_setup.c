@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,6 +33,7 @@
 
 #include "krb5_locl.h"
 #include <getarg.h>
+#include <err.h>
 
 RCSID("$Id$");
 
