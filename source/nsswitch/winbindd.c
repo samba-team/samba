@@ -27,6 +27,7 @@
 
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
+BOOL opt_ldap_proxy = False;
 int max_busy_children = 0;
 
 /* Reload configuration */
@@ -940,6 +941,7 @@ int main(int argc, char **argv)
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
+		{ "ldap-proxy", 'L', POPT_ARG_VAL, &opt_ldap_proxy, True, "ldap proxy" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		{ "num-clients", 'c', POPT_ARG_INT, &num_children, True, "Number of winbind children" },
 		POPT_COMMON_SAMBA
@@ -1074,6 +1076,10 @@ int main(int argc, char **argv)
 
 		for (i=0; i<num_children; i++)
 			do_dual_daemon();
+	}
+
+	if (opt_ldap_proxy) {
+		do_ldap_proxy();
 	}
 
 	/* Initialise messaging system */
