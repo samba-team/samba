@@ -12,4 +12,8 @@ usr/share/man/man5/smb.conf.5
 usr/share/man/man7/samba.7
 usr/share/man/man8/net.8
 usr/share/man/man8/smbpasswd.8
-usr/share/samba/
+usr/share/samba/lowcase.dat
+usr/share/samba/panic-action
+usr/share/samba/smb.conf
+usr/share/samba/upcase.dat
+usr/share/samba/valid.dat
