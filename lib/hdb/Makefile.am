@@ -9,9 +9,9 @@ SUFFIXES = .x .et .h
 INCLUDES = -I../asn1 -I$(srcdir)/../asn1
 
 BUILT_SOURCES = asn1_Key.c asn1_Event.c asn1_HDBFlags.c asn1_hdb_entry.c \
-	hdb_err.c hdb_err.h
+	asn1_Salt.c hdb_err.c hdb_err.h
 
-foo = asn1_Key.x asn1_Event.x asn1_HDBFlags.x asn1_hdb_entry.x
+foo = asn1_Key.x asn1_Event.x asn1_HDBFlags.x asn1_hdb_entry.x asn1_Salt.x
 
 CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
 
