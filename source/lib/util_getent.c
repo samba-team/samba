@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+#if 0
 static void print_grent_list(struct sys_grent *glist)
 {
 	DEBUG(100, ("print_grent_list: %x\n", glist ));
@@ -40,6 +41,7 @@ static void print_grent_list(struct sys_grent *glist)
 	}
 	DEBUG(100,("FINISHED !\n\n"));
 }
+#endif
 
 /****************************************************************
  Returns a single linked list of group entries.
@@ -108,8 +110,6 @@ struct sys_grent * getgrent_list(void)
 	}
 	
 	endgrent();
-	print_grent_list(glist);
-	DEBUG(100,("getgrent_list returned %x\n", glist ));
 	return glist;
 
   err:
@@ -127,12 +127,9 @@ struct sys_grent * getgrent_list(void)
 
 void grent_free (struct sys_grent *glist)
 {
-	DEBUG(100,("getgrent_free %x\n", glist ));
 	while (glist) {
 		struct sys_grent *prev;
 		
-		print_grent_list(glist);
-
 		if (glist->gr_name)
 			free(glist->gr_name);
 		if (glist->gr_passwd)
