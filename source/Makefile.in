@@ -155,7 +155,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o rpc_client/cli_spoolss_notify.o
+		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -169,8 +169,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
-		rpc_client/cli_login.o \
-		rpc_client/cli_trust.o
+		 rpc_client/cli_login.o rpc_client/cli_trust.o \
+		 libsmb/cli_spoolss_notify.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 

@@ -1065,8 +1065,21 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			     uint32 offered, uint32 *needed,
 			     POLICY_HND *handle, int level, uint32 *num_forms,
 			     FORM_1 **forms);
-WERROR cli_spoolss_setprinterdata (struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					POLICY_HND *pol, char* valname, char* value);
+WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *pol, char *valname, char *value);
+
+/* The following definitions come from libsmb/cli_spoolss_notify.c  */
+
+WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				      char *printer, uint32 printerlocal, uint32 type, 
+				      POLICY_HND *handle);
+WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				       POLICY_HND *handle);
+WERROR cli_spoolss_routerreplyprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol, uint32 condition, uint32 change_id);
+WERROR cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *pol, uint32 change_low,
+			       uint32 change_high, SPOOL_NOTIFY_INFO *info);
 
 /* The following definitions come from libsmb/cli_srvsvc.c  */
 
@@ -2517,21 +2530,6 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
 
-/* The following definitions come from rpc_client/cli_spoolss_notify.c  */
-
-BOOL spoolss_disconnect_from_client( struct cli_state *cli);
-BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
-WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				char *printer, uint32 localprinter, uint32 type, 
-				POLICY_HND *handle);
-WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					POLICY_HND *handle);
-WERROR cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					POLICY_HND *pol, uint32 condition, uint32 changd_id);
-WERROR cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					POLICY_HND *handle, PRINTER_MESSAGE_INFO *info,
-					NT_PRINTER_INFO_LEVEL *printer);
-
 /* The following definitions come from rpc_client/cli_trust.c  */
 
 BOOL change_trust_account_password( char *domain, char *remote_machine_list);
@@ -3947,6 +3945,7 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
 void close_policy_by_pipe(pipes_struct *p);
+BOOL pipe_access_check(pipes_struct *p);
 
 /* The following definitions come from rpc_server/srv_lsa_nt.c  */
 

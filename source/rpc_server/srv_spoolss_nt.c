@@ -189,9 +189,9 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		if(!spoolss_disconnect_from_client(&cli))
-			return;
-
+		cli_nt_session_close(&cli);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
 		message_deregister(MSG_PRINTER_NOTIFY);
 	}
 
@@ -598,6 +598,74 @@ static WERROR srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLO
 	return result;
 }
 
+/**********************************************************************************
+ Build the SPOOL_NOTIFY_INFO_DATA entries based upon the flags which have been set
+ *********************************************************************************/
+
+struct msg_info_table {
+	uint32 msg;
+	uint32 field;
+	char*  name;
+	void (*construct_fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
+		print_queue_struct *queue,
+		NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
+};
+
+struct msg_info_table msg_table[] = {
+{ PRINTER_MESSAGE_DRIVER,      PRINTER_NOTIFY_DRIVER_NAME,    "PRINTER_MESSAGE_DRIVER",      spoolss_notify_driver_name  },
+{ PRINTER_MESSAGE_ATTRIBUTES,  PRINTER_NOTIFY_ATTRIBUTES,     "PRINTER_MESSAGE_ATTRIBUTES",  spoolss_notify_attributes   },
+{ PRINTER_MESSAGE_COMMENT,     PRINTER_NOTIFY_COMMENT,        "PRINTER_MESSAGE_COMMENT",     spoolss_notify_comment      },
+{ PRINTER_MESSAGE_LOCATION,    PRINTER_NOTIFY_LOCATION,       "PRINTER_MESSAGE_LOCATION",    spoolss_notify_location     },
+{ PRINTER_MESSAGE_PRINTERNAME, PRINTER_NOTIFY_PRINTER_NAME,   "PRINTER_MESSAGE_PRINTERNAME", spoolss_notify_printer_name },
+{ PRINTER_MESSAGE_SHARENAME,   PRINTER_NOTIFY_SHARE_NAME,     "PRINTER_MESSAGE_SHARENAME",   spoolss_notify_share_name   },
+{ PRINTER_MESSAGE_PORT,        PRINTER_NOTIFY_PORT_NAME,      "PRINTER_MESSAGE_PORT",        spoolss_notify_port_name    },
+{ PRINTER_MESSAGE_CJOBS,       PRINTER_NOTIFY_CJOBS,          "PRINTER_MESSAGE_CJOBS",       spoolss_notify_cjobs        },
+{ PRINTER_MESSAGE_SEPFILE,     PRINTER_NOTIFY_SEPFILE,        "PRINTER_MESSAGE_SEPFILE",     spoolss_notify_sepfile      },
+{ PRINTER_MESSAGE_PARAMS,      PRINTER_NOTIFY_PARAMETERS,     "PRINTER_MESSAGE_PARAMETERS",  spoolss_notify_parameters   },
+{ PRINTER_MESSAGE_DATATYPE,    PRINTER_NOTIFY_DATATYPE,       "PRINTER_MESSAGE_DATATYPE",    spoolss_notify_datatype     },
+{ PRINTER_MESSAGE_NULL,        0x0,                           "",                            NULL                        },
+};
+
+static int build_notify_data (TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, uint32 flags, 
+			SPOOL_NOTIFY_INFO_DATA **notify_data)
+{
+	SPOOL_NOTIFY_INFO_DATA *data;
+	uint32 idx = 0;
+	int i = 0;
+	
+	while ((msg_table[i].msg != PRINTER_MESSAGE_NULL) && flags)
+	{
+		if (flags & msg_table[i].msg) 
+		{
+			DEBUG(10,("build_notify_data: %s set on [%s][%d]\n", msg_table[i].name,
+				printer->info_2->printername, idx));
+			if ((data=Realloc(*notify_data, (idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+				DEBUG(0,("build_notify_data: Realloc() failed with size [%d]!\n",
+					(idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA)));
+				return -1;
+			}
+			*notify_data = data;
+
+			/* clear memory */
+			memset(*notify_data+idx, 0x0, sizeof(SPOOL_NOTIFY_INFO_DATA));
+
+			/*
+			 * 'id' (last param here) is undefined when type == PRINTER_NOTIFY_TYPE
+			 * See PRINTER_NOTIFY_INFO_DATA entries in MSDN
+			 * --jerry
+			 */
+			construct_info_data(*notify_data+idx, PRINTER_NOTIFY_TYPE, msg_table[i].field, 0x00);
+
+			msg_table[i].construct_fn(-1, *notify_data+idx, NULL, printer, ctx);
+			idx++;
+		}
+		
+		i++;
+	}
+	
+	return idx;
+}
+
 /***********************************************************************
  Wrapper around the decision of which RPC use to in the change 
  notification
@@ -610,19 +678,49 @@ static WERROR srv_spoolss_send_event_to_client(Printer_entry* Printer,
 	WERROR result;
 	
 	if (valid_notify_options(Printer)) {
+		SPOOL_NOTIFY_INFO notify_info;
+		SPOOL_NOTIFY_INFO_DATA *notify_data;
+		uint32 data_len;
+		TALLOC_CTX *mem_ctx = NULL;
+		
+		if (!(mem_ctx = talloc_init())) {
+			DEBUG(0, ("out of memory in srv_spoolss_send_event_to_client\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
+
 		/* This is a single call that can send information about multiple changes */
 		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
 			msg->flags |= PRINTER_MESSAGE_ATTRIBUTES;
 
-		result = cli_spoolss_reply_rrpcn(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
-				msg, info);
-	}
-	else {
+		data_len = build_notify_data(mem_ctx, info, msg->flags, &notify_data);
+
+		if (msg->flags && (data_len == -1)) {
+			DEBUG(0,("cli_spoolss_reply_rrpcn: Failed to build SPOOL_NOTIFY_INFO_DATA [flags == 0x%x] for printer [%s]\n",
+				 msg->flags, msg->printer_name));
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		notify_info.version = 0x2;
+		notify_info.flags   = 0x00020000;	/* ?? */
+		notify_info.count   = data_len;
+		notify_info.data    = notify_data;
+
+		result = cli_spoolss_reply_rrpcn(
+			send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
+			msg->low, msg->high, &notify_info);
+		
+	done:
+		if (mem_ctx)
+			talloc_destroy(mem_ctx);
+		
+	} else {
 		/* This requires that the server send an individual event notification for each change */
 		result = srv_spoolss_routerreplyprinter(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
-	
+
 	return result;
 }
 
@@ -1682,6 +1780,96 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		return WERR_MORE_DATA;
 	else 
 		return WERR_OK;
+}
+
+/*********************************************************
+ Connect to the client machine.
+**********************************************************/
+
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_machine)
+{
+	extern pstring global_myname;
+
+	ZERO_STRUCTP(the_cli);
+	if(cli_initialise(the_cli) == NULL) {
+		DEBUG(0,("connect_to_client: unable to initialize client connection.\n"));
+		return False;
+	}
+
+	if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
+		DEBUG(0,("connect_to_client: Can't resolve address for %s\n", remote_machine));
+		cli_shutdown(the_cli);
+	return False;
+	}
+
+	if (ismyip(the_cli->dest_ip)) {
+		DEBUG(0,("connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
+		cli_shutdown(the_cli);
+		return False;
+	}
+
+	if (!cli_connect(the_cli, remote_machine, &the_cli->dest_ip)) {
+		DEBUG(0,("connect_to_client: unable to connect to SMB server on machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+  
+	if (!attempt_netbios_session_request(the_cli, global_myname, remote_machine, &the_cli->dest_ip)) {
+		DEBUG(0,("connect_to_client: machine %s rejected the NetBIOS session request.\n", 
+			remote_machine));
+		return False;
+	}
+
+	the_cli->protocol = PROTOCOL_NT1;
+    
+	if (!cli_negprot(the_cli)) {
+		DEBUG(0,("connect_to_client: machine %s rejected the negotiate protocol. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+
+	if (the_cli->protocol != PROTOCOL_NT1) {
+		DEBUG(0,("connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
+		cli_shutdown(the_cli);
+		return False;
+	}
+    
+	/*
+	 * Do an anonymous session setup.
+	 */
+    
+	if (!cli_session_setup(the_cli, "", "", 0, "", 0, "")) {
+		DEBUG(0,("connect_to_client: machine %s rejected the session setup. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+    
+	if (!(the_cli->sec_mode & 1)) {
+		DEBUG(0,("connect_to_client: machine %s isn't in user level security mode\n", remote_machine));
+		cli_shutdown(the_cli);
+		return False;
+	}
+    
+	if (!cli_send_tconX(the_cli, "IPC$", "IPC", "", 1)) {
+		DEBUG(0,("connect_to_client: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+
+	/*
+	 * Ok - we have an anonymous connection to the IPC$ share.
+	 * Now start the NT Domain stuff :-).
+	 */
+
+	if(cli_nt_session_open(the_cli, PIPE_SPOOLSS) == False) {
+		DEBUG(0,("connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
+		cli_nt_session_close(the_cli);
+		cli_ulogoff(the_cli);
+		cli_shutdown(the_cli);
+		return False;
+	} 
+
+	return True;
 }
 
 /***************************************************************************
