@@ -7,7 +7,7 @@ GtkRpcBindingDialog - Gtk Dialog Window for obtaining user credentials and a RPC
 GtkSelectDomainDialog - Gtk Dialog for selecting a domain
 GtkSelectHostDialog - Gtk Dialog for selecting a SMB host
 gtk_show_werror() - Show dialog box with a WERROR
-gtk_show_nterror() - Show dialog box with a NTSTATUS
+gtk_show_ntstatus() - Show dialog box with a NTSTATUS
 create_gtk_samba_about() - Shows about Window
 
 Utilities:

@@ -55,6 +55,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/samr.o \
 		torture/rpc/wkssvc.o \
 		torture/rpc/srvsvc.o \
+		torture/rpc/svcctl.o \
 		torture/rpc/atsvc.o \
 		torture/rpc/eventlog.o \
 		torture/rpc/epmapper.o \
