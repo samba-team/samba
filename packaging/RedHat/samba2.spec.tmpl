@@ -129,7 +129,7 @@ mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 # Install standard binary files
-for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
+for i in nmblookup smbclient smbspool smbpasswd smbstatus testparm testprns \
       make_smbcodepage make_printerdef rpcclient
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
@@ -140,7 +140,7 @@ install -m755 source/script/$i $RPM_BUILD_ROOT/usr/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbmnt
+for i in smbd nmbd swat smbmount smbmnt smbumount
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
@@ -186,6 +186,7 @@ install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT/usr/man/man8
+install -m644 docs/manpages/smbspool.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT/usr/bin
@@ -277,11 +278,13 @@ fi
 %attr(-,root,root) /usr/sbin/swat
 %attr(-,root,root) /usr/sbin/smbmnt
 %attr(-,root,root) /usr/sbin/smbmount
+%attr(-,root,root) /usr/sbin/smbumount
 %attr(-,root,root) /sbin/mount.smb
 %attr(0750,root,root) /usr/sbin/samba
 %attr(-,root,root) /usr/bin/addtosmbpass
 %attr(-,root,root) /usr/bin/mksmbpasswd.sh
 %attr(-,root,root) /usr/bin/smbclient
+%attr(-,root,root) /usr/bin/smbspool
 %attr(-,root,root) /usr/bin/rpcclient
 %attr(-,root,root) /usr/bin/testparm
 %attr(-,root,root) /usr/bin/testprns
@@ -304,6 +307,7 @@ fi
 %attr(-,root,root) /usr/share/swat/help/samba.7.html
 %attr(-,root,root) /usr/share/swat/help/smb.conf.5.html
 %attr(-,root,root) /usr/share/swat/help/smbclient.1.html
+%attr(-,root,root) /usr/share/swat/help/smbspool.1.html
 %attr(-,root,root) /usr/share/swat/help/smbd.8.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.5.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.8.html
@@ -357,6 +361,7 @@ fi
 %attr(-,root,root) /usr/man/man8/swat.8
 %attr(-,root,root) /usr/man/man8/smbmnt.8
 %attr(-,root,root) /usr/man/man8/smbmount.8
+%attr(-,root,root) /usr/man/man8/smbspool.8
 %attr(-,root,nobody) %dir /home/samba
 %attr(-,root,root) %dir /etc/codepages
 %attr(-,root,root) %dir /etc/codepages/src
