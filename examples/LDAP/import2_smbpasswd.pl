@@ -69,7 +69,17 @@ while ( $string = <STDIN> ) {
 	    print "Updating [" . $entry->dn . "]\n";
 
   	    ## Add the objectclass: smbPasswordEntry attribute if it's not there
-	    $entry->add(objectclass => "smbPasswordEntry");
+	    @values = $entry->get_value( "objectclass" );
+	    $flag = 1;
+	    foreach $item (@values) {
+	       if ( lc($item) eq "smbpasswordentry" ) {
+		   print $item . "\n";
+		   $flag = 0;
+	       }
+	    }
+	    if ( $flag ) {
+	       $entry->add(objectclass => "smbPasswordEntry");
+	    }
 
 	    ## Set the other attribute values
 	    $entry->replace(lmPassword => $smbentry[2],
@@ -84,6 +94,8 @@ while ( $string = <STDIN> ) {
 		print "Error updating $smbentry[0]!\n";
 	    }
 
+        ## If we get here, the LDAP search returned more than one value
+        ## which shouldn't happen under normal circumstances.
 	} else {
 	    print STDERR "LDAP search returned more than one entry for $smbentry[0]... skipping!\n";
 	    next;
@@ -92,11 +104,5 @@ while ( $string = <STDIN> ) {
 
 $ldap->unbind();
 exit 0;
-
-
-
-
-
-
 
 
