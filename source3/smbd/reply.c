@@ -156,7 +156,7 @@ int reply_special(char *inbuf,char *outbuf)
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	char *service;
+	const char *service;
 	pstring service_buf;
 	pstring password;
 	pstring dev;
