@@ -31,7 +31,10 @@ my \$SMB_BUILD_CTX;
 _SMB_ACEOF
 
 cat >> config.smb_build.pl < build/smb_build/config_mk.pl
+cat >> config.smb_build.pl < build/smb_build/input.pl
+cat >> config.smb_build.pl < build/smb_build/depend.pl
 cat >> config.smb_build.pl < build/smb_build/makefile.pl
+cat >> config.smb_build.pl < build/smb_build/main.pl
 
 cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
@@ -56,9 +59,10 @@ $SMB_INFO_BINARIES
 ## End Binaries
 #########################################
 
-_SMB_ACEOF
+smb_build_main(\$SMB_BUILD_CTX);
 
-cat >> config.smb_build.pl < build/smb_build/main.pl
+0;
+_SMB_ACEOF
 
 $PERL config.smb_build.pl || exit $?
 
