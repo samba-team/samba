@@ -215,11 +215,11 @@ struct smbsrv_connection {
 
 	/* the context associated with open tree connects on a smb socket */
 	struct {
+		/* list of open tree connects */
 		struct smbsrv_tcon *tcons;
 
-		/* number of open connections */
-		struct bitmap *bmap;
-		int num_open;
+		/* an id tree used to allocate tids */
+		void *idtree_tid;
 	} tree;
 
 	/* the context associated with open files on an smb socket */

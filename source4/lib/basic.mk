@@ -48,7 +48,8 @@ ADD_OBJ_FILES = \
 		lib/crypto/hmacmd5.o \
 		lib/crypto/md4.o \
 		lib/db_wrap.o \
-		lib/server_mutex.o 
+		lib/server_mutex.o \
+		lib/idtree.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB CHARSET
 # End SUBSYSTEM LIBBASIC
