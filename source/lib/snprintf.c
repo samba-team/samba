@@ -817,7 +817,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	(*currlen)++;
 }
 
- int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
+ int smb_vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 {
 	return dopr(str, count, fmt, args);
 }
