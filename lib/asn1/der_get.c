@@ -92,7 +92,7 @@ der_get_octet_string (unsigned char *p, size_t len,
     p += l;
     len -= l;
     if (len < slen)
-	ASN1_OVERRUN;
+	return ASN1_OVERRUN;
     data->length = slen;
     data->data = malloc(slen);
     if (data->data == NULL && data->length != 0)
