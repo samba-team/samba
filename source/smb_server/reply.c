@@ -2136,7 +2136,7 @@ void reply_findclose(struct smbsrv_request *req)
 	NTSTATUS status;
 	union smb_search_close io;
 
-	io.findclose.level = RAW_FINDCLOSE_CLOSE;
+	io.findclose.level = RAW_FINDCLOSE_FINDCLOSE;
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 1);

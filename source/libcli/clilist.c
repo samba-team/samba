@@ -29,7 +29,7 @@ struct search_private {
 	int total_received;  /* total received all together */
 	enum smb_search_level info_level;
 	const char *last_name;     /* used to continue trans2 search */
-	DATA_BLOB status;	/* used for old-style search */
+	struct smb_search_id id;   /* used for old-style search */
 };
 
 
@@ -238,7 +238,7 @@ static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 
 	state->total_received++;
 	state->ff_searchcount++;
-	state->status = file->search.search_id; /* return resume info */
+	state->id = file->search.id; /* return resume info */
 	
 	return True;
 }
@@ -294,7 +294,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			next_parms.search_next.level = RAW_SEARCH_SEARCH;
 			next_parms.search_next.in.max_count = num_asked;
 			next_parms.search_next.in.search_attrib = attribute;
-			next_parms.search_next.in.search_id = state.status;
+			next_parms.search_next.in.id = state.id;
 			
 			status = smb_raw_search_next(tree, state.mem_ctx,
 						     &next_parms,

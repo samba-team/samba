@@ -42,11 +42,15 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 	p = req->in.data + 3;
 
 	for (i=0; i < count; i++) {
-		search_data.search.search_id  = smbcli_req_pull_blob(req, mem_ctx, p, 21);
-		search_data.search.attrib     = CVAL(p,            21);
-		search_data.search.write_time = raw_pull_dos_date(req->transport,
-								  p + 22);
-		search_data.search.size       = IVAL(p,            26);
+		search_data.search.id.reserved      = CVAL(p, 0);
+		memcpy(search_data.search.id.name,    p+1, 11);
+		search_data.search.id.handle        = CVAL(p, 12);
+		search_data.search.id.server_cookie = IVAL(p, 13);
+		search_data.search.id.client_cookie = IVAL(p, 17);
+		search_data.search.attrib           = CVAL(p, 21);
+		search_data.search.write_time       = raw_pull_dos_date(req->transport,
+									p + 22);
+		search_data.search.size             = IVAL(p, 26);
 		smbcli_req_pull_ascii(req, mem_ctx, &search_data.search.name, p+30, 13, STR_ASCII);
 		if (!callback(private, &search_data)) {
 			break;
@@ -65,8 +69,15 @@ static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 
 {
 	struct smbcli_request *req; 
-	
-	req = smbcli_request_setup(tree, SMBsearch, 2, 0);
+	uint8_t op = SMBsearch;
+
+	if (io->generic.level == RAW_SEARCH_FFIRST) {
+		op = SMBffirst;
+	} else if (io->generic.level == RAW_SEARCH_FUNIQUE) {
+		op = SMBfunique;
+	}
+
+	req = smbcli_request_setup(tree, op, 2, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -99,8 +110,14 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 
 {
 	struct smbcli_request *req; 
+	uint8_t var_block[21];
+	uint8_t op = SMBsearch;
+
+	if (io->generic.level == RAW_SEARCH_FFIRST) {
+		op = SMBffirst;
+	}
 	
-	req = smbcli_request_setup(tree, SMBsearch, 2, 0);
+	req = smbcli_request_setup(tree, op, 2, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -108,7 +125,14 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 	SSVAL(req->out.vwv, VWV(0), io->search_next.in.max_count);
 	SSVAL(req->out.vwv, VWV(1), io->search_next.in.search_attrib);
 	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
-	smbcli_req_append_var_block(req, io->search_next.in.search_id.data, 21);
+
+	SCVAL(var_block,  0, io->search_next.in.id.reserved);
+	memcpy(&var_block[1], io->search_next.in.id.name, 11);
+	SCVAL(var_block, 12, io->search_next.in.id.handle);
+	SIVAL(var_block, 13, io->search_next.in.id.server_cookie);
+	SIVAL(var_block, 17, io->search_next.in.id.client_cookie);
+
+	smbcli_req_append_var_block(req, var_block, 21);
 
 	if (!smbcli_request_send(req) ||
 	    !smbcli_request_receive(req)) {
@@ -122,6 +146,43 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 	
 	return smbcli_request_destroy(req);
 }
+
+
+/****************************************************************************
+ Old style search next.
+****************************************************************************/
+static NTSTATUS smb_raw_search_close_old(struct smbcli_tree *tree,
+					 union smb_search_close *io)
+{
+	struct smbcli_request *req; 
+	uint8_t var_block[21];
+
+	req = smbcli_request_setup(tree, SMBfclose, 2, 0);
+	if (!req) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	SSVAL(req->out.vwv, VWV(0), io->fclose.in.max_count);
+	SSVAL(req->out.vwv, VWV(1), io->fclose.in.search_attrib);
+	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
+
+	SCVAL(var_block,  0, io->fclose.in.id.reserved);
+	memcpy(&var_block[1], io->fclose.in.id.name, 11);
+	SCVAL(var_block, 12, io->fclose.in.id.handle);
+	SIVAL(var_block, 13, io->fclose.in.id.server_cookie);
+	SIVAL(var_block, 17, io->fclose.in.id.client_cookie);
+
+	smbcli_req_append_var_block(req, var_block, 21);
+
+	if (!smbcli_request_send(req) ||
+	    !smbcli_request_receive(req)) {
+		return smbcli_request_destroy(req);
+	}
+
+	return smbcli_request_destroy(req);
+}
+
+
 
 /****************************************************************************
  Very raw search first - returns param/data blobs.
@@ -245,6 +306,8 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 	switch (level) {
 	case RAW_SEARCH_GENERIC:
 	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
+	case RAW_SEARCH_FUNIQUE:
 		/* handled elsewhere */
 		return -1;
 
@@ -499,7 +562,9 @@ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
 			
-	if (io->generic.level == RAW_SEARCH_SEARCH) {
+	if (io->generic.level == RAW_SEARCH_SEARCH ||
+	    io->generic.level == RAW_SEARCH_FFIRST ||
+	    io->generic.level == RAW_SEARCH_FUNIQUE) {
 		return smb_raw_search_first_old(tree, mem_ctx, io, private, callback);
 	}
 	if (io->generic.level >= RAW_SEARCH_GENERIC) {
@@ -543,7 +608,8 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
 
-	if (io->generic.level == RAW_SEARCH_SEARCH) {
+	if (io->generic.level == RAW_SEARCH_SEARCH ||
+	    io->generic.level == RAW_SEARCH_FFIRST) {
 		return smb_raw_search_next_old(tree, mem_ctx, io, private, callback);
 	}
 	if (io->generic.level >= RAW_SEARCH_GENERIC) {
@@ -582,6 +648,10 @@ NTSTATUS smb_raw_search_close(struct smbcli_tree *tree,
 			      union smb_search_close *io)
 {
 	struct smbcli_request *req;
+
+	if (io->generic.level == RAW_FINDCLOSE_FCLOSE) {
+		return smb_raw_search_close_old(tree, io);
+	}
 	
 	req = smbcli_request_setup(tree, SMBfindclose, 1, 0);
 	if (!req) {

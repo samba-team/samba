@@ -45,10 +45,13 @@ static NTSTATUS single_search(struct smbcli_state *cli,
 			      union smb_search_data *data)
 {
 	union smb_search_first io;
+	union smb_search_close c;
 	NTSTATUS status;
 
 	io.generic.level = level;
-	if (level == RAW_SEARCH_SEARCH) {
+	if (level == RAW_SEARCH_SEARCH ||
+	    level == RAW_SEARCH_FFIRST ||
+	    level == RAW_SEARCH_FUNIQUE) {
 		io.search_first.in.max_count = 1;
 		io.search_first.in.search_attrib = 0;
 		io.search_first.in.pattern = pattern;
@@ -62,6 +65,14 @@ static NTSTATUS single_search(struct smbcli_state *cli,
 
 	status = smb_raw_search_first(cli->tree, mem_ctx,
 				      &io, (void *)data, single_search_callback);
+
+	if (NT_STATUS_IS_OK(status) && level == RAW_SEARCH_FFIRST) {
+		c.fclose.level = RAW_FINDCLOSE_FCLOSE;
+		c.fclose.in.max_count = 1;
+		c.fclose.in.search_attrib = 0;
+		c.fclose.in.id = data->search.id;
+		status = smb_raw_search_close(cli->tree, &c);
+	}
 	
 	return status;
 }
@@ -74,6 +85,8 @@ static struct {
 	NTSTATUS status;
 	union smb_search_data data;
 } levels[] = {
+	{"FFIRST",                 RAW_SEARCH_FFIRST, },
+	{"FUNIQUE",                RAW_SEARCH_FUNIQUE, },
 	{"SEARCH",                 RAW_SEARCH_SEARCH, },
 	{"STANDARD",               RAW_SEARCH_STANDARD, },
 	{"EA_SIZE",                RAW_SEARCH_EA_SIZE, },
@@ -151,7 +164,9 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 				       levels[i].level, &levels[i].data);
 		
 		expected_status = NT_STATUS_NO_SUCH_FILE;
-		if (levels[i].level == RAW_SEARCH_SEARCH) {
+		if (levels[i].level == RAW_SEARCH_SEARCH ||
+		    levels[i].level == RAW_SEARCH_FFIRST ||
+		    levels[i].level == RAW_SEARCH_FUNIQUE) {
 			expected_status = STATUS_NO_MORE_FILES;
 		}
 		if (!NT_STATUS_EQUAL(status, expected_status)) {
@@ -447,7 +462,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 		if (level == RAW_SEARCH_SEARCH) {
 			io2.search_next.in.max_count = per_search;
 			io2.search_next.in.search_attrib = 0;
-			io2.search_next.in.search_id = result->list[result->count-1].search.search_id;
+			io2.search_next.in.id = result->list[result->count-1].search.id;
 		} else {
 			io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 			io2.t2fnext.in.max_count = per_search;

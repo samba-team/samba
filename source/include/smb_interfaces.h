@@ -1694,17 +1694,18 @@ struct smb_notify {
 
 
 enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
-		   RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
-		   RAW_SEARCH_FCLOSE,		      /* SMBfclose */
-		   RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
-		   RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
-		   RAW_SEARCH_DIRECTORY_INFO          = SMB_FIND_DIRECTORY_INFO,
-		   RAW_SEARCH_FULL_DIRECTORY_INFO     = SMB_FIND_FULL_DIRECTORY_INFO,
-		   RAW_SEARCH_NAME_INFO               = SMB_FIND_NAME_INFO,
-		   RAW_SEARCH_BOTH_DIRECTORY_INFO     = SMB_FIND_BOTH_DIRECTORY_INFO,
-		   RAW_SEARCH_ID_FULL_DIRECTORY_INFO  = SMB_FIND_ID_FULL_DIRECTORY_INFO,
-		   RAW_SEARCH_ID_BOTH_DIRECTORY_INFO  = SMB_FIND_ID_BOTH_DIRECTORY_INFO,
-		   RAW_SEARCH_UNIX_INFO               = SMB_FIND_UNIX_INFO};
+		       RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
+		       RAW_SEARCH_FFIRST,                 /* SMBffirst */ 
+		       RAW_SEARCH_FUNIQUE,                /* SMBfunique */ 
+		       RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
+		       RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
+		       RAW_SEARCH_DIRECTORY_INFO          = SMB_FIND_DIRECTORY_INFO,
+		       RAW_SEARCH_FULL_DIRECTORY_INFO     = SMB_FIND_FULL_DIRECTORY_INFO,
+		       RAW_SEARCH_NAME_INFO               = SMB_FIND_NAME_INFO,
+		       RAW_SEARCH_BOTH_DIRECTORY_INFO     = SMB_FIND_BOTH_DIRECTORY_INFO,
+		       RAW_SEARCH_ID_FULL_DIRECTORY_INFO  = SMB_FIND_ID_FULL_DIRECTORY_INFO,
+		       RAW_SEARCH_ID_BOTH_DIRECTORY_INFO  = SMB_FIND_ID_BOTH_DIRECTORY_INFO,
+		       RAW_SEARCH_UNIX_INFO               = SMB_FIND_UNIX_INFO};
 
 	
 /* union for file search */
@@ -1713,7 +1714,8 @@ union smb_search_first {
 		enum smb_search_level level;
 	} generic;
 	
-	/* search (old) findfirst interface */
+	/* search (old) findfirst interface. 
+	   Also used for ffirst and funique. */
 	struct {
 		enum smb_search_level level;
 	
@@ -1752,14 +1754,21 @@ union smb_search_next {
 		enum smb_search_level level;
 	} generic;
 
-	/* search (old) findnext interface */
+	/* search (old) findnext interface. Also used
+	   for ffirst when continuing */
 	struct {
 		enum smb_search_level level;
 	
 		struct {
 			uint16_t max_count;
 			uint16_t search_attrib;
-			DATA_BLOB search_id;
+			struct smb_search_id {
+				uint8_t reserved;
+				char name[11];
+				uint8_t handle;
+				uint32_t server_cookie;
+				uint32_t client_cookie;
+			} id;
 		} in;
 		struct {
 			uint16_t count;
@@ -1791,7 +1800,7 @@ union smb_search_data {
 		uint16_t attrib;
 		time_t write_time;
 		uint32_t size;
-		DATA_BLOB search_id;  /* used to resume search from this point */
+		struct smb_search_id id;
 		char *name;
 	} search;
 	
@@ -1920,7 +1929,7 @@ union smb_search_data {
 };
 
 
-enum smb_search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_CLOSE};
+enum smb_search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_FCLOSE, RAW_FINDCLOSE_FINDCLOSE};
 
 /* union for file search close */
 union smb_search_close {
@@ -1933,14 +1942,12 @@ union smb_search_close {
 		enum smb_search_close_level level;
 	
 		struct {
+			/* max_count and search_attrib are not used, but are present */
 			uint16_t max_count;
 			uint16_t search_attrib;
-			DATA_BLOB search_id;
+			struct smb_search_id id;
 		} in;
-		struct {
-			uint16_t count;
-		} out;
-	} search_next;
+	} fclose;
 	
 	/* SMBfindclose interface */
 	struct {

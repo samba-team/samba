@@ -395,7 +395,7 @@ size_t req_push_str(struct smbsrv_request *req, char *dest, const char *str, int
   return the number of bytes added
 */
 size_t req_append_bytes(struct smbsrv_request *req, 
-		const uint8_t *bytes, size_t byte_len)
+			const uint8_t *bytes, size_t byte_len)
 {
 	req_grow_allocation(req, byte_len + req->out.data_size);
 	memcpy(req->out.data + req->out.data_size, bytes, byte_len);
