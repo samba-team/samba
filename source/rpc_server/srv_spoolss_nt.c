@@ -5481,7 +5481,6 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 			    DEVICEMODE *devmode)
 {
 	pstring temp_name;
-	pstring chaine;
 	struct tm *t;
 
 	t=gmtime(&queue->time);
