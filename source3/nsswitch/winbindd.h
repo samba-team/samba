@@ -63,7 +63,8 @@ struct getent_state {
 struct getpwent_user {
 	fstring name;                        /* Account name */
 	fstring gecos;                       /* User information */
-	uint32 user_rid, group_rid;          /* NT user and group rids */
+	DOM_SID user_sid;                    /* NT user and primary group SIDs */
+	DOM_SID group_sid;
 };
 
 /* Server state structure */
@@ -81,8 +82,8 @@ extern struct winbindd_state server_state;  /* Server information */
 typedef struct {
 	char *acct_name;
 	char *full_name;
-	uint32 user_rid;
-	uint32 group_rid; /* primary group */
+	DOM_SID *user_sid;                    /* NT user and primary group SIDs */
+	DOM_SID *group_sid;
 } WINBIND_USERINFO;
 
 /* Structures to hold per domain information */
@@ -138,6 +139,7 @@ struct winbindd_methods {
 				    
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
 				const char *name,
 				DOM_SID *sid,
 				enum SID_NAME_USE *type);
@@ -149,10 +151,10 @@ struct winbindd_methods {
 				char **name,
 				enum SID_NAME_USE *type);
 
-	/* lookup user info for a given rid */
+	/* lookup user info for a given SID */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx, 
-			       uint32 user_rid, 
+			       DOM_SID *user_sid,
 			       WINBIND_USERINFO *user_info);
 
 	/* lookup all groups that a user is a member of. The backend
@@ -160,14 +162,15 @@ struct winbindd_methods {
 	   function */
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      uint32 user_rid, 
-				      uint32 *num_groups, uint32 **user_gids);
+				      DOM_SID *user_sid,
+				      uint32 *num_groups, DOM_SID ***user_gids);
 
 	/* find all members of the group with the specified group_rid */
 	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32 group_rid, uint32 *num_names, 
-				    uint32 **rid_mem, char ***names, 
+				    DOM_SID *group_sid,
+				    uint32 *num_names, 
+				    DOM_SID ***sid_mem, char ***names, 
 				    uint32 **name_types);
 
 	/* return the current global sequence number */
@@ -206,13 +209,6 @@ struct idmap_methods {
 
   BOOL (*get_uid_from_sid)(DOM_SID *sid, uid_t *uid);
   BOOL (*get_gid_from_sid)(DOM_SID *sid, gid_t *gid);
-
-  BOOL (*get_rid_from_uid)(uid_t uid, uint32 *user_rid, 
-                           struct winbindd_domain **domain);
-  BOOL (*get_rid_from_gid)(gid_t gid, uint32 *group_rid,
-                           struct winbindd_domain **domain);
-  BOOL (*get_uid_from_rid)(const char *dom_name, uint32 rid, uid_t *uid);
-  BOOL (*get_gid_from_rid)(const char *dom_name, uint32 rid, gid_t *gid);
 
   /* Called when backend is unloaded */
   BOOL (*close)(void);

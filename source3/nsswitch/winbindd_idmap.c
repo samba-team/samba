@@ -121,48 +121,6 @@ BOOL winbindd_idmap_get_gid_from_sid(DOM_SID *sid, gid_t *gid)
   return ret;
 }
 
-/* Get UID from RID */
-BOOL winbindd_idmap_get_uid_from_rid(const char *dom_name, uint32 rid, 
-                                     uid_t *uid)
-{
-  BOOL ret = False;
-
-  if (!impl) {
-    impl = get_impl(lp_idmap_backend());
-    if (!impl) {
-      DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-                lp_idmap_backend()));
-    }
-  }
-
-  if (impl) {
-    ret = impl->get_uid_from_rid(dom_name, rid, uid);
-  }
-
-  return ret;
-}
-
-/* Get GID From RID */
-BOOL winbindd_idmap_get_gid_from_rid(const char *dom_name, uint32 rid, 
-                                     gid_t *gid)
-{
-  BOOL ret = False;
-
-  if (!impl) {
-    impl = get_impl(lp_idmap_backend());
-    if (!impl) {
-      DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-                lp_idmap_backend()));
-    }
-  }
-
-  if (impl) {
-    ret = impl->get_gid_from_rid(dom_name, rid, gid);
-  }
-
-  return ret;
-}
-
 /* Get SID from UID */
 BOOL winbindd_idmap_get_sid_from_uid(uid_t uid, DOM_SID *sid)
 {
@@ -194,46 +152,6 @@ BOOL winbindd_idmap_get_sid_from_gid(gid_t gid, DOM_SID *sid)
 
   if (impl) {
     ret = impl->get_sid_from_gid(gid, sid);
-  } else {
-    DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-              lp_idmap_backend()));
-  }
-
-  return ret;
-}
-
-/* Get RID From UID */
-BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
-                                     struct winbindd_domain **domain)
-{
-  BOOL ret = False;
-
-  if (!impl) {
-    impl = get_impl(lp_idmap_backend());
-  }
-
-  if (impl) {
-    ret = impl->get_rid_from_uid(uid, user_rid, domain);
-  } else {
-    DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-              lp_idmap_backend()));
-  }
-
-  return ret;
-}
-
-/* Get RID from GID */
-BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
-                                     struct winbindd_domain **domain)
-{
-  BOOL ret = False;
-
-  if (!impl) {
-    impl = get_impl(lp_idmap_backend());
-  }
-
-  if (impl) {
-    ret = impl->get_rid_from_gid(gid, group_rid, domain);
   } else {
     DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
               lp_idmap_backend()));

@@ -29,29 +29,30 @@
 /* Fill a pwent structure with information we have obtained */
 
 static BOOL winbindd_fill_pwent(char *dom_name, char *user_name, 
-				uint32 user_rid, uint32 group_rid, 
+				DOM_SID *user_sid, DOM_SID *group_sid,
 				char *full_name, struct winbindd_pw *pw)
 {
 	extern userdom_struct current_user_info;
 	fstring output_username;
 	pstring homedir;
+	fstring sid_string;
 	
 	if (!pw || !dom_name || !user_name)
 		return False;
 	
 	/* Resolve the uid number */
 	
-	if (!winbindd_idmap_get_uid_from_rid(dom_name, user_rid, 
+	if (!winbindd_idmap_get_uid_from_sid(user_sid, 
 					     &pw->pw_uid)) {
-		DEBUG(1, ("error getting user id for rid %d\n", user_rid));
+		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 	
-	if (!winbindd_idmap_get_gid_from_rid(dom_name, group_rid, 
+	if (!winbindd_idmap_get_gid_from_sid(group_sid, 
 					     &pw->pw_gid)) {
-		DEBUG(1, ("error getting group id for rid %d\n", group_rid));
+		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
 
@@ -95,7 +96,6 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 
 enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state) 
 {
-	uint32 user_rid;
 	WINBIND_USERINFO user_info;
 	DOM_SID user_sid;
 	NTSTATUS status;
@@ -144,9 +144,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	sid_split_rid(&user_sid, &user_rid);
-
-	status = domain->methods->query_user(domain, mem_ctx, user_rid, 
+	status = domain->methods->query_user(domain, mem_ctx, &user_sid, 
 					     &user_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -158,7 +156,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
     
 	/* Now take all this information and fill in a passwd structure */	
 	if (!winbindd_fill_pwent(name_domain, name_user, 
-				 user_rid, user_info.group_rid, 
+				 user_info.user_sid, user_info.group_sid, 
 				 user_info.full_name,
 				 &state->response.data.pw)) {
 		talloc_destroy(mem_ctx);
@@ -176,7 +174,6 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
-	uint32 user_rid;
 	fstring dom_name;
 	fstring user_name;
 	enum SID_NAME_USE name_type;
@@ -196,18 +193,15 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get rid from uid */
 
-	if (!winbindd_idmap_get_rid_from_uid(state->request.data.uid, 
-					     &user_rid, &domain)) {
-		DEBUG(1, ("could not convert uid %d to rid\n", 
+	if (!winbindd_idmap_get_sid_from_uid(state->request.data.uid, 
+					     &user_sid)) {
+		DEBUG(1, ("could not convert uid %d to SID\n", 
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
 	}
 	
 	/* Get name and name type from rid */
 
-	sid_copy(&user_sid, &domain->sid);
-	sid_append_rid(&user_sid, user_rid);
-	
 	if (!winbindd_lookup_name_by_sid(&user_sid, dom_name, user_name, &name_type)) {
 		fstring temp;
 		
@@ -216,6 +210,13 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 	
+	domain = find_domain_from_sid(&user_sid);
+
+	if (!domain) {
+		DEBUG(1,("Can't find domain from sid\n"));
+		return WINBINDD_ERROR;
+	}
+
 	/* Get some user info */
 	
 	if (!(mem_ctx = talloc_init("winbind_getpwuid(%d)",
@@ -225,7 +226,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	status = domain->methods->query_user(domain, mem_ctx, user_rid, 
+	status = domain->methods->query_user(domain, mem_ctx, &user_sid, 
 					     &user_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -237,7 +238,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Resolve gid number */
 
-	if (!winbindd_idmap_get_gid_from_rid(domain->name, user_info.group_rid, &gid)) {
+	if (!winbindd_idmap_get_gid_from_sid(user_info.group_sid, &gid)) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
@@ -245,7 +246,8 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 
 	/* Fill in password structure */
 
-	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, user_info.group_rid,
+	if (!winbindd_fill_pwent(domain->name, user_name, user_info.user_sid, 
+				 user_info.group_sid,
 				 user_info.full_name, &state->response.data.pw)) {
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
@@ -332,13 +334,13 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_domain *domain;
 	struct winbindd_methods *methods;
-	int i;
+	unsigned int i;
 
 	if (ent->num_sam_entries)
 		return False;
 
 	if (!(mem_ctx = talloc_init("get_sam_user_entries(%s)",
-					  ent->domain_name)))
+				    ent->domain_name)))
 		return False;
 
 	if (!(domain = find_domain_from_name(ent->domain_name))) {
@@ -393,8 +395,8 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		}
 		
 		/* User and group ids */
-		name_list[ent->num_sam_entries+i].user_rid = info[i].user_rid;
-		name_list[ent->num_sam_entries+i].group_rid = info[i].group_rid;
+		sid_copy(&name_list[ent->num_sam_entries+i].user_sid, info[i].user_sid);
+		sid_copy(&name_list[ent->num_sam_entries+i].group_sid, info[i].group_sid);
 	}
 		
 	ent->num_sam_entries += num_entries;
@@ -492,8 +494,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 		result = winbindd_fill_pwent(
 			ent->domain_name, 
 			name_list[ent->sam_entry_index].name,
-			name_list[ent->sam_entry_index].user_rid,
-			name_list[ent->sam_entry_index].group_rid,
+			&name_list[ent->sam_entry_index].user_sid,
+			&name_list[ent->sam_entry_index].group_sid,
 			name_list[ent->sam_entry_index].gecos,
 			&user_list[user_list_ndx]);
 		
@@ -540,7 +542,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	for (domain = domain_list(); domain; domain = domain->next) {
 		NTSTATUS status;
 		struct winbindd_methods *methods;
-		int i;
+		unsigned int i;
 
 		methods = domain->methods;
 
