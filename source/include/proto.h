@@ -295,12 +295,14 @@ int reply_sendend(char *inbuf,char *outbuf);
 
 /*The following definitions come from  nameannounce.c  */
 
+void reset_announce_timer();
 void announce_request(struct work_record *work, struct in_addr ip);
 void do_announce_request(char *info, char *to_name, int announce_type, 
 			 int from,
 			 int to, struct in_addr dest_ip);
 void sync_server(enum state_type state, char *serv_name, char *work_name, 
 		 int name_type,
+                 struct subnet_record *d,
 		 struct in_addr ip);
 void do_announce_host(int command,
 		char *from_name, int from_type, struct in_addr from_ip,
@@ -318,7 +320,9 @@ void announce_remote(time_t t);
 
 void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip, BOOL local);
+					      time_t ttl, 
+                                              struct subnet_record *d,
+                                              struct in_addr ip, BOOL local);
 void do_browser_lists(time_t t);
 
 /*The following definitions come from  nameconf.c  */
@@ -460,7 +464,7 @@ BOOL name_query(int fd,char *name,int name_type,
 /*The following definitions come from  nameresp.c  */
 
 void expire_netbios_response_entries(time_t t);
-struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
+struct response_record *queue_netbios_pkt_wins(
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,

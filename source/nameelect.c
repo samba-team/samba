@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -67,13 +67,9 @@ void check_master_browser(time_t t)
 
 	dump_workgroups();
 
-	for (d = subnetlist; d; d = d->next)
+	for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
 	{
 		struct work_record *work;
-
-                /* don't do election stuff on the WINS subnet */
-               if (ip_equal(d->bcast_ip,wins_ip)) 
-                  continue;
 
 		for (work = d->workgrouplist; work; work = work->next)
 		{
@@ -365,7 +361,27 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
         /* XXXX OOPS! add_server_entry will always add one entry - our own. */
         announce_request(work, d->bcast_ip);
       }
+
+      /* If we have WINS support or are a WINS server we must add
+         the workgroup we just became master browser for to the 
+         WINS subnet. This is needed so we have somewhere to save
+         server lists when we do browser synchronization. */
+      if(wins_subnet != 0) 
+        {
+          if(find_workgroupstruct(wins_subnet, work->work_group, True) == 0)
+            DEBUG(0, ("become_local_master: \
+Failed to add workgroup %s to WINS subnet.\n",
+                     work->work_group));
+          else
+            DEBUG(3, ("become_local_master: Added workgroup %s to WINS subnet.\n",
+                   work->work_group));
+
+          /* Reset the announce master timer so that we do an announce as soon as possible
+             now we are a master. */
+          reset_announce_timer();
+        }
       break;
+
     }
 
     case MST_BROWSER:
@@ -642,16 +658,9 @@ void run_elections(time_t t)
   
   lastime = t;
   
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
   {
     struct work_record *work;
-
-    if(ip_equal(d->bcast_ip, wins_ip)) 
-      {
-        /* WINS ip */
-        DEBUG(10,("run_elections: ignoring WINS subnet\n"));
-        continue;
-      }
 
     for (work = d->workgrouplist; work; work = work->next)
 	{
@@ -777,7 +786,7 @@ BOOL check_elections(void)
   struct subnet_record *d;
   BOOL run_any_election = False;
 
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)

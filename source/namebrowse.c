@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -95,7 +95,8 @@ void expire_browse_cache(time_t t)
   add a browser entry
   ****************************************************************************/
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip, BOOL local)
+					      time_t ttl, struct subnet_record *d,
+                                              struct in_addr ip, BOOL local)
 {
   BOOL newentry=False;
   
@@ -137,7 +138,8 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
   b->ip     = ip;
   b->type   = type;
   b->local  = local; /* local server list sync or complete sync required */
-  
+  b->subnet = d;
+ 
   if (newentry || ttl < b->sync_time) 
     b->sync_time = ttl;
   
@@ -164,20 +166,14 @@ find a server responsible for a workgroup, and sync browse lists
 **************************************************************************/
 static void start_sync_browse_entry(struct browse_cache_record *b)
 {                     
-  struct subnet_record *d;
+  struct subnet_record *d = b->subnet;
   struct work_record *work;
 
-  /* Look for the workgroup first on the local subnet. If this
-     fails try WINS - we may need to sync with the domain master,
-     or we may be the domain master and need to sync with subnet
-     masters.
-  */
-
-  if (!(d = find_subnet_all(b->ip))) {
-    DEBUG(0, ("start_sync_browse_entry: failed to get a \
-subnet for a browse cache entry workgroup %s, server %s\n", 
-                  b->group, b->name));
-    return;
+  /* Check panic conditions - these should not be true. */
+  if(b->subnet != wins_subnet) {
+      DEBUG(0, 
+        ("start_sync_browse_entry: ERROR sync requested on non-WINS subnet.\n"));
+      return;
   }
 
   if (!(work = find_workgroupstruct(d, b->group, False))) {
@@ -187,29 +183,23 @@ workgroup for a browse cache entry workgroup %s, server %s\n",
       return;
   }
 
-  /* only sync if we are a subnet master or domain master - but
-     we sync if we are a master for this workgroup on *any* 
-     of our interfaces. */
-  if (AM_MASTER(work) || AM_DOMMST(work) || AM_ANY_MASTER(work)) {
-
-    DEBUG(4, ("start_sync_browse_entry: Initiating %s sync with %s<0x20>, \
+  DEBUG(4, ("start_sync_browse_entry: Initiating %s sync with %s<0x20>, \
 workgroup %s\n",
-               b->local ? "local" : "remote", b->name, b->group));
+             b->local ? "local" : "remote", b->name, b->group));
 
-    /* first check whether the server we intend to sync with exists. if it
-       doesn't, the server must have died. o dear. */
+  /* first check whether the server we intend to sync with exists. if it
+     doesn't, the server must have died. o dear. */
 
-    /* see response_netbios_packet() or expire_netbios_response_entries() */
-    /* We cheat here by using the my_comment field of the response_record 
-       struct as the workgroup name we are going to do the sync for. 
-       This is because the reply packet doesn't include the workgroup, but 
-       we need it when the reply comes back.
-    */
-    queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-			 b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
-			 b->name,0x20,0,0,0,NULL,b->group,
-			 False,False,b->ip,b->ip);
-  }
+  /* see response_netbios_packet() or expire_netbios_response_entries() */
+  /* We cheat here by using the my_comment field of the response_record 
+     struct as the workgroup name we are going to do the sync for. 
+     This is because the reply packet doesn't include the workgroup, but 
+     we need it when the reply comes back.
+  */
+  queue_netbios_packet(d,ClientNMB,NMB_QUERY,
+	 b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
+	 b->name,0x20,0,0,0,NULL,b->group,
+	 False,False,b->ip,b->ip);
 
   b->synced = True;
 }

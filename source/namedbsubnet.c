@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,6 +50,10 @@ extern struct interface *local_interfaces;
 /* this is our domain/workgroup/server database */
 struct subnet_record *subnetlist = NULL;
 
+/* WINS subnet - keep this separate so enumeration code doesn't
+   run onto it by mistake. */
+struct subnet_record *wins_subnet = 0;
+
 extern uint16 nb_type; /* samba's NetBIOS name type */
 
 /* Forward references. */
@@ -81,32 +85,19 @@ static void add_subnet(struct subnet_record *d)
 
 
 /****************************************************************************
-  find a subnet in the subnetlist 
+  find a subnet in the subnetlist - not including WINS.
   **************************************************************************/
 struct subnet_record *find_subnet(struct in_addr bcast_ip)
 {   
   struct subnet_record *d;
   
   /* search through subnet list for broadcast/netmask that matches
-     the source ip address. a subnet 255.255.255.255 represents the
-     WINS list. */
+     the source ip address. */
   
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
-      if (ip_equal(bcast_ip, wins_ip))
-	{
-	  if (ip_equal(bcast_ip, d->bcast_ip))
-	    {
-	      return d;
-	    }
-        }
-      else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
-	{
-	  if (!ip_equal(d->bcast_ip, wins_ip))
-	    {
-	      return d;
-	    }
-	}
+      if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
+        return d;
     }
   
   return (NULL);
@@ -125,8 +116,8 @@ struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast)
     /* identify the subnet the broadcast request came from */
     return find_subnet(*iface_bcast(ip));
   }
-  /* find the subnet under the pseudo-ip of 255.255.255.255 */
-  return find_subnet(wins_ip);
+  /* Return the subnet with the pseudo-ip of 255.255.255.255 */
+  return wins_subnet;
 }
 
 /****************************************************************************
@@ -137,13 +128,13 @@ struct subnet_record *find_subnet_all(struct in_addr bcast_ip)
 {
   struct subnet_record *d = find_subnet(bcast_ip);
   if(!d)
-    return find_subnet( wins_ip);
+    return wins_subnet;
 }
 
 /****************************************************************************
   create a domain entry
   ****************************************************************************/
-static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr mask_ip)
+static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr mask_ip, BOOL add)
 {
   struct subnet_record *d;
   d = (struct subnet_record *)malloc(sizeof(*d));
@@ -159,7 +150,8 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   d->mask_ip  = mask_ip;
   d->workgrouplist = NULL;
   
-  add_subnet(d);
+  if(add)
+    add_subnet(d);
   
   return d;
 }
@@ -179,7 +171,7 @@ void add_subnet_interfaces(void)
       /* add the interface into our subnet database */
       if (!find_subnet(i->bcast))
 	{
-	  make_subnet(i->bcast,i->nmask);
+	  make_subnet(i->bcast,i->nmask, True);
 	}
     }
 
@@ -188,14 +180,14 @@ void add_subnet_interfaces(void)
     {
       struct in_addr wins_bcast = wins_ip;
       struct in_addr wins_nmask = ipzero;
-      make_subnet(wins_bcast, wins_nmask);
+      wins_subnet = make_subnet(wins_bcast, wins_nmask, False);
     }
 }
 
 
 
 /****************************************************************************
-  add the default workgroup into my domain
+  add the default workgroup into the subnet lists.
   **************************************************************************/
 void add_my_subnets(char *group)
 {
@@ -212,6 +204,18 @@ void add_my_subnets(char *group)
     {
       add_subnet_entry(i->bcast,i->nmask,group, True, False);
     }
+
+    /* If we are setup as a domain master browser, and are using
+       WINS, then we must add the workgroup to the WINS subnet. This
+       is used as a place to keep collated server lists. */
+
+    if(lp_domain_master() && (lp_wins_support() || lp_wins_server()))
+      if(find_workgroupstruct(wins_subnet, group, True) == 0)
+        DEBUG(0, ("add_my_subnets: Failed to add workgroup %s to \
+WINS subnet.\n", group));
+      else
+        DEBUG(3,("add_my_subnets: Added workgroup %s to WINS subnet.\n",
+                 group));
 }
 
 
@@ -240,7 +244,7 @@ static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
   /* Note that we never add into the WINS subnet as add_subnet_entry
      is only called to add our local interfaces. */
   if ((d = find_subnet(bcast_ip)) ||
-      (d = make_subnet(bcast_ip, mask_ip)))
+      (d = make_subnet(bcast_ip, mask_ip, True)))
     {
       struct work_record *w = find_workgroupstruct(d, name, add);
       
@@ -304,7 +308,7 @@ void write_browse_list(time_t t)
       return;
     }
   
-  for (d = subnetlist; d ; d = d->next)
+  for (d = FIRST_SUBNET; d ; d = NEXT_SUBNET_INCLUDING_WINS(d))
     {
       struct work_record *work;
       for (work = d->workgrouplist; work ; work = work->next)

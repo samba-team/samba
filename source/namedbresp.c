@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios library routines
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -144,7 +144,7 @@ struct response_record *find_response_record(struct subnet_record **d,
 
   if (!d) return NULL;
 
-  for ((*d) = subnetlist; (*d); (*d) = (*d)->next)
+  for ((*d) = FIRST_SUBNET; (*d); (*d) = NEXT_SUBNET_INCLUDING_WINS(*d))
   {
     for (n = (*d)->responselist; n; n = n->next)
     {

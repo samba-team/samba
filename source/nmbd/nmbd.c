@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -205,6 +205,13 @@ BOOL reload_services(BOOL test)
 
   load_interfaces();
   add_subnet_interfaces();
+
+  /* Do a sanity check for a misconfigured nmbd */
+  if(lp_wins_support() && *lp_wins_server()) {
+    DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
+cannot be set in the smb.conf file. nmbd aborting.\n"));
+    exit(10);
+  }
 
   return(ret);
 }
@@ -546,6 +553,7 @@ static void usage(char *pname)
 
   if (strequal(lp_workgroup(),"*")) {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+    exit(1);
   }
 
   add_my_subnets(lp_workgroup());

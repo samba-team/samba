@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ void tell_become_backup(void)
    */
 
   struct subnet_record *d;
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
@@ -263,6 +263,7 @@ static void process_localnet_announce(struct packet_struct *p,uint16 command,cha
   tell_become_backup();
 #endif
 
+#if 0 /* JRA TEST - I Think this code should not be here */
   /* get the local_only browse list from the local master and add it 
      to ours. */
   if (command == ANN_LocalMasterAnnouncement)
@@ -270,15 +271,18 @@ static void process_localnet_announce(struct packet_struct *p,uint16 command,cha
     add_browser_entry(serv_name,dgram->dest_name.name_type,
 		      work->work_group,30,p->ip,True);
   }
+#endif /* END JRA TEST */
 }
 
 /*******************************************************************
   process a master announcement frame
+  Domain master browsers recieve these from local masters. The Domain
+  master should then issue a sync with the local master, asking for
+  that machines local server list.
   ******************************************************************/
 static void process_master_announce(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct subnet_record *d = find_subnet_all(p->ip); /* Explicitly include WINS */
   char *name = buf;
   struct work_record *work;
   name[15] = 0;
@@ -287,9 +291,9 @@ static void process_master_announce(struct packet_struct *p,char *buf)
   
   if (same_context(dgram)) return;
   
-  if (!d) 
+  if (!wins_subnet) 
     {
-      DEBUG(3,("process_master_announce: Cannot find interface\n"));
+      DEBUG(3,("process_master_announce: No wins subnet !\n"));
       return;
     }
   
@@ -299,12 +303,12 @@ static void process_master_announce(struct packet_struct *p,char *buf)
       return;
     }
   
-  for (work = d->workgrouplist; work; work = work->next)
+  for (work = wins_subnet->workgrouplist; work; work = work->next)
   {
-    if (AM_MASTER(work) || AM_DOMMST(work) || AM_ANY_MASTER(work))
+    if (AM_MASTER(work) || AM_DOMMST(work))
     {
 	  /* merge browse lists with them */
-	  add_browser_entry(name,0x1d, work->work_group,30,p->ip,True);
+	  add_browser_entry(name,0x1d, work->work_group,30,wins_subnet,p->ip,True);
     }
   }
 }
@@ -434,7 +438,7 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
 
 #if 0
 
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
   {
       struct work_record *work;
       
@@ -573,7 +577,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
   if (state & 0x1)
     {
       struct subnet_record *d;
-      for (d = subnetlist; d; d = d->next)
+      for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
 	{
 	  struct work_record *work;
 	  for (work = d->workgrouplist; work; work = work->next)
@@ -594,7 +598,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
   if (state & 0x2)
     {
       struct subnet_record *d;
-      for (d = subnetlist; d; d = d->next)
+      for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
 	{
 	  struct work_record *work;
 	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work,True));
