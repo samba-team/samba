@@ -2666,9 +2666,10 @@ static BOOL run_oplock2(int dummy)
 
 	sleep(2);
 
-	/* Ensure cli1 processes the break. */
+	/* Ensure cli1 processes the break. Empty file should always return 0
+	 * bytes.  */
 
-	if (cli_read(cli1, fnum1, buf, 0, 4) != 4) {
+	if (cli_read(cli1, fnum1, buf, 0, 4) != 0) {
 		printf("read on fnum1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
