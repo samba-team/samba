@@ -57,8 +57,8 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 
 	/* make sure its a user, not a group */
 	atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-	if (atype && atype != ATYPE_NORMAL_ACCOUNT) {
-		DEBUG(0,("sid_to_unixuid: sid %s is not ATYPE_NORMAL_ACCOUNT\n", sidstr));
+	if (!atype || (!(atype & ATYPE_ACCOUNT))) {
+		DEBUG(0,("sid_to_unixuid: sid %s is not an account!\n", sidstr));
 		talloc_free(ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
