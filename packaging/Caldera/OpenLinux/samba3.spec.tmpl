@@ -306,7 +306,7 @@ done
 # Add VFS Modules
 for i in audit.so recycle.so netatalk.so skel.so
 do
-	install -m755 $i $DESTDIR/lib/samba
+	install -m755 examples/VFS/$i $DESTDIR/lib/samba
 done
 
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
