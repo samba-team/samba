@@ -197,7 +197,8 @@ kt_add(int argc, char **argv)
     }
     if(principal_string == NULL) {
 	printf("Principal: ");
-	fgets(buf, sizeof(buf), stdin);
+	if (fgets(buf, sizeof(buf), stdin) == NULL)
+	    return 0;
 	buf[strcspn(buf, "\r\n")] = '\0';
 	principal_string = buf;
     }
@@ -208,7 +209,10 @@ kt_add(int argc, char **argv)
     }
     if(enctype_string == NULL) {
 	printf("Encryption type: ");
-	fgets(buf, sizeof(buf), stdin);
+	if (fgets(buf, sizeof(buf), stdin) == NULL) {
+	    krb5_free_principal (context, entry.principal);
+	    return 0;
+	}
 	buf[strcspn(buf, "\r\n")] = '\0';
 	enctype_string = buf;
     }
@@ -219,19 +223,24 @@ kt_add(int argc, char **argv)
 	    enctype = t;
 	else {
 	    krb5_warn(context, ret, "%s", enctype_string);
-	    if(entry.principal)
-		krb5_free_principal(context, entry.principal);
+	    krb5_free_principal(context, entry.principal);
 	    return 0;
 	}
     }
     if(kvno == -1) {
 	printf("Key version: ");
-	fgets(buf, sizeof(buf), stdin);
+	if (fgets(buf, sizeof(buf), stdin) == NULL) {
+	    krb5_free_principal (context, entry.principal);
+	    return 0;
+	}
 	buf[strcspn(buf, "\r\n")] = '\0';
 	kvno = atoi(buf);
     }
     if(password_string == NULL && random_flag == 0) {
-	des_read_pw_string(buf, sizeof(buf), "Password: ", 1);
+	if(des_read_pw_string(buf, sizeof(buf), "Password: ", 1)) {
+	    krb5_free_principal (context, entry.principal);
+	    return 0;
+	}
 	password_string = buf;
     }
     if(password_string) {
@@ -250,6 +259,7 @@ kt_add(int argc, char **argv)
 	    krb5_string_to_key(context, enctype, password_string, 
 			       entry.principal, &entry.keyblock);
 	}
+	memset (password_string, 0, strlen(password_string));
     } else {
 	krb5_generate_random_keyblock(context, enctype, &entry.keyblock);
     }
