@@ -1842,7 +1842,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_INTERNAL_INFORMATION:
-			/* This should be an index number - looks like dev/ino to me :-) */
+			/* This should be an index number - looks like
+			   dev/ino to me :-) 
+
+			   I think this causes us to fail the IFSKIT
+			   BasicFileInformationTest. -tpot */
+
 			SIVAL(pdata,0,sbuf.st_dev);
 			SIVAL(pdata,4,sbuf.st_ino);
 			data_size = 8;
