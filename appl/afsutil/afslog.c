@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,8 +54,8 @@ static int unlog_flag;
 static int verbose;
 
 struct getargs args[] = {
-    { "cell",	'c', arg_strings, &cells, "cell to get tokens for", "cell" },
-    { "file",	'p', arg_strings, &files, "file to get tokens for", "path" },
+    { "cell",	'c', arg_strings, &cells, "cells to get tokens for", "cells" },
+    { "file",	'p', arg_strings, &files, "files to get tokens for", "paths" },
     { "realm",	'k', arg_string, &realm, "realm for afs cell", "realm" },
     { "unlog",	'u', arg_flag, &unlog_flag, "remove tokens" },
 #if 0
