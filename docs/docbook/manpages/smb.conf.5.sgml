@@ -7332,9 +7332,9 @@ let "time++"
 		<listitem><para> This variable controls controls whether samba will try 
 		to use Simple and Protected NEGOciation (as specified by rfc2478) with 
 		WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism. 
-		As of samba 3.0alpha it must be set to "no" for these clients to join a samba 
-		domain controller.  It can be set to "yes" to allow samba to participate in an 
-		AD domain controlled by a Windows2000 domain controller.</para>
+		Unless further issues are discovered with our SPNEGO
+		implementation, there is no reason this should ever be
+		disabled.</para>
 		<para>Default:  <emphasis>use spnego = yes</emphasis></para>
 		</listitem>
 		</varlistentry>
