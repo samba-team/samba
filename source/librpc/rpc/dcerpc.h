@@ -32,7 +32,6 @@ struct dcerpc_security {
 };
 
 struct dcerpc_pipe {
-	TALLOC_CTX *mem_ctx;
 	int reference_count;
 	uint32_t call_id;
 	uint32_t srv_max_xmit_frag;
@@ -47,16 +46,33 @@ struct dcerpc_pipe {
 	struct dcerpc_transport {
 		enum dcerpc_transport_t transport;
 		void *private;
-		NTSTATUS (*full_request)(struct dcerpc_pipe *, 
-					 TALLOC_CTX *, DATA_BLOB *, DATA_BLOB *);
-		NTSTATUS (*secondary_request)(struct dcerpc_pipe *, TALLOC_CTX *, DATA_BLOB *);
-		NTSTATUS (*initial_request)(struct dcerpc_pipe *, TALLOC_CTX *, DATA_BLOB *);
+
 		NTSTATUS (*shutdown_pipe)(struct dcerpc_pipe *);
+
 		const char *(*peer_name)(struct dcerpc_pipe *);
+
+		/* send a request to the server */
+		NTSTATUS (*send_request)(struct dcerpc_pipe *, DATA_BLOB *);
+
+		/* send a read request to the server */
+		NTSTATUS (*send_read)(struct dcerpc_pipe *);
+
+		/* get an event context for the connection */
+		struct event_context *(*event_context)(struct dcerpc_pipe *);
+
+		/* a callback to the dcerpc code when a full fragment
+		   has been received */
+		void (*recv_data)(struct dcerpc_pipe *, DATA_BLOB *, NTSTATUS status);
 	} transport;
 
 	/* the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;
+
+	/* pending requests */
+	struct rpc_request *pending;
+
+	/* private pointer for pending full requests */
+	void *full_request_private;
 };
 
 /* dcerpc pipe flags */
@@ -118,4 +134,33 @@ struct dcerpc_binding {
 	const char *host;
 	const char **options;
 	uint32_t flags;
+};
+
+
+enum rpc_request_state {
+	RPC_REQUEST_PENDING,
+	RPC_REQUEST_DONE
+};
+
+/*
+  handle for an async dcerpc request
+*/
+struct rpc_request {
+	struct rpc_request *next, *prev;
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	uint32_t call_id;
+	enum rpc_request_state state;
+	DATA_BLOB payload;
+	uint_t flags;
+	uint32_t fault_code;
+
+	/* use by the ndr level async recv call */
+	struct rpc_request_ndr {
+		NTSTATUS (*ndr_push)(struct ndr_push *, int, void *);
+		NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *);
+		void *struct_ptr;
+		size_t struct_size;
+		TALLOC_CTX *mem_ctx;
+	} ndr;
 };

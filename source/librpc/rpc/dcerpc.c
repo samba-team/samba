@@ -28,18 +28,12 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 {
 	struct dcerpc_pipe *p;
 
-	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_tree");
-	if (mem_ctx == NULL)
-		return NULL;
-
-	p = talloc(mem_ctx, sizeof(*p));
+	p = talloc_p(NULL, struct dcerpc_pipe);
 	if (!p) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
 	p->reference_count = 0;
-	p->mem_ctx = mem_ctx;
 	p->call_id = 1;
 	p->security_state.auth_info = NULL;
 	p->security_state.generic_state = NULL;
@@ -48,8 +42,21 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->srv_max_xmit_frag = 0;
 	p->srv_max_recv_frag = 0;
 	p->last_fault_code = 0;
+	p->pending = NULL;
 
 	return p;
+}
+
+/* 
+   choose the next call id to use
+*/
+static uint32_t next_call_id(struct dcerpc_pipe *p)
+{
+	p->call_id++;
+	if (p->call_id == 0) {
+		p->call_id++;
+	}
+	return p->call_id;
 }
 
 /* close down a dcerpc over SMB pipe */
@@ -62,7 +69,7 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 			gensec_end(&p->security_state.generic_state);
 		}
 		p->transport.shutdown_pipe(p);
-		talloc_destroy(p->mem_ctx);
+		talloc_free(p);
 	}
 }
 
@@ -320,6 +327,67 @@ static void init_dcerpc_hdr(struct dcerpc_pipe *p, struct dcerpc_packet *pkt)
 	pkt->drep[3] = 0;
 }
 
+/*
+  hold the state of pending full requests
+*/
+struct full_request_state {
+	DATA_BLOB *reply_blob;
+	NTSTATUS status;
+};
+
+/*
+  receive a reply to a full request
+ */
+static void full_request_recv(struct dcerpc_pipe *p, DATA_BLOB *blob, 
+			      NTSTATUS status)
+{
+	struct full_request_state *state = p->full_request_private;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		state->status = status;
+		return;
+	}
+	state->reply_blob[0] = data_blob_talloc(state, blob->data, blob->length);
+	state->reply_blob = NULL;
+}
+
+/*
+  perform a synchronous request - used for the bind code
+  this cannot be mixed with normal async requests
+*/
+static NTSTATUS full_request(struct dcerpc_pipe *p, 
+			     TALLOC_CTX *mem_ctx,
+			     DATA_BLOB *request_blob,
+			     DATA_BLOB *reply_blob)
+{
+	struct full_request_state *state = talloc_p(mem_ctx, struct full_request_state);
+	NTSTATUS status;
+
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->reply_blob = reply_blob;
+	state->status = NT_STATUS_OK;
+
+	p->transport.recv_data = full_request_recv;
+	p->full_request_private = state;
+
+	status = p->transport.send_request(p, request_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	p->transport.send_read(p);
+
+	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
+		struct event_context *ctx = p->transport.event_context(p);
+		event_loop_once(ctx);
+	}
+
+	return state->status;
+}
+
 
 /* 
    perform a bind using the given syntax 
@@ -367,7 +435,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	}
 
 	/* send it on its way */
-	status = p->transport.full_request(p, mem_ctx, &blob, &blob);
+	status = full_request(p, mem_ctx, &blob, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -441,7 +509,7 @@ NTSTATUS dcerpc_alter(struct dcerpc_pipe *p,
 	}
 
 	/* send it on its way */
-	status = p->transport.full_request(p, mem_ctx, &blob, &blob);
+	status = full_request(p, mem_ctx, &blob, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -483,7 +551,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 
 	pkt.ptype = DCERPC_PKT_AUTH3;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = p->call_id++;
+	pkt.call_id = next_call_id(p);
 	pkt.auth_length = 0;
 	pkt.u.auth._pad = 0;
 	pkt.u.auth.auth_info = data_blob(NULL, 0);
@@ -495,7 +563,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	}
 
 	/* send it on its way */
-	status = p->transport.initial_request(p, mem_ctx, &blob);
+	status = p->transport.send_request(p, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -530,33 +598,141 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 }
 
 /*
+  process a fragment received from the transport layer during a
+  request
+*/
+static void dcerpc_request_recv_data(struct dcerpc_pipe *p, 
+				     DATA_BLOB *data,
+				     NTSTATUS status)
+{
+	struct dcerpc_packet pkt;
+	struct rpc_request *req;
+	uint_t length;
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		/* all pending requests get the error */
+		while (p->pending) {
+			req = p->pending;
+			req->state = RPC_REQUEST_DONE;
+			req->status = status;
+			DLIST_REMOVE(p->pending, req);
+		}
+		return;
+	}
+
+	pkt.call_id = 0;
+
+	status = dcerpc_pull_request_sign(p, data, (TALLOC_CTX *)data->data, &pkt);
+
+	/* find the matching request. Notice we match before we check
+	   the status.  this is ok as a pending call_id can never be
+	   zero */
+	for (req=p->pending;req;req=req->next) {
+		if (pkt.call_id == req->call_id) break;
+	}
+
+	if (req == NULL) {
+		DEBUG(2,("dcerpc_request: unmatched call_id in response packet\n"));
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		req->status = status;
+		req->state = RPC_REQUEST_DONE;
+		DLIST_REMOVE(p->pending, req);
+		return;
+	}
+
+	if (pkt.ptype == DCERPC_PKT_FAULT) {
+		DEBUG(5,("rpc fault 0x%x\n", pkt.u.fault.status));
+		req->fault_code = pkt.u.fault.status;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		req->state = RPC_REQUEST_DONE;
+		DLIST_REMOVE(p->pending, req);
+		return;
+	}
+
+	if (pkt.ptype != DCERPC_PKT_RESPONSE) {
+		DEBUG(2,("Unexpected packet type %d in dcerpc response\n",
+			 (int)pkt.ptype)); 
+		req->fault_code = DCERPC_FAULT_OTHER;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		req->state = RPC_REQUEST_DONE;
+		DLIST_REMOVE(p->pending, req);
+		return;
+	}
+
+	length = pkt.u.response.stub_and_verifier.length;
+
+	if (length > 0) {
+		req->payload.data = talloc_realloc(req->payload.data, 
+						   req->payload.length + length);
+		if (!req->payload.data) {
+			req->status = NT_STATUS_NO_MEMORY;
+			req->state = RPC_REQUEST_DONE;
+			DLIST_REMOVE(p->pending, req);
+			return;
+		}
+		memcpy(req->payload.data+req->payload.length, 
+		       pkt.u.response.stub_and_verifier.data, length);
+		req->payload.length += length;
+	}
+
+	if (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		p->transport.send_read(p);
+		return;
+	}
+
+	/* we've got the full payload */
+	req->state = RPC_REQUEST_DONE;
+	DLIST_REMOVE(p->pending, req);
+
+	if (!(pkt.drep[0] & DCERPC_DREP_LE)) {
+		req->flags |= DCERPC_PULL_BIGENDIAN;
+	} else {
+		req->flags &= ~DCERPC_PULL_BIGENDIAN;
+	}
+}
+
+
+/*
   perform a full request/response pair on a dcerpc pipe
 */
-NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			uint16_t opnum,
-			TALLOC_CTX *mem_ctx,
-			DATA_BLOB *stub_data_in,
-			DATA_BLOB *stub_data_out)
+struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
+					uint16_t opnum,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *stub_data)
 {
-	
+	struct rpc_request *req;
 	struct dcerpc_packet pkt;
-	NTSTATUS status;
-	DATA_BLOB blob, payload;
+	DATA_BLOB blob;
 	uint32_t remaining, chunk_size;
 
-	/* allow the application to tell when a fault has happened */
-	p->last_fault_code = 0;
+	p->transport.recv_data = dcerpc_request_recv_data;
+
+	req = talloc_p(mem_ctx, struct rpc_request);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	req->p = p;
+	req->call_id = next_call_id(p);
+	req->status = NT_STATUS_OK;
+	req->state = RPC_REQUEST_PENDING;
+	req->payload = data_blob(NULL, 0);
+	req->flags = 0;
+	req->fault_code = 0;
 
 	init_dcerpc_hdr(p, &pkt);
 
-	remaining = stub_data_in->length;
+	remaining = stub_data->length;
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
 	chunk_size = p->srv_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
-	pkt.call_id = p->call_id++;
+	pkt.call_id = req->call_id;
 	pkt.auth_length = 0;
 	pkt.u.request.alloc_hint = remaining;
 	pkt.u.request.context_id = 0;
@@ -565,24 +741,26 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	/* we send a series of pdus without waiting for a reply until
 	   the last pdu */
 	while (remaining > chunk_size) {
-		if (remaining == stub_data_in->length) {
+		if (remaining == stub_data->length) {
 			pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST;
 		} else {
 			pkt.pfc_flags = 0;
 		}
 
-		pkt.u.request.stub_and_verifier.data = stub_data_in->data + 
-			(stub_data_in->length - remaining);
+		pkt.u.request.stub_and_verifier.data = stub_data->data + 
+			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk_size;
 
-		status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		req->status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
+		if (!NT_STATUS_IS_OK(req->status)) {
+			req->state = RPC_REQUEST_DONE;
+			return req;
 		}
 		
-		status = p->transport.initial_request(p, mem_ctx, &blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		req->status = p->transport.send_request(p, &blob);
+		if (!NT_STATUS_IS_OK(req->status)) {
+			req->state = RPC_REQUEST_DONE;
+			return req;
 		}		
 
 		remaining -= chunk_size;
@@ -590,102 +768,88 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 	/* now we send a pdu with LAST_FRAG sent and get the first
 	   part of the reply */
-	if (remaining == stub_data_in->length) {
+	if (remaining == stub_data->length) {
 		pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	} else {
 		pkt.pfc_flags = DCERPC_PFC_FLAG_LAST;
 	}
-	pkt.u.request.stub_and_verifier.data = stub_data_in->data + 
-		(stub_data_in->length - remaining);
+	pkt.u.request.stub_and_verifier.data = stub_data->data + 
+		(stub_data->length - remaining);
 	pkt.u.request.stub_and_verifier.length = remaining;
 
-	status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	req->status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
+	if (!NT_STATUS_IS_OK(req->status)) {
+		req->state = RPC_REQUEST_DONE;
+		return req;
 	}
 
-	/* send the pdu and get the initial response pdu */
-	status = p->transport.full_request(p, mem_ctx, &blob, &blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	/* send the pdu */
+	req->status = p->transport.send_request(p, &blob);
+
+	if (!NT_STATUS_IS_OK(req->status)) {
+		req->state = RPC_REQUEST_DONE;
 	}
 
-	status = dcerpc_pull_request_sign(p, &blob, mem_ctx, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	DLIST_ADD(p->pending, req);
+
+	p->transport.send_read(p);
+
+	return req;
+}
+
+/*
+  return the event context for a dcerpc pipe
+  used by callers who wish to operate asynchronously
+*/
+struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
+{
+	return p->transport.event_context(p);
+}
+
+
+
+/*
+  perform a full request/response pair on a dcerpc pipe
+*/
+NTSTATUS dcerpc_request_recv(struct rpc_request *req,
+			     TALLOC_CTX *mem_ctx,
+			     DATA_BLOB *stub_data)
+{
+	NTSTATUS status;
+
+	while (req->state == RPC_REQUEST_PENDING) {
+		struct event_context *ctx = dcerpc_event_context(req->p);
+		event_loop_once(ctx);
 	}
-
-	if (pkt.ptype == DCERPC_PKT_FAULT) {
-		DEBUG(5,("rpc fault 0x%x\n", pkt.u.fault.status));
-		p->last_fault_code = pkt.u.fault.status;
-		return NT_STATUS_NET_WRITE_FAULT;
+	*stub_data = req->payload;
+	status = req->status;
+	if (stub_data->data) {
+		stub_data->data = talloc_steal(mem_ctx, stub_data->data);
 	}
-
-	if (pkt.ptype != DCERPC_PKT_RESPONSE) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		req->p->last_fault_code = req->fault_code;
 	}
-
-	if (!(pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
-		/* something is badly wrong! */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	payload = pkt.u.response.stub_and_verifier;
-
-	/* continue receiving fragments */
-	while (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		uint32_t length;
-
-		status = p->transport.secondary_request(p, mem_ctx, &blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		status = dcerpc_pull_request_sign(p, &blob, mem_ctx, &pkt);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		if (pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
-			/* start of another packet!? */
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		if (pkt.ptype == DCERPC_PKT_FAULT) {
-			p->last_fault_code = pkt.u.fault.status;
-			return NT_STATUS_NET_WRITE_FAULT;
-		}
-
-		if (pkt.ptype != DCERPC_PKT_RESPONSE) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		length = pkt.u.response.stub_and_verifier.length;
-
-		payload.data = talloc_realloc(payload.data, 
-					      payload.length + length);
-		if (!payload.data) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		memcpy(payload.data + payload.length,
-		       pkt.u.response.stub_and_verifier.data,
-		       length);
-
-		payload.length += length;
-	}
-
-	if (stub_data_out) {
-		*stub_data_out = payload;
-	}
-
-	if (!(pkt.drep[0] & DCERPC_DREP_LE)) {
-		p->flags |= DCERPC_PULL_BIGENDIAN;
-	} else {
-		p->flags &= ~DCERPC_PULL_BIGENDIAN;
-	}
-
+	talloc_free(req);
 	return status;
+}
+
+/*
+  perform a full request/response pair on a dcerpc pipe
+*/
+NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
+			uint16_t opnum,
+			TALLOC_CTX *mem_ctx,
+			DATA_BLOB *stub_data_in,
+			DATA_BLOB *stub_data_out)
+{
+	struct rpc_request *req;
+
+	req = dcerpc_request_send(p, opnum, mem_ctx, stub_data_in);
+	if (req == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return dcerpc_request_recv(req, mem_ctx, stub_data_out);
 }
 
 
@@ -830,6 +994,135 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+
+/*
+  send a rpc request with a given set of ndr helper functions
+
+  call dcerpc_ndr_request_recv() to receive the answer
+*/
+struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
+					    uint32_t opnum,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
+					    NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *),
+					    void *struct_ptr,
+					    size_t struct_size)
+{
+	struct ndr_push *push;
+	NTSTATUS status;
+	DATA_BLOB request;
+	struct rpc_request *req;
+
+	/* setup for a ndr_push_* call */
+	push = ndr_push_init();
+	if (!push) {
+		return NULL;
+	}
+
+	if (p->flags & DCERPC_PUSH_BIGENDIAN) {
+		push->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	/* push the structure into a blob */
+	status = ndr_push(push, NDR_IN, struct_ptr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("Unable to ndr_push structure in dcerpc_ndr_request_send - %s\n",
+			 nt_errstr(status)));
+		ndr_push_free(push);
+		return NULL;
+	}
+
+	/* retrieve the blob */
+	request = ndr_push_blob(push);
+
+	if (p->flags & DCERPC_DEBUG_VALIDATE_IN) {
+		status = dcerpc_ndr_validate_in(mem_ctx, request, struct_size, 
+						ndr_push, ndr_pull);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2,("Validation failed in dcerpc_ndr_request_send - %s\n",
+				 nt_errstr(status)));
+			ndr_push_free(push);
+			return NULL;
+		}
+	}
+
+	DEBUG(10,("rpc request data:\n"));
+	dump_data(10, request.data, request.length);
+
+	/* make the actual dcerpc request */
+	req = dcerpc_request_send(p, opnum, mem_ctx, &request);
+
+	if (req != NULL) {
+		req->ndr.ndr_push = ndr_push;
+		req->ndr.ndr_pull = ndr_pull;
+		req->ndr.struct_ptr = struct_ptr;
+		req->ndr.struct_size = struct_size;
+		req->ndr.mem_ctx = mem_ctx;
+	}
+
+	ndr_push_free(push);
+	
+	return req;
+}
+
+/*
+  receive the answer from a dcerpc_ndr_request_send()
+*/
+NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
+{
+	struct dcerpc_pipe *p = req->p;
+	NTSTATUS status;
+	DATA_BLOB response;
+	struct ndr_pull *pull;
+	struct rpc_request_ndr ndr = req->ndr;
+	uint_t flags = req->flags;
+
+	status = dcerpc_request_recv(req, ndr.mem_ctx, &response);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* prepare for ndr_pull_* */
+	pull = ndr_pull_init_blob(&response, ndr.mem_ctx);
+	if (!pull) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (flags & DCERPC_PULL_BIGENDIAN) {
+		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	DEBUG(10,("rpc reply data:\n"));
+	dump_data(10, pull->data, pull->data_size);
+
+	/* pull the structure from the blob */
+	status = ndr.ndr_pull(pull, NDR_OUT, ndr.struct_ptr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
+		status = dcerpc_ndr_validate_out(ndr.mem_ctx, ndr.struct_ptr, ndr.struct_size, 
+						 ndr.ndr_push, ndr.ndr_pull);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	if (pull->offset != pull->data_size) {
+		DEBUG(0,("Warning! ignoring %d unread bytes in rpc packet!\n", 
+			 pull->data_size - pull->offset));
+		/* we used return NT_STATUS_INFO_LENGTH_MISMATCH here,
+		   but it turns out that early versions of NT
+		   (specifically NT3.1) add junk onto the end of rpc
+		   packets, so if we want to interoperate at all with
+		   those versions then we need to ignore this error */
+	}
+
+	return NT_STATUS_OK;
+}
+
+
 /*
   a useful helper function for synchronous rpc requests 
 
@@ -844,91 +1137,14 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    void *struct_ptr,
 			    size_t struct_size)
 {
-	struct ndr_push *push;
-	struct ndr_pull *pull;
-	NTSTATUS status;
-	DATA_BLOB request, response;
+	struct rpc_request *req;
 
-	/* setup for a ndr_push_* call */
-	push = ndr_push_init();
-	if (!push) {
-		talloc_destroy(mem_ctx);
+	req = dcerpc_ndr_request_send(p, opnum, mem_ctx, ndr_push, ndr_pull, struct_ptr, struct_size);
+	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (p->flags & DCERPC_PUSH_BIGENDIAN) {
-		push->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	/* push the structure into a blob */
-	status = ndr_push(push, NDR_IN, struct_ptr);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	/* retrieve the blob */
-	request = ndr_push_blob(push);
-
-	if (p->flags & DCERPC_DEBUG_VALIDATE_IN) {
-		status = dcerpc_ndr_validate_in(mem_ctx, request, struct_size, 
-						ndr_push, ndr_pull);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
-		}
-	}
-
-	DEBUG(10,("rpc request data:\n"));
-	dump_data(10, request.data, request.length);
-
-	/* make the actual dcerpc request */
-	status = dcerpc_request(p, opnum, mem_ctx, &request, &response);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	/* prepare for ndr_pull_* */
-	pull = ndr_pull_init_blob(&response, mem_ctx);
-	if (!pull) {
-		goto failed;
-	}
-
-	if (p->flags & DCERPC_PULL_BIGENDIAN) {
-		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	DEBUG(10,("rpc reply data:\n"));
-	dump_data(10, pull->data, pull->data_size);
-
-	/* pull the structure from the blob */
-	status = ndr_pull(pull, NDR_OUT, struct_ptr);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	/* possibly check the packet signature */
-	
-
-	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
-		status = dcerpc_ndr_validate_out(mem_ctx, struct_ptr, struct_size, 
-						 ndr_push, ndr_pull);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
-		}
-	}
-
-	if (pull->offset != pull->data_size) {
-		DEBUG(0,("Warning! ignoring %d unread bytes in rpc packet!\n", 
-			 pull->data_size - pull->offset));
-		/* we used return NT_STATUS_INFO_LENGTH_MISMATCH here,
-		   but it turns out that early versions of NT
-		   (specifically NT3.1) add junk onto the end of rpc
-		   packets, so if we want to interoperate at all with
-		   those versions then we need to ignore this error */
-	}
-
-failed:
-	ndr_push_free(push);
-	return status;
+	return dcerpc_ndr_request_recv(req);
 }
 
 

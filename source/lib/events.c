@@ -403,7 +403,7 @@ void event_loop_once(struct event_context *ev)
 			   made readable and that should have removed
 			   the event, so this must be a bug. This is a
 			   fatal error. */
-			DEBUG(0,("EBADF on event_loop_wait - exiting\n"));
+			DEBUG(0,("EBADF on event_loop_once - exiting\n"));
 			return;
 		}
 		
