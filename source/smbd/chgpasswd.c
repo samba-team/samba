@@ -57,13 +57,12 @@ extern int DEBUGLEVEL;
 static int findpty(char **slave)
 {
   int master;
-#ifndef HAVE_GRANTPT
   static fstring line;
   void *dirp;
   char *dpname;
-#endif /* !HAVE_GRANTPT */
   
 #if defined(HAVE_GRANTPT)
+  /* Try to open /dev/ptmx. If that fails, fall through to old method. */
   if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0) {
     grantpt(master);
     unlockpt(master);
@@ -78,7 +77,8 @@ static int findpty(char **slave)
       return (master);
     }
   }
-#else /* HAVE_GRANTPT */
+#endif /* HAVE_GRANTPT */
+
   fstrcpy( line, "/dev/ptyXX" );
 
   dirp = OpenDir(NULL, "/dev", False);
@@ -99,7 +99,6 @@ static int findpty(char **slave)
     }
   }
   CloseDir(dirp);
-#endif /* HAVE_GRANTPT */
   return (-1);
 }
 
