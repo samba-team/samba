@@ -59,13 +59,13 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	TALLOC_CTX *mem_ctx;
 	
 	if (!(domain_sid = malloc(sizeof(DOM_SID)))){
-		DEBUG(0,("fetch_domain_sid: malloc returned NULL!\n"));
+		DEBUG(0,("net_get_remote_domain_sid: malloc returned NULL!\n"));
 		goto error;
 	}
 	    
 	if (!(mem_ctx=talloc_init()))
 	{
-		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		DEBUG(0,("net_get_remote_domain_sid: talloc_init returned NULL!\n"));
 		goto error;
 	}
 
