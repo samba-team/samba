@@ -72,8 +72,12 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 
  int main(int argc, char *argv[])
 {
+  extern char *optarg;
+  extern int optind;
   pstring configfile;
+  int opt;
   int s;
+  BOOL silent_mode = False;
 
   TimeInit();
 
@@ -81,10 +85,20 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
   
   charset_initialise();
 
-  if (argc < 2)
+  while ((opt = getopt(argc, argv,"s")) != EOF) {
+  switch (opt) {
+    case 's':
+      silent_mode = True;
+      break;
+    }
+  }
+
+  argc += (1 - optind);
+
+  if ((argc == 1) || (argc == 3))
     pstrcpy(configfile,CONFIGFILE);
-  else
-    pstrcpy(configfile,argv[1]);
+  else if ((argc == 2) || (argc == 4))
+    pstrcpy(configfile,argv[optind]);
 
   dbf = stdout;
   DEBUGLEVEL = 2;
@@ -116,19 +130,29 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	break;
       }
 
-  if (argc < 4)
+  if (argc < 3)
     {
-      printf("Press enter to see a dump of your service definitions\n");
-      fflush(stdout);
-      getc(stdin);
+      if (!silent_mode) {
+	printf("Press enter to see a dump of your service definitions\n");
+	fflush(stdout);
+	getc(stdin);
+      }
       lp_dump(stdout,True);
     }
   
-  if (argc == 4)
+  if (argc >= 3)
     {
-      char *cname = argv[2];
-      char *caddr = argv[3];
+      char *cname;
+      char *caddr;
       
+      if (argc == 3) {
+	cname = argv[optind];
+	caddr = argv[optind+1];
+      } else if (argc == 4) {
+	cname = argv[optind+1];
+	caddr = argv[optind+2];
+      }
+
       /* this is totally ugly, a real `quick' hack */
       for (s=0;s<1000;s++)
 	if (VALID_SNUM(s))

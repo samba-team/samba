@@ -24,7 +24,7 @@
 <p><br><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
      
-<p><br><strong>testparm</strong> [<a href="testparm.1.html#configfilename">configfilename</a> [<a href="testparm.1.html#hostname">hostname</a> <a href="testparm.1.html#hostIP">hostIP</a>] ]
+<p><br><strong>testparm</strong> [<a href="testparm.1.html#minuss">-s</a>] [<a href="testparm.1.html#configfilename">configfilename</a>] [<a href="testparm.1.html#hostname">hostname</a> <a href="testparm.1.html#hostIP">hostIP</a>]
 <p><br><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -43,6 +43,10 @@ reporting whether the specified host has access to each service.
 <h2>OPTIONS</h2>
     
 <p><br><ul>
+<p><br><a name="minuss"></a>
+<li><strong><strong>-s</strong></strong> Without this option, <strong>testparm</strong> will prompt for a
+carriage return after printing the service names and before dumping
+the service definitions.
 <p><br><a name="configfilename"></a>
 <li><strong><strong>configfilename</strong></strong> This is the name of the configuration file to
 check. If this parameter is not present then the default
