@@ -146,9 +146,9 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	fstring dc_name;
 	struct in_addr dc_ip;
-	char *password = NULL;
-	char *username = NULL;
-	char *domain = NULL;
+	const char *password = NULL;
+	const char *username = NULL;
+	const char *domain = NULL;
 	uint32 info_class = 5;
 	char *domain_name = NULL;
 	DOM_SID *domain_sid, sid;
