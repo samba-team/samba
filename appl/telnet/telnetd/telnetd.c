@@ -124,24 +124,17 @@ extern void usage (void);
  * that only the actual options that we support will be
  * passed off to getopt().
  */
-char valid_opts[] = {
-    'B', 'd', ':', 'h', 'k', 'l', 'n', 'S', ':', 'u', ':', 'U',
-#ifdef	AUTHENTICATION
-    'a', ':', 'X', ':',
+char valid_opts[] = "Bd:hklnS:u:UL:y"
+#ifdef AUTHENTICATION
+		    "a:X:z"
 #endif
 #ifdef DIAGNOSTICS
-    'D', ':',
+		    "D:"
 #endif
 #ifdef _CRAY
-    'r', ':',
+		    "r:"
 #endif
-    'L', ':',
-#ifdef AUTHENTICATION
-    'y',
-    'z',
-#endif
-    '\0'
-};
+		    ;
 
 void doit(struct sockaddr_in*);
 
@@ -308,9 +301,11 @@ int main(int argc, char **argv)
 	     */
 	    auth_disable_name(optarg);
 	    break;
+#endif
 	case 'y':
 	    no_warn = 1;
 	    break;
+#ifdef AUTHENTICATION
 	case 'z':
 	    log_unauth = 1;
 	    break;
@@ -670,8 +665,6 @@ char *hostname;
 char host_name[MaxHostNameLen];
 char remote_host_name[MaxHostNameLen];
 
-extern void telnet (int, int);
-
 /*
  * Get a pty, scan input lines.
  */
@@ -765,11 +758,6 @@ Please contact your net administrator");
     level = getterminaltype(user_name);
     setenv("TERM", terminaltype ? terminaltype : "network", 1);
 
-    /*
-     * Start up the login process on the slave side of the terminal
-     */
-    startslave(host, level, user_name);
-
 #ifdef _SC_CRAY_SECURE_SYS
     if (secflag) {
 	if (setulvl(dv.dv_actlvl) < 0)
@@ -779,7 +767,7 @@ Please contact your net administrator");
     }
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-    telnet(net, ourpty);  /* begin server processing */
+    telnet(net, ourpty, host, level, user_name);  /* begin server processing */
     /*NOTREACHED*/
 }  /* end of doit */
 
@@ -788,7 +776,7 @@ Please contact your net administrator");
  * hand data to telnet receiver finite state machine.
  */
 void
-telnet(int f, int p)
+telnet(int f, int p, char *host, int level, char *autoname)
 {
     int on = 1;
 #define	TABBUFSIZ	512
@@ -800,6 +788,8 @@ telnet(int f, int p)
     char *IM;
     void netflush();
     int nfd;
+    int startslave_called = 0;
+    time_t timeout;
 
     /*
      * Initialize the slc mapping table.
@@ -965,9 +955,17 @@ telnet(int f, int p)
 
 
     nfd = ((f > p) ? f : p) + 1;
+    timeout = time(NULL) + 5;
     for (;;) {
 	fd_set ibits, obits, xbits;
 	int c;
+
+	/* wait for encryption to be turned on, but don't wait
+           indefinitely */
+	if(!startslave_called && (!encrypt_delay() || timeout > time(NULL))){
+	    startslave_called = 1;
+	    startslave(host, level, autoname);
+	}
 
 	if (ncc < 0 && pcc < 0)
 	    break;

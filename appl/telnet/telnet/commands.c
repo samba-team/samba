@@ -2069,7 +2069,7 @@ tn(int argc, char **argv)
 	    --argc; ++argv;
 	    if (argc == 0)
 		goto usage;
-	    user = *argv++;
+	    user = strdup(*argv++);
 	    --argc;
 	    continue;
 	}

@@ -56,6 +56,10 @@
 #include <bsdsetjmp.h>
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -65,6 +69,10 @@
 
 #if defined(SOCKS) && defined(HAVE_CURSES_H)
 #include <curses.h>
+#endif
+
+#ifdef HAVE_SYS_TERMIO_H
+#include <sys/termio.h>
 #endif
 
 #ifdef HAVE_FCNTL_H
@@ -79,9 +87,6 @@
 #include <pwd.h>
 #endif
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -144,6 +149,7 @@
 #endif
 
 #include <roken.h>
+/* krb.h? */
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
 #include <libtelnet/auth.h>

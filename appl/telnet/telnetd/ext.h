@@ -126,7 +126,7 @@ int getterminaltype (char *name);
 void _gettermname (void);
 int terminaltypeok (char *s);
 void doit (struct sockaddr_in *who);
-void telnet (int f, int p);
+void telnet (int f, int p, char*, int, char*);
 void interrupt (void);
 void sendbrk (void);
 void sendsusp (void);
