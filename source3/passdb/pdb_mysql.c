@@ -370,8 +370,8 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	}
 	
 	DEBUG(5,
-		("mysqlsam_setsampwent succeeded(%d results)!\n",
-				mysql_num_fields(data->pwent)));
+		("mysqlsam_setsampwent succeeded(%lu results)!\n",
+				mysql_num_rows(data->pwent)));
 	
 	return NT_STATUS_OK;
 }
