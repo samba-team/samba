@@ -3753,3 +3753,14 @@ void get_private_directory(pstring priv_dir)
 	p = strrchr(priv_dir, '/');
 	if (p)	*p = 0;
 }
+
+/***********************************************************
+ Allow daemons such as winbindd to fix their logfile name.
+************************************************************/
+
+void lp_set_logfile(const char *name)
+{
+	extern pstring debugf;
+	pstrcpy(Globals.szLogFile, name);
+	pstrcpy(debugf, name);
+}

@@ -22,7 +22,6 @@
 #include "includes.h"
 
 pstring servicesf = CONFIGFILE;
-extern pstring debugf;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 
@@ -396,7 +395,7 @@ static BOOL dump_core(void)
 {
 	char *p;
 	pstring dname;
-	pstrcpy(dname,debugf);
+	pstrcpy(dname,lp_logfile());
 	if ((p=strrchr(dname,'/'))) *p=0;
 	pstrcat(dname,"/corefiles");
 	mkdir(dname,0700);
@@ -559,6 +558,7 @@ static void usage(char *pname)
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
+	pstring logfile;
 	
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
@@ -582,7 +582,8 @@ static void usage(char *pname)
 
 		case 'l':
 			specified_logfile = True;
-			slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", optarg);
+			slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", optarg);
+			lp_set_logfile(logfile);
 			break;
 
 		case 'a':
@@ -636,7 +637,8 @@ static void usage(char *pname)
 	TimeInit();
 
 	if(!specified_logfile) {
-		slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", LOGFILEBASE);
+		slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", LOGFILEBASE);
+		lp_set_logfile(logfile);
 	}
 
 	pstrcpy(remote_machine, "smbd");

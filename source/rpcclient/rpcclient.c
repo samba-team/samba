@@ -23,8 +23,6 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-extern pstring debugf;
-
 DOM_SID domain_sid;
 
 /* List to hold groups of commands */
@@ -628,6 +626,7 @@ static void usage(void)
 				username,
 				domain,
 				server;
+	pstring			logfile;
 	struct cmd_set **cmd_set;
 
 	setlinebuf(stdout);
@@ -652,7 +651,8 @@ static void usage(void)
 			break;
 
 		case 'l':
-			slprintf(debugf, sizeof(debugf) - 1, "%s.client", optarg);
+			slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
+			lp_set_logfile(logfile);
 			interactive = False;
 			break;
 

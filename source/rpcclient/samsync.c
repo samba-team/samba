@@ -226,7 +226,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
         struct cli_state cli;
         NTSTATUS result;
         int opt;
-        extern pstring debugf;
+        pstring logfile;
         BOOL interactive = False, do_smbpasswd_output = False;
         uint32 low_serial = 0;
         unsigned char trust_passwd[16];
@@ -295,8 +295,9 @@ static struct cli_state *init_connection(struct cli_state *cli,
 
         /* Initialise samba */
 
-	slprintf(debugf, sizeof(debugf) - 1, "%s/log.%s", LOGFILEBASE, 
+	slprintf(logfile, sizeof(logfile) - 1, "%s/log.%s", LOGFILEBASE, 
                  "samsync");
+	lp_set_logfile(logfile);
 
         setup_logging("samsync", interactive);
 

@@ -34,9 +34,6 @@ extern pstring global_myname;
 extern pstring user_socket_options;
 
 
-extern pstring debugf;
-
-
 extern file_info def_finfo;
 
 #define CNV_LANG(s) dos2unix_format(s,False)
@@ -239,6 +236,7 @@ enum client_action
 	enum client_action cli_action = CLIENT_NONE;
 	int nprocs = 1;
 	int numops = 100;
+	pstring logfile;
 
 	struct client_info cli_info;
 
@@ -457,8 +455,9 @@ enum client_action
 
 			case 'l':
 			{
-				slprintf(debugf, sizeof(debugf)-1,
+				slprintf(logfile, sizeof(logfile)-1,
 				         "%s.client",optarg);
+				lp_set_logfile(logfile);
 				break;
 			}
 

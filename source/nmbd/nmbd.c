@@ -27,7 +27,6 @@
 
 #include "includes.h"
 
-extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 
 int ClientNMB       = -1;
@@ -108,7 +107,7 @@ static BOOL dump_core(void)
 {
   char *p;
   pstring dname;
-  pstrcpy( dname, debugf );
+  pstrcpy( dname, lp_logfile() );
   if ((p=strrchr(dname,'/')))
     *p=0;
   pstrcat( dname, "/corefiles" );
@@ -657,6 +656,7 @@ static void usage(char *pname)
   extern FILE *dbf;
   extern char *optarg;
   extern BOOL  append_log;
+  pstring logfile;
 
   append_log = True;  /* Default, override with '-o' option. */
 
@@ -670,7 +670,8 @@ static void usage(char *pname)
 
   TimeInit();
 
-  slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", LOGFILEBASE);
+  slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", LOGFILEBASE);
+  lp_set_logfile(logfile);
   setup_logging( argv[0], False );
 
   charset_initialise();
@@ -730,7 +731,8 @@ static void usage(char *pname)
           strupper(global_myname);
           break;
         case 'l':
-          slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", optarg);
+          slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", optarg);
+          lp_set_logfile(logfile);
           break;
         case 'a':
           append_log = True;

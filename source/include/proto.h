@@ -874,6 +874,28 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_valid(SMB_ACL_T acl_d);
 int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *path);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T acl_d) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p);
+SMB_ACL_T sys_acl_init(int count);
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
+int sys_acl_valid(SMB_ACL_T acl_d);
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
 int sys_acl_delete_def_file(const char *name);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
@@ -2059,6 +2081,7 @@ int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 char *lp_printername(int snum);
 void get_private_directory(pstring priv_dir);
+void lp_set_logfile(const char *name);
 
 /*The following definitions come from  param/params.c  */
 
@@ -3508,6 +3531,7 @@ uint32 spoolss_size_job_info_2(JOB_INFO_2 *info);
 uint32 spoolss_size_form_1(FORM_1 *info);
 uint32 spoolss_size_port_info_1(PORT_INFO_1 *info);
 uint32 spoolss_size_driverdir_info_1(DRIVER_DIRECTORY_1 *info);
+uint32 spoolss_size_printprocessordirectory_info_1(PRINTPROCESSOR_DIRECTORY_1 *info);
 uint32 spoolss_size_port_info_2(PORT_INFO_2 *info);
 uint32 spoolss_size_printprocessor_info_1(PRINTPROCESSOR_1 *info);
 uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info);
@@ -4263,7 +4287,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
 int close_file_fchmod(files_struct *fsp);
 files_struct *open_directory(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action);
+		SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
