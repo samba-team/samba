@@ -76,6 +76,7 @@ struct sec_server_mech {
 #define AUTH_CONTINUE	1
 #define AUTH_ERROR	2
 
+extern int ftp_do_gss_bindings;
 #ifdef FTP_SERVER
 extern struct sec_server_mech krb4_server_mech, gss_server_mech;
 #else
