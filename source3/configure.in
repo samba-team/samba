@@ -2536,12 +2536,13 @@ AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" = x"yes"; then
     AC_MSG_RESULT($srcdir/popt)
     BUILD_POPT='$(POPT_OBJS)'
-    CFLAGS="$CFLAGS -I$srcdir/popt"
+    FLAGS1="-I$srcdir/popt"
 else
     AC_MSG_RESULT(no)
     LIBS="$LIBS -lpopt"
 fi
 AC_SUBST(BUILD_POPT)
+AC_SUBST(FLAGS1)
 
 #################################################
 # final configure stuff

@@ -69,9 +69,10 @@ LOCKDIR = @lockdir@
 # man pages language(s)
 man_langs = "@manlangs@"
 
-FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -I. -I$(srcdir)
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -I. -I$(srcdir)
 FLAGS2 = 
 FLAGS3 = 
+FLAGS4 = 
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
 FLAGS  = $(ISA) $(FLAGS5) 
 FLAGS32  = $(ISA32) $(FLAGS5)
@@ -790,8 +791,8 @@ winbindd_proto:
 	  $(WINBINDD_OBJ1)
 
 delheaders:
-	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
-	@/bin/rm -f include/proto.h include/build_env.h 
+	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h $(srcdir)/.headers.stamp
+	@/bin/rm -f include/proto.h include/build_env.h .headers.stamp
 
 # we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
 .headers.stamp: include/proto.h include/build_env.h
