@@ -1,5 +1,11 @@
 2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/context.c: add protocol compatible krb524 error codes
+
+	* lib/krb5/Makefile.am: add protocol compatible krb524 error codes
+
+	* lib/krb5/k524_err.et: add protocol compatible krb524 error codes
+
 	* lib/krb5/krb5_principal_get_realm.3: manpage
 
 	* lib/krb5/principal.c: add functions `krb5_principal_get_realm'
