@@ -57,6 +57,7 @@ kadm5_s_randkey_principal(void *server_handle,
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
     {
+	/* XXX this should be merged with set_keys */
 	int i;
 	Key *key;
 	*new_keys = malloc(ent.keys.len * sizeof(**new_keys));
@@ -74,11 +75,13 @@ kadm5_s_randkey_principal(void *server_handle,
 
 	    if(ret)
 		break;
-	    ret = krb5_copy_keyblock(context->context, &key->key, &new_keys[i]);
+	    ret = krb5_copy_keyblock_contents(context->context, 
+					      &key->key, &(*new_keys)[i]);
 	    if(ret)
 		break;
 	    *n_keys = i + 1;
 	}
+	ent.kvno++;
     }
     if(ret)
 	goto out2;
