@@ -22,6 +22,7 @@ k_getpwnam (char *user)
 	  spwd = getspnam (user);
 	  if (spwd)
 	       p->pw_passwd = spwd->sp_pwdp;
+	  endspent ();
      }
 #endif
      return p;
