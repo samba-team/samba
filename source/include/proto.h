@@ -1844,8 +1844,9 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  smbd/access.c  */
 
-BOOL check_access(int snum);
-BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
+BOOL allow_access(char *deny_list,char *allow_list,
+		  char *cname,char *caddr);
+BOOL check_access(int sock, char *allow_list, char *deny_list);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 

@@ -2679,7 +2679,7 @@ static void process_smb(char *inbuf, char *outbuf)
 	     deny parameters before doing any parsing of the packet
 	     passed to us by the client.  This prevents attacks on our
 	     parsing code from hosts not in the hosts allow list */
-	  if (!check_access(-1)) {
+	  if (!check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		  /* send a negative session response "not listining on calling
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
@@ -3459,6 +3459,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   connection_struct *pcon;
   BOOL guest = False;
   BOOL force = False;
+  extern int Client;
 
   strlower(service);
 
@@ -3503,7 +3504,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       }
     }
 
-  if (!lp_snum_ok(snum) || !check_access(snum)) {    
+  if (!lp_snum_ok(snum) || 
+      !check_access(Client, lp_hostsallow(snum), lp_hostsdeny(snum))) {    
     return(-4);
   }
 
@@ -4649,6 +4651,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   static int num_smb_messages = 
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
+  extern int Client;
 
 #if PROFILING
   struct timeval msg_start_time;
@@ -4756,8 +4759,11 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         return(ERROR(ERRSRV,ERRaccess));
 
       /* does this protocol need to be run as guest? */
-      if ((flags & AS_GUEST) && (!become_guest() || !check_access(-1)))
+      if ((flags & AS_GUEST) && 
+	  (!become_guest() || 
+	   !check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1)))) {
         return(ERROR(ERRSRV,ERRaccess));
+      }
 
       last_inbuf = inbuf;
 
