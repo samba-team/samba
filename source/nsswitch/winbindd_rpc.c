@@ -792,7 +792,7 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
  LDAP queries
 **********************************************************************/
 
-int get_ldap_sequence_number( const char* domain, uint32 *seq)
+static int get_ldap_sequence_number( const char* domain, uint32 *seq)
 {
 	int ret = -1;
 	int i, port = LDAP_PORT;

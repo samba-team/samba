@@ -91,7 +91,7 @@ static char *grab_line(FILE *f, int *cl)
  (This was in rfc1738_unescape(), but that broke the squid helper)
 **/
 
-void plus_to_space_unescape(char *buf)
+static void plus_to_space_unescape(char *buf)
 {
 	char *p=buf;
 
