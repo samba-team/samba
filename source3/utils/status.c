@@ -55,7 +55,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
   BOOL firstopen=True;
   BOOL processes_only=False;
   int last_pid=0;
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   pstring shmem_file_name;
   share_mode_record *scanner_p;
   share_mode_record *prev_p;
@@ -165,7 +165,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
   printf("\n");
 
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   /*******************************************************************
   initialize the shared memory for share_mode management 
   ******************************************************************/
@@ -286,7 +286,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
       }
     printf(" %s   %s",fname,asctime(LocalTime(&t)));
 
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
      prev_p = scanner_p ;
      scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
   } /* end while */
@@ -307,7 +307,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 #endif
   if (firstopen)
     printf("No locked files\n");
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   printf("\nShare mode memory usage (bytes):\n");
   printf("   %d(%d%%) free + %d(%d%%) used + %d(%d%%) overhead = %d(100%%) total\n",
 	 bytes_free, (bytes_free * 100)/bytes_total,

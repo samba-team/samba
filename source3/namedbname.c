@@ -230,8 +230,8 @@ void dump_names(void)
     {
       int i;
 
-	  DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
-	  DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
+      DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
+      DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
       DEBUG(3,("%-19s TTL=%ld ",
 	       namestr(&n->name),
 	       n->death_time?n->death_time-t:0));
@@ -243,35 +243,29 @@ void dump_names(void)
 						n->ip_flgs[i].nb_flags));
 
         }
-		DEBUG(3,("\n"));
+	DEBUG(3,("\n"));
 
       if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
       {
-        fstring data;
-
       /* XXXX i have little imagination as to how to output nb_flags as
          anything other than as a hexadecimal number :-) */
 
-        sprintf(data, "%s#%02x %ld",
-	       n->name.name,n->name.name_type, /* XXXX ignore scope for now */
-	       n->death_time);
-	    fprintf(f, "%s", data);
+        fprintf(f,"%s#%02x %ld",
+		n->name.name,n->name.name_type, /* XXXX ignore scope for now */
+		n->death_time);
         for (i = 0; i < n->num_ips; i++)
         {
            DEBUG(3,("%15s NB=%2x ",
-						inet_ntoa(n->ip_flgs[i].ip),
-						n->ip_flgs[i].nb_flags));
+		    inet_ntoa(n->ip_flgs[i].ip),
+		    n->ip_flgs[i].nb_flags));
 
-           sprintf(data, "%s %2x ",
-						inet_ntoa(n->ip_flgs[i].ip),
-						n->ip_flgs[i].nb_flags);
-   
-		   fprintf(f, "%s", data);
+           fprintf(f, "%s %2x ",
+		   inet_ntoa(n->ip_flgs[i].ip),
+		   n->ip_flgs[i].nb_flags);   
         }
-		DEBUG(3,("\n"));
-		fprintf(f, "\n");
+	DEBUG(3,("\n"));
+	fprintf(f, "\n");
       }
-
     }
 
   fclose(f);
@@ -318,34 +312,31 @@ void load_netbios_names(void)
       int type = 0;
       int nb_flags;
       time_t ttd;
-	  struct in_addr ipaddr;
-
-	  enum name_source source;
-
+      struct in_addr ipaddr;
+      enum name_source source;
       char *ptr;
-	  int count = 0;
-
+      int count = 0;
       char *p;
 
       if (!fgets_slash(line,sizeof(pstring),f)) continue;
 
       if (*line == '#') continue;
 
-	ptr = line;
+      ptr = line;
 
-	if (next_token(&ptr,name_str    ,NULL)) ++count;
-	if (next_token(&ptr,ttd_str     ,NULL)) ++count;
-	if (next_token(&ptr,ip_str      ,NULL)) ++count;
-	if (next_token(&ptr,nb_flags_str,NULL)) ++count;
+      if (next_token(&ptr,name_str    ,NULL)) ++count;
+      if (next_token(&ptr,ttd_str     ,NULL)) ++count;
+      if (next_token(&ptr,ip_str      ,NULL)) ++count;
+      if (next_token(&ptr,nb_flags_str,NULL)) ++count;
 
-	if (count <= 0) continue;
+      if (count <= 0) continue;
 
-	if (count != 4) {
-	  DEBUG(0,("Ill formed wins line"));
-	  DEBUG(0,("[%s]: name#type ip nb_flags abs_time\n",line));
-	  continue;
-	}
-
+      if (count != 4) {
+	DEBUG(0,("Ill formed wins line"));
+	DEBUG(0,("[%s]: name#type ip nb_flags abs_time\n",line));
+	continue;
+      }
+      
       /* netbios name. # divides the name from the type (hex): netbios#xx */
       strcpy(name,name_str);
 
@@ -357,10 +348,10 @@ void load_netbios_names(void)
       }
 
       /* decode the netbios flags (hex) and the time-to-die (seconds) */
-	  sscanf(nb_flags_str,"%x",&nb_flags);
-	  sscanf(ttd_str,"%ld",&ttd);
+      sscanf(nb_flags_str,"%x",&nb_flags);
+      sscanf(ttd_str,"%ld",&ttd);
 
-	  ipaddr = *interpret_addr2(ip_str);
+      ipaddr = *interpret_addr2(ip_str);
 
       if (ip_equal(ipaddr,ipzero)) {
          source = SELF;
@@ -545,7 +536,7 @@ struct name_record *search_for_name(struct subnet_record **d,
   if (!n)
     {
       struct in_addr dns_ip;
-      unsigned long a;
+      uint32 a;
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
       if (!dns_type && name_type != 0x1b)

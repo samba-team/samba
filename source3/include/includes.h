@@ -183,10 +183,6 @@
 #endif
 #endif
 
-#if defined(USE_MMAP) || defined(FAST_SHARE_MODES)
-#include <sys/mman.h>
-#endif
-
 #if defined(GETPWANAM)
 #include <sys/types.h>
 #include <sys/label.h>
@@ -224,6 +220,7 @@ Here come some platform specific sections
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
 #define USE_SIGPROCMASK
+#define FAST_SHARE_MODES 1
 #if 0
 /* SETFS disabled until we can check on some bug reports */
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
@@ -908,6 +905,10 @@ typedef int mode_t;
 /*******************************************************************
 end of the platform specific sections
 ********************************************************************/
+
+#if defined(USE_MMAP) || FAST_SHARE_MODES
+#include <sys/mman.h>
+#endif
 
 #ifdef SecureWare
 #define NEED_AUTH_PARAMETERS

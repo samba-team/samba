@@ -231,7 +231,7 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
   return True; /* Did unlock */
 }
 
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
 /*******************************************************************
   initialize the shared memory for share_mode management 
   ******************************************************************/
@@ -312,7 +312,7 @@ get the share mode of a file
 ********************************************************************/
 int get_share_mode(int cnum,struct stat *sbuf,int *pid)
 {
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   share_mode_record *scanner_p;
   share_mode_record *prev_p;
   int ret;
@@ -434,7 +434,7 @@ del the share mode of a file, if we set it last
 ********************************************************************/
 void del_share_mode(int fnum)
 {
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   struct stat st;
   time_t t=0;
   int pid=0;
@@ -540,7 +540,7 @@ set the share mode of a file
 ********************************************************************/
 BOOL set_share_mode(int fnum,int mode)
 {
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   int pid = (int)getpid();
   struct stat st;
   shm_offset_t new_off;

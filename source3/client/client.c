@@ -2523,7 +2523,7 @@ static void cmd_qinfo(char *inbuf,char *outbuf )
   char *p;
   int rdrcnt, rprcnt;
   pstring param;
-  int result_code;
+  int result_code=0;
   
   bzero(param,sizeof(param));
 
@@ -3037,6 +3037,7 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
   pstring dev;
   char *p;
   int numprots;
+  int tries=0;
 
   if (was_null)
     {
@@ -3173,6 +3174,10 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
     pass = password;
   else
     pass = (char *)getpass("Password: ");
+
+  /* use a blank username for the 2nd try with a blank password */
+  if (tries++ && !*pass)
+    *username = 0;
 
   if (Protocol >= PROTOCOL_LANMAN1 && use_setup)
     {
