@@ -1046,6 +1046,7 @@ pk_initialize(const char *cert_file,
 				   cert_file,
 				   key_file,
 				   ca_dir,
+				   NULL,
 				   NULL);
     if (ret) {
 	krb5_warn(context, ret, "PKINIT: failed to load");
