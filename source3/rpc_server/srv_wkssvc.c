@@ -3,7 +3,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Anthony Liguori                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,16 +59,17 @@ static BOOL api_wks_query_info(pipes_struct *p)
 /*******************************************************************
  \PIPE\wkssvc commands
  ********************************************************************/
-static struct api_struct api_wks_cmds[] =
-{
-	{ "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info },
-	{ NULL             , 0            , NULL }
-};
 
-/*******************************************************************
- receives a wkssvc pipe and responds.
- ********************************************************************/
-BOOL api_wkssvc_rpc(pipes_struct *p)
+#ifdef RPC_WKS_DYNAMIC
+int rpc_pipe_init(void)
+#else
+int rpc_wks_init(void)
+#endif
 {
-	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds);
+  static struct api_struct api_wks_cmds[] =
+    {
+      { "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info }
+    };
+  return rpc_pipe_register_commands("wkssvc", "ntsvcs", api_wks_cmds,
+				    sizeof(api_wks_cmds) / sizeof(struct api_struct));
 }

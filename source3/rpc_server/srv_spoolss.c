@@ -3,9 +3,10 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Jeremy Allison                    2001.
- *  Copyright (C) Gerald Carter                2001-2002.
+ *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Gerald Carter                2001-2002,
+ *  Copyright (C) Anthony Liguori                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1579,8 +1580,14 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
 \pipe\spoolss commands
 ********************************************************************/
 
-struct api_struct api_spoolss_cmds[] = 
+#ifdef RPC_SPOOLSS_DYNAMIC
+int rpc_pipe_init(void)
+#else
+int rpc_spoolss_init(void)
+#endif
 {
+  struct api_struct api_spoolss_cmds[] = 
+    {
  {"SPOOLSS_OPENPRINTER",               SPOOLSS_OPENPRINTER,               api_spoolss_open_printer              },
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },
@@ -1634,15 +1641,9 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_DELETEPRINTERDRIVEREX",     SPOOLSS_DELETEPRINTERDRIVEREX,     api_spoolss_deleteprinterdriverex     },
 #if 0
  {"SPOOLSS_REPLYOPENPRINTER",          SPOOLSS_REPLYOPENPRINTER,          api_spoolss_replyopenprinter          },
- {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         },
+ {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         }
 #endif
- { NULL,                               0,                                 NULL                                  }
-};
-
-/*******************************************************************
-receives a spoolss pipe and responds.
-********************************************************************/
-BOOL api_spoolss_rpc(pipes_struct *p)
-{
-	return api_rpcTNP(p, "api_spoolss_rpc", api_spoolss_cmds);
+    };
+  return rpc_pipe_register_commands("spoolss", "spoolss", api_spoolss_cmds,
+				    sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
 }

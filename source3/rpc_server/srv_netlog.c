@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison               1998-2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Jeremy Allison               1998-2001,
+ *  Copyright (C) Anthony Liguori                   2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -319,25 +320,26 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 /*******************************************************************
  array of \PIPE\NETLOGON operations
  ********************************************************************/
-static struct api_struct api_net_cmds [] =
-{
-	{ "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
-	{ "NET_AUTH"          , NET_AUTH          , api_net_auth           }, 
-	{ "NET_AUTH2"         , NET_AUTH2         , api_net_auth_2         }, 
-	{ "NET_SRVPWSET"      , NET_SRVPWSET      , api_net_srv_pwset      }, 
-	{ "NET_SAMLOGON"      , NET_SAMLOGON      , api_net_sam_logon      }, 
-	{ "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
-	{ "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
-	{ "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
-	{ "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
-	{  NULL               , 0                 , NULL                   }
-};
 
-/*******************************************************************
- receives a netlogon pipe and responds.
- ********************************************************************/
-
-BOOL api_netlog_rpc(pipes_struct *p)
+#ifdef RPC_NETLOG_DYNAMIC
+int rpc_pipe_init(void)
+#else
+int rpc_net_init(void)
+#endif
 {
-	return api_rpcTNP(p, "api_netlog_rpc", api_net_cmds);
+  static struct api_struct api_net_cmds [] =
+    {
+      { "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
+      { "NET_AUTH"          , NET_AUTH          , api_net_auth           }, 
+      { "NET_AUTH2"         , NET_AUTH2         , api_net_auth_2         }, 
+      { "NET_SRVPWSET"      , NET_SRVPWSET      , api_net_srv_pwset      }, 
+      { "NET_SAMLOGON"      , NET_SAMLOGON      , api_net_sam_logon      }, 
+      { "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
+      { "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
+      { "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
+      { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     }
+    };
+
+  return rpc_pipe_register_commands("NETLOGON", "lsass", api_net_cmds,
+				    sizeof(api_net_cmds) / sizeof(struct api_struct));
 }

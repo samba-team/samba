@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
- *  Copyright (C) Jeremy Allison                    1999.
+ *  Copyright (C) Paul Ashton                  1997-1998,
+ *  Copyright (C) Jeremy Allison                    1999,
+ *  Copyright (C) Anthony Liguori                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -457,23 +458,52 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 
 struct api_cmd
 {
-  const char * pipe_clnt_name;
-  const char * pipe_srv_name;
-  BOOL (*fn) (pipes_struct *);
+  const char *name;
+  int (*init)(void);
 };
 
 static struct api_cmd api_fd_commands[] =
 {
-    { "lsarpc",   "lsass",   api_ntlsa_rpc },
-    { "samr",     "lsass",   api_samr_rpc },
-    { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
-    { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
-    { "NETLOGON", "lsass",   api_netlog_rpc },
-    { "winreg",   "winreg",  api_reg_rpc },
-    { "spoolss",  "spoolss", api_spoolss_rpc },
-    { "netdfs",   "netdfs" , api_netdfs_rpc },
-    { NULL,       NULL,      NULL }
+#ifndef RPC_LSA_DYNAMIC
+    { "lsarpc",   rpc_lsa_init },
+#endif
+#ifndef RPC_SAMR_DYNAMIC
+    { "samr",     rpc_samr_init },
+#endif
+#ifndef RPC_SVC_DYNAMIC
+    { "srvsvc",   rpc_srv_init },
+#endif
+#ifndef RPC_WKS_DYNAMIC
+    { "wkssvc",   rpc_wks_init },
+#endif
+#ifndef RPC_NETLOG_DYNAMIC
+    { "NETLOGON", rpc_net_init },
+#endif
+#ifndef RPC_REG_DYNAMIC
+    { "winreg",   rpc_reg_init },
+#endif
+#ifndef RPC_SPOOLSS_DYNAMIC
+    { "spoolss",  rpc_spoolss_init },
+#endif
+#ifndef RPC_DFS_DYNAMIC
+    { "netdfs",   rpc_dfs_init },
+#endif
+    { NULL, NULL }
 };
+
+struct rpc_table
+{
+  struct
+  {
+    const char *clnt;
+    const char *srv;
+  } pipe;
+  struct api_struct *cmds;
+  int n_cmds;
+};
+
+static struct rpc_table *rpc_lookup;
+static int rpc_lookup_size;
 
 /*******************************************************************
  This is the client reply to our challenge for an authenticated 
@@ -681,6 +711,7 @@ BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 	fstrcpy(pname,"\\PIPE\\");
 	fstrcat(pname,pipe_name);
 
+	DEBUG(3,("check_bind_req for %s\n", pname));
 
 #ifndef SUPPORT_NEW_LSARPC_UUID
 
@@ -728,6 +759,82 @@ BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 }
 
 /*******************************************************************
+ Register commands to an RPC pipe
+*******************************************************************/
+int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct api_struct *cmds, int size)
+{
+        struct rpc_table *rpc_entry;
+
+
+        /* We use a temporary variable because this call can fail and 
+           rpc_lookup will still be valid afterwards.  It could then succeed if
+           called again later */
+        rpc_entry = realloc(rpc_lookup, 
+                            ++rpc_lookup_size*sizeof(struct rpc_table));
+        if (NULL == rpc_entry) {
+                rpc_lookup_size--;
+                DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
+                return 0;
+        } else {
+                rpc_lookup = rpc_entry;
+        }
+        
+        rpc_entry = rpc_lookup + (rpc_lookup_size - 1);
+        ZERO_STRUCTP(rpc_entry);
+        rpc_entry->pipe.clnt = strdup(clnt);
+        rpc_entry->pipe.srv = strdup(srv);
+        rpc_entry->cmds = realloc(rpc_entry->cmds, 
+                                  (rpc_entry->n_cmds + size) *
+                                  sizeof(struct api_struct));
+        memcpy(rpc_entry->cmds + rpc_entry->n_cmds, cmds,
+               size * sizeof(struct api_struct));
+        rpc_entry->n_cmds += size;
+        
+        return size;
+}
+
+/*******************************************************************
+ Register commands to an RPC pipe
+*******************************************************************/
+int rpc_load_module(const char *module)
+{
+#ifdef HAVE_DLOPEN
+        void *handle;
+        int (*module_init)(void);
+        pstring full_path;
+        char *error;
+        
+        pstrcpy(full_path, lib_path("rpc"));
+        pstrcat(full_path, "/librpc_");
+        pstrcat(full_path, module);
+        pstrcat(full_path, ".");
+        pstrcat(full_path, shlib_ext());
+
+        handle = sys_dlopen(full_path, RTLD_LAZY);
+        if (!handle) {
+                DEBUG(0, ("Could not load requested pipe %s as %s\n", 
+                    module, full_path));
+                DEBUG(0, (" Error: %s\n", dlerror()));
+                return 0;
+        }
+        
+        DEBUG(3, ("Module '%s' loaded\n", full_path));
+        
+        module_init = sys_dlsym(handle, "rpc_pipe_init");
+        if ((error = sys_dlerror()) != NULL) {
+                DEBUG(0, ("Error trying to resolve symbol 'rpc_pipe_init' in %s: %s\n",
+                          full_path, error));
+                return 0;
+        }
+        
+        return module_init();
+#else
+        DEBUG(0,("Attempting to load a dynamic RPC pipe when dlopen isn't available\n"));
+        return 0;
+#endif
+}
+
+/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -754,23 +861,40 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * that this is a pipe name we support.
 	 */
 
-	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++) {
-		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
-		    api_fd_commands[i].fn != NULL) {
-			DEBUG(3,("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-			           api_fd_commands[i].pipe_clnt_name,
-			           api_fd_commands[i].pipe_srv_name));
-			fstrcpy(p->pipe_srv_name, api_fd_commands[i].pipe_srv_name);
-			break;
-		}
+
+	for (i = 0; i < rpc_lookup_size; i++) {
+	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+                  DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+                            rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
+                  fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
+                  break;
+                }
 	}
 
-	if (api_fd_commands[i].fn == NULL) {
-		DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
-			p->name ));
-		if(!setup_bind_nak(p))
-			return False;
-		return True;
+	if (i == rpc_lookup_size) {
+                for (i = 0; api_fd_commands[i].name; i++) {
+                       if (strequal(api_fd_commands[i].name, p->name)) {
+                               api_fd_commands[i].init();
+                               break;
+                       }
+                }
+
+                if (!api_fd_commands[i].name && !rpc_load_module(p->name)) {
+                       DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
+                                p->name ));
+                       if(!setup_bind_nak(p))
+                               return False;
+                       return True;
+                }
+
+                for (i = 0; i < rpc_lookup_size; i++) {
+                       if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+                               DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+                                         rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
+                               fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
+                               break;
+                       }
+                }
 	}
 
 	/* decode the bind request */
@@ -1153,14 +1277,46 @@ BOOL api_pipe_request(pipes_struct *p)
 		}
 	}
 
-	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++) {
-		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
-		    api_fd_commands[i].fn != NULL) {
-			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
-			set_current_rpc_talloc(p->mem_ctx);
-			ret = api_fd_commands[i].fn(p);
-			set_current_rpc_talloc(NULL);
-		}
+	DEBUG(5, ("Requested \\PIPE\\%s\n", p->name));
+
+	for (i = 0; i < rpc_lookup_size; i++) {
+	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+                        DEBUG(3,("Doing \\PIPE\\%s\n", 
+                                 rpc_lookup[i].pipe.clnt));
+                        set_current_rpc_talloc(p->mem_ctx);
+                        ret = api_rpcTNP(p, rpc_lookup[i].pipe.clnt,
+                                         rpc_lookup[i].cmds,
+                                         rpc_lookup[i].n_cmds);
+                        set_current_rpc_talloc(NULL);
+                        break;
+                }
+	}
+
+
+	if (i == rpc_lookup_size) {
+	        for (i = 0; api_fd_commands[i].name; i++) {
+                        if (strequal(api_fd_commands[i].name, p->name)) {
+                                api_fd_commands[i].init();
+                                break;
+                        }
+                }
+
+                if (!api_fd_commands[i].name) {
+                       rpc_load_module(p->name);
+                }
+
+                for (i = 0; i < rpc_lookup_size; i++) {
+                        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+                                DEBUG(3,("Doing \\PIPE\\%s\n",
+                                         rpc_lookup[i].pipe.clnt));
+                                set_current_rpc_talloc(p->mem_ctx);
+                                ret = api_rpcTNP(p, rpc_lookup[i].pipe.clnt,
+                                                 rpc_lookup[i].cmds,
+                                                 rpc_lookup[i].n_cmds);
+                                set_current_rpc_talloc(NULL);
+                                break;
+                        }
+                }
 	}
 
 	if(p->ntlmssp_auth_validated)
@@ -1174,7 +1330,7 @@ BOOL api_pipe_request(pipes_struct *p)
  ********************************************************************/
 
 BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name, 
-		const struct api_struct *api_rpc_cmds)
+		const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;
 	fstring name;
@@ -1186,14 +1342,14 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	slprintf(name, sizeof(name)-1, "in_%s", rpc_name);
 	prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
 
-	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
+	for (fn_num = 0; fn_num < n_cmds; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
 			DEBUG(3,("api_rpcTNP: rpc command: %s\n", api_rpc_cmds[fn_num].name));
 			break;
 		}
 	}
 
-	if (api_rpc_cmds[fn_num].name == NULL) {
+	if (fn_num == n_cmds) {
 		/*
 		 * For an unknown RPC just return a fault PDU but
 		 * return True to allow RPC's on the pipe to continue
@@ -1206,6 +1362,8 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 
 	offset1 = prs_offset(&p->out_data.rdata);
 
+        DEBUG(6, ("api_rpc_cmds[%d].fn == %p\n", 
+                fn_num, api_rpc_cmds[fn_num].fn));
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", rpc_name, api_rpc_cmds[fn_num].name));
