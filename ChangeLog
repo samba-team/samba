@@ -1,3 +1,16 @@
+2003-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: don't use PKINIT DH per default since its too
+	slow
+
+	* lib/krb5/pkinit.c: tweek to make pkinit work with the fact the
+	asn1_compile can't generate code for context tagless optionals
+	
+	* kdc/pkinit.c: add support for KDC side of DH PKINIT
+	
+	* lib/krb5/pkinit.c: clean up error handling, make enc-type work
+	again
+
 2003-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: add flag to make it work with pkinit dh
