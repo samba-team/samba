@@ -168,7 +168,9 @@ sub ParseElementPushScalar($$$)
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
 
-	if (defined $e->{VALUE}) {
+	if (my $value = util::has_property($e, "value")) {
+		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $value));\n";
+	} elsif (defined $e->{VALUE}) {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $e->{VALUE}));\n";
 	} elsif (util::need_wire_pointer($e)) {
 		$res .= "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
