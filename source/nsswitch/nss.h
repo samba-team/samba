@@ -1,3 +1,5 @@
+#ifndef _NSSWITCH_NSS_H
+#define _NSSWITCH_NSS_H
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
@@ -46,6 +48,31 @@ typedef nss_status_t NSS_STATUS;
 
 typedef enum nss_status NSS_STATUS;
 
+#elif HAVE_NS_API_H
+
+/* SGI IRIX */
+
+/* following required to prevent warnings of double definition
+ * of datum from ns_api.h
+*/
+#ifdef DATUM
+#define _DATUM_DEFINED
+#endif
+
+#include <ns_api.h>
+
+typedef enum
+{
+  NSS_STATUS_SUCCESS=NS_SUCCESS,
+  NSS_STATUS_NOTFOUND=NS_NOTFOUND,
+  NSS_STATUS_UNAVAIL=NS_UNAVAIL,
+  NSS_STATUS_TRYAGAIN=NS_TRYAGAIN
+} NSS_STATUS;
+
+#define NSD_MEM_STATIC 0
+#define NSD_MEM_VOLATILE 1
+#define NSD_MEM_DYNAMIC 2
+
 #else /* Nothing's defined. Neither gnu nor sun */
 
 typedef enum
@@ -57,4 +84,6 @@ typedef enum
 } NSS_STATUS;
 
 #endif
+
+#endif /* _NSSWITCH_NSS_H */
 
