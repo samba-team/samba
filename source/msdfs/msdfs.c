@@ -430,7 +430,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 
 	DEBUG(10,("setting up version2 referral\nRequested path:\n"));
 
-	requestedpathlen = (dos_struni2((char *)uni_requestedpath,pathname,512) + 1) * 2;
+	requestedpathlen = (dos_struni2((char *)uni_requestedpath,pathname,sizeof(uni_requestedpath)) + 1) * 2;
 
 	dump_data(10, (char *) uni_requestedpath,requestedpathlen);
 
@@ -495,7 +495,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 		SSVAL(pdata,offset+16,uni_reqpathoffset1-offset);
 		SSVAL(pdata,offset+18,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
-		unilen = (dos_struni2(pdata+uni_curroffset,ref->alternate_path,512) +1)*2;
+		unilen = (dos_struni2(pdata+uni_curroffset,ref->alternate_path,sizeof(uni_requestedpath)) +1)*2;
 		SSVAL(pdata,offset+20,uni_curroffset-offset);
 
 		uni_curroffset += unilen;
@@ -523,7 +523,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 	
 	DEBUG(10,("setting up version3 referral\n"));
 
-	reqpathlen = (dos_struni2((char *) uni_reqpath,pathname,512)+1)*2;
+	reqpathlen = (dos_struni2((char *) uni_reqpath,pathname,sizeof(uni_reqpath))+1)*2;
 	
 	dump_data(10, (char *) uni_reqpath,reqpathlen);
 
@@ -573,7 +573,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 		SSVAL(pdata,offset+12,uni_reqpathoffset1-offset);
 		SSVAL(pdata,offset+14,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
-		unilen = (dos_struni2(pdata+uni_curroffset,ref->alternate_path,512) +1)*2;
+		unilen = (dos_struni2(pdata+uni_curroffset,ref->alternate_path,sizeof(uni_reqpath)) +1)*2;
 		SSVAL(pdata,offset+16,uni_curroffset-offset);
 		/* copy 0x10 bytes of 00's in the ServiceSite GUID */
 		memset(pdata+offset+18,'\0',16);
