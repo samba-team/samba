@@ -1196,7 +1196,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	    SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 		  FILE_DEVICE_IS_MOUNTED|
 		  (lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
-	    SIVAL(pdata,4,128); /* Max filename component length */
+	    SIVAL(pdata,4,255); /* Max filename component length */
 	    len = srvstr_push(outbuf, pdata+12, fstype, -1, STR_TERMINATE|STR_CONVERT);
 	    SIVAL(pdata,8,len);
 	    data_len = 12 + len;
