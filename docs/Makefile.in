@@ -6,7 +6,6 @@
 # 		Jelmer Vernooij <jelmer@samba.org>
 
 # Programs
-WGET = @WGET@
 XSLTPROC = @XSLTPROC@
 XMLLINT = @XMLLINT@
 DVIPS = @DVIPS@
@@ -153,9 +152,6 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
-gpl.tex:
-	$(WGET) http://www.gnu.org/licenses/gpl.tex
-
 latexfigures: $(LATEX_FIGURES)
 
 $(PDFDIR)/%.pdf: %.pdf
@@ -163,7 +159,7 @@ $(PDFDIR)/%.pdf: %.pdf
 	cp $< $@
 
 # Adobe PDF files
-%.pdf: %.tex latexfigures gpl.tex 
+%.pdf: %.tex latexfigures 
 	-$(PDFLATEX) $<
 	-$(PDFLATEX) $<
 	$(MAKEINDEX) $*
@@ -175,7 +171,7 @@ $(DVIDIR)/%.dvi: %.dvi
 	mkdir -p $(@D)
 	cp $< $@
 
-%.dvi: %.tex %.idx gpl.tex
+%.dvi: %.tex %.idx 
 	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".eps" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
 	-$(LATEX) $< 
 	-$(LATEX) $< 

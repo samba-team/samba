@@ -1,3 +1,6 @@
+dnl (C) 2003-2004 Jelmer Vernooij <jelmer@samba.org>
+dnl Published under the GNU GPL
+dnl
 dnl DOCS_DEFINE_TARGET
 dnl arg1: Target that is defined
 dnl arg2: Requirement

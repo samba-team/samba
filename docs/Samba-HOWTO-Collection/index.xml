@@ -179,7 +179,7 @@ Samba has several features that you might want or might not want to use. The cha
 
 
 
-<?latex \include{gpl}?>
+<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
 
 <xi:include href="glossary.xml"/>
 
