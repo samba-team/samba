@@ -432,7 +432,7 @@ BOOL check_name(pstring name,connection_struct *conn)
 
 static BOOL scan_directory(connection_struct *conn, const char *path, char *name, size_t maxlength)
 {
-	void *cur_dir;
+	struct smb_Dir *cur_dir;
 	const char *dname;
 	BOOL mangled;
 	long curpos;
