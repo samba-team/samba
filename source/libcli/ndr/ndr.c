@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
+
    libndr interface
+
    Copyright (C) Andrew Tridgell 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -19,7 +21,10 @@
 */
 
 /*
-  this provides the core routines for MSNDR parsing functions
+  this provides the core routines for NDR parsing functions
+
+  see http://www.opengroup.org/onlinepubs/9629399/chap14.htm for details
+  of NDR encoding rules
 */
 
 #include "includes.h"
@@ -27,9 +32,9 @@
 /*
   initialise a ndr parse structure from a data blob
 */
-struct ndr_parse *ndr_parse_init_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+struct ndr_pull *ndr_pull_init_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
-	struct ndr_parse *ndr;
+	struct ndr_pull *ndr;
 
 	ndr = talloc(mem_ctx, sizeof(*ndr));
 	if (!ndr) return NULL;
@@ -52,7 +57,7 @@ struct ndr_parse *ndr_parse_init_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
    the 'ofs' parameter indicates how many bytes back from the current
    offset in the buffer the 'size' number of bytes starts
 */
-NTSTATUS ndr_parse_limit_size(struct ndr_parse *ndr, uint32 size, uint32 ofs)
+NTSTATUS ndr_pull_limit_size(struct ndr_pull *ndr, uint32 size, uint32 ofs)
 {
 	uint32 new_size;
 	new_size = ndr->offset + size - ofs;
@@ -69,7 +74,7 @@ NTSTATUS ndr_parse_limit_size(struct ndr_parse *ndr, uint32 size, uint32 ofs)
 /*
   advance by 'size' bytes
 */
-NTSTATUS ndr_parse_advance(struct ndr_parse *ndr, uint32 size)
+NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32 size)
 {
 	ndr->offset += size;
 	if (ndr->offset > ndr->data_size) {
@@ -81,7 +86,7 @@ NTSTATUS ndr_parse_advance(struct ndr_parse *ndr, uint32 size)
 /*
   set the parse offset to 'ofs'
 */
-NTSTATUS ndr_parse_set_offset(struct ndr_parse *ndr, uint32 ofs)
+NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32 ofs)
 {
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
@@ -91,15 +96,89 @@ NTSTATUS ndr_parse_set_offset(struct ndr_parse *ndr, uint32 ofs)
 }
 
 /* save the offset/size of the current ndr state */
-void ndr_parse_save(struct ndr_parse *ndr, struct ndr_parse_save *save)
+void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save)
 {
 	save->offset = ndr->offset;
 	save->data_size = ndr->data_size;
 }
 
 /* restore the size/offset of a ndr structure */
-void ndr_parse_restore(struct ndr_parse *ndr, struct ndr_parse_save *save)
+void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save)
 {
 	ndr->offset = save->offset;
 	ndr->data_size = save->data_size;
+}
+
+
+
+
+/* create a ndr_push structure, ready for some marshalling */
+struct ndr_push *ndr_push_init(void)
+{
+	struct ndr_push *ndr;
+	TALLOC_CTX *mem_ctx = talloc_init("ndr_push_init");
+	if (!mem_ctx) return NULL;
+
+	ndr = talloc(mem_ctx, sizeof(*ndr));
+	if (!ndr) {
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
+
+	ndr->mem_ctx = mem_ctx;
+	ndr->flags = 0;
+	ndr->alloc_size = NDR_BASE_MARSHALL_SIZE;
+	ndr->data = talloc(ndr->mem_ctx, ndr->alloc_size);
+	if (!ndr->data) {
+		ndr_push_free(ndr);
+		return NULL;
+	}
+	ndr->offset = 0;
+	
+	return ndr;
+}
+
+/* free a ndr_push structure */
+void ndr_push_free(struct ndr_push *ndr)
+{
+	talloc_destroy(ndr->mem_ctx);
+}
+
+
+/* return a DATA_BLOB structure for the current ndr_push marshalled data */
+DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
+{
+	DATA_BLOB blob;
+	blob.data = ndr->data;
+	blob.length = ndr->offset;
+	return blob;
+}
+
+
+/*
+  expand the available space in the buffer to 'size'
+*/
+NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32 size)
+{
+	if (ndr->alloc_size >= size) {
+		return NT_STATUS_OK;
+	}
+
+	ndr->alloc_size = size;
+	ndr->data = realloc(ndr->data, ndr->alloc_size);
+	if (!ndr->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  set the push offset to 'ofs'
+*/
+NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
+{
+	NDR_CHECK(ndr_push_expand(ndr, ofs));
+	ndr->offset = ofs;
+	return NT_STATUS_OK;
 }

@@ -430,7 +430,6 @@ struct vuid_cache {
 #include "events.h"
 #include "context.h"
 #include "smb_interfaces.h"
-#include "dcerpc_interfaces.h"
 #include "ntvfs.h"
 
 typedef struct smb_vfs_handle_struct

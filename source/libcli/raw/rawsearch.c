@@ -307,7 +307,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 
 	case RAW_SEARCH_FULL_DIRECTORY_INFO:
 		if (blob->length < 69) return -1;
-		ofs                                          = IVAL(blob->data,             0);
+		ofs                                   = IVAL(blob->data,             0);
 		data->full_directory_info.file_index  = IVAL(blob->data,             4);
 		data->full_directory_info.create_time = cli_pull_nttime(blob->data,  8);
 		data->full_directory_info.access_time = cli_pull_nttime(blob->data, 16);
@@ -364,7 +364,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 
 	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
 		if (blob->length < 81) return -1;
-		ofs                                          = IVAL(blob->data,             0);
+		ofs                                      = IVAL(blob->data,             0);
 		data->id_full_directory_info.file_index  = IVAL(blob->data,             4);
 		data->id_full_directory_info.create_time = cli_pull_nttime(blob->data,  8);
 		data->id_full_directory_info.access_time = cli_pull_nttime(blob->data, 16);
@@ -385,7 +385,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 
 	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
 		if (blob->length < 105) return -1;
-		ofs                                          = IVAL(blob->data,             0);
+		ofs                                      = IVAL(blob->data,             0);
 		data->id_both_directory_info.file_index  = IVAL(blob->data,             4);
 		data->id_both_directory_info.create_time = cli_pull_nttime(blob->data,  8);
 		data->id_both_directory_info.access_time = cli_pull_nttime(blob->data, 16);
@@ -481,7 +481,7 @@ NTSTATUS smb_raw_search_first(struct cli_tree *tree,
 		return status;
 	}
 	
-	if (p_blob.length != 10) {
+	if (p_blob.length < 10) {
 		DEBUG(1,("smb_raw_search_first: parms wrong size %d != expected_param_size\n",
 			p_blob.length));
 		return NT_STATUS_INVALID_PARAMETER;

@@ -98,11 +98,11 @@ BOOL torture_open_connection(struct cli_state **c)
 
 	if (use_kerberos)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-	
+
 	status = cli_full_connection(c, lp_netbios_name(),
 				     host, NULL, 
 				     share, "?????", 
-				     username, lp_workgroup(), 
+				     username, username[0]?lp_workgroup():"",
 				     password, flags, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
@@ -129,6 +129,87 @@ BOOL torture_close_connection(struct cli_state *c)
 	cli_shutdown(c);
 	DEBUG(9,("torture_close_connection: exit\n"));
 	return ret;
+}
+
+/* open a rpc connection to a named pipe */
+NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, const char *pipe_name)
+{
+        struct cli_state *cli;
+        int fnum;
+        NTSTATUS status;
+	char *name = NULL;
+	union smb_open open_parms;
+	TALLOC_CTX *mem_ctx;
+
+	if (!torture_open_connection(&cli)) {
+                return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	asprintf(&name, "\\%s", pipe_name);
+	if (!name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
+	open_parms.ntcreatex.in.flags = 0;
+	open_parms.ntcreatex.in.root_fid = 0;
+	open_parms.ntcreatex.in.access_mask = 
+		STD_RIGHT_READ_CONTROL_ACCESS | 
+		SA_RIGHT_FILE_WRITE_ATTRIBUTES | 
+		SA_RIGHT_FILE_WRITE_EA | 
+		GENERIC_RIGHTS_FILE_READ;
+	open_parms.ntcreatex.in.file_attr = 0;
+	open_parms.ntcreatex.in.alloc_size = 0;
+	open_parms.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	open_parms.ntcreatex.in.create_options = 0;
+	open_parms.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	open_parms.ntcreatex.in.security_flags = 0;
+	open_parms.ntcreatex.in.fname = name;
+
+	mem_ctx = talloc_init("torture_rpc_connection");
+	status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
+	free(name);
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+                printf("Open of pipe %s failed with error (%s)\n",
+		       pipe_name, nt_errstr(status));
+                return status;
+        }
+ 
+        if (!(*p = dcerpc_pipe_init(cli->tree))) {
+                return NT_STATUS_NO_MEMORY;
+	}
+ 
+	(*p)->fnum = open_parms.ntcreatex.out.fnum;
+ 
+	status = cli_dcerpc_bind_byname(*p, pipe_name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_close(cli, fnum);
+		dcerpc_pipe_close(*p);
+	}
+
+        return status;
+}
+
+/* close a rpc connection to a named pipe */
+NTSTATUS torture_rpc_close(struct dcerpc_pipe *p)
+{
+	union smb_close io;
+	NTSTATUS status;
+
+	io.close.level = RAW_CLOSE_CLOSE;
+	io.close.in.fnum = p->fnum;
+	io.close.in.write_time = 0;
+	status = smb_raw_close(p->tree, &io);
+
+	dcerpc_pipe_close(p);
+
+	return status;
 }
 
 
@@ -3755,85 +3836,6 @@ static BOOL run_deny3test(int dummy)
 	return True;
 }
 
-/* Helper function for RPC-OPEN test */
-
-static DATA_BLOB blob_lsa_open_policy_req(TALLOC_CTX *mem_ctx, BOOL sec_qos, 
-					  uint32 des_access)
-{
-	prs_struct qbuf;
-	LSA_Q_OPEN_POL q;
-	LSA_SEC_QOS qos;
-
-	ZERO_STRUCT(q);
-
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-
-	/* Initialise input parameters */
-
-	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0);
-		init_q_open_pol(&q, '\\', 0, des_access, &qos);
-	} else {
-		init_q_open_pol(&q, '\\', 0, des_access, NULL);
-	}
-
-	if (lsa_io_q_open_pol("", &q, &qbuf, 0))
-		return data_blob_talloc(
-			mem_ctx, prs_data_p(&qbuf), prs_offset(&qbuf));
-
-	return data_blob(NULL, 0);
-}
-
-static BOOL torture_rpc_open(int dummy)
-{
-        struct cli_state *cli;
-        const char *pipe_name = "\\lsarpc";
-        int fnum;
-        TALLOC_CTX *mem_ctx;
-        NTSTATUS status;
-        struct cli_dcerpc_pipe *p;
-	DATA_BLOB request;
-
-        mem_ctx = talloc_init("rpc_open");
-
-        printf("starting rpc test\n");
-
-	if (!torture_open_connection(&cli))
-                return False;
-
-        fnum = cli_nt_create_full(cli, pipe_name, 0, SA_RIGHT_FILE_READ_DATA, 
-				  FILE_ATTRIBUTE_NORMAL,
-                                  NTCREATEX_SHARE_ACCESS_READ|
-				  NTCREATEX_SHARE_ACCESS_WRITE,
-                                  NTCREATEX_DISP_OPEN_IF, 0, 0);
-
-        if (fnum == -1) {
-                printf("Open of pipe %s failed with error (%s)\n",
-		       pipe_name, cli_errstr(cli));
-                return False;
-        }
- 
-        if (!(p = cli_dcerpc_pipe_init(cli->tree)))
-                return False;
- 
-        p->fnum = fnum;
- 
-	status = cli_dcerpc_bind_byname(p, pipe_name);
-
-	request = blob_lsa_open_policy_req(mem_ctx, True, 
-					   SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-	status = cli_dcerpc_request(p, LSA_OPENPOLICY, request);
-
-        talloc_destroy(mem_ctx);
- 
-        torture_close_connection(cli);
-
-        return True;
-}
-
 static void sigcont(void)
 {
 }
@@ -4023,7 +4025,7 @@ static struct {
 	{"SCAN-NTTRANS", torture_nttrans_scan, 0},
 	{"SCAN-ALIASES", torture_trans2_aliases, 0},
 	{"SCAN-SMB", torture_smb_scan, 0},
-        {"RPC-OPEN", torture_rpc_open, 0},
+        {"RPC-LSA", torture_rpc_lsa, 0},
 	{NULL, NULL, 0}};
 
 

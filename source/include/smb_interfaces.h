@@ -1610,7 +1610,7 @@ struct smb_trans2 {
 		uint32 timeout;
 		uint8  setup_count;
 		uint16 *setup;
-		char *trans_name; /* SMBtrans only */
+		const char *trans_name; /* SMBtrans only */
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} in;

@@ -79,3 +79,12 @@ struct smb_query_secdesc {
 		struct security_descriptor *sd;
 	} out;
 };
+
+/* set security descriptor */
+struct smb_set_secdesc {
+	struct {
+		uint16 fnum;
+		uint32 secinfo_flags;
+		struct security_descriptor *sd;
+	} in;
+};

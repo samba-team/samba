@@ -318,8 +318,8 @@ static NTSTATUS smb_raw_session_setup_generic_nt1(struct cli_session *session,
 	s2.nt1.in.os = "Unix";
 	s2.nt1.in.lanman = "Samba";
 
-	if (session->transport->negotiate.sec_mode & 
-	    NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+	if (s2.nt1.in.user[0] &&
+	    (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) {
 		s2.nt1.in.password1 = lanman_blob(parms->generic.in.password, 
 						  session->transport->negotiate.secblob);
 		s2.nt1.in.password2 = nt_blob(parms->generic.in.password, 

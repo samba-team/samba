@@ -31,7 +31,7 @@
    are being kept deliberately very simple, and are not tied to a
    particular transport
 */
-struct ndr_parse {
+struct ndr_pull {
 	uint32 flags; /* LIBNDR_FLAG_* */
 	char *data;
 	uint32 data_size;
@@ -39,10 +39,24 @@ struct ndr_parse {
 	TALLOC_CTX *mem_ctx;
 };
 
-struct ndr_parse_save {
+struct ndr_pull_save {
 	uint32 data_size;
 	uint32 offset;
 };
+
+
+/* structure passed to functions that generate NDR formatted data */
+struct ndr_push {
+	uint32 flags; /* LIBNDR_FLAG_* */
+	char *data;
+	uint32 alloc_size;
+	uint32 offset;
+	TALLOC_CTX *mem_ctx;
+};
+
+#define NDR_BASE_MARSHALL_SIZE 1024
+
+
 
 #define LIBNDR_FLAG_BIGENDIAN 1
 
