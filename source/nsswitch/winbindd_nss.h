@@ -84,6 +84,11 @@ enum winbindd_cmd {
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 
+	/* WINS commands */
+
+	WINBINDD_WINS_BYIP,
+	WINBINDD_WINS_BYNAME,
+
 	/* Placeholder for end of cmd list */
 
 	WINBINDD_NUM_CMDS

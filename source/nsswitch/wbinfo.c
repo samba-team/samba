@@ -59,6 +59,56 @@ static BOOL wbinfo_get_usergroups(char *user)
 	return True;
 }
 
+/* Convert NetBIOS name to IP */
+
+static BOOL wbinfo_wins_byname(char *name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.name, name);
+	if (winbindd_request(WINBINDD_WINS_BYNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.name.name);
+
+	return True;
+}
+
+/* Convert IP to NetBIOS name */
+
+static BOOL wbinfo_wins_byip(char *ip)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.name, ip);
+	if (winbindd_request(WINBINDD_WINS_BYIP, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.name.name);
+
+	return True;
+}
+
 /* List trusted domains */
 
 static BOOL wbinfo_list_domains(void)
@@ -456,6 +506,8 @@ static void usage(void)
                "| -aA user%%password\n");
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
+	printf("\t-h name\t\t\tconverts NetBIOS hostname to IP\n");
+	printf("\t-i ip\t\t\tconverts IP address to NetBIOS name\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");
 	printf("\t-s sid\t\t\tconverts sid to name\n");
 	printf("\t-U uid\t\t\tconverts uid to sid\n");
@@ -508,7 +560,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:A:")) != EOF) {
+	while ((opt = getopt(argc, argv, "h:i:ugs:n:U:G:S:Y:tmr:a:A:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -519,6 +571,18 @@ int main(int argc, char **argv)
 		case 'g':
 			if (!print_domain_groups()) {
 				printf("Error looking up domain groups\n");
+				return 1;
+			}
+			break;
+		case 'h':
+			if (!wbinfo_wins_byname(optarg)) {
+				printf("Could not lookup WINS by hostname %s\n", optarg);
+				return 1;
+			}
+			break;
+		case 'i':
+			if (!wbinfo_wins_byip(optarg)) {
+				printf("Could not lookup WINS by IP %s\n", optarg);
 				return 1;
 			}
 			break;

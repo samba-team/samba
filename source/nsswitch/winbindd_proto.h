@@ -55,6 +55,7 @@ void winbindd_cache_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_cm.c  */
 
+void cm_init_creds(struct ntuser_creds *creds);
 CLI_POLICY_HND *cm_get_lsa_handle(char *domain);
 CLI_POLICY_HND *cm_get_sam_handle(char *domain);
 CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid);
@@ -156,4 +157,9 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
 BOOL parse_domain_user(char *domuser, fstring domain, fstring user);
+
+/*The following definitions come from  nsswitch/winbindd_wins.c  */
+
+enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state);
 #endif /* _PROTO_H_ */
