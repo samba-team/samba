@@ -81,21 +81,27 @@ afslog_uid_int(kafs_data *data, const char *cell, const char *rh, uid_t uid,
 {
     krb5_error_code ret;
     CREDENTIALS c;
-    krb5_realm lrealm; /* local realm */
+    krb5_principal princ;
+    krb5_realm *trealm; /* ticket realm */
     struct krb5_kafs_data *d = data->data;
     
     if (cell == 0 || cell[0] == 0)
 	return _kafs_afslog_all_local_cells (data, uid, homedir);
 
-    ret = krb5_get_default_realm(d->context, &lrealm);
-    if(ret || (d->realm && strcmp(d->realm, lrealm) == 0)){
-	free(lrealm);
-	lrealm = NULL;
+    ret = krb5_cc_get_principal (d->context, d->id, &princ);
+    if (ret)
+	return ret;
+
+    trealm = krb5_princ_realm (d->context, princ);
+
+    if (strcmp (d->realm, *trealm) == 0) {
+	trealm = NULL;
+	krb5_free_principal (d->context, princ);
     }
 
-    ret = _kafs_get_cred(data, cell, d->realm, lrealm, &c);
-    if(lrealm)
-	free(lrealm);
+    ret = _kafs_get_cred(data, cell, d->realm, *trealm, &c);
+    if(trealm)
+	krb5_free_principal (d->context, princ);
     
     if(ret == 0)
 	ret = kafs_settoken(cell, uid, &c);
