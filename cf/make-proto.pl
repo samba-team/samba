@@ -27,7 +27,8 @@ if($opt_R) {
 	  'multiline-proto' => 1,
 	  'header' => 1,
 	  'function-blocking' => 0,
-	  'gnuc-attribute' => 1
+	  'gnuc-attribute' => 1,
+	  'cxx' => 1
 	  );
 if($opt_m) {
     foreach $i (split(/,/, $opt_m)) {
@@ -36,6 +37,7 @@ if($opt_m) {
 	    $flags{"header"} = 0;
 	    $flags{"function-blocking"} = 0;
 	    $flags{"gnuc-attribute"} = 0;
+	    $flags{"cxx"} = 0;
 	} else {
 	    if(substr($i, 0, 3) eq "no-") {
 		$flags{substr($i, 3)} = 0;
@@ -209,6 +211,7 @@ if ($oproto) {
 
 ";
 }
+$public_h_trailer = "";
 
 $private_h_header = "/* This is a generated file */
 #ifndef $private
@@ -233,6 +236,7 @@ if($oproto) {
 
 ";
 }
+$private_h_trailer = "";
 
 foreach(sort keys %funcs){
     if(/^(main)$/) { next }
@@ -278,6 +282,19 @@ if($flags{"gnuc-attribute"}) {
 ";
     }
 }
+if($flags{"cxx"}) {
+    $public_h_header .= "#ifdef __cplusplus
+extern \"C\" {
+#endif
+
+";
+    $public_h_trailer .= "#ifdef __cplusplus
+}
+#endif
+
+";
+
+}
 if ($opt_E) {
     $public_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
@@ -301,10 +318,12 @@ if ($opt_E) {
 }
     
 if ($public_h ne "" && $flags{"header"}) {
-    $public_h = $public_h_header . $public_h . "#endif /* $block */\n";
+    $public_h = $public_h_header . $public_h . 
+	$public_h_trailer . "#endif /* $block */\n";
 }
 if ($private_h ne "" && $flags{"header"}) {
-    $private_h = $private_h_header . $private_h . "#endif /* $private */\n";
+    $private_h = $private_h_header . $private_h .
+	$private_h_trailer . "#endif /* $private */\n";
 }
 
 if($opt_o) {
