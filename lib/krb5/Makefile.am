@@ -77,6 +77,7 @@ libkrb5_a_SOURCES = \
 	str2key.c \
 	ticket.c \
 	time.c \
+	transited.c \
 	verify_init.c \
 	verify_user.c \
 	version.c \
