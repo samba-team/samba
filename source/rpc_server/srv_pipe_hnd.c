@@ -32,7 +32,7 @@ static pipes_struct *chain_p;
 static int pipes_open;
 
 #ifndef MAX_OPEN_PIPES
-#define MAX_OPEN_PIPES 64
+#define MAX_OPEN_PIPES 1024
 #endif
 
 static pipes_struct *Pipes;
