@@ -53,7 +53,7 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	char *data_in, *data_out;
-	int len = 10;
+	int len = 17;
 	int len_out;
 
 	printf("\nTesting EchoData\n");
@@ -83,6 +83,68 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+
+/*
+  test the SourceData interface
+*/
+static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	int i;
+	NTSTATUS status;
+	char *data_out;
+	int len = 100;
+	int len_out;
+
+	printf("\nTesting SourceData\n");
+
+	status = dcerpc_rpcecho_sourcedata(p, mem_ctx,
+					   len,
+					   &len_out,
+					   &data_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SourceData(%d) failed\n", len);
+		return False;
+	}
+	printf("SourceData(%d) returned %d bytes\n", len, len_out);
+
+	for (i=0;i<len;i++) {
+		if (data_out[i] != (i & 0xFF)) {
+			printf("bad data 0x%x at %d\n", data_out[i], i);
+			return False;
+		}
+	}
+
+	return True;
+}
+
+/*
+  test the SinkData interface
+*/
+static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	int i;
+	NTSTATUS status;
+	char *data_in;
+	int len = 100;
+
+	printf("\nTesting SinkData\n");
+
+	data_in = talloc(mem_ctx, len);
+	for (i=0;i<len;i++) {
+		data_in[i] = i+1;
+	}
+
+	status = dcerpc_rpcecho_sinkdata(p, mem_ctx,
+					 len,
+					 data_in);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SinkData(%d) failed\n", len);
+		return False;
+	}
+
+	return True;
+}
+
 BOOL torture_rpc_echo(int dummy)
 {
         NTSTATUS status;
@@ -102,6 +164,14 @@ BOOL torture_rpc_echo(int dummy)
 	}
 
 	if (!test_echodata(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_sourcedata(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_sinkdata(p, mem_ctx)) {
 		ret = False;
 	}
 

@@ -47,6 +47,25 @@ struct rpcecho_echodata {
 	} out;
 };
 
+/* SinkData interface */
+struct rpcecho_sinkdata {
+	struct {
+		int len;
+		char *data;
+	} in;
+};
+
+/* SourceData interface */
+struct rpcecho_sourcedata {
+	struct {
+		int len;
+	} in;
+	struct {
+		int len;
+		char *data;
+	} out;
+};
+
 /* define the command codes */
 enum {
 	RPCECHO_CALL_ADDONE=0,

@@ -83,3 +83,55 @@ NTSTATUS dcerpc_rpcecho_echodata(struct dcerpc_pipe *p,
 
 	return status;
 }
+
+/*
+  sourcedata interface
+*/
+NTSTATUS dcerpc_rpcecho_sourcedata(struct dcerpc_pipe *p,
+				 TALLOC_CTX *mem_ctx,
+				 int len,
+				 int *out_len,
+				 char **out_data)
+{
+	struct rpcecho_sourcedata r;
+	NTSTATUS status;
+
+	/* fill the .in side of the call */
+	r.in.len  = len;
+
+	/* make the call */
+	status = dcerpc_ndr_request(p, RPCECHO_CALL_SOURCEDATA, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_rpcecho_sourcedata,
+				    (ndr_pull_fn_t) ndr_pull_rpcecho_sourcedata,
+				    &r);
+
+	/* and extract the .out parameters */
+	*out_len = r.out.len;
+	*out_data = r.out.data;
+
+	return status;
+}
+
+/*
+  sinkdata interface
+*/
+NTSTATUS dcerpc_rpcecho_sinkdata(struct dcerpc_pipe *p,
+				 TALLOC_CTX *mem_ctx,
+				 int len,
+				 char *data)
+{
+	struct rpcecho_sinkdata r;
+	NTSTATUS status;
+
+	/* fill the .in side of the call */
+	r.in.len  = len;
+	r.in.data = data;
+
+	/* make the call */
+	status = dcerpc_ndr_request(p, RPCECHO_CALL_SINKDATA, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_rpcecho_sinkdata,
+				    (ndr_pull_fn_t) ndr_pull_rpcecho_sinkdata,
+				    &r);
+
+	return status;
+}
