@@ -167,6 +167,10 @@ typedef union {
     krb5_flags i;
 } krb5_ticket_flags;
 
+typedef union {
+    KDCOptions b;
+    krb5_flags i;
+} krb5_kdc_flags;
 
 typedef struct krb5_creds {
     krb5_principal client;
