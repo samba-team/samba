@@ -403,5 +403,5 @@ typedef struct buffer4_info
 }
 BUFFER4;
 
-enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2 };
+enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2, UNI_BROKEN_NON_NULL = 3 };
 #endif /* _RPC_MISC_H */
