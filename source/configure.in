@@ -2093,27 +2093,26 @@ AC_ARG_WITH(dfs,
 #################################################
 # active directory support
 
-with_ads_support=yes
+with_ads_support=auto
 AC_MSG_CHECKING([whether to use Active Directory])
 
 AC_ARG_WITH(ads,
 [  --with-ads              Active Directory support (default yes)],
 [ case "$withval" in
-    no)
-	with_ads_support=no
+    yes|no)
+	with_ads_support="$withval"
 	;;
   esac ])
-
-if test x"$with_ads_support" = x"yes"; then
-   AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
-fi
 
 AC_MSG_RESULT($with_ads_support)
 
 FOUND_KRB5=no
 KRB5_LIBS=""
 
-if test x"$with_ads_support" = x"yes"; then
+if test x"$with_ads_support" != x"no"; then
+
+  # Do no harm to the values of CFLAGS and LIBS while testing for
+  # Kerberos support.
 
   ac_save_CFLAGS="$CFLAGS"
   ac_save_LIBS="$LIBS"
@@ -2200,8 +2199,34 @@ if test x"$with_ads_support" = x"yes"; then
   AC_CHECK_HEADERS(krb5.h)
 
   if test x"$ac_cv_header_krb5_h" = x"no"; then
-    AC_MSG_WARN([Active Directory cannot be supported without krb5.h])
+
+    # Give a warning if AD support was not explicitly requested,
+    # i.e with_ads_support = auto, otherwise die with an error.
+
+    if test x"$with_ads_support" = x"yes"; then
+      AC_MSG_ERROR([Active Directory cannot be supported without krb5.h])
+    else
+      AC_MSG_WARN([Active Directory cannot be supported without krb5.h])
+    fi
+
+    # Turn off AD support and restore CFLAGS and LIBS variables
+
+    with_ads_support="no"
+
+    CFLAGS="$ac_save_CFLAGS"
+    LIBS="$ac_save_LIBS"
   fi
+
+  # Get rid of case where $with_ads_support=auto
+
+  with_ads_support="yes"
+fi
+
+# Now we have determined whether we really want ADS support
+
+if test x"$with_ads_support" = x"yes"; then
+
+  AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
 
   # now check for gssapi headers.  This is also done here to allow for
   # different kerberos include paths
@@ -2337,7 +2362,8 @@ if test x"$with_ads_support" = x"yes"; then
                [KRB5_LIBS="$KRB5_LIBS -lgssapi_krb5";
                 AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 
-  LIBS="$ac_save_LIBS"; CFLAGS="$ac_save_CFLAGS"
+  CFLAGS="$ac_save_CFLAGS"
+  LIBS="$ac_save_LIBS"
 fi
 
 ########################################################
