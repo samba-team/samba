@@ -12,4 +12,17 @@ interface wzcsvc
 	/*****************/
 	/* Function 0x00 */
 	WERROR wzcsvc_Unknown0();
+
+	/*****************/
+	/* Function 0x01 */
+	WERROR wzcsvc_Unknown1();
+
+	/*****************/
+	/* Function 0x02 */
+	WERROR wzcsvc_Unknown2();
+
+	/*****************/
+	/* Function 0x03 */
+	WERROR wzcsvc_Unknown3();
+
 }
