@@ -253,9 +253,9 @@ des_rand_data(unsigned char *data, int size)
 {
     struct itimerval tv, otv;
     RETSIGTYPE (*osa)(int);
-    RETSIGTYPE (*ochld)(int);
     int i, j;
-#ifndef HAVE_SETITIMER
+#ifndef HAVE_SETITIMER 
+    RETSIGTYPE (*ochld)(int);
     pid_t pid;
 #endif
     char *rnd_devices[] = {"/dev/random",
