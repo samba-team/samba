@@ -61,7 +61,7 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	ADS_STATUS status;
 
 	/* allocate the list */
-	mods = ads_mod_list_start(sizeof(ADS_PRINTER_ENTRY) / sizeof(char *));
+	mods = ads_init_mods(sizeof(ADS_PRINTER_ENTRY) / sizeof(char *));
 
 	/* add the attributes to the list - required ones first */
 	ads_mod_repl(mods, "printerName", prt->printerName);
@@ -69,23 +69,34 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	ads_mod_repl(mods, "shortServerName", prt->shortServerName);
 	ads_mod_repl(mods, "uNCName", prt->uNCName);
 	ads_mod_repl(mods, "versionNumber", prt->versionNumber);
-	/* now the optional ones - not ready yet, since it will
-	   fail if the attributes don't exist already 
+
+	/* now the optional ones */
 	ads_mod_repl_list(mods, "description", prt->description);
+	ads_mod_repl(mods, "assetNumber",prt->assetNumber);
+	ads_mod_repl(mods, "bytesPerMinute",prt->bytesPerMinute);
+	ads_mod_repl(mods, "defaultPriority",prt->defaultPriority);
 	ads_mod_repl(mods, "driverName", prt->driverName);
+	ads_mod_repl(mods, "driverVersion",prt->driverVersion);
 	ads_mod_repl(mods, "location", prt->location);
+	ads_mod_repl(mods, "operatingSystem",prt->operatingSystem);
+	ads_mod_repl(mods, "operatingSystemHotfix",prt->operatingSystemHotfix);
+	ads_mod_repl(mods, "operatingSystemServicePack",
+		     prt->operatingSystemServicePack);
+	ads_mod_repl(mods, "operatingSystemVersion",
+		     prt->operatingSystemVersion);
+	ads_mod_repl(mods, "physicalLocationObject",
+		     prt->physicalLocationObject);
 	ads_mod_repl_list(mods, "portName", prt->portName);
 	ads_mod_repl(mods, "printStartTime", prt->printStartTime);
 	ads_mod_repl(mods, "printEndTime", prt->printEndTime);
 	ads_mod_repl_list(mods, "printBinNames", prt->printBinNames);
-
-	... and many others */
+	/*... and many others */
 
 	/* do the ldap modify */
 	status = ads_gen_mod(ads, prt_dn, mods);
 
 	/* free mod list, mods, and values */
-	ads_mod_list_end(mods); 
+	ads_free_mods(mods); 
 
 	return status;
 }
