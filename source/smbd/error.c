@@ -29,6 +29,17 @@ NTSTATUS unix_ERR_ntstatus = NT_STATUS_OK;
 extern struct unix_error_map unix_dos_nt_errmap[];
 
 /****************************************************************************
+ Ensure we don't have any errors cached.
+****************************************************************************/
+ 
+void clear_cached_errors(void)
+{
+	unix_ERR_class = SMB_SUCCESS;
+	unix_ERR_code = 0;
+	unix_ERR_ntstatus = NT_STATUS_OK;
+}
+
+/****************************************************************************
  Create an error packet from a cached error.
 ****************************************************************************/
  
