@@ -790,7 +790,9 @@ done
 # Allow DNS(udp)
 $IPTABLES -A INPUT -i $EXTIF -p udp -dport 53  -j ACCEPT
 echo "Allow all connections OUT and only existing and specified ones IN"
-$IPTABLES -A FORWARD -i $EXTIF -o $INTIF -m state \
+$IPTABLES -A FORWARD -i $EXTIF -o $INTIFA -m state \
+                                  --state ESTABLISHED,RELATED -j ACCEPT
+$IPTABLES -A FORWARD -i $EXTIF -o $INTIFB -m state \
                                   --state ESTABLISHED,RELATED -j ACCEPT
 $IPTABLES -A FORWARD -i $INTIFA -o $EXTIF -j ACCEPT
 $IPTABLES -A FORWARD -i $INTIFB -o $EXTIF -j ACCEPT
@@ -1503,7 +1505,7 @@ abmas.biz       IN SOA  sleeth1.abmas.biz. root.abmas.biz. (
                                 38400      ; minimum (10 hours 40 minutes)
                                 )
                         NS      dns.abmas.biz.
-                        MX      10 sleeth1.abmas.biz.
+                        MX      10 mail.abmas.biz.
 $ORIGIN abmas.biz.
 sleeth1                 A       192.168.1.1
 sleeth2                 A       192.168.2.1
@@ -1531,7 +1533,7 @@ abmas.us        IN SOA  server.abmas.us. root.abmas.us. (
                                 )
                         NS      dns.abmas.us.
                         NS      dns2.abmas.us.
-                        MX      10 server.abmas.us.
+                        MX      10 mail.abmas.us.
 $ORIGIN abmas.us.
 server                  A       123.45.67.66
 dns2                    A       123.45.54.32
