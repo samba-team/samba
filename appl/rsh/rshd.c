@@ -137,8 +137,17 @@ recv_krb4_auth (int s, u_char *buf,
     if (kuserok (&auth, server_username) != 0)
 	fatal (s, "Permission denied");
     read_str (s, cmd, COMMAND_SZ, "command");
+
+    syslog(LOG_INFO|LOG_AUTH,
+	   "kerberos v4 shell from %s on %s as %s, cmd '%.80s'",
+	   krb_unparse_name_long(auth.pname, auth.pinst, auth.prealm),
+	   inet_ntoa(thataddr.sin_addr),
+	   server_username,
+	   cmd);
+
     return 0;
 }
+
 #endif /* KRB4 */
 
 static void
@@ -277,6 +286,21 @@ recv_krb5_auth (int s, u_char *buf,
 	do_encrypt = 1;
 	memmove (cmd, cmd + 3, strlen(cmd) - 2);
     }
+
+    {
+	char *name;
+
+	if (krb5_unparse_name (context, ticket->client, &name) == 0) {
+	    syslog(LOG_INFO|LOG_AUTH,
+		   "kerberos v5 shell from %s on %s as %s, cmd '%.80s'",
+		   name,
+		   inet_ntoa(thataddr.sin_addr),
+		   server_username,
+		   cmd);
+	    free (name);
+	}
+    }	   
+
     return 0;
 }
 
