@@ -1,5 +1,7 @@
 2000-02-13  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am: set version to 9:0:0
+
 	* kdc/kaserver.c (do_authenticate): return the kvno of the server
 	and not the client.  Thanks to Brandon S. Allbery KF8NH
 	<allbery@kf8nh.apk.net> and Chaskiel M Grundman
