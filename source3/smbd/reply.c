@@ -39,7 +39,7 @@ unsigned int smb_echo_count = 0;
 extern BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
- Reply to an special message.
+ Reply to a special message.
 ****************************************************************************/
 
 int reply_special(char *inbuf,char *outbuf)
