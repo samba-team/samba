@@ -2160,7 +2160,6 @@ int lp_force_dir_security_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
-int lp_maxprintjobs(int );
 int lp_printing(int );
 int lp_oplock_contention_limit(int );
 int lp_csc_policy(int );
@@ -2206,6 +2205,7 @@ char *lp_printername(int snum);
 void get_private_directory(pstring priv_dir);
 void lp_set_logfile(const char *name);
 const char *get_called_name(void);
+int lp_maxprintjobs(int snum);
 
 /* The following definitions come from param/params.c  */
 
@@ -4998,7 +4998,8 @@ int tdb_reopen_all(void);
 
 /* The following definitions come from tdb/tdbutil.c  */
 
-int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval);
+int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout);
+int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout);
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
 int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int32 tdb_fetch_int32(TDB_CONTEXT *tdb, char *keystr);
