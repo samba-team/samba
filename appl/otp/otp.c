@@ -40,8 +40,6 @@
 
 RCSID("$Id$");
 
-static char *prog;
-
 #define USAGE_STRING \
           "Usage: %s [-r] [-f alg] [-u user] num seed\n" \
 	  "       or -[d|l] [-u user]\n" \
@@ -62,14 +60,14 @@ static char *prog;
 static void
 help (void)
 {
-  fprintf(stderr, USAGE_STRING HELP_STRING, prog);
+  fprintf(stderr, USAGE_STRING HELP_STRING, __progname);
   exit (0);
 }
 
 static void
 usage (void)
 {
-  fprintf(stderr, USAGE_STRING, prog);
+  fprintf(stderr, USAGE_STRING, __progname);
   exit (1);
 }
 
@@ -109,7 +107,7 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
 
   dbm = otp_db_open ();
   if (dbm == NULL) {
-    fprintf (stderr, "%s: otp_db_open failed\n", prog);
+    warnx ("otp_db_open failed");
     return 1;
   }
   otp_put (dbm, ctx);
@@ -130,7 +128,7 @@ verify_user_otp(char *username)
   char prompt[128], ss[256];
 
   if (otp_challenge (&ctx, username, ss, sizeof(ss)) != 0) {
-    fprintf(stderr, "%s: no otp challenge found\n", prog);
+    warnx("no otp challenge found for %s", username);
     return 1; 
   }
 
@@ -157,10 +155,9 @@ set (int argc, char **argv, OtpAlgorithm *alg, char *user)
 
   ctx.alg = alg;
   ctx.user = strdup (user);
-  if (ctx.user == NULL) {
-    fprintf (stderr, "%s: Out of memory\n", prog);
-    return 1;
-  }
+  if (ctx.user == NULL)
+    err (1, "out of memory");
+
   ctx.n = atoi (argv[0]);
   strncpy (ctx.seed, argv[1], sizeof(ctx.seed));
   ctx.seed[sizeof(ctx.seed) - 1] = '\0';
@@ -177,9 +174,8 @@ set (int argc, char **argv, OtpAlgorithm *alg, char *user)
     ctx.alg->next (ctx.key);
   db = otp_db_open ();
   if(db == NULL) {
-    fprintf (stderr, "%s: otp_db_open failed\n", prog);
     free (ctx.user);
-    return 1;
+    err (1, "otp_db_open failed");
   }
   ret = otp_put (db, &ctx);
   otp_db_close (db);
@@ -202,10 +198,8 @@ delete_otp (int argc, char **argv, char *user)
     usage();
 
   db = otp_db_open ();
-  if(db == NULL) {
-    fprintf (stderr, "%s: otp_db_open failed\n", prog);
-    return 1;
-  }
+  if(db == NULL)
+    errx (1, "otp_db_open failed");
 
   ctx.user = user;
   ret = otp_delete(db, &ctx);
@@ -226,7 +220,7 @@ has_an_otp(char *user)
 
   db = otp_db_open ();
   if(db == NULL) {
-    fprintf (stderr, "%s: otp_db_open failed\n", prog);
+    warnx ("otp_db_open failed");
     return 0; /* if no db no otp! */
   }
   
@@ -268,9 +262,7 @@ list_otps (int argc, char **argv, char *user)
 
   db = otp_db_open ();
   if(db == NULL) {
-    fprintf (stderr, "%s: otp_db_open failed\n", prog);
-    return 1;
-  }
+    errx ("otp_db_open failed");
 
   if (user)
     print_otp_entry_for_name(db, user);
@@ -292,7 +284,7 @@ main (int argc, char **argv)
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
   char *user = NULL;
 
-  prog = argv[0];
+  set_progname (argv[0]);
 
   while ((c = getopt (argc, argv, "hrf:u:ld")) != EOF)
     switch (c) {
@@ -303,11 +295,8 @@ main (int argc, char **argv)
       listp = 1;
       break;
     case 'd' :
-      if (uid != 0) {
-	fprintf (stderr, "%s: Only root can delete OTPs\n",
-		 prog);
-	return 1;
-      }
+      if (uid != 0)
+	errx (1, "Only root can delete OTPs");
       deletep = 1;
       break;
     case 'r' :
@@ -315,16 +304,12 @@ main (int argc, char **argv)
       break;
     case 'f' :
       alg = otp_find_alg (optarg);
-      if (alg == NULL) {
-	fprintf (stderr, "%s: Unknown algorithm: %s\n", prog, optarg);
-	return 1;
-      }
+      if (alg == NULL)
+	errx (1, "Unknown algorithm: %s", optarg);
       break;
     case 'u' :
-      if (uid != 0) {
-	fprintf (stderr, "%s: Only root can use `-u'\n", prog);
-	return 1;
-      }
+      if (uid != 0)
+	errx (1, "Only root can use `-u'");
       user = optarg;
       break;
     default :
@@ -347,10 +332,8 @@ main (int argc, char **argv)
     struct passwd *pwd;
 
     pwd = k_getpwuid(uid);
-    if (pwd == NULL) {
-      fprintf (stderr, "%s: You don't exist\n", prog);
-      return 1;
-    }
+    if (pwd == NULL)
+      err (1, "You don't exist");
     user = pwd->pw_name;
   }
   
@@ -361,12 +344,10 @@ main (int argc, char **argv)
    */
   if (uid != 0 && (defaultp || renewp)) {
     if (!has_an_otp(user)) {
-      fprintf(stderr, "%s: Only root can set an initial OTP\n", prog);
-      return 1;
+      errx (1, "Only root can set an initial OTP");
     } else { /* Check the next OTP (RFC 1938/8.0: SHOULD) */
       if (verify_user_otp(user) != 0) {
-	fprintf(stderr, "%s: User authentification failed\n", prog);
-        return 1;
+	errx (1, "User authentification failed");
       }
     }
   }
