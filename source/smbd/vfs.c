@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* Some structures to help us initialise the vfs operations table */
 
 struct vfs_syminfo {

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;
@@ -31,7 +29,6 @@ pstring samlogon_user="";
 BOOL sam_logon_in_ssb = False;
 fstring remote_proto="UNKNOWN";
 fstring remote_machine="";
-
 
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
@@ -318,4 +315,3 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
 {
 	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, str);
 }
-

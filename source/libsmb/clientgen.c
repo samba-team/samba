@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-
-extern int DEBUGLEVEL;
-
 /*
  * Change the port number used to call on 
  */
@@ -248,4 +245,3 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 	cli->pid = pid;
 	return ret;
 }
-

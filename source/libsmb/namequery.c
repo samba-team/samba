@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* nmbd.c sets this to True. */
 BOOL global_in_nmbd = False;
 

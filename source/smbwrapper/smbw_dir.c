@@ -28,7 +28,6 @@ extern fstring smbw_prefix;
 static struct smbw_dir *smbw_dirs;
 
 extern struct bitmap *smbw_file_bmap;
-extern int DEBUGLEVEL;
 
 extern int smbw_busy;
 
@@ -688,4 +687,3 @@ off_t smbw_telldir(DIR *dirp)
 	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	return smbw_dir_lseek(d->fd,0,SEEK_CUR);
 }
-

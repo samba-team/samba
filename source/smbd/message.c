@@ -27,9 +27,6 @@
 #include "includes.h"
 
 /* look in server.c for some explanation of these variables */
-extern int DEBUGLEVEL;
-
-
 static char msgbuf[1600];
 static int msgpos;
 static fstring msgfrom;

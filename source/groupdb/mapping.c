@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 
 static TDB_CONTEXT *tdb; /* used for driver files */

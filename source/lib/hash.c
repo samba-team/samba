@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static BOOL enlarge_hash_table(hash_table *table);
 static int primes[] = 
         {17, 37, 67, 131, 257, 521, 1031, 2053, 4099, 8209, 16411};

@@ -41,9 +41,6 @@ extern pstring user_socket_options;
 extern struct user_creds *usr_creds;
 
 
-extern int DEBUGLEVEL;
-
-
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 

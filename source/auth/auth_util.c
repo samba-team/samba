@@ -19,9 +19,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-#include "includes.h"
 
-extern int DEBUGLEVEL;
+#include "includes.h"
 
 /* Data to do lanman1/2 password challenge. */
 static unsigned char saved_challenge[8];

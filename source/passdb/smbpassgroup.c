@@ -22,7 +22,6 @@
 #ifdef USE_SMBPASS_DB
 
 static int grp_file_lock_depth = 0;
-extern int DEBUGLEVEL;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer

@@ -25,8 +25,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring server;
 extern pstring global_myname;
 extern pstring username, password;

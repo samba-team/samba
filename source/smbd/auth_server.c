@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 
 /****************************************************************************
@@ -228,5 +226,3 @@ use this machine as the password server.\n"));
 
 	return(nt_status);
 }
-
-

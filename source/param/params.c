@@ -98,8 +98,6 @@
  *  bSize       - The size of the global buffer <bufr>.
  */
 
-extern int DEBUGLEVEL;
-
 static char *bufr  = NULL;
 static int   bSize = 0;
 

@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #define DEBUG_TESTING
 
 extern struct cli_state *smb_cli;
@@ -91,4 +89,3 @@ void cmd_wks_query_info(struct client_info *info)
 		DEBUG(5,("cmd_wks_query_info: query failed\n"));
 	}
 }
-

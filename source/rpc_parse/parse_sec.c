@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #define SD_HEADER_SIZE 0x14
 
 /*******************************************************************

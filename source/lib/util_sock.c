@@ -28,8 +28,6 @@ extern SSL  *ssl;
 extern int  sslFd;
 #endif  /* WITH_SSL */
 
-extern int DEBUGLEVEL;
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -1243,4 +1241,3 @@ int sock_exec(const char *prog)
 	close(fd[1]);
 	return fd[0];
 }
-

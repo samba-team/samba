@@ -41,7 +41,6 @@ int  Debug1( char *, ... ) PRINTF_ATTRIBUTE(1,2);
 BOOL dbgtext( char *, ... ) PRINTF_ATTRIBUTE(1,2);
 
 extern XFILE *dbf;
-extern int DEBUGLEVEL;
 
 /* If we have these macros, we can add additional info to the header. */
 #ifdef HAVE_FILE_MACRO

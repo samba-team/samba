@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* Oplock ipc UDP socket. */
 static int oplock_sock = -1;
 uint16 global_oplock_port = 0;

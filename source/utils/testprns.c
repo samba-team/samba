@@ -34,9 +34,6 @@
 #include "includes.h"
 #include "smb.h"
 
-/* these live in util.c */
-extern int DEBUGLEVEL;
-
 int main(int argc, char *argv[])
 {
    char *pszTemp;
@@ -66,4 +63,3 @@ int main(int argc, char *argv[])
    }
    return (0);
 }
-

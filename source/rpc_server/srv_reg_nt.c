@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 struct reg_info
 {
     /* for use by \PIPE\winreg */

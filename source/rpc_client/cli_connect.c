@@ -32,7 +32,6 @@ static uint32 num_cons = 0;
 struct user_creds *usr_creds = NULL;
 vuser_key *user_key = NULL;
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 /*
  * needed for the struct cli_connection
@@ -379,4 +378,3 @@ BOOL rpc_con_ok(struct cli_connection *con)
 
         return True;
 }
-

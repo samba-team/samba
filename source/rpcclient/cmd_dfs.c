@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring server;
 
 /* Check DFS is supported by the remote server */

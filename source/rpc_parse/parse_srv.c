@@ -22,10 +22,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 /*******************************************************************
  Inits a SH_INFO_1_STR structure

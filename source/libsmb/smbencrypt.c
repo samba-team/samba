@@ -23,9 +23,6 @@
 */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
-
 #include "byteorder.h"
 
 /*

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 BOOL global_machine_password_needs_changing = False;
 
 /****************************************************************************

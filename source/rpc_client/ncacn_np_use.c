@@ -20,14 +20,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
 #define NO_SYSLOG
 
 #include "includes.h"
 #include "rpc_parse.h"
 #include "trans2.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 struct ncacn_np_use
@@ -454,6 +452,3 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
         cli->num_users++;
         return cli->cli;
 }
-
-
-

@@ -30,10 +30,6 @@
 
 #include "winbindd_nss.h"
 
-/* Naughty global stuff */
-
-extern int DEBUGLEVEL;
-
 /* Client state structure */
 
 struct winbindd_cli_state {

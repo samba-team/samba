@@ -26,8 +26,6 @@
 static struct iface_struct *probed_ifaces;
 static int total_probed;
 
-extern int DEBUGLEVEL;
-
 struct in_addr ipzero;
 struct in_addr allones_ip;
 struct in_addr loopback_ip;

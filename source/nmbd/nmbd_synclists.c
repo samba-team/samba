@@ -31,8 +31,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern int DEBUGLEVEL;
-
 struct sync_record {
 	struct sync_record *next, *prev;
 	fstring workgroup;

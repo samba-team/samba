@@ -26,8 +26,6 @@
 #include "nterr.h"
 #include "rpc_parse.h"   
 
-extern int DEBUGLEVEL;
-
 /******************************************************************* 
 Make a DFS_Q_DFS_QUERY structure
 *******************************************************************/

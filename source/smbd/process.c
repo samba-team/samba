@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 struct timeval smb_last_time;
 
 static char *InBuffer = NULL;

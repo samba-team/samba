@@ -10,8 +10,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #define	FAIL		(-1)
 
 /* masked_match - match address against netnumber/netmask */

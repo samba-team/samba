@@ -21,11 +21,8 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these functions provide a simple way to allocate integers from a
    pool without repitition */
-
 
 /****************************************************************************
 allocate a bitmap of the specified size

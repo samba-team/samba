@@ -28,8 +28,6 @@ extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
 
-extern int DEBUGLEVEL;
-
 extern int num_response_packets;
 
 extern struct in_addr loopback_ip;

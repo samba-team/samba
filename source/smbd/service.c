@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
@@ -740,5 +738,3 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	}
 	conn_free(conn);
 }
-
-

@@ -21,15 +21,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
 #ifdef SYSLOG
 #undef SYSLOG
 #endif
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 extern int smb_tidx;
 
@@ -1071,4 +1067,3 @@ struct cmd_set reg_commands[] = {
 */
 	{ NULL }
 };
-

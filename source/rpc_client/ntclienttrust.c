@@ -26,8 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 
 /************************************************************************
  check workstation trust account status
@@ -162,5 +160,3 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 	cli_shutdown(&cli_trust);
 	return right_error_code;
 }
-
-

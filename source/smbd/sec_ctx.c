@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct current_user current_user;
 
 struct sec_ctx {

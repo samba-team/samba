@@ -21,11 +21,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambgrpsge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-
-extern int DEBUGLEVEL;
-
 
 /*******************************************************************
 makes a CREDS_UNIX structure.

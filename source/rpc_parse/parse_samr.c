@@ -27,8 +27,6 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 
-extern int DEBUGLEVEL;
-
 /*******************************************************************
 inits a SAMR_Q_CLOSE_HND structure.
 ********************************************************************/

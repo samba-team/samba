@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
   Get the next token from a string, return False if none found
   handles double-quotes. 
@@ -855,4 +853,3 @@ void strupper_m(char *s)
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
 }
-

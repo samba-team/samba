@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static BOOL setup_write_cache(files_struct *, SMB_OFF_T);
 
 /****************************************************************************

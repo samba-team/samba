@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /**********************************************************************
@@ -737,5 +736,3 @@ int enum_msdfs_links(struct junction_map* jn)
 	}
 	return jn_count;
 }
-
-

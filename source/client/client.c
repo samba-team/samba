@@ -61,7 +61,6 @@ time_t newer_than = 0;
 int archive_level = 0;
 
 extern pstring debugf;
-extern int DEBUGLEVEL;
 
 BOOL translation = False;
 

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #ifndef MAXUNI
 #define MAXUNI 1024
 #endif
@@ -453,4 +451,3 @@ smb_ucs2_t *strncat_wa(smb_ucs2_t *dest, const char *src, const size_t max)
 	SAFE_FREE(ucs2_src);
 	return dest;
 }
-

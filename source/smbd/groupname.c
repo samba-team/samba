@@ -22,9 +22,7 @@
 #ifdef USING_GROUPNAME_MAP
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
-
 
 /**************************************************************************
  Groupname map functionality. The code loads a groupname map file and

@@ -44,11 +44,9 @@ struct smb_passwd
 };
 
 
-extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 extern struct passdb_ops pdb_ops;
-
 
 /* used for maintain locks on the smbpasswd file */
 static int 	pw_file_lock_depth;

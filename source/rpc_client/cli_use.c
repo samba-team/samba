@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "trans2.h"
 
-extern int DEBUGLEVEL;
 extern pstring scope;
 extern pstring global_myname;
 

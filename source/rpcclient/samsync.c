@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* Synchronise sam database */
 
 static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],

@@ -24,7 +24,6 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*********************************************************
@@ -292,4 +291,3 @@ BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle,
 
 	return True;
 }
-
