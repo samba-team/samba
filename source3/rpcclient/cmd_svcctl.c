@@ -242,6 +242,65 @@ void cmd_svc_enum(struct client_info *info)
 }
 
 /****************************************************************************
+nt stop service 
+****************************************************************************/
+void cmd_svc_stop(struct client_info *info)
+{
+	uint16 fnum;
+	BOOL res = True;
+	BOOL res1 = True;
+	fstring svc_name;
+	BOOL res2 = True;
+	POLICY_HND pol_svc;
+	POLICY_HND pol_scm;
+	
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_svc_stop: server:%s\n", srv_name));
+
+	if (!next_token(NULL, svc_name, NULL, sizeof(svc_name)))
+	{
+		report(out_hnd,"svcstop <service name>\n");
+		return;
+	}
+
+	/* open SVCCTL session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
+
+	/* open service control manager receive a policy handle */
+	res = res ? svc_open_sc_man(smb_cli, fnum,
+	                        srv_name, NULL, 0x80000000,
+				&pol_scm) : False;
+
+	res1 = res ? svc_open_service(smb_cli, fnum,
+				       &pol_scm,
+				       svc_name, 0x00000020,
+				       &pol_svc) : False;
+	res2 = res1 ? svc_stop_service(smb_cli, fnum, &pol_svc, 0x1) : False;
+
+	res1 = res1 ? svc_close(smb_cli, fnum, &pol_svc) : False;
+	res  = res  ? svc_close(smb_cli, fnum, &pol_scm) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res2)
+	{
+		report(out_hnd,"Stopped Service %s\n", svc_name);
+		DEBUG(5,("cmd_svc_stop: succeeded\n"));
+	}
+	else
+		report(out_hnd,"Failed Service Stopped (%s)\n", svc_name);
+	{
+		DEBUG(5,("cmd_svc_stop: failed\n"));
+	}
+}
+
+/****************************************************************************
 nt start service 
 ****************************************************************************/
 void cmd_svc_start(struct client_info *info)
@@ -263,7 +322,7 @@ void cmd_svc_start(struct client_info *info)
 	fstrcat(srv_name, info->myhostname);
 	strupper(srv_name);
 
-	DEBUG(4,("cmd_svc_info: server:%s\n", srv_name));
+	DEBUG(4,("cmd_svc_start: server:%s\n", srv_name));
 
 	if (!next_token(NULL, svc_name, NULL, sizeof(svc_name)))
 	{

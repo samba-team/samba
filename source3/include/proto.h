@@ -2051,6 +2051,9 @@ BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 				uint32 *buf_size, uint32 *resume_hnd,
 				uint32 *dos_error,
 				ENUM_SRVC_STATUS **svcs, uint32 *num_svcs);
+BOOL svc_stop_service(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *hnd,
+				uint32 unknown);
 BOOL svc_start_service(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *hnd,
 				uint32 argc,
@@ -3059,6 +3062,10 @@ BOOL svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, 
 BOOL make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
 				uint32 status)  ;
 BOOL svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth);
+BOOL make_svc_q_stop_service(SVC_Q_STOP_SERVICE *q_c, POLICY_HND *hnd,
+				uint32 unk);
+BOOL svc_io_q_stop_service(char *desc, SVC_Q_STOP_SERVICE *q_s, prs_struct *ps, int depth);
+BOOL svc_io_r_stop_service(char *desc,  SVC_R_STOP_SERVICE *r_s, prs_struct *ps, int depth);
 BOOL make_svc_q_start_service(SVC_Q_START_SERVICE *q_c, POLICY_HND *hnd,
 				uint32 argc,
 				char **argv);
@@ -3322,6 +3329,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 				SVC_INFO_FN(info_fn),
 				SVC_QUERY_FN(query_fn));
 void cmd_svc_enum(struct client_info *info);
+void cmd_svc_stop(struct client_info *info);
 void cmd_svc_start(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */

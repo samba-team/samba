@@ -153,6 +153,13 @@ commands[] =
 		{COMPL_SVCLST, COMPL_NONE}
 	},
 
+	{
+		"svcstop",
+		cmd_svc_stop,
+		"<service> Stop Service",
+		{COMPL_SVCLST, COMPL_NONE}
+	},
+
 	/*
 	 * scheduler
 	 */

@@ -179,6 +179,63 @@ BOOL svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps,
 }
 
 /*******************************************************************
+makes an SVC_Q_STOP_SERVICE structure.
+********************************************************************/
+BOOL make_svc_q_stop_service(SVC_Q_STOP_SERVICE *q_c, POLICY_HND *hnd,
+				uint32 unk)
+{
+	if (q_c == NULL || hnd == NULL) return False;
+
+	DEBUG(5,("make_svc_q_stop_service\n"));
+
+	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+	q_c->unknown = unk;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a SVC_Q_STOP_SERVICE structure.
+********************************************************************/
+BOOL svc_io_q_stop_service(char *desc, SVC_Q_STOP_SERVICE *q_s, prs_struct *ps, int depth)
+{
+	if (q_s == NULL) return False;
+
+	prs_debug(ps, depth, desc, "svc_io_q_stop_service");
+	depth++;
+
+	prs_align(ps);
+	smb_io_pol_hnd("", &(q_s->pol), ps, depth);
+
+	prs_align(ps);
+
+	prs_uint32("unknown", ps, depth, &(q_s->unknown));
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL svc_io_r_stop_service(char *desc,  SVC_R_STOP_SERVICE *r_s, prs_struct *ps, int depth)
+{
+	if (r_s == NULL) return False;
+
+	prs_debug(ps, depth, desc, "svc_io_r_stop_service");
+	depth++;
+
+	prs_uint32("unknown0", ps, depth, &(r_s->unknown0));
+	prs_uint32("unknown1", ps, depth, &(r_s->unknown1));
+	prs_uint32("unknown2", ps, depth, &(r_s->unknown2));
+	prs_uint32("unknown3", ps, depth, &(r_s->unknown3));
+	prs_uint32("unknown4", ps, depth, &(r_s->unknown4));
+	prs_uint32("unknown5", ps, depth, &(r_s->unknown5));
+	prs_uint32("unknown6", ps, depth, &(r_s->unknown6));
+	prs_uint32("status", ps, depth, &(r_s->status));
+
+	return True;
+}
+
+/*******************************************************************
 makes an SVC_Q_START_SERVICE structure.
 ********************************************************************/
 BOOL make_svc_q_start_service(SVC_Q_START_SERVICE *q_c, POLICY_HND *hnd,
@@ -189,7 +246,7 @@ BOOL make_svc_q_start_service(SVC_Q_START_SERVICE *q_c, POLICY_HND *hnd,
 
 	if (q_c == NULL || hnd == NULL) return False;
 
-	DEBUG(5,("make_svc_q_query_svc_config\n"));
+	DEBUG(5,("make_svc_q_start_service\n"));
 
 	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
 	q_c->argc = argc;
