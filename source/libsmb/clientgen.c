@@ -371,8 +371,8 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli, int t_idx,char *user, char *wo
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, BOOL sort, BOOL *long_share_name,
-		       void (*fn)(char *, uint32, char *))
+BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, FILE* hnd, BOOL sort, BOOL *long_share_name,
+		       void (*fn)(FILE *, char *, uint32, char *))
 {
 #ifdef NOSTRCASECMP
 /* If strcasecmp is already defined, remove it. */
@@ -435,7 +435,7 @@ BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, BOOL sort, BOOL *long_sh
 					comment = resp_data+comment_offset-converter;
 				}
 
-				fn(sname, type, comment);
+				fn(hnd, sname, type, comment);
 
 				if (long_share_name && strlen(sname) > 8) *long_share_name=True;
 
@@ -458,8 +458,8 @@ This function then calls the specified callback function for each name returned.
 The callback function takes 3 arguments: the machine name, the server type and
 the comment.
 ****************************************************************************/
-BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, char *workgroup, uint32 stype,
-		       void (*fn)(char *, uint32, char *))
+BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, FILE* hnd, char *workgroup, uint32 stype,
+		       void (*fn)(FILE *, char *, uint32, char *))
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -511,7 +511,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, char *workgroup, uint32
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-				if (fn) fn(sname, stype, cmnt);
+				if (fn) fn(hnd, sname, stype, cmnt);
 			}
 		}
 	}

@@ -59,10 +59,10 @@ BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
 	char *param, char *data, uint16 *setup,
 	char **rparam,char **rdata);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli, int t_idx,char *user, char *workstation);
-BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, BOOL sort, BOOL *long_share_name,
-		       void (*fn)(char *, uint32, char *));
-BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, char *workgroup, uint32 stype,
-		       void (*fn)(char *, uint32, char *));
+BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, FILE* hnd, BOOL sort, BOOL *long_share_name,
+		       void (*fn)(FILE *, char *, uint32, char *));
+BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, FILE* hnd, char *workgroup, uint32 stype,
+		       void (*fn)(FILE *, char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli,
 		       char *user, 
 		       char *pass, int passlen,
@@ -262,6 +262,16 @@ int TellDir(void *p);
 void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
 void DirCacheFlush( int snum );
+
+/*The following definitions come from  display.c  */
+
+void display_srv_info_101(FILE *out_hnd, SRV_INFO_101 *sv101);
+void display_srv_info_102(FILE *out_hnd, SRV_INFO_102 *sv102);
+void display_srv_info_ctr(FILE *out_hnd, SRV_INFO_CTR *ctr);
+void display_server(FILE *out_hnd, char *sname, uint32 type, char *comment);
+void display_share(FILE *out_hnd, char *sname, uint32 type, char *comment);
+void display_group_info(FILE *out_hnd, uint32 num_gids, DOM_GID *gid);
+void display_sam_user_info_15(FILE *out_hnd, SAM_USER_INFO_15 *usr);
 
 /*The following definitions come from  fault.c  */
 
@@ -764,6 +774,9 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  ntclient.c  */
 
+void cmd_srv_query_info(struct client_info *info);
+void cmd_srv_query_sess(struct client_info *info);
+void cmd_srv_query_files(struct client_info *info);
 void cmd_lsa_query_info(struct client_info *info);
 void cmd_sam_query_users(struct client_info *info);
 void cmd_nt_login_test(struct client_info *info);
@@ -1126,6 +1139,21 @@ BOOL do_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd);
+
+/*The following definitions come from  rpc_pipes/ntclientsrvsvc.c  */
+
+BOOL do_srv_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
+void do_srv_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
+BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, int t_idx, uint16 fnum,
+			char *server_name, uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_file_enum(struct cli_state *cli, int t_idx, uint16 fnum,
+			char *server_name, uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_get_info(struct cli_state *cli, int t_idx, uint16 fnum,
+			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
 
 /*The following definitions come from  rpc_pipes/ntclienttrust.c  */
 
@@ -1496,7 +1524,20 @@ void make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
 void srv_io_sess_info0_str(char *desc, BOOL io, SESS_INFO_0_STR *ss0, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
 void srv_io_sess_info0(char *desc, BOOL io, SESS_INFO_0 *ss0, struct mem_buffer *buf, int *q,  int depth);
-void srv_io_sess_0_ctr(char *desc, BOOL io, SESS_INFO_0_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_sess_info_0(char *desc, BOOL io, SRV_SESS_INFO_0 *ss0, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user);
+void srv_io_sess_info1_str(char *desc, BOOL io, SESS_INFO_1_STR *ss1, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_sess_info1(SESS_INFO_1 *ss1, 
+				char *name, char *user,
+				uint32 num_opens, uint32 open_time, uint32 idle_time,
+				uint32 user_flags);
+void srv_io_sess_info1(char *desc, BOOL io, SESS_INFO_1 *ss1, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_sess_info_1(char *desc, BOOL io, SRV_SESS_INFO_1 *ss1, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_sess_ctr(char *desc, BOOL io, SRV_SESS_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
+				char *srv_name, uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_sess_enum(char *desc, BOOL io, SRV_Q_NET_SESS_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_sess_enum(char *desc, BOOL io, SRV_R_NET_SESS_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name);
@@ -1505,7 +1546,12 @@ void make_srv_file_info3(FILE_INFO_3 *fl3,
 				uint32 id, uint32 perms, uint32 num_locks,
 				char *path_name, char *user_name);
 void srv_io_file_info3(char *desc, BOOL io, FILE_INFO_3 *fl3, struct mem_buffer *buf, int *q,  int depth);
-void srv_io_file_3_ctr(char *desc, BOOL io, FILE_INFO_3_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_file_info_3(char *desc, BOOL io, SRV_FILE_INFO_3 *fl3, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_file_ctr(char *desc, BOOL io, SRV_FILE_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
+				char *srv_name, uint32 file_level, SRV_FILE_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_file_enum(char *desc, BOOL io, SRV_Q_NET_FILE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_file_enum(char *desc, BOOL io, SRV_R_NET_FILE_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
@@ -1518,10 +1564,19 @@ void make_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
 				uint32 announce, uint32 ann_delta, uint32 licenses,
 				char *usr_path);
 void srv_io_info_102(char *desc, BOOL io, SRV_INFO_102 *sv102, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_info_ctr(char *desc, BOOL io, SRV_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
+				char *server_name, uint32 switch_value);
 void srv_io_q_net_srv_get_info(char *desc, BOOL io, SRV_Q_NET_SRV_GET_INFO *q_n, struct mem_buffer *buf, int *q,  int depth);
-void make_srv_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
+void make_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
 void srv_io_r_net_srv_get_info(char *desc, BOOL io, SRV_R_NET_SRV_GET_INFO *r_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_q_net_srv_set_info(SRV_Q_NET_SRV_SET_INFO *srv,
+				uint32 switch_value, SRV_INFO_CTR *ctr);
+void srv_io_q_net_srv_set_info(char *desc, BOOL io, SRV_Q_NET_SRV_SET_INFO *q_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
+				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
+void srv_io_r_net_srv_set_info(char *desc, BOOL io, SRV_R_NET_SRV_SET_INFO *r_n, struct mem_buffer *buf, int *q,  int depth);
 
 /*The following definitions come from  rpc_pipes/wksparse.c  */
 

@@ -33,13 +33,175 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
-extern int smb_tidx;
-
 extern struct cli_state *ipc_cli;
 extern int ipc_tidx;
 
 extern FILE* out_hnd;
+
+
+/****************************************************************************
+server get info query
+
+use the anon IPC$ for this one
+****************************************************************************/
+void cmd_srv_query_info(struct client_info *info)
+{
+	fstring dest_srv;
+	fstring tmp;
+	SRV_INFO_CTR ctr;
+	uint32 info_level = 101;
+
+	BOOL res = True;
+
+	bzero(&ctr, sizeof(ctr));
+
+	strcpy(dest_srv, "\\\\");
+	strcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		info_level = strtoul(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(4,("cmd_srv_query_info: server:%s info level: %D\n",
+				dest_srv, info_level));
+
+	DEBUG(5, ("cmd_srv_query_info: ipc_cli->fd:%d\n", ipc_cli->fd));
+
+	/* open LSARPC session. */
+	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? do_srv_net_srv_get_info(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
+				dest_srv, info_level, &ctr) : False;
+
+	/* close the session */
+	do_srv_session_close(ipc_cli, ipc_tidx, info);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_query_info: query succeeded\n"));
+
+		display_srv_info_ctr(out_hnd, &ctr);
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_query_info: query failed\n"));
+	}
+}
+
+/****************************************************************************
+server enum sessions
+****************************************************************************/
+void cmd_srv_query_sess(struct client_info *info)
+{
+	fstring dest_srv;
+	fstring tmp;
+	SRV_SESS_INFO_CTR ctr;
+	ENUM_HND hnd;
+	uint32 info_level = 0;
+
+	BOOL res = True;
+
+	bzero(&ctr, sizeof(ctr));
+
+	strcpy(dest_srv, "\\\\");
+	strcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		info_level = strtoul(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(4,("cmd_srv_query_files: server:%s info level: %D\n",
+				dest_srv, info_level));
+
+	DEBUG(5, ("cmd_srv_query_files: ipc_cli->fd:%d\n", ipc_cli->fd));
+
+	/* open LSARPC session. */
+	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
+
+	hnd.ptr_hnd = 1;
+	hnd.handle = 0;
+
+	/* enumerate files on server */
+	res = res ? do_srv_net_srv_sess_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
+				dest_srv, info_level, &ctr, 0x1000, &hnd) : False;
+
+	/* close the session */
+	do_srv_session_close(ipc_cli, ipc_tidx, info);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_query_files: query succeeded\n"));
+
+/*
+		display_srv_info_ctr(out_hnd, &ctr);
+*/
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_query_files: query failed\n"));
+	}
+}
+
+/****************************************************************************
+server enum files
+****************************************************************************/
+void cmd_srv_query_files(struct client_info *info)
+{
+	fstring dest_srv;
+	fstring tmp;
+	SRV_FILE_INFO_CTR ctr;
+	ENUM_HND hnd;
+	uint32 info_level = 3;
+
+	BOOL res = True;
+
+	bzero(&ctr, sizeof(ctr));
+
+	strcpy(dest_srv, "\\\\");
+	strcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		info_level = strtoul(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(4,("cmd_srv_query_files: server:%s info level: %D\n",
+				dest_srv, info_level));
+
+	DEBUG(5, ("cmd_srv_query_files: ipc_cli->fd:%d\n", ipc_cli->fd));
+
+	/* open LSARPC session. */
+	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
+
+	hnd.ptr_hnd = 1;
+	hnd.handle = 0;
+
+	/* enumerate files on server */
+	res = res ? do_srv_net_srv_file_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
+				dest_srv, info_level, &ctr, 0x1000, &hnd) : False;
+
+	/* close the session */
+	do_srv_session_close(ipc_cli, ipc_tidx, info);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_query_files: query succeeded\n"));
+
+/*
+		display_srv_info_ctr(out_hnd, &ctr);
+*/
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_query_files: query failed\n"));
+	}
+}
 
 /****************************************************************************
 nt lsa query
@@ -123,96 +285,6 @@ void cmd_lsa_query_info(struct client_info *info)
 }
 
 /****************************************************************************
- display group rid info
- ****************************************************************************/
-static void display_group_info(uint32 num_gids, DOM_GID *gid)
-{
-	int i;
-
-	if (num_gids == 0)
-	{
-		fprintf(out_hnd, "\tNo Groups\n");
-	}
-	else
-	{
-		fprintf(out_hnd, "\tGroup Info\n");
-		fprintf(out_hnd, "\t----------\n");
-
-		for (i = 0; i < num_gids; i++)
-		{
-			fprintf(out_hnd, "\tGroup RID: %8x attr: %x\n",
-							  gid[i].g_rid, gid[i].attr);
-		}
-
-		fprintf(out_hnd, "\n");
-	}
-}
-
-
-/****************************************************************************
- display sam_user_info_15 structure
- ****************************************************************************/
-static void display_sam_user_info_15(SAM_USER_INFO_15 *usr)
-{
-	fprintf(out_hnd, "\tUser Info, Level 0x15\n");
-	fprintf(out_hnd, "\t---------------------\n");
-
-	fprintf(out_hnd, "\t\tUser Name   : %s\n", unistrn2(usr->uni_user_name   .buffer, usr->uni_user_name   .uni_str_len)); /* username unicode string */
-	fprintf(out_hnd, "\t\tFull Name   : %s\n", unistrn2(usr->uni_full_name   .buffer, usr->uni_full_name   .uni_str_len)); /* user's full name unicode string */
-	fprintf(out_hnd, "\t\tHome Drive  : %s\n", unistrn2(usr->uni_home_dir    .buffer, usr->uni_home_dir    .uni_str_len)); /* home directory unicode string */
-	fprintf(out_hnd, "\t\tDir Drive   : %s\n", unistrn2(usr->uni_dir_drive   .buffer, usr->uni_dir_drive   .uni_str_len)); /* home directory drive unicode string */
-	fprintf(out_hnd, "\t\tProfile Path: %s\n", unistrn2(usr->uni_profile_path.buffer, usr->uni_profile_path.uni_str_len)); /* profile path unicode string */
-	fprintf(out_hnd, "\t\tLogon Script: %s\n", unistrn2(usr->uni_logon_script.buffer, usr->uni_logon_script.uni_str_len)); /* logon script unicode string */
-	fprintf(out_hnd, "\t\tDescription : %s\n", unistrn2(usr->uni_description .buffer, usr->uni_description .uni_str_len)); /* user description unicode string */
-
-	fprintf(out_hnd, "\t\tLogon Time               : %s\n", time_to_string(interpret_nt_time(&(usr->logon_time           ))));
-	fprintf(out_hnd, "\t\tLogoff Time              : %s\n", time_to_string(interpret_nt_time(&(usr->logoff_time          ))));
-	fprintf(out_hnd, "\t\tKickoff Time             : %s\n", time_to_string(interpret_nt_time(&(usr->kickoff_time         ))));
-	fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", time_to_string(interpret_nt_time(&(usr->pass_last_set_time   ))));
-	fprintf(out_hnd, "\t\tPassword can change Time : %s\n", time_to_string(interpret_nt_time(&(usr->pass_can_change_time ))));
-	fprintf(out_hnd, "\t\tPassword must change Time: %s\n", time_to_string(interpret_nt_time(&(usr->pass_must_change_time))));
-	
-	fprintf(out_hnd, "\t\tlogon_count : %d\n", usr->logon_count); /* logon count */
-	fprintf(out_hnd, "\t\tbad_pw_count: %d\n", usr->bad_pw_count); /* bad password count */
-	fprintf(out_hnd, "\t\tunknown_0: %08x\n", usr->unknown_0);
-	fprintf(out_hnd, "\t\tunknown_1: %08x\n", usr->unknown_1);
-
-	fprintf(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
-
-	fprintf(out_hnd, "\t\tuser_rid : %x\n"  , usr->user_rid ); /* User ID */
-	fprintf(out_hnd, "\t\tgroup_rid: %x\n"  , usr->group_rid); /* Group ID */
-	fprintf(out_hnd, "\t\tacb_info : %04x\n", usr->acb_info ); /* Account Control Info */
-
-	fprintf(out_hnd, "\t\tunknown_3: %08x\n", usr->unknown_3); /* 0x00ff ffff */
-	fprintf(out_hnd, "\t\tlogon_divs: %d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
-	fprintf(out_hnd, "\t\tunknown_5: %08x\n", usr->unknown_5); /* 0x0002 0000 */
-
-	fprintf(out_hnd, "\t\tpadding1[0..7]...\n");
-
-	if (usr->ptr_padding2)
-	{
-		fprintf(out_hnd, "\t\tpadding2[0..31]...\n");
-	}
-
-	if (usr->ptr_padding3)
-	{
-		fprintf(out_hnd, "\t\tpadding3: %x\n", usr->padding3);
-	}
-
-	if (usr->ptr_unknown6)
-	{
-		fprintf(out_hnd, "\t\tunknown_6,pad4: %08x %08x\n", usr->unknown_6, usr->padding4);
-	}
-
-	if (usr->ptr_logon_hrs)
-	{
-		fprintf(out_hnd, "\t\tlogon_hrs[0..%d]...\n", usr->logon_hrs.len);
-	}
-
-	fprintf(out_hnd, "\n");
-}
-
-/****************************************************************************
 experimental SAM user query.
 
 use the nt IPC$ connection for this one.
@@ -291,20 +363,20 @@ void cmd_sam_query_users(struct client_info *info)
 #endif
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? do_samr_session_open(smb_cli, smb_tidx, info) : False;
+	res = res ? do_samr_session_open(ipc_cli, ipc_tidx, info) : False;
 
 	/* establish a connection. */
-	res = res ? do_samr_connect(smb_cli, smb_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_connect(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 				srv_name, 0x00000020,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
-	res = res ? do_samr_open_domain(smb_cli, smb_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_open_domain(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 	            &info->dom.samr_pol_connect, admin_rid, sid,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* read some users */
-	res = res ? do_samr_enum_dom_users(smb_cli, smb_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_enum_dom_users(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 				&info->dom.samr_pol_open_domain,
 	            num_entries, unk_0, acb_mask, unk_1, 0xffff,
 				info->dom.sam, &info->dom.num_sam_entries) : False;
@@ -331,11 +403,11 @@ void cmd_sam_query_users(struct client_info *info)
 			if (request_user_info)
 			{
 				/* send user info query, level 0x15 */
-				if (get_samr_query_userinfo_15(smb_cli, smb_tidx, info->dom.samr_fnum,
+				if (get_samr_query_userinfo_15(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 							&info->dom.samr_pol_open_domain,
 							user_rid, &usr))
 				{
-					display_sam_user_info_15(&usr);
+					display_sam_user_info_15(out_hnd, &usr);
 				}
 			}
 
@@ -345,11 +417,11 @@ void cmd_sam_query_users(struct client_info *info)
 				DOM_GID gid[LSA_MAX_GROUPS];
 
 				/* send user group query */
-				if (get_samr_query_usergroups(smb_cli, smb_tidx, info->dom.samr_fnum,
+				if (get_samr_query_usergroups(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 							&info->dom.samr_pol_open_domain,
 							user_rid, &num_groups, gid))
 				{
-					display_group_info(num_groups, gid);
+					display_group_info(out_hnd, num_groups, gid);
 				}
 			}
 
@@ -357,14 +429,14 @@ void cmd_sam_query_users(struct client_info *info)
 		}
 	}
 
-	res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_close(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 	            &info->dom.samr_pol_connect) : False;
 
-	res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_close(ipc_cli, ipc_tidx, info->dom.samr_fnum,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* close the session */
-	do_samr_session_close(smb_cli, smb_tidx, info);
+	do_samr_session_close(ipc_cli, ipc_tidx, info);
 
 	if (res)
 	{
@@ -474,7 +546,7 @@ void cmd_nltest(struct client_info *info)
 	DEBUG(5,("do_nltest: %d\n", __LINE__));
 
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(smb_cli, smb_tidx, &info->dom.lsarpc_fnum,
+	res = res ? do_nt_session_open(ipc_cli, ipc_tidx, &info->dom.lsarpc_fnum,
 	                          info->dest_host, info->myhostname,
 	                          info->mach_acct,
 	                          username, info->workgroup,
@@ -482,7 +554,7 @@ void cmd_nltest(struct client_info *info)
 	                          &info->dom.clnt_cred) : False;
 
 	/* close the session */
-	do_nt_session_close(smb_cli, smb_tidx, info->dom.lsarpc_fnum);
+	do_nt_session_close(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum);
 
 	if (res)
 	{
@@ -500,7 +572,7 @@ initialise nt client structure
 ****************************************************************************/
  void client_nt_init(void)
 {
-	bzero(smb_cli, sizeof(nt_cli));
+	bzero(ipc_cli, sizeof(nt_cli));
 }
 
 /****************************************************************************
@@ -512,7 +584,7 @@ make nt client connection
 	BOOL anonymous = !username || username[0] == 0;
 	BOOL got_pass = password && password[0] == 0;
 
-	if (!cli_establish_connection(smb_cli, &smb_tidx,
+	if (!cli_establish_connection(ipc_cli, &ipc_tidx,
 			info->dest_host, 0x20, &info->dest_ip,
 		     info->myhostname,
 		   (got_pass || anonymous) ? NULL : "Enter Password:",
@@ -521,7 +593,7 @@ make nt client connection
 	       False, True, !anonymous))
 	{
 		DEBUG(0,("client_nt_connect: connection failed\n"));
-		cli_shutdown(smb_cli);
+		cli_shutdown(ipc_cli);
 	}
 }
 
@@ -530,7 +602,7 @@ stop the nt connection(s?)
 ****************************************************************************/
  void client_nt_stop(void)
 {
-	cli_shutdown(smb_cli);
+	cli_shutdown(ipc_cli);
 }
 #endif /* 0 */
 

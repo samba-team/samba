@@ -377,6 +377,10 @@ struct acct_info
 
 struct nt_client_info
 {
+	/************* \PIPE\srvsvc stuff ******************/
+
+	uint16 srvsvc_fnum;
+	
 	/************* \PIPE\NETLOGON stuff ******************/
 
 	uint16 netlogon_fnum;

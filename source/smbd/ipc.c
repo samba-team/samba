@@ -2889,7 +2889,7 @@ api_fd_commands [] =
 {
     { "lsarpc",   "lsass",   0x26, api_ntlsa_rpc },
     { "samr",     "lsass",   0x26, api_samr_rpc },
-    { "srvsvc",   "lsass",   0x26, api_srvsvc_rpc },
+    { "srvsvc",   "ntsvcs",  0x26, api_srvsvc_rpc },
     { "wkssvc",   "ntsvcs",  0x26, api_wkssvc_rpc },
     { "NETLOGON", "lsass",   0x26, api_netlog_rpc },
     { "winreg",   "winreg",  0x26, api_reg_rpc },

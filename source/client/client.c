@@ -83,6 +83,9 @@ struct
 {
   {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login test"},
   {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
+  {"srvinfo",    cmd_srv_query_info,   "DCE/RPC - Server Query Info"},
+  {"srvsessions",cmd_srv_query_sess,   "DCE/RPC - List sessions on a server"},
+  {"srvfiles",   cmd_srv_query_files,  "DCE/RPC - List files on a server"},
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"samusers",   cmd_sam_query_users,  "SAM User Database Query"},
 #if 0
@@ -498,6 +501,7 @@ enum client_action
 	strcpy(cli_info.dom.level5_sid, "");
 	strcpy(cli_info.dom.level5_dom, "");
 
+	cli_info.dom.srvsvc_fnum   = 0xffff;
 	cli_info.dom.lsarpc_fnum   = 0xffff;
 	cli_info.dom.samr_fnum     = 0xffff;
 	cli_info.dom.netlogon_fnum = 0xffff;
@@ -572,6 +576,8 @@ enum client_action
 		argc--;
 		argv++;
 
+		DEBUG(1,("service: %s\n", cli_info.service));
+
 		if (count_chars(cli_info.service,'\\') < 3)
 		{
 			usage(pname);
@@ -596,6 +602,8 @@ enum client_action
 			argc--;
 			argv++;
 		}
+
+		cli_action = CLIENT_SVC;
 	}
 
 	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
@@ -849,13 +857,20 @@ enum client_action
 	/* establish connections.  nothing to stop these being re-established */
 	if (!got_pass) password[0] = 0;
 
-	client_smb_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
-	client_ipc_connect(&cli_info, NULL             , NULL    , cli_info.workgroup);
+	if (cli_action == CLIENT_IPC || cli_action == CLIENT_QUERY)
+	{
+		client_ipc_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
+		DEBUG(5,("cli_ipc_connect: ipc_cli->fd:%d\n", ipc_cli->fd));
+
+	}
+	else
+	{
+		client_smb_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
+		DEBUG(5,("cli_smb_connect: smb_cli->fd:%d\n", smb_cli->fd));
+	}
 #if 0
 	client_nt_connect (&cli_info, cli_info.username, password, cli_info.workgroup);
 #endif
-
-	DEBUG(5,("cli_ipc_connect: ipc_cli->fd:%d\n", ipc_cli->fd));
 
 	ret = 0;
 
@@ -905,8 +920,14 @@ enum client_action
 		}
 	}
 
-	client_smb_stop();
-	client_ipc_stop();
+	if (cli_action == CLIENT_IPC || cli_action == CLIENT_QUERY)
+	{
+		client_ipc_stop();
+	}
+	else
+	{
+		client_smb_stop();
+	}
 #if 0
 	client_nt_stop();
 #endif

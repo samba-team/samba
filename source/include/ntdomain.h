@@ -147,7 +147,8 @@ SamrTestPrivateFunctionsUser
 #define NET_TRUST_DOM_LIST     0x13
 
 /* srvsvc pipe */
-#define SRV_NETSERVERGETINFO 0x15
+#define SRV_NET_SRV_GET_INFO 0x15
+#define SRV_NET_SRV_SET_INFO 0x16
 #define SRV_NETSHAREENUM     0x0f
 #define SRV_NETFILEENUM      0x09
 #define SRV_NETSESSENUM      0x0c
@@ -1183,16 +1184,69 @@ typedef struct str_sess_info0
 /* the UNISTR2s already have 1024 uint16 chars in them... */
 #define MAX_SESS_ENTRIES 32
 
-/* SESS_INFO_0_CONTAINER  */
-typedef struct sess_info_0_ctr
+/* SRV_SESS_INFO_0 */
+typedef struct srv_sess_info_0_info
 {
 	uint32 num_entries_read;                     /* EntriesRead */
 	uint32 ptr_sess_info;                       /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
+
 	SESS_INFO_0     info_0    [MAX_SESS_ENTRIES]; /* session entry pointers */
 	SESS_INFO_0_STR info_0_str[MAX_SESS_ENTRIES]; /* session entry strings */
 
-} SESS_INFO_0_CTR;
+	uint32 total_entries;                    /* total number of entries */
+
+} SRV_SESS_INFO_0;
+
+/* SESS_INFO_1 (pointers to level 1 session info strings) */
+typedef struct ptr_sess_info1
+{
+	uint32 ptr_name; /* pointer to name. */
+	uint32 ptr_user; /* pointer to user name. */
+
+	uint32 num_opens;
+	uint32 open_time;
+	uint32 idle_time;
+	uint32 user_flags;
+
+} SESS_INFO_1;
+
+/* SESS_INFO_1_STR (level 1 session info strings) */
+typedef struct str_sess_info1
+{
+	UNISTR2 uni_name; /* unicode string of name */
+	UNISTR2 uni_user; /* unicode string of user */
+
+} SESS_INFO_1_STR;
+
+/* SRV_SESS_INFO_1 */
+typedef struct srv_sess_info_1_info
+{
+	uint32 num_entries_read;                     /* EntriesRead */
+	uint32 ptr_sess_info;                       /* Buffer */
+	uint32 num_entries_read2;                    /* EntriesRead */
+
+	SESS_INFO_1     info_1    [MAX_SESS_ENTRIES]; /* session entry pointers */
+	SESS_INFO_1_STR info_1_str[MAX_SESS_ENTRIES]; /* session entry strings */
+
+	uint32 total_entries;                    /* total number of entries */
+
+} SRV_SESS_INFO_1;
+
+/* SRV_SESS_INFO_CTR */
+typedef struct srv_sess_info_ctr_info
+{
+	uint32 switch_value;         /* switch value */
+	uint32 ptr_sess_ctr;       /* pointer to sess info union */
+	union
+    {
+		SRV_SESS_INFO_0 info0; /* session info level 0 */
+		SRV_SESS_INFO_1 info1; /* session info level 1 */
+
+    } sess;
+
+} SRV_SESS_INFO_CTR;
+
 
 /* SRV_Q_NET_SESS_ENUM */
 typedef struct q_net_sess_enum_info
@@ -1204,38 +1258,20 @@ typedef struct q_net_sess_enum_info
 	uint32 padding1;
 
 	uint32 sess_level;          /* session level */
-	uint32 switch_value;         /* switch value */
 
-	uint32 ptr_sess_info;       /* pointer to SESS_INFO_0_CTR */
+	SRV_SESS_INFO_CTR *ctr;
 
-	union
-    {
-		SESS_INFO_0_CTR info0; /* session info container with 0 entries */
-
-    } sess;
-
-	uint32 num_entries;                    /* EntriesRead */
 	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
-
 	ENUM_HND enum_hnd;
 
 } SRV_Q_NET_SESS_ENUM;
-
 
 /* SRV_R_NET_SESS_ENUM */
 typedef struct r_net_sess_enum_info
 {
 	uint32 sess_level;          /* share level */
-	uint32 switch_value;         /* switch value */
 
-	uint32 ptr_sess_info;       /* pointer to SESS_INFO_0_CTR */
-	union
-    {
-		SESS_INFO_0_CTR info0; /* session info container */
-
-    } sess;
-
-	uint32 num_entries;                    /* EntriesRead */
+	SRV_SESS_INFO_CTR *ctr;
 
 	ENUM_HND enum_hnd;
 
@@ -1264,14 +1300,17 @@ typedef struct str_share_info1
 
 } SH_INFO_1_STR;
 
-/* SHARE_INFO_1_CONTAINER  */
-typedef struct share_info_1_ctr
+/* SHARE_INFO_1 */
+typedef struct share_info_1_info
 {
 	uint32 num_entries_read;                     /* EntriesRead */
 	uint32 ptr_share_info;                       /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
+
 	SH_INFO_1     info_1    [MAX_SHARE_ENTRIES]; /* share entry pointers */
 	SH_INFO_1_STR info_1_str[MAX_SHARE_ENTRIES]; /* share entry strings */
+
+	uint32 total_entries;                    /* total number of entries */
 
 } SHARE_INFO_1_CTR;
 
@@ -1280,9 +1319,6 @@ typedef struct q_net_share_enum_info
 {
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* server name */
-
-	uint32 padding0;
-	uint32 padding1;
 
 	uint32 share_level;          /* share level */
 	uint32 switch_value;         /* switch value */
@@ -1295,7 +1331,6 @@ typedef struct q_net_share_enum_info
 
     } share;
 
-	uint32 num_entries;                    /* EntriesRead */
 	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
 
 	ENUM_HND enum_hnd;
@@ -1315,8 +1350,6 @@ typedef struct r_net_share_enum_info
 		SHARE_INFO_1_CTR info1; /* share info container */
 
     } share;
-
-	uint32 num_entries;                    /* EntriesRead */
 
 	ENUM_HND enum_hnd;
 
@@ -1347,8 +1380,8 @@ typedef struct str_file_info3_info
 /* the UNISTR2s already have 1024 uint16 chars in them... */
 #define MAX_FILE_ENTRIES 32
 
-/* FILE_INFO_3_CONTAINER  */
-typedef struct file_info_3_ctr
+/* SRV_FILE_INFO_3 */
+typedef struct srv_file_info_3
 {
 	uint32 num_entries_read;                     /* EntriesRead */
 	uint32 ptr_file_info;                        /* Buffer */
@@ -1358,8 +1391,22 @@ typedef struct file_info_3_ctr
 	FILE_INFO_3     info_3    [MAX_FILE_ENTRIES]; /* file entry details */
 	FILE_INFO_3_STR info_3_str[MAX_FILE_ENTRIES]; /* file entry strings */
 
+	uint32 total_entries;                    /* total number of files */
 
-} FILE_INFO_3_CTR;
+} SRV_FILE_INFO_3;
+
+/* SRV_FILE_INFO_CTR */
+typedef struct srv_file_info_3_info
+{
+	uint32 switch_value;         /* switch value */
+	uint32 ptr_file_ctr;       /* pointer to file info union */
+	union
+    {
+		SRV_FILE_INFO_3 info3; /* file info with 0 entries */
+
+    } file;
+
+} SRV_FILE_INFO_CTR;
 
 
 /* SRV_Q_NET_FILE_ENUM */
@@ -1372,16 +1419,9 @@ typedef struct q_net_file_enum_info
 	uint32 padding1;
 
 	uint32 file_level;          /* file level */
-	uint32 switch_value;         /* switch value */
 
-	uint32 ptr_file_info;       /* pointer to FILE_INFO_3_CTR */
-	union
-    {
-		FILE_INFO_3_CTR info3; /* file info with 0 entries */
+	SRV_FILE_INFO_CTR *ctr;
 
-    } file;
-
-	uint32 num_entries;                    /* EntriesRead */
 	uint32 preferred_len; /* preferred maximum length (0xffff ffff) */
 	ENUM_HND enum_hnd;
 
@@ -1392,34 +1432,17 @@ typedef struct q_net_file_enum_info
 typedef struct r_net_file_enum_info
 {
 	uint32 file_level;          /* file level */
-	uint32 switch_value;         /* switch value */
 
-	uint32 ptr_file_info;       /* pointer to FILE_INFO_3_CTR */
-	union
-    {
-		FILE_INFO_3_CTR info3; /* file info container */
+	SRV_FILE_INFO_CTR *ctr;
 
-    } file;
-
-	uint32 num_entries;                    /* EntriesRead */
 	ENUM_HND enum_hnd;
 	uint32 status;        /* return status */
 
 } SRV_R_NET_FILE_ENUM;
 
-/* SRV_Q_NET_SRV_GET_INFO */
-typedef struct q_net_srv_get_info
-{
-	uint32  ptr_srv_name;
-	UNISTR2 uni_srv_name; /* "\\server" */
-	uint32  switch_value;
-
-} SRV_Q_NET_SRV_GET_INFO;
-
-/* SRV_INFO_101  */
+/* SRV_INFO_101 */
 typedef struct srv_info_101_info
 {
-
 	uint32 platform_id;     /* 0x500 */
 	uint32 ptr_name;        /* pointer to server name */
 	uint32 ver_major;       /* 0x4 */
@@ -1435,13 +1458,12 @@ typedef struct srv_info_101_info
 /* SRV_INFO_102  */
 typedef struct srv_info_102_info
 {
-
 	uint32 platform_id;     /* 0x500 */
 	uint32 ptr_name;        /* pointer to server name */
-	uint32 ptr_comment;     /* pointer to server comment */
 	uint32 ver_major;       /* 0x4 */
 	uint32 ver_minor;       /* 0x2 */
 	uint32 srv_type;        /* browse etc type */
+	uint32 ptr_comment;     /* pointer to server comment */
 	uint32 users;           /* 0xffff ffff*/
 	uint32 disc;            /* 0xf */
 	uint32 hidden;          /* 0x0 */
@@ -1460,6 +1482,8 @@ typedef struct srv_info_102_info
 /* SRV_INFO_CTR */
 typedef struct srv_info_ctr_info
 {
+	uint32 switch_value;         /* switch value */
+	uint32 ptr_srv_ctr;         /* pointer to server info */
 	union
     {
 		SRV_INFO_102 sv102; /* server info level 102 */
@@ -1469,17 +1493,44 @@ typedef struct srv_info_ctr_info
 
 } SRV_INFO_CTR;
 
+/* SRV_Q_NET_SRV_GET_INFO */
+typedef struct q_net_srv_get_info
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name; /* "\\server" */
+	uint32  switch_value;
+
+} SRV_Q_NET_SRV_GET_INFO;
+
 /* SRV_R_NET_SRV_GET_INFO */
 typedef struct r_net_srv_get_info
 {
-	uint32 switch_value;         /* switch value */
-
-	uint32 ptr_srv_ctr;         /* pointer to server info */
 	SRV_INFO_CTR *ctr;
 
 	uint32 status;               /* return status */
 
 } SRV_R_NET_SRV_GET_INFO;
+
+/* SRV_Q_NET_SRV_SET_INFO */
+typedef struct q_net_srv_set_info
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name; /* "\\server" */
+	uint32  switch_value;
+
+	SRV_INFO_CTR *ctr;
+
+} SRV_Q_NET_SRV_SET_INFO;
+
+
+/* SRV_R_NET_SRV_SET_INFO */
+typedef struct r_net_srv_set_info
+{
+	uint32 switch_value;         /* switch value */
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_SRV_SET_INFO;
 
 
 /* SAMR_Q_CLOSE_HND - probably a policy handle close */
