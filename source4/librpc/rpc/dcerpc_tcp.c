@@ -153,7 +153,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	struct in_addr addr;
 
 	if (port == 0) {
-		port = 135;
+		port = EPMAPPER_PORT;
 	}
 
 	addr.s_addr = interpret_addr(server);

@@ -62,13 +62,13 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	GUID guid;
 	struct epm_twr_t twr, *twr_r;
 
-	if (strcmp(uuid, DCERPC_EPMAPPER_UUID) == 0) {
+	if (strcasecmp(uuid, DCERPC_EPMAPPER_UUID) == 0) {
 		/* don't lookup epmapper via epmapper! */
-		*port = 135;
+		*port = EPMAPPER_PORT;
 		return NT_STATUS_OK;
 	}
 
-	status = dcerpc_pipe_open_tcp(&p, server, 135);
+	status = dcerpc_pipe_open_tcp(&p, server, EPMAPPER_PORT);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
