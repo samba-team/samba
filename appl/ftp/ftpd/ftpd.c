@@ -2161,7 +2161,11 @@ send_file_list(char *whichf)
   char buf[MaxPathLen];
 
   if (strpbrk(whichf, "~{[*?") != NULL) {
-    int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
+    int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE
+#ifdef GLOB_LIMIT
+	| GLOB_LIMIT
+#endif
+	;
 
     memset(&gl, 0, sizeof(gl));
     freeglob = 1;
