@@ -22,6 +22,19 @@
 
 #include "includes.h"
 
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return((tp2.tv_sec - tp1.tv_sec) + 
+	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+}
 
 /*
   test references 
@@ -101,6 +114,47 @@ static BOOL test_ref2(void)
 	return True;
 }
 
+/*
+  measure the speed of talloc versus malloc
+*/
+static BOOL test_speed(void)
+{
+	void *ctx = talloc(NULL, 0);
+	uint_t count;
+
+	printf("MEASURING TALLOC VS MALLOC SPEED\n");
+
+	start_timer();
+	count = 0;
+	do {
+		void *p1, *p2, *p3;
+		p1 = talloc(ctx, count);
+		p2 = talloc_strdup(p1, "foo bar");
+		p3 = talloc(p1, 300);
+		talloc_free(p1);
+		count += 3;
+	} while (end_timer() < 5.0);
+
+	printf("talloc: %.0f ops/sec\n", count/end_timer());
+
+	start_timer();
+	count = 0;
+	do {
+		void *p1, *p2, *p3;
+		p1 = malloc(count);
+		p2 = strdup("foo bar");
+		p3 = malloc(300);
+		free(p1);
+		free(p2);
+		free(p3);
+		count += 3;
+	} while (end_timer() < 5.0);
+
+	printf("malloc: %.0f ops/sec\n", count/end_timer());
+
+	return True;	
+}
+
 
 BOOL torture_local_talloc(int dummy) 
 {
@@ -110,6 +164,7 @@ BOOL torture_local_talloc(int dummy)
 
 	ret &= test_ref1();
 	ret &= test_ref2();
+	ret &= test_speed();
 
 	return True;
 }
