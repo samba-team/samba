@@ -25,7 +25,7 @@ sub print_footer {
 sub handle_loadparm {
 	my $line = shift;
 
-	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|CHAR|INTEGER|LIST)\((\w+),.*\)/) {
+	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
 		my $scope = $1;
 		my $type = $2;
 		my $name = $3;
@@ -49,76 +49,72 @@ sub handle_loadparm {
 }
 
 
-sub process_files {
+sub process_file($) 
+{
+	my $filename = shift;
 	my $line;
 	my $inheader;
 	my $gotstart;
 
-      FILE: foreach my $filename (@ARGV) {
-		next FILE unless (open(FH, "< $filename")); # skip over file unless it can be opened
-		print "\n/* The following definitions come from $filename  */\n\n";
+	open(FH, "< $filename") || die "Failed to open $filename";
 
-		$inheader = 0;
+	$inheader = 0;
+	$gotstart = 0;
+
+	print "\n/* The following definitions come from $filename  */\n\n";
+
+	while ($line = <FH>) {	      
+		# this ignores most lines
+		next if ($line =~ /^\s/);
+	      
 		$gotstart = 0;
-	      LINE: while (defined($line = <FH>)) {
-
-			if ($inheader) {
-				# this chomp is somewhat expensive, so don't do it unless we know
-				# that we probably want to use it
-				chomp $line;
-				if ($line =~ /\)\s*$/o) {
-					$inheader = 0;
-					print "$line;\n";
-				} else {
-					print "$line\n";
-				}
-				next LINE;
-			}
-
-			$gotstart = 0;
-
-			# ignore static and extern declarations
-			if ($line =~ /^static|^extern/o ||
-			    $line !~ /^[a-zA-Z]/o ||
-			    $line =~ /[;]/o) {
-				next LINE;
-			}
-
-
-			if ($line =~ /^FN_/) {
-				handle_loadparm($line);
-			}
-
-
-			# I'm going to leave these as is for now - perl can probably handle larger regex, though -- vance
-			# I've also sort of put these in approximate order of most commonly called
-
-			if ( $line =~ /
-			     ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
-			     ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
-			     ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME
-			     /x) {
-				$gotstart = 1;
-			}
-
-
-			# goto next line if we don't have a start
-			next LINE unless $gotstart;
-
-			if ( $line =~ /\(.*\)\s*$/o ) {
-			# now that we're here, we know we
-				chomp $line;
-				print "$line;\n";
-				next LINE;
-			}
-			elsif ( $line =~ /\(/o ) {
-
-				$inheader = 1;
-				# line hasn't been chomped, so we can assume it already has the \n
-				print $line;
-				next LINE;
-			}
+	      
+		if ($line =~ /^static|^extern/o ||
+		    $line !~ /^[a-zA-Z]/o ||
+		    $line =~ /[;]/o) {
+			next;
 		}
+	      	      
+		if ($line =~ /^FN_/) {
+			handle_loadparm($line);
+		}
+
+		next unless ($line =~ /\(/);
+	      
+		if ( $line =~ /
+		     ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
+		     ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
+		     ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME
+		     /xo) {
+			$gotstart = 1;
+		}
+		
+		
+		# goto next line if we don't have a start
+		next unless $gotstart;
+
+		if ( $line =~ /\(.*\)\s*$/o ) {
+			chomp $line;
+			print "$line;\n";
+			next;
+		}
+
+		print $line;
+
+		while ($line = <FH>) {
+			chomp $line;
+			if ($line =~ /\)\s*$/o) {
+				print "$line;\n";
+				last;
+			}
+			print "$line\n";
+		}
+	}
+}
+
+sub process_files {
+	foreach my $filename (@ARGV) {
+		process_file($filename);
 	}
 }
 
