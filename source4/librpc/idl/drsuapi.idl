@@ -50,7 +50,7 @@ interface drsuapi
 
 	/*****************/
 	/* Function 0x02 */
-	typedef struct {
+	typedef [flag(NDR_PAHEX)] struct {
 		uint32 unknown1;
 		uint32 unknown2;
 		GUID guid1;
