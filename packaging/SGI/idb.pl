@@ -16,7 +16,7 @@ while (<IGNORES>) {
 close IGNORES;
 
 # We don't want the files listed in .cvsignore in the source/include tree
-open(IGNORES,"../src/source/include/.cvsignore") || die "Unable to open include/.cvsignore file\n";
+open(IGNORES,"../../source/include/.cvsignore") || die "Unable to open include/.cvsignore file\n";
 while (<IGNORES>) {
   chop;
   $ignores{$_}++;
