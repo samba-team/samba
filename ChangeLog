@@ -1,3 +1,30 @@
+2001-07-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/Makefile.am: address.c is no more; add a couple of
+	manpages
+
+	* lib/krb5/krb5_timeofday.3: new manpage
+
+	* lib/krb5/krb5_get_all_client_addrs.3: new manpage
+
+	* lib/krb5/get_in_tkt.c (init_as_req): treat no addresses as
+	wildcard
+
+	* lib/krb5/get_cred.c (get_cred_kdc_la): treat no addresses as
+	wildcard
+
+	* lib/krb5/get_addrs.c: don't include client addresses that match
+	ignore_addresses
+
+	* lib/krb5/context.c: initialise ignore_addresses
+
+	* lib/krb5/addr_families.c: add new `arange' fake address type,
+	that matches more than one address; this required some internal
+	changes to many functions, so all of address.c got moved here
+	(wasn't much left there)
+
+	* lib/krb5/krb5.h: add list of ignored addresses to context
+
 2001-07-03  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.4a
