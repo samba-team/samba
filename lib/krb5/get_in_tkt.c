@@ -276,10 +276,12 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
     EncryptedData encdata;
     krb5_error_code ret;
     int32_t sec, usec;
+    unsigned usec2;
     
     krb5_us_timeofday (context, &sec, &usec);
     p.patimestamp = sec;
-    p.pausec      = &usec;
+    usec2 = usec;
+    p.pausec      = &usec2;
 
     ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
 			       sizeof(buf),
@@ -493,6 +495,7 @@ krb5_get_in_cred(krb5_context context,
     opts.i = options;
 
     krb5_generate_random_block (&nonce, sizeof(nonce));
+    nonce &= 0xffffffff;
 
     ret = init_as_req (context,
 		       opts,
