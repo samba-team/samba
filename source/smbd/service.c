@@ -823,8 +823,12 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
-	file_close_conn(conn);
-	dptr_closecnum(conn);
+	if (IS_IPC(conn)) {
+		pipe_close_conn(conn);
+	} else {
+		file_close_conn(conn);
+		dptr_closecnum(conn);
+	}
 
 	change_to_root_user();
 
