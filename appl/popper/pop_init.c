@@ -19,7 +19,7 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
     char version[9];
     int auth;
   
-    strcpy(instance, "*");
+    k_getsockinst (0, instance);
     auth = krb_recvauth(0L, 0, &ticket, "pop", instance,
                         addr, (struct sockaddr_in *) NULL,
                         &p->kdata, "", schedule, version);
