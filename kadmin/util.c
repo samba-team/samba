@@ -172,7 +172,6 @@ str2time_t (const char *str, time_t *time)
 {
     const char *p;
     struct tm tm, tm2;
-    char *t;
 
     memset (&tm, 0, sizeof (tm));
 
