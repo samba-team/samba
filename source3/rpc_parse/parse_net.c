@@ -1540,6 +1540,9 @@ BOOL net_io_q_sam_logon(const char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, 
 	if(!smb_io_sam_info("", &q_l->sam_id, ps, depth))
 		return False;
 
+	if(!prs_align_uint16(ps))
+		return False;
+	
 	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
 		return False;
 
