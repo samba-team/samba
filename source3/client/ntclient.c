@@ -106,6 +106,13 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 		return False;
 	}
 
+	/**************** Set Named Pipe State ***************/
+	if (!rpc_pipe_set_hnd_state(PIPE_LSARPC, fnum, 0x4300))
+	{
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
 	/******************* bind request on \PIPE\lsarpc *****************/
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
@@ -127,13 +134,6 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	make_rpc_iface(&transfer, trn_data, 0x2);
 
 	if (!rpc_pipe_bind(PIPE_LSARPC, fnum, ++call_id, &abstract, &transfer))
-	{
-		free(inbuf); free(outbuf);
-		return False;
-	}
-
-	/**************** Set Named Pipe State ***************/
-	if (!rpc_pipe_set_hnd_state(PIPE_LSARPC, fnum, 0x4300))
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -198,16 +198,16 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 		return False;
 	}
 
-	/******************* bind request on \PIPE\NETLOGON *****************/
-
-	if (!rpc_pipe_bind(PIPE_NETLOGON, fnum, ++call_id, &abstract, &transfer))
+	/**************** Set Named Pipe State ***************/
+	if (!rpc_pipe_set_hnd_state(PIPE_NETLOGON, fnum, 0x4300))
 	{
 		free(inbuf); free(outbuf);
 		return False;
 	}
 
-	/**************** Set Named Pipe State ***************/
-	if (!rpc_pipe_set_hnd_state(PIPE_NETLOGON, fnum, 0x4300))
+	/******************* bind request on \PIPE\NETLOGON *****************/
+
+	if (!rpc_pipe_bind(PIPE_NETLOGON, fnum, ++call_id, &abstract, &transfer))
 	{
 		free(inbuf); free(outbuf);
 		return False;
