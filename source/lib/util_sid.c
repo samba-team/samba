@@ -629,3 +629,18 @@ void print_guid(GUID *guid)
 		d_printf("%02x", guid->info[i]);
 	d_printf("\n");
 }
+
+
+/*******************************************************************
+ Check if ACE has OBJECT type.
+********************************************************************/
+BOOL sec_ace_object(uint8 type)
+{
+	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+            type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
+            type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
+            type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+		return True;
+	}
+	return False;
+}
