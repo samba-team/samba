@@ -33,8 +33,8 @@
  *                       int (*sec_check)(TDB_DATA , void *), void *arg)
  *
  *
- * int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
- *                  int (*sec_check)(TDB_DATA , void *), void *arg)
+ * int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, int flag,
+ *                  int (*sec_check)(TDB_DATA , int, void *), void *arg)
  *
  *
  * example uses.  must set security first, followed by store actual data.
@@ -53,7 +53,7 @@
 
 
 #define SEC_KEY "SEC/"
-#degine SEC_KEY_LEN 4
+#define SEC_KEY_LEN 4
 
 static TDB_DATA null_data;
 
@@ -131,8 +131,8 @@ int tdbsec_delete(TDB_CONTEXT *tdb, TDB_DATA key,
 	return -1;
 }
 
-int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
-		 int (*sec_check)(TDB_DATA , void *), void *arg)
+int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, int flag,
+		 int (*sec_check)(TDB_DATA , int, void *), void *arg)
 {
 	TDB_DATA key2, data2;
 
@@ -143,14 +143,14 @@ int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
 
 	data2 = tdb_fetch(tdb, key2);
 
-	if (sec_check(data2, arg) != 0) {
+	if (sec_check(data2, flag, arg) != 0) {
 		goto failed;
 	}
 
 	tdbsec_free(key2);
 	tdbsec_free(data2);
 
-	return tdb_store(tdb, key, data, TDB_REPLACE);
+	return tdb_store(tdb, key, data, flag);
 
  failed:
 	tdbsec_free(key2);
