@@ -1517,17 +1517,17 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 
 NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_CHGPASSWD_USER *r_u)
 {
-    fstring user_name;
-    fstring wks;
+	fstring user_name;
+	fstring wks;
 
-    DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
-    rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
+	rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
+	rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
 
-    DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
+	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -1541,14 +1541,14 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	 * is case insensitive.
 	 */
 
-    r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-				  q_u->nt_newpass.pass, q_u->nt_oldhash.hash);
+	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
+				q_u->nt_newpass.pass, q_u->nt_oldhash.hash);
 
-    init_samr_r_chgpasswd_user(r_u, r_u->status);
+	init_samr_r_chgpasswd_user(r_u, r_u->status);
 
-    DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
