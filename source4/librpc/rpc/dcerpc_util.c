@@ -486,7 +486,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	
 	/* this ensures that the reference count is decremented so
 	   a pipe close will really close the link */
-	smbcli_tree_close(cli->tree);
+	talloc_free(cli->tree);
 	
 	(*p)->flags = binding->flags;
 

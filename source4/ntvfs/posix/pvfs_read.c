@@ -36,7 +36,8 @@ NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	f = pvfs_find_fd(pvfs, rd->readx.in.fnum);
+
+	f = pvfs_find_fd(req, rd->readx.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

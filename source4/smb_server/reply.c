@@ -1149,23 +1149,26 @@ void reply_flush(struct smbsrv_request *req)
 
 
 /****************************************************************************
- Reply to a exit.
+ Reply to a exit. This closes all files open by a smbpid
 ****************************************************************************/
 void reply_exit(struct smbsrv_request *req)
 {
+	NTSTATUS status;
+	struct smbsrv_tcon *tcon;
 	REQ_CHECK_WCT(req, 0);
 
-	req->async.send_fn = reply_simple_send;
-
-	if (!req->tcon) {
-		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
-		return;
+	for (tcon=req->smb_conn->tree.tcons;tcon;tcon=tcon->next) {
+		req->tcon = tcon;
+		status = tcon->ntvfs_ops->exit(req);
+		req->tcon = NULL;
+		if (!NT_STATUS_IS_OK(status)) {
+			req_reply_error(req, status);
+			return;
+		}
 	}
 
-	/* call backend */
-	req->async.status = req->tcon->ntvfs_ops->exit(req);
-	
-	REQ_ASYNC_TAIL;
+	req_setup_reply(req, 0, 0);
+	req_send_reply(req);
 }
 
 
@@ -2097,20 +2100,29 @@ void reply_sesssetup(struct smbsrv_request *req)
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
 
-
 /****************************************************************************
  Reply to a SMBulogoffX.
 ****************************************************************************/
 void reply_ulogoffX(struct smbsrv_request *req)
 {
+	struct smbsrv_tcon *tcon;
 	uint16_t vuid;
+	NTSTATUS status;
 
 	vuid = SVAL(req->in.hdr, HDR_UID);
-	
+
 	/* in user level security we are supposed to close any files
-	   open by this user */
+	   open by this user on all open tree connects */
 	if ((vuid != 0) && (lp_security() != SEC_SHARE)) {
-		DEBUG(0,("REWRITE: not closing user files\n"));
+		for (tcon=req->smb_conn->tree.tcons;tcon;tcon=tcon->next) {
+			req->tcon = tcon;
+			status = tcon->ntvfs_ops->logoff(req);
+			req->tcon = NULL;
+			if (!NT_STATUS_IS_OK(status)) {
+				req_reply_error(req, status);
+				return;
+			}
+		}
 	}
 
 	smbsrv_invalidate_vuid(req->smb_conn, vuid);

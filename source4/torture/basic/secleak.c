@@ -43,7 +43,7 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 		return False;
 	}
 
-	smbcli_session_close(session);
+	talloc_free(session);
 	talloc_free(mem_ctx);
 
 	return True;

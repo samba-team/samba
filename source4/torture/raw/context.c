@@ -81,6 +81,8 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("create a second security context on the same transport\n");
 	session = smbcli_session_init(cli->transport);
+	talloc_increase_ref_count(cli->transport);
+
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.generic.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
@@ -95,6 +97,8 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("create a third security context on the same transport, with vuid set\n");
 	session2 = smbcli_session_init(cli->transport);
+	talloc_increase_ref_count(cli->transport);
+
 	session2->vuid = session->vuid;
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
@@ -110,10 +114,13 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
 	
 	CHECK_NOT_VALUE(session->vuid, session2->vuid);
+	talloc_free(session2);
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		printf("create a fourth security context on the same transport, without extended security\n");
 		session3 = smbcli_session_init(cli->transport);
+		talloc_increase_ref_count(cli->transport);
+
 		session3->vuid = session->vuid;
 		setup.generic.level = RAW_SESSSETUP_GENERIC;
 		setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
@@ -124,12 +131,14 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		status = smb_raw_session_setup(session3, mem_ctx, &setup);
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+		talloc_free(session3);
 	}
 		
 	printf("use the same tree as the existing connection\n");
 	tree = smbcli_tree_init(session);
+	talloc_increase_ref_count(session);
 	tree->tid = cli->tree->tid;
-	cli->tree->reference_count++;
 
 	printf("create a file using the new vuid\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -168,6 +177,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("logoff the new vuid\n");
 	status = smb_raw_ulogoff(session);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	talloc_free(session);
 
 	printf("the new vuid should not now be accessible\n");
 	status = smb_raw_write(tree, &wr);
@@ -182,7 +192,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* close down the new tree, which will also close the session
 	   as the reference count will be 0 */
-	smbcli_tree_close(tree);
+	talloc_free(tree);
 	
 done:
 	return ret;
@@ -215,9 +225,10 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	share = lp_parm_string(-1, "torture", "share");
-
+	
 	printf("create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session);
+	talloc_increase_ref_count(cli->session);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
@@ -286,7 +297,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	/* close down the new tree */
-	smbcli_tree_close(tree);
+	talloc_free(tree);
 	
 done:
 	return ret;
@@ -425,5 +436,6 @@ BOOL torture_raw_context(int dummy)
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
+
 	return ret;
 }

@@ -27,11 +27,16 @@
 /*
   find open file handle given fnum
 */
-struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs, uint16_t fnum)
+struct pvfs_file *pvfs_find_fd(struct smbsrv_request *req, uint16_t fnum)
 {
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_file *f;
 	for (f=pvfs->open_files;f;f=f->next) {
 		if (f->fnum == fnum) {
+			if (req->session != f->session) {
+				DEBUG(2,("pvfs_find_fd: attempt to use wrong session for fnum %d\n", fnum));
+				return NULL;
+			}
 			return f;
 		}
 	}
@@ -146,6 +151,8 @@ do_open:
 	f->fnum = fd;
 	f->fd = fd;
 	f->name = talloc_steal(f, name);
+	f->session = req->session;
+	f->smbpid = req->smbpid;
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
@@ -183,7 +190,7 @@ NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	f = pvfs_find_fd(pvfs, io->close.in.fnum);
+	f = pvfs_find_fd(req, io->close.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -200,5 +207,47 @@ NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 	talloc_free(f);
 
 	return status;
+}
+
+
+/*
+  logoff - close all file descriptors open by a vuid
+*/
+NTSTATUS pvfs_logoff(struct smbsrv_request *req)
+{
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_file *f, *next;
+
+	for (f=pvfs->open_files;f;f=next) {
+		next = f->next;
+		if (f->session == req->session) {
+			talloc_set_destructor(f, NULL);
+			DLIST_REMOVE(pvfs->open_files, f);
+			talloc_free(f);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/*
+  exit - close files for the current pid
+*/
+NTSTATUS pvfs_exit(struct smbsrv_request *req)
+{
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_file *f, *next;
+
+	for (f=pvfs->open_files;f;f=next) {
+		next = f->next;
+		if (f->smbpid == req->smbpid) {
+			talloc_set_destructor(f, NULL);
+			DLIST_REMOVE(pvfs->open_files, f);
+			talloc_free(f);
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
