@@ -272,6 +272,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
+	--with-codepagedir='$(DESTDIR)'/usr/share/samba/codepages \
 	--without-smbwrapper \
 	--with-smbmount \
 	--with-pam \
@@ -291,11 +292,10 @@ VVS=packaging/%{Vendor}/%{Dist}
 mkdir -p $DESTDIR/etc/{{logrotate,pam}.d,sysconfig/daemons}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
-mkdir -p $DESTDIR/usr/share/samba/codepages
 mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
-mkdir -p $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
+mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
@@ -303,7 +303,7 @@ make LOGFILEBASE=/var/log/samba.d -C source  install
 strip $DESTDIR/usr/bin/smb{mnt,umount}
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/bin
 
-cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
+cp -p source/codepages/codepage_def.??? $DESTDIR/usr/share/samba/codepages/src
 
 # Install the nsswitch library extension file
 install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
@@ -503,4 +503,4 @@ test "$1" = "0" || exit 0
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec-lsb.tmpl,v 1.1.2.18 2001/05/16 14:47:18 jht Exp $
+$Id: samba2.spec-lsb.tmpl,v 1.1.2.19 2001/05/18 23:05:43 jht Exp $
