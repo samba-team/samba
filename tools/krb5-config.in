@@ -1,27 +1,44 @@
 #!/bin/sh
 # $Id$
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
+
+do_libs=no
+do_cflags=no
+do_usage=no
+library=krb5
+
+if test $# -eq 0; then
+  do_usage=yes
+  usage_exit=1
+fi
+
 for i in $*; do
   case $i in
   --help)
-    echo "usage: $0 [--libs] [--cflags]"
-    exit 0
+    do_usage=yes
+    usage_exit=0
     ;;
   --version)
     echo "@PACKAGE@ @VERSION@"
     echo "$Id$"
     exit 0
     ;;
+  --prefix=*)
+    prefix=`echo $i | sed 's/^--prefix=//'`
+    ;;
+  --exec-prefix=*)
+    exec_prefix=`echo $i | sed 's/^--exec-prefix=//'`
+    ;;
   --libs)
-    echo "-L${libdir} -lkrb5 -lasn1 -ldes -lroken @LIB_crypt@ @LIB_dbopen@ @LIBS@"
-    exit 0
+    do_libs=yes
     ;;
   --cflags)
-    echo "-I${includedir}"
-    exit 0
+    do_cflags=yes
+    ;;
+  krb5)
+    library=krb5
+    ;;
+  gssapi)
+    library=gssapi
     ;;
   *)
     echo "unknown option: $i"
@@ -29,4 +46,35 @@ for i in $*; do
     ;;
   esac
 done
+
+if test "$do_usage" = "yes"; then
+    echo "usage: $0 [options] [libraries]"
+    echo "options: [--prefix=dir] [--exec-prefix=dir] [--libs] [--cflags]"
+    echo "libraries: krb5 gssapi"
+    exit $usage_exit
+fi
+
+if test "$prefix" = ""; then
+  prefix=@prefix@
+fi
+if test "$exec_prefix" = ""; then
+  exec_prefix=@exec_prefix@
+fi
+
+libdir=@libdir@
+includedir=@includedir@
+
+if test "$do_libs" = "yes"; then
+    echo -n "-L${libdir}"
+    case $library in
+    gssapi)
+	echo -n " -lgssapi"
+	;;
+    esac
+    echo " -lkrb5 -lasn1 -ldes -lroken @LIB_crypt@ @LIB_dbopen@ @LIBS@"
+fi
+if test "$do_cflags" = "yes"; then
+    echo "-I${includedir}"
+fi
+
 exit 0
