@@ -712,9 +712,9 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "dlinklist.h"
-#include "../tdb/tdb.h"
-#include "../tdb/spinlock.h"
-#include "../tdb/tdbutil.h"
+#include "lib/tdb/tdb.h"
+#include "lib/tdb/spinlock.h"
+#include "lib/tdb/tdbutil.h"
 #include "talloc.h"
 #include "nt_status.h"
 #include "interfaces.h"
