@@ -1,5 +1,5 @@
 !==
-!== BUGS.txt for Samba release 2.0.0-alpha 31 Aug 1998
+!== BUGS.txt for Samba release 2.0.0-alpha1 31 Aug 1998
 !==
 Contributor:	Samba Team
 Updated:	June 27, 1997

@@ -1,5 +1,5 @@
 !==
-!== GOTCHAS.txt for Samba release 2.0.0-alpha 31 Aug 1998
+!== GOTCHAS.txt for Samba release 2.0.0-alpha1 31 Aug 1998
 !==
 This file lists Gotchas to watch out for:
 =========================================================================
