@@ -254,7 +254,7 @@ process_reply (krb5_context context,
 	    return ret;
 	}
 	if (error.e_data->length < 2) {
-	    warnx ("too short e_data to print anything usable");
+	    krb5_warnx (context, "too short e_data to print anything usable");
 	    return 1;
 	}
 
