@@ -4025,7 +4025,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   char *data;
   uint32 ecode=0, dummy2;
   int eclass=0, dummy1;
-  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
   BOOL err;
 
   CHECK_FSP(fsp,conn);
