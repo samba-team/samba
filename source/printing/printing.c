@@ -622,6 +622,8 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	int next_jobid;
 	extern struct current_user current_user;
 
+	errno = 0;
+
 	if (!print_access_check(user, snum, PRINTER_ACE_PRINT)) {
 		DEBUG(3, ("job start denied by security descriptor\n"));
 		return False;
@@ -713,7 +715,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	}
 
 	tdb_writeunlock(tdb);
-	return jobid;
+	return -1;
 }
 
 /****************************************************************************
