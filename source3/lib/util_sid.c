@@ -57,60 +57,61 @@ char *sid_to_string(pstring sidstr_out, const DOM_SID *sid)
    
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
-  pstring tok;
-  const char *p = sidstr;
-  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  uint32 ia;
+	const char *p = sidstr;
+	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+	uint32 ia;
 
-  memset((char *)sidout, '\0', sizeof(DOM_SID));
+	memset((char *)sidout, '\0', sizeof(DOM_SID));
 
-  if (StrnCaseCmp( sidstr, "S-", 2)) {
-    DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
-    return False;
-  }
+	if (StrnCaseCmp( sidstr, "S-", 2))
+	{
+		DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
+		return False;
+	}
 
-  p += 2;
-  if (!next_token(&p, tok, "-", sizeof(tok))) {
-    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    return False;
-  }
+	if ((p = strchr(p, '-')) == NULL)
+	{
+		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		return False;
+	}
 
-  /* Get the revision number. */
-  sidout->sid_rev_num = (uint8)strtoul(tok,NULL,10);
+	p++;
 
-  if (!next_token(&p, tok, "-", sizeof(tok))) {
-    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    return False;
-  }
+	/* Get the revision number. */
+	sidout->sid_rev_num = (uint8)strtoul(p,NULL,10);
 
-  /* identauth in decimal should be <  2^32 */
-  ia = (uint32)strtoul(tok,NULL,10);
+	if ((p = strchr(p, '-')) == NULL)
+	{
+		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		return False;
+	}
 
-  /* NOTE - the ia value is in big-endian format. */
-  sidout->id_auth[0] = 0;
-  sidout->id_auth[1] = 0;
-  sidout->id_auth[2] = (ia & 0xff000000) >> 24;
-  sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
-  sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
-  sidout->id_auth[5] = (ia & 0x000000ff);
+	p++;
 
-  sidout->num_auths = 0;
+	/* identauth in decimal should be <  2^32 */
+	ia = (uint32)strtoul(p,NULL,10);
 
-  while(next_token(&p, tok, "-", sizeof(tok)) && 
-	sidout->num_auths < MAXSUBAUTHS)
-  {
-    /* 
-     * NOTE - the subauths are in native machine-endian format. They
-     * are converted to little-endian when linearized onto the wire.
-     */
-	uint32 rid = (uint32)strtoul(tok, NULL, 10);
-	DEBUG(50,("string_to_sid: tok: %s rid 0x%lx\n", tok, (unsigned long)rid));
-	sid_append_rid(sidout, rid);
-  }
+	/* NOTE - the ia value is in big-endian format. */
+	sidout->id_auth[0] = 0;
+	sidout->id_auth[1] = 0;
+	sidout->id_auth[2] = (ia & 0xff000000) >> 24;
+	sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
+	sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
+	sidout->id_auth[5] = (ia & 0x000000ff);
 
-  DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
+	sidout->num_auths = 0;
 
-  return True;
+	while (((p = strchr(p, '-')) != NULL) && sidout->num_auths < MAXSUBAUTHS)
+	{
+		p++;
+		/*
+		 * NOTE - the subauths are in native machine-endian format. They
+		 * are converted to little-endian when linearized onto the wire.
+		 */
+		sid_append_rid(sidout, (uint32)strtoul(p, NULL, 10));
+	}
+
+	return True;
 }
 
 /*****************************************************************
