@@ -1915,7 +1915,7 @@ int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
 		pstrcat(directory, "/");
 		pstrcat(directory, mask);
 		if (can_delete(directory, conn, dirtype)
-		    && !dos_unlink(directory))
+		    && !vfs_unlink(conn,directory))
 			count++;
 		if (!count)
 			exists = vfs_file_exist(conn, directory, NULL);

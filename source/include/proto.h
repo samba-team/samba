@@ -3417,6 +3417,7 @@ int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname,
                          SMB_STRUCT_STAT *st);
+int vfs_unlink(connection_struct *conn, char *fname);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 
