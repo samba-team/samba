@@ -126,6 +126,7 @@ extract_ticket(krb5_context context,
     krb5_principal tmp_principal;
     int tmp;
     time_t tmp_time;
+    int32_t sec_now;
 
     /* compare client */
 
@@ -184,6 +185,18 @@ extract_ticket(krb5_context context,
 	goto out;
     }
 
+    /* set kdc-offset */
+
+    krb5_timeofday (context, &sec_now);
+    if (context->kdc_sec_offset == 0
+	&& krb5_config_get_string (context->cf,
+				   "libdefaults",
+				   "kdc_timesync",
+				   NULL) != NULL) {
+	context->kdc_sec_offset = rep->part2.authtime - sec_now;
+	krb5_timeofday (context, &sec_now);
+    }
+
     /* check all times */
 
     if (rep->part2.starttime) {
@@ -192,7 +205,7 @@ extract_ticket(krb5_context context,
 	tmp_time = rep->part2.authtime;
 
     if (creds->times.starttime == 0
-	&& abs(tmp_time - time(NULL)) > context->max_skew) {
+	&& abs(tmp_time - sec_now) > context->max_skew) {
 	err = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
@@ -262,9 +275,11 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
     size_t len;
     EncryptedData encdata;
     krb5_error_code ret;
+    int32_t sec, usec;
     
-    p.patimestamp = time(NULL);
-    p.pausec      = NULL;
+    krb5_us_timeofday (context, &sec, &usec);
+    p.patimestamp = sec;
+    p.pausec      = usec;
 
     ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
 			       sizeof(buf),
