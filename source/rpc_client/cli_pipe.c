@@ -519,7 +519,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	if (auth_seal)
 	{
 		crc32 = crc32_calc_buffer(data->offset, mem_data(&data->data, 0));
-		NTLMSSPcalc(cli->ntlmssp_hash, mem_data(&data->data, 0), data->offset);
+		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)mem_data(&data->data, 0), data->offset);
 	}
 
 	if (auth_verify)
@@ -532,7 +532,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 
 		make_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, 0);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
-		NTLMSSPcalc(cli->ntlmssp_hash, mem_data(&auth_verf.data, 4), 12);
+		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)mem_data(&auth_verf.data, 4), 12);
 	}
 
 	if (auth_seal || auth_verify)
