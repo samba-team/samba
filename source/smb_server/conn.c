@@ -25,80 +25,56 @@
    per-client basis. Thus any one machine can't connect to more than
    MAX_CONNECTIONS services, but any number of machines may connect at
    one time. */
-#define MAX_CONNECTIONS 128
+#define MAX_CONNECTIONS 1024
 
 /****************************************************************************
 init the tcon structures
 ****************************************************************************/
 void conn_init(struct smbsrv_connection *smb_conn)
 {
-	smb_conn->tree.bmap = bitmap_allocate(MAX_CONNECTIONS);
+	smb_conn->tree.idtree_tid = idr_init(smb_conn);
 }
-
-/****************************************************************************
-check if a snum is in use
-****************************************************************************/
-BOOL conn_snum_used(struct smbsrv_connection *smb_conn, int snum)
-{
-	struct smbsrv_tcon *tcon;
-	for (tcon=smb_conn->tree.tcons;tcon;tcon=tcon->next) {
-		if (tcon->service == snum) {
-			return(True);
-		}
-	}
-	return(False);
-}
-
 
 /****************************************************************************
 find a tcon given a cnum
 ****************************************************************************/
 struct smbsrv_tcon *conn_find(struct smbsrv_connection *smb_conn, uint_t cnum)
 {
-	int count=0;
-	struct smbsrv_tcon *tcon;
-
-	for (tcon=smb_conn->tree.tcons;tcon;tcon=tcon->next,count++) {
-		if (tcon->cnum == cnum) {
-			if (count > 10) {
-				DLIST_PROMOTE(smb_conn->tree.tcons, tcon);
-			}
-			return tcon;
-		}
-	}
-
-	return NULL;
+	return idr_find(smb_conn->tree.idtree_tid, cnum);
 }
 
+/*
+  destroy a connection structure
+*/
+static int conn_destructor(void *ptr)
+{
+	struct smbsrv_tcon *tcon = ptr;
+	idr_remove(tcon->smb_conn->tree.idtree_tid, tcon->cnum);
+	DLIST_REMOVE(tcon->smb_conn->tree.tcons, tcon);
+	return 0;
+}
 
-/****************************************************************************
-  find first available connection slot, starting from a random position.
-The randomisation stops problems with the server dieing and clients
-thinking the server is still available.
-****************************************************************************/
+/*
+  find first available connection slot
+*/
 struct smbsrv_tcon *conn_new(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_tcon *tcon;
 	int i;
 
-	i = bitmap_find(smb_conn->tree.bmap, 1);
-	
+	tcon = talloc_zero_p(smb_conn, struct smbsrv_tcon);
+	if (!tcon) return NULL;
+
+	i = idr_get_new(smb_conn->tree.idtree_tid, tcon, MAX_CONNECTIONS);	
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));	       
 		return NULL;
 	}
 
-	tcon = talloc_p(smb_conn, struct smbsrv_tcon);
-	if (!tcon) return NULL;
-
-	ZERO_STRUCTP(tcon);
-
 	tcon->cnum = i;
 	tcon->smb_conn = smb_conn;
 
-	bitmap_set(smb_conn->tree.bmap, i);
-
-	smb_conn->tree.num_open++;
+	talloc_set_destructor(tcon, conn_destructor);
 
 	DLIST_ADD(smb_conn->tree.tcons, tcon);
 
@@ -118,36 +94,11 @@ void conn_close_all(struct smbsrv_connection *smb_conn)
 }
 
 
-#if REWRITE_REMOVED
-/****************************************************************************
-clear a vuid out of the validity cache, and as the 'owner' of a connection.
-****************************************************************************/
-void conn_clear_vuid_cache(struct smbsrv_connection *smb_conn, uint16_t vuid)
-{
-	struct smbsrv_tcon *tcon;
-	uint_t i;
-
-	for (tcon=smb_conn->tree.tcons;tcon;tcon=tcon->next) {
-		for (i=0;i<tcon->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
-			if (tcon->vuid_cache.list[i] == vuid) {
-				tcon->vuid_cache.list[i] = UID_FIELD_INVALID;
-			}
-		}
-	}
-}
-#endif
-
 /****************************************************************************
  Free a tcon structure.
 ****************************************************************************/
-
 void conn_free(struct smbsrv_connection *smb_conn, struct smbsrv_tcon *tcon)
 {
-	DLIST_REMOVE(smb_conn->tree.tcons, tcon);
-
-	bitmap_clear(smb_conn->tree.bmap, tcon->cnum);
-	smb_conn->tree.num_open--;
-
-	talloc_destroy(tcon);
+	talloc_free(tcon);
 }
 

@@ -90,10 +90,6 @@ BOOL reload_services(struct smbsrv_connection *smb, BOOL test)
 	if (test && !lp_file_list_changed())
 		return(True);
 
-	if (smb) {
-		lp_killunused(smb, conn_snum_used);
-	}
-	
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
 	/* perhaps the config filename is now set */
