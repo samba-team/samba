@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Nigel Williams 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +34,7 @@
 #define SRV_NET_SHARE_GET_INFO     0x10
 #define SRV_NET_SHARE_SET_INFO     0x11
 #define SRV_NET_SHARE_DEL          0x12
+#define SRV_NET_SHARE_DEL_STICKY   0x13
 #define SRV_NET_SRV_GET_INFO       0x15
 #define SRV_NET_SRV_SET_INFO       0x16
 #define SRV_NET_DISK_ENUM          0x17
@@ -54,7 +56,7 @@ typedef struct disk_enum_container {
 	uint32 entries_read;
 	uint32 unknown;
 	uint32 disk_info_ptr;
-	DISK_INFO disk_info[MAX_SERVER_DISK_ENTRIES];
+	DISK_INFO *disk_info;
 } DISK_ENUM_CONTAINER;
 
 typedef struct net_srv_disk_enum {
@@ -294,6 +296,29 @@ typedef struct r_net_conn_enum_info
 
 } SRV_R_NET_CONN_ENUM;
 
+/* SH_INFO_0 */
+typedef struct ptr_share_info0
+{
+	uint32 ptr_netname; /* pointer to net name. */
+} SH_INFO_0;
+
+/* SH_INFO_0_STR (level 0 share info strings) */
+typedef struct str_share_info0
+{
+        SH_INFO_0 *ptrs;
+
+	UNISTR2 uni_netname; /* unicode string of net name */
+
+} SH_INFO_0_STR;
+
+/* SRV_SHARE_INFO_0 */
+typedef struct share_info_0_info
+{
+	SH_INFO_0 info_0;
+	SH_INFO_0_STR info_0_str;
+
+} SRV_SHARE_INFO_0;
+
 /* SH_INFO_1 (pointers to level 1 share info strings) */
 typedef struct ptr_share_info1
 {
@@ -306,6 +331,8 @@ typedef struct ptr_share_info1
 /* SH_INFO_1_STR (level 1 share info strings) */
 typedef struct str_share_info1
 {
+        SH_INFO_1 *ptrs;
+
 	UNISTR2 uni_netname; /* unicode string of net name */
 	UNISTR2 uni_remark; /* unicode string of comment */
 
@@ -336,6 +363,8 @@ typedef struct ptr_share_info2
 /* SH_INFO_2_STR (level 2 share info strings) */
 typedef struct str_share_info2
 {
+	SH_INFO_2 *ptrs;
+
 	UNISTR2 uni_netname; /* unicode string of net name (e.g NETLOGON) */
 	UNISTR2 uni_remark;  /* unicode string of comment (e.g "Logon server share") */
 	UNISTR2 uni_path;    /* unicode string of local path (e.g c:\winnt\system32\repl\import\scripts) */
@@ -383,6 +412,8 @@ typedef struct ptr_share_info502
 	uint32 num_uses;   /* current uses */
 	uint32 ptr_path;   /* pointer to path name */
 	uint32 ptr_passwd; /* pointer to password */
+        uint32 reserved;    /* this holds the space taken by the sd in the rpc packet */
+        uint32 reserved_offset;   /* required for _post operation when marshalling */
 	uint32 sd_size;    /* size of security descriptor */
 	uint32 ptr_sd;     /* pointer to security descriptor */
 
@@ -398,6 +429,7 @@ typedef struct str_share_info502
 	UNISTR2 uni_path;    /* unicode string of local path (e.g c:\winnt\system32\repl\import\scripts) */
 	UNISTR2 uni_passwd;  /* unicode string of password - presumably for share level security (e.g NULL) */
 
+        uint32 reserved;
 	uint32 sd_size;
 	SEC_DESC *sd;
 
@@ -411,11 +443,56 @@ typedef struct share_info_502_info
 
 } SRV_SHARE_INFO_502;
 
-/* SRV_SHARE_INFO_1005 */
+typedef struct ptr_share_info1004
+{
+	uint32 ptr_remark;
+
+} SH_INFO_1004;
+
+typedef struct str_share_info1004
+{
+	SH_INFO_1004 *ptrs;
+
+	UNISTR2 uni_remark;
+
+} SH_INFO_1004_STR;
+
+typedef struct ptr_info_1004_info
+{
+	SH_INFO_1004     info_1004; 
+	SH_INFO_1004_STR info_1004_str; 
+} SRV_SHARE_INFO_1004;
+
 typedef struct share_info_1005_info
 {
   uint32 dfs_root_flag; 
 } SRV_SHARE_INFO_1005;
+
+typedef struct share_info_1006_info
+{
+	uint32 max_uses; 
+} SRV_SHARE_INFO_1006;
+
+typedef struct ptr_share_info1007
+{
+	uint32 flags;
+	uint32 ptr_AlternateDirectoryName;
+
+} SH_INFO_1007;
+
+typedef struct str_share_info1007
+{
+	SH_INFO_1007 *ptrs;
+
+	UNISTR2 uni_AlternateDirectoryName;
+
+} SH_INFO_1007_STR;
+
+typedef struct ptr_info_1007_info
+{
+	SH_INFO_1007     info_1007; 
+	SH_INFO_1007_STR info_1007_str; 
+} SRV_SHARE_INFO_1007;
 
 /* SRV_SHARE_INFO_1501 */
 typedef struct share_info_1501_info
@@ -435,10 +512,16 @@ typedef struct srv_share_info_ctr_info
 	uint32 num_entries2;
 
 	union {
-		SRV_SHARE_INFO_1 *info1; /* share info level 1 */
-		SRV_SHARE_INFO_2 *info2; /* share info level 2 */
-		SRV_SHARE_INFO_501 *info501; /* share info level 501 */
-		SRV_SHARE_INFO_502 *info502; /* share info level 502 */
+		SRV_SHARE_INFO_0    *info0;
+		SRV_SHARE_INFO_1    *info1;    /* share info level 1 */
+		SRV_SHARE_INFO_2    *info2;    /* share info level 2 */
+		SRV_SHARE_INFO_501  *info501;  /* share info level 501 */
+		SRV_SHARE_INFO_502  *info502;  /* share info level 502 */
+		SRV_SHARE_INFO_1004 *info1004;
+		SRV_SHARE_INFO_1005 *info1005;
+		SRV_SHARE_INFO_1006 *info1006;
+		SRV_SHARE_INFO_1007 *info1007;
+		SRV_SHARE_INFO_1501 *info1501;
 		void *info;
 
 	} share;
@@ -484,19 +567,21 @@ typedef struct q_net_share_get_info_info
 
 } SRV_Q_NET_SHARE_GET_INFO;
 
-/* JRA. NB. We also need level 1004 and 1006 here. */
-
 /* SRV_SHARE_INFO */
 typedef struct srv_share_info {
 	uint32 switch_value;
 	uint32 ptr_share_ctr;
 
 	union {
+		SRV_SHARE_INFO_0    info0;
 		SRV_SHARE_INFO_1 info1;
 		SRV_SHARE_INFO_2 info2;
 		SRV_SHARE_INFO_501 info501;
 		SRV_SHARE_INFO_502 info502;
+		SRV_SHARE_INFO_1004 info1004;
 		SRV_SHARE_INFO_1005 info1005;
+		SRV_SHARE_INFO_1006 info1006;
+		SRV_SHARE_INFO_1007 info1007;
 		SRV_SHARE_INFO_1501 info1501;
 	} share;
 } SRV_SHARE_INFO;
@@ -520,12 +605,16 @@ typedef struct q_net_share_set_info_info
 
 	SRV_SHARE_INFO info;
 
+        uint32 ptr_parm_error;
+        uint32 parm_error;
+
 } SRV_Q_NET_SHARE_SET_INFO;
 
 /* SRV_R_NET_SHARE_SET_INFO */
 typedef struct r_net_share_set_info
 {
-	uint32 switch_value;         /* switch value */
+        uint32 ptr_parm_error;
+        uint32 parm_error;
 
 	WERROR status;               /* return status */
 
@@ -549,7 +638,9 @@ typedef struct q_net_share_add
 /* SRV_R_NET_SHARE_ADD */
 typedef struct r_net_share_add
 {
-	uint32 switch_value;         /* switch value */
+
+        uint32 ptr_parm_error;
+        uint32 parm_error;
 
 	WERROR status;               /* return status */
 
@@ -594,9 +685,12 @@ typedef struct str_file_info3_info
 /* SRV_FILE_INFO_3 */
 typedef struct srv_file_info_3
 {
+	uint32 num_entries_read;                     /* EntriesRead */
+	uint32 ptr_file_info;                        /* Buffer */
+
+	uint32 num_entries_read2;                    /* EntriesRead */
 	FILE_INFO_3     info_3;     /* file entry details */
 	FILE_INFO_3_STR info_3_str; /* file entry strings */
-
 } SRV_FILE_INFO_3;
 
 /* SRV_FILE_INFO_CTR */

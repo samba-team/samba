@@ -55,10 +55,10 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 
 	status = ADS_ERROR(LDAP_NO_MEMORY);
 
-	if (!(upn = talloc_asprintf(ctx, "%s@%s", user, ads->realm)))
+	if (!(upn = talloc_asprintf(ctx, "%s@%s", user, ads->config.realm)))
 		goto done;
 	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,cn=Users,%s", name, 
-				       ads->bind_path)))
+				       ads->config.bind_path)))
 		goto done;
 	if (!(controlstr = talloc_asprintf(ctx, "%u", UF_NORMAL_ACCOUNT)))
 		goto done;
@@ -94,7 +94,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	status = ADS_ERROR(LDAP_NO_MEMORY);
 
 	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,cn=Users,%s", group, 
-				       ads->bind_path)))
+				       ads->config.bind_path)))
 		goto done;
 	if (!(mods = ads_init_mods(ctx)))
 		goto done;

@@ -365,6 +365,9 @@ BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
 {
 	int i;
 	if (len < 8) return False;
+
+	ZERO_STRUCTP(sid);
+
 	sid->sid_rev_num = CVAL(inbuf, 0);
 	sid->num_auths = CVAL(inbuf, 1);
 	memcpy(sid->id_auth, inbuf+2, 6);

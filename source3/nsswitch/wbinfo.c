@@ -255,8 +255,7 @@ static BOOL wbinfo_check_secret(void)
 
         ZERO_STRUCT(response);
 
-        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
-                NSS_STATUS_SUCCESS;
+        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response);
 		
 	d_printf("checking the trust secret via RPC calls %s\n", 
 		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
@@ -490,9 +489,9 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
-        SMBencrypt((uchar *)pass, request.data.auth_crap.chal, 
+        SMBencrypt(pass, request.data.auth_crap.chal, 
                    (uchar *)request.data.auth_crap.lm_resp);
-        SMBNTencrypt((uchar *)pass, request.data.auth_crap.chal,
+        SMBNTencrypt(pass, request.data.auth_crap.chal,
                      (uchar *)request.data.auth_crap.nt_resp);
 
         request.data.auth_crap.lm_resp_len = 24;

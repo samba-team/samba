@@ -37,6 +37,165 @@
  * codepoints in UTF-8).  This may have to change at some point
  **/
 
+
+/*
+  try a connection to a given ldap server, returning True and setting the servers IP
+  in the ads struct if successful
+ */
+static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
+{
+	char *srv;
+
+	if (!server || !*server) {
+		return False;
+	}
+
+	DEBUG(5,("ads_try_connect: trying ldap server '%s' port %u\n", server, port));
+
+	/* this copes with inet_ntoa brokenness */
+	srv = strdup(server);
+
+	ads->ld = ldap_open(srv, port);
+	if (!ads->ld) {
+		free(srv);
+		return False;
+	}
+	ads->ldap_port = port;
+	ads->ldap_ip = *interpret_addr2(srv);
+	free(srv);
+	return True;
+}
+
+/* used by the IP comparison function */
+struct ldap_ip {
+	struct in_addr ip;
+	unsigned port;
+};
+
+/* compare 2 ldap IPs by nearness to our interfaces - used in qsort */
+static int ldap_ip_compare(struct ldap_ip *ip1, struct ldap_ip *ip2)
+{
+	return ip_compare(&ip1->ip, &ip2->ip);
+}
+
+/* try connecting to a ldap server via DNS */
+static BOOL ads_try_dns(ADS_STRUCT *ads)
+{
+	char *realm, *ptr;
+	char *list = NULL;
+	pstring tok;
+	struct ldap_ip *ip_list;
+	int count, i=0;
+
+	realm = ads->server.realm;
+	if (!realm || !*realm) {
+		realm = lp_realm();
+	}
+	if (!realm || !*realm) {
+		realm = ads->server.workgroup;
+	}
+	if (!realm || !*realm) {
+		realm = lp_workgroup();
+	}
+	if (!realm) {
+		return False;
+	}
+	realm = smb_xstrdup(realm);
+
+	DEBUG(6,("ads_try_dns: looking for realm '%s'\n", realm));
+	if (ldap_domain2hostlist(realm, &list) != LDAP_SUCCESS) {
+		SAFE_FREE(realm);
+		return False;
+	}
+
+	DEBUG(6,("ads_try_dns: ldap realm '%s' host list '%s'\n", realm, list));
+	SAFE_FREE(realm);
+
+	count = count_chars(list, ' ') + 1;
+	ip_list = malloc(count * sizeof(struct ldap_ip));
+	if (!ip_list) {
+		return False;
+	}
+
+	ptr = list;
+	while (next_token(&ptr, tok, " ", sizeof(tok))) {
+		unsigned port = LDAP_PORT;
+		char *p = strchr(tok, ':');
+		if (p) {
+			*p = 0;
+			port = atoi(p+1);
+		}
+		ip_list[i].ip = *interpret_addr2(tok);
+		ip_list[i].port = port;
+		if (!is_zero_ip(ip_list[i].ip)) {
+			i++;
+		}
+	}
+	free(list);
+
+	count = i;
+
+	/* we sort the list of addresses by closeness to our interfaces. This
+	   tries to prevent us using a DC on the other side of the country */
+	if (count > 1) {
+		qsort(ip_list, count, sizeof(struct ldap_ip), 
+		      QSORT_CAST ldap_ip_compare);	
+	}
+
+	for (i=0;i<count;i++) {
+		if (ads_try_connect(ads, inet_ntoa(ip_list[i].ip), ip_list[i].port)) {
+			free(ip_list);
+			return True;
+		}
+	}
+
+	SAFE_FREE(ip_list);
+	return False;
+}
+
+/* try connecting to a ldap server via netbios */
+static BOOL ads_try_netbios(ADS_STRUCT *ads)
+{
+	struct in_addr *ip_list;
+	int count;
+	int i;
+	char *workgroup = ads->server.workgroup;
+
+	if (!workgroup) {
+		workgroup = lp_workgroup();
+	}
+
+	DEBUG(6,("ads_try_netbios: looking for workgroup '%s'\n", workgroup));
+
+	/* try the PDC first */
+	if (get_dc_list(True, workgroup, &ip_list, &count)) { 
+		for (i=0;i<count;i++) {
+			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
+				 inet_ntoa(ip_list[i])));
+			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
+				free(ip_list);
+				return True;
+			}
+		}
+		free(ip_list);
+	}
+
+	/* now any DC, including backups */
+	if (get_dc_list(False, workgroup, &ip_list, &count)) { 
+		for (i=0;i<count;i++) {
+			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
+				 inet_ntoa(ip_list[i])));
+			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
+				free(ip_list);
+				return True;
+			}
+		}
+		free(ip_list);
+	}
+
+	return False;
+}
+
 /**
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
@@ -49,38 +208,35 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ADS_STATUS status;
 
 	ads->last_attempt = time(NULL);
-
 	ads->ld = NULL;
 
-	if (ads->ldap_server) {
-		ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
+	/* try with a user specified server */
+	if (ads->server.ldap_server && 
+	    ads_try_connect(ads, ads->server.ldap_server, LDAP_PORT)) {
+		goto got_connection;
 	}
 
-	/* if that failed then try each of the BDC's in turn */
-	if (!ads->ld) {
-		struct in_addr *ip_list;
-		int count;
+	/* try with a smb.conf ads server setting if we are connecting
+           to the primary workgroup or realm */
+	if (!ads->server.foreign &&
+	    ads_try_connect(ads, lp_ads_server(), LDAP_PORT)) {
+		goto got_connection;
+	}
 
-		if (get_dc_list(False, ads->workgroup, &ip_list, &count)) {
-			int i;
-			for (i=0;i<count;i++) {
-				ads->ld = ldap_open(inet_ntoa(ip_list[i]),
-						    ads->ldap_port);
-				if (ads->ld) break;
-			}
-			if (ads->ld) {
-				SAFE_FREE(ads->ldap_server);
-				ads->ldap_server = strdup(inet_ntoa(ip_list[i]));
-			}
-			free(ip_list);
+	/* try via DNS */
+	if (ads_try_dns(ads)) {
+		goto got_connection;
 		}
+
+	/* try via netbios lookups */
+	if (!lp_disable_netbios() && ads_try_netbios(ads)) {
+		goto got_connection;
 	}
 
-	if (!ads->ld) {
-		return ADS_ERROR_SYSTEM(errno);
-	}
+	return ADS_ERROR_SYSTEM(errno?errno:ENOENT);
 
-	DEBUG(3,("Connected to LDAP server %s\n", ads->ldap_server));
+got_connection:
+	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap_ip)));
 
 	status = ads_server_info(ads);
 	if (!ADS_ERR_OK(status)) {
@@ -90,20 +246,41 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
+	if (!ads->auth.user_name) {
+		/* by default use the machine account */
+		extern pstring global_myname;
+		fstring myname;
+		fstrcpy(myname, global_myname);
+		strlower(myname);
+		asprintf(&ads->auth.user_name, "HOST/%s", myname);
+	}
+
+	if (!ads->auth.realm) {
+		ads->auth.realm = strdup(ads->config.realm);
+	}
+
+	if (!ads->auth.kdc_server) {
+		ads->auth.kdc_server = strdup(inet_ntoa(ads->ldap_ip));
+	}
+
 #if KRB5_DNS_HACK
 	/* this is a really nasty hack to avoid ADS DNS problems. It needs a patch
 	   to MIT kerberos to work (tridge) */
 	{
 		char *env;
-		asprintf(&env, "KRB5_KDC_ADDRESS_%s", ads->server_realm);
-		setenv(env, inet_ntoa(*interpret_addr2(ads->ldap_server)), 1);
+		asprintf(&env, "KRB5_KDC_ADDRESS_%s", ads->config.realm);
+		setenv(env, ads->auth.kdc_server, 1);
 		free(env);
 	}
 #endif
 
-	if (ads->password) {
+	if (ads->auth.password) {
 		if ((code = ads_kinit_password(ads)))
 			return ADS_ERROR_KRB5(code);
+	}
+
+	if (ads->auth.no_bind) {
+		return ADS_SUCCESS;
 	}
 
 	return ads_sasl_bind(ads);
@@ -161,7 +338,7 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		push_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
+		push_utf8_talloc(ctx, &values[i], in_vals[i]);
 	}
 	return values;
 }
@@ -180,7 +357,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		pull_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
+		pull_utf8_talloc(ctx, &values[i], in_vals[i]);
 	}
 	return values;
 }
@@ -219,8 +396,8 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, (void **) &utf8_exp, exp) < 0) ||
-	    (push_utf8_talloc(ctx, (void **) &utf8_path, bind_path) < 0)) {
+	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
+	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -230,7 +407,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
-			if (!(str_list_copy(&search_attrs, (char **) attrs)))
+		if (!(str_list_copy(&search_attrs, attrs)))
 		{
 			rc = LDAP_NO_MEMORY;
 			goto done;
@@ -442,8 +619,8 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, (void **) &utf8_exp, exp) < 0) ||
-	    (push_utf8_talloc(ctx, (void **) &utf8_path, bind_path) < 0)) {
+	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
+	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -453,7 +630,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
-		if (!(str_list_copy(&search_attrs, (char **) attrs)))
+		if (!(str_list_copy(&search_attrs, attrs)))
 		{
 			rc = LDAP_NO_MEMORY;
 			goto done;
@@ -494,7 +671,7 @@ ADS_STATUS ads_search(ADS_STRUCT *ads, void **res,
 		      const char *exp, 
 		      const char **attrs)
 {
-	return ads_do_search(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
+	return ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE, 
 			     exp, attrs, res);
 }
 
@@ -805,11 +982,11 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 
 	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", hostname)))
 		goto done;
-	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->realm)))
+	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm)))
 		goto done;
 	ou_str = ads_ou_string(org_unit);
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", hostname, ou_str, 
-				 ads->bind_path);
+				 ads->config.bind_path);
 	free(ou_str);
 	if (!new_dn)
 		goto done;
@@ -925,6 +1102,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 	} handlers[] = {
 		{"objectGUID", False, dump_binary},
 		{"nTSecurityDescriptor", False, dump_sd},
+		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
 		{NULL, True, NULL}
 	};
@@ -999,7 +1177,7 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 			char *field;
 			BOOL string; 
 
-			pull_utf8_talloc(ctx, (void **) &field, utf8_field);
+			pull_utf8_talloc(ctx, &field, utf8_field);
 			string = fn(field, NULL, data_area);
 
 			if (string) {
@@ -1061,7 +1239,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org
 		status = ads_leave_realm(ads, host);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("Failed to delete host '%s' from the '%s' realm.\n", 
-				  host, ads->realm));
+				  host, ads->config.realm));
 			return status;
 		}
 	}
@@ -1224,20 +1402,15 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	char *host = strdup(hostname);
 	char *principal; 
 
-        if (!ads->kdc_server) {
-		DEBUG(0, ("Unable to find KDC server\n"));
-		return ADS_ERROR(LDAP_SERVER_DOWN);
-	}
-
 	strlower(host);
 
 	/*
 	  we need to use the '$' form of the name here, as otherwise the
 	  server might end up setting the password for a user instead
 	 */
-	asprintf(&principal, "%s$@%s", host, ads->realm);
+	asprintf(&principal, "%s$@%s", host, ads->auth.realm);
 	
-	status = krb5_set_password(ads->kdc_server, principal, password);
+	status = krb5_set_password(ads->auth.kdc_server, principal, password);
 	
 	free(host);
 	free(principal);
@@ -1287,7 +1460,7 @@ char *ads_pull_string(ADS_STRUCT *ads,
 	if (!values) return NULL;
 	
 	if (values[0]) {
-		rc = pull_utf8_talloc(mem_ctx, (void **)&ux_string, 
+		rc = pull_utf8_talloc(mem_ctx, &ux_string, 
 				      values[0]);
 		if (rc != -1)
 			ret = ux_string;
@@ -1321,7 +1494,7 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 	ret = talloc(mem_ctx, sizeof(char *) * (n+1));
 
 	for (i=0;i<n;i++) {
-		if (pull_utf8_talloc(mem_ctx, (void **)&ret[i], values[i]) == -1) {
+		if (pull_utf8_talloc(mem_ctx, &ret[i], values[i]) == -1) {
 			return NULL;
 		}
 	}
@@ -1472,33 +1645,27 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
-	SAFE_FREE(ads->ldap_server_name);
+	SAFE_FREE(ads->config.ldap_server_name);
 
-	ads->ldap_server_name = strdup(p+1);
-	p = strchr(ads->ldap_server_name, '$');
+	ads->config.ldap_server_name = strdup(p+1);
+	p = strchr(ads->config.ldap_server_name, '$');
 	if (!p || p[1] != '@') {
 		ldap_value_free(values);
 		ldap_msgfree(res);
-		SAFE_FREE(ads->ldap_server_name);
+		SAFE_FREE(ads->config.ldap_server_name);
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
 	*p = 0;
 
-	SAFE_FREE(ads->server_realm);
-	SAFE_FREE(ads->bind_path);
+	SAFE_FREE(ads->config.realm);
+	SAFE_FREE(ads->config.bind_path);
 
-	ads->server_realm = strdup(p+2);
-	ads->bind_path = ads_build_dn(ads->server_realm);
-
-	/* in case the realm isn't configured in smb.conf */
-	if (!ads->realm || !ads->realm[0]) {
-		SAFE_FREE(ads->realm);
-		ads->realm = strdup(ads->server_realm);
-	}
+	ads->config.realm = strdup(p+2);
+	ads->config.bind_path = ads_build_dn(ads->config.realm);
 
 	DEBUG(3,("got ldap server name %s@%s\n", 
-		 ads->ldap_server_name, ads->realm));
+		 ads->config.ldap_server_name, ads->config.realm));
 
 	return ADS_SUCCESS;
 }
@@ -1514,9 +1681,13 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
  * @return the count of SIDs pulled
  **/
 ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
-			       int *num_trusts, char ***names, DOM_SID **sids)
+			       int *num_trusts, 
+			       char ***names, 
+			       char ***alt_names,
+			       DOM_SID **sids)
 {
-	const char *attrs[] = {"flatName", "securityIdentifier", NULL};
+	const char *attrs[] = {"name", "flatname", "securityIdentifier", 
+			       "trustDirection", NULL};
 	ADS_STATUS status;
 	void *res, *msg;
 	int count, i;
@@ -1533,11 +1704,31 @@ ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	}
 
 	(*names) = talloc(mem_ctx, sizeof(char *) * count);
+	(*alt_names) = talloc(mem_ctx, sizeof(char *) * count);
 	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * count);
 	if (! *names || ! *sids) return ADS_ERROR(LDAP_NO_MEMORY);
 
 	for (i=0, msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		(*names)[i] = ads_pull_string(ads, mem_ctx, msg, "flatName");
+		uint32 direction;
+
+		/* direction is a 2 bit bitfield, 1 means they trust us 
+		   but we don't trust them, so we should not list them
+		   as users from that domain can't login */
+		if (ads_pull_uint32(ads, msg, "trustDirection", &direction) &&
+		    direction == 1) {
+			continue;
+		}
+		
+		(*names)[i] = ads_pull_string(ads, mem_ctx, msg, "name");
+		(*alt_names)[i] = ads_pull_string(ads, mem_ctx, msg, "flatname");
+
+		if ((*alt_names)[i] && (*alt_names)[i][0]) {
+			/* we prefer the flatname as the primary name
+			   for consistency with RPC */
+			char *name = (*alt_names)[i];
+			(*alt_names)[i] = (*names)[i];
+			(*names)[i] = name;
+		}
 		if (ads_pull_sid(ads, msg, "securityIdentifier", &(*sids)[i])) {
 			i++;
 		}
@@ -1562,13 +1753,75 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 	void *res;
 	ADS_STATUS rc;
 
-	rc = ads_do_search(ads, ads->bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
+	rc = ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
 			   attrs, &res);
 	if (!ADS_ERR_OK(rc)) return rc;
 	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 	ads_msgfree(ads, res);
+	
+	return ADS_SUCCESS;
+}
+
+/* this is rather complex - we need to find the allternate (netbios) name
+   for the domain, but there isn't a simple query to do this. Instead
+   we look for the principle names on the DCs account and find one that has 
+   the right form, then extract the netbios name of the domain from that
+*/
+ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **workgroup)
+{
+	char *exp;
+	ADS_STATUS rc;
+	char **principles;
+	char *prefix;
+	int prefix_length;
+	int i;
+	void *res;
+	const char *attrs[] = {"servicePrincipalName", NULL};
+
+	(*workgroup) = NULL;
+
+	asprintf(&exp, "(&(objectclass=computer)(dnshostname=%s.%s))", 
+		 ads->config.ldap_server_name, ads->config.realm);
+	rc = ads_search(ads, &res, exp, attrs);
+	free(exp);
+
+	if (!ADS_ERR_OK(rc)) {
+		return rc;
+	}
+
+	principles = ads_pull_strings(ads, mem_ctx, res, "servicePrincipalName");
+
+	ads_msgfree(ads, res);
+
+	if (!principles) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	asprintf(&prefix, "HOST/%s.%s/", 
+		 ads->config.ldap_server_name, 
+		 ads->config.realm);
+
+	prefix_length = strlen(prefix);
+
+	for (i=0;principles[i]; i++) {
+		if (strncasecmp(principles[i], prefix, prefix_length) == 0 &&
+		    strcasecmp(ads->config.realm, principles[i]+prefix_length) != 0 &&
+		    !strchr(principles[i]+prefix_length, '.')) {
+			/* found an alternate (short) name for the domain. */
+			DEBUG(3,("Found alternate name '%s' for realm '%s'\n",
+				 principles[i]+prefix_length, 
+				 ads->config.realm));
+			(*workgroup) = talloc_strdup(mem_ctx, principles[i]+prefix_length);
+			break;
+		}
+	}
+	free(prefix);
+
+	if (!*workgroup) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
 	
 	return ADS_SUCCESS;
 }

@@ -282,20 +282,17 @@ smb_connect(char *workgroup,		/* I - Workgroup */
   get_myname(myname);  
   	
   nt_status = cli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
-				  username, lp_workgroup(), password, 0);
+				  username, workgroup, password, 0);
   
-  if (NT_STATUS_IS_OK(nt_status)) {
-	  return c;
-  } else {
+  if (!NT_STATUS_IS_OK(nt_status)) {
 	  fprintf(stderr, "ERROR:  Connection failed with error %s\n", nt_errstr(nt_status));
 	  return NULL;
   }
 
-
- /*
-  * Return the new connection...
-  */
-
+  /*
+   * Return the new connection...
+   */
+  
   return (c);
 }
 

@@ -49,23 +49,36 @@ static BOOL unixsam_getsampwrid (struct pdb_methods *methods,
 {
 	struct passwd *pass;
 	BOOL ret = False;
+	const char *guest_account = lp_guestaccount();
+	if (!(guest_account && *guest_account)) {
+		DEBUG(1, ("NULL guest account!?!?\n"));
+		return False;
+	}
+
 	if (!methods) {
 		DEBUG(0,("invalid methods\n"));
 		return False;
 	}
-
-	if (pdb_rid_is_user(rid)) {
-		pass = getpwuid_alloc(fallback_pdb_user_rid_to_uid (rid));
-		
-		if (pass) {
-			ret = NT_STATUS_IS_OK(pdb_fill_sam_pw(user, pass));
-			passwd_free(&pass);
+	
+	if (rid == DOMAIN_USER_RID_GUEST) {
+		pass = getpwnam_alloc(guest_account);
+		if (!pass) {
+			DEBUG(1, ("guest account %s does not seem to exist...\n", guest_account));
+			return False;
 		}
+	} else if (pdb_rid_is_user(rid)) {
+		pass = getpwuid_alloc(fallback_pdb_user_rid_to_uid (rid));
+	} else {
+		return False;
 	}
+
+	ret = NT_STATUS_IS_OK(pdb_fill_sam_pw(user, pass));
+	passwd_free(&pass);
+
 	return ret;
 }
 
-static BOOL unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))

@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Jim McDonough   2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -439,6 +440,28 @@ BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 	return True;
 }
 
+/*
+  generate a minimal SPNEGO NTLMSSP response packet.  Doesn't contain much.
+*/
+DATA_BLOB spnego_gen_auth_response(void)
+{
+	ASN1_DATA data;
+	DATA_BLOB ret;
+
+	memset(&data, 0, sizeof(data));
+
+	asn1_push_tag(&data, ASN1_CONTEXT(1));
+	asn1_push_tag(&data, ASN1_SEQUENCE(0));
+	asn1_push_tag(&data, ASN1_CONTEXT(0));
+	asn1_write_enumerated(&data, 0);	
+	asn1_pop_tag(&data);
+	asn1_pop_tag(&data);
+	asn1_pop_tag(&data);
+
+	ret = data_blob(data.data, data.length);
+	asn1_free(&data);
+	return ret;
+}
 
 /*
   this is a tiny msrpc packet generator. I am only using this to
@@ -449,6 +472,7 @@ BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
   format specifiers are:
 
   U = unicode string (input is unix string)
+  a = address (1 byte type, 1 byte length, unicode string, all inline)
   B = data blob (pointer + length)
   b = data blob in header (pointer + length)
   d = word (4 bytes)
@@ -472,6 +496,11 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			s = va_arg(ap, char *);
 			head_size += 8;
 			data_size += str_charnum(s) * 2;
+			break;
+		case 'a':
+			n = va_arg(ap, int);
+			s = va_arg(ap, char *);
+			data_size += (str_charnum(s) * 2) + 4;
 			break;
 		case 'B':
 			b = va_arg(ap, uint8 *);
@@ -512,6 +541,19 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			push_string(NULL, blob->data+data_ofs, s, n*2, STR_UNICODE|STR_NOALIGN);
 			data_ofs += n*2;
 			break;
+		case 'a':
+			n = va_arg(ap, int);
+			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
+			s = va_arg(ap, char *);
+			n = str_charnum(s);
+			SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
+			if (0 < n) {
+				push_string(NULL, blob->data+data_ofs, s, n*2,
+					    STR_UNICODE|STR_NOALIGN);
+			}
+			data_ofs += n*2;
+			break;
+			
 		case 'B':
 			b = va_arg(ap, uint8 *);
 			n = va_arg(ap, int);
@@ -550,6 +592,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
   format specifiers are:
 
   U = unicode string (output is unix string)
+  A = ascii string
   B = data blob
   b = data blob in header
   d = word (4 bytes)
@@ -583,6 +626,24 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 			pull_string(NULL, p, blob->data + ptr, -1, len1, 
 				    STR_UNICODE|STR_NOALIGN);
 			(*ps) = strdup(p);
+			break;
+		case 'A':
+			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
+
+			/* make sure its in the right format - be strict */
+			if (len1 != len2 || ptr + len1 > blob->length) {
+				return False;
+			}
+			ps = va_arg(ap, char **);
+			if (0 < len1) {
+				pull_string(NULL, p, blob->data + ptr, -1, 
+					    len1, STR_ASCII|STR_NOALIGN);
+				(*ps) = strdup(p);
+			} else {
+				(*ps) = NULL;
+			}
 			break;
 		case 'B':
 			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;

@@ -54,7 +54,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 
 	/* setup a full fsp */
 	fsp->print_jobid = jobid;
-	fsp->fd = print_job_fd(jobid);
+	fsp->fd = print_job_fd(SNUM(conn),jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
 	fsp->size = 0;
@@ -70,7 +70,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->is_directory = False;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
-	string_set(&fsp->fsp_name,print_job_fname(jobid));
+	string_set(&fsp->fsp_name,print_job_fname(SNUM(conn),jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
 	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
@@ -96,7 +96,7 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 		sys_ftruncate(fsp->fd, 0);
 	}
 
-	print_job_end(fsp->print_jobid, normal_close);
+	print_job_end(SNUM(fsp->conn),fsp->print_jobid, normal_close);
 
 	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);

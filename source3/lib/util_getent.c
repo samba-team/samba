@@ -21,27 +21,6 @@
 
 #include "includes.h"
 
-#if 0
-static void print_grent_list(struct sys_grent *glist)
-{
-	DEBUG(100, ("print_grent_list: %x\n", glist ));
-	while (glist) {
-		DEBUG(100,("glist: %x ", glist));
-		if (glist->gr_name)
-			DEBUG(100,(": gr_name = (%x) %s ", glist->gr_name, glist->gr_name));
-		if (glist->gr_passwd)
-			DEBUG(100,(": gr_passwd = (%x) %s ", glist->gr_passwd, glist->gr_passwd));
-		if (glist->gr_mem) {
-			int i;
-			for (i = 0; glist->gr_mem[i]; i++)
-				DEBUG(100,(" : gr_mem[%d] = (%x) %s ", i, glist->gr_mem[i], glist->gr_mem[i]));
-		}
-		DEBUG(100,(": gr_next = %x\n", glist->next ));
-		glist = glist->next;
-	}
-	DEBUG(100,("FINISHED !\n\n"));
-}
-#endif
 
 /****************************************************************
  Returns a single linked list of group entries.

@@ -557,6 +557,8 @@ struct packet_struct
 #define SAMLOGON	18
 #define SAMLOGON_R	19
 #define SAMLOGON_UNK_R	21
+#define SAMLOGON_AD_UNK_R 23
+#define SAMLOGON_AD_R   25
 
 /* Ids for netbios packet types. */
 

@@ -107,7 +107,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	memcpy(client_response, ntv2_response.data, sizeof(client_response));
 
 	ntv2_owf_gen(part_passwd, user, domain, kr);
-	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, (char *)value_from_encryption);
+	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, value_from_encryption);
 	if (user_sess_key != NULL)
 	{
 		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key);
@@ -232,11 +232,26 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		{
 			return NT_STATUS_OK;
 		} else {
+			if (lp_ntlm_auth()) {				
+				/* Apparently NT accepts NT responses in the LM feild
+				   - I think this is related to Win9X pass-though authenticaion
+				*/
+				DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM feild\n"));
+				if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
+							 nt_pw, auth_context->challenge,
+							 user_sess_key)) 
+				{
+					return NT_STATUS_OK;
+				} else {
+					DEBUG(3,("sam_password_ok: NT MD4 password in LM feild failed for user %s\n",pdb_get_username(sampass)));
+					return NT_STATUS_WRONG_PASSWORD;
+				}
+			}
 			DEBUG(4,("sam_password_ok: LM password check failed for user %s\n",pdb_get_username(sampass)));
 			return NT_STATUS_WRONG_PASSWORD;
 		} 
 	}
-
+		
 	/* Should not be reached, but if they send nothing... */
 	DEBUG(3,("sam_password_ok: NEITHER LanMan nor NT password supplied for user %s\n",pdb_get_username(sampass)));
 	return NT_STATUS_WRONG_PASSWORD;

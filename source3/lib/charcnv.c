@@ -249,15 +249,15 @@ convert:
 size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
-	void *ob;
+	void *alloced_string;
 	size_t dest_len;
 
 	*dest = NULL;
-	dest_len=convert_string_allocate(from, to, src, srclen, (void **)&ob);
+	dest_len=convert_string_allocate(from, to, src, srclen, &alloced_string);
 	if (dest_len == -1)
 		return -1;
-	*dest = talloc_strdup(ctx, (char *)ob);
-	SAFE_FREE(ob);
+	*dest = talloc_memdup(ctx, alloced_string, dest_len);
+	SAFE_FREE(alloced_string);
 	if (*dest == NULL)
 		return -1;
 	return dest_len;
@@ -505,12 +505,12 @@ int push_utf8_pstring(void *dest, const char *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int push_utf8_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+int push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	int src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void**)dest);
 }
 
 /**
@@ -562,7 +562,8 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 	}
 
 	/* ucs2 is always a multiple of 2 bytes */
-	src_len &= ~1;
+	if (src_len != -1)
+		src_len &= ~1;
 	
 	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
@@ -658,11 +659,11 @@ int pull_utf8_fstring(char *dest, const void *src)
  *
  * @retval The number of bytes occupied by the string in the destination
  **/
-int pull_utf8_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+int pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	int src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, dest);	
+	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);	
 }
 
 /**

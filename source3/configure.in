@@ -746,7 +746,7 @@ AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
-AC_CHECK_FUNCS(syslog vsyslog)
+AC_CHECK_FUNCS(syslog vsyslog getgrouplist)
 # setbuffer is needed for smbtorture
 AC_CHECK_FUNCS(setbuffer)
 
@@ -2695,6 +2695,7 @@ WINBIND_PAM_PROGS=""
 
 if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_WINBIND)
 
 	WINBIND_TARGETS="bin/wbinfo"
 	WINBIND_STARGETS="bin/winbindd"
@@ -2707,30 +2708,6 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 else
         AC_MSG_RESULT(no$winbind_no_reason)
 fi
-
-
-# Check for FreeBSD problem with getgroups
-# It returns EGID too many times in the list of groups
-# and causes a security problem
-AC_CACHE_CHECK([whether or not getgroups returns EGID too many times],
-    samba_cv_have_getgroups_too_many_egids,[AC_TRY_RUN([
-#include <sys/types.h>
-#include <stdio.h>
-
-int main(int argc, char *argv[])
-{
-  gid_t groups[10];
-  int n = 10;
-
-  n = getgroups(n, &groups);
-  /* Could actually pass back the number of EGIDs there ... */
-  exit((n > 1 && groups[0] == getegid() && groups[1] == getegid()) ? 1 : 0);
-}],
-	samba_cv_have_getgroups_too_many_egids=no,samba_cv_have_getgroups_too_many_egids=yes, samba_cv_have_getgroups_too_many_egids=cross)])
-if test x"$samba_cv_have_getgroups_too_many_egids" = x"yes"; then
-    AC_DEFINE(HAVE_GETGROUPS_TOO_MANY_EGIDS)
-fi
-
 
 
 # Substitution time!
@@ -2791,7 +2768,7 @@ fi
 
 AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" = x"yes"; then
-    AC_MSG_RESULT($srcdir/popt)
+    AC_MSG_RESULT(yes)
     BUILD_POPT='$(POPT_OBJS)'
     FLAGS1="-I$srcdir/popt"
 else
@@ -2820,7 +2797,7 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile script/findsmb)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/VFS/block/Makefile)
 
 #################################################
 # Print very concise instructions on building/use

@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell                 1992-1997.
+   Copyright (C) Luke Kenneth Casson Leighton    1996-1997.
+   Copyright (C) Paul Ashton                          1997.
+   Copyright (C) Gerald Carter                        2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,35 +27,35 @@
 
 /* winreg pipe defines 
    NOT IMPLEMENTED !!
-#define REG_OPEN_HKCR		0x00
 #define _REG_UNK_01		0x01
 #define _REG_UNK_03		0x03
 #define REG_CREATE_KEY		0x06
 #define REG_DELETE_KEY		0x07
 #define REG_DELETE_VALUE	0x08
-#define REG_ENUM_VALUE		0x0a
 #define REG_FLUSH_KEY		0x0b
 #define REG_GET_KEY_SEC		0x0c
 #define	_REG_UNK_0D		0x0d
 #define _REG_UNK_0E		0x0e
 #define	_REG_UNK_12		0x12
 #define _REG_UNK_13		0x13
-#define	_REG_UNK_14		0x14
 #define REG_SET_KEY_SEC		0x15
 #define REG_CREATE_VALUE	0x16
 #define	_REG_UNK_17		0x17
 */
 
 /* Implemented */
+#define REG_OPEN_HKCR		0x00
 #define REG_OPEN_HKLM		0x02
 #define REG_OPEN_HKU		0x04
 #define REG_CLOSE		0x05
 #define REG_ENUM_KEY		0x09
+#define REG_ENUM_VALUE		0x0a
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
 #define REG_INFO		0x11
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
+#define	REG_SAVE_KEY		0x14	/* no idea what the real name is */
 #define REG_UNKNOWN_1A		0x1a
 
 
@@ -62,6 +63,12 @@
 #define HKEY_CURRENT_USER	0x80000001
 #define HKEY_LOCAL_MACHINE 	0x80000002
 #define HKEY_USERS         	0x80000003
+
+#define KEY_HKLM	"HKLM"
+#define KEY_HKU		"HKU"
+#define KEY_HKCR	"HKCR"
+#define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
+#define KEY_TREE_ROOT	""
 
 /* Registry data types */
 
@@ -81,6 +88,65 @@
 /* Shutdown options */
 #define REG_FORCE_SHUTDOWN 0x001
 #define REG_REBOOT_ON_SHUTDOWN 0x100
+
+/* structure to contain registry values */
+
+typedef struct {
+	fstring		valuename;
+	uint16		type;
+	uint32		size;	/* in bytes */
+	uint8           *data_p;
+} REGISTRY_VALUE;
+
+/* container for regostry values */
+
+typedef struct {
+	TALLOC_CTX      *ctx;
+	uint32          num_values;
+	REGISTRY_VALUE	**values;
+} REGVAL_CTR;
+
+/* container for registry subkey names */
+
+typedef struct {
+	TALLOC_CTX	*ctx;
+	uint32          num_subkeys;
+	char            **subkeys;
+} REGSUBKEY_CTR;
+
+
+/* 
+ * container for function pointers to enumeration routines
+ * for vitural registry view 
+ */ 
+ 
+typedef struct {
+	/* functions for enumerating subkeys and values */	
+	int 	(*subkey_fn)( char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*value_fn) ( char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys_fn)( char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values_fn)( char *key, REGVAL_CTR *val );
+} REGISTRY_OPS;
+
+typedef struct {
+	char		*keyname;	/* full path to name of key */
+	REGISTRY_OPS	*ops;		/* registry function hooks */
+} REGISTRY_HOOK;
+
+
+
+/* structure to store the registry handles */
+
+typedef struct _RegistryKey {
+
+	struct _RegistryKey *prev, *next;
+
+	POLICY_HND	hnd;
+	pstring 	name; 	/* full name of registry key */
+	REGISTRY_HOOK	*hook;
+	
+} REGISTRY_KEY;
+
 
 /* REG_Q_OPEN_HKCR   */
 typedef struct q_reg_open_hkcr_info
@@ -107,7 +173,7 @@ typedef struct q_reg_open_hklm_info
 	uint32 ptr;
 	uint16 unknown_0;	/* 0xE084      - 16 bit unknown */
 	uint16 unknown_1;	/* random.  changes */
-	uint32 access_mask;	/* 0x0000 0002 - 32 bit unknown */
+	uint32 access_mask;
 
 }
 REG_Q_OPEN_HKLM;
@@ -246,6 +312,7 @@ typedef struct q_reg_query_value_info
 	uint32 ptr2;       /* pointer */
 	uint32 len_value2; /* */
 
+
 } REG_Q_ENUM_VALUE;
 
 /* REG_R_ENUM_VALUE */
@@ -258,7 +325,7 @@ typedef struct r_reg_enum_value_info
 	uint32 type;        /* 1 = UNISTR, 3 = BYTES, 4 = DWORD, 7 = MULTI_UNISTR */
 
 	uint32 ptr_value;       /* pointer */
-	BUFFER2 *buf_value;    /* value, in byte buffer */
+	BUFFER2 buf_value;    /* value, in byte buffer */
 
 	uint32 ptr1;            /* pointer */
 	uint32 len_value1;       /* */
@@ -388,6 +455,29 @@ typedef struct r_reg_unk_1a_info
 } REG_R_UNKNOWN_1A;
 
 
+/* REG_Q_UNKNOWN_1A */
+typedef struct q_reg_unknown_14
+{
+	POLICY_HND pol;       /* policy handle */
+	
+	UNIHDR  hdr_file;	/* unicode product type header */
+	UNISTR2 uni_file;	/* local filename to save key as from regedt32.exe */
+				/* e.g. "c:\temp\test.dat" */
+	
+	uint32 unknown;		/* 0x0000 0000 */
+
+} REG_Q_SAVE_KEY;
+
+
+/* REG_R_UNKNOWN_1A */
+typedef struct r_reg_unknown_14
+{
+	NTSTATUS status;         /* return status */
+
+} REG_R_SAVE_KEY;
+
+
+
 /* REG_Q_CLOSE */
 typedef struct reg_q_close_info
 {
@@ -481,7 +571,7 @@ typedef struct r_reg_info_info
 	uint32 type;		/* key datatype  */
 
 	uint32 ptr_uni_val;	/* key value pointer */
-	BUFFER2 *uni_val;	/* key value */
+	BUFFER2 uni_val;	/* key value */
 
 	uint32 ptr_max_len;
 	uint32 buf_max_len;

@@ -354,7 +354,8 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
 	 * Only updates fields which have been set (not defaults from smb.conf)
 	 */
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE)) dir_drive = pdb_get_dirdrive(sampass);
+	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE)) 
+	  dir_drive = pdb_get_dir_drive(sampass);
 	else dir_drive = NULL;
 	if (dir_drive) dir_drive_len = strlen(dir_drive) +1;
 	else dir_drive_len = 0;
@@ -541,7 +542,7 @@ static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user
 		/* increment to next in line */
 		tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
 
-	/* do we have an valid interation pointer? */
+	/* do we have an valid iteration pointer? */
 	if(tdb_state->passwd_tdb == NULL) {
 		DEBUG(0,("pdb_get_sampwent: Bad TDB Context pointer.\n"));
 		return False;
@@ -668,7 +669,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	return tdbsam_getsampwnam (my_methods, user, name);
 }
 
-static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))

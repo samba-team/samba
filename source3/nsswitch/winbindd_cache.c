@@ -873,13 +873,14 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_domains,
 				char ***names,
+				char ***alt_names,
 				DOM_SID **dom_sids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 
 	/* we don't cache this call */
 	return cache->backend->trusted_domains(domain, mem_ctx, num_domains, 
-					       names, dom_sids);
+					       names, alt_names, dom_sids);
 }
 
 /* find the domain sid */
@@ -889,6 +890,15 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 
 	/* we don't cache this call */
 	return cache->backend->domain_sid(domain, sid);
+}
+
+/* find the alternate names for the domain, if any */
+static NTSTATUS alternate_name(struct winbindd_domain *domain)
+{
+	struct winbind_cache *cache = get_cache(domain);
+
+	/* we don't cache this call */
+	return cache->backend->alternate_name(domain);
 }
 
 /* the ADS backend methods are exposed via this structure */
@@ -903,5 +913,6 @@ struct winbindd_methods cache_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid
+	domain_sid,
+	alternate_name
 };

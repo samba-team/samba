@@ -123,7 +123,7 @@ static BOOL context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_ac
 	return False;
 }
 
-static BOOL context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, DOM_SID *sid)
+static BOOL context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 {
 	struct pdb_methods *curmethods;
 	if ((!context)) {
@@ -353,7 +353,7 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected)
 NTSTATUS make_pdb_context_string(struct pdb_context **context, const char *selected) 
 {
 	NTSTATUS ret;
-	char **newsel = str_list_make(selected);
+	char **newsel = str_list_make(selected, NULL);
 	ret = make_pdb_context_list(context, newsel);
 	str_list_free(&newsel);
 	return ret;
@@ -434,7 +434,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 	return pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username);
 }
 
-BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, DOM_SID *sid) 
+BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 

@@ -25,7 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern fstring remote_machine;
 extern pstring global_myname;
 
 /****************************************************************************
@@ -394,7 +393,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	
 	ret = make_user_info_map(user_info, smb_name,
 				 client_domain, 
-				 remote_machine,
+				 get_remote_machine_name(),
 				 local_lm_blob,
 				 local_nt_blob,
 				 plaintext_password, 
@@ -429,7 +428,7 @@ BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
 
 	return make_user_info_map(user_info, smb_name, 
 				 client_domain, 
-				 remote_machine, 
+				 get_remote_machine_name(), 
 				 lm_resp, 
 				 nt_resp, 
 				 no_plaintext_blob, 
