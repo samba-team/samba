@@ -2,9 +2,10 @@
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-# Copyright Andrew Barteltt 2002
+# Copyright (C) 2002 Andrew Bartlett <abartlet@samba.org>
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
 # Copyright (C) 2003 James Myers <myersjj@samba.org>
+# Copyright (C) 2002-2003 Jelmer Vernooij <jelmer@samba.org>
 ###########################################################################
 
 prefix=@prefix@
@@ -123,10 +124,9 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 # QUOTAOBJS=@QUOTAOBJS@
 
-VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ \
-	bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
-PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
-MODULES = bin/developer.@SHLIBEXT@ 
+VFS_MODULES = @NTVFS_MODULES@
+CHARSET_MODULES = @CHARSET_MODULES@
+MODULES = $(NTVFS_MODULES) $(CHARSET_MODULES)
 
 ######################################################################
 # object file lists
@@ -246,8 +246,6 @@ DEVEL_HELP_OBJ = modules/developer.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
-# passdb/smbpass.o passdb/ldap.o passdb/nispass.o 
-
 #PROFILE_OBJ = profile/profile.o
 
 # OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
@@ -269,9 +267,9 @@ MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash
 
 SMBD_OBJ_MAIN = smbd/server.o
 
-CSM_NTVFS_MAIN = ntvfs/tank/vfs_tank.o
+NTVFS_CSM_MAIN = ntvfs/tank/vfs_tank.o
 #we don't want these in main proto.h
-CSM_NTVFS_OBJ = ntvfs/tank/csm_init.o ntvfs/tank/csm_unlink.o \
+NTVFS_CSM_OBJ = ntvfs/tank/csm_init.o ntvfs/tank/csm_unlink.o \
 		ntvfs/tank/csm_util.o ntvfs/tank/csm_error.o ntvfs/tank/csm_lookup.o \
 		ntvfs/tank/csm_blockmap.o ntvfs/tank/csm_dir.o \
 		ntvfs/tank/csm_fcntl.o ntvfs/tank/csm_io.o ntvfs/tank/csm_mkdir.o \
@@ -279,10 +277,16 @@ CSM_NTVFS_OBJ = ntvfs/tank/csm_init.o ntvfs/tank/csm_unlink.o \
 		ntvfs/tank/csm_attr.o ntvfs/tank/csm_truncate.o \
 		ntvfs/tank/csm_fd.o
 
-SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o ntvfs/ntvfs_generic.o \
-	ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o \
-	ntvfs/ipc/vfs_ipc.o ntvfs/cifs/vfs_cifs.o \
-	ntvfs/print/vfs_print.o
+STFS_LIBS = -L/usr/lib -L/usr/src/newport/csm/lib -Wl,"-(,-lcsm,-lcsmlinuxusp,-)"
+
+NTVFS_CIFS_OBJ = ntvfs/cifs/vfs_cifs.o
+NTVFS_SIMPLE_OBJ = ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o
+NTVFS_IPC_OBJ = ntvfs/ipc/vfs_ipc.o
+NTVFS_PRINT_OBJ = ntvfs/print/vfs_print.o
+NTVFS_POSIX_OBJ = ntvfs/posix/vfs_posix.o
+
+SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o \
+	ntvfs/ntvfs_generic.o @NTVFS_STATIC@
 
 SMBD_OBJ_SRV = smbd/connection.o \
 	       smbd/session.o \
