@@ -395,9 +395,11 @@ static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *f
 	}
 
 	if (ret == -1) {
+#ifdef ENOTSUP
 		if (errno == ENOTSUP) {
 			return NT_STATUS_EAS_NOT_SUPPORTED;
 		}
+#endif
 		return map_nt_error_from_unix(errno);
 	}
 
