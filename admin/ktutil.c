@@ -474,6 +474,26 @@ fail:
     return 0;
 }
 
+static int
+kt_change (int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
+
+    ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+    if(ret){
+	krb5_warn(context, ret, "krb5_kt_start_seq_get");
+	return 1;
+    }
+    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0) {
+
+	krb5_kt_free_entry (context, &entry);
+    }
+    ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+    return 0;
+}
+
 static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
@@ -493,6 +513,8 @@ static SL_cmd cmds[] = {
       "remove key from keytab" },
     { "copy",		kt_copy,	"copy src dst",
       "copy one keytab to another" },
+    { "change",		kt_change,	"change [principal...]",
+      "get new key for principals (all)" },
     { "help",		help,		"help",			"" },
     { NULL, 	NULL,		NULL, 			NULL }
 };
