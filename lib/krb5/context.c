@@ -88,31 +88,33 @@ krb5_free_context(krb5_context context)
   free(context);
 }
 
-
 /*
  * XXX - This information needs to be coordinated with encrypt.c
  */
 
 static krb5_boolean
-valid_etype(krb5_enctype e)
+valid_etype(krb5_context context, krb5_enctype e)
 {
-  return e == ETYPE_DES_CBC_CRC
-      || e == ETYPE_DES_CBC_MD4
-      || e == ETYPE_DES_CBC_MD5;
+    krb5_keytype thrash;
+
+    return e != ETYPE_NULL
+	&& krb5_etype_to_keytype(context, e, &thrash) == 0;
 }
 
 static krb5_error_code
 default_etypes(krb5_enctype **etype)
 {
   krb5_enctype *p;
-  ALLOC(p, 4);
+  ALLOC(p, 6);
   if(!p)
     return ENOMEM;
-  p[0] = ETYPE_DES_CBC_MD5;
-  p[1] = ETYPE_DES_CBC_MD4;
-  p[2] = ETYPE_DES_CBC_CRC;
-  p[3] = 0;
   *etype = p;
+  *p++ = ETYPE_DES3_CBC_SHA1;
+  *p++ = ETYPE_DES3_CBC_MD5;
+  *p++ = ETYPE_DES_CBC_MD5;
+  *p++ = ETYPE_DES_CBC_MD4;
+  *p++ = ETYPE_DES_CBC_CRC;
+  *p++ = 0;
   return 0;
 }
 
@@ -126,7 +128,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
   if(etypes) {
     i = 0;
     while(etypes[i])
-      if(!valid_etype(etypes[i++]))
+      if(!valid_etype(context, etypes[i++]))
 	return KRB5_PROG_ETYPE_NOSUPP;
     ++i;
     ALLOC(p, i);
