@@ -158,10 +158,11 @@ static int negprot_spnego(char *p)
 	DATA_BLOB blob;
 	extern pstring global_myname;
 	uint8 guid[16];
-	const char *OIDs[] = {OID_NTLMSSP,
-			      OID_KERBEROS5,
-			      OID_KERBEROS5_OLD,
-			      NULL};
+	const char *OIDs_krb5[] = {OID_NTLMSSP,
+				   OID_KERBEROS5,
+				   OID_KERBEROS5_OLD,
+				   NULL};
+	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 	char *principal;
 	int len;
 
@@ -171,17 +172,25 @@ static int negprot_spnego(char *p)
 	safe_strcpy((char *)guid, global_myname, 16);
 	strlower((char *)guid);
 
+#if 0
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
-	   not a ADS member, it sends no OIDs at all */
+	   not a ADS member, it sends no OIDs at all
+
+	   we can't do this until we teach our sesssion setup parser to know
+	   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)
+	*/
 	if (lp_security() != SEC_ADS) {
 		memcpy(p, guid, 16);
 		return 16;
 	}
+#endif
 
 	/* win2000 uses host$@REALM, which we will probably use eventually,
 	   but for now this works */
 	asprintf(&principal, "HOST/%s@%s", guid, lp_realm());
-	blob = spnego_gen_negTokenInit(guid, OIDs, principal);
+	blob = spnego_gen_negTokenInit(guid, 
+				       lp_security()==SEC_ADS ? OIDs_krb5 : OIDs_plain, 
+				       principal);
 	free(principal);
 
 	memcpy(p, blob.data, blob.length);
