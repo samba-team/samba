@@ -411,7 +411,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	}
 	else
 	{
-		cli->cli->smb->nt.key.pid = sys_getpid();
+		cli->cli->smb->nt.key.pid = 0;
 		cli->cli->smb->nt.key.vuid = UID_FIELD_INVALID;
 #if 0
 		NET_USER_INFO_3 usr;
