@@ -63,6 +63,8 @@ OM_uint32 gss_delete_sec_context
 			  (*context_handle)->ticket);
 	free((*context_handle)->ticket);
     }
+    if((*context_handle)->order)
+	gssapi_msg_order_destroy(&(*context_handle)->order);
 
     HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
