@@ -1,3 +1,7 @@
+1999-07-26  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: set version to 0:1:0
+
 Wed Apr  7 14:05:15 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* display_status.c: set minor_status

@@ -1,5 +1,7 @@
 1999-07-26  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am: set version to 1:0:1
+
 	* roken.h.in (inet_ntop): add prototype
 
  	* roken-common.h: (INET{,6}_ADDRSTRLEN): add

@@ -1,3 +1,7 @@
+1999-07-26  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: update versions to 2:0:1
+
 1999-07-24  Assar Westerlund  <assar@sics.se>
 
 	* ent_setup.c (_kadm5_setup_entry): make princ_expire_time == 0
