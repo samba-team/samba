@@ -914,7 +914,7 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		switch (opt)
 		{
 			case 'm':
-				safe_strcpy(msg, optarg, sizeof(msg)-1);
+				fstrcpy(msg, optarg);
 				/*fprintf (stderr, "[%s|%s]\n", optarg, msg);*/
 				break;
 
