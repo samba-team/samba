@@ -453,6 +453,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		last_set_time = secrets_fetch(key, &size);
 		if (last_set_time) {
 			*pass_last_set_time = IVAL(last_set_time,0);
+			SAFE_FREE(last_set_time);
 		} else {
 			*pass_last_set_time = 0;
 		}
@@ -467,6 +468,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		channel_type = secrets_fetch(key, &size);
 		if (channel_type) {
 			*channel = IVAL(channel_type,0);
+			SAFE_FREE(channel_type);
 		} else {
 			*channel = get_default_sec_channel();
 		}
