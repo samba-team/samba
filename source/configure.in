@@ -838,14 +838,6 @@ if test x"$samba_cv_REPLACE_GETPASS" = x"yes"; then
 	AC_DEFINE(REPLACE_GETPASS)
 fi
 
-AC_CACHE_CHECK([for working fnmatch],samba_cv_HAVE_FNMATCH,[
-AC_TRY_RUN([#include <fnmatch.h>
-main() { exit(fnmatch("*.o", "x.o", FNM_PATHNAME) == 0? 0: 1); }],
-samba_cv_HAVE_FNMATCH=yes,samba_cv_HAVE_FNMATCH=no,samba_cv_HAVE_FNMATCH=cross)])
-if test x"$samba_cv_HAVE_FNMATCH" = x"yes"; then
-    AC_DEFINE(HAVE_FNMATCH)
-fi
-
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
