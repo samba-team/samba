@@ -751,8 +751,8 @@ do_query:
 		if (domain->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
-						(*info)[i].acct_name, 
 						domain->name,
+						(*info)[i].acct_name, 
 						(*info)[i].user_sid,
 						SID_NAME_USER);
 			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
