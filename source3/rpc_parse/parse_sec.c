@@ -149,7 +149,7 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 	{
 		/* reading */
 		t->ace = malloc(sizeof(t->ace[0]) * t->num_aces);
-		ZERO_STRUCTP(t->ace);
+		ZERO_STRUCTPN(t->ace);
 	}
 
 	if (t->ace == NULL && t->num_aces != 0)
@@ -316,7 +316,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		{
 			/* reading */
 			t->dacl = malloc(sizeof(*t->dacl));
-			ZERO_STRUCTP(t->dacl);
+			ZERO_STRUCTPN(t->dacl);
 		}
 
 		if (t->dacl == NULL)
@@ -348,7 +348,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		{
 			/* reading */
 			t->sacl = malloc(sizeof(*t->sacl));
-			ZERO_STRUCTP(t->sacl);
+			ZERO_STRUCTPN(t->sacl);
 		}
 
 		if (t->sacl == NULL)
@@ -383,7 +383,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		{
 			/* reading */
 			t->owner_sid = malloc(sizeof(*t->owner_sid));
-			ZERO_STRUCTP(t->owner_sid);
+			ZERO_STRUCTPN(t->owner_sid);
 		}
 
 		if (t->owner_sid == NULL)
@@ -412,7 +412,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		{
 			/* reading */
 			t->grp_sid = malloc(sizeof(*t->grp_sid));
-			ZERO_STRUCTP(t->grp_sid);
+			ZERO_STRUCTPN(t->grp_sid);
 		}
 
 		if (t->grp_sid == NULL)
@@ -485,7 +485,7 @@ void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 	{
 		/* reading */
 		sec->sec = malloc(sizeof(*sec->sec));
-		ZERO_STRUCTP(sec->sec);
+		ZERO_STRUCTPN(sec->sec);
 
 		if (sec->sec == NULL)
 		{
