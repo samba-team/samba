@@ -595,6 +595,12 @@ For example, these all connect to the samr pipe:
    ncacn_ip_tcp:myserver:[1024,sign,seal]
 
 
+IDEA: Maybe extend UNC names like this?
+
+ smbclient //server/share
+ smbclient //server/share:[sign,seal,spnego]
+
+
 
 
 MSRPC
