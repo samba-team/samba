@@ -250,166 +250,6 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 #include <mntent.h>
 #endif
 
-#if defined(SUNOS5)
-
-/****************************************************************************
- Allows querying of remote hosts for quotas on NFS mounted shares.
- Supports normal NFS and AMD mounts.
- Alan Romeril <a.romeril@ic.ac.uk> July 2K.
-****************************************************************************/
-
-#include <rpc/rpc.h>
-#include <rpc/types.h>
-#include <rpcsvc/rquota.h>
-#include <rpc/nettype.h>
-#include <rpc/xdr.h>
-
-static int quotastat;
-
-static int xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
-{
-	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
-		return(0);
-	if (!xdr_int(xdrsp, &args->gqa_uid))
-		return(0);
-	return (1);
-}
-
-static int xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
-{
-	gqr_status status;
-	union { 
-		rquota gqr_rquota;
-	} getquota_rslt_u;
-   
-	if (!xdr_int(xdrsp, &quotastat)) {
-		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_int32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsize)) {
-		DEBUG(6,("nfs_quotas: Block size bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_bool(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_active)) {
-		DEBUG(6,("nfs_quotas: Active bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_uint32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bhardlimit)) {
-		DEBUG(6,("nfs_quotas: Hardlimit bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_uint32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsoftlimit)) {
-		DEBUG(6,("nfs_quotas: Softlimit bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_uint32_t(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_curblocks)) {
-		DEBUG(6,("nfs_quotas: Currentblocks bad or zero\n"));
-		return 0;
-	}
-	return (1);
-}
-
-/* Restricted to SUNOS5 for the moment, I haven`t access to others to test. */ 
-static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
-{
-	uid_t uid = euser_id;
-	struct dqblk D;
-	char *mnttype = nfspath;
-	CLIENT *clnt;
-	struct getquota_rslt gqr;
-	struct getquota_args args;
-	char *cutstr, *pathname, *host, *testpath;
-	int len;
-	static struct timeval timeout = {2,0};
-	enum clnt_stat clnt_stat;
-
-	len=strcspn(mnttype, ":");
-	pathname=strstr(mnttype, ":");
-	cutstr = (char *) malloc(sizeof(char) * len );
-	if (!cutstr)
-		return False;
-
-	host = strncat(cutstr,mnttype, sizeof(char) * len );
-	DEBUG(5,("nfs_quotas: looking for mount on \"%s\"\n", cutstr));
-	DEBUG(5,("nfs_quotas: of path \"%s\"\n", mnttype));
-	testpath=strchr(mnttype, ':');
-	args.gqa_pathp = testpath+1;
-	args.gqa_uid = uid;
-
-	DEBUG(5,("nfs_quotas: Asking for host \"%s\" rpcprog \"%i\" rpcvers \"%i\"
-network \"%s\"\n", host, RQUOTAPROG, RQUOTAVERS, "udp"));
-
-	if ((clnt = clnt_create(host, RQUOTAPROG, RQUOTAVERS, "udp")) != NULL) {
-		clnt->cl_auth = authunix_create_default();
-		DEBUG(9,("nfs_quotas: auth_success\n"));
-
-		clnt_stat=clnt_call(clnt, RQUOTAPROC_GETQUOTA, xdr_getquota_args, (caddr_t)&args,
-							xdr_getquota_rslt, (caddr_t)&gqr, timeout);
-		if (clnt_stat == RPC_SUCCESS)
-			DEBUG(9,("nfs_quotas: rpccall_success\n"));
-	};
-
-
-	/* 
-	 * quotastat returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
-	 * no quota set, and 3 if no permission to get the quota.  If 0 or 3 return
-	 * something sensible.
-	 */   
-
-	if (quotastat == 1) {
-		DEBUG(9,("nfs_quotas: Good quota data\n"));
-		D.dqb_bsoftlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bsoftlimit;
-		D.dqb_bhardlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit;
-		D.dqb_curblocks = gqr.getquota_rslt_u.gqr_rquota.rq_curblocks;
-	}
-
-	if (quotastat == 0 || quotastat == 3) {
-		D.dqb_bsoftlimit = 1;
-		D.dqb_curblocks = 1;
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
-	}
-
-	if (quotastat == 2) {
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
-		auth_destroy(clnt->cl_auth);
-		clnt_destroy(clnt);
-		free(cutstr);
-		return(False);
-	}       
-
-	DEBUG(10,("nfs_quotas: Let`s look at D a bit closer... status \"%i\" bsize \"%i\" active? \"%i\" \
-bhard \"%i\" bsoft \"%i\" curb \"%i\" \n",
-			quotastat,
-			gqr.getquota_rslt_u.gqr_rquota.rq_bsize,
-			gqr.getquota_rslt_u.gqr_rquota.rq_active,
-			gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit,
-			gqr.getquota_rslt_u.gqr_rquota.rq_bsoftlimit,
-			gqr.getquota_rslt_u.gqr_rquota.rq_curblocks));
-
-	*bsize = gqr.getquota_rslt_u.gqr_rquota.rq_bsize;
-	*dsize = D.dqb_bsoftlimit;
-
-	if (D.dqb_curblocks == D.dqb_curblocks == 1)
-		*bsize = 512;
-
-	if (D.dqb_curblocks > D.dqb_bsoftlimit) {
-		*dfree = 0;
-		*dsize = D.dqb_curblocks;
-	} else
-		*dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
-
-	auth_destroy(clnt->cl_auth);
-	clnt_destroy(clnt);
-
-	DEBUG(5,("nfs_quotas: For path \"%s\" returning  bsize %.0f, dfree %.0f, dsize \
-%.0f\n",args.gqa_pathp,(double)*bsize,(double)*dfree,(double)*dsize));
-
-	free(cutstr);
-	DEBUG(10,("nfs_quotas: End of nfs_quotas\n" ));
-	return(True);
-}
-#endif
-
 /****************************************************************************
 try to get the disk space from disk quotas (SunOS & Solaris2 version)
 Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
@@ -417,154 +257,147 @@ Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-	uid_t euser_id;
-	int ret;
-	struct dqblk D;
+  uid_t euser_id;
+  int ret;
+  struct dqblk D;
 #if defined(SUNOS5)
-	struct quotctl command;
-	int file;
-	static struct mnttab mnt;
-	static pstring name;
-	pstring devopt;
+  struct quotctl command;
+  int file;
+  static struct mnttab mnt;
+  static pstring name;
+  pstring devopt;
 #else /* SunOS4 */
-	struct mntent *mnt;
-	static pstring name;
+  struct mntent *mnt;
+  static pstring name;
 #endif
-	FILE *fd;
-	SMB_STRUCT_STAT sbuf;
-	SMB_DEV_T devno ;
-	static SMB_DEV_T devno_cached = 0 ;
-	static int found ;
+  FILE *fd;
+  SMB_STRUCT_STAT sbuf;
+  SMB_DEV_T devno ;
+  static SMB_DEV_T devno_cached = 0 ;
+  static int found ;
 
-	euser_id = geteuid();
+  euser_id = geteuid();
   
-	if ( sys_stat(path,&sbuf) == -1 )
-		return(False) ;
+  if ( sys_stat(path,&sbuf) == -1 )
+    return(False) ;
   
-	devno = sbuf.st_dev ;
-	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,devno));
-	if ( devno != devno_cached ) {
-		devno_cached = devno ;
+  devno = sbuf.st_dev ;
+  DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,devno));
+  if ( devno != devno_cached ) {
+    devno_cached = devno ;
 #if defined(SUNOS5)
-		if ((fd = sys_fopen(MNTTAB, "r")) == NULL)
-			return(False) ;
+    if ((fd = sys_fopen(MNTTAB, "r")) == NULL)
+      return(False) ;
     
-		found = False ;
-		slprintf(devopt, sizeof(devopt) - 1, "dev=%x", devno);
-		while (getmntent(fd, &mnt) == 0) {
-			if( !hasmntopt(&mnt, devopt) )
-				continue;
+    found = False ;
+    slprintf(devopt, sizeof(devopt) - 1, "dev=%x", devno);
+    while (getmntent(fd, &mnt) == 0) {
+      if( !hasmntopt(&mnt, devopt) )
+	continue;
 
-			DEBUG(5,("disk_quotas: testing \"%s\" %s\n", mnt.mnt_mountp,devopt));
+      DEBUG(5,("disk_quotas: testing \"%s\" %s\n", mnt.mnt_mountp,devopt));
 
-			/* quotas are only on vxfs, UFS or NFS */
-			if ( strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 || 
-				strcmp( mnt.mnt_fstype, "nfs" ) == 0  ) ||
-				strcmp( mnt.mnt_fstype, "vxfs" ) == 0  ) { 
-					found = True ;
-					break;
-			}
-		}
+      /* quotas are only on vxfs, UFS or NFS, but nfs is not supported here */
+      if ( strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 || 
+           strcmp( mnt.mnt_fstype, "vxfs" ) == 0  )
+      { 
+	found = True ;
+	break ;
+      }
+    }
     
-		pstrcpy(name,mnt.mnt_mountp) ;
-		pstrcat(name,"/quotas") ;
-		fclose(fd) ;
+    pstrcpy(name,mnt.mnt_mountp) ;
+    pstrcat(name,"/quotas") ;
+    fclose(fd) ;
 #else /* SunOS4 */
-		if ((fd = setmntent(MOUNTED, "r")) == NULL)
-			return(False) ;
+    if ((fd = setmntent(MOUNTED, "r")) == NULL)
+      return(False) ;
     
-		found = False ;
-		while ((mnt = getmntent(fd)) != NULL) {
-			if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
-				continue ;
-			DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt->mnt_dir,sbuf.st_dev));
-			if (sbuf.st_dev == devno) {
-				found = True ;
-				break;
-			}
-		}
+    found = False ;
+    while ((mnt = getmntent(fd)) != NULL) {
+      if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
+	continue ;
+      DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", 
+	       mnt->mnt_dir,sbuf.st_dev));
+      if (sbuf.st_dev == devno) {
+	found = True ;
+	break ;
+      }
+    }
     
-		pstrcpy(name,mnt->mnt_fsname) ;
-		endmntent(fd) ;
+    pstrcpy(name,mnt->mnt_fsname) ;
+    endmntent(fd) ;
 #endif
-	}
+    
+  }
 
-	if ( ! found )
-		return(False) ;
+  if ( ! found )
+      return(False) ;
 
-	save_re_uid();
-	set_effective_uid(0);
+  save_re_uid();
+  set_effective_uid(0);
 
 #if defined(SUNOS5)
-	if ( strcmp( mnt.mnt_fstype, "nfs" ) == 0) {
-		BOOL retval;
-		DEBUG(5,("disk_quotas: looking for mountpath (NFS) \"%s\"\n", mnt.mnt_special));
-		retval = nfs_quotas(mnt.mnt_special, euser_id, bsize, dfree, dsize);
-		restore_re_uid();
-		return retval;
-	}
-
-	DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
-	if((file=sys_open(name, O_RDONLY,0))<0) {
-		restore_re_uid();
-		return(False);
-	}
-	command.op = Q_GETQUOTA;
-	command.uid = euser_id;
-	command.addr = (caddr_t) &D;
-	ret = ioctl(file, Q_QUOTACTL, &command);
-	close(file);
+  DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
+  if((file=sys_open(name, O_RDONLY,0))<0) {
+	  restore_re_uid();
+	  return(False);
+  }
+  command.op = Q_GETQUOTA;
+  command.uid = euser_id;
+  command.addr = (caddr_t) &D;
+  ret = ioctl(file, Q_QUOTACTL, &command);
+  close(file);
 #else
-	DEBUG(5,("disk_quotas: trying quotactl on device \"%s\"\n", name));
-	ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
+  DEBUG(5,("disk_quotas: trying quotactl on device \"%s\"\n", name));
+  ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 
-	restore_re_uid();
+  restore_re_uid();
 
-	if (ret < 0) {
-		DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
+  if (ret < 0) {
+    DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
 
 #if defined(SUNOS5) && defined(VXFS_QUOTA)
-		/* If normal quotactl() fails, try vxfs private calls */
-		set_effective_uid(euser_id);
-		DEBUG(5,("disk_quotas: mount type \"%s\"\n", mnt.mnt_fstype));
-		if ( 0 == strcmp ( mnt.mnt_fstype, "vxfs" )) {
-			BOOL retval;
-			retval = disk_quotas_vxfs(name, path, bsize, dfree, dsize);
-			return(retval);
-		}
+    /* If normal quotactl() fails, try vxfs private calls */
+    set_effective_uid(euser_id);
+    DEBUG(5,("disk_quotas: mount type \"%s\"\n", mnt.mnt_fstype));
+    if ( 0 == strcmp ( mnt.mnt_fstype, "vxfs" )) {
+      ret = disk_quotas_vxfs(name, path, bsize, dfree, dsize);
+      return(ret);
+    }
 #else
-		return(False);
+      return(False);
 #endif
-	}
+  }
 
-	/* If softlimit is zero, set it equal to hardlimit.
-	 */
+  /* If softlimit is zero, set it equal to hardlimit.
+   */
   
-	if (D.dqb_bsoftlimit==0)
-		D.dqb_bsoftlimit = D.dqb_bhardlimit;
+  if (D.dqb_bsoftlimit==0)
+    D.dqb_bsoftlimit = D.dqb_bhardlimit;
 
-	/* Use softlimit to determine disk space. A user exceeding the quota is told
-	 * that there's no space left. Writes might actually work for a bit if the
-	 * hardlimit is set higher than softlimit. Effectively the disk becomes
-	 * made of rubber latex and begins to expand to accommodate the user :-)
-	 */
+  /* Use softlimit to determine disk space. A user exceeding the quota is told
+   * that there's no space left. Writes might actually work for a bit if the
+   * hardlimit is set higher than softlimit. Effectively the disk becomes
+   * made of rubber latex and begins to expand to accommodate the user :-)
+   */
 
-	if (D.dqb_bsoftlimit==0)
-		return(False);
-	*bsize = DEV_BSIZE;
-	*dsize = D.dqb_bsoftlimit;
+  if (D.dqb_bsoftlimit==0)
+    return(False);
+  *bsize = DEV_BSIZE;
+  *dsize = D.dqb_bsoftlimit;
 
-	if (D.dqb_curblocks > D.dqb_bsoftlimit) {
-		*dfree = 0;
-		*dsize = D.dqb_curblocks;
-	} else
-		*dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
+  if (D.dqb_curblocks > D.dqb_bsoftlimit) {
+     *dfree = 0;
+     *dsize = D.dqb_curblocks;
+  } else
+    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
       
-	DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",
-		path,(double)*bsize,(double)*dfree,(double)*dsize));
+  DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",
+         path,(double)*bsize,(double)*dfree,(double)*dsize));
 
-	return(True);
+      return(True);
 }
 
 
