@@ -265,10 +265,6 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 
 	DEBUG(6,("context_sam_enum_domains: enumerating %d domains\n", (*domain_count)));
 
-	if (*domain_count == 0) {
-		return NT_STATUS_OK;
-	}
-
 	tmp_methods = context->methods;
 
 	if (((*domains) = malloc( sizeof(DOM_SID) * (*domain_count))) == NULL) {
