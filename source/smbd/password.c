@@ -368,12 +368,15 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	SAM_ACCOUNT 	*sampass = NULL;
 	BOOL 		ret;
 	
+	pdb_init_sam(&sampass);
+	
 	become_root();
-	sampass = pdb_getsampwnam(user);
+	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
 
-	if(sampass == NULL) {
+	if(ret == False) {
 		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
+		pdb_clear_sam(sampass);
 		return False;
 	}
 
@@ -390,6 +393,7 @@ static BOOL update_smbpassword_file(char *user, char *password)
 		DEBUG(3,("change_oem_password returned False\n"));
 	}
 
+	pdb_clear_sam(sampass);
 	return ret;
 }
 
@@ -519,7 +523,8 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
                     uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd)
 {
 	struct passwd *pass;
-	SAM_ACCOUNT *sampass;
+	SAM_ACCOUNT *sampass=NULL;
+	BOOL ret;
 
 	if (!lm_pwd || !nt_pwd)
 	{
@@ -546,17 +551,21 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 		return(False);
 	}
 
+	pdb_init_sam(&sampass);
+
 	/* get the account information */
-	sampass = pdb_getsampwnam(user);
-	if (sampass == NULL)
+	ret = pdb_getsampwnam(sampass, user);
+	if (ret == False)
 	{
 		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user));
+		pdb_clear_sam(sampass);
 		return(False);
 	}
 
 	/* Quit if the account was disabled. */
 	if(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
 		DEBUG(1,("Account for user '%s' was disabled.\n", user));
+		pdb_clear_sam(sampass);
 		return(False);
 	}
 
@@ -566,6 +575,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	if (smb_pass->smb_userid != pass->pw_uid)
 	{
 		DEBUG(0,("Error : UNIX and SMB uids in password files do not match for user '%s'!\n", user));
+		pdb_clear_sam(sampass);
 		return(False);
 	}
 #endif
@@ -575,21 +585,25 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 		if (lp_null_passwords()) 
 		{
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", user));
+			pdb_clear_sam(sampass);
 			return(True);
 		} 
 		else 
 		{
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", user));
+			pdb_clear_sam(sampass);
 			return(False);
 		}		
 	}
 
 	if (smb_password_ok(sampass, chal, lm_pwd, nt_pwd))
 	{
+		pdb_clear_sam(sampass);
 		return(True);
 	}
 	
 	DEBUG(2,("pass_check_smb failed - invalid password for user [%s]\n", user));
+	pdb_clear_sam(sampass);
 	return False;
 }
 

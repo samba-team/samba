@@ -119,6 +119,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
 	SAM_ACCOUNT *sampass = NULL;
 	uint8 *pass;
+	BOOL ret;
 
 #if 0
     /*
@@ -138,23 +139,31 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 	}
 #endif /* 0 */
 
-	/* JRA. This is ok as it is only used for generating the challenge. */
+	if(!pdb_init_sam(&sampass))
+		return False;
 
+	/* JRA. This is ok as it is only used for generating the challenge. */
 	become_root();
-	sampass = pdb_getsampwnam(mach_acct);
+	ret=pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
  
-	if ((sampass) != NULL && !(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) &&
-		((pass=pdb_get_nt_passwd(sampass)) != NULL))
-	{
-		memcpy(md4pw, pass, 16);
-		dump_data(5, md4pw, 16);
- 
-		return True;
+ 	if (ret==False) {
+ 		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
+		pdb_clear_sam(sampass);
+		return False;
 	}
 
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) && ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
+		memcpy(md4pw, pass, 16);
+		dump_data(5, md4pw, 16);
+ 		pdb_clear_sam(sampass);
+		return True;
+	}
+ 	
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
+	pdb_clear_sam(sampass);
 	return False;
+
 }
 
 /*************************************************************************
@@ -308,7 +317,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	uint32 status = NT_STATUS_WRONG_PASSWORD;
 	DOM_CRED srv_cred;
 	pstring mach_acct;
-	SAM_ACCOUNT *sampass;
+	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret = False;
 	unsigned char pwd[16];
 	int i;
@@ -328,15 +337,19 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	                            q_u->clnt_id.login.uni_acct_name.uni_str_len));
 
 	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+	
+	pdb_init_sam(&sampass);
 
 	become_root();
-	sampass = pdb_getsampwnam(mach_acct);
+	ret=pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
 
 	/* Ensure the account exists and is a machine account. */
 
-	if (sampass == NULL || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST))
+	if (ret==False || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST)) {
+		pdb_clear_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	/*
 	 * Check the machine account name we're changing is the same
@@ -344,8 +357,10 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	 * machines changing other machine account passwords.
 	 */
 
-	if (!strequal(mach_acct, p->dc.mach_acct))
+	if (!strequal(mach_acct, p->dc.mach_acct)) {
+		pdb_clear_sam(sampass);
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	
 	DEBUG(100,("Server password set : new given value was :\n"));
@@ -370,6 +385,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
 
+	pdb_clear_sam(sampass);
 	return r_u->status;
 }
 
@@ -500,26 +516,28 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
 {
 	uint32 status = NT_STATUS_NOPROBLEMO;
-    NET_USER_INFO_3 *usr_info = NULL;
-    DOM_CRED srv_cred;
-    SAM_ACCOUNT *sampass = NULL;
+	NET_USER_INFO_3 *usr_info = NULL;
+	DOM_CRED srv_cred;
+	SAM_ACCOUNT *sampass = NULL;
 	uint16 acct_ctrl;
-    UNISTR2 *uni_samlogon_user = NULL;
-    fstring nt_username;
+	UNISTR2 *uni_samlogon_user = NULL;
+	fstring nt_username;
+	BOOL ret;
    
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
+
 	ZERO_STRUCTP(usr_info);
  
-    if (!get_valid_user_struct(p->vuid))
-        return NT_STATUS_NO_SUCH_USER;
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
     
-    /* checks and updates credentials.  creates reply credentials */
-    if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
-        return NT_STATUS_INVALID_HANDLE;
-    else
-        memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+	/* checks and updates credentials.  creates reply credentials */
+	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
+		return NT_STATUS_INVALID_HANDLE;
+	else
+		memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
@@ -530,7 +548,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	r_u->auth_resp = 1; /* authoritative response */
 	r_u->switch_value = 3; /* indicates type of validation user info */
 
-    /* find the username */
+	/* find the username */
     
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
@@ -560,18 +578,24 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	map_username(nt_username);
 
+	pdb_init_sam(&sampass);
+
 	/* get the account information */
 	become_root();
-	sampass = pdb_getsampwnam(nt_username);
+	ret = pdb_getsampwnam(sampass, nt_username);
 	unbecome_root();
 
-	if (sampass == NULL)
+	if (ret == False){
+		pdb_clear_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
-	if (acct_ctrl & ACB_DISABLED)
+	if (acct_ctrl & ACB_DISABLED) {
+		pdb_clear_sam(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
+	}
     
 	/* Validate password - if required. */
     
@@ -588,8 +612,10 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		}
 	}
     
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (status != NT_STATUS_NOPROBLEMO) {
+		pdb_clear_sam(sampass);
 		return status;
+	}
 
 	/* lkclXXXX this is the point at which, if the login was
 		successful, that the SAM Local Security Authority should
@@ -633,7 +659,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
         
 		sam_logon_in_ssb = False;
         
-        init_net_user_info3(p->mem_ctx, usr_info, sampass,
+		init_net_user_info3(p->mem_ctx, usr_info, sampass,
                             0, /* logon_count */
                             0, /* bad_pw_count */
                             num_gids,    /* uint32 num_groups */
@@ -644,7 +670,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
                             my_workgroup, /* char *logon_dom */
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
-    }
-
-    return status;
+	}
+	pdb_clear_sam(sampass);
+	return status;
 }

@@ -1765,7 +1765,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   {
     fstring saved_pass2;
-    SAM_ACCOUNT *sampass;
+    SAM_ACCOUNT *sampass=NULL;
 
     /*
      * Save the new password as change_oem_password overwrites it
@@ -1788,7 +1788,9 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
       if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
         SSVAL(*rparam,0,NERR_badpass);
     }
-  }
+ 	pdb_clear_sam(sampass);
+ }
+  
 
   /*
    * If the above failed, attempt the plaintext password change.
@@ -1823,7 +1825,9 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     {
       SSVAL(*rparam,0,NERR_Success);
     }
+	pdb_clear_sam(hnd);
   }
+
 
   memset((char *)pass1,'\0',sizeof(fstring));
   memset((char *)pass2,'\0',sizeof(fstring));	 

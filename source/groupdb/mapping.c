@@ -388,7 +388,8 @@ BOOL group_map_remove(DOM_SID sid)
 /****************************************************************************
 enumerate the group mapping
 ****************************************************************************/
-BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap, int *num_entries)
+BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
+			int *num_entries, BOOL unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -405,10 +406,12 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap, int *n
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
+		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
+			continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr) continue;
+		if (!dbuf.dptr)
+			continue;
 
 		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
 				
@@ -416,10 +419,15 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap, int *n
 				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment, &map.privilege);
 
 		safe_free(dbuf.dptr);
-		if (ret != dbuf.dsize) continue;
+		if (ret != dbuf.dsize)
+			continue;
 
 		/* list only the type or everything if UNKNOWN */
-		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) continue;
+		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use)
+			continue;
+
+		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1)
+			continue;
 
 		string_to_sid(&map.sid, string_sid);
 		
@@ -513,19 +521,29 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	struct group *grp;
 
+	DEBUG(10, ("get_domain_group_from_sid\n"));
+
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
 	if(!get_group_map_from_sid(sid, map))
 		return False;
 
+	DEBUG(10, ("get_domain_group_from_sid: SID found in the TDB\n"));
+
 	/* if it's not a domain group, continue */
 	if (map->sid_name_use!=SID_NAME_DOM_GRP)
 		return False;
+
+	DEBUG(10, ("get_domain_group_from_sid: SID is a domain group\n"));
  	
 	if (map->gid==-1)
 		return False;
 
+	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%d\n",map->gid));
+
 	if ( (grp=getgrgid(map->gid)) == NULL)
-		return False;	
+		return False;
+
+	DEBUG(10, ("get_domain_group_from_sid: gid exists in UNIX security\n"));
 
 	return True;
 }
@@ -599,8 +617,6 @@ Returns a GROUP_MAP struct based on the gid.
 BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	struct group *grp;
-	DOM_SID sid;
-	uint32 rid;
 
 	if ( (grp=getgrgid(gid)) == NULL)
 		return False;
@@ -613,9 +629,8 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 		map->sid_name_use=SID_NAME_ALIAS;
 		map->privilege=SE_PRIV_NONE;
 
-		rid=pdb_gid_to_group_rid(gid);
-		sid_copy(&sid, &global_sam_sid);
-		sid_append_rid(&sid, rid);
+		sid_copy(&map->sid, &global_sam_sid);
+		sid_append_rid(&map->sid, pdb_gid_to_group_rid(gid));
 
 		fstrcpy(map->nt_name, grp->gr_name);
 		fstrcpy(map->comment, "Local Unix Group");

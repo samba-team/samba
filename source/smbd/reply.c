@@ -427,34 +427,42 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
   /* check if trust account exists */
   SAM_ACCOUNT 	*sam_trust_acct = NULL; 
   uint16	acct_ctrl;
+  BOOL ret;
+  
+  pdb_init_sam(&sam_trust_acct);
 
   if (lp_security() == SEC_USER) {
-    sam_trust_acct = pdb_getsampwnam(user);
+    ret = pdb_getsampwnam(sam_trust_acct, user);
   } else {
     DEBUG(0,("session_trust_account: Trust account %s only supported with security = user\n", user));
     SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+    pdb_clear_sam(sam_trust_acct);
     return(ERROR(0, NT_STATUS_LOGON_FAILURE));
   }
 
-  if (sam_trust_acct == NULL) {
+  if (ret == False) {
     /* lkclXXXX: workstation entry doesn't exist */
     DEBUG(0,("session_trust_account: Trust account %s user doesn't exist\n",user));
     SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+    pdb_clear_sam(sam_trust_acct);
     return(ERROR(0, NT_STATUS_NO_SUCH_USER));
   } else {
     if ((smb_passlen != 24) || (smb_nt_passlen != 24)) {
       DEBUG(0,("session_trust_account: Trust account %s - password length wrong.\n", user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, NT_STATUS_LOGON_FAILURE));
+     pdb_clear_sam(sam_trust_acct);
+     return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
     if (!smb_password_ok(sam_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd)) {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+    pdb_clear_sam(sam_trust_acct);
       return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
     acct_ctrl = pdb_get_acct_ctrl(sam_trust_acct);
+    pdb_clear_sam(sam_trust_acct);
     if (acct_ctrl & ACB_DOMTRUST) {
       DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n",user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);

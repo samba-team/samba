@@ -412,10 +412,15 @@ static int process_root(int argc, char *argv[])
 		 */
 
 		if(local_flags & LOCAL_ENABLE_USER) {
-			SAM_ACCOUNT *sampass = pdb_getsampwnam(user_name);
-			if((sampass != NULL) && (pdb_get_lanman_passwd(sampass) != NULL)) {
+			SAM_ACCOUNT *sampass = NULL;
+			BOOL ret;
+			
+			pdb_init_sam(&sampass);
+			ret = pdb_getsampwnam(sampass, user_name);
+			if((sampass != False) && (pdb_get_lanman_passwd(sampass) != NULL)) {
 				new_passwd = xstrdup("XXXX"); /* Don't care. */
 			}
+			pdb_clear_sam(sampass);
 		}
 
 		if(!new_passwd)
@@ -434,13 +439,19 @@ static int process_root(int argc, char *argv[])
 	} 
 
 	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
-		SAM_ACCOUNT *sampass = pdb_getsampwnam(user_name);
+		SAM_ACCOUNT *sampass = NULL;
+		BOOL ret;
+		
+		pdb_init_sam(&sampass);
+		ret = pdb_getsampwnam(sampass, user_name);
+
 		printf("Password changed for user %s.", user_name );
-		if( (sampass != NULL) && (pdb_get_acct_ctrl(sampass)&ACB_DISABLED) )
+		if( (ret != False) && (pdb_get_acct_ctrl(sampass)&ACB_DISABLED) )
 			printf(" User has disabled flag set.");
-		if((sampass != NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
+		if((ret != False) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
 			printf(" User has no password flag set.");
 		printf("\n");
+		pdb_clear_sam(sampass);
 	}
 
  done:

@@ -370,27 +370,32 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 			return False;
 		}
 
-		if(!(sampass = pdb_getsampwnam(pipe_user_name))) {
+		pdb_init_sam(&sampass);
+
+		if(!pdb_getsampwnam(sampass, pipe_user_name)) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
 				pipe_user_name));
+			pdb_clear_sam(sampass);
 			unbecome_root();
 			return False;
 		}
 
 		unbecome_root();
 
-        /* Quit if the account was disabled. */
-        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
-            DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
-            return(False);
-        }
+	        /* Quit if the account was disabled. */
+	        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
+			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
+			pdb_clear_sam(sampass);
+			return False;
+ 	       }
  
-        if(!pdb_get_nt_passwd(sampass)) {
-            DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
-            return(False);
-        }
+		if(!pdb_get_nt_passwd(sampass)) {
+			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
+			pdb_clear_sam(sampass);
+			return False;
+	        }
  
-        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
+	        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*
@@ -454,6 +459,8 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 						guest_user);
 
 	p->ntlmssp_auth_validated = True;
+
+	pdb_clear_sam(sampass);
 	return True;
 }
 
