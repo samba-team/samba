@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
 
 /* Define if type char is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__
@@ -125,7 +125,6 @@
 #undef HAVE_BROKEN_GETGROUPS
 #undef REPLACE_GETPASS
 #undef REPLACE_INET_NTOA
-#undef HAVE_FILE_MACRO
 #undef HAVE_FUNCTION_MACRO
 #undef HAVE_VA_COPY
 #undef HAVE_SETRESUID_DECL
@@ -1430,9 +1429,6 @@
 
 /* Whether seekdir returns void */
 #undef SEEKDIR_RETURNS_VOID
-
-/* Whether there is a __FILE__ macro */
-#undef HAVE_FILE_MACRO
 
 /* Whether there is a __FUNCTION__ macro */
 #undef HAVE_FUNCTION_MACRO

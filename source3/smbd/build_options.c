@@ -294,9 +294,6 @@ void build_options(BOOL screen)
 #ifdef SEEKDIR_RETURNS_VOID
        output(screen,"   SEEKDIR_RETURNS_VOID\n");
 #endif
-#ifdef HAVE_FILE_MACRO
-       output(screen,"   HAVE_FILE_MACRO\n");
-#endif
 #ifdef HAVE_FUNCTION_MACRO
        output(screen,"   HAVE_FUNCTION_MACRO\n");
 #endif

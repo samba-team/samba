@@ -44,11 +44,6 @@ extern XFILE *dbf;
 extern pstring debugf;
 
 /* If we have these macros, we can add additional info to the header. */
-#ifdef HAVE_FILE_MACRO
-#define FILE_MACRO (__FILE__)
-#else
-#define FILE_MACRO ("")
-#endif
 
 #ifdef HAVE_FUNCTION_MACRO
 #define FUNCTION_MACRO  (__FUNCTION__)
@@ -157,7 +152,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
      ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
+   && dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUGLVLC( dbgc_class, level ) \
@@ -165,7 +160,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
      ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
+   && dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUG( level, body ) \
@@ -173,7 +168,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
            ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGC( dbgc_class, level, body ) \
@@ -181,7 +176,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
            ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
 	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
