@@ -2206,13 +2206,12 @@ fi
 
   ##################################################################
   # we might need the k5crypto and com_err libraries on some systems
-  AC_CHECK_LIB(com_err, _et_list, [LIBS="$LIBS -lcom_err"])
-  AC_CHECK_LIB(k5crypto, krb5_encrypt_data, [LIBS="$LIBS -lk5crypto"])
+  AC_CHECK_LIB(com_err, _et_list)
+  AC_CHECK_LIB(k5crypto, krb5_encrypt_data)
   # Heimdal checks.
-  AC_CHECK_LIB(crypto, des_set_key, [LIBS="$LIBS -lcrypto"])
-  AC_CHECK_LIB(asn1, copy_Authenticator, [LIBS="$LIBS -lasn1"])
-  AC_CHECK_LIB(roken, roken_getaddrinfo_hostspec, [LIBS="$LIBS -lroken"])
-  AC_CHECK_LIB(resolv, dn_expand, [LIBS="$LIBS -lresolv"])
+  AC_CHECK_LIB(crypto, des_set_key)
+  AC_CHECK_LIB(asn1, copy_Authenticator)
+  AC_CHECK_LIB(roken, roken_getaddrinfo_hostspec)
   # Heimdal checks. On static Heimdal gssapi must be linked before krb5.
   AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi -lkrb5";
         AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
@@ -2313,7 +2312,7 @@ if test x"$with_ldap_support" = x"yes"; then
   ##################################################################
   # we might need the lber lib on some systems. To avoid link errors
   # this test must be before the libldap test
-  AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
+  AC_CHECK_LIB(lber, ber_scanf)
 
   ########################################################
   # now see if we can find the ldap libs in standard paths
