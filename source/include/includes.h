@@ -1177,5 +1177,13 @@ time_t timegm(struct tm *tm);
 #define strlen(x) valgrind_strlen(x)
 #endif
 
+/*
+ * Veritas File System.  Often in addition to native.
+ * Quotas different.
+ */
+#if defined(HAVE_SYS_FS_VX_QUOTA_H)
+#define VXFS_QUOTA
+#endif
+
 #endif /* _INCLUDES_H */
 
