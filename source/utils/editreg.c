@@ -310,6 +310,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 #define False 0
 #define True 1
+#define REG_KEY_LIST_SIZE 10;
 
 static int verbose = 0;
 static int print_security = 0;
@@ -944,14 +945,75 @@ int nt_delete_reg_key(REG_KEY *key, int delete_name)
  * We return the key structure for the final component as that is 
  * often where we want to add values ...
  */
-REG_KEY *nt_add_reg_key_list(KEY_LIST *list, char * name, REG_KEY *key, int xxx)
+
+/*
+ * Create a 1 component key name and set its parent to parent
+ */
+REG_KEY *nt_create_reg_key1(char *name, REG_KEY *parent)
 {
+  REG_KEY *tmp;
 
+  if (!name || !*name) return NULL; /* A key's name cannot be empty */
+
+  /* There should not be more than one component */
+  if (strchr(name, '\\')) return NULL;
+
+  if (!(tmp = (REG_KEY *)malloc(sizeof(REG_KEY)))) return NULL;
+
+  bzero(tmp, sizeof(REG_KEY));
+
+  if (!(tmp->name = strdup(name))) goto error;
+
+
+
+ error:
+  if (tmp) free(tmp);
   return NULL;
-
 }
 
-REG_KEY *nt_add_reg_key(REG_KEY *key, char *name)
+REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create);
+REG_KEY *nt_add_reg_key_list(KEY_LIST *list, char * name, REG_KEY *parent, int create)
+{
+  int i;
+  REG_KEY *ret;
+  char *lname, *c1, *c2;
+
+  if (!list || !name || !*name) return NULL;
+
+  for (i = 0; i < list->key_count; i++) {
+    if ((ret = nt_add_reg_key(list->keys[i], name, create)))
+      return ret;
+  }
+
+  /*
+   * If we reach here we could not find the the first component
+   * so create it ...
+   */
+
+  lname = strdup(name);
+  if (!lname) return NULL;
+
+  c1 = lname;
+  c2 = strchr(c1, '\\');
+  if (c2) { /* Split here ... */
+    *c2 = 0;
+    c2++;
+  }
+
+  if (list->key_count < list->max_keys){
+    list->key_count++;
+  }
+  else { /* Create more space in the list ... */
+
+  }
+
+  return NULL;
+ error:
+  if (lname) free(lname);
+  return NULL;
+}
+
+REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create)
 {
   char *lname = NULL, *c1, *c2;
   REG_KEY * tmp;
