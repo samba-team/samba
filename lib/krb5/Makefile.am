@@ -75,6 +75,7 @@ libkrb5_a_SOURCES = \
 	verify_init.c \
 	verify_user.c \
 	version.c \
+	warn.c \
 	write_message.c
 
 libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
