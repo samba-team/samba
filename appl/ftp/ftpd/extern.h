@@ -53,7 +53,7 @@ void	delete(char *);
 void	dologout(int);
 void	fatal(char *);
 int	ftpd_pclose(FILE *);
-FILE   *ftpd_popen(char *, char *, int);
+FILE   *ftpd_popen(char *, char *, int, int);
 char   *getline(char *, int);
 void	logwtmp(char *, char *, char *);
 void	lreply(int, const char *, ...);
@@ -78,6 +78,9 @@ void	user(char *);
 void	yyerror(char *);
 
 void	kauth(char *, char*);
+
+int find(char *);
+
 
 int klogin(char *name, char *password);
 
