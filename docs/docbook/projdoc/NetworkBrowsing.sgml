@@ -883,7 +883,7 @@ name resolve order = wins lmhosts  	(eliminates bcast and host)
 The default is:
 <programlisting>
 name  resolve order = host lmhost wins bcast
-</programlisting>.
+</programlisting>
 where "host" refers the the native methods used by the Unix system
 to implement the gethostbyname() function call. This is normally
 controlled by <filename>/etc/host.conf</filename>, <filename>/etc/nsswitch.conf</filename> and <filename>/etc/resolv.conf</filename>.
@@ -927,7 +927,7 @@ that can NOT be provided by any other means of name resolution.
 Samba facilitates browsing.  The browsing is supported by &nmbd;
 and is also controlled by options in the &smb.conf; file.
 Samba can act as a local browse master for a workgroup and the ability
-for samba to support domain logons and scripts is now available.
+to support domain logons and scripts is now available.
 </para>
 
 <para>
