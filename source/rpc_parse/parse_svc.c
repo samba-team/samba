@@ -344,8 +344,8 @@ BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG * q_u,
 /*******************************************************************
 reads or writes a QUERY_SERVICE_CONFIG structure.
 ********************************************************************/
-BOOL svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG * q_u,
-			  prs_struct *ps, int depth)
+static BOOL svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG * q_u,
+				 prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;

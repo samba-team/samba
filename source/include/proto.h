@@ -374,7 +374,7 @@ void generate_wellknown_sids(void);
 BOOL create_sidmap_table(void);
 BOOL generate_sam_sid(char *domain_name, DOM_SID *sid);
 BOOL pwdb_initialise(BOOL is_server);
-BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
+const DOM_SID *map_wk_name_to_sid(const char *name, DOM_SID *sid, uint32 *type);
 const char *map_wk_sid_to_name(const DOM_SID *sid, char *nt_domain, uint32 *type);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL map_domain_sid_to_any_dc(DOM_SID *sid, char *dc_name);

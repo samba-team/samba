@@ -1177,8 +1177,6 @@ BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG * q_u,
 			    uint32 tag_id,
 			    char *dependencies, char *service_start_name,
 			    char *disp_name);
-BOOL svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG * q_u,
-			  prs_struct *ps, int depth);
 BOOL make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS * q_c,
 				 POLICY_HND *hnd, uint32 service_type,
 				 uint32 service_state, uint32 buf_size,

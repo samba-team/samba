@@ -210,7 +210,7 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 	fstring dummy;
 	uint32 status;
 
-	DEBUG(10, ("lookup remote name: %s %s\n", dom_name, find_name));
+	DEBUG(10, ("lookup remote name: %s/%s\n", dom_name, find_name));
 
 	if (!get_any_dc_name(dom_name, srv_name))
 	{
@@ -266,9 +266,9 @@ uint32 _lsa_lookup_names(const POLICY_HND * pol,
 			status1 = NT_STATUS_NONE_MAPPED;
 		}
 		if (status1 == NT_STATUS_NOPROBLEMO
-		    && map_domain_name_to_sid(&find_sid, &find_name))
+		    && map_wk_name_to_sid(find_name, &find_sid,
+					  &sid_name_use))
 		{
-			sid_name_use = SID_NAME_DOMAIN;
 			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
 			rid = 0xffffffff;
 			sid_copy(&sid, &find_sid);

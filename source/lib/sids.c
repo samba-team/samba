@@ -466,52 +466,39 @@ BOOL pwdb_initialise(BOOL is_server)
  *** side-effect: if the domain name is NULL, it is set to our domain ***
 
 ***************************************************************************/
-BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
+const DOM_SID *map_wk_name_to_sid(const char *name, DOM_SID *sid, uint32 *type)
 {
 	int i = 0;
 
-	if (nt_domain == NULL)
+	if (name == NULL)
 	{
-		sid_copy(sid, &global_sam_sid);
-		return True;
+		DEBUG(1, ("map_wk_name_to_sid: NULL name\n"));
+		return NULL;
 	}
 
-	if ((*nt_domain) == NULL)
-	{
-		DEBUG(5,("map_domain_name_to_sid: overriding NULL name to %s\n",
-		          global_sam_name));
-		(*nt_domain) = strdup(global_sam_name);
-		sid_copy(sid, &global_sam_sid);
-		return True;
-	}
-
-	if ((*nt_domain)[0] == 0)
-	{
-		free(*nt_domain);
-		(*nt_domain) = strdup(global_sam_name);
-		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n",
-		          (*nt_domain)));
-		sid_copy(sid, &global_sam_sid);
-		return True;
-	}
-
-	DEBUG(5,("map_domain_name_to_sid: %s\n", (*nt_domain)));
+	DEBUG(7, ("map_wk_name_to_sid: %s\n", name));
 
 	for (i = 0; i < num_maps; i++)
 	{
-		DEBUG(5,("compare: %s\n", sid_name_map[i]->name));
-		if (strequal(sid_name_map[i]->name, (*nt_domain)))
+		DEBUGADD(7, ("compare: %s\n", sid_name_map[i]->name));
+		if (strequal(sid_name_map[i]->name, name))
 		{
 			fstring sid_str;
-			sid_copy(sid, sid_name_map[i]->sid);
+
+			if (sid)
+				sid_copy(sid, sid_name_map[i]->sid);
+			if (type)
+				*type = sid_name_map[i]->type;
+
 			sid_to_string(sid_str, sid_name_map[i]->sid);
-			DEBUG(5,("found %s\n", sid_str));
-			return True;
+			DEBUGADD(7, ("found %s %d\n", sid_str,
+				     sid_name_map[i]->type));
+
+			return sid_name_map[i]->sid;
 		}
 	}
 
-	DEBUG(5,("map_domain_name_to_sid: mapping to %s not known\n",
-		  (*nt_domain)));
+	DEBUGADD(7, ("map_wk_name_to_sid: %s not found\n", name));
 	return False;
 }
 
