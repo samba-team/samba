@@ -756,9 +756,9 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
-WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/common.o
+WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/wb_common.o
 
-WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/common.o
+WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
