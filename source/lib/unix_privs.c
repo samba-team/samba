@@ -21,8 +21,8 @@
 */
 
 #include "includes.h"
-#include "system/passwd.h"
 #include "system/filesys.h"
+#include "system/passwd.h"
 
 /*
   there are times when smbd needs to temporarily gain root privileges
