@@ -52,7 +52,6 @@ NTSTATUS ads_ntstatus(ADS_STATUS rc)
 */
 const char *ads_errstr(ADS_STATUS status)
 {
-	uint32 minor;
 	int msg_ctx;
 	static char *ret;
 
@@ -73,6 +72,8 @@ const char *ads_errstr(ADS_STATUS status)
 #ifdef HAVE_GSSAPI
 	case ADS_ERROR_GSS:
 	{
+		uint32 minor;
+		
 		gss_buffer_desc msg1, msg2;
 		msg1.value = NULL;
 		msg2.value = NULL;
