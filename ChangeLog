@@ -1,3 +1,7 @@
+2000-09-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: fix dpagaix test
+
 2000-09-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kstash.8: update manual page
