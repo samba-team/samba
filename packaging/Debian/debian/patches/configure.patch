@@ -30,3 +30,14 @@ diff -uNr samba-3.0alpha21.orig/source/configure.in samba-3.0alpha21/source/conf
          CPPFLAGS="$old_CPPFLAGS"
          if test x$LINUX_LFS_SUPPORT = xyes ; then
            CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
+--- samba-3.0.0beta2.orig/source/configure.in	2003-07-01 16:44:25.000000000 -0400
++++ samba-3.0.0beta2/source/configure.in	2003-07-03 13:58:38.000000000 -0400
+@@ -2118,6 +2118,8 @@
+ 
+   ac_save_CFLAGS="$CFLAGS"
+   ac_save_LIBS="$LIBS"
++  CFLAGS=""
++  LIBS=""
+ 
+   #################################################
+   # check for krb5-config from recent MIT and Heimdal kerberos 5
