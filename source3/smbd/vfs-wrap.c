@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -505,3 +506,4 @@ BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent
 {
 	return set_nt_acl(fsp, security_info_sent, psd);
 }
+#undef OLD_NTDOMAIN
