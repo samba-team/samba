@@ -1,5 +1,7 @@
 #!/bin/sh
 
+SAMBA_DHCP_CONF=/etc/samba/dhcp.conf
+
 netbios_setup() {
 	# No need to continue if we're called with an unsupported option
 
@@ -10,24 +12,45 @@ netbios_setup() {
 		return
 	fi
 
+	# Nor should we continue if no settings have changed
+	if [ "$new_netbios_name_servers" = "$old_netbios_name_servers" ] \
+	   && [ "$new_netbios_scope" = "$old_netbios_scope" ]
+	then
+		return
+	fi
+
+	# reparse our own file
+	local other_servers=`sed -n -e"s/[[:space:]]$interface:[^[:space:]]*//g; \
+		s/^[[:space:]]*wins server[[:space:]]*=[[:space:]]*//pi" \
+		$SAMBA_DHCP_CONF`
+
 	umask 022
 
-	if [ -z "$new_netbios_name_servers" ] || [ "$reason" = FAIL ] \
-	   || [ "$reason" = EXPIRE ]
+	local serverlist="$other_servers"
+	for server in $new_netbios_name_servers
+	do
+		serverlist="$serverlist $interface:$server"
+	done
+
+	echo -n > $SAMBA_DHCP_CONF
+
+	# If we're updating on failure/expire, AND there are no WINS
+	# servers for other interfaces, leave the file empty.
+	if [ -z "$other_servers" ]
 	then
-		# FIXME: add sed magic to only remove wins servers
-		# associated with this interface
-		echo -n > /etc/samba/dhcp.conf
-	elif [ "$new_netbios_name_servers" != "$old_netbios_name_servers" ]
+		if [ "$reason" = FAIL ] || [ "$reason" = EXPIRE ]
+		then
+			return
+		fi
+	fi
+
+	if [ -n "$serverlist" ]
 	then
-		local serverlist=""
-		for server in $new_netbios_name_servers
-		do
-			serverlist="$serverlist $interface:$server"
-		done
-		# FIXME: add sed magic to only update wins servers
-		# associated with this interface
-		echo "   wins server =$serverlist" > /etc/samba/dhcp.conf
+		echo "   wins server =$serverlist" >> $SAMBA_DHCP_CONF
+	fi
+	if [ -n "$new_netbios_scope" ]
+	then
+		echo "   netbios scope = $new_netbios_scope" >> $SAMBA_DHCP_CONF
 	fi
 }
 
