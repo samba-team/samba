@@ -371,7 +371,7 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
 	}
 
 	/* it's a print server */
-	if (!strchr(handlename+2, '\\')) {
+	if (*handlename=='\\' && *(handlename+1)=='\\' && !strchr(handlename+2, '\\')) {
 		DEBUGADD(4,("Printer is a print server\n"));
 		Printer->printer_type = PRINTER_HANDLE_IS_PRINTSERVER;		
 	}
@@ -407,8 +407,13 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	if (Printer->printer_type!=PRINTER_HANDLE_IS_PRINTER)
 		return False;
 	
-	aprinter=strchr(handlename+2, '\\');
-	aprinter++;
+	if (*handlename=='\\') {
+		aprinter=strchr(handlename+2, '\\');
+		aprinter++;
+	}
+	else {
+		aprinter=handlename;
+	}
 
 	DEBUGADD(5,("searching for [%s] (len=%d)\n", aprinter, strlen(aprinter)));
 
@@ -5305,7 +5310,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
-	int numofforms=0, i = -1;
+	int numofforms=0, i=0;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
