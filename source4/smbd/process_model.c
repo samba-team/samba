@@ -57,7 +57,7 @@ static int num_models;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-static NTSTATUS register_process_model(void *_ops)
+static NTSTATUS register_process_model(const void *_ops)
 {
 	const struct model_ops *ops = _ops;
 
