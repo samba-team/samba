@@ -134,14 +134,13 @@
 #endif
 
 #include <err.h>
+#include "roken.h"
 
 #include "pathnames.h"
 #include "extern.h"
 #include "common.h"
 
 #include "security.h"
-
-#include "roken.h"
 
 #ifdef KRB5
 #include <krb5.h>
