@@ -85,7 +85,7 @@ static size_t convert_string(smb_iconv_t descriptor,
 	o_len=destlen;
 	retval=smb_iconv(descriptor,&inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) 		
-	{    	char *reason;
+	{    	char *reason="unknown error";
 		switch(errno)
 		{ case EINVAL: reason="Incomplete multybyte sequence"; break;
 		  case E2BIG:  reason="No more room"; 
