@@ -23,7 +23,6 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-#include <nss.h>
 
 extern int DEBUGLEVEL;
 
@@ -132,7 +131,7 @@ struct in_addr *lookup_backend(const char *name, int *count)
 gethostbyname() - we ignore any domain portion of the name and only
 handle names that are at most 15 characters long
   **************************************************************************/
-enum nss_status 
+NSS_STATUS
 _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 			  char *buffer, size_t buflen, int *errnop,
 			  int *h_errnop)
