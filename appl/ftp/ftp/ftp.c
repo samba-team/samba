@@ -277,16 +277,17 @@ command (char *fmt,...)
 	return (0);
     }
     oldintr = signal(SIGINT, cmdabort);
-    va_start(ap, fmt);
     if(debug){
 	printf("---> ");
 	if (strncmp("PASS ", fmt, 5) == 0)
 	    printf("PASS XXXX");
-	else 
+	else {
+	    va_start(ap, fmt);
 	    vfprintf(stdout, fmt, ap);
-	va_end(ap);
-	va_start(ap, fmt);
+	    va_end(ap);
+	}
     }
+    va_start(ap, fmt);
     sec_vfprintf(cout, fmt, ap);
     va_end(ap);
     if(debug){
