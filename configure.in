@@ -5,6 +5,8 @@ AC_INIT(heimdal, 0.3a, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
 dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_CPP
 AC_PROG_CC_STDC
 
 AM_INIT_AUTOMAKE(heimdal,0.3a)
