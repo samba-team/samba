@@ -406,6 +406,7 @@ int event_loop_once(struct event_context *ev)
 			   the event, so this must be a bug. This is a
 			   fatal error. */
 			DEBUG(0,("EBADF on event_loop_once - exiting\n"));
+			ev->exit.code = EBADF;
 			return -1;
 		}
 		
