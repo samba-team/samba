@@ -131,7 +131,6 @@ group:          files winbind
 		</varlistentry>
 
 		&popt.common.samba;
-		&popt.common.connection;
 		&stdarg.help;
 
 		<varlistentry>

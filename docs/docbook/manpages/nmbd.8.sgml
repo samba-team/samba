@@ -149,7 +149,6 @@
 		</varlistentry>
 
 		&popt.common.samba;
-		&popt.common.connection;
 		
 		<varlistentry>
 		<term>-p &lt;UDP port number&gt;</term>
