@@ -1624,11 +1624,14 @@ BOOL domain_client_validate( char *user, char *domain,
 		if(strequal(remote_machine, "*")) {
 			connected_ok = find_connect_pdc(&pcli, trust_passwd, last_change_time);
 		} else {
-			int i;
+			int i = 0;
 			BOOL retry = False;
-			for (i = 0; !connected_ok && retry && (i < 3); i++)
-				connected_ok = connect_to_domain_password_server(&pcli,
-						remote_machine, trust_passwd, &retry);
+
+			do {
+			  connected_ok = connect_to_domain_password_server(
+				  &pcli, remote_machine, trust_passwd, &retry);
+			  i++;
+			} while (!connected_ok && retry && (i < 3));
 		}
 	}
 
