@@ -55,12 +55,16 @@ krb5_mk_priv(krb5_context context,
   unsigned tmp_seq;
   krb5_keyblock *key;
   int32_t sec, usec;
+  KerberosTime sec2;
+  unsigned usec2;
 
   krb5_us_timeofday (context, &sec, &usec);
 
   part.user_data = *userdata;
-  part.timestamp  = &sec;
-  part.usec       = &usec;
+  sec2 = sec;
+  part.timestamp  = &sec2;
+  usec2 = usec;
+  part.usec       = &usec2;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     tmp_seq = ++auth_context->local_seqnumber;
     part.seq_number = &tmp_seq;
