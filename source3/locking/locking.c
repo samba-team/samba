@@ -310,15 +310,19 @@ BOOL locking_init(int read_only)
 
 BOOL locking_end(void)
 {
+#if 0
 	BOOL check_self = True;
+#endif
 
 	brl_shutdown(open_read_only);
 	if (tdb) {
 
 		/* delete any dead locks */
 
+#if 0 /* Don't scan on close. */
 		if (!open_read_only)
 			tdb_traverse(tdb, delete_fn, &check_self);
+#endif
 
 		if (tdb_close(tdb) != 0)
 			return False;
