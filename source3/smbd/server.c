@@ -38,8 +38,6 @@ extern pstring user_socket_options;
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
 
-extern fstring remote_machine;
-
 /* really we should have a top level context structure that has the
    client file descriptor as an element. That would require a major rewrite :(
 
@@ -366,7 +364,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 				
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
-				fstrcpy(remote_machine, get_socket_addr(smbd_server_fd()));
+				set_remote_machine_name(get_socket_addr(smbd_server_fd()));
 				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
@@ -742,7 +740,7 @@ static void usage(char *pname)
 		lp_set_logfile(logfile);
 	}
 
-	fstrcpy(remote_machine, "smbd");
+	set_remote_machine_name("smbd");
 
 	setup_logging(argv[0],interactive);
 
