@@ -1,3 +1,8 @@
+2002-08-28  Assar Westerlund  <assar@kth.se>
+
+	* Makefile.am (make_print_version_LDADD): do not hardcode -ldes,
+	use $(LIB_des)
+
 2002-08-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* print_version.c: add bug-report message
