@@ -368,6 +368,60 @@ static int net_groupmap(int argc, const char **argv)
 	return net_help_groupmap( argc, argv );
 }
 
+/***********************************************************
+ Helper function for net_idmap_dump. Dump one entry.
+ **********************************************************/
+static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
+				    TDB_DATA key,
+				    TDB_DATA data,
+				    void *unused)
+{
+	if (strncmp(key.dptr, "S-", 2) != 0)
+		return 0;
+
+	printf("%s %s\n", data.dptr, key.dptr);
+	return 0;
+}
+
+/***********************************************************
+ Dump the current idmap
+ **********************************************************/
+static int net_idmap_dump(int argc, const char **argv)
+{
+	TDB_CONTEXT *idmap_tdb;
+
+	if ( argc != 1 )
+		return net_help_idmap( argc, argv );
+
+	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
+
+	if (idmap_tdb == NULL) {
+		d_printf("Could not open idmap: %s\n", argv[0]);
+		return -1;
+	}
+
+	tdb_traverse(idmap_tdb, net_idmap_dump_one_entry, NULL);
+
+	tdb_close(idmap_tdb);
+
+	return 0;
+}
+
+/***********************************************************
+ Look at the current idmap
+ **********************************************************/
+static int net_idmap(int argc, const char **argv)
+{
+	if ( 0 == argc )
+		return net_help_idmap( argc, argv );
+
+	if ( !StrCaseCmp( argv[0], "dump" ) )
+		return net_idmap_dump(argc-1, argv+1);
+
+	return net_help_idmap( argc, argv );
+}
+
+
 /*
  Retrieve our local SID or the SID for the specified name
  */
@@ -544,6 +598,7 @@ static struct functable net_func[] = {
 	{"SETLOCALSID", net_setlocalsid},
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
+	{"IDMAP", net_idmap},
 
 	{"HELP", net_help},
 	{NULL, NULL}

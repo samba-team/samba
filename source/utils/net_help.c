@@ -118,6 +118,13 @@ int net_help_groupmap(int argc, const char **argv)
 	return -1;
 }
 
+int net_help_idmap(int argc, const char **argv)
+{
+	d_printf("net idmap dump filename"\
+		 "\n  Dump current id mapping\n");
+
+	return -1;
+}
 
 int net_help_join(int argc, const char **argv)
 {
