@@ -218,44 +218,38 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 	return result;
 }
 
-/* Shut down connections to all domain controllers */
+/* Shut down connections to a domain controller.  If domain is NULL then
+   kill all connections. */
 
 void winbindd_kill_connections(struct winbindd_domain *domain)
 {
-	BOOL is_server = False;
-	struct winbindd_domain *server_domain = NULL, *tmp;
+        /* Kill all connections */
 
-	/* If NULL passed, use pdc */
+        if (!domain) {
+                struct winbindd_domain *tmp;
 
-	if (!domain) {
-		domain = server_domain;
-	}
+                for (tmp = domain_list; tmp; tmp = tmp->next) {
+                        winbindd_kill_connections(domain);
+                }
 
-	/* Find pointer to domain of pdc */
-
-	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strequal(domain->name, tmp->name)) {
-			server_domain = tmp;
-			break;
-		}
-	}
-
-	if (!server_domain) return;
-
-	if (domain == server_domain || 
-	    strequal(domain->name, lp_workgroup())) {
-		is_server = True;
-	}
+                return;
+        }
 
 	/* Log a level 0 message - this is probably a domain controller
 	   failure */
+
+        if (!domain->controller[0])
+                return;
 
 	DEBUG(0, ("killing connections to domain %s with controller %s\n", 
 		  domain->name, domain->controller));
 
 	debug_conn_state();
 
-	if (is_server) {
+        /* Close LSA connections if we are killing connections to the dc
+           that has them open. */
+
+	if (strequal(server_state.controller, domain->controller)) {
 		server_state.pwdb_initialised = False;
 		server_state.lsa_handle_open = False;
 		lsa_close(&server_state.lsa_handle);
