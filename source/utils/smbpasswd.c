@@ -524,7 +524,7 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 			return False;
 		}
 		ret = remote_password_change(remote_machine, user_name, 
-									 old_passwd, new_passwd, err_str, sizeof(err_str));
+					     old_passwd, new_passwd, err_str, sizeof(err_str));
 		if(*err_str)
 			fprintf(stderr, err_str);
 		return ret;
@@ -707,7 +707,7 @@ static int process_root(int argc, char *argv[])
 		usage();
 	}
 
-	if (!user_name[0] && (pwd = sys_getpwuid(0))) {
+	if (!user_name[0] && (pwd = sys_getpwuid(geteuid()))) {
 		fstrcpy(user_name, pwd->pw_name);
 	} 
 
@@ -768,7 +768,7 @@ static int process_root(int argc, char *argv[])
 			if((sampass != False) && (pdb_get_lanman_passwd(sampass) != NULL)) {
 				new_passwd = xstrdup("XXXX"); /* Don't care. */
 			}
-			pdb_free_sam(sampass);
+			pdb_free_sam(&sampass);
 		}
 
 		if(!new_passwd)
@@ -799,7 +799,7 @@ static int process_root(int argc, char *argv[])
 		if((ret != False) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
 			printf(" User has no password flag set.");
 		printf("\n");
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 	}
 
  done:

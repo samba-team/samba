@@ -306,7 +306,7 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 	if (ret == False)
 	{
 		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->unix_username.str));
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -316,7 +316,7 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 		nt_status = sam_account_ok(sampass, user_info);
 	}
 
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 	return nt_status;
 }
 

@@ -203,19 +203,19 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
  
  	if (ret==False) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return False;
 	}
 
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) && ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
 		memcpy(md4pw, pass, 16);
 		dump_data(5, md4pw, 16);
- 		pdb_free_sam(sampass);
+ 		pdb_free_sam(&sampass);
 		return True;
 	}
  	
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 	return False;
 
 }
@@ -410,7 +410,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	/* Ensure the account exists and is a machine account. */
 
 	if (ret==False || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST)) {
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
@@ -422,9 +422,21 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
-	pdb_set_lanman_passwd (sampass, pwd);
-	pdb_set_nt_passwd     (sampass, pwd);
-	pdb_set_acct_ctrl     (sampass, ACB_WSTRUST);
+	if (!pdb_set_lanman_passwd (sampass, pwd)) {
+		pdb_free_sam(&sampass);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_nt_passwd     (sampass, pwd)) {
+		pdb_free_sam(&sampass);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_acct_ctrl     (sampass, ACB_WSTRUST)) {
+		pdb_free_sam(&sampass);
+		/* Not quite sure what this one qualifies as, but this will do */
+		return NT_STATUS_NO_MEMORY; 
+	}
  
 	become_root();
 	ret = pdb_update_sam_account (sampass,False);
@@ -436,7 +448,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
 
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 	return r_u->status;
 }
 
@@ -679,7 +691,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	unbecome_root();
 
 	if (ret == False) {
-		pdb_free_sam(sampass);
+		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
         
@@ -736,6 +748,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
 	}
-	pdb_free_sam(sampass);
+	pdb_free_sam(&sampass);
 	return status;
 }

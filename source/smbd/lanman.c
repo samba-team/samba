@@ -1884,7 +1884,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     fstrcpy(saved_pass2, pass2);
 
     if (check_plaintext_password(user,pass1,strlen(pass1),&sampass) &&
-        change_oem_password(sampass,pass2,False))
+        change_oem_password(sampass,pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
 
@@ -1897,7 +1897,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
       if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
         SSVAL(*rparam,0,NERR_badpass);
     }
- 	pdb_free_sam(sampass);
+ 	pdb_free_sam(&sampass);
  }
   
 
@@ -1931,12 +1931,12 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   {
     SAM_ACCOUNT *hnd = NULL;
 
-    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd) && 
+    if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd) && 
        change_lanman_password(hnd,(unsigned char *)pass1,(unsigned char *)pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }
-	pdb_free_sam(hnd);
+	pdb_free_sam(&hnd);
   }
 
 
