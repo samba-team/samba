@@ -52,6 +52,11 @@ void delete_ftp_command(void)
     }
 }
 
+int auth_ok(void)
+{
+    return ct && auth_complete;
+}
+
 void auth(char *auth)
 {
     for(ct=auth_types; ct->name; ct++){
@@ -74,7 +79,7 @@ void adat(char *auth)
 void pbsz(int size)
 {
     int old = buffer_size;
-    if(ct && auth_complete)
+    if(auth_ok())
 	ct->pbsz(size);
     else
 	reply(503, "Incomplete security data exchange.");
@@ -111,7 +116,7 @@ void prot(char *pl)
 	return;
     }
     
-    if(ct && auth_complete){
+    if(auth_ok()){
 	if(ct->prot(p)){
 	    reply(536, "%s does not support %s protection.", 
 		  ct->name, protection_names[p]);
@@ -127,7 +132,7 @@ void prot(char *pl)
 
 void ccc(void)
 {
-    if(ct && auth_complete){
+    if(auth_ok()){
 	if(!ct->ccc())
 	    prot_level = prot_clear;
     }else
@@ -136,7 +141,7 @@ void ccc(void)
 
 void mic(char *msg)
 {
-    if(ct && auth_complete){
+    if(auth_ok()){
 	if(!ct->mic(msg))
 	    prot_level = prot_safe;
     }else
@@ -145,7 +150,7 @@ void mic(char *msg)
 
 void conf(char *msg)
 {
-    if(ct && auth_complete){
+    if(auth_ok()){
 	if(!ct->conf(msg))
 	    prot_level = prot_confidential;
     }else
@@ -154,7 +159,7 @@ void conf(char *msg)
 
 void enc(char *msg)
 {
-    if(ct && auth_complete){
+    if(auth_ok()){
 	if(!ct->enc(msg))
 	    prot_level = prot_private;
     }else
@@ -163,7 +168,7 @@ void enc(char *msg)
 
 int auth_read(int fd, void *data, int length)
 {
-    if(ct && auth_complete && data_protection)
+    if(auth_ok() && data_protection)
 	return ct->read(fd, data, length);
     else
 	return read(fd, data, length);
@@ -171,7 +176,7 @@ int auth_read(int fd, void *data, int length)
 
 int auth_write(int fd, void *data, int length)
 {
-    if(ct && auth_complete && data_protection)
+    if(auth_ok() && data_protection)
 	return ct->write(fd, data, length);
     else
 	return write(fd, data, length);
@@ -179,7 +184,7 @@ int auth_write(int fd, void *data, int length)
 
 void auth_vprintf(const char *fmt, va_list ap)
 {
-    if(ct && auth_complete && prot_level){
+    if(auth_ok() && prot_level){
 	ct->vprintf(fmt, ap);
     }else
 	vprintf(fmt, ap);

@@ -37,6 +37,8 @@ extern int auth_complete;
 
 void auth_init(void);
 
+int auth_ok(void);
+
 void auth(char*);
 void adat(char*);
 void pbsz(int);
