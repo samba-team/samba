@@ -387,7 +387,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 	    return False;
     }
 
-    if (strequal(domain->name, domain_name)) {
+    if (strequal(domain->controller, server_state.controller)) {
 	    /* Do a level 5 query info policy */
 	    return lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
 				      level5_dom, &domain->sid);
