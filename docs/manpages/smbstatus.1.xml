@@ -98,8 +98,7 @@
 
 		<varlistentry>
 		<term>-u|--user=&lt;username&gt;</term>
-		<listitem><para>selects information relevant to 
-		<parameter>username</parameter> only.</para>
+		<listitem><para>selects information relevant to <parameter>username</parameter> only.</para>
 		</listitem>
 		</varlistentry>
 
