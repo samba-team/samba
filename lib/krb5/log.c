@@ -1,39 +1,39 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden).
- * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *      This product includes software developed by the Kungliga Tekniska
- *      Högskolan and its contributors.
- * 
- * 4. Neither the name of the Institute nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. All advertising materials mentioning features or use of this software 
+ *    must display the following acknowledgement: 
+ *      This product includes software developed by Kungliga Tekniska 
+ *      Högskolan and its contributors. 
+ *
+ * 4. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
  */
 
 #include "krb5_locl.h"
@@ -41,6 +41,8 @@
 RCSID("$Id");
 
 struct facility {
+    int min;
+    int max;
     void (*log)(struct facility *, const char *, const char *);
     void (*close)(struct facility*);
     void *data;
@@ -220,17 +222,26 @@ krb5_openlog(krb5_context context,
 				   "logging",
 				   logname,
 				   NULL)){
+	struct facility *fp = NULL;
+	int min = 0, max = 0, n;
+	n = sscanf(p, "%d-%d/", &min, &max);
+	if(n){
+	    p = strchr(p, '/');
+	    if(p == NULL) continue;
+	    p++;
+	}
 	if(strcmp(p, "STDERR") == 0){
-	    struct facility *fp = log_realloc(f);
+	    fp = log_realloc(f);
 	    open_file(fp, NULL, NULL, stderr, 1);
 	}else if(strcmp(p, "CONSOLE") == 0){
-	    struct facility *fp = log_realloc(f);
+	    fp = log_realloc(f);
 	    open_file(fp, "/dev/console", "w", NULL, 0);
 	}else if(strncmp(p, "FILE:", 4) == 0 && (p[4] == ':' || p[4] == '=')){
-	    struct facility *fp = log_realloc(f);
-	    char *fn = strdup(p + 5);
+	    char *fn;
 	    FILE *file = NULL;
 	    int keep_open = 0;
+	    fp = log_realloc(f);
+	    fn = strdup(p + 5);
 	    if(p[4] == '='){
 		int i = open(fn, O_WRONLY | O_CREAT | 
 			     O_TRUNC | O_APPEND, 0666);
@@ -239,20 +250,23 @@ krb5_openlog(krb5_context context,
 	    }
 	    open_file(fp, fn, "a", file, keep_open);
 	}else if(strncmp(p, "DEVICE=", 6) == 0){
-	    struct facility *fp = log_realloc(f);
+	    fp = log_realloc(f);
 	    open_file(fp, strdup(p + 7), "w", NULL, 0);
 	}else if(strncmp(p, "SYSLOG", 6) == 0){
 	    char *severity;
 	    char *facility;
-	    struct facility *fd;
 	    severity = strchr(p, ':');
 	    if(severity == NULL)
 		severity = "ERR";
 	    facility = strchr(severity, ':');
 	    if(facility == NULL)
 		facility = "AUTH";
-	    fd = log_realloc(f);
-	    open_syslog(program, severity, facility, fd);
+	    fp = log_realloc(f);
+	    open_syslog(program, severity, facility, fp);
+	}
+	if(fp){
+	    fp->min = min; 
+	    fp->max = max;
 	}
     }
     *fac = f;
@@ -273,6 +287,7 @@ krb5_error_code
 krb5_vlog_msg(krb5_context context,
 	      krb5_log_facility *fac,
 	      char **reply,
+	      int level,
 	      const char *fmt,
 	      va_list ap)
 {
@@ -285,7 +300,9 @@ krb5_vlog_msg(krb5_context context,
     t = time(NULL);
     strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&t));
     for(i = 0; i < fac->len; i++)
-	(*fac->val[i].log)(&fac->val[i], buf, msg);
+	if(fac->val[i].min <= level && 
+	   (fac->val[i].max == 0 || fac->val[i].max >= level))
+	    (*fac->val[i].log)(&fac->val[i], buf, msg);
     *reply = msg;
     return 0;
 }
@@ -293,13 +310,14 @@ krb5_vlog_msg(krb5_context context,
 krb5_error_code
 krb5_vlog(krb5_context context,
 	  krb5_log_facility *fac,
+	  int level,
 	  const char *fmt,
 	  va_list ap)
 {
     char *msg;
     krb5_error_code ret;
 
-    ret = krb5_vlog_msg(context, fac, &msg, fmt, ap);
+    ret = krb5_vlog_msg(context, fac, &msg, level, fmt, ap);
     free(msg);
     return ret;
 }
@@ -307,6 +325,7 @@ krb5_vlog(krb5_context context,
 krb5_error_code
 krb5_log_msg(krb5_context context,
 	     krb5_log_facility *fac,
+	     int level,
 	     char **reply,
 	     const char *fmt,
 	     ...)
@@ -315,7 +334,7 @@ krb5_log_msg(krb5_context context,
     krb5_error_code ret;
 
     va_start(ap, fmt);
-    ret = krb5_vlog_msg(context, fac, reply, fmt, ap);
+    ret = krb5_vlog_msg(context, fac, reply, level, fmt, ap);
     va_end(ap);
     return ret;
 }
@@ -324,6 +343,7 @@ krb5_log_msg(krb5_context context,
 krb5_error_code
 krb5_log(krb5_context context,
 	 krb5_log_facility *fac,
+	 int level,
 	 const char *fmt,
 	 ...)
 {
@@ -331,7 +351,7 @@ krb5_log(krb5_context context,
     krb5_error_code ret;
 
     va_start(ap, fmt);
-    ret = krb5_vlog(context, fac, fmt, ap);
+    ret = krb5_vlog(context, fac, level, fmt, ap);
     va_end(ap);
     return ret;
 }
