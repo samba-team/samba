@@ -195,8 +195,11 @@ int psec_getsec(char *printer)
 	if (tdb_prs_fetch(tdb, keystr, &ps, mem_ctx) != 0) {
 		printf("error fetching descriptor for printer %s\n",
 		       printer);
-		result = 1;
-		goto done;
+		/* cannot do a prs_mem_free() when tdb_prs_fetch fails */
+		/* as the prs structure has not been initialized */
+		tdb_close(tdb);
+		talloc_destroy(mem_ctx);
+		return 1;
 	}
 
 	/* Unpack into security descriptor buffer */

@@ -1307,7 +1307,6 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
     if (!dbuf.dptr)
 	    return -1;
 
-    ZERO_STRUCTP(ps);
     prs_init(ps, 0, mem_ctx, UNMARSHALL);
     prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
 
