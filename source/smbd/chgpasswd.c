@@ -53,6 +53,24 @@ extern int DEBUGLEVEL;
 
 #if ALLOW_CHANGE_PASSWORD
 
+#ifdef WITH_PAM
+BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
+{
+	BOOL ret;
+
+	if (as_root)
+		become_root();
+
+	ret = smb_pam_passchange(name, oldpass, newpass);
+
+	if (as_root)
+		unbecome_root();
+
+	return ret;
+}     
+
+#else /* WITH_PAM */
+
 static int findpty(char **slave)
 {
 	int master;
@@ -526,7 +544,10 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 		(passwordprogram, name, chatsequence, as_root));
 }
 
+#endif /* WITH_PAM */
+
 #else /* ALLOW_CHANGE_PASSWORD */
+
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 {
 	DEBUG(0, ("Password changing not compiled in (user=%s)\n", name));

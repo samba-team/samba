@@ -491,23 +491,23 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	/* Try against the lanman password. smb_pass->smb_passwd == NULL means
 	   no password, allow access. */
 
-	DEBUG(4,("Checking LM MD4 password\n"));
-
 	if((smb_pass->smb_passwd == NULL) && 
 	   (smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
-		DEBUG(4,("no password required for user %s\n",
+		DEBUG(4,("smb_password_ok: no password required for user %s\n",
 			 smb_pass->smb_name));
 		return True;
 	}
 
-	if((smb_pass->smb_passwd != NULL) && 
-	   smb_password_check((char *)lm_pass, 
-			      (uchar *)smb_pass->smb_passwd, challenge)) {
-		DEBUG(4,("LM MD4 password check succeeded\n"));
-		return(True);
-	}
+	if(lp_lanman_auth() && (smb_pass->smb_passwd != NULL)) {
+		DEBUG(4,("smb_password_ok: Checking LM password\n"));
 
-	DEBUG(4,("LM MD4 password check failed\n"));
+		if (smb_password_check((char *)lm_pass, 
+			      (uchar *)smb_pass->smb_passwd, challenge)) {
+			DEBUG(4,("smb_password_ok: LM password check succeeded\n"));
+			return(True);
+		}
+		DEBUG(4,("LM password check failed\n"));
+	}
 
 	return False;
 }
@@ -621,14 +621,14 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		 */
 
 		if (ret)
-		  return smb_pam_accountcheck(user);
+		  return (smb_pam_accountcheck(user) == NT_STATUS_NOPROBLEMO);
 
 		return ret;
 	} 
 
-	return pass_check(user, password, pwlen, pwd, 
+	return (pass_check(user, password, pwlen, pwd, 
 			  lp_update_encrypted() ? 
-			  update_smbpassword_file : NULL);
+			  update_smbpassword_file : NULL));
 }
 
 /****************************************************************************

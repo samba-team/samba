@@ -594,9 +594,11 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	} 
 
 #ifdef WITH_PAM
-	if (!smb_pam_accountcheck(nt_username)) {
-	  return NT_STATUS_ACCOUNT_DISABLED;
-	}
+	become_root();
+	status = smb_pam_accountcheck(nt_username);
+	unbecome_root();
+	if (status != NT_STATUS_NOPROBLEMO)
+		return status;
 #endif
 
 	if (!(smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
