@@ -18,7 +18,7 @@ RCSID("$Id$");
 
 static state_table states[] = {
         auth1,  "user", 1,  1,  pop_user,   {auth1, auth2},
-        auth2,  "pass", 1,  1,  pop_pass,   {auth1, trans},
+        auth2,  "pass", 1,  99, pop_pass,   {auth1, trans},
 #ifdef RPOP
         auth2,  "rpop", 1,  1,  pop_rpop,   {auth1, trans},
 #endif /* RPOP */
@@ -34,6 +34,7 @@ static state_table states[] = {
         trans,  "last", 0,  0,  pop_last,   {trans, trans},
         trans,  "xtnd", 1,  99, pop_xtnd,   {trans, trans},
         trans,  "quit", 0,  0,  pop_updt,   {halt,  halt},
+	trans,  "help", 0,  0,  pop_help,   {trans, trans},
 #ifdef UIDL
         trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans},
 #endif
@@ -99,4 +100,19 @@ pop_get_command(POP *p, char *mp)
     pop_msg(p,POP_FAILURE,
 	    "Unknown command: \"%s\".",p->pop_command);
     return NULL;
+}
+
+int
+pop_help (POP *p)
+{
+    state_table		*s;
+
+    pop_msg(p, POP_SUCCESS, "help");
+
+    for (s = states; s->command; s++) {
+	fprintf (p->output, "%s\r\n", s->command);
+    }
+    fprintf (p->output, ".\r\n");
+    fflush (p->output);
+    return POP_SUCCESS;
 }
