@@ -142,15 +142,6 @@ void status_page(void)
 		printf("<input type=submit value=\"Stop Refreshing\" name=norefresh>\n");
 		printf("<br>Refresh Interval: %d\n", refresh_interval);
 		printf("<input type=hidden name=refresh value=1>\n");
-		/* this little JavaScript allows for automatic refresh
-                   of the page. There are other methods but this seems
-                   to be the best alternative */
-		printf("<script language=\"JavaScript\">\n");
-		printf("<!--\nsetTimeout('window.location.replace(\"%s/status?refresh_interval=%d&refresh=1\")', %d)\n", 
-		       cgi_baseurl(),
-		       refresh_interval,
-		       refresh_interval*1000);
-		printf("//-->\n</script>\n");
 	}
 
 	printf("<p>\n");
@@ -242,5 +233,17 @@ void status_page(void)
 	fclose(f);
 
 	printf("</FORM>\n");
+
+	if (autorefresh) {
+		/* this little JavaScript allows for automatic refresh
+                   of the page. There are other methods but this seems
+                   to be the best alternative */
+		printf("<script language=\"JavaScript\">\n");
+		printf("<!--\nsetTimeout('window.location.replace(\"%s/status?refresh_interval=%d&refresh=1\")', %d)\n", 
+		       cgi_baseurl(),
+		       refresh_interval,
+		       refresh_interval*1000);
+		printf("//-->\n</script>\n");
+	}
 }
 
