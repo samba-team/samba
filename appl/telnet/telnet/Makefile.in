@@ -65,7 +65,7 @@ TAGS: $(SOURCES)
 	etags $(SOURCES)
 
 clean cleandir:
-	rm -f *.o *.a telnet \#* *~ core
+	rm -f *.o *.a telnet$(EXECSUFFIX) \#* *~ core
 
 distclean: clean
 	rm -f Makefile *~

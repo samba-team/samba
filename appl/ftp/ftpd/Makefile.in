@@ -78,7 +78,7 @@ TAGS: $(SOURCES)
 	etags $(SOURCES)
 
 clean cleandir:
-	rm -f *~ *.o core ftpd ftpcmd.c \#*
+	rm -f *~ *.o core ftpd$(EXECSUFFIX) ftpcmd.c \#*
 
 distclean: 
 	rm -f Makefile

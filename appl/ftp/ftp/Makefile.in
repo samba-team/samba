@@ -68,7 +68,7 @@ TAGS: $(SOURCES)
 	etags $(SOURCES)
 
 clean cleandir:
-	rm -f *~ *.o core ftp \#*
+	rm -f *~ *.o core ftp$(EXECSUFFIX) \#*
 
 distclean: 
 	rm -f Makefile
