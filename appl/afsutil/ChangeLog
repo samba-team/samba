@@ -1,3 +1,11 @@
+2005-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pagsh.c: add --cache-type that allows the user to control the
+	resulting credential cache type, inherit the type from the
+	invoking process
+
+	* pagsh.1: manpag for pagsh
+
 2004-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afslog.c: use negative string help string for arg_negative_flag
