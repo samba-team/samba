@@ -737,14 +737,15 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 		}
 	}
 
-	local_uid_to_sid(psid, uid);
+	if (!local_uid_to_sid(psid, uid)) {
+		DEBUG(10,("uid_to_sid: local %u failed to map to sid\n", (unsigned int)uid ));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
         
 	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
 
-	if (psid)
-		store_uid_sid_cache(psid, uid);
-
-	return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+	store_uid_sid_cache(psid, uid);
+	return NT_STATUS_OK;
 }
 
 /*****************************************************************
@@ -775,14 +776,15 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 		}
 	}
 
-	local_gid_to_sid(psid, gid);
+	if (!local_gid_to_sid(psid, gid)) {
+		DEBUG(10,("gid_to_sid: local %u failed to map to sid\n", (unsigned int)gid ));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
         
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
 
-	if (psid)
-		store_gid_sid_cache(psid, gid);
-
-	return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+	store_gid_sid_cache(psid, gid);
+	return NT_STATUS_OK;
 }
 
 /*****************************************************************
@@ -829,8 +831,7 @@ NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 	/* query only first */
 	
-	if ( !winbind_sid_to_uid_query(puid, psid) ) 
-	{
+	if ( !winbind_sid_to_uid_query(puid, psid) ) {
 		DEBUG(10,("sid_to_uid: winbind query for sid %s failed.\n",
 			sid_to_string(sid_str, psid) ));
 		
@@ -906,8 +907,7 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	/* query only first */
 	
-	if ( !winbind_sid_to_gid_query(pgid, psid) ) 
-	{
+	if ( !winbind_sid_to_gid_query(pgid, psid) ) {
 		DEBUG(10,("sid_to_gid: winbind query for sid %s failed.\n",
 			sid_to_string(sid_str, psid) ));
 			
@@ -936,4 +936,3 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	
 	return NT_STATUS_OK;
 }
-
