@@ -53,4 +53,7 @@
 #include <asn1_err.h>
 #include <der.h>
 
+size_t _heim_len_unsigned (unsigned);
+size_t _heim_len_int (int);
+
 #endif /* __DER_LOCL_H__ */
