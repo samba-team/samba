@@ -699,9 +699,9 @@ static BOOL win_election(struct work_record *work,int version,uint32 criterion,
   int mytimeup = time(NULL) - StartupTime;
   uint32 mycriterion = work->ElectionCriterion;
 
-  /* If local master is set to false then never win
+  /* If local master is false then never win
      in election broadcasts. */
-  if(lp_local_master() == False)
+  if(!lp_local_master())
   {
     DEBUG(3,("win_election: Losing election as local master == False\n"));
     return False;
@@ -735,53 +735,61 @@ static BOOL win_election(struct work_record *work,int version,uint32 criterion,
   ******************************************************************/
 void process_election(struct packet_struct *p,char *buf)
 {
-  struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip);
-  int version = CVAL(buf,0);
-  uint32 criterion = IVAL(buf,1);
-  int timeup = IVAL(buf,5)/1000;
-  char *name = buf+13;
-  struct work_record *work;
+	struct dgram_packet *dgram = &p->packet.dgram;
+	struct in_addr ip = dgram->header.source_ip;
+	struct subnet_record *d = find_subnet(ip);
+	int version = CVAL(buf,0);
+	uint32 criterion = IVAL(buf,1);
+	int timeup = IVAL(buf,5)/1000;
+	char *name = buf+13;
+	struct work_record *work;
 
-  if (!d) return;
+	if (!d) return;
 
-  if (ip_equal(d->bcast_ip,wins_ip)) {
-    DEBUG(3,("Unexpected election request from %s %s on WINS net\n",
-	     name, inet_ntoa(p->ip)));
-    return;
-  }
-  
-  name[15] = 0;  
-
-  DEBUG(3,("Election request from %s %s vers=%d criterion=%08x timeup=%d\n",
-	   name,inet_ntoa(p->ip),version,criterion,timeup));
- 
-  if (same_context(dgram)) return;
-  
-  for (work = d->workgrouplist; work; work = work->next)
-    {
-      if (!strequal(work->work_group, myworkgroup))
-	continue;
-
-      if (win_election(work, version,criterion,timeup,name)) {
-	if (!work->RunningElection) {
-	  work->needelection = True;
-	  work->ElectionCount=0;
-	  work->mst_state = MST_POTENTIAL;
+	if (ip_equal(d->bcast_ip,wins_ip))
+	{
+		DEBUG(3,("Unexpected election request from %s %s on WINS net\n",
+		          name, inet_ntoa(p->ip)));
+		return;
 	}
-      } else {
-	work->needelection = False;
-	  
-	if (work->RunningElection || AM_MASTER(work)) {
-	  work->RunningElection = False;
-	  DEBUG(3,(">>> Lost election on %s %s <<<\n",
-		   work->work_group,inet_ntoa(d->bcast_ip)));
-	  if (AM_MASTER(work))
-	    unbecome_local_master(d, work, SV_TYPE_MASTER_BROWSER);
+
+	name[15] = 0;  
+
+	DEBUG(3,("Election request from %s %s vers=%d criterion=%08x timeup=%d\n",
+	          name,inet_ntoa(p->ip),version,criterion,timeup));
+
+	if (same_context(dgram)) return;
+
+	for (work = d->workgrouplist; work; work = work->next)
+	{
+		if (!strequal(work->work_group, myworkgroup))
+		continue;
+
+		if (win_election(work, version,criterion,timeup,name))
+		{
+			if (!work->RunningElection)
+			{
+				work->needelection = True;
+				work->ElectionCount=0;
+				work->mst_state = MST_POTENTIAL;
+			}
+		}
+		else
+		{
+			work->needelection = False;
+
+			if (work->RunningElection || AM_MASTER(work))
+			{
+				work->RunningElection = False;
+				DEBUG(3,(">>> Lost election on %s %s <<<\n",
+						  work->work_group,inet_ntoa(d->bcast_ip)));
+				if (AM_MASTER(work))
+				{
+					unbecome_local_master(d, work, SV_TYPE_MASTER_BROWSER);
+				}
+			}
+		}
 	}
-      }
-    }
 }
 
 
