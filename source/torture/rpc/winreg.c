@@ -354,7 +354,7 @@ BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	if (!open_fn(p, mem_ctx, &handle))
 		return False;
 
-	if (!test_GetEnumKey(p, mem_ctx, &handle)) {
+	if (!test_EnumKey(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
