@@ -129,6 +129,13 @@ CLASS="COMMAND"
 > will prompt
 		for a passeword, unless the guest option is
 		given. </P
+><P
+>		Note that password which contain the arguement delimiter
+		character (i.e. a comma ',') will failed to be parsed correctly
+		on the command line.  However, the same password defined
+		in the PASSWD environment variable or a credentials file (see
+		below) will be read correctly.
+		</P
 ></DD
 ><DT
 >credentials=&#60;filename&#62;</DT
@@ -311,7 +318,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN119"
+NAME="AEN120"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -343,7 +350,7 @@ CLASS="ENVAR"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN127"
+NAME="AEN128"
 ></A
 ><H2
 >BUGS</H2
@@ -371,7 +378,7 @@ NAME="AEN127"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN134"
+NAME="AEN135"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -382,7 +389,7 @@ NAME="AEN134"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN137"
+NAME="AEN138"
 ></A
 ><H2
 >AUTHOR</H2

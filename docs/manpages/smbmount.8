@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMOUNT" "8" "03 May 2001" "" ""
+.TH "SMBMOUNT" "8" "22 June 2001" "" ""
 .SH NAME
 smbmount \- mount an smbfs filesystem
 .SH SYNOPSIS
@@ -48,6 +48,12 @@ option is not given then the environment variable
 no password \fBsmbmount\fR will prompt
 for a passeword, unless the guest option is
 given. 
+
+Note that password which contain the arguement delimiter
+character (i.e. a comma ',') will failed to be parsed correctly
+on the command line. However, the same password defined
+in the PASSWD environment variable or a credentials file (see
+below) will be read correctly.
 .TP
 \fBcredentials=<filename>\fR
 specifies a file that contains a username

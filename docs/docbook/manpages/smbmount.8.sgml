@@ -69,7 +69,16 @@
 		<envar>PASSWD</envar> is used. If it can find
 		no password <command>smbmount</command> will prompt
 		for a passeword, unless the guest option is
-		given. </para></listitem>
+		given. </para>
+
+		<para>
+		Note that password which contain the arguement delimiter
+		character (i.e. a comma ',') will failed to be parsed correctly
+		on the command line.  However, the same password defined
+		in the PASSWD environment variable or a credentials file (see
+		below) will be read correctly.
+		</para>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
