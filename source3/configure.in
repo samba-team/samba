@@ -1637,6 +1637,11 @@ AC_ARG_WITH(krb5,
   AC_MSG_RESULT(no)
 )
 
+# now check for krb5.h. Some systems have the libraries without the headers!
+# note that this check is done here to allow for different kerberos
+# include paths
+AC_CHECK_HEADERS(krb5.h)
+
 ##################################################################
 # we might need the k5crypto and com_err libraries on some systems
 AC_CHECK_LIB(com_err, _et_list, [LIBS="$LIBS -lcom_err"])
