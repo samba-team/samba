@@ -24,7 +24,7 @@
 
 extern int DEBUGLEVEL;
 
-static TDB_CONTEXT *tdb;
+static TDB_CONTEXT *tdbd = NULL;
 
 /* the key type used in the unexpeceted packet database */
 struct unexpected_key {
@@ -48,11 +48,11 @@ void unexpected_packet(struct packet_struct *p)
 	char buf[1024];
 	int len=0;
 
-	if (!tdb) {
-		tdb = tdb_open(lock_path("unexpected.tdb"), 1, 
+	if (!tdbd) {
+		tdbd = tdb_open(lock_path("unexpected.tdb"), 1, 
 			       TDB_CLEAR_IF_FIRST,
 			       O_RDWR | O_CREAT, 0644);
-		if (!tdb) {
+		if (!tdbd) {
 			DEBUG(0,("Failed to open unexpected.tdb\n"));
 			return;
 		}
@@ -71,7 +71,7 @@ void unexpected_packet(struct packet_struct *p)
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 
-	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	tdb_store(tdbd, kbuf, dbuf, TDB_REPLACE);
 }
 
 
@@ -80,7 +80,7 @@ static time_t lastt;
 /****************************************************************************
 delete the record if it is too old
   **************************************************************************/
-static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct unexpected_key key;
 
@@ -99,14 +99,14 @@ delete all old unexpected packets
   **************************************************************************/
 void clear_unexpected(time_t t)
 {
-	if (!tdb) return;
+	if (!tdbd) return;
 
 	if ((lastt != 0) && (t < lastt + NMBD_UNEXPECTED_TIMEOUT))
 		return;
 
 	lastt = t;
 
-	tdb_traverse(tdb, traverse_fn);
+	tdb_traverse(tdbd, traverse_fn, NULL);
 }
 
 
@@ -118,7 +118,7 @@ static char *match_name;
 /****************************************************************************
 tdb traversal fn to find a matching 137 packet
   **************************************************************************/
-static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct unexpected_key key;
 	struct packet_struct *p;
@@ -159,7 +159,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 	match_type = packet_type;
 	match_name = mailslot_name;
 
-	tdb_traverse(tdb2, traverse_match);
+	tdb_traverse(tdb2, traverse_match, NULL);
 
 	tdb_close(tdb2);
 

@@ -220,7 +220,7 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 
 
 /* write a lump of data at a specified offset */
-static int tdb_write(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
+static int tdb_write(TDB_CONTEXT *tdb, tdb_off offset, const char *buf, tdb_len len)
 {
 	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to write beyond the end of the database! */
@@ -674,7 +674,7 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
    if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
-int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf))
+int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void* state), void* state)
 {
 	int count = 0;
 	unsigned h;
@@ -712,7 +712,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB
 			dbuf.dsize = rec.data_len;
 			count++;
 
-			if (fn && fn(tdb, key, dbuf) != 0) {
+			if (fn && fn(tdb, key, dbuf, state) != 0) {
 				/* they want us to stop traversing */
 				free(data);
 				tdb_unlock(tdb, BUCKET(h));

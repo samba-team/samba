@@ -180,7 +180,7 @@ static int profile_dump(void)
 }
 
 
-static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	static pid_t last_pid;
 	struct session_record *ptr;
@@ -326,7 +326,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 		printf("Service      uid      gid      pid     machine\n");
 		printf("----------------------------------------------\n");
 	}
-	tdb_traverse(tdb, traverse_fn1);
+	tdb_traverse(tdb, traverse_fn1, NULL);
 
  locks:
 	if (processes_only) exit(0);

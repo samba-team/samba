@@ -168,7 +168,7 @@ static void addrec_gdbm(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 #if 0
 	printf("[%s] [%s]\n", key.dptr, dbuf.dptr);
@@ -208,8 +208,8 @@ int main(int argc, char *argv[])
 
 	compare_db();
 
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn));
+	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
+	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
 
 	tdb_close(db);
 	gdbm_close(gdbm);

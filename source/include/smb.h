@@ -686,6 +686,12 @@ typedef struct
 } share_mode_entry;
 
 
+#define SHAREMODE_FN_CAST() \
+	void (*)(share_mode_entry *, char*)
+
+#define SHAREMODE_FN(fn) \
+	void (*fn)(share_mode_entry *, char*)
+
 /* each implementation of the share mode code needs
    to support the following operations */
 struct share_ops {
@@ -833,6 +839,14 @@ struct enum_list {
 	char *name;
 };
 
+#define BRLOCK_FN_CAST() \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
+#define BRLOCK_FN(fn) \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
 struct parm_struct
 {
 	char *label;

@@ -72,6 +72,7 @@ int tdb_close(TDB_CONTEXT *tdb);
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_traverse(TDB_CONTEXT *tdb, 
-		 int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
+	int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state),
+	void *state);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 #endif

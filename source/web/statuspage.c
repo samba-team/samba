@@ -72,7 +72,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
 
 /* kill off any connections chosen by the user */
-static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct connections_data crec;
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
@@ -88,7 +88,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 }
 
 /* traversal fn for showing machine connections */
-static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct connections_data crec;
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
@@ -109,7 +109,7 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 }
 
 /* traversal fn for showing share connections */
-static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct connections_data crec;
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
@@ -171,7 +171,7 @@ void status_page(void)
 	}
 
 	tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
-	if (tdb) tdb_traverse(tdb, traverse_fn1);
+	if (tdb) tdb_traverse(tdb, traverse_fn1, NULL);
 
 	printf("<H2>Server Status</H2>\n");
 
@@ -237,7 +237,7 @@ void status_page(void)
 	}
 	printf("</tr>\n");
 
-	if (tdb) tdb_traverse(tdb, traverse_fn2);
+	if (tdb) tdb_traverse(tdb, traverse_fn2, NULL);
 
 	printf("</table><p>\n");
 
@@ -245,7 +245,7 @@ void status_page(void)
 	printf("<table border=1>\n");
 	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
 
-	if (tdb) tdb_traverse(tdb, traverse_fn3);
+	if (tdb) tdb_traverse(tdb, traverse_fn3, NULL);
 
 	printf("</table><p>\n");
 

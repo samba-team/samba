@@ -387,6 +387,10 @@ enum client_action
 {
 	BOOL interactive = True;
 
+	printf("Please use rpcclient from the SAMBA_TNG cvs tag.\n");
+	printf("Please refer to http://samba.org/cvs.html for details.\n");
+	exit(-1);
+
 	int opt;
 	extern FILE *dbf;
 	extern char *optarg;
