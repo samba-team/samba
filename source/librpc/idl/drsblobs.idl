@@ -3,6 +3,7 @@
 [
   uuid("38578646-4566-4564-2244-275796345667"),
   version(0.0),
+  pointer_default(unique),
   helpstring("Active Directory Replication LDAP Blobs")
 ]
 interface drsblobs {

@@ -4,6 +4,10 @@
   miscellaneous IDL structures
 */
 
+
+[
+	pointer_default(unique)
+]
 interface misc
 {
 	typedef [public,noprint,gensize] struct {

@@ -62,16 +62,34 @@ sub is_scalar_type($)
     return 0;
 }
 
+sub pointer_type($)
+{
+	my $e = shift;
+
+	return undef unless $e->{POINTERS};
+	
+	return "ref" if (util::has_property($e, "ref"));
+	return "ptr" if (util::has_property($e, "ptr"));
+	return "unique" if (util::has_property($e, "unique"));
+	return "relative" if (util::has_property($e, "relative"));
+
+	return undef;
+}
+
 # determine if an element needs a reference pointer on the wire
 # in its NDR representation
 sub need_wire_pointer($)
 {
 	my $e = shift;
-	if ($e->{POINTERS} && 
-	    !util::has_property($e, "ref")) {
-		return $e->{POINTERS};
+	my $pt;
+	
+	return 0 unless ($pt = pointer_type($e));
+
+	if ($pt ne "ref") {
+		return 1;
+	} else {
+		return 0;
 	}
-	return undef;
 }
 
 # determine if an element is a pure scalar. pure scalars do not
@@ -1828,15 +1846,6 @@ sub ParseInterface($)
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
 
-	foreach my $d (@{$data}) {
-		if ($d->{TYPE} eq "DECLARE") {
-		    $typedefs{$d->{NAME}} = $d;
-		}
-		if ($d->{TYPE} eq "TYPEDEF") {
-		    $typedefs{$d->{NAME}} = $d;
-		}
-	}
-
 	# Push functions
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
@@ -1904,6 +1913,54 @@ sub RegistrationFunction($$)
 	pidl "}\n\n";
 }
 
+sub CheckPointerTypes($$)
+{
+	my $s = shift;
+	my $default = shift;
+
+	foreach my $e (@{$s->{ELEMENTS}}) {
+		if ($e->{POINTERS}) {
+			if (not defined(pointer_type($e))) {
+				$e->{PROPERTIES}->{$default} = 1;
+			}
+
+			if (pointer_type($e) eq "ptr") {
+				print "Warning: ptr is not supported by pidl yet\n";
+			}
+		}
+	}
+}
+
+sub LoadInterface($)
+{
+	my $x = shift;
+
+	if (not util::has_property($x, "pointer_default")) {
+		$x->{PROPERTIES}->{pointer_default} = "ptr";
+	}
+
+	foreach my $d (@{$x->{DATA}}) {
+		if ($d->{TYPE} eq "DECLARE" or $d->{TYPE} eq "TYPEDEF") {
+		    $typedefs{$d->{NAME}} = $d;
+			if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
+				CheckPointerTypes($d->{DATA}, $x->{PROPERTIES}->{pointer_default});
+			}
+		}
+		if ($d->{TYPE} eq "FUNCTION") {
+			CheckPointerTypes($d, $x->{PROPERTIES}->{pointer_default});
+		}
+	}
+}
+
+sub Load($)
+{
+	my $idl = shift;
+
+	foreach my $x (@{$idl}) {
+		LoadInterface($x);
+	}
+}
+
 #####################################################################
 # parse a parsed IDL structure back into an IDL file
 sub Parse($$)
@@ -1912,6 +1969,8 @@ sub Parse($$)
 	my($filename) = shift;
 	my $h_filename = $filename;
 	$res = "";
+
+	Load($idl);
 
 	if ($h_filename =~ /(.*)\.c/) {
 		$h_filename = "$1.h";

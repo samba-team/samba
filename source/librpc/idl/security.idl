@@ -4,6 +4,9 @@
   security IDL structures
 */
 
+[
+	pointer_default(unique)
+]
 interface security
 {
 	/*

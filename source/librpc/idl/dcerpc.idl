@@ -8,6 +8,9 @@
   see http://www.opengroup.org/onlinepubs/9629399/chap12.htm for packet
   layouts
 */
+[
+pointer_default(unique)
+]
 interface dcerpc
 {
 	typedef [public] struct {
