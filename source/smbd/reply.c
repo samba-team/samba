@@ -1386,7 +1386,7 @@ void fail_readraw(void)
 
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
-	size_t maxcount,mincount;
+	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
 	char *header = outbuf;
