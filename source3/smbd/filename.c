@@ -76,15 +76,17 @@ static BOOL fname_equal(char *name1, char *name2)
 ****************************************************************************/
 static BOOL mangled_equal(char *name1, char *name2)
 {
-  pstring tmpname;
+	char *tmpname;
+	BOOL ret = False;
 
-  if (is_8_3(name2, True))
-    return(False);
-
-  pstrcpy(tmpname,name2);
-  mangle_name_83(tmpname);
-
-  return(strequal(name1,tmpname));
+	if (is_8_3(name2, True))
+	{
+		tmpname = dos_mangle(name2);
+		if(tmpname)
+			ret = strequal(name1,tmpname);
+		SAFE_FREE(tmpname);
+	}
+	return ret;
 }
 
 
