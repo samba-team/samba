@@ -808,6 +808,12 @@
    <xsl:template match="author">
 	   <xsl:apply-templates/>,
    </xsl:template>
+
+   <xsl:template match="editor">
+	   <!--FIXME: More information referring to editor ? -->
+	   <xsl:apply-templates/>,
+   </xsl:template>
+
    <xsl:template match="othername">
 	   <xsl:apply-templates/>
    </xsl:template>
@@ -982,6 +988,16 @@
 	<xsl:template match="authorgroup">
 		<xsl:apply-templates/>
 	</xsl:template>
+
+	<xsl:template match="formalpara">
+		<!--FIXME-->
+	</xsl:template>
+
+	<xsl:template match="citerefentry"/><!--FIXME-->
+	<xsl:template match="term"/><!--FIXME-->
+	<xsl:template match="substeps"/><!--FIXME-->
+	<xsl:template match="seealso"/><!--FIXME-->
+	<xsl:template match="affiliation"/><!--FIXME-->
 </xsl:stylesheet>
 
 
