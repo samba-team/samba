@@ -22,6 +22,7 @@ ADD_OBJ_FILES = \
 		ntvfs/posix/pvfs_shortname.o \
 		ntvfs/posix/pvfs_lock.o \
 		ntvfs/posix/pvfs_wait.o \
+		ntvfs/common/opendb.o \
 		ntvfs/common/brlock.o
 # End MODULE ntvfs_posix
 ################################################

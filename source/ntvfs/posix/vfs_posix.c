@@ -94,6 +94,14 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	pvfs->odb_context = odb_init(pvfs, 
+				     pvfs->tcon->smb_conn->connection->server_id,  
+				     pvfs->tcon->service,
+				     pvfs->tcon->smb_conn->connection->messaging_ctx);
+	if (pvfs->odb_context == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	/* allocate the fnum id -> ptr tree */
 	pvfs->idtree_fnum = idr_init(pvfs);
 	if (pvfs->idtree_fnum == NULL) {
