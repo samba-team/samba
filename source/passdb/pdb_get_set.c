@@ -72,6 +72,14 @@ time_t pdb_get_kickoff_time (const SAM_ACCOUNT *sampass)
 		return (-1);
 }
 
+time_t pdb_get_bad_password_time (const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->private.bad_password_time);
+	else
+		return (-1);
+}
+
 time_t pdb_get_pass_last_set_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -380,6 +388,17 @@ BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_s
 	sampass->private.kickoff_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_KICKOFFTIME, flag);
+}
+
+BOOL pdb_set_bad_password_time (SAM_ACCOUNT *sampass, time_t mytime, 
+				enum pdb_value_state flag)
+{
+	if (!sampass)
+		return False;
+
+	sampass->private.bad_password_time = mytime;
+
+	return pdb_set_init_flags(sampass, PDB_BAD_PASSWORD_TIME, flag);
 }
 
 BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
