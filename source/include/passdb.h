@@ -59,7 +59,7 @@ typedef struct pdb_context
 
 typedef struct pdb_methods 
 {
-	char *name; /* What name got this module */
+	const char *name; /* What name got this module */
 
 	BOOL (*setsampwent)(struct pdb_context *, BOOL update);
 	
