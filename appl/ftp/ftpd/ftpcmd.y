@@ -54,6 +54,10 @@ static char rcsid[] = "$NetBSD: ftpcmd.y,v 1.6 1995/06/03 22:46:45 mycroft Exp $
 #include <config.h>
 #endif
 
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 #include <sys/types.h>
 
 #include <sys/param.h>

@@ -52,6 +52,9 @@
  */
 
 #include <config.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
 
 RCSID("$Id$");
 

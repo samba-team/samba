@@ -7,6 +7,10 @@
 #include <config.h>
 #endif
 
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 #include <sys/bitypes.h>
 #include <sys/cdefs.h>
 

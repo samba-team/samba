@@ -1,10 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include "ftp_locl.h"
 RCSID("$Id$");
 
-#include "ftp_locl.h"
 #include <krb.h>
 
 void kauth(int argc, char **argv)

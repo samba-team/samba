@@ -21,6 +21,10 @@
 #define RETURN_PATH_HANDLING
 #endif
 
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 /* Common include files */
 
 #include <stdio.h>

@@ -55,6 +55,10 @@
 #include <config.h>
 #endif
 
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 RCSID("$Id$");
 
 #ifdef	KRB4

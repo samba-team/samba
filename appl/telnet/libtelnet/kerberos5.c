@@ -60,6 +60,9 @@ char rcsid_kerberos5_c[] = "$Id$";
  */
 
 #include <config.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
 
 RCSID("$Id$");
 

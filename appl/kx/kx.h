@@ -4,6 +4,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

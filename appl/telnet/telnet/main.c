@@ -38,6 +38,9 @@ static char copyright[] =
 #endif /* not lint */
 
 #include <config.h>
+#ifdef SOCKS
+#include <socks.h>
+#endif
 #include "roken.h"
 
 RCSID("$Id$");

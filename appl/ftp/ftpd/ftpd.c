@@ -38,6 +38,10 @@
 RCSID("$Id$");
 #endif
 
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
 /*
  * FTP server.
  */
