@@ -457,9 +457,12 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const DATA_BLOB user_session_
 
 /***********************************************************
  Tell client code we are in a multiple trans reply state.
+ We call this after the last outgoing trans2 packet (which
+ has incremented the sequence numbers), so we must save the
+ current mid and sequence number -2.
 ************************************************************/
 
-void cli_signing_trans_start(struct cli_state *cli)
+void cli_signing_trans_start(struct cli_state *cli, uint16 mid)
 {
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
 
@@ -469,9 +472,9 @@ void cli_signing_trans_start(struct cli_state *cli)
 	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
 	ZERO_STRUCTP(data->trans_info);
 
-	data->trans_info->send_seq_num = data->send_seq_num;
-	data->trans_info->mid = SVAL(cli->outbuf,smb_mid);
-	data->trans_info->reply_seq_num = data->send_seq_num+1;
+	data->trans_info->send_seq_num = data->send_seq_num-2;
+	data->trans_info->mid = mid;
+	data->trans_info->reply_seq_num = data->send_seq_num-1;
 
 	DEBUG(10,("cli_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
 data->send_seq_num = %u\n",
@@ -492,10 +495,15 @@ void cli_signing_trans_stop(struct cli_state *cli)
 	if (!cli->sign_info.doing_signing || !data)
 		return;
 
+	DEBUG(10,("cli_signing_trans_stop: freeing mid = %u, reply_seq_num = %u, send_seq_num = %u \
+data->send_seq_num = %u\n",
+			(unsigned int)data->trans_info->mid,
+			(unsigned int)data->trans_info->reply_seq_num,
+			(unsigned int)data->trans_info->send_seq_num,
+			(unsigned int)data->send_seq_num ));
+
 	SAFE_FREE(data->trans_info);
 	data->trans_info = NULL;
-
-	data->send_seq_num += 2;
 }
 
 /***********************************************************
