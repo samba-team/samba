@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -295,7 +295,22 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
 krb5_error_code
 hdb_set_master_key (krb5_context context,
 		    HDB *db,
-		    const char *keyfile)
+		    EncryptionKey key)
+{
+    krb5_error_code ret;
+
+    ret = hdb_process_master_key(context, key, &db->master_key);
+    if (ret)
+	return ret;
+    des_set_random_generator_seed(key.keyvalue.data);
+    db->master_key_set = 1;
+    return 0;
+}
+
+krb5_error_code
+hdb_set_master_keyfile (krb5_context context,
+			HDB *db,
+			const char *keyfile)
 {
     EncryptionKey key;
     krb5_error_code ret;
@@ -304,16 +319,12 @@ hdb_set_master_key (krb5_context context,
     if (ret) {
 	if (ret != ENOENT)
 	    return ret;
-    } else {
-	ret = hdb_process_master_key(context, key, &db->master_key);
-	if (ret)
-	    return ret;
-	des_set_random_generator_seed(key.keyvalue.data);
-	db->master_key_set = 1;
-	memset(key.keyvalue.data, 0, key.keyvalue.length);
-	free_EncryptionKey(&key);
+	return 0;
     }
-    return 0;
+    ret = hdb_set_master_key(context, db, key);
+    memset(key.keyvalue.data, 0, key.keyvalue.length);
+    free_EncryptionKey(&key);
+    return ret;
 }
 
 krb5_error_code
