@@ -1,7 +1,17 @@
+2003-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.[ch]: rrc_rotate() was untested and broken, fix it.
+	Set and verify wrap Token->Filler.
+	Correct token ID for wrap tokens, 
+	were accidentally swapped with delete tokens.
+	From: Luke Howard <lukeh@PADL.COM>
+
+	Howard <lukeh@PADL.COM>
+
 2003-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* cfx.c: no ASN.1-ish header on per-message tokens From: Luke
-	Howard <lukeh@PADL.COM>
+	* cfx.[ch]: no ASN.1-ish header on per-message tokens
+	From: Luke Howard <lukeh@PADL.COM>
 	
 2003-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
