@@ -3149,11 +3149,21 @@ AC_SUBST(FLAGS1)
 # though they can coexist in different directories.)  In the future
 # this might make the Python stuff be built by default.
 
+# If you don't specify --with-python, we assume "python" anyhow,
+# because the extensions are not built until you specifically "make
+# python_ext".  --without-python turns them off.  Perhaps in the
+# future --with-python should make them automatically built by make
+# all.
+
+PYTHON=python
+
 AC_ARG_WITH(python,
 [  --with-python=PYTHONNAME  build Python libraries],
 [ case "${withval-python}" in
   yes)
-	PYTHON=python
+	;;
+  no)
+	PYTHON=
 	;;
   *)
 	PYTHON=${withval-python}
