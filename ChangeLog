@@ -1,5 +1,11 @@
 2000-05-12  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/fcache.c (scrub_file): new function
+	(erase_file): re-write, use scrub_file
+	* lib/krb5/krb5.h (KRB5_DEFAULT_CCFILE_ROOT): add
+
+	* configure.in (dbopen): add header files
+
 	* lib/krb5/krb5.h (krb5_key_usage): add some more
 	* lib/krb5/fcache.c (erase_file): try to detect symlink games.
 	also call revoke.
