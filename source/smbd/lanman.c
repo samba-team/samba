@@ -1107,7 +1107,7 @@ static int get_server_info(uint32 servertype,
   BOOL local_list_only;
   int i;
 
-  lines = file_lines_load(lock_path(SERVER_LIST), NULL, False);
+  lines = file_lines_load(lock_path(SERVER_LIST), NULL, True);
   if (!lines) {
     DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
     return(0);
