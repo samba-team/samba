@@ -175,6 +175,7 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->sign_info.use_smb_signing 
 		    || cli->sign_info.temp_smb_signing)
 			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
+	        flags2 |= 0xc010;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
