@@ -2062,7 +2062,7 @@ AC_ARG_WITH(acl-support,
 
 		case "$host_os" in
 		*sysv5*)
-			AC_MSG_RESULT(Using UNIXWARE ACLs)
+			AC_MSG_RESULT(Using UnixWare ACLs)
 			AC_DEFINE(HAVE_UNIXWARE_ACLS)
 			;;
 		*solaris*)

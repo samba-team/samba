@@ -11706,8 +11706,8 @@ if test "${with_acl_support+set}" = set; then
   yes)
 
 		case "$host_os" in
-		*unixware*)
-			echo "$ac_t""Using SVR4 ACLs" 1>&6
+		*sysv5*)
+			echo "$ac_t""Using UnixWare ACLs" 1>&6
 			cat >> confdefs.h <<\EOF
 #define HAVE_UNIXWARE_ACLS 1
 EOF
