@@ -181,6 +181,10 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 				  lptr,
 				  rptr);
 out:
+    if (lptr)
+	krb5_free_address (context, lptr);
+    if (rptr)
+	krb5_free_address (context, rptr);
     free (buf1);
     free (buf2);
     return ret;
