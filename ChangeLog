@@ -1,3 +1,7 @@
+2000-10-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/524.c: fix log messge
+
 2000-10-01  Assar Westerlund  <assar@sics.se>
 
 	* kdc/524.c (set_address): allocate memory for storing addresses
