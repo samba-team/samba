@@ -1979,7 +1979,7 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (!set_nt_acl(fsp, psd)) {
+  if (!set_nt_acl(fsp, security_info_sent, psd)) {
 	free_sec_desc(&psd);
 	return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
