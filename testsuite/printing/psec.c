@@ -169,7 +169,9 @@ int psec_getsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
+	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", 
+		 lp_lockdir());
+
 	tdb = tdb_open(tdb_path, 0, 0, O_RDONLY, 0600);
 
 	if (!tdb) {
@@ -268,7 +270,9 @@ int psec_setsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", LOCKDIR);
+	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", 
+		 lp_lockdir());
+
 	tdb = tdb_open(tdb_path, 0, 0, O_RDWR, 0600);
 
 	if (!tdb) {
@@ -381,10 +385,22 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
+	pstring servicesf = CONFIGFILE;
+
 	/* Argument check */
 
 	if (argc == 1) {
 		usage();
+		return 1;
+	}
+
+	/* Load smb.conf file */
+
+	charset_initialise();
+
+	if (!lp_load(servicesf,False,False,True)) {
+		fprintf(stderr, "Couldn't load confiuration file %s\n",
+			servicesf);
 		return 1;
 	}
 
