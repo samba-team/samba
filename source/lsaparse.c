@@ -403,7 +403,10 @@ char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int
 	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align); /* server credentials.  server time stamp appears to be ignored. */
 
 	RW_IVAL(io, q, r_l->buffer_user, 0); q += 4;
-	q = lsa_io_user_info(io, &(r_l->user), q, base, align);
+	if (r_l->buffer_user != 0)
+	{
+		q = lsa_io_user_info(io, r_l->user, q, base, align);
+	}
 
 	RW_IVAL(io, q, r_l->auth_resp, 0); q += 4; /* 1 - Authoritative response; 0 - Non-Auth? */
 
