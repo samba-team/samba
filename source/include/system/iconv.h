@@ -33,6 +33,10 @@
 #include <ctype.h>
 #endif
 
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
+
 /* needed for some systems without iconv. Doesn't really matter
    what error code we use */
 #ifndef EILSEQ
