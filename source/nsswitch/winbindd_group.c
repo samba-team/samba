@@ -824,14 +824,15 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	fstring name_domain, name_user;
 	DOM_SID user_sid;
 	enum SID_NAME_USE name_type;
-	uint32 user_rid, num_groups, num_gids;
+	uint32 user_rid, num_groups, num_gids, num_other_gids = 0;
 	NTSTATUS status;
-	uint32 *user_gids;
+	uint32 *group_rids;
 	struct winbindd_domain *domain;
 	enum winbindd_result result = WINBINDD_ERROR;
-	gid_t *gid_list;
+	gid_t *gid_list, *other_gids = NULL;
 	int i;
 	TALLOC_CTX *mem_ctx;
+	NET_USER_INFO_3 *info3 = NULL;
 	
 	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
@@ -870,28 +871,116 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	status = domain->methods->lookup_usergroups(domain, mem_ctx, user_rid, &num_groups, &user_gids);
+	status = domain->methods->lookup_usergroups(domain, mem_ctx, user_rid, &num_groups, &group_rids);
 	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	/* Also merge in groups from cached info3 other_sids.  Unfortunately 
+           we have to work out whether these guys are user or group sids. */
+
+	if ((info3 = netsamlogon_cache_get(mem_ctx, &domain->sid, user_rid)) &&
+	    info3->num_other_sids) {
+
+		DEBUG(10, ("winbindd_getgroups: info3 has %d other sids\n",
+			   info3->num_other_sids));
+
+		other_gids = calloc(sizeof(gid_t), info3->num_other_sids);
+		num_other_gids = info3->num_other_sids;
+
+		/* Go through each other sid and convert it to a gid */
+
+		for (i = 0; i < info3->num_other_sids; i++) {
+			fstring domain_name, name;
+			enum SID_NAME_USE sid_type;
+			uint32 other_rid;
+
+			/* Is this sid known to us?  It can either be
+                           a trusted domain sid or a foreign sid. */
+
+			if (!winbindd_lookup_name_by_sid(
+				    &info3->other_sids[i].sid,
+				    domain_name, name, &sid_type)) {
+				DEBUG(10, ("winbindd_getgroups: could not "
+					   "lookup name for %s\n", 
+					   sid_string_static(
+						   &info3->other_sids[i].sid)));
+				continue;
+			}
+
+			/* Check it is a domain group */
+
+			if (sid_type != SID_NAME_DOM_GRP) {
+				DEBUG(10, ("winbindd_getgroups: sid type %d "
+					   "for %s is not a domain group\n",
+					   sid_type,
+					   sid_string_static(
+						   &info3->other_sids[i].sid)));
+				continue;
+			}
+
+			/* Map to a gid */
+
+			if (!sid_peek_rid(
+				    &info3->other_sids[i].sid, &other_rid)) {
+				DEBUG(10, ("winbindd_getgroups: could not "
+					   "peek at rid for %s\n",
+					   sid_string_static(
+						   &info3->other_sids[i].sid)));
+				continue;
+			}
+
+			if (!winbindd_idmap_get_gid_from_rid(
+				    domain_name, other_rid, &other_gids[i])) {
+				DEBUG(10, ("winbindd_getgroups: could not "
+					   "map rid %d from sid %s to gid\n",
+					   other_rid,
+					   sid_string_static(
+						   &info3->other_sids[i].sid)));
+				continue;
+			}
+			
+			/* We've jumped through a lot of hoops to get here */
+
+			DEBUG(10, ("winbindd_getgroups: mapped other sid %s to "
+				   "gid %d\n", sid_string_static(
+					   &info3->other_sids[i].sid),
+				   other_gids[i]));
+		}
+	}
+
+	SAFE_FREE(info3);
 
 	/* Copy data back to client */
 
 	num_gids = 0;
-	gid_list = malloc(sizeof(gid_t) * num_groups);
+	gid_list = malloc(sizeof(gid_t) * (num_groups + num_other_gids));
 
 	if (state->response.extra_data)
 		goto done;
 
 	for (i = 0; i < num_groups; i++) {
+
 		if (!winbindd_idmap_get_gid_from_rid(domain->name, 
-						     user_gids[i], 
+						     group_rids[i], 
 						     &gid_list[num_gids])) {
 
 			DEBUG(1, ("unable to convert group rid %d to gid\n", 
-				  user_gids[i]));
+				  group_rids[i]));
 			continue;
 		}
 			
 		num_gids++;
+	}
+
+	if (other_gids) {
+
+		for (i = 0; i < num_other_gids; i++) {
+			if (other_gids[i]) {
+				gid_list[num_gids] = other_gids[i];
+				num_gids++;
+			} 
+		}
+
+		SAFE_FREE(other_gids);
 	}
 
 	state->response.data.num_entries = num_gids;
@@ -901,8 +990,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	result = WINBINDD_OK;
 
  done:
-
 	talloc_destroy(mem_ctx);
+	SAFE_FREE(info3);
 
 	return result;
 }
