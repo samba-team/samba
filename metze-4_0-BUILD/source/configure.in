@@ -170,7 +170,7 @@ AC_ARG_WITH(exclude-modules,
 [ if test $withval; then
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
-		eval MODULE_$i=NOT
+		eval SMB_MODULE_$i=NOT
 	done
 fi ])
 
@@ -180,7 +180,7 @@ AC_ARG_WITH(shared-modules,
 [ if test $withval; then
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
-		eval MODULE_$i=SHARED
+		eval SMB_MODULE_$i=SHARED
 	done
 fi ])
 
@@ -190,7 +190,7 @@ AC_ARG_WITH(static-modules,
 [ if test $withval; then
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
-		eval MODULE_$i=STATIC
+		eval SMB_MODULE_$i=STATIC
 	done
 fi ])
 

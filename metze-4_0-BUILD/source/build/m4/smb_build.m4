@@ -105,12 +105,7 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_MODULE_DEFAULT],
 [
-	dnl Fall back to static if dlopen() is not available
-	[MODULE_DEFAULT_][$1]=$2
-
-	if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
-		[MODULE_DEFAULT_][$1]=STATIC
-	fi
+	[SMB_MODULE_DEFAULT_][$1]="$2"
 ])
 
 dnl SMB_MODULE	( 
@@ -125,16 +120,30 @@ dnl		)
 AC_DEFUN([SMB_MODULE],
 [
 
+	if test -z "$[SMB_MODULE_DEFAULT_][$1]"; then
+		[SMB_MODULE_DEFAULT_][$1]=$3
+	fi
+	
+	if test "$[SMB_MODULE_][$1]"; then
+		[SMB_MODULE_][$1]=$[SMB_MODULE_][$1]
+	elif test "$[SMB_MODULE_]translit([$2], [A-Z], [a-z])" -a x"$[SMB_MODULE_DEFAULT_][$1]" != xNOT; then
+		[SMB_MODULE_][$1]=$[SMB_MODULE_]translit([$2], [A-Z], [a-z])
+	else
+		[SMB_MODULE_][$1]="DEFAULT";
+	fi
+
 SMB_INFO_MODULES="$SMB_INFO_MODULES
 ###################################
 # Start MODULE $1
 \$module{$1}{NAME} = \"$1\";
 \$module{$1}{SUBSYSTEM} = \"$2\";
-\$module{$1}{DEFAULT_BUILD} = \"$3\";
+\$module{$1}{DEFAULT_BUILD} = \"$[SMB_MODULE_DEFAULT_][$1]\";
 \$module{$1}{INIT_OBJ_FILE} = \"$4\";
 \$module{$1}{ADD_OBJ_FILES} = \"$5\";
 \$module{$1}{REQUIRED_LIBS} = \"$6\";
 \$module{$1}{REQUIRED_SUBSYSTEMS} = \"$7\";
+#
+\$module{$1}{CHOSEN_BUILD} = \"$[SMB_MODULE_][$1]\";
 # End MODULE $1
 ###################################
 "
@@ -149,16 +158,30 @@ dnl		)
 AC_DEFUN([SMB_MODULE_MK],
 [
 
+	if test -z "$[SMB_MODULE_DEFAULT_][$1]"; then
+		[SMB_MODULE_DEFAULT_][$1]=$3
+	fi
+	
+	if test "$[SMB_MODULE_][$1]"; then
+		[SMB_MODULE_][$1]=$[SMB_MODULE_][$1]
+	elif test "$[SMB_MODULE_]translit([$2], [A-Z], [a-z])" -a x"$[SMB_MODULE_DEFAULT_][$1]" != xNOT; then
+		[SMB_MODULE_][$1]=$[SMB_MODULE_]translit([$2], [A-Z], [a-z])
+	else
+		[SMB_MODULE_][$1]="DEFAULT";
+	fi
+
 SMB_INFO_MODULES="$SMB_INFO_MODULES
 ###################################
 # Start MODULE $1
 \$module{$1}{NAME} = \"$1\";
 \$module{$1}{SUBSYSTEM} = \"$2\";
-\$module{$1}{DEFAULT_BUILD} = \"$3\";
+\$module{$1}{DEFAULT_BUILD} = \"$[SMB_MODULE_DEFAULT_][$1]\";
 \$module{$1}{INIT_OBJ_FILE} = module_get($4, $1,\"INIT_OBJ_FILE\");
 \$module{$1}{ADD_OBJ_FILES} = module_get($4, $1,\"ADD_OBJ_FILES\");
 \$module{$1}{REQUIRED_LIBS} = module_get($4, $1,\"REQUIRED_LIBS\");
 \$module{$1}{REQUIRED_SUBSYSTEMS} = module_get($4, $1,\"REQUIRED_SUBSYSTEMS\");
+#
+\$module{$1}{CHOSEN_BUILD} = \"$[SMB_MODULE_][$1]\";
 # End MODULE $1
 ###################################
 "
@@ -170,7 +193,7 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_SUBSYSTEM_ENABLE],
 [
-	[SUBSYSTEM_][$1][_ENABLE]=$2
+	[SMB_SUBSYSTEM_ENABLE_][$1]="$2"
 ])
 
 dnl SMB_SUBSYSTEM(
@@ -183,6 +206,10 @@ dnl		)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
 
+	if test -z "$[SMB_SUBSYSTEM_ENABLE_][$1]"; then
+		[SMB_SUBSYSTEM_ENABLE_][$1]="YES";
+	fi
+
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
@@ -191,6 +218,8 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 \$subsystem{$1}{ADD_OBJ_FILES} = \"$3\";
 \$subsystem{$1}{REQUIRED_LIBS} = \"$4\";
 \$subsystem{$1}{REQUIRED_SUBSYSTEMS} = \"$5\";
+#
+\$subsystem{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
 # End Subsystem $1
 ###################################
 "
@@ -203,6 +232,10 @@ dnl		)
 AC_DEFUN([SMB_SUBSYSTEM_MK],
 [
 
+	if test -z "$[SMB_SUBSYSTEM_ENABLE_][$1]"; then
+		[SMB_SUBSYSTEM_ENABLE_][$1]="YES";
+	fi
+
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
@@ -211,6 +244,8 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 \$subsystem{$1}{ADD_OBJ_FILES} = subsystem_get($2, $1,\"ADD_OBJ_FILES\");
 \$subsystem{$1}{REQUIRED_LIBS} = subsystem_get($2, $1,\"REQUIRED_LIBS\");
 \$subsystem{$1}{REQUIRED_SUBSYSTEMS} = subsystem_get($2, $1,\"REQUIRED_SUBSYSTEMS\");
+#
+\$subsystem{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
 # End Subsystem $1
 ###################################
 "
@@ -235,7 +270,7 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_LIBRARY_ENABLE],
 [
-	[LIBRARY_][$1][_ENABLE]=$2
+	[SMB_LIBRARY_ENABLE_][$1]="$2"
 ])
 
 dnl SMB_LIBRARY(
@@ -247,6 +282,10 @@ dnl		)
 AC_DEFUN([SMB_LIBRARY],
 [
 
+	if test -z "$[SMB_LIBRARY_ENABLE_][$1]"; then
+		[SMB_LIBRARY_ENABLE_][$1]="YES";
+	fi
+
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
@@ -254,6 +293,8 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 \$library{$1}{OBJ_FILES} = \"$2\";
 \$library{$1}{REQUIRED_LIBS} = \"$3\";
 \$library{$1}{REQUIRED_SUBSYSTEMS} = \"$4\";
+#
+\$library{$1}{ENABLE} = \"$[SMB_LIBRARY_ENABLE_][$1]\";
 # End Library $1
 ###################################
 "
@@ -266,6 +307,10 @@ dnl		)
 AC_DEFUN([SMB_LIBRARY_MK],
 [
 
+	if test -z "$[SMB_LIBRARY_ENABLE_][$1]"; then
+		[SMB_LIBRARY_ENABLE_][$1]="YES";
+	fi
+
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
@@ -273,6 +318,8 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 \$library{$1}{OBJ_FILES} = library_get($2, $1,\"OBJ_FILES\");
 \$library{$1}{REQUIRED_LIBS} = library_get($2, $1,\"REQUIRED_LIBS\");
 \$library{$1}{REQUIRED_SUBSYSTEMS} = library_get($2, $1,\"REQUIRED_SUBSYSTEMS\");
+#
+\$library{$1}{ENABLE} = \"$[SMB_LIBRARY_ENABLE_][$1]\";
 # End Library $1
 ###################################
 "
@@ -284,7 +331,7 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_BINARY_ENABLE],
 [
-	[BINARY_][$1][_ENABLE]=$2
+	[SMB_BINARY_ENABLE_][$1]="$2";
 ])
 
 dnl SMB_BINARY(
@@ -298,6 +345,10 @@ dnl		)
 AC_DEFUN([SMB_BINARY],
 [
 
+	if test -z "$[SMB_BINARY_ENABLE_][$1]"; then
+		[SMB_BINARY_ENABLE_][$1]="YES";
+	fi
+
 SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 ###################################
 # Start Binary $1
@@ -307,6 +358,8 @@ SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 \$binary{$1}{OBJ_FILES} = \"$4\";
 \$binary{$1}{REQUIRED_LIBS} = \"$5\";
 \$binary{$1}{REQUIRED_SUBSYSTEMS} = \"$6\";
+#
+\$binary{$1}{ENABLE} = \"$[SMB_BINARY_ENABLE_][$1]\";
 # End Binary $1
 ###################################
 "
@@ -319,6 +372,10 @@ dnl		)
 AC_DEFUN([SMB_BINARY_MK],
 [
 
+	if test -z "$[SMB_BINARY_ENABLE_][$1]"; then
+		[SMB_BINARY_ENABLE_][$1]="YES";
+	fi
+
 SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 ###################################
 # Start Binary $1
@@ -328,6 +385,8 @@ SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 \$binary{$1}{OBJ_FILES} = binary_get($2, $1,\"OBJ_FILES\");
 \$binary{$1}{REQUIRED_LIBS} = binary_get($2, $1,\"REQUIRED_LIBS\");
 \$binary{$1}{REQUIRED_SUBSYSTEMS} = binary_get($2, $1,\"REQUIRED_SUBSYSTEMS\");
+#
+\$binary{$1}{ENABLE} = \"$[SMB_BINARY_ENABLE_][$1]\";
 # End Binary $1
 ###################################
 "
