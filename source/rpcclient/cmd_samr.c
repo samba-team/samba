@@ -25,7 +25,6 @@
 
 #include "includes.h"
 
-extern pstring server;
 extern DOM_SID domain_sid;
 
 /****************************************************************************
@@ -108,6 +107,7 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 		got_user_pol = False;
 	SAM_USERINFO_CTR user_ctr;
 	SAM_USER_INFO_21 info_21;
+	fstring			server;
 	
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
@@ -119,6 +119,9 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 		fprintf (stderr, "Could not initialize samr pipe!\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
 	
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
@@ -223,6 +226,7 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 	BOOL got_connect_pol = False, got_domain_pol = False,
 		got_group_pol = False;
 	GROUP_INFO_CTR group_ctr;
+	fstring			server;	
 	
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
@@ -235,6 +239,9 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
 	    NT_STATUS_NOPROBLEMO) {
@@ -286,13 +293,18 @@ done:
 
 static uint32 cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **argv) 
 {
-	POLICY_HND connect_pol, domain_pol, user_pol;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	BOOL got_connect_pol = False, got_domain_pol = False,
-		got_user_pol = False;
-	uint32 num_groups, user_rid;
-	DOM_GID *user_gids;
-	int i;
+	POLICY_HND 		connect_pol, 
+				domain_pol, 
+				user_pol;
+	uint32 			result = NT_STATUS_UNSUCCESSFUL;
+	BOOL 			got_connect_pol = False, 
+				got_domain_pol = False,
+				got_user_pol = False;
+	uint32 			num_groups, 
+				user_rid;
+	DOM_GID 		*user_gids;
+	int 			i;
+	fstring			server;
 	
 	if (argc != 2) {
 		printf("Usage: %s rid/name\n", argv[0]);
@@ -306,7 +318,10 @@ static uint32 cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **
 		fprintf (stderr, "Could not initialize samr pipe!\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+		
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
 	    NT_STATUS_NOPROBLEMO) {
@@ -366,6 +381,7 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 		got_group_pol = False;
 	uint32 num_members, *group_rids, *group_attrs, group_rid;
 	int i;
+	fstring			server;
 	
 	if (argc != 2) {
 		printf("Usage: %s rid/name\n", argv[0]);
@@ -379,6 +395,9 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 		fprintf (stderr, "Could not initialize samr pipe!\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
 
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
