@@ -267,7 +267,7 @@ static NTSTATUS ndr_push_lsa_Name(struct ndr_push *ndr, int ndr_flags, struct ls
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->name) {
-		NDR_CHECK(ndr_push_unistr(ndr, r->name));
+		NDR_CHECK(ndr_push_unistr_noterm(ndr, r->name));
 	}
 done:
 	return NT_STATUS_OK;
@@ -288,7 +288,7 @@ static NTSTATUS ndr_pull_lsa_Name(struct ndr_pull *ndr, int ndr_flags, struct ls
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->name) {
-		NDR_CHECK(ndr_pull_unistr(ndr, &r->name));
+		NDR_CHECK(ndr_pull_unistr_noterm(ndr, &r->name));
 	}
 done:
 	return NT_STATUS_OK;
@@ -451,6 +451,99 @@ NTSTATUS ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, struct lsa_LookupSids *r)
 		NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 	}
 	NDR_CHECK(ndr_pull_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.names));
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.count));
+	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_TranslatedSid(struct ndr_push *ndr, int ndr_flags, struct lsa_TranslatedSid *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint16(ndr, r->sid_type));
+	NDR_CHECK(ndr_push_uint32(ndr, r->rid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->sid_index));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_TranslatedSid(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->sid_type));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->rid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->sid_index));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_TransSidArray(struct ndr_push *ndr, int ndr_flags, struct lsa_TransSidArray *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->sids));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->sids) {
+		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->sids, sizeof(r->sids[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_TranslatedSid));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_TransSidArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray *r)
+{
+	uint32 _ptr_sids;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sids));
+	if (_ptr_sids) {
+		NDR_ALLOC(ndr, r->sids);
+	} else {
+		r->sids = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->sids) {
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->sids, sizeof(r->sids[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedSid));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, struct lsa_LookupNames *r)
+{
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.num_names));
+	if (r->in.names) {
+		int ndr_flags = NDR_SCALARS|NDR_BUFFERS;
+		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->in.names, sizeof(r->in.names[0]), r->in.num_names, (ndr_push_flags_fn_t)ndr_push_lsa_Name));
+	}
+	NDR_CHECK(ndr_push_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.count));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, struct lsa_LookupNames *r)
+{
+	uint32 _ptr_domains;
+	NDR_ALLOC(ndr, r->out.domains);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domains));
+	if (_ptr_domains) {
+		NDR_ALLOC(ndr, r->out.domains);
+	} else {
+		r->out.domains = NULL;
+	}
+	if (r->out.domains) {
+		NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+	}
+	NDR_CHECK(ndr_pull_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
 	NDR_CHECK(ndr_pull_uint32(ndr, r->out.count));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 

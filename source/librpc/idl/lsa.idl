@@ -57,7 +57,7 @@
 	typedef struct {
 		uint16 name_len;
 		uint16 name_size;
-		unistr *name;
+		unistr_noterm *name;
 	} lsa_Name;
 
 	typedef struct {
@@ -87,6 +87,27 @@
 		[in,ref]     lsa_SidArray *sids,
 		[out]        lsa_RefDomainList *domains,
 		[in,out,ref] lsa_TransNameArray *names,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count
+		);
+
+	typedef struct {
+		uint16 sid_type;
+		uint32 rid;
+		uint32 sid_index;
+	} lsa_TranslatedSid;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TranslatedSid *sids;
+	} lsa_TransSidArray;
+
+	NTSTATUS lsa_LookupNames (
+		[in,ref]     policy_handle *handle,
+		[in]         uint32 num_names,
+		[in,ref,size_is(num_names)]  lsa_Name *names,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransSidArray *sids,
 		[in]         uint16 level,
 		[in,out,ref] uint32 *count
 		);

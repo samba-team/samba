@@ -112,3 +112,33 @@ struct lsa_LookupSids {
 
 };
 
+struct lsa_TranslatedSid {
+	uint16 sid_type;
+	uint32 rid;
+	uint32 sid_index;
+};
+
+struct lsa_TransSidArray {
+	uint32 count;
+	struct lsa_TranslatedSid *sids;
+};
+
+struct lsa_LookupNames {
+	struct {
+		struct policy_handle *handle;
+		uint32 num_names;
+		struct lsa_Name *names;
+		struct lsa_TransSidArray *sids;
+		uint16 level;
+		uint32 *count;
+	} in;
+
+	struct {
+		struct lsa_RefDomainList *domains;
+		struct lsa_TransSidArray *sids;
+		uint32 *count;
+		NTSTATUS result;
+	} out;
+
+};
+
