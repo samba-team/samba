@@ -251,7 +251,7 @@ static BOOL lsa_io_obj_attr(const char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps
 
 	if (attr->ptr_sec_qos != 0) {
 		if (UNMARSHALLING(ps))
-			if (!(attr->sec_qos = (LSA_SEC_QOS *)prs_alloc_mem(ps,sizeof(LSA_SEC_QOS))))
+			if (!(attr->sec_qos = PRS_ALLOC_MEM(ps,LSA_SEC_QOS,1)))
 				return False;
 
 		if(!lsa_io_sec_qos("sec_qos", attr->sec_qos, ps, depth))
@@ -540,17 +540,17 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 en
 		 * allocating empty arrays of unicode headers, strings
 		 * and sids of enumerated trusted domains
 		 */
-		if (!(r_e->hdr_domain_name = (UNIHDR2 *)talloc(ctx,sizeof(UNIHDR2) * num_domains))) {
+		if (!(r_e->hdr_domain_name = TALLOC_ARRAY(ctx,UNIHDR2,num_domains))) {
 			r_e->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
 		
-		if (!(r_e->uni_domain_name = (UNISTR2 *)talloc(ctx,sizeof(UNISTR2) * num_domains))) {
+		if (!(r_e->uni_domain_name = TALLOC_ARRAY(ctx,UNISTR2,num_domains))) {
 			r_e->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
 
-		if (!(r_e->domain_sid = (DOM_SID2 *)talloc(ctx,sizeof(DOM_SID2) * num_domains))) {
+		if (!(r_e->domain_sid = TALLOC_ARRAY(ctx,DOM_SID2,num_domains))) {
 			r_e->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
@@ -596,13 +596,13 @@ BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 		num_domains = r_e->num_domains2;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(r_e->hdr_domain_name = (UNIHDR2 *)prs_alloc_mem(ps,sizeof(UNIHDR2) * num_domains)))
+			if (!(r_e->hdr_domain_name = PRS_ALLOC_MEM(ps,UNIHDR2,num_domains)))
 				return False;
 
-			if (!(r_e->uni_domain_name = (UNISTR2 *)prs_alloc_mem(ps,sizeof(UNISTR2) * num_domains)))
+			if (!(r_e->uni_domain_name = PRS_ALLOC_MEM(ps,UNISTR2,num_domains)))
 				return False;
 
-			if (!(r_e->domain_sid = (DOM_SID2 *)prs_alloc_mem(ps,sizeof(DOM_SID2) * num_domains)))
+			if (!(r_e->domain_sid = PRS_ALLOC_MEM(ps,DOM_SID2,num_domains)))
 				return False;
 		}
 
@@ -697,7 +697,7 @@ static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *p
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		d_q->auditsettings = (uint32 *)talloc_zero(ps->mem_ctx, d_q->count2 * sizeof(uint32));
+		d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
 	}
 
 	if (d_q->auditsettings == NULL) {
@@ -818,14 +818,12 @@ static void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
 
 	if (num_entries == 0) return;
 
-	if ((sen->ptr_sid = (uint32 *)talloc_zero(mem_ctx, num_entries * 
-					     sizeof(uint32))) == NULL) {
+	if ((sen->ptr_sid = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_entries )) == NULL) {
 		DEBUG(3, ("init_lsa_sid_enum(): out of memory for ptr_sid\n"));
 		return;
 	}
 
-	if ((sen->sid = (DOM_SID2 *)talloc_zero(mem_ctx, num_entries * 
-					   sizeof(DOM_SID2))) == NULL) {
+	if ((sen->sid = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID2, num_entries)) == NULL) {
 		DEBUG(3, ("init_lsa_sid_enum(): out of memory for sids\n"));
 		return;
 	}
@@ -872,15 +870,13 @@ static BOOL lsa_io_sid_enum(const char *desc, LSA_SID_ENUM *sen, prs_struct *ps,
 	/* Mallocate memory if we're unpacking from the wire */
 
 	if (UNMARSHALLING(ps)) {
-		if ((sen->ptr_sid = (uint32 *)prs_alloc_mem( ps,
-			sen->num_entries * sizeof(uint32))) == NULL) {
+		if ((sen->ptr_sid = PRS_ALLOC_MEM( ps, uint32, sen->num_entries)) == NULL) {
 			DEBUG(3, ("init_lsa_sid_enum(): out of memory for "
 				  "ptr_sid\n"));
 			return False;
 		}
 
-		if ((sen->sid = (DOM_SID2 *)prs_alloc_mem( ps,
-			sen->num_entries * sizeof(DOM_SID2))) == NULL) {
+		if ((sen->sid = PRS_ALLOC_MEM( ps, DOM_SID2, sen->num_entries)) == NULL) {
 			DEBUG(3, ("init_lsa_sid_enum(): out of memory for "
 				  "sids\n"));
 			return False;
@@ -980,15 +976,11 @@ static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
 			return False;
 
 		if (UNMARSHALLING(ps)) {
-			if ((trn->name = (LSA_TRANS_NAME *)
-			     prs_alloc_mem(ps, trn->num_entries * 
-				    sizeof(LSA_TRANS_NAME))) == NULL) {
+			if ((trn->name = PRS_ALLOC_MEM(ps, LSA_TRANS_NAME, trn->num_entries)) == NULL) {
 				return False;
 			}
 
-			if ((trn->uni_name = (UNISTR2 *)
-			     prs_alloc_mem(ps, trn->num_entries *
-				    sizeof(UNISTR2))) == NULL) {
+			if ((trn->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, trn->num_entries)) == NULL) {
 				return False;
 			}
 		}
@@ -1068,14 +1060,12 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	q_l->num_entries2 = num_names;
 	q_l->lookup_level = 1;
 
-	if ((q_l->uni_name = (UNISTR2 *)talloc_zero(
-		mem_ctx, num_names * sizeof(UNISTR2))) == NULL) {
+	if ((q_l->uni_name = TALLOC_ZERO_ARRAY(mem_ctx, UNISTR2, num_names)) == NULL) {
 		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
 		return;
 	}
 
-	if ((q_l->hdr_name = (UNIHDR *)talloc_zero(
-		mem_ctx, num_names * sizeof(UNIHDR))) == NULL) {
+	if ((q_l->hdr_name = TALLOC_ZERO_ARRAY(mem_ctx, UNIHDR, num_names)) == NULL) {
 		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
 		return;
 	}
@@ -1113,11 +1103,9 @@ BOOL lsa_io_q_lookup_names(const char *desc, LSA_Q_LOOKUP_NAMES *q_r,
 
 	if (UNMARSHALLING(ps)) {
 		if (q_r->num_entries) {
-			if ((q_r->hdr_name = (UNIHDR *)prs_alloc_mem(ps,
-					q_r->num_entries * sizeof(UNIHDR))) == NULL)
+			if ((q_r->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, q_r->num_entries)) == NULL)
 				return False;
-			if ((q_r->uni_name = (UNISTR2 *)prs_alloc_mem(ps,
-					q_r->num_entries * sizeof(UNISTR2))) == NULL)
+			if ((q_r->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, q_r->num_entries)) == NULL)
 				return False;
 		}
 	}
@@ -1187,7 +1175,7 @@ BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *r_r,
 		}
 
 		if (UNMARSHALLING(ps)) {
-			if ((r_r->dom_rid = (DOM_RID2 *)prs_alloc_mem(ps, r_r->num_entries2 * sizeof(DOM_RID2)))
+			if ((r_r->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID2, r_r->num_entries2))
 			    == NULL) {
 				DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
 				return False;
@@ -1409,7 +1397,7 @@ BOOL lsa_io_r_enum_privs(const char *desc, LSA_R_ENUM_PRIVS *r_q, prs_struct *ps
 			return False;
 
 		if (UNMARSHALLING(ps))
-			if (!(r_q->privs = (LSA_PRIV_ENTRY *)prs_alloc_mem(ps, sizeof(LSA_PRIV_ENTRY) * r_q->count1)))
+			if (!(r_q->privs = PRS_ALLOC_MEM(ps, LSA_PRIV_ENTRY, r_q->count1)))
 				return False;
 
 		if (!lsa_io_priv_entries("", r_q->privs, r_q->count1, ps, depth))
@@ -1852,7 +1840,7 @@ BOOL lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *r_c, p
 			if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
 				return False;
 
-			if (!(r_c->set->set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+			if (!(r_c->set->set = PRS_ALLOC_MEM(ps,LUID_ATTR,r_c->count)))
 				return False;
 
 		}
@@ -2022,7 +2010,7 @@ BOOL lsa_io_q_addprivs(const char *desc, LSA_Q_ADDPRIVS *r_c, prs_struct *ps, in
 		if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
 			return False;
 		
-		if (!(r_c->set->set = (LUID_ATTR *)prs_alloc_mem(ps, sizeof(LUID_ATTR) * r_c->count)))
+		if (!(r_c->set->set = PRS_ALLOC_MEM(ps, LUID_ATTR, r_c->count)))
 			return False;
 	}
 	
@@ -2084,7 +2072,7 @@ BOOL lsa_io_q_removeprivs(const char *desc, LSA_Q_REMOVEPRIVS *r_c, prs_struct *
 			if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
 				return False;
 
-			if (!(r_c->set->set = (LUID_ATTR *)prs_alloc_mem(ps, sizeof(LUID_ATTR) * r_c->count)))
+			if (!(r_c->set->set = PRS_ALLOC_MEM(ps, LUID_ATTR, r_c->count)))
 				return False;
 		}
 

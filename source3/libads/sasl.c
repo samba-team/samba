@@ -374,7 +374,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	gss_release_buffer(&minor_status, &output_token);
 
-	output_token.value = malloc(strlen(ads->config.bind_path) + 8);
+	output_token.value = SMB_MALLOC(strlen(ads->config.bind_path) + 8);
 	p = output_token.value;
 
 	*p++ = 1; /* no sign & seal selection */

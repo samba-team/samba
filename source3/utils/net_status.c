@@ -129,8 +129,7 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		return 0;
 
 	ids->num_entries += 1;
-	ids->entries = Realloc(ids->entries,
-			       sizeof(struct sessionid) * ids->num_entries);
+	ids->entries = SMB_REALLOC_ARRAY(ids->entries, struct sessionid, ids->num_entries);
 	ids->entries[ids->num_entries-1] = sessionid;
 
 	return 0;

@@ -536,7 +536,7 @@ static BOOL pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 		if (buflen != len) {
 			char *tb;
 
-			tb = (char *)Realloc(buf, len);
+			tb = (char *)SMB_REALLOC(buf, len);
 			if (!tb) {
 				DEBUG(0,("pjob_store: failed to enlarge buffer!\n"));
 				goto done;
@@ -934,7 +934,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 				queue[i].fs_file);
 	}
 
-	if ((data.dptr = malloc(data.dsize)) == NULL)
+	if ((data.dptr = SMB_MALLOC(data.dsize)) == NULL)
 		return;
 
         len = 0;
@@ -1423,7 +1423,7 @@ BOOL print_notify_register_pid(int snum)
 
 	if (i == data.dsize) {
 		/* We weren't in the list. Realloc. */
-		data.dptr = Realloc(data.dptr, data.dsize + 8);
+		data.dptr = SMB_REALLOC(data.dptr, data.dsize + 8);
 		if (!data.dptr) {
 			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n",
 						printername));
@@ -2379,7 +2379,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	if (qcount == 0 && extra_count == 0)
 		goto out;
 
-	if ((queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*(qcount + extra_count))) == NULL)
+	if ((queue = SMB_MALLOC_ARRAY(print_queue_struct, qcount + extra_count)) == NULL)
 		goto out;
 
 	/* Retrieve the linearised queue data. */

@@ -87,7 +87,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
 	struct browse_cache_record *browc;
 	time_t now = time( NULL );
 
-	browc = (struct browse_cache_record *)malloc( sizeof( *browc ) );
+	browc = SMB_MALLOC_P(struct browse_cache_record);
 
 	if( NULL == browc ) {
 		DEBUG( 0, ("create_browser_in_lmb_cache: malloc fail !\n") );

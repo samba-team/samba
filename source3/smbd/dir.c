@@ -407,7 +407,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 	if (dptrs_open >= MAX_OPEN_DIRECTORIES)
 		dptr_idleoldest();
 
-	dptr = (dptr_struct *)malloc(sizeof(dptr_struct));
+	dptr = SMB_MALLOC_P(dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("malloc fail in dptr_create.\n"));
 		return -1;
@@ -819,7 +819,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 
 	if (!p)
 		return(NULL);
-	dirp = (Dir *)malloc(sizeof(Dir));
+	dirp = SMB_MALLOC_P(Dir);
 	if (!dirp) {
 		DEBUG(0,("Out of memory in OpenDir\n"));
 		SMB_VFS_CLOSEDIR(conn,p);
@@ -900,7 +900,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 		if (used + l > dirp->mallocsize) {
 			int s = MAX(used+l,used+2000);
 			char *r;
-			r = (char *)Realloc(dirp->data,s);
+			r = (char *)SMB_REALLOC(dirp->data,s);
 			if (!r) {
 				DEBUG(0,("Out of memory in OpenDir\n"));
 					break;

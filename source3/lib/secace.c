@@ -80,7 +80,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, unsigned 
 
 	*num += 1;
 	
-	if((new[0] = (SEC_ACE *) talloc_zero(ctx, (*num) * sizeof(SEC_ACE))) == 0)
+	if((new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num - 1; i ++)
@@ -124,7 +124,7 @@ NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, uint32 *n
 
 	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
-	if((new[0] = (SEC_ACE *) talloc_zero(ctx, (*num) * sizeof(SEC_ACE))) == 0)
+	if((new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num; i ++) {

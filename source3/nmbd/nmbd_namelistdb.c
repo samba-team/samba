@@ -181,14 +181,14 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
 	struct name_record *namerec;
 	time_t time_now = time(NULL);
 
-	namerec = (struct name_record *)malloc( sizeof(*namerec) );
+	namerec = SMB_MALLOC_P(struct name_record);
 	if( NULL == namerec ) {
 		DEBUG( 0, ( "add_name_to_subnet: malloc fail.\n" ) );
 		return( NULL );
 	}
 
 	memset( (char *)namerec, '\0', sizeof(*namerec) );
-	namerec->data.ip = (struct in_addr *)malloc( sizeof(struct in_addr) * num_ips );
+	namerec->data.ip = SMB_MALLOC_ARRAY( struct in_addr, num_ips );
 	if( NULL == namerec->data.ip ) {
 		DEBUG( 0, ( "add_name_to_subnet: malloc fail when creating ip_flgs.\n" ) );
 		ZERO_STRUCTP(namerec);
@@ -329,7 +329,7 @@ void add_ip_to_name_record( struct name_record *namerec, struct in_addr new_ip )
 	if( find_ip_in_name_record( namerec, new_ip ) )
 		return;
   
-	new_list = (struct in_addr *)malloc( (namerec->data.num_ips + 1) * sizeof(struct in_addr) );
+	new_list = SMB_MALLOC_ARRAY( struct in_addr, namerec->data.num_ips + 1);
 	if( NULL == new_list ) {
 		DEBUG(0,("add_ip_to_name_record: Malloc fail !\n"));
 		return;
@@ -460,7 +460,7 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
 		/* Create an IP list containing all our known subnets. */
 
 		num_ips = iface_count();
-		iplist = (struct in_addr *)malloc( num_ips * sizeof(struct in_addr) );
+		iplist = SMB_MALLOC_ARRAY( struct in_addr, num_ips);
 		if( NULL == iplist ) {
 			DEBUG(0,("add_samba_names_to_subnet: Malloc fail !\n"));
 			return;

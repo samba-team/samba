@@ -354,7 +354,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
 {
 	int i;
 
-	*recs = (struct res_rec *)malloc(sizeof(**recs)*count);
+	*recs = SMB_MALLOC_ARRAY(struct res_rec, count);
 	if (!*recs)
 		return(False);
 
@@ -557,7 +557,7 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 	struct nmb_packet *copy_nmb;
 	struct packet_struct *pkt_copy;
 
-	if(( pkt_copy = (struct packet_struct *)malloc(sizeof(*packet))) == NULL) {
+	if(( pkt_copy = SMB_MALLOC_P(struct packet_struct)) == NULL) {
 		DEBUG(0,("copy_nmb_packet: malloc fail.\n"));
 		return NULL;
 	}
@@ -580,22 +580,19 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 	/* Now copy any resource records. */
 
 	if (nmb->answers) {
-		if((copy_nmb->answers = (struct res_rec *)
-					malloc(nmb->header.ancount * sizeof(struct res_rec))) == NULL)
+		if((copy_nmb->answers = SMB_MALLOC_ARRAY(struct res_rec,nmb->header.ancount)) == NULL)
 			goto free_and_exit;
 		memcpy((char *)copy_nmb->answers, (char *)nmb->answers, 
 				nmb->header.ancount * sizeof(struct res_rec));
 	}
 	if (nmb->nsrecs) {
-		if((copy_nmb->nsrecs = (struct res_rec *)
-					malloc(nmb->header.nscount * sizeof(struct res_rec))) == NULL)
+		if((copy_nmb->nsrecs = SMB_MALLOC_ARRAY(struct res_rec, nmb->header.nscount)) == NULL)
 			goto free_and_exit;
 		memcpy((char *)copy_nmb->nsrecs, (char *)nmb->nsrecs, 
 				nmb->header.nscount * sizeof(struct res_rec));
 	}
 	if (nmb->additional) {
-		if((copy_nmb->additional = (struct res_rec *)
-					malloc(nmb->header.arcount * sizeof(struct res_rec))) == NULL)
+		if((copy_nmb->additional = SMB_MALLOC_ARRAY(struct res_rec, nmb->header.arcount)) == NULL)
 			goto free_and_exit;
 		memcpy((char *)copy_nmb->additional, (char *)nmb->additional, 
 				nmb->header.arcount * sizeof(struct res_rec));
@@ -622,7 +619,7 @@ static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
 { 
 	struct packet_struct *pkt_copy;
 
-	if(( pkt_copy = (struct packet_struct *)malloc(sizeof(*packet))) == NULL) {
+	if(( pkt_copy = SMB_MALLOC_P(struct packet_struct)) == NULL) {
 		DEBUG(0,("copy_dgram_packet: malloc fail.\n"));
 		return NULL;
 	}
@@ -700,7 +697,7 @@ struct packet_struct *parse_packet(char *buf,int length,
 	struct packet_struct *p;
 	BOOL ok=False;
 
-	p = (struct packet_struct *)malloc(sizeof(*p));
+	p = SMB_MALLOC_P(struct packet_struct);
 	if (!p)
 		return(NULL);
 

@@ -144,7 +144,7 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 	if (!opt_password && !opt_machine_pass) {
 		char *pass = getpass("Password:");
 		if (pass) {
-			opt_password = strdup(pass);
+			opt_password = SMB_STRDUP(pass);
 		}
 	}
 	
@@ -221,11 +221,11 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 NTSTATUS connect_pipe(struct cli_state **cli_dst, int pipe_num, BOOL *got_pipe)
 {
 	NTSTATUS nt_status;
-	char *server_name = strdup("127.0.0.1");
+	char *server_name = SMB_STRDUP("127.0.0.1");
 	struct cli_state *cli_tmp = NULL;
 
 	if (opt_destination)
-		server_name = strdup(opt_destination);
+		server_name = SMB_STRDUP(opt_destination);
 
 	/* make a connection to a named pipe */
 	nt_status = connect_to_ipc(&cli_tmp, NULL, server_name);
@@ -270,13 +270,13 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 {
 
 	if (opt_host) {
-		*server_name = strdup(opt_host);
+		*server_name = SMB_STRDUP(opt_host);
 	}		
 
 	if (opt_have_ip) {
 		*server_ip = opt_dest_ip;
 		if (!*server_name) {
-			*server_name = strdup(inet_ntoa(opt_dest_ip));
+			*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 		}
 	} else if (*server_name) {
 		/* resolve the IP address */
@@ -296,7 +296,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 			if ( !name_status_find(opt_target_workgroup, 0x1b, 0x20, pdc_ip, dc_name) )
 				return False;
 				
-			*server_name = strdup(dc_name);
+			*server_name = SMB_STRDUP(dc_name);
 			*server_ip = pdc_ip;
 		}
 		
@@ -309,7 +309,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		} else {
 			*server_ip = msbrow_ip;
 		}
-		*server_name = strdup(inet_ntoa(opt_dest_ip));
+		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 	} else if (flags & NET_FLAGS_MASTER) {
 		struct in_addr brow_ips;
 		if (!resolve_name(opt_target_workgroup, &brow_ips, 0x1D))  {
@@ -319,11 +319,11 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		} else {
 			*server_ip = brow_ips;
 		}
-		*server_name = strdup(inet_ntoa(opt_dest_ip));
+		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
 		extern struct in_addr loopback_ip;
 		*server_ip = loopback_ip;
-		*server_name = strdup("127.0.0.1");
+		*server_name = SMB_STRDUP("127.0.0.1");
 	}
 
 	if (!server_name || !*server_name) {
@@ -786,7 +786,7 @@ static struct functable net_func[] = {
 			break;
 		case 'U':
 			opt_user_specified = True;
-			opt_user_name = strdup(opt_user_name);
+			opt_user_name = SMB_STRDUP(opt_user_name);
 			p = strchr(opt_user_name,'%');
 			if (p) {
 				*p = 0;

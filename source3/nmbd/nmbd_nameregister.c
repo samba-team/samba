@@ -306,7 +306,7 @@ static void multihomed_register_one(struct nmb_name *nmbname,
 	struct in_addr wins_ip = wins_srv_ip_tag(tag, ip);
 	fstring ip_str;
 
-	userdata = (struct userdata_struct *)malloc(sizeof(*userdata) + strlen(tag) + 1);
+	userdata = (struct userdata_struct *)SMB_MALLOC(sizeof(*userdata) + strlen(tag) + 1);
 	if (!userdata) {
 		DEBUG(0,("Failed to allocate userdata structure!\n"));
 		return;
@@ -423,7 +423,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
 		num_ips++;
 	
-	if((ip_list = (struct in_addr *)malloc(num_ips * sizeof(struct in_addr)))==NULL) {
+	if((ip_list = SMB_MALLOC_ARRAY(struct in_addr, num_ips))==NULL) {
 		DEBUG(0,("multihomed_register_name: malloc fail !\n"));
 		return;
 	}

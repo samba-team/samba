@@ -67,7 +67,7 @@ BOOL echo_io_q_echo_data(const char *desc, ECHO_Q_ECHO_DATA *q_d,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		q_d->data = prs_alloc_mem(ps, q_d->size);
+		q_d->data = PRS_ALLOC_MEM(ps, char, q_d->size);
 
 		if (!q_d->data)
 			return False;
@@ -86,7 +86,7 @@ BOOL echo_io_r_echo_data(const char *desc, ECHO_R_ECHO_DATA *q_d,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		q_d->data = prs_alloc_mem(ps, q_d->size);
+		q_d->data = PRS_ALLOC_MEM(ps, char, q_d->size);
 
 		if (!q_d->data)
 			return False;
@@ -114,7 +114,7 @@ BOOL echo_io_q_sink_data(const char *desc, ECHO_Q_SINK_DATA *q_d,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		q_d->data = prs_alloc_mem(ps, q_d->size);
+		q_d->data = PRS_ALLOC_MEM(ps, char, q_d->size);
 
 		if (!q_d->data)
 			return False;
@@ -153,7 +153,7 @@ BOOL echo_io_r_source_data(const char *desc, ECHO_R_SOURCE_DATA *q_d,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		q_d->data = prs_alloc_mem(ps, q_d->size);
+		q_d->data = PRS_ALLOC_MEM(ps, char, q_d->size);
 
 		if (!q_d->data)
 			return False;

@@ -551,7 +551,7 @@ static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
 	new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 
 				NEW_PW_FORMAT_SPACE_PADDED_LEN + 1 + 13 + 2;
 
-	if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
+	if((new_entry = (char *)SMB_MALLOC( new_entry_length )) == NULL) {
 		DEBUG(0, ("format_new_smbpasswd_entry: Malloc failed adding entry for user %s.\n",
 			newpwd->smb_name ));
 		return NULL;
@@ -1505,7 +1505,7 @@ static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_m
 
 	/* Setup private data and free function */
 
-	privates = talloc_zero(pdb_context->mem_ctx, sizeof(struct smbpasswd_privates));
+	privates = TALLOC_ZERO_P(pdb_context->mem_ctx, struct smbpasswd_privates);
 
 	if (!privates) {
 		DEBUG(0, ("talloc() failed for smbpasswd private_data!\n"));

@@ -83,7 +83,7 @@ NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods 
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = smb_xmalloc(sizeof(struct idmap_function_entry));
+	entry = SMB_XMALLOC_P(struct idmap_function_entry);
 	entry->name = smb_xstrdup(name);
 	entry->methods = methods;
 

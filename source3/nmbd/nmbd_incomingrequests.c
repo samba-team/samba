@@ -516,7 +516,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
 			if (namerec->data.num_ips == 1) {
 				prdata = rdata;
 			} else {
-				if ((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL) {
+				if ((prdata = (char *)SMB_MALLOC( namerec->data.num_ips * 6 )) == NULL) {
 					DEBUG(0,("process_name_query_request: malloc fail !\n"));
 					return;
 				}

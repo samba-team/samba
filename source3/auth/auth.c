@@ -49,7 +49,7 @@ NTSTATUS smb_register_auth(int version, const char *name, auth_init_function ini
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 	
-	entry = smb_xmalloc(sizeof(struct auth_init_function_entry));
+	entry = SMB_XMALLOC_P(struct auth_init_function_entry);
 	entry->name = smb_xstrdup(name);
 	entry->init = init;
 
@@ -347,7 +347,7 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 
 	mem_ctx = talloc_init("authentication context");
 	
-	*auth_context = talloc(mem_ctx, sizeof(**auth_context));
+	*auth_context = TALLOC_P(mem_ctx, struct auth_context);
 	if (!*auth_context) {
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
 		talloc_destroy(mem_ctx);

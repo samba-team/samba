@@ -59,10 +59,10 @@ static char **completion_fn(const char *text, int start, int end)
 	if (!commands) 
 		return NULL;
 
-	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	matches = SMB_MALLOC_ARRAY(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
 
-	matches[count++] = strdup(text);
+	matches[count++] = SMB_STRDUP(text);
 	if (!matches[0]) return NULL;
 
 	while (commands && count < MAX_COMPLETIONS-1) 
@@ -78,7 +78,7 @@ static char **completion_fn(const char *text, int start, int end)
                       ( commands->cmd_set[i].returntype == RPC_RTYPE_WERROR &&
                         commands->cmd_set[i].wfn)))
 			{
-				matches[count] = strdup(commands->cmd_set[i].name);
+				matches[count] = SMB_STRDUP(commands->cmd_set[i].name);
 				if (!matches[count]) 
 					return NULL;
 				count++;
@@ -91,7 +91,7 @@ static char **completion_fn(const char *text, int start, int end)
 
 	if (count == 2) {
 		SAFE_FREE(matches[0]);
-		matches[0] = strdup(matches[1]);
+		matches[0] = SMB_STRDUP(matches[1]);
 	}
 	matches[count] = NULL;
 	return matches;
@@ -485,7 +485,7 @@ static void add_command_set(struct cmd_set *cmd_set)
 {
 	struct cmd_list *entry;
 
-	if (!(entry = (struct cmd_list *)malloc(sizeof(struct cmd_list)))) {
+	if (!(entry = SMB_MALLOC_P(struct cmd_list))) {
 		DEBUG(0, ("out of memory\n"));
 		return;
 	}

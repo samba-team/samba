@@ -35,8 +35,13 @@ NTSTATUS cli_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
+		prs_mem_free(&qbuf);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Marshall data and send request */
 
@@ -76,8 +81,13 @@ NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
+		prs_mem_free(&qbuf);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Marshall data and send request */
 
@@ -95,7 +105,7 @@ NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = True;
 
 	if (out_data) {
-		*out_data = talloc(mem_ctx, size);
+		*out_data = TALLOC(mem_ctx, size);
 		memcpy(*out_data, r.data, size);
 	}
 
@@ -119,8 +129,13 @@ NTSTATUS cli_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
+		prs_mem_free(&qbuf);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Marshall data and send request */
 
@@ -159,8 +174,13 @@ NTSTATUS cli_echo_source_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
+		prs_mem_free(&qbuf);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Marshall data and send request */
 

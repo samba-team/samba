@@ -166,7 +166,7 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 
 	*store_size = PAI_ENTRIES_BASE + ((num_entries + num_def_entries)*PAI_ENTRY_LENGTH);
 
-	pai_buf = malloc(*store_size);
+	pai_buf = SMB_MALLOC(*store_size);
 	if (!pai_buf) {
 		return NULL;
 	}
@@ -343,7 +343,7 @@ static struct pai_val *create_pai_val(char *buf, size_t size)
 	if (!check_pai_ok(buf, size))
 		return NULL;
 
-	paiv = malloc(sizeof(struct pai_val));
+	paiv = SMB_MALLOC_P(struct pai_val);
 	if (!paiv)
 		return NULL;
 
@@ -362,7 +362,7 @@ static struct pai_val *create_pai_val(char *buf, size_t size)
 	for (i = 0; i < paiv->num_entries; i++) {
 		struct pai_entry *paie;
 
-		paie = malloc(sizeof(struct pai_entry));
+		paie = SMB_MALLOC_P(struct pai_entry);
 		if (!paie) {
 			free_inherited_info(paiv);
 			return NULL;
@@ -393,7 +393,7 @@ static struct pai_val *create_pai_val(char *buf, size_t size)
 	for (i = 0; i < paiv->num_def_entries; i++) {
 		struct pai_entry *paie;
 
-		paie = malloc(sizeof(struct pai_entry));
+		paie = SMB_MALLOC_P(struct pai_entry);
 		if (!paie) {
 			free_inherited_info(paiv);
 			return NULL;
@@ -438,7 +438,7 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 	if (!lp_map_acl_inherit(SNUM(fsp->conn)))
 		return NULL;
 
-	if ((pai_buf = malloc(pai_buf_size)) == NULL)
+	if ((pai_buf = SMB_MALLOC(pai_buf_size)) == NULL)
 		return NULL;
 
 	do {
@@ -456,7 +456,10 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 			/* Buffer too small - enlarge it. */
 			pai_buf_size *= 2;
 			SAFE_FREE(pai_buf);
-			if ((pai_buf = malloc(pai_buf_size)) == NULL)
+			if (pai_buf_size > 1024*1024) {
+				return NULL; /* Limit malloc to 1mb. */
+			}
+			if ((pai_buf = SMB_MALLOC(pai_buf_size)) == NULL)
 				return NULL;
 		}
 	} while (ret == -1);
@@ -523,7 +526,7 @@ static void free_canon_ace_list( canon_ace *list_head )
 
 static canon_ace *dup_canon_ace( canon_ace *src_ace)
 {
-	canon_ace *dst_ace = (canon_ace *)malloc(sizeof(canon_ace));
+	canon_ace *dst_ace = SMB_MALLOC_P(canon_ace);
 
 	if (dst_ace == NULL)
 		return NULL;
@@ -1083,7 +1086,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	}
 
 	if (!got_user) {
-		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+		if ((pace = SMB_MALLOC_P(canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
 		}
@@ -1113,7 +1116,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	}
 
 	if (!got_grp) {
-		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+		if ((pace = SMB_MALLOC_P(canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
 		}
@@ -1139,7 +1142,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	}
 
 	if (!got_other) {
-		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+		if ((pace = SMB_MALLOC_P(canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
 		}
@@ -1323,7 +1326,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 		 * Create a cannon_ace entry representing this NT DACL ACE.
 		 */
 
-		if ((current_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+		if ((current_ace = SMB_MALLOC_P(canon_ace)) == NULL) {
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
 			DEBUG(0,("create_canon_ace_lists: malloc fail.\n"));
@@ -2161,7 +2164,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		 * Add this entry to the list.
 		 */
 
-		if ((ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+		if ((ace = SMB_MALLOC_P(canon_ace)) == NULL)
 			goto fail;
 
 		ZERO_STRUCTP(ace);
@@ -2793,7 +2796,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			num_def_acls = count_canon_ace_list(dir_ace);
 
 			/* Allocate the ace list. */
-			if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_def_acls)* sizeof(SEC_ACE))) == NULL) {
+			if ((nt_ace_list = SMB_MALLOC_ARRAY(SEC_ACE,num_acls + num_profile_acls + num_def_acls)) == NULL) {
 				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
 				goto done;
 			}

@@ -132,7 +132,7 @@ find_again:
 		return NULL;
 	}
 
-	if ((conn=(connection_struct *)talloc_zero(mem_ctx, sizeof(*conn)))==NULL) {
+	if ((conn=TALLOC_ZERO_P(mem_ctx, connection_struct))==NULL) {
 		DEBUG(0,("talloc_zero() failed!\n"));
 		return NULL;
 	}

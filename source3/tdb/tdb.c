@@ -65,6 +65,30 @@
 #include "spinlock.h"
 #else
 #include "includes.h"
+
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef malloc
+#undef malloc
+#endif
+
+#ifdef realloc
+#undef realloc
+#endif
+
+#ifdef calloc
+#undef calloc
+#endif
+
+#ifdef strdup
+#undef strdup
+#endif
+
+#ifdef strndup
+#undef strndup
+#endif
+
+#endif
+
 #endif
 
 #define TDB_MAGIC_FOOD "TDB file\n"

@@ -775,7 +775,7 @@ BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 			int 			n_fns = 0;
 			PIPE_RPC_FNS		*context_fns;
 			
-			if ( !(context_fns = malloc(sizeof(PIPE_RPC_FNS))) ) {
+			if ( !(context_fns = SMB_MALLOC_P(PIPE_RPC_FNS)) ) {
 				DEBUG(0,("check_bind_req: malloc() failed!\n"));
 				return False;
 			}
@@ -831,8 +831,8 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
         /* We use a temporary variable because this call can fail and 
            rpc_lookup will still be valid afterwards.  It could then succeed if
            called again later */
-        rpc_entry = realloc(rpc_lookup, 
-                            ++rpc_lookup_size*sizeof(struct rpc_table));
+	rpc_lookup_size++;
+        rpc_entry = SMB_REALLOC_ARRAY(rpc_lookup, struct rpc_table, rpc_lookup_size);
         if (NULL == rpc_entry) {
                 rpc_lookup_size--;
                 DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
@@ -843,13 +843,10 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
         
         rpc_entry = rpc_lookup + (rpc_lookup_size - 1);
         ZERO_STRUCTP(rpc_entry);
-        rpc_entry->pipe.clnt = strdup(clnt);
-        rpc_entry->pipe.srv = strdup(srv);
-        rpc_entry->cmds = realloc(rpc_entry->cmds, 
-                                  (rpc_entry->n_cmds + size) *
-                                  sizeof(struct api_struct));
-        memcpy(rpc_entry->cmds + rpc_entry->n_cmds, cmds,
-               size * sizeof(struct api_struct));
+        rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
+        rpc_entry->pipe.srv = SMB_STRDUP(srv);
+        rpc_entry->cmds = SMB_REALLOC_ARRAY(rpc_entry->cmds, struct api_struct, rpc_entry->n_cmds + size);
+        memcpy(rpc_entry->cmds + rpc_entry->n_cmds, cmds, size * sizeof(struct api_struct));
         rpc_entry->n_cmds += size;
         
         return NT_STATUS_OK;
@@ -1585,9 +1582,7 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	if ((DEBUGLEVEL >= 10) && 
 	    (prs_offset(&p->in_data.data) != prs_data_size(&p->in_data.data))) {
 		size_t data_len = prs_data_size(&p->in_data.data) - prs_offset(&p->in_data.data);
-		char *data;
-
-		data = malloc(data_len);
+		char *data = SMB_MALLOC(data_len);
 
 		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
 		if (data) {

@@ -783,7 +783,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info0 = (SRV_SHARE_INFO_0 *)prs_alloc_mem(ps, num_entries * sizeof(SRV_SHARE_INFO_0))))
+			if (!(info0 = PRS_ALLOC_MEM(ps, SRV_SHARE_INFO_0, num_entries)))
 				return False;
 			ctr->share.info0 = info0;
 		}
@@ -809,7 +809,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1 = (SRV_SHARE_INFO_1 *)prs_alloc_mem(ps, num_entries * sizeof(SRV_SHARE_INFO_1))))
+			if (!(info1 = PRS_ALLOC_MEM(ps, SRV_SHARE_INFO_1, num_entries)))
 				return False;
 			ctr->share.info1 = info1;
 		}
@@ -835,7 +835,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info2 = (SRV_SHARE_INFO_2 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_2))))
+			if (!(info2 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_2,num_entries)))
 				return False;
 			ctr->share.info2 = info2;
 		}
@@ -860,8 +860,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info501 = (SRV_SHARE_INFO_501 *) prs_alloc_mem(ps, num_entries *
-					sizeof (SRV_SHARE_INFO_501))))
+			if (!(info501 = PRS_ALLOC_MEM(ps, SRV_SHARE_INFO_501, num_entries)))
 				return False;
 			ctr->share.info501 = info501;
 		}
@@ -886,7 +885,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info502 = (SRV_SHARE_INFO_502 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_502))))
+			if (!(info502 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_502,num_entries)))
 				return False;
 			ctr->share.info502 = info502;
 		}
@@ -912,7 +911,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1004 = (SRV_SHARE_INFO_1004 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_1004))))
+			if (!(info1004 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_1004,num_entries)))
 				return False;
 			ctr->share.info1004 = info1004;
 		}
@@ -938,7 +937,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1005 = (SRV_SHARE_INFO_1005 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_1005))))
+			if (!(info1005 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_1005,num_entries)))
 				return False;
 			ctr->share.info1005 = info1005;
 		}
@@ -958,7 +957,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1006 = (SRV_SHARE_INFO_1006 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_1006))))
+			if (!(info1006 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_1006,num_entries)))
 				return False;
 			ctr->share.info1006 = info1006;
 		}
@@ -978,7 +977,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1007 = (SRV_SHARE_INFO_1007 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_1007))))
+			if (!(info1007 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_1007,num_entries)))
 				return False;
 			ctr->share.info1007 = info1007;
 		}
@@ -1004,7 +1003,7 @@ static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1501 = (SRV_SHARE_INFO_1501 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_1501))))
+			if (!(info1501 = PRS_ALLOC_MEM(ps,SRV_SHARE_INFO_1501,num_entries)))
 				return False;
 			ctr->share.info1501 = info1501;
 		}
@@ -1848,7 +1847,7 @@ static BOOL srv_io_srv_sess_ctr(const char *desc, SRV_SESS_INFO_CTR **pp_ctr, pr
 	depth++;
 
 	if(UNMARSHALLING(ps)) {
-		ctr = *pp_ctr = (SRV_SESS_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_SESS_INFO_CTR));
+		ctr = *pp_ctr = PRS_ALLOC_MEM(ps, SRV_SESS_INFO_CTR, 1);
 		if (ctr == NULL)
 			return False;
 	}
@@ -2221,7 +2220,7 @@ static BOOL srv_io_srv_conn_ctr(const char *desc, SRV_CONN_INFO_CTR **pp_ctr, pr
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
-		ctr = *pp_ctr = (SRV_CONN_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_CONN_INFO_CTR));
+		ctr = *pp_ctr = PRS_ALLOC_MEM(ps, SRV_CONN_INFO_CTR, 1);
 		if (ctr == NULL)
 			return False;
 	}
@@ -2487,7 +2486,7 @@ static BOOL srv_io_srv_file_ctr(const char *desc, SRV_FILE_INFO_CTR *ctr, prs_st
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info3 = (SRV_FILE_INFO_3 *)prs_alloc_mem(ps, num_entries * sizeof(SRV_FILE_INFO_3))))
+			if (!(info3 = PRS_ALLOC_MEM(ps, SRV_FILE_INFO_3, num_entries)))
 				return False;
 			ctr->file.info3 = info3;
 		}
@@ -3022,8 +3021,7 @@ BOOL srv_io_q_net_srv_set_info(const char *desc, SRV_Q_NET_SRV_SET_INFO *q_n,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		q_n->ctr = (SRV_INFO_CTR *)
-			prs_alloc_mem(ps, sizeof(SRV_INFO_CTR));
+		q_n->ctr = PRS_ALLOC_MEM(ps, SRV_INFO_CTR, 1);
 
 		if (!q_n->ctr)
 			return False;
@@ -3310,8 +3308,8 @@ BOOL srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_stru
 
 		DISK_INFO *dinfo;
 
-		if(!(dinfo = (DISK_INFO *)prs_alloc_mem(ps, sizeof(*dinfo) * entries_read3)))
-		return False;
+		if(!(dinfo = PRS_ALLOC_MEM(ps, DISK_INFO, entries_read3)))
+			return False;
 		r_n->disk_enum_ctr.disk_info = dinfo;
 	}
 

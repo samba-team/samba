@@ -59,7 +59,7 @@ static char *grab_line(FILE *f, int *cl)
 			char *ret2;
 			if (len == 0) len = 1024;
 			else len *= 2;
-			ret2 = (char *)Realloc(ret, len);
+			ret2 = (char *)SMB_REALLOC(ret, len);
 			if (!ret2) return ret;
 			ret = ret2;
 		}
@@ -135,8 +135,8 @@ void cgi_load_variables(void)
 			
 			*p = 0;
 			
-			variables[num_variables].name = strdup(line);
-			variables[num_variables].value = strdup(p+1);
+			variables[num_variables].name = SMB_STRDUP(line);
+			variables[num_variables].value = SMB_STRDUP(p+1);
 
 			SAFE_FREE(line);
 			
@@ -170,8 +170,8 @@ void cgi_load_variables(void)
 			
 			*p = 0;
 			
-			variables[num_variables].name = strdup(tok);
-			variables[num_variables].value = strdup(p+1);
+			variables[num_variables].name = SMB_STRDUP(tok);
+			variables[num_variables].value = SMB_STRDUP(p+1);
 
 			if (!variables[num_variables].name || 
 			    !variables[num_variables].value)
@@ -205,13 +205,13 @@ void cgi_load_variables(void)
 			       variables[i].name, -1, 
 			       dest, sizeof(dest), True);
 		free(variables[i].name);
-		variables[i].name = strdup(dest);
+		variables[i].name = SMB_STRDUP(dest);
 
 		convert_string(CH_UTF8, CH_UNIX, 
 			       variables[i].value, -1,
 			       dest, sizeof(dest), True);
 		free(variables[i].value);
-		variables[i].value = strdup(dest);
+		variables[i].value = SMB_STRDUP(dest);
 	}
 }
 
@@ -366,7 +366,7 @@ static BOOL cgi_handle_authorization(char *line)
 			become_user_permanently(pass->pw_uid, pass->pw_gid);
 			
 			/* Save the users name */
-			C_user = strdup(user);
+			C_user = SMB_STRDUP(user);
 			passwd_free(&pass);
 			return True;
 		}
@@ -530,11 +530,11 @@ void cgi_setup(const char *rootdir, int auth_required)
 		if (line[0] == '\r' || line[0] == '\n') break;
 		if (strnequal(line,"GET ", 4)) {
 			got_request = True;
-			url = strdup(&line[4]);
+			url = SMB_STRDUP(&line[4]);
 		} else if (strnequal(line,"POST ", 5)) {
 			got_request = True;
 			request_post = 1;
-			url = strdup(&line[5]);
+			url = SMB_STRDUP(&line[5]);
 		} else if (strnequal(line,"PUT ", 4)) {
 			got_request = True;
 			cgi_setup_error("400 Bad Request", "",

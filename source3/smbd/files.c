@@ -93,7 +93,7 @@ files_struct *file_new(connection_struct *conn)
 		return NULL;
 	}
 
-	fsp = (files_struct *)malloc(sizeof(*fsp));
+	fsp = SMB_MALLOC_P(files_struct);
 	if (!fsp) {
 		unix_ERR_class = ERRSRV;
 		unix_ERR_code = ERRnofids;

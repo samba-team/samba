@@ -217,8 +217,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	talloced_info =	(struct acct_info *)
-		talloc_memdup(mem_ctx, *info,
+	talloced_info =	(struct acct_info *)TALLOC_MEMDUP(mem_ctx, *info,
 			      *num_entries * sizeof(struct acct_info));
 
 	SAFE_FREE(*info);
@@ -332,15 +331,12 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, 1,
 							&num_sec_domains,
 							&domains);
-		*names = talloc_realloc(mem_ctx, *names,
-					sizeof(*names) *
-					(num_sec_domains + *num_domains));
-		*alt_names = talloc_realloc(mem_ctx, *alt_names,
-					    sizeof(*alt_names) *
-					    (num_sec_domains + *num_domains));
-		*dom_sids = talloc_realloc(mem_ctx, *dom_sids,
-					   sizeof(**dom_sids) *
-					   (num_sec_domains + *num_domains));
+		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names, char *,
+					num_sec_domains + *num_domains);
+		*alt_names = TALLOC_REALLOC_ARRAY(mem_ctx, *alt_names, char *,
+					    num_sec_domains + *num_domains);
+		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids, DOM_SID,
+					   num_sec_domains + *num_domains);
 
 		for (i=0; i< num_sec_domains; i++) {
 			if (pull_ucs2_talloc(mem_ctx, &(*names)[*num_domains],

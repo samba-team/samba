@@ -407,7 +407,7 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
+	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(*locks));
 	if (!tp) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;

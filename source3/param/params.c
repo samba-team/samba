@@ -238,7 +238,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
       {
       char *tb;
       
-      tb = Realloc( bufr, bSize +BUFR_INC );
+      tb = SMB_REALLOC( bufr, bSize +BUFR_INC );
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
@@ -335,7 +335,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
       {
       char *tb;
       
-      tb = Realloc( bufr, bSize + BUFR_INC );
+      tb = SMB_REALLOC( bufr, bSize + BUFR_INC );
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
@@ -403,7 +403,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
       {
       char *tb;
       
-      tb = Realloc( bufr, bSize + BUFR_INC );
+      tb = SMB_REALLOC( bufr, bSize + BUFR_INC );
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
@@ -521,7 +521,7 @@ static myFILE *OpenConfFile( const char *FileName )
   int lvl = in_client?1:0;
   myFILE *ret;
 
-  ret = (myFILE *)malloc(sizeof(*ret));
+  ret = SMB_MALLOC_P(myFILE);
   if (!ret) return NULL;
 
   ret->buf = file_load(FileName, &ret->size);
@@ -572,7 +572,7 @@ BOOL pm_process( const char *FileName,
   else                                        /* If we don't have a buffer   */
     {                                         /* allocate one, then parse,   */
     bSize = BUFR_INC;                         /* then free.                  */
-    bufr = (char *)malloc( bSize );
+    bufr = (char *)SMB_MALLOC( bSize );
     if( NULL == bufr )
       {
       DEBUG(0,("%s memory allocation failure.\n", func));

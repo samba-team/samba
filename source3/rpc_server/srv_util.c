@@ -90,7 +90,7 @@ NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	DOM_GID *gids;
 	int i;
 
-	gids = (DOM_GID *)talloc(mem_ctx, sizeof(*gids) * nt_token->num_sids);
+	gids = TALLOC_ARRAY(mem_ctx, DOM_GID, nt_token->num_sids);
 
 	if (!gids) {
 		return NT_STATUS_NO_MEMORY;

@@ -126,16 +126,15 @@ static void atalk_add_to_list(name_compare_entry **list)
 		}
 	}
 
-	if (!(new_list = calloc(1, 
-	  (count == 0 ? 1 : count + 1) * sizeof(name_compare_entry))))
+	if (!(new_list = SMB_CALLOC_ARRAY(name_compare_entry, (count == 0 ? 1 : count + 1))))
 		return;
 
 	for (i = 0; i < count; i ++) {
-		new_list[i].name    = strdup(cur_list[i].name);
+		new_list[i].name    = SMB_STRDUP(cur_list[i].name);
 		new_list[i].is_wild = cur_list[i].is_wild;
 	}
 
-	new_list[i].name    = strdup(APPLEDOUBLE);
+	new_list[i].name    = SMB_STRDUP(APPLEDOUBLE);
 	new_list[i].is_wild = False;
 
 	free_namearray(*list);

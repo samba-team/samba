@@ -579,7 +579,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	SAM_ACCOUNT *sampw;
 	struct auth_context *auth_context = NULL;
 	        
-	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
+	usr_info = TALLOC_P(p->mem_ctx, NET_USER_INFO_3);
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
 

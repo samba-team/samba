@@ -105,7 +105,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
 	struct response_record *rrec;
 	struct nmb_packet *nmb = &p->packet.nmb;
 
-	if (!(rrec = (struct response_record *)malloc(sizeof(*rrec)))) {
+	if (!(rrec = SMB_MALLOC_P(struct response_record))) {
 		DEBUG(0,("make_response_queue_record: malloc fail for response_record.\n"));
 		return NULL;
 	}
@@ -133,7 +133,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
 		} else {
 			/* Primitive userdata, do a memcpy. */
 			if((rrec->userdata = (struct userdata_struct *)
-					malloc(sizeof(struct userdata_struct)+userdata->userdata_len)) == NULL) {
+					SMB_MALLOC(sizeof(struct userdata_struct)+userdata->userdata_len)) == NULL) {
 				DEBUG(0,("make_response_queue_record: malloc fail for userdata.\n"));
 				ZERO_STRUCTP(rrec);
 				SAFE_FREE(rrec);

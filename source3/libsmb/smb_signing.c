@@ -54,7 +54,7 @@ static BOOL store_sequence_for_reply(struct outstanding_packet_lookup **list,
 		}
 	}
 
-	t = smb_xmalloc(sizeof(*t));
+	t = SMB_XMALLOC_P(struct outstanding_packet_lookup);
 	ZERO_STRUCTP(t);
 
 	t->mid = mid;
@@ -459,7 +459,7 @@ BOOL cli_simple_set_signing(struct cli_state *cli,
 		return False;
 	}
 
-	data = smb_xmalloc(sizeof(*data));
+	data = SMB_XMALLOC_P(struct smb_basic_signing_context);
 	memset(data, '\0', sizeof(*data));
 
 	cli->sign_info.signing_context = data;
@@ -509,7 +509,7 @@ void cli_signing_trans_start(struct cli_state *cli, uint16 mid)
 	if (!cli->sign_info.doing_signing || !data)
 		return;
 
-	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
+	data->trans_info = SMB_XMALLOC_P(struct trans_info_context);
 	ZERO_STRUCTP(data->trans_info);
 
 	/* This ensures the sequence is pulled off the outstanding packet list */
@@ -982,7 +982,7 @@ void srv_signing_trans_start(uint16 mid)
 	if (!data)
 		return;
 
-	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
+	data->trans_info = SMB_XMALLOC_P(struct trans_info_context);
 	ZERO_STRUCTP(data->trans_info);
 
 	data->trans_info->reply_seq_num = data->send_seq_num-1;
@@ -1051,7 +1051,7 @@ void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response)
 	
 	srv_sign_info.doing_signing = True;
 
-	data = smb_xmalloc(sizeof(*data));
+	data = SMB_XMALLOC_P(struct smb_basic_signing_context);
 	memset(data, '\0', sizeof(*data));
 
 	srv_sign_info.signing_context = data;

@@ -129,7 +129,7 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		/*
 		 * This is a read and we must allocate the stuct to read into.
 		 */
-		if((psa = (SEC_ACL *)prs_alloc_mem(ps, sizeof(SEC_ACL))) == NULL)
+		if((psa = PRS_ALLOC_MEM(ps, SEC_ACL, 1)) == NULL)
 			return False;
 		*ppsa = psa;
 	}
@@ -154,7 +154,7 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		 * between a non-present DACL (allow all access) and a DACL with no ACE's
 		 * (allow no access).
 		 */
-		if((psa->ace = (SEC_ACE *)prs_alloc_mem(ps,sizeof(psa->ace[0]) * (psa->num_aces+1))) == NULL)
+		if((psa->ace = PRS_ALLOC_MEM(ps, SEC_ACE, psa->num_aces+1)) == NULL)
 			return False;
 	}
 
@@ -191,7 +191,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd == NULL) {
 		if(UNMARSHALLING(ps)) {
-			if((psd = (SEC_DESC *)prs_alloc_mem(ps,sizeof(SEC_DESC))) == NULL)
+			if((psd = PRS_ALLOC_MEM(ps,SEC_DESC,1)) == NULL)
 				return False;
 			*ppsd = psd;
 		} else {
@@ -244,7 +244,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if (UNMARSHALLING(ps)) {
 			/* reading */
-			if((psd->owner_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->owner_sid))) == NULL)
+			if((psd->owner_sid = PRS_ALLOC_MEM(ps,DOM_SID,1)) == NULL)
 				return False;
 		}
 
@@ -265,7 +265,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if (UNMARSHALLING(ps)) {
 			/* reading */
-			if((psd->grp_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->grp_sid))) == NULL)
+			if((psd->grp_sid = PRS_ALLOC_MEM(ps,DOM_SID,1)) == NULL)
 				return False;
 		}
 
@@ -324,7 +324,7 @@ BOOL sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 	psdb = *ppsdb;
 
 	if (UNMARSHALLING(ps) && psdb == NULL) {
-		if((psdb = (SEC_DESC_BUF *)prs_alloc_mem(ps,sizeof(SEC_DESC_BUF))) == NULL)
+		if((psdb = PRS_ALLOC_MEM(ps,SEC_DESC_BUF,1)) == NULL)
 			return False;
 		*ppsdb = psdb;
 	}

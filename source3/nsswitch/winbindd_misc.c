@@ -128,7 +128,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 		/* Add domain to list */
 
 		total_entries++;
-		ted = Realloc(extra_data, sizeof(fstring) * 
+		ted = SMB_REALLOC(extra_data, sizeof(fstring) * 
                               total_entries);
 
 		if (!ted) {
@@ -168,7 +168,7 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
 	which_domain = state->request.domain_name;
 
-	extra_data = strdup("");
+	extra_data = SMB_STRDUP("");
 
 	/* this makes for a very simple data format, and is easily parsable as well
 	   if that is ever needed */
@@ -296,7 +296,7 @@ enum winbindd_result winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: request location of privileged pipe\n", (unsigned long)state->pid));
 	
-	state->response.extra_data = strdup(get_winbind_priv_pipe_dir());
+	state->response.extra_data = SMB_STRDUP(get_winbind_priv_pipe_dir());
 	if (!state->response.extra_data)
 		return WINBINDD_ERROR;
 

@@ -187,7 +187,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, uint16 type,
 
 	*sd_size = 0;
 
-	if(( dst = (SEC_DESC *)talloc_zero(ctx, sizeof(SEC_DESC))) == NULL)
+	if(( dst = TALLOC_ZERO_P(ctx, SEC_DESC)) == NULL)
 		return NULL;
 
 	dst->revision = revision;
@@ -284,7 +284,7 @@ SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 {
 	SEC_DESC_BUF *dst;
 
-	if((dst = (SEC_DESC_BUF *)talloc_zero(ctx, sizeof(SEC_DESC_BUF))) == NULL)
+	if((dst = TALLOC_ZERO_P(ctx, SEC_DESC_BUF)) == NULL)
 		return NULL;
 
 	/* max buffer size (allocated size) */
@@ -417,7 +417,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 	the_acl = parent_ctr->dacl;
 
-	if (!(new_ace_list = talloc(ctx, sizeof(SEC_ACE) * the_acl->num_aces))) 
+	if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE, the_acl->num_aces))) 
 		return NULL;
 
 	for (i = 0; the_acl && i < the_acl->num_aces; i++) {

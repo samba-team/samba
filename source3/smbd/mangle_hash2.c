@@ -153,13 +153,19 @@ static u32 mangle_hash(const char *key, unsigned int length)
  */
 static BOOL cache_init(void)
 {
-	if (prefix_cache) return True;
+	if (prefix_cache) {
+		return True;
+	}
 
-	prefix_cache = calloc(MANGLE_CACHE_SIZE, sizeof(char *));
-	if (!prefix_cache) return False;
+	prefix_cache = SMB_CALLOC_ARRAY(char *,MANGLE_CACHE_SIZE);
+	if (!prefix_cache) {
+		return False;
+	}
 
-	prefix_cache_hashes = calloc(MANGLE_CACHE_SIZE, sizeof(u32));
-	if (!prefix_cache_hashes) return False;
+	prefix_cache_hashes = SMB_CALLOC_ARRAY(u32, MANGLE_CACHE_SIZE);
+	if (!prefix_cache_hashes) {
+		return False;
+	}
 
 	return True;
 }
@@ -175,7 +181,7 @@ static void cache_insert(const char *prefix, int length, u32 hash)
 		free(prefix_cache[i]);
 	}
 
-	prefix_cache[i] = strndup(prefix, length);
+	prefix_cache[i] = SMB_STRNDUP(prefix, length);
 	prefix_cache_hashes[i] = hash;
 }
 

@@ -681,7 +681,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 					return -1;
 				}
 				
-				broken_entry = malloc(sizeof(struct share_mode_entry_list));
+				broken_entry = SMB_MALLOC_P(struct share_mode_entry_list);
 				if (!broken_entry) {
 					smb_panic("open_mode_check: malloc fail.\n");
 				}

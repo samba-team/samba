@@ -487,7 +487,7 @@ static NTSTATUS db_idmap_init( char *params )
 	BOOL tdb_is_new = False;
 
 	/* use the old database if present */
-	tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
+	tdbfile = SMB_STRDUP(lock_path("winbindd_idmap.tdb"));
 	if (!tdbfile) {
 		DEBUG(0, ("idmap_init: out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;

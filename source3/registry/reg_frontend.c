@@ -154,7 +154,7 @@ BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index
 	if ( !(s = regsubkey_ctr_specific_key( &ctr, key_index )) )
 		return False;
 
-	*subkey = strdup( s );
+	*subkey = SMB_STRDUP( s );
 
 	return True;
 }

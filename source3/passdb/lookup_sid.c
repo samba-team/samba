@@ -208,7 +208,7 @@ static void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
 		}
 	}
 
-	pc = (struct uid_sid_cache *)malloc(sizeof(struct uid_sid_cache));
+	pc = SMB_MALLOC_P(struct uid_sid_cache);
 	if (!pc)
 		return;
 	pc->uid = uid;
@@ -282,7 +282,7 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 		}
 	}
 
-	pc = (struct gid_sid_cache *)malloc(sizeof(struct gid_sid_cache));
+	pc = SMB_MALLOC_P(struct gid_sid_cache);
 	if (!pc)
 		return;
 	pc->gid = gid;

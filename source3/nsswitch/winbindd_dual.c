@@ -117,7 +117,7 @@ void dual_send_request(struct winbindd_cli_state *state)
 
 	if (!background_process) return;
 
-	list = malloc(sizeof(*list));
+	list = SMB_MALLOC_P(struct dual_list);
 	if (!list) return;
 
 	list->next = NULL;

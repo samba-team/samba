@@ -1238,7 +1238,7 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 	/* Look up names */
 
 	num_names = argc - 2;
-	names = (const char **)talloc(mem_ctx, sizeof(char *) * num_names);
+	names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
 
 	for (i = 0; i < argc - 2; i++)
 		names[i] = argv[i + 2];
@@ -1296,7 +1296,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 	/* Look up rids */
 
 	num_rids = argc - 1;
-	rids = (uint32 *)talloc(mem_ctx, sizeof(uint32) * num_rids);
+	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
 
 	for (i = 0; i < argc - 1; i++)
                 sscanf(argv[i + 1], "%i", &rids[i]);

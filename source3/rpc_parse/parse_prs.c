@@ -105,7 +105,7 @@ BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 
 	if (size != 0) {
 		ps->buffer_size = size;
-		if((ps->data_p = (char *)malloc((size_t)size)) == NULL) {
+		if((ps->data_p = (char *)SMB_MALLOC((size_t)size)) == NULL) {
 			DEBUG(0,("prs_init: malloc fail for %u bytes.\n", (unsigned int)size));
 			return False;
 		}
@@ -143,14 +143,21 @@ void prs_mem_clear(prs_struct *ps)
  Allocate memory when unmarshalling... Always zero clears.
  ********************************************************************/
 
-char *prs_alloc_mem(prs_struct *ps, size_t size)
+#if defined(PARANOID_MALLOC_CHECKER)
+char *prs_alloc_mem_(prs_struct *ps, size_t size, unsigned int count)
+#else
+char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
+#endif
 {
 	char *ret = NULL;
 
 	if (size) {
-		ret = talloc(ps->mem_ctx, size);
-		if (ret)
-			memset(ret, '\0', size);
+		/* We can't call the type-safe version here. */
+#if defined(PARANOID_MALLOC_CHECKER)
+		ret = talloc_zero_array_(ps->mem_ctx, size, count);
+#else
+		ret = talloc_zero_array(ps->mem_ctx, size, count);
+#endif
 	}
 	return ret;
 }
@@ -199,7 +206,7 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 		return prs_force_grow(ps, newsize - ps->buffer_size);
 
 	if (newsize < ps->buffer_size) {
-		char *new_data_p = Realloc(ps->data_p, newsize);
+		char *new_data_p = SMB_REALLOC(ps->data_p, newsize);
 		/* if newsize is zero, Realloc acts like free() & returns NULL*/
 		if (new_data_p == NULL && newsize != 0) {
 			DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
@@ -253,7 +260,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 		new_size = MAX(MAX_PDU_FRAG_LEN,extra_space);
 
-		if((new_data = malloc(new_size)) == NULL) {
+		if((new_data = SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
@@ -265,7 +272,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		 */
 		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
-		if ((new_data = Realloc(ps->data_p, new_size)) == NULL) {
+		if ((new_data = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
@@ -296,7 +303,7 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	if((new_data = Realloc(ps->data_p, new_size)) == NULL) {
+	if((new_data = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
 			(unsigned int)new_size));
 		return False;
@@ -886,7 +893,7 @@ BOOL prs_buffer5(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len * sizeof(uint16));
+		str->buffer = PRS_ALLOC_MEM(ps,uint16,str->buf_len);
 		if (str->buffer == NULL)
 			return False;
 	}
@@ -918,7 +925,7 @@ BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
 
 	if (UNMARSHALLING(ps)) {
 		if ( str->buf_len ) {
-			str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len);
+			str->buffer = PRS_ALLOC_MEM(ps, uint16, str->buf_len);
 			if ( str->buffer == NULL )
 				return False;
 		}
@@ -945,7 +952,7 @@ BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STR
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (unsigned char *)prs_alloc_mem(ps,str->str_max_len);
+		str->buffer = PRS_ALLOC_MEM(ps,unsigned char, str->str_max_len);
 		if (str->buffer == NULL)
 			return False;
 	}
@@ -989,7 +996,7 @@ BOOL prs_unistr2(BOOL charmode, const char *name, prs_struct *ps, int depth, UNI
 		return True;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (uint16 *)prs_alloc_mem(ps,str->uni_max_len * sizeof(uint16));
+		str->buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_max_len);
 		if (str->buffer == NULL)
 			return False;
 	}
@@ -1016,7 +1023,7 @@ BOOL prs_unistr3(BOOL charmode, const char *name, UNISTR3 *str, prs_struct *ps, 
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->str.buffer = (uint16 *)prs_alloc_mem(ps,str->uni_str_len * sizeof(uint16));
+		str->str.buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_str_len);
 		if (str->str.buffer == NULL)
 			return False;
 	}
@@ -1109,7 +1116,7 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 			alloc_len += 1;
 
 		/* should we allocate anything at all? */
-		str->buffer = (uint16 *)prs_alloc_mem(ps,alloc_len * sizeof(uint16));
+		str->buffer = PRS_ALLOC_MEM(ps,uint16,alloc_len);
 		if ((str->buffer == NULL) && (alloc_len > 0))
 			return False;
 
