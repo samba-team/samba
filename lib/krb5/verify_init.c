@@ -40,17 +40,6 @@
 
 RCSID("$Id$");
 
-static int
-ison (const char *s)
-{
-    return strcasecmp (s, "y") == 0
-	|| strcasecmp (s, "yes") == 0
-	|| strcasecmp (s, "t") == 0
-	|| strcasecmp (s, "true") == 0
-	|| strcasecmp (s, "1") == 0
-	|| strcasecmp (s, "on") == 0;
-}
-
 void
 krb5_verify_init_creds_opt_init(krb5_verify_init_creds_opt *options)
 {
