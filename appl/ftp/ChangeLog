@@ -1,3 +1,8 @@
+1999-11-29  Assar Westerlund  <assar@sics.se>
+
+	* ftp/security.c (sec_login): check return value from realloc
+	(sec_end): set app_data to NULL
+
 1999-11-25  Assar Westerlund  <assar@sics.se>
 
 	* ftp/krb4.c (krb4_auth): obtain the `local' address when doing
