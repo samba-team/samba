@@ -500,7 +500,7 @@ There are 3 major Site Types:
 </para>
 
 <para><programlisting>
-<= 50 Users
+&lt;= 50 Users
 Want simple conversion with NO pain
 50 - 250 Users
 Want new features, can manage some in-house complexity
@@ -591,7 +591,7 @@ Windows: NT4 Domain User Manager, Server Manager (NEXUS)
 Authentication
 New SAM back end (smbpasswd, tdbsam, ldapsam, mysqlsam)
 With of without Unix Accounts (NUA)
-<programlisting></para>
+</programlisting></para>
 
 </sect1>
 
