@@ -46,7 +46,9 @@ uint32 ads_acb2uf(uint16 acb)
 	return uf;
 }
 
-/* translated the UserFlags (userAccountControl) to ACB_CTRL Flags */
+/*
+translated the UserFlags (userAccountControl) to ACB_CTRL Flags
+*/
 uint16 ads_uf2acb(uint32 uf)
 {
 	uint16 acb = 0x0000;
@@ -70,6 +72,100 @@ uint16 ads_uf2acb(uint32 uf)
 	}
 
 	return acb;
+}
+
+/* 
+get the accountType from the UserFlags
+*/
+uint32 ads_uf2atype(uint32 uf)
+{
+	uint32 atype = 0x00000000;
+		
+	if (uf & UF_NORMAL_ACCOUNT)			atype = ATYPE_NORMAL_ACCOUNT;
+	else if (uf & UF_TEMP_DUPLICATE_ACCOUNT)	atype = ATYPE_NORMAL_ACCOUNT;
+	else if (uf & UF_SERVER_TRUST_ACCOUNT)		atype = ATYPE_WORKSTATION_TRUST;
+	else if (uf & UF_WORKSTATION_TRUST_ACCOUNT)	atype = ATYPE_WORKSTATION_TRUST;
+	else if (uf & UF_INTERDOMAIN_TRUST_ACCOUNT)	atype = ATYPE_INTERDOMAIN_TRUST;
+
+	return atype;
+} 
+
+/* 
+translated the GROUP_CTRL Flags to GroupType (groupType) 
+*/ 
+uint32 ads_gcb2gtype(uint16 gcb)
+{
+	uint32 gtype = 0x00000000;
+
+	if (gcb & GCB_ALIAS_GROUP)	gtype |= GTYPE_SECURITY_BUILTIN_LOCAL_GROUP;
+	else if(gcb & GCB_LOCAL_GROUP)	gtype |= GTYPE_SECURITY_DOMAIN_LOCAL_GROUP;
+	if (gcb & GCB_GLOBAL_GROUP)	gtype |= GTYPE_SECURITY_GLOBAL_GROUP;
+		
+	return gtype;
+}
+
+/*
+translated the GroupType (groupType) to GROUP_CTRL Flags
+*/
+uint16 ads_gtype2gcb(uint32 gtype)
+{
+	uint16 gcb = 0x0000;
+
+	switch(gtype) {
+		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+			gcb = GCB_ALIAS_GROUP;
+			break;
+		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+			gcb = GCB_LOCAL_GROUP;
+			break;
+		case GTYPE_SECURITY_GLOBAL_GROUP:
+			gcb = GCB_GLOBAL_GROUP;
+			break;
+
+		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
+			gcb = GCB_GLOBAL_GROUP;
+			break;
+		case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
+			gcb = GCB_LOCAL_GROUP;
+			break;
+		case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
+			gcb = GCB_GLOBAL_GROUP;
+			break;
+	}
+	
+	return gcb;
+}
+
+/* 
+get the accountType from the groupType
+*/
+uint32 ads_gtype2atype(uint32 gtype)
+{
+	uint32 atype = 0x00000000;
+	
+	switch(gtype) {
+		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+			atype = ATYPE_SECURITY_LOCAL_GROUP;
+			break;
+		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+			atype = ATYPE_SECURITY_LOCAL_GROUP;
+			break;
+		case GTYPE_SECURITY_GLOBAL_GROUP:
+			atype = ATYPE_SECURITY_GLOBAL_GROUP;
+			break;
+	
+		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
+			atype = ATYPE_DISTRIBUTION_GLOBAL_GROUP;
+			break;
+		case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
+			atype = ATYPE_DISTRIBUTION_UNIVERSAL_GROUP;
+			break;
+		case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
+			atype = ATYPE_DISTRIBUTION_LOCAL_GROUP;
+			break;
+	}
+
+	return atype;
 }
 
 #endif
