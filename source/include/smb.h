@@ -1743,6 +1743,8 @@ struct field_info
 #define AGENT_CMD_CON       0
 #define AGENT_CMD_CON_REUSE 1
 
+#define MAX_MAX_MUX_LIMIT 16
+
 #endif /* _SMB_H */
 
 /* _SMB_H */

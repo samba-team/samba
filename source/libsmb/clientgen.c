@@ -1597,7 +1597,7 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 	int total = -1;
 	int issued=0;
 	int received=0;
-	int mpx = MAX(cli->max_mux-1, 1);
+	int mpx = MIN(MAX(cli->max_mux-1, 1), MAX_MAX_MUX_LIMIT);
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
 	int mid;
 	int blocks = (size + (block-1)) / block;
