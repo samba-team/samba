@@ -1909,55 +1909,58 @@ void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
-BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
+BOOL reg_connect( const char* srv_name,
 				const char *full_keyname,
 				char *key_name,
 				POLICY_HND *reg_hnd);
-BOOL do_reg_open_hkcr(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+BOOL reg_open_hkcr( struct cli_state *cli, uint16 fnum,
+				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_open_hklm(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+BOOL reg_open_hklm( struct cli_state *cli, uint16 fnum,
+				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_open_hku(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+BOOL reg_open_hku( struct cli_state *cli, uint16 fnum,
+				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
-BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_flush_key( POLICY_HND *hnd);
+BOOL reg_query_key( POLICY_HND *hnd,
 				char *key_class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
 				uint32 *max_valnamelen, uint32 *max_valbufsize,
 				uint32 *sec_desc, NTTIME *mod_time);
-BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk);
-BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk);
+BOOL reg_query_info( POLICY_HND *hnd,
 				const char* val_name,
 				uint32 *type, BUFFER2 *buffer);
-BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_set_key_sec( POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
-BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_get_key_sec( POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
-BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *val_name);
-BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *key_name);
-BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_delete_val( POLICY_HND *hnd, char *val_name);
+BOOL reg_delete_key( POLICY_HND *hnd, char *key_name);
+BOOL reg_create_key( POLICY_HND *hnd,
 				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				POLICY_HND *key);
-BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_enum_key( POLICY_HND *hnd,
 				int key_index, char *key_name,
 				uint32 *unk_1, uint32 *unk_2,
 				time_t *mod_time);
-BOOL do_reg_create_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_create_val( POLICY_HND *hnd,
 				char *val_name, uint32 type, BUFFER3 *data);
-BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_enum_val( POLICY_HND *hnd,
 				int val_index, int max_valnamelen, int max_valbufsize,
 				fstring val_name,
 				uint32 *val_type, BUFFER2 *value);
-BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_open_entry( POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd);
-BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
-BOOL do_reg_shutdown(struct cli_state *cli, uint16 fnum, 
-				char *msg, uint32 timeout, uint16 flags);
+BOOL reg_close( POLICY_HND *hnd);
+BOOL reg_shutdown(const char *srv_name,
+			const char *msg, uint32 timeout, uint16 flags);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
@@ -2709,7 +2712,7 @@ BOOL make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status);
 BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
-				char *msg, uint32 timeout, uint16 flags);
+				const char *msg, uint32 timeout, uint16 flags);
 BOOL reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth);
 BOOL reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth);
 
@@ -3602,7 +3605,7 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
-BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
+BOOL msrpc_reg_enum_key(const char* srv_name, const char* full_keyname,
 				REG_FN(reg_fn),
 				REG_KEY_FN(reg_key_fn),
 				REG_VAL_FN(reg_val_fn));

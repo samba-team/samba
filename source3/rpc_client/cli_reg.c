@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
+BOOL reg_connect( const char* srv_name,
 				const char *full_keyname,
 				char *key_name,
 				POLICY_HND *reg_hnd)
@@ -42,12 +42,20 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
 	BOOL res = True;
 	uint32 reg_type = 0;
 
-	if (full_keyname == NULL)
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_init(srv_name, PIPE_WINREG, &cli, &fnum))
 	{
 		return False;
 	}
 
 	ZERO_STRUCTP(reg_hnd);
+
+	if (full_keyname == NULL)
+	{
+		return False;
+	}
 
 	/*
 	 * open registry receive a policy handle
@@ -55,7 +63,8 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
 
 	if (!reg_split_key(full_keyname, &reg_type, key_name))
 	{
-		DEBUG(0,("do_reg_connect: unrecognised key name %s\n", full_keyname));	
+		DEBUG(0,("reg_connect: unrecognised key name %s\n",
+		          full_keyname));	
 		return False;
 	}
 
@@ -63,7 +72,7 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
 	{
 		case HKEY_CLASSES_ROOT:
 		{
-			res = res ? do_reg_open_hkcr(cli, fnum,
+			res = res ? reg_open_hkcr(cli, fnum,
 					0x5428, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -71,7 +80,7 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
 	
 		case HKEY_LOCAL_MACHINE:
 		{
-			res = res ? do_reg_open_hklm(cli, fnum,
+			res = res ? reg_open_hklm(cli, fnum,
 					0x84E0, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -79,14 +88,25 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
 	
 		case HKEY_USERS:
 		{
-			res = res ? do_reg_open_hku(cli, fnum,
+			res = res ? reg_open_hku(cli, fnum,
 					0x84E0, 0x02000000,
 					reg_hnd) : False;
 			break;
 		}
 		default:
 		{
-			DEBUG(0,("do_reg_connect: unrecognised hive key\n"));	
+			DEBUG(0,("reg_connect: unrecognised hive key\n"));	
+			return False;
+		}
+	}
+
+	if (res)
+	{
+		if (!register_policy_hnd(reg_hnd) ||
+		    !set_policy_cli_state(reg_hnd, cli, fnum,
+						 cli_state_free))
+		{
+			cli_state_free(cli, fnum);
 			return False;
 		}
 	}
@@ -97,7 +117,8 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_open_hkcr(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+BOOL reg_open_hkcr( struct cli_state *cli, uint16 fnum,
+				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -154,7 +175,8 @@ BOOL do_reg_open_hkcr(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_open_hklm(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+BOOL reg_open_hklm( struct cli_state *cli, uint16 fnum,
+				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -211,7 +233,8 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint
 /****************************************************************************
 do a REG Open HKU
 ****************************************************************************/
-BOOL do_reg_open_hku(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+BOOL reg_open_hku( struct cli_state *cli, uint16 fnum,
+				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -270,12 +293,20 @@ do a REG Unknown 0xB command.  sent after a create key or create value.
 this might be some sort of "sync" or "refresh" command, sent after
 modification of the registry...
 ****************************************************************************/
-BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+BOOL reg_flush_key( POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_FLUSH_KEY q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -324,7 +355,7 @@ BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 /****************************************************************************
 do a REG Query Key
 ****************************************************************************/
-BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_query_key( POLICY_HND *hnd,
 				char *key_class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
@@ -335,6 +366,14 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_QUERY_KEY q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -394,12 +433,20 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Unknown 1A
 ****************************************************************************/
-BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk)
+BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_UNK_1A q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -449,7 +496,7 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_query_info( POLICY_HND *hnd,
 				const char* val_name,
 				uint32 *type, BUFFER2 *buffer)
 {
@@ -457,6 +504,14 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_INFO q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -508,7 +563,7 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Set Key Security 
 ****************************************************************************/
-BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_set_key_sec( POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 sec_buf_size, SEC_DESC *sec_buf)
 {
@@ -516,6 +571,14 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_SET_KEY_SEC q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -558,7 +621,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Query Key Security 
 ****************************************************************************/
-BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_get_key_sec( POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
 {
@@ -566,6 +629,14 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_GET_KEY_SEC q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -628,12 +699,20 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Delete Value
 ****************************************************************************/
-BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *val_name)
+BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_DELETE_VALUE q_o;
 	BOOL valid_delete = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -682,12 +761,20 @@ BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char
 /****************************************************************************
 do a REG Delete Key
 ****************************************************************************/
-BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *key_name)
+BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_DELETE_KEY q_o;
 	BOOL valid_delete = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -736,7 +823,7 @@ BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char
 /****************************************************************************
 do a REG Create Key
 ****************************************************************************/
-BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_create_key( POLICY_HND *hnd,
 				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				POLICY_HND *key)
@@ -748,6 +835,14 @@ BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	SEC_DESC sec;
 	SEC_DESC_BUF sec_buf;
 	int sec_len;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	ZERO_STRUCT(sec);
 	ZERO_STRUCT(sec_buf);
@@ -810,7 +905,7 @@ BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Enum Key
 ****************************************************************************/
-BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_enum_key( POLICY_HND *hnd,
 				int key_index, char *key_name,
 				uint32 *unk_1, uint32 *unk_2,
 				time_t *mod_time)
@@ -819,6 +914,14 @@ BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_ENUM_KEY q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -872,13 +975,21 @@ BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Create Value
 ****************************************************************************/
-BOOL do_reg_create_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_create_val( POLICY_HND *hnd,
 				char *val_name, uint32 type, BUFFER3 *data)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_CREATE_VALUE q_o;
 	BOOL valid_create = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -927,7 +1038,7 @@ BOOL do_reg_create_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Enum Value
 ****************************************************************************/
-BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_enum_val( POLICY_HND *hnd,
 				int val_index, int max_valnamelen, int max_valbufsize,
 				fstring val_name,
 				uint32 *val_type, BUFFER2 *value)
@@ -936,6 +1047,14 @@ BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_ENUM_VALUE q_o;
 	BOOL valid_query = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -987,7 +1106,7 @@ BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Open Key
 ****************************************************************************/
-BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+BOOL reg_open_entry( POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd)
 {
@@ -995,6 +1114,14 @@ BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_OPEN_ENTRY q_o;
 	BOOL valid_pol = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -1030,8 +1157,9 @@ BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 		if (p)
 		{
-			valid_pol = True;
 			memcpy(key_hnd, r_o.pol.data, sizeof(key_hnd->data));
+			valid_pol = register_policy_hnd(key_hnd) &&
+			        set_policy_cli_state(key_hnd, cli, fnum, NULL);
 		}
 	}
 
@@ -1044,12 +1172,20 @@ BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Close
 ****************************************************************************/
-BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+BOOL reg_close( POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_CLOSE q_c;
 	BOOL valid_close = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -1108,19 +1244,29 @@ BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
+	close_policy_hnd(hnd);
+
 	return valid_close;
 }
 
 /****************************************************************************
 do a REG Shutdown Server
 ****************************************************************************/
-BOOL do_reg_shutdown(struct cli_state *cli, uint16 fnum, 
-				char *msg, uint32 timeout, uint16 flags)
+BOOL reg_shutdown(const char *srv_name,
+			const char *msg, uint32 timeout, uint16 flags)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	REG_Q_SHUTDOWN q_o;
 	BOOL valid_shutdown = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_init(srv_name, PIPE_WINREG, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (msg == NULL) return False;
 
@@ -1162,6 +1308,8 @@ BOOL do_reg_shutdown(struct cli_state *cli, uint16 fnum,
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
+
+	cli_state_free(cli, fnum);
 
 	return valid_shutdown;
 }

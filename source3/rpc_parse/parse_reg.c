@@ -1350,7 +1350,7 @@ BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int
 makes a structure.
 ********************************************************************/
 BOOL make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
-				char *msg, uint32 timeout, uint16 flags)
+				const char *msg, uint32 timeout, uint16 flags)
 {
 	int len = strlen(msg) + 1;
 

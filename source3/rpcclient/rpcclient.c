@@ -903,6 +903,7 @@ static char *complete_regenum(char *text, int state)
     
 	if (state == 0)
 	{
+		fstring srv_name;
 		if (cmd_argc >= 2 && cmd_argv != NULL && cmd_argv[1] != NULL)
 		{
 			char *sep;
@@ -914,8 +915,12 @@ static char *complete_regenum(char *text, int state)
 			}
 		}
 
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
 		/* Iterate all keys / values */
-		if (!msrpc_reg_enum_key(smb_cli, full_keyname,
+		if (!msrpc_reg_enum_key(srv_name, full_keyname,
 		                   reg_init, reg_key_list, reg_val_list))
 		{
 			return NULL;
