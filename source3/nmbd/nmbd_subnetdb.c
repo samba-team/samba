@@ -79,7 +79,7 @@ static void add_subnet(struct subnet_record *subrec)
   Note that we cannot use memcmp here as we have no control
   over how the struct nmb_name structures are packed in memory. JRA.
  * ************************************************************************** ** */
-int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
+static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
   {
   struct name_record *NR = (struct name_record *)Node;
   struct nmb_name *nmbname = (struct nmb_name *)Item;
@@ -103,7 +103,7 @@ int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
  * This will go away when we move to a "real" database back-end.
  * ************************************************************************** **
  */
-int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
+static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
   {
   struct name_record *NR = (struct name_record *)Node;
 

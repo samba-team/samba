@@ -1533,7 +1533,6 @@ void write_browse_list(time_t t, BOOL force_write);
 
 /*The following definitions come from  nmbd_subnetdb.c  */
 
-int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node );
 BOOL create_subnets(void);
 BOOL we_are_a_wins_client(void);
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
