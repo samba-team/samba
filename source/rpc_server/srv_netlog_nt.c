@@ -441,96 +441,137 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
 }
 
 /*************************************************************************
- net_login_interactive:
+ _net_logon_any:  Use the new authentications subsystem to log in.
  *************************************************************************/
 
-static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pipes_struct *p)
+static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *sess_key)
 {
-	uint32 status = 0x0;
 
-	char nt_pwd[16];
-	char lm_pwd[16];
-	unsigned char key[16];
+	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
 
-	memset(key, 0, 16);
-	memcpy(key, p->dc.sess_key, 8);
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
 
-	memcpy(lm_pwd, id1->lm_owf.data, 16);
-	memcpy(nt_pwd, id1->nt_owf.data, 16);
+	auth_usersupplied_info user_info;
+	auth_serversupplied_info server_info;
+	AUTH_STR ourdomain, theirdomain, smb_username, wksta_name;
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("key:"));
-	dump_data(100, (char *)key, 16);
+	DEBUG(5, ("_net_logon_any: entered with user %s and domain %s\n", user, domain));
+		
+	ZERO_STRUCT(user_info);
+	ZERO_STRUCT(server_info);
+	ZERO_STRUCT(ourdomain);
+	ZERO_STRUCT(theirdomain);
+	ZERO_STRUCT(smb_username);
+	ZERO_STRUCT(wksta_name);
+	
+	ourdomain.str = lp_workgroup();
+	ourdomain.len = strlen(ourdomain.str);
 
-	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd, 16);
+	theirdomain.str = domain;
+	theirdomain.len = strlen(theirdomain.str);
 
-	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd, 16);
+	user_info.requested_domain = theirdomain;
+	user_info.domain = ourdomain;
+	
+	smb_username.str = user;
+	smb_username.len = strlen(smb_username.str);
+
+	user_info.requested_username = smb_username;  /* For the time-being */
+	user_info.smb_username = smb_username;
+
+#if 0
+	user_info.wksta_name.str = cleint_name();
+	user_info.wksta_name.len = strlen(client_name());
+
+	user_info.wksta_name = wksta_name;
 #endif
 
-	SamOEMhash((uchar *)lm_pwd, key, 16);
-	SamOEMhash((uchar *)nt_pwd, key, 16);
+	DEBUG(10,("_net_logon_any: Attempting validation level %d.\n", ctr->switch_value));
+	switch (ctr->switch_value) {
+	case NET_LOGON_TYPE:
+		user_info.lm_resp.buffer = (uint8 *)ctr->auth.id2.lm_chal_resp.buffer;
+		user_info.lm_resp.len = ctr->auth.id2.lm_chal_resp.str_str_len;
+		user_info.nt_resp.buffer = (uint8 *)ctr->auth.id2.nt_chal_resp.buffer;
+		user_info.nt_resp.len = ctr->auth.id2.nt_chal_resp.str_str_len;
+		memcpy(user_info.chal, ctr->auth.id2.lm_chal, 8);
+		break;
+	case INTERACTIVE_LOGON_TYPE:
+	{
+		char nt_pwd[16];
+		char lm_pwd[16];
+		unsigned char key[16];
+		
+		memset(key, 0, 16);
+		memcpy(key, sess_key, 8);
+		
+		memcpy(lm_pwd, ctr->auth.id1.lm_owf.data, 16);
+		memcpy(nt_pwd, ctr->auth.id1.nt_owf.data, 16);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd, 16);
-
-	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd, 16);
+		DEBUG(100,("key:"));
+		dump_data(100, (char *)key, 16);
+		
+		DEBUG(100,("lm owf password:"));
+		dump_data(100, lm_pwd, 16);
+		
+		DEBUG(100,("nt owf password:"));
+		dump_data(100, nt_pwd, 16);
+#endif
+		
+		SamOEMhash((uchar *)lm_pwd, key, 16);
+		SamOEMhash((uchar *)nt_pwd, key, 16);
+		
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("decrypt of lm owf password:"));
+		dump_data(100, lm_pwd, 16);
+		
+		DEBUG(100,("decrypt of nt owf password:"));
+		dump_data(100, nt_pwd, 16);
 #endif
 
-	if (memcmp(pdb_get_lanman_passwd(sampass), lm_pwd, 16) != 0 ||
-	    memcmp(pdb_get_nt_passwd(sampass), nt_pwd, 16) != 0) {
-		status = NT_STATUS_WRONG_PASSWORD;
+		generate_random_buffer(user_info.chal, 8, False);
+		SMBOWFencrypt(lm_pwd, user_info.chal, local_lm_response);
+		SMBOWFencrypt(nt_pwd, user_info.chal, local_nt_response);
+		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
+		user_info.lm_resp.len = 24;
+		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
+		user_info.nt_resp.len = 24;
+		break;
 	}
+#if 0	     
+	case GENERAL_LOGON_TYPE:
+		/* plaintext login.  plaintext username and password */
 
-	return status;
+		/*
+		 * Not encrypted - do so.
+		 */
+		
+		SMBencrypt( (uchar *)ctr->auth.id4....., user_info.chal, local_lm_response);
+		SMBNTencrypt((uchar *)ctr->auth.id4......., user_info.chal, local_nt_response);
+		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
+		user_info.lm_resp.len = 24;
+		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
+		user_info.nt_resp.len = 24;
+		
+		user_info.plaintext_password.str = ;
+		user_info.plaintext_password.len = ;
+		break;
+#endif
+	default:
+		DEBUG(2,("SAM Logon: unsupported switch value\n"));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	} /* end switch */
+	
+	nt_status = check_password(&user_info, &server_info);
+
+	DEBUG(5, ("_net_logon_any: exited with status %d\n", nt_status));
+
+	return nt_status;
+
 }
 
-/*************************************************************************
- _net_login_network:
- *************************************************************************/
 
-static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
-{
-	uint8    *nt_pwd, *lanman_pwd;
-
-	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
-		id2->hdr_lm_chal_resp.str_str_len, 
-		id2->hdr_nt_chal_resp.str_str_len));
-
-	/* JRA. Check the NT password first if it exists - this is a higher quality 
-           password, if it exists and it doesn't match - fail. */
-
-	nt_pwd = pdb_get_nt_passwd(sampass);
-	lanman_pwd = pdb_get_lanman_passwd(sampass);
-
-	if (id2->hdr_nt_chal_resp.str_str_len == 24 && nt_pwd) {
-		if(smb_password_check((char *)id2->nt_chal_resp.buffer,
-		                   nt_pwd, id2->lm_chal)) 
-			return NT_STATUS_NOPROBLEMO;
-		else
-			return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	/* lkclXXXX this is not a good place to put disabling of LM hashes in.
-	   if that is to be done, first move this entire function into a
-	   library routine that calls the two smb_password_check() functions.
-	   if disabling LM hashes (which nt can do for security reasons) then
-	   an attempt should be made to disable them everywhere (which nt does
-	   not do, for various security-hole reasons).
-	 */
-
-	if (id2->hdr_lm_chal_resp.str_str_len == 24 && lanman_pwd &&
-		smb_password_check((char *)id2->lm_chal_resp.buffer,
-		                   lanman_pwd, id2->lm_chal))
-		return NT_STATUS_NOPROBLEMO;
-
-	/* oops! neither password check succeeded */
-
-	return NT_STATUS_WRONG_PASSWORD;
-}
 
 /*************************************************************************
  _net_sam_logon
@@ -542,11 +583,12 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	NET_USER_INFO_3 *usr_info = NULL;
 	DOM_CRED srv_cred;
 	SAM_ACCOUNT *sampass = NULL;
-	uint16 acct_ctrl;
 	UNISTR2 *uni_samlogon_user = NULL;
+	UNISTR2 *uni_samlogon_domain = NULL;
 	fstring nt_username;
+	fstring nt_domain;
 	BOOL ret;
-   
+
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
@@ -576,11 +618,13 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
 		uni_samlogon_user = &q_u->sam_id.ctr->auth.id1.uni_user_name;
+ 		uni_samlogon_domain = &q_u->sam_id.ctr->auth.id1.uni_domain_name;
             
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
 		uni_samlogon_user = &q_u->sam_id.ctr->auth.id2.uni_user_name;
+		uni_samlogon_domain = &q_u->sam_id.ctr->auth.id2.uni_domain_name;
             
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
@@ -592,14 +636,26 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	/* check username exists */
 
 	rpcstr_pull(nt_username,uni_samlogon_user->buffer,sizeof(nt_username),uni_samlogon_user->uni_str_len*2,0);
+	rpcstr_pull(nt_domain,uni_samlogon_domain->buffer,sizeof(nt_domain),uni_samlogon_domain->uni_str_len*2,0);
 
-	DEBUG(3,("User:[%s]\n", nt_username));
+	DEBUG(3,("User:[%s] Requested Domain:[%s]\n", nt_username, nt_domain));
         
 	/*
 	 * Convert to a UNIX username.
 	 */
 
 	map_username(nt_username);
+
+	DEBUG(10,("Attempting validation level %d for mapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
+
+	status = _net_logon_any(q_u->sam_id.ctr, nt_username, nt_domain, p->dc.sess_key);
+
+	/* Check account and password */
+    
+	if (status != NT_STATUS_NOPROBLEMO) {
+		pdb_free_sam(sampass);
+		return status;
+	}
 
 	pdb_init_sam(&sampass);
 
@@ -611,33 +667,6 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	if (ret == False){
 		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
-
-	if (acct_ctrl & ACB_DISABLED) {
-		pdb_free_sam(sampass);
-		return NT_STATUS_ACCOUNT_DISABLED;
-	}
-    
-	/* Validate password - if required. */
-    
-	if (!(acct_ctrl & ACB_PWNOTREQ)) {
-		switch (q_u->sam_id.logon_level) {
-		case INTERACTIVE_LOGON_TYPE:
-			/* interactive login. */
-			status = net_login_interactive(&q_u->sam_id.ctr->auth.id1, sampass, p);
-			break;
-		case NET_LOGON_TYPE:
-			/* network login.  lm challenge and 24 byte responses */
-			status = net_login_network(&q_u->sam_id.ctr->auth.id2, sampass);
-			break;
-		}
-	}
-    
-	if (status != NT_STATUS_NOPROBLEMO) {
-		pdb_free_sam(sampass);
-		return status;
 	}
 
 	/* lkclXXXX this is the point at which, if the login was

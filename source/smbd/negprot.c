@@ -179,7 +179,10 @@ static int reply_nt1(char *outbuf)
   char *p, *q;
 
   if (lp_security() == SEC_SERVER) {
+	  DEBUG(5,("attempting password server validation\n"));
 	  cli = server_cryptkey();
+  } else {
+	  DEBUG(5,("attempting local password validation\n"));
   }
 
   if (cli) {

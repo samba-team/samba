@@ -263,7 +263,9 @@ BOOL create_next_pdu(pipes_struct *p)
 static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlmssp_resp)
 {
 	uchar lm_owf[24];
-	uchar nt_owf[24];
+	uchar nt_owf[128];
+	int nt_pw_len;
+	int lm_pw_len;
 	fstring user_name;
 	fstring pipe_user_name;
 	fstring domain;
@@ -307,13 +309,16 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	DEBUG(5,("user: %s domain: %s wks: %s\n", user_name, domain, wks));
 
+	nt_pw_len = MIN(sizeof(nt_owf), ntlmssp_resp->hdr_nt_resp.str_str_len);
+	lm_pw_len = MIN(sizeof(lm_owf), ntlmssp_resp->hdr_lm_resp.str_str_len);
+
 	memcpy(lm_owf, ntlmssp_resp->lm_resp, sizeof(lm_owf));
-	memcpy(nt_owf, ntlmssp_resp->nt_resp, sizeof(nt_owf));
+	memcpy(nt_owf, ntlmssp_resp->nt_resp, nt_pw_len);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm, nt owfs, chal\n"));
 	dump_data(100, (char *)lm_owf, sizeof(lm_owf));
-	dump_data(100, (char *)nt_owf, sizeof(nt_owf));
+	dump_data(100, (char *)nt_owf, nt_pw_len);
 	dump_data(100, (char *)p->challenge, 8);
 #endif
 
@@ -362,8 +367,11 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 		become_root();
 
-		if(!(p->ntlmssp_auth_validated = pass_check_smb(pipe_user_name, domain,
-		                      (uchar*)p->challenge, lm_owf, nt_owf))) {
+		if(!(p->ntlmssp_auth_validated = 
+		     pass_check_smb_with_chal(pipe_user_name, domain,
+					      (uchar*)p->challenge, 
+					      lm_owf, lm_pw_len, 
+					      nt_owf, nt_pw_len) == NT_STATUS_NOPROBLEMO)) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
 			unbecome_root();

@@ -823,7 +823,7 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
  Creates a STRING2 structure.
 ********************************************************************/
 
-void init_string2(STRING2 *str, char *buf, int len)
+void init_string2(STRING2 *str, const char *buf, int len)
 {
 	int alloc_len = 0;
 

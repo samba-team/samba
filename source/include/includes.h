@@ -666,6 +666,8 @@ extern int errno;
 #include "md5.h"
 #include "hmacmd5.h"
 
+#include "auth.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
