@@ -1,3 +1,17 @@
+2001-08-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ank.c: add a --use-defaults option to just use default values
+	without questions
+
+	* kadmin.c: add "del" alias for delete
+
+	* cpw.c: call this operation "passwd" in usage
+
+	* kadmin_locl.h: prototype for set_defaults
+
+	* util.c (edit_entry): move setting of default values to a
+	separate function, set_defaults
+
 2001-08-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmin.c: print help message on bad options
