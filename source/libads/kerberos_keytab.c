@@ -46,7 +46,7 @@ void name_to_fqdn(fstring fqdn, const char *name)
 }
 
 /**********************************************************************
-  Adds a single service principal, i.e. 'host' to the system keytab
+ Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
 
 int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
@@ -290,7 +290,7 @@ out:
 }
 
 /**********************************************************************
-  Flushes all entries from the system keytab.
+ Flushes all entries from the system keytab.
 ***********************************************************************/
 
 int ads_keytab_flush(ADS_STRUCT *ads)
@@ -339,35 +339,40 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		goto out;
 	}
 
-HERE
-
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT) {
-		while (!krb5_kt_next_entry(context, keytab, &entry, &cursor)) {
+		while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 			ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+			cursor = NULL;
 			if (ret) {
-				DEBUG(1,("krb5_kt_end_seq_get() failed (%s)\n",error_message(ret)));
+				DEBUG(1,("ads_keytab_flush: krb5_kt_end_seq_get() failed (%s)\n",error_message(ret)));
 				goto out;
 			}
-			ret = krb5_kt_remove_entry(context, keytab, &entry);
+			ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
 			if (ret) {
-				DEBUG(1,("krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
+				DEBUG(1,("ads_keytab_flush: krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
 				goto out;
 			}
 			ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 			if (ret) {
-				DEBUG(1,("krb5_kt_start_seq failed (%s)\n",error_message(ret)));
+				DEBUG(1,("ads_keytab_flush: krb5_kt_start_seq failed (%s)\n",error_message(ret)));
 				goto out;
 			}
-			ret = krb5_kt_free_entry(context, &entry);
+			ret = krb5_kt_free_entry(context, &kt_entry);
+			ZERO_STRUCT(kt_entry);
 			if (ret) {
-				DEBUG(1,("krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
+				DEBUG(1,("ads_keytab_flush: krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
 				goto out;
 			}
 		}
 	}
+
+	/* Ensure we don't double free. */
+	ZERO_STRUCT(kt_entry);
+	cursor = NULL;
+
 	if (!ADS_ERR_OK(ads_clear_spns(ads, global_myname()))) {
-		DEBUG(1,("Error while clearing service principal listings in LDAP.\n"));
+		DEBUG(1,("ads_keytab_flush: Error while clearing service principal listings in LDAP.\n"));
 		goto out;
 	}
 
@@ -392,78 +397,105 @@ out:
 	return ret;
 }
 
+/**********************************************************************
+ Adds all the required service principals to the system keytab.
+***********************************************************************/
 
 int ads_keytab_create_default(ADS_STRUCT *ads)
 {
-	krb5_error_code ret;
-	krb5_context context;
-	krb5_keytab keytab;
-	krb5_kt_cursor cursor;
-	krb5_keytab_entry entry;
+	krb5_error_code ret = 0;
+	krb5_context context = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_kt_cursor cursor = NULL;
+	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
-	char *ktprinc;
 	int i, found = 0;
-	char **oldEntries;
+	char **oldEntries = NULL;
 
 	ret = ads_keytab_add_entry("host", ads);
 	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry failed while adding 'host'.\n"));
+		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'host'.\n"));
 		return ret;
 	}
 	ret = ads_keytab_add_entry("cifs", ads);
 	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry failed while adding 'cifs'.\n"));
+		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'cifs'.\n"));
 		return ret;
 	}
 
 	kvno = (krb5_kvno) ads_get_kvno(ads, global_myname());
 	if (kvno == -1) {
-		DEBUG(1,("ads_get_kvno failed to determine the system's kvno.\n"));
+		DEBUG(1,("ads_keytab_create_default: ads_get_kvno failed to determine the system's kvno.\n"));
 		return -1;
 	}
 
-	DEBUG(1,("Searching for keytab entries to preserve and update.\n"));
+	DEBUG(3,("ads_keytab_create_default: Searching for keytab entries to preserve and update.\n"));
 	/* Now loop through the keytab and update any other existing entries... */
+
+	ZERO_STRUCT(kt_entry);
+
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("could not krb5_init_context: %s\n",error_message(ret)));
+		DEBUG(1,("ads_keytab_create_default: could not krb5_init_context: %s\n",error_message(ret)));
 		return ret;
 	}
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
-		DEBUG(1,("krb5_kt_default failed (%s)\n",error_message(ret)));
-		return ret;
+		DEBUG(1,("ads_keytab_create_default: krb5_kt_default failed (%s)\n",error_message(ret)));
+		goto done;
 	}
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		while ((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0) {
+		while ((ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) == 0) {
+			krb5_kt_free_entry(context, &kt_entry);
+			ZERO_STRUCT(kt_entry);
 			found++;
 		}
 	}
+	krb5_kt_end_seq_get(context, keytab, &cursor);
+	cursor = NULL;
 
-	DEBUG(1, ("Found %d entries in the keytab.\n", found));
+	/*
+	 * Hmmm. There is no "rewind" function for the keytab. This means we have a race condition
+	 * where someone else could add entries after we've counted them. Re-open asap to minimise
+	 * the race. JRA.
+	 */
+	
+	DEBUG(3, ("ads_keytab_create_default: Found %d entries in the keytab.\n", found));
 	if (!found) {
 		goto done;
 	}
 	oldEntries = (char **) malloc(found * sizeof(char *));
 	if (!oldEntries) {
-		DEBUG(1,("Failed to allocate space to store the old keytab entries (malloc failed?).\n"));
-		return ENOMEM;
+		DEBUG(1,("ads_keytab_create_default: Failed to allocate space to store the old keytab entries (malloc failed?).\n"));
+		ret = -1;
+		goto done;
 	}
-	memset(oldEntries, 0, found * sizeof(char *));
+	memset(oldEntries, '\0', found * sizeof(char *));
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		while ((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0) {
-			if (entry.vno != kvno) {
-				krb5_unparse_name(context, entry.principal, &ktprinc);
-				for (i = 0; *(ktprinc + i); i++) {
-					if (*(ktprinc + i) == '/') {
-						*(ktprinc + i) = (char) NULL;
-						break;
-					}
+		while ((ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) == 0) {
+			if (kt_entry.vno != kvno) {
+				char *ktprinc;
+				char *p;
+
+				/* This returns a malloc'ed string in ktprinc. */
+				ret = krb5_unparse_name(context, kt_entry.principal, &ktprinc);
+				if (ret) {
+					DEBUG(1,("krb5_unparse_name failed (%s)\n", error_message(ret)));
+					goto out;
+				}
+				/*
+				 * From looking at the krb5 source they don't seem to take locale
+				 * or mb strings into account. Maybe this is because they assume utf8 ?
+				 * In this case we may need to convert from utf8 to mb charset here ? JRA.
+				 */
+				p = strchr_m(ktprinc, '/');
+				if (p) {
+					*p = '\0';
 				}
 				for (i = 0; i < found; i++) {
 					if (!oldEntries[i]) {
@@ -475,17 +507,37 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 					}
 				}
 			}
+			krb5_kt_free_entry(context, &kt_entry);
+			ZERO_STRUCT(kt_entry);
 		}
 		for (i = 0; oldEntries[i]; i++) {
 			ret |= ads_keytab_add_entry(oldEntries[i], ads);
-			free(oldEntries[i]);
+			SAFE_FREE(oldEntries[i]);
 		}
+		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
-	free(oldEntries);
+	cursor = NULL;
 
 done:
 
-	krb5_kt_close(context, keytab);
+	SAFE_FREE(oldEntries);
+
+	{
+		krb5_keytab_entry zero_kt_entry;
+		ZERO_STRUCT(zero_kt_entry);
+		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+			krb5_kt_free_entry(context, &kt_entry);
+		}
+	}
+	if (cursor && keytab) {
+		krb5_kt_end_seq_get(context, keytab, &cursor);	
+	}
+	if (keytab) {
+		krb5_kt_close(context, keytab);
+	}
+	if (context) {
+		krb5_free_context(context);
+	}
 	return ret;
 }
 #endif /* HAVE_KRB5 */
