@@ -50,10 +50,10 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   uint32 domainsidsize;
   BOOL short_request = False;
   char *getdc;
-  pstring ascuser;
-  pstring asccomp;
   char *uniuser; /* Unicode user name. */
   char *unicomp; /* Unicode computer name. */
+  pstring ascuser;
+  pstring asccomp;
 
   memset(outbuf, 0, sizeof(outbuf));
 
@@ -70,7 +70,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
   code = SVAL(buf,0);
   DEBUG(1,("process_logon_packet: Logon from %s: code = %x\n", inet_ntoa(p->ip), code));
 
-      dump_data(4, buf, len);
+  	dump_data(4, buf, len);
 
   switch (code)
   {
@@ -120,23 +120,22 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       getdc = skip_string(machine,1);
       unicomp = skip_string(getdc,1);
 
-      /* at this point we can work out if this is a W9X or NT style
-         request. Experiments show that the difference is wether the
-         packet ends here. For a W9X request we now end with a pair of
-         bytes (usually 0xFE 0xFF) whereas with NT we have two further
-         strings - the following is a simple way of detecting this */
-      if (len - PTR_DIFF(unicomp, buf ) <= 3)
-      {
-	      short_request = True;
-      } else {
-
-	      /* A full length (NT style) request */
-	      
 	q = align2(unicomp, buf);
 
 	/* skip unicode string -- cannot go beyond end of input buffer */
 	q = skip_unibuf(q, buf + len - q);
 
+      /* at this point we can work out if this is a W9X or NT style
+         request. Experiments show that the difference is wether the
+         packet ends here. For a W9X request we now end with a pair of
+         bytes (usually 0xFE 0xFF) whereas with NT we have two further
+         strings - the following is a simple way of detecting this */
+      if (PTR_DIFF(buf, q) >= len)
+      {
+	      short_request = True;
+      } else {
+
+	      /* A full length (NT style) request */
 
 	      if (len - PTR_DIFF(q, buf) > 8) {
 					/* with NT5 clients we can sometimes
@@ -171,6 +170,10 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
         q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
+
+	ntversion = 0x1;
+	lmnttoken = 0xffff;
+	lm20token = 0xffff;
 
         SIVAL(q, 0, ntversion);
         SSVAL(q, 4, lmnttoken);
@@ -207,24 +210,43 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       uniuser = skip_unicode_string(unicomp,1);
       getdc = skip_unicode_string(uniuser,1);
       q = skip_string(getdc,1);
-      q += 4;
+      q += 4; /* Account Control Bits - indicating username type */
       domainsidsize = IVAL(q, 0);
       q += 4;
-      q += domainsidsize + 3;
-      ntversion = IVAL(q, 0);
-      q += 4;
-      lmnttoken = SVAL(q, 0);
-      q += 2;
-      lm20token = SVAL(q, 0);
-      q += 2;
 
-      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
+      if (domainsidsize != 0)
+	{
+		q += domainsidsize;
+		q = align4(q, buf);
+	}
+	      if (len - PTR_DIFF(q, buf) > 8)
+	      {
+			/* with NT5 clients we can sometimes
+			   get additional data - a length specificed string
+			   containing the domain name, then 16 bytes of
+			   data (no idea what it is) */
+			int dom_len = CVAL(q, 0);
+			q++;
+			if (dom_len != 0) {
+				q += dom_len + 1;
+			}
+			q += 16;
+	      }
+      ntversion = IVAL(q, 0);
+      lmnttoken = SVAL(q, 4);
+      lm20token = SVAL(q, 6);
+
+      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %x\n", domainsidsize, ntversion));
 
       /*
        * we respond regadless of whether the machine is in our password 
        * database. If it isn't then we let smbd send an appropriate error.
        * Let's ignore the SID.
        */
+
+	ntversion = 0x1;
+	lmnttoken = 0xffff;
+	lm20token = 0xffff;
 
       unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser)-1);
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
