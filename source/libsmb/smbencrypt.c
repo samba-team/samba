@@ -159,7 +159,7 @@ void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
 	dump_data(100, p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(pwrd, sizeof(pwrd));
+	ZERO_STRUCT(pwrd);
 }
 
 /* Does the LM owf of a user's password */
@@ -188,7 +188,7 @@ void lm_owf_gen(const char *pwd, uchar p16[16])
 	dump_data(100, p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(pwrd, sizeof(pwrd));
+	ZERO_STRUCT(pwrd);
 }
 
 /* Does both the NT and LM owfs of a user's password */
@@ -231,7 +231,7 @@ void nt_owf_gen(const char *pwd, uchar nt_p16[16])
 	dump_data(100, nt_p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(pwrd, sizeof(pwrd));
+	ZERO_STRUCT(pwrd);
 }
 
 /* Does both the NT and LM owfs of a user's UNICODE password */
