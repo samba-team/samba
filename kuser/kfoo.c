@@ -23,7 +23,7 @@ main(int argc, char **argv)
     in.times.endtime = time(NULL) + 4711;
     ret = krb5_get_credentials(context, 0, cache, &in, &out);
     
-    printf("%d\n", ret);
+    printf("%s\n", krb5_get_err_text(context, ret));
 }
 #endif
 
