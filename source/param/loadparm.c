@@ -145,7 +145,6 @@ typedef struct
 	char *szLogonPath;
 	char *szLogonDrive;
 	char *szLogonHome;
-	char *szSmbrun;
 	char *szWINSserver;
 	char *szCodingSystem;
 	char *szInterfaces;
@@ -957,7 +956,6 @@ static struct parm_struct parm_table[] = {
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, 0},
 	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, 0},
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, 0},
-	{"smbrun", P_STRING, P_GLOBAL, &Globals.szSmbrun, NULL, NULL, 0},
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
 	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
@@ -1210,7 +1208,6 @@ static void init_globals(void)
 	string_set(&Globals.szUtmpHostname, "%m");
 	Globals.bUtmpConsolidate = False;
 #endif /* WITH_UTMP */
-	string_set(&Globals.szSmbrun, SMBRUN);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
 	pstrcat(s, VERSION);
@@ -1426,7 +1423,6 @@ static char *lp_string(const char *s)
  int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
-FN_GLOBAL_STRING(lp_smbrun, &Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 /* #ifdef WITH_TDBPWD
 FN_GLOBAL_STRING(lp_tdb_passwd_file, &Globals.szTDBPasswdFile)

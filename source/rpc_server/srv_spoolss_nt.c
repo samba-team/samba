@@ -296,7 +296,7 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
 
 		DEBUG(10,("Running [%s]\n", command));
-		ret = smbrun(command, NULL, NULL);
+		ret = smbrun(command, NULL);
 		if (ret != 0) {
 			return ERROR_INVALID_HANDLE; /* What to return here? */
 		}
@@ -4123,7 +4123,6 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	char *cmd = lp_addprinter_cmd();
 	char *path;
 	char **qlines;
-	pstring tmp_file;
 	pstring command;
 	pstring driverlocation;
 	int numlines;
@@ -4141,16 +4140,15 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 
-	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d.", path, sys_getpid());
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation);
 
-    /* Convert script args to unix-codepage */
-    dos_to_unix(command, True);
-	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-	ret = smbrun(command, &fd, tmp_file);
+	/* Convert script args to unix-codepage */
+	dos_to_unix(command, True);
+	DEBUG(10,("Running [%s]\n", command));
+	ret = smbrun(command, &fd);
 	DEBUGADD(10,("returned [%d]\n", ret));
 
 	if ( ret != 0 ) {
@@ -4160,7 +4158,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	}
 
 	numlines = 0;
-    /* Get lines and convert them back to dos-codepage */
+	/* Get lines and convert them back to dos-codepage */
 	qlines = fd_lines_load(fd, &numlines, True);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	close(fd);
@@ -5307,7 +5305,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
-	int numofforms, i;
+	int numofforms=0, i;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
@@ -5406,7 +5404,6 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		char *cmd = lp_enumports_cmd();
 		char *path;
 		char **qlines;
-		pstring tmp_file;
 		pstring command;
 		int numlines;
 		int ret;
@@ -5417,11 +5414,10 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = lp_lockdir();
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d.", path, sys_getpid());
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
-		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, &fd, tmp_file);
+		DEBUG(10,("Running [%s]\n", command));
+		ret = smbrun(command, &fd);
 		DEBUG(10,("Returned [%d]\n", ret));
 		if (ret != 0) {
 			if (fd != -1)
@@ -5519,7 +5515,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, &fd, tmp_file);
+		ret = smbrun(command, &fd);
 		DEBUGADD(10,("returned [%d]\n", ret));
 		if (ret != 0) {
 			if (fd != -1)

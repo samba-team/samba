@@ -816,7 +816,7 @@ You can string acls together with spaces, commas or newlines\n\
 	int opt;
 	char *p;
 	static pstring servicesf = CONFIGFILE;
-	struct cli_state *cli;
+	struct cli_state *cli=NULL;
 	enum acl_mode mode;
 	char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;

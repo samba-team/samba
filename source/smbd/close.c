@@ -58,7 +58,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
       slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
 
     chmod(fname,0755);
-    ret = smbrun(fname,&tmp_fd,magic_output);
+    ret = smbrun(fname,&tmp_fd);
     DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
     unlink(fname);
 	if (ret != 0 || tmp_fd == -1) {

@@ -398,7 +398,7 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	BOOL found = False;
 	pstring buf;
 	char *p = cmd;
-	uint32 result;
+	uint32 result=0;
 
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;

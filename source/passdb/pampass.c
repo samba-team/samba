@@ -61,8 +61,6 @@ static char *PAM_password;
 static BOOL pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
 {
 
-	int retval;
-
        	if( pam_error != PAM_SUCCESS)
 	{
 		DEBUG(dbglvl, ("PAM: %s : %s\n", msg, pam_strerror(pamh, pam_error)));

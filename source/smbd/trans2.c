@@ -1588,7 +1588,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   struct utimbuf tvs;
   SMB_STRUCT_STAT sbuf;
   pstring fname1;
-  char *fname;
+  char *fname = NULL;
   int fd = -1;
   BOOL bad_path = False;
   files_struct *fsp = NULL;

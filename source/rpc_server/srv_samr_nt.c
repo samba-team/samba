@@ -1266,8 +1266,8 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 	    UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
 {
 	uint32 i;
-	UNIHDR *hdr_name;
-	UNISTR2 *uni_name;
+	UNIHDR *hdr_name = NULL;
+	UNISTR2 *uni_name = NULL;
 
 	*pp_uni_name = NULL;
 	*pp_hdr_name = NULL;

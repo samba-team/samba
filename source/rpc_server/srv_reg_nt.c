@@ -117,7 +117,7 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
 	uint32 status = NT_STATUS_NOPROBLEMO;
-	char *key;
+	char *key = NULL;
 	uint32 type=0x1; /* key type: REG_SZ */
 
 	UNISTR2 *uni_key = NULL;

@@ -507,7 +507,7 @@ int smb_create_user(char *unix_user, char *homedir)
   all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
   if (homedir)
     all_string_sub(add_script, "%H", homedir, sizeof(pstring));
-  ret = smbrun(add_script,NULL,NULL);
+  ret = smbrun(add_script,NULL);
   DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
   return ret;
 }
@@ -524,7 +524,7 @@ static int smb_delete_user(char *unix_user)
   pstrcpy(del_script, lp_deluser_script());
   if (! *del_script) return -1;
   all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
-  ret = smbrun(del_script,NULL,NULL);
+  ret = smbrun(del_script,NULL);
   DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
   return ret;
 }
@@ -570,7 +570,7 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
                             smb_apasswd, smb_apasslen, 
                             smb_ntpasswd, smb_ntpasslen);
   if(ret) {
-    struct passwd *pwd;
+    struct passwd *pwd = NULL;
 
     /*
      * User validated ok against Domain controller.
@@ -611,7 +611,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
 {
   BOOL ret = False;
   BOOL user_exists = True;
-  struct passwd *pwd;
+  struct passwd *pwd = NULL;
 
   if(lp_security() != SEC_DOMAIN)
     return False;

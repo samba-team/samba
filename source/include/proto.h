@@ -194,7 +194,7 @@ int vslprintf(char *str, int n, char *format, va_list ap);
 
 /*The following definitions come from  lib/smbrun.c  */
 
-int smbrun(char *cmd, int *outfd, char *template);
+int smbrun(char *cmd, int *outfd);
 
 /*The following definitions come from  lib/snprintf.c  */
 
@@ -1545,7 +1545,6 @@ enum nss_status winbindd_request(int req_type,
 
 void lp_talloc_free(void);
 char *lp_logfile(void);
-char *lp_smbrun(void);
 char *lp_configfile(void);
 char *lp_tdb_passwd_file(void);
 char *lp_smb_passwd_file(void);

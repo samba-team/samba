@@ -569,7 +569,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
 		DEBUG(5,("cmd=%s\n",cmd));
-		ret = smbrun(cmd,NULL,NULL);
+		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
 			conn_free(conn);
@@ -621,7 +621,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
-		ret = smbrun(cmd,NULL,NULL);
+		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
 			conn_free(conn);
@@ -698,7 +698,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
-		smbrun(cmd,NULL,NULL);
+		smbrun(cmd,NULL);
 		unbecome_user();
 	}
 
@@ -708,7 +708,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
-		smbrun(cmd,NULL,NULL);
+		smbrun(cmd,NULL);
 	}
 	conn_free(conn);
 }

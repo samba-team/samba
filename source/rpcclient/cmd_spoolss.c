@@ -768,7 +768,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
  */
 static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **argv)
 {
-	uint32 		result, 
+	uint32 		result=0, 
 			info_level = 1;
 	PRINTER_DRIVER_CTR 	ctr;
 	fstring 	server;
