@@ -516,6 +516,9 @@ void dbgflush( void )
 
 BOOL dbghdr( int level, char *file, char *func, int line )
 {
+  /* Ensure we don't lose any real errno value. */
+  int old_errno = errno;
+
   if( format_pos ) {
     /* This is a fudge.  If there is stuff sitting in the format_bufr, then
      * the *right* thing to do is to call
@@ -564,6 +567,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
 				  header_str, file, func, line );
   }
 
+  errno = old_errno;
   return( True );
 }
 
