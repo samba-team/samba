@@ -1,3 +1,7 @@
+2003-06-14  Love  <lha@stacken.kth.se>
+
+	* glob.hin: prefix glob symbols with rk_
+	
 2003-04-22  Love  <lha@stacken.kth.se>
 
 	* resolve.c: copy NUL too, from janj@wenf.org via openbsd
