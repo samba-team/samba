@@ -35,65 +35,12 @@ struct samdb_context {
 } while(0)
 
 
-/*
-   fix the DN removing unneded non-significative spaces
-   this function ASSUME the string is talloced
- */
-static char *sldb_fix_dn(const char *dn)
-{
-	char *new_dn;
-	int i, j, k;
-
-	/* alloc enough room to host the whole dn as multibyte string */
-	new_dn = talloc(dn, strlen(dn) + 1);
-	if (!new_dn) {
-		DEBUG(0, ("sldb_fix_dn: Out of memory!"));
-		return NULL;
-	}
-
-	i = j = 0;
-	while (dn[i] != '\0') {
-		/* it is legal to check for ascii chars in utf-8 as it is
-		 * guaranted to never contain ascii chars (up to 0x7F) as part
-		 * of a multibyte sequence */
-
-		new_dn[j] = dn[i];
-
-		if (dn[i] == ',' || dn[i] == '=') {
-			/* skip spaces after ',' or '=' */
-			for (++i; dn[i] == ' '; i++) ;
-			j++;
-			continue;
-		}
-		if (dn[i] == ' ') {
-			/* check if there's a ',' after these spaces */
-			for (k = i; dn[k] == ' '; k++) ;
-			if (dn[k] == ',') {
-				/* skip spaces */
-				i = k;
-				continue;
-			} else {
-				/* fill the dest buffer with the spaces */
-				for (; dn[i] == ' '; i++, j++) {
-					new_dn[j] = ' ';
-				}
-				continue;
-			}
-		}
-		i++;
-		j++;
-	}
-	new_dn[j] = '\0';
-
-	return new_dn;
-}
-
-
 static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_SearchRequest *r)
 {
 	NTSTATUS status;
-	struct ldap_dn *bdn;
+	void *local_ctx;
+	struct ldap_dn *basedn;
 	struct ldap_Result *done;
 	struct ldap_SearchResEntry *ent;
 	struct ldapsrv_reply *ent_r, *done_r;
@@ -101,21 +48,20 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct samdb_context *samdb;
 	struct ldb_message **res;
 	int i, j, y, count;
-	struct ldb_context *ldb;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
-	const char *basedn;
 	const char *errstr;
 
-	samdb = samdb_connect(call);
-	ldb = samdb->ldb;
-	bdn = ldap_parse_dn(call, r->basedn);
-	basedn = bdn->dn;
-	if (basedn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
+	ALLOC_CHECK(local_ctx);
 
-	DEBUG(10, ("sldb_Search: basedn: [%s]\n", basedn));
+	samdb = samdb_connect(local_ctx);
+	ALLOC_CHECK(samdb);
+
+	basedn = ldap_parse_dn(local_ctx, r->basedn);
+	ALLOC_CHECK(basedn);
+
+	DEBUG(10, ("sldb_Search: basedn: [%s]\n", basedn->dn));
 	DEBUG(10, ("sldb_Search: filter: [%s]\n", r->filter));
 
 	switch (r->scope) {
@@ -144,8 +90,8 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
-	count = ldb_search(ldb, basedn, scope, r->filter, attrs, &res);
+	ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
+	count = ldb_search(samdb->ldb, basedn->dn, scope, r->filter, attrs, &res);
 
 	for (i=0; i < count; i++) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
@@ -195,11 +141,11 @@ queue_reply:
 	} else if (count == 0) {
 		DEBUG(10,("sldb_Search: no results\n"));
 		result = 32;
-		errstr = talloc_strdup(done_r, ldb_errstring(ldb));
+		errstr = talloc_strdup(done_r, ldb_errstring(samdb->ldb));
 	} else if (count == -1) {
 		DEBUG(10,("sldb_Search: error\n"));
 		result = 1;
-		errstr = talloc_strdup(done_r, ldb_errstring(ldb));
+		errstr = talloc_strdup(done_r, ldb_errstring(samdb->ldb));
 	}
 
 	done = &done_r->msg.r.SearchResultDone;
@@ -208,7 +154,7 @@ queue_reply:
 	done->errormessage = errstr;
 	done->referral = NULL;
 
-	talloc_free(samdb);
+	talloc_free(local_ctx);
 
 	return ldapsrv_queue_reply(call, done_r);
 }
@@ -216,32 +162,34 @@ queue_reply:
 static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_AddRequest *r)
 {
-	struct ldap_dn *bdn;
+	void *local_ctx;
+	struct ldap_dn *ldn;
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
 	struct samdb_context *samdb;
-	struct ldb_context *ldb;
-	const char *dn;
 	struct ldb_message *msg;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
 	int i,j;
 
-	samdb = samdb_connect(call);
-	ldb = samdb->ldb;
-	bdn = ldap_parse_dn(call, r->dn);
-	dn = bdn->dn;
-	if (dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	local_ctx = talloc_named(call, 0, "sldb_Add local memory context");
+	ALLOC_CHECK(local_ctx);
+
+	samdb = samdb_connect(local_ctx);
+	ALLOC_CHECK(samdb);
+
+	ldn = ldap_parse_dn(local_ctx, r->dn);
+	if (!ldn) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(10, ("sldb_add: dn: [%s]\n", dn));
+	DEBUG(10, ("sldb_add: dn: [%s]\n", ldn->dn));
 
-	msg = talloc_p(samdb, struct ldb_message);
+	msg = talloc_p(local_ctx, struct ldb_message);
 	ALLOC_CHECK(msg);
 
-	msg->dn = discard_const_p(char, dn);
+	msg->dn = ldn->dn;
 	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -286,11 +234,11 @@ invalid_input:
 	ALLOC_CHECK(add_reply);
 
 	add_result = &add_reply->msg.r.AddResponse;
-	add_result->dn = talloc_steal(add_reply, dn);
+	add_result->dn = talloc_steal(add_reply, ldn->dn);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
-		ldb_ret = ldb_add(ldb, msg);
+		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
+		ldb_ret = ldb_add(samdb->ldb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -299,17 +247,17 @@ invalid_input:
 		 	 * or if the object was not found, return the most probable error
 		 	 */
 			result = 1;
-			errstr = talloc_strdup(add_reply, ldb_errstring(ldb));
+			errstr = talloc_strdup(add_reply, ldb_errstring(samdb->ldb));
 		}
 	} else {
-		errstr = talloc_strdup(add_reply,"invalid input data");
+		errstr = talloc_strdup(add_reply, "invalid input data");
 	}
 
 	add_result->resultcode = result;
 	add_result->errormessage = errstr;
 	add_result->referral = NULL;
 
-	talloc_free(samdb);
+	talloc_free(local_ctx);
 
 	return ldapsrv_queue_reply(call, add_reply);
 }
@@ -317,34 +265,33 @@ invalid_input:
 static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_DelRequest *r)
 {
-	struct ldap_dn *bdn;
+	void *local_ctx;
+	struct ldap_dn *ldn;
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
 	struct samdb_context *samdb;
-	struct ldb_context *ldb;
 	const char *dn;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 
-	samdb = samdb_connect(call);
-	ldb = samdb->ldb;
-	bdn = ldap_parse_dn(call, r->dn);
-	dn = bdn->dn;
-	if (dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	local_ctx = talloc_named(call, 0, "sldb_Del local memory context");
+	ALLOC_CHECK(local_ctx);
 
-	DEBUG(10, ("sldb_Del: dn: [%s]\n", dn));
+	samdb = samdb_connect(local_ctx);
+	ldn = ldap_parse_dn(local_ctx, r->dn);
+	ALLOC_CHECK(ldn);
 
-	ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
-	ldb_ret = ldb_delete(ldb, dn);
+	DEBUG(10, ("sldb_Del: dn: [%s]\n", ldn->dn));
+
+	ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
+	ldb_ret = ldb_delete(samdb->ldb, ldn->dn);
 
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
 	ALLOC_CHECK(del_reply);
 
 	del_result = &del_reply->msg.r.DelResponse;
-	del_result->dn = talloc_steal(del_reply, dn);
+	del_result->dn = talloc_steal(del_reply, ldn->dn);
 
 	if (ldb_ret == 0) {
 		result = LDAP_SUCCESS;
@@ -354,14 +301,14 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 		 * or if the object was not found, return the most probable error
 		 */
 		result = LDAP_NO_SUCH_OBJECT;
-		errstr = talloc_strdup(del_reply, ldb_errstring(ldb));
+		errstr = talloc_strdup(del_reply, ldb_errstring(samdb->ldb));
 	}
 
 	del_result->resultcode = result;
 	del_result->errormessage = errstr;
 	del_result->referral = NULL;
 
-	talloc_free(samdb);
+	talloc_free(local_ctx);
 
 	return ldapsrv_queue_reply(call, del_reply);
 }
@@ -369,32 +316,32 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_ModifyRequest *r)
 {
-	struct ldap_dn *bdn;
+	void *local_ctx;
+	struct ldap_dn *ldn;
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
 	struct samdb_context *samdb;
-	struct ldb_context *ldb;
-	const char *dn;
 	struct ldb_message *msg;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
 	int i,j;
 
+	local_ctx = talloc_named(call, 0, "sldb_Modify local memory context");
+	ALLOC_CHECK(local_ctx);
+
 	samdb = samdb_connect(call);
-	ldb = samdb->ldb;
-	bdn = ldap_parse_dn(call, r->dn);
-	dn = bdn->dn;
-	if (dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ALLOC_CHECK(samdb);
 
-	DEBUG(10, ("sldb_modify: dn: [%s]\n", dn));
+	ldn = ldap_parse_dn(local_ctx, r->dn);
+	ALLOC_CHECK(ldn);
 
-	msg = talloc_p(samdb, struct ldb_message);
+	DEBUG(10, ("sldb_modify: dn: [%s]\n", ldn->dn));
+
+	msg = talloc_p(local_ctx, struct ldb_message);
 	ALLOC_CHECK(msg);
 
-	msg->dn = discard_const_p(char, dn);
+	msg->dn = ldn->dn;
 	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -455,11 +402,11 @@ invalid_input:
 	ALLOC_CHECK(modify_reply);
 
 	modify_result = &modify_reply->msg.r.AddResponse;
-	modify_result->dn = talloc_steal(modify_reply, dn);
+	modify_result->dn = talloc_steal(modify_reply, ldn->dn);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
-		ldb_ret = ldb_modify(ldb, msg);
+		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
+		ldb_ret = ldb_modify(samdb->ldb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -468,17 +415,17 @@ invalid_input:
 		 	 * or if the object was not found, return the most probable error
 		 	 */
 			result = 1;
-			errstr = talloc_strdup(modify_reply, ldb_errstring(ldb));
+			errstr = talloc_strdup(modify_reply, ldb_errstring(samdb->ldb));
 		}
 	} else {
-		errstr = talloc_strdup(modify_reply,"invalid input data");
+		errstr = talloc_strdup(modify_reply, "invalid input data");
 	}
 
 	modify_result->resultcode = result;
 	modify_result->errormessage = errstr;
 	modify_result->referral = NULL;
 
-	talloc_free(samdb);
+	talloc_free(local_ctx);
 
 	return ldapsrv_queue_reply(call, modify_reply);
 }
@@ -486,7 +433,8 @@ invalid_input:
 static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_CompareRequest *r)
 {
-	struct ldap_dn *bdn;
+	void *local_ctx;
+	struct ldap_dn *ldn;
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
 	int result = 80;
@@ -499,23 +447,25 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	const char *filter;
 	int count;
 
-	samdb = samdb_connect(call);
-	ldb = samdb->ldb;
-	bdn = ldap_parse_dn(call, r->dn);
-	dn = bdn->dn;
-	if (dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	local_ctx = talloc_named(call, 0, "sldb_Compare local_memory_context");
+	ALLOC_CHECK(local_ctx);
 
-	DEBUG(10, ("sldb_Compare: dn: [%s]\n", dn));
-	filter = talloc_asprintf(samdb, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
+	samdb = samdb_connect(local_ctx);
+	ALLOC_CHECK(samdb);
+
+	ldn = ldap_parse_dn(local_ctx, r->dn);
+	ALLOC_CHECK(ldn);
+
+	DEBUG(10, ("sldb_Compare: dn: [%s]\n", ldn->dn));
+	filter = talloc_asprintf(local_ctx, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
 	ALLOC_CHECK(filter);
+
 	DEBUGADD(10, ("sldb_Compare: attribute: [%s]\n", filter));
 
 	attrs[0] = NULL;
 
-	ldb_set_alloc(ldb, talloc_realloc_fn, samdb);
-	count = ldb_search(ldb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
+	ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
+	count = ldb_search(samdb->ldb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
 
 	compare_r = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
 	ALLOC_CHECK(compare_r);
@@ -526,7 +476,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 		errstr = NULL;
 	} else if (count == 0) {
 		result = 32;
-		errstr = talloc_strdup(compare_r, ldb_errstring(ldb));
+		errstr = talloc_strdup(compare_r, ldb_errstring(samdb->ldb));
 		DEBUG(10,("sldb_Compare: no results: %s\n", errstr));
 	} else if (count > 1) {
 		result = 80;
@@ -534,7 +484,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 		DEBUG(10,("sldb_Compare: %d results: %s\n", count, errstr));
 	} else if (count == -1) {
 		result = 1;
-		errstr = talloc_strdup(compare_r, ldb_errstring(ldb));
+		errstr = talloc_strdup(compare_r, ldb_errstring(samdb->ldb));
 		DEBUG(10,("sldb_Compare: error: %s\n", errstr));
 	}
 
@@ -544,7 +494,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	compare->errormessage = errstr;
 	compare->referral = NULL;
 
-	talloc_free(samdb);
+	talloc_free(local_ctx);
 
 	return ldapsrv_queue_reply(call, compare_r);
 }
