@@ -5027,8 +5027,8 @@
 		support with Windows NT/2k/XP clients. This is a developer
 		debugging option and should be left alone.
 	 	If this option is set to <constant>no</constant> then Samba offers
-		exactly the same SMB error calls that versions prior to Samba 2.2.3
-		offered.</para>
+		exactly the same DOS error codes that versions prior to Samba 2.2.3
+		reported.</para>
 
 		<para>You should not need to ever disable this parameter.</para>
 
