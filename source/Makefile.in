@@ -84,7 +84,8 @@ SCRIPTS = script/smbtar script/addtosmbpass
 # object file lists
 ######################################################################
 
-LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
+LIB_OBJ = lib/charcnv.o lib/charset.o \
+          lib/debugparse.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
@@ -231,6 +232,8 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 
+DEBUG2HTML_OBJ = utils/debug2html.o lib/debugparse.o
+
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ)
 
@@ -248,6 +251,8 @@ smbwrapper : CHECK bin/smbsh bin/smbwrapper.so @WRAP32@
 smbtorture : CHECK bin/smbtorture
 
 rpctorture : CHECK bin/rpctorture
+
+debug2html : CHECK bin/debug2html
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32
@@ -367,6 +372,10 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbwrapper.so: $(PICOBJS)
 	@echo Linking shared library $@
