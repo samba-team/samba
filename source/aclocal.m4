@@ -3,6 +3,7 @@ dnl if the cache file is inconsistent with the current host,
 dnl target and build system types, execute CMD or print a default
 dnl error message.
 AC_DEFUN(AC_VALIDATE_CACHE_SYSTEM_TYPE, [
+    AC_REQUIRE([AC_CANONICAL_TARGET])
     AC_MSG_CHECKING([config.cache system type])
     if { test x"${ac_cv_host_system_type+set}" = x"set" &&
          test x"$ac_cv_host_system_type" != x"$host"; } ||
@@ -561,10 +562,3 @@ fi
 
 sinclude(build/smb_build/public.m4)
 sinclude(build/smb_build/core.m4)
-sinclude(build/smb_build/env.m4)
-sinclude(build/smb_build/check_path.m4)
-sinclude(build/smb_build/check_perl.m4)
-sinclude(build/smb_build/check_cc.m4)
-sinclude(build/smb_build/check_ld.m4)
-sinclude(build/smb_build/check_shld.m4)
-sinclude(build/smb_build/check_types.m4)
