@@ -126,7 +126,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				p += 2; 
 				if (p[1] == 0 && slen > 1) {
 					/* NT has stuffed up again */
-					unistr_to_ascii(finfo->short_name, p, slen/2);
+					unistr_to_dos(finfo->short_name, p, slen/2);
 				} else {
 					strncpy(finfo->short_name, p, 12);
 					finfo->short_name[12] = 0;

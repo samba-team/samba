@@ -438,19 +438,3 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 }
 
 #endif
-
-/* Trivial fn that chops off upper bytes to convert unicode to dos */
-void unistr_to_dos(char* dst,char* src)	       
-{
-  pstring s;
-  int i=0;
-
-  for(i=0;SVAL(src,i*2) && i<1024;i++)
-    {
-      s[i]= SVAL(src,i*2) & 0xff;
-    }
-  s[i]=0;
-
-  safe_strcpy(dst,s,1024);
-  DEBUG(10,("converted unistring to %s\n",s));
-}

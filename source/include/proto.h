@@ -496,8 +496,8 @@ char *string_truncate(char *s, int length);
 /*The following definitions come from  lib/util_unistr.c  */
 
 int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
-void ascii_to_unistr(char *dest, const char *src, int maxlen);
-void unistr_to_ascii(char *dest, char *src, int len);
+void ascii_to_unistr(char *dest, const char *src, size_t maxlen);
+void unistr_to_dos(char *dest, char *src, size_t len);
 char *skip_unibuf(char *src, size_t len);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
@@ -771,7 +771,6 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 /*The following definitions come from  libsmb/pwd_cache.c  */
 
 void pwd_init(struct pwd_info *pwd);
-void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key);
 BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2);
 void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
 void pwd_set_nullpwd(struct pwd_info *pwd);
@@ -881,7 +880,6 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
-void unistr_to_dos(char* dst,char* src)	       ;
 
 /*The following definitions come from  msdfs/msdfs_tdb.c  */
 

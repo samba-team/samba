@@ -2118,7 +2118,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   /* NT always sends in UNICODE, may not set UNICODE flag */
   if(NT_arch || (SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS))
     {
-      unistr_to_dos(pathname, &params[2]);
+      unistr_to_dos(pathname, &params[2], sizeof(pathname));
       DEBUG(10,("UNICODE referral for %s\n",pathname));
     }
   else
