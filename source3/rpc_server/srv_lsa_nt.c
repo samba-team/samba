@@ -52,7 +52,7 @@ static void free_lsa_info(void *ptr)
 {
 	struct lsa_info *lsa = (struct lsa_info *)ptr;
 
-	SAFE_FRE(lsa);
+	SAFE_FREE(lsa);
 }
 
 /***************************************************************************
