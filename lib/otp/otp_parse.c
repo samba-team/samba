@@ -48,7 +48,7 @@ struct e {
   unsigned n;
 };
 
-static struct e inv_std_dict[] = {
+static const struct e inv_std_dict[] = {
 {"A", 0},
 {"ABE", 1},
 {"ABED", 571},

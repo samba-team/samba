@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 #include "otp_locl.h"
 
-static char *std_dict[] =
+static const char *std_dict[] =
 
 {        "A",    "ABE",   "ACE",   "ACT",   "AD",    "ADA",   "ADD",
 "AGO",   "AID",  "AIM",   "AIR",   "ALL",   "ALP",   "AM",    "AMY",
