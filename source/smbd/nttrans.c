@@ -588,6 +588,50 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 }
 
 /****************************************************************************
+ Reply to an NT create and X call for pipes.
+****************************************************************************/
+
+static int do_ntcreate_pipe_open(connection_struct *conn,
+			 char *inbuf,char *outbuf,int length,int bufsize)
+{
+	pstring fname;
+	int ret;
+	int pnum = -1;
+	char *p = NULL;
+	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
+			       ((uint32)sizeof(fname)-1));
+
+	get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
+                  smb_buflen(inbuf),fname_len);
+	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
+		return ret;
+
+	/*
+	 * Deal with pipe return.
+	 */  
+
+	set_message(outbuf,34,0,True);
+
+	p = outbuf + smb_vwv2;
+	p++;
+	SSVAL(p,0,pnum);
+	p += 2;
+	SIVAL(p,0,FILE_WAS_OPENED);
+	p += 4;
+	p += 32;
+	SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
+	p += 20;
+	/* File type. */
+	SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
+	/* Device state. */
+	SSVAL(p,2, 0x5FF); /* ? */
+
+	DEBUG(5,("do_ntcreate_pipe_open: open pipe = %s\n", fname));
+
+	return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+/****************************************************************************
  Reply to an NT create and X call.
 ****************************************************************************/
 
@@ -611,7 +655,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	   reply bits separately. */
 	int oplock_request = 0;
 	mode_t unixmode;
-	int pnum = -1;
 	int fmode=0,rmode=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
@@ -620,6 +663,16 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	files_struct *fsp=NULL;
 	char *p = NULL;
 	BOOL stat_open_only = False;
+
+	/* If it's an IPC, use the pipe handler. */
+
+	if (IS_IPC(conn)) {
+		if (lp_nt_pipe_support())
+			return do_ntcreate_pipe_open(conn,inbuf,outbuf,length,bufsize);
+		else
+			return(ERROR(ERRDOS,ERRbadaccess));
+	}
+			
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
@@ -691,39 +744,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
                    smb_buflen(inbuf),fname_len);
     }
 	
-	/* If it's an IPC, use the pipe handler. */
-
-	if (IS_IPC(conn) && lp_nt_pipe_support()) {
-
-		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
-		if(ret != 0)
-			return ret;
-
-		/*
-		 * Deal with pipe return.
-		 */  
-
-		set_message(outbuf,34,0,True);
-	
-		p = outbuf + smb_vwv2;
-		p++;
-		SSVAL(p,0,pnum);
-		p += 2;
-		SIVAL(p,0,FILE_WAS_OPENED);
-		p += 4;
-		p += 32;
-		SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
-		p += 20;
-		/* File type. */
-		SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
-		/* Device state. */
-		SSVAL(p,2, 0x5FF); /* ? */
-
-		DEBUG(5,("reply_ntcreate_and_X: open pipe = %s\n", fname));
-
-		return chain_reply(inbuf,outbuf,length,bufsize);
-	}
-
 	/*
 	 * Now contruct the smb_open_mode value from the filename, 
      * desired access and the share access.
@@ -941,6 +961,72 @@ int reply_ntcreate_and_X(connection_struct *conn,
 }
 
 /****************************************************************************
+ Reply to a NT_TRANSACT_CREATE call to open a pipe.
+****************************************************************************/
+
+static int do_nt_transact_create_pipe( connection_struct *conn,
+					char *inbuf, char *outbuf, int length, 
+					int bufsize, char **ppsetup, char **ppparams, 
+					char **ppdata)
+{
+	pstring fname;
+	uint32 fname_len;
+	int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
+	char *params = *ppparams;
+	int ret;
+	int pnum = -1;
+	char *p = NULL;
+
+	/*
+	 * Ensure minimum number of parameters sent.
+	 */
+
+	if(total_parameter_count < 54) {
+		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+		return(ERROR(ERRDOS,ERRbadaccess));
+	}
+
+	fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
+
+	get_filename_transact(&fname[0], params, 53,
+			total_parameter_count - 53 - fname_len, fname_len);
+
+    if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
+      return ret;
+
+	/* Realloc the size of parameters and data we will return */
+	params = *ppparams = Realloc(*ppparams, 69);
+	if(params == NULL)
+		return(ERROR(ERRDOS,ERRnomem));
+
+	memset((char *)params,'\0',69);
+
+	p = params;
+	SCVAL(p,0,NO_OPLOCK_RETURN);
+
+	p += 2;
+	SSVAL(p,0,pnum);
+	p += 2;
+	SIVAL(p,0,FILE_WAS_OPENED);
+	p += 8;
+
+	p += 32;
+	SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
+	p += 20;
+	/* File type. */
+	SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
+	/* Device state. */
+	SSVAL(p,2, 0x5FF); /* ? */
+
+	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
+
+	/* Send the required number of replies */
+	send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+
+	return -1;
+}
+
+/****************************************************************************
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
@@ -956,7 +1042,6 @@ static int call_nt_transact_create(connection_struct *conn,
      reply bits separately. */
   int oplock_request = 0;
   mode_t unixmode;
-  int pnum = -1;
   int fmode=0,rmode=0;
   SMB_OFF_T file_len = 0;
   SMB_STRUCT_STAT sbuf;
@@ -978,6 +1063,18 @@ static int call_nt_transact_create(connection_struct *conn,
   int smb_attr;
 
   DEBUG(5,("call_nt_transact_create\n"));
+
+  /*
+   * If it's an IPC, use the pipe handler.
+   */
+
+  if (IS_IPC(conn)) {
+		if (lp_nt_pipe_support())
+			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
+					bufsize, ppsetup, ppparams, ppdata);
+		else
+			return(ERROR(ERRDOS,ERRbadaccess));
+  }
 
   /*
    * Ensure minimum number of parameters sent.
@@ -1069,76 +1166,68 @@ static int call_nt_transact_create(connection_struct *conn,
                  total_parameter_count - 53 - fname_len, fname_len);
   }
 
-  /* If it's an IPC, use the pipe handler. */
-  if (IS_IPC(conn)) {
-    int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
-    if(ret != 0)
-      return ret;
-    smb_action = FILE_WAS_OPENED;
+  /*
+   * Now contruct the smb_open_mode value from the desired access
+   * and the share access.
+   */
+
+  if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
+                                      share_access, file_attributes)) == -1)
+    return(ERROR(ERRDOS,ERRbadaccess));
+
+  oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+  oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
+  /*
+   * Check if POSIX semantics are wanted.
+   */
+
+  set_posix_case_semantics(file_attributes);
+    
+  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
+  unix_convert(fname,conn,0,&bad_path,NULL);
+    
+  unixmode = unix_mode(conn,smb_attr | aARCH, fname);
+   
+  /*
+   * If it's a request for a directory open, deal with it separately.
+   */
+
+  if(create_options & FILE_DIRECTORY_FILE) {
+
+    oplock_request = 0;
+
+    /*
+     * We will get a create directory here if the Win32
+     * app specified a security descriptor in the 
+     * CreateDirectory() call.
+     */
+
+    fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
+
+    if(!fsp) {
+      restore_case_semantics(file_attributes);
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+
+    if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+	     &sbuf) != 0) {
+      close_file(fsp,True);
+      restore_case_semantics(file_attributes);
+      return(ERROR(ERRDOS,ERRnoaccess));
+    }
+
   } else {
 
     /*
-     * Now contruct the smb_open_mode value from the desired access
-     * and the share access.
+     * Ordinary file case.
      */
 
-    if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
-                                        share_access, file_attributes)) == -1)
-      return(ERROR(ERRDOS,ERRbadaccess));
+    fsp = open_file_shared(conn,fname,smb_open_mode,smb_ofun,unixmode,
+                     oplock_request,&rmode,&smb_action);
 
-    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
-
-    /*
-     * Check if POSIX semantics are wanted.
-     */
-
-    set_posix_case_semantics(file_attributes);
-    
-    RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
-
-    unix_convert(fname,conn,0,&bad_path,NULL);
-    
-    unixmode = unix_mode(conn,smb_attr | aARCH, fname);
-    
-    /*
-     * If it's a request for a directory open, deal with it separately.
-     */
-
-    if(create_options & FILE_DIRECTORY_FILE) {
-
-      oplock_request = 0;
-
-      /*
-       * We will get a create directory here if the Win32
-       * app specified a security descriptor in the 
-       * CreateDirectory() call.
-       */
-
-      fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
-
-      if(!fsp) {
-        restore_case_semantics(file_attributes);
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
-      }
-
-      if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
-			     &sbuf) != 0) {
-        close_file(fsp,True);
-        restore_case_semantics(file_attributes);
-        return(ERROR(ERRDOS,ERRnoaccess));
-      }
-
-    } else {
-
-      /*
-       * Ordinary file case.
-       */
-
-      fsp = open_file_shared(conn,fname,smb_open_mode,smb_ofun,unixmode,
-                       oplock_request,&rmode,&smb_action);
-
-      if (!fsp) { 
+    if (!fsp) { 
 
 		if(errno == EISDIR) {
 
@@ -1227,7 +1316,6 @@ static int call_nt_transact_create(connection_struct *conn,
   
       if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
-    }
   }
 
   restore_case_semantics(file_attributes);
@@ -1248,45 +1336,25 @@ static int call_nt_transact_create(connection_struct *conn,
 	SCVAL(p,0,NO_OPLOCK_RETURN);
 	
   p += 2;
-  if (IS_IPC(conn)) {
-	  SSVAL(p,0,pnum);
-  } else {
-	  SSVAL(p,0,fsp->fnum);
-  }
+  SSVAL(p,0,fsp->fnum);
   p += 2;
   SIVAL(p,0,smb_action);
   p += 8;
 
-  if (IS_IPC(conn)) {
-    /*
-     * Deal with pipe return.
-     */  
-    p += 32;
-    SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
-    p += 20;
-    /* File type. */
-    SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
-    /* Device state. */
-    SSVAL(p,2, 0x5FF); /* ? */
-  } else {
-    /*
-     * Deal with file return.
-     */
-    /* Create time. */
-    put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
-    p += 8;
-    put_long_date(p,sbuf.st_atime); /* access time */
-    p += 8;
-    put_long_date(p,sbuf.st_mtime); /* write time */
-    p += 8;
-    put_long_date(p,sbuf.st_mtime); /* change time */
-    p += 8;
-    SIVAL(p,0,fmode); /* File Attributes. */
-    p += 4;
-    SOFF_T(p,0,file_len);
-    p += 8;
-    SOFF_T(p,0,file_len);
-  }
+  /* Create time. */
+  put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+  p += 8;
+  put_long_date(p,sbuf.st_atime); /* access time */
+  p += 8;
+  put_long_date(p,sbuf.st_mtime); /* write time */
+  p += 8;
+  put_long_date(p,sbuf.st_mtime); /* change time */
+  p += 8;
+  SIVAL(p,0,fmode); /* File Attributes. */
+  p += 4;
+  SOFF_T(p,0,file_len);
+  p += 8;
+  SOFF_T(p,0,file_len);
 
   DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
