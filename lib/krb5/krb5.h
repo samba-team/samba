@@ -581,6 +581,10 @@ krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_ticket **ticket);
 
 
+krb5_error_code
+krb5_free_creds (krb5_context context,
+		 krb5_creds *creds);
+
 typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 krb5_error_code
