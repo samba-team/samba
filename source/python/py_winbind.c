@@ -454,9 +454,12 @@ static PyMethodDef winbind_methods[] = {
 	/* Name <-> SID conversion */
 
 	{ "name_to_sid", py_name_to_sid, METH_VARARGS,
-	  "name_to_sid(s) -> string\n
-Return the SID for a name.\n
-Example:\n
+	  "name_to_sid(s) -> string
+
+Return the SID for a name.
+
+Example:
+
 >>> winbind.name_to_sid('FOO/Administrator')
 'S-1-5-21-406022937-1377575209-526660263-500' " },
 
@@ -626,9 +629,8 @@ void initwinbind(void)
 
 	/* Initialise module */
 
-        module = Py_InitModule4("winbind", winbind_methods,
-				winbind_module__doc__,
-				(PyObject*)NULL,PYTHON_API_VERSION);
+        module = Py_InitModule3("winbind", winbind_methods,
+				winbind_module__doc__);
 
 	dict = PyModule_GetDict(module);
 
