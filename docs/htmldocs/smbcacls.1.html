@@ -17,7 +17,7 @@
     
 <p><a name="NAME"></a>
 <h2>NAME</h2>
-    smbcacls - Set or get ACLs on an NT file
+    smbcacls - Set or get ACLs on an NT file or directory 
 <p><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
      
@@ -33,24 +33,27 @@ SMB file shares.
 <p><a name="OPTIONS"></a>
 <h2>OPTIONS</h2>
     
-<p>The following options are available to the <strong>smbcacls</strong> program:
+<p>The following options are available to the <strong>smbcacls</strong> program.  The
+format of ACLs is described in the section <a href="smbcacls.1.html#ACLFORMAT">ACL FORMAT</a>
 <p><dl>
 <p><a name="minusA"></a>
 <p></p><dt><strong><strong>-A acls</strong></strong><dd>
-<p>Add the ACLs specified to the ACL list.
+<p>Add the ACLs specified to the ACL list.  Existing access control entries
+are unchanged.
 <p><a name="minusM"></a>
 <p></p><dt><strong><strong>-M acls</strong></strong><dd>
 <p>Modify the mask value (permissions) for the ACLs specified on the command
-line.  An error will be printed if the ACL specified is not already present
-in the ACL list
+line.  An error will be printed for each ACL specified that was not already
+present in the ACL list.
 <p><a name="minusD"></a>
 <p></p><dt><strong><strong>-D acls</strong></strong><dd>
-<p>Delete any ACLs specfied on the command line.  An error is printed if any
-of the ACLs specified are not present in the ACL list.
+<p>Delete any ACLs specfied on the command line.  An error will be printed for
+each ACL specified that was not already present in the ACL list.
 <p><a name="minusS"></a>
 <p></p><dt><strong><strong>-S acls</strong></strong><dd>
-<p>This command deletes the current ACLs for the file or directory and
-replaces them with the ACLs specified on the command line.
+<p>This command sets the ACLs on the file with only the ones specified on the
+command line.  All other ACLs are erased.  Note that the ACL specified must
+contain at least a revision, type, owner and group for the call to succeed.
 <p><a name="minusU"></a>
 <p></p><dt><strong><strong>-U username</strong></strong><dd>
 <p>Specifies a username used to connect to the specified service.  The
@@ -67,6 +70,58 @@ format.
 <p><a name="minush"></a>
 <p></p><dt><strong><strong>-h</strong></strong><dd>
 <p>Print usage information on the <strong>smbcacls</strong> program
+<p></dl>
+<p><a name="ACLFORMAT"></a>
+<h2>ACL FORMAT</h2>
+    
+<p>The format of an ACL is one or more ACL entries separated by either spaces,
+commas or newlines.  An ACL entry is one of the following:
+<p><pre>
+
+REVISION:&lt;revision number&gt;
+OWNER:&lt;sid or name&gt;
+GROUP:&lt;sid or name&gt;
+ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
+</pre>
+
+<p>The revision of the ACL specifies the internal Windows NT ACL revision for
+the security descriptor.  If not specified it defaults to 1.
+<p>The owner and group specify the owner and group sids for the object.  If a
+SID in the format <code>S-1-x-y-z</code> is specified this is used, otherwise
+the name specified is resolved using the server on which the file or
+directory resides. 
+<p>ACLs specify permissions granted to the SID.  This SID again can be
+specified in <code>S-1-x-y-z</code> format or as a name in which case it is resolved
+against the server on which the file or directory resides.  The type, flags
+and mask values determine the type of access granted to the SID.
+<p>The type can be either 0 or 1 corresponding to ALLOWED or DENIED access to
+the SID.  The flags values are generally zero for file ACLs and either 9 or
+2 for directory ACLs.  Some common flags are:
+<p><pre>
+
+#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1
+#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2
+#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT       0x4
+#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8
+</pre>
+
+<p>The mask is a value which expresses the access right granted to
+the SID.  It can be given as a hexadecimal value or by using one of the
+following text strings which map to the NT file permissions of the same
+name. 
+<p><dl>
+<p><p></p><dt><strong></strong><dd> <code>R</code> 	Allow read access
+<p><p></p><dt><strong></strong><dd> <code>W</code> 	Allow write access
+<p><p></p><dt><strong></strong><dd> <code>X</code> 	Execute permission on the object
+<p><p></p><dt><strong></strong><dd> <code>D</code> 	Delete the object
+<p><p></p><dt><strong></strong><dd> <code>P</code> 	Change permissions
+<p><p></p><dt><strong></strong><dd> <code>O</code>	Take ownership
+<p></dl>
+<p>The following combined permissions can be specified:
+<p><dl>
+<p><p></p><dt><strong></strong><dd> <code>READ</code>	 Equivalent to <code>RX</code> permissions
+<p></p><dt><strong></strong><dd> <code>CHANGE</code> Equivalent to <code>RXWD</code> permissions
+<p></p><dt><strong></strong><dd> <code>FULL</code>   Equivalent to <code>RWXDPO</code> permissions
 <p></dl>
 <p><a name="EXITSTATUS"></a>
 <h2>EXIT STATUS</h2>
