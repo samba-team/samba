@@ -320,8 +320,6 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 		return -1;
 	}
 
-	DEBUG(4,("sizeof(*dirp)=%d\n", sizeof(*dirp)));
-	
 	while (count>=DIRP_SIZE && (dir->offset < dir->count)) {
 		dirp->d_off = (dir->offset+1)*DIRP_SIZE;
 		dirp->d_reclen = DIRP_SIZE;

@@ -647,6 +647,8 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 	struct smbw_file *file;
 	int ret;
 
+	DEBUG(4,("smbw_read(%d, %d)\n", fd, (int)count));
+
 	smbw_busy++;
 
 	file = smbw_file(fd);
@@ -666,6 +668,8 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 	}
 
 	file->f->offset += ret;
+	
+	DEBUG(4,(" -> %d\n", ret));
 
 	smbw_busy--;
 	return ret;
@@ -793,8 +797,19 @@ a wrapper for access()
 int smbw_access(const char *name, int mode)
 {
 	struct stat st;
-	/* how do we map this properly ?? */
-	return smbw_stat(name, &st);
+
+	DEBUG(4,("smbw_access(%s, 0x%x)\n", name, mode));
+
+	if (smbw_stat(name, &st)) return -1;
+
+	if (((mode & R_OK) && !(st.st_mode & S_IRUSR)) ||
+	    ((mode & W_OK) && !(st.st_mode & S_IWUSR)) ||
+	    ((mode & X_OK) && !(st.st_mode & S_IXUSR))) {
+		errno = EACCES;
+		return -1;
+	}
+	
+	return 0;
 }
 
 /***************************************************** 
@@ -887,6 +902,8 @@ int smbw_rename(const char *oldname, const char *newname)
 
 	smbw_init();
 
+	DEBUG(4,("smbw_rename(%s,%s)\n", oldname, newname));
+
 	smbw_busy++;
 
 	/* work out what server they are after */
@@ -907,8 +924,13 @@ int smbw_rename(const char *oldname, const char *newname)
 	}
 
 	if (!cli_rename(&srv->cli, path1, path2)) {
-		errno = smbw_errno(&srv->cli);
-		goto failed;
+		int eno = smbw_errno(&srv->cli);
+		if (eno != EEXIST ||
+		    !cli_unlink(&srv->cli, path2) ||
+		    !cli_rename(&srv->cli, path1, path2)) {
+			errno = eno;
+			goto failed;
+		}
 	}
 
 	smbw_busy--;

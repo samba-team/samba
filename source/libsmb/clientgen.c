@@ -1196,6 +1196,8 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 	int mid;
 	int blocks = (size + (block-1)) / block;
 
+	if (size == 0) return 0;
+
 	while (received < blocks) {
 		int size2;
 
@@ -1294,6 +1296,8 @@ size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
 	int mid;
 	int blocks = (size + (block-1)) / block;
+
+	if (size == 0) return 0;
 
 	while (received < blocks) {
 		int size2;
@@ -2309,6 +2313,8 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		case ERRbadfile: return ENOENT;
 		case ERRbadpath: return ENOTDIR;
 		case ERRnoaccess: return EACCES;
+		case ERRfilexists: return EEXIST;
+		case ERRrename: return EEXIST;
 		}
 	}
 	if (rcls == ERRSRV) {
