@@ -393,7 +393,7 @@ queue_reply:
 		result = 0;
 		errstr = NULL;
 	} else if (count > 1) {
-		DEBUG(10,("rootdse_Search: to many results[%d]\n", count));
+		DEBUG(10,("rootdse_Search: too many results[%d]\n", count));
 		result = 80; /* nosuchobject */
 		errstr = talloc_strdup(done_r, "internal error");	
 	} else if (count == 0) {
