@@ -120,7 +120,8 @@ enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED,
 /* ntcreatex flags field. */
 #define NTCREATEX_FLAGS_REQUEST_OPLOCK       0x02
 #define NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK 0x04
-#define NTCREATEX_FLAGS_OPEN_DIRECTORY       0x08
+#define NTCREATEX_FLAGS_OPEN_DIRECTORY       0x08 /* TODO: opens parent? we need
+						     a test suite for this */
 #define NTCREATEX_FLAGS_EXTENDED             0x10
 
 /* the ntcreatex access_mask field 
