@@ -416,6 +416,8 @@ krb5_log_msg(krb5_context context,
 
 krb5_error_code krb5_warn(krb5_context, krb5_error_code, const char*, ...);
 krb5_error_code krb5_warnx(krb5_context, const char*, ...);
+krb5_error_code krb5_vwarn(krb5_context, krb5_error_code, const char*, va_list);
+krb5_error_code krb5_vwarnx(krb5_context, const char*, va_list);
 krb5_error_code krb5_set_warn_dest(krb5_context, krb5_log_facility*);
 
 
