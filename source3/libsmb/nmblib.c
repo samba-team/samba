@@ -197,7 +197,7 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
     unsigned char c1,c2;
     c1 = ubuf[offset++]-'A';
     c2 = ubuf[offset++]-'A';
-    if ((c1 & 0xF0) || (c2 & 0xF0)) return(0);
+    if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1)) return(0);
     name->name[n++] = (c1<<4) | c2;
     m -= 2;
   }
