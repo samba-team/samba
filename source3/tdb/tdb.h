@@ -101,9 +101,9 @@ typedef struct tdb_context {
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
 typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
 
-TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
-TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn);
 
