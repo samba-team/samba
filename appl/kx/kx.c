@@ -109,9 +109,7 @@ connect_host (char *host, char *user, des_cblock *key,
      int addrlen;
      struct hostent *hostent;
      int s;
-     u_char b;
      char **p;
-     char name[ANAME_SZ+1];
 
      hostent = gethostbyname (host);
      if (hostent == NULL) {
@@ -258,7 +256,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
      if (*p == ERROR) {
 	 p++;
 	 p += krb_get_int (p, &tmp, 4, 0);
-	 errx (1, "%s: %.*s", host, tmp, p);
+	 errx (1, "%s: %.*s", host, (int)tmp, p);
      } else if (*p != ACK) {
 	 errx (1, "%s: strange msg %d", host, *p);
      } else
@@ -276,7 +274,6 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
      status_output (debugp);
      for (;;) {
 	 pid_t child;
-	 int i;
 
 	 len = read_encrypted (otherside, msg, sizeof(msg), &ret,
 			       schedule, &key, &him, &me);
@@ -289,7 +286,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	 if (*p == ERROR) {
 	     p++;
 	     p += krb_get_int (p, &tmp, 4, 0);
-	     errx (1, "%s: %.*s", host, tmp, p);
+	     errx (1, "%s: %.*s", host, (int)tmp, p);
 	 } else if(*p != NEW_CONN) {
 	     errx (1, "%s: strange msg %d", host, *p);
 	 } else {
@@ -304,7 +301,6 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	     continue;
 	 } else if (child == 0) {
 	     struct sockaddr_in addr;
-	     int addrlen = sizeof(addr);
 	     int fd;
 	     int xserver;
 
@@ -410,7 +406,7 @@ doit_active (char *host, char *user,
     if (*p == ERROR) {
 	p++;
 	p += krb_get_int (p, &tmp, 4, 0);
-	errx (1, "%s: %.*s", host, tmp, p);
+	errx (1, "%s: %.*s", host, (int)tmp, p);
     } else if (*p != ACK) {
 	errx (1, "%s: strange msg %d", host, *p);
     } else
@@ -469,7 +465,7 @@ doit_active (char *host, char *user,
 	if (*p == ERROR) {
 	    p++;
 	    p += krb_get_int (p, &tmp, 4, 0);
-	    errx (1, "%s: %.*s", host, tmp, p);
+	    errx (1, "%s: %.*s", host, (int)tmp, p);
 	} else if (*p != NEW_CONN) {
 	    errx (1, "%s: strange msg %d", host, *p);
 	} else {
@@ -484,9 +480,7 @@ doit_active (char *host, char *user,
 	    continue;
 	} else if (child == 0) {
 	    int s;
-	    u_char zero = 0;
 	    struct sockaddr_in addr;
-	    int addrlen = sizeof(addr);
 
 	    if (rendez_vous1)
 		close (rendez_vous1);

@@ -231,7 +231,6 @@ doit_conn (int fd, int meta_sock, int flags,
 	   struct sockaddr_in *thataddr)
 {
     int sock, sock2;
-    int one = 1;
     struct sockaddr_in addr;
     int addrlen;
     u_char msg[1024], *p;
@@ -429,7 +428,6 @@ doit(int sock, int tcpp)
 	  }
 	  for (;;) {
 	      pid_t child;
-	      int fd;
 	      int len;
 	      void *ret;
 	      

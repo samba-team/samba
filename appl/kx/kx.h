@@ -126,6 +126,9 @@ int connect_local_xsocket (unsigned dnr);
 int create_and_write_cookie (char *xauthfile,
 			     u_char *cookie,
 			     size_t sz);
+int verify_and_remove_cookies (int fd, int sock);
+int replace_cookie(int xserver, int fd, char *filename);
+
 int suspicious_address (int sock, struct sockaddr_in addr);
 
 int
