@@ -32,7 +32,7 @@ typedef struct {
 	PyObject_HEAD
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-	POLICY_HND pol;
+	POLICY_HND connect_pol;
 } samr_connect_hnd_object;
      
 /* SAMR domain policy handle object */
@@ -41,7 +41,7 @@ typedef struct {
 	PyObject_HEAD
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-	POLICY_HND pol;
+	POLICY_HND domain_pol;
 } samr_domain_hnd_object;
 
 /* SAMR user policy handle object */
@@ -50,7 +50,7 @@ typedef struct {
 	PyObject_HEAD
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-	POLICY_HND pol;
+	POLICY_HND user_pol;
 } samr_user_hnd_object;
 
 /* SAMR group policy handle object */
@@ -59,7 +59,7 @@ typedef struct {
 	PyObject_HEAD
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-	POLICY_HND pol;
+	POLICY_HND group_pol;
 } samr_group_hnd_object;
      
 /* SAMR alias policy handle object */
@@ -68,7 +68,7 @@ typedef struct {
 	PyObject_HEAD
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-	POLICY_HND pol;
+	POLICY_HND alias_pol;
 } samr_alias_hnd_object;
      
 extern PyTypeObject samr_connect_hnd_type, samr_domain_hnd_type,
@@ -78,6 +78,6 @@ extern PyTypeObject samr_connect_hnd_type, samr_domain_hnd_type,
 
 extern PyObject *samr_error;
 
-// #include "python/py_samr_proto.h"
+/* #include "python/py_samr_proto.h" */
 
 #endif /* _PY_SAMR_H */
