@@ -23,10 +23,16 @@
 
 #include "includes.h"
 
+static void exit_server(const char *reason)
+{
+	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
+	exit(0);
+}
+
 /****************************************************************************
- main program.
+ main server.
 ****************************************************************************/
- int main(int argc,const char *argv[])
+static int binary_smbd_main(int argc,const char *argv[])
 {
 	BOOL is_daemon = False;
 	BOOL interactive = False;
@@ -34,7 +40,7 @@
 	BOOL log_stdout = False;
 	int opt;
 	poptContext pc;
-	struct event_context *events;
+	struct server_context *srv_ctx;
 	const char *model = "standard";
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -42,7 +48,6 @@
 	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
 	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, NULL, 0, "Listen on the specified ports"},
 	{"model", 'M', POPT_ARG_STRING, &model, 0, "select process model"},
 	POPT_COMMON_SAMBA
@@ -53,19 +58,12 @@
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt)  {
-		case 'b':
-			/* Display output to screen as well as debug */
-			build_options(True); 
-			exit(0);
-			break;
 		case 'p':
 			lp_set_cmdline("smb ports", poptGetOptArg(pc));
 			break;
 		}
 	}
 	poptFreeContext(pc);
-
-	events = event_context_init();
 
 	load_case_tables();
 
@@ -110,15 +108,11 @@
 	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION_STRING));
 	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
 
-	/* Output the build options to the debug log */ 
-	build_options(False);
-
-	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4) {
+	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4 || sizeof(uint64_t) < 8) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
 		exit(1);
 	}
-	DEBUG(0,("Using %s process model\n", model));
-			
+
 	if (!reload_services(NULL, False))
 		return(-1);	
 
@@ -149,8 +143,18 @@
 
 	init_subsystems();
 
-	process_model_startup(events, model);
+	DEBUG(0,("Using %s process model\n", model));
+	srv_ctx = server_service_startup(model);
+	if (!srv_ctx) {
+		DEBUG(0,("Starting Services failed.\n"));
+		return 1;
+	}
 
 	/* wait for events */
-	return event_loop_wait(events);
+	return event_loop_wait(srv_ctx->events);
+}
+
+ int main(int argc, const char *argv[])
+{
+	return binary_smbd_main(argc, argv);
 }

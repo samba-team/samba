@@ -63,7 +63,7 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 	char header[4];
 	struct smbsrv_request *req;
 
-	len = read_data(smb_conn->socket.fd, header, 4);
+	len = read_data(smb_conn->connection->socket->fde->fd, header, 4);
 	if (len != 4) {
 		return NULL;
 	}
@@ -81,7 +81,7 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 	/* fill in the already received header */
 	memcpy(req->in.buffer, header, 4);
 
-	len2 = read_data(smb_conn->socket.fd, req->in.buffer + NBT_HDR_SIZE, len);
+	len2 = read_data(smb_conn->connection->socket->fde->fd, req->in.buffer + NBT_HDR_SIZE, len);
 	if (len2 != len) {
 		return NULL;
 	}
@@ -467,7 +467,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	if (req->user_ctx) {
 		req->user_ctx->vuid = session_tag;
 	}
-	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->model_ops->get_id(req)));
+	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->connection->service->model_ops->get_id(req)));
 
 	/* does this protocol need to be run as root? */
 	if (!(flags & AS_USER)) {
@@ -562,19 +562,19 @@ static void construct_reply(struct smbsrv_request *req)
 	if (memcmp(req->in.hdr,"\377SMB",4) != 0) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating connection\n", 
 			 req->in.size));
-		exit_server(req->smb_conn, "Non-SMB packet");
+		smbsrv_terminate_connection(req->smb_conn, "Non-SMB packet");
 		return;
 	}
 
 	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct > req->in.size) {
 		DEBUG(2,("Invalid SMB word count %d\n", req->in.wct));
-		exit_server(req->smb_conn, "Invalid SMB packet");
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
 		return;
 	}
 
 	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
 		DEBUG(2,("Invalid SMB buffer length count %d\n", req->in.data_size));
-		exit_server(req->smb_conn, "Invalid SMB packet");
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
 		return;
 	}
 
@@ -667,64 +667,26 @@ error:
 /*
   close the socket and shutdown a server_context
 */
-void server_terminate(struct smbsrv_connection *smb_conn)
+void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char *reason)
 {
-	close(smb_conn->socket.fd);
-	event_remove_fd_all(smb_conn->events, smb_conn->socket.fd);
-
-	conn_close_all(smb_conn);
-
-	talloc_destroy(smb_conn->mem_ctx);
+	server_terminate_connection(smb_conn->connection, reason);
 }
 
 /*
   called on a fatal error that should cause this server to terminate
 */
-void exit_server(struct smbsrv_connection *smb_conn, const char *reason)
+static void smbsrv_exit(struct server_service *service, const char *reason)
 {
-	smb_conn->model_ops->terminate_connection(smb_conn, reason);
-}
-
-/*
-  setup a single listener of any type
- */
-static void setup_listen(struct event_context *events,
-			 const struct model_ops *model_ops, 
-			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16_t),
-			 struct in_addr *ifip, uint_t port)
-{
-	struct fd_event fde;
-	fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-	if (fde.fd == -1) {
-		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
-			 inet_ntoa(*ifip), port, strerror(errno)));
-		return;
-	}
-
-	/* ready to listen */
-	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
-	set_socket_options(fde.fd, lp_socket_options());
-      
-	if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
-		DEBUG(0,("Failed to listen on %s:%d - %s\n",
-			 inet_ntoa(*ifip), port, strerror(errno)));
-		close(fde.fd);
-		return;
-	}
-
-	/* we are only interested in read events on the listen socket */
-	fde.flags = EVENT_FD_READ;
-	fde.private = model_ops;
-	fde.handler = accept_handler;
-	
-	event_add_fd(events, &fde);
+	DEBUG(1,("smbsrv_exit\n"));
+	return;
 }
 
 /*
   add a socket address to the list of events, one event per port
 */
-static void add_socket(struct event_context *events, 
-		       const struct model_ops *model_ops, 
+static void add_socket(struct server_service *service, 
+		       const struct model_ops *model_ops,
+		       struct socket_context *socket_ctx, 
 		       struct in_addr *ifip)
 {
 	char *ptr, *tok;
@@ -733,18 +695,19 @@ static void add_socket(struct event_context *events,
 	for (tok=strtok_r(lp_smb_ports(), delim, &ptr); 
 	     tok; 
 	     tok=strtok_r(NULL, delim, &ptr)) {
-		uint_t port = atoi(tok);
+		uint16_t port = atoi(tok);
 		if (port == 0) continue;
-		setup_listen(events, model_ops, model_ops->accept_connection, ifip, port);
+		service_setup_socket(service, model_ops, socket_ctx, ifip, &port);
 	}
 }
 
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
-void open_sockets_smbd(struct event_context *events,
-			      const struct model_ops *model_ops)
-{
+static void smbsrv_init(struct server_service *service, const struct model_ops *model_ops)
+{	
+	DEBUG(1,("smbsrv_init\n"));
+
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();
 		int i;
@@ -761,33 +724,37 @@ void open_sockets_smbd(struct event_context *events,
 				continue;
 			}
 
-			add_socket(events, model_ops, ifip);
+			add_socket(service, model_ops, NULL, ifip);
 		}
 	} else {
+		struct in_addr *ifip;
 		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");
-		
-		struct in_addr *ifip = interpret_addr2(mem_ctx, lp_socket_address());
-		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
+
 		if (!mem_ctx) {
 			smb_panic("No memory");
-		}
-		add_socket(events, model_ops, ifip);
+		}	
+
+		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
+		ifip = interpret_addr2(mem_ctx, lp_socket_address());
+		add_socket(service, model_ops, NULL, ifip);
+
 		talloc_destroy(mem_ctx);
-	} 
+	}
 }
 
 /*
   called when a SMB socket becomes readable
 */
-void smbd_read_handler(struct event_context *ev, struct fd_event *fde, 
-		       time_t t, uint16_t flags)
+static void smbsrv_recv(struct server_connection *conn, time_t t, uint16_t flags)
 {
 	struct smbsrv_request *req;
-	struct smbsrv_connection *smb_conn = fde->private;
-	
+	struct smbsrv_connection *smb_conn = conn->private_data;
+
+	DEBUG(10,("smbsrv_recv\n"));
+
 	req = receive_smb_request(smb_conn);
 	if (!req) {
-		smb_conn->model_ops->terminate_connection(smb_conn, "receive error");
+		smbsrv_terminate_connection(smb_conn, "receive error");
 		return;
 	}
 
@@ -795,8 +762,44 @@ void smbd_read_handler(struct event_context *ev, struct fd_event *fde,
 
 	/* free up temporary memory */
 	lp_talloc_free();
+	return;
 }
 
+/*
+  called when a SMB socket becomes writable
+*/
+static void smbsrv_send(struct server_connection *conn, time_t t, uint16_t flags)
+{
+	DEBUG(10,("smbsrv_send\n"));
+	return;
+}
+
+/*
+  called when connection is idle
+*/
+static void smbsrv_idle(struct server_connection *conn, time_t t)
+{
+	DEBUG(10,("smbsrv_idle: not implemented!\n"));
+	conn->event.idle->next_event = t + 5;
+
+	return;
+}
+
+static void smbsrv_close(struct server_connection *conn, const char *reason)
+{
+	struct smbsrv_connection *smb_conn = conn->private_data;
+
+	DEBUG(5,("smbsrv_close: %s\n",reason));
+
+	close(conn->event.fde->fd);
+	event_remove_fd_all(conn->event.ctx, conn->socket->fde->fd);
+	event_remove_timed(conn->event.ctx, conn->event.idle);
+
+	conn_close_all(smb_conn);
+
+	talloc_destroy(smb_conn->mem_ctx);
+	return;
+}
 
 /*
   process a message from an SMB socket while still processing a
@@ -810,7 +813,7 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
 	
 	req = receive_smb_request(smb_conn);
 	if (!req) {
-		smb_conn->model_ops->terminate_connection(smb_conn, "receive error");
+		smbsrv_terminate_connection(smb_conn, "receive error");
 		return;
 	}
 
@@ -822,18 +825,15 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
-void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int fd,
-		     void (*read_handler)(struct event_context *, struct fd_event *, time_t, uint16_t))
+void smbsrv_accept(struct server_connection *conn)
 {
 	struct smbsrv_connection *smb_conn;
 	TALLOC_CTX *mem_ctx;
-	struct fd_event fde;
 	char *socket_addr;
 
-	set_socket_options(fd,"SO_KEEPALIVE");
-	set_socket_options(fd, lp_socket_options());
+	DEBUG(5,("smbsrv_accept\n"));
 
-	mem_ctx = talloc_init("server_context");
+	mem_ctx = talloc_init("smbsrv_context");
 
 	smb_conn = talloc_p(mem_ctx, struct smbsrv_connection);
 	if (!smb_conn) return;
@@ -841,16 +841,14 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	ZERO_STRUCTP(smb_conn);
 
 	smb_conn->mem_ctx = mem_ctx;
-	smb_conn->socket.fd = fd;
 	smb_conn->pid = getpid();
 
 	sub_set_context(&smb_conn->substitute);
 
 	/* set an initial client name based on its IP address. This will be replaced with
 	   the netbios name later if it gives us one */
-	socket_addr = get_socket_addr(smb_conn->mem_ctx, fd);
+	socket_addr = get_socket_addr(smb_conn->mem_ctx, conn->socket->fde->fd);
 	sub_set_remote_machine(socket_addr);
-	smb_conn->socket.client_addr = socket_addr;
 
 	/* now initialise a few default values associated with this smb socket */
 	smb_conn->negotiate.max_send = 0xFFFF;
@@ -862,21 +860,36 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
 	smb_conn->users.next_vuid = VUID_OFFSET;
-	
-	smb_conn->events = ev;
-	smb_conn->model_ops = model_ops;
 
 	conn_init(smb_conn);
 
-	/* setup a event handler for this socket. We are initially
-	   only interested in reading from the socket */
-	fde.fd = fd;
-	fde.handler = read_handler;
-	fde.private = smb_conn;
-	fde.flags = EVENT_FD_READ;
+	smb_conn->connection = conn;
 
-	event_add_fd(ev, &fde);
+	conn->private_data = smb_conn;
 
 	/* setup the DCERPC server subsystem */
 	dcesrv_init_context(&smb_conn->dcesrv);
+
+	return;
+}
+
+static const struct server_service_ops smb_server_ops = {
+	.name			= "smb",
+	.service_init		= smbsrv_init,
+	.accept_connection	= smbsrv_accept,
+	.recv_handler		= smbsrv_recv,
+	.send_handler		= smbsrv_send,
+	.idle_handler		= smbsrv_idle,
+	.close_connection	= smbsrv_close,
+	.service_exit		= smbsrv_exit,	
+};
+
+const struct server_service_ops *smbsrv_get_ops(void)
+{
+	return &smb_server_ops;
+}
+
+NTSTATUS server_service_smb_init(void)
+{
+	return NT_STATUS_OK;	
 }

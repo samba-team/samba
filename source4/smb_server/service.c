@@ -259,7 +259,7 @@ close a cnum
 void close_cnum(struct smbsrv_tcon *tcon)
 {
 	DEBUG(3,("%s closed connection to service %s\n",
-		 tcon->smb_conn->socket.client_addr, lp_servicename(SNUM(tcon))));
+		 tcon->smb_conn->connection->socket->client_addr, lp_servicename(SNUM(tcon))));
 
 	yield_connection(tcon, lp_servicename(SNUM(tcon)));
 

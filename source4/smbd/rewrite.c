@@ -79,6 +79,10 @@ void init_subsystems(void)
 	if (!process_model_init())
 		exit(1);
 
+	/* Setup the SERVER_SERVICE subsystem */
+	if (!server_service_init())
+		exit(1);
+
 	/* Setup the AUTH subsystem */
 	if (!auth_init())
 		exit(1);
@@ -88,7 +92,7 @@ void init_subsystems(void)
 		exit(1);
 
 	/* Setup the DCERPC subsystem */
-	if (!dcesrv_init())
+	if (!subsystem_dcerpc_init())
 		exit(1);
 
 }
