@@ -47,7 +47,7 @@ kcm_ccache_acquire(krb5_context context,
 		   kcm_ccache ccache,
 		   krb5_creds **credp)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     krb5_creds cred;
     krb5_const_realm realm;
     krb5_get_init_creds_opt opt;
@@ -402,7 +402,7 @@ update_keytab_entries(krb5_context context,
 		      krb5_salt salt,
 		      unsigned kvno)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     int i;
 
     for (i = 0; etypes[i] != ETYPE_NULL; i++) {
