@@ -499,8 +499,9 @@ AC_NEED_PROTO([
 vasnprintf)dnl
 fi
 
-AC_BROKEN(chown daemon err errx fchown flock fnmatch)
-AC_BROKEN(getcwd getdtablesize gethostname geteuid getgid getegid)
+AC_BROKEN(chown copyhostent daemon err errx fchown flock fnmatch freehostent)
+AC_BROKEN(getcwd getdtablesize gethostname getipnodebyaddr getipnodebyname)
+AC_BROKEN(geteuid getgid getegid)
 AC_BROKEN(getopt getusershell)
 AC_BROKEN(inet_aton initgroups innetgr iruserok lstat memmove)
 AC_BROKEN(mkstemp putenv rcmd readv recvmsg sendmsg setegid setenv seteuid)
