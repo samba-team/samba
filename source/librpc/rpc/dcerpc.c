@@ -854,7 +854,6 @@ static int dcerpc_req_destructor(void *ptr)
 struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
 					const struct GUID *object,
 					uint16_t opnum,
-					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
@@ -865,7 +864,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 
 	p->conn->transport.recv_data = dcerpc_request_recv_data;
 
-	req = talloc(mem_ctx, struct rpc_request);
+	req = talloc(p, struct rpc_request);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -923,7 +922,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk;
 
-		req->status = dcerpc_push_request_sign(p->conn, &blob, mem_ctx, &pkt);
+		req->status = dcerpc_push_request_sign(p->conn, &blob, req, &pkt);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
@@ -995,7 +994,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 {
 	struct rpc_request *req;
 
-	req = dcerpc_request_send(p, object, opnum, mem_ctx, stub_data_in);
+	req = dcerpc_request_send(p, object, opnum, stub_data_in);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1167,7 +1166,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	call = &table->calls[opnum];
 
 	/* setup for a ndr_push_* call */
-	push = ndr_push_init();
+	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NULL;
 	}
@@ -1181,7 +1180,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Unable to ndr_push structure in dcerpc_ndr_request_send - %s\n",
 			 nt_errstr(status)));
-		ndr_push_free(push);
+		talloc_free(push);
 		return NULL;
 	}
 
@@ -1189,12 +1188,12 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	request = ndr_push_blob(push);
 
 	if (p->conn->flags & DCERPC_DEBUG_VALIDATE_IN) {
-		status = dcerpc_ndr_validate_in(p->conn, mem_ctx, request, call->struct_size, 
+		status = dcerpc_ndr_validate_in(p->conn, push, request, call->struct_size, 
 						call->ndr_push, call->ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("Validation failed in dcerpc_ndr_request_send - %s\n",
 				 nt_errstr(status)));
-			ndr_push_free(push);
+			talloc_free(push);
 			return NULL;
 		}
 	}
@@ -1203,7 +1202,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	dump_data(10, request.data, request.length);
 
 	/* make the actual dcerpc request */
-	req = dcerpc_request_send(p, object, opnum, mem_ctx, &request);
+	req = dcerpc_request_send(p, object, opnum, &request);
 
 	if (req != NULL) {
 		req->ndr.table = table;
@@ -1212,8 +1211,8 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 		req->ndr.mem_ctx = mem_ctx;
 	}
 
-	ndr_push_free(push);
-	
+	talloc_free(push);
+
 	return req;
 }
 
@@ -1243,13 +1242,18 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	}
 
 	flags = req->flags;
-	talloc_free(req);
 
 	/* prepare for ndr_pull_* */
 	pull = ndr_pull_init_flags(p->conn, &response, mem_ctx);
 	if (!pull) {
+		talloc_free(req);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	if (pull->data) {
+		pull->data = talloc_steal(pull, pull->data);
+	}
+	talloc_free(req);
 
 	if (flags & DCERPC_PULL_BIGENDIAN) {
 		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
@@ -1267,7 +1271,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	}
 
 	if (p->conn->flags & DCERPC_DEBUG_VALIDATE_OUT) {
-		status = dcerpc_ndr_validate_out(p->conn, mem_ctx, r, call->struct_size, 
+		status = dcerpc_ndr_validate_out(p->conn, pull, r, call->struct_size, 
 						 call->ndr_push, call->ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			dcerpc_log_packet(table, opnum, NDR_OUT, 
@@ -1285,6 +1289,8 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 		   packets, so if we want to interoperate at all with
 		   those versions then we need to ignore this error */
 	}
+
+	/* TODO: make pull context independent from the output mem_ctx and free the pull context */
 
 	return NT_STATUS_OK;
 }
