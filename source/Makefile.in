@@ -570,7 +570,9 @@ LSACLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/lsa_cmds.o \
 		rpcclient/cmd_lsarpc.o \
 		$(SIDDB_OBJ) \
+		rpcclient/display_sec.o \
 		$(STUB_UID_OBJ)
+
 LSACLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 RPCTORTURE_OBJ = lib/cmd_interp.o \
@@ -585,6 +587,7 @@ RPCTORTURE_OBJ = lib/cmd_interp.o \
 		rpcclient/cmd_netlogon.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
+
 RPCTORTURE_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 SPOOLCLIENT_OBJ = lib/cmd_interp.o \
