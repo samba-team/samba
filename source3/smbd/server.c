@@ -2225,6 +2225,9 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 	      signal(SIGPIPE, SIGNAL_CAST sig_pipe);
 	      signal(SIGCLD, SIGNAL_CAST SIG_DFL);
 #endif
+	      /* close the listening socket */
+	      close(s);
+
 	      /* close our standard file descriptors */
 	      close_low_fds();
   
@@ -4280,22 +4283,23 @@ int main(int argc,char *argv[])
       become_daemon();
     }
 
-  if (open_sockets(is_daemon,port))
-    {      
-      /* possibly reload the services file. */
-      reload_services(True);
+  if (!open_sockets(is_daemon,port))
+    exit(1);
 
-      maxxmit = MIN(lp_maxxmit(),BUFFER_SIZE);
+  /* possibly reload the services file. */
+  reload_services(True);
 
-      if (*lp_rootdir())
-	{
-	  if (sys_chroot(lp_rootdir()) == 0)
-	    DEBUG(2,("%s changed root to %s\n",timestring(),lp_rootdir()));
-	}
+  maxxmit = MIN(lp_maxxmit(),BUFFER_SIZE);
 
-      process();
-      close_sockets();
+  if (*lp_rootdir())
+    {
+      if (sys_chroot(lp_rootdir()) == 0)
+	DEBUG(2,("%s changed root to %s\n",timestring(),lp_rootdir()));
     }
+
+  process();
+  close_sockets();
+
   exit_server("normal exit");
   return(0);
 }
