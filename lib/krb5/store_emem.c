@@ -63,8 +63,16 @@ emem_store(krb5_storage *sp, void *data, size_t size)
 {
     emem_storage *s = (emem_storage*)sp->data;
     if(size > s->base + s->size - s->ptr){
-	s->size = 2 * (size + (s->ptr - s->base)); /* XXX */
-	s->base = realloc(s->base, s->size);
+	void *base;
+	size_t sz, off;
+	sz = 2 * (size + (s->ptr - s->base)); /* XXX */
+	off = s->ptr - s->base;
+	base = realloc(s->base, sz);
+	if(base == NULL)
+	    return 0;
+	s->size = sz;
+	s->base = base;
+	s->ptr = (char*)base + off;
     }
     memmove(s->ptr, data, size);
     sp->seek(sp, size, SEEK_CUR);
