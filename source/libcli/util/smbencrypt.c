@@ -374,7 +374,7 @@ static DATA_BLOB LMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	return final_response;
 }
 
-BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const char nt_hash[16],
+BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uint8_t nt_hash[16],
 			   const DATA_BLOB *server_chal, 
 			   const DATA_BLOB *names_blob,
 			   DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
