@@ -55,6 +55,17 @@ krb5_mk_safe(krb5_context context,
   u_char buf[1024];
   size_t len;
   unsigned tmp_seq;
+  krb5_cksumtype cksumtype;
+
+  if (auth_context->cksumtype)
+      cksumtype = auth_context->cksumtype;
+  else {
+      r = krb5_keytype_to_cksumtype (context,
+				     auth_context->key.keytype,
+				     &cksumtype);
+      if (r)
+	  return r;
+  }
 
   s.pvno = 5;
   s.msg_type = krb_safe;
@@ -88,7 +99,7 @@ krb5_mk_safe(krb5_context context,
     return r;
 
   r = krb5_create_checksum (context,
-			    auth_context->cksumtype,
+			    cksumtype,
 			    buf + sizeof(buf) - len,
 			    len,
 			    &auth_context->key,
