@@ -19,14 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-void *memcpy (void *, void *, unsigned int);
+#include "includes.h"
 
 /* NOTE: This code makes no attempt to be fast! 
 
    It assumes that a int is at least 32 bits long
 */
-
-typedef unsigned int uint32;
 
 static uint32 A, B, C, D;
 
