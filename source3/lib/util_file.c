@@ -353,7 +353,7 @@ char *file_pload(char *syscmd, size_t *size)
 		memcpy(p+total, buf, n);
 		total += n;
 	}
-	p[total] = 0;
+	if (p) p[total] = 0;
 
 	sys_pclose(fd);
 

@@ -115,7 +115,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
                     &rparam, &rprcnt,               /* return params, return size */
                     &rdata, &rdrcnt                 /* return data, return size */
                    )) {
-		cli->rap_error = SVAL(rparam,0);
+		cli->rap_error = rparam? SVAL(rparam,0) : -1;
 		p = rdata;
 		
 		if (cli->rap_error == 0) {
@@ -139,65 +139,66 @@ call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
 {
-  char *rparam = NULL;
-  char *rdata = NULL;
-  char *p;
-  int rdrcnt,rprcnt;
-  pstring param;
-  int count = -1;
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt;
+	pstring param;
+	int count = -1;
 
-  /* now send a SMBtrans command with api RNetShareEnum */
-  p = param;
-  SSVAL(p,0,0); /* api number */
-  p += 2;
-  pstrcpy(p,"WrLeh");
-  p = skip_string(p,1);
-  pstrcpy(p,"B13BWz");
-  p = skip_string(p,1);
-  SSVAL(p,0,1);
-  /*
-   * Win2k needs a *smaller* buffer than 0xFFFF here -
-   * it returns "out of server memory" with 0xFFFF !!! JRA.
-   */
-  SSVAL(p,2,0xFFE0);
-  p += 4;
-
-  if (cli_api(cli, 
-              param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-              NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
-              &rparam, &rprcnt,                /* return params, length */
-              &rdata, &rdrcnt))                /* return data, length */
-    {
-      int res = SVAL(rparam,0);
-      int converter=SVAL(rparam,2);
-      int i;
-      
-      if (res == 0 || res == ERRmoredata) {
-	      count=SVAL(rparam,4);
-	      p = rdata;
-
-	      for (i=0;i<count;i++,p+=20) {
-		      char *sname = p;
-		      int type = SVAL(p,14);
-		      int comment_offset = IVAL(p,16) & 0xFFFF;
-		      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-			  dos_to_unix(sname,True);
-			  dos_to_unix(cmnt,True);
-		      fn(sname, type, cmnt);
-	      }
-      } else {
-	      DEBUG(4,("NetShareEnum res=%d\n", res));
-      }      
-    } else {
-	      DEBUG(4,("NetShareEnum failed\n"));
-    }
+	/* now send a SMBtrans command with api RNetShareEnum */
+	p = param;
+	SSVAL(p,0,0); /* api number */
+	p += 2;
+	pstrcpy(p,"WrLeh");
+	p = skip_string(p,1);
+	pstrcpy(p,"B13BWz");
+	p = skip_string(p,1);
+	SSVAL(p,0,1);
+	/*
+	 * Win2k needs a *smaller* buffer than 0xFFFF here -
+	 * it returns "out of server memory" with 0xFFFF !!! JRA.
+	 */
+	SSVAL(p,2,0xFFE0);
+	p += 4;
+	
+	if (cli_api(cli, 
+		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
+		    NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
+		    &rparam, &rprcnt,                /* return params, length */
+		    &rdata, &rdrcnt))                /* return data, length */
+		{
+			int res = rparam? SVAL(rparam,0) : -1;
+			
+			if (res == 0 || res == ERRmoredata) {
+				int converter=SVAL(rparam,2);
+				int i;
+				
+				count=SVAL(rparam,4);
+				p = rdata;
+				
+				for (i=0;i<count;i++,p+=20) {
+					char *sname = p;
+					int type = SVAL(p,14);
+					int comment_offset = IVAL(p,16) & 0xFFFF;
+					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+					dos_to_unix(sname,True);
+					dos_to_unix(cmnt,True);
+					fn(sname, type, cmnt);
+				}
+			} else {
+				DEBUG(4,("NetShareEnum res=%d\n", res));
+			}      
+		} else {
+			DEBUG(4,("NetShareEnum failed\n"));
+		}
   
-  if (rparam)
-    free(rparam);
-  if (rdata)
-    free(rdata);
-
-  return count;
+	if (rparam)
+		free(rparam);
+	if (rdata)
+		free(rdata);
+	
+	return count;
 }
 
 
@@ -244,11 +245,12 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
                     &rparam, &rprcnt,                   /* return params, return size */
                     &rdata, &rdrcnt                     /* return data, return size */
                    )) {
-		int res = SVAL(rparam,0);
-		int converter=SVAL(rparam,2);
-		int i;
+		int res = rparam? SVAL(rparam,0) : -1;
 			
 		if (res == 0 || res == ERRmoredata) {
+			int i;
+			int converter=SVAL(rparam,2);
+
 			count=SVAL(rparam,4);
 			p = rdata;
 					
@@ -268,9 +270,9 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	}
   
 	if (rparam)
-      free(rparam);
+		free(rparam);
 	if (rdata)
-      free(rdata);
+		free(rdata);
 	
 	return(count > 0);
 }
