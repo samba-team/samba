@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -456,7 +456,7 @@ doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
     }
     for (;;) {
 	pid_t child;
-	int fd;
+	int fd = -1;
 	fd_set fds;
 	int i;
 	int ret;
@@ -534,11 +534,12 @@ doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
 		}
 	    }
 	}
-	if (fd < 0)
+	if (fd < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		return 1;
+	}
 
 	child = fork ();
 	if (child < 0) {
@@ -617,7 +618,6 @@ doit(int sock, int tcpp)
      des_cblock key;
      struct sockaddr_in me, him;
      int flags;
-     u_char msg[1024], *p;
      struct x_socket *sockets;
      int nsockets;
      int dispnr;
