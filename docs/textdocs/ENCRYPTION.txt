@@ -1,3 +1,6 @@
+!==
+!== ENCRYPTION.txt for Samba release 1.9.18alpha2 22 Oct 1997
+!==
 Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
 Updated:	June 27, 1997
 Note:		Please refer to WinNT.txt also
