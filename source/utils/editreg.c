@@ -2522,15 +2522,39 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
 
       /*
        * Fix up the free space ptr
+       * If it is NULL, we fix it up next time
        */
-    }
 
+      if (!blk->free_space) 
+	regf->free_space = blk->next;
+
+      *off = tmp;
+      return ret;
+    }
   }
 
   /*
    * If we got here, we need to add another block, which might be 
    * larger than one block -- deal with that later
    */
+  if (nt_create_hbin_blk(regf, REGF_HDR_BLKSIZ)) {
+    blk = regf->free_space;
+    tmp = blk->file_offset + blk->fsp_off;
+    ret = blk->data + blk->fsp_off;
+    blk->free_space -= size;
+    blk->fsp_off += size;
+
+    /*
+     * Fix up the free space ptr
+     * If it is NULL, we fix it up next time
+     */
+    
+    if (!blk->free_space) 
+      regf->free_space = blk->next;
+
+    *off = tmp;
+    return ret;
+  }
 
   return NULL;
 }
