@@ -49,6 +49,19 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
+typedef struct html_conversion {
+	char src;
+	char *dest;
+} html_conversion;
+
+static const html_conversion entities[] = {
+	{ '"', "&quot;" },
+	{ '&', "&amp;"  },
+	{ '<', "&lt;"   },
+	{ '>', "&gt;"   },
+	{ '\0', NULL },
+};
+
 /* we need these because we link to locking*.o */
  void become_root(void) {}
  void unbecome_root(void) {}
@@ -75,6 +88,51 @@ static char *fix_backslash(char *str)
         }
 	*p = '\0';
 	return newstring;
+}
+
+static char *htmlentities(char *str)
+{
+	int i,j, destlen = 0;
+	int length = strlen(str);
+	/* Feel free to use a pstring if appropriate -- I haven't 
+	   checked if it's guaranteed to be long enough, and suspect it 
+	   isn't. -SRL */
+	char *dststr = NULL;
+	char *p;
+
+	for (i = 0; i < length; i++) {
+		for (j = 0; entities[j].src; j++) {
+			if (str[i] == entities[j].src) {
+				destlen += strlen(entities[j].dest);
+				break;
+			}
+		}
+		if (!entities[j].src) {
+			destlen++;
+		}
+	}
+	if (length == destlen) {
+		return(strdup(str));
+	}
+	p = dststr = malloc(destlen + 1);
+	if (!dststr) {
+		return(NULL);
+	}
+	dststr[destlen] = '\0';
+	for (i = 0; i < length; i++) {
+		for (j = 0; entities[j].src; j++) {
+			if (str[i] == entities[j].src) {
+				strncpy(p, entities[j].dest,
+				        strlen(entities[j].dest));
+				p += strlen(entities[j].dest);
+				break;
+			}
+		}
+		if (!entities[j].src) {
+			*p++ = str[i];
+		}
+	}
+	return(dststr);
 }
 
 static char *stripspace(char *str)
@@ -182,8 +240,12 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_STRING:
 	case P_USTRING:
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), *(char **)ptr);
+		str = htmlentities(*(char **)ptr);
+		printf("<input type=\"text\" size=\"40\" name=\"parm_%s\" value=\"%s\">",
+			make_parm_name(parm->label), str);
+		if (str != NULL) {
+			free(str);
+		}
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
