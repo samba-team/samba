@@ -40,7 +40,7 @@ POPPER_SOURCES = \
 	pop_last.c pop_list.c pop_log.c \
 	pop_msg.c pop_parse.c pop_pass.c pop_quit.c \
 	pop_rset.c pop_send.c pop_stat.c pop_updt.c \
-	pop_user.c pop_uidl.c pop_xover.c popper.c maildir
+	pop_user.c pop_uidl.c pop_xover.c popper.c maildir.c
 
 POP_DEBUG_SOURCES = \
 	pop_debug.c
