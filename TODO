@@ -89,3 +89,8 @@ OTP?
 ** lib/roken
 
 ** lib/sl
+
+** socket stuff
+
+update everything to rfc2553 and implement fall-back functions for
+them in lib/roken
