@@ -133,28 +133,38 @@ static void gain_root(void)
  Get the list of current groups.
 ****************************************************************************/
 
-int get_current_groups(int *p_ngroups, gid_t **p_groups)
+int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i;
 	gid_t grp;
-	int ngroups = sys_getgroups(0,&grp);
-	gid_t *groups;
+	int ngroups;
+	gid_t *groups = NULL;
 
 	(*p_ngroups) = 0;
 	(*p_groups) = NULL;
 
-	if (ngroups <= 0)
-		return -1;
+	/* this looks a little strange, but is needed to cope with
+	   systems that put the current egid in the group list
+	   returned from getgroups() (tridge) */
+	save_re_gid();
+	set_effective_gid(gid);
+	setgid(gid);
 
-	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL) {
+	ngroups = sys_getgroups(0,&grp);
+	if (ngroups <= 0) {
+		goto fail;
+	}
+
+	if((groups = (gid_t *)malloc(sizeof(gid_t)*(ngroups+1))) == NULL) {
 		DEBUG(0,("setup_groups malloc fail !\n"));
-		return -1;
+		goto fail;
 	}
 
 	if ((ngroups = sys_getgroups(ngroups,groups)) == -1) {
-		SAFE_FREE(groups);
-		return -1;
+		goto fail;
 	}
+
+	restore_re_gid();
 
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
@@ -165,7 +175,12 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 	}
 	DEBUG( 3, ( "\n" ) );
 
-    return ngroups;
+	return ngroups;
+
+fail:
+	SAFE_FREE(groups);
+	restore_re_gid();
+	return -1;
 }
 
 /****************************************************************************
@@ -245,7 +260,7 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 	SAFE_FREE(prev_ctx_p->groups);
 	prev_ctx_p->ngroups = 0;
 
-	get_current_groups(&prev_ctx_p->ngroups, &prev_ctx_p->groups);
+	get_current_groups(gid, &prev_ctx_p->ngroups, &prev_ctx_p->groups);
 
  done:
 	unbecome_root();
@@ -445,7 +460,7 @@ void init_sec_ctx(void)
 	ctx_p->uid = geteuid();
 	ctx_p->gid = getegid();
 
-	get_current_groups(&ctx_p->ngroups, &ctx_p->groups);
+	get_current_groups(ctx_p->gid, &ctx_p->ngroups, &ctx_p->groups);
 
 	ctx_p->token = NULL; /* Maps to guest user. */
 

@@ -106,7 +106,8 @@ static struct printjob *print_job_find(int jobid)
 	TDB_DATA ret;
 
 	ret = tdb_fetch(tdb, print_key(jobid));
-	if (!ret.dptr || ret.dsize != sizeof(pjob)) return NULL;
+	if (!ret.dptr || ret.dsize != sizeof(pjob))
+		return NULL;
 
 	memcpy(&pjob, ret.dptr, sizeof(pjob));
 	SAFE_FREE(ret.dptr);
@@ -139,11 +140,13 @@ static int print_parse_jobid(char *fname)
 {
 	int jobid;
 
-	if (strncmp(fname,PRINT_SPOOL_PREFIX,strlen(PRINT_SPOOL_PREFIX)) != 0) return -1;
+	if (strncmp(fname,PRINT_SPOOL_PREFIX,strlen(PRINT_SPOOL_PREFIX)) != 0)
+		return -1;
 	fname += strlen(PRINT_SPOOL_PREFIX);
 
 	jobid = atoi(fname);
-	if (jobid <= 0) return -1;
+	if (jobid <= 0)
+		return -1;
 
 	return jobid;
 }
@@ -185,14 +188,18 @@ struct traverse_struct {
 	int qcount, snum, maxcount, total_jobs;
 };
 
-/* utility fn to delete any jobs that are no longer active */
+/****************************************************************************
+ Utility fn to delete any jobs that are no longer active.
+****************************************************************************/
+
 static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct traverse_struct *ts = (struct traverse_struct *)state;
 	struct printjob pjob;
 	int i, jobid;
 
-	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
+	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int))
+		return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 	unix_to_dos(pjob.queuename);
@@ -207,7 +214,8 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		/* remove a unix job if it isn't in the system queue any more */
 
 		for (i=0;i<ts->qcount;i++) {
-			if (jobid == ts->queue[i].job + UNIX_JOB_START) break;
+			if (jobid == ts->queue[i].job + UNIX_JOB_START)
+				break;
 		}
 		if (i == ts->qcount)
 			tdb_delete(tdb, key);
@@ -230,7 +238,8 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 
 	for (i=0;i<ts->qcount;i++) {
 		int qid = print_parse_jobid(ts->queue[i].fs_file);
-		if (jobid == qid) break;
+		if (jobid == qid)
+			break;
 	}
 	
 	/* The job isn't in the system queue - we have to assume it has
@@ -307,7 +316,7 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 	fstring keystr;
 	TDB_DATA key;
 	TDB_DATA data;
-	pid_t updating_pid = getpid();
+	pid_t updating_pid = sys_getpid();
 
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", printer_name);
     	key.dptr = keystr;
@@ -516,7 +525,8 @@ BOOL print_job_exists(int jobid)
 int print_job_snum(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	if (!pjob) return -1;
+	if (!pjob)
+		return -1;
 
 	return find_service(pjob->queuename);
 }
@@ -528,9 +538,11 @@ int print_job_snum(int jobid)
 int print_job_fd(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	if (!pjob) return -1;
+	if (!pjob)
+		return -1;
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != local_pid) return -1;
+	if (pjob->pid != local_pid)
+		return -1;
 	return pjob->fd;
 }
 
@@ -543,7 +555,8 @@ int print_job_fd(int jobid)
 char *print_job_fname(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	if (!pjob || pjob->spooled || pjob->pid != local_pid) return NULL;
+	if (!pjob || pjob->spooled || pjob->pid != local_pid)
+		return NULL;
 	return pjob->filename;
 }
 
@@ -564,7 +577,8 @@ BOOL print_job_set_place(int jobid, int place)
 BOOL print_job_set_name(int jobid, char *name)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	if (!pjob || pjob->pid != local_pid) return False;
+	if (!pjob || pjob->pid != local_pid)
+		return False;
 
 	fstrcpy(pjob->jobname, name);
 	return print_job_store(jobid, pjob);
@@ -579,7 +593,8 @@ static BOOL print_job_delete1(int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, result = 0;
 
-	if (!pjob) return False;
+	if (!pjob)
+		return False;
 
 	/*
 	 * If already deleting just return.
@@ -598,8 +613,7 @@ static BOOL print_job_delete1(int jobid)
 	   has reached the spooler. */
 
 	if (pjob->sysjob == -1) {
-		DEBUG(5, ("attempt to delete job %d not seen by lpr\n",
-			  jobid));
+		DEBUG(5, ("attempt to delete job %d not seen by lpr\n", jobid));
 	}
 
 	/* Set the tdb entry to be deleting. */
@@ -629,7 +643,8 @@ static BOOL is_owner(struct current_user *user, int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	user_struct *vuser;
 
-	if (!pjob || !user) return False;
+	if (!pjob || !user)
+		return False;
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		return strequal(pjob->user, 
@@ -667,7 +682,8 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 		return False;
 	}
 
-	if (!print_job_delete1(jobid)) return False;
+	if (!print_job_delete1(jobid))
+		return False;
 
 	/* force update the database and say the delete failed if the
            job still exists */
@@ -693,9 +709,11 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 	int snum, ret = -1;
 	char *printer_name;
 	
-	if (!pjob || !user) return False;
+	if (!pjob || !user)
+		return False;
 
-	if (!pjob->spooled || pjob->sysjob == -1) return False;
+	if (!pjob->spooled || pjob->sysjob == -1)
+		return False;
 
 	snum = print_job_snum(jobid);
 	if (snum == -1) {
@@ -742,9 +760,11 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 	char *printer_name;
 	int snum, ret;
 	
-	if (!pjob || !user) return False;
+	if (!pjob || !user)
+		return False;
 
-	if (!pjob->spooled || pjob->sysjob == -1) return False;
+	if (!pjob->spooled || pjob->sysjob == -1)
+		return False;
 
 	snum = print_job_snum(jobid);
 	if (snum == -1) {
@@ -888,7 +908,8 @@ static int get_total_jobs(int snum)
 	int total_jobs;
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
 
 	total_jobs = tdb_fetch_int32(tdb, "INFO/total_jobs");
 	if (total_jobs >0)
@@ -1140,14 +1161,18 @@ fail:
 	return False;
 }
 
-/* utility fn to enumerate the print queue */
+/****************************************************************************
+ Utility fn to enumerate the print queue.
+****************************************************************************/
+
 static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct traverse_struct *ts = (struct traverse_struct *)state;
 	struct printjob pjob;
 	int i, jobid;
 
-	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
+	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int))
+		return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 	unix_to_dos(pjob.queuename);
@@ -1156,7 +1181,8 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	if (ts->snum != lp_servicenumber(pjob.queuename))
 		return 0;
 
-	if (ts->qcount >= ts->maxcount) return 0;
+	if (ts->qcount >= ts->maxcount)
+		return 0;
 
 	i = ts->qcount;
 
@@ -1178,14 +1204,18 @@ struct traverse_count_struct {
 	int snum, count;
 };
 
-/* utility fn to count the number of entries in the print queue */
+/****************************************************************************
+ Utility fn to count the number of entries in the print queue.
+****************************************************************************/
+
 static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct traverse_count_struct *ts = (struct traverse_count_struct *)state;
 	struct printjob pjob;
 	int jobid;
 
-	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
+	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int))
+		return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 	unix_to_dos(pjob.queuename);
@@ -1199,19 +1229,25 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	return 0;
 }
 
-/* Sort print jobs by submittal time */
+/****************************************************************************
+ Sort print jobs by submittal time.
+****************************************************************************/
 
 static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
 {
 	/* Silly cases */
 
-	if (!j1 && !j2) return 0;
-	if (!j1) return -1;
-	if (!j2) return 1;
+	if (!j1 && !j2)
+		return 0;
+	if (!j1)
+		return -1;
+	if (!j2)
+		return 1;
 
 	/* Sort on job start time */
 
-	if (j1->time == j2->time) return 0;
+	if (j1->time == j2->time)
+		return 0;
 	return (j1->time > j2->time) ? 1 : -1;
 }
 
@@ -1229,7 +1265,8 @@ int print_queue_status(int snum,
 	TDB_DATA data, key;
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
 
 	*queue = NULL;
 	
@@ -1264,8 +1301,7 @@ int print_queue_status(int snum,
 
 	/* Allocate the queue size. */
 	if ((tstruct.queue = (print_queue_struct *)
-	     malloc(sizeof(print_queue_struct)*tsc.count))
-				== NULL)
+	     malloc(sizeof(print_queue_struct)*tsc.count)) == NULL)
 		return 0;
 
 	/*
@@ -1296,7 +1332,8 @@ int print_queue_status(int snum,
 int print_queue_snum(char *qname)
 {
 	int snum = lp_servicenumber(qname);
-	if (snum == -1 || !lp_print_ok(snum)) return -1;
+	if (snum == -1 || !lp_print_ok(snum))
+		return -1;
 	return snum;
 }
 

@@ -77,6 +77,7 @@ typedef struct _Printer{
 		SPOOL_NOTIFY_OPTION *option;
 		POLICY_HND client_hnd;
 		uint32 client_connected;
+		uint32 change;
 	} notify;
 	struct {
 		fstring machine;
@@ -659,6 +660,8 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 
 		if (find_printer->notify.client_connected==True) {
 		
+			msg->low = find_printer->notify.change;
+
 			/* does the client care about what changed? */
 
 			if (msg->flags && !is_client_monitoring_event(find_printer, msg->flags)) {
@@ -1723,9 +1726,8 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
  * _spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  *
- * jfmxxxx: before replying OK: status=0
- * should do a rpc call to the workstation asking ReplyOpenPrinter
- * have to code it, later.
+ * before replying OK: status=0 a rpc call is made to the workstation
+ * asking ReplyOpenPrinter 
  *
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex
@@ -2479,6 +2481,10 @@ struct s_notify_info_data_table
 		    NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
 };
 
+/* A table describing the various print notification constants and
+   whether the notification data is a pointer to a variable sized
+   buffer, a one value uint32 or a two value uint32. */
+
 struct s_notify_info_data_table notify_info_data_table[] =
 {
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         POINTER,   spoolss_notify_server_name },
@@ -2902,7 +2908,6 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	uint32 change = q_u->change; - notused. */
 /*	SPOOL_NOTIFY_OPTION *option = q_u->option; - notused. */
 	SPOOL_NOTIFY_INFO *info = &r_u->info;
 
@@ -2920,16 +2925,15 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 
 	DEBUG(4,("Printer type %x\n",Printer->printer_type));
 
-	/* jfm: the change value isn't used right now.
-	 * 	we will honour it when
-	 *	a) we'll be able to send notification to the client
-	 *	b) we'll have a way to communicate between the spoolss process.
-	 *
+	/*
 	 *	same thing for option->flags
 	 *	I should check for PRINTER_NOTIFY_OPTIONS_REFRESH but as
 	 *	I don't have a global notification system, I'm sending back all the
 	 *	informations even when _NOTHING_ has changed.
 	 */
+
+	if (Printer->notify.client_connected)
+		Printer->notify.change = q_u->change;
 
 	/* just ignore the SPOOL_NOTIFY_OPTION */
 	
@@ -4847,7 +4851,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			get_called_name());
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
-	standard_sub_basic(remote_machine);
+	standard_sub_basic(remote_machine,sizeof(remote_machine));
 	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,

@@ -2074,7 +2074,10 @@ AC_ARG_WITH(ldapsam,
     LDAPLIBS="-lldap"
     AC_CHECK_LIB(lber, ber_bvfree, [LDAPLIBS="$LDAPLIBS -llber"])
     LDAPLIBS="-lresolv $LDAPLIBS"
+    old_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $LDAPLIBS"
     AC_CHECK_FUNCS(ldap_start_tls_s)
+    LDFLAGS="$old_LDFLAGS"
     with_smbpasswd_sam=no
     AC_SUBST(LDAPLIBS)
     ;;
@@ -2702,10 +2705,11 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 			AC_DEFINE(WITH_WINBIND_AUTH_CRAP)
 			AC_MSG_RESULT(yes)
 			;;
-	        no)
+	        *)
 			AC_MSG_RESULT(no)
 	                ;;
 	  esac ],
+          AC_MSG_RESULT(no)
 	)
 
 # Check for FreeBSD problem with getgroups

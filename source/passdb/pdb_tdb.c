@@ -87,6 +87,11 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	uid_t uid;
 	gid_t gid;
 
+	pstring phomedir;
+	pstring pdir_drive;
+	pstring plogon_script;
+	pstring pprofile_path;
+
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
 		return False;
@@ -160,42 +165,38 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	if (homedir) setflag = True;
 	else {
 		setflag = False;
-		homedir = strdup(lp_logon_home());
-		if(!homedir) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, homedir);
-		DEBUG(5,("Home directory set back to %s\n", homedir));
+		pstrcpy(phomedir, lp_logon_home());
+		standard_sub_advanced(-1, username, "", gid, phomedir, sizeof(phomedir));
+		DEBUG(5,("Home directory set back to %s\n", phomedir));
 	}
-	pdb_set_homedir(sampass, homedir, setflag);
+	pdb_set_homedir(sampass, phomedir, setflag);
 
 	if (dir_drive) setflag = True;
 	else {
 		setflag = False;
-		dir_drive = strdup(lp_logon_drive());
-		if(!dir_drive) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, dir_drive);
-		DEBUG(5,("Home directory set back to %s\n", dir_drive));
+		pstrcpy(pdir_drive, lp_logon_drive());
+		standard_sub_advanced(-1, username, "", gid, pdir_drive, sizeof(pdir_drive));
+		DEBUG(5,("Home directory set back to %s\n", pdir_drive));
 	}
-	pdb_set_dir_drive(sampass, dir_drive, setflag);
+	pdb_set_dir_drive(sampass, pdir_drive, setflag);
 
 	if (logon_script) setflag = True;
 	else {
 		setflag = False;
-		logon_script = strdup(lp_logon_script());
-		if(!logon_script) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, logon_script);
-		DEBUG(5,("Home directory set back to %s\n", logon_script));
+		pstrcpy(plogon_script, lp_logon_script());
+		standard_sub_advanced(-1, username, "", gid, plogon_script, sizeof(plogon_script));
+		DEBUG(5,("Home directory set back to %s\n", plogon_script));
 	}
-	pdb_set_logon_script(sampass, logon_script, setflag);
+	pdb_set_logon_script(sampass, plogon_script, setflag);
 
 	if (profile_path) setflag = True;
 	else {
 		setflag = False;
-		profile_path = strdup(lp_logon_path());
-		if(!profile_path) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, profile_path);
-		DEBUG(5,("Home directory set back to %s\n", profile_path));
+		pstrcpy(pprofile_path, lp_logon_path());
+		standard_sub_advanced(-1, username, "", gid, pprofile_path, sizeof(pprofile_path));
+		DEBUG(5,("Home directory set back to %s\n", pprofile_path));
 	}
-	pdb_set_profile_path(sampass, profile_path, setflag);
+	pdb_set_profile_path(sampass, pprofile_path, setflag);
 
 	pdb_set_acct_desc    (sampass, acct_desc);
 	pdb_set_workstations (sampass, workstations);

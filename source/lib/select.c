@@ -102,6 +102,12 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 	}
 
 	if (FD_ISSET(select_pipe[0], readfds2)) {
+		char c;
+		saved_errno = errno;
+		if (read(select_pipe[0], &c, 1) == 1) {
+			pipe_read++;
+		}
+		errno = saved_errno;
 		FD_CLR(select_pipe[0], readfds2);
 		ret--;
 		if (ret == 0) {
@@ -109,18 +115,6 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 			errno = EINTR;
 		}
 	}
-
-	saved_errno = errno;
-
-	while (pipe_written != pipe_read) {
-		char c;
-		/* Due to the linux kernel bug in 2.0.x, we
-		 * always increment here even if the read failed... */
-		read(select_pipe[0], &c, 1);
-		pipe_read++;
-	}
-
-	errno = saved_errno;
 
 	return ret;
 }

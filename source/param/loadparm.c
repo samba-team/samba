@@ -1493,7 +1493,7 @@ static char *lp_string(const char *s)
 
 	trim_string(ret, "\"", "\"");
 
-	standard_sub_basic(ret);
+	standard_sub_basic(ret, len + 100);
 	return (ret);
 }
 
@@ -2289,7 +2289,7 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
  
 		pstrcpy(n2, f->name);
-		standard_sub_basic(n2);
+		standard_sub_basic(n2,sizeof(n2));
  
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			f->name, n2, ctime(&f->modtime)));
@@ -2320,7 +2320,7 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 
 	pstrcpy(netbios_name, pszParmValue);
 
-	standard_sub_basic(netbios_name);
+	standard_sub_basic(netbios_name,sizeof(netbios_name));
 	strupper(netbios_name);
 
 	/*
@@ -2407,7 +2407,7 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
 
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(fname);
+	standard_sub_basic(fname,sizeof(fname));
 
 	string_set(ptr, pszParmValue);
 
@@ -2526,9 +2526,9 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	add_to_file_list(pszParmValue, fname);
+	standard_sub_basic(fname,sizeof(fname));
 
-	standard_sub_basic(fname);
+	add_to_file_list(pszParmValue, fname);
 
 	string_set(ptr, fname);
 
@@ -3444,7 +3444,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	BOOL bRetval;
 
 	pstrcpy(n2, pszFname);
-	standard_sub_basic(n2);
+	standard_sub_basic(n2,sizeof(n2));
 
 	add_to_file_list(pszFname, n2);
 
@@ -3462,7 +3462,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	pstrcpy(n2, pszFname);
-	standard_sub_basic(n2);
+	standard_sub_basic(n2,sizeof(n2));
 
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
@@ -3571,7 +3571,7 @@ int lp_servicenumber(char *pszServiceName)
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(serviceName);
+			standard_sub_basic(serviceName,sizeof(serviceName));
 			if (strequal(serviceName, pszServiceName))
 				break;
 		}

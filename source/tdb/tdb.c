@@ -189,7 +189,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
-		if (!probe) {
+		if (!probe && lck_type != F_SETLK) {
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
 		}
@@ -419,7 +419,8 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 		TDB_LOG((tdb, 0,"rec_free_read non-free magic at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
-		tdb_write(tdb, off, rec, sizeof(*rec));
+		if (tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
+			return -1;
 	}
 
 	if (rec->magic != TDB_FREE_MAGIC) {

@@ -181,7 +181,504 @@ void CatchSignal(int signum,void (*handler)(int ));
 void CatchChild(void);
 void CatchChildLeaveStatus(void);
 
+<<<<<<< proto.h
+<<<<<<< proto.h
 /* The following definitions come from libsmb/cliconnect.c  */
+=======
+/* The following definitions come from lib/smbrun.c  */
+
+int smbrun(char *cmd, int *outfd);
+
+/* The following definitions come from lib/snprintf.c  */
+
+
+/* The following definitions come from lib/substitute.c  */
+
+void standard_sub_basic(char *str, int len);
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len);
+void standard_sub_conn(connection_struct *conn, char *str, int len);
+void standard_sub_home(int snum, char *user, char *str, int len);
+void standard_sub_snum(int snum, char *str, int len);
+void standard_sub_vuser(char *str, int len, user_struct *vuser);
+void standard_sub_vsnum(char *str, int len, user_struct *vuser, int snum);
+
+/* The following definitions come from lib/sysacls.c  */
+
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p);
+SMB_ACL_T sys_acl_init(int count);
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
+int sys_acl_valid(SMB_ACL_T acl_d);
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *path);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T acl_d) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p);
+SMB_ACL_T sys_acl_init(int count);
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
+int sys_acl_valid(SMB_ACL_T acl_d);
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *path);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T acl_d) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p);
+SMB_ACL_T sys_acl_init(int count);
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
+int sys_acl_valid(SMB_ACL_T acl_d);
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *name);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T acl_d) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry( SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T theacl, ssize_t *plen);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T posix_acl);
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+int sys_acl_free_text(char *text);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
+
+/* The following definitions come from lib/system.c  */
+
+int sys_usleep(long usecs);
+ssize_t sys_read(int fd, void *buf, size_t count);
+ssize_t sys_write(int fd, const void *buf, size_t count);
+ssize_t sys_send(int s, const void *msg, size_t len, int flags);
+ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
+int sys_fcntl_ptr(int fd, int cmd, void *arg);
+int sys_fcntl_long(int fd, int cmd, long arg);
+int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
+int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
+int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);
+int sys_ftruncate(int fd, SMB_OFF_T offset);
+SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
+int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);
+SMB_OFF_T sys_ftell(FILE *fp);
+int sys_creat(const char *path, mode_t mode);
+int sys_open(const char *path, int oflag, mode_t mode);
+FILE *sys_fopen(const char *path, const char *type);
+SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
+int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
+char *sys_realpath(const char *path, char *resolved_path);
+int sys_waitpid(pid_t pid,int *status,int options);
+char *sys_getwd(char *s);
+int sys_symlink(const char *oldpath, const char *newpath);
+int sys_readlink(const char *path, char *buf, size_t bufsiz);
+int sys_link(const char *oldpath, const char *newpath);
+int sys_chown(const char *fname,uid_t uid,gid_t gid);
+int sys_chroot(const char *dname);
+struct hostent *sys_gethostbyname(const char *name);
+void oplock_set_capability(BOOL this_process, BOOL inherit);
+long sys_random(void);
+void sys_srandom(unsigned int seed);
+int groups_max(void);
+int sys_getgroups(int setlen, gid_t *gidset);
+int sys_setgroups(int setlen, gid_t *gidset);
+void sys_setpwent(void);
+struct passwd *sys_getpwent(void);
+void sys_endpwent(void);
+struct passwd *sys_getpwnam(const char *name);
+struct passwd *sys_getpwuid(uid_t uid);
+int wsys_stat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf);
+int wsys_lstat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf);
+int wsys_creat(const smb_ucs2_t *wfname, mode_t mode);
+int wsys_open(const smb_ucs2_t *wfname, int oflag, mode_t mode);
+FILE *wsys_fopen(const smb_ucs2_t *wfname, const char *type);
+DIR *wsys_opendir(const smb_ucs2_t *wfname);
+smb_ucs2_t *wsys_getwd(smb_ucs2_t *s);
+int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid);
+int wsys_chroot(const smb_ucs2_t *wfname);
+pid_t sys_fork(void);
+pid_t sys_getpid(void);
+int sys_popen(const char *command);
+int sys_pclose(int fd);
+void *sys_dlopen(const char *name, int flags);
+void *sys_dlsym(void *handle, char *symbol);
+int sys_dlclose (void *handle);
+const char *sys_dlerror(void);
+void sys_adminlog(int priority, const char *format_str, ...);
+
+/* The following definitions come from lib/talloc.c  */
+
+TALLOC_CTX *talloc_init(void);
+void *talloc(TALLOC_CTX *t, size_t size);
+void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size);
+void talloc_destroy_pool(TALLOC_CTX *t);
+void talloc_destroy(TALLOC_CTX *t);
+size_t talloc_pool_size(TALLOC_CTX *t);
+const char * talloc_pool_name(TALLOC_CTX const *t);
+void *talloc_zero(TALLOC_CTX *t, size_t size);
+void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size);
+char *talloc_strdup(TALLOC_CTX *t, const char *p);
+char *talloc_describe_all(TALLOC_CTX *rt);
+void talloc_get_allocation(TALLOC_CTX *t,
+			   size_t *total_bytes,
+			   int *n_chunks);
+
+/* The following definitions come from lib/time.c  */
+
+time_t get_time_t_min(void);
+time_t get_time_t_max(void);
+void GetTimeOfDay(struct timeval *tval);
+void TimeInit(void);
+void get_process_uptime(struct timeval *ret_time);
+int TimeDiff(time_t t);
+struct tm *LocalTime(time_t *t);
+time_t nt_time_to_unix(NTTIME *nt);
+time_t nt_time_to_unix_abs(NTTIME *nt);
+time_t interpret_long_date(char *p);
+void unix_to_nt_time(NTTIME *nt, time_t t);
+void unix_to_nt_time_abs(NTTIME *nt, time_t t);
+void put_long_date(char *p,time_t t);
+BOOL null_mtime(time_t mtime);
+void put_dos_date(char *buf,int offset,time_t unixdate);
+void put_dos_date2(char *buf,int offset,time_t unixdate);
+void put_dos_date3(char *buf,int offset,time_t unixdate);
+time_t make_unix_date(void *date_ptr);
+time_t make_unix_date2(void *date_ptr);
+time_t make_unix_date3(void *date_ptr);
+char *http_timestring(time_t t);
+char *timestring(BOOL hires);
+time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs);
+void init_nt_time(NTTIME *nt);
+
+/* The following definitions come from lib/ufc.c  */
+
+char *ufc_crypt(const char *key,const char *salt);
+
+/* The following definitions come from lib/username.c  */
+
+BOOL name_is_local(const char *name);
+char *get_user_home_dir(char *user);
+char *get_user_service_home_dir(char *user);
+BOOL map_username(char *user);
+struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+BOOL user_in_group_list(char *user,char *gname);
+BOOL user_in_list(char *user,char *list);
+struct passwd *smb_getpwnam(char *user, BOOL allow_change);
+
+/* The following definitions come from lib/util.c  */
+
+char *tmpdir(void);
+BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
+char *Atoic(char *p, int *n, char *c);
+char *get_numlist(char *p, uint32 **num, int *count);
+BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
+time_t file_modtime(char *fname);
+BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
+SMB_OFF_T get_file_size(char *file_name);
+char *attrib_string(uint16 mode);
+void show_msg(char *buf);
+void smb_setlen(char *buf,int len);
+int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
+int set_message_bcc(char *buf,int num_bytes);
+int set_message_end(void *outbuf,void *end_ptr);
+void dos_clean_name(char *s);
+void unix_clean_name(char *s);
+void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
+void close_low_fds(void);
+int set_blocking(int fd, BOOL set);
+ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
+						ssize_t (*write_fn)(int, const void *, size_t));
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n);
+void msleep(unsigned int t);
+void become_daemon(void);
+BOOL yesno(char *p);
+void *Realloc(void *p,size_t size);
+void safe_free(void *p);
+BOOL get_myname(char *my_name);
+int interpret_protocol(char *str,int def);
+BOOL is_ipaddress(const char *str);
+uint32 interpret_addr(const char *str);
+struct in_addr *interpret_addr2(const char *str);
+BOOL is_zero_ip(struct in_addr ip);
+void zero_ip(struct in_addr *ip);
+char *automount_lookup(char *user_name);
+char *automount_lookup(char *user_name);
+BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
+BOOL process_exists(pid_t pid);
+char *uidtoname(uid_t uid);
+char *gidtoname(gid_t gid);
+uid_t nametouid(char *name);
+gid_t nametogid(char *name);
+void smb_panic(char *why);
+char *readdirname(DIR *p);
+BOOL is_in_path(char *name, name_compare_entry *namelist);
+void set_namearray(name_compare_entry **ppname_array, char *namelist);
+void free_namearray(name_compare_entry *name_array);
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+BOOL is_myname(char *s);
+const char* get_my_primary_ip (void);
+BOOL is_myname_or_ipaddr(char *s);
+void set_remote_arch(enum remote_arch_types type);
+enum remote_arch_types get_remote_arch(void);
+void out_ascii(FILE *f, unsigned char *buf,int len);
+void out_data(FILE *f,char *buf1,int len, int per_line);
+void print_asc(int level, unsigned char *buf,int len);
+void dump_data(int level,char *buf1,int len);
+char *tab_depth(int depth);
+int str_checksum(const char *s);
+void zero_free(void *p, size_t size);
+int set_maxfiles(int requested_max);
+BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
+int smb_mkstemp(char *template);
+void *smb_xmalloc(size_t size);
+void *smb_xmemdup(const void *p, size_t size);
+char *smb_xstrdup(const char *s);
+int smb_xvasprintf(char **ptr, const char *format, va_list ap);
+void *memdup(void *p, size_t size);
+char *myhostname(void);
+char *lock_path(char *name);
+char *pid_path(char *name);
+char *parent_dirname(const char *path);
+BOOL ms_has_wild(char *s);
+BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
+BOOL unix_wild_match(char *pattern, char *string);
+DATA_BLOB data_blob(const void *p, size_t length);
+DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length);
+void data_blob_free(DATA_BLOB *d);
+void data_blob_clear(DATA_BLOB *d);
+int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
+
+/* The following definitions come from lib/util_file.c  */
+
+BOOL do_file_lock(int fd, int waitsecs, int type);
+BOOL file_lock(int fd, int type, int secs, int *plock_depth);
+BOOL file_unlock(int fd, int *plock_depth);
+void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
+				int *file_lock_depth, BOOL update);
+void endfilepwent(void *vp, int *file_lock_depth);
+SMB_BIG_UINT getfilepwpos(void *vp);
+BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
+int getfileline(void *vp, char *linebuf, int linebuf_size);
+char *fgets_slash(char *s2,int maxlen,FILE *f);
+char *file_pload(char *syscmd, size_t *size);
+char *fd_load(int fd, size_t *size);
+char *file_load(char *fname, size_t *size);
+char **file_lines_load(char *fname, int *numlines, BOOL convert);
+char **fd_lines_load(int fd, int *numlines, BOOL convert);
+char **file_lines_pload(char *syscmd, int *numlines, BOOL convert);
+void file_lines_free(char **lines);
+void file_lines_slashcont(char **lines);
+
+/* The following definitions come from lib/util_getent.c  */
+
+struct sys_grent * getgrent_list(void);
+void grent_free (struct sys_grent *glist);
+struct sys_pwent * getpwent_list(void);
+void pwent_free (struct sys_pwent *plist);
+struct sys_userlist *get_users_in_group(const char *gname);
+void free_userlist(struct sys_userlist *list_head);
+
+/* The following definitions come from lib/util_seaccess.c  */
+
+void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
+void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
+BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
+		     uint32 acc_desired, uint32 *acc_granted, 
+		     NTSTATUS *status);
+SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
+				      BOOL child_container);
+
+/* The following definitions come from lib/util_sec.c  */
+
+void sec_init(void);
+uid_t sec_initial_uid(void);
+gid_t sec_initial_gid(void);
+BOOL non_root_mode(void);
+void gain_root_privilege(void);
+void gain_root_group_privilege(void);
+void set_effective_uid(uid_t uid);
+void set_effective_gid(gid_t gid);
+void save_re_uid(void);
+void restore_re_uid(void);
+int set_re_uid(void);
+void become_user_permanently(uid_t uid, gid_t gid);
+BOOL is_setuid_root(void) ;
+
+/* The following definitions come from lib/util_sid.c  */
+=======
+/* The following definitions come from libsmb/cliconnect.c  */
+>>>>>>> 1.900.2.381
+
+<<<<<<< proto.h
+void generate_wellknown_sids(void);
+BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
+BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *psid_name_use);
+BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain);
+void split_domain_name(const char *fullname, char *domain, char *name);
+char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
+const char *sid_string_static(DOM_SID *sid);
+BOOL string_to_sid(DOM_SID *sidout, const char *sidstr);
+BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
+BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
+BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid);
+void sid_copy(DOM_SID *dst, const DOM_SID *src);
+DOM_SID *sid_dup(DOM_SID *src);
+BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
+BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid);
+int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2);
+int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2);
+int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2);
+BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
+BOOL sid_check_is_domain(const DOM_SID *sid);
+BOOL sid_check_is_builtin(const DOM_SID *sid);
+BOOL sid_check_is_in_our_domain(const DOM_SID *sid);
+BOOL sid_check_is_in_builtin(const DOM_SID *sid);
+size_t sid_size(DOM_SID *sid);
+BOOL non_mappable_sid(DOM_SID *sid);
+char *sid_binstring(DOM_SID *sid);
+
+/* The following definitions come from lib/util_sock.c  */
+
+BOOL is_a_socket(int fd);
+void set_socket_options(int fd, char *options);
+ssize_t read_udp_socket(int fd,char *buf,size_t len);
+ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
+BOOL send_keepalive(int client);
+ssize_t read_data(int fd,char *buffer,size_t N);
+ssize_t write_data(int fd,char *buffer,size_t N);
+ssize_t write_socket_data(int fd,char *buffer,size_t N);
+ssize_t write_socket(int fd,char *buf,size_t len);
+ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL send_smb(int fd,char *buffer);
+BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
+int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL rebind );
+int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
+void client_setfd(int fd);
+char *client_name(void);
+char *client_addr(void);
+char *get_socket_name(int fd);
+char *get_socket_addr(int fd);
+int create_pipe_sock(const char *socket_dir,
+					const char *socket_name,
+					mode_t dir_perms);
+int sock_exec(const char *prog);
+>>>>>>> 1.900.2.380
 
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
@@ -210,6 +707,35 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     char *password, int pass_len) ;
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
                                      struct in_addr *pdest_ip);
+=======
+BOOL cli_session_setup(struct cli_state *cli, 
+		       char *user, 
+		       char *pass, int passlen,
+		       char *ntpass, int ntpasslen,
+		       char *workgroup);
+BOOL cli_ulogoff(struct cli_state *cli);
+BOOL cli_send_tconX(struct cli_state *cli, 
+		    const char *share, const char *dev, const char *pass, int passlen);
+BOOL cli_tdis(struct cli_state *cli);
+void cli_negprot_send(struct cli_state *cli);
+BOOL cli_negprot(struct cli_state *cli);
+BOOL cli_session_request(struct cli_state *cli,
+			 struct nmb_name *calling, struct nmb_name *called);
+BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
+BOOL cli_establish_connection(struct cli_state *cli, 
+				char *dest_host, struct in_addr *dest_ip,
+				struct nmb_name *calling, struct nmb_name *called,
+				char *service, char *service_type,
+				BOOL do_shutdown, BOOL do_tcon);
+NTSTATUS cli_full_connection(struct cli_state **output_cli, 
+			     const char *my_name, const char *dest_host, 
+			     struct in_addr *dest_ip, int port,
+			     char *service, char *service_type,
+			     char *user, char *domain, 
+			     char *password, int pass_len) ;
+BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+                                     struct in_addr *pdest_ip);
+>>>>>>> 1.900.2.381
 
 /* The following definitions come from libsmb/cli_dfs.c  */
 
@@ -252,6 +778,7 @@ struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
+BOOL cli_send_keepalive(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clierror.c  */
 
@@ -816,6 +1343,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 
 /* The following definitions come from lib/substitute.c  */
 
+<<<<<<< proto.h
 void standard_sub_basic(char *str);
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
 void standard_sub_conn(connection_struct *conn, char *str);
@@ -823,6 +1351,15 @@ void standard_sub_home(int snum, char *user, char *str);
 void standard_sub_snum(int snum, char *str);
 void standard_sub_vuser(char *str, user_struct *vuser);
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
+=======
+void standard_sub_basic(char *str, int len);
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len);
+void standard_sub_conn(connection_struct *conn, char *str, int len);
+void standard_sub_home(int snum, char *user, char *str, int len);
+void standard_sub_snum(int snum, char *str, int len);
+void standard_sub_vuser(char *str, int len, user_struct *vuser);
+void standard_sub_vsnum(char *str, int len, user_struct *vuser, int snum);
+>>>>>>> 1.900.2.381
 
 /* The following definitions come from lib/sysacls.c  */
 
@@ -1226,6 +1763,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 /* The following definitions come from lib/util_sec.c  */
 
+<<<<<<< proto.h
 void sec_init(void);
 uid_t sec_initial_uid(void);
 gid_t sec_initial_gid(void);
@@ -1239,6 +1777,23 @@ void restore_re_uid(void);
 int set_re_uid(void);
 void become_user_permanently(uid_t uid, gid_t gid);
 BOOL is_setuid_root(void) ;
+=======
+void sec_init(void);
+uid_t sec_initial_uid(void);
+gid_t sec_initial_gid(void);
+BOOL non_root_mode(void);
+void gain_root_privilege(void);
+void gain_root_group_privilege(void);
+void set_effective_uid(uid_t uid);
+void set_effective_gid(gid_t gid);
+void save_re_uid(void);
+void restore_re_uid(void);
+void save_re_gid(void);
+void restore_re_gid(void);
+int set_re_uid(void);
+void become_user_permanently(uid_t uid, gid_t gid);
+BOOL is_setuid_root(void) ;
+>>>>>>> 1.900.2.381
 
 /* The following definitions come from lib/util_sid.c  */
 
@@ -2886,6 +3441,7 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
 BOOL prs_append_data(prs_struct *dst, char *src, uint32 len);
 void prs_set_endian_data(prs_struct *ps, BOOL endian);
 BOOL prs_align(prs_struct *ps);
+BOOL prs_align_uint16(prs_struct *ps);
 BOOL prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, BOOL io);
@@ -4675,7 +5231,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 /* The following definitions come from smbd/sec_ctx.c  */
 
-int get_current_groups(int *p_ngroups, gid_t **p_groups);
+int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
 NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
 BOOL initialise_groups(char *user, uid_t uid, gid_t gid);

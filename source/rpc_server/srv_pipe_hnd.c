@@ -46,7 +46,7 @@ static int pipes_open;
  */
 
 #ifndef MAX_OPEN_SPOOLSS_PIPES
-#define MAX_OPEN_SPOOLSS_PIPES 64
+#define MAX_OPEN_SPOOLSS_PIPES 256
 #endif
 static int current_spoolss_pipes_open;
 

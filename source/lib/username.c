@@ -73,7 +73,7 @@ char *get_user_service_home_dir(char *user)
 		static pstring home_dir;
 
 		pstrcpy(home_dir, lp_pathname(snum));
-		standard_sub_home(snum, user, home_dir);
+		standard_sub_home(snum, user, home_dir, sizeof(home_dir));
 
 		if (home_dir[0])
 			return home_dir;

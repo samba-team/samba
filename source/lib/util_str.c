@@ -1163,7 +1163,7 @@ This routine looks for pattern in s and replaces it with
 insert. It may do multiple replacements.
 
 any of " ; ' $ or ` in the insert string are replaced with _
-if len==0 then no length check is performed
+if len==0 then no expansion is permitted.
 ****************************************************************************/
 void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
@@ -1177,9 +1177,12 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	li = (ssize_t)strlen(insert);
 
 	if (!*pattern) return;
+
+	if (len == 0)
+		len = ls + 1; /* len is number of *bytes* */
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (len && (ls + (li-lp) >= len)) {
+		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
@@ -1222,7 +1225,7 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
 /****************************************************************************
 similar to string_sub() but allows for any character to be substituted. 
 Use with caution!
-if len==0 then no length check is performed
+if len==0 then no expansion is permitted.
 ****************************************************************************/
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
@@ -1237,8 +1240,11 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 
 	if (!*pattern) return;
 	
+	if (len == 0)
+		len = ls + 1; /* len is number of *bytes* */
+	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (len && (ls + (li-lp) >= len)) {
+		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));

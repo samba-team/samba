@@ -454,6 +454,7 @@ close the low 3 fd's and open dev/null in their place
 ********************************************************************/
 void close_low_fds(void)
 {
+#ifndef VALGRIND
   int fd;
   int i;
   close(0); close(1); 
@@ -474,6 +475,7 @@ void close_low_fds(void)
       return;
     }
   }
+#endif
 }
 
 /****************************************************************************

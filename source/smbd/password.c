@@ -311,7 +311,7 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	/* Find all the groups this uid is in and store them. 
 		Used by change_to_user() */
 	initialise_groups(unix_name, uid, gid);
-	get_current_groups( &vuser->n_groups, &vuser->groups);
+	get_current_groups( vuser->gid, &vuser->n_groups, &vuser->groups);
 
 #ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
 	/*
@@ -1028,7 +1028,7 @@ struct cli_state *server_cryptkey(void)
 	p = pserver;
 
 	while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
-		standard_sub_basic(desthost);
+		standard_sub_basic(desthost,sizeof(desthost));
 		strupper(desthost);
 
 		if(!resolve_name( desthost, &dest_ip, 0x20)) {
@@ -1248,7 +1248,7 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 		fstrcpy(remote_machine, server);
 	}
 
-	standard_sub_basic(remote_machine);
+	standard_sub_basic(remote_machine,sizeof(remote_machine));
 	strupper(remote_machine);
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {

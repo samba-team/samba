@@ -289,7 +289,8 @@ SMBW_OBJ = smbwrapper/smbw.o \
 
 SMBWRAPPER_OBJ = $(SMBW_OBJ) smbwrapper/wrapped.o
 
-LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o $(LIB_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
+LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o $(LIB_OBJ) $(LIBSMB_OBJ) \
+		$(PARAM_OBJ) $(UBIQX_OBJ)
 
 CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
@@ -414,6 +415,8 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 	popt/popthelp.o popt/poptparse.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
+
+TDBDUMP_OBJ =  tdb/tdbdump.o $(TDBBASE_OBJ)
 
 ######################################################################
 # now the rules...
@@ -631,7 +634,7 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 	@echo Linking shared library $@
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS) \
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LDFLAGS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`
 
 bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32) bin/.dummy
@@ -650,7 +653,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ) bin/.dummy
 	@echo Linking shared library $@
-	$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc \
+	$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) $(LDAPLIBS) -lc \
 		@SONAMEFLAG@`basename $@`
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
@@ -686,6 +689,10 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
+
+bin/tdbdump: $(TDBDUMP_OBJ)  bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TDBDUMP_OBJ)
 
 install: installbin installman installscripts installcp installswat
 
