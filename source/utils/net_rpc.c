@@ -1379,6 +1379,9 @@ rpc_group_addmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 		}
 	}
 
+	d_printf("Can only add members to global or local groups which "
+		 "%s is not\n", argv[0]);
+
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1544,6 +1547,9 @@ rpc_group_delmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 			return result;
 		}
 	}
+
+	d_printf("Can only delete members from global or local groups which "
+		 "%s is not\n", argv[0]);
 
 	return NT_STATUS_UNSUCCESSFUL;
 }
