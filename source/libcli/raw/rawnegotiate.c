@@ -32,6 +32,7 @@ static const struct {
 	{PROTOCOL_LANMAN1,"Windows for Workgroups 3.1a"},
 	{PROTOCOL_LANMAN2,"LM1.2X002"},
 	{PROTOCOL_LANMAN2,"DOS LANMAN2.1"},
+	{PROTOCOL_LANMAN2,"LANMAN2.1"},
 	{PROTOCOL_LANMAN2,"Samba"},
 	{PROTOCOL_NT1,"NT LANMAN 1.0"},
 	{PROTOCOL_NT1,"NT LM 0.12"},
@@ -44,11 +45,24 @@ struct cli_request *smb_negprot_send(struct cli_transport *transport, int maxpro
 {
 	struct cli_request *req;
 	int i;
+	uint16_t flags2 = 0;
 
 	req = cli_request_setup_transport(transport, SMBnegprot, 0, 0);
 	if (!req) {
 		return NULL;
 	}
+
+	flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	flags2 |= FLAGS2_UNICODE_STRINGS;
+	flags2 |= FLAGS2_EXTENDED_ATTRIBUTES;
+	flags2 |= FLAGS2_LONG_PATH_COMPONENTS;
+	flags2 |= FLAGS2_IS_LONG_NAME;
+
+	if (transport->options.use_spnego) {
+		flags2 |= FLAGS2_EXTENDED_SECURITY;
+	}
+
+	SSVAL(req->out.hdr,HDR_FLG2, flags2);
 
 	/* setup the protocol strings */
 	for (i=0; i < ARRAY_SIZE(prots) && prots[i].prot <= maxprotocol; i++) {
@@ -102,25 +116,34 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		transport->negotiate.max_mux  = SVAL(req->in.vwv,VWV(1)+1);
 		transport->negotiate.max_xmit = IVAL(req->in.vwv,VWV(3)+1);
 		transport->negotiate.sesskey  = IVAL(req->in.vwv,VWV(7)+1);
-		transport->negotiate.server_zone = SVALS(req->in.vwv,VWV(15)+1) * 60;
+		transport->negotiate.capabilities = IVAL(req->in.vwv,VWV(9)+1);
 
 		/* this time arrives in real GMT */
 		ntt = cli_pull_nttime(req->in.vwv, VWV(11)+1);
-		transport->negotiate.server_time = nt_time_to_unix(ntt);
-		transport->negotiate.capabilities = IVAL(req->in.vwv,VWV(9)+1);
+		transport->negotiate.server_time = nt_time_to_unix(ntt);		
+		transport->negotiate.server_zone = SVALS(req->in.vwv,VWV(15)+1) * 60;
+		transport->negotiate.key_len = CVAL(req->in.vwv,VWV(16)+1);
 
-		transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, req->in.data, req->in.data_size);
+		if (transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
+			if (req->in.data_size < 16) {
+				goto failed;
+			}
+			transport->negotiate.server_guid = cli_req_pull_blob(req, transport->mem_ctx, req->in.data, 16);
+			transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, req->in.data + 16, req->in.data_size - 16);
+		} else {
+			if (req->in.data_size < (transport->negotiate.key_len)) {
+				goto failed;
+			}
+			transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, req->in.data, transport->negotiate.key_len);
+			cli_req_pull_string(req, transport->mem_ctx, &transport->negotiate.server_domain,
+					    req->in.data+transport->negotiate.key_len,
+					    req->in.data_size-transport->negotiate.key_len, STR_UNICODE|STR_NOALIGN);
+			/* here comes the server name */
+		}
+
 		if (transport->negotiate.capabilities & CAP_RAW_MODE) {
 			transport->negotiate.readbraw_supported = True;
 			transport->negotiate.writebraw_supported = True;
-		}
-
-		/* work out if they sent us a workgroup */
-		if ((transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) &&
-		    req->in.data_size > 16) {
-			cli_req_pull_string(req, transport->mem_ctx, &transport->negotiate.server_domain,
-					    req->in.data+16,
-					    req->in.data_size-16, STR_UNICODE|STR_NOALIGN);
 		}
 	} else if (transport->negotiate.protocol >= PROTOCOL_LANMAN1) {
 		CLI_CHECK_WCT(req, 13);
