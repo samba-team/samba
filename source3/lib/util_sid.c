@@ -410,8 +410,6 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
 	sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
   }
 
-  DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
-
   return True;
 }
 
