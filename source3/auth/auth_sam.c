@@ -201,6 +201,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  user_info->smb_name.str, 
 					  "",
 					  user_sess_key))
+		    
 		{
 			return NT_STATUS_OK;
 		} else {
@@ -225,7 +226,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			}
 		} else {
 			DEBUG(2,("sam_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
-			/* no return, because we might pick up LMv2 in the LM feild */
+			/* no return, becouse we might pick up LMv2 in the LM field */
 		}
 	}
 	
