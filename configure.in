@@ -35,13 +35,7 @@ AC_KRB_PROG_LN_S
 AM_DISABLE_SHARED
 AM_PROG_LIBTOOL
 
-if test "$GCC" = "yes"; then
-# -Wcast-align doesn't work well on alpha osf/1
-  WFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs"
-  WFLAGS_NOUNUSED="-Wno-unused"
-fi
-AC_SUBST(WFLAGS)
-AC_SUBST(WFLAGS_NOUNUSED)
+AC_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
 
 berkeley_db=db
 AC_ARG_WITH(berkeley-db,
