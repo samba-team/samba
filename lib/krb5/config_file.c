@@ -237,6 +237,8 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
 	    ++p;
 	if (*p == '}')
 	    return 0;
+	if (*p == '\0')
+	    continue;
 	ret = parse_binding (f, lineno, p, &b, parent);
 	if (ret)
 	    return ret;
