@@ -107,7 +107,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,0, 2 + strlen(dname),True);
+	set_message(cli->outbuf,0, 0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBmkdir;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -115,8 +115,9 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	pstrcpy(p,dname);
-    unix_to_dos(p,True);
+	p += clistr_push(cli, p, dname, -1, CLISTR_CONVERT|CLISTR_TERMINATE);
+
+	set_message(cli->outbuf,0, PTR_DIFF(p, smb_buf(cli->outbuf)), False);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
