@@ -499,18 +499,21 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		if (cli_write(c1, fnum1, 0, buf, 0, buf_size) != buf_size) {
 			printf("write failed (%s)\n", cli_errstr(c1));
 			correct = False;
+			break;
 		}
 
 		if ((bytes_read = cli_read(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			printf("read failed (%s)\n", cli_errstr(c2));
 			printf("read %d, expected %d\n", bytes_read, buf_size); 
 			correct = False;
+			break;
 		}
 
 		if (memcmp(buf_rd, buf, buf_size) != 0)
 		{
 			printf("read/write compare failed\n");
 			correct = False;
+			break;
 		}
 	}
 
@@ -547,8 +550,10 @@ static BOOL run_readwritetest(int dummy)
 	test1 = rw_torture2(cli1, cli2);
 	printf("Passed readwritetest v1: %s\n", BOOLSTR(test1));
 
-	test2 = rw_torture2(cli1, cli1);
-	printf("Passed readwritetest v2: %s\n", BOOLSTR(test2));
+	if (test1) {
+		test2 = rw_torture2(cli1, cli1);
+		printf("Passed readwritetest v2: %s\n", BOOLSTR(test2));
+	}
 
 	if (!torture_close_connection(cli1)) {
 		test1 = False;
