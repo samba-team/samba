@@ -380,7 +380,7 @@ static BOOL listen_for_wins_packets(void)
 
 	BlockSignals(False, SIGTERM);
 
-	num = sys_select(FD_SETSIZE, &fds, &timeout);
+	num = sys_select(FD_SETSIZE, &fds, NULL, NULL, &timeout);
 
 	/* We can only take signals when we are in the select - block them again here. */
 
