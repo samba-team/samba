@@ -56,7 +56,7 @@ static char *prog;
     "\t-h: help!\n" \
     "\t-u user: specify a user, default is the current user.\n" \
     "\t		only root can use this option.\n" \
-    "\t-f alg: encryption algorithm (md4|md5|sha), default is md4.\n" \
+    "\t-f alg: encryption algorithm (md4|md5|sha), default is md5.\n" \
     "\tnum seed: number of iterations and seed for OTP\n"
 
 static void
