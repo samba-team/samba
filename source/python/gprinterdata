@@ -3,7 +3,7 @@
 import sys
 from gtkdictbrowser import GtkDictBrowser, hex_string
 import gtk
-import spoolss
+from samba import spoolss
 import string
 import printerdata
 
