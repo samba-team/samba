@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "system/time.h"
-#include "libcli/auth/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 #include "auth/auth.h"
 
 static const gss_OID_desc gensec_gss_krb5_mechanism_oid_desc =
@@ -465,7 +465,7 @@ static NTSTATUS gensec_gsskrb5_sign_packet(struct gensec_security *gensec_securi
 
 	input_token.length = length;
 	input_token.value = data;
-	
+
 	maj_stat = gss_wrap(&min_stat, 
 			    gensec_gsskrb5_state->gssapi_context,
 			    0,
