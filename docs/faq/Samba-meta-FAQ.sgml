@@ -378,14 +378,14 @@ that an explanation can be incorporated into the next version.
 If you make changes to the source code, <em>please</em> submit these patches
 so that everyone else gets the benefit of your work. This is one of
 the most important aspects to the maintainence of Samba. Send all
-patches to <htmlurl url="mailto:samba-bugs@samba.org" name="samba-bugs@samba.org">. Do not send patches to Andrew Tridgell or any
+patches to <htmlurl url="mailto:samba@samba.org" name="samba@samba.org">. Do not send patches to Andrew Tridgell or any
 other individual, they may be lost if you do.
 
 Patch format
 ------------
 
 If you are sending a patch to fix a problem then please don't just use
-standard diff format. As an example, samba-bugs received this patch from
+standard diff format. As an example, samba received this patch from
 someone:
 
 382a
@@ -441,7 +441,7 @@ Some extras :
 If you have spotted something very serious and believe that it is
 important to contact the developers quickly send a message to
 samba-urgent@samba.org. This will be processed more quickly than
-mail to samba-bugs. Please think carefully before using this address. An
+mail to samba. Please think carefully before using this address. An
 example of its use might be to report a security hole.
 
 Examples of things <em>not</em> to send to samba-urgent include problems
