@@ -1,3 +1,4 @@
+# $Id$
 
 SHELL = /bin/sh
 
@@ -74,7 +75,9 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
+KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken
+
 popper: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(KLIB) $(LIBS)
 
 $(OBJECTS): ../../config.h
