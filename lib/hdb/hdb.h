@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 typedef struct HDB{
     void *db;
+    void *dbc;
     char *name;
     int master_key_set;
     krb5_data master_key;
@@ -80,14 +81,6 @@ typedef struct HDB{
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry*, void*);
 extern krb5_kt_ops hdb_kt_ops;
-
-/* this is for db3.c */
-
-typedef struct HDB {
-	void *db;
-	void *dbc;
-	char *name;
-} HDB;
 
 #include <hdb-protos.h>
 
