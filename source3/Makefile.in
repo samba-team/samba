@@ -170,6 +170,8 @@ PASSDB_OBJ = passdb/passdb.o passdb/secrets.o \
 	     passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 	     passdb/pdb_tdb.o
 
+GROUPDB_OBJ = groupdb/mapping.o
+
 # passdb/smbpass.o passdb/ldap.o passdb/nispass.o 
 
 PROFILE_OBJ = profile/profile.o
@@ -201,7 +203,7 @@ MSDFS_OBJ = msdfs/msdfs.o
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) $(NOTIFY_OBJ)
+	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) $(NOTIFY_OBJ) $(GROUPDB_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -257,6 +259,9 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ)
+
+SMBGROUPEDIT_OBJ = utils/smbgroupedit.o $(GROUPDB_OBJ) $(PARAM_OBJ) \
+		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o
@@ -512,6 +517,10 @@ bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@

@@ -638,6 +638,8 @@ extern int errno;
 
 #include "profile.h"
 
+#include "mapping.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif

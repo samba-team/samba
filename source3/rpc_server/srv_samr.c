@@ -5,7 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen						1999.
+ *  Copyright (C) Marc Jacobsen			    1999.
  *	
  * 	Split into interface and implementation modules by, 
  *
@@ -110,13 +110,17 @@ static BOOL api_samr_get_usrdom_pwinfo(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!samr_io_q_get_usrdom_pwinfo("", &q_u, data, 0))
+	if(!samr_io_q_get_usrdom_pwinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_get_usrdom_pwinfo: unable to unmarshall SAMR_Q_GET_USRDOM_PWINFO.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_get_usrdom_pwinfo(p, &q_u, &r_u);
 
-	if(!samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0))
+	if(!samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_get_usrdom_pwinfo: unable to marshall SAMR_R_GET_USRDOM_PWINFO.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -136,13 +140,17 @@ static BOOL api_samr_query_sec_obj(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!samr_io_q_query_sec_obj("", &q_u, data, 0))
+	if(!samr_io_q_query_sec_obj("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_sec_obj: unable to unmarshall SAMR_Q_QUERY_SEC_OBJ.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_query_sec_obj(p, &q_u, &r_u);
 
-	if(!samr_io_r_query_sec_obj("", &r_u, rdata, 0))
+	if(!samr_io_r_query_sec_obj("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_sec_obj: unable to marshall SAMR_R_QUERY_SEC_OBJ.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -162,14 +170,18 @@ static BOOL api_samr_enum_dom_users(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open */
-	if(!samr_io_q_enum_dom_users("", &q_u, data, 0))
+	if(!samr_io_q_enum_dom_users("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_enum_dom_users: unable to unmarshall SAMR_Q_ENUM_DOM_USERS.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_enum_dom_users(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_enum_dom_users("", &r_u, rdata, 0))
+	if(!samr_io_r_enum_dom_users("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_enum_dom_users: unable to marshall SAMR_R_ENUM_DOM_USERS.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -189,14 +201,18 @@ static BOOL api_samr_enum_dom_groups(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open */
-	if(!samr_io_q_enum_dom_groups("", &q_u, data, 0))
+	if(!samr_io_q_enum_dom_groups("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_enum_dom_groups: unable to unmarshall SAMR_Q_ENUM_DOM_GROUPS.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_enum_dom_groups(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_enum_dom_groups("", &r_u, rdata, 0))
+	if(!samr_io_r_enum_dom_groups("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_enum_dom_groups: unable to marshall SAMR_R_ENUM_DOM_GROUPS.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -216,14 +232,18 @@ static BOOL api_samr_enum_dom_aliases(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open */
-	if(!samr_io_q_enum_dom_aliases("", &q_u, data, 0))
+	if(!samr_io_q_enum_dom_aliases("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_enum_dom_aliases: unable to unmarshall SAMR_Q_ENUM_DOM_ALIASES.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_enum_dom_aliases(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_enum_dom_aliases("", &r_u, rdata, 0))
+	if(!samr_io_r_enum_dom_aliases("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_enum_dom_aliases: unable to marshall SAMR_R_ENUM_DOM_ALIASES.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -242,14 +262,18 @@ static BOOL api_samr_query_dispinfo(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!samr_io_q_query_dispinfo("", &q_u, data, 0))
+	if(!samr_io_q_query_dispinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_dispinfo: unable to unmarshall SAMR_Q_QUERY_DISPINFO.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_query_dispinfo(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_query_dispinfo("", &r_u, rdata, 0))
+	if(!samr_io_r_query_dispinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_dispinfo: unable to marshall SAMR_R_QUERY_DISPINFO.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -269,14 +293,18 @@ static BOOL api_samr_query_aliasinfo(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open */
-	if(!samr_io_q_query_aliasinfo("", &q_u, data, 0))
+	if(!samr_io_q_query_aliasinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_aliasinfo: unable to unmarshall SAMR_Q_QUERY_ALIASINFO.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_query_aliasinfo(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_query_aliasinfo("", &r_u, rdata, 0))
+	if(!samr_io_r_query_aliasinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_aliasinfo: unable to marshall SAMR_R_QUERY_ALIASINFO.\n"));
 		return False;
+	}
   
 	return True;
 }
@@ -296,14 +324,18 @@ static BOOL api_samr_lookup_names(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr lookup names */
-	if(!samr_io_q_lookup_names("", &q_u, data, 0))
+	if(!samr_io_q_lookup_names("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_lookup_names: unable to unmarshall SAMR_Q_LOOKUP_NAMES.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_lookup_names(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_lookup_names("", &r_u, rdata, 0))
+	if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_lookup_names: unable to marshall SAMR_R_LOOKUP_NAMES.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -354,14 +386,18 @@ static BOOL api_samr_lookup_rids(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr lookup names */
-	if(!samr_io_q_lookup_rids("", &q_u, data, 0))
+	if(!samr_io_q_lookup_rids("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_lookup_rids: unable to unmarshall SAMR_Q_LOOKUP_RIDS.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_lookup_rids(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_lookup_rids("", &r_u, rdata, 0))
+	if(!samr_io_r_lookup_rids("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_lookup_rids: unable to marshall SAMR_R_LOOKUP_RIDS.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -381,16 +417,18 @@ static BOOL api_samr_open_user(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr unknown 22 */
-	if(!samr_io_q_open_user("", &q_u, data, 0))
+	if(!samr_io_q_open_user("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_open_user: unable to unmarshall SAMR_Q_OPEN_USER.\n"));
 		return False;
+	}
 
 	r_u.status = _api_samr_open_user(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_open_user("", &r_u, rdata, 0))
+	if(!samr_io_r_open_user("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_open_user: unable to marshall SAMR_R_OPEN_USER.\n"));
 		return False;
-
-	DEBUG(5,("samr_open_user: %d\n", __LINE__));
+	}
 
 	return True;
 }
@@ -410,14 +448,18 @@ static BOOL api_samr_query_userinfo(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr unknown 24 */
-	if(!samr_io_q_query_userinfo("", &q_u, data, 0))
+	if(!samr_io_q_query_userinfo("", &q_u, data, 0)){
+		DEBUG(0,("api_samr_query_userinfo: unable to unmarshall SAMR_Q_QUERY_USERINFO.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_query_userinfo(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_query_userinfo("", &r_u, rdata, 0))
+	if(!samr_io_r_query_userinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_userinfo: unable to marshall SAMR_R_QUERY_USERINFO.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -437,13 +479,16 @@ static BOOL api_samr_query_usergroups(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr unknown 32 */
-	if(!samr_io_q_query_usergroups("", &q_u, data, 0))
+	if(!samr_io_q_query_usergroups("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_usergroups: unable to unmarshall SAMR_Q_QUERY_USERGROUPS.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_query_usergroups(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
 	if(!samr_io_r_query_usergroups("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_usergroups: unable to marshall SAMR_R_QUERY_USERGROUPS.\n"));
 		return False;
 	}
 
@@ -465,16 +510,18 @@ static BOOL api_samr_query_dom_info(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr unknown 8 command */
-	if(!samr_io_q_query_dom_info("", &q_u, data, 0))
+	if(!samr_io_q_query_dom_info("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_dom_info: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_query_dom_info(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_query_dom_info("", &r_u, rdata, 0))
+	if(!samr_io_r_query_dom_info("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_dom_info: unable to marshall SAMR_R_QUERY_DOMAIN_INFO.\n"));
 		return False;
-
-	DEBUG(5,("api_samr_query_dom_info: %d\n", __LINE__));
+	}
 
 	return True;
 }
@@ -526,14 +573,18 @@ static BOOL api_samr_connect_anon(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open policy */
-	if(!samr_io_q_connect_anon("", &q_u, data, 0))
+	if(!samr_io_q_connect_anon("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_connect_anon: unable to unmarshall SAMR_Q_CONNECT_ANON.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_connect_anon(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_connect_anon("", &r_u, rdata, 0))
+	if(!samr_io_r_connect_anon("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_connect_anon: unable to marshall SAMR_R_CONNECT_ANON.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -553,14 +604,18 @@ static BOOL api_samr_connect(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open policy */
-	if(!samr_io_q_connect("", &q_u, data, 0))
+	if(!samr_io_q_connect("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_connect: unable to unmarshall SAMR_Q_CONNECT.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_connect(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_connect("", &r_u, rdata, 0))
+	if(!samr_io_r_connect("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_connect: unable to marshall SAMR_R_CONNECT.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -759,12 +814,14 @@ static BOOL api_samr_query_aliasmem(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_query_aliasmem("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_aliasmem: unable to unmarshall SAMR_Q_QUERY_ALIASMEM.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_query_aliasmem(p, &q_u, &r_u);
 
 	if (!samr_io_r_query_aliasmem("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_aliasmem: unable to marshall SAMR_R_QUERY_ALIASMEM.\n"));
 		return False;
 	}
 
@@ -787,12 +844,14 @@ static BOOL api_samr_query_groupmem(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_query_groupmem("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_groupmem: unable to unmarshall SAMR_Q_QUERY_GROUPMEM.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_query_groupmem(p, &q_u, &r_u);
 
 	if (!samr_io_r_query_groupmem("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_groupmem: unable to marshall SAMR_R_QUERY_GROUPMEM.\n"));
 		return False;
 	}
 
@@ -815,12 +874,14 @@ static BOOL api_samr_add_aliasmem(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_add_aliasmem("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_add_aliasmem: unable to unmarshall SAMR_Q_ADD_ALIASMEM.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_add_aliasmem(p, &q_u, &r_u);
 
 	if (!samr_io_r_add_aliasmem("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_add_aliasmem: unable to marshall SAMR_R_ADD_ALIASMEM.\n"));
 		return False;
 	}
 
@@ -843,12 +904,14 @@ static BOOL api_samr_del_aliasmem(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_del_aliasmem("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_del_aliasmem: unable to unmarshall SAMR_Q_DEL_ALIASMEM.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_del_aliasmem(p, &q_u, &r_u);
 
 	if (!samr_io_r_del_aliasmem("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_del_aliasmem: unable to marshall SAMR_R_DEL_ALIASMEM.\n"));
 		return False;
 	}
 
@@ -871,12 +934,14 @@ static BOOL api_samr_add_groupmem(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_add_groupmem("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_add_groupmem: unable to unmarshall SAMR_Q_ADD_GROUPMEM.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_add_groupmem(p, &q_u, &r_u);
 
 	if (!samr_io_r_add_groupmem("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_add_groupmem: unable to marshall SAMR_R_ADD_GROUPMEM.\n"));
 		return False;
 	}
 
@@ -899,12 +964,14 @@ static BOOL api_samr_del_groupmem(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_del_groupmem("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_del_groupmem: unable to unmarshall SAMR_Q_DEL_GROUPMEM.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_del_groupmem(p, &q_u, &r_u);
 
 	if (!samr_io_r_del_groupmem("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_del_groupmem: unable to marshall SAMR_R_DEL_GROUPMEM.\n"));
 		return False;
 	}
 
@@ -927,12 +994,14 @@ static BOOL api_samr_delete_dom_user(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_delete_dom_user("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_delete_dom_user: unable to unmarshall SAMR_Q_DELETE_DOM_USER.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_delete_dom_user(p, &q_u, &r_u);
 
 	if (!samr_io_r_delete_dom_user("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_delete_dom_user: unable to marshall SAMR_R_DELETE_DOM_USER.\n"));
 		return False;
 	}
 
@@ -955,12 +1024,14 @@ static BOOL api_samr_delete_dom_group(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_delete_dom_group("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_delete_dom_group: unable to unmarshall SAMR_Q_DELETE_DOM_GROUP.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_delete_dom_group(p, &q_u, &r_u);
 
 	if (!samr_io_r_delete_dom_group("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_delete_dom_group: unable to marshall SAMR_R_DELETE_DOM_GROUP.\n"));
 		return False;
 	}
 
@@ -983,12 +1054,14 @@ static BOOL api_samr_delete_dom_alias(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_delete_dom_alias("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_delete_dom_alias: unable to unmarshall SAMR_Q_DELETE_DOM_ALIAS.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_delete_dom_alias(p, &q_u, &r_u);
 
 	if (!samr_io_r_delete_dom_alias("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_delete_dom_alias: unable to marshall SAMR_R_DELETE_DOM_ALIAS.\n"));
 		return False;
 	}
 
@@ -1011,12 +1084,14 @@ static BOOL api_samr_create_dom_group(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_create_dom_group("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_create_dom_group: unable to unmarshall SAMR_Q_CREATE_DOM_GROUP.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_create_dom_group(p, &q_u, &r_u);
 
 	if (!samr_io_r_create_dom_group("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_create_dom_group: unable to marshall SAMR_R_CREATE_DOM_GROUP.\n"));
 		return False;
 	}
 
@@ -1039,12 +1114,14 @@ static BOOL api_samr_create_dom_alias(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_create_dom_alias("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_create_dom_alias: unable to unmarshall SAMR_Q_CREATE_DOM_ALIAS.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_create_dom_alias(p, &q_u, &r_u);
 
 	if (!samr_io_r_create_dom_alias("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_create_dom_alias: unable to marshall SAMR_R_CREATE_DOM_ALIAS.\n"));
 		return False;
 	}
 
@@ -1067,12 +1144,14 @@ static BOOL api_samr_query_groupinfo(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_query_groupinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_groupinfo: unable to unmarshall SAMR_Q_QUERY_GROUPINFO.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_query_groupinfo(p, &q_u, &r_u);
 
 	if (!samr_io_r_query_groupinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_groupinfo: unable to marshall SAMR_R_QUERY_GROUPINFO.\n"));
 		return False;
 	}
 
@@ -1095,12 +1174,14 @@ static BOOL api_samr_set_groupinfo(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_set_groupinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_set_groupinfo: unable to unmarshall SAMR_Q_SET_GROUPINFO.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_set_groupinfo(p, &q_u, &r_u);
 
 	if (!samr_io_r_set_groupinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_set_groupinfo: unable to marshall SAMR_R_SET_GROUPINFO.\n"));
 		return False;
 	}
 
@@ -1123,12 +1204,14 @@ static BOOL api_samr_get_dom_pwinfo(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_get_dom_pwinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_get_dom_pwinfo: unable to unmarshall SAMR_Q_GET_DOM_PWINFO.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_get_dom_pwinfo(p, &q_u, &r_u);
 
 	if (!samr_io_r_get_dom_pwinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_get_dom_pwinfo: unable to marshall SAMR_R_GET_DOM_PWINFO.\n"));
 		return False;
 	}
 
@@ -1151,12 +1234,14 @@ static BOOL api_samr_open_group(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_open_group("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_open_group: unable to unmarshall SAMR_Q_OPEN_GROUP.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_open_group(p, &q_u, &r_u);
 
 	if (!samr_io_r_open_group("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_open_group: unable to marshall SAMR_R_OPEN_GROUP.\n"));
 		return False;
 	}
 
@@ -1179,12 +1264,14 @@ static BOOL api_samr_unknown_2d(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	if (!samr_io_q_unknown_2d("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_unknown_2d: unable to unmarshall SAMR_Q_UNKNOWN_2D.\n"));
 		return False;
 	}
 
 	r_u.status = _samr_unknown_2d(p, &q_u, &r_u);
 
 	if (!samr_io_r_unknown_2d("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_unknown_2d: unable to marshall SAMR_R_UNKNOWN_2D.\n"));
 		return False;
 	}
 
