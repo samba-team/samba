@@ -20,7 +20,6 @@ void
 hdb_key2principal(krb5_context context, krb5_data *key, krb5_principal *p)
 {
     krb5_storage *sp;
-    int32_t tmp;
     sp = krb5_storage_from_mem(key->data, key->length);
     krb5_ret_principal(sp, p);
     krb5_storage_free(sp);
@@ -31,10 +30,14 @@ hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
 {
     krb5_storage *sp;
     sp = krb5_storage_emem();
-    krb5_store_keyblock(sp, ent->keyblock);
     krb5_store_int32(sp, ent->kvno);
+    krb5_store_keyblock(sp, ent->keyblock);
     krb5_store_int32(sp, ent->max_life);
     krb5_store_int32(sp, ent->max_renew);
+    krb5_store_int32(sp, ent->last_change);
+    krb5_store_principal(sp, ent->changed_by);
+    krb5_store_int32(sp, ent->expires);
+    krb5_store_int32(sp, ent->u.flags);
     krb5_storage_to_data(sp, value);
     krb5_storage_free(sp);
 }
@@ -42,23 +45,35 @@ hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
 void
 hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
 {
+    /* XXX must check return values */
     krb5_storage *sp;
     int32_t tmp;
     sp = krb5_storage_from_mem(value->data, value->length);
-    krb5_ret_keyblock(sp, &ent->keyblock);
     krb5_ret_int32(sp, &tmp);
     ent->kvno = tmp;
+    krb5_ret_keyblock(sp, &ent->keyblock);
     krb5_ret_int32(sp, &tmp);
     ent->max_life = tmp;
     krb5_ret_int32(sp, &tmp);
     ent->max_renew = tmp;
+    krb5_ret_int32(sp, &tmp);
+    ent->last_change = tmp;
+    krb5_ret_principal(sp, &ent->changed_by);
+    krb5_ret_int32(sp, &tmp);
+    ent->expires = tmp;
+    krb5_ret_int32(sp, &tmp);
+    ent->u.flags = tmp;
     krb5_storage_free(sp);
 }
 
-
-#ifdef HAVE_DB_H
-
-#endif
+void
+hdb_free_entry(krb5_context context, hdb_entry *ent)
+{
+    krb5_free_principal(context, ent->principal);
+    krb5_free_keyblock(context, &ent->keyblock);
+    krb5_free_principal(context, ent->changed_by);
+}
+	       
 
 
 krb5_error_code
@@ -68,9 +83,10 @@ hdb_open(krb5_context context, HDB **db,
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
 #ifdef HAVE_DB_H
-    return hdb_db_open(context,db, filename, flags, mode);
+    return hdb_db_open(context, db, filename, flags, mode);
 #elif HAVE_NDBM_H
-    return hdb_ndbm_open(context,db, filename, flags, mode);
+    return hdb_ndbm_open(context, db, filename, flags, mode);
+#else
+#error No suitable database library
 #endif
-    return 17;
 }
