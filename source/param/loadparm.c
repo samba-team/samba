@@ -1219,6 +1219,9 @@ static void init_globals(void)
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
+	/* using UTF8 by default allows us to support all chars */
+	string_set(&Globals.unix_charset, "UTF8");
+
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
