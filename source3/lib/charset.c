@@ -132,6 +132,8 @@ static void add_dos_char(int lower, BOOL map_lower_to_upper,
          map_upper_to_lower ? "True" : "False"));
   if (lower) dos_char_map[lower] = 1;
   if (upper) dos_char_map[upper] = 1;
+  lower_char_map[lower] = (char)lower; /* Define tolower(lower) */
+  upper_char_map[upper] = (char)upper; /* Define toupper(upper) */
   if (lower && upper) {
     if(map_upper_to_lower)
     lower_char_map[upper] = (char)lower;
