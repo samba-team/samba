@@ -41,8 +41,9 @@ DB_close(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->db;
     DBC *dbcp = (DBC*)db->dbc;
-    if (dbcp)
-      dbcp->c_close(dbcp);
+
+    dbcp->c_close(dbcp);
+    db->dbc = 0;
     d->close(d, 0);
     return 0;
 }
@@ -85,7 +86,7 @@ DB_seq(krb5_context context, HDB *db,
 {
     DB *d = (DB*)db->db;
     DBT key, value;
-    DBC *dbcp;
+    DBC *dbcp = db->dbc;
     krb5_data key_data, data;
     int code;
 
@@ -93,11 +94,6 @@ DB_seq(krb5_context context, HDB *db,
     memset(&value, 0, sizeof(DBT));
     if (db->lock(context, db, HDB_RLOCK))
 	return HDB_ERR_DB_INUSE;
-    if (!db->dbc)
-	code = d->cursor(d, NULL, (DBC **)&db->dbc, 0);
-    if (code)
-	return code;
-    dbcp=db->dbc;
     code = dbcp->c_get(dbcp, &key, &value, flag);
     db->unlock(context, db); /* XXX check value */
     if (code == DB_NOTFOUND)
@@ -261,6 +257,11 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 	}
     }
     free(fn);
+
+    ret = d->cursor(d, NULL, (DBC **)&db->dbc, 0);
+    if (ret)
+        return ret;
+
     if((flags & O_ACCMODE) == O_RDONLY)
 	ret = hdb_check_db_format(context, db);
     else
