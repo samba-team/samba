@@ -562,30 +562,6 @@ gid_t nametogid(const char *name)
 	return (gid_t)-1;
 }
 
-/*******************************************************************
- Something really nasty happened - panic !
-********************************************************************/
-
-void smb_panic(const char *why)
-{
-	const char *cmd = lp_panic_action();
-	int result;
-
-	if (cmd && *cmd) {
-		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
-		result = system(cmd);
-
-		if (result == -1)
-			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
-				  strerror(errno)));
-		else
-			DEBUG(0, ("smb_panic(): action returned status %d\n",
-				  WEXITSTATUS(result)));
-	}
-	DEBUG(0,("PANIC: %s\n", why));
-	abort();
-}
-
 /****************************************************************************
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
