@@ -289,6 +289,8 @@ BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 	 * allocate
 	 */
 
+	DEBUG(10,("cli_connection_init: %s %s\n", srv_name, pipe_name));
+
 	*con = cli_con_get(srv_name, pipe_name, reuse);
 
 	if ((*con) == NULL)
@@ -644,6 +646,7 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 		{
 			BOOL ret;
 			ret = msrpc_receive_prs(con->msrpc.local, rdata);
+			rdata->io = True;
 			rdata->offset = 0;
 			rdata->data->offset.start = 0;
 			rdata->data->offset.end = rdata->data->data_used;
@@ -671,6 +674,7 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 			prs_link(NULL, data, NULL);
 			ret = msrpc_send_prs(con->msrpc.local, data) &&
 			      msrpc_receive_prs(con->msrpc.local, rdata);
+			rdata->io = True;
 			rdata->offset = 0;
 			rdata->data->offset.start = 0;
 			rdata->data->offset.end = rdata->data->data_used;

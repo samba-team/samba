@@ -72,6 +72,8 @@ BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps)
 
 	dump_data(10, msrpc->inbuf, len+4);
 
+	DEBUG(10,("msrpc_receive_prs: len %d\n", len));
+
 	prs_init(ps, len, 4, 0, False);
 	ps->offset = len;
 	data = mem_data(&ps->data, 0);

@@ -370,7 +370,21 @@ void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from)
 		ZERO_STRUCTP(to);
 		return;
 	}
-	memcpy(&to, &from, sizeof(*from));
+	sid_copy(&to->sid, &from->sid);
+	to->num_grps = 0;
+	to->grp_rids = NULL;
+
+	if (from->num_grps != 0)
+	{
+		size_t size = from->num_grps * sizeof(from->grp_rids[0]);
+		to->grp_rids = (uint32*)malloc(size);
+		if (to->grp_rids == NULL)
+		{
+			return;
+		}
+		to->num_grps = from->num_grps;
+		memcpy(to->grp_rids, from->grp_rids, size);
+	}
 };
 
 void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)

@@ -114,8 +114,11 @@ static struct msrpc_use *msrpc_find(const char* pipe_name,
 	int i;
 	struct user_creds null_usr;
 
-	copy_user_creds(&null_usr, usr_creds);
-	usr_creds = &null_usr;
+	if (usr_creds == NULL)
+	{
+		copy_user_creds(&null_usr, usr_creds);
+		usr_creds = &null_usr;
+	}
 		
 	DEBUG(10,("msrpc_find: %s %s %s\n",
 			pipe_name,
@@ -197,7 +200,10 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 				const struct user_creds *usr_creds,
 				BOOL redir)
 {
-	struct msrpc_use *cli = msrpc_find(pipe_name, usr_creds); 
+	struct msrpc_use *cli;
+	DEBUG(10,("msrpc_use_add: %s redir: %s\n", pipe_name, BOOLSTR(redir)));
+
+	cli = msrpc_find(pipe_name, usr_creds); 
 
 	if (cli != NULL)
 	{
