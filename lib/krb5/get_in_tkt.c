@@ -586,7 +586,7 @@ fail:
 static int
 set_ptypes(krb5_context context,
 	   KRB_ERROR *error, 
-	   krb5_preauthtype **ptypes,
+	   const krb5_preauthtype **ptypes,
 	   krb5_preauthdata **preauth)
 {
     static krb5_preauthdata preauth2;
