@@ -227,7 +227,8 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 					  uint32 flags, 
 					  uint8 lm_key[8], 
 					  uint8 nt_key[16], 
-					  char **error_string) 
+					  char **error_string, 
+					  char **unix_name) 
 {
 	NTSTATUS nt_status;
         NSS_STATUS result;
@@ -302,6 +303,13 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 		memcpy(nt_key, response.data.auth.nt_session_key, 
 			sizeof(response.data.auth.nt_session_key));
 	}
+
+	if (flags & WBFLAG_PAM_UNIX_NAME) {
+		if (pull_utf8_allocate(unix_name, (char *)response.extra_data) == -1) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	return nt_status;
 }
 				   
@@ -312,15 +320,16 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	char *error_string;
 	uint8 lm_key[8]; 
 	uint8 nt_key[16]; 
-	
+	char *unix_name;
+
 	nt_status = contact_winbind_auth_crap(ntlmssp_state->user, ntlmssp_state->domain,
 					      ntlmssp_state->workstation,
 					      &ntlmssp_state->chal,
 					      &ntlmssp_state->lm_resp,
 					      &ntlmssp_state->nt_resp, 
-					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_NTKEY,
+					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_NTKEY | WBFLAG_PAM_UNIX_NAME,
 					      lm_key, nt_key, 
-					      &error_string);
+					      &error_string, &unix_name);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (memcmp(lm_key, zeros, 8) != 0) {
@@ -332,10 +341,13 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		if (memcmp(nt_key, zeros, 16) != 0) {
 			*nt_session_key = data_blob(nt_key, 16);
 		}
+		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state->mem_ctx, unix_name);
+		SAFE_FREE(unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
 		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
 		       ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, error_string ? error_string : "unknown error (NULL)"));
+		ntlmssp_state->auth_context = NULL;
 	}
 	return nt_status;
 }
@@ -369,10 +381,12 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *n
 		if (memcmp(nt_key, zeros, 16) != 0) {
 			*nt_session_key = data_blob(nt_key, 16);
 		}
+		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, "%s%c%s", ntlmssp_state->domain, *lp_winbind_separator(), ntlmssp_state->user);
 	} else {
 		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
 			  ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, 
 			  nt_errstr(nt_status)));
+		ntlmssp_state->auth_context = NULL;
 	}
 	return nt_status;
 }
@@ -520,7 +534,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
-		x_fprintf(x_stdout, "AF %s\\%s\n", ntlmssp_state->domain, ntlmssp_state->user);
+		x_fprintf(x_stdout, "AF %s\n", (char *)ntlmssp_state->auth_context);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 	}
 
@@ -1368,7 +1382,7 @@ static BOOL check_auth_crap(void)
 					      flags,
 					      (unsigned char *)lm_key, 
 					      (unsigned char *)nt_key, 
-					      &error_string);
+					      &error_string, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		x_fprintf(x_stdout, "%s (0x%x)\n", 
@@ -1476,7 +1490,7 @@ static BOOL test_lm_ntlm_broken(enum ntlm_break break_which)
 					      flags,
 					      lm_key, 
 					      nt_key,
-					      &error_string);
+					      &error_string, NULL);
 	
 	data_blob_free(&lm_response);
 
@@ -1575,7 +1589,7 @@ static BOOL test_ntlm_in_lm(void)
 					      flags,
 					      lm_key,
 					      nt_key,
-					      &error_string);
+					      &error_string, NULL);
 	
 	data_blob_free(&nt_response);
 
@@ -1646,7 +1660,7 @@ static BOOL test_ntlm_in_both(void)
 					      flags,
 					      (unsigned char *)lm_key,
 					      (unsigned char *)nt_key,
-					      &error_string);
+					      &error_string, NULL);
 	
 	data_blob_free(&nt_response);
 
@@ -1737,7 +1751,7 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 					      flags,
 					      NULL, 
 					      nt_key,
-					      &error_string);
+					      &error_string, NULL);
 	
 	data_blob_free(&lmv2_response);
 	data_blob_free(&ntlmv2_response);
@@ -1881,7 +1895,7 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 					      flags,
 					      lm_key,
 					      nt_key,
-					      &error_string);
+					      &error_string, NULL);
 	
 	SAFE_FREE(nt_response.data);
 	SAFE_FREE(lm_response.data);
