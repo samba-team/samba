@@ -309,14 +309,12 @@ do a SAMR query user info
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, SAM_USER_INFO_21 *usr)
+				uint32 user_rid, void *usr)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
 
-	if (pol_open_domain == NULL || usr == NULL) return False;
-
-	bzero(usr, sizeof(*usr));
+	if (pol_open_domain == NULL) return False;
 
 	/* send open domain (on user sid) */
 	if (!samr_open_user(cli, fnum,
@@ -330,7 +328,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 	/* send user info query */
 	if (!samr_query_userinfo(cli, fnum,
 				&pol_open_user,
-				info_level, (void*)usr))
+				info_level, usr))
 	{
 		DEBUG(5,("samr_query_userinfo: error in query user info, level 0x%x\n",
 		          info_level));
@@ -2329,7 +2327,7 @@ BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 
 	DEBUG(4,("SAMR Query User Info.  level: %d\n", switch_value));
 
-	if (pol == NULL || usr == NULL || switch_value == 0) return False;
+	if (pol == NULL || switch_value == 0) return False;
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERINFO */
 

@@ -558,6 +558,12 @@ void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
 
+/*The following definitions come from  lib/util_status.c  */
+
+BOOL get_connection_status(struct connect_record **crec,
+				uint32 *connection_count);
+BOOL get_session_count(struct connect_record **srec,uint32 *session_count);
+
 /*The following definitions come from  lib/util_str.c  */
 
 void set_first_token(char *ptr);
@@ -1854,7 +1860,7 @@ BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, SAM_USER_INFO_21 *usr);
+				uint32 user_rid, void *usr);
 BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
@@ -2668,7 +2674,7 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint32 rid_group,
 				uint16 acct_ctrl);
 void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
-void make_sam_user_info_24(SAM_USER_INFO_24 *usr,
+void make_sam_user_info24(SAM_USER_INFO_24 *usr,
 	char newpass[516]);
 void make_sam_user_info23(SAM_USER_INFO_23 *usr,
 
