@@ -22,15 +22,13 @@
 */
 
 #include "includes.h"
-#include "winbind_nss_config.h"
 #include "winbindd.h"
 #include "debug.h"
 
 /* Prototypes from common.h - only needed #if TNG */
 
-enum nss_status winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response);
+int winbindd_request(int req_type, struct winbindd_request *request,
+		     struct winbindd_response *response);
 
 /* List groups a user is a member of */
 
@@ -53,7 +51,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 	}
 
 	for (i = 0; i < response.data.num_entries; i++) {
-		printf("%d\n", ((gid_t *)response.extra_data)[i]);
+		printf("%d\n", (int)((gid_t *)response.extra_data)[i]);
 	}
 
 	return True;
@@ -184,7 +182,7 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 
 	/* Display response */
 
-	printf("%d\n", response.data.uid);
+	printf("%d\n", (int)response.data.uid);
 
 	return True;
 }
@@ -207,7 +205,7 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 
 	/* Display response */
 
-	printf("%d\n", response.data.gid);
+	printf("%d\n", (int)response.data.gid);
 
 	return True;
 }
