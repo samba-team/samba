@@ -195,13 +195,26 @@ void winbindd_store_name_cache_entry(char *domain,
 void winbindd_store_sid_cache_entry(char *domain,
 					char *name, struct winbindd_sid *sid)
 {
+	fstring name_domain, name_user, key_name;
+
 	if (lp_winbind_cache_time() == 0)
 		return;
  
-	store_cache_entry(domain, CACHE_TYPE_SID, name, sid,
+	/* Store the lowercased username as a key */
+
+	if (!parse_domain_user(name, name_domain, name_user))
+		return;
+
+	strlower(name_user);
+
+	fstrcpy(key_name, name_domain);
+	fstrcat(key_name, "\\");
+	fstrcat(key_name, name_user);
+
+	store_cache_entry(domain, CACHE_TYPE_SID, key_name, sid,
 		sizeof(struct winbindd_sid));
  
-	set_cache_sequence_number(domain, CACHE_TYPE_SID, name);
+	set_cache_sequence_number(domain, CACHE_TYPE_SID, key_name);
 }
 
 /* Fill a user info cache entry */

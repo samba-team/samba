@@ -482,26 +482,33 @@ static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME
  
 static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE *type)
 {
-    fstring domain_str;
-    char *p;
-    struct winbindd_sid sid_ret;
+	fstring name_domain, name_user, key_name;
+	struct winbindd_sid sid_ret;
+	BOOL result = False;
  
-    /* Get name from domain. */
-    fstrcpy( domain_str, name);
-    p = strchr(domain_str, '\\');
-    if (p)
-        *p = '\0';
- 
-    if (!winbindd_fetch_sid_cache_entry(domain_str, name, &sid_ret))
-        return False;
- 
-    string_to_sid( sid, sid_ret.sid);
-    *type = (enum SID_NAME_USE)sid_ret.type;
- 
-    DEBUG(10,("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n",
-        name, sid_ret.sid ));
- 
-    return True;
+	/* Get name from domain. */
+	
+	if (!parse_domain_user(name, name_domain, name_user))
+		goto done;
+	
+	strlower(name_user);	/* Username in key is lowercased */
+
+	fstrcpy(key_name, name_domain);
+	fstrcat(key_name, "\\");
+	fstrcat(key_name, name_user);
+	
+	if (!winbindd_fetch_sid_cache_entry(name_domain, key_name, &sid_ret))
+		goto done;
+
+	string_to_sid(sid, sid_ret.sid);
+	*type = (enum SID_NAME_USE)sid_ret.type;
+
+	DEBUG(10, ("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n", name, sid_ret.sid));
+
+	result = True;
+
+ done:
+	return result;
 }
 
 /* Store a name in a domain indexed by SID in the cache. */
@@ -570,7 +577,8 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
     int num_sids = 0, num_names = 1;
     DOM_SID *sids = NULL;
     uint32 *types = NULL;
-    BOOL res;
+    BOOL res = False;
+    char **names = NULL;
 
     /* Don't bother with machine accounts */
 
@@ -592,38 +600,50 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 
     /* Return rid and type if lookup successful */
 
-    if (res) {
-
-        /* Return sid */
-
-        if ((sid != NULL) && (sids != NULL)) {
-            sid_copy(sid, &sids[0]);
-        }
-
-        /* Return name type */
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-
-        /* Store the forward and reverse map of this lookup in the cache. */
-        store_sid_by_name_in_cache(name, &sids[0], types[0]);
-        store_name_by_sid_in_cache(&sids[0], name, types[0]);
-
-    } else {
-
+    if (!res) {
         /* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
         DOM_SID nullsid;
 
         ZERO_STRUCT(nullsid);
         store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
         *type = SID_NAME_UNKNOWN;
+	goto done;
+    }
+
+    /* Return sid */
+
+    if ((sid != NULL) && (sids != NULL)) {
+            sid_copy(sid, &sids[0]);
     }
     
+    /* Return name type */
+    
+    if ((type != NULL) && (types != NULL)) {
+            *type = types[0];
+    }
+
+    res = lsa_lookup_sids(&server_state.lsa_handle, 1, &sids,
+			  &names, &types, &num_names);
+
+    if (!res)
+	    goto done;
+
+    /* Store the forward and reverse map of this lookup in the cache. */
+    store_sid_by_name_in_cache(names[0], &sids[0], types[0]);
+    store_name_by_sid_in_cache(&sids[0], names[0], types[0]);
+
+    res = True;
+
+done:
+
     /* Free memory */
 
     if (types != NULL) free(types);
     if (sids != NULL) free(sids);
+    if (names && names[0]) {
+	    free(names[0]);
+	    free(names);
+    }
 
     return res;
 }
