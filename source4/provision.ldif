@@ -758,6 +758,7 @@ dn: CN=TemplateUser,CN=Templates,${BASEDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
+objectClass: Template
 objectClass: userTemplate
 cn: TemplateUser
 name: TemplateUser
@@ -777,6 +778,7 @@ sAMAccountType: 0x30000000
 
 dn: CN=TemplateGroup,CN=Templates,${BASEDN}
 objectClass: top
+objectClass: Template
 objectClass: groupTemplate
 cn: TemplateGroup
 name: TemplateGroup
