@@ -870,19 +870,22 @@ BOOL pdb_generate_sam_sid(void)
 			close(fd);
 			return False;
 		}
+
 		/*
-		 * Check for a previous bug where we were writing
-		 * a machine SID with an incorrect id_auth[5] of *decimal*
-		 * 21 which should have been hex 21. If so then fix it now...
+		 * JRA. Reversed the sense of this test now that I have
+		 * actually done this test *personally*. One more reason
+		 * to never trust third party information you have not
+		 * independently verified.... sigh. JRA.
 		 */
-		if(global_sam_sid.num_auths > 0 && global_sam_sid.sub_auths[0] == 21) {
+
+		if(global_sam_sid.num_auths > 0 && global_sam_sid.sub_auths[0] == 0x21) {
 			/*
 			 * Fix and re-write...
 			 */
 			overwrite_bad_sid = True;
-			global_sam_sid.sub_auths[0] = 0x21;
-			DEBUG(5,("pdb_generate_sam_sid: Old (incorrect) sid id_auth of decimal 21 \
-detected - re-writing to be hex 0x21 instead.\n" ));
+			global_sam_sid.sub_auths[0] = 21;
+			DEBUG(5,("pdb_generate_sam_sid: Old (incorrect) sid id_auth of hex 21 \
+detected - re-writing to be decimal 21 instead.\n" ));
 			sid_to_string(sid_string, &global_sam_sid);
 			if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0) {
 				DEBUG(0,("unable to seek file file %s. Error was %s\n",
@@ -908,13 +911,7 @@ detected - re-writing to be hex 0x21 instead.\n" ));
 		mysid.sid_rev_num = 1;
 		mysid.id_auth[5] = 5;
 		mysid.num_auths = 0;
-		mysid.sub_auths[mysid.num_auths++] = 0x21;
-
-#if 0
-		/* NB. This replaces this older code : */
-		fstrcpy( sid_string, "S-1-5-21");
-		/* which was incorrect - the 21 shoud have been 33 !. JRA. */
-#endif
+		mysid.sub_auths[mysid.num_auths++] = 21;
 
 		generate_random_buffer( raw_sid_data, 12, True);
 		for( i = 0; i < 3; i++)
