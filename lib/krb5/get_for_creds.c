@@ -168,6 +168,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_crypto crypto;
     struct addrinfo *ai;
     int save_errno;
+    krb5_keyblock *key;
 
     addrs.len = 0;
     addrs.val = NULL;
@@ -328,7 +329,14 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	return ret;
     }    
 
-    ret = krb5_crypto_init(context, auth_context->local_subkey, 0, &crypto);
+    if (auth_context->local_subkey)
+	key = auth_context->local_subkey;
+    else if (auth_context->remote_subkey)
+	key = auth_context->remote_subkey;
+    else
+	key = auth_context->keyblock;
+
+    ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret) {
 	free_KRB_CRED(&cred);
 	return ret;
