@@ -481,6 +481,8 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		{ SEC_GENERIC_EXECUTE, SEC_RIGHTS_DIR_EXECUTE },
 		{ SEC_GENERIC_ALL,     SEC_RIGHTS_DIR_ALL }
 	};
+	BOOL has_restore_privilege;
+	BOOL has_take_ownership_privilege;
 
 	printf("TESTING FILE GENERIC BITS\n");
 
@@ -515,8 +517,31 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
 
+	status = smblsa_sid_check_privilege(cli, owner_sid, SEC_PRIV_RESTORE);
+	has_restore_privilege = NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+	}
+	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
+
+	status = smblsa_sid_check_privilege(cli, owner_sid, SEC_PRIV_TAKE_OWNERSHIP);
+	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+	}
+	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_restore_privilege?"Yes":"No");
 
 	for (i=0;i<ARRAY_SIZE(file_mappings);i++) {
+		uint32_t expected_mask = 
+			SEC_STD_WRITE_DAC | 
+			SEC_STD_READ_CONTROL | 
+			SEC_FILE_READ_ATTRIBUTE |
+			SEC_STD_DELETE;
+		uint32_t expected_mask_anon = SEC_FILE_READ_ATTRIBUTE;
+
+		if (has_restore_privilege) {
+			expected_mask_anon |= SEC_STD_DELETE;
+		}
 
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
@@ -556,18 +581,17 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_ACCESS_FLAGS(io.ntcreatex.out.fnum, 
-				   SEC_STD_READ_CONTROL | 
-				   SEC_STD_WRITE_DAC | 
-				   SEC_STD_DELETE | 
-				   SEC_FILE_READ_ATTRIBUTE |
-				   file_mappings[i].specific_bits);
+				   expected_mask | file_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.fnum);
 
+		if (!has_take_ownership_privilege) {
+			continue;
+		}
 
 		printf("testing generic bits 0x%08x (anonymous)\n", 
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_create(mem_ctx,
-						SID_ANONYMOUS, NULL,
+						SID_NT_ANONYMOUS, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						file_mappings[i].gen_bits,
@@ -582,7 +606,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_STATUS(status, NT_STATUS_OK);
 
 		sd2 = security_descriptor_create(mem_ctx,
-						 SID_ANONYMOUS, NULL,
+						 SID_NT_ANONYMOUS, NULL,
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
 						 file_mappings[i].specific_bits,
@@ -602,9 +626,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_ACCESS_FLAGS(io.ntcreatex.out.fnum, 
-				   SEC_STD_DELETE | 
-				   SEC_FILE_READ_ATTRIBUTE |
-				   file_mappings[i].specific_bits);
+				   expected_mask_anon | file_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.fnum);
 	}
 
@@ -649,6 +671,11 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 	for (i=0;i<ARRAY_SIZE(dir_mappings);i++) {
+		uint32_t expected_mask = 
+			SEC_STD_WRITE_DAC | 
+			SEC_STD_READ_CONTROL | 
+			SEC_FILE_READ_ATTRIBUTE |
+			SEC_STD_DELETE;
 
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
@@ -688,14 +715,10 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_ACCESS_FLAGS(io.ntcreatex.out.fnum, 
-				   SEC_STD_WRITE_DAC | 
-				   SEC_STD_READ_CONTROL | 
-				   SEC_STD_DELETE | 
-				   SEC_FILE_READ_ATTRIBUTE |
-				   dir_mappings[i].specific_bits);
+				   expected_mask | dir_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.fnum);
-
 	}
+
 	printf("put back original sd\n");
 	set.set_secdesc.in.sd = sd_orig;
 	status = smb_raw_setfileinfo(cli->tree, &set);
