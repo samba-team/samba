@@ -63,7 +63,7 @@ uint32_t dcesrv_common_get_share_current_users(TALLOC_CTX *mem_ctx, struct dcesr
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
 	/* for disk share	0x00000000
 	 * for print share	0x00000001
@@ -73,7 +73,7 @@ uint32_t dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context
 	 * ADMIN$, IPC$, C$, D$, E$ ...  are type |= 0x80000000
 	 * this ones are hidden in NetShareEnum, but shown in NetShareEnumAll
 	 */
-	uint32_t share_type = 0;
+	enum srvsvc_ShareType share_type = 0;
 
 	if (!lp_browseable(snum)) {
 		share_type |= STYPE_HIDDEN;
