@@ -31,124 +31,6 @@ static char this_user[100] = "";
 static char this_salt[100] = "";
 static char this_crypted[100] = "";
 
-
-#ifdef WITH_PAM
-/*******************************************************************
-check on PAM authentication
-********************************************************************/
-
-/* We first need some helper functions */
-#include <security/pam_appl.h>
-/* Static variables used to communicate between the conversation function
- * and the server_login function
- */
-static char *PAM_username;
-static char *PAM_password;
-
-/* PAM conversation function
- * Here we assume (for now, at least) that echo on means login name, and
- * echo off means password.
- */
-static int PAM_conv(int num_msg,
-		    const struct pam_message **msg,
-		    struct pam_response **resp, void *appdata_ptr)
-{
-	int replies = 0;
-	struct pam_response *reply = NULL;
-
-#define COPY_STRING(s) (s) ? strdup(s) : NULL
-
-	reply = malloc(sizeof(struct pam_response) * num_msg);
-	if (!reply)
-		return PAM_CONV_ERR;
-
-	for (replies = 0; replies < num_msg; replies++)
-	{
-		switch (msg[replies]->msg_style)
-		{
-			case PAM_PROMPT_ECHO_ON:
-				reply[replies].resp_retcode = PAM_SUCCESS;
-				reply[replies].resp =
-					COPY_STRING(PAM_username);
-				/* PAM frees resp */
-				break;
-			case PAM_PROMPT_ECHO_OFF:
-				reply[replies].resp_retcode = PAM_SUCCESS;
-				reply[replies].resp =
-					COPY_STRING(PAM_password);
-				/* PAM frees resp */
-				break;
-			case PAM_TEXT_INFO:
-				/* fall through */
-			case PAM_ERROR_MSG:
-				/* ignore it... */
-				reply[replies].resp_retcode = PAM_SUCCESS;
-				reply[replies].resp = NULL;
-				break;
-			default:
-				/* Must be an error of some sort... */
-				free(reply);
-				return PAM_CONV_ERR;
-		}
-	}
-	if (reply)
-		*resp = reply;
-	return PAM_SUCCESS;
-}
-static struct pam_conv PAM_conversation = {
-	&PAM_conv,
-	NULL
-};
-
-
-static BOOL pam_auth(char *user, char *password)
-{
-	pam_handle_t *pamh;
-	int pam_error;
-
-	/* Now use PAM to do authentication.  For now, we won't worry about
-	 * session logging, only authentication.  Bail out if there are any
-	 * errors.  Since this is a limited protocol, and an even more limited
-	 * function within a server speaking this protocol, we can't be as
-	 * verbose as would otherwise make sense.
-	 * Query: should we be using PAM_SILENT to shut PAM up?
-	 */
-#define PAM_BAIL if (pam_error != PAM_SUCCESS) { \
-     pam_end(pamh, 0); return False; \
-   }
-	PAM_password = password;
-	PAM_username = user;
-	pam_error = pam_start("samba", user, &PAM_conversation, &pamh);
-	PAM_BAIL;
-/* Setting PAM_SILENT stops generation of error messages to syslog
- * to enable debugging on Red Hat Linux set:
- * /etc/pam.d/samba:
- *	auth required /lib/security/pam_pwdb.so nullok shadow audit
- * _OR_ change PAM_SILENT to 0 to force detailed reporting (logging)
- */
-	pam_error = pam_authenticate(pamh, PAM_SILENT);
-	PAM_BAIL;
-	/* It is not clear to me that account management is the right thing
-	 * to do, but it is not clear that it isn't, either.  This can be
-	 * removed if no account management should be done.  Alternately,
-	 * put a pam_allow.so entry in /etc/pam.conf for account handling. */
-	pam_error = pam_acct_mgmt(pamh, PAM_SILENT);
-	PAM_BAIL;
-
-	/*
-	 * This will allow samba to aquire a kerberos token. And, when
-	 * exporting an AFS cell, be able to /write/ to this cell.
-	 */
-	pam_error = pam_setcred(pamh, (PAM_ESTABLISH_CRED|PAM_SILENT));
-	PAM_BAIL;
-	
-	pam_end(pamh, PAM_SUCCESS);
-	/* If this point is reached, the user has been authenticated. */
-	return (True);
-}
-#endif
-
-
 #ifdef WITH_AFS
 
 #include <afs/stds.h>
@@ -724,16 +606,7 @@ static BOOL password_check(char *password)
 {
 
 #ifdef WITH_PAM
-	/* This falls through if the password check fails
-	   - if HAVE_CRYPT is not defined this causes an error msg
-	   saying Warning - no crypt available
-	   - if HAVE_CRYPT is defined this is a potential security hole
-	   as it may authenticate via the crypt call when PAM
-	   settings say it should fail.
-	   if (pam_auth(user,password)) return(True);
-	   Hence we make a direct return to avoid a second chance!!!
-	 */
-	return (pam_auth(this_user, password));
+	return (pam_passcheck(this_user, password));
 #endif /* WITH_PAM */
 
 #ifdef WITH_AFS
@@ -946,16 +819,13 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 	fstrcpy(this_crypted, pass->pw_passwd);
 
-	if (!*this_crypted)
-	{
-		if (!lp_null_passwords())
-		{
+	if (!*this_crypted) {
+		if (!lp_null_passwords()) {
 			DEBUG(2, ("Disallowing %s with null password\n",
 				  this_user));
 			return (False);
 		}
-		if (!*password)
-		{
+		if (!*password) {
 			DEBUG(3,
 			      ("Allowing access to %s with null password\n",
 			       this_user));
