@@ -1,0 +1,11 @@
+<chapter id="Config">
+<title>Configuration problems</title>
+
+<sect1>
+<title>I have set 'force user' and samba still makes 'root' the owner of all the files I touch!</title>
+<para>
+When you have a user in 'admin users', samba will always do file operations for 
+this user as 'root', even if 'force user' has been set.
+</para>
+</sect1>
+</chapter>
