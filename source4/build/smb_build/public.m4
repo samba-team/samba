@@ -357,13 +357,14 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 
 				SMB_EXT_LIB_ENABLE($1, YES)
 				SMB_EXT_LIB($1, 
-					[`$PKG_CONFIG --libs-only-l $2`], 
-					[`$PKG_CONFIG --cflags-only-other $2`],
-					[`$PKG_CONFIG --cflags-only-I $2`],
-					[`$PKG_CONFIG --libs-only-other $2` `$PKG_CONFIG --libs-only-L $2`])
+					[`$PKG_CONFIG --libs-only-l "$2"`], 
+					[`$PKG_CONFIG --cflags-only-other "$2"`],
+					[`$PKG_CONFIG --cflags-only-I "$2"`],
+					[`$PKG_CONFIG --libs-only-other "$2"` `$PKG_CONFIG --libs-only-L "$2"`])
 
 				# FIXME: Dirty hack
-				CFLAGS="$CFLAGS `$PKG_CONFIG --cflags $2`"
+				$1_CFLAGS="`$PKG_CONFIG --cflags $2`"
+				CFLAGS="$CFLAGS $$1_CFLAGS"
         		else
 				AC_MSG_RESULT(no)
             			$PKG_CONFIG --errors-to-stdout --print-errors $2

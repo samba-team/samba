@@ -298,7 +298,7 @@ const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d)
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_host));
 }
 
-const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pipe_name)
+const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, const char *pipe_name)
 {
 	const char *transport;
 	const char *host;
@@ -331,7 +331,7 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 	}
 }
 
-GtkWidget *create_gtk_samba_about_dialog (char *appname)
+GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 {
   GtkWidget *samba_about_dialog;
   GtkWidget *dialog_vbox1;

@@ -1,6 +1,6 @@
 dnl # LIB GTK SMB subsystem
 
-SMB_EXT_LIB_FROM_PKGCONFIG(gtk, [glib-2.0 gtk+-2.0])
+SMB_EXT_LIB_FROM_PKGCONFIG(gtk, [glib-2.0 gtk+-2.0>=2.4])
 SMB_SUBSYSTEM_ENABLE(GTKSMB, NO)
 SMB_BINARY_ENABLE(gregedit, NO)
 SMB_BINARY_ENABLE(gwcrontab, NO)
