@@ -348,28 +348,36 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 
 	  if (smbc_stat(path1, &st1) < 0) {
 	    
-	    g_print("cb_select_child: Could not stat file %s, %s\n", path1, 
-		    strerror(errno));
+	    if (errno != EBUSY) {
+	      
+	      g_print("cb_select_child: Could not stat file %s, %s\n", path1, 
+		      strerror(errno));
 	    
-	    gtk_main_quit();
+	      gtk_main_quit();
 
-	    return;
+	      return;
 
+	    }
+	    else {
+
+	      strncpy(col2, "Device or resource busy", sizeof(col2));
+
+	    }
 	  }
+	  else {
+	    /* Now format each of the relevant things ... */
 
-	  /* Now format each of the relevant things ... */
-
-	  snprintf(col2, sizeof(col2), "%s%s%s%s%s%s(%0X)",
-		   (st1.st_mode&0x20?"A":""),
-		   (st1.st_mode&0x10?"D":""),
-		   (st1.st_mode&0x08?"V":""),
-		   (st1.st_mode&0x04?"S":""),
-		   (st1.st_mode&0x02?"H":""),
-		   (st1.st_mode&0x01?"R":""),
-		   st1.st_mode); 
-	  snprintf(col3, sizeof(col3), "%u", st1.st_size);
-	  snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_ctime));
-
+	    snprintf(col2, sizeof(col2), "%s%s%s%s%s%s(%0X)",
+		     (st1.st_mode&0x20?"A":""),
+		     (st1.st_mode&0x10?"D":""),
+		     (st1.st_mode&0x08?"V":""),
+		     (st1.st_mode&0x04?"S":""),
+		     (st1.st_mode&0x02?"H":""),
+		     (st1.st_mode&0x01?"R":""),
+		     st1.st_mode); 
+	    snprintf(col3, sizeof(col3), "%u", st1.st_size);
+	    snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_ctime));
+	  }
 	}
 
 	break;
