@@ -292,14 +292,14 @@ static BOOL get_cmd_args(char *line)
 	cmd_argv = NULL;
 
 	/* get the first part of the command */
-	if (!next_token(&ptr, tok, NULL, sizeof(tok)))
+	if (!next_token_nr(&ptr, tok, NULL, sizeof(tok)))
 		return False;
 
 	do
 	{
 		add_chars_to_array(&cmd_argc, &cmd_argv, tok);
 	}
-	while (next_token(NULL, tok, NULL, sizeof(tok)));
+	while (next_token_nr(NULL, tok, NULL, sizeof(tok)));
 
 	add_chars_to_array(&cmd_argc, &cmd_argv, NULL);
 

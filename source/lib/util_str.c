@@ -23,13 +23,6 @@
 
 extern int DEBUGLEVEL;
 
-static char *last_ptr=NULL;
-
-void set_first_token(char *ptr)
-{
-	last_ptr = ptr;
-}
-
 /****************************************************************************
   Get the next token from a string, return False if none found
   handles double-quotes. 
@@ -38,41 +31,63 @@ Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
 BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 {
-  char *s;
-  BOOL quoted;
-  size_t len=1;
+	char *s;
+	BOOL quoted;
+	size_t len=1;
 
-  if (!ptr) ptr = &last_ptr;
-  if (!ptr) return(False);
+	if (!ptr) return(False);
 
-  s = *ptr;
+	s = *ptr;
 
-  /* default to simple separators */
-  if (!sep) sep = " \t\n\r";
+	/* default to simple separators */
+	if (!sep) sep = " \t\n\r";
 
-  /* find the first non sep char */
-  while(*s && strchr(sep,*s)) s++;
-
-  /* nothing left? */
-  if (! *s) return(False);
-
-  /* copy over the token */
-  for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++)
-    {
-	    if (*s == '\"') {
-		    quoted = !quoted;
-	    } else {
-		    len++;
-		    *buff++ = *s;
-	    }
-    }
-
-  *ptr = (*s) ? s+1 : s;  
-  *buff = 0;
-  last_ptr = *ptr;
-
-  return(True);
+	/* find the first non sep char */
+	while (*s && strchr(sep,*s)) s++;
+	
+	/* nothing left? */
+	if (! *s) return(False);
+	
+	/* copy over the token */
+	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+		if (*s == '\"') {
+			quoted = !quoted;
+		} else {
+			len++;
+			*buff++ = *s;
+		}
+	}
+	
+	*ptr = (*s) ? s+1 : s;  
+	*buff = 0;
+	
+	return(True);
 }
+
+
+
+/****************************************************************************
+This is like next_token but is not re-entrant and "remembers" the first 
+parameter so you can pass NULL. This is useful for user interface code
+but beware the fact that it is not re-entrant!
+****************************************************************************/
+static char *last_ptr=NULL;
+
+BOOL next_token_nr(char **ptr,char *buff,char *sep, size_t bufsize)
+{
+	BOOL ret;
+	if (!ptr) ptr = &last_ptr;
+
+	ret = next_token(ptr, buff, sep, bufsize);
+	last_ptr = *ptr;
+	return ret;	
+}
+
+void set_first_token(char *ptr)
+{
+	last_ptr = ptr;
+}
+
 
 /****************************************************************************
 Convert list of tokens to array; dependent on above routine.
@@ -80,35 +95,35 @@ Uses last_ptr from above - bit of a hack.
 ****************************************************************************/
 char **toktocliplist(int *ctok, char *sep)
 {
-  char *s=last_ptr;
-  int ictok=0;
-  char **ret, **iret;
+	char *s=last_ptr;
+	int ictok=0;
+	char **ret, **iret;
 
-  if (!sep) sep = " \t\n\r";
+	if (!sep) sep = " \t\n\r";
 
-  while(*s && strchr(sep,*s)) s++;
+	while(*s && strchr(sep,*s)) s++;
 
-  /* nothing left? */
-  if (!*s) return(NULL);
+	/* nothing left? */
+	if (!*s) return(NULL);
 
-  do {
-    ictok++;
-    while(*s && (!strchr(sep,*s))) s++;
-    while(*s && strchr(sep,*s)) *s++=0;
-  } while(*s);
+	do {
+		ictok++;
+		while(*s && (!strchr(sep,*s))) s++;
+		while(*s && strchr(sep,*s)) *s++=0;
+	} while(*s);
+	
+	*ctok=ictok;
+	s=last_ptr;
+	
+	if (!(ret=iret=malloc(ictok*sizeof(char *)))) return NULL;
+	
+	while(ictok--) {    
+		*iret++=s;
+		while(*s++);
+		while(!*s) s++;
+	}
 
-  *ctok=ictok;
-  s=last_ptr;
-
-  if (!(ret=iret=malloc(ictok*sizeof(char *)))) return NULL;
-  
-  while(ictok--) {    
-    *iret++=s;
-    while(*s++);
-    while(!*s) s++;
-  }
-
-  return ret;
+	return ret;
 }
 
 

@@ -628,8 +628,9 @@ int create_pipe_socket(char *dir, int dir_perms,
 
 /* The following definitions come from lib/util_str.c  */
 
-void set_first_token(char *ptr);
 BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize);
+BOOL next_token_nr(char **ptr,char *buff,char *sep, size_t bufsize);
+void set_first_token(char *ptr);
 char **toktocliplist(int *ctok, char *sep);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, size_t n);
@@ -711,9 +712,6 @@ int isxdigit_w( smb_ucs2_t val);
 int isspace_w( smb_ucs2_t val);
 smb_ucs2_t toupper_w( smb_ucs2_t val );
 smb_ucs2_t tolower_w( smb_ucs2_t val );
-void set_first_token_w(smb_ucs2_t *ptr);
-BOOL next_token_w(smb_ucs2_t **ptr, smb_ucs2_t *buff, smb_ucs2_t *sep, size_t bufsize);
-smb_ucs2_t **toktocliplist_w(int *ctok, smb_ucs2_t *sep);
 int StrCaseCmp_w(const smb_ucs2_t *s, const smb_ucs2_t *t);
 int StrnCaseCmp_w(const smb_ucs2_t *s, const smb_ucs2_t *t, size_t n);
 BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2);

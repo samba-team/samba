@@ -358,13 +358,13 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 	pstring buf;
 	int argc = 1, i;
 
-	next_token(&p, buf, " ", sizeof(buf));
+	next_token_nr(&p, buf, " ", sizeof(buf));
 
 	/* Count number of arguments first time through the loop then
 	   allocate memory and strdup them. */
 
  again:
-	while(next_token(NULL, buf, " ", sizeof(buf))) {
+	while(next_token_nr(NULL, buf, " ", sizeof(buf))) {
 		if (argv) {
 			argv[argc] = strdup(buf);
 		}
@@ -384,7 +384,7 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 		}
 					
 		p = cmd;
-		next_token(&p, buf, " ", sizeof(buf));
+		next_token_nr(&p, buf, " ", sizeof(buf));
 		argv[0] = strdup(buf);
 		argc = 1;
 					
@@ -425,7 +425,7 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	if (cmd[strlen(cmd) - 1] == '\n')
 		cmd[strlen(cmd) - 1] = '\0';
 
-	if (!next_token(&p, buf, " ", sizeof(buf))) {
+	if (!next_token_nr(&p, buf, " ", sizeof(buf))) {
 		return 0;
 	}
 

@@ -91,7 +91,7 @@ void cmd_reg_enum(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regenum <key_name>\n");
 		return;
@@ -250,7 +250,7 @@ void cmd_reg_query_key(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regquery key_name\n");
 		return;
@@ -349,7 +349,7 @@ void cmd_reg_create_val(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_create_val: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regcreate <val_name> <val_type> <val>\n");
 		return;
@@ -363,7 +363,7 @@ void cmd_reg_create_val(struct client_info *info)
 		return;
 	}
 	
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (!next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		fprintf(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
@@ -377,7 +377,7 @@ void cmd_reg_create_val(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (!next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		fprintf(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
@@ -484,7 +484,7 @@ void cmd_reg_delete_val(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_delete_val: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regdelete <val_name>\n");
 		return;
@@ -559,7 +559,7 @@ void cmd_reg_delete_key(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_delete_key: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regdeletekey <key_name>\n");
 		return;
@@ -640,7 +640,7 @@ void cmd_reg_create_key(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_create_key: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regcreate <key_name> [key_class]\n");
 		return;
@@ -654,7 +654,7 @@ void cmd_reg_create_key(struct client_info *info)
 		return;
 	}
 	
-	if (!next_token(NULL, key_class, NULL, sizeof(key_class)))
+	if (!next_token_nr(NULL, key_class, NULL, sizeof(key_class)))
 	{
 		memset(key_class, 0, sizeof(key_class));
 	}
@@ -735,7 +735,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "reggetsec <key_name>\n");
 		return;
@@ -830,7 +830,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "reggetsec <key_name>\n");
 		return;

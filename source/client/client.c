@@ -287,7 +287,7 @@ static void cmd_cd(void)
 {
 	fstring buf;
 
-	if (next_token(NULL,buf,NULL,sizeof(buf)))
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
 		do_cd(buf);
 	else
 		DEBUG(0,("Current directory is %s\n",cur_dir));
@@ -586,7 +586,7 @@ static void cmd_dir(void)
 	if(mask[strlen(mask)-1]!='\\')
 		pstrcat(mask,"\\");
 	
-	if (next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == '\\')
 			pstrcpy(mask,p);
@@ -620,7 +620,7 @@ static void cmd_du(void)
 	if(mask[strlen(mask)-1]!='\\')
 		pstrcat(mask,"\\");
 	
-	if (next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == '\\')
 			pstrcpy(mask,p);
@@ -758,14 +758,14 @@ static void cmd_get(void)
 	
 	p = rname + strlen(rname);
 	
-	if (!next_token(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
+	if (!next_token_nr(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
 		DEBUG(0,("get <filename>\n"));
 		return;
 	}
 	pstrcpy(lname,p);
 	dos_clean_name(rname);
 	
-	next_token(NULL,lname,NULL,sizeof(lname));
+	next_token_nr(NULL,lname,NULL,sizeof(lname));
 	
 	do_get(rname, lname);
 }
@@ -857,7 +857,7 @@ static void cmd_more(void)
 	}
 	close(fd);
 
-	if (!next_token(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
+	if (!next_token_nr(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
 		DEBUG(0,("more <filename>\n"));
 		unlink(lname);
 		return;
@@ -893,7 +893,7 @@ static void cmd_mget(void)
 	
 	abort_mget = False;
 
-	while (next_token(NULL,p,NULL,sizeof(buf))) {
+	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
 		if(mget_mask[strlen(mget_mask)-1]!='\\')
 			pstrcat(mget_mask,"\\");
@@ -951,7 +951,7 @@ static void cmd_mkdir(void)
   
 	pstrcpy(mask,cur_dir);
 
-	if (!next_token(NULL,p,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		if (!recurse)
 			DEBUG(0,("mkdir <dirname>\n"));
 		return;
@@ -1090,13 +1090,13 @@ static void cmd_put(void)
 	pstrcpy(rname,cur_dir);
 	pstrcat(rname,"\\");
   
-	if (!next_token(NULL,p,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		DEBUG(0,("put <filename>\n"));
 		return;
 	}
 	pstrcpy(lname,p);
   
-	if (next_token(NULL,p,NULL,sizeof(buf)))
+	if (next_token_nr(NULL,p,NULL,sizeof(buf)))
 		pstrcat(rname,p);      
 	else
 		pstrcat(rname,lname);
@@ -1167,7 +1167,7 @@ static BOOL seek_list(struct file_list *list, char *name)
 static void cmd_select(void)
 {
 	pstrcpy(fileselection,"");
-	next_token(NULL,fileselection,NULL,sizeof(fileselection));
+	next_token_nr(NULL,fileselection,NULL,sizeof(fileselection));
 }
 
 /****************************************************************************
@@ -1241,7 +1241,7 @@ static void cmd_mput(void)
 	fstring buf;
 	char *p=buf;
 	
-	while (next_token(NULL,p,NULL,sizeof(buf))) {
+	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		int ret;
 		struct file_list *temp_list;
 		char *quest, *lname, *rname;
@@ -1335,14 +1335,14 @@ static void cmd_cancel(void)
 	fstring buf;
 	int job; 
 
-	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		printf("cancel <jobid> ...\n");
 		return;
 	}
 	do {
 		job = atoi(buf);
 		do_cancel(job);
-	} while (next_token(NULL,buf,NULL,sizeof(buf)));
+	} while (next_token_nr(NULL,buf,NULL,sizeof(buf)));
 }
 
 
@@ -1355,7 +1355,7 @@ static void cmd_print(void)
 	pstring rname;
 	char *p;
 
-	if (!next_token(NULL,lname,NULL, sizeof(lname))) {
+	if (!next_token_nr(NULL,lname,NULL, sizeof(lname))) {
 		DEBUG(0,("print <filename>\n"));
 		return;
 	}
@@ -1422,7 +1422,7 @@ static void cmd_del(void)
 	
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		DEBUG(0,("del <filename>\n"));
 		return;
 	}
@@ -1440,7 +1440,7 @@ static void cmd_open(void)
 	
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		DEBUG(0,("del <filename>\n"));
 		return;
 	}
@@ -1460,7 +1460,7 @@ static void cmd_rmdir(void)
   
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		DEBUG(0,("rmdir <dirname>\n"));
 		return;
 	}
@@ -1483,8 +1483,8 @@ static void cmd_rename(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		DEBUG(0,("rename <src> <dest>\n"));
 		return;
 	}
@@ -1518,7 +1518,7 @@ static void cmd_newer(void)
 	BOOL ok;
 	SMB_STRUCT_STAT sbuf;
 
-	ok = next_token(NULL,buf,NULL,sizeof(buf));
+	ok = next_token_nr(NULL,buf,NULL,sizeof(buf));
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
@@ -1538,7 +1538,7 @@ static void cmd_archive(void)
 {
 	fstring buf;
 
-	if (next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
 	} else
 		DEBUG(0,("Archive level is %d\n",archive_level));
@@ -1584,7 +1584,7 @@ static void cmd_printmode(void)
 	fstring buf;
 	fstring mode;
 
-	if (next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		if (strequal(buf,"text")) {
 			printmode = 0;      
 		} else {
@@ -1619,7 +1619,7 @@ static void cmd_lcd(void)
 	fstring buf;
 	pstring d;
 	
-	if (next_token(NULL,buf,NULL,sizeof(buf)))
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
 		chdir(buf);
 	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
 }
@@ -1794,7 +1794,7 @@ static void cmd_help(void)
 	int i=0,j;
 	fstring buf;
 	
-	if (next_token(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
 			DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
 	} else {
@@ -1834,7 +1834,7 @@ static void process_command_string(char *cmd)
 		
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
 		
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
@@ -1945,7 +1945,7 @@ static void process_stdin(void)
       
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
 
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();

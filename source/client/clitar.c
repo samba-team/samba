@@ -1322,7 +1322,7 @@ void cmd_block(void)
   fstring buf;
   int block;
 
-  if (!next_token(NULL,buf,NULL,sizeof(buf)))
+  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("blocksize <n>\n"));
       return;
@@ -1346,7 +1346,7 @@ void cmd_tarmode(void)
 {
   fstring buf;
 
-  while (next_token(NULL,buf,NULL,sizeof(buf))) {
+  while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
     if (strequal(buf, "full"))
       tar_inc=False;
     else if (strequal(buf, "inc"))
@@ -1392,7 +1392,7 @@ void cmd_setmode(void)
 
   attra[0] = attra[1] = 0;
 
-  if (!next_token(NULL,buf,NULL,sizeof(buf)))
+  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
       return;
@@ -1401,7 +1401,7 @@ void cmd_setmode(void)
   safe_strcpy(fname, cur_dir, sizeof(pstring));
   safe_strcat(fname, buf, sizeof(pstring));
 
-  while (next_token(NULL,buf,NULL,sizeof(buf))) {
+  while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
     q=buf;
 
     while(*q)
@@ -1443,7 +1443,7 @@ void cmd_tar(void)
   char **argl;
   int argcl;
 
-  if (!next_token(NULL,buf,NULL,sizeof(buf)))
+  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
       return;
