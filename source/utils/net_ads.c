@@ -155,7 +155,7 @@ retry:
 	 * If the username is of the form "name@realm", 
 	 * extract the realm and convert to upper case.
 	 */
-	if (realm = strchr(ads->auth.user_name, '@')) {
+	if ((realm = strchr(ads->auth.user_name, '@'))) {
 		*realm++ = '\0';
 		ads->auth.realm = strdup(realm);
 		strupper(ads->auth.realm);
