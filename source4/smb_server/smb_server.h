@@ -286,4 +286,7 @@ struct smbsrv_connection {
 	pid_t pid;
 	
 	struct server_connection *connection;
+
+	/* this holds a partially received request */
+	struct smbsrv_request *partial_req;
 };
