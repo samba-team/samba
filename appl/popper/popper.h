@@ -189,6 +189,9 @@ typedef enum {                              /*  POP processing states */
 } state;
 
 
+#define DEL_FLAG	1
+#define RETR_FLAG	2
+
 typedef struct {                                /*  Message information */
     int         number;                         /*  Message number relative to 
                                                     the beginning of list */
@@ -197,10 +200,8 @@ typedef struct {                                /*  Message information */
     int         lines;                          /*  Number of (null-terminated)                                                     lines in the message */
     long        offset;                         /*  Offset from beginning of 
                                                     file */
-    int         del_flag;                       /*  Flag indicating if message 
-                                                    is marked for deletion */
-    int         retr_flag;                      /*  Flag indicating if message 
-                                                    was retrieved */
+    unsigned	flags;
+
 #if defined(UIDL) || defined(XOVER)
     char        *msg_id;	                /*  The POP UIDL uniqueifier */
 #endif
