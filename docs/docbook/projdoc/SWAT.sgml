@@ -42,14 +42,71 @@ your Unix/Linux system has you will have either an <filename>inetd</filename> or
 </para>
 
 <para>
-The nature and location of the network super
+The nature and location of the network super-daemon varies with the operating system
+implementation. The control file (or files) can be located in the file 
+<filename>/etc/inetd.conf</filename> or in the directory <filename>/etc/[x]inet.d</filename>
+or similar.
+</para>
+
+<para>
+The control entry for the older style file might be:
+</para>
+
+<para><programlisting>
+	# swat is the Samba Web Administration Tool
+	swat stream tcp nowait.400 root /usr/sbin/swat swat
+</programlisting></para>
+
+<para>
+A control file for the newer style xinetd could be:
+</para>
+
+<para>
+<programlisting>
+	# default: off
+	# description: SWAT is the Samba Web Admin Tool. Use swat \
+	#              to configure your Samba server. To use SWAT, \
+	#              connect to port 901 with your favorite web browser.
+	service swat
+	{
+		port    = 901
+		socket_type     = stream
+		wait    = no
+		only_from = localhost
+		user    = root
+		server  = /usr/sbin/swat
+		log_on_failure  += USERID
+		disable = yes
+	}
+</programlisting>
+</para>
+
+<para>
+Both the above examples assume that the <filename>swat</filename> binary has been
+located in the <filename>/usr/sbin</filename> directory. In addition to the above
+SWAT will use a directory access point from which it will load all it's help files,
+as well as other control information. The default location for this on most Linux
+systems is in the directory <filename>/usr/share/samba/swat</filename>.
+</para>
+
+<para>
+Access to SWAT will prompt for a logon. If you log onto SWAT as any non-root user
+the only permission allowed is to view certain aspects of configuration as well as
+access to the password change facility.
+</para>
+
+<para>
+So long as you log onto SWAT as the user <command>root</command> you should obtain
+full change and commit ability.
 </para>
 
 <sect2>
 <title>The SWAT Home Page</title>
 
 <para>
-Blah blah here.
+The SWAT title page provides access to the latest Samba documentation. The manual page for
+each samba component is accessible from this page as are the Samba-HOWTO-Collection (this 
+document) as well as the O'Reilly book "Using Samba".
 </para>
 
 </sect2>
