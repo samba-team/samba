@@ -45,8 +45,8 @@ add_dynamic_entries()
   # Add the binaries, docs and SWAT files
 
   echo "#\n# libraries\n#"
-  echo f none /lib/nss_winbind.so.1=source/nsswitch/libnss_winbind.so 0755 root other
-  echo f none /lib/security/pam_winbind.so=source/nsswitch/pam_winbind.so 0755 root other
+  echo f none /usr/lib/nss_winbind.so.1=source/nsswitch/libnss_winbind.so 0755 root other
+  echo f none /usr/lib/security/pam_winbind.so=source/nsswitch/pam_winbind.so 0755 root other
 
   echo "#\n# libsmbclient\n#"
   echo f none /usr/local/include/libsmbclient.h=source/include/libsmbclient.h 0755 root other
