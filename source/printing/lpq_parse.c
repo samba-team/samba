@@ -149,21 +149,17 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   StrnCpy(buf->fs_file,tok[FILETOK],sizeof(buf->fs_file)-1);
 
   if ((FILETOK + 1) != TOTALTOK) {
-    int bufsize;
     int i;
 
-    bufsize = sizeof(buf->fs_file) - strlen(buf->fs_file) - 1;
-
     for (i = (FILETOK + 1); i < TOTALTOK; i++) {
-      safe_strcat(buf->fs_file," ",bufsize);
-      safe_strcat(buf->fs_file,tok[i],bufsize - 1);
-      bufsize = sizeof(buf->fs_file) - strlen(buf->fs_file) - 1;
-      if (bufsize <= 0) {
-        break;
-      }
+        /* FIXME: Using fstrcat rather than other means is a bit
+         * inefficient; this might be a problem for enormous queues with
+         * many fields. */
+         fstrcat(buf->fs_file, " ");
+         fstrcat(buf->fs_file, tok[i]);
     }
     /* Ensure null termination. */
-    buf->fs_file[sizeof(buf->fs_file)-1] = '\0';
+    fstrterminate(buf->fs_file);
   }
 
 #ifdef PRIOTOK
@@ -282,21 +278,17 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
   StrnCpy(buf->fs_file,tokarr[LPRNG_FILETOK],sizeof(buf->fs_file)-1);
 
   if ((LPRNG_FILETOK + 1) != LPRNG_TOTALTOK) {
-    int bufsize;
     int i;
 
-    bufsize = sizeof(buf->fs_file) - strlen(buf->fs_file) - 1;
-
     for (i = (LPRNG_FILETOK + 1); i < LPRNG_TOTALTOK; i++) {
-      safe_strcat(buf->fs_file," ",bufsize);
-      safe_strcat(buf->fs_file,tokarr[i],bufsize - 1);
-      bufsize = sizeof(buf->fs_file) - strlen(buf->fs_file) - 1;
-      if (bufsize <= 0) {
-        break;
-      }
+      /* FIXME: Using fstrcat rather than other means is a bit
+       * inefficient; this might be a problem for enormous queues with
+       * many fields. */
+      fstrcat(buf->fs_file, " ");
+      fstrcat(buf->fs_file, tokarr[i]);
     }
     /* Ensure null termination. */
-    buf->fs_file[sizeof(buf->fs_file)-1] = '\0';
+    fstrterminate(buf->fs_file);
   }
 
   return(True);
