@@ -746,24 +746,12 @@ NTSTATUS pass_oem_change(char *user,
 			 uchar * ntdata, uchar * nthash)
 {
 	fstring new_passwd;
-	const char *unix_user;
 	SAM_ACCOUNT *sampass = NULL;
 	NTSTATUS nt_status = check_oem_password(user, lmdata, lmhash, ntdata, nthash,
 				     &sampass, new_passwd, sizeof(new_passwd));
 
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
-
-	/* 
-	 * At this point we have the new case-sensitive plaintext
-	 * password in the fstring new_passwd. If we wanted to synchronise
-	 * with UNIX passwords we would call a UNIX password changing 
-	 * function here. However it would have to be done as root
-	 * as the plaintext of the old users password is not 
-	 * available. JRA.
-	 */
-
-	unix_user = pdb_get_username(sampass);
 
 	/* We've already checked the old password here.... */
 	become_root();
