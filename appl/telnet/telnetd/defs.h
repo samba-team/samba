@@ -66,17 +66,6 @@
 #define TIOCPKT_DOSTOP  0x20
 #endif
 
-#ifndef	FD_SET
-#ifndef	HAVE_fd_set
-typedef struct fd_set { int fds_bits[1]; } fd_set;
-#endif
-
-#define	FD_SET(n, p)	((p)->fds_bits[0] |= (1<<(n)))
-#define	FD_CLR(n, p)	((p)->fds_bits[0] &= ~(1<<(n)))
-#define	FD_ISSET(n, p)	((p)->fds_bits[0] & (1<<(n)))
-#define FD_ZERO(p)	((p)->fds_bits[0] = 0)
-#endif	/* FD_SET */
-
 /*
  * I/O data buffers defines
  */

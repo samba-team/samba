@@ -41,10 +41,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
@@ -53,15 +59,24 @@
 #else
 #include <time.h>
 #endif
+
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif /* HAVE_SYS_RESOURCE_H */
-#ifndef	_CRAY
+
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
-#endif	/* CRAY */
+#endif
+
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
 
 /* including both <sys/ioctl.h> and <termios.h> in SunOS 4 generates a
    lot of warnings */
@@ -73,18 +88,20 @@
 #include <sys/filio.h>
 #endif
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
 
 #include <signal.h>
 #include <errno.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
-#include <syslog.h>
-#ifndef	LOG_DAEMON
-#define	LOG_DAEMON	0
 #endif
-#ifndef	LOG_ODELAY
-#define	LOG_ODELAY	0
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
 #endif
 #include <ctype.h>
 
@@ -100,7 +117,9 @@
 
 #include "defs.h"
 
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
 
 #ifndef _POSIX_VDISABLE
 # ifdef VDISABLE
@@ -111,27 +130,42 @@
 #endif
 
 
-#ifdef	_CRAY
-# ifdef	CRAY1
-# include <sys/pty.h>
-#  ifndef FD_ZERO
-# include <sys/select.h>
-#  endif /* FD_ZERO */
-# endif	/* CRAY1 */
+#ifdef HAVE_SYS_PTY_H
+#include <sys/pty.h>
+#endif
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
-#include <memory.h>
-#endif	/* _CRAY */
-
-#ifdef __hpux
+#ifdef HAVE_SYS_PTYIO_H
 #include <sys/ptyio.h>
 #endif
 
-#ifdef HAVE_UNAME
+#ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
 #endif
 
 #include "ext.h"
-#include "pathnames.h"
+
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+
+/* Don't use the system login, use our version instead */
+
+#undef _PATH_LOGIN
+#define _PATH_LOGIN	BINDIR "/login"
+
+/* fallbacks */
+
+#ifndef _PATH_DEV
+#define _PATH_DEV "/dev/"
+#endif
+
+#ifndef _PATH_TTY
+#define _PATH_TTY "/dev/tty"
+#endif /* _PATH_TTY */
+
 #include <protos.h>
 
 #ifdef SOCKS
@@ -161,7 +195,6 @@
 
 /* other external variables */
 extern	char **environ;
-extern	int errno;
 
 /* prototypes */
 

@@ -10,8 +10,7 @@ RCSID("$Id$");
 int utmpx_login(char *line, char *user, char *host) { return 0; }
 #else
 
-static
-void
+static void
 utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
 {
     struct timeval tmp;
