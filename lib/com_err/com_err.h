@@ -50,10 +50,10 @@ const char * error_message __P((long));
 int init_error_table __P((const char**, long, int));
 
 void com_err_va __P((const char *, long, const char *, va_list))
-    __attribute((format(printf, 3, 0)));
+    __attribute__((format(printf, 3, 0)));
 
 void com_err __P((const char *, long, const char *, ...))
-    __attribute((format(printf, 3, 4)));
+    __attribute__((format(printf, 3, 4)));
 
 errf set_com_err_hook __P((errf));
 errf reset_com_err_hook __P((void));
