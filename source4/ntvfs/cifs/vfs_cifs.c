@@ -73,8 +73,8 @@ static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 f
 */
 static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
 {
-	struct tcon_context *conn = fde->private;
-	struct cvfs_private *private = conn->ntvfs_private;
+	struct cvfs_private *private = fde->private;
+	struct tcon_context *conn = private->conn;
 
 	DEBUG(5,("cifs_socket_handler event on fd %d\n", fde->fd));
 
@@ -160,7 +160,7 @@ static NTSTATUS cvfs_connect(struct request_context *req, const char *sharename)
 	   on our SMB connection to the server */
 	fde.fd = private->transport->socket->fd;
 	fde.flags = EVENT_FD_READ;
-	fde.private = req->conn;
+	fde.private = private;
 	fde.handler = cifs_socket_handler;
 
 	event_add_fd(conn->smb->events, &fde);
