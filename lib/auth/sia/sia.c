@@ -98,11 +98,6 @@ setup_password(SIAENTITY *e, prompt_t *p)
 }
 
 
-#if defined(SIA_KRB4) && !defined(KRB_VERIFY_SECURE)
-#define KRB_VERIFY_SECURE 1
-#define KRB_VERIFY_NOT_SECURE 0
-#endif
-
 static int
 doauth(SIAENTITY *entity, int pkgind, char *name)
 {
