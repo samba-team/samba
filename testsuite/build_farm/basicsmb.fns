@@ -75,7 +75,7 @@ test_smbpasswd() {
 	test_smbpasswd_password="$1"
 	rm -f $prefix/private/smbpasswd
 	echo "( echo $test_smbpasswd_password ; echo $test_smbpasswd_password; ) | $prefix/bin/smbpasswd -L -s -a $whoami"
-	( echo $password ; echo $password; ) | $prefix/bin/smbpasswd -L -s -a $whoami
+	( echo $test_smbpasswd_password; echo $test_smbpasswd_password; ) | $prefix/bin/smbpasswd -L -s -a $whoami
 	status=$?
 	if [ $status = 0 ]; then
 	    echo "smbpasswd correctly set initial password ($test_smbpasswd_password)"
