@@ -9,7 +9,7 @@ check-var.m4
 need-proto.m4
 proto-compat.m4
 have-struct-field.m4
-have-declaration.m4
+check-declaration.m4
 krb-prog-yacc.m4
 krb-sys-nextstep.m4
 krb-sys-aix.m4
