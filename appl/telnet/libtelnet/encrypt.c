@@ -952,6 +952,13 @@ encrypt_delay(void)
     return 0;
 }
 
+int encrypt_is_encrypting()
+{
+    if (encrypt_output && decrypt_input)
+	return 1;
+    return 0;
+}
+
 void
 encrypt_debug(int mode)
 {

@@ -93,6 +93,7 @@ void encrypt_request_start(unsigned char*, int);
 void encrypt_send_end(void);
 void encrypt_send_keyid(int, unsigned char*, int, int);
 void encrypt_send_request_end(void);
+int encrypt_is_encrypting(void);
 void encrypt_send_request_start(void);
 void encrypt_send_support(void);
 void encrypt_session_key(Session_Key*, int);
