@@ -409,20 +409,20 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		if ( is_print_op )
 			become_root();
 		
-		ret = smbrun(command, NULL);
+		if ( (ret = smbrun(command, NULL)) == 0 ) {
+			/* Tell everyone we updated smb.conf. */
+			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		}
 		
 		if ( is_print_op )
 			unbecome_root();
 
-		/********** BEGIN SePrintOperatorPrivlege BLOCK **********/
+		/********** END SePrintOperatorPrivlege BLOCK **********/
 
 		DEBUGADD(10,("returned [%d]\n", ret));
 
 		if (ret != 0) 
 			return WERR_BADFID; /* What to return here? */
-
-		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 		/* go ahead and re-read the services immediately */
 		reload_services( False );
@@ -6034,7 +6034,10 @@ static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printe
 	if ( is_print_op )
 		become_root();
 	
-	ret = smbrun(command, &fd);
+	if ( (ret = smbrun(command, &fd)) == 0 ) {
+		/* Tell everyone we updated smb.conf. */
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+	}
 
 	if ( is_print_op )
 		unbecome_root();
@@ -6048,9 +6051,6 @@ static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printe
 			close(fd);
 		return False;
 	}
-
-	/* Tell everyone we updated smb.conf. */
-	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 	/* reload our services immediately */
 	reload_services( False );

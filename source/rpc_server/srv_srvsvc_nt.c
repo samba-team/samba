@@ -1580,7 +1580,10 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		if ( is_disk_op )
 			become_root();
 			
-		ret = smbrun(command, NULL);
+		if ( (ret = smbrun(command, NULL)) == 0 ) {
+			/* Tell everyone we updated smb.conf. */
+			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		}
 		
 		if ( is_disk_op )
 			unbecome_root();
@@ -1591,9 +1594,6 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	
 		if ( ret != 0 )
 			return WERR_ACCESS_DENIED;
-
-		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	} else {
 		DEBUG(10,("_srv_net_share_set_info: No change to share name (%s)\n", share_name ));
 	}
@@ -1725,7 +1725,10 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	if ( is_disk_op )
 		become_root();
 
-	ret = smbrun(command, NULL);
+	if ( (ret = smbrun(command, NULL)) == 0 ) {
+		/* Tell everyone we updated smb.conf. */
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+	}
 
 	if ( is_disk_op )
 		unbecome_root();
@@ -1736,9 +1739,6 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	if ( ret != 0 )
 		return WERR_ACCESS_DENIED;
-
-	/* Tell everyone we updated smb.conf. */
-	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 	if (psd) {
 		if (!set_share_security(p->mem_ctx, share_name, psd)) {
@@ -1808,7 +1808,10 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	if ( is_disk_op )
 		become_root();
 
-	ret = smbrun(command, NULL);
+	if ( (ret = smbrun(command, NULL)) == 0 ) {
+		/* Tell everyone we updated smb.conf. */
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+	}
 
 	if ( is_disk_op )
 		unbecome_root();
@@ -1819,9 +1822,6 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	if ( ret != 0 )
 		return WERR_ACCESS_DENIED;
-
-	/* Tell everyone we updated smb.conf. */
-	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 	/* Delete the SD in the database. */
 	delete_share_security(snum);
