@@ -2,8 +2,6 @@ THIS IS INCOMPLETE! I'M ONLY COMMITING IT IN ORDER TO SOLICIT COMMENTS
 FROM A FEW PEOPLE. DON'T TAKE THIS AS THE FINAL VERSION YET.
 
 
-
-
 Samba4 Programming Guide
 ------------------------
 
@@ -736,3 +734,5 @@ docs
 
   conference paper
   developer docs
+
+svn instructions
