@@ -165,6 +165,10 @@ typedef struct
   char *szUtmpDir;
 #endif /* WITH_UTMP */
   char *szSourceEnv;
+  char *szWinbindUID;
+  char *szWinbindGID;
+  char *szTemplateHomedir;
+  char *szTemplateShell;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -195,6 +199,7 @@ typedef struct
   int map_to_guest;
   int min_passwd_length;
   int oplock_break_wait_time;
+  int winbind_cache_time;
 #ifdef WITH_LDAP
   int ldap_port;
 #endif /* WITH_LDAP */
@@ -506,6 +511,7 @@ static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue,char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue,char **ptr);
+static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
 
 static void set_default_server_announce_type(void);
 
@@ -889,6 +895,14 @@ static struct parm_struct parm_table[] =
   {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
 #endif
 
+  {"Winbind options", P_SEP, P_SEPARATOR},
+
+  {"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
+  {"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
+  {"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
+  {"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
+  {"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL,   NULL, 0},
+
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
 
@@ -1071,6 +1085,10 @@ static void init_globals(void)
   Globals.bKernelOplocks = True;
 
   Globals.bAllowTrustedDomains = True;
+
+  string_set(&Globals.szTemplateShell, "/bin/false");
+  string_set(&Globals.szTemplateHomedir, "/home/%U");
+  Globals.winbind_cache_time = 15;
 
   /*
    * This must be done last as it checks the value in 
@@ -2206,6 +2224,37 @@ static BOOL handle_copy(char *pszParmValue,char **ptr)
 
    free_service(&serviceTemp);
    return (bRetval);
+}
+
+/***************************************************************************
+ Handle winbind uid and gid allocation parameters.  The format of these
+ parameters is:
+
+ [global]
+
+        winbind uid = 1000-1999
+        winbind gid = 700-899
+
+ We only do simple parsing checks here.  The strings are parsed into useful
+ structures in the winbind daemon code.
+
+***************************************************************************/
+
+/* Do some simple checks on "winbind [ug]id" parameter value */
+
+static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
+{
+    int low, high;
+
+    if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2) {
+        return False;
+    }
+
+    /* Parse OK */
+
+    string_set(ptr,pszParmValue);
+
+    return True;
 }
 
 /***************************************************************************
