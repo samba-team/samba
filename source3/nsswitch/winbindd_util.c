@@ -297,14 +297,10 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
  * @brief Lookup a name in a domain from a sid.
  *
  * @param sid Security ID you want to look up.
- *
  * @param name On success, set to the name corresponding to @p sid.
- * 
  * @param dom_name On success, set to the 'domain name' corresponding to @p sid.
- * 
  * @param type On success, contains the type of name: alias, group or
  * user.
- *
  * @retval True if the name exists, in which case @p name and @p type
  * are set, otherwise False.
  **/
