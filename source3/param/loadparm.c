@@ -1208,7 +1208,7 @@ static void init_globals(void)
 	string_set(&Globals.szLogonHome, "\\\\%N\\%U");
 	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
 
-	string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
+	string_set(&Globals.szNameResolveOrder, "lmhosts wins host bcast");
 
 	Globals.bLoadPrinters = True;
 	Globals.bUseRhosts = False;
