@@ -101,6 +101,9 @@ only flag supported is M.
 A M means that this name is the default netbios name for this
 machine. This has the same affect as specifying the -n option to nmbd.
 
+NOTE: The G and S flags are now obsolete and are replaced by the
+"interfaces" and "remote announce" options in smb.conf.
+
 After startup the server waits for queries, and will answer queries to
 any name known to it. This includes all names in the netbios hosts
 file (if any) and it's own name.
