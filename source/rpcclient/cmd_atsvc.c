@@ -327,8 +327,8 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 	else if (jobid == -1) /* enumerate */
 	{
 		AT_ENUM_INFO jobs[AT_MAX_JOBS];
-		char **commands;
-		uint32 num_jobs;
+		char **commands = NULL;
+		uint32 num_jobs = 0;
 
 		if (at_enum_jobs(dest_wks, &num_jobs, jobs, &commands))
 		{
