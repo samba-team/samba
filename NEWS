@@ -1,5 +1,7 @@
 Changes in release 0.1n:
 
+ * support password quality control in v4 kadmind
+ * improvements in v4 compat kadmind
  * v6-ify the remaining programs.
  * add `ank --random-password' and `cpw --random-password' in kadmin
  * bug fixes
