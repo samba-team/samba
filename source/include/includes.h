@@ -166,6 +166,11 @@
 #include <sys/id.h>
 #endif
 
+/* AIX 4.1 and previous needs this for setpriv */
+#if defined(HAVE_SETPRIV) && defined(HAVE_SYS_PRIV_H)
+#include <sys/priv.h>
+#endif
+
 #include <errno.h>
 
 #ifdef HAVE_UTIME_H

@@ -20,6 +20,80 @@
 
 #include "includes.h"
 
+#ifdef HAVE_TRAPDOOR_UID
+
+/****************************************************************************
+ This next section of code is for trapdoor uid systems only.
+ Currently the only one known is AIX pre 4.2. JRA.
+****************************************************************************/
+
+#if defined(HAVE_SETUIDX) && defined(HAVE_SETPRIV)
+
+/****************************************************************************
+ Ensure we have privs to do what we need to.
+****************************************************************************/
+
+static void trapdoor_set_priv(void)
+{
+	/*
+	 * We can only do the priv stuff if our euid is zero I think.
+	 * I believe we only need to do this once but the older code
+	 * in 1.9.18 always did it. Attempt to do the same.
+	 */
+
+	/* AIX 3 stuff - inspired by a code fragment in wu-ftpd */
+	priv_t priv;
+
+	priv.pv_priv[0] = 0;
+	priv.pv_priv[1] = 0;
+	setpriv(PRIV_SET|PRIV_INHERITED|PRIV_EFFECTIVE|PRIV_BEQUEATH,&priv,sizeof(priv_t));
+}
+#endif /* !defined(HAVE_SETUIDX) || !defined(HAVE_SETPRIV) */
+
+/****************************************************************************
+ Set the effective uid on a trapdoor system.
+****************************************************************************/
+
+int trapdoor_set_effective_uid(uid_t uid)
+{
+#if defined(HAVE_SETUIDX) && defined(HAVE_SETPRIV)
+	trapdoor_set_priv();
+	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
+	return setuidx(ID_EFFECTIVE, uid);
+#endif /* !defined(HAVE_SETUIDX) || !defined(HAVE_SETPRIV) */
+	return -1;
+}
+
+/****************************************************************************
+ Set the real uid on a trapdoor system.
+****************************************************************************/
+
+int trapdoor_set_real_uid(uid_t uid)
+{
+#if defined(HAVE_SETUIDX) && defined(HAVE_SETPRIV)
+	trapdoor_set_priv();
+	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
+	return setuidx(ID_REAL,uid);
+#endif /* !defined(HAVE_SETUIDX) || !defined(HAVE_SETPRIV) */
+	return -1;
+}
+
+/****************************************************************************
+ Set the effective gid on a trapdoor system.
+****************************************************************************/
+
+int trapdoor_set_effective_gid(gid_t gid)
+{
+#if defined(HAVE_SETGIDX) && defined(HAVE_SETPRIV)
+	trapdoor_set_priv();
+	/* AIX3 has setgidx which is NOT a trapoor function (tridge) */
+	return setgidx(ID_EFFECTIVE,gid);
+#endif /* !defined(HAVE_SETGIDX) || !defined(HAVE_SETPRIV) */
+	return -1;
+}
+
+#endif /* HAVE_TRAPDOOR_UID */
+
 /****************************************************************************
  Gain root privilege before doing something.
 ****************************************************************************/
@@ -75,18 +149,8 @@ void gain_root_group_privilege(void)
 int set_effective_uid(uid_t uid)
 {
 #if defined(HAVE_TRAPDOOR_UID)
-#if defined(HAVE_SETUIDX)
-	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-	if (setuidx(ID_EFFECTIVE, uid) != 0) {
-		if (seteuid(uid) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-#endif
-#endif
-
-#if defined(HAVE_SETRESUID)
+	return trapdoor_set_effective_uid(uid);
+#elif defined(HAVE_SETRESUID)
     return setresuid(-1,uid,-1);
 #elif defined(HAVE_SETREUID)
 	return setreuid(-1,uid);
@@ -103,7 +167,9 @@ int set_effective_uid(uid_t uid)
 
 int set_effective_gid(gid_t gid)
 {
-#if defined(HAVE_SETRESGID)
+#if defined(HAVE_TRAPDOOR_UID)
+	return trapdoor_set_effective_gid(gid);
+#elif defined(HAVE_SETRESGID)
 	return setresgid(-1,gid,-1);
 #elif defined(HAVE_SETREGID)
 	return setregid(-1,gid);
@@ -121,14 +187,9 @@ int set_effective_gid(gid_t gid)
 int set_real_uid(uid_t uid)
 {
 #if defined(HAVE_TRAPDOOR_UID)
-#if defined(HAVE_SETUIDX)
-    /* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-    return setuidx(ID_REAL,uid);
-#endif
-#endif
-
-#if defined(HAVE_SETRESUID)
-    return setresuid(uid,-1,-1);
+	return trapdoor_set_real_uid(uid);
+#elif defined(HAVE_SETRESUID)
+	return setresuid(uid,-1,-1);
 #elif defined(HAVE_SETREUID)
     return setreuid(uid,-1);
 #else

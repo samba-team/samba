@@ -575,6 +575,9 @@
 /* Define if you have the seteuid function.  */
 #undef HAVE_SETEUID
 
+/* Define if you have the setgidx function.  */
+#undef HAVE_SETGIDX
+
 /* Define if you have the setgroups function.  */
 #undef HAVE_SETGROUPS
 
@@ -583,6 +586,9 @@
 
 /* Define if you have the setnetgrent function.  */
 #undef HAVE_SETNETGRENT
+
+/* Define if you have the setpriv function.  */
+#undef HAVE_SETPRIV
 
 /* Define if you have the setregid function.  */
 #undef HAVE_SETREGID
@@ -787,6 +793,9 @@
 
 /* Define if you have the <sys/param.h> header file.  */
 #undef HAVE_SYS_PARAM_H
+
+/* Define if you have the <sys/priv.h> header file.  */
+#undef HAVE_SYS_PRIV_H
 
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
