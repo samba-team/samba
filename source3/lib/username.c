@@ -58,6 +58,7 @@ BOOL map_username(char *user)
   char *mapfile = lp_username_map();
   char *s;
   pstring buf;
+  BOOL mapped_user = False;
 
   if (!*user)
     return False;
@@ -119,6 +120,7 @@ BOOL map_username(char *user)
 
     if (strchr(dosname,'*') || user_in_list(user,dosname)) {
       DEBUG(3,("Mapped user %s to %s\n",user,unixname));
+      mapped_user = True;
       fstrcpy(last_from,user);
       sscanf(unixname,"%s",user);
       fstrcpy(last_to,user);
@@ -132,14 +134,13 @@ BOOL map_username(char *user)
   fclose(f);
 
   /*
-   * Username wasn't mapped. Setup the last_from and last_to
-   * as an optimization so that we don't scan the file again
-   * for the same user.
+   * Setup the last_from and last_to as an optimization so 
+   * that we don't scan the file again for the same user.
    */
   fstrcpy(last_from,user);
   fstrcpy(last_to,user);
 
-  return False;
+  return mapped_user;
 }
 
 /****************************************************************************
