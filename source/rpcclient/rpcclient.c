@@ -578,7 +578,6 @@ static void usage(void)
 {
 	printf("Usage: rpcclient [options] server\n");
 
-	printf("\t-A or --authfile authfile          File containing user credentials\n");
 	printf("\t-c or --command \"command string\"   Execute semicolon separated cmds\n");
 	printf("\t-d or --debug debuglevel           Set the debuglevel\n");
 	printf("\t-l or --logfile logfile            Logfile to use instead of stdout\n");
@@ -622,19 +621,18 @@ static void usage(void)
 	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
-		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A'},
-		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's'},
-		{"nopass",	'N', POPT_ARG_NONE,	&got_pass},
-		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U'},
-		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W'},
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
-		{"help",        'h', POPT_ARG_NONE,	0, 'h'},
-		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I'},
+		POPT_AUTOHELP
+		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A', "File containing user credentials"},
+		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's', "Specify an alternative config file"},
+		{"nopass",	'N', POPT_ARG_NONE,	&got_pass, 'N', "Don't ask for a password"},
+		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U', "Set the network username"},
+		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W', "Set the domain name for user account"},
+		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds"},
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
+		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL }
 	};
-
 
 	setlinebuf(stdout);
 
