@@ -72,6 +72,33 @@ make_err_reply(krb5_data *reply, int code, const char *msg)
     krb5_data_copy(reply, er.dat, er.length);
 }
 
+static krb5_boolean
+valid_princ(krb5_context context, krb5_principal princ)
+{
+    hdb_entry *ent = db_fetch(princ);
+    if(ent == NULL)
+	return 0;
+    hdb_free_entry(context, ent);
+    free(ent);
+    return 1;
+}
+
+static hdb_entry*
+db_fetch4(const char *name, const char *instance, const char *realm)
+{
+    krb5_principal p;
+    hdb_entry *ent;
+    krb5_error_code ret;
+    
+    ret = krb5_425_conv_principal_ext(context, name, instance, realm, 
+				      valid_princ, 0, &p);
+    if(ret)
+	return NULL;
+    ent = db_fetch(p);
+    krb5_free_principal(context, p);
+    return ent;
+}
+
 #define RCHECK(X, L) if(X){make_err_reply(reply, KFAILURE, "Packet too short"); goto L;}
 
 krb5_error_code
@@ -83,7 +110,6 @@ do_version4(unsigned char *buf,
 {
     krb5_storage *sp;
     krb5_error_code ret;
-    krb5_principal client_princ = NULL, server_princ = NULL;
     hdb_entry *client = NULL, *server = NULL;
     Key *ckey, *skey, *ekey;
     int8_t pvno;
@@ -119,35 +145,14 @@ do_version4(unsigned char *buf,
 	kdc_log(0, "AS-REQ %s.%s@%s from %s for %s.%s", 
 		name, inst, realm, from, sname, sinst);
 
-	ret = krb5_425_conv_principal(context, name, inst, realm,
-				      &client_princ);
-
-	if(ret){
-	    kdc_log(0, "Converting client principal: %s", 
-		    krb5_get_err_text(context, ret));
-	    make_err_reply(reply, KFAILURE, 
-			   "Failed to convert v4 principal (client)");
-	    goto out1;
-	}
-
-	ret = krb5_425_conv_principal(context, sname, sinst, v4_realm,
-				      &server_princ);
-	if(ret){
-	    kdc_log(0, "Converting server principal: %s", 
-		    krb5_get_err_text(context, ret));
-	    make_err_reply(reply, KFAILURE, 
-			   "Failed to convert v4 principal (server)");
-	    goto out1;
-	}
-
-	client = db_fetch(client_princ);
+	client = db_fetch4(name, inst, realm);
 	if(client == NULL){
 	    kdc_log(0, "Client not found in database: %s.%s@%s", 
 		    name, inst, realm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, NULL);
 	    goto out1;
 	}
-	server = db_fetch(server_princ);
+	server = db_fetch4(sname, sinst, v4_realm);
 	if(server == NULL){
 	    kdc_log(0, "Server not found in database: %s.%s@%s", 
 		    sname, sinst, v4_realm);
@@ -317,17 +322,8 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 	
-	ret = krb5_425_conv_principal(context, ad.pname, ad.pinst, ad.prealm, 
-				      &client_princ);
-	if(ret){
-	    kdc_log(0, "Converting client principal: %s", 
-		    krb5_get_err_text(context, ret));
-	    make_err_reply(reply, KFAILURE, 
-			   "Failed to convert v4 principal (client)");
-	    goto out2;
-	}
-
-	client = db_fetch(client_princ);
+#if 0
+	client = db_fetch4(ad.pname, ad.pinst, ad.prealm);
 	if(client == NULL){
 	    char *s;
 	    s = kdc_log_msg(0, "Client not found in database: %s.%s@%s", 
@@ -336,17 +332,9 @@ do_version4(unsigned char *buf,
 	    free(s);
 	    goto out2;
 	}
+#endif
 	
-	ret = krb5_425_conv_principal(context, sname, sinst, v4_realm, 
-				      &server_princ);
-	if(ret){
-	    kdc_log(0, "Converting server principal: %s", 
-		    krb5_get_err_text(context, ret));
-	    make_err_reply(reply, KFAILURE, 
-			   "Failed to convert v4 principal (server)");
-	    goto out2;
-	}
-	server = db_fetch(server_princ);
+	server = db_fetch4(sname, sinst, v4_realm);
 	if(server == NULL){
 	    char *s;
 	    s = kdc_log_msg(0, "Server not found in database: %s.%s@%s", 
@@ -361,7 +349,7 @@ do_version4(unsigned char *buf,
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
 	    make_err_reply(reply, KDC_NULL_KEY, 
-			   "No DES key in database (server)");
+			   "Server has no DES key");
 	    goto out2;
 	}
 
@@ -369,8 +357,10 @@ do_version4(unsigned char *buf,
 	max_life = min(max_life, krb_life_to_time(kdc_time, life));
 	life = min(life, krb_time_to_life(kdc_time, max_life));
 	max_life = krb_life_to_time(0, life);
+#if 0
 	if(client->max_life)
 	    max_life = min(max_life, *client->max_life);
+#endif
 	if(server->max_life)
 	    max_life = min(max_life, *server->max_life);
 	
@@ -428,10 +418,6 @@ out:
 	free(sname);
     if(sinst)
 	free(sinst);
-    if(client_princ)
-	krb5_free_principal(context, client_princ);
-    if(server_princ)
-	krb5_free_principal(context, server_princ);
     if(client){
 	hdb_free_entry(context, client);
 	free(client);
