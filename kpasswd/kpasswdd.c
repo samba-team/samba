@@ -466,7 +466,7 @@ doit (int port)
 
     free (realm);
 
-    ret = krb5_get_all_client_addrs (&addrs);
+    ret = krb5_get_all_client_addrs (context, &addrs);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_get_all_client_addrs");
 
