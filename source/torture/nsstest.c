@@ -24,6 +24,7 @@
 static char *so_path = "/lib/libnss_winbind.so";
 static char *nss_name = "winbind";
 static int nss_errno;
+static NSS_STATUS last_error;
 
 static void *find_fn(const char *name)
 {
@@ -50,7 +51,10 @@ static void *find_fn(const char *name)
 
 static void report_nss_error(const char *who, NSS_STATUS status)
 {
-	printf("ERROR %s: NSS_STATUS=%d  %d\n", who, status, NSS_STATUS_SUCCESS);
+	last_error = status;
+
+	printf("ERROR %s: NSS_STATUS=%d  %d (nss_errno=%d)\n", 
+	       who, status, NSS_STATUS_SUCCESS, nss_errno);
 }
 
 static struct passwd *nss_getpwent(void)
@@ -136,10 +140,19 @@ static struct group *nss_getgrent(void)
 	NSS_STATUS (*_nss_getgrent_r)(struct group *, char *, 
 				      size_t , int *) = find_fn("getgrent_r");
 	static struct group grp;
-	static char buf[1000];
+	static char *buf;
+	static int buflen = 1024;
 	NSS_STATUS status;
-	
-	status = _nss_getgrent_r(&grp, buf, sizeof(buf), &nss_errno);
+
+	if (!buf) buf = malloc(buflen);
+
+again:	
+	status = _nss_getgrent_r(&grp, buf, buflen, &nss_errno);
+	if (status == NSS_STATUS_TRYAGAIN) {
+		buflen *= 2;
+		buf = realloc(buf, buflen);
+		goto again;
+	}
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
@@ -155,10 +168,18 @@ static struct group *nss_getgrnam(const char *name)
 	NSS_STATUS (*_nss_getgrnam_r)(const char *, struct group *, char *, 
 				      size_t , int *) = find_fn("getgrnam_r");
 	static struct group grp;
-	static char buf[1000];
+	static char *buf;
+	static int buflen = 1000;
 	NSS_STATUS status;
-	
-	status = _nss_getgrnam_r(name, &grp, buf, sizeof(buf), &nss_errno);
+
+	if (!buf) buf = malloc(buflen);
+again:	
+	status = _nss_getgrnam_r(name, &grp, buf, buflen, &nss_errno);
+	if (status == NSS_STATUS_TRYAGAIN) {
+		buflen *= 2;
+		buf = realloc(buf, buflen);
+		goto again;
+	}
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
@@ -174,10 +195,18 @@ static struct group *nss_getgrgid(gid_t gid)
 	NSS_STATUS (*_nss_getgrgid_r)(gid_t , struct group *, char *, 
 				      size_t , int *) = find_fn("getgrgid_r");
 	static struct group grp;
-	static char buf[1000];
+	static char *buf;
+	static int buflen = 1000;
 	NSS_STATUS status;
 	
-	status = _nss_getgrgid_r(gid, &grp, buf, sizeof(buf), &nss_errno);
+	if (!buf) buf = malloc(buflen);
+again:	
+	status = _nss_getgrgid_r(gid, &grp, buf, buflen, &nss_errno);
+	if (status == NSS_STATUS_TRYAGAIN) {
+		buflen *= 2;
+		buf = realloc(buf, buflen);
+		goto again;
+	}
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
@@ -316,6 +345,31 @@ static void nss_test_groups(void)
 	nss_endgrent();
 }
 
+static void nss_test_errors(void)
+{
+	struct passwd *pwd;
+	struct group *grp;
+
+	pwd = getpwnam("nosuchname");
+	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
+		printf("ERROR Non existant user gave error %d\n", last_error);
+	}
+
+	pwd = getpwuid(0xFFF0);
+	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
+		printf("ERROR Non existant uid gave error %d\n", last_error);
+	}
+
+	grp = getgrnam("nosuchgroup");
+	if (grp || last_error != NSS_STATUS_NOTFOUND) {
+		printf("ERROR Non existant group gave error %d\n", last_error);
+	}
+
+	grp = getgrgid(0xFFF0);
+	if (grp || last_error != NSS_STATUS_NOTFOUND) {
+		printf("ERROR Non existant gid gave error %d\n", last_error);
+	}
+}
 
  int main(int argc, char *argv[])
 {	
@@ -324,6 +378,7 @@ static void nss_test_groups(void)
 
 	nss_test_users();
 	nss_test_groups();
+	nss_test_errors();
 
 	return 0;
 }
