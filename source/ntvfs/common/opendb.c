@@ -145,40 +145,37 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
-
 /*
   determine if two odb_entry structures conflict
 */
 static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 {
-	uint32_t m1, m2;
+#define CHECK_MASK(am, sa, right, share) if (((am) & (right)) && !((sa) & (share))) return True
 
-	m1 = e1->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA);
-	m2 = e2->share_access & 
-		(NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_READ);
-
-	if ((m1 & m2) != m1) {
-		return True;
+	/* if either open involves no read.write or delete access then
+	   it can't conflict */
+	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA | STD_RIGHT_DELETE_ACCESS))) {
+		return False;
+	}
+	if (!(e2->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA | STD_RIGHT_DELETE_ACCESS))) {
+		return False;
 	}
 
-	m1 = e2->access_mask & (SA_RIGHT_FILE_WRITE_DATA | SA_RIGHT_FILE_READ_DATA);
-	m2 = e1->share_access & 
-		(NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_READ);
+	/* check the basic share access */
+	CHECK_MASK(e1->access_mask, e2->share_access, SA_RIGHT_FILE_WRITE_DATA, NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(e2->access_mask, e1->share_access, SA_RIGHT_FILE_WRITE_DATA, NTCREATEX_SHARE_ACCESS_WRITE);
 
-	if ((m1 & m2) != m1) {
-		return True;
-	}
+	CHECK_MASK(e1->access_mask, e2->share_access, SA_RIGHT_FILE_READ_DATA, NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(e2->access_mask, e1->share_access, SA_RIGHT_FILE_READ_DATA, NTCREATEX_SHARE_ACCESS_READ);
 
+	CHECK_MASK(e1->access_mask, e2->share_access, STD_RIGHT_DELETE_ACCESS, NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(e2->access_mask, e1->share_access, STD_RIGHT_DELETE_ACCESS, NTCREATEX_SHARE_ACCESS_DELETE);
+
+	/* if a delete is pending then a second open is not allowed */
 	if ((e1->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) ||
 	    (e2->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return True;
 	}
-
-	if ((e1->access_mask & STD_RIGHT_DELETE_ACCESS) &&
-	    !(e2->share_access & NTCREATEX_SHARE_ACCESS_DELETE)) {
-		return True;
-	}
-	    
 
 	return False;
 }
@@ -338,20 +335,49 @@ NTSTATUS odb_set_create_options(struct odb_lock *lck,
 
 
 /*
-  determine if a file is open
+  determine if a file can be opened with the given share_access,
+  create_options and access_mask
 */
-BOOL odb_is_open(struct odb_context *odb, DATA_BLOB *key)
+NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key, 
+		      uint32_t share_access, uint32_t create_options, 
+		      uint32_t access_mask)
 {
 	TDB_DATA dbuf;
 	TDB_DATA kbuf;
+	struct odb_entry *elist;
+	int i, count;
+	struct odb_entry e;
 
 	kbuf.dptr = key->data;
 	kbuf.dsize = key->length;
 
 	dbuf = tdb_fetch(odb->w->tdb, kbuf);
 	if (dbuf.dptr == NULL) {
-		return False;
+		return NT_STATUS_OK;
 	}
+
+	elist = (struct odb_entry *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(struct odb_entry);
+
+	if (count == 0) {
+		free(dbuf.dptr);
+		return NT_STATUS_OK;
+	}
+
+	e.server         = odb->server;
+	e.tid            = odb->tid;
+	e.fnum           = -1;
+	e.share_access   = share_access;
+	e.create_options = create_options;
+	e.access_mask    = access_mask;
+
+	for (i=0;i<count;i++) {
+		if (share_conflict(elist+i, &e)) {
+			if (dbuf.dptr) free(dbuf.dptr);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+	}
+
 	free(dbuf.dptr);
-	return True;
+	return NT_STATUS_OK;
 }
