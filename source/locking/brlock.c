@@ -592,7 +592,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type, int check_self)
+		  enum brl_type lock_type)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -617,16 +617,11 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		locks = (struct lock_struct *)dbuf.dptr;
 		count = dbuf.dsize / sizeof(*locks);
 		for (i=0; i<count; i++) {
-			if (check_self) {
-				if (brl_conflict(&locks[i], &lock))
-					goto fail;
-			} else {
-				/*
-				 * Our own locks don't conflict.
-				 */
-				if (brl_conflict_other(&locks[i], &lock))
-					goto fail;
-			}
+			/*
+			 * Our own locks don't conflict.
+			 */
+			if (brl_conflict_other(&locks[i], &lock))
+				goto fail;
 		}
 	}
 
