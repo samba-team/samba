@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <parse_units.h>
 #include "parse_bytes.h"
 
-static units bytes_units[] = {
+static struct units bytes_units[] = {
     { "gigabyte", 1024 * 1024 * 1024 },
     { "gbyte", 1024 * 1024 * 1024 },
     { "GB", 1024 * 1024 * 1024 },
@@ -52,7 +52,7 @@ static units bytes_units[] = {
     { NULL, 0 }
 };
 
-static units bytes_short_units[] = {
+static struct units bytes_short_units[] = {
     { "GB", 1024 * 1024 * 1024 },
     { "MB", 1024 * 1024 },
     { "KB", 1024 },

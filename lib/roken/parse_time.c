@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <parse_units.h>
 #include "parse_time.h"
 
-static units time_units[] = {
+static struct units time_units[] = {
     {"year",	365 * 24 * 60 * 60},
     {"month",	30 * 24 * 60 * 60},
     {"week",	7 * 24 * 60 * 60},
