@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "19 November 2002" "" ""
+.TH "SMBPASSWD" "8" "01 February 2003" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
@@ -54,6 +54,13 @@ the attributes of the user in this file to be made. When run by root,
 \fBsmbpasswd\fR accesses the local smbpasswd file 
 directly, thus enabling changes to be made even if smbd is not 
 running. 
+.PP
+\fBsmbpasswd\fR can also be used to retrieve 
+the SIDs related to previous incarnations of this server on the
+same machine, as well as set the SID of this domain. This is needed
+in those cases when the admin changes the NetBIOS or DNS name of 
+the server without realizing that doing so will change the SID of
+the server as well. See the -W and -X options below. 
 .SH "OPTIONS"
 .TP
 \fB-L\fR
@@ -154,6 +161,18 @@ different systems to change these passwords. The optional
 
 In particular, this parameter specifies the username
 used to create the machine account when invoked with -j
+.TP
+\fB-W S-1-5-21-x-y-z\fR
+This option forces the SID S-1-5-21-x-y-z to
+be the server and domain SID for the current Samba server. It
+does this by updating the appropriate keys in the secrets
+file. 
+.TP
+\fB-X server|domain\fR
+This option allows the admin to retrieve the 
+SID associated with a former servername or domain name that
+this Samba server might have used. It does this by retrieving
+the appropriate entry from the secrets file.
 .TP
 \fBNOTE:\fR
 \fBThe following options are available only when the smbpasswd command is

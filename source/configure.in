@@ -2114,6 +2114,15 @@ AC_ARG_WITH(ldapsam,
     LDFLAGS="$old_LDFLAGS"
     with_smbpasswd_sam=no
     AC_SUBST(LDAPLIBS)
+AC_CACHE_CHECK(whether ldap_set_rebind_proc takes 3 arguments, samba_cv_ldap_set_rebind_proc, [
+AC_TRY_COMPILE([
+#include <lber.h>
+#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [samba_cv_ldap_set_rebind_proc=3], [samba_cv_ldap_set_rebind_proc=2]) ])
+if test x"$samba_cv_ldap_set_rebind_proc" = x"3"; then
+   AC_DEFINE(LDAP_SET_REBIND_PROC_ARGS,3)
+else
+   AC_DEFINE(LDAP_SET_REBIND_PROC_ARGS,2)
+fi
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2121,6 +2130,7 @@ AC_ARG_WITH(ldapsam,
   esac ],
   AC_MSG_RESULT(no)
 )
+
 
 #################################################
 # check for a NISPLUS password database

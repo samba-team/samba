@@ -324,7 +324,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	  {
 		guest_user = True;
 
-        fstrcpy(pipe_user_name, lp_guestaccount(-1));
+		fstrcpy(pipe_user_name, lp_guestaccount(-1));
 		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", pipe_user_name));
 
 		smb_passwd_ptr = null_smb_passwd;
@@ -380,8 +380,8 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 		
 		unbecome_root();
 
-        /* Quit if the account was disabled. */
-        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
+		/* Quit if the account was disabled. */
+		if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
 			pdb_free_sam(sampass);
 			return False;
@@ -393,7 +393,31 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 			return False;
 		}
  
-        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
+		smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
+		
+		/*
+		 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
+		 */
+
+		p->pipe_user.uid = pdb_get_uid(sampass);
+		p->pipe_user.gid = pdb_get_gid(sampass);
+	}
+	else {
+		struct passwd *pw;
+		
+		/* setup the guest credentials; assuming that the guest 
+		   account does not have to exist in the smbpasswd file */
+
+		if ( (pw = sys_getpwnam(pipe_user_name)) == NULL ) {
+			DEBUG(0,("api_pipe_ntlmssp_verify: Invalid guest account [%s].  getpwnam() failed!\n", 
+				pipe_user_name));
+			pdb_free_sam(sampass);
+			return False;
+		}
+			
+		p->pipe_user.uid = pw->pw_uid;
+		p->pipe_user.gid = pw->pw_gid;
+		
 	}
 
 	/*
@@ -439,13 +463,6 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	fstrcpy(p->pipe_user_name, pipe_user_name);
 	fstrcpy(p->domain, domain);
 	fstrcpy(p->wks, wks);
-
-	/*
-	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
-	 */
-
-	p->pipe_user.uid = pdb_get_uid(sampass);
-	p->pipe_user.gid = pdb_get_gid(sampass);
 
 	/* Set up pipe user group membership. */
 	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);

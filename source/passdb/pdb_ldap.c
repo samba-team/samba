@@ -64,6 +64,7 @@ struct ldap_enum_info {
 };
 
 static struct ldap_enum_info global_ldap_ent;
+static pstring ldap_secret;
 
 
 extern pstring samlogon_user;
@@ -140,7 +141,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	port = lp_ldap_port();
 	
 	/* remap default port is no SSL */
-	if ( (lp_ldap_ssl() == LDAP_SSL_OFF) && (lp_ldap_port() == 636) ) {
+	if ( (lp_ldap_ssl() != LDAP_SSL_ON) && (lp_ldap_port() == 636) ) {
 		port = 389;
 	}
 
@@ -217,6 +218,81 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	return True;
 }
 
+
+/*******************************************************************
+ ldap rebind proc to rebind w/ the admin dn when following referrals
+*******************************************************************/
+
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+# if LDAP_SET_REBIND_PROC_ARGS == 3
+static int rebindproc_with_state (LDAP *ldap_struct,
+                                          LDAP_CONST char *url,
+                                          ber_tag_t request,
+                                          ber_int_t msgid, void *arg)
+# else  /* LDAP_SET_REBIND_PROC_ARGS == 2 */
+static int rebindproc (LDAP *ldap_struct,
+                                          LDAP_CONST char *url,
+                                          ber_tag_t request,
+                                          ber_int_t msgid)
+# endif  /*  LDAP_SET_REBIND_PROC_ARGS */
+{
+
+        int rc = 0;
+
+        DEBUG(2,("ldap_connect_system: Rebinding as \"%s\", API: %d, PROC_ARGS: %d\n",
+                  lp_ldap_admin_dn(), LDAP_API_VERSION, LDAP_SET_REBIND_PROC_ARGS));
+
+        /** @TODO Should we be doing something to check what servers we rebind to?
+            Could we get a referral to a machine that we don't want to give our
+            username and password to? */
+
+	if ( ( rc = ldap_simple_bind_s( ldap_struct, lp_ldap_admin_dn(), ldap_secret ) ) == LDAP_SUCCESS )
+	{
+        	DEBUG( 2, ( "Rebind successful\n" ) );
+	}
+	else {
+		DEBUG( 2, ( "Rebind failed: %s\n", ldap_err2string( rc ) ) );
+	}
+	return rc;
+}
+#else /* other Vendor or LDAP_API_VERSION  */
+# if LDAP_SET_REBIND_PROC_ARGS ==3 
+static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
+                                   int *methodp, int freeit, void *arg)
+
+# else  /* LDAP_SET_REBIND_PROC_ARGS == 2 */
+static int rebindproc (LDAP *ldap_struct, char **whop, char **credp,
+                       int *method, int freeit )
+# endif
+{
+    register char   *to_clear = *credp;
+
+
+	if (freeit) {
+                SAFE_FREE(*whop);
+                memset(*credp, '\0', strlen(*credp));
+                SAFE_FREE(*credp);
+	} else {
+                *whop = strdup(ldap_state->bind_dn);
+                if (!*whop) {
+                        return LDAP_NO_MEMORY;
+                }
+                DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n",
+                          whop));
+
+                *credp = strdup(ldap_secret);
+                if (!*credp) {
+                        SAFE_FREE(*whop);
+                        return LDAP_NO_MEMORY;
+                }
+                *methodp = LDAP_AUTH_SIMPLE;
+	}
+	return LDAP_SUCCESS;
+}
+#endif
+
+
+
 /*******************************************************************
  connect to the ldap server under system privilege.
 ******************************************************************/
@@ -224,7 +300,6 @@ static BOOL ldap_connect_system(LDAP * ldap_struct)
 {
 	int rc;
 	static BOOL got_pw = False;
-	static pstring ldap_secret;
 
 	/* get the password if we don't have it already */
 	if (!got_pw && !(got_pw=fetch_ldap_pw(lp_ldap_admin_dn(), ldap_secret, sizeof(pstring)))) 
@@ -236,10 +311,16 @@ static BOOL ldap_connect_system(LDAP * ldap_struct)
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
-	   
-	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
+
+	DEBUG(0,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
 		lp_ldap_admin_dn()));
-		
+	   
+#if LDAP_SET_REBIND_PROC_ARGS == 2 
+        ldap_set_rebind_proc(ldap_struct, rebindproc);
+#else /* LDAP_SET_REBIND_PROC_ARGS == 3 */
+        ldap_set_rebind_proc(ldap_struct, rebindproc_with_state, NULL);
+#endif
+
 	if ((rc = ldap_simple_bind_s(ldap_struct, lp_ldap_admin_dn(), 
 		ldap_secret)) != LDAP_SUCCESS)
 	{

@@ -1284,11 +1284,15 @@ routine to free a namearray.
 
 void free_namearray(name_compare_entry *name_array)
 {
-  if(name_array == NULL)
-    return;
+	int i;
 
-  SAFE_FREE(name_array->name);
-  SAFE_FREE(name_array);
+	if(name_array == NULL)
+		return;
+
+	for(i=0; name_array[i].name!=NULL; i++)
+		SAFE_FREE(name_array[i].name);
+
+	SAFE_FREE(name_array);
 }
 
 /****************************************************************************
@@ -2123,7 +2127,6 @@ void data_blob_free(DATA_BLOB *d)
 		if (d->free) {
 			(d->free)(d);
 		}
-		ZERO_STRUCTP(d);
 	}
 }
 

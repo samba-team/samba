@@ -1,12 +1,58 @@
-            WHAT'S NEW IN Samba 2.2.7a - 10th December 2002
-            ===============================================
+            What's new in Samba 2.2.8pre1 - 3rd February 2003
+            =================================================
 
-This is the latest stable release of Samba. This is the version 
-that all production Samba servers should be running for all current
-bug-fixes.  The primary reason for this release is to correct problems
-with large file (>2Gb) support.   Please see the "Changes..." section
-for more details.
+This is a non-production, preview release of the upcoming Samba 
+2.2.8 distribution.  This preview release is for testing purposes 
+only and should not be installed in production environments. 
 
+The purpose of this preview release to make numerous bugs fixes 
+for Samba 2.2.7a available to the Samba community.  Please report
+testing results of this release to the Samba mailing list 
+<samba@samba.org>.
+
+
+Changes since 2.2.7a
+---------------------
+
+See the cvs log for SAMBA_2_2 for more details
+
+1)  Fix seg fault in smbpasswd when specifying the new password
+    as a command line argument
+2)  Correct 64-but file sizes issues with smbtar and smbclient
+3)  Add batch mode option to pdbedit
+4)  Add protection in nmbd against malformed reply packets
+5)  Fix bug with sendfile profiling support in smbstatus output
+6)  Correct bug in "hide unreadable" smb.conf parameter that 
+    resulted in incorrect directory listings 
+7)  Fix bug in group enumerationg in winbindd
+8)  Correct build issues with libsmbclient on Solaris
+9)  Fix memory leak and bad pointer dereference in password
+    changing code in smbd
+10) Fix for changing attributes on a file truncate
+11) Ensure smbd process count never gets to -1 if limiting number 
+    of processes
+12) Ensure we return disk full by default on short writes
+13) Don't delete jobs submitted after the lpq time
+14) Fix reference count bug where smbd's would not terminate 
+    with no open resources
+15) Performance fix when using quota support on HP-UX
+16) Fixes for --with-ldapsam
+    * Default to port 389 when "ldap ssl != on"
+    * add support for rebinding to the master directory server
+      for password changes when "ldap server" points to a read-only 
+      slave
+17) Add -W and -X comand line flags to smbpasswd for extracting and
+    setting the machine/domain SID in secrets.tdb.  See the 
+    smbpasswd(8) man page for details.
+18) Added (c) Luke Howard to winbind_nss_solaris.c for coded 
+    obtained from PADL's nss_ldap library.
+19) Fix bug in samr_dispinfo query in winbindd
+20) Fix segfault in NTLMSSP password changing code for 
+    guest connections
+21) Correct pstring/fstring mismatches
+22) Send level II oplock break requests synchronously to prevent 
+    condition where one smbd would continually lock a share entry
+    in locking.tdb
 
 
 Changes since 2.2.7

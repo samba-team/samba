@@ -369,6 +369,7 @@ BOOL process_local_message(char *buffer, int buf_size)
 
 		case OPLOCK_BREAK_CMD:
 		case LEVEL_II_OPLOCK_BREAK_CMD:
+		case ASYNC_LEVEL_II_OPLOCK_BREAK_CMD:
 
 			/* Ensure that the msg length is correct. */
 			if(msg_len != OPLOCK_BREAK_MSG_LEN) {
@@ -439,14 +440,14 @@ oplocks. Returning success.\n"));
 	}
 
 	/* 
-	 * Do the appropriate reply - none in the kernel or level II case.
+	 * Do the appropriate reply - none in the kernel or async level II case.
 	 */
 
-	if(SVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET) == OPLOCK_BREAK_CMD) {
+	if(break_cmd_type == OPLOCK_BREAK_CMD || break_cmd_type == LEVEL_II_OPLOCK_BREAK_CMD) {
 		struct sockaddr_in toaddr;
 
 		/* Send the message back after OR'ing in the 'REPLY' bit. */
-		SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD | CMD_REPLY);
+		SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,break_cmd_type | CMD_REPLY);
 
 		memset((char *)&toaddr,'\0',sizeof(toaddr));
 		toaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -901,7 +902,7 @@ Send an oplock break message to another smbd process. If the oplock is held
 by the local smbd then call the oplock break function directly.
 ****************************************************************************/
 
-BOOL request_oplock_break(share_mode_entry *share_entry)
+BOOL request_oplock_break(share_mode_entry *share_entry, BOOL async)
 {
 	char op_break_msg[OPLOCK_BREAK_MSG_LEN];
 	struct sockaddr_in addr_out;
@@ -911,6 +912,7 @@ BOOL request_oplock_break(share_mode_entry *share_entry)
 	SMB_DEV_T dev = share_entry->dev;
 	SMB_INO_T inode = share_entry->inode;
 	unsigned long file_id = share_entry->share_file_id;
+	uint16 break_cmd_type;
 
 	if(pid == share_entry->pid) {
 		/* We are breaking our own oplock, make sure it's us. */
@@ -941,11 +943,12 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 	/* We need to send a OPLOCK_BREAK_CMD message to the port in the share mode entry. */
 
 	if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
-		SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,LEVEL_II_OPLOCK_BREAK_CMD);
+		break_cmd_type = async ? ASYNC_LEVEL_II_OPLOCK_BREAK_CMD : LEVEL_II_OPLOCK_BREAK_CMD;
 	} else {
-		SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD);
+		break_cmd_type = OPLOCK_BREAK_CMD;
 	}
 
+	SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,break_cmd_type);
 	memcpy(op_break_msg+OPLOCK_BREAK_PID_OFFSET,(char *)&pid,sizeof(pid));
 	memcpy(op_break_msg+OPLOCK_BREAK_DEV_OFFSET,(char *)&dev,sizeof(dev));
 	memcpy(op_break_msg+OPLOCK_BREAK_INODE_OFFSET,(char *)&inode,sizeof(inode));
@@ -958,7 +961,7 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 	addr_out.sin_family = AF_INET;
    
 	if( DEBUGLVL( 3 ) ) {
-		dbgtext( "request_oplock_break: sending a oplock break message to " );
+		dbgtext( "request_oplock_break: sending a %s oplock break message to ", async ? "asynchronous" : "synchronous" );
 		dbgtext( "pid %d on port %d ", (int)share_entry->pid, share_entry->op_port );
 		dbgtext( "for dev = %x, inode = %.0f, file_id = %lu\n",
             (unsigned int)dev, (double)inode, file_id );
@@ -971,19 +974,19 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 			dbgtext( "break message to pid %d ", (int)share_entry->pid );
 			dbgtext( "on port %d ", share_entry->op_port );
 			dbgtext( "for dev = %x, inode = %.0f, file_id = %lu\n",
-          (unsigned int)dev, (double)inode, file_id );
+				(unsigned int)dev, (double)inode, file_id );
 			dbgtext( "Error was %s\n", strerror(errno) );
 		}
 		return False;
 	}
 
 	/*
-	 * If we just sent a message to a level II oplock share entry then
+	 * If we just sent a message to a level II oplock share entry in async mode then
 	 * we are done and may return.
 	 */
 
-	if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
-		DEBUG(3,("request_oplock_break: sent break message to level II entry.\n"));
+	if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type) && async) {
+		DEBUG(3,("request_oplock_break: sent async break message to level II entry.\n"));
 		return True;
 	}
 
@@ -1038,10 +1041,10 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 		reply_msg_start = &op_break_reply[OPBRK_CMD_HEADER_LEN];
 
 		/*
-		 * Test to see if this is the reply we are awaiting.
+		 * Test to see if this is the reply we are awaiting (ie. the one we sent with the CMD_REPLY flag OR'ed in).
 		 */
 		if((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & CMD_REPLY) &&
-			((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == OPLOCK_BREAK_CMD) &&
+			((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == break_cmd_type) &&
 			(reply_from_port == share_entry->op_port) && 
 			(memcmp(&reply_msg_start[OPLOCK_BREAK_PID_OFFSET], &op_break_msg[OPLOCK_BREAK_PID_OFFSET],
 				OPLOCK_BREAK_MSG_LEN - OPLOCK_BREAK_PID_OFFSET) == 0)) {
@@ -1184,8 +1187,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			 * message.
 			 */
 
-			DEBUG(10,("release_level_2_oplocks_on_change: breaking remote oplock.\n"));
-			request_oplock_break(share_entry);
+			DEBUG(10,("release_level_2_oplocks_on_change: breaking remote oplock (async).\n"));
+			request_oplock_break(share_entry, True);
 		}
 	}
 

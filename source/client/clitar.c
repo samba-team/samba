@@ -45,10 +45,10 @@ typedef struct file_info_struct file_info2;
 
 struct file_info_struct
 {
-  size_t size;
+  SMB_BIG_UINT size;
   uint16 mode;
-  int uid;
-  int gid;
+  uid_t uid;
+  gid_t gid;
   /* These times are normally kept in GMT */
   time_t mtime;
   time_t atime;
@@ -118,18 +118,18 @@ extern uint16 cnum;
 extern BOOL readbraw_supported;
 extern int max_xmit;
 extern pstring cur_dir;
-extern int get_total_time_ms;
-extern int get_total_size;
+extern unsigned int get_total_time_ms;
+extern off_t get_total_size;
 extern int Protocol;
 
 int blocksize=20;
 int tarhandle;
 
-static void writetarheader(int f,  char *aname, int size, time_t mtime,
+static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
 			   char *amode, unsigned char ftype);
 static void do_atar(char *rname,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
-static void oct_it(long value, int ndgs, char *p);
+static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
 static void fixtarname(char *tptr, char *fp, int l);
 static int dotarbuf(int f, char *b, int n);
 static void dozerobuf(int f, int n);
@@ -168,14 +168,14 @@ static char *string_create_s(int size)
 /****************************************************************************
 Write a tar header to buffer
 ****************************************************************************/
-static void writetarheader(int f,  char *aname, int size, time_t mtime,
+static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
 			   char *amode, unsigned char ftype)
 {
   union hblock hb;
   int i, chk, l;
   char *jp;
 
-  DEBUG(5, ("WriteTarHdr, Type = %c, Size= %i, Name = %s\n", ftype, size, aname));
+  DEBUG(5, ("WriteTarHdr, Type = %c, Size = %.0f, Name = %s\n", ftype, (double)size, aname));
 
   memset(hb.dummy, 0, sizeof(hb.dummy));
   
@@ -207,17 +207,17 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 
   hb.dbuf.name[NAMSIZ-1]='\0';
   safe_strcpy(hb.dbuf.mode, amode, strlen(amode));
-  oct_it(0L, 8, hb.dbuf.uid);
-  oct_it(0L, 8, hb.dbuf.gid);
-  oct_it((long) size, 13, hb.dbuf.size);
-  oct_it((long) mtime, 13, hb.dbuf.mtime);
+  oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.uid);
+  oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.gid);
+  oct_it((SMB_BIG_UINT) size, 13, hb.dbuf.size);
+  oct_it((SMB_BIG_UINT) mtime, 13, hb.dbuf.mtime);
   memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
   memset(hb.dbuf.linkname, 0, NAMSIZ);
   hb.dbuf.linkflag=ftype;
   
   for (chk=0, i=sizeof(hb.dummy), jp=hb.dummy; --i>=0;) chk+=(0xFF & *jp++);
 
-  oct_it((long) chk, 8, hb.dbuf.chksum);
+  oct_it((SMB_BIG_UINT) chk, 8, hb.dbuf.chksum);
   hb.dbuf.chksum[6] = '\0';
 
   (void) dotarbuf(f, hb.dummy, sizeof(hb.dummy));
@@ -450,7 +450,7 @@ static void fixtarname(char *tptr, char *fp, int l)
 /****************************************************************************
 Convert from decimal to octal string
 ****************************************************************************/
-static void oct_it (long value, int ndgs, char *p)
+static void oct_it (SMB_BIG_UINT value, int ndgs, char *p)
 {
   /* Converts long to octal string, pads with leading zeros */
 
@@ -621,7 +621,7 @@ append one remote file to the tar file
 static void do_atar(char *rname,char *lname,file_info *finfo1)
 {
   int fnum;
-  uint32 nread=0;
+  SMB_BIG_UINT nread=0;
   char ftype;
   file_info2 finfo;
   BOOL close_done = False;
@@ -643,6 +643,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.mtime = finfo1 -> mtime;
     finfo.atime = finfo1 -> atime;
     finfo.ctime = finfo1 -> ctime;
+    finfo.name  = finfo1 -> name;
   }
   else {
     finfo.size  = def_finfo.size;
@@ -652,13 +653,14 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.mtime = def_finfo.mtime;
     finfo.atime = def_finfo.atime;
     finfo.ctime = def_finfo.ctime;
+    finfo.name  = def_finfo.name;
   }
 
   if (dry_run)
     {
-      DEBUG(3,("skipping file %s of size %d bytes\n",
+      DEBUG(3,("skipping file %s of size %12.0f bytes\n",
 	       finfo.name,
-	       (int)finfo.size));
+	       (double)finfo.size));
       shallitime=0;
       ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
       ntarf++;
@@ -709,9 +711,9 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     }
   else
     {
-      DEBUG(3,("getting file %s of size %d bytes as a tar file %s",
+      DEBUG(3,("getting file %s of size %.0f bytes as a tar file %s",
 	       finfo.name,
-	       (int)finfo.size,
+	       (double)finfo.size,
 	       lname));
       
       /* write a tar header, don't bother with mode - just set to 100644 */
@@ -719,7 +721,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
       while (nread < finfo.size && !close_done)	{
 	      
-	      DEBUG(3,("nread=%d\n",nread));
+	      DEBUG(3,("nread=%.0f\n",(double)nread));
 	      
 	      datalen = cli_read(cli, fnum, data, nread, read_size);
 	      
@@ -736,7 +738,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
 		  if (nread > finfo.size) {
 			datalen -= nread - finfo.size;
-			DEBUG(0,("File size change - truncating %s to %d bytes\n", finfo.name, (int)finfo.size));
+			DEBUG(0,("File size change - truncating %s to %.0f bytes\n", finfo.name, (double)finfo.size));
 		  }
 
 	      /* add received bits of file to buffer - dotarbuf will
@@ -756,7 +758,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
       /* pad tar file with zero's if we couldn't get entire file */
       if (nread < finfo.size) {
-	      DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", (int)finfo.size, (int)nread));
+	      DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%.0f\n", (double)finfo.size, (double)nread));
 	      if (padit(data, sizeof(data), finfo.size - nread))
 		      DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
       }
@@ -789,8 +791,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
       if (tar_noisy)
 	{
-	  DEBUG(0, ("%10d (%7.1f kb/s) %s\n",
-	       (int)finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
+	  DEBUG(0, ("%12.0f (%7.1f kb/s) %s\n",
+	       (double)finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
                finfo.name));
 	}
 
@@ -1868,7 +1870,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
       {
 	if (!dry_run) {
-	  DEBUG(0,("Output is /dev/null, assuming dry_run"));
+	  DEBUG(0,("Output is /dev/null, assuming dry_run\n"));
 	  dry_run = True;
 	}
 	tarhandle=-1;

@@ -30,10 +30,15 @@ Issue a single SMBread and don't wait for a reply.
 static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
+	BOOL bigoffset = False;
+
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,10,0,True);
+	if ((SMB_BIG_UINT)offset >> 32) 
+		bigoffset = True;
+
+	set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -45,6 +50,16 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+
+#ifdef SMB_LARGE_OFF_T
+        /*
+	 * We only want to do the following if we understand large offsets
+	 * otherwise the compiler is likely to get upset with us
+	 */
+	if (bigoffset)
+		SIVAL(cli->outbuf,smb_vwv10,(offset>>32) & 0xffffffff);
+
+#endif /* SMB_LARGE_OFF_T */
 
 	return cli_send_smb(cli);
 }
@@ -223,6 +238,7 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 			    size_t size, int i)
 {
 	char *p;
+	BOOL bigoffset = False;
 
 	if (size > cli->bufsize) {
 		cli->outbuf = realloc(cli->outbuf, size + 1024);
@@ -235,7 +251,10 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	if (size > 0xFFFF)
+	if ((SMB_BIG_UINT)offset >> 32) 
+		bigoffset = True;
+
+	if (bigoffset)
 		set_message(cli->outbuf,14,0,True);
 	else
 		set_message(cli->outbuf,12,0,True);
@@ -248,15 +267,27 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SIVAL(cli->outbuf,smb_vwv5,(mode & 0x0008) ? 0xFFFFFFFF : 0);
+	SIVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
+	/*
+	 * THe following is still wrong ...
+	 */
 	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
 	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
-	
+
+#ifdef SMB_LARGE_OFF_T
+        /*
+	 * We only want to do the following if we understand large offsets
+	 * otherwise the compiler is likely to get upset with us
+	 */
+	if (bigoffset)
+		SIVAL(cli->outbuf,smb_vwv12,(offset>>32) & 0xffffffff);
+#endif /* SMB_LARGE_OFF_T */
+
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
 	memcpy(p, buf, size);
 	cli_setup_bcc(cli, p+size);

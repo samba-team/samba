@@ -99,7 +99,9 @@ static void usage(void)
 	printf("  -t DOMAIN            change trust account password on domain\n");
 	printf("  -S DOMAIN            Retrieve the domain SID for DOMAIN\n");
 	printf("  -R ORDER             name resolve order\n");
-
+	printf("  -W S-1-5-...	       Write the SID S-1-5-... to the secrets file\n");
+	printf("  -X SERVER|DOMAIN     Extract SID for SERVER or DOMAIN from the secrets file\n");
+	
 	exit(1);
 }
 
@@ -114,10 +116,12 @@ static void set_line_buffering(FILE *f)
 static void process_options(int argc, char **argv, BOOL amroot)
 {
 	int ch;
+	DOM_SID dom_sid;
+	fstring sid_str;
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnj:t:r:sw:R:D:U:LS")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehmnj:t:r:sw:R:D:U:LSW:X:")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = amroot = True;
@@ -208,8 +212,60 @@ static void process_options(int argc, char **argv, BOOL amroot)
 				       strlen(user_password));
 			}
 
-			break;
 		}
+		break;
+
+		case 'W': /* Take the SID on the command line and make it ours */
+			if (!lp_load(servicesf,True,False,False)) {
+				fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+					servicesf);
+				exit(1);
+			}
+
+			if (!string_to_sid(&dom_sid, optarg)) {
+				fprintf(stderr, "Invalid SID: %s\n", optarg);
+				exit(1);
+			}
+		  	if (!secrets_init()) {
+				fprintf(stderr, "Unable to open secrets database!\n");
+				exit(1);	
+		  	}
+			if (!secrets_store_domain_sid(global_myname, &dom_sid)) {
+				fprintf(stderr, "Unable to write the new SID %s as the server SID for %s\n", optarg, global_myname);
+				exit(1);
+			}
+			/*
+			 * Now, write it to the workgroup as well, to make
+			 * things consistent. This is a risk however.
+			 */
+			if (!secrets_store_domain_sid(lp_workgroup(), &dom_sid)) {
+				fprintf(stderr, "Unable to write the new SID %s as the domain SID for %s\n", optarg, lp_workgroup());
+				exit(1);
+			}
+
+	        	exit(0);	
+		break;
+	
+		case 'X': /* Extract the SID for a domain from secrets */
+			if (!lp_load(servicesf,True,False,False)) {
+				fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+					servicesf);
+				exit(1);
+			}
+		  if (!secrets_init()) {
+			fprintf(stderr, "Unable to open secrets database!\n");
+			exit(1);
+		  }
+		  if (secrets_fetch_domain_sid(optarg, &dom_sid)) {
+		    sid_to_string(sid_str, &dom_sid);
+		    printf("SID for domain %s is: %s\n", optarg, sid_str);
+		    exit(0);
+		  }
+		  else {
+		    fprintf(stderr, "Could not retrieve SID for domain: %s\n", optarg);
+		    exit(1);
+		  }
+		  break;
 		case 'h':
 		default:
 bad_args:
@@ -906,6 +962,7 @@ static int process_root(void)
 	/* 
 	 * get the domain sid from a PDC and store it in secrets.tdb 
 	 * Used for Samba PDC/BDC installations.
+	 * 
 	 */
 	 
 	if (local_flags & LOCAL_GET_DOM_SID) {
@@ -1041,6 +1098,8 @@ static int process_nonroot(void)
 {
 	struct passwd  *pwd = NULL;
 	int result = 0;
+	char *new_pw = NULL;
+	char *old_pw = NULL;
 
 	if (!user_name[0]) {
 		pwd = sys_getpwuid(getuid());
@@ -1065,19 +1124,21 @@ static int process_nonroot(void)
 	}
 
 	if (remote_machine != NULL) {
-		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
+		old_pw = get_pass("Old SMB password:",stdin_passwd_get);
 	}
 	
 	if (!new_passwd) {
-		new_passwd = prompt_for_new_password(stdin_passwd_get);
+		new_pw = prompt_for_new_password(stdin_passwd_get);
 	}
+	else
+		new_pw = strdup_x(new_passwd);
 	
-	if (!new_passwd) {
+	if (!new_pw) {
 		fprintf(stderr, "Unable to get new password.\n");
 		exit(1);
 	}
 
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, 0)) {
+	if (!password_change(remote_machine, user_name, old_pw, new_pw, 0)) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		result = 1;
 		goto done;
@@ -1086,8 +1147,8 @@ static int process_nonroot(void)
 	printf("Password changed for user %s\n", user_name);
 
  done:
-	safe_free(old_passwd);
-	safe_free(new_passwd);
+	SAFE_FREE(old_pw);
+	SAFE_FREE(new_pw);
 
 	return result;
 }

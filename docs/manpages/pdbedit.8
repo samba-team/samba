@@ -8,7 +8,7 @@
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
 .sp
-\fBpdbedit\fR [ \fB-l\fR ]  [ \fB-v\fR ]  [ \fB-w\fR ]  [ \fB-u username\fR ]  [ \fB-f fullname\fR ]  [ \fB-h homedir\fR ]  [ \fB-d drive\fR ]  [ \fB-s script\fR ]  [ \fB-p profile\fR ]  [ \fB-a\fR ]  [ \fB-m\fR ]  [ \fB-x\fR ]  [ \fB-i file\fR ] 
+\fBpdbedit\fR [ \fB-l\fR ]  [ \fB-v\fR ]  [ \fB-w\fR ]  [ \fB-u username\fR ]  [ \fB-f fullname\fR ]  [ \fB-h homedir\fR ]  [ \fB-d drive\fR ]  [ \fB-s script\fR ]  [ \fB-p profile\fR ]  [ \fB-a\fR ]  [ \fB-b\fR ]  [ \fB-m\fR ]  [ \fB-x\fR ]  [ \fB-i file\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Samba suite.
@@ -143,6 +143,13 @@ Example: \fBpdbedit -a -u sorce\fR
 new password:
 		retype new password
 .sp
+.fi
+.TP
+\fB-b\fR
+This option causes pdbedit to read the password from standard
+input, rather than from \fI/dev/tty\fR.
+
+Example: \fBecho -e "secret\\nsecret\\n" | pdbedit -a -b -u sorce\fR
 .fi
 .TP
 \fB-m\fR

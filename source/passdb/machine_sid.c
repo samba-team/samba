@@ -158,7 +158,7 @@ BOOL pdb_generate_sam_sid(void)
 	/* we don't have the SID in secrets.tdb, we will need to
 		generate one and save it */
 	generate_random_sid(&global_sam_sid);
-
+	DEBUG(10, ("Generated random SID ...\n"));
 	if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
 		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
 		return False;

@@ -54,7 +54,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	int i;
+	int i, loop_count = 0;
 
 	*num_entries = 0;
 	*info = NULL;
@@ -78,7 +78,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	do {
 		SAM_DISPINFO_CTR ctr;
 		SAM_DISPINFO_1 info1;
-		uint32 count = 0, start=i;
+		uint32 count = 0, start=i, max_entries, max_size;
 		int j;
 		TALLOC_CTX *ctx2;
 
@@ -90,10 +90,15 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			goto done;
 		}
 		
+		get_query_dispinfo_params(
+			loop_count, &max_entries, &max_size);
+
 		/* Query display info level 1 */
-		result = cli_samr_query_dispinfo(hnd->cli, ctx2,
-						 &dom_pol, &start, 1,
-						 &count, 0xFFFF, &ctr);
+		result = cli_samr_query_dispinfo(
+			hnd->cli, ctx2, &dom_pol, &start, 1, &count, 
+			max_entries, max_size, &ctr);
+
+		loop_count++;
 
 		if (!NT_STATUS_IS_OK(result) && 
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) break;
@@ -146,6 +151,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	CLI_POLICY_HND *hnd;
 	POLICY_HND dom_pol;
 	NTSTATUS result;
+	uint32 start = 0;
 
 	*num_entries = 0;
 	*info = NULL;
@@ -161,11 +167,12 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	do {
 		struct acct_info *info2 = NULL;
-		uint32 count = 0, start = *num_entries;
+		uint32 count = 0;
 		TALLOC_CTX *mem_ctx2;
 
 		mem_ctx2 = talloc_init_named("enum_dom_groups[rpc]");
 
+		/* This call updates 'start' */
 		result = cli_samr_enum_dom_groups(
 			hnd->cli, mem_ctx2, &dom_pol, &start,
 			0xFFFF, /* buffer size? */ &info2, &count);

@@ -590,7 +590,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
 
-				opb_ret = request_oplock_break(share_entry);
+				opb_ret = request_oplock_break(share_entry, False);
 
 				/* Now relock. */
 				lock_share_entry(conn, dev, inode);
@@ -685,7 +685,8 @@ dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fn
 	return num_share_modes;
 }
 
-static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode, mode_t new_mode)
+static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode,
+		mode_t new_mode, mode_t *returned_mode)
 {
 	uint32 old_dos_mode, new_dos_mode;
 	SMB_STRUCT_STAT sbuf;
@@ -698,14 +699,25 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 	sbuf.st_mode = new_mode;
 	new_dos_mode = dos_mode(conn, path, &sbuf);
 
+	/*
+	 * We only set returned mode to be the same as new_mode if
+	 * the file attributes need to be changed.
+	 */
+
+	*returned_mode = (mode_t)0;
+
 	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
 	if (lp_map_system(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && !(new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
 			return False;
+		if  (!(old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && (new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
+			*returned_mode = new_mode;
 	}
 	if (lp_map_hidden(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && !(new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
 			return False;
+		if (!(old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && (new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
+			*returned_mode = new_mode;
 	}
 	return True;
 }
@@ -763,6 +775,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	files_struct *fsp = NULL;
 	int open_mode=0;
 	uint16 port = 0;
+	mode_t new_mode = (mode_t)0;
 
 	if (conn->printer) {
 		/* printers are handled completely differently. Most
@@ -822,7 +835,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	/* We only care about matching attributes on file exists and truncate. */
 	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
-		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode)) {
+		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode, &new_mode)) {
 			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
 						fname, psbuf->st_mode, mode ));
 			file_free(fsp);
@@ -1091,11 +1104,36 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 */
 
 	if (!file_existed && !def_acl && (conn->vfs_ops.fchmod_acl != NULL)) {
+
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+
 		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
 			errno = saved_errno; /* Ignore ENOSYS */
+
+	} else if (new_mode) {
+
+		int ret = -1;
+
+		/* Attributes need changing. File already existed. */
+
+		if (conn->vfs_ops.fchmod_acl != NULL) {
+			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+			ret = conn->vfs_ops.fchmod_acl(fsp, fsp->fd, new_mode);
+
+			if (ret == -1 && errno == ENOSYS) {
+				errno = saved_errno; /* Ignore ENOSYS */
+			} else {
+				DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
+					fname, (int)new_mode));
+				ret = 0; /* Don't do the fchmod below. */
+			}
+		}
+
+		if ((ret == -1) && (conn->vfs_ops.fchmod(fsp, fsp->fd, new_mode) == -1))
+			DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
+				fname, (int)new_mode));
 	}
-		
+
 	unlock_share_entry_fsp(fsp);
 
 	conn->num_files_open++;
@@ -1284,118 +1322,61 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 
 	return fsp;
 }
-#if 0
 
-Old code - I have replaced with correct desired_access checking. JRA.
+/****************************************************************************
+ Open a pseudo-file (no locking checks - a 'stat' open).
+****************************************************************************/
 
-/*******************************************************************
- Check if the share mode on a file allows it to be deleted or unlinked.
- Return True if sharing doesn't prevent the operation.
-********************************************************************/
-
-BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
+files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	int i;
-	int ret = False;
-	share_mode_entry *old_shares = 0;
-	int num_share_modes;
-	SMB_STRUCT_STAT sbuf;
-	pid_t pid = sys_getpid();
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
+	extern struct current_user current_user;
+	files_struct *fsp = NULL;
 
-	if (vfs_stat(conn,fname,&sbuf) == -1)
-		return(True);
+	if (!VALID_STAT(*psbuf))
+		return NULL;
 
-	dev = sbuf.st_dev;
-	inode = sbuf.st_ino;
+	/* Can't 'stat' open directories. */
+	if(S_ISDIR(psbuf->st_mode))
+		return NULL;
 
-	lock_share_entry(conn, dev, inode);
-	num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+	fsp = file_new(conn);
+	if(!fsp)
+		return NULL;
+
+	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
+
+	DEBUG(5,("open_file_stat: 'opening' file %s\n", fname));
 
 	/*
-	 * Check if the share modes will give us access.
+	 * Setup the files_struct for it.
 	 */
-
-	if(num_share_modes != 0) {
-		BOOL broke_oplock;
-
-		do {
-
-			broke_oplock = False;
-			for(i = 0; i < num_share_modes; i++) {
-				share_mode_entry *share_entry = &old_shares[i];
-
-				/* 
-				 * Break oplocks before checking share modes. See comment in
-				 * open_file_shared for details. 
-				 * Check if someone has an oplock on this file. If so we must 
-				 * break it before continuing. 
-				 */
-				if(BATCH_OPLOCK_TYPE(share_entry->op_type)) {
-
-					DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
-
-					/* Oplock break.... */
-					unlock_share_entry(conn, dev, inode);
-
-					if(request_oplock_break(share_entry) == False) {
-						DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
-
-						SAFE_FREE(old_shares);
-						return False;
-					}
-					lock_share_entry(conn, dev, inode);
-					broke_oplock = True;
-					break;
-				}
-
-				/* 
-				 * If this is a delete request and ALLOW_SHARE_DELETE is set then allow 
-				 * this to proceed. This takes precedence over share modes.
-				 */
-
-				if(!rename_op && GET_ALLOW_SHARE_DELETE(share_entry->share_mode))
-					continue;
-
-				/* 
-				 * Someone else has a share lock on it, check to see 
-				 * if we can too.
-				 */
-       			 	if ((GET_DENY_MODE(share_entry->share_mode) != DENY_DOS) || 
-							(share_entry->pid != pid))
-					goto free_and_exit;
 	
-			} /* end for */
-
-			if(broke_oplock) {
-				SAFE_FREE(old_shares);
-				num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
-			}
-		} while(broke_oplock);
-	}
-
-	/*
-	 * XXXX exactly what share mode combinations should be allowed for
-	 * deleting/renaming?
-	 */
-
+	fsp->mode = psbuf->st_mode;
 	/* 
-	 * If we got here then either there were no share modes or
-	 * all share modes were DENY_DOS and the pid == getpid() or
-	 * delete access was requested and all share modes had the
-	 * ALLOW_SHARE_DELETE bit set (takes precedence over other
-	 * share modes).
+	 * Don't store dev or inode, we don't want any iterator
+	 * to see this.
 	 */
+	fsp->inode = (SMB_INO_T)0;
+	fsp->dev = (SMB_DEV_T)0;
+	fsp->size = psbuf->st_size;
+	fsp->vuid = current_user.vuid;
+	fsp->pos = -1;
+	fsp->can_lock = False;
+	fsp->can_read = False;
+	fsp->can_write = False;
+	fsp->share_mode = 0;
+	fsp->desired_access = 0;
+	fsp->print_file = False;
+	fsp->modified = False;
+	fsp->oplock_type = NO_OPLOCK;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->is_directory = False;
+	fsp->is_stat = True;
+	fsp->directory_delete_on_close = False;
+	fsp->conn = conn;
+	string_set(&fsp->fsp_name,fname);
 
-	ret = True;
+	conn->num_files_open++;
 
-free_and_exit:
-
-	unlock_share_entry(conn, dev, inode);
-	SAFE_FREE(old_shares);
-	return(ret);
+	return fsp;
 }
-#endif

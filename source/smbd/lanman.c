@@ -1151,7 +1151,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
     if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
       /* this allows us to cope with an old nmbd */
-      pstrcpy(s->domain,global_myworkgroup); 
+      fstrcpy(s->domain,global_myworkgroup); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -1794,7 +1794,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
         SSVAL(*rparam,0,NERR_badpass);
     }
 
-    pdb_free_sam(sampass);
+    if (sampass)
+      pdb_free_sam(sampass);
   }
 
   /*

@@ -35,7 +35,7 @@ directory and do an ls, the UNIX security solution is to
 change the UNIX file permissions on the users home directories
 such that the cd and ls would be denied.
 
-Samba tries very had not to second guess the UNIX administrators
+Samba tries very hard not to second guess the UNIX administrators
 security policies, and trusts the UNIX admin to set
 the policies and permissions he or she desires.
 
