@@ -1,5 +1,18 @@
 2004-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_expand_hostname.3: krb5_expand_hostname_realms
+	result should be free with krb5_free_host_realm drop
+	krb5_get_host_realm text
+
+	* lib/krb5/krb5_set_default_realm.3: krb5_get_host_realm result
+	should be free with krb5_free_host_realm
+	
+	* lib/krb5/krb5_get_in_cred.3: document krb5_free_kdc_rep
+	
+	* lib/krb5/krb5_get_init_creds.3: remove dup krb5_get_init_creds
+	
+	* lib/krb5/krb5_auth_context.3: sort, add krb5_free_authenticator
+	
 	* lib/krb5/Makefile.am: man_MANS += krb5_rd_error
 	
 	* lib/krb5/krb5_rd_error.3: krb5_rd_error and friends
