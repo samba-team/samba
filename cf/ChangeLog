@@ -1,3 +1,13 @@
+2003-03-12  Love  <lha@stacken.kth.se>
+
+	* check-compile-et.m4: check if the output of compile_et needs
+	initialize_error_table_r
+
+2003-02-17  Love  <lha@stacken.kth.se>
+
+	* check-var.m4: add a check if the variable is avaible when we
+	include the headerfiles
+
 2002-12-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: res_nsearch takes 6 parameters; spotted by Howard
