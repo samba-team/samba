@@ -92,7 +92,7 @@ $(HTMLDIR)/index.html: htmldocs.html
 $(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css  xslt/html-chunk.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
-	-mkdir $(@D)/images
+	mkdir -p $(@D)/images
 	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $(@D)
 
 # Single large HTML files
@@ -175,7 +175,7 @@ $(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
 	$(FOP) -q -d $< -pdf $@
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
-	-mkdir -p $@/images
+	mkdir -p $@/images
 	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $@
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
