@@ -426,6 +426,7 @@ fi
 %{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/lang/*/include/*.html
 %{prefix}/share/swat/using_samba/*
+%attr(755,root,root) %{prefix}/lib/samba/*.msg
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers

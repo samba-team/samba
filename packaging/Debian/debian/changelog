@@ -1,8 +1,14 @@
-samba (3.0.0beta2+3.0.0rc4-1) unstable; urgency=low
+samba (3.0.0-1) unstable; urgency=low
 
   * Local build.
 
- -- Debian User <user@somewhere.com>  Thu, 11 Sep 2003 16:15:27 -0400
+ -- Debian User <somebody@somewhere.com>  Tue, 23 Sep 2003 21:50:26 -0400
+
+samba (3.0.0beta2+3.0.0rc4-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Eloy A. Paris <peloy@debian.org>  Sat, 13 Sep 2003 08:47:56 -0400
 
 samba (3.0.0beta2+3.0.0rc3-1) unstable; urgency=low
 
