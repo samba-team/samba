@@ -161,5 +161,5 @@ fi
 tarargs=${tarargs}${blocksizearg}${newerarg}
 
 eval $SMBCLIENT "'\\\\$server\\$service'" "'$password'" -U "'$username'" \
--E -N $log -D "'$cdcmd'" ${clientargs} \
+-E $log -D "'$cdcmd'" ${clientargs} \
 -T${tarcmd}${tarargs} $blocksize $newer $tapefile '${1+"$@"}' $verbose
