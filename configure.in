@@ -234,6 +234,13 @@ AC_STRUCT_TM
 dnl Checks for header files.
 AC_HEADER_STDC
 
+if test "$berkeley_db"; then
+  AC_CHECK_HEADERS([				\
+	db.h					\
+	db_185.h				\
+  ])
+fi
+
 AC_CHECK_HEADERS([\
 	arpa/ftp.h				\
 	arpa/inet.h				\
@@ -243,8 +250,6 @@ AC_CHECK_HEADERS([\
 	bsdsetjmp.h				\
 	crypt.h					\
 	curses.h				\
-	db.h					\
-	db_185.h				\
 	dbm.h					\
 	dirent.h				\
 	dlfcn.h					\
@@ -721,7 +726,7 @@ dnl
 
 dnl el_init
 
-AC_FIND_FUNC_NO_LIBS(el_init, edit)
+AC_FIND_FUNC_NO_LIBS(el_init, edit, [], [], [$LIB_tgetent])
 if test "$ac_cv_func_el_init" = yes ; then
 	AC_CACHE_CHECK(for four argument el_init, ac_cv_func_el_init_four,[
 		AC_TRY_COMPILE([#include <stdio.h>
@@ -861,6 +866,7 @@ AC_OUTPUT(Makefile 			\
 	appl/push/Makefile		\
 	appl/rsh/Makefile		\
 	appl/su/Makefile		\
+	appl/xnlock/Makefile		\
 	appl/telnet/Makefile		\
 	appl/telnet/libtelnet/Makefile	\
 	appl/telnet/telnet/Makefile	\
