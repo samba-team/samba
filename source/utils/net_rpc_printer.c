@@ -1288,6 +1288,194 @@ done:
 
 }
 
+/** 
+ * Publish print-queues with args-wrapper
+ *
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ * @param action
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_printer_publish_internals_args(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+						   int argc, const char **argv, uint32 action)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	uint32 i, num_printers; 
+	uint32 level = 7;
+	pstring printername, sharename;
+	PRINTER_INFO_CTR ctr, ctr_pub;
+	POLICY_HND hnd;
+	BOOL got_hnd = False;
+	WERROR result;
+	char *action_str;
+
+	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr))
+		return nt_status;
+
+	for (i = 0; i < num_printers; i++) {
+
+		/* do some initialization */
+		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
+			sizeof(printername), -1, STR_TERMINATE);
+		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
+			sizeof(sharename), -1, STR_TERMINATE);
+
+		/* open printer handle */
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd)) 
+			goto done;
+
+		got_hnd = True;
+
+		/* check for existing dst printer */
+		if (!net_spoolss_getprinter(cli, mem_ctx, &hnd, level, &ctr_pub)) 
+			goto done;
+
+		/* check action and set string */
+		switch (action) {
+		case SPOOL_DS_PUBLISH:
+			action_str = "published";
+			break;
+		case SPOOL_DS_UPDATE:
+			action_str = "updated";
+			break;
+		case SPOOL_DS_UNPUBLISH:
+			action_str = "unpublished";
+			break;
+		default:
+			printf("unkown action: %d\n", action);
+			break;
+		}
+
+		ctr_pub.printers_7->action = action;
+
+		result = cli_spoolss_setprinter(cli, mem_ctx, &hnd, level, &ctr_pub, 0);
+		if (!W_ERROR_IS_OK(result) && (W_ERROR_V(result) =! W_ERROR_V(WERR_IO_PENDING))) {
+			printf("cannot set printer-info: %s\n", dos_errstr(result));
+			goto done;
+		}
+
+		printf("successfully %s printer %s in Active Directory\n", action_str, sharename);
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (got_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+	
+	return nt_status;
+}
+
+NTSTATUS rpc_printer_publish_publish_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					       int argc, const char **argv)
+{
+	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_PUBLISH);
+}
+
+NTSTATUS rpc_printer_publish_unpublish_internals(const DOM_SID *domain_sid, const char *domain_name, 
+						 struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+						 int argc, const char **argv)
+{
+	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_UNPUBLISH);
+}
+
+NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					      struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					      int argc, const char **argv)
+{
+	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_UPDATE);
+}
+
+/** 
+ * List print-queues w.r.t. thei publishing
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passed through. 
+ *
+ * @param domain_sid The domain sid aquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					    struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	uint32 i, num_printers; 
+	uint32 level = 7;
+	pstring printername, sharename;
+	pstring guid;
+	PRINTER_INFO_CTR ctr, ctr_pub;
+	POLICY_HND hnd;
+	BOOL got_hnd = False;
+	int state;
+
+	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr))
+		return nt_status;
+
+	for (i = 0; i < num_printers; i++) {
+
+		ZERO_STRUCT(ctr_pub);
+
+		/* do some initialization */
+		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
+			sizeof(printername), -1, STR_TERMINATE);
+		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
+			sizeof(sharename), -1, STR_TERMINATE);
+
+		/* open printer handle */
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd)) 
+			goto done;
+
+		got_hnd = True;
+
+		/* check for existing dst printer */
+		if (!net_spoolss_getprinter(cli, mem_ctx, &hnd, level, &ctr_pub)) 
+			goto done;
+
+		rpcstr_pull(guid, ctr_pub.printers_7->guid.buffer, sizeof(guid), -1, STR_TERMINATE);
+
+		state = ctr_pub.printers_7->action;
+		switch (state) {
+			case SPOOL_DS_PUBLISH:
+				printf("printer [%s] is published", sharename);
+				if (opt_verbose)
+					printf(", guid: %s", guid);
+				printf("\n");
+				break;
+			case SPOOL_DS_UNPUBLISH:
+				printf("printer [%s] is unpublished\n", sharename);
+				break;
+			case SPOOL_DS_UPDATE:
+				printf("printer [%s] is currently updating\n", sharename);
+				break;
+			default:
+				printf("unkown state: %d\n", state);
+				break;
+		}
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (got_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+	
+	return nt_status;
+}
 
 /** 
  * Migrate Printer-ACLs from a source server to the destination server
