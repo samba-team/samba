@@ -68,7 +68,7 @@ krb5_parse_name(krb5_context context,
 		const char *name,
 		krb5_principal *principal)
 {
-
+    krb5_error_code ret;
     general_string *comp;
     general_string realm;
     int ncomp;
@@ -93,9 +93,15 @@ krb5_parse_name(krb5_context context,
 	    ncomp++;
     }
     comp = calloc(ncomp, sizeof(*comp));
+    if (comp == NULL)
+	return ENOMEM;
   
     n = 0;
     start = q = p = s = strdup(name);
+    if (start == NULL) {
+	free (comp);
+	return ENOMEM;
+    }
     while(*p){
 	c = *p++;
 	if(c == '\\'){
@@ -110,15 +116,14 @@ krb5_parse_name(krb5_context context,
 		c = '\0';
 	}else if(c == '/' || c == '@'){
 	    if(got_realm){
-	    exit:
-		while(n>0){
-		    free(comp[--n]);
-		}
-		free(comp);
-		free(s);
-		return KRB5_PARSE_MALFORMED;
+		ret = KRB5_PARSE_MALFORMED;
+		goto exit;
 	    }else{
 		comp[n] = malloc(q - start + 1);
+		if (comp[n] == NULL) {
+		    ret = ENOMEM;
+		    goto exit;
+		}
 		strncpy(comp[n], start, q - start);
 		comp[n][q - start] = 0;
 		n++;
@@ -128,29 +133,52 @@ krb5_parse_name(krb5_context context,
 	    start = q;
 	    continue;
 	}
-	if(got_realm && (c == ':' || c == '/' || c == '\0'))
+	if(got_realm && (c == ':' || c == '/' || c == '\0')) {
+	    ret = KRB5_PARSE_MALFORMED;
 	    goto exit;
+	}
 	*q++ = c;
     }
     if(got_realm){
 	realm = malloc(q - start + 1);
+	if (realm == NULL) {
+	    ret = ENOMEM;
+	    goto exit;
+	}
 	strncpy(realm, start, q - start);
 	realm[q - start] = 0;
     }else{
-	krb5_get_default_realm (context, &realm);
+	ret = krb5_get_default_realm (context, &realm);
+	if (ret)
+	    goto exit;
 
 	comp[n] = malloc(q - start + 1);
+	if (comp[n] == NULL) {
+	    ret = ENOMEM;
+	    goto exit;
+	}
 	strncpy(comp[n], start, q - start);
 	comp[n][q - start] = 0;
 	n++;
     }
     *principal = malloc(sizeof(**principal));
+    if (*principal == NULL) {
+	ret = ENOMEM;
+	goto exit;
+    }
     (*principal)->name.name_type = KRB5_NT_PRINCIPAL;
     (*principal)->name.name_string.val = comp;
     princ_num_comp(*principal) = n;
     (*principal)->realm = realm;
     free(s);
     return 0;
+exit:
+    while(n>0){
+	free(comp[--n]);
+    }
+    free(comp);
+    free(s);
+    return ret;
 }
 
 static const char quotable_chars[] = "\n\t\b\\/@";
@@ -403,7 +431,7 @@ krb5_make_principal(krb5_context context,
     krb5_error_code ret;
     krb5_realm r = NULL;
     va_list ap;
-    if(realm == NULL){
+    if(realm == NULL) {
 	ret = krb5_get_default_realm(context, &r);
 	if(ret)
 	    return ret;
