@@ -37,6 +37,9 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 	pstring printdb_path;
 	BOOL done_become_root = False;
 
+	if (printername == NULL)
+		return NULL;
+
 	for (p = print_db_head, last_entry = print_db_head; p; p = p->next) {
 		/* Ensure the list terminates... JRA. */
 		SMB_ASSERT(p->next != print_db_head);
