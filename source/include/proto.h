@@ -720,6 +720,7 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_valid(SMB_ACL_T acl_d);
 int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *path);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
 int sys_acl_free_qualifier(void *qual) ;
@@ -741,6 +742,7 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_valid(SMB_ACL_T acl_d);
 int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *name);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
 int sys_acl_free_qualifier(void *qual) ;
@@ -782,6 +784,7 @@ int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 int sys_acl_valid( SMB_ACL_T theacl );
 int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T posix_acl);
@@ -1078,7 +1081,6 @@ ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL send_null_session_msg(int fd);
 BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
@@ -3776,7 +3778,6 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_spoolss_nt.c  */
 
-void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len);
 uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
