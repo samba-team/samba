@@ -34,6 +34,7 @@ create_user_edit_dialog (void)
 	GtkWidget *label5;
 	GtkWidget *label6;
 	GtkWidget *label7;
+	int i;
 	GtkWidget *label8;
 	GtkWidget *chk_mustchange;
 	GtkWidget *entry_fullname;
@@ -295,35 +296,17 @@ create_user_edit_dialog (void)
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
-	combo_homedrive = gtk_combo_box_entry_new_text ();
+	combo_homedrive = gtk_combo_new();
 	gtk_widget_show (combo_homedrive);
 	gtk_table_attach (GTK_TABLE (table3), combo_homedrive, 1, 2, 1, 2,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (GTK_FILL), 0, 0);
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "C:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "D:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "E:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "F:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "G:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "H:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "I:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "J:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "K");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "L:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "M:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "N:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "O:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "P:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "Q:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "R:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "S:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "T:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "U:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "V:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "W:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "X:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "Y:");
-	gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), "Z:");
+	for(i = 'C'; i <= 'Z'; i++)
+	{
+		char drive[3];
+		snprintf(drive, 3, "%c:", i);
+		gtk_combo_box_append_text (GTK_COMBO_BOX (combo_homedrive), drive);
+	}
 
 	label11 = gtk_label_new ("Home Directory");
 	gtk_widget_show (label11);
