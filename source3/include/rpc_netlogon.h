@@ -192,7 +192,7 @@ typedef struct net_q_trust_dom_info
 /* NET_R_TRUST_DOM_LIST - response to LSA Trusted Domains */
 typedef struct net_r_trust_dom_info
 {
-	UNISTR2 uni_trust_dom_name[MAX_TRUST_DOMS];
+	BUFFER2 uni_trust_dom_name;
 
 	uint32 status; /* return code */
 

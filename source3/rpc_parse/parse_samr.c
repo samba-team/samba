@@ -250,7 +250,7 @@ BOOL make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status)
 
 	DEBUG(5,("samr_make_r_unknown_2c\n"));
 
-	q_u->unknown_0 = 0x00160000;
+	q_u->unknown_0 = 0x00150000;
 	q_u->unknown_1 = 0x00000000;
 	q_u->status    = status;
 
@@ -5716,6 +5716,7 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 
 	if (!ps->io)
 	{
+		/* writing */
 		free_samr_q_set_userinfo(q_u);
 	}
 

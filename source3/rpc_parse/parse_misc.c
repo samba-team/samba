@@ -672,6 +672,36 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 /*******************************************************************
 creates a BUFFER2 structure.
 ********************************************************************/
+BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num)
+{
+	int i;
+	char *dest = (char*)str->buffer;
+	size_t max_len = sizeof(str->buffer)-1;
+
+	ZERO_STRUCTP(str);
+
+	str->buf_max_len = 0;
+	str->undoc       = 0;
+
+	for (i = 0; i < num && max_len > 0; i++)
+	{
+		size_t len = buf[i] != NULL ? strlen(buf[i]) : 0;
+
+		str->buf_max_len += len * 2;
+		str->buf_len     += len * 2;
+
+		ascii_to_unibuf(dest, buf[i], max_len);
+	
+		dest += len * 2 + 2;
+		max_len -= len * 2 + 2;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+creates a BUFFER2 structure.
+********************************************************************/
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);

@@ -296,28 +296,18 @@ makes an NET_R_TRUST_DOM_LIST structure.
 BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 			uint32 num_doms, char **dom_name)
 {
-	uint32 i = 0;
-
 	if (r_t == NULL) return False;
 
 	DEBUG(5,("make_r_trust_dom\n"));
 
-	for (i = 0; i < MAX_TRUST_DOMS; i++)
+	make_buffer2_multi(&r_t->uni_trust_dom_name,
+			dom_name, num_doms);
+	if (num_doms == 0)
 	{
-		r_t->uni_trust_dom_name[i].uni_str_len = 0;
-		r_t->uni_trust_dom_name[i].uni_max_len = 0;
+		r_t->uni_trust_dom_name.buf_max_len = 0x2;
+		r_t->uni_trust_dom_name.buf_len = 0x2;
 	}
-	if (num_doms > MAX_TRUST_DOMS) num_doms = MAX_TRUST_DOMS;
-
-	for (i = 0; i < num_doms; i++)
-	{
-		fstring domain_name;
-		fstrcpy(domain_name, dom_name[i]);
-		strupper(domain_name);
-		make_unistr2(&(r_t->uni_trust_dom_name[i]), domain_name, strlen(domain_name)+1);
-		/* the use of UNISTR2 here is non-standard. */
-		r_t->uni_trust_dom_name[i].undoc = 0x1;
-	}
+	r_t->uni_trust_dom_name.undoc = 0x1;
 	
 	r_t->status = 0;
 
@@ -329,17 +319,13 @@ reads or writes an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
 {
-	uint32 i;
 	if (r_t == NULL) return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_trust_dom");
 	depth++;
 
-	for (i = 0; i < MAX_TRUST_DOMS; i++)
-	{
-		if (r_t->uni_trust_dom_name[i].uni_str_len == 0) break;
-		smb_io_unistr2("", &(r_t->uni_trust_dom_name[i]), True, ps, depth);
-	}
+	smb_io_buffer2("", &r_t->uni_trust_dom_name, True, ps, depth);
+	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_t->status));
 

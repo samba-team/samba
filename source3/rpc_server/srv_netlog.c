@@ -102,7 +102,7 @@ static void net_reply_trust_dom_list(NET_Q_TRUST_DOM_LIST *q_t, prs_struct *rdat
 	/* store the response in the SMB stream */
 	net_io_r_trust_dom("", &r_t, rdata, 0);
 
-	DEBUG(6,("net_reply_trust_dom_listlogon_ctrl2: %d\n", __LINE__));
+	DEBUG(6,("net_reply_trust_dom_list: %d\n", __LINE__));
 
 }
 

@@ -2090,6 +2090,11 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	static uchar lm_hash[16];
 	pstring new_pw;
 
+	if (id23 == NULL)
+	{
+		DEBUG(5, ("set_user_info_23: NULL id23\n"));
+		return False;
+	}
 	if (pwd == NULL)
 	{
 		return False;
@@ -2155,6 +2160,12 @@ static void samr_reply_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 	DEBUG(5,("samr_reply_set_userinfo: rid:0x%x\n", rid));
 
 	/* ok!  user info levels (there are lots: see MSDEV help), off we go... */
+	if (status == 0x0 && q_u->info.id == NULL)
+	{
+		DEBUG(5,("samr_reply_set_userinfo: NULL info level\n"));
+		status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+	}
+
 	if (status == 0x0)
 	{
 		switch (q_u->switch_value)
@@ -2170,7 +2181,13 @@ static void samr_reply_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 			case 23:
 			{
 				SAM_USER_INFO_23 *id23 = q_u->info.id23;
-				SamOEMhash(id23->pass, user_sess_key, True);
+				SamOEMhash(id23->pass, user_sess_key, 1);
+#if DEBUG_PASSWORD
+				DEBUG(100,("pass buff:\n"));
+				dump_data(100, id23->pass, sizeof(id23->pass));
+#endif
+				dbgflush();
+
 				status = set_user_info_23(id23, rid) ? 0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 				break;
 			}
@@ -2663,7 +2680,7 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 		pstring msg_str;
 
 		if (!local_password_change(user_name, True,
-		          q_u->acb_info, 0xffff,
+		          q_u->acb_info | ACB_DISABLED, 0xffff,
 		          NULL,
 		          err_str, sizeof(err_str),
 		          msg_str, sizeof(msg_str)))
