@@ -75,6 +75,17 @@ static BOOL fname_equal(char *name1, char *name2)
 ****************************************************************************/
 static BOOL mangled_equal(char *name1, char *name2)
 {
+#if 1
+	pstring tmpname;
+	if (is_8_3(name2, True)) {
+		return False;
+	}
+	
+	pstrcpy(tmpname, name2);
+	mangle_name_83(tmpname);
+
+	return strequal(name1, tmpname);
+#else	
 	char *tmpname;
 	BOOL ret = False;
 
@@ -86,6 +97,8 @@ static BOOL mangled_equal(char *name1, char *name2)
 		SAFE_FREE(tmpname);
 	}
 	return ret;
+#endif
+	
 }
 
 
@@ -116,7 +129,7 @@ stat struct will be filled with zeros (and this can be detected by checking
 for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
-BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
+BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_component, 
                   BOOL *bad_path, SMB_STRUCT_STAT *pst)
 {
   SMB_STRUCT_STAT st;
