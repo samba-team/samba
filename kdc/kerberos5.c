@@ -850,9 +850,6 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 				  &et.key);
     et.crealm = tgt->crealm;
     et.cname = tgt->cname;
-    /* do cross realm stuff */
-    et.transited = tgt->transited;
-	    
 	    
     ek.key = et.key;
     /* MIT must have at least one last_req */
