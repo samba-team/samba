@@ -570,7 +570,7 @@ static struct functable net_func[] = {
 			}
 			break;
 		default:
-			d_printf("\nInvalid option %c (%d)\n", (char)opt, opt);
+			d_printf("\nInvalid option\n");
 			net_help(argc, argv);
 			exit(1);
 		}
