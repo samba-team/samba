@@ -269,8 +269,6 @@ AC_CHECK_HEADERS([\
 	netinet/in6_machtypes.h			\
 	netinet/in6_var.h			\
 	netinet/in_systm.h			\
-	netinet/ip.h				\
-	netinet/tcp.h				\
 	netinet6/in6.h				\
 	netinfo/ni.h				\
 	paths.h					\
@@ -329,6 +327,9 @@ AC_CHECK_HEADERS([\
 	utmp.h					\
 	utmpx.h					\
 ])
+
+CHECK_NETINET_IP_AND_TCP
+
 
 AC_ARG_ENABLE(netinfo,
 [  --enable-netinfo      enable netinfo for configuration lookup])
