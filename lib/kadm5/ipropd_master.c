@@ -591,6 +591,9 @@ static int help_flag;
 static char *keytab_str = "HDB:";
 static char *database;
 static char *config_file;
+#ifdef HAVE_DAEMON
+static int detach_from_console = 0;
+#endif
 
 static struct getargs args[] = {
     { "config-file", 'c', arg_string, &config_file },
@@ -601,6 +604,10 @@ static struct getargs args[] = {
     { "slave-stats-file", 0, arg_string, &slave_stats_file, "file"},
     { "time-missing", 0, arg_string, &slave_time_missing, "time"},
     { "time-gone", 0, arg_string, &slave_time_gone, "time"},
+#ifdef HAVE_DAEMON
+    { "detach", 0, arg_flag, &detach_from_console, 
+      "detach from console" },
+#endif
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -650,6 +657,10 @@ main(int argc, char **argv)
     if (time_before_missing < 0)
 	krb5_errx (context, 1, "couldn't parse time: %s", slave_time_missing);
 
+#ifdef HAVE_DAEMON
+    if (detach_from_console)
+	daemon(0, 0);
+#endif
     pidfile (NULL);
     krb5_openlog (context, "ipropd-master", &log_facility);
     krb5_set_warn_dest(context, log_facility);
