@@ -414,7 +414,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 		return -1;
 	}
 	
-	d_printf("Updated mapping entry for %s\n", ntgroup);
+	d_printf("Updated mapping entry for %s\n", map.nt_name);
 
 	return 0;
 }
