@@ -378,7 +378,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 		return result;
 	}
 
-	if (!cli_nt_session_open (cli, PIPE_NETLOGON)) {
+	if (!cli_nt_session_open (cli, PI_NETLOGON)) {
 		DEBUG(0, ("Could not initialize netlogon pipe!\n"));
 		goto done;
 	}

@@ -353,10 +353,10 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "SRVSVC" },
 
-	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PIPE_SRVSVC, "Server query info", "" },
-	{ "netshareenum", cmd_srvsvc_net_share_enum, PIPE_SRVSVC, "Enumerate shares", "" },
-	{ "netfileenum", cmd_srvsvc_net_file_enum, PIPE_SRVSVC, "Enumerate open files", "" },
-	{ "netremotetod", cmd_srvsvc_net_remote_tod, PIPE_SRVSVC, "Fetch remote time of day", "" },
+	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PI_SRVSVC, "Server query info", "" },
+	{ "netshareenum", cmd_srvsvc_net_share_enum, PI_SRVSVC, "Enumerate shares", "" },
+	{ "netfileenum", cmd_srvsvc_net_file_enum, PI_SRVSVC, "Enumerate open files", "" },
+	{ "netremotetod", cmd_srvsvc_net_remote_tod, PI_SRVSVC, "Fetch remote time of day", "" },
 
 	{ NULL }
 };
