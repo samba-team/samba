@@ -1,3 +1,3 @@
 #!/bin/sh
-CFLAGS="-g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD"; export CFLAGS
-./configure $*
+CFLAGS="-g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD" \
+  `dirname $0`/configure "$@"
