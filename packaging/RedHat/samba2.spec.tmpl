@@ -38,6 +38,9 @@ for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %changelog
+* Thu Jul 22 1999 <tridge@samba.org>
+ - removed smbwrapper and add smbmount
+
 * Sun Apr 25 1999 John H Terpstra <jht@samba.org>
  - added smbsh.1 man page
 
@@ -106,8 +109,8 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %build
 cd source
-./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-pam
-make all smbwrapper
+./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-automount --with-quotas --with-pam --with-smbmount
+make all
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -125,7 +128,7 @@ mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_smbcodepage make_printerdef rpcclient smbsh smbwrapper.so
+      make_smbcodepage make_printerdef rpcclient smbmount smbmnt
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
 done
@@ -141,7 +144,7 @@ install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
 
 # Install level 1 man pages
-for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1 smbsh.1
+for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1
 do
 install -m644 docs/manpages/$i $RPM_BUILD_ROOT/usr/man/man1
 done
@@ -281,8 +284,8 @@ fi
 %attr(-,root,root) /usr/bin/smbtar
 %attr(-,root,root) /usr/bin/smbprint
 %attr(-,root,root) /usr/bin/smbadduser
-%attr(0755,root,root) /usr/bin/smbsh
-%attr(0755,root,root) /usr/bin/smbwrapper.so
+%attr(-,root,root) /usr/bin/smbmount
+%attr(-,root,root) /usr/bin/smbmnt
 %attr(-,root,root) /usr/share/swat/help/welcome.html
 %attr(-,root,root) /usr/share/swat/help/DOMAIN_MEMBER.html
 %attr(-,root,root) /usr/share/swat/help/NT_Security.html
@@ -293,7 +296,6 @@ fi
 %attr(-,root,root) /usr/share/swat/help/samba.7.html
 %attr(-,root,root) /usr/share/swat/help/smb.conf.5.html
 %attr(-,root,root) /usr/share/swat/help/smbclient.1.html
-%attr(-,root,root) /usr/share/swat/help/smbsh.1.html
 %attr(-,root,root) /usr/share/swat/help/smbd.8.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.5.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.8.html
@@ -334,7 +336,6 @@ fi
 %attr(-,root,root) /usr/man/man1/make_smbcodepage.1
 %attr(-,root,root) /usr/man/man1/smbrun.1
 %attr(-,root,root) /usr/man/man1/smbtar.1
-%attr(-,root,root) /usr/man/man1/smbsh.1
 %attr(-,root,root) /usr/man/man1/testparm.1
 %attr(-,root,root) /usr/man/man1/testprns.1
 %attr(-,root,root) /usr/man/man1/nmblookup.1
