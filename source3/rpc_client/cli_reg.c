@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
+BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char *key_name,
 				POLICY_HND *reg_hnd)
 {
 	BOOL res = True;
@@ -61,7 +61,7 @@ BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
 	{
 		case HKEY_LOCAL_MACHINE:
 		{
-			res = res ? do_reg_open_hklm(cli,
+			res = res ? do_reg_open_hklm(cli, fnum,
 					0x84E0, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -69,7 +69,7 @@ BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
 	
 		case HKEY_USERS:
 		{
-			res = res ? do_reg_open_hku(cli,
+			res = res ? do_reg_open_hku(cli, fnum,
 					0x84E0, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -87,7 +87,7 @@ BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_open_hklm(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -110,7 +110,7 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	reg_io_q_open_hklm("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_OPEN_HKLM, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_HKLM, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKLM r_o;
 		BOOL p;
@@ -144,7 +144,7 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 /****************************************************************************
 do a REG Open HKU
 ****************************************************************************/
-BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_open_hku(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -167,7 +167,7 @@ BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	reg_io_q_open_hku("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_OPEN_HKU, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_HKU, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKU r_o;
 		BOOL p;
@@ -203,7 +203,7 @@ do a REG Unknown 0xB command.  sent after a create key or create value.
 this might be some sort of "sync" or "refresh" command, sent after
 modification of the registry...
 ****************************************************************************/
-BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd)
+BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -225,7 +225,7 @@ BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd)
 	reg_io_q_flush_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_FLUSH_KEY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_FLUSH_KEY, &buf, &rbuf))
 	{
 		REG_R_FLUSH_KEY r_o;
 		BOOL p;
@@ -257,7 +257,7 @@ BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd)
 /****************************************************************************
 do a REG Query Key
 ****************************************************************************/
-BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
@@ -284,7 +284,7 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_query_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_QUERY_KEY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_QUERY_KEY, &buf, &rbuf))
 	{
 		REG_R_QUERY_KEY r_o;
 		BOOL p;
@@ -327,7 +327,7 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Unknown 1A
 ****************************************************************************/
-BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
+BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -349,7 +349,7 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
 	reg_io_q_unk_1a("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_UNK_1A, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_UNK_1A, &buf, &rbuf))
 	{
 		REG_R_UNK_1A r_o;
 		BOOL p;
@@ -382,7 +382,7 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *type, uint32 *unk_0, uint32 *unk_1)
 {
 	prs_struct rbuf;
@@ -405,7 +405,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_info("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_INFO, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_INFO, &buf, &rbuf))
 	{
 		REG_R_INFO r_o;
 		BOOL p;
@@ -440,7 +440,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Set Key Security 
 ****************************************************************************/
-BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 sec_buf_size, SEC_DESC *sec_buf)
 {
 	prs_struct rbuf;
@@ -463,7 +463,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_set_key_sec("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_SET_KEY_SEC, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_SET_KEY_SEC, &buf, &rbuf))
 	{
 		REG_R_SET_KEY_SEC r_o;
 		BOOL p;
@@ -488,7 +488,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Query Key Security 
 ****************************************************************************/
-BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
 {
 	prs_struct rbuf;
@@ -511,7 +511,7 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_get_key_sec("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_GET_KEY_SEC, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_GET_KEY_SEC, &buf, &rbuf))
 	{
 		REG_R_GET_KEY_SEC r_o;
 		BOOL p;
@@ -557,7 +557,7 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Delete Value
 ****************************************************************************/
-BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name)
+BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *val_name)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -579,7 +579,7 @@ BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name)
 	reg_io_q_delete_val("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_DELETE_VALUE, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_DELETE_VALUE, &buf, &rbuf))
 	{
 		REG_R_DELETE_VALUE r_o;
 		BOOL p;
@@ -611,7 +611,7 @@ BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name)
 /****************************************************************************
 do a REG Delete Key
 ****************************************************************************/
-BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name)
+BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *key_name)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -633,7 +633,7 @@ BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name)
 	reg_io_q_delete_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_DELETE_KEY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_DELETE_KEY, &buf, &rbuf))
 	{
 		REG_R_DELETE_KEY r_o;
 		BOOL p;
@@ -665,7 +665,7 @@ BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name)
 /****************************************************************************
 do a REG Create Key
 ****************************************************************************/
-BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				POLICY_HND *key)
@@ -704,7 +704,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_create_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_CREATE_KEY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_CREATE_KEY, &buf, &rbuf))
 	{
 		REG_R_CREATE_KEY r_o;
 		BOOL p;
@@ -739,7 +739,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Enum Key
 ****************************************************************************/
-BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				int key_index, char *key_name,
 				uint32 *unk_1, uint32 *unk_2,
 				time_t *mod_time)
@@ -764,7 +764,7 @@ BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_enum_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_ENUM_KEY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_ENUM_KEY, &buf, &rbuf))
 	{
 		REG_R_ENUM_KEY r_o;
 		BOOL p;
@@ -800,7 +800,7 @@ BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Create Value
 ****************************************************************************/
-BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_create_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *val_name, uint32 type, BUFFER3 *data)
 {
 	prs_struct rbuf;
@@ -823,7 +823,7 @@ BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_create_val("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_CREATE_VALUE, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_CREATE_VALUE, &buf, &rbuf))
 	{
 		REG_R_CREATE_VALUE r_o;
 		BOOL p;
@@ -855,7 +855,7 @@ BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Enum Value
 ****************************************************************************/
-BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				int val_index, int max_valnamelen, int max_valbufsize,
 				fstring val_name,
 				uint32 *val_type, BUFFER2 *value)
@@ -880,7 +880,7 @@ BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_enum_val("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_ENUM_VALUE, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_ENUM_VALUE, &buf, &rbuf))
 	{
 		REG_R_ENUM_VALUE r_o;
 		BOOL p;
@@ -915,7 +915,7 @@ BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Open Key
 ****************************************************************************/
-BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd)
 {
@@ -939,7 +939,7 @@ BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
 	reg_io_q_open_entry("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_OPEN_ENTRY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_ENTRY, &buf, &rbuf))
 	{
 		REG_R_OPEN_ENTRY r_o;
 		BOOL p;
@@ -972,7 +972,7 @@ BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
 /****************************************************************************
 do a REG Close
 ****************************************************************************/
-BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
+BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -995,7 +995,7 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 	reg_io_q_close("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_CLOSE, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, REG_CLOSE, &buf, &rbuf))
 	{
 		REG_R_CLOSE r_c;
 		BOOL p;

@@ -44,6 +44,7 @@ nt lsa query
 ****************************************************************************/
 void cmd_lsa_query_info(struct client_info *info)
 {
+	uint16 nt_pipe_fnum;
 	fstring srv_name;
 
 	BOOL res = True;
@@ -62,29 +63,29 @@ void cmd_lsa_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_lsa_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(smb_cli,
+	res = res ? lsa_open_policy(smb_cli, nt_pipe_fnum,
 				srv_name,
 				&info->dom.lsa_info_pol, False) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? lsa_query_info_pol(smb_cli, 
+	res = res ? lsa_query_info_pol(smb_cli, nt_pipe_fnum, 
 	                                  &info->dom.lsa_info_pol, 0x03,
 	                                  info->dom.level3_dom,
 	                                  &info->dom.level3_sid) : False;
 
 	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? lsa_query_info_pol(smb_cli,
+	res = res ? lsa_query_info_pol(smb_cli, nt_pipe_fnum,
 	                        &info->dom.lsa_info_pol, 0x05,
 				info->dom.level5_dom,
 	                        &info->dom.level5_sid) : False;
 
-	res = res ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	if (res)
 	{
@@ -125,6 +126,7 @@ lookup names
 ****************************************************************************/
 void cmd_lsa_lookup_names(struct client_info *info)
 {
+	uint16 nt_pipe_fnum;
 	fstring temp;
 	int i;
 	fstring srv_name;
@@ -157,23 +159,23 @@ void cmd_lsa_lookup_names(struct client_info *info)
 	}
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(smb_cli,
+	res = res ? lsa_open_policy(smb_cli, nt_pipe_fnum,
 				srv_name,
 				&info->dom.lsa_info_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res = res ? lsa_lookup_names(smb_cli, 
+	res = res ? lsa_lookup_names(smb_cli, nt_pipe_fnum, 
 	                               &info->dom.lsa_info_pol,
 	                               num_names, names,
 	                               &sids, &num_sids) : False;
 
-	res = res ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	if (res)
 	{
@@ -215,6 +217,7 @@ lookup sids
 ****************************************************************************/
 void cmd_lsa_lookup_sids(struct client_info *info)
 {
+	uint16 nt_pipe_fnum;
 	fstring temp;
 	int i;
 	pstring sid_name;
@@ -264,23 +267,23 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 	}
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(smb_cli,
+	res = res ? lsa_open_policy(smb_cli, nt_pipe_fnum,
 				srv_name,
 				&info->dom.lsa_info_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res = res ? lsa_lookup_sids(smb_cli, 
+	res = res ? lsa_lookup_sids(smb_cli, nt_pipe_fnum, 
 	                               &info->dom.lsa_info_pol,
 	                               num_sids, sids,
 	                               &names, &num_names) : False;
 
-	res = res ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	if (res)
 	{

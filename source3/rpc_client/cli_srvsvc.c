@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a server net conn enum
 ****************************************************************************/
-BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len,
@@ -70,7 +70,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 	srv_io_q_net_conn_enum("", &q_o, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SRV_NETCONNENUM, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SRV_NETCONNENUM, &data, &rdata))
 	{
 		SRV_R_NET_CONN_ENUM r_o;
 		BOOL p;
@@ -111,7 +111,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 /****************************************************************************
 do a server net sess enum
 ****************************************************************************/
-BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
@@ -147,7 +147,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	srv_io_q_net_sess_enum("", &q_o, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SRV_NETSESSENUM, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SRV_NETSESSENUM, &data, &rdata))
 	{
 		SRV_R_NET_SESS_ENUM r_o;
 		BOOL p;
@@ -188,7 +188,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 /****************************************************************************
 do a server net share enum
 ****************************************************************************/
-BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_share_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, 
 			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
@@ -226,7 +226,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 	srv_io_q_net_share_enum("", &q_o, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SRV_NETSHAREENUM, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SRV_NETSHAREENUM, &data, &rdata))
 	{
 		SRV_R_NET_SHARE_ENUM r_o;
 		BOOL p;
@@ -267,7 +267,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 /****************************************************************************
 do a server net file enum
 ****************************************************************************/
-BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
@@ -305,7 +305,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 	srv_io_q_net_file_enum("", &q_o, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SRV_NETFILEENUM, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SRV_NETFILEENUM, &data, &rdata))
 	{
 		SRV_R_NET_FILE_ENUM r_o;
 		BOOL p;
@@ -346,7 +346,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 /****************************************************************************
 do a server get info 
 ****************************************************************************/
-BOOL do_srv_net_srv_get_info(struct cli_state *cli,
+BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
 			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr)
 {
 	prs_struct data; 
@@ -370,7 +370,7 @@ BOOL do_srv_net_srv_get_info(struct cli_state *cli,
 	srv_io_q_net_srv_get_info("", &q_o, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SRV_NET_SRV_GET_INFO, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SRV_NET_SRV_GET_INFO, &data, &rdata))
 	{
 		SRV_R_NET_SRV_GET_INFO r_o;
 		BOOL p;

@@ -466,8 +466,6 @@ enum client_action
 	fstrcpy(cli_info.dom.level3_dom, "");
 	fstrcpy(cli_info.dom.level5_dom, "");
 
-	smb_cli->nt_pipe_fnum   = 0xffff;
-
 	TimeInit();
 	charset_initialise();
 

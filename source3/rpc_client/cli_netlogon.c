@@ -57,7 +57,7 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 /****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
-BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
+BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 status_level)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -79,7 +79,7 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
   net_io_q_logon_ctrl2("", &q_l,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_LOGON_CTRL2, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_LOGON_CTRL2, &buf, &rbuf))
   {
     NET_R_LOGON_CTRL2 r_l;
 
@@ -110,7 +110,7 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 sec_chan, 
                    uint32 neg_flags, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
@@ -135,7 +135,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
   net_io_q_auth_2("", &q_a,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_AUTH2, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_AUTH2, &buf, &rbuf))
   {
     NET_R_AUTH_2 r_a;
 
@@ -197,7 +197,7 @@ LSA Request Challenge. Sends our challenge to server, then gets
 server response. These are used to generate the credentials.
 ****************************************************************************/
 
-BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
+BOOL cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -222,7 +222,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
   net_io_q_req_chal("", &q_c,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_REQCHAL, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_REQCHAL, &buf, &rbuf))
   {
     NET_R_REQ_CHAL r_c;
     BOOL ok;
@@ -256,7 +256,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
 LSA Server Password Set.
 ****************************************************************************/
 
-BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
+BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 hashed_mach_pwd[16])
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -284,7 +284,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
   net_io_q_srv_pwset("", &q_s,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_SRVPWSET, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_SRVPWSET, &buf, &rbuf))
   {
     NET_R_SRV_PWSET r_s;
 
@@ -321,7 +321,7 @@ password ?).\n", cli->desthost ));
 LSA SAM Logon - interactive or network.
 ****************************************************************************/
 
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
                        NET_USER_INFO_3 *user_info3)
 {
   DOM_CRED new_clnt_cred;
@@ -355,7 +355,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
   net_io_q_sam_logon("", &q_s,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_SAMLOGON, &buf, &rbuf))
   {
     NET_R_SAM_LOGON r_s;
 
@@ -407,7 +407,7 @@ send a different info level. Right now though, I'm not sure
 what that needs to be (I need to see one on the wire before
 I can be sure). JRA.
 ****************************************************************************/
-BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
+BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr)
 {
   DOM_CRED new_clnt_cred;
   DOM_CRED dummy_rtn_creds;
@@ -439,7 +439,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
   net_io_q_sam_logoff("", &q_s,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, NET_SAMLOGOFF, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_SAMLOGOFF, &buf, &rbuf))
   {
     NET_R_SAM_LOGOFF r_s;
 
@@ -480,6 +480,7 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char orig_trust_passwd_hash[16],
                           unsigned char new_trust_passwd_hash[16])
 {
+  uint16 nt_pipe_fnum;
   struct cli_state cli;
   struct nmb_name calling, called;
 
@@ -563,35 +564,35 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Now start the NT Domain stuff :-).
    */
     
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
+  if(cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum) == False) {
     DEBUG(0,("modify_trust_password: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
   } 
   
-  if(cli_nt_setup_creds(&cli, orig_trust_passwd_hash) == False) {
+  if(cli_nt_setup_creds(&cli, nt_pipe_fnum, orig_trust_passwd_hash) == False) {
     DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
   } 
 
-  if( cli_nt_srv_pwset( &cli,new_trust_passwd_hash ) == False) {
+  if( cli_nt_srv_pwset( &cli, nt_pipe_fnum, new_trust_passwd_hash ) == False) {
     DEBUG(0,("modify_trust_password: unable to change password for machine %s in domain \
 %s to Domain controller %s. Error was %s.\n", global_myname, domain, remote_machine, 
                             cli_errstr(&cli)));
-    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
   }
 
-  cli_nt_session_close(&cli);
+  cli_nt_session_close(&cli, nt_pipe_fnum);
   cli_ulogoff(&cli);
   cli_shutdown(&cli);
 

@@ -1498,252 +1498,252 @@ void load_printers(void);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);
-BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd);
-BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_pwd[16]);
+BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_mach_pwd);
+BOOL cli_nt_login_interactive(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
                               uint32 luid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
-BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
+BOOL cli_nt_login_network(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
                           uint32 luid_low, char lm_chal[8], char lm_chal_resp[24],
                           char nt_chal_resp[24],
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
-BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
+BOOL cli_nt_logoff(struct cli_state *cli, uint16 fnum, NET_ID_INFO_CTR *ctr);
 
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
-BOOL lsa_open_policy(struct cli_state *cli,
+BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 			char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
-BOOL lsa_lookup_names(struct cli_state *cli,
+BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_names,
 			const char **names,
 			DOM_SID **sids,
 			int *num_sids);
-BOOL lsa_lookup_sids(struct cli_state *cli,
+BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
 			int *num_names);
-BOOL lsa_query_info_pol(struct cli_state *cli,
+BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
-BOOL lsa_close(struct cli_state *cli, POLICY_HND *hnd);
+BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
-BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level);
-BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 status_level);
+BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 sec_chan, 
                    uint32 neg_flags, DOM_CHAL *srv_chal);
-BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+BOOL cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
+BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 hashed_mach_pwd[16]);
+BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
                        NET_USER_INFO_3 *user_info3);
-BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
+BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr);
 BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
-BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
+BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
-BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
-void cli_nt_session_close(struct cli_state *cli);
+BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, uint16* nt_pipe_fnum);
+void cli_nt_session_close(struct cli_state *cli, uint16 nt_pipe_fnum);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
-BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
+BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char *key_name,
 				POLICY_HND *reg_hnd);
-BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_open_hklm(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_open_hku(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd);
-BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
 				uint32 *max_valnamelen, uint32 *max_valbufsize,
 				uint32 *sec_desc, NTTIME *mod_time);
-BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
-BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk);
+BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *type, uint32 *unk_0, uint32 *unk_1);
-BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
-BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
-BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
-BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name);
-BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *val_name);
+BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *key_name);
+BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				POLICY_HND *key);
-BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				int key_index, char *key_name,
 				uint32 *unk_1, uint32 *unk_2,
 				time_t *mod_time);
-BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_create_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *val_name, uint32 type, BUFFER3 *data);
-BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				int val_index, int max_valnamelen, int max_valbufsize,
 				fstring val_name,
 				uint32 *val_type, BUFFER2 *value);
-BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
+BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd);
-BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
+BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
-BOOL create_samr_domain_alias(struct cli_state *cli, 
+BOOL create_samr_domain_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
 				uint32 *rid);
-BOOL create_samr_domain_group(struct cli_state *cli, 
+BOOL create_samr_domain_group(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
 				uint32 *rid);
-BOOL get_samr_query_usergroups(struct cli_state *cli, 
+BOOL get_samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
-BOOL delete_samr_dom_group(struct cli_state *cli, 
+BOOL delete_samr_dom_group(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 group_rid);
-BOOL get_samr_query_groupmem(struct cli_state *cli, 
+BOOL get_samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 group_rid, uint32 *num_mem,
 				uint32 *rid, uint32 *attr);
-BOOL delete_samr_dom_alias(struct cli_state *cli, 
+BOOL delete_samr_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 alias_rid);
-BOOL get_samr_query_aliasmem(struct cli_state *cli, 
+BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid);
-BOOL get_samr_query_userinfo(struct cli_state *cli, 
+BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USER_INFO_21 *usr);
-BOOL get_samr_query_groupinfo(struct cli_state *cli, 
+BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 group_rid, GROUP_INFO_CTR *ctr);
-BOOL samr_chgpasswd_user(struct cli_state *cli,
+BOOL samr_chgpasswd_user(struct cli_state *cli, uint16 fnum,
 		char *srv_name, char *user_name,
 		char nt_newpass[516], uchar nt_oldhash[16],
 		char lm_newpass[516], uchar lm_oldhash[16]);
-BOOL samr_unknown_38(struct cli_state *cli, char *srv_name);
-BOOL samr_query_dom_info(struct cli_state *cli, 
+BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name);
+BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, uint16 switch_value);
-BOOL samr_enum_dom_groups(struct cli_state *cli, 
+BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_groups);
-BOOL samr_enum_dom_aliases(struct cli_state *cli, 
+BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_aliases);
-BOOL samr_enum_dom_users(struct cli_state *cli, 
+BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_users);
-BOOL samr_connect(struct cli_state *cli, 
+BOOL samr_connect(struct cli_state *cli, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
 				POLICY_HND *connect_pol);
-BOOL samr_open_user(struct cli_state *cli, 
+BOOL samr_open_user(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol);
-BOOL samr_open_alias(struct cli_state *cli, 
+BOOL samr_open_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol,
 				uint32 flags, uint32 rid,
 				POLICY_HND *alias_pol);
-BOOL samr_del_aliasmem(struct cli_state *cli, 
+BOOL samr_del_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, DOM_SID *sid);
-BOOL samr_add_aliasmem(struct cli_state *cli, 
+BOOL samr_add_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, DOM_SID *sid);
-BOOL samr_delete_dom_alias(struct cli_state *cli, 
+BOOL samr_delete_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol);
-BOOL samr_create_dom_alias(struct cli_state *cli, 
+BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *alias_pol, uint32 *rid);
-BOOL samr_set_aliasinfo(struct cli_state *cli, 
+BOOL samr_set_aliasinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
-BOOL samr_open_group(struct cli_state *cli, 
+BOOL samr_open_group(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol,
 				uint32 flags, uint32 rid,
 				POLICY_HND *group_pol);
-BOOL samr_del_groupmem(struct cli_state *cli, 
+BOOL samr_del_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, uint32 rid);
-BOOL samr_add_groupmem(struct cli_state *cli, 
+BOOL samr_add_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, uint32 rid);
-BOOL samr_delete_dom_group(struct cli_state *cli, POLICY_HND *group_pol);
-BOOL samr_create_dom_group(struct cli_state *cli, 
+BOOL samr_delete_dom_group(struct cli_state *cli, uint16 fnum, POLICY_HND *group_pol);
+BOOL samr_create_dom_group(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *group_pol, uint32 *rid);
-BOOL samr_set_groupinfo(struct cli_state *cli, 
+BOOL samr_set_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
-BOOL samr_open_domain(struct cli_state *cli, 
+BOOL samr_open_domain(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *connect_pol, uint32 flags, DOM_SID *sid,
 				POLICY_HND *domain_pol);
-BOOL samr_query_lookup_names(struct cli_state *cli, 
+BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 flags,
 				uint32 num_names, const char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS]);
-BOOL samr_query_lookup_rids(struct cli_state *cli, 
+BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, uint32 *rids,
 				uint32 *num_names,
 				fstring names[MAX_LOOKUP_SIDS],
 				uint32  type [MAX_LOOKUP_SIDS]);
-BOOL samr_query_aliasmem(struct cli_state *cli, 
+BOOL samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, 
 				uint32 *num_mem, DOM_SID2 *sid);
-BOOL samr_query_useraliases(struct cli_state *cli, 
+BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, DOM_SID *sid,
 				uint32 *num_aliases, uint32 *rid);
-BOOL samr_query_groupmem(struct cli_state *cli, 
+BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, 
 				uint32 *num_mem, uint32 *rid, uint32 *attr);
-BOOL samr_query_usergroups(struct cli_state *cli, 
+BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
-BOOL samr_query_groupinfo(struct cli_state *cli, 
+BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
 				uint16 switch_value, GROUP_INFO_CTR* ctr);
-BOOL samr_query_userinfo(struct cli_state *cli, 
+BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
-BOOL samr_close(struct cli_state *cli, POLICY_HND *hnd);
+BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
-BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_share_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, 
 			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
+BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_get_info(struct cli_state *cli,
+BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
 			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
-BOOL do_wks_query_info(struct cli_state *cli, 
+BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum, 
 			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
 
@@ -2296,6 +2296,7 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint32 rid_user,
 				uint32 rid_group,
 				uint16 acct_ctrl);
+void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
 void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,
@@ -2853,6 +2854,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
 
+BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp);

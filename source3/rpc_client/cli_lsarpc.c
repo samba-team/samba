@@ -35,7 +35,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-BOOL lsa_open_policy(struct cli_state *cli,
+BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 			char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos)
 {
@@ -69,7 +69,7 @@ BOOL lsa_open_policy(struct cli_state *cli,
 	lsa_io_q_open_pol("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, LSA_OPENPOLICY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, LSA_OPENPOLICY, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL r_o;
 		BOOL p;
@@ -101,7 +101,7 @@ BOOL lsa_open_policy(struct cli_state *cli,
 /****************************************************************************
 do a LSA Lookup Names
 ****************************************************************************/
-BOOL lsa_lookup_names(struct cli_state *cli,
+BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_names,
 			const char **names,
@@ -129,7 +129,7 @@ BOOL lsa_lookup_names(struct cli_state *cli,
 	lsa_io_q_lookup_names("", &q_l, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, LSA_LOOKUPNAMES, &buf, &rbuf))
 	{
 		LSA_R_LOOKUP_NAMES r_l;
 		DOM_R_REF ref;
@@ -219,7 +219,7 @@ BOOL lsa_lookup_names(struct cli_state *cli,
 /****************************************************************************
 do a LSA Lookup SIDs
 ****************************************************************************/
-BOOL lsa_lookup_sids(struct cli_state *cli,
+BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
@@ -247,7 +247,7 @@ BOOL lsa_lookup_sids(struct cli_state *cli,
 	lsa_io_q_lookup_sids("", &q_l, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, LSA_LOOKUPSIDS, &buf, &rbuf))
 	{
 		LSA_R_LOOKUP_SIDS r_l;
 		DOM_R_REF ref;
@@ -338,7 +338,7 @@ BOOL lsa_lookup_sids(struct cli_state *cli,
 /****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
-BOOL lsa_query_info_pol(struct cli_state *cli,
+BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid)
 {
@@ -366,7 +366,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli,
 	lsa_io_q_query("", &q_q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, LSA_QUERYINFOPOLICY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, LSA_QUERYINFOPOLICY, &buf, &rbuf))
 	{
 		LSA_R_QUERY_INFO r_q;
 		BOOL p;
@@ -451,7 +451,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli,
 /****************************************************************************
 do a LSA Close
 ****************************************************************************/
-BOOL lsa_close(struct cli_state *cli, POLICY_HND *hnd)
+BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -474,7 +474,7 @@ BOOL lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 	lsa_io_q_close("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, LSA_CLOSE, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, fnum, LSA_CLOSE, &buf, &rbuf))
 	{
 		LSA_R_CLOSE r_c;
 		BOOL p;

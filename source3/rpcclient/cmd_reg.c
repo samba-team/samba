@@ -60,6 +60,7 @@ nt registry enum
 ****************************************************************************/
 void cmd_reg_enum(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
@@ -99,16 +100,16 @@ void cmd_reg_enum(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
+	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res1 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res1 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
@@ -116,7 +117,7 @@ void cmd_reg_enum(struct client_info *info)
 		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
 	}
 
-	res1 = res1 ? do_reg_query_key(smb_cli,
+	res1 = res1 ? do_reg_query_key(smb_cli, fnum,
 				&key_pol,
 				key_class, &max_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
@@ -141,7 +142,7 @@ void cmd_reg_enum(struct client_info *info)
 		time_t key_mod_time;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, &key_pol,
+		res2 = res1 ? do_reg_unknown_1a(smb_cli, fnum, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
@@ -150,7 +151,7 @@ void cmd_reg_enum(struct client_info *info)
 		}
 
 		/* enum key */
-		res2 = res2 ? do_reg_enum_key(smb_cli, &key_pol,
+		res2 = res2 ? do_reg_enum_key(smb_cli, fnum, &key_pol,
 					i, enum_name,
 					&enum_unk1, &enum_unk2,
 					&key_mod_time) : False;
@@ -181,7 +182,7 @@ void cmd_reg_enum(struct client_info *info)
 		fstring val_name;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, &key_pol,
+		res2 = res1 ? do_reg_unknown_1a(smb_cli, fnum, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
@@ -190,7 +191,7 @@ void cmd_reg_enum(struct client_info *info)
 		}
 
 		/* enum key */
-		res2 = res2 ? do_reg_enum_val(smb_cli, &key_pol,
+		res2 = res2 ? do_reg_enum_val(smb_cli, fnum, &key_pol,
 					i, max_valnamelen, max_valbufsize,
 		                        val_name, &val_type, &value) : False;
 		
@@ -205,12 +206,12 @@ void cmd_reg_enum(struct client_info *info)
 	/* close the handles */
 	if ((*key_name) != 0)
 	{
-		res1 = res1 ? do_reg_close(smb_cli, &key_pol) : False;
+		res1 = res1 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
 	}
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res1 && res2)
 	{
@@ -227,6 +228,7 @@ nt registry query key
 ****************************************************************************/
 void cmd_reg_query_key(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
 
@@ -258,16 +260,16 @@ void cmd_reg_query_key(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
+	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res1 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res1 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
@@ -275,7 +277,7 @@ void cmd_reg_query_key(struct client_info *info)
 		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
 	}
 
-	res1 = res1 ? do_reg_query_key(smb_cli,
+	res1 = res1 ? do_reg_query_key(smb_cli, fnum,
 				&key_pol,
 				key_class, &key_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
@@ -284,7 +286,7 @@ void cmd_reg_query_key(struct client_info *info)
 
 	if (res1 && key_class_len != 0)
 	{
-		res1 = res1 ? do_reg_query_key(smb_cli,
+		res1 = res1 ? do_reg_query_key(smb_cli, fnum,
 				&key_pol,
 				key_class, &key_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
@@ -305,12 +307,12 @@ void cmd_reg_query_key(struct client_info *info)
 	/* close the handles */
 	if ((*key_name) != 0)
 	{
-		res1 = res1 ? do_reg_close(smb_cli, &key_pol) : False;
+		res1 = res1 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
 	}
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res1)
 	{
@@ -327,6 +329,7 @@ nt registry create value
 ****************************************************************************/
 void cmd_reg_create_val(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -344,7 +347,7 @@ void cmd_reg_create_val(struct client_info *info)
 	uint32 unk_0;
 	uint32 unk_1;
 	/* query it */
-	res1 = res1 ? do_reg_query_info(smb_cli, &val_pol,
+	res1 = res1 ? do_reg_query_info(smb_cli, fnum, &val_pol,
 	                        type, &unk_0, &unk_1) : False;
 #endif
 
@@ -421,16 +424,16 @@ void cmd_reg_create_val(struct client_info *info)
 	dump_data(10, (char *)value.buffer, value.buf_len);
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, keyname, parent_name,
+	res = res ? do_reg_connect(smb_cli, fnum, keyname, parent_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*val_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 parent_name, 0x02000000, &parent_pol) : False;
 	}
 	else
@@ -439,23 +442,23 @@ void cmd_reg_create_val(struct client_info *info)
 	}
 
 	/* create an entry */
-	res4 = res3 ? do_reg_create_val(smb_cli, &parent_pol,
+	res4 = res3 ? do_reg_create_val(smb_cli, fnum, &parent_pol,
 				 val_name, val_type, &value) : False;
 
 	/* flush the modified key */
-	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
+	res4 = res4 ? do_reg_flush_key(smb_cli, fnum, &parent_pol) : False;
 
 	/* close the val handle */
 	if ((*val_name) != 0)
 	{
-		res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
+		res3 = res3 ? do_reg_close(smb_cli, fnum, &parent_pol) : False;
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res3 && res4)
 	{
@@ -473,6 +476,7 @@ nt registry delete value
 ****************************************************************************/
 void cmd_reg_delete_val(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -500,16 +504,16 @@ void cmd_reg_delete_val(struct client_info *info)
 	}
 	
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, keyname, parent_name,
+	res = res ? do_reg_connect(smb_cli, fnum, keyname, parent_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*val_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 parent_name, 0x02000000, &parent_pol) : False;
 	}
 	else
@@ -518,19 +522,19 @@ void cmd_reg_delete_val(struct client_info *info)
 	}
 
 	/* delete an entry */
-	res4 = res3 ? do_reg_delete_val(smb_cli, &parent_pol, val_name) : False;
+	res4 = res3 ? do_reg_delete_val(smb_cli, fnum, &parent_pol, val_name) : False;
 
 	/* flush the modified key */
-	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
+	res4 = res4 ? do_reg_flush_key(smb_cli, fnum, &parent_pol) : False;
 
 	/* close the key handle */
-	res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
+	res3 = res3 ? do_reg_close(smb_cli, fnum, &parent_pol) : False;
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res3 && res4)
 	{
@@ -548,6 +552,7 @@ nt registry delete key
 ****************************************************************************/
 void cmd_reg_delete_key(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -575,16 +580,16 @@ void cmd_reg_delete_key(struct client_info *info)
 	}
 	
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, parent_name, key_name,
+	res = res ? do_reg_connect(smb_cli, fnum, parent_name, key_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 key_name, 0x02000000, &parent_pol) : False;
 	}
 	else
@@ -593,22 +598,22 @@ void cmd_reg_delete_key(struct client_info *info)
 	}
 
 	/* create an entry */
-	res4 = res3 ? do_reg_delete_key(smb_cli, &parent_pol, subkey_name) : False;
+	res4 = res3 ? do_reg_delete_key(smb_cli, fnum, &parent_pol, subkey_name) : False;
 
 	/* flush the modified key */
-	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
+	res4 = res4 ? do_reg_flush_key(smb_cli, fnum, &parent_pol) : False;
 
 	/* close the key handle */
 	if ((*key_name) != 0)
 	{
-		res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
+		res3 = res3 ? do_reg_close(smb_cli, fnum, &parent_pol) : False;
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res3 && res4)
 	{
@@ -626,6 +631,7 @@ nt registry create key
 ****************************************************************************/
 void cmd_reg_create_key(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -664,16 +670,16 @@ void cmd_reg_create_key(struct client_info *info)
 	sam_access.mask = SEC_RIGHTS_READ;
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, parent_key, parent_name,
+	res = res ? do_reg_connect(smb_cli, fnum, parent_key, parent_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*parent_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 parent_name, 0x02000000, &parent_pol) : False;
 	}
 	else
@@ -682,26 +688,26 @@ void cmd_reg_create_key(struct client_info *info)
 	}
 
 	/* create an entry */
-	res4 = res3 ? do_reg_create_key(smb_cli, &parent_pol,
+	res4 = res3 ? do_reg_create_key(smb_cli, fnum, &parent_pol,
 				 key_name, key_class, &sam_access, &key_pol) : False;
 
 	/* flush the modified key */
-	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
+	res4 = res4 ? do_reg_flush_key(smb_cli, fnum, &parent_pol) : False;
 
 	/* close the key handle */
-	res4 = res4 ? do_reg_close(smb_cli, &key_pol) : False;
+	res4 = res4 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
 
 	/* close the key handle */
 	if ((*parent_name) != 0)
 	{
-		res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
+		res3 = res3 ? do_reg_close(smb_cli, fnum, &parent_pol) : False;
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res3 && res4)
 	{
@@ -719,6 +725,7 @@ nt registry security info
 ****************************************************************************/
 void cmd_reg_test_key_sec(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -743,16 +750,16 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
+	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
@@ -761,14 +768,14 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	}
 
 	/* open an entry */
-	res3 = res ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+	res3 = res ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 				 key_name, 0x02000000, &key_pol) : False;
 
 	/* query key sec info.  first call sets sec_buf_size. */
 	sec_buf_size = 0;
 	ZERO_STRUCT(sec_buf);
 
-	res4 = res3 ? do_reg_get_key_sec(smb_cli, &key_pol,
+	res4 = res3 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 	
 	if (res4)
@@ -776,7 +783,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 		free_sec_desc_buf(&sec_buf);
 	}
 
-	res4 = res4 ? do_reg_get_key_sec(smb_cli, &key_pol,
+	res4 = res4 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 
 	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
@@ -785,7 +792,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 		display_sec_desc(out_hnd, ACTION_ENUMERATE, sec_buf.sec);
 		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
 
-		res4 = res4 ? do_reg_set_key_sec(smb_cli, &key_pol,
+		res4 = res4 ? do_reg_set_key_sec(smb_cli, fnum, &key_pol,
 				sec_buf_size, sec_buf.sec) : False;
 
 		free_sec_desc_buf(&sec_buf);
@@ -794,14 +801,14 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	/* close the key handle */
 	if ((*key_name) != 0)
 	{
-		res3 = res3 ? do_reg_close(smb_cli, &key_pol) : False;
+		res3 = res3 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res3 && res4)
 	{
@@ -819,6 +826,7 @@ nt registry security info
 ****************************************************************************/
 void cmd_reg_get_key_sec(struct client_info *info)
 {
+	uint16 fnum;
 	BOOL res = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -843,16 +851,16 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
+	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
 				&info->dom.reg_pol_connect) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
@@ -861,14 +869,14 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	}
 
 	/* open an entry */
-	res3 = res ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+	res3 = res ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 				 key_name, 0x02000000, &key_pol) : False;
 
 	/* query key sec info.  first call sets sec_buf_size. */
 	sec_buf_size = 0;
 	ZERO_STRUCT(sec_buf);
 
-	res4 = res3 ? do_reg_get_key_sec(smb_cli, &key_pol,
+	res4 = res3 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 	
 	if (res4)
@@ -876,7 +884,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 		free_sec_desc_buf(&sec_buf);
 	}
 
-	res4 = res4 ? do_reg_get_key_sec(smb_cli, &key_pol,
+	res4 = res4 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 
 	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
@@ -891,14 +899,14 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	/* close the key handle */
 	if ((*key_name) != 0)
 	{
-		res3 = res3 ? do_reg_close(smb_cli, &key_pol) : False;
+		res3 = res3 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli);
+	cli_nt_session_close(smb_cli, fnum);
 
 	if (res && res3 && res4)
 	{

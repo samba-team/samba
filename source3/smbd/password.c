@@ -1095,6 +1095,7 @@ BOOL domain_client_validate( char *user, char *domain,
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen)
 {
+  uint16 nt_pipe_fnum;
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
   unsigned char local_nt_reponse[24];
@@ -1174,19 +1175,19 @@ BOOL domain_client_validate( char *user, char *domain,
    * Now start the NT Domain stuff :-).
    */
 
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
+  if(cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum) == False) {
     DEBUG(0,("domain_client_validate: unable to open the domain client session to \
 machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False; 
   }
 
-  if(cli_nt_setup_creds(&cli, trust_passwd) == False) {
+  if(cli_nt_setup_creds(&cli, nt_pipe_fnum, trust_passwd) == False) {
     DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
@@ -1195,13 +1196,13 @@ machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
   /* We really don't care what LUID we give the user. */
   generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-  if(cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
+  if(cli_nt_login_network(&cli, nt_pipe_fnum, domain, user, smb_uid_low, (char *)local_challenge,
                           ((smb_apasslen != 0) ? smb_apasswd : NULL),
                           ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
                           &ctr, &info3) == False) {
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));
-    cli_nt_session_close(&cli);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
@@ -1218,17 +1219,17 @@ machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
    * send here. JRA.
    */
 
-  if(cli_nt_logoff(&cli, &ctr) == False) {
+  if(cli_nt_logoff(&cli, nt_pipe_fnum, &ctr) == False) {
     DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));        
-    cli_nt_session_close(&cli);
+    cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
     return False;
   }
 #endif /* 0 */
 
-  cli_nt_session_close(&cli);
+  cli_nt_session_close(&cli, nt_pipe_fnum);
   cli_ulogoff(&cli);
   cli_shutdown(&cli);
   return True;
