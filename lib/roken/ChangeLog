@@ -1,3 +1,17 @@
+2005-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* snprintf-test.c (try): reset va_list argument between reuse,
+	from Peter Kruty <xkruty@fi.muni.cz>
+
+2005-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken_gethostby.c (roken_gethostby): s/sin/addr/ to avoid
+	shadowing
+
+	* resolve.c (dns_lookup_int): s/stat/state/ to avoid shadowing
+
+	* parse_units.c: avoid shadowing div
+
 2005-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* snprintf.c: use defined(TEST_SNPRINTF) like on all other places
