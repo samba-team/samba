@@ -37,7 +37,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
+BOOL yield_connection(connection_struct *conn,char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;

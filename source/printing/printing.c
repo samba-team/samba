@@ -507,15 +507,13 @@ void start_background_queue(void)
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
-		claim_connection(NULL,"smbd lpq backend",MAXSTATUS,False);
+		claim_connection(NULL,"smbd lpq backend",0,False);
 
-		if (!locking_init(0)) {
+		if (!locking_init(0))
 			exit(1);
-		}
 
-		if (!print_backend_init()) {
+		if (!print_backend_init())
 			exit(1);
-		}
 
 		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
 		
