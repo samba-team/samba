@@ -729,8 +729,7 @@ AC_TRY_RUN([
 #define F_NOTIFY 1026
 #endif
 main() {
-	signal(SIGIO, SIG_IGN);
-       	exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0xF) != 0);
+       	exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
 }
 ],
 samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
