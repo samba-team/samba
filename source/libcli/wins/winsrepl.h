@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 
 /*
@@ -66,4 +67,48 @@ struct wrepl_request {
 		void (*fn)(struct wrepl_request *);
 		void *private;
 	} async;
+};
+
+
+/*
+  setup an association
+*/
+struct wrepl_associate {
+	struct {
+		uint32_t assoc_ctx;
+	} out;
+};
+
+/*
+  pull the partner table
+*/
+struct wrepl_pull_table {
+	struct {
+		uint32_t assoc_ctx;
+	} in;
+	struct {
+		uint32_t num_partners;
+		struct wrepl_wins_owner *partners;
+	} out;
+};
+
+/*
+  a full pull replication
+*/
+struct wrepl_pull_names {
+	struct {
+		uint32_t assoc_ctx;
+		struct wrepl_wins_owner partner;
+	} in;
+	struct {
+		uint32_t num_names;
+		struct wrepl_name {
+			struct nbt_name name;
+			uint32_t num_addresses;
+			struct wrepl_address {
+				const char *owner;
+				const char *address;
+			} *addresses;
+		} *names;
+	} out;
 };

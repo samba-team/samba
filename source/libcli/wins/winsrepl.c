@@ -434,3 +434,271 @@ NTSTATUS wrepl_request(struct wrepl_socket *wrepl_socket,
 	struct wrepl_request *req = wrepl_request_send(wrepl_socket, req_packet);
 	return wrepl_request_recv(req, mem_ctx, reply_packet);
 }
+
+
+/*
+  setup an association - send
+*/
+struct wrepl_request *wrepl_associate_send(struct wrepl_socket *wrepl_socket,
+					   struct wrepl_associate *io)
+{
+	struct wrepl_packet *packet;
+	struct wrepl_request *req;
+
+	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
+	if (packet == NULL) return NULL;
+
+	packet->opcode                      = WREPL_OPCODE_BITS;
+	packet->mess_type                   = WREPL_START_ASSOCIATION;
+	packet->message.start.minor_version = 2;
+	packet->message.start.major_version = 5;
+
+	req = wrepl_request_send(wrepl_socket, packet);
+
+	talloc_free(packet);
+
+	return req;	
+}
+
+/*
+  setup an association - recv
+*/
+NTSTATUS wrepl_associate_recv(struct wrepl_request *req,
+			      struct wrepl_associate *io)
+{
+	struct wrepl_packet *packet=NULL;
+	NTSTATUS status;
+	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	if (packet->mess_type != WREPL_START_ASSOCIATION_REPLY) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+	if (NT_STATUS_IS_OK(status)) {
+		io->out.assoc_ctx = packet->message.start_reply.assoc_ctx;
+	}
+	talloc_free(packet);
+	return status;
+}
+
+/*
+  setup an association - sync api
+*/
+NTSTATUS wrepl_associate(struct wrepl_socket *wrepl_socket,
+			 struct wrepl_associate *io)
+{
+	struct wrepl_request *req = wrepl_associate_send(wrepl_socket, io);
+	return wrepl_associate_recv(req, io);
+}
+
+
+/*
+  fetch the partner tables - send
+*/
+struct wrepl_request *wrepl_pull_table_send(struct wrepl_socket *wrepl_socket,
+					    struct wrepl_pull_table *io)
+{
+	struct wrepl_packet *packet;
+	struct wrepl_request *req;
+
+	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
+	if (packet == NULL) return NULL;
+
+	packet->opcode                      = WREPL_OPCODE_BITS;
+	packet->assoc_ctx                   = io->in.assoc_ctx;
+	packet->mess_type                   = WREPL_REPLICATION;
+	packet->message.replication.command = WREPL_REPL_TABLE_QUERY;
+
+	req = wrepl_request_send(wrepl_socket, packet);
+
+	talloc_free(packet);
+
+	return req;	
+}
+
+
+/*
+  fetch the partner tables - recv
+*/
+NTSTATUS wrepl_pull_table_recv(struct wrepl_request *req,
+			       TALLOC_CTX *mem_ctx,
+			       struct wrepl_pull_table *io)
+{
+	struct wrepl_packet *packet=NULL;
+	NTSTATUS status;
+	struct wrepl_table *table;
+	int i;
+
+	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	if (packet->mess_type != WREPL_REPLICATION) {
+		status = NT_STATUS_NETWORK_ACCESS_DENIED;
+	} else if (packet->message.replication.command != WREPL_REPL_TABLE_REPLY) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	table = &packet->message.replication.info.table;
+	io->out.num_partners = table->partner_count;
+	io->out.partners = talloc_steal(mem_ctx, table->partners);
+	for (i=0;i<io->out.num_partners;i++) {
+		talloc_steal(io->out.partners, io->out.partners[i].address);
+	}
+
+failed:
+	talloc_free(packet);
+	return status;
+}
+
+
+/*
+  fetch the partner table - sync api
+*/
+NTSTATUS wrepl_pull_table(struct wrepl_socket *wrepl_socket,
+			  TALLOC_CTX *mem_ctx,
+			  struct wrepl_pull_table *io)
+{
+	struct wrepl_request *req = wrepl_pull_table_send(wrepl_socket, io);
+	return wrepl_pull_table_recv(req, mem_ctx, io);
+}
+
+
+/*
+  fetch the names for a WINS partner - send
+*/
+struct wrepl_request *wrepl_pull_names_send(struct wrepl_socket *wrepl_socket,
+					    struct wrepl_pull_names *io)
+{
+	struct wrepl_packet *packet;
+	struct wrepl_request *req;
+
+	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
+	if (packet == NULL) return NULL;
+
+	packet->opcode                         = WREPL_OPCODE_BITS;
+	packet->assoc_ctx                      = io->in.assoc_ctx;
+	packet->mess_type                      = WREPL_REPLICATION;
+	packet->message.replication.command    = WREPL_REPL_SEND_REQUEST;
+	packet->message.replication.info.owner = io->in.partner;
+
+	req = wrepl_request_send(wrepl_socket, packet);
+
+	talloc_free(packet);
+
+	return req;	
+}
+
+
+/*
+  extract a nbt_name from a WINS name buffer
+*/
+static NTSTATUS wrepl_extract_name(struct nbt_name *name,
+				   TALLOC_CTX *mem_ctx,
+				   uint8_t *namebuf, uint32_t len)
+{
+	char *s;
+
+	/* oh wow, what a nasty bug in windows ... */
+	if (namebuf[0] == 0x1b && len >= 16) {
+		namebuf[0] = namebuf[15];
+		namebuf[15] = 0x1b;
+	}
+
+	if (len < 17) {
+		name->name = talloc_strndup(mem_ctx, namebuf, len);
+		name->type = 0;
+		name->scope = NULL;
+		return NT_STATUS_OK;
+	}
+
+	s = talloc_strndup(mem_ctx, namebuf, 15);
+	trim_string(s, NULL, " ");
+	name->name = s;
+	name->type = namebuf[15];
+	if (len > 18) {
+		name->scope = talloc_strndup(mem_ctx, namebuf+17, len-17);
+	} else {
+		name->scope = NULL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  fetch the names for a WINS partner - recv
+*/
+NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
+			       TALLOC_CTX *mem_ctx,
+			       struct wrepl_pull_names *io)
+{
+	struct wrepl_packet *packet=NULL;
+	NTSTATUS status;
+	int i;
+
+	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	if (packet->mess_type != WREPL_REPLICATION ||
+	    packet->message.replication.command != WREPL_REPL_SEND_REPLY) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	io->out.num_names = packet->message.replication.info.reply.num_names;
+
+	status = NT_STATUS_NO_MEMORY;
+
+	io->out.names = talloc_array(packet, struct wrepl_name, io->out.num_names);
+	if (io->out.names == NULL) goto failed;
+
+	/* convert the list of names and addresses to a sane format */
+	for (i=0;i<io->out.num_names;i++) {
+		struct wrepl_wins_name *wname = &packet->message.replication.info.reply.names[i];
+		struct wrepl_name *name = &io->out.names[i];
+		status = wrepl_extract_name(&name->name, io->out.names, 
+					    wname->name, wname->name_len);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+
+		/* trying to save 1 or 2 bytes on the wire isn't a good idea */
+		if (wname->flags & 2) {
+			int j;
+
+			name->num_addresses = wname->addresses.addresses.num_ips;
+			name->addresses = talloc_array(io->out.names, 
+						       struct wrepl_address, 
+						       name->num_addresses);
+			if (name->addresses == NULL) goto failed;
+			for (j=0;j<name->num_addresses;j++) {
+				name->addresses[j].owner = 
+					talloc_steal(name->addresses, 
+						     wname->addresses.addresses.ips[j].owner);
+				name->addresses[j].address = 
+					talloc_steal(name->addresses, 
+						     wname->addresses.addresses.ips[j].ip);
+			}
+		} else {
+			name->num_addresses = 1;
+			name->addresses = talloc(io->out.names, struct wrepl_address);
+			if (name->addresses == NULL) goto failed;
+			name->addresses[0].owner = talloc_steal(name->addresses, 
+								wname->addresses.address.owner);
+			name->addresses[0].address = talloc_steal(name->addresses,
+								  wname->addresses.address.ip);
+		}
+	}
+
+	talloc_steal(mem_ctx, io->out.names);
+	status = NT_STATUS_OK;
+
+failed:
+	talloc_free(packet);
+	return status;
+}
+
+
+
+/*
+  fetch the names for a WINS partner - sync api
+*/
+NTSTATUS wrepl_pull_names(struct wrepl_socket *wrepl_socket,
+			  TALLOC_CTX *mem_ctx,
+			  struct wrepl_pull_names *io)
+{
+	struct wrepl_request *req = wrepl_pull_names_send(wrepl_socket, io);
+	return wrepl_pull_names_recv(req, mem_ctx, io);
+}
