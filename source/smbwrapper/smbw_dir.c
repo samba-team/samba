@@ -554,7 +554,7 @@ char *smbw_getcwd(char *buf, size_t size)
 	smbw_init();
 
 	if (smbw_busy) {
-		return real_getcwd(buf, size);
+		return (char *)real_getcwd(buf, size);
 	}
 
 	smbw_busy++;
