@@ -346,8 +346,10 @@ v5_loop (krb5_context context,
 	krb5_net_read(context, &fd, tmp, 4);
 	_krb5_get_int (tmp, &len, 4);
 
-	in.length = len;
-	in.data = malloc(in.length);
+	ret = krb5_data_alloc(&in, len);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_data_alloc");
+
 	n = krb5_net_read(context, &fd, in.data, in.length);
 	if (n == 0)
 	    exit (0);
