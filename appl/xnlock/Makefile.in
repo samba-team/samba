@@ -25,9 +25,9 @@ exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 bindir = $(exec_prefix)/bin
 
-X_PROGS = xnlock
+X_PROGS_BIN = xnlock
 
-PROG_BIN	= @MAKE_X_PROGS@
+PROG_BIN	= @MAKE_X_PROGS_BIN@
 PROG_LIBEXEC	= 
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
