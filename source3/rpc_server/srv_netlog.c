@@ -90,7 +90,7 @@ static void net_reply_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, prs_struct *rdata,
  net_reply_trust_dom_list:
  *************************************************************************/
 static void net_reply_trust_dom_list(NET_Q_TRUST_DOM_LIST *q_t, prs_struct *rdata,
-			uint32 num_trust_domains, char *trust_domain_name)
+			uint32 num_trust_domains, char **trust_domain_name)
 {
 	NET_R_TRUST_DOM_LIST r_t;
 
@@ -948,8 +948,10 @@ static void api_net_trust_dom_list( pipes_struct *p,
                                     prs_struct *rdata)
 {
 	NET_Q_TRUST_DOM_LIST q_t;
+	char **doms = NULL;
+	uint32 num_doms = 0;
 
-	char *trusted_domain = "test_domain";
+	enumtrustdoms(&doms, &num_doms);
 
 	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
 
@@ -958,7 +960,9 @@ static void api_net_trust_dom_list( pipes_struct *p,
 
 	/* construct reply. */
 	net_reply_trust_dom_list(&q_t, rdata,
-				1, trusted_domain);
+				num_doms, doms);
+
+	free_char_array(num_doms, doms);
 
 	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
 }
