@@ -135,7 +135,8 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
-LIBADS_OBJ = libads/ldap.o libads/sasl.o libads/krb5_setpw.o libads/kerberos.o \
+LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
+	     libads/krb5_setpw.o libads/kerberos.o \
 	     libads/ads_struct.o libads/ads_status.o passdb/secrets.o \
              libads/util.o
 
