@@ -442,6 +442,7 @@ an Active Directory environment.
 <!ENTITY MAN-SMBSTATUS SYSTEM "manpages/smbstatus.1.sgml">
 <!ENTITY MAN-SMBUMOUNT SYSTEM "manpages/smbumount.8.sgml">
 <!ENTITY MAN-SWAT SYSTEM "manpages/swat.8.sgml">
+<!ENTITY MAN-TDBBACKUP SYSTEM "manpages/tdbbackup.8.sgml">
 <!ENTITY MAN-TESTPARM SYSTEM "manpages/testparm.1.sgml">
 <!ENTITY MAN-TESTPRNS SYSTEM "manpages/testprns.1.sgml">
 <!ENTITY MAN-VFSTEST SYSTEM "manpages/vfstest.1.sgml">
