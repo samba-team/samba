@@ -59,11 +59,11 @@ length_int (int val)
 
   if (val == 0)
     return 1;
-  while (abs(val) > 255) {
+  while (val > 255 || val < -255) {
     ++ret;
     val /= 256;
   }
-  if (abs(val) > 0) {
+  if (val != 0) {
     ++ret;
     if ((signed char)val != val)
       ++ret;
