@@ -1,10 +1,10 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   
+   Version 2.2
+   RPC pipe client
+
+   Copyright (C) Tim Potter 2000
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -22,227 +22,296 @@
 
 #include "includes.h"
 
-extern FILE *out_hnd;
+extern int DEBUGLEVEL;
+extern pstring server;
 
-/* Convert SID_NAME_USE values to strings */
+/* Look up domain related information on a remote host */
 
-struct sid_name {
-	enum SID_NAME_USE name_type;
-	char *name;
-} sid_name_type_str[] = {
-	{ SID_NAME_UNKNOWN, "UNKNOWN" },       
-	{ SID_NAME_USER,    "User" },
-	{ SID_NAME_DOM_GRP, "Domain Group" },
-	{ SID_NAME_DOMAIN,  "Domain" },
-	{ SID_NAME_ALIAS,   "Local Group"} ,
-	{ SID_NAME_WKN_GRP, "Well-known Group" },
-	{ SID_NAME_DELETED, "Deleted" },
-	{ SID_NAME_INVALID, "Invalid" },
-	{ 0, NULL }
-};
-
-static char *get_sid_name_type_str(enum SID_NAME_USE name_type)
+static uint32 cmd_lsa_query_info_policy(int argc, char **argv) 
 {
-	int i = 0;
+	struct cli_state cli;
+	POLICY_HND pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	struct ntuser_creds creds;
+	BOOL got_policy_hnd = False;
+	DOM_SID dom_sid;
+	fstring sid_str, domain_name;
+	uint32 info_class = 3;
 
-	while(sid_name_type_str[i].name) {
-		if (name_type == sid_name_type_str[i].name_type) {
-			return sid_name_type_str[i].name;
-		}
-		i++;
+	if (argc > 2) {
+		printf("Usage: %s [info_class]\n", argv[0]);
+		return 0;
 	}
 
-	return NULL;
-}
+	if (argc == 2) {
+		info_class = atoi(argv[1]);
+	}
+	
+	/* Open a lsa handle */
 
-/* Look up a list of sids */
+	ZERO_STRUCT(cli);
+	init_rpcclient_creds(&creds);
 
-uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
-{
-	POLICY_HND lsa_pol;
-	fstring srv_name;
-	char **names;
-	DOM_SID *sids;
-	int num_sids = 0, num_names, i;
-	uint32 *types, result;
-
-	/* Check command arguments */
-
-	if (argc == 1) {
-		fprintf(out_hnd, "lsa_lookupsids sid1 [sid2...]\n");
-		return NT_STATUS_INVALID_PARAMETER;
+	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
+		goto done;
 	}
 
-	sids = (DOM_SID *)malloc((argc - 1) * sizeof(DOM_SID));
-
-	for (i = 1; i < argc; i++) {
-		if (string_to_sid(&sids[num_sids], argv[i])) {
-			num_sids++;
-		} else {
-			fprintf(out_hnd, "could not parse sid %s\n", argv[i]);
-		}
+	if ((result = cli_lsa_open_policy(&cli, True, 
+					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  &pol)) != NT_STATUS_NOPROBLEMO) {
+		goto done;
 	}
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
+	got_policy_hnd = True;
 
-	/* Lookup domain controller; receive a policy handle */
+	/* Lookup the names */
 
-	result = lsa_open_policy(srv_name, &lsa_pol, True,
-				 SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-	if (result != 0) {
-		report(out_hnd, "open policy failed: %s\n",
-		       get_nt_error_msg(result));
-		return result;
+	if ((result = cli_lsa_query_info_policy(&cli, &pol, info_class, 
+						domain_name, &dom_sid)) 
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
 	}
 
-	/* Send lsa lookup sids call */
+	sid_to_string(sid_str, &dom_sid);
 
-	result = lsa_lookup_sids(&lsa_pol, num_sids, sids, &names,
-				 &types, &num_names);
+	printf("domain %s has sid %s\n", domain_name, sid_str);
 
-	if (result != 0) {
-		report(out_hnd, "lookup names failed: %s\n",
-		       get_nt_error_msg(result));
-		return result;
-	}
+ done:
 
-	result = lsa_close(&lsa_pol);
-
-	if (result != 0) {
-		report(out_hnd, "lsa close failed: %s\n",
-		       get_nt_error_msg(result));
-		return result;
-	}
-
-	/* Print output */
-
-	if (names != NULL) {
-		report(out_hnd, "Lookup SIDS:\n");
-
-		for (i = 0; i < num_names; i++) {
-			fstring temp;
-
-			sid_to_string(temp, &sids[i]);
-
-			report(out_hnd, "SID: %s -> %s (%d: %s)\n",
-			       temp, names[i] ? names[i] : "(null)", 
-			       types[i], get_sid_name_type_str(types[i]));
-
-			if (names[i] != NULL) {
-				free(names[i]);
-			}
-		}
-
-		free(names);
-	}
-
-	if (types) {
-		free(types);
+	if (got_policy_hnd) {
+		cli_lsa_close(&cli, &pol);
 	}
 
 	return result;
 }
 
-/* Look up a list of names */
+/* Resolve a list of names to a list of sids */
 
-uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
+static uint32 cmd_lsa_lookup_names(int argc, char **argv)
 {
-	POLICY_HND lsa_pol;
-	fstring srv_name;
-	int num_names, i, num_sids;
+	struct cli_state cli;
+	struct ntuser_creds creds;
+	POLICY_HND pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	BOOL got_policy_hnd = False;
 	DOM_SID *sids;
-	char **names;
-	uint32 *types, result;
-
-	/* Check command arguments */
+	uint32 *types;
+	int num_names, i;
 
 	if (argc == 1) {
-		fprintf(out_hnd, "lsa_lookupnames name1 [name2...]\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		printf("Usage: %s [name1 [name2 [...]]]\n", argv[0]);
+		return 0;
 	}
 
-	names = (char **)malloc((argc - 1) * sizeof(char *));
-	num_names = argc - 1;
+	/* Open a lsa handle */
 
-	for (i = 1; i < argc; i++) {
-		names[i - 1] = argv[i];
+	ZERO_STRUCT(cli);
+	init_rpcclient_creds(&creds);
+
+	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
+		goto done;
 	}
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-
-	/* Lookup domain controller; receive a policy handle */
-
-	result = lsa_open_policy(srv_name, &lsa_pol, True,
-				 SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-	if (result != 0) {
-		report(out_hnd, "open policy failed: %s\n",
-		       get_nt_error_msg(result));
-		return result;
+	if ((result = cli_lsa_open_policy(&cli, True, 
+					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  &pol)) != NT_STATUS_NOPROBLEMO) {
+		goto done;
 	}
 
-	/* Send lsa lookup names call */
+	got_policy_hnd = True;
 
-	result = lsa_lookup_names(&lsa_pol, num_names, names, &sids,
-				  &types, &num_sids);
+	/* Lookup the names */
 
-	if (result != 0) {
-		report(out_hnd, "lookup sids failed: %s\n",
-		       get_nt_error_msg(result));
-		return result;
+	if ((result = cli_lsa_lookup_names(
+		&cli, &pol, argc - 1, &argv[1], &sids, &types, &num_names) !=
+	     NT_STATUS_NOPROBLEMO)) {
+		goto done;
 	}
 
-	result = lsa_close(&lsa_pol);
+	/* Print results */
 
-	if (result != 0) {
-		report(out_hnd, "lsa close failed: %s\n",
-		       get_nt_error_msg(result));
-		return result;
+	for (i = 0; i < num_names; i++) {
+		fstring sid_str;
+
+		sid_to_string(sid_str, &sids[i]);
+		printf("%s\t\t%s (%d)\n", argv[i + 1], sid_str,
+		       types[i]);
 	}
 
-	/* Print output */
+	safe_free(sids);
+	safe_free(types);      
 
-	if (sids != NULL) {
-		fstring temp;
+ done:
 
-		report(out_hnd, "Lookup Names:\n");
-		for (i = 0; i < num_sids; i++) {
-			sid_to_string(temp, &sids[i]);
-			report(out_hnd, "Name: %s -> %s (%d: %s)\n",
-			       names[i], temp, types[i],
-			       get_sid_name_type_str(types[i]));
-#if 0
-			if (sids[i] != NULL) {
-				free(sids[i]);
-			}
-#endif
-		}
-
-		free(sids);
+	if (got_policy_hnd) {
+		cli_lsa_close(&cli, &pol);
 	}
 
 	return result;
 }
 
-/* rpcclient interface */
+/* Resolve a list of SIDs to a list of names */
 
-static const struct command_set lsa_commands[] = {
-
-	{ "LSARPC", NULL, NULL, {NULL, NULL} },
-
-	{ "lsa_lookup_sids", cmd_lsa_lookup_sids },
-	{ "lsa_lookup_names", cmd_lsa_lookup_names },
-
-	{"", NULL, NULL, {NULL, NULL}}
-};
-
-
-void add_lsa_commands(void)
+static uint32 cmd_lsa_lookup_sids(int argc, char **argv)
 {
-	add_command_set(lsa_commands);
+	struct cli_state cli;
+	POLICY_HND pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	struct ntuser_creds creds;
+	BOOL got_policy_hnd = False;
+	DOM_SID *sids;
+	char **names;
+	uint32 *types;
+	int num_names, i;
+
+	if (argc == 1) {
+		printf("Usage: %s [sid1 [sid2 [...]]]\n", argv[0]);
+		return 0;
+	}
+
+	/* Open a lsa handle */
+
+	ZERO_STRUCT(cli);
+	init_rpcclient_creds(&creds);
+
+	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
+		goto done;
+	}
+
+	if ((result = cli_lsa_open_policy(&cli, True, 
+					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  &pol)) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_policy_hnd = True;
+
+	/* Convert arguments to sids */
+
+	sids = (DOM_SID *)malloc(sizeof(DOM_SID) * (argc - 1));
+
+	if (!sids) {
+		printf("out of memory\n");
+		goto done;
+	}
+
+	for (i = 0; i < argc - 1; i++) {
+		string_to_sid(&sids[i], argv[i + 1]);
+	}
+
+	/* Lookup the SIDs */
+
+	if ((result = cli_lsa_lookup_sids(&cli, &pol, argc - 1, sids, 
+					  &names, &types, &num_names) !=
+	     NT_STATUS_NOPROBLEMO)) {
+		goto done;
+	}
+
+	/* Print results */
+
+	for (i = 0; i < num_names; i++) {
+		fstring sid_str;
+
+		sid_to_string(sid_str, &sids[i]);
+		printf("%s\t\t%s (%d)\n", sid_str, names[i] ? names[i] :
+		       "*unknown*", types[i]);
+	}
+
+	safe_free(sids);
+	safe_free(types);      
+
+	for (i = 0; i < num_names; i++) {
+		safe_free(names[i]);
+	}
+
+	safe_free(names);
+
+ done:
+
+	if (got_policy_hnd) {
+		cli_lsa_close(&cli, &pol);
+	}
+
+	return result;
 }
+
+/* Enumerate list of trusted domains */
+
+static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
+{
+	struct cli_state cli;
+	POLICY_HND pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	struct ntuser_creds creds;
+	BOOL got_policy_hnd = False;
+	DOM_SID *domain_sids;
+	char **domain_names;
+	int num_domains, enum_ctx = 0, i;
+
+	if (argc != 1) {
+		printf("Usage: %s\n", argv[0]);
+		return 0;
+	}
+
+	/* Open a lsa handle */
+
+	ZERO_STRUCT(cli);
+	init_rpcclient_creds(&creds);
+
+	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
+		goto done;
+	}
+
+	if ((result = cli_lsa_open_policy(&cli, True, 
+					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  &pol)) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_policy_hnd = True;
+
+	/* Lookup list of trusted domains */
+
+	if ((result = cli_lsa_enum_trust_dom(&cli, &pol, &enum_ctx,
+					     &num_domains, &domain_names,
+					     &domain_sids) 
+	     != NT_STATUS_NOPROBLEMO)) {
+		goto done;
+	}
+
+	/* Print results */
+
+	for (i = 0; i < num_domains; i++) {
+		fstring sid_str;
+
+		sid_to_string(sid_str, &domain_sids[i]);
+		printf("%s\t\t%s\n", domain_names[i] ? domain_names[i] : 
+		       "*unknown*", sid_str);
+	}
+
+	safe_free(domain_sids);
+
+	for (i = 0; i < num_domains; i++) {
+		safe_free(domain_names[i]);
+	}
+
+	safe_free(domain_names);
+
+ done:
+
+	if (got_policy_hnd) {
+		cli_lsa_close(&cli, &pol);
+	}
+
+	return result;
+}
+
+/* List of commands exported by this module */
+
+struct cmd_set lsarpc_commands[] = {
+	{ "lsaquery", cmd_lsa_query_info_policy, "Query info policy" },
+	{ "lookupsids", cmd_lsa_lookup_sids, "Convert SIDs to names" },
+	{ "lookupnames", cmd_lsa_lookup_names, "Convert names to SIDs" },
+	{ "enumtrust", cmd_lsa_enum_trust_dom, "Enumerate trusted domains" },
+	{ NULL, NULL, NULL }
+};
