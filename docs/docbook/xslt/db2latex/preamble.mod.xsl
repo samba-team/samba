@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: preamble.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $		
 |- #############################################################################
-|	$Author: jerry $
 |
 |   PURPOSE: Variables and templates to manage LaTeX preamble. 
 + ############################################################################## -->
@@ -15,7 +13,6 @@
     <doc:reference id="preamble" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: preamble.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

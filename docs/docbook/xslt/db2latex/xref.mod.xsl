@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: xref.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 |- #############################################################################
-|	$Author: jerry $
 |														
 |   PURPOSE: Manage XREFs
 + ############################################################################## -->
@@ -19,7 +17,6 @@
 <doc:reference id="xref" xmlns="">
 <referenceinfo> 
 <releaseinfo role="meta">
-$Id: xref.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 </releaseinfo>
 <authorgroup>
 <author> <surname>Casellas</surname><firstname>Ramon</firstname> </author>

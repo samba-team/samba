@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: docbook.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $		
 |- #############################################################################
-|	$Author: jerry $												
 |														
 |   PURPOSE: 
 | 	This is the "parent" stylesheet. The used "modules" are included here.

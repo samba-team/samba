@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: labelid.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 |- #############################################################################
-|	$Author: jerry $
 |														
 |   PURPOSE: When this template is called, it marks the object with a label
 | and an hypertarget.
@@ -20,7 +18,6 @@
     <doc:reference id="labelid" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: labelid.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
