@@ -1005,6 +1005,11 @@ static BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override)
  	return mod_nisp21pwd_entry(pdb_smb_to_sam(pwd), override);
 }
 
+static BOOL del_nisppwd_entry(const char *name)
+{
+ 	return False; /* Dummy. */
+}
+
 static struct smb_passwd *getnisppwnam(char *name)
 {
 	return pdb_sam_to_smb(getnisp21pwnam(name));
@@ -1051,6 +1056,7 @@ static struct passdb_ops nispasswd_ops = {
   getnisppwent,
   add_nisppwd_entry,
   mod_nisppwd_entry,
+  del_nisppwd_entry,
   getnisp21pwent,
   getnisp21pwnam,
   getnisp21pwuid,

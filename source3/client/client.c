@@ -1560,10 +1560,15 @@ try and browse available connections on a host
 ****************************************************************************/
 static BOOL browse_host(BOOL sort)
 {
+	int ret;
+
         printf("\n\tSharename      Type      Comment\n");
         printf("\t---------      ----      -------\n");
 
-	return cli_RNetShareEnum(cli, browse_fn);
+	if((ret = cli_RNetShareEnum(cli, browse_fn)) == -1)
+		printf("Error returning browse list: %s\n", cli_errstr(cli));
+
+	return (ret != -1);
 }
 
 /****************************************************************************

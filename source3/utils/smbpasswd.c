@@ -63,6 +63,7 @@ static void usage(void)
 		printf("  -R ORDER             name resolve order\n");
 		printf("  -j DOMAIN            join domain name\n");
 		printf("  -a                   add user\n");
+		printf("  -x                   delete user\n");
 		printf("  -d                   disable user\n");
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
@@ -218,20 +219,19 @@ static char *prompt_for_new_password(BOOL stdin_get)
 
 
 /*************************************************************
-change a password either locally or remotely
+ Change a password either locally or remotely.
 *************************************************************/
+
 static BOOL password_change(const char *remote_machine, char *user_name, 
-			    char *old_passwd, char *new_passwd, 
-			    BOOL add_user, BOOL enable_user, 
-			    BOOL disable_user, BOOL set_no_password,
-			    BOOL trust_account)
+			    char *old_passwd, char *new_passwd, int local_flags)
 {
 	BOOL ret;
 	pstring err_str;
 	pstring msg_str;
 
 	if (remote_machine != NULL) {
-		if (add_user || enable_user || disable_user || set_no_password || trust_account) {
+		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
+							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
 			/* these things can't be done remotely yet */
 			return False;
 		}
@@ -242,8 +242,7 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 		return ret;
 	}
 	
-	ret = local_password_change(user_name, trust_account, add_user, enable_user, 
-				     disable_user, set_no_password, new_passwd, 
+	ret = local_password_change(user_name, local_flags, new_passwd, 
 				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
 
 	if(*msg_str)
@@ -256,18 +255,15 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 
 
 /*************************************************************
-handle password changing for root
+ Handle password changing for root.
 *************************************************************/
+
 static int process_root(int argc, char *argv[])
 {
 	struct passwd  *pwd;
 	int ch;
 	BOOL joining_domain = False;
-	BOOL trust_account = False;
-	BOOL add_user = False;
-	BOOL disable_user = False;
-	BOOL enable_user = False;
-	BOOL set_no_password = False;
+	int local_flags = 0;
 	BOOL stdin_passwd_get = False;
 	char *user_name = NULL;
 	char *new_domain = NULL;
@@ -275,24 +271,37 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
+	while ((ch = getopt(argc, argv, "a:x:d:e:mnj:r:sR:D:U:")) != EOF) {
 		switch(ch) {
 		case 'a':
-			add_user = True;
+			local_flags |= LOCAL_ADD_USER;
+			user_name = optarg;
+			break;
+		case 'x':
+			local_flags |= LOCAL_DELETE_USER;
+			user_name = optarg;
+			new_passwd = "XXXXXX";
 			break;
 		case 'd':
-			disable_user = True;
+			local_flags |= LOCAL_DISABLE_USER;
+			user_name = optarg;
 			new_passwd = "XXXXXX";
 			break;
 		case 'e':
-			enable_user = True;
+			local_flags |= LOCAL_ENABLE_USER;
+			user_name = optarg;
 			break;
-		case 'D':
-			DEBUGLEVEL = atoi(optarg);
+		case 'm':
+			local_flags |= LOCAL_TRUST_ACCOUNT;
 			break;
 		case 'n':
-			set_no_password = True;
+			local_flags |= LOCAL_SET_NO_PASSWORD;
 			new_passwd = "NO PASSWORD";
+		case 'j':
+			new_domain = optarg;
+			strupper(new_domain);
+			joining_domain = True;
+			break;
 		case 'r':
 			remote_machine = optarg;
 			break;
@@ -305,13 +314,8 @@ static int process_root(int argc, char *argv[])
 		case 'R':
 			lp_set_name_resolve_order(optarg);
 			break;
-		case 'm':
-			trust_account = True;
-			break;
-		case 'j':
-			new_domain = optarg;
-			strupper(new_domain);
-			joining_domain = True;
+		case 'D':
+			DEBUGLEVEL = atoi(optarg);
 			break;
 		case 'U':
 			user_name = optarg;
@@ -326,15 +330,16 @@ static int process_root(int argc, char *argv[])
 
 
 	/*
-	 * Ensure add_user and either remote machine or join domain are
+	 * Ensure add/delete user and either remote machine or join domain are
 	 * not both set.
 	 */	
-	if(add_user && ((remote_machine != NULL) || joining_domain)) {
+	if((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && ((remote_machine != NULL) || joining_domain)) {
 		usage();
 	}
 	
 	if(joining_domain) {
-		if (argc != 0) usage();
+		if (argc != 0)
+			usage();
 		return join_domain(new_domain, remote_machine);
 	}
 
@@ -365,7 +370,7 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (trust_account) {
+	if (local_flags & LOCAL_TRUST_ACCOUNT) {
 		/* add the $ automatically */
 		static fstring buf;
 
@@ -378,7 +383,7 @@ static int process_root(int argc, char *argv[])
 			user_name[strlen(user_name)-1] = 0;
 		}
 
-		if (add_user) {
+		if (local_flags & LOCAL_ADD_USER) {
 			new_passwd = xstrdup(user_name);
 			strlower(new_passwd);
 		}
@@ -390,12 +395,6 @@ static int process_root(int argc, char *argv[])
 
 		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
 		user_name = buf;
-	}
-
-	if (!remote_machine && !Get_Pwnam(user_name, True)) {
-		fprintf(stderr, "User \"%s\" was not found in system password file.\n", 
-			user_name);
-		exit(1);
 	}
 
 	if (remote_machine != NULL) {
@@ -413,7 +412,7 @@ static int process_root(int argc, char *argv[])
 		 * smbpasswd file) then we need to prompt for a new password.
 		 */
 
-		if(enable_user) {
+		if(local_flags & LOCAL_ENABLE_USER) {
 			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
 			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
 				new_passwd = "XXXX"; /* Don't care. */
@@ -429,20 +428,12 @@ static int process_root(int argc, char *argv[])
 		}
 	}
 	
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
-			     add_user, enable_user, disable_user, set_no_password,
-			     trust_account)) {
-		fprintf(stderr,"Failed to change password entry for %s\n", user_name);
+	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) {
+		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
 		return 1;
 	} 
 
-	if(disable_user) {
-		printf("User %s disabled.\n", user_name);
-	} else if(enable_user) {
-		printf("User %s enabled.\n", user_name);
-	} else if (set_no_password) {
-		printf("User %s - set to no password.\n", user_name);
-	} else {
+	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
 		struct smb_passwd *smb_pass = getsmbpwnam(user_name);
 		printf("Password changed for user %s.", user_name );
 		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_DISABLED ))
@@ -534,8 +525,7 @@ static int process_nonroot(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
-			     False, False, False, False, False)) {
+	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, 0)) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		return 1;
 	}

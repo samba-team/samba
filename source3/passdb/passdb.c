@@ -226,6 +226,15 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 }
 
 /************************************************************************
+ Routine to delete an entry from the smb passwd file.
+*************************************************************************/
+
+BOOL del_smbpwd_entry(const char *name)
+{
+	return pdb_ops->del_smbpwd_entry(name);
+}
+
+/************************************************************************
  Routine to search smb passwd by name.
 *************************************************************************/
 
