@@ -569,8 +569,10 @@ static BOOL init_structs(void)
    */
   /* Work out the max number of netbios aliases that we have */
   ptr = lp_netbios_aliases();
-  for( namecount=0; *ptr; namecount++,ptr++ )
-    ;
+  namecount = 0;
+  if (ptr)
+    for( ; *ptr; namecount++,ptr++ )
+      ;
   if ( *global_myname )
     namecount++;
 
@@ -588,28 +590,31 @@ static BOOL init_structs(void)
     my_netbios_names[namecount++] = global_myname;
   
   ptr = lp_netbios_aliases();
-  while ( *ptr )
+  if (ptr)
   {
-    nbname = strdup(*ptr);
-    if (nbname == NULL)
+    while ( *ptr )
     {
-      DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
-      return False;
-    }
-    strupper( nbname );
-    /* Look for duplicates */
-    nodup=1;
-    for( n=0; n<namecount; n++ )
-    {
-      if( 0 == strcmp( nbname, my_netbios_names[n] ) )
-        nodup=0;
-    }
-    if (nodup)
-      my_netbios_names[namecount++] = nbname;
-    else
-      free(nbname);
+      nbname = strdup(*ptr);
+      if (nbname == NULL)
+      {
+        DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
+        return False;
+      }
+      strupper( nbname );
+      /* Look for duplicates */
+      nodup=1;
+      for( n=0; n<namecount; n++ )
+      {
+        if( 0 == strcmp( nbname, my_netbios_names[n] ) )
+          nodup=0;
+      }
+      if (nodup)
+        my_netbios_names[namecount++] = nbname;
+      else
+        free(nbname);
 
-    ptr++;
+      ptr++;
+    }
   }
   
   /* Terminate name list */
