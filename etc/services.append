@@ -6,7 +6,7 @@
 kerberos	88/udp		kerberos-sec	# Kerberos v5 UDP
 kerberos	88/tcp		kerberos-sec	# Kerberos v5 TCP
 kpasswd		464/udp				# password changing
-kpasswd		464/tdp				# password changing
+kpasswd		464/tcp				# password changing
 klogin		543/tcp				# Kerberos authenticated rlogin
 kshell		544/tcp		krcmd		# and remote shell
 ekshell		545/tcp		      # Kerberos encrypted remote shell -kfall
