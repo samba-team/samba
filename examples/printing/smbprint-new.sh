@@ -75,9 +75,9 @@ config_file=$spool_dir/.config
 #   debug (optional)
 #   debugsmb (optional)
 #   debugfile (optional)
- $config_file
+. $config_file
 
-if [ "x$password" = "x"] ; then
+if [ "x$password" = "x" ] ; then
 	password="-N"
 fi
 
@@ -103,12 +103,16 @@ if [ $TRANS -eq 1 ]; then
 fi
 
 debugfile="/tmp/smb-print.log"
-if [ "x$debug" = "x" -o $debug -eq 0 ] ; then
-	debugfile=/dev/null debugargs=
+if [ "x$debug" = "x" ] ; then 
+		debugfile=/dev/null debugargs=
 else
-	set -x; exec >>$debugfile 2>&1
-	debugargs="$debugfile."
-	#[ "x$debugsmb" == "x" ] || debugargs="$debugargs -d $debugsmb"
+        if [ $debug -eq 0 ] ; then
+		debugfile=/dev/null debugargs=
+	else
+		set -x; exec >>$debugfile 2>&1
+		debugargs="$debugfile."
+		#[ "x$debugsmb" == "x" ] || debugargs="$debugargs -d $debugsmb"
+	fi
 fi
 
 if [ "x$smbconf" != "x" ]; then
