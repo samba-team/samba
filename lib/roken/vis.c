@@ -164,7 +164,7 @@ do {									   \
 		if (c & 0200) {						   \
 			c &= 0177; *dst++ = 'M';			   \
 		}							   \
-		if (iscntrl(c)) {					   \
+		if (iscntrl((unsigned char)c)) {			   \
 			*dst++ = '^';					   \
 			if (c == 0177)					   \
 				*dst++ = '?';				   \
