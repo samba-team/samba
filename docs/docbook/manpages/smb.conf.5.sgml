@@ -792,6 +792,8 @@
 		<listitem><para><link linkend="COPY"><parameter>copy</parameter></link></para></listitem>
 		<listitem><para><link linkend="CREATEMASK"><parameter>create mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="CREATEMODE"><parameter>create mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="CSCPOLICY"><parameter>csc policy</parameter></link></para></listitem>
+		
 		<listitem><para><link linkend="DEFAULTCASE"><parameter>default case</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEFAULTDEVMODE"><parameter>default devmode</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEREADONLY"><parameter>delete readonly</parameter></link></para></listitem>
@@ -1734,6 +1736,24 @@
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term><anchor id="CSCPOLICY">csc policy (S)</term>
+		<listitem><para>This stands for <emphasis>client-side caching 
+		policy</emphasis>, and specifies how clients capable of offline
+		caching will cache the files in the share. The valid values
+		are: manual, documents, programs, disable.</para>
+
+		<para>These values correspond to those used on Windows
+		servers.</para>
+
+		<para>For example, shares containing roaming profiles can have
+		offline caching disabled using <command>csc policy = disable
+		</command>.</para>
+
+		<para>Default: <command>csc policy = manual</command></para>
+		<para>Example: <command>csc policy = programs</command></para>
+		</listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term><anchor id="DEADTIME">deadtime (G)</term>
