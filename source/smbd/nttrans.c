@@ -2051,21 +2051,16 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
     /*
      * The security mask may be UNIX_ACCESS_NONE which should map into
      * no permissions (we overload the WRITE_OWNER bit for this) or it
-     * should be one of the ALL/EXECUTE/READ/WRITE bits. Fail if not.
+     * should be one of the ALL/EXECUTE/READ/WRITE bits. Arrange for this
+     * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
      */
 
-    if(psa->info.mask & UNIX_ACCESS_NONE) {
-      /* Ensure no other bits are set. */
-      if(psa->info.mask & ~UNIX_ACCESS_NONE) {
-        DEBUG(3,("unpack_unix_permissions: UNIX_ACCESS_NONE must be set alone.\n"));
-        return False;
-      }
-    } else if(psa->info.mask & ~(GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
-                     GENERIC_READ_ACCESS)) {
-      DEBUG(3,("unpack_unix_permissions: can only set generic permissions on an ACE.\n"));
-      return False;
-    }
-    
+    psa->info.mask &= (GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
+                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE);
+
+    if(psa->info.mask != UNIX_ACCESS_NONE)
+      psa->info.mask &= ~UNIX_ACCESS_NONE;
+
     sid_copy(&ace_sid, &psa->sid);
 
     if(sid_equal(&ace_sid, &owner_sid)) {
