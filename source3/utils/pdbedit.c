@@ -172,8 +172,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		char lm_passwd[33];
 		char nt_passwd[33];
 
-		uid = -1;
-		idmap_sid_to_uid(pdb_get_user_sid(sam_pwent), &uid, 0);
+		uid = nametouid(pdb_get_username(sam_pwent));
 		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 			
@@ -185,8 +184,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
 		       (uint32)pdb_get_pass_last_set_time(sam_pwent));
 	} else {
-		uid = -1;
-		idmap_sid_to_uid(pdb_get_user_sid(sam_pwent), &uid, 0);
+		uid = nametouid(pdb_get_username(sam_pwent));
 		printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), uid,	pdb_get_fullname(sam_pwent));
 	}
 
@@ -621,19 +619,10 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	/* Initialise the password backed before idmap and the global_sam_sid
-	   to ensure that we fetch from ldap before we make a domain sid up */
-	
 	if(!initialize_password_db(False))
 		exit(1);
 
 	if (!init_names())
-		exit(1);
-
-	if (!idmap_init(lp_idmap_backend()))
-		exit(1);
-
-	if (!idmap_init_wellknown_sids())
 		exit(1);
 
 	setparms =	(backend ? BIT_BACKEND : 0) +
