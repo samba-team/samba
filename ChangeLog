@@ -1,3 +1,10 @@
+2000-01-12  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos4.c (do_version4): check if preauth was required and
+	bail-out if so since there's no way that could be done in v4.
+	Return NULL_KEY as an error to the client (which is non-obvious,
+	but what can you do?)
+
 2000-01-09  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/principal.c (krb5_sname_to_principal): use
