@@ -35,7 +35,12 @@ int kerberos_kinit_password(const char *principal, const char *password,
 	krb5_ccache cc;
 	krb5_principal me;
 	krb5_creds my_creds;
-	
+
+	if (! *password) {
+		/* kerberos dies on an empty password! */
+		return KRB5_PARSE_MALFORMED;
+	}
+
 	if ((code = krb5_init_context(&ctx)))
 		return code;
 	
@@ -103,7 +108,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	ret = kerberos_kinit_password(s, ads->password, 0);
 
 	if (ret) {
-		DEBUG(1,("kerberos_kinit_password %s failed: %s\n", 
+		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
 			 s, error_message(ret)));
 	}
 	free(s);
