@@ -95,6 +95,11 @@ static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
+	io.in.pattern = BASEDIR "\\..\\..";
+	io.in.attrib = 0;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+
 	io.in.pattern = BASEDIR "\\..";
 	io.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
@@ -107,10 +112,32 @@ static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
+	io.in.pattern = BASEDIR "\\z*";
+	io.in.attrib = 0;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
+
+	io.in.pattern = BASEDIR "\\z*";
+	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
+
 	io.in.pattern = BASEDIR "\\*";
 	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.pattern = BASEDIR "\\?";
+	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.pattern = BASEDIR "\\t*";
+	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 
 	io.in.pattern = BASEDIR "\\*.dat";
 	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
