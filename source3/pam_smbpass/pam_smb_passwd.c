@@ -35,8 +35,7 @@
 
 int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  const char *pass_new )
 {
- char		c;
- int		retval, i;
+ int		retval;
  pstring	err_str;
  pstring	msg_str;
 
@@ -94,12 +93,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     SAM_ACCOUNT *sampass = NULL;
     const char *user;
-    const char *pass_old, *pass_new;
+    char *pass_old;
+    char *pass_new;
 
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
-    charset_initialise();
-    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);
