@@ -58,7 +58,7 @@ static NTSTATUS rid_idmap_parse(const char *init_param,
 	fstring tok;
 
 	/* falling back to automatic mapping when there were no options given */
-	if (!*init_param || !lp_allow_trusted_domains()) {
+	if (!*init_param) {
 
 		DEBUG(3,("rid_idmap_parse: no domain list given or trusted domain-support deactivated, falling back to automatic mapping for own domain:\n"));
 
