@@ -645,6 +645,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
     uint32 status = 0x0;
     DOM_CRED srv_cred;
     struct smb_passwd *smb_pass = NULL;
+    struct sam_passwd *sam_pass = NULL;
     UNISTR2 *uni_samlogon_user = NULL;
     fstring nt_username;
     struct passwd *pw;
@@ -714,6 +715,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
         pw=Get_Pwnam(nt_username, True);
         
         become_root();
+        sam_pass = getsam21pwnam(nt_username);
         smb_pass = getsmbpwnam(nt_username);
         unbecome_root();
         
@@ -774,26 +776,29 @@ static BOOL api_net_sam_logon(pipes_struct *p)
         sam_logon_in_ssb = True;
         pstrcpy(samlogon_user, nt_username);
 
-        pstrcpy(logon_script, lp_logon_script());
+        pstrcpy(logon_script, sam_pass->logon_script);
         standard_sub_advanced(-1, nt_username, "", pw->pw_gid, logon_script);
 	
-        pstrcpy(profile_path, lp_logon_path());
+        pstrcpy(profile_path, sam_pass->profile_path);
         standard_sub_advanced(-1, nt_username, "", pw->pw_gid, profile_path);
         
         pstrcpy(my_workgroup, lp_workgroup());
         
-        pstrcpy(home_drive, lp_logon_drive());
+        pstrcpy(home_drive, sam_pass->dir_drive);
         standard_sub_advanced(-1, nt_username, "", pw->pw_gid, home_drive);
 
-        pstrcpy(home_dir, lp_logon_home());
+        pstrcpy(home_dir, sam_pass->home_dir);
         standard_sub_advanced(-1, nt_username, "", pw->pw_gid, home_dir);
         
         pstrcpy(my_name, global_myname);
         strupper(my_name);
 
-	fstrcpy(full_name, "<Full Name>");
-	if (lp_unix_realname())
-		fstrcpy(full_name, pw->pw_gecos);
+	pstrcpy(full_name, sam_pass->full_name );
+	if( !*full_name ) {
+	  fstrcpy(full_name, "<Full Name>");
+	  if (lp_unix_realname())
+		fstrcpy(full_name, strtok(pw->pw_gecos, ","));
+	}
         
         /*
          * This is the point at which we get the group
