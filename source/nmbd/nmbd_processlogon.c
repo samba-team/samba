@@ -204,9 +204,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d, len = %d\n", domainsidsize, len));
 
-	  if(domainsidsize > 1000)
-		smb_panic("plc");  /*JRATEST */
-		
       if (domainsidsize < (len - PTR_DIFF(q, buf)) && (domainsidsize != 0)) {
 	      q += domainsidsize;
 	      q = ALIGN4(q, buf);
