@@ -1221,9 +1221,9 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 	printf("host=%s share=%s user=%s myname=%s procs=%d ops=%d\n", 
 	       host, share, username, myname, nprocs, numops);
 
-	create_procs(nprocs, numops, run_randomipc_nowait);
-/*
 	create_procs(nprocs, numops, run_randomipc);
+/*
+	create_procs(nprocs, numops, run_randomipc_nowait);
 
 	create_procs(nprocs, numops, run_connection);
 

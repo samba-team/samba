@@ -112,7 +112,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,
 do a server net sess enum
 ****************************************************************************/
 BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name,
+			char *server_name, char *qual_name, char *user_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
@@ -138,7 +138,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
 	ctr->sess.info0.ptr_sess_info    = 1;
 
 	/* store the parameters */
-	make_srv_q_net_sess_enum(&q_o, server_name, qual_name,
+	make_srv_q_net_sess_enum(&q_o, server_name, qual_name, user_name,
 	                         switch_value, ctr,
 	                         preferred_len,
 	                         hnd);
@@ -268,7 +268,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli, uint16 fnum,
 do a server net file enum
 ****************************************************************************/
 BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name,
+			char *server_name, char *qual_name, uint32 file_id,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
@@ -296,7 +296,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
 	ctr->file.info3.ptr_file_info    = 1;
 
 	/* store the parameters */
-	make_srv_q_net_file_enum(&q_o, server_name, qual_name,
+	make_srv_q_net_file_enum(&q_o, server_name, qual_name, file_id,
 	                         switch_value, ctr,
 	                         preferred_len,
 	                         hnd);

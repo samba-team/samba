@@ -72,23 +72,23 @@ typedef struct eventlog_q_open
 
 	uint16 unk0;
 	uint16 unk1;
-	uint16 unk2;
-	uint16 unk3;
 
-	uint32 ptr_source;	
-
-	UNISTR2 source;
+	UNIHDR  hdr_source;
+	UNISTR2 uni_source;
 	
-	uint32 unk4;
-	uint32 unk5;
+	UNIHDR  hdr_unk;
+	UNISTR2 uni_unk;
+	
 	uint32 unk6;
 	uint32 unk7;
+
 } EVENTLOG_Q_OPEN;
 
 typedef struct eventlog_r_open
 {
         POLICY_HND pol;
         uint32 status;
+
 } EVENTLOG_R_OPEN;
 
 typedef struct eventlog_q_close
