@@ -2284,33 +2284,23 @@ BOOL create_user_creds( prs_struct *ps,
 
 /*The following definitions come from  rpc_parse/parse_dfs.c  */
 
-BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps,
-			int depth);
+BOOL dfs_io_q_dfs_exist(char *desc, DFS_Q_DFS_EXIST *q_d, prs_struct *ps, int depth);
+BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, int depth);
 BOOL make_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
 			   char *servername, char *sharename);
-BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps,
-			 int depth);
-BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps,
-		      int depth);
+BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps, int depth);
+BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int depth);
 BOOL make_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
 			char *sharename, char *comment, uint32 flags);
-BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps,
-		      int depth);
-BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps,
-		      int depth);
-BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, 
-			   prs_struct* ps, int depth);
-BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i,
-			   prs_struct* ps, int depth);
+BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps, int depth);
+BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int depth);
+BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct* ps, int depth);
+BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, int depth);
 BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr);
-BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps,
-		      int depth);
-BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
-			 uint32 level,
-			 prs_struct* ps, int depth);
+BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps, int depth);
+BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries, uint32 level, prs_struct* ps, int depth);
 BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth);
-BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
-			     prs_struct *ps, int depth);
+BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
@@ -3523,6 +3513,14 @@ BOOL wks_io_r_query_info(char *desc, WKS_R_QUERY_INFO *r_u, prs_struct *ps, int 
 /*The following definitions come from  rpc_server/srv_dfs.c  */
 
 BOOL api_netdfs_rpc(pipes_struct *p);
+
+/*The following definitions come from  rpc_server/srv_dfs_nt.c  */
+
+uint32 _dfs_exist(pipes_struct *p, DFS_Q_DFS_EXIST *q_u, DFS_R_DFS_EXIST *r_u);
+uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u);
+uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u);
+uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u);
+uint32 _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, DFS_R_DFS_GET_INFO *r_u);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
