@@ -614,7 +614,7 @@ void cgi_setup(char *rootdir)
 		cgi_download(url+1);
 	}
 
-	printf("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n");
+	printf("HTTP/1.1 200 OK\r\nConnection: close\r\n");
 	
 }
 
