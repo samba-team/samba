@@ -1618,6 +1618,20 @@ static int sig_cld()
   **************************************************************************/
 static int sig_pipe()
 {
+  extern int password_client;
+  BlockSignals(True,SIGPIPE);
+
+  if (password_client != -1) {
+    DEBUG(3,("lost connection to password server\n"));
+    close(password_client);
+    password_client = -1;
+#ifndef DONT_REINSTALL_SIG
+    signal(SIGPIPE, SIGNAL_CAST sig_pipe);
+#endif
+    BlockSignals(False,SIGPIPE);
+    return 0;
+  }
+
   exit_server("Got sigpipe\n");
   return(0);
 }
