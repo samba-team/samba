@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -346,7 +346,7 @@ krb5_sendto_kdc (krb5_context context,
 	     }
 	     colon = strchr (p, ':');
 	     if (colon)
-		 *colon = '\0';
+		 *colon++ = '\0';
 
 	     memset (&hints, 0, sizeof(hints));
 	     hints.ai_family = PF_UNSPEC;
@@ -357,8 +357,6 @@ krb5_sendto_kdc (krb5_context context,
 	     snprintf (portstr, sizeof(portstr), "%d",
 		       ntohs(init_port (colon, port)));
 	     ret = getaddrinfo (p, portstr, &hints, &ai);
-	     if (colon)
-		 *colon++ = ':';
 	     if (ret)
 		 continue;
 	     for (a = ai; a != NULL; a = a->ai_next) {
