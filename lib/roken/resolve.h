@@ -240,6 +240,8 @@ struct resource_record{
     struct resource_record *next;
 };
 
+#define rk_DNS_MAX_PACKET_SIZE		0xffff
+
 struct dns_header {
     unsigned id;
     unsigned flags;
