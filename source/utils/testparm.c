@@ -183,6 +183,10 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	}
 #endif
 
+	if (!lp_passdb_backend()) {
+		printf("ERROR: passdb backend must have a value or be left out\n");
+	}
+
 	return ret;
 }   
 
