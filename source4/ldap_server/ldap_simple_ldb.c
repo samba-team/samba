@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    LDAP server SIMPLE LDB implementation
    Copyright (C) Stefan Metzmacher 2004
+   Copyright (C) Simo Sorce 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -329,7 +330,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "sldb_Modify local memory context");
 	ALLOC_CHECK(local_ctx);
 
-	samdb = samdb_connect(call);
+	samdb = samdb_connect(local_ctx);
 	ALLOC_CHECK(samdb);
 
 	ldn = ldap_parse_dn(local_ctx, r->dn);
