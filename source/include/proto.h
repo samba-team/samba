@@ -1041,6 +1041,7 @@ void sys_srandom(unsigned int seed);
 int groups_max(void);
 int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(int setlen, gid_t *gidset);
+int sys_setgroups(int setlen, gid_t *gidset);
 void sys_setpwent(void);
 struct passwd *sys_getpwent(void);
 void sys_endpwent(void);
@@ -1499,6 +1500,7 @@ void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode);
 BOOL lock_share_entry_fsp(files_struct *fsp);
 void unlock_share_entry_fsp(files_struct *fsp);
+char *share_mode_str(int num, share_mode_entry *e);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **pp_shares);

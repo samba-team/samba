@@ -438,7 +438,7 @@ void unlock_share_entry_fsp(files_struct *fsp)
  Print out a share mode.
 ********************************************************************/
 
-static char *share_mode_str(int num, share_mode_entry *e)
+char *share_mode_str(int num, share_mode_entry *e)
 {
 	static pstring share_str;
 
