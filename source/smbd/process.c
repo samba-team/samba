@@ -1078,14 +1078,40 @@ static int setup_select_timeout(void)
 void check_reload(int t)
 {
 	static time_t last_smb_conf_reload_time = 0;
+	static time_t last_load_printers_reload_time = 0;
+	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 
-	if(last_smb_conf_reload_time == 0)
+	if(last_smb_conf_reload_time == 0) {
 		last_smb_conf_reload_time = t;
+		/* Our printing subsystem might not be ready at smbd start up.
+		   Then no printer is available till the first printers check
+		   is performed.  A lower initial interval circumvents this. */
+		if ( printcap_cache_time > 60 )
+			last_load_printers_reload_time = t - printcap_cache_time + 60;
+		else
+			last_load_printers_reload_time = t;
+	}
 
 	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
 		reload_services(True);
 		reload_after_sighup = False;
 		last_smb_conf_reload_time = t;
+	}
+
+	/* 'printcap cache time = 0' disable the feature */
+	
+	if ( printcap_cache_time != 0 )
+	{ 
+		/* see if it's time to reload or if the clock has been set back */
+		
+		if ( (t >= last_load_printers_reload_time+printcap_cache_time) 
+			|| (t-last_load_printers_reload_time  < 0) ) 
+		{
+			DEBUG( 3,( "Printcap cache time expired.\n"));
+			remove_stale_printers();
+			load_printers();
+			last_load_printers_reload_time = t;
+		}
 	}
 }
 

@@ -826,3 +826,27 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	conn_free(conn);
 }
+
+/****************************************************************************
+ Remove stale printers
+****************************************************************************/
+
+void remove_stale_printers( void )
+{
+	int snum, iNumServices, printersServiceNum;
+	const char *pname;
+
+	iNumServices = lp_numservices();
+	printersServiceNum = lp_servicenumber( PRINTERS_NAME);
+	for( snum = 0; snum < iNumServices; snum++) {
+		/* Never remove PRINTERS_NAME */
+		if ( snum == printersServiceNum)
+			continue;
+		pname = lp_printername( snum);
+		/* Is snum a print service and still in the printing subsystem? */
+		if ( lp_print_ok( snum) && !pcap_printername_ok( pname, NULL)) {
+			DEBUG( 3, ( "Removing printer: %s\n", pname));
+			lp_killservice( snum);
+		}
+	}
+}
