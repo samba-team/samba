@@ -243,6 +243,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"srvtransports",
+		cmd_srv_enum_tprt,
+		"List transports on a server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"srvconnections",
 		cmd_srv_enum_conn,
 		"List connections on a server",

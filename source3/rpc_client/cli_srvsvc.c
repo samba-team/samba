@@ -32,6 +32,83 @@
 extern int DEBUGLEVEL;
 
 /****************************************************************************
+do a server net tprt enum
+****************************************************************************/
+BOOL do_srv_net_srv_tprt_enum(struct cli_state *cli, uint16 fnum,
+			char *server_name, 
+			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd)
+{
+	prs_struct data; 
+	prs_struct rdata;
+	SRV_Q_NET_TPRT_ENUM q_o;
+    BOOL valid_enum = False;
+
+	if (server_name == NULL || ctr == NULL || preferred_len == 0) return False;
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SRV_NETTPRTENUM */
+
+	DEBUG(4,("SRV Net Server Transport Enum(%s), level %d, enum:%8x\n",
+				server_name, switch_value, get_enum_hnd(hnd)));
+				
+	ctr->switch_value = switch_value;
+	ctr->ptr_tprt_ctr = 1;
+	ctr->tprt.info0.num_entries_read = 0;
+	ctr->tprt.info0.ptr_tprt_info    = 1;
+
+	/* store the parameters */
+	make_srv_q_net_tprt_enum(&q_o, server_name,
+	                         switch_value, ctr,
+	                         preferred_len,
+	                         hnd);
+
+	/* turn parameters into data stream */
+	srv_io_q_net_tprt_enum("", &q_o, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SRV_NETTRANSPORTENUM, &data, &rdata))
+	{
+		SRV_R_NET_TPRT_ENUM r_o;
+		BOOL p;
+
+		r_o.ctr = ctr;
+
+		srv_io_r_net_tprt_enum("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = 0;
+		}
+
+		if (p && r_o.ctr->switch_value != switch_value)
+		{
+			/* different switch levels.  oops. */
+			DEBUG(0,("SRV_R_NET_SRV_TPRT_ENUM: info class %d does not match request %d\n",
+				r_o.ctr->switch_value, switch_value));
+			p = 0;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. */
+			valid_enum = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+	
+	return valid_enum;
+}
+
+/****************************************************************************
 do a server net conn enum
 ****************************************************************************/
 BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,

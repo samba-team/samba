@@ -30,6 +30,7 @@
 #define SRV_NETFILEENUM      0x09
 #define SRV_NETSESSENUM      0x0c
 #define SRV_NETSHAREENUM     0x0f
+#define SRV_NETTRANSPORTENUM 0x1a
 #define SRV_NET_SRV_GET_INFO 0x15
 #define SRV_NET_SRV_SET_INFO 0x16
 #define	SRV_NET_REMOTE_TOD   0x1c
@@ -103,11 +104,11 @@ typedef struct srv_sess_info_ctr_info
 	uint32 switch_value;         /* switch value */
 	uint32 ptr_sess_ctr;       /* pointer to sess info union */
 	union
-    {
+	{
 		SRV_SESS_INFO_0 info0; /* session info level 0 */
 		SRV_SESS_INFO_1 info1; /* session info level 1 */
 
-    } sess;
+	} sess;
 
 } SRV_SESS_INFO_CTR;
 
@@ -209,11 +210,11 @@ typedef struct srv_conn_info_ctr_info
 	uint32 switch_value;         /* switch value */
 	uint32 ptr_conn_ctr;       /* pointer to conn info union */
 	union
-    {
+	{
 		SRV_CONN_INFO_0 info0; /* connection info level 0 */
 		SRV_CONN_INFO_1 info1; /* connection info level 1 */
 
-    } conn;
+	} conn;
 
 } SRV_CONN_INFO_CTR;
 
@@ -249,6 +250,85 @@ typedef struct r_net_conn_enum_info
 	uint32 status;               /* return status */
 
 } SRV_R_NET_CONN_ENUM;
+
+/* oops - this is going to take up a *massive* amount of stack. */
+/* the UNISTR2s already have 1024 uint16 chars in them... */
+#define MAX_TPRT_ENTRIES 32
+
+/* TPRT_INFO_0 (pointers to level 0 transport info strings) */
+typedef struct ptr_tprt_info0
+{
+	uint32 num_vcs;   /* number of clients using transport */
+	uint32 ptr_trans_name; /* pointer to transport name. */
+	uint32 ptr_trans_addr; /* pointer to transport address */
+	uint32 trans_addr_len; /* length of transport address */
+	uint32 ptr_addr_name; /* pointer to network address name. */
+
+} TPRT_INFO_0;
+
+/* TPRT_INFO_0_STR (level 0 transport info strings) */
+typedef struct str_tprt_info0
+{
+	UNISTR2 uni_trans_name; /* unicode string of transport */
+	BUFFER4 buf_trans_addr; /* buffer for transport address */
+	UNISTR2 uni_addr_name; /* unicode string of network address */
+
+} TPRT_INFO_0_STR;
+
+/* SRV_TPRT_INFO_0 */
+typedef struct srv_tprt_info_0_info
+{
+	uint32 num_entries_read;                     /* EntriesRead */
+	uint32 ptr_tprt_info;                        /* Buffer */
+	uint32 num_entries_read2;                    /* EntriesRead */
+
+	TPRT_INFO_0     info_0    [MAX_TPRT_ENTRIES]; /* transport entry pointers */
+	TPRT_INFO_0_STR info_0_str[MAX_TPRT_ENTRIES]; /* transport entry strings */
+
+} SRV_TPRT_INFO_0;
+
+/* SRV_TPRT_INFO_CTR */
+typedef struct srv_tprt_info_ctr_info
+{
+	uint32 switch_value;         /* switch value */
+	uint32 ptr_tprt_ctr;       /* pointer to tprt info union */
+	union
+	{
+		SRV_TPRT_INFO_0 info0; /* tprtection info level 0 */
+
+	} tprt;
+
+} SRV_TPRT_INFO_CTR;
+
+
+/* SRV_Q_NET_TPRT_ENUM */
+typedef struct q_net_tprt_enum_info
+{
+	uint32 ptr_srv_name;         /* pointer (to server name) */
+	UNISTR2 uni_srv_name;        /* server name "\\server" */
+
+	uint32 tprt_level;          /* transport level */
+
+	SRV_TPRT_INFO_CTR *ctr;
+
+	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
+	ENUM_HND enum_hnd;
+
+} SRV_Q_NET_TPRT_ENUM;
+
+/* SRV_R_NET_TPRT_ENUM */
+typedef struct r_net_tprt_enum_info
+{
+	uint32 tprt_level;          /* share level */
+
+	SRV_TPRT_INFO_CTR *ctr;
+
+	uint32 total_entries;                    /* total number of entries */
+	ENUM_HND enum_hnd;
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_TPRT_ENUM;
 
 /* oops - this is going to take up a *massive* amount of stack. */
 /* the UNISTR2s already have 1024 uint16 chars in them... */
@@ -325,11 +405,11 @@ typedef struct srv_share_info_1_info
 	uint32 switch_value;         /* switch value */
 	uint32 ptr_share_ctr;       /* pointer to share info union */
 	union
-    {
+	{
 		SRV_SHARE_INFO_1 info1; /* share info level 1 */
 		SRV_SHARE_INFO_2 info2; /* share info level 2 */
 
-    } share;
+	} share;
 
 } SRV_SHARE_INFO_CTR;
 
@@ -405,10 +485,10 @@ typedef struct srv_file_info_3_info
 	uint32 switch_value;         /* switch value */
 	uint32 ptr_file_ctr;       /* pointer to file info union */
 	union
-    {
+	{
 		SRV_FILE_INFO_3 info3; /* file info with 0 entries */
 
-    } file;
+	} file;
 
 } SRV_FILE_INFO_CTR;
 
@@ -493,11 +573,11 @@ typedef struct srv_info_ctr_info
 	uint32 switch_value;         /* switch value */
 	uint32 ptr_srv_ctr;         /* pointer to server info */
 	union
-    {
+	{
 		SRV_INFO_102 sv102; /* server info level 102 */
 		SRV_INFO_101 sv101; /* server info level 101 */
 
-    } srv;
+	} srv;
 
 } SRV_INFO_CTR;
 

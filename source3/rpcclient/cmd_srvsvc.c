@@ -103,6 +103,67 @@ void cmd_srv_query_info(struct client_info *info)
 }
 
 /****************************************************************************
+server enum transports
+****************************************************************************/
+void cmd_srv_enum_tprt(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+	fstring dest_srv;
+	fstring tmp;
+	SRV_TPRT_INFO_CTR ctr;
+	ENUM_HND hnd;
+	uint32 info_level = 0;
+
+	BOOL res = True;
+
+	bzero(&ctr, sizeof(ctr));
+
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
+	{
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(4,("cmd_srv_enum_tprt: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
+
+	DEBUG(5, ("cmd_srv_enum_tprt: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+
+	hnd.ptr_hnd = 1;
+	hnd.handle = 0;
+
+	/* enumerate transports on server */
+	res = res ? do_srv_net_srv_tprt_enum(smb_cli, nt_pipe_fnum,
+				dest_srv, 
+	            info_level, &ctr, 0xffffffff, &hnd) : False;
+
+	if (res)
+	{
+		display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+	}
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_enum_tprt: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_enum_tprt: query failed\n"));
+	}
+}
+
+/****************************************************************************
 server enum connections
 ****************************************************************************/
 void cmd_srv_enum_conn(struct client_info *info)

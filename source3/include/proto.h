@@ -610,6 +610,7 @@ char *skip_unibuf(char *srcbuf, int len);
 char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
 uint32 buffer2_to_uint32(const BUFFER2 *str);
 void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen);
+void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -2003,6 +2004,11 @@ BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
+BOOL do_srv_net_srv_tprt_enum(struct cli_state *cli, uint16 fnum,
+			char *server_name, 
+			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
 BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,
 			char *server_name, char *qual_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
@@ -2174,6 +2180,7 @@ BOOL make_buffer3_str(BUFFER3 *str, const char *buf, int len);
 BOOL make_buffer3_hex(BUFFER3 *str, char *buf);
 BOOL make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
 BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
+BOOL make_buffer4_str(BUFFER4 *str, const char *buf, int len);
 BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth);
 BOOL init_buffer5(BUFFER5 **str);
 BOOL clear_buffer5(BUFFER5 **str);
@@ -2983,6 +2990,21 @@ BOOL make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n,
 				ENUM_HND *hnd);
 BOOL srv_io_q_net_conn_enum(char *desc,  SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *ps, int depth);
+BOOL make_srv_tprt_info0_str(TPRT_INFO_0_STR *tp0,
+				char *trans_name,
+				char *trans_addr, uint32 trans_addr_len,
+				char *addr_name);
+BOOL make_srv_tprt_info0(TPRT_INFO_0 *tp0, 
+				uint32 num_vcs, uint32 trans_addr_len,
+				char *trans_name, char *trans_addr,
+				char *addr_name);
+BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n, 
+				char *srv_name, 
+				uint32 tprt_level, SRV_TPRT_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
+BOOL srv_io_q_net_tprt_enum(char *desc,  SRV_Q_NET_TPRT_ENUM *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_tprt_enum(char *desc,  SRV_R_NET_TPRT_ENUM *r_n, prs_struct *ps, int depth);
 BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name);
 BOOL make_srv_file_info3(FILE_INFO_3 *fl3,
 				uint32 id, uint32 perms, uint32 num_locks,
@@ -3272,6 +3294,7 @@ BOOL net_srv_get_info(struct client_info *info,
 		uint32 info_level,
 		SRV_INFO_CTR *ctr);
 void cmd_srv_query_info(struct client_info *info);
+void cmd_srv_enum_tprt(struct client_info *info);
 void cmd_srv_enum_conn(struct client_info *info);
 void cmd_srv_enum_shares(struct client_info *info);
 void cmd_srv_enum_sess(struct client_info *info);
@@ -3307,6 +3330,12 @@ void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
 				SRV_CONN_INFO_1 *ctr);
 void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 				SRV_CONN_INFO_CTR *ctr);
+void display_tprt_info_0(FILE *out_hnd, enum action_type action,
+		TPRT_INFO_0 *info0, TPRT_INFO_0_STR *str0);
+void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action,
+				SRV_TPRT_INFO_0 *ctr);
+void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_TPRT_INFO_CTR *ctr);
 void display_share_info_1(FILE *out_hnd, enum action_type action,
 		SH_INFO_1 *info1, SH_INFO_1_STR *str1);
 void display_share_info_2(FILE *out_hnd, enum action_type action,

@@ -479,6 +479,117 @@ void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 
 
 /****************************************************************************
+transport info level 0 display function
+****************************************************************************/
+void display_tprt_info_0(FILE *out_hnd, enum action_type action,
+		TPRT_INFO_0 *info0, TPRT_INFO_0_STR *str0)
+{
+	if (info0 == NULL || str0 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Connection Info Level 0:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring trans_name;
+			fstring trans_addr;
+			fstring addr_name;
+
+			unistr2_to_ascii(trans_name, &str0->uni_trans_name, sizeof(trans_name)-1);
+			buffer4_to_str(trans_addr, &str0->buf_trans_addr, sizeof(trans_addr)-1);
+			unistr2_to_ascii(addr_name, &str0->uni_addr_name, sizeof(addr_name)-1);
+
+			fprintf(out_hnd, "\tnum_vcs  :\t%d\n", info0->num_vcs);
+			fprintf(out_hnd, "\ttransport name:\t%s\n", trans_name);
+			fprintf(out_hnd, "\ttransport addr:\t%s\n", trans_addr);
+			fprintf(out_hnd, "\taddress name:\t%s\n", addr_name);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+transport info level 0 container display function
+****************************************************************************/
+void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action,
+				SRV_TPRT_INFO_0 *ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_srv_tprt_info_0_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < ctr->num_entries_read; i++)
+			{
+				display_tprt_info_0(out_hnd, ACTION_HEADER   , &(ctr->info_0[i]), &(ctr->info_0_str[i]));
+				display_tprt_info_0(out_hnd, ACTION_ENUMERATE, &(ctr->info_0[i]), &(ctr->info_0_str[i]));
+				display_tprt_info_0(out_hnd, ACTION_FOOTER   , &(ctr->info_0[i]), &(ctr->info_0_str[i]));
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+transport info container display function
+****************************************************************************/
+void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_TPRT_INFO_CTR *ctr)
+{
+	if (ctr == NULL || ctr->ptr_tprt_ctr == 0)
+	{
+		fprintf(out_hnd, "display_srv_tprt_info_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (ctr->switch_value)
+	{
+		case 0:
+		{
+			display_srv_tprt_info_0_ctr(out_hnd, action,
+			                   &(ctr->tprt.info0));
+			break;
+		}
+		default:
+		{
+			fprintf(out_hnd, "display_srv_tprt_info_ctr: Unknown Info Level\n");
+			break;
+		}
+	}
+}
+
+
+/****************************************************************************
 share info level 1 display function
 ****************************************************************************/
 void display_share_info_1(FILE *out_hnd, enum action_type action,

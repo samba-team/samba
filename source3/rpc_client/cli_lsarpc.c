@@ -58,7 +58,7 @@ BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 	if (sec_qos)
 	{
 		make_lsa_sec_qos(&qos, 2, 1, 0, 0x20000000);
-		make_q_open_pol(&q_o, 0x5c, 0, 0, &qos);
+		make_q_open_pol(&q_o, 0x5c, 0, 0x02000000, &qos);
 	}
 	else
 	{

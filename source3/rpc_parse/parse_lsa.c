@@ -540,11 +540,11 @@ BOOL make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol)
 	memcpy(&(q_q->pol), pol, sizeof(q_q->pol));
 
 	/* Want secret */
-	q_q->info.ptr_value = 1;
+	q_q->info.ptr_value = 0;
 	q_q->info.value.ptr_secret = 0;
 
 	/* Want last change time */
-	q_q->info.ptr_update = 1;
+	q_q->info.ptr_update = 0;
 
 	/* Don't care about old info */
 	q_q->oldinfo.ptr_value = 0;
