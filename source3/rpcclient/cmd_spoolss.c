@@ -313,7 +313,7 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	uint32			info_level = 1;
 	PRINTER_INFO_CTR	ctr;
 	uint32			i = 0, num_printers, needed;
-	char *name = NULL;
+	fstring name;
 
 	if (argc > 3) 
 	{
@@ -325,7 +325,11 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 		info_level = atoi(argv[1]);
 
 	if (argc == 3)
-		name = argv[2];
+		fstrcpy(name, argv[2]);
+	else {
+		slprintf(name, "\\\\%s", cli->desthost);
+		strupper(name);
+	}
 
 	/* Enumerate printers  -- Should we enumerate types other 
 	   than PRINTER_ENUM_LOCAL?  Maybe accept as a parameter?  --jerry */
