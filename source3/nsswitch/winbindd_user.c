@@ -91,8 +91,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	return True;
 }
 
-/* Return a password structure from a username.  Specify whether cached data 
-   can be returned. */
+/* Return a password structure from a username.  */
 
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) 
 {
