@@ -229,7 +229,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	tree->tid = tcon.tconx.out.cnum;
+	tree->tid = tcon.tconx.out.tid;
 	printf("tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
 
 	printf("try a tconx with a bad device type\n");

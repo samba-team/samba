@@ -39,7 +39,7 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 	req_setup_reply(req, 8, 0);
 	
 	SCVAL(req->out.hdr,HDR_COM,SMBlockingX);
-	SSVAL(req->out.hdr,HDR_TID,tcon->cnum);
+	SSVAL(req->out.hdr,HDR_TID,tcon->tid);
 	SSVAL(req->out.hdr,HDR_PID,0xFFFF);
 	SSVAL(req->out.hdr,HDR_UID,0);
 	SSVAL(req->out.hdr,HDR_MID,0xFFFF);
@@ -484,7 +484,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	flags = smb_messages[type].flags;
 
-	req->tcon = conn_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
+	req->tcon = smbsrv_tcon_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
 
 	if (req->session == NULL) {
 		/* setup the user context for this request if it
@@ -792,8 +792,6 @@ static void smbsrv_close(struct server_connection *conn, const char *reason)
 
 	DEBUG(5,("smbsrv_close: %s\n",reason));
 
-	conn_close_all(smb_conn);
-
 	talloc_free(smb_conn);
 
 	return;
@@ -846,7 +844,7 @@ void smbsrv_accept(struct server_connection *conn)
 
 	srv_init_signing(smb_conn);
 
-	conn_init(smb_conn);
+	smbsrv_tcon_init(smb_conn);
 
 	smb_conn->connection = conn;
 

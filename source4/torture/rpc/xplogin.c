@@ -163,7 +163,7 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	tree->tid = tcon.tconx.out.cnum;
+	tree->tid = tcon.tconx.out.tid;
 
 	if (tcon.tconx.out.dev_type != NULL)
 		tree->device = talloc_strdup(tree, tcon.tconx.out.dev_type);

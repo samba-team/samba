@@ -28,7 +28,7 @@
 /****************************************************************************
 init the tcon structures
 ****************************************************************************/
-void conn_init(struct smbsrv_connection *smb_conn)
+void smbsrv_tcon_init(struct smbsrv_connection *smb_conn)
 {
 	smb_conn->tree.idtree_tid = idr_init(smb_conn);
 }
@@ -36,18 +36,27 @@ void conn_init(struct smbsrv_connection *smb_conn)
 /****************************************************************************
 find a tcon given a cnum
 ****************************************************************************/
-struct smbsrv_tcon *conn_find(struct smbsrv_connection *smb_conn, uint_t cnum)
+struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_connection *smb_conn, uint_t tid)
 {
-	return idr_find(smb_conn->tree.idtree_tid, cnum);
+	return idr_find(smb_conn->tree.idtree_tid, tid);
 }
 
 /*
   destroy a connection structure
 */
-static int conn_destructor(void *ptr)
+static int smbsrv_tcon_destructor(void *ptr)
 {
 	struct smbsrv_tcon *tcon = ptr;
-	idr_remove(tcon->smb_conn->tree.idtree_tid, tcon->cnum);
+
+
+	DEBUG(3,("%s closed connection to service %s\n",
+		 socket_get_peer_addr(tcon->smb_conn->connection->socket, tcon),
+		 lp_servicename(SNUM(tcon))));
+
+	/* tell the ntvfs backend that we are disconnecting */
+	ntvfs_disconnect(tcon);
+
+	idr_remove(tcon->smb_conn->tree.idtree_tid, tcon->tid);
 	DLIST_REMOVE(tcon->smb_conn->tree.tcons, tcon);
 	return 0;
 }
@@ -55,7 +64,7 @@ static int conn_destructor(void *ptr)
 /*
   find first available connection slot
 */
-struct smbsrv_tcon *conn_new(struct smbsrv_connection *smb_conn)
+struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_tcon *tcon;
 	int i;
@@ -69,34 +78,12 @@ struct smbsrv_tcon *conn_new(struct smbsrv_connection *smb_conn)
 		return NULL;
 	}
 
-	tcon->cnum = i;
+	tcon->tid = i;
 	tcon->smb_conn = smb_conn;
 
-	talloc_set_destructor(tcon, conn_destructor);
+	talloc_set_destructor(tcon, smbsrv_tcon_destructor);
 
 	DLIST_ADD(smb_conn->tree.tcons, tcon);
 
 	return tcon;
 }
-
-/****************************************************************************
-close all tcon structures
-****************************************************************************/
-void conn_close_all(struct smbsrv_connection *smb_conn)
-{
-	struct smbsrv_tcon *tcon, *next;
-	for (tcon=smb_conn->tree.tcons;tcon;tcon=next) {
-		next=tcon->next;
-		close_cnum(tcon);
-	}
-}
-
-
-/****************************************************************************
- Free a tcon structure.
-****************************************************************************/
-void conn_free(struct smbsrv_connection *smb_conn, struct smbsrv_tcon *tcon)
-{
-	talloc_free(tcon);
-}
-
