@@ -177,6 +177,7 @@ static const struct {
 	{"seal", DCERPC_SEAL},
 	{"connect", DCERPC_CONNECT},
 	{"spnego", DCERPC_AUTH_SPNEGO},
+	{"krb5", DCERPC_AUTH_KRB5},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
@@ -797,6 +798,8 @@ static NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		uint8_t auth_type;
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+		} else if (binding->flags & DCERPC_AUTH_KRB5) {
+			auth_type = DCERPC_AUTH_TYPE_KRB5;
 		} else {
 			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		}
