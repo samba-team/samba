@@ -1557,9 +1557,9 @@ krb5_enctype_valid(krb5_context context,
 
 /* if two enctypes have compatible keys */
 krb5_boolean
-krb5_enctypes_comptible_keys(krb5_context context,
-			     krb5_enctype etype1,
-			     krb5_enctype etype2)
+krb5_enctypes_compatible_keys(krb5_context context,
+			      krb5_enctype etype1,
+			      krb5_enctype etype2)
 {
     struct encryption_type *e1 = _find_enctype(etype1);
     struct encryption_type *e2 = _find_enctype(etype2);
