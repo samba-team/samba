@@ -589,6 +589,27 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	return ret;
 }
 
+/****************************************************************************
+ Create a guest user_info blob, for anonymous authenticaion.
+****************************************************************************/
+
+BOOL make_user_info_guest(auth_usersupplied_info **user_info) 
+{
+	DATA_BLOB sec_blob = data_blob(NULL, 0);
+	DATA_BLOB lm_blob = data_blob(NULL, 0);
+	DATA_BLOB nt_blob = data_blob(NULL, 0);
+	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
+	uint32 ntlmssp_flags = 0;
+
+	return make_user_info(user_info, 
+			      "","", 
+			      "","", 
+			      "", sec_blob, 
+			      nt_blob, lm_blob,
+			      plaintext_blob, 
+			      ntlmssp_flags, True);
+}
+
 BOOL make_server_info(auth_serversupplied_info **server_info) 
 {
 	*server_info = malloc(sizeof(**server_info));
@@ -664,13 +685,19 @@ void free_server_info(auth_serversupplied_info **server_info)
  Make a server_info struct for a guest user 
 ***************************************************************************/
 
-void make_server_info_guest(auth_serversupplied_info **server_info) 
+BOOL make_server_info_guest(auth_serversupplied_info **server_info) 
 {
 	struct passwd *pass = sys_getpwnam(lp_guestaccount(-1));
 	
 	if (pass) {
-		make_server_info_pw(server_info, pass);
+		if (!make_server_info_pw(server_info, pass)) {
+			return False;
+		}
+		(*server_info)->guest = True;
+		return True;
 	}
+	DEBUG(0,("make_server_info_guest: sys_getpwnam() failed on guest account!\n")); 
+	return False;
 }
 
 /****************************************************************************
@@ -711,4 +738,26 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
     token->num_sids = ptoken->num_sids;
 
 	return token;
+}
+
+/****************************************************************************
+ Check for a guest logon (username = "") and if so create the required 
+ structure.
+****************************************************************************/
+
+NTSTATUS check_guest_security(const auth_usersupplied_info *user_info, 
+			      auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+
+	if (!(user_info->internal_username.str 
+	      && *user_info->internal_username.str)) { 
+		if (make_server_info_guest(server_info)) {
+			nt_status = NT_STATUS_OK;
+		} else {
+			nt_status = NT_STATUS_NO_SUCH_USER;
+		}
+	}
+
+	return nt_status;
 }

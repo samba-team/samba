@@ -66,7 +66,7 @@ void invalidate_vuid(uint16 vuid)
 	if (vuser == NULL)
 		return;
 
-	session_yield(vuid);
+	session_yield(vuser);
 
 	DLIST_REMOVE(validated_users, vuser);
 
@@ -208,7 +208,7 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL guest)
+int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 {
 	user_struct *vuser = NULL;
 	uid_t *puid;
@@ -251,7 +251,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL gu
 	vuser->vuid = next_vuid;
 	vuser->uid = *puid;
 	vuser->gid = *pgid;
-	vuser->guest = guest;
+	vuser->guest = server_info->guest;
 	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account));
 	fstrcpy(vuser->user.smb_name, smb_name);
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
@@ -260,7 +260,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL gu
 	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
 		  (unsigned int)vuser->uid, 
 		  (unsigned int)vuser->gid,
-		  vuser->user.unix_name, vuser->user.smb_name, vuser->user.domain, guest ));
+		  vuser->user.unix_name, vuser->user.smb_name, vuser->user.domain, vuser->guest ));
 
 	DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,vuser->user.full_name));	
 
@@ -276,7 +276,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL gu
 		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, &server_info->ptok);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, guest, server_info->ptok);
+	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, vuser->guest, server_info->ptok);
 
 	DEBUG(3,("uid %d registered to name %s\n",(int)vuser->uid,vuser->user.unix_name));
 
@@ -285,7 +285,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL gu
 
 	DLIST_ADD(validated_users, vuser);
 
-	if (!session_claim(vuser->vuid)) {
+	if (!session_claim(vuser)) {
 		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
 		invalidate_vuid(vuser->vuid);
 		return -1;
@@ -453,8 +453,8 @@ BOOL authorise_login(int snum,char *user, DATA_BLOB password,
 	user_struct *vuser = get_valid_user_struct(vuid);
 
 #if DEBUG_PASSWORD
-	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s\n",
-			user,password.data));
+	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s vuid=%d\n",
+			user,password.data, vuid));
 #endif
 
 	*guest = False;
@@ -501,7 +501,7 @@ BOOL authorise_login(int snum,char *user, DATA_BLOB password,
 			if (user_ok(vuser->user.unix_name,snum) &&
 					password_ok(vuser->user.unix_name, password)) {
 				fstrcpy(user, vuser->user.unix_name);
-				vuser->guest = False;
+				*guest = False;
 				DEBUG(3,("authorise_login: ACCEPTED: given password with registered user %s\n", user));
 				ok = True;
 			}

@@ -63,9 +63,23 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	BOOL done_pam = False;
+	const char *pdb_username;
 
-	DEBUG(3, ("check_password:  Checking password for unmapped user %s\\%s@%s with the new password interface\n", 
-		  user_info->smb_name.str, user_info->client_domain.str, user_info->wksta_name.str));
+	DEBUG(3, ("check_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
+		  user_info->client_domain.str, user_info->smb_name.str, user_info->wksta_name.str));
+
+	DEBUG(3, ("check_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
+		  user_info->domain.str, user_info->internal_username.str, user_info->wksta_name.str));
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		nt_status = check_guest_security(user_info, server_info);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(5, ("check_password:  checking guest-account for user [%s] suceeded\n", user_info->smb_name.str));
+		} else {
+			DEBUG(10, ("check_password:  checking gusst-account for user [%s] FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
+			
+		}		
+	}
 
 	/* This needs to be sorted:  If it doesn't match, what should we do? */
   	if (!check_domain_match(user_info->smb_name.str, user_info->domain.str)) {
@@ -75,9 +89,9 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		nt_status = check_rhosts_security(user_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(7, ("check_password:  Password (rhosts) for user %s suceeded\n", user_info->smb_name.str));
+			DEBUG(3, ("check_password:  Password (rhosts) for user [%s] suceeded\n", user_info->smb_name.str));
 		} else {
-			DEBUG(5, ("check_password:  Password (rhosts)for user %s FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
+			DEBUG(10, ("check_password:  Password (rhosts) for user [%s] FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
 			
 		}		
 	}
@@ -85,9 +99,9 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	if ((lp_security() == SEC_DOMAIN) && !NT_STATUS_IS_OK(nt_status)) {
 		nt_status = check_domain_security(user_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(7, ("check_password:  Password (domain) for user %s suceeded\n", user_info->smb_name.str));
+			DEBUG(7, ("check_password:  Password (domain) for user [%s] suceeded\n", user_info->smb_name.str));
 		} else {
-			DEBUG(5, ("check_password:  Password (domain) for user %s FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
+			DEBUG(5, ("check_password:  Password (domain) for user [%s] FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
 			
 		}		
 	}
@@ -95,9 +109,9 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	if ((lp_security() == SEC_SERVER) && !NT_STATUS_IS_OK(nt_status)) {
 		nt_status = check_server_security(user_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(7, ("check_password:  Password (server) for user %s suceeded\n", user_info->smb_name.str));
+			DEBUG(7, ("check_password:  Password (server) for user [%s] suceeded\n", user_info->smb_name.str));
 		} else {
-			DEBUG(5, ("check_password:  Password (server) for user %s FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
+			DEBUG(5, ("check_password:  Password (server) for user [%s] FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
 			
 		}		
 	}
@@ -115,32 +129,37 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 		}
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(7, ("check_password:  Password (unix/smbpasswd) for user %s suceeded\n", user_info->smb_name.str));
+			DEBUG(7, ("check_password:  Password (unix/smbpasswd) for user [%s] suceeded\n", user_info->smb_name.str));
 		} else {
-			DEBUG(5, ("check_password:  Password (unix/smbpasswd) for user %s FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
-			
-		}		
-	}
-
-
-	if (NT_STATUS_IS_OK(nt_status) && !done_pam) {
-		/* We might not be root if we are an RPC call */
-		become_root();
-		nt_status = smb_pam_accountcheck(pdb_get_username((*server_info)->sam_account));
-		unbecome_root();
-	
-		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(5, ("check_password:  PAM Account for user %s suceeded\n", user_info->smb_name.str));
-		} else {
-			DEBUG(3, ("check_password:  PAM Account for user %s FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
+			DEBUG(5, ("check_password:  Password (unix/smbpasswd) for user [%s] FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
 			
 		}		
 	}
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5, ("check_password:  Password for smb user %s suceeded\n", user_info->smb_name.str));
+		pdb_username = pdb_get_username((*server_info)->sam_account);
+		if (!done_pam && !(*server_info)->guest) {
+			/* We might not be root if we are an RPC call */
+			become_root();
+			nt_status = smb_pam_accountcheck(pdb_username);
+			unbecome_root();
+			
+			if (NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(5, ("check_password:  PAM Account for user [%s] suceeded\n", pdb_username));
+			} else {
+				DEBUG(3, ("check_password:  PAM Account for user [%s] FAILED with error %s\n", pdb_username, get_nt_error_msg(nt_status)));
+			} 
+		}
+	}
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(3, ("check_password:  %sauthenticaion for user [%s] -> [%s] -> [%s] suceeded\n", 
+			  (*server_info)->guest ? "guest " : "", 
+			  user_info->smb_name.str, 
+			  user_info->internal_username.str, 
+			  pdb_username));
 	} else {
-		DEBUG(3, ("check_password:  Password for smb user %s FAILED with error %s\n", user_info->smb_name.str, get_nt_error_msg(nt_status)));
+		DEBUG(3, ("check_password:  Authenticaion for user [%s] -> [%s] FAILED with error %s\n", user_info->smb_name.str, user_info->internal_username.str, get_nt_error_msg(nt_status)));
 		ZERO_STRUCTP(server_info);
 	}		
 

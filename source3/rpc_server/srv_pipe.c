@@ -268,7 +268,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring pipe_user_name;
 	fstring domain;
 	fstring wks;
-	BOOL guest_user = False;
+
+	NTSTATUS nt_status;
 
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
@@ -328,8 +329,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	if((strlen(user_name) == 0) && 
 	   (ntlmssp_resp->hdr_nt_resp.str_str_len==0))
 	{
-		guest_user = True;
-		
+
 		fstrcpy(pipe_user_name, lp_guestaccount(-1));
 		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", pipe_user_name));
 
@@ -352,32 +352,25 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	}
 
-	if(!guest_user) {
-		NTSTATUS nt_status;
-
-		if (!make_user_info_netlogon_network(&user_info, 
-						     user_name, domain, wks,  (uchar*)p->challenge, 
-						     lm_owf, lm_pw_len, 
-						     nt_owf, nt_pw_len)) {
-			DEBUG(0,("make_user_info_netlogon_network failed!  Failing authenticaion.\n"));
-			return False;
-		}
-
-		nt_status = check_password(user_info, &server_info); 
-		
-		free_user_info(&user_info);
-
-		p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
-
-		if (!p->ntlmssp_auth_validated) {
-			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
+	if (!make_user_info_netlogon_network(&user_info, 
+					     user_name, domain, wks,  (uchar*)p->challenge, 
+					     lm_owf, lm_pw_len, 
+					     nt_owf, nt_pw_len)) {
+		DEBUG(0,("make_user_info_netlogon_network failed!  Failing authenticaion.\n"));
+		return False;
+	}
+	
+	nt_status = check_password(user_info, &server_info); 
+	
+	free_user_info(&user_info);
+	
+	p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
+	
+	if (!p->ntlmssp_auth_validated) {
+		DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
-			free_server_info(&server_info);
-			return False;
-		}
-	} else {
-		/* This includes a NULLed out first_8_lm_hash */
-		make_server_info_guest(&server_info);
+		free_server_info(&server_info);
+		return False;
 	}
 
 	/*
@@ -450,7 +443,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	/* Create an NT_USER_TOKEN struct for this user. */
 	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
 						     p->pipe_user.ngroups, p->pipe_user.groups,
-						     guest_user, server_info->ptok);
+						     server_info->guest, server_info->ptok);
 
 	p->ntlmssp_auth_validated = True;
 
