@@ -741,7 +741,7 @@ getterminaltype(name)
 		     */
 		     _gettermname();
 		    if (strncmp(first, terminaltype, sizeof(first)) != 0)
-			(void) strncpy(terminaltype, first, sizeof(first));
+			(void) strcpy(terminaltype, first);
 		    break;
 		}
 	    }
