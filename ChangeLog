@@ -1,3 +1,7 @@
+2004-03-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: try to handle sys/strtty.h needing sys/stream.h
+	
 2004-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/send_to_kdc.c: remove function krb5_sendto_kdc2, its no
