@@ -1,3 +1,9 @@
+2001-06-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_krbhst_init.3: manpage
+
+	* lib/krb5/krb5_get_krbhst.3: manpage
+
 2001-06-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.h: add opaque krb5_krbhst_handle type
