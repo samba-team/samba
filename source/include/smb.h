@@ -190,15 +190,6 @@ enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED,
    incorrect parameters - what does it mean? maybe created temporary file? */
 #define NTCREATEX_ACTION_UNKNOWN 5
 
-
-struct security_token {
-	struct dom_sid *user_sid;
-	struct dom_sid *group_sid;
-	uint32_t num_sids;
-	struct dom_sid **sids;
-	uint64_t privilege_mask;
-};
-
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
 	uint8_t *data;
