@@ -1178,7 +1178,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
    * domain, where smbpasswd entry should be stored.
    */
 
-#if 0
+#if 1	/* passwd and smbpasswd users should be in the same domain */
   nisname = make_nisname_from_name(pdb_get_username(newpwd),
 				     "passwd.org_dir");
   
@@ -1236,7 +1236,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
       /* we need full name for nis_add_entry() */
       slprintf(pfiletmp, sizeof(pfiletmp)-1, "%s.%s", obj->zo_name,
 		obj->zo_domain);
-#if 0
+#if 1 /* matching } from previous #if */
     }
 #endif
 
