@@ -30,8 +30,8 @@ Region                             Number of entries
     AMERICA - USA                                25
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
-    CANADA                                        6
-    EUROPE                                       28
+    CANADA                                        7
+    EUROPE                                       29
     MIDDLE EAST                                   1
 
 AFRICA
@@ -88,6 +88,11 @@ Contact no's: +56 2 365 19 18, Fax: +56 2 365 14 55
 
 Contact Person: Marcelo Bartsch or Roy Zderich
         
+Email contact:
+Samba Support : samba@mg.dyn.ml.org
+Other NET OS Support : othernetos@mg.dyn.ml.org
+Other Questions : networks@mg.dyn.ml.org
+General Info: info@mg.dyn.ml.org
 
 Our level of experience: support for all Samba and Linux security and
 compatability issues. We use Samba in our local network and we have
@@ -887,6 +892,24 @@ Samba and other applications running under Caldera Linux.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+ONTARIO - CANADA
+
+GenX Internet Laboratories Inc.
+20 Madison Ave.
+Toronto, Ontario, Canada
+M5R 1S2
+
+GenX Internet Labs is engaged in systems integration and 
+the design and development of software for use over the 
+internet and intranets. 
+
+We install, support and can resolve most system/Samba problems
+on Linux. We are also an internet provider and use Samba to 
+provide a remote office solution to our customers. This solution
+provides access to the shared resources on a corporate lan.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 OTTAWA - CANADA
 
 Russell McOrmond
@@ -1275,6 +1298,27 @@ SZEGED - HUNGARY
     Fax/Message: (62) 326-246 (Hungary's code: 36)                
          E-mail: makayg@math.u-szeged.hu                         
  World Wide Web: http://www.math.u-szeged.hu/                   
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+MILANO - ITALY
+
+INFERENTIA S.p.A.
+Via Tacito 6
+56125 MILANO (PI)
+ITALY
+tel: +39 2 599281
+fax: +39 2 59928221
+contact: Consulting Division
+e-mail: consulting@inferentia.it
+www: http://www.inferentia.it
+
+INFERENTIA Consulting is available for establishing commercial support
+contracts on Samba integration with Microsoft Networks-based LANs.
+We can offer a solid experience with:
+- All flavours of Windows (Workgroups, 95, NT)
+- IBM AIX, Digital UNIX, Sun Solaris, Linux, HP/UX
+- geographically distributed networks with WAN links
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
