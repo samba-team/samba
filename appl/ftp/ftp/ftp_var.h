@@ -52,6 +52,7 @@ extern int	verbose;		/* print messages coming back from server */
 extern int	connected;		/* connected to server */
 extern int	fromatty;		/* input is from a terminal */
 extern int	interactive;		/* interactively prompt on m* cmds */
+extern int	lineedit;		/* use line-editing */
 extern int	debug;			/* debugging level */
 extern int	bell;			/* ring bell on cmd completion */
 extern int	doglob;			/* glob local file names */
