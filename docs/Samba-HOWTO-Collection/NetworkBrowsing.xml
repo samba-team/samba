@@ -162,7 +162,6 @@ effect browse list management. When running NetBIOS over TCP/IP, this uses UDP-b
 UDP messages can be broadcast or uni-cast.
 </para>
 
-
 <para>
 <indexterm><primary>UDP</primary></indexterm>
 Normally, only uni-cast UDP messaging can be forwarded by routers. The
@@ -170,6 +169,11 @@ Normally, only uni-cast UDP messaging can be forwarded by routers. The
 to remote network segments via uni-cast UDP. Similarly, the 
 <smbconfoption><name>remote browse sync</name></smbconfoption> parameter of &smb.conf;
 implements browse list collation using uni-cast UDP.
+</para>
+
+<para>
+The methods and order of methods used by MS Windows to perform name lookup requests (name resolution)
+is determined by a configuration parameter called the netbios node-type.
 </para>
 
 <para>
