@@ -215,6 +215,7 @@ krb5_init_context(krb5_context *context)
 
     p->cc_ops = NULL;
     p->num_cc_ops = 0;
+    krb5_cc_register(p, &krb5_acc_ops, TRUE);
     krb5_cc_register(p, &krb5_fcc_ops, TRUE);
     krb5_cc_register(p, &krb5_mcc_ops, TRUE);
 
