@@ -27,10 +27,15 @@
 # the smb.conf man page
 ;   hosts allow = 192.168.1. 192.168.2. 127.
 
-# if you want to automatically load your printer list rather
+# If you want to automatically load your printer list rather
 # than setting them up individually then you'll need this
    printcap name = /etc/printcap
    load printers = yes
+
+# It should not be necessary to specify the print system type unless
+# it is non-standard. Currently supported print systems include:
+# bsd, sysv, plp, lprng, aix, hpux, qnx
+;   printing = bsd
 
 # Uncomment this if you want a guest account, you must add this to /etc/passwd
 # otherwise the user "nobody" is used
@@ -119,6 +124,11 @@
 # at least one	WINS Server on the network. The default is NO.
 ;   wins proxy = yes
 
+# DNS Proxy - tells Samba whether or not to try to resolve NetBIOS names
+# via DNS nslookups. The built-in default for versions 1.9.17 is yes,
+# this has been changed in version 1.9.18 to no.
+   dns proxy = no 
+
 #============================ Share Definitions ==============================
 [homes]
    comment = Home Directories
@@ -131,6 +141,7 @@
 ;   path = /usr/local/samba/lib/netlogon
 ;   guest ok = yes
 ;   writable = no
+;   share modes = no
 
 
 # Un-comment the following to provide a specific roving profile share
