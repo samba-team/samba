@@ -2,6 +2,8 @@ Thu Mar 18 15:28:35 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: clean pfrom
 
+	* Makefile.am: include Makefile.am.common
+
 Mon Mar 15 18:26:16 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* push.c: strncasecmp headers

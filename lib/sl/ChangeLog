@@ -8,6 +8,8 @@ Thu Mar 18 15:07:06 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: install ss.h
 
+	* Makefile.am: include Makefile.am.common
+
 Thu Mar 11 15:01:01 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* parse.y: prototype for error_message

@@ -2,6 +2,10 @@ Fri Mar 19 14:52:29 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: add version-info
 
+Thu Mar 18 11:24:02 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
 Sat Feb 27 19:46:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: remove EXTRA_DATA (as of autoconf 2.13/automake

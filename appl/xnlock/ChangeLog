@@ -1,3 +1,7 @@
+Thu Mar 18 11:21:44 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
 Tue Mar 16 22:29:14 1999  Assar Westerlund  <assar@sics.se>
 
 	* xnlock.c: krb_verify_user_multiple -> krb_verify_user

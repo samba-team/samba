@@ -1,3 +1,7 @@
+Thu Mar 18 11:22:13 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
 Tue Mar 16 22:30:05 1999  Assar Westerlund  <assar@sics.se>
 
 	* parse.y: use YYACCEPT instead of return
