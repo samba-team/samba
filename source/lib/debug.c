@@ -310,14 +310,6 @@ BOOL reopen_logs( void )
 	FILE *new_dbf = NULL;
 	BOOL ret = True;
 
-	if (DEBUGLEVEL_CLASS[ DBGC_ALL ] <= 0) {
-		if (dbf) {
-			(void)fclose(dbf);
-			dbf = NULL;
-		}
-		return True;
-	}
-
 	oldumask = umask( 022 );
   
 	pstrcpy(fname, debugf );
