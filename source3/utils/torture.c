@@ -116,7 +116,8 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 	int fnum;
 	int fnum2;
 	int pid2, pid = getpid();
-	int i;
+	int i, j;
+	char buf[1024];
 
 	fnum2 = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE);
@@ -147,6 +148,14 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 
 		if (cli_write(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("write failed (%s)\n", cli_errstr(c));
+		}
+
+		for (j=0;j<50;j++) {
+			if (cli_write(c, fnum, (char *)buf, 
+				      sizeof(pid)+(j*sizeof(buf)), 
+				      sizeof(buf)) != sizeof(buf)) {
+				printf("write failed (%s)\n", cli_errstr(c));
+			}
 		}
 
 		pid2 = 0;
