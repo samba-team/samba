@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -476,15 +476,15 @@ krb5_425_conv_principal_ext(krb5_context context,
 	instance = NULL;
 	goto no_host;
     }
-    p = krb5_config_get_string(context->cf, "realms", realm,
+    p = krb5_config_get_string(context, NULL, "realms", realm,
 			       "v4_name_convert", "host", name, NULL);
     if(p == NULL)
-	p = krb5_config_get_string(context->cf, "libdefaults", 
+	p = krb5_config_get_string(context, NULL, "libdefaults", 
 				   "v4_name_convert", "host", name, NULL);
     if(p == NULL)
 	goto no_host;
     name = p;
-    p = krb5_config_get_string(context->cf, "realms", realm, 
+    p = krb5_config_get_string(context, NULL, "realms", realm, 
 			       "v4_instance_convert", instance, NULL);
     if(p){
 	instance = p;
@@ -512,7 +512,7 @@ krb5_425_conv_principal_ext(krb5_context context,
     }
     {
 	char **domains, **d;
-	domains = krb5_config_get_strings(context->cf, "realms", realm,
+	domains = krb5_config_get_strings(context, NULL, "realms", realm,
 					  "v4_domains", NULL);
 	for(d = domains; d && *d; d++){
 	    snprintf(host, sizeof(host), "%s.%s", instance, *d);
@@ -528,7 +528,7 @@ krb5_425_conv_principal_ext(krb5_context context,
     }
     
     
-    p = krb5_config_get_string(context->cf, "realms", realm, 
+    p = krb5_config_get_string(context, NULL, "realms", realm, 
 			       "default_domain", NULL);
     if(p == NULL){
 	/* should this be an error or should it silently
@@ -545,7 +545,7 @@ krb5_425_conv_principal_ext(krb5_context context,
     krb5_free_principal(context, pr);
     return HEIM_ERR_V4_PRINC_NO_CONV;
 no_host:
-    p = krb5_config_get_string(context->cf,
+    p = krb5_config_get_string(context, NULL,
 			       "realms",
 			       realm,
 			       "v4_name_convert",
@@ -553,7 +553,7 @@ no_host:
 			       name,
 			       NULL);
     if(p == NULL)
-	p = krb5_config_get_string(context->cf,
+	p = krb5_config_get_string(context, NULL,
 				   "libdefaults",
 				   "v4_name_convert",
 				   "plain",
@@ -578,7 +578,8 @@ krb5_425_conv_principal(krb5_context context,
 			const char *realm,
 			krb5_principal *princ)
 {
-    krb5_boolean resolve = krb5_config_get_bool(context->cf, 
+    krb5_boolean resolve = krb5_config_get_bool(context,
+						NULL,
 						"libdefaults", 
 						"v4_instance_resolve", 
 						NULL);
@@ -593,14 +594,16 @@ name_convert(krb5_context context, const char *name, const char *realm,
 	     const char *section)
 {
     const krb5_config_binding *l;
-    l = krb5_config_get_list (context->cf,
+    l = krb5_config_get_list (context,
+			      NULL,
 			      "realms",
 			      realm,
 			      "v4_name_convert",
 			      section,
 			      NULL);
     if(l == NULL)
-	l = krb5_config_get_list (context->cf,
+	l = krb5_config_get_list (context,
+				  NULL,
 				  "libdefaults",
 				  "v4_name_convert",
 				  section,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,17 +60,17 @@ krb5_init_context(krb5_context *context)
     else
 	krb5_config_parse_file (krb5_config_file, &p->cf);
     p->max_skew = 5 * 60;
-    val = krb5_config_get_time (p->cf, "libdefaults", "clockskew", NULL);
+    val = krb5_config_get_time (p, NULL, "libdefaults", "clockskew", NULL);
     if (val >= 0)
 	p->max_skew = val;
 
     p->kdc_timeout = 3;
-    val = krb5_config_get_time (p->cf, "libdefaults", "kdc_timeout", NULL);
+    val = krb5_config_get_time (p, NULL, "libdefaults", "kdc_timeout", NULL);
     if(val >= 0) 
 	p->kdc_timeout = val;
 
     p->max_retries = 3;
-    val = krb5_config_get_int (p->cf, "libdefaults", "max_retries", NULL);
+    val = krb5_config_get_int (p, NULL, "libdefaults", "max_retries", NULL);
     if (val >= 0)
 	p->max_retries = val;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -325,9 +325,9 @@ krb5_openlog(krb5_context context,
     if(ret)
 	return ret;
 
-    p = krb5_config_get_strings(context->cf, "logging", program, NULL);
+    p = krb5_config_get_strings(context, NULL, "logging", program, NULL);
     if(p == NULL)
-	p = krb5_config_get_strings(context->cf, "logging", "default", NULL);
+	p = krb5_config_get_strings(context, NULL, "logging", "default", NULL);
     if(p){
 	for(q = p; *q; q++)
 	    ret = krb5_addlog_dest(context, *fac, *q);

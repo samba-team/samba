@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,7 +87,7 @@ krb5_get_host_realm(krb5_context context,
     (*realms)[0] = NULL;
     (*realms)[1] = NULL;
 
-    for(l = krb5_config_get_list (context->cf,
+    for(l = krb5_config_get_list (context, NULL,
 				  "domain_realm",
 				  NULL);
 	l;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -80,7 +80,8 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
     if(params->mask & KADM5_CONFIG_ADMIN_SERVER)
 	(*ctx)->admin_server = strdup(params->admin_server);
     else{
-	const char *h = krb5_config_get_string(context->cf, 
+	const char *h = krb5_config_get_string(context,
+					       NULL, 
 					       "realms", 
 					       (*ctx)->realm, 
 					       "admin_server", 

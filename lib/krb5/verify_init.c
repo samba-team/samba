@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -155,7 +155,8 @@ krb5_verify_init_creds(krb5_context context,
     if (ret) {
 	if (((options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL) && 
 	     options->ap_req_nofail == 1) || 
-	    krb5_config_get_bool (context->cf,
+	    krb5_config_get_bool (context,
+				  NULL,
 				  "libdefaults",
 				  "verify_ap_req_nofail",
 				  NULL)) {

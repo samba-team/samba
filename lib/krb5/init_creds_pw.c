@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,14 +48,14 @@ get_config_time (krb5_context context,
 {
     int ret;
 
-    ret = krb5_config_get_time (context->cf,
+    ret = krb5_config_get_time (context, NULL,
 				"realms",
 				realm,
 				name,
 				NULL);
     if (ret >= 0)
 	return ret;
-    ret = krb5_config_get_time (context->cf,
+    ret = krb5_config_get_time (context, NULL,
 				"libdefaults",
 				name,
 				NULL);
@@ -69,12 +69,14 @@ get_config_bool (krb5_context context,
 		 char *realm,
 		 char *name)
 {
-    return krb5_config_get_bool (context->cf,
+    return krb5_config_get_bool (context,
+				 NULL,
 				 "realms",
 				 realm,
 				 name,
 				 NULL)
-	|| krb5_config_get_bool (context->cf,
+	|| krb5_config_get_bool (context,
+				 NULL,
 				 "libdefaults",
 				 name,
 				 NULL);
