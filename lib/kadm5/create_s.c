@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -101,8 +101,12 @@ kadm5_s_create_principal(void *server_handle,
     ent.created_by.time = time(NULL);
     ret = krb5_copy_principal(context->context, context->caller, 
 			      &ent.created_by.principal);
+
     if(ret) 
 	goto out;
+
+    kadm5_log_create (context, &ent);
+
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	goto out;
