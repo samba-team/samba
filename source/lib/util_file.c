@@ -51,7 +51,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   lock.l_len = 1;
   lock.l_pid = 0;
 
-  alarm(5);
+  alarm(waitsecs);
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
   CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
