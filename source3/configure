@@ -23296,7 +23296,7 @@ builddir=`pwd`
 # I added make files that are outside /source directory.
 # I know this is not a good solution, will work out a better
 # solution soon.			--simo
-                                                                      ac_config_files="$ac_config_files include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile ../examples/sam/Makefile"
+                                                  ac_config_files="$ac_config_files include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/sam/Makefile"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -23805,8 +23805,6 @@ do
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "script/findsmb" ) CONFIG_FILES="$CONFIG_FILES script/findsmb" ;;
   "../examples/VFS/Makefile" ) CONFIG_FILES="$CONFIG_FILES ../examples/VFS/Makefile" ;;
-  "../examples/pdb/mysql/Makefile" ) CONFIG_FILES="$CONFIG_FILES ../examples/pdb/mysql/Makefile" ;;
-  "../examples/pdb/xml/Makefile" ) CONFIG_FILES="$CONFIG_FILES ../examples/pdb/xml/Makefile" ;;
   "../examples/sam/Makefile" ) CONFIG_FILES="$CONFIG_FILES ../examples/sam/Makefile" ;;
   "include/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
