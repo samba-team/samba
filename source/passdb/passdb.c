@@ -847,7 +847,6 @@ BOOL local_password_change(char *user_name, int local_flags,
 {
 	struct passwd  *pwd = NULL;
 	SAM_ACCOUNT 	*sam_pass=NULL;
-	SAM_ACCOUNT	*new_sam_acct=NULL;
 
 	*err_str = '\0';
 	*msg_str = '\0';
@@ -876,34 +875,31 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		/* create the SAM_ACCOUNT struct and call pdb_add_sam_account.
-		   Because the new_sam_pwd only exists in the scope of this function
-		   we will not allocate memory for members */
-		if (!pdb_init_sam_pw(&new_sam_acct, pwd)) {
+		if (!pdb_init_sam_pw(&sam_pass, pwd)) {
 			return False;
 		}
 
 		/* set account flags */
-		pdb_set_acct_ctrl(new_sam_acct,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
+		pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
 
 		if (local_flags & LOCAL_DISABLE_USER)
-			pdb_set_acct_ctrl (new_sam_acct, pdb_get_acct_ctrl(new_sam_acct)|ACB_DISABLED);
+			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
 
-		if (local_flags & LOCAL_SET_NO_PASSWORD)
-			pdb_set_acct_ctrl (new_sam_acct, pdb_get_acct_ctrl(new_sam_acct)|ACB_PWNOTREQ);
-		else {
+		if (local_flags & LOCAL_SET_NO_PASSWORD) {
+			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
+		} else {
 			/* set the passwords here.  if we get to here it means
 			   we have a valid, active account */
-			pdb_set_plaintext_passwd (new_sam_acct, new_passwd);
+			pdb_set_plaintext_passwd (sam_pass, new_passwd);
 		}
 
-		if (pdb_add_sam_account(new_sam_acct)) {
+		if (pdb_add_sam_account(sam_pass)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
-			pdb_free_sam(new_sam_acct);
+			pdb_free_sam(sam_pass);
 			return True;
 		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
-			pdb_free_sam(new_sam_acct);
+			pdb_free_sam(sam_pass);
 			return False;
 		}
 	} else {
@@ -920,7 +916,7 @@ account without a valid local system user.\n", user_name);
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
 	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if(pdb_get_lanman_passwd(sam_pass) == NULL) {
-			pdb_set_plaintext_passwd (new_sam_acct, new_passwd);
+			pdb_set_plaintext_passwd (sam_pass, new_passwd);
 		}
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
@@ -942,7 +938,7 @@ account without a valid local system user.\n", user_name);
 		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED))
 			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ));
-		pdb_set_plaintext_passwd (new_sam_acct, new_passwd);
+		pdb_set_plaintext_passwd (sam_pass, new_passwd);
 	}
 	
 	if(local_flags & LOCAL_DELETE_USER) {
