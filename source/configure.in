@@ -14,6 +14,15 @@ AC_ENABLE_SHARED
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
+lockdir="\${VARDIR}/locks"
+piddir="\${VARDIR}/locks"
+mandir="\${prefix}/man"
+logfilebase="\${VARDIR}"
+privatedir="\${prefix}/private"
+libdir="\${prefix}/lib"
+configdir="\${LIBDIR}"
+swatdir="\${prefix}/swat"
+
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
 [ case "$withval" in
@@ -25,15 +34,11 @@ AC_ARG_WITH(fhs,
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
-    swatdir="\${DATADIR}/samba/swat",
-    configdir="\${LIBDIR}"
-    logfilebase="\${VARDIR}"
-    lockdir="\${VARDIR}/locks"
-    piddir="\${VARDIR}/locks"
-    privatedir="\${prefix}/private"
-    swatdir="\${prefix}/swat"
+    swatdir="\${LIBDIR}/samba/swat"
     ;;
   esac])
+
+lmhostsfile="\${CONFIGDIR}/lmhosts"
 
 #################################################
 # set private directory location
