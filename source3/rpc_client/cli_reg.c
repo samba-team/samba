@@ -147,6 +147,62 @@ BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
 }
 
 /****************************************************************************
+do a REG Unknown 0xB command.  sent after a create key or create value.
+this might be some sort of "sync" or "refresh" command, sent after
+modification of the registry...
+****************************************************************************/
+BOOL do_reg_unk_b(struct cli_state *cli, POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_UNK_B q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_UNK_B */
+
+	DEBUG(4,("REG Unknown 0xB\n"));
+
+	make_reg_q_unk_b(&q_o, hnd);
+
+	/* turn parameters into data stream */
+	reg_io_q_unk_b("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_UNK_B, &buf, &rbuf))
+	{
+		REG_R_UNK_B r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_unk_b("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_UNK_B: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_query = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
 do a REG Query Key
 ****************************************************************************/
 BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,

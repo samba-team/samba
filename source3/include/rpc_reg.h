@@ -28,6 +28,7 @@
 /* winreg pipe defines */
 #define REG_OPEN_POLICY     0x02
 #define REG_OPEN_UNK_4      0x04
+#define REG_UNK_B           0x0B
 #define REG_UNK_1A          0x1a
 #define REG_QUERY_KEY       0x10
 #define REG_ENUM_KEY        0x09
@@ -76,6 +77,21 @@ typedef struct r_reg_open_unk4_info
 	uint32 status;         /* return status */
 
 } REG_R_OPEN_UNK_4;
+
+
+/* REG_Q_UNK_B */
+typedef struct q_reg_open_unkb_info
+{
+	POLICY_HND pol;       /* policy handle */
+
+} REG_Q_UNK_B;
+
+/* REG_R_UNK_B */
+typedef struct r_reg_open_unkb_info
+{
+	uint32 status;         /* return status */
+
+} REG_R_UNK_B;
 
 
 /* REG_Q_GET_KEY_SEC */

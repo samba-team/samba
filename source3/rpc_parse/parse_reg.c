@@ -79,6 +79,46 @@ void reg_io_r_open_policy(char *desc,  REG_R_OPEN_POLICY *r_r, prs_struct *ps, i
 }
 
 
+/*******************************************************************
+creates a structure.
+********************************************************************/
+void make_reg_q_unk_b(REG_Q_UNK_B *q_u, POLICY_HND *pol)
+{
+	memcpy(&(q_u->pol), pol, sizeof(q_u->pol));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_q_unk_b(char *desc,  REG_Q_UNK_B *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_q_unk_b");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_r_unk_b(char *desc,  REG_R_UNK_B *r_r, prs_struct *ps, int depth)
+{
+	if (r_r == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_r_unk_b");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("status", ps, depth, &(r_r->status));
+}
+
+
 
 /*******************************************************************
 creates a structure.
