@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   html smb.conf editing - prototype only
+   Samba Web Administration Tool
    Copyright (C) Andrew Tridgell 1997-1998
    
    This program is free software; you can redistribute it and/or modify
@@ -537,7 +537,25 @@ static void status_page(void)
 	pstring fname;
 	FILE *f;
 
+	if (cgi_variable("smbd_start")) {
+		start_smbd();
+	}
+
+	if (cgi_variable("smbd_stop")) {
+		stop_smbd();
+	}
+
+	if (cgi_variable("nmbd_start")) {
+		start_nmbd();
+	}
+
+	if (cgi_variable("nmbd_stop")) {
+		stop_nmbd();
+	}
+
 	printf("<H2>Server Status</H2>\n");
+
+	printf("<FORM method=post>\n");
 
 	pstrcpy(fname,lp_lockdir());
 	standard_sub_basic(fname);
@@ -553,9 +571,32 @@ static void status_page(void)
 	}
 
 
-	printf("\nSamba version %s\n<p>",VERSION);
+	printf("<table>\n");
 
-	printf("<h3>Active Connections</h3>\n");
+	printf("<tr><td>version:</td><td>%s</td></tr>",VERSION);
+
+	fflush(stdout);
+	if (smbd_running()) {
+		printf("<tr><td>smbd:</td><td>running</td><td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td></tr>\n");
+	} else {
+		printf("<tr><td>smbd:</td><td>not running</td><td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td></tr>\n");
+	}
+
+	fflush(stdout);
+	if (nmbd_running()) {
+		printf("<tr><td>nmbd:</td><td>running</td><td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td></tr>\n");
+	} else {
+		printf("<tr><td>nmbd:</td><td>not running</td><td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td></tr>\n");
+	}
+
+	printf("</table>\n");
+	fflush(stdout);
+
+
+	if (geteuid() != 0)
+		printf("<b>NOTE: You are not logged in as root and won't be able to start/stop the server</b><p>\n");
+	
+	printf("<p><h3>Active Connections</h3>\n");
 	printf("<table border=1>\n");
 	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
 
@@ -583,6 +624,8 @@ static void status_page(void)
 	printf("</table>\n");
 
 	fclose(f);
+
+	printf("</FORM>\n");
 }
 
 
