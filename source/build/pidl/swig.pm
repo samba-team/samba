@@ -51,7 +51,7 @@ sub ArrayFromPython($$)
     }
 
     if (!util::is_constant($e->{ARRAY_LEN})) {
-	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, $size * sizeof($type));\n";
+	$result .= "\ts->$prefix$e->{NAME} = talloc_array_p(mem_ctx, $type, $size);\n";
     }
 
     $result .= "\tif (!PyDict_GetItemString(obj, \"$e->{NAME}\")) {\n";
@@ -120,7 +120,7 @@ sub FieldFromPython($$)
 		}
 	    }
 	} else {
-	    $result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, sizeof($e->{TYPE}));\n";
+	    $result .= "\ts->$prefix$e->{NAME} = talloc_p(mem_ctx, $e->{TYPE});\n";
 	    $result .= "\t*s->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj, \"$e->{NAME}\");\n";
 	}
     } else {
@@ -271,7 +271,7 @@ sub ParseFunction($)
     $result .= "\t\t\treturn NULL;\n";
     $result .= "\t}\n\n";
 
-    $result .= "\ts = talloc(mem_ctx, sizeof(struct $fn->{NAME}));\n\n";
+    $result .= "\ts = talloc_p(mem_ctx, struct $fn->{NAME});\n\n";
 
     # Remove this when all elements are initialised
     $result .= "\tmemset(s, 0, sizeof(struct $fn->{NAME}));\n\n";
@@ -411,7 +411,7 @@ sub ParseStruct($)
     $result .= "\t\treturn NULL;\n";
     $result .= "\t}\n\n";
 
-    $result .= "\ts = talloc(mem_ctx, sizeof(struct $s->{NAME}));\n\n";
+    $result .= "\ts = talloc_p(mem_ctx, struct $s->{NAME});\n\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$result .= FieldFromPython($e, "");
@@ -468,7 +468,41 @@ sub ParseStruct($)
     $result .= "\treturn obj;\n";
     $result .= "}\n\n";
 
+    if (util::has_property($s->{DATA}, "public")) {
+
+	# Generate function to unmarshall a structure. Used
+	# exclusively (?) in the spoolss pipe.
+
+	$result .= "/* Unmarshall a structures from a Python string */\n\n";
+
+	$result .= "NTSTATUS unmarshall_$s->{NAME}(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct $s->{NAME} *info)\n";
+	$result .= "{\n";
+	$result .= "\tstruct ndr_pull *ndr;\n";
+	$result .= "\tndr = ndr_pull_init_blob(blob, mem_ctx);\n";
+	$result .= "\tif (!ndr) {\n";
+	$result .= "\t\treturn NT_STATUS_NO_MEMORY;\n";
+	$result .= "\t}\n";
+	$result .= "\tNDR_CHECK(ndr_pull_$s->{NAME}(ndr, NDR_SCALARS|NDR_BUFFERS, info));\n\n";
+	$result .= "\treturn NT_STATUS_OK;\n";
+	$result .= "}\n\n";
+    }
+
     $result .= "%}\n\n";    
+
+    if (util::has_property($s->{DATA}, "public")) {
+
+	$result .= "%typemap(in, numinputs=0) struct $s->{NAME} *EMPTY (struct $s->{NAME} temp_$s->{NAME}) {\n";
+	$result .= "\t\$1 = &temp_$s->{NAME};\n";
+	$result .= "}\n\n";
+
+	$result .= "%typemap(argout) (struct $s->{NAME} *EMPTY) {\n";
+	$result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"unmarshall_$s->{NAME}\");\n\n";
+	$result .= "\t\$result = $s->{NAME}_ptr_to_python(mem_ctx, \$1);\n\n";
+	$result .= "\ttalloc_free(mem_ctx);\n";
+	$result .= "}\n\n";
+
+	$result .= "NTSTATUS unmarshall_$s->{NAME}(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct $s->{NAME} *EMPTY);\n\n";
+    }
 
     return $result;
 }
@@ -503,7 +537,7 @@ sub ParseUnion($)
     $result .= "\t\treturn NULL;\n";
     $result .= "\t}\n\n";
 
-    $result .= "\tu = talloc(mem_ctx, sizeof(union $u->{NAME}));\n\n";
+    $result .= "\tu = talloc_p(mem_ctx, union $u->{NAME});\n\n";
 
     for my $e (@{$u->{DATA}{DATA}}) {
 	    if (defined $e->{DATA}{NAME}) {
