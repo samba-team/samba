@@ -1081,9 +1081,9 @@ bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.@PICSUFFIX@)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.@PICSUFFIX@) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/pgsql.@SHLIBEXT@: $(PGSQL_OBJ:.o=.po)
+bin/pgsql.@SHLIBEXT@: $(PGSQL_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PGSQL_OBJ:.o=.po) @PGSQL_LIBS@ \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PGSQL_OBJ:.o=.@PICSUFFIX@) @PGSQL_LIBS@ \
       @SONAMEFLAG@`basename $@`
 
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.@PICSUFFIX@
@@ -1116,9 +1116,9 @@ bin/CP437.@SHLIBEXT@: $(CP437_OBJ:.o=.@PICSUFFIX@)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.po)
+bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@) \
 		-framework CoreFoundation @SONAMEFLAG@`basename $@`
 
 bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
