@@ -33,10 +33,9 @@ n-ary tree, where you can free any part of the tree with
 talloc_free().
 
 If you find this confusing, then I suggest you run the LOCAL-TALLOC
-smbtorture test with the --leak-report-full option to watch talloc in
-action. You may also like to add your own tests to
-source/torture/local/talloc.c to clarify how some particular situation
-is handled.
+smbtorture test to watch talloc in action. You may also like to add
+your own tests to source/torture/local/talloc.c to clarify how some
+particular situation is handled.
 
 
 Performance
@@ -103,9 +102,11 @@ destructor returned -1. See talloc_set_destructor() for details on
 destructors.
 
 If this pointer has an additional reference when talloc_free() is
-called then the memory is not actually released, but instead the
-reference is destroyed. See talloc_reference() for details on
-establishing additional references.
+called then the memory is not actually released, but instead the most
+recently established reference is destroyed. See talloc_reference()
+for details on establishing additional references.
+
+For more control on which parent is removed, see talloc_unlink()
 
 talloc_free() operates recursively on its children.
 
@@ -137,21 +138,22 @@ ways:
     reference. That will destroy the reference, and leave the pointer
     where it is.
 
+For more control on which parent to remove, see talloc_unlink()
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc_unreference(const void *context, const void *ptr);
+int talloc_unlink(const void *context, const void *ptr);
 
-The talloc_unreference() function removes a reference added by
-talloc_reference(). It must be called with exactly the same arguments
-as talloc_reference().
+The talloc_unlink() function removes a specific parent from ptr. The
+context passed must either be a context used in talloc_reference()
+with this pointer, or must be a direct parent of ptr. 
 
-Note that if the reference has already been removed using
-talloc_free() then this function will fail and will return NULL.
+Note that if the parent has already been removed using talloc_free()
+then this function will fail and will return -1.
 
-Usually you can just use talloc_free() instead of
-talloc_unreference(), but sometimes it is useful to have the
-additional control on who becomes the parent of the pointer given by
-talloc_unreference().
+Usually you can just use talloc_free() instead of talloc_unlink(), but
+sometimes it is useful to have the additional control on which parent
+is removed.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -20,7 +20,48 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef _STANDALONE_
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <sys/time.h>
+#include <time.h>
+#include "talloc.h"
+#else
 #include "includes.h"
+#endif
+
+/* the test suite can be built standalone, or as part of Samba */
+#ifdef _STANDALONE_
+typedef enum {False=0,True=1} BOOL;
+
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return((tp2.tv_sec - tp1.tv_sec) + 
+	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+}
+#endif /* _STANDALONE_ */
+
+
+#define CHECK_SIZE(ptr, tsize) do { \
+	if (talloc_total_size(ptr) != (tsize)) { \
+		printf(__location__ " failed: wrong '%s' tree size: got %u  expected %u\n", \
+		       #ptr, \
+		       (unsigned)talloc_total_size(ptr), \
+		       (unsigned)tsize); \
+		talloc_report_full(ptr, stdout); \
+		return False; \
+	} \
+} while (0)
 
 #define CHECK_BLOCKS(ptr, tblocks) do { \
 	if (talloc_total_blocks(ptr) != (tblocks)) { \
@@ -33,16 +74,6 @@
 	} \
 } while (0)
 
-#define CHECK_SIZE(ptr, tsize) do { \
-	if (talloc_total_size(ptr) != (tsize)) { \
-		printf(__location__ " failed: wrong '%s' tree size: got %u  expected %u\n", \
-		       #ptr, \
-		       (unsigned)talloc_total_size(ptr), \
-		       (unsigned)tsize); \
-		talloc_report_full(ptr, stdout); \
-		return False; \
-	} \
-} while (0)
 
 /*
   test references 
@@ -241,11 +272,11 @@ static BOOL test_ref4(void)
 /*
   test references 
 */
-static BOOL test_unref1(void)
+static BOOL test_unlink1(void)
 {
 	void *root, *p1, *p2, *ref, *r1;
 
-	printf("TESTING UNREFERENCE\n");
+	printf("TESTING UNLINK\n");
 
 	root = talloc_named_const(NULL, 0, "root");
 	p1 = talloc_named_const(root, 1, "p1");
@@ -263,7 +294,7 @@ static BOOL test_unref1(void)
 	CHECK_BLOCKS(r1, 2);
 
 	printf("Unreferencing r1\n");
-	talloc_unreference(r1, p2);
+	talloc_unlink(r1, p2);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p1, 6);
@@ -314,11 +345,16 @@ static BOOL test_misc(void)
 	talloc_free(p1);
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
-	talloc_unreference(NULL, p1);
+	talloc_unlink(NULL, p1);
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
-	if (talloc_unreference(root, p1) != NULL) {
-		printf("failed: talloc_unreference() of non-reference context should return NULL\n");
+	p2 = talloc_strdup(p1, "foo");
+	if (talloc_unlink(root, p2) != -1) {
+		printf("failed: talloc_unlink() of non-reference context should return -1\n");
+		return False;
+	}
+	if (talloc_unlink(p1, p2) != 0) {
+		printf("failed: talloc_unlink() of parent should succeed\n");
 		return False;
 	}
 	talloc_free(p1);
@@ -405,6 +441,44 @@ static BOOL test_misc(void)
 
 	talloc_free(p1);
 	CHECK_BLOCKS(root, 1);
+
+	p1 = talloc_named(root, 100, "%d bytes", 100);
+	CHECK_BLOCKS(p1, 2);
+	CHECK_BLOCKS(root, 3);
+	talloc_unlink(root, p1);
+
+	p1 = talloc_init("%d bytes", 200);
+	p2 = talloc_asprintf(p1, "my test '%s'", "string");
+	CHECK_BLOCKS(p1, 3);
+	CHECK_SIZE(p2, 17);
+	CHECK_BLOCKS(root, 1);
+	talloc_unlink(NULL, p1);
+
+	p1 = talloc_named_const(root, 10, "p1");
+	p2 = talloc_named_const(root, 20, "p2");
+	talloc_reference(p1, p2);
+	talloc_report_full(root, stdout);
+	talloc_unlink(root, p2);
+	talloc_report_full(root, stdout);
+	CHECK_BLOCKS(p2, 1);
+	CHECK_BLOCKS(p1, 2);
+	CHECK_BLOCKS(root, 3);
+	talloc_unlink(p1, p2);
+	talloc_unlink(root, p1);
+
+	p1 = talloc_named_const(root, 10, "p1");
+	p2 = talloc_named_const(root, 20, "p2");
+	talloc_reference(NULL, p2);
+	talloc_report_full(root, stdout);
+	talloc_unlink(root, p2);
+	talloc_report_full(root, stdout);
+	CHECK_BLOCKS(p2, 1);
+	CHECK_BLOCKS(p1, 1);
+	CHECK_BLOCKS(root, 2);
+	talloc_unlink(NULL, p2);
+	talloc_unlink(root, p1);
+
+	
 
 	talloc_report(root, stdout);
 	talloc_report(NULL, stdout);
@@ -567,7 +641,7 @@ static BOOL test_ldb(void)
 static BOOL test_speed(void)
 {
 	void *ctx = talloc(NULL, 0);
-	uint_t count;
+	unsigned count;
 
 	printf("MEASURING TALLOC VS MALLOC SPEED\n");
 
@@ -609,18 +683,32 @@ BOOL torture_local_talloc(int dummy)
 {
 	BOOL ret = True;
 
-	init_iconv();
-
 	ret &= test_ref1();
 	ret &= test_ref2();
 	ret &= test_ref3();
 	ret &= test_ref4();
-	ret &= test_unref1();
+	ret &= test_unlink1();
 	ret &= test_misc();
 	ret &= test_realloc();
 	ret &= test_steal();
 	ret &= test_ldb();
-	ret &= test_speed();
+	if (ret) {
+		ret &= test_speed();
+	}
 
 	return ret;
 }
+
+
+
+#ifdef _STANDALONE_
+int main(void)
+{
+	if (!torture_local_talloc(0)) {
+		printf("ERROR: TESTSUIE FAILED\n");
+		return -1;
+	}
+	return 0;
+}
+#endif
+
