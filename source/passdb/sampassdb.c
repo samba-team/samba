@@ -290,12 +290,13 @@ void pwdb_init_sam(struct sam_passwd *user)
 {
 	if (user == NULL) return;
 	bzero(user, sizeof(*user));
-	unix_to_nt_time(&user->logon_time            , (time_t)-1);
-	unix_to_nt_time(&user->logoff_time           , (time_t)-1);
-	unix_to_nt_time(&user->kickoff_time          , (time_t)-1);
-	unix_to_nt_time(&user->pass_last_set_time    , (time_t)-1);
-	unix_to_nt_time(&user->pass_can_change_time  , (time_t)-1);
-	unix_to_nt_time(&user->pass_must_change_time , (time_t)-1);
+
+	init_nt_time(&user->logon_time);
+	init_nt_time(&user->logoff_time);
+	init_nt_time(&user->kickoff_time);
+	init_nt_time(&user->pass_last_set_time);
+	init_nt_time(&user->pass_can_change_time);
+	init_nt_time(&user->pass_must_change_time);
 
 	user->unix_uid = (uid_t)-1;
 	user->unix_gid = (gid_t)-1;
@@ -360,8 +361,6 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	static struct sam_passwd pw_buf;
 	static fstring nt_name;
 	static fstring unix_name;
-        static time_t t;
-        static int time_count = 0;
 
 	if (user == NULL) return NULL;
 
@@ -377,29 +376,11 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
 	pw_buf.acct_ctrl          = user->acct_ctrl;
 
-        /* Just update the time counter every 1,000 times though this function */
-        switch (time_count) {
-                case 0: 
-                        DEBUG(3, ("Called time() in smb_to_sam function\n"));
-                        time (&t);
-                        time_count++;
-                        break;
-                case 1000:
-                        time_count = 0;
-                        break;
-                default:
-                        time_count++;
-                        break;
-        }
-
-        if ( user->pass_last_set_time == (time_t)-1 )
+        if ( user->pass_last_set_time != (time_t)-1 )
         {
-                user->pass_last_set_time = t;
-        }
-        unix_to_nt_time(&pw_buf.pass_last_set_time, user->pass_last_set_time);
-        unix_to_nt_time(&pw_buf.pass_can_change_time , user->pass_last_set_time);
-        unix_to_nt_time(&pw_buf.pass_must_change_time, t+3628800);
-
+		unix_to_nt_time(&pw_buf.pass_last_set_time, user->pass_last_set_time);
+		unix_to_nt_time(&pw_buf.pass_can_change_time, user->pass_last_set_time);
+	}
 
 	return &pw_buf;
 }
