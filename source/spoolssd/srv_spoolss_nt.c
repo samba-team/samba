@@ -3306,15 +3306,14 @@ uint32 _spoolss_enumprintprocessors(const UNISTR2 *name,
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rdata)
+uint32 _spoolss_enumprintmonitors( const UNISTR2 *name,
+				uint32 level,
+				PRINTMONITOR_1 **info_1,
+				uint32 *offered,
+				uint32 *numofprintmonitors)
 {
-	SPOOL_R_ENUMPRINTMONITORS r_u;
-	PRINTMONITOR_1 *info_1;
-	
  	DEBUG(5,("spoolss_enumprintmonitors\n"));
 
 	/* 
@@ -3324,22 +3323,19 @@ uint32 _spoolss_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rd
 	 * and I can use my nice printer checker.
 	 */
 	
-	status = 0x0;
-	offered = buf_size;
-	level = level;
+	(*numofprintmonitors) = 0x1;
+	(*info_1) = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1));
+	if ((*info_1) == NULL)
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
 	
-	numofprintmonitors = 0x1;
-	
-	info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1));
-	
-	make_unistr(&(info_1->name), "Local Port");
-	
-	info_1=info_1;
-	
-	spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0);
-	
-	free(info_1);
+	make_unistr(&((*info_1)->name), "Local Port");
+
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

@@ -4992,7 +4992,11 @@ uint32 _spoolss_enumprintprocessors(const UNISTR2 *name,
 				PRINTPROCESSOR_1 **info_1,
 				uint32 *offered,
 				uint32 *numofprintprocessors);
-uint32 _spoolss_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprintmonitors( const UNISTR2 *name,
+				uint32 level,
+				PRINTMONITOR_1 **info_1,
+				uint32 *offered,
+				uint32 *numofprintmonitors);
 uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */

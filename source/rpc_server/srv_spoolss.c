@@ -950,6 +950,9 @@ static void api_spoolss_enumprintprocessors(rpcsrv_struct *p, prs_struct *data,
 	SPOOL_Q_ENUMPRINTPROCESSORS q_u;
 	SPOOL_R_ENUMPRINTPROCESSORS r_u;
 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_enumprintprocessors("", &q_u, data, 0);
 	r_u.offered = q_u.buf_size;
 	r_u.level = q_u.level;
@@ -966,49 +969,26 @@ static void api_spoolss_enumprintprocessors(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMPRINTMONITORS r_u;
-	PRINTMONITOR_1 *info_1;
-	
- 	DEBUG(5,("spoolss_reply_enumprintmonitors\n"));
-
-	/* 
-	 * Enumerate the print monitors ...
-	 *
-	 * Just reply with "Local Port", to keep NT happy
-	 * and I can use my nice printer checker.
-	 */
-	
-	r_u.status = 0x0;
-	r_u.offered = q_u->buf_size;
-	r_u.level = q_u->level;
-	
-	r_u.numofprintmonitors = 0x1;
-	
-	info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1));
-	
-	make_unistr(&(info_1->name), "Local Port");
-	
-	r_u.info_1 = info_1;
-	
-	spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0);
-	
-	free(info_1);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_enumprintmonitors(rpcsrv_struct *p, prs_struct *data,
 				          prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTMONITORS q_u;
+	SPOOL_R_ENUMPRINTMONITORS r_u;
 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_enumprintmonitors("", &q_u, data, 0);
-
-	spoolss_reply_enumprintmonitors(&q_u, rdata);
-
-	spoolss_io_free_buffer(&(q_u.buffer));
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
+	r_u.status = _spoolss_enumprintmonitors(&q_u.name,
+				q_u.level,
+				&r_u.info_1,
+				&r_u.offered,
+				&r_u.numofprintmonitors);
+	spoolss_io_free_buffer(&q_u.buffer);
+	spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0);
+	safe_free(r_u.info_1);
 }
 
 /****************************************************************************
