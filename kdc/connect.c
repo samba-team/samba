@@ -645,7 +645,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	ret = handle_http_tcp (&d[index], addr);
 	if (ret < 0)
 	    clear_descr (d + index);
-    } else {
+    } else if (d[index].len > 4) {
 	kdc_log (0, "TCP data of strange type from %s", addr);
 	return;
     }
