@@ -159,6 +159,8 @@ krb5_checksum_is_keyed.3
 krb5_checksumsize.3
 krb5_clear_error_string.3
 krb5_closelog.3
+krb5_config_file_free.3
+krb5_config_free_strings.3
 krb5_config_get.3
 krb5_config_get_bool.3
 krb5_config_get_bool_default.3
@@ -256,6 +258,7 @@ krb5_get_use_admin_kdc.3
 krb5_h_addr2addr.3
 krb5_h_addr2sockaddr.3
 krb5_have_error_string.3
+krb5_hmac.3
 krb5_init_context.3
 krb5_init_ets.3
 krb5_initlog.3
@@ -282,6 +285,7 @@ krb5_kt_end_seq_get.3
 krb5_kt_free_entry.3
 krb5_kt_get_entry.3
 krb5_kt_get_name.3
+krb5_kt_get_type.3
 krb5_kt_next_entry.3
 krb5_kt_ops.3
 krb5_kt_read_service_key.3
@@ -301,9 +305,16 @@ krb5_parse_name.3
 krb5_password_key_proc.3
 krb5_prepend_config_files.3
 krb5_prepend_config_files_default.3
+krb5_princ_realm.3
+krb5_princ_set_realm.3
 krb5_principal.3
+krb5_principal_compare.3
+krb5_principal_compare_any_realm.3
 krb5_principal_get_comp_string.3
 krb5_principal_get_realm.3
+krb5_principal_get_type.3
+krb5_principal_match.3
+krb5_principal_set_type.3
 krb5_print_address.3
 krb5_ret_address.3
 krb5_ret_addrs.3
@@ -367,11 +378,15 @@ krb5_ticket_get_client.3
 krb5_ticket_get_server.3
 krb5_timeofday.3
 krb5_unparse_name.3
+krb5_unparse_name_fixed.3
+krb5_unparse_name_fixed_short.3
+krb5_unparse_name_short.3
 krb5_us_timeofday.3
 krb5_vabort.3
 krb5_vabortx.3
 krb5_verify_checksum.3
 krb5_verify_opt_init.3
+krb5_verify_opt_set_ccache.3
 krb5_verify_opt_set_flags.3
 krb5_verify_opt_set_keytab.3
 krb5_verify_opt_set_secure.3
