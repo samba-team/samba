@@ -5,6 +5,7 @@ FULLBUILD=$1
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
 PIDL="$PERL ./build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --server"
+EPARSERPIDL="$PERL ./build/pidl/pidl.pl --output $EPARSERPREFIX/ndr_ --parse --header --eparser"
 TABLES="$PERL ./build/pidl/tables.pl --output librpc/gen_ndr/tables"
 
 if [ x$FULLBUILD = xFULL ]; then
@@ -13,6 +14,12 @@ if [ x$FULLBUILD = xFULL ]; then
 
       echo Rebuilding IDL tables
       $TABLES librpc/gen_ndr/ndr_*.h || exit 1
+      exit 0
+fi
+
+if [ x$FULLBUILD = xEPARSER ]; then
+      echo Rebuilding all idl files in librpc/idl
+      $EPARSERPIDL librpc/idl/*.idl || exit 1
       exit 0
 fi
 
