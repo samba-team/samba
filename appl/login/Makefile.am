@@ -28,8 +28,6 @@ LDADD = $(LIB_kafs) \
 	$(LIB_roken) \
 	$(LIB_security)
 
-login_DEPENDENCIES = $(LIB_roken)
-
 $(srcdir)/login_protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -o login_protos.h $(login_SOURCES) || rm -f login_protos.h
 
