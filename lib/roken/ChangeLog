@@ -1,5 +1,7 @@
 1999-09-24  Johan Danielsson  <joda@pdc.kth.se>
 
+	* getarg.3: getarg manpage
+
 	* getarg.{c,h}: add a callback type to do more complicated processing
 
 	* getarg.{c,h}: add floating point support
