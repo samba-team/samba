@@ -421,12 +421,6 @@
 		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
 		or DENY_ALL. There are also special compatibility modes called 
 		DENY_FCB and  DENY_DOS.</para>
-
-		<para>You can disable share modes using "share modes = no". 
-		This may be useful on a heavily loaded server as the share 
-		modes code is very slow. See also the FAST_SHARE_MODES 
-		option in the Makefile for a way to do full share modes 
-		very fast using shared memory (if your OS supports it).</para>
 	</sect2>
 	
 	<sect2>
