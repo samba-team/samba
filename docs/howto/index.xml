@@ -153,7 +153,7 @@ Samba has several features that you might want or might not want to use. The cha
 <xi:include href="PolicyMgmt.xml"/>
 <xi:include href="ProfileMgmt.xml"/>
 <xi:include href="PAM.xml"/>
-<xi:include href="Integrating-With_windows.xml"/>
+<xi:include href="Integrating-with-Windows.xml"/>
 <xi:include href="Unicode.xml"/>
 <xi:include href="Backup.xml"/>
 <xi:include href="HighAvailability.xml"/>
