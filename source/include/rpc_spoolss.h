@@ -25,7 +25,6 @@
 #define _RPC_SPOOLSS_H
 
 #define INTEGER 1
-#define STRING 2
 
 /* spoolss pipe: this are the calls which are not implemented ...
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
