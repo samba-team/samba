@@ -1059,13 +1059,18 @@ int smbw_chmod(const char *fname, mode_t newmode)
 		goto failed;
 	}
 
-	if (!cli_getatr(&srv->cli, path, &mode, NULL, NULL)) {
+	mode = 0;
+
+	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= aRONLY;
+	if ((newmode & S_IXUSR) && lp_map_archive(-1)) mode |= aARCH;
+	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
+	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= aHIDDEN;
+
+	if (!cli_setatr(&srv->cli, path, mode, 0)) {
 		errno = smbw_errno(&srv->cli);
 		goto failed;
 	}
 	
-	/* assume success for the moment - need to add attribute mapping */
-
 	smbw_busy--;
 	return 0;
 

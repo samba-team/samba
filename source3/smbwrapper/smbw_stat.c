@@ -33,12 +33,19 @@ setup basic info in a stat structure
 void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 {
 	ZERO_STRUCTP(st);
+	
+	st->st_mode = 0;
 
 	if (IS_DOS_DIR(mode)) {
 		st->st_mode = SMBW_DIR_MODE;
 	} else {
 		st->st_mode = SMBW_FILE_MODE;
 	}
+
+	if (IS_DOS_ARCHIVE(mode)) st->st_mode |= S_IXUSR;
+	if (IS_DOS_SYSTEM(mode)) st->st_mode |= S_IXGRP;
+	if (IS_DOS_HIDDEN(mode)) st->st_mode |= S_IXOTH;
+	if (!IS_DOS_READONLY(mode)) st->st_mode |= S_IWUSR;
 
 	st->st_size = size;
 	st->st_blksize = 512;

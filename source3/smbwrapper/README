@@ -30,7 +30,8 @@ happens. If you set SMBW_WORKGROUP to your workgroup or have workgroup
 set in yoru smb.conf then listing /smb/ should list all SMB servers in
 your workgroup.
 
-Environment variables
+
+ENVIRONMENT VARIABLES
 ---------------------
 
 SMBW_USER
@@ -57,6 +58,23 @@ SMBW_WORKGROUP
  This is the workgroup used for browsing (ie. listing machines in the
  /smb/ directory). It defaults to the one set in smb.conf.
 
+
+ATTRIBUTE MAPPING
+-----------------
+
+smbwrapper does an inverse attribute maping to what Samba does. This
+means that the archive bit appears as the user execute bit, the system
+bit appears as the group execute bit and the hidden bit appears as the
+other execute bit. You can control these with chmod. The mapping can
+be enabled an disabled using the normal smb.conf controls (ie. "map
+archive", "map system" and "map hidden").
+
+Read-only files appear as non-writeable by everyone. Writeable files
+appear as writeable by the current user.
+
+
+WHAT WORKS
+----------
 
 Things that I have tried and do seem to work include:
 
