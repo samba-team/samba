@@ -58,8 +58,8 @@
 #ifndef	__MISC_PROTO__
 #define	__MISC_PROTO__
 
-void auth_encrypt_init (char *, char *, char *, int);
-void auth_encrypt_user(char *name);
+void auth_encrypt_init (const char *, const char *, const char *, int);
+void auth_encrypt_user(const char *name);
 void auth_encrypt_connect (int);
 void printd (const unsigned char *, int);
 
