@@ -187,7 +187,7 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 	if (sys_stat(fname,sbuf) != 0) 
 		return(False);
 
-	return(S_ISREG(sbuf->st_mode));
+	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
 }
 
 /*******************************************************************
