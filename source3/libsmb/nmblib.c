@@ -363,6 +363,27 @@ static int put_res_rec(char *buf,int offset,struct res_rec *recs,int count)
 }
 
 /*******************************************************************
+  put a compressed name pointer record into a packet
+  ******************************************************************/
+static int put_compressed_name_ptr(unsigned char *buf,int offset,struct res_rec *rec,int ptr_offset)
+{  
+  int ret=0;
+  buf[offset] = (0xC0 | ((ptr_offset >> 8) & 0xFF));
+  buf[offset+1] = (ptr_offset & 0xFF);
+  offset += 2;
+  ret += 2;
+  RSSVAL(buf,offset,rec->rr_type);
+  RSSVAL(buf,offset+2,rec->rr_class);
+  RSIVAL(buf,offset+4,rec->ttl);
+  RSSVAL(buf,offset+8,rec->rdlength);
+  memcpy(buf+offset+10,rec->rdata,rec->rdlength);
+  offset += 10+rec->rdlength;
+  ret += 10+rec->rdlength;
+    
+  return(ret);
+}
+
+/*******************************************************************
   parse a dgram packet. Return False if the packet can't be parsed 
   or is invalid for some reason, True otherwise 
 
@@ -808,10 +829,27 @@ static int build_nmb(char *buf,struct packet_struct *p)
     offset += put_res_rec((char *)ubuf,offset,nmb->nsrecs,
 			  nmb->header.nscount);
 
-  if (nmb->header.arcount)
+  /*
+   * The spec says we must put compressed name pointers
+   * in the following outgoing packets :
+   * NAME_REGISTRATION_REQUEST, NAME_REFRESH_REQUEST,
+   * NAME_RELEASE_REQUEST.
+   */
+
+  if((nmb->header.response == False) &&
+     ((nmb->header.opcode == NMB_NAME_REG_OPCODE) ||
+      (nmb->header.opcode == NMB_NAME_RELEASE_OPCODE) ||
+      (nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_8) ||
+      (nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_9) ||
+      (nmb->header.opcode == NMB_NAME_MULTIHOMED_REG_OPCODE)) &&
+     (nmb->header.arcount == 1)) {
+
+    offset += put_compressed_name_ptr(ubuf,offset,nmb->additional,12);
+
+  } else if (nmb->header.arcount) {
     offset += put_res_rec((char *)ubuf,offset,nmb->additional,
 			  nmb->header.arcount);  
-
+  }
   return(offset);
 }
 
