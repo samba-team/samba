@@ -48,6 +48,7 @@ if test "$with_krb4"; then
 	LIB_krb4="$KRB4LIB -ldes"
 	INCLUDE_krb4="$KRB4INCLUDE"
 fi
+AM_CONDITIONAL(KRB4, test "$with_krb4")
 AC_SUBST(LIB_krb4)
 AC_SUBST(INCLUDE_krb4)
 
