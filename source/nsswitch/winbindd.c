@@ -283,6 +283,16 @@ static void process_request(struct winbindd_cli_state *state)
                 state->response.result = winbindd_list_groups(state);
                 break;
 
+		/* SID related functions */
+
+	case WINBINDD_SID2STRING:
+		state->response.result = winbindd_sid2string(state);
+		break;
+
+	case WINBINDD_STRING2SID:
+		state->response.result = winbindd_string2sid(state);
+		break;
+
 		/* Oops */
         
 	default:
@@ -607,88 +617,91 @@ struct winbindd_state server_state;   /* Server state information */
 
 int main(int argc, char **argv)
 {
-    extern pstring global_myname;
-    extern pstring debugf;
-    int accept_sock;
-    BOOL interactive = False;
-    int opt;
+	extern pstring global_myname;
+	extern pstring debugf;
+	int accept_sock;
+	BOOL interactive = False;
+	int opt;
 
-    while ((opt = getopt(argc, argv, "i")) != EOF) {
-	    switch (opt) {
+	while ((opt = getopt(argc, argv, "id:")) != EOF) {
+		switch (opt) {
 		case 'i':
 			interactive = True;
 			break;
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 		default:
-			printf("Unknown option %c (%d)\n", (char)opt, opt);
+			printf("Unknown option %c\n", (char)opt);
 			exit(1);
 		}
-    }
+	}
 
-    /* Initialise samba/rpc client stuff */
-    slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
-    setup_logging("winbindd", interactive);
-    reopen_logs();
+	/* Initialise samba/rpc client stuff */
+	slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
+	setup_logging("winbindd", interactive);
+	reopen_logs();
 
-    if (!*global_myname) {
-        char *p;
+	if (!*global_myname) {
+		char *p;
 
-        fstrcpy(global_myname, myhostname());
-        p = strchr(global_myname, '.');
-        if (p) {
-            *p = 0;
-        }
-    }
+		fstrcpy(global_myname, myhostname());
+		p = strchr(global_myname, '.');
+		if (p) {
+			*p = 0;
+		}
+	}
 
-    TimeInit();
-    charset_initialise();
-    codepage_initialise(lp_client_code_page());
+	TimeInit();
+	charset_initialise();
+	codepage_initialise(lp_client_code_page());
 
-    if (!lp_load(CONFIGFILE, True, False, False)) {
-        DEBUG(0, ("error opening config file\n"));
-        exit(1);
-    }
+	if (!lp_load(CONFIGFILE, True, False, False)) {
+		DEBUG(0, ("error opening config file\n"));
+		exit(1);
+	}
 
-    if (!interactive) {
-	    become_daemon();
-    }
-    load_interfaces();
+	if (!interactive) {
+		become_daemon();
+	}
+	load_interfaces();
 
-    secrets_init();
+	secrets_init();
 
-    ZERO_STRUCT(server_state);
+	ZERO_STRUCT(server_state);
 
     /* Winbind daemon initialisation */
-    if (!winbindd_param_init()) {
-	    return 1;
-    }
+	if (!winbindd_param_init()) {
+		return 1;
+	}
 
-    if (!winbindd_idmap_init()) {
-        return 1;
-    }
+	if (!winbindd_idmap_init()) {
+		return 1;
+	}
 
-    winbindd_cache_init();
+	winbindd_cache_init();
 
     /* Setup signal handlers */
 
-    CatchSignal(SIGINT, termination_handler);         /* Exit on these sigs */
-    CatchSignal(SIGQUIT, termination_handler);
-    CatchSignal(SIGTERM, termination_handler);
+	CatchSignal(SIGINT, termination_handler);         /* Exit on these sigs */
+	CatchSignal(SIGQUIT, termination_handler);
+	CatchSignal(SIGTERM, termination_handler);
 
-    CatchSignal(SIGPIPE, SIG_IGN);                    /* Ignore sigpipe */
+	CatchSignal(SIGPIPE, SIG_IGN);                    /* Ignore sigpipe */
 
-    CatchSignal(SIGUSR1, sigusr1_handler);            /* Debugging sigs */
-    CatchSignal(SIGHUP, sighup_handler);
+	CatchSignal(SIGUSR1, sigusr1_handler);            /* Debugging sigs */
+	CatchSignal(SIGHUP, sighup_handler);
 
     /* Create UNIX domain socket */
 
-    if ((accept_sock = create_sock()) == -1) {
-        DEBUG(0, ("failed to create socket\n"));
-        return 1;
-    }
+	if ((accept_sock = create_sock()) == -1) {
+		DEBUG(0, ("failed to create socket\n"));
+		return 1;
+	}
 
-    /* Loop waiting for requests */
+	/* Loop waiting for requests */
 
-    process_loop(accept_sock);
+	process_loop(accept_sock);
 
-    return 0;
+	return 0;
 }
