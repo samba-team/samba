@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,8 +43,10 @@ OM_uint32 gss_delete_sec_context
 {
   gssapi_krb5_init ();
 
-  output_token->length = 0;
-  output_token->value  = NULL;
+  if (output_token) {
+      output_token->length = 0;
+      output_token->value  = NULL;
+  }
 
   krb5_auth_con_free (gssapi_krb5_context,
 		      (*context_handle)->auth_context);
@@ -58,7 +60,5 @@ OM_uint32 gss_delete_sec_context
     krb5_free_ticket (gssapi_krb5_context,
 		      (*context_handle)->ticket);
   free (*context_handle);
-  if (output_token)
-    output_token->length = 0;
   return GSS_S_COMPLETE;
 }
