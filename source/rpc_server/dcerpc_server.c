@@ -398,7 +398,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 
-	/* setup a bind_ack */
+	/* setup a bind_nak */
 	dcesrv_init_hdr(&pkt);
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
@@ -420,6 +420,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 	dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
+	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
 
 	return NT_STATUS_OK;	
 }
@@ -472,6 +473,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
+		/* TODO: work out the right reject code */
 		return dcesrv_bind_nak(call, 0);
 	}
 
@@ -562,6 +564,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	void *r;
 	NTSTATUS status;
 	DATA_BLOB stub;
+	uint32 total_length;
 
 	opnum = call->pkt.u.request.opnum;
 
@@ -612,6 +615,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	stub = ndr_push_blob(push);
 
+	total_length = stub.length;
+
 	do {
 		uint32 length;
 		struct dcesrv_call_reply *rep;
@@ -635,7 +640,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		pkt.call_id = call->pkt.call_id;
 		pkt.ptype = DCERPC_PKT_RESPONSE;
 		pkt.pfc_flags = 0;
-		if (!call->replies) {
+		if (stub.length == total_length) {
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_FIRST;
 		}
 		if (length == stub.length) {
