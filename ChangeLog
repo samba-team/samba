@@ -1,3 +1,21 @@
+2004-02-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: don't use path's in first .Nm, it confuses
+	some locate.updatedb, use FILES section to describe where the file
+	is instead.
+
+2004-02-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/check-der.c: test for "der_length.c: Fix len_unsigned
+	for certain negative integers, it got the length wrong" , from
+	Panasas, Inc.
+
+	* lib/asn1/der_length.c: Fix len_unsigned for certain negative
+	integers, it got the length wrong, fix from Panasas, Inc.
+	
+	rename len_int and len_unsigned to _heim_\&
+	* lib/asn1/der_locl.h: add _heim_len_unsigned, _heim_len_int
+	
 2004-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/check-gen.c: test for: (length_type): TSequenceOf: add
