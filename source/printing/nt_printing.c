@@ -2508,16 +2508,10 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
         char *ascii_str;
 	int i;
 
-	for (i=0; i < info2->data.num_keys; i++)
-		if (!(StrCaseCmp(SPOOL_DSSPOOLER_KEY, 
-				 info2->data.keys[i].name)))
-			ctr = &info2->data.keys[i].values;
+	if ((i = lookup_printerkey(&info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
+		i = add_new_printer_key(&info2->data, SPOOL_DSSPOOLER_KEY);
+	ctr = &info2->data.keys[i].values;
 
-	if (!ctr) {
-		add_new_printer_key(&info2->data, SPOOL_DSSPOOLER_KEY);
-		ctr = &info2->data.keys[info2->data.num_keys - 1].values;
-	}
-	
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTERNAME, info2->sharename);
 	map_sz_into_ctr(ctr, SPOOL_REG_SHORTSERVERNAME, global_myname());
 
@@ -2561,6 +2555,136 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	return True;
 }
 
+#ifdef HAVE_ADS
+static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, GUID guid)
+{
+	int i;
+	REGVAL_CTR *ctr=NULL;
+
+	/* find the DsSpooler key */
+	if ((i = lookup_printerkey(&info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
+		i = add_new_printer_key(&info2->data, SPOOL_DSSPOOLER_KEY);
+	ctr = &info2->data.keys[i].values;
+
+	regval_ctr_delvalue(ctr, "objectGUID");
+	regval_ctr_addvalue(ctr, "objectGUID", REG_BINARY, 
+			    (char *) &guid, sizeof(GUID));	
+}
+
+static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
+{
+	ADS_STATUS ads_rc;
+	TALLOC_CTX *ctx = talloc_init();
+	ADS_MODLIST mods = ads_init_mods(ctx);
+	char *prt_dn = NULL, *srv_dn, **srv_cn;
+	void *res = NULL;
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"objectGUID", NULL};
+	GUID guid;
+	WERROR win_rc = WERR_OK;
+
+	ZERO_STRUCT(guid);
+	/* set the DsSpooler info and attributes */
+	if (!(map_nt_printer_info2_to_dsspooler(printer->info_2)))
+			return WERR_NOMEM;
+	printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
+	win_rc = mod_a_printer(*printer, 2);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		DEBUG(3, ("err %d saving data\n",
+				  W_ERROR_V(win_rc)));
+		return win_rc;
+	}
+
+	/* Build the ads mods */
+	get_local_printer_publishing_data(ctx, &mods, 
+					  &printer->info_2->data);
+	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
+		    printer->info_2->sharename);
+
+	/* connect to the ADS server */
+	ads = ads_init(NULL, NULL, lp_ads_server());
+	if (!ads) {
+		DEBUG(3, ("ads_init() failed\n"));
+		return WERR_SERVER_UNAVAILABLE;
+	}
+	ads_rc = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_rc)) {
+		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
+		ads_destroy(&ads);
+		return WERR_ACCESS_DENIED;
+	}
+
+	/* figure out where to publish */
+	ads_find_machine_acct(ads, &res, global_myname());
+	srv_dn = ldap_get_dn(ads->ld, res);
+	ads_msgfree(ads, res);
+	srv_cn = ldap_explode_dn(srv_dn, 1);
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], 
+		 printer->info_2->sharename, srv_dn);
+	ads_memfree(ads, srv_dn);
+
+	/* publish it */
+	ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
+	if (LDAP_ALREADY_EXISTS == ads_rc.err.rc)
+		ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx,&mods);
+	
+	/* retreive the guid and store it locally */
+	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
+		ads_memfree(ads, prt_dn);
+		ads_pull_guid(ads, res, &guid);
+		ads_msgfree(ads, res);
+		store_printer_guid(printer->info_2, guid);
+		win_rc = mod_a_printer(*printer, 2);
+	} 
+
+	safe_free(prt_dn);
+	ads_destroy(&ads);
+
+	return WERR_OK;
+}
+
+WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
+{
+	ADS_STATUS ads_rc;
+	ADS_STRUCT *ads;
+	void *res;
+	char *prt_dn = NULL;
+	WERROR win_rc;
+
+	printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
+	win_rc = mod_a_printer(*printer, 2);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		DEBUG(3, ("err %d saving data\n",
+				  W_ERROR_V(win_rc)));
+		return win_rc;
+	}
+	
+	ads = ads_init(NULL, NULL, lp_ads_server());
+	if (!ads) {
+		DEBUG(3, ("ads_init() failed\n"));
+		return WERR_SERVER_UNAVAILABLE;
+	}
+	ads_rc = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_rc)) {
+		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
+		ads_destroy(&ads);
+		return WERR_ACCESS_DENIED;
+	}
+	
+	/* remove the printer from the directory */
+	ads_rc = ads_find_printer_on_server(ads, &res, 
+			    printer->info_2->sharename, global_myname());
+	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
+		prt_dn = ads_get_dn(ads, res);
+		ads_msgfree(ads, res);
+		ads_rc = ads_del_dn(ads, prt_dn);
+		ads_memfree(ads, prt_dn);
+	}
+
+	ads_destroy(&ads);
+	return WERR_OK;
+}
+
 /****************************************************************************
  * Publish a printer in the directory
  *
@@ -2570,87 +2694,69 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 
 WERROR nt_printer_publish(int snum, int action)
 {
-#ifdef HAVE_ADS
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	WERROR win_rc;
-	ADS_STATUS ads_rc;
-	TALLOC_CTX *ctx = talloc_init();
-	ADS_MODLIST mods = ads_init_mods(ctx);
-	char *prt_dn = NULL, *srv_dn, **srv_cn;
-	void *res = NULL;
-	ADS_STRUCT *ads;
 
 	win_rc = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(win_rc))
 		return win_rc;
 
-	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action)) {
-		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2)))
-			return WERR_NOMEM;
-
-		printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
-
-		win_rc = mod_a_printer(*printer, 2);
-		if (!W_ERROR_IS_OK(win_rc)) {
-			DEBUG(3, ("nt_printer_publish: err %d saving data\n",
-				  W_ERROR_V(win_rc)));
-			free_a_printer(&printer, 2);
-			return win_rc;
-		}
-
-		get_local_printer_publishing_data(ctx, &mods, 
-						  &printer->info_2->data);
-		ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
-			    lp_servicename(snum));
-	} else {
-		printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
-		win_rc = mod_a_printer(*printer, 2);
-		if (!W_ERROR_IS_OK(win_rc)) {
-			DEBUG(3, ("nt_printer_publish: err %d saving data\n",
-				  W_ERROR_V(win_rc)));
-			free_a_printer(&printer, 2);
-			return win_rc;
-		}
+	switch(action) {
+	case SPOOL_DS_PUBLISH:
+	case SPOOL_DS_UPDATE:
+		win_rc = publish_it(printer);
+		break;
+	case SPOOL_DS_UNPUBLISH:
+		win_rc = unpublish_it(printer);
+		break;
+	default:
+		win_rc = WERR_NOT_SUPPORTED;
 	}
-
-	ads = ads_init(NULL, NULL, lp_ads_server());
-
-	ads_rc = ads_connect(ads);
-
-	if (SPOOL_DS_UNPUBLISH == action) {
-		ads_rc = ads_find_printer_on_server(ads, &res, 
-				printer->info_2->sharename, global_myname());
-		if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
-				prt_dn = ads_get_dn(ads, res);
-				ads_msgfree(ads, res);
-				ads_rc = ads_del_dn(ads, prt_dn);
-				ads_memfree(ads, prt_dn);
-		}
-	}
-
-	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action)) {
-		ads_find_machine_acct(ads, &res, global_myname());
-		srv_dn = ldap_get_dn(ads->ld, res);
-		ads_msgfree(ads, res);
-		srv_cn = ldap_explode_dn(srv_dn, 1);
-		asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], 
-			 printer->info_2->sharename, srv_dn);
-		ads_memfree(ads, srv_dn);
-
-		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
-		if (LDAP_ALREADY_EXISTS == ads_rc.err.rc)
-			ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx,&mods);
-		safe_free(prt_dn);
-		ads_destroy(&ads);
-	}
+	
 
 	free_a_printer(&printer, 2);
-	return WERR_OK;
-#else
-	return WERR_OK;
-#endif
+	return win_rc;
 }
 
+BOOL is_printer_published(int snum, GUID *guid)
+{
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	REGVAL_CTR *ctr;
+	REGISTRY_VALUE *guid_val;
+	WERROR win_rc;
+	int i;
+
+
+	win_rc = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(win_rc))
+		return False;
+
+	if (!(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED))
+		return False;
+
+	if ((i = lookup_printerkey(&printer->info_2->data, 
+				   SPOOL_DSSPOOLER_KEY)) < 0)
+		return False;
+
+	ctr = &printer->info_2->data.keys[i].values;
+
+	guid_val = regval_ctr_getvalue(ctr, "objectGUID");
+	if (regval_size(guid_val) == sizeof(GUID))
+		memcpy(guid, regval_data_p(guid_val), sizeof(GUID));
+
+	return True;
+}
+	
+#else
+WERROR nt_printer_publish(int snum, int action)
+{
+	return WERR_OK;
+}
+BOOL is_printer_published(int snum, GUID *guid)
+{
+	return False;
+}
+#endif
 /****************************************************************************
  ***************************************************************************/
  
