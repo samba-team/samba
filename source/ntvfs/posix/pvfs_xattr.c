@@ -21,12 +21,11 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
 /*
-  pull a xattr as a blob, from either a file or a file descriptor
+  pull a xattr as a blob
 */
 static NTSTATUS pull_xattr_blob(struct pvfs_state *pvfs,
 				TALLOC_CTX *mem_ctx,
@@ -36,45 +35,16 @@ static NTSTATUS pull_xattr_blob(struct pvfs_state *pvfs,
 				size_t estimated_size,
 				DATA_BLOB *blob)
 {
-#if HAVE_XATTR_SUPPORT
-	int ret;
-
-	*blob = data_blob_talloc(mem_ctx, NULL, estimated_size);
-	if (blob->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (pvfs->ea_db) {
+		return pull_xattr_blob_tdb(pvfs, mem_ctx, attr_name, fname, 
+					   fd, estimated_size, blob);
 	}
-
-again:
-	if (fd != -1) {
-		ret = fgetxattr(fd, attr_name, blob->data, estimated_size);
-	} else {
-		ret = getxattr(fname, attr_name, blob->data, estimated_size);
-	}
-	if (ret == -1 && errno == ERANGE) {
-		estimated_size *= 2;
-		blob->data = talloc_realloc(mem_ctx, blob->data, estimated_size);
-		if (blob->data == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		blob->length = estimated_size;
-		goto again;
-	}
-
-	if (ret == -1) {
-		data_blob_free(blob);
-		return pvfs_map_errno(pvfs, errno);
-	}
-
-	blob->length = ret;
-
-	return NT_STATUS_OK;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
+	return pull_xattr_blob_system(pvfs, mem_ctx, attr_name, fname, 
+				      fd, estimated_size, blob);
 }
 
 /*
-  push a xattr as a blob, from either a file or a file descriptor
+  push a xattr as a blob
 */
 static NTSTATUS push_xattr_blob(struct pvfs_state *pvfs,
 				const char *attr_name, 
@@ -82,22 +52,10 @@ static NTSTATUS push_xattr_blob(struct pvfs_state *pvfs,
 				int fd, 
 				const DATA_BLOB *blob)
 {
-#if HAVE_XATTR_SUPPORT
-	int ret;
-
-	if (fd != -1) {
-		ret = fsetxattr(fd, attr_name, blob->data, blob->length, 0);
-	} else {
-		ret = setxattr(fname, attr_name, blob->data, blob->length, 0);
+	if (pvfs->ea_db) {
+		return push_xattr_blob_tdb(pvfs, attr_name, fname, fd, blob);
 	}
-	if (ret == -1) {
-		return pvfs_map_errno(pvfs, errno);
-	}
-
-	return NT_STATUS_OK;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
+	return push_xattr_blob_system(pvfs, attr_name, fname, fd, blob);
 }
 
 
@@ -107,23 +65,23 @@ static NTSTATUS push_xattr_blob(struct pvfs_state *pvfs,
 static NTSTATUS delete_xattr(struct pvfs_state *pvfs, const char *attr_name, 
 			     const char *fname, int fd)
 {
-#if HAVE_XATTR_SUPPORT
-	int ret;
-
-	if (fd != -1) {
-		ret = fremovexattr(fd, attr_name);
-	} else {
-		ret = removexattr(fname, attr_name);
+	if (pvfs->ea_db) {
+		return delete_xattr_tdb(pvfs, attr_name, fname, fd);
 	}
-	if (ret == -1) {
-		return pvfs_map_errno(pvfs, errno);
-	}
-
-	return NT_STATUS_OK;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
+	return delete_xattr_system(pvfs, attr_name, fname, fd);
 }
+
+/*
+  a hook called on unlink - allows the tdb xattr backend to cleanup
+*/
+NTSTATUS pvfs_xattr_unlink_hook(struct pvfs_state *pvfs, const char *fname)
+{
+	if (pvfs->ea_db) {
+		return unlink_xattr_tdb(pvfs, fname);
+	}
+	return unlink_xattr_system(pvfs, fname);
+}
+
 
 /*
   load a NDR structure from a xattr
@@ -211,7 +169,7 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 	/* not having a DosAttrib is not an error */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		talloc_free(mem_ctx);
-		return NT_STATUS_OK;
+		return pvfs_stream_info(pvfs, name, fd);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -493,3 +451,4 @@ NTSTATUS pvfs_xattr_save(struct pvfs_state *pvfs,
 	talloc_free(aname);
 	return status;
 }
+
