@@ -121,7 +121,7 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 		 struct in_addr ip)
 {                     
   /* with a domain master we can get the whole list (not local only list) */
-  BOOL local_only = state != NAME_STATUS_DOM_SRV_CHK;
+  BOOL local_only = (state != NAME_STATUS_DOM_SRV_CHK);
 
   add_browser_entry(serv_name, name_type, work_name, 0, ip, local_only);
 
@@ -473,10 +473,6 @@ void announce_host(void)
 /****************************************************************************
   announce myself as a master to all other primary domain conrollers.
 
-  BIG NOTE: this code will remain untested until some kind soul that has access
-  to a couple of windows NT advanced servers runs this version of nmbd for at
-  least 15 minutes.
-  
   this actually gets done in search_and_sync_workgroups() via the
   NAME_QUERY_DOM_SRV_CHK command, if there is a response from the
   name query initiated here.  see response_name_query()
