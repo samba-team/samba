@@ -292,7 +292,7 @@ static BOOL reload_nmbd_services(BOOL test)
 {
 	BOOL ret;
 
-	set_remote_machine_name("nmbd");
+	set_remote_machine_name("nmbd", False);
 
 	if ( lp_loaded() ) {
 		pstring fname;

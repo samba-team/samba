@@ -398,7 +398,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 			}
 
 			/* here we are no longer interactive */
-			set_remote_machine_name("smbmount");	/* sneaky ... */
+			set_remote_machine_name("smbmount", False);	/* sneaky ... */
 			setup_logging("mount.smbfs", False);
 			reopen_logs();
 			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, sys_getpid()));

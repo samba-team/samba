@@ -87,8 +87,8 @@ int reply_special(char *inbuf,char *outbuf)
 			name2[15] = 0;
 		}
 
-		set_local_machine_name(name1);
-		set_remote_machine_name(name2);
+		set_local_machine_name(name1, True);
+		set_remote_machine_name(name2, True);
 
 		DEBUG(2,("netbios connect: local=%s remote=%s\n",
 			get_local_machine_name(), get_remote_machine_name() ));
