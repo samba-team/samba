@@ -4070,6 +4070,7 @@ static void usage(void)
 	printf("\t-s seed\n");
 	printf("\t-f max failures\n");
 	printf("\t-b bypass I/O (NBENCH)\n");
+	printf("\t-X enable dangerous tests\n");
 	printf("\n\n");
 
 	printf("tests are:");
@@ -4139,7 +4140,7 @@ static void usage(void)
 
 	srandom(time(NULL));
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:C:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:C:X")) != EOF) {
 		switch (opt) {
 		case 'p':
 			lp_set_cmdline("smb ports", optarg);
@@ -4200,6 +4201,10 @@ static void usage(void)
 			break;
 		case 'f':
 			torture_failures = atoi(optarg);
+			break;
+
+		case 'X':
+			lp_set_cmdline("torture:dangerous", "1");
 			break;
 
 		default:

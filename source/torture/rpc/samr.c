@@ -61,6 +61,62 @@ static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_Shutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_Shutdown r;
+
+	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+		printf("samr_Shutdown disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
+	r.in.handle = handle;
+
+	printf("testing samr_Shutdown\n");
+
+	status = dcerpc_samr_Shutdown(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("samr_Shutdown failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_SetDsrmPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				 struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_SetDsrmPassword r;
+	struct samr_Name name;
+	struct samr_Hash hash;
+
+	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+		printf("samr_SetDsrmPassword disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
+	E_md4hash("TeSTDSRM123", hash.hash);
+
+	init_samr_Name(&name, "Administrator");
+
+	r.in.name = &name;
+	r.in.unknown = 0;
+	r.in.hash = &hash;
+
+	printf("testing samr_SetDsrmPassword\n");
+
+	status = dcerpc_samr_SetDsrmPassword(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		printf("samr_SetDsrmPassword failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 
 static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle)
@@ -241,10 +297,10 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__, 0);
 	TEST_USERINFO_INT(21, code_page, 21, code_page, __LINE__, 0x00800000);
 
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  3, logon_hours.bitmap[3], __LINE__, 0);
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], __LINE__, 0);
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__, 0);
-	TEST_USERINFO_INT(21, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__, 0x00002000);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  3, logon_hours.bitmap[3], 1, 0);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], 2, 0);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], 3, 0);
+	TEST_USERINFO_INT(21, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], 4, 0x00002000);
 
 #if 0
 	/* these fail with win2003 - it appears you can't set the primary gid?
@@ -2634,6 +2690,14 @@ BOOL torture_rpc_samr(int dummy)
 	}
 
 	if (!test_EnumDomains(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_SetDsrmPassword(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_Shutdown(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

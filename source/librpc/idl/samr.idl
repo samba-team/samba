@@ -1133,11 +1133,22 @@
 
 	/************************/
 	/* Function    0x42     */
-	NTSTATUS samr_SET_DSRM_PASSWORD();
+
+	/*
+	  this should set the DSRM password for the server, which is used
+	  when booting into Directory Services Recovery Mode on a DC. Win2003
+	  gives me NT_STATUS_NOT_SUPPORTED
+	*/
+
+	NTSTATUS samr_SetDsrmPassword(
+		[in]       samr_Name *name,
+		[in]       uint32 unknown,
+		[in]       samr_Hash *hash
+		);
+
 
 	/************************/
 	/* Function    0x43     */
-
 	/*
 	  I haven't been able to work out the format of this one yet.
 	  Seems to start with a switch level for a union?
