@@ -10,8 +10,7 @@ computer suffers a melt-down.
 
 @heading What is Heimdal?
 
-@sc{Heimdal} is a free implementation of Kerberos 5. The goals
-are to:
+Heimdal is a free implementation of Kerberos 5. The goals are to:
 
 @itemize @bullet
 @item
@@ -57,11 +56,14 @@ Eric Young's @file{libdes}
 @item
 @file{rsh}, @file{rshd}
 @item
+@file{popper}, @file{push} (a movemail equivalent)
+@item
 some simple test programs
 @item
-a simple KDC
+a KDC that supports most things, not including cross-realm and
+user-to-user
 @item
-an even simpler @file{kdb_edit}
+an incredibly simple @file{kdb_edit}
 @end itemize
 
 @heading Bug reports
@@ -69,12 +71,18 @@ an even simpler @file{kdb_edit}
 If you find bugs in this software, make sure it is a genuine bug and not
 just a part of the code that isn't implemented.
 
-Bug reports should be sent to @code{<heimdal-bugs@@pdc.kth.se>}. Please
+Bug reports should be sent to @email{heimdal-bugs@@pdc.kth.se}. Please
 include information on what machine and operating system (including
 version) you are running, what you are trying to do, what happens, what
 you think should have happened, an example for us to repeat, the output
 you get when trying the example, and a patch for the problem if you have
 one. Please make any patches with @code{diff -u} or @code{diff -c}.
 
-Suggestions, comments and other non bug reports are welcome.  Send them
-to @code{<heimdal@@pdc.kth.se>}.
+Suggestions, comments and other non bug reports are also welcome.
+
+@heading Mailing list
+
+There are two mailing lists with talk about
+Heimdal. @email{heimdal-announce@@sics.se} is a low-volume announcement
+list, while @email{heimdal-discuss@@sics.se} is for general discussion.
+Send a message to @email{majordomo@@sics.se} to subscribe.
