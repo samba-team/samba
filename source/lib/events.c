@@ -104,8 +104,7 @@ static void calc_maxfd(struct event_context *ev)
 	struct fd_event *e;
 	ev->maxfd = 0;
 	for (e=ev->fd_events; e; e=e->next) {
-		if (e->ref_count && 
-		    e->fd > ev->maxfd) {
+		if (e->fd > ev->maxfd) {
 			ev->maxfd = e->fd;
 		}
 	}
@@ -117,7 +116,8 @@ static void calc_maxfd(struct event_context *ev)
 
   this is used by modules that need to call on the events of a lower module
 */
-struct event_context *event_context_merge(struct event_context *ev, struct event_context *ev2)
+struct event_context *event_context_merge(struct event_context *ev, 
+					  struct event_context *ev2)
 {
 	DLIST_CONCATENATE(ev->fd_events, ev2->fd_events, struct fd_event *);
 	DLIST_CONCATENATE(ev->timed_events, ev2->timed_events, struct timed_event *);
@@ -136,28 +136,41 @@ struct event_context *event_context_merge(struct event_context *ev, struct event
 	return ev;
 }
 
+/* to mark the ev->maxfd invalid
+ * this means we need to recalculate it
+ */
+#define EVENT_INVALID_MAXFD (-1)
+
+
+static int event_fd_destructor(void *ptr)
+{
+	struct fd_event *fde = talloc_get_type(ptr, struct fd_event);
+	if (fde->event_ctx->maxfd == fde->fd) {
+		fde->event_ctx->maxfd = EVENT_INVALID_MAXFD;
+	}
+	DLIST_REMOVE(fde->event_ctx->fd_events, fde);
+	fde->event_ctx->destruction_count++;
+	return 0;
+}
 
 /*
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e) 
+struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0) 
 {
-	e = talloc_memdup(ev->events, e, sizeof(*e));
+	struct fd_event *e = talloc(ev->events, struct fd_event);
 	if (!e) return NULL;
+	*e = *e0;
 	DLIST_ADD(ev->fd_events, e);
-	e->ref_count = 1;
+	e->event_ctx = ev;
 	if (e->fd > ev->maxfd) {
 		ev->maxfd = e->fd;
 	}
+	talloc_set_destructor(e, event_fd_destructor);
 	return e;
 }
 
-
-/* to mark the ev->maxfd invalid
- * this means we need to recalculate it
- */
-#define EVENT_INVALID_MAXFD (-1)
 
 /*
   remove a fd based event
@@ -167,16 +180,8 @@ struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e)
 */
 BOOL event_remove_fd(struct event_context *ev, struct fd_event *e1)
 {
-	struct fd_event *e;
-	for (e=ev->fd_events; e; e=e->next) {
-		if (e->ref_count &&
-		    e->fd == e1->fd && 
-		    e->handler == e1->handler) {
-			e->ref_count--;
-			return True;
-		}
-	}
-	return False;
+	talloc_free(e1);
+	return True;
 }
 
 /*
@@ -184,10 +189,13 @@ BOOL event_remove_fd(struct event_context *ev, struct fd_event *e1)
 */
 void event_remove_fd_all(struct event_context *ev, int fd)
 {
-	struct fd_event *e;
-	for (e=ev->fd_events; e; e=e->next) {
-		if (e->ref_count && e->fd == fd) {
-			e->ref_count--;
+	struct fd_event *e = ev->fd_events;
+	/* be careful to cope with extra reference counts on events */
+	while (e) {
+		if (talloc_free(ev->fd_events) == 0) {
+			e = ev->fd_events;
+		} else {
+			e = e->next;
 		}
 	}
 }
@@ -197,26 +205,35 @@ void event_remove_fd_all(struct event_context *ev, int fd)
 */
 void event_remove_fd_all_handler(struct event_context *ev, void *handler)
 {
-	struct fd_event *e;
-	for (e=ev->fd_events; e; e=e->next) {
-		if (e->ref_count &&
-		    handler == (void *)e->handler) {
-			e->ref_count--;
+	struct fd_event *e, *next;
+	for (e=ev->fd_events; e; e=next) {
+		next = e->next;
+		if (handler == (void *)e->handler) {
+			talloc_free(e);
 		}
 	}
 }
 
+static int event_timed_destructor(void *ptr)
+{
+	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
+	DLIST_REMOVE(te->event_ctx->timed_events, te);
+	te->event_ctx->destruction_count++;
+	return 0;
+}
 
 /*
   add a timed event
   return NULL on failure (memory allocation error)
 */
-struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e) 
+struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e0) 
 {
-	e = talloc_memdup(ev->events, e, sizeof(*e));
+	struct timed_event *e = talloc(ev->events, struct timed_event);
 	if (!e) return NULL;
-	e->ref_count = 1;
+	*e = *e0;
+	e->event_ctx = ev;
 	DLIST_ADD(ev->timed_events, e);
+	talloc_set_destructor(e, event_timed_destructor);
 	return e;
 }
 
@@ -224,28 +241,32 @@ struct timed_event *event_add_timed(struct event_context *ev, struct timed_event
   remove a timed event
   return False on failure (event not found)
 */
-BOOL event_remove_timed(struct event_context *ev, struct timed_event *e1) 
+BOOL event_remove_timed(struct event_context *ev, struct timed_event *e) 
 {
-	struct timed_event *e;
-	for (e=ev->timed_events; e; e=e->next) {
-		if (e->ref_count && e == e1) {
-			e->ref_count--;
-			return True;
-		}
-	}
-	return False;
+	talloc_free(e);
+	return True;
+}
+
+static int event_loop_destructor(void *ptr)
+{
+	struct loop_event *le = talloc_get_type(ptr, struct loop_event);
+	DLIST_REMOVE(le->event_ctx->loop_events, le);
+	le->event_ctx->destruction_count++;
+	return 0;
 }
 
 /*
   add a loop event
   return NULL on failure (memory allocation error)
 */
-struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e)
+struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e0)
 {
-	e = talloc_memdup(ev->events, e, sizeof(*e));
+	struct loop_event *e = talloc(ev->events, struct loop_event);
 	if (!e) return NULL;
-	e->ref_count = 1;
+	*e = *e0;
+	e->event_ctx = ev;
 	DLIST_ADD(ev->loop_events, e);
+	talloc_set_destructor(e, event_loop_destructor);
 	return e;
 }
 
@@ -254,17 +275,10 @@ struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e
   the event to remove is matched only on the handler function
   return False on failure (memory allocation error)
 */
-BOOL event_remove_loop(struct event_context *ev, struct loop_event *e1) 
+BOOL event_remove_loop(struct event_context *ev, struct loop_event *e) 
 {
-	struct loop_event *e;
-	for (e=ev->loop_events; e; e=e->next) {
-		if (e->ref_count &&
-		    e->handler == e1->handler) {
-			e->ref_count--;
-			return True;
-		}
-	}
-	return False;
+	talloc_free(e);
+	return True;
 }
 
 
@@ -288,6 +302,7 @@ int event_loop_once(struct event_context *ev)
 	struct timed_event *te;
 	int selrtn;
 	struct timeval tval, t;
+	uint32_t destruction_count = ev->destruction_count;
 
 	t = timeval_current();
 
@@ -295,14 +310,8 @@ int event_loop_once(struct event_context *ev)
 	   event to remove itself */
 	for (le=ev->loop_events;le;) {
 		struct loop_event *next = le->next;
-		if (le->ref_count == 0) {
-			DLIST_REMOVE(ev->loop_events, le);
-			talloc_free(le);
-		} else {
-			le->ref_count++;
-			le->handler(ev, le, t);
-			le->ref_count--;
-		}
+		le->handler(ev, le, t);
+		if (destruction_count != ev->destruction_count) break;
 		le = next;
 	}
 
@@ -312,19 +321,11 @@ int event_loop_once(struct event_context *ev)
 	/* setup any fd events */
 	for (fe=ev->fd_events; fe; ) {
 		struct fd_event *next = fe->next;
-		if (fe->ref_count == 0) {
-			DLIST_REMOVE(ev->fd_events, fe);
-			if (ev->maxfd == fe->fd) {
-				ev->maxfd = EVENT_INVALID_MAXFD;
-			}
-			talloc_free(fe);
-		} else {
-			if (fe->flags & EVENT_FD_READ) {
-				FD_SET(fe->fd, &r_fds);
-			}
-			if (fe->flags & EVENT_FD_WRITE) {
-				FD_SET(fe->fd, &w_fds);
-			}
+		if (fe->flags & EVENT_FD_READ) {
+			FD_SET(fe->fd, &r_fds);
+		}
+		if (fe->flags & EVENT_FD_WRITE) {
+			FD_SET(fe->fd, &w_fds);
 		}
 		fe = next;
 	}
@@ -379,10 +380,11 @@ int event_loop_once(struct event_context *ev)
 				uint16_t flags = 0;
 				if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
 				if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
-				if (fe->ref_count && flags) {
-					fe->ref_count++;
+				if (flags) {
 					fe->handler(ev, fe, t, flags);
-					fe->ref_count--;
+					if (destruction_count != ev->destruction_count) {
+						break;
+					}
 				}
 			}
 		}
@@ -391,13 +393,11 @@ int event_loop_once(struct event_context *ev)
 	/* call any timed events that are now due */
 	for (te=ev->timed_events;te;) {
 		struct timed_event *next = te->next;
-		if (te->ref_count == 0) {
-			DLIST_REMOVE(ev->timed_events, te);
-			talloc_free(te);
-		} else if (timeval_compare(&te->next_event, &t) >= 0) {
-			te->ref_count++;
+		if (timeval_compare(&te->next_event, &t) >= 0) {
 			te->handler(ev, te, t);
-			te->ref_count--;
+			if (destruction_count != ev->destruction_count) {
+				break;
+			}
 			if (timeval_compare(&te->next_event, &t) >= 0) {
 				/* the handler didn't set a time for the 
 				   next event - remove the event */

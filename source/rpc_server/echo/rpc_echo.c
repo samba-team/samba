@@ -135,13 +135,6 @@ static void echo_TestSleep_handler(struct event_context *ev, struct timed_event 
 	}
 }
 
-static int echo_TestSleep_destructor(void *ptr)
-{
-	struct echo_TestSleep_private *p = ptr;
-	event_remove_timed(p->dce_call->event_ctx, p->te);
-	return 0;
-}
-
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
 	struct timed_event te;
@@ -170,8 +163,7 @@ static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	if (!p->te) {
 		return 0;
 	}
-
-	talloc_set_destructor(p, echo_TestSleep_destructor);
+	talloc_steal(p, p->te);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	return 0;
