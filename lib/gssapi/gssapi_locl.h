@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+
 #include <gssapi.h>
 
 #include <krb5.h>
@@ -27,5 +31,20 @@ gssapi_krb5_decapsulate(
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
 			u_char *type);
+
+void
+gssapi_krb5_encap_length (size_t data_len,
+			  size_t *len,
+			  size_t *total_len);
+
+u_char *
+gssapi_krb5_make_header (u_char *p,
+			 size_t len,
+			 u_char *type);
+
+OM_uint32
+gssapi_krb5_verify_header(u_char **str,
+			  size_t total_len,
+			  u_char *type);
 
 #endif
