@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -37,184 +37,151 @@
  */
 
 #include <popper.h>
+#ifdef SASL
 #include <base64.h>
+#include <pop_auth.h>
 RCSID("$Id$");
-
-#ifdef KRB4
-
-enum {
-    NO_PROT   = 1,
-    INT_PROT  = 2,
-    PRIV_PROT = 4
-};
-
-static int
-auth_krb4(POP *p)
-{
-    int ret;
-    des_cblock key;
-    u_int32_t nonce, nonce_reply;
-    u_int32_t max_client_packet;
-    int protocols = NO_PROT | INT_PROT | PRIV_PROT;
-    char data[8];
-    int len;
-    char *s;
-    char instance[INST_SZ];  
-    KTEXT_ST authent;
-    des_key_schedule schedule;
-    struct passwd *pw;
-
-    /* S -> C: 32 bit nonce in MSB base64 */
-
-    des_new_random_key(&key);
-    nonce = (key[0] | (key[1] << 8) | (key[2] << 16) | (key[3] << 24)
-	     | key[4] | (key[5] << 8) | (key[6] << 16) | (key[7] << 24));
-    krb_put_int(nonce, data, 4, 8);
-    len = base64_encode(data, 4, &s);
-
-    pop_msg(p, POP_CONTINUE, "%s", s);
-    free(s);
-
-    /* C -> S: ticket and authenticator */
-
-    ret = sch_readline(p->input, &s);
-    if (ret <= 0 || strcmp (s, "*") == 0)
-	return pop_msg(p, POP_FAILURE,
-		       "authentication aborted by client");
-    len = strlen(s);
-    if (len > sizeof(authent.dat)) {
-	return pop_msg(p, POP_FAILURE, "data packet too long");
-    }
-
-    authent.length = base64_decode(s, authent.dat);
-
-    k_getsockinst (0, instance, sizeof(instance));
-    ret = krb_rd_req(&authent, "pop", instance,
-		     p->in_addr.sin_addr.s_addr,
-		     &p->kdata, NULL);
-    if (ret != 0) {
-	return pop_msg(p, POP_FAILURE, "rd_req: %s",
-		       krb_get_err_text(ret));
-    }
-    if (p->kdata.checksum != nonce) {
-	return pop_msg(p, POP_FAILURE, "data stream modified");
-    }
-
-    /* S -> C: nonce + 1 | bit | max segment */
-
-    krb_put_int(nonce + 1, data, 4, 7);
-    data[4] = protocols;
-    krb_put_int(1024, data + 5, 3, 3); /* XXX */
-    des_key_sched(&p->kdata.session, schedule);
-    des_pcbc_encrypt((des_cblock*)data,
-		     (des_cblock*)data, 8,
-		     schedule,
-		     &p->kdata.session,
-		     DES_ENCRYPT);
-    len = base64_encode(data, 8, &s);
-    pop_msg(p, POP_CONTINUE, "%s", s);
-
-    free(s);
-
-    /* C -> S: nonce | bit | max segment | username */
-
-    ret = sch_readline(p->input, &s);
-    if (ret <= 0 || strcmp (s, "*") == 0)
-	return pop_msg(p, POP_FAILURE,
-		       "authentication aborted");
-    len = strlen(s);
-    if (len > sizeof(authent.dat)) {
-	return pop_msg(p, POP_FAILURE, "data packet too long");
-    }
-
-    authent.length = base64_decode(s, authent.dat);
-    
-    if (authent.length % 8 != 0) {
-	return pop_msg(p, POP_FAILURE, "reply is not a multiple of 8 bytes");
-    }
-
-    des_key_sched(&p->kdata.session, schedule);
-    des_pcbc_encrypt((des_cblock*)authent.dat,
-		     (des_cblock*)authent.dat,
-		     authent.length,
-		     schedule,
-		     &p->kdata.session,
-		     DES_DECRYPT);
-
-    krb_get_int(authent.dat, &nonce_reply, 4, 0);
-    if (nonce_reply != nonce) {
-	return pop_msg(p, POP_FAILURE, "data stream modified");
-    }
-    protocols &= authent.dat[4];
-    krb_get_int(authent.dat + 5, &max_client_packet, 3, 0);
-    if(authent.dat[authent.length - 1] != '\0') {
-	return pop_msg(p, POP_FAILURE, "bad format of username");
-    }
-    strncpy (p->user, authent.dat + 8, sizeof(p->user));
-    pw = k_getpwnam(p->user);
-    if (pw == NULL) {
-	return (pop_msg(p,POP_FAILURE,
-			"Password supplied for \"%s\" is incorrect.",
-			p->user));
-    }
-
-    if (kuserok(&p->kdata, p->user)) {
-	pop_log(p, POP_PRIORITY,
-		"%s: (%s.%s@%s) tried to retrieve mail for %s.",
-		p->client, p->kdata.pname, p->kdata.pinst,
-		p->kdata.prealm, p->user);
-	return(pop_msg(p,POP_FAILURE,
-		       "Popping not authorized"));
-    }
-    pop_log(p, POP_INFO, "%s: %s.%s@%s -> %s",
-	    p->ipaddr,
-	    p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
-	    p->user);
-    ret = pop_login(p, pw);
-    if (protocols & PRIV_PROT)
-	;
-    else if (protocols & INT_PROT)
-	;
-    else
-	;
-    
-    return ret;
-}
-#endif /* KRB4 */
-
-#ifdef KRB5
-static int
-auth_gssapi(POP *p)
-{
-    
-}
-#endif /* KRB5 */
 
 /* 
  *  auth: RFC1734
  */
 
-static struct {
-    const char *name;
-    int (*func)(POP *);
-} methods[] = {
-#ifdef KRB4
-    {"KERBEROS_V4",	auth_krb4},
-#endif
+static char *
+getline(POP *p)
+{
+    char *buf = NULL;
+    size_t size = 1024;
+    buf = malloc(size);
+    if(buf == NULL)
+	return NULL;
+    *buf = '\0';
+    while(fgets(buf + strlen(buf), size - strlen(buf), p->input) != NULL) {
+	char *p;
+	if((p = strchr(buf, '\n')) != NULL) {
+	    while(p > buf && p[-1] == '\r')
+		p--;
+	    *p = '\0';
+	    return buf;
+	} 
+	/* just assume we ran out of buffer space, we'll catch eof
+           next round */
+	size += 1024;
+	p = realloc(buf, size);
+	if(p == NULL)
+	    break;
+	buf = p;
+    }
+    free(buf);
+    return NULL;
+}
+
+static char auth_msg[128];
+void
+pop_auth_set_error(const char *message)
+{
+    strlcpy(auth_msg, message, sizeof(auth_msg));
+}
+
+static struct auth_mech *methods[] = {
 #ifdef KRB5
-    {"GSSAPI",		auth_gssapi},
+    &gssapi_mech,
 #endif
-    {NULL,		NULL}
+#ifdef KRB4
+    &krb4_mech,
+#endif
+    NULL
 };
+
+static int
+auth_execute(POP *p, struct auth_mech *m, void *state, const char *line)
+{
+    void *input, *output;
+    size_t input_length, output_length;
+    int status;
+
+    if(line == NULL) {
+	input = NULL;
+	input_length = 0;
+    } else {
+	input = strdup(line);
+	if(input == NULL) {
+	    pop_auth_set_error("out of memory");
+	    return POP_AUTH_FAILURE;
+	}
+	input_length = base64_decode(line, input);
+	if(input_length == (size_t)-1) {
+	    pop_auth_set_error("base64 decode error");
+	    return POP_AUTH_FAILURE;
+	}
+    }
+    output = NULL; output_length = 0;
+    status = (*m->loop)(p, state, input, input_length, &output, &output_length);
+    if(output_length > 0) {
+	char *s;
+	base64_encode(output, output_length, &s);
+	fprintf(p->output, "+ %s\r\n", s);
+	fflush(p->output);
+	free(output);
+	free(s);
+    }
+    return status;
+}
+
+static int
+auth_loop(POP *p, struct auth_mech *m)
+{
+    int status;
+    void *state = NULL;
+    char *line;
+
+    status = (*m->init)(p, &state);
+
+    status = auth_execute(p, m, state, p->pop_parm[2]);
+
+    while(status == POP_AUTH_CONTINUE) {
+	line = getline(p);
+	if(line == NULL) {
+	    (*m->cleanup)(p, state);
+	    return pop_msg(p, POP_FAILURE, "error reading data");
+	}
+	if(strcmp(line, "*") == 0) {
+	    (*m->cleanup)(p, state);
+	    return pop_msg(p, POP_FAILURE, "terminated by client");
+	}
+	status = auth_execute(p, m, state, line);
+	free(line);
+    }
+    
+
+    (*m->cleanup)(p, state);
+    if(status == POP_AUTH_FAILURE)
+	return pop_msg(p, POP_FAILURE, "%s", auth_msg);
+    return pop_msg(p, POP_SUCCESS, "authentication complete");
+}
 
 int
 pop_auth (POP *p)
 {
     int i;
 
-    for (i = 0; methods[i].name != NULL; ++i)
-	if (strcasecmp(p->pop_parm[1], methods[i].name) == 0)
-	    return (*methods[i].func)(p);
+    for (i = 0; methods[i] != NULL; ++i)
+	if (strcasecmp(p->pop_parm[1], methods[i]->name) == 0)
+	    return auth_loop(p, methods[i]);
     return pop_msg(p, POP_FAILURE,
 		   "Authentication method %s unknown", p->pop_parm[1]);
 }
+
+void
+pop_capa_sasl(POP *p)
+{
+    int i;
+
+    if(methods[0] == NULL)
+	return;
+    
+    fprintf(p->output, "SASL");
+    for (i = 0; methods[i] != NULL; ++i)
+	fprintf(p->output, " %s", methods[i]->name);
+    fprintf(p->output, "\r\n");
+}
+#endif
