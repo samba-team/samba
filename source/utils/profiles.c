@@ -521,7 +521,7 @@ static void process_acl(ACL *acl, const char *prefix)
 int main(int argc, char *argv[])
 {
   int opt;
-  int fd, start = 0;
+  int fd;
   char *base;
   struct stat sbuf;
   REGF_HDR *regf_hdr;
@@ -608,10 +608,9 @@ int main(int argc, char *argv[])
    * Now, mmap the file into memory, check the header and start
    * dealing with the records. We are interested in the sk record
    */
-  start = 0;
 
 #ifdef HAVE_MMAP
-  base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  base = mmap(NULL, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 #else
   base = (char *)-1;
   errno = ENOSYS;
