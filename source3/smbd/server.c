@@ -2326,13 +2326,21 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line)
 {
   int outsize = set_message(outbuf,0,0,True);
-  int cmd;
-  cmd = CVAL(inbuf,smb_com);
-  
-  CVAL(outbuf,smb_rcls) = error_class;
-  SSVAL(outbuf,smb_err,error_code);  
-  
-  DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
+  int cmd = CVAL(inbuf,smb_com);
+  int flgs2 = SVAL(outbuf,smb_flg2); 
+
+  if ((flgs2 & FLAGS2_32_BIT_ERROR_CODES) == FLAGS2_32_BIT_ERROR_CODES)
+  {
+    SIVAL(outbuf,smb_rcls,error_code);
+    
+    DEBUG(3,("%s 32 bit error packet at line %d cmd=%d (%s) eclass=%08x [%s]\n",
+           timestring(), line, cmd, smb_fn_name(cmd), error_code, smb_errstr(outbuf)));
+  }
+  else
+  {
+    CVAL(outbuf,smb_rcls) = error_class;
+    SSVAL(outbuf,smb_err,error_code);  
+    DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
 	   timestring(),
 	   line,
 	   (int)CVAL(inbuf,smb_com),
@@ -2340,6 +2348,8 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 	   error_class,
 	   error_code));
 
+  }
+  
   if (errno != 0)
     DEBUG(3,("error string = %s\n",strerror(errno)));
   
@@ -3319,13 +3329,14 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   snum = find_service(service);
   if (snum < 0)
     {
+      extern int Client;
       if (strequal(service,"IPC$"))
 	{	  
 	  DEBUG(3,("%s refusing IPC connection\n",timestring()));
 	  return(-3);
 	}
 
-      DEBUG(0,("%s %s (%s) couldn't find service %s\n",timestring(),remote_machine,client_addr(),service));      
+      DEBUG(0,("%s %s (%s) couldn't find service %s\n",timestring(),remote_machine,client_addr(Client),service));      
       return(-2);
     }
 
