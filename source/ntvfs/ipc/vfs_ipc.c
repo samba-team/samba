@@ -3,7 +3,7 @@
    default IPC$ NTVFS backend
 
    Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Stefan (metze) Metzmacher 2004
+   Copyright (C) Stefan (metze) Metzmacher 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -94,7 +94,7 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(private->idtree_fnum);
 
 	/* setup the DCERPC server subsystem */
-	status = dcesrv_init_context(private, &private->dcesrv);
+	status = dcesrv_init_ipc_context(private, &private->dcesrv);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
@@ -106,13 +106,6 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_disconnect(struct ntvfs_module_context *ntvfs,
 			       struct smbsrv_tcon *tcon)
 {
-	struct ipc_private *private = ntvfs->private_data;
-
-	/* close any pipes that are open. Discard any unread data */
-	while (private->pipe_list) {
-		talloc_free(private->pipe_list);
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -171,7 +164,6 @@ static int ipc_fd_destructor(void *ptr)
 	struct pipe_state *p = ptr;
 	idr_remove(p->private->idtree_fnum, p->fnum);
 	DLIST_REMOVE(p->private->pipe_list, p);
-	talloc_free(p->dce_conn);
 	return 0;
 }
 
@@ -186,21 +178,21 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	NTSTATUS status;
 	struct dcerpc_binding ep_description;
-	struct auth_session_info *session_info = NULL;
 	struct ipc_private *private = ntvfs->private_data;
 	int fnum;
+	struct server_connection *srv_conn;
 
-	p = talloc_p(req, struct pipe_state);
-	if (!p) {
-		return NT_STATUS_NO_MEMORY;
+	if (!req->session || !req->session->session_info) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	p = talloc(req, struct pipe_state);
+	NT_STATUS_HAVE_NO_MEMORY(p);
 
 	while (fname[0] == '\\') fname++;
 
 	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
-	if (!p->pipe_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(p->pipe_name);
 
 	fnum = idr_get_new_above(private->idtree_fnum, p, IPC_BASE_FNUM, UINT16_MAX);
 	if (fnum == -1) {
@@ -215,24 +207,23 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  endpoint. At this stage the pipe isn't bound, so we don't
 	  know what interface the user actually wants, just that they want
 	  one of the interfaces attached to this pipe endpoint.
-
-	  TODO: note that we aren't passing any credentials here. We
-	  will need to do that once the credentials infrastructure is
-	  finalised for Samba4
 	*/
 	ep_description.transport = NCACN_NP;
 	ep_description.endpoint = p->pipe_name;
 
-	/* tell the RPC layer the session_info */
-	if (req->session) {
-		/* The session info is refcount-increased in the 
-		   dcesrv_endpoint_search_connect() function */
-		session_info = req->session->session_info;
-	}
+	/* TOTO: pass in full server_connection in here */
+	srv_conn = talloc_zero(p, struct server_connection);
+	NT_STATUS_HAVE_NO_MEMORY(srv_conn);
+	srv_conn->event.ctx	= talloc_reference(srv_conn, req->smb_conn->connection->event.ctx);
 
-	status = dcesrv_endpoint_search_connect(private->dcesrv, 
+	/* The session info is refcount-increased in the 
+	 * dcesrv_endpoint_search_connect() function
+	 */
+	status = dcesrv_endpoint_search_connect(private->dcesrv,
+						p,
 						&ep_description, 
-						session_info,
+						req->session->session_info,
+						srv_conn,
 						&p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(private->idtree_fnum, p->fnum);

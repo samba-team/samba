@@ -2,6 +2,7 @@
 # stub boilerplate generator
 # Copyright jelmer@samba.org 2004
 # Copyright tridge@samba.org 2003
+# Copyright metze@samba.org 2004
 # released under the GNU GPL
 
 package IdlStub;
@@ -39,17 +40,39 @@ sub gen_dispatch_switch($)
 		} else {
 			pidl "\t\tvtable->$d->{NAME}(iface, mem_ctx, r2);\n";
 		}
-		pidl "\t\tif (DEBUGLEVEL > 10 && dce_call->fault_code == 0) {\n";
-		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
-		pidl "\t\t}\n";
-		pidl "\t\tif (dce_call->fault_code != 0) {\n";
-		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault 0x%x in $d->{NAME}\\n\", dce_call->fault_code));\n";
+		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
+		pidl "\t\t\tDEBUG(5,(\"function $d->{NAME} will reply async\\n\"));\n";
 		pidl "\t\t}\n";
 		pidl "\t\tbreak;\n\t}\n";
 		$count++; 
 	}
 }
 
+#####################################################
+# generate the switch statement for function reply
+sub gen_reply_switch($)
+{
+	my $data = shift;
+
+	my $count = 0;
+	foreach my $d (@{$data}) {
+		next if ($d->{TYPE} ne "FUNCTION");
+
+		pidl "\tcase $count: {\n";
+		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
+		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
+		pidl "\t\t\tDEBUG(5,(\"function $d->{NAME} replied async\\n\"));\n";
+		pidl "\t\t}\n";
+		pidl "\t\tif (DEBUGLEVEL > 10 && dce_call->fault_code == 0) {\n";
+		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
+		pidl "\t\t}\n";
+		pidl "\t\tif (dce_call->fault_code != 0) {\n";
+		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault %s in $d->{NAME}\\n\", dcerpc_errstr(mem_ctx, dce_call->fault_code)));\n";
+		pidl "\t\t}\n";
+		pidl "\t\tbreak;\n\t}\n";
+		$count++; 
+	}
+}
 
 #####################################################################
 # produce boilerplate code for a interface
@@ -57,7 +80,6 @@ sub Boilerplate_Iface($)
 {
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
-	my $count = 0;
 	my $name = $interface->{NAME};
 	my $uname = uc $name;
 	my $uuid = util::make_str($interface->{PROPERTIES}->{uuid});
@@ -76,7 +98,7 @@ static NTSTATUS $name\__op_bind(struct dcesrv_call_state *dce_call, const struct
 static void $name\__op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
 #ifdef DCESRV_INTERFACE_$uname\_UNBIND
-	DCESRV_INTERFACE_$uname\_UNBIND(context,iface);
+	DCESRV_INTERFACE_$uname\_UNBIND(context, iface);
 #else
 	return;
 #endif
@@ -95,11 +117,9 @@ static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	*r = talloc_size(mem_ctx, dcerpc_table_$name.calls[opnum].struct_size);
-	if (!*r) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(*r);
 
-	/* unravel the NDR for the packet */
+        /* unravel the NDR for the packet */
 	status = dcerpc_table_$name.calls[opnum].ndr_pull(pull, NDR_IN, *r);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
@@ -118,11 +138,32 @@ static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct dcom_interface_p *iface = dcom_get_local_iface_p(&ipid);
 	const struct dcom_$name\_vtable *vtable = iface->vtable;
 
-	dce_call->fault_code = 0;
-
 	switch (opnum) {
 ";
 	gen_dispatch_switch($data);
+
+pidl "
+	default:
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		break;
+	}
+
+	if (dce_call->fault_code != 0) {
+		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
+				  &dce_call->pkt.u.request.stub_and_verifier);
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+{
+	uint16 opnum = dce_call->pkt.u.request.opnum;
+
+	switch (opnum) {
+";
+	gen_reply_switch($data);
 
 pidl "
 	default:
@@ -154,14 +195,15 @@ static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_C
 }
 
 static const struct dcesrv_interface $name\_interface = {
-	\"$name\",
-	$uuid,
-	$if_version,
-	$name\__op_bind,
-	$name\__op_unbind,
-	$name\__op_ndr_pull,
-	$name\__op_dispatch,
-	$name\__op_ndr_push
+	.name		= \"$name\",
+	.uuid		= $uuid,
+	.if_version	= $if_version,
+	.bind		= $name\__op_bind,
+	.unbind		= $name\__op_unbind,
+	.ndr_pull	= $name\__op_ndr_pull,
+	.dispatch	= $name\__op_dispatch,
+	.reply		= $name\__op_reply,
+	.ndr_push	= $name\__op_ndr_push
 };
 
 ";
@@ -243,10 +285,12 @@ NTSTATUS dcerpc_server_$name\_init(void)
 ";
 }
 
+#####################################################################
+# dcom interface stub from a parsed IDL structure 
 sub ParseInterface($)
 {
 	my($interface) = shift;
-		my($data) = $interface->{DATA};
+	my($data) = $interface->{DATA};
 	my $count = 0;
 
 	$res = "";

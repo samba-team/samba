@@ -3,8 +3,8 @@
 
    server side dcerpc defines
 
-   Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Stefan (metze) Metzmacher 2004
+   Copyright (C) Andrew Tridgell 2003-2005
+   Copyright (C) Stefan (metze) Metzmacher 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +54,10 @@ struct dcesrv_interface {
 	 */
 	NTSTATUS (*dispatch)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 
+	/* the reply function for the chosen interface.
+	 */
+	NTSTATUS (*reply)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
+
 	/* the ndr_push function for the chosen interface.
 	 */
 	NTSTATUS (*ndr_push)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_push *,void *);
@@ -68,6 +72,33 @@ struct dcesrv_call_state {
 	struct dcesrv_connection *conn;
 	struct dcesrv_connection_context *context;
 	struct dcerpc_packet pkt;
+
+	/* the backend can mark the call
+	 * with DCESRV_CALL_STATE_FLAG_ASYNC
+	 * that will cause the frontend to not touch r->out
+	 * and skip the reply
+	 *
+	 * this is only allowed to the backend when DCESRV_CALL_STATE_FLAG_MAY_ASYNC
+	 * is alerady set by the frontend
+	 *
+	 * the backend then needs to call dcesrv_reply() when it's
+	 * ready to send the reply
+	 */
+#define DCESRV_CALL_STATE_FLAG_ASYNC (1<<0)
+#define DCESRV_CALL_STATE_FLAG_MAY_ASYNC (1<<1)
+	uint32_t state_flags;
+
+	/* the time the request arrived in the server */
+	struct timeval time;
+
+	/* the backend can use this event context for async replies */
+	struct event_context *event_ctx;
+
+	/* this is the pointer to the allocated function struct */
+	void *r;
+
+	/* that's the ndr push context used in dcesrv_request */
+	struct ndr_pull *ndr_pull;
 
 	DATA_BLOB input;
 
@@ -132,6 +163,9 @@ struct dcesrv_connection {
 	/* the state of the current calls */
 	struct dcesrv_call_state *call_list;
 
+	/* the state of the async pending calls */
+	struct dcesrv_call_state *pending_call_list;
+
 	/* the maximum size the client wants to receive */
 	uint32_t cli_max_recv_frag;
 
@@ -187,6 +221,9 @@ struct dcesrv_context {
 			struct dcesrv_interface iface;
 		} *interface_list;
 	} *endpoint_list;
+
+	/* this is the default state_flags for dcesrv_call_state structs */
+	uint32_t state_flags;
 };
 
 /* this structure is used by modules to determine the size of some critical types */
