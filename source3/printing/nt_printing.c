@@ -1347,7 +1347,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->scale            = 0x64;
 	nt_devmode->copies           = 01;
 	nt_devmode->defaultsource    = BIN_FORMSOURCE;
-	nt_devmode->printquality     = RES_HIGH;           // 0x0258;
+	nt_devmode->printquality     = RES_HIGH;           /* 0x0258 */
 	nt_devmode->color            = COLOR_MONOCHROME;
 	nt_devmode->duplex           = DUP_SIMPLEX;
 	nt_devmode->yresolution      = 0;
