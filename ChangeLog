@@ -1,5 +1,7 @@
 2002-08-28  Jacques Vidrine  <nectar@kth.se>
 
+	* lib/krb5/krb5.conf.5: document the options related to
+	dns-locate.
 	* lib/krb5/verify_krb5_conf.c: check for `krb4_get_tickets' in
 	[appdefaults] (for kinit) rather than [libdefaults].
 	* lib/krb5/context.c: rename the `srv_lookup' option to
