@@ -35,3 +35,7 @@ typedef int sig_atomic_t;
 #define SIGCLD SIGCHLD
 #endif
 
+#ifndef SIGNAL_CAST
+#define SIGNAL_CAST (RETSIGTYPE (*)(int))
+#endif
+

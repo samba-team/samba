@@ -54,18 +54,6 @@ typedef int BOOL;
 #include "enums.h"
 #include "events.h"
 
-#ifndef LOCKING_VERSION
-#define LOCKING_VERSION 4
-#endif /* LOCKING_VERSION */
-
-#ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)(int))
-#endif
-
-#ifndef SELECT_CAST
-#define SELECT_CAST
-#endif
-
 /*
  * Loopback command offsets.
  */

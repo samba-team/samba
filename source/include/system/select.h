@@ -24,3 +24,7 @@
 #include <sys/select.h>
 #endif
 
+#ifndef SELECT_CAST
+#define SELECT_CAST
+#endif
+
