@@ -72,6 +72,7 @@ int des_string_to_2keys __P((char *str,des_cblock *key1,des_cblock *key2));
 void des_set_random_generator_seed __P((des_cblock *seed));
 int des_new_random_key __P((des_cblock *key));
 void des_init_random_number_generator __P((des_cblock *seed));
+void des_set_sequence_number __P((unsigned char *ll));
 int des_random_key __P((des_cblock ret));
 int des_read_password __P((des_cblock *key,char *prompt,int verify));
 int des_read_2passwords __P((des_cblock *key1,des_cblock *key2,char *prompt,int verify));

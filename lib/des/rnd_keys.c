@@ -57,11 +57,21 @@ do_initialize(void)
 
 #define incr_long_long(ll) do { if (++ll[0] == 0) ++ll[1]; } while (0)
 
-#define des_set_sequence_number(ll) \
-do { \
-       memcpy((char *)sequence_index, (ll), sizeof(sequence_index)); \
-     } while (0)
+#define set_sequence_number(ll) \
+       memcpy((char *)sequence_index, (ll), sizeof(sequence_index));
 
+/*
+ * Set the sequnce number to this value (a long long).
+ */
+void
+des_set_sequence_number(unsigned char *ll)
+{
+  set_sequence_number(ll);
+}
+
+/*
+ * Set the generator seed and reset the sequence number to 0.
+ */
 void
 des_set_random_generator_seed(des_cblock *seed)
 {
@@ -129,14 +139,14 @@ des_init_random_number_generator(des_cblock *seed)
 
   /* Pick a unique random key from the shared sequence. */
   des_set_random_generator_seed(seed);
-  des_set_sequence_number((unsigned char *)uniq);
+  set_sequence_number((unsigned char *)uniq);
   des_new_random_key(&new_key);
 
   /* Select a new nonshared sequence, */
   des_set_random_generator_seed(&new_key);
 
   /* and use the current time to pick a key for the new sequence. */
-  des_set_sequence_number((unsigned char *)&now);
+  set_sequence_number((unsigned char *)&now);
   des_new_random_key(&new_key);
   des_set_random_generator_seed(&new_key);
 }
