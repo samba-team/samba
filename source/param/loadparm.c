@@ -787,7 +787,6 @@ static struct parm_struct parm_table[] =
   {"Ldap Options", P_SEP, P_SEPARATOR},
 
   {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
-  {"ldap realm",       P_STRING,  P_GLOBAL, &Globals.szLdapRealm,       NULL,   NULL,  0},
   {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
   {"ldap suffix",      P_STRING,  P_GLOBAL, &Globals.szLdapSuffix,      NULL,   NULL,  0},
   {"ldap bind as",     P_STRING,  P_GLOBAL, &Globals.szLdapBindAs,      NULL,   NULL,  0},
@@ -795,6 +794,7 @@ static struct parm_struct parm_table[] =
 #endif /* WITH_LDAP */
 
 #ifdef WITH_NT5LDAP
+  {"ldap realm",       P_STRING,  P_GLOBAL, &Globals.szLdapRealm,       NULL,   NULL,  0},
   {"ldap protocol version", P_INTEGER, P_GLOBAL, &Globals.ldap_protocol_version, NULL,   NULL,  0},
   {"ldap url",         P_STRING,  P_GLOBAL, &Globals.szLdapUrl,         NULL,   NULL,  0},
   {"ldap users subcontext",      P_STRING,  P_GLOBAL, &Globals.szLdapComputersSubcontext,      NULL,   NULL,  0},
