@@ -141,7 +141,7 @@ static krb5_error_code build_setpw_request(krb5_context context,
 	packet->data = (char *)malloc(ap_req->length + cipherpw.length + 6);
 
 	/* see the RFC for details */
-	p = packet->data + 2;
+	p = ((char *)packet->data) + 2;
 	RSSVAL(p, 0, 0xff80); p += 2;
 	RSSVAL(p, 0, ap_req->length); p += 2;
 	memcpy(p, ap_req->data, ap_req->length); p += ap_req->length;
@@ -172,10 +172,10 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	
 	p = packet->data;
 	
-	if (packet->data[0] == 0x7e || packet->data[0] == 0x5e) {
+	if (((char *)packet->data)[0] == 0x7e || ((char *)packet->data)[0] == 0x5e) {
 		/* it's an error packet. We should parse it ... */
 		DEBUG(1,("Got error packet 0x%x from kpasswd server\n",
-			 packet->data[0]));
+			 ((char *)packet->data)[0]));
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 	
@@ -196,7 +196,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	
 	ap_rep.length = RSVAL(p, 0); p += 2;
 	
-	if (p + ap_rep.length >= packet->data + packet->length) {
+	if (p + ap_rep.length >= (char *)packet->data + packet->length) {
 		DEBUG(1,("ptr beyond end of packet from kpasswd server\n"));
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
@@ -219,7 +219,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	krb5_free_ap_rep_enc_part(context, ap_rep_enc);
 	
 	cipherresult.data = p;
-	cipherresult.length = (packet->data + packet->length) - p;
+	cipherresult.length = ((char *)packet->data + packet->length) - p;
 		
 	ret = krb5_rd_priv(context, auth_context, &cipherresult, &clearresult,
 			   &replay);
@@ -353,12 +353,8 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 	addr_len = sizeof(local_addr);
 	getsockname(sock, &local_addr, &addr_len);
 	
-	remote_kaddr.addrtype = ADDRTYPE_INET;
-	remote_kaddr.length = sizeof(((struct sockaddr_in *)&remote_addr)->sin_addr);
-	remote_kaddr.contents = (char *)&(((struct sockaddr_in *)&remote_addr)->sin_addr);
-	local_kaddr.addrtype = ADDRTYPE_INET;
-	local_kaddr.length = sizeof(((struct sockaddr_in *)&local_addr)->sin_addr);
-	local_kaddr.contents = (char *)&(((struct sockaddr_in *)&local_addr)->sin_addr);
+	setup_kaddr(&remote_kaddr, &remote_addr);
+	setup_kaddr(&local_kaddr, &local_addr);
 
 	ret = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL);
 	if (ret) {
