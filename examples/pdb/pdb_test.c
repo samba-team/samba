@@ -23,6 +23,10 @@ static int testsam_debug_level = DBGC_ALL;
 #undef DBGC_CLASS
 #define DBGC_CLASS testsam_debug_level
 
+/***************************************************************
+ Start enumeration of the passwd list.
+****************************************************************/
+
 static BOOL testsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
 	DEBUG(10, ("testsam_setsampwent called\n"));
@@ -107,6 +111,9 @@ NTSTATUS pdb_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char
 	}
 
 	(*pdb_method)->name = "testsam";
+
+	/* Functions your pdb module doesn't provide should be set 
+	 * to NULL */
 
 	(*pdb_method)->setsampwent = testsam_setsampwent;
 	(*pdb_method)->endsampwent = testsam_endsampwent;
