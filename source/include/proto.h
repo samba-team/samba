@@ -3459,6 +3459,7 @@ void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 				ENUM_HND *hnd);
 BOOL srv_io_q_net_file_enum(char *desc, SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth);
+void init_srv_info_100(SRV_INFO_100 *sv100, uint32 platform_id, char *name);
 void init_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
 				uint32 ver_major, uint32 ver_minor,
 				uint32 srv_type, char *comment);

@@ -1359,22 +1359,29 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		if (lp_hide_local_users()) return False;
 
 		gid = pdb_user_rid_to_gid(rid);
-		gr = getgrgid(gid);
 
+		switch (rid) {
+		case DOMAIN_GROUP_RID_ADMINS:
+			fstrcpy(name, "Domain Admins");
+			break;
+		case DOMAIN_GROUP_RID_USERS:
+			fstrcpy(name, "Domain Users");
+			break;
+		case DOMAIN_GROUP_RID_GUESTS:
+			fstrcpy(name, "Domain Guests");
+			break;
+		default:
+			gr = getgrgid(gid);
+			DEBUG(5,("local_lookup_rid: looking up gid %u %s\n", (unsigned int)gid, gr ? "succeeded" : "failed" ));
+			if(!gr)
+				slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
+			else
+				fstrcpy( name, gr->gr_name);
+			break;
+		}
 		*psid_name_use = SID_NAME_ALIAS;
 
-		DEBUG(5,("local_local_rid: looking up gid %u %s\n", (unsigned int)gid,
-			gr ? "succeeded" : "failed" ));
-
-		if(!gr) {
-			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
-			return True;
-		}
-
-		fstrcpy( name, gr->gr_name);
-
-		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name,
-			(unsigned int)rid ));
+		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name, (unsigned int)rid ));
 	}
 
 	return True;
