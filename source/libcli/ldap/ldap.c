@@ -1739,42 +1739,62 @@ struct ldap_message *ldap_transaction(struct ldap_connection *conn,
 	return ldap_receive(conn, request->messageid, NULL);
 }
 
-BOOL ldap_setup_connection(struct ldap_connection *conn,
-			   const char *url)
+struct ldap_message *ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
-	struct ldap_message *msg = new_ldap_message();
+	struct ldap_message *response;
+	struct ldap_message *msg;
+	const char *dn, *pw;
+
+	if (conn == NULL || msg == NULL)
+		return False;
+
+	if (userdn) {
+		dn = userdn;
+	} else {
+		if (conn->auth_dn) {
+			dn = conn->auth_dn;
+		} else {
+			dn = "";
+		}
+	}
+
+	if (password) {
+		pw = password;
+	} else {
+		if (conn->simple_pw) {
+			pw = conn->simple_pw;
+		} else {
+			pw = "";
+		}
+	}
+
+	msg =  new_ldap_simple_bind_msg(dn, pw);
+	if (!msg)
+		return False;
+
+	response = ldap_transaction(conn, msg);
+
+	destroy_ldap_message(msg);
+	return response;
+}
+
+BOOL ldap_setup_connection(struct ldap_connection *conn,
+			   const char *url, const char *userdn, const char *password)
+{
 	struct ldap_message *response;
 	BOOL result;
 
-	if (msg == NULL)
-		return False;
-
 	if (!ldap_connect(conn, url)) {
-		destroy_ldap_message(msg);
 		return False;
 	}
 
-	msg->messageid = conn->next_msgid++;
-	msg->type = LDAP_TAG_BindRequest;
-	msg->r.BindRequest.version = 3;
-	if (conn->auth_dn) {
-		msg->r.BindRequest.dn = conn->auth_dn;
+	response = ldap_bind_simple(conn, userdn, password);
+	if (response == NULL) {
+		result = False;
 	} else {
-		msg->r.BindRequest.dn = "";
-	}
-	msg->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
-	if (conn->simple_pw) {
-		msg->r.BindRequest.creds.password = conn->simple_pw;
-	} else {
-		msg->r.BindRequest.creds.password = "";
+		result = (response->r.BindResponse.response.resultcode == 0);
 	}
 
-	if ((response = ldap_transaction(conn, msg)) == NULL)
-		return False;
-
-	result = (response->r.BindResponse.response.resultcode == 0);
-
-	destroy_ldap_message(msg);
 	destroy_ldap_message(response);
 	return result;
 }
