@@ -223,21 +223,32 @@ add_hostent (int port, int protocol, int socktype,
 {
     char **h;
     int ret;
+    char *canonname = NULL;
+
+    if (*flags & AI_CANONNAME) {
+	canonname = he->h_name;
+
+	if (strchr (he->h_name, '.') == NULL)
+	    for (h = he->h_aliases; *h; ++h) {
+		if (strchr (*h, '.') != NULL) {
+		    canonname = *h;
+		    break;
+		}
+	    }
+	canonname = strdup (canonname);
+	if (canonname == NULL)
+	    return EAI_MEMORY;
+    }
 
     for (h = he->h_addr_list; *h != NULL; ++h) {
-	char *canonname = NULL;
-
-	if (*flags & AI_CANONNAME) {
-	    canonname = strdup (he->h_name);
-	    if (canonname == NULL)
-		return ENOMEM;
-	    *flags &= ~AI_CANONNAME;
-	}
-
 	ret = add_one (port, protocol, socktype,
 		       current, func, *h, canonname);
 	if (ret)
 	    return ret;
+	if (*flags & AI_CANONNAME) {
+	    *flags &= ~AI_CANONNAME;
+	    canonname = NULL;
+	}
     }
     return 0;
 }
@@ -320,8 +331,6 @@ get_nodes (const char *nodename,
 			       &current, const_v4, he, &flags);
     }
     *res = first;
-    if (ret == EAI_NONAME)
-	return get_number (nodename, hints, port, protocol, socktype, res);
     return ret;
 }
 
@@ -369,10 +378,14 @@ getaddrinfo(const char *nodename,
 	    return ret;
     }
     if (nodename != NULL) {
-	if (hints && hints->ai_flags & AI_NUMERICHOST)
-	    ret = get_number (nodename, hints, port, protocol, socktype, res);
-	else
-	    ret = get_nodes (nodename, hints, port, protocol, socktype, res);
+	ret = get_number (nodename, hints, port, protocol, socktype, res);
+	if (ret) {
+	    if(hints && hints->ai_flags & AI_NUMERICHOST)
+		ret = EAI_NONAME;
+	    else
+		ret = get_nodes (nodename, hints, port, protocol, socktype,
+				 res);
+	}
     } else {
 	ret = get_null (hints, port, protocol, socktype, res);
     }
