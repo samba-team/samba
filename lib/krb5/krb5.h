@@ -970,7 +970,7 @@ krb5_free_krbhst (krb5_context context,
 krb5_error_code
 krb5_get_host_realm(krb5_context context,
 		    const char *host,
-		    char ***realms);
+		    krb5_realm **realms);
 
 krb5_error_code
 krb5_free_host_realm(krb5_context context,
