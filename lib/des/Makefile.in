@@ -11,6 +11,7 @@ DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -40,7 +41,7 @@ Wall:
 
 install: all
 	$(INSTALL) -d $(prefix)/lib
-	$(INSTALL) $(LIB) $(libdir)
+	$(INSTALL_DATA) $(LIB) $(libdir)
 	-$(RANLIB) $(libdir)/$(LIB)
 	
 uninstall:
