@@ -698,6 +698,11 @@ typedef struct krb5_krbhst_info {
     char hostname[1]; /* has to come last */
 } krb5_krbhst_info;
 
+/* flags for krb5_krbhst_init_flags (and krb5_send_to_kdc_flags) */
+enum {
+    KRB5_KRBHST_FLAGS_MASTER      = 1,
+    KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
+};
 
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
