@@ -249,7 +249,7 @@ int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
 int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 int sys_acl_valid( SMB_ACL_T theacl );
 int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
-int sys_acl_set_fd( int fd, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
@@ -270,7 +270,7 @@ int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
 int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 int sys_acl_valid( SMB_ACL_T theacl );
 int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
-int sys_acl_set_fd( int fd, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
 int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 
 /*The following definitions come from  lib/system.c  */
