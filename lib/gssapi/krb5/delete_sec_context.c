@@ -58,11 +58,9 @@ OM_uint32 gss_delete_sec_context
     if((*context_handle)->target)
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
-    if ((*context_handle)->ticket) {
+    if ((*context_handle)->ticket)
 	krb5_free_ticket (gssapi_krb5_context,
 			  (*context_handle)->ticket);
-	free((*context_handle)->ticket);
-    }
     if((*context_handle)->order)
 	gssapi_msg_order_destroy(&(*context_handle)->order);
 
