@@ -99,7 +99,6 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
-	struct passwd *pw;
 	uid_t uid = -1;
 	gid_t gid = -1;
 	

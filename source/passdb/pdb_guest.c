@@ -26,7 +26,6 @@
 
 static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *sam_account, const char *sname)
 {
-	NTSTATUS nt_status;
 	const char *guest_account = lp_guestaccount();
 
 	if (!sam_account || !sname) {

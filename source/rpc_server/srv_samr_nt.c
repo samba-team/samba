@@ -3516,7 +3516,6 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	struct group *grp;
 	fstring grp_name;
 	GROUP_MAP map;
-	uid_t uid;
 	NTSTATUS ret;
 	SAM_ACCOUNT *sam_user=NULL;
 	BOOL check;
