@@ -314,6 +314,7 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 	if (!ndr.mem_ctx) return;
 	ndr.print = ndr_print_debug_helper;
 	ndr.depth = 1;
+	ndr.flags = 0;
 	fn(&ndr, name, ptr);
 	talloc_destroy(ndr.mem_ctx);
 }
@@ -333,6 +334,7 @@ void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32_t
 	if (!ndr.mem_ctx) return;
 	ndr.print = ndr_print_debug_helper;
 	ndr.depth = 1;
+	ndr.flags = 0;
 	fn(&ndr, name, level, ptr);
 	talloc_destroy(ndr.mem_ctx);
 }
