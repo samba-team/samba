@@ -8,7 +8,7 @@ echo Installing SWAT in $SWATDIR
 
 echo Installing the Samba Web Admisistration Tool
 
-for d in $SWATDIR $SWATDIR/help $SWATDIR/images; do
+for d in $SWATDIR $SWATDIR/help $SWATDIR/images $SWATDIR/include; do
 if [ ! -d $d ]; then
   mkdir $d
 if [ ! -d $d ]; then
@@ -34,6 +34,13 @@ done
 
 for f in $SRCDIR../swat/help/*.html; do
       FNAME=$SWATDIR/help/`basename $f`
+      echo $FNAME
+      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+      chmod 0644 $FNAME
+done
+
+for f in $SRCDIR../swat/include/*.html; do
+      FNAME=$SWATDIR/include/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       chmod 0644 $FNAME
