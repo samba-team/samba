@@ -79,6 +79,35 @@ Exiting.\n", global_myworkgroup, subrec->subnet_name));
 	initiate_myworkgroup_startup(subrec, work);
 }
 
+/*******************************************************************
+ Utility function to add a name to the unicast subnet, or add in
+ our IP address if it already exists.
+******************************************************************/
+
+static void insert_refresh_name_into_unicast( struct subnet_record *subrec,
+                                                struct nmb_name *nmbname, uint16 nb_type )
+{
+  struct name_record *namerec;
+
+  if (!we_are_a_wins_client()) {
+    insert_permanent_name_into_unicast(subrec, nmbname, nb_type);
+    return;
+  }
+
+  if((namerec = find_name_on_subnet(unicast_subnet, nmbname, FIND_SELF_NAME)) == NULL)
+  {
+    /* The name needs to be created on the unicast subnet. */
+    (void)add_name_to_subnet( unicast_subnet, nmbname->name,
+                              nmbname->name_type, nb_type,
+                              MIN(lp_max_ttl(), MAX_REFRESH_TIME), SELF_NAME, 1, &subrec->myip);
+  }
+  else
+  {
+    /* The name already exists on the unicast subnet. Add our local
+       IP for the given broadcast subnet to the name. */
+    add_ip_to_name_record( namerec, subrec->myip);
+  }
+}
 
 /****************************************************************************
   Add my workgroup and my given names to the subnet lists.
@@ -114,13 +143,13 @@ BOOL register_my_workgroup_and_names(void)
       struct nmb_name nmbname;
 
       make_nmb_name(&nmbname, my_netbios_names[i],0x20);
-      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
+      insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
       make_nmb_name(&nmbname, my_netbios_names[i],0x3);
-      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
+      insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
       make_nmb_name(&nmbname, my_netbios_names[i],0x0);
-      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
+      insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
     }
   }
 
@@ -137,10 +166,10 @@ BOOL register_my_workgroup_and_names(void)
     struct nmb_name nmbname;
 
     make_nmb_name(&nmbname, global_myworkgroup, 0x0);
-    insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+    insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
 
     make_nmb_name(&nmbname, global_myworkgroup, 0x1e);
-    insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+    insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
   }
 
   /*
