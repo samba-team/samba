@@ -229,30 +229,21 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		return True;
 	}
 
-
-	/* We must know the owner sid */
-
-	if (sd->owner_sid == NULL) {
-		DEBUG(1, ("no owner for security descriptor\n"));
-		*acc_granted = 0;
-		*status = NT_STATUS_ACCESS_DENIED;
-		DEBUG(5, ("se_access_check: no owner sid, access denied\n"));
-		return False;
-	}
-
 	/* The user sid is the first in the token */
 
 	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[0]) ));
 
 	/* Is the token the owner of the SID ? */
 
-	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&token->user_sids[i], sd->owner_sid)) {
-			/*
-			 * The owner always has SEC_RIGHTS_WRITE_DAC.
-			 */
-			if (tmp_acc_desired & SEC_RIGHTS_WRITE_DAC)
-				tmp_acc_desired &= ~SEC_RIGHTS_WRITE_DAC;
+	if (sd->owner_sid) {
+		for (i = 0; i < token->num_sids; i++) {
+			if (sid_equal(&token->user_sids[i], sd->owner_sid)) {
+				/*
+				 * The owner always has SEC_RIGHTS_WRITE_DAC.
+				 */
+				if (tmp_acc_desired & SEC_RIGHTS_WRITE_DAC)
+					tmp_acc_desired &= ~SEC_RIGHTS_WRITE_DAC;
+			}
 		}
 	}
 
