@@ -127,6 +127,8 @@ sub HeaderType($$$)
 		$res .= "const char";
 	} elsif ($data =~ "nstring") {
 		$res .= "const char *";
+	} elsif ($data =~ "lstring") {
+		$res .= "const char *";
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
 	} elsif (util::has_property($e, "switch_is")) {
