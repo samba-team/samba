@@ -81,8 +81,6 @@
 #define SAM_ACCOUNT struct sam_passwd
 #endif
 
-#define MODIFY_TIMESTAMP_STRING "modifyTimestamp"
-
 #include "smbldap.h"
 
 struct ldapsam_privates {
@@ -301,7 +299,9 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 		   really exist. */
 
 		for (attrib = attrs; *attrib != NULL; attrib++) {
-			if (StrCaseCmp(*attrib, name) == 0) {
+			if ((StrCaseCmp(*attrib, name) == 0) &&
+					!(StrCaseCmp(*attrib,
+						get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_MOD_TIMESTAMP)))) {
 				DEBUG(10, ("ldapsam_delete_entry: deleting attribute %s\n", name));
 				smbldap_set_mod(&mods, LDAP_MOD_DELETE, name, NULL);
 			}
@@ -400,8 +400,9 @@ static time_t ldapsam_get_entry_timestamp(
 	pstring temp;	
 	struct tm tm;
 
-	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct,
-					entry, MODIFY_TIMESTAMP_STRING, temp)) 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
+			get_userattr_key2string(ldap_state->schema_ver,LDAP_ATTR_MOD_TIMESTAMP),
+			temp))
 		return (time_t) 0;
 
 	strptime(temp, "%Y%m%d%H%M%SZ", &tm);
@@ -448,6 +449,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
 	LOGIN_CACHE	*cache_entry = NULL;
+	int pwHistLen;
 
 	/*
 	 * do a little initialization
@@ -694,6 +696,37 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		ZERO_STRUCT(smbntpwd);
 	}
 
+	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+	if (pwHistLen > 0){
+		uint8 *pwhist = NULL;
+		int i;
+
+		if ((pwhist = malloc(NT_HASH_LEN * pwHistLen)) == NULL){
+			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
+			return False;
+		}
+		memset(pwhist, '\0', NT_HASH_LEN * pwHistLen);
+
+		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY), temp)) {
+			/* leave as default - zeros */
+		} else {
+			for (i = 0; i < pwHistLen; i++){
+				if (!pdb_gethexpwd(&temp[i*32], smbntpwd)) {
+					break;
+				}
+				memset(&temp[i*32], '\0', 32);
+				memcpy(&pwhist[i*NT_HASH_LEN], smbntpwd, NT_HASH_LEN);
+				ZERO_STRUCT(smbntpwd);
+			}
+		}
+		if (!pdb_set_pw_history(sampass, pwhist, pwHistLen, PDB_SET)){
+			SAFE_FREE(pwhist);
+			return False;
+		}
+		SAFE_FREE(pwhist);
+	}
+
 	if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ACB_INFO), temp)) {
 		acct_ctrl |= ACB_NORMAL;
@@ -781,7 +814,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 }
 
 /**********************************************************************
- Initialize SAM_ACCOUNT from an LDAP query.
+ Initialize the ldap db from a SAM_ACCOUNT. Called on update.
  (Based on init_buffer_from_sam in pdb_tdb.c)
 *********************************************************************/
 
@@ -985,6 +1018,29 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			}
 		}
 
+		if (need_update(sampass, PDB_PWHISTORY)) {
+			int pwHistLen = 0;
+			account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+			if (pwHistLen == 0) {
+				/* Remove any password history from the LDAP store. */
+				pstrcpy(temp, "00000000000000000000000000000000");
+			} else {
+				int i, currHistLen = 0;
+				const uint8 *pwhist = pdb_get_pw_history(sampass, &currHistLen);
+				if (pwhist != NULL) {
+					/* We can only store (sizeof(pstring)-1)/32 password history entries. */
+					pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/32));
+					for (i=0; i< pwHistLen && i < currHistLen; i++) {
+						pdb_sethexpwd (&temp[i*32], &pwhist[i*NT_HASH_LEN], 0);
+						DEBUG(100, ("temp=%s\n", temp));
+					}
+				} 
+			}
+			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
+					 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY), 
+					 temp);
+		}
+
 		if (need_update(sampass, PDB_PASSLASTSET)) {
 			slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
 			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
@@ -1162,7 +1218,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	int rc;
 	
 	attr_list = get_userattr_list( ldap_state->schema_ver );
-	append_attr(&attr_list, MODIFY_TIMESTAMP_STRING);
+	append_attr(&attr_list, get_userattr_key2string(ldap_state->schema_ver,LDAP_ATTR_MOD_TIMESTAMP));
 	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result, attr_list);
 	free_attr_list( attr_list );
 
@@ -1208,7 +1264,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 	switch ( ldap_state->schema_ver ) {
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			attr_list = get_userattr_list(ldap_state->schema_ver);
-			append_attr(&attr_list, MODIFY_TIMESTAMP_STRING);
+			append_attr(&attr_list, get_userattr_key2string(ldap_state->schema_ver,LDAP_ATTR_MOD_TIMESTAMP));
 			rc = ldapsam_search_suffix_by_sid(ldap_state, sid, result, attr_list);
 			free_attr_list( attr_list );
 
