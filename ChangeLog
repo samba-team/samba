@@ -1,3 +1,10 @@
+Sun Jul  6 23:02:59 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/[gs]et_default_realm.c, kuserok.c: new files
+
+	* lib/krb5/config_file.[ch]: new c-based configuration reading
+ 	stuff
+
 Wed Jul  2 23:12:56 1997  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: Set WFLAGS if using gcc
