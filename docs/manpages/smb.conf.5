@@ -289,7 +289,7 @@ printers are defined on the system you may be able to use
 of printers. See the "printcap name" option 
 for more details.
 .PP
-.SH "PARAMETRS"
+.SH "PARAMETERS"
 .PP
 parameters define the specific attributes of sections.
 .PP
@@ -674,7 +674,10 @@ each parameter for details. Note that some are synonyms.
 \fImax mux\fR 
 .TP 0.2i
 \(bu
-\fImax open files\fR 
+\fImax open files\fR
+.TP 0.2i
+\(bu
+\fImax smbd processes\fR 
 .TP 0.2i
 \(bu
 \fImax ttl\fR 
@@ -1138,6 +1141,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fImax connections\fR 
+.TP 0.2i
+\(bu
+\fImax print jobs\fR
 .TP 0.2i
 \(bu
 \fImin print space\fR 
@@ -3689,6 +3695,29 @@ by the UNIX per-process file descriptor limit rather than
 this parameter so you should never need to touch this parameter.
 
 Default: \fBmax open files = 10000\fR
+.TP
+\fBmax print jobs (S)\fR
+This parameter limits the maximum number of 
+jobs allowable in a Samba printer queue at any given moment.
+If this number is exceeded, \fB smbd(8)\fR <URL:smbd.8.html> will remote "Out of Space" to the client.
+
+Default: \fBmax print jobs = 1000\fR
+
+Example: \fBmax print jobs = 5000\fR
+.TP
+\fBmax smbd processes (G)\fR
+This parameter limits the maximum number of 
+\fBsmbd(8)\fR <URL:smbd.8.html>
+processes concurrently running on a system and is intended
+as a stop gap to prevent degrading service to clients in the event
+that the server has insufficient resources to handle more than this
+number of connections. Remember that under normal operating
+conditions, each user will have an smbd associated with him or her
+to handle connections to all shares from a given host.
+
+Default: \fBmax smbd processes = 0 ## no limit\fR
+
+Example: \fBmax smbd processes = 1000\fR
 .TP
 \fBmax ttl (G)\fR
 This option tells nmbd(8) <URL:nmbd.8.html>

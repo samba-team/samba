@@ -426,7 +426,7 @@ CLASS="REFSECT1"
 NAME="AEN101"
 ></A
 ><H2
->paraMETRS</H2
+>PARAMETERS</H2
 ><P
 >parameters define the specific attributes of sections.</P
 ><P
@@ -1350,6 +1350,15 @@ CLASS="PARAMETER"
 ><I
 >max open files</I
 ></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>max smbd processes</I
+></TT
 > </P
 ></LI
 ><LI
@@ -2167,7 +2176,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN701"
+NAME="AEN704"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -2749,6 +2758,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>max print jobs</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >min print space</I
 ></TT
 > </P
@@ -3199,7 +3217,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1044"
+NAME="AEN1050"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -9305,6 +9323,69 @@ TARGET="_top"
 >Default: <B
 CLASS="COMMAND"
 >max open files = 10000</B
+></P
+></DD
+><DT
+><A
+NAME="MAXPRINTJOBS"
+></A
+>max print jobs (S)</DT
+><DD
+><P
+>This parameter limits the maximum number of 
+		jobs allowable in a Samba printer queue at any given moment.
+		If this number is exceeded, <A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>		smbd(8)</B
+></A
+> will remote "Out of Space" to the client.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>max print jobs = 1000</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>max print jobs = 5000</B
+></P
+></DD
+><DT
+><A
+NAME="MAXSMBDPROCESSES"
+></A
+>max smbd processes (G)</DT
+><DD
+><P
+>This parameter limits the maximum number of 
+		<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>
+		processes concurrently running on a system and is intended
+		as a stop gap to prevent degrading service to clients in the event
+		that the server has insufficient resources to handle more than this
+		number of connections.  Remember that under normal operating
+		conditions, each user will have an smbd associated with him or her
+		to handle connections to all shares from a given host.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>max smbd processes = 0   ## no limit</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>max smbd processes = 1000</B
 ></P
 ></DD
 ><DT
@@ -16076,7 +16157,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5072"
+NAME="AEN5100"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16106,7 +16187,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5078"
+NAME="AEN5106"
 ></A
 ><H2
 >VERSION</H2
@@ -16117,7 +16198,7 @@ NAME="AEN5078"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5081"
+NAME="AEN5109"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -16196,7 +16277,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5101"
+NAME="AEN5129"
 ></A
 ><H2
 >AUTHOR</H2
