@@ -116,7 +116,7 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root, int fd)
     krb5_principal server;
     krb5_error_code ret;
     slave *s;
-    int addr_len;
+    socklen_t addr_len;
     krb5_ticket *ticket = NULL;
     char hostname[128];
 
@@ -455,7 +455,7 @@ main(int argc, char **argv)
 
 	if (ret && FD_ISSET(signal_fd, &readset)) {
 	    struct sockaddr_un peer_addr;
-	    int peer_len = sizeof(peer_addr);
+	    socklen_t peer_len = sizeof(peer_addr);
 
 	    if(recvfrom(signal_fd, &vers, sizeof(vers), 0,
 			(struct sockaddr *)&peer_addr, &peer_len) < 0) {

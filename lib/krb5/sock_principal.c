@@ -46,7 +46,7 @@ krb5_sock_to_principal (krb5_context context,
     krb5_address address;
     struct sockaddr_storage __ss;
     struct sockaddr *sa = (struct sockaddr *)&__ss;
-    int len = sizeof(__ss);
+    socklen_t len = sizeof(__ss);
     struct hostent *hostent;
     int family;
     char hname[256];

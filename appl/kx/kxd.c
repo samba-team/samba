@@ -112,7 +112,7 @@ recv_conn (int sock, kx_context *kc,
 {
      u_char msg[1024], *p;
      char user[256];
-     int addrlen;
+     socklen_t addrlen;
      struct passwd *passwd;
      struct sockaddr_in thisaddr, thataddr;
      char remotehost[MaxHostNameLen];
@@ -295,7 +295,7 @@ doit_conn (kx_context *kc,
     int sock, sock2;
     struct sockaddr_in addr;
     struct sockaddr_in thisaddr;
-    int addrlen;
+    socklen_t addrlen;
     u_char msg[1024], *p;
 
     sock = socket (AF_INET, SOCK_STREAM, 0);
@@ -509,7 +509,7 @@ doit_passive (kx_context *kc,
 		if (FD_ISSET(sockets[i].fd, &fds)) {
 		    if (sockets[i].flags == TCP) {
 			struct sockaddr_in peer;
-			int len = sizeof(peer);
+			socklen_t len = sizeof(peer);
 
 			fd = accept (sockets[i].fd,
 				     (struct sockaddr *)&peer,
@@ -524,7 +524,7 @@ doit_passive (kx_context *kc,
 			    errno = EINTR;
 			}
 		    } else if(sockets[i].flags == UNIX_SOCKET) {
-			int zero = 0;
+			socklen_t zero = 0;
 
 			fd = accept (sockets[i].fd, NULL, &zero);
 

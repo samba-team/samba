@@ -66,7 +66,7 @@ static int
 proto (int sock, const char *service)
 {
     struct sockaddr_in remote, local;
-    int addrlen;
+    socklen_t addrlen;
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
     gss_buffer_t input_token, output_token;
     gss_buffer_desc real_input_token, real_output_token;

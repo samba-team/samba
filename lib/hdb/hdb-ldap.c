@@ -962,7 +962,8 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
     if (db->db != NULL) {
 	/* connection has been opened. ping server. */
 	struct sockaddr_un addr;
-	int sd, len;
+	socklen_t len;
+	int sd;
 
 	if (ldap_get_option((LDAP *) db->db, LDAP_OPT_DESC, &sd) == 0 &&
 	    getpeername(sd, (struct sockaddr *) &addr, &len) < 0) {

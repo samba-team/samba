@@ -98,7 +98,7 @@ connect_host (kx_context *kc)
     struct addrinfo hints;
     int error;
     char portstr[NI_MAXSERV];
-    int addrlen;
+    socklen_t addrlen;
     int s;
     struct sockaddr_storage thisaddr_ss;
     struct sockaddr *thisaddr = (struct sockaddr *)&thisaddr_ss;
@@ -445,7 +445,7 @@ doit_active (kx_context *kc)
 	fd_set fdset;
 	pid_t child;
 	int fd, thisfd = -1;
-	int zero = 0;
+	socklen_t zero = 0;
 
 	FD_ZERO(&fdset);
 	for (i = 0; i < nsockets; ++i)

@@ -272,7 +272,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
     char realm[REALM_SZ];
     char instance[INST_SZ];
     int r;
-    int addr_len;
+    socklen_t addr_len;
 
     if (cnt-- < 1)
 	return;

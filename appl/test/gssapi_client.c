@@ -85,7 +85,7 @@ static int
 proto (int sock, const char *hostname, const char *service)
 {
     struct sockaddr_in remote, local;
-    int addrlen;
+    socklen_t addrlen;
 
     int context_established = 0;
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
@@ -140,7 +140,7 @@ proto (int sock, const char *hostname, const char *service)
     input_chan_bindings.acceptor_address.value = acct_buf;
     
 #if 0
-    input_chan_bindings.application_data.value = malloc(4);
+    input_chan_bindings.application_data.value = emalloc(4);
     * (unsigned short*)input_chan_bindings.application_data.value = local.sin_port;
     * ((unsigned short *)input_chan_bindings.application_data.value + 1) = remote.sin_port;
     input_chan_bindings.application_data.length = 4;

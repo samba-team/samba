@@ -929,7 +929,7 @@ handle_v4(krb5_context context,
 {
     int first = 1;
     struct sockaddr_in admin_addr, client_addr;
-    int addr_len;
+    socklen_t addr_len;
     krb5_data message, reply;
     ssize_t n;
 

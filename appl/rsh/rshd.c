@@ -581,7 +581,7 @@ doit (int do_kerberos, int check_rhosts)
     struct sockaddr *thataddr = (struct sockaddr *)&thataddr_ss;
     struct sockaddr_storage erraddr_ss;
     struct sockaddr *erraddr = (struct sockaddr *)&erraddr_ss;
-    int addrlen;
+    socklen_t addrlen;
     int port;
     int errsock = -1;
     char client_user[COMMAND_SZ], server_user[USERNAME_SZ];

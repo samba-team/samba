@@ -245,7 +245,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 {
     struct sockaddr_storage cs_ss;
     struct sockaddr *cs = (struct sockaddr *)&cs_ss;
-    int                     len;
+    socklen_t		    len;
     char                *   trace_file_name = "/tmp/popper-trace";
     int			    portnum = 0;
     int 		    optind = 0;

@@ -139,7 +139,7 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
     struct sockaddr_storage ss_local, ss_remote;
     struct sockaddr *local  = (struct sockaddr *)&ss_local;
     struct sockaddr *remote = (struct sockaddr *)&ss_remote;
-    int len;
+    socklen_t len;
 
     if (auth_context->local_address == NULL) {
 	len = sizeof(ss_local);

@@ -252,7 +252,8 @@ show_file(const char *file, int code)
 int
 main(int argc, char **argv)
 {
-    int his_addr_len, ctrl_addr_len, on = 1;
+    socklen_t his_addr_len, ctrl_addr_len;
+    int on = 1;
     int port;
     struct servent *sp;
 
@@ -1254,7 +1255,7 @@ dataconn(const char *name, off_t size, const char *mode)
 		struct sockaddr_storage from_ss;
 		struct sockaddr *from = (struct sockaddr *)&from_ss;
 		int s;
-		int fromlen = sizeof(from_ss);
+		socklen_t fromlen = sizeof(from_ss);
 
 		s = accept(pdata, from, &fromlen);
 		if (s < 0) {
@@ -1922,7 +1923,7 @@ myoob(int signo)
 void
 pasv(void)
 {
-	int len;
+	socklen_t len;
 	char *p, *a;
 	struct sockaddr_in *sin;
 
@@ -1972,7 +1973,7 @@ pasv_error:
 void
 epsv(char *proto)
 {
-	int len;
+	socklen_t len;
 
 	pdata = socket(ctrl_addr->sa_family, SOCK_STREAM, 0);
 	if (pdata < 0) {

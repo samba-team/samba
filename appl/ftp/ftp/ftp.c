@@ -60,7 +60,7 @@ hookup (const char *host, int port)
     struct addrinfo hints;
     int error;
     char portstr[NI_MAXSERV];
-    int len;
+    socklen_t len;
     int s;
 
     memset (&hints, 0, sizeof(hints));
@@ -1240,7 +1240,7 @@ static int
 active_mode (void)
 {
     int tmpno = 0;
-    int len;
+    socklen_t len;
     int result;
 
 noport:
@@ -1366,7 +1366,8 @@ dataconn (const char *lmode)
 {
     struct sockaddr_storage from_ss;
     struct sockaddr *from = (struct sockaddr *)&from_ss;
-    int s, fromlen = sizeof (from_ss);
+    socklen_t fromlen = sizeof(from_ss);
+    int s;
 
     if (passivemode)
 	return (fdopen (data, lmode));

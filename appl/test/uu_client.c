@@ -40,7 +40,7 @@ static int
 proto (int sock, const char *hostname, const char *service)
 {
     struct sockaddr_in remote, local;
-    int addrlen;
+    socklen_t addrlen;
     krb5_address remote_addr, local_addr;
     krb5_context context;
     krb5_ccache ccache;

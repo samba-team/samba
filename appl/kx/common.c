@@ -732,7 +732,7 @@ int
 suspicious_address (int sock, struct sockaddr_in addr)
 {
     char data[40];
-    int len = sizeof(data);
+    socklen_t len = sizeof(data);
 
     return addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)
 #if defined(IP_OPTIONS) && defined(HAVE_GETSOCKOPT)

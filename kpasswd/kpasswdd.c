@@ -473,7 +473,7 @@ doit (krb5_keytab keytab, int port)
 	for (i = 0; i < n; ++i)
 	    if (FD_ISSET(sockets[i], &fdset)) {
 		u_char buf[BUFSIZ];
-		int addrlen = sizeof(__ss);
+		socklen_t addrlen = sizeof(__ss);
 
 		ret = recvfrom (sockets[i], buf, sizeof(buf), 0,
 				sa, &addrlen);

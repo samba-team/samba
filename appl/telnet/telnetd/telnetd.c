@@ -143,7 +143,8 @@ main(int argc, char **argv)
 {
     struct sockaddr_storage __ss;
     struct sockaddr *sa = (struct sockaddr *)&__ss;
-    int on = 1, sa_size;
+    int on = 1;
+    socklen_t sa_size;
     int ch;
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
     int tos = -1;
@@ -362,9 +363,9 @@ main(int argc, char **argv)
      *	Get socket's security label
      */
     if (secflag)  {
-	int szss = sizeof(ss);
+	socklen_t szss = sizeof(ss);
 	int sock_multi;
-	int szi = sizeof(int);
+	socklen_t szi = sizeof(int);
 
 	memset(&dv, 0, sizeof(dv));
 
