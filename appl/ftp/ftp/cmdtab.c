@@ -133,7 +133,7 @@ struct cmd cmdtab[] = {
 	{ "glob",	globhelp,	0,	0,	0,	setglob },
 	{ "hash",	hashhelp,	0,	0,	0,	sethash },
 	{ "help",	helphelp,	0,	0,	1,	help },
-	{ "idle",	idlehelp,	0,	1,	1,	idle },
+	{ "idle",	idlehelp,	0,	1,	1,	ftp_idle },
 	{ "image",	binaryhelp,	0,	1,	1,	setbinary },
 	{ "lcd",	lcdhelp,	0,	0,	0,	lcd },
 	{ "ls",		lshelp,		1,	1,	1,	ls },

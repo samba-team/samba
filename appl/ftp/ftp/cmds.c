@@ -1403,7 +1403,7 @@ do_umask(int argc, char **argv)
 }
 
 void
-idle(int argc, char **argv)
+ftp_idle(int argc, char **argv)
 {
 	int oldverbose = verbose;
 

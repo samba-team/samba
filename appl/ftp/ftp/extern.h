@@ -83,7 +83,7 @@ int	globulize __P((char **));
 char   *gunique __P((char *));
 void	help __P((int, char **));
 char   *hookup __P((char *, int));
-void	idle __P((int, char **));
+void	ftp_idle __P((int, char **));
 int     initconn __P((void));
 void	intr __P((int));
 void	lcd __P((int, char **));
