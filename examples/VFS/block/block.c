@@ -48,7 +48,7 @@
 
 
 DIR *block_opendir(struct connection_struct *conn, char *fname);
-int block_connect(struct connection_struct *conn, char *service, char *user);    
+int block_connect(struct connection_struct *conn, const char *service, const char *user);    
 void block_disconnect(struct connection_struct *conn);    
 
 

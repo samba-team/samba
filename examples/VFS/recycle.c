@@ -43,7 +43,7 @@
 extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
 
 static int recycle_unlink(connection_struct *, const char *);
-static int recycle_connect(struct connection_struct *conn, char *service, char *user);
+static int recycle_connect(struct connection_struct *conn, const char *service, const char *user);
 static void recycle_disconnect(struct connection_struct *conn);
 
 struct vfs_ops recycle_ops = {
@@ -137,7 +137,7 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 	return &recycle_ops;
 }
 
-static int recycle_connect(struct connection_struct *conn, char *service, char *user)
+static int recycle_connect(struct connection_struct *conn, const char *service, const char *user)
 {
 	pstring opts_str;
 	fstring recycle_bin;

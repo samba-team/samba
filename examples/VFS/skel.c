@@ -41,7 +41,7 @@
 extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
 extern struct vfs_ops skel_ops;
 
-static int skel_connect(struct connection_struct *conn, char *service, char *user)    
+static int skel_connect(struct connection_struct *conn, const char *service, const char *user)    
 {
 	return default_vfs_ops.connect(conn, service, user);
 }
@@ -51,7 +51,7 @@ static void skel_disconnect(struct connection_struct *conn)
 	default_vfs_ops.disconnect(conn);
 }
 
-static SMB_BIG_UINT skel_disk_free(struct connection_struct *conn, char *path,
+static SMB_BIG_UINT skel_disk_free(struct connection_struct *conn, const char *path,
 	BOOL small_query, SMB_BIG_UINT *bsize,
 	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {

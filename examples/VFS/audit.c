@@ -47,7 +47,7 @@
 
 /* Function prototypes */
 
-int audit_connect(struct connection_struct *conn, char *svc, char *user);
+int audit_connect(struct connection_struct *conn, const char *svc, const char *user);
 void audit_disconnect(struct connection_struct *conn);
 DIR *audit_opendir(struct connection_struct *conn, const char *fname);
 int audit_mkdir(struct connection_struct *conn, const char *path, mode_t mode);
@@ -174,7 +174,7 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
-int audit_connect(struct connection_struct *conn, char *svc, char *user)
+int audit_connect(struct connection_struct *conn, const char *svc, const char *user)
 {
 	syslog(SYSLOG_PRIORITY, "connect to service %s by user %s\n", 
 	       svc, user);
