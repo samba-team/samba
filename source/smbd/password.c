@@ -312,6 +312,103 @@ static void update_protected_database( char *user, BOOL result)
 }
 
 
+#ifdef USE_PAM
+/*******************************************************************
+check on PAM authentication
+********************************************************************/
+
+/* We first need some helper functions */
+#include <security/pam_appl.h>
+/* Static variables used to communicate between the conversation function
+ * and the server_login function
+ */
+static char *PAM_username;
+static char *PAM_password;
+
+/* PAM conversation function
+ * Here we assume (for now, at least) that echo on means login name, and
+ * echo off means password.
+ */
+static int PAM_conv (int num_msg,
+                     const struct pam_message **msg,
+                     struct pam_response **resp,
+                     void *appdata_ptr) {
+  int count = 0, replies = 0;
+  struct pam_response *reply = NULL;
+  int size = sizeof(struct pam_response);
+
+  #define GET_MEM if (reply) realloc(reply, size); else reply = malloc(size); \
+  if (!reply) return PAM_CONV_ERR; \
+  size += sizeof(struct pam_response)
+  #define COPY_STRING(s) (s) ? strdup(s) : NULL
+
+  for (count = 0; count < num_msg; count++) {
+    switch (msg[count]->msg_style) {
+      case PAM_PROMPT_ECHO_ON:
+        GET_MEM;
+        reply[replies].resp_retcode = PAM_SUCCESS;
+        reply[replies++].resp = COPY_STRING(PAM_username);
+          /* PAM frees resp */
+        break;
+      case PAM_PROMPT_ECHO_OFF:
+        GET_MEM;
+        reply[replies].resp_retcode = PAM_SUCCESS;
+        reply[replies++].resp = COPY_STRING(PAM_password);
+          /* PAM frees resp */
+        break;
+      case PAM_TEXT_INFO:
+        /* ignore it... */
+        break;
+      case PAM_ERROR_MSG:
+      default:
+        /* Must be an error of some sort... */
+        free (reply);
+        return PAM_CONV_ERR;
+    }
+  }
+  if (reply) *resp = reply;
+  return PAM_SUCCESS;
+}
+static struct pam_conv PAM_conversation = {
+    &PAM_conv,
+    NULL
+};
+
+
+static BOOL pam_auth(char *this_user,char *password)
+{
+  pam_handle_t *pamh;
+  int pam_error;
+
+  /* Now use PAM to do authentication.  For now, we won't worry about
+   * session logging, only authentication.  Bail out if there are any
+   * errors.  Since this is a limited protocol, and an even more limited
+   * function within a server speaking this protocol, we can't be as
+   * verbose as would otherwise make sense.
+   * Query: should we be using PAM_SILENT to shut PAM up?
+   */
+  #define PAM_BAIL if (pam_error != PAM_SUCCESS) { \
+     pam_end(pamh, 0); return False; \
+   }
+  PAM_password = password;
+  PAM_username = this_user;
+  pam_error = pam_start("samba", this_user, &PAM_conversation, &pamh);
+  PAM_BAIL;
+  pam_error = pam_authenticate(pamh, 0);
+  PAM_BAIL;
+  /* It is not clear to me that account management is the right thing
+   * to do, but it is not clear that it isn't, either.  This can be
+   * removed if no account management should be done.  Alternately,
+   * put a pam_allow.so entry in /etc/pam.conf for account handling. */
+  pam_error = pam_acct_mgmt(pamh, 0);
+  PAM_BAIL;
+  pam_end(pamh, PAM_SUCCESS);
+  /* If this point is reached, the user has been authenticated. */
+  return(True);
+}
+#endif
+
+
 #ifdef AFS_AUTH
 /*******************************************************************
 check on AFS authentication
@@ -513,6 +610,11 @@ core of password checking routine
 ****************************************************************************/
 BOOL password_check(char *password)
 {
+
+#ifdef USE_PAM
+  if (pam_auth(this_user,password)) return(True);
+#endif
+
 #ifdef AFS_AUTH
   if (afs_auth(this_user,password)) return(True);
 #endif
