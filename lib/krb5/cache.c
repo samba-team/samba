@@ -78,6 +78,30 @@ krb5_cc_register(krb5_context context,
 }
 
 
+static krb5_error_code
+allocate_ccache (krb5_context context,
+		 const krb5_cc_ops *ops,
+		 const char *residual,
+		 krb5_ccache *id)
+{
+    krb5_error_code ret;
+    krb5_ccache p;
+
+    p = malloc(sizeof(*p));
+    if(p == NULL)
+	return KRB5_CC_NOMEM;
+    p->ops = (krb5_cc_ops *)ops;
+    *id = p;
+    ret = p->ops->resolve(context, id, residual);
+    if(ret)
+	free(p);
+    return ret;
+}
+
+/*
+ * Find and allocate a ccache in `id' from the specification in `residual'.
+ */
+
 krb5_error_code
 krb5_cc_resolve(krb5_context context,
 		const char *residual,
@@ -93,21 +117,20 @@ krb5_cc_resolve(krb5_context context,
 	if(ret) return ret;
     }
 
-    for(i = 0; i < context->num_ops && context->cc_ops[i].prefix; i++)
-	if(strncmp(context->cc_ops[i].prefix, residual, 
-		   strlen(context->cc_ops[i].prefix)) == 0){
-	    krb5_ccache p;
-	    p = malloc(sizeof(*p));
-	    if(p == NULL)
-		return KRB5_CC_NOMEM;
-	    p->ops = &context->cc_ops[i];
-	    *id = p;
-	    ret =  p->ops->resolve(context, id, residual + 
-				   strlen(p->ops->prefix) + 1);
-	    if(ret) free(p);
-	    return ret;
+    for(i = 0; i < context->num_ops && context->cc_ops[i].prefix; i++) {
+	size_t prefix_len = strlen(context->cc_ops[i].prefix);
+
+	if(strncmp(context->cc_ops[i].prefix, residual, prefix_len) == 0
+	   && residual[prefix_len] == ':') {
+	    return allocate_ccache (context, &context->cc_ops[i],
+				    residual + prefix_len + 1,
+				    id);
 	}
-    return KRB5_CC_UNKNOWN_TYPE;
+    }
+    if (strchr (residual, ':') == NULL)
+	return allocate_ccache (context, &krb5_fcc_ops, residual, id);
+    else
+	return KRB5_CC_UNKNOWN_TYPE;
 }
 
 krb5_error_code
