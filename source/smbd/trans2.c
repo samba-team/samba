@@ -2540,6 +2540,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
+	if (fsp && fsp->pending_modtime) {
+		/* the pending modtime overrides the current modtime */
+		sbuf.st_mtime = fsp->pending_modtime;
+	}
+
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		c_time &= ~1;
 		sbuf.st_atime &= ~1;
@@ -3904,10 +3909,12 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		if(fsp != NULL) {
 			/*
 			 * This was a setfileinfo on an open file.
-			 * NT does this a lot. It's actually pointless
-			 * setting the time here, as it will be overwritten
-			 * on the next write, so we save the request
-			 * away and will set it on file close. JRA.
+			 * NT does this a lot. We also need to 
+			 * set the time here, as it can be read by 
+			 * FindFirst/FindNext and with the patch for bug #2045
+			 * in smbd/fileio.c it ensures that this timestamp is
+			 * kept sticky even after a write. We save the request
+			 * away and will set it on file close and after a write. JRA.
 			 */
 
 			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
@@ -3915,12 +3922,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				fsp->pending_modtime = tvs.modtime;
 			}
 
-		} else {
-
 			DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
 
-			if(file_utime(conn, fname, &tvs)!=0)
+			if(file_utime(conn, fname, &tvs)!=0) {
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
 		}
 	}
 
