@@ -122,7 +122,7 @@ static BOOL srv_io_sh_info1_hdr(char *desc, SH_INFO_1 * sh1,
 /*******************************************************************
  makes a SHARE_INFO_1 structure
 ********************************************************************/
-BOOL make_srv_share_info_1(SHARE_INFO_1 * sh1,
+static BOOL make_srv_share_info_1(SHARE_INFO_1 * sh1,
 			   const char *net_name, uint32 type,
 			   const char *remark)
 {
