@@ -121,6 +121,10 @@ on port 139, such as Samba (ie: smbd is running from inetd already) or
 something like Digital's Pathworks. Check your inetd.conf file before trying
 to start smbd as a daemon, it can avoid a lot of frustration!
 
+And yet another possible cause for failure of TEST 3 is when the subnet mask
+and / or broadcast address settings are incorrect. Please check that the
+network interface IP Address / Broadcast Address / Subnet Mask settings are
+correct and that Samba has correctly noted these in the log.nmb file.
 
 TEST 4:
 -------
@@ -170,6 +174,8 @@ If your PC and server aren't on the same subnet then you will need to
 use the -B option to set the broadcast address to the that of the PCs
 subnet.
 
+This test will probably fail if your subnet mask and broadcast address are
+not correct. (Refer to TEST 3 notes above).
 
 TEST 7:
 -------
