@@ -343,9 +343,23 @@
 	WERROR spoolss_DeletePrinter(
 	);
 
+	typedef [v1_enum] enum {
+		SPOOLSS_PRINTER_CONTROL_UNPAUSE    = 0,
+		SPOOLSS_PRINTER_CONTROL_PAUSE      = 1,
+		SPOOLSS_PRINTER_CONTROL_RESUME     = 2,
+		SPOOLSS_PRINTER_CONTROL_PURGE      = 3,
+		SPOOLSS_PRINTER_CONTROL_SET_STATUS = 4
+	} spoolss_PrinterControl;
+
 	/******************/
 	/* Function: 0x07 */
 	WERROR spoolss_SetPrinter(
+		[in,ref] policy_handle *handle,
+		[in]     uint32 level,
+		[in,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
+		[in]     spoolss_DevmodeContainer devmode_ctr,
+		[in,relative,subcontext(0)] security_descriptor *secdesc,
+		[in]     spoolss_PrinterControl command
 	);
 
 	/******************/
