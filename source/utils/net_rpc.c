@@ -5572,6 +5572,7 @@ int net_rpc(int argc, const char **argv)
 		{"vampire", rpc_vampire},
 		{"getsid", net_rpc_getsid},
 		{"rights", net_rpc_rights},
+		{"service", net_rpc_service},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
