@@ -1223,19 +1223,24 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
  a domain.
 *********************************************************/
 
-BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count)
+BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count,  int *ordered)
 {
-	/*
-	 * If it's our domain then
-	 * use the 'password server' parameter.
-	 */
+
+	*ordered = False;
+		
+	/* If it's our domain then use the 'password server' parameter. */
 
 	if (strequal_unix(domain, lp_workgroup_unix())) {
 		char *p;
 		char *pserver = lp_passwordserver(); /* UNIX charset. */
 		fstring name;
-		int num_adresses = 0;
+		int num_addresses = 0;
+		int  local_count, i, j;
 		struct in_addr *return_iplist = NULL;
+		struct in_addr *auto_ip_list = NULL;
+		BOOL done_auto_lookup = False;
+		int auto_count = 0;
+		
 
 		if (!*pserver)
 			return internal_resolve_name(
@@ -1243,19 +1248,31 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count)
 
 		p = pserver;
 
+		/*
+		 * if '*' appears in the "password server" list then add
+		 * an auto lookup to the list of manually configured
+		 * DC's.  If any DC is listed by name, then the list should be 
+		 * considered to be ordered 
+		 */
+		 
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			if (strequal(name, "*"))
-				return internal_resolve_name(
-					domain, 0x1C, ip_list, count);
-			num_adresses++;
+			if (strequal(name, "*")) {
+				if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count) )
+					num_addresses += auto_count;
+				done_auto_lookup = True;
+				DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
+			}
+			else 
+				num_addresses++;
 		}
 
-		if (num_adresses == 0)
-			return internal_resolve_name(
-				domain, 0x1C, ip_list, count);
+		/* if we have no addresses and haven't done the auto lookup, then
+		   just return the list of DC's */
+		   
+		if ( (num_addresses == 0) && !done_auto_lookup )
+			return internal_resolve_name(domain, 0x1C, ip_list, count);
 
-		return_iplist = (struct in_addr *)malloc(
-			num_adresses * sizeof(struct in_addr));
+		return_iplist = (struct in_addr *)malloc(num_addresses * sizeof(struct in_addr));
 
 		if (return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
@@ -1263,16 +1280,80 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count)
 		}
 
 		p = pserver;
-		*count = 0;
+		local_count = 0;
 
-		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+		/* fill in the return list now with real IP's */
+				
+		while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) 
+		{
 			struct in_addr name_ip;
-			if (resolve_name( name, &name_ip, 0x20) == False)
+			
+			/* copy any addersses from the auto lookup */
+			
+			if ( strequal(name, "*") ) {
+				for ( j=0; j<auto_count; j++ ) 
+					return_iplist[local_count++] = auto_ip_list[j];
 				continue;
-			return_iplist[(*count)++] = name_ip;
+			}
+			
+			/* explicit lookup */
+					
+			if ( resolve_name( name, &name_ip, 0x20) ) {
+				return_iplist[local_count++] = name_ip;
+				*ordered = True;
+			}
+				
 		}
+				
+		/* need to remove duplicates in the list if we have 
+		   any explicit password servers */
+		   
+		if ( *ordered )
+		{		
+			int hole_index = -1;
 
+			/* one loop to remove duplicates */
+			for ( i=0; i<local_count; i++ )
+			{
+				if ( is_zero_ip(return_iplist[i]) )
+					continue;
+					
+				for ( j=i+1; j<local_count; j++ ) {
+					if ( ip_equal( return_iplist[i], return_iplist[j]) )
+						zero_ip(&return_iplist[j]);
+				}
+			}
+			
+			/* one loop to clean up any holes we left */
+			/* first ip can never be a zero_ip() */
+			i = 0;
+			while ( i<local_count )
+			{
+				if ( !is_zero_ip(return_iplist[i]) ) {
+					i++;
+					continue;
+				}
+				
+				hole_index = i;
+				i++;
+				
+				while ( i<local_count ) {
+					if ( !is_zero_ip(return_iplist[i]) )
+						return_iplist[hole_index++] = return_iplist[i];
+					i++;
+				}
+				
+				/* we should exit the loop implicitly here, but ... */
+				break;
+			}
+			
+			local_count = hole_index;
+		}
+		
 		*ip_list = return_iplist;
+		*count = local_count;
+		
+		DEBUG(8,("get_dc_list: return %d ip addresses\n", *count));
 
 		return (*count != 0);
 	}

@@ -81,19 +81,24 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 {
 	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
 	int count, i;
+	BOOL list_ordered;
 
 	zero_ip(&exclude_ip);
+
+#if 0	/* There has got to be a better way than this */
+
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
-	if (get_pdc_ip(domain, &dc_ip)) {
+	if ( get_pdc_ip(domain, &dc_ip) ) {
 		if (name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
 			goto done;
 		}
 		/* Didn't get name, remember not to talk to this DC. */
 		exclude_ip = dc_ip;
 	}
+#endif
 
-	if (!get_dc_list(domain, &ip_list, &count)) {
+	if (!get_dc_list( domain, &ip_list, &count, &list_ordered) ) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
@@ -105,20 +110,23 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 			zero_ip(&ip_list[i]);
 	}
 
-	/* Pick a nice close server */
-	/* Look for DC on local net */
+	/* 
+	 * Pick a nice close server. Look for DC on local net 
+	 * (assuming we don't have a list of preferred DC's)
+	 */
 
 	for (i = 0; i < count; i++) {
 		if (is_zero_ip(ip_list[i]))
 			continue;
 
-		if (!is_local_net(ip_list[i]))
+		if ( !list_ordered && !is_local_net(ip_list[i]) )
 			continue;
 		
 		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
 			dc_ip = ip_list[i];
 			goto done;
 		}
+		
 		zero_ip(&ip_list[i]);
 	}
 

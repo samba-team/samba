@@ -657,6 +657,7 @@ static int set_domain_sid_from_dc( const char *domain, const char *remote )
 	DOM_SID domain_sid;
 	fstring sid_str;
 	fstring returned_domain;
+	BOOL list_ordered;
 	
 	pstrcpy(pdc_name, remote ? remote : "");
 
@@ -668,7 +669,7 @@ static int set_domain_sid_from_dc( const char *domain, const char *remote )
 	if(remote == NULL || !strcmp(remote, "*")) {
                 struct in_addr *ip_list = NULL;
                 int addr_count;
-                if (!get_dc_list(domain, &ip_list, &addr_count)) {
+                if ( !get_dc_list(domain, &ip_list, &addr_count, &list_ordered) ) {
 			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
 			return 1;
 		}

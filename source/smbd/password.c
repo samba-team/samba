@@ -1443,6 +1443,7 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 	BOOL connected_ok = False;
 	time_t time_now = time(NULL);
 	BOOL use_pdc_only = False;
+	BOOL list_ordered;
 
 	/*
 	 * If the time the machine password has changed
@@ -1469,16 +1470,17 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 		count = 1;
 
 	} else {
-		if (!get_dc_list(lp_workgroup_unix(), &ip_list, &count))
+		if ( !get_dc_list(lp_workgroup_unix(), &ip_list, &count, &list_ordered) )
 			return False;
 	}
 
 	/*
-	 * Firstly try and contact a PDC/BDC who has the same
-	 * network address as any of our interfaces.
+	 * if the list is not ordered, then try and contact a PDC/BDC who has 
+	 * the same network address as any of our interfaces.
 	 */
+	 
 	for(i = 0; i < count; i++) {
-		if(!is_local_net(ip_list[i]))
+		if( !list_ordered && !is_local_net(ip_list[i]) )
 			continue;
 
 		if((connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd))) 
