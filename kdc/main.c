@@ -98,10 +98,14 @@ main(int argc, char **argv)
 
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
+
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
     }
 #else
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
+    signal(SIGPIPE, SIG_IGN);
 #endif
 #ifdef HAVE_DAEMON
     if (detach_from_console)
