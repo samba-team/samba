@@ -50,7 +50,7 @@ off_t	restart_point;
 static	int cmd_type;
 static	int cmd_form;
 static	int cmd_bytesz;
-char	cbuf[2048];
+char	cbuf[64*1024];
 char	*fromname;
 
 struct tab {
