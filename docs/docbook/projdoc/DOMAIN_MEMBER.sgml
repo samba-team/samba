@@ -69,8 +69,13 @@
 	<para>In order to actually join the domain, you must run this
         command:</para>
 
-	<para><prompt>root# </prompt><userinput>net rpc join -S DOMPDC
+	<para><prompt>root# </prompt><userinput>net join -S DOMPDC
 	-U<replaceable>Administrator%password</replaceable></userinput></para>
+
+	<para>
+	If the <userinput>-S DOMPDC</userinput> argument is not given then
+	the domain name will be obtained from smb.conf.
+	</para>
 
 	<para>as we are joining the domain DOM and the PDC for that domain 
 	(the only machine that has write access to the domain SAM database) 
@@ -123,8 +128,7 @@
 	<para>Please refer to the <ulink url="winbind.html">Winbind 
 	paper</ulink> for information on a system to automatically
 	assign UNIX uids and gids to Windows NT Domain users and groups.
-	This code is available in development branches only at the moment,
-	but will be moved to release branches soon.</para>
+	</para>
 
 	<para>The advantage to domain-level security is that the 
 	authentication in domain-level security is passed down the authenticated 

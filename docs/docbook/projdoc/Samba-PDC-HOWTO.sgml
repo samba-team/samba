@@ -169,6 +169,11 @@ Here is an example &smb.conf; for acting as a PDC:
     <ulink url="smb.conf.5.html#NETBIOSNAME">netbios name</ulink> = <replaceable>POGO</replaceable>
     <ulink url="smb.conf.5.html#WORKGROUP">workgroup</ulink> = <replaceable>NARNIA</replaceable>
 
+    ; User and Machine Account Backends
+    ; Choices are: tdbsam, tdbsam_nua, smbpasswd, smbpasswd_nua, ldapsam, ldapsam_nua, ...
+    ;              mysqlsam, xmlsam, guest
+    <ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend</ulink> = ldapsam, guest
+
     ; we should act as the domain and local master browser
     <ulink url="smb.conf.5.html#OSLEVEL">os level</ulink> = 64
     <ulink url="smb.conf.5.html#PERFERREDMASTER">preferred master</ulink> = yes
@@ -208,6 +213,20 @@ Here is an example &smb.conf; for acting as a PDC:
     <ulink url="smb.conf.5.html#CREATEMASK">create mask</ulink> = 0600
     <ulink url="smb.conf.5.html#DIRECTORYMASK">directory mask</ulink> = 0700
 </programlisting></para>
+
+<note><para>
+The above parameters make for a full set of parameters that may define the server's mode
+of operation. The following parameters are the essentials alone:
+
+<programlisting>
+	workgroup = NARNIA
+	domain logons = Yes
+	security = User
+</programlisting>
+
+The additional parameters shown in the longer listing above just makes for a
+more complete environment.
+</para></note>
 
 <para>
 There are a couple of points to emphasize in the above configuration.
@@ -264,13 +283,13 @@ shared secret with the domain controller.
 
 <para>A Windows PDC stores each machine trust account in the Windows
 Registry. A Samba-3 PDC also has to store machine trust account information
-in a suitable back-end data store. With Samba-3 there can be multiple back-ends
+in a suitable backend data store. With Samba-3 there can be multiple back-ends
 for this including:
 </para>
 
 <itemizedlist>
 	<listitem><para>
-	<emphasis>smbpaswd</emphasis> - the plain ascii file stored used by
+	<emphasis>smbpasswd</emphasis> - the plain ascii file stored used by
 	earlier versions of Samba. This file configuration option requires
 	a Unix/Linux system account for EVERY entry (ie: both for user and for
 	machine accounts). This file will be located in the <emphasis>private</emphasis>
@@ -311,8 +330,15 @@ for this including:
 	</para></listitem>
 </itemizedlist>
 
-<para>Read the chapter about the <link linkend="passdb">User Database</link> 
+<para>Read the chapter about the <link linkend="passdb backend">User Database</link> 
 for details.</para>
+
+<note><para>
+The new tdbsam and ldapsam account backends store vastly more information than
+smbpasswd is capable of. The new backend database includes capacity to specify
+per user settings for many parameters, over-riding global settings given in the
+<filename>smb.conf</filename> file. eg: logon drive, logon home, logon path, etc.
+</para></note>
 
 <para>
 A Samba PDC, however, stores each machine trust account in two parts,
@@ -420,7 +446,7 @@ the corresponding Unix account.
 	equivalent of creating a machine trust account on a Windows NT PDC using 
 	the "Server Manager".  From the time at which the account is created
 	to the time which the client joins the domain and changes the password,
-	your domain is vulnerable to an intruder joining your domain using a
+	your domain is vulnerable to an intruder joining your domain using
 	a machine with the same NetBIOS name.  A PDC inherently trusts
 	members of the domain and will serve out a large degree of user 
 	information to such clients.  You have been warned!
@@ -469,20 +495,22 @@ version of Windows.
 <itemizedlist>
 <listitem><para><emphasis>Windows 2000</emphasis></para>
 
-	<para> When the user elects to join the client to a domain, Windows prompts for
-	an account and password that is privileged to join the domain.  A
-	Samba administrative account (i.e., a Samba account that has root
-	privileges on the Samba server) must be entered here; the
-	operation will fail if an ordinary user account is given. 
-	The password for this account should be
-	set to a different password than the associated
-	<filename>/etc/passwd</filename> entry, for security
-	reasons. </para>
+	<para>
+	When the user elects to join the client to a domain, Windows prompts for
+	an account and password that is privileged to join the domain. A Samba administrative
+	account (i.e., a Samba account that has root privileges on the Samba server) must be
+	entered here; the operation will fail if an ordinary user account is given. 
+	The password for this account should be set to a different password than the associated
+	<filename>/etc/passwd</filename> entry, for security reasons.
+	</para>
 
-	<para>The session key of the Samba administrative account acts as an
+	<para>
+	The session key of the Samba administrative account acts as an
 	encryption key for setting the password of the machine trust
 	account. The machine trust account will be created on-the-fly, or
-	updated if it already exists.</para>
+	updated if it already exists.
+	</para>
+
 </listitem>
 
 <listitem><para><emphasis>Windows NT</emphasis></para>
@@ -522,11 +550,9 @@ systems?) won't create a user with a '$' in their name.
 </para>
 
 <para>
-The problem is only in the program used to make the entry, once 
-made, it works perfectly. So create a user without the '$' and 
-use <command>vipw</command> to edit the entry, adding the '$'. Or create 
-the whole entry with vipw if you like, make sure you use a 
-unique User ID !
+The problem is only in the program used to make the entry. Once made, it works perfectly.
+Create a user without the '$' using <command>vipw</command> to edit the entry, adding
+the '$'. Or create the whole entry with vipw if you like, make sure you use a unique User ID!
 </para>
 </sect2>
 
@@ -547,7 +573,7 @@ will remove all network drive connections:
 </para>
 
 <para>
-Further, if the machine is a already a 'member of a workgroup' that 
+Further, if the machine is already a 'member of a workgroup' that 
 is the same name as the domain you are joining (bad idea) you will 
 get this message.  Change the workgroup name to something else, it 
 does not matter what, reboot, and try again.
@@ -569,8 +595,18 @@ is changed. The most common cause of a change in domain SID is when
 the domain name and/or the server name (netbios name) is changed.
 The only way to correct the problem is to restore the original domain 
 SID or remove the domain client from the domain and rejoin. The domain
-SID may be reset using either the smbpasswd or rpcclient utilities.
+SID may be reset using either the net or rpcclient utilities.
 </para>
+
+<para>
+The reset or change the domain SID you can use the net command as follows:
+
+<programlisting>
+	net getlocalsid 'OLDNAME'
+	net setlocalsid 'SID'
+</programlisting>
+</para>
+
 </sect2>
 
 <sect2>
