@@ -1525,4 +1525,91 @@ void srv_io_r_net_srv_set_info(char *desc,  SRV_R_NET_SRV_SET_INFO *r_n, prs_str
 	prs_uint32("status      ", ps, depth, &(r_n->status      ));
 }
 
+/*******************************************************************
+ reads or writes a structure.
+ ********************************************************************/
+void srv_io_q_net_remote_tod(char *desc,  SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth)
+{
+	if (q_n == NULL) return;
 
+	prs_debug(ps, depth, desc, "srv_io_q_net_remote_tod");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr_srv_name  ", ps, depth, &(q_n->ptr_srv_name));
+	smb_io_unistr2("", &(q_n->uni_srv_name), True, ps, depth); 
+}
+
+/*******************************************************************
+ reads or writes a TIME_OF_DAY_INFO structure.
+ ********************************************************************/
+void srv_io_time_of_day_info(char *desc, TIME_OF_DAY_INFO  *tod, prs_struct *ps, int depth)
+{
+	if (tod == NULL) return;
+
+	prs_debug(ps, depth, desc, "srv_io_time_of_day_info");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("elapsedt   ", ps, depth, &(tod->elapsedt  ));
+	prs_uint32("msecs      ", ps, depth, &(tod->msecs     ));
+	prs_uint32("hours      ", ps, depth, &(tod->hours     ));
+	prs_uint32("mins       ", ps, depth, &(tod->mins      ));
+	prs_uint32("secs       ", ps, depth, &(tod->secs      ));
+	prs_uint32("hunds      ", ps, depth, &(tod->hunds     ));
+	prs_uint32("timezone   ", ps, depth, &(tod->zone  ));
+	prs_uint32("tintervals ", ps, depth, &(tod->tintervals));
+	prs_uint32("day        ", ps, depth, &(tod->day       ));
+	prs_uint32("month      ", ps, depth, &(tod->month     ));
+	prs_uint32("year       ", ps, depth, &(tod->year      ));
+	prs_uint32("weekday    ", ps, depth, &(tod->weekday   ));
+
+}
+
+/*******************************************************************
+ makes a TIME_OF_DAY_INFO structure.
+ ********************************************************************/
+void make_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
+                           uint32 hours, uint32 mins, uint32 secs, uint32 hunds,
+			   uint32 zone, uint32 tintervals, uint32 day,
+			   uint32 month, uint32 year, uint32 weekday)
+{
+	if (tod == NULL) return;
+
+	DEBUG(5,("make_time_of_day_info\n"));
+
+	tod->elapsedt	= elapsedt;
+	tod->msecs	= msecs;
+	tod->hours	= hours;
+	tod->mins	= mins;
+	tod->secs	= secs;
+	tod->hunds	= hunds;
+	tod->zone	= zone;
+	tod->tintervals	= tintervals;
+	tod->day	= day;
+	tod->month	= month;
+	tod->year	= year;
+	tod->weekday	= weekday;
+}
+
+
+/*******************************************************************
+ reads or writes a structure.
+ ********************************************************************/
+void srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth)
+{
+	if (r_n == NULL) return;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_remote_tod");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("ptr_srv_tod ", ps, depth, &(r_n->ptr_srv_tod));
+
+	srv_io_time_of_day_info("tod", r_n->tod, ps, depth); 
+
+	prs_uint32("status      ", ps, depth, &(r_n->status));
+}

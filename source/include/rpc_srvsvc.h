@@ -32,7 +32,7 @@
 #define SRV_NETSHAREENUM     0x0f
 #define SRV_NET_SRV_GET_INFO 0x15
 #define SRV_NET_SRV_SET_INFO 0x16
-
+#define	SRV_NET_REMOTE_TOD   0x1c
 
 /* SESS_INFO_0 (pointers to level 0 session info strings) */
 typedef struct ptr_sess_info0
@@ -534,6 +534,42 @@ typedef struct r_net_srv_set_info
 	uint32 status;               /* return status */
 
 } SRV_R_NET_SRV_SET_INFO;
+
+/* SRV_Q_NET_REMOTE_TOD */
+typedef struct q_net_remote_tod
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name; /* "\\server" */
+
+} SRV_Q_NET_REMOTE_TOD;
+
+/* TIME_OF_DAY_INFO */
+typedef struct time_of_day_info
+{
+	uint32	elapsedt;
+	uint32	msecs;
+	uint32	hours;
+	uint32	mins;
+	uint32	secs;
+	uint32	hunds;
+	uint32	zone;
+	uint32	tintervals;
+	uint32	day;
+	uint32	month;
+	uint32	year;
+	uint32	weekday;
+	
+} TIME_OF_DAY_INFO;
+
+/* SRV_R_NET_REMOTE_TOD */
+typedef struct r_net_remote_tod
+{
+	uint32 ptr_srv_tod;         /* pointer to TOD */
+	TIME_OF_DAY_INFO *tod;
+	
+	uint32 status;               /* return status */
+
+} SRV_R_NET_REMOTE_TOD;
 
 
 #endif /* _RPC_SRVSVC_H */

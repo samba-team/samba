@@ -828,6 +828,13 @@ void srv_io_q_net_srv_set_info(char *desc,  SRV_Q_NET_SRV_SET_INFO *q_n, prs_str
 void make_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
 				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
 void srv_io_r_net_srv_set_info(char *desc,  SRV_R_NET_SRV_SET_INFO *r_n, prs_struct *ps, int depth);
+void srv_io_q_net_remote_tod(char *desc,  SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth);
+void srv_io_time_of_day_info(char *desc, TIME_OF_DAY_INFO  *tod, prs_struct *ps, int depth);
+void make_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
+                           uint32 hours, uint32 mins, uint32 secs, uint32 hunds,
+			   uint32 zone, uint32 tintervals, uint32 day,
+			   uint32 month, uint32 year, uint32 weekday);
+void srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth);
 
 /*The following definitions come from  lib/rpc/parse/parse_wks.c  */
 
