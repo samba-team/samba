@@ -316,8 +316,7 @@ BOOL get_domain_info(struct winbindd_domain *domain)
 
 /* Lookup a sid in a domain from a name */
 
-BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
-                                 char *name, DOM_SID *sid,
+BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
                                  enum SID_NAME_USE *type)
 {
     int num_sids = 0, num_names = 1;
@@ -363,8 +362,7 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 
 /* Lookup a name in a domain from a sid */
 
-BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
-                                 DOM_SID *sid, char *name,
+BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
                                  enum SID_NAME_USE *type)
 {
     int num_sids = 1, num_names = 0;
@@ -373,6 +371,7 @@ BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
     BOOL res;
 
     /* Lookup name */
+
     res = lsa_lookup_sids(&server_state.lsa_handle, num_sids, &sid, &names, 
 			  &types, &num_names);
 
@@ -619,12 +618,12 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 		result = "list groups";
 		break;
 
-	case WINBINDD_STRING2SID:
-		result = "sid to string";
+	case WINBINDD_LOOKUPSID:
+		result = "lookup sid";
 		break;
 
-	case WINBINDD_SID2STRING:
-		result = "string to sid";
+	case WINBINDD_LOOKUPNAME:
+		result = "lookup name";
 		break;
 
 	default:
