@@ -1,0 +1,22 @@
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY Chapter1 SYSTEM "chapter1.sgml">
+]>
+
+<book id="Samba-Project-Documentation">
+
+<title>SAMBA Project Documentation</title>
+
+<bookinfo>
+	<author>
+		<surname>SAMBA Team</surname>
+	</author>
+	<address><email>samba&commat;samba.org</email></address>
+	<pubdate>$rcsId</pubdate>
+</bookinfo>
+
+<toc></toc>
+
+
+&Chapter1;
+
+</book>
