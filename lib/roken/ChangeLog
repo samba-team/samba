@@ -1,3 +1,9 @@
+2003-04-15  Love  <lha@stacken.kth.se>
+
+	* socket.c (socket_set_tos): if setsockopt failed with EINVAL
+	failed, just ignore it, sock was probably a just a non AF_INET
+	socket
+
 2003-04-14  Love  <lha@stacken.kth.se>
 
 	* strncasecmp.c: cast argument to toupper to unsigned char, from
