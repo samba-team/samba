@@ -115,15 +115,6 @@ krb5_auth_con_getaddrs(krb5_context context,
 }
 
 krb5_error_code
-krb5_auth_con_setuserkey(krb5_context context,
-			 krb5_auth_context auth_context,
-			 krb5_keyblock *keyblock)
-{
-    abort ();
-}
-
-
-krb5_error_code
 krb5_auth_con_getkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock)
@@ -256,27 +247,38 @@ krb5_free_authenticator(krb5_context context,
 }
 
 
+#if 0 /* not implemented */
+
 krb5_error_code
-krb5_auth_initvector(krb5_context context,
-		     krb5_auth_context auth_context)
+krb5_auth_con_initivector(krb5_context context,
+			  krb5_auth_context auth_context)
 {
     abort ();
 }
 
 
 krb5_error_code
-krb5_set_initvector(krb5_context context,
-		    krb5_auth_context auth_context,
-		    krb5_pointer ivector)
+krb5_auth_con_setivector(krb5_context context,
+			 krb5_auth_context auth_context,
+			 krb5_pointer ivector)
 {
     abort ();
 }
 
 
 krb5_error_code
-krb5_set_rcache(krb5_context context,
-		krb5_auth_context auth_context,
-		krb5_rcache rcache)
+krb5_auth_con_setrcache(krb5_context context,
+			krb5_auth_context auth_context,
+			krb5_rcache rcache)
 {
     abort ();
 }
+
+krb5_error_code
+krb5_auth_con_setuserkey(krb5_context context,
+			 krb5_auth_context auth_context,
+			 krb5_keyblock *keyblock)
+{
+    abort ();
+}
+#endif /* not implemented */
