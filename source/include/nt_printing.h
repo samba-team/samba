@@ -336,12 +336,15 @@ typedef struct _form
    notification data is either stored in two uint32 values or a
    variable length array. */
 
+#define SPOOLSS_NOTIFY_MSG_UNIX_JOBID 0x0001    /* Job id is unix  */
+
 struct spoolss_notify_msg {
 	fstring printer;	/* Name of printer notified */
 	uint32 type;		/* Printer or job notify */
 	uint32 field;		/* Notify field changed */
 	uint32 id;		/* Job id */
 	uint32 len;		/* Length of data, 0 for two uint32 value */
+	uint32 flags;
 	union {
 		uint32 value[2];
 		char *data;

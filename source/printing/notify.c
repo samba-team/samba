@@ -29,6 +29,7 @@ static void send_spoolss_notify2_msg(struct spoolss_notify_msg *msg)
 {
 	char *buf = NULL;
 	int buflen = 0, len;
+	TDB_CONTEXT *tdb;
 
 	/* Let's not waste any time with this */
 
@@ -44,8 +45,8 @@ again:
 
 	len += tdb_pack(buf + len, buflen - len, "f", msg->printer);
 
-	len += tdb_pack(buf + len, buflen - len, "dddd",
-			msg->type, msg->field, msg->id, msg->len);
+	len += tdb_pack(buf + len, buflen - len, "ddddd",
+			msg->type, msg->field, msg->id, msg->len, msg->flags);
 
 	/* Pack data */
 
@@ -64,15 +65,23 @@ again:
 
 	/* Send message */
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY2, buf,
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
+
+	if (!tdb) {
+		DEBUG(3, ("Failed to open connections database in send_spoolss_notify2_msg\n"));
+		return;
+	}
+
+	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf,
 			 buflen, False, NULL);
 
 	SAFE_FREE(buf);
+	tdb_close(tdb);
 }
 
 static void send_notify_field_values(const char *printer_name, uint32 type,
 				     uint32 field, uint32 id, uint32 value1, 
-				     uint32 value2)
+				     uint32 value2, uint32 flags)
 {
 	struct spoolss_notify_msg msg;
 
@@ -84,6 +93,7 @@ static void send_notify_field_values(const char *printer_name, uint32 type,
 	msg.id = id;
 	msg.notify.value[0] = value1;
 	msg.notify.value[1] = value2;
+	msg.flags = flags;
 
 	send_spoolss_notify2_msg(&msg);
 }
@@ -108,26 +118,38 @@ static void send_notify_field_buffer(const char *printer_name, uint32 type,
 
 /* Send a message that the printer status has changed */
 
-void notify_printer_status(int snum, uint32 status)
+void notify_printer_status_byname(char *printer_name, uint32 status)
 {
-	char *printer_name = PRINTERNAME(snum);
-
 	/* Printer status stored in value1 */
 
 	send_notify_field_values(printer_name, PRINTER_NOTIFY_TYPE, 
 				 PRINTER_NOTIFY_STATUS, 0, 
-				 status, 0);
+				 status, 0, 0);
+}
+
+void notify_printer_status(int snum, uint32 status)
+{
+	char *printer_name = PRINTERNAME(snum);
+
+	if (printer_name)
+		notify_printer_status_byname(printer_name, status);
+}
+
+void notify_job_status_byname(char *printer_name, uint32 jobid, uint32 status,
+			      uint32 flags)
+{
+	/* Job id stored in id field, status in value1 */
+
+	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
+				 JOB_NOTIFY_STATUS, jobid,
+				 status, 0, flags);
 }
 
 void notify_job_status(int snum, uint32 jobid, uint32 status)
 {
 	char *printer_name = PRINTERNAME(snum);
 
-	/* Job id stored in id field, status in value1 */
-
-	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
-				 JOB_NOTIFY_STATUS, jobid,
-				 status, 0);
+	notify_job_status_byname(printer_name, jobid, status, 0);
 }
 
 void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
@@ -138,7 +160,7 @@ void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
 
 	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_TOTAL_BYTES, jobid,
-				 size, 0);
+				 size, 0, 0);
 }
 
 void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
@@ -149,7 +171,7 @@ void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
 
 	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_TOTAL_PAGES, jobid,
-				 pages, 0);
+				 pages, 0, 0);
 }
 
 void notify_job_username(int snum, uint32 jobid, char *name)
