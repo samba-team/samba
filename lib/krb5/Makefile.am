@@ -6,7 +6,12 @@ INCLUDES += $(INCLUDE_krb4) $(INCLUDE_des) -I../com_err -I$(srcdir)/../com_err
 
 bin_PROGRAMS = verify_krb5_conf
 
-noinst_PROGRAMS = dump_config test_get_addrs krbhst-test test_alname
+noinst_PROGRAMS =				\
+	dump_config				\
+	test_get_addrs				\
+	krbhst-test				\
+	test_alname				\
+	test_crypto
 
 TESTS =						\
 	aes-test				\
@@ -18,7 +23,6 @@ TESTS =						\
 	test_cc					\
 	test_config				\
 	test_time				\
-	test_crypto				\
 	name-45-test
 
 check_PROGRAMS = $(TESTS)
