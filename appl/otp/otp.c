@@ -232,7 +232,6 @@ has_an_otp(char *user)
   
   ctx.user = user;
   ret = otp_simple_get(db, &ctx); 
-  if (!ret) free(ctx.alg);
 
   otp_db_close (db);
   return !ret;
@@ -251,7 +250,6 @@ print_otp_entry_for_name (void *db, char *user)
   if (!otp_simple_get(db, &ctx)) {
     fprintf(stdout, "%s\totp-%s %d %s\n", 
 	    ctx.user, ctx.alg->name, ctx.n, ctx.seed);
-    free(ctx.alg);
   }
 }
 
