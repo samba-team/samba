@@ -168,7 +168,6 @@ PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	PyDict_SetItemString(result, "level", PyInt_FromLong(level));
 
- done:
 	Py_INCREF(result);
 	return result;
 }
