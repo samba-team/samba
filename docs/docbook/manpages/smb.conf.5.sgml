@@ -5344,6 +5344,8 @@
                         <para>See also <link linkend="NONUNIXACCOUNTRANGE">
                         <parameter>non unix account range</parameter></link></para></listitem>
 			
+			<listitem><para><command>nisplussam</command> - The NIS+ based passdb backend. Takes name NIS domain as an optional argument. Only works with sun NIS+ servers. </para></listitem>
+			
 			<listitem><para><command>plugin</command> - Allows Samba to load an 
                         arbitary passdb backend from the .so specified as a compulsary argument.
                         </para>
