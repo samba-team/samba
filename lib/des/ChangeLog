@@ -1,3 +1,8 @@
+2005-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rnd_keys.c: move <des.h> to after include <krb5-types.h> so the
+	C99 integer types exists
+
 2005-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* des.c: add DES_set_key_checked
