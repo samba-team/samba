@@ -2599,6 +2599,10 @@ void make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c,
 				QUERY_SERVICE_CONFIG *cfg,
 				uint32 buf_size);
 void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth);
+void svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct *ps, int depth);
+void make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d, 
+				char *disp_name, uint32 status);
+void svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct *ps, int depth);
 void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
 void svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth);

@@ -521,6 +521,64 @@ void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_str
 }
 
 /*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_q_query_disp_name");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("", &(q_u->scman_pol), ps, depth); 
+	prs_align(ps);
+
+	smb_io_unistr2("uni_svc_name", &(q_u->uni_svc_name), 1, ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
+}
+
+/*******************************************************************
+makes an SVC_R_QUERY_DISP_NAME structure.
+********************************************************************/
+void make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d, 
+				char *disp_name, uint32 status)
+{
+	uint32 len = strlen(disp_name);
+
+	if (r_d == NULL) return;
+
+	DEBUG(5,("make_svc_r_query_disp_name\n"));
+
+	make_unistr2(&(r_d->uni_disp_name), disp_name, len+1);
+	r_d->buf_size = len;
+
+	r_d->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_r_query_disp_name");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_unistr2("uni_disp_name", &(r_u->uni_disp_name), 1, ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("buf_size", ps, depth, &(r_u->buf_size));
+	prs_uint32("status  ", ps, depth, &(r_u->status  ));
+}
+
+/*******************************************************************
 makes an SVC_Q_CLOSE structure.
 ********************************************************************/
 void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd)
