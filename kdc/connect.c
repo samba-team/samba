@@ -440,8 +440,9 @@ loop(void)
 		if(d[i].type == SOCK_STREAM && 
 		   d[i].timeout && d[i].timeout < time(NULL)){
 		    struct sockaddr sa;
-		    size_t salen = sizeof(sa);
+		    int salen = sizeof(sa);
 		    char addr[32];
+
 		    getpeername(d[i].s, &sa, &salen);
 		    addr_to_string(&sa, salen, addr, sizeof(addr));
 		    kdc_log(1, "TCP-connection from %s expired after %u bytes",
