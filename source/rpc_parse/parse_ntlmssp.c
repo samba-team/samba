@@ -3,9 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
- *  Copyright (C) Paul Ashton                  1997-1999.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,15 +33,6 @@ checks an RPC_HDR_AUTH structure.
 BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai)
 {
 	return (rai->auth_type == 0x0a && rai->auth_level == 0x06);
-}
-
-/*******************************************************************
-checks an RPC_AUTH_VERIFIER structure.
-********************************************************************/
-BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_VERIFIER *rav,
-				char *signature, uint32 msg_type)
-{
-	return (strequal(rav->signature, signature) && rav->msg_type == msg_type);
 }
 
 /*******************************************************************

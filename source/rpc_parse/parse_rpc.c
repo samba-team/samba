@@ -662,3 +662,13 @@ BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps
 
 	return True;
 }
+
+/*******************************************************************
+checks an RPC_AUTH_VERIFIER structure.
+********************************************************************/
+BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
+				char *signature, uint32 msg_type)
+{
+	return (strequal(rav->signature, signature) &&
+	        rav->msg_type == msg_type);
+}

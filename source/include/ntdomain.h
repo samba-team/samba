@@ -111,6 +111,11 @@ typedef struct rpcsrv_struct
 
 	void *auth_info;
 	struct srv_auth_fns *auth;
+
+	/* set of authentication modules.  does not include noauth */
+	uint32 num_auths;
+	struct srv_auth_fns **auth_fns;
+
 	BOOL auth_validated;
 	BOOL faulted_once_before;
 
@@ -145,7 +150,7 @@ typedef struct cli_auth_fns
 
 typedef struct srv_auth_fns
 {
-	BOOL (*api_is_auth)(RPC_HDR_AUTH*);
+	BOOL (*api_is_auth)(RPC_HDR_AUTH*, void **auth_info);
 
 	/* state-based authentication: one to decode, one to generate */
 	BOOL (*api_auth_chk)(rpcsrv_struct *, enum RPC_PKT_TYPE);

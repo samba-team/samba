@@ -28,6 +28,13 @@ extern pstring debugf;
 extern BOOL append_log;
 extern int DEBUGLEVEL;
 
+/*****************************************************************************
+ initialise srv_auth_fns array
+ *****************************************************************************/
+void msrpc_auth_init(rpcsrv_struct *l)
+{
+}
+
 void msrpc_service_init(char* service_name)
 {
 	add_msrpc_command_processor( pipe_name, service_name, api_ntlsa_rpc );

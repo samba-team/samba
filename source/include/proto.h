@@ -5,6 +5,7 @@
 
 /*The following definitions come from  browserd/browserd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
@@ -1049,6 +1050,7 @@ int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 
 /*The following definitions come from  lsarpcd/lsarpcd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
@@ -1081,6 +1083,8 @@ int msrpc_main(int argc,char *argv[]);
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
 BOOL get_user_creds(int c, struct user_creds *usr);
+void close_srv_auth_array(rpcsrv_struct *l);
+void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn);
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
 void msrpcd_process(int c, msrpc_pipes_struct *p);
 
@@ -1092,6 +1096,7 @@ BOOL cred_init_db(void);
 
 /*The following definitions come from  netlogond/netlogond.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
@@ -2872,8 +2877,6 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
 BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai);
-BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_VERIFIER *rav,
-				char *signature, uint32 msg_type);
 BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
 				fstring myname, fstring domain);
@@ -3051,6 +3054,8 @@ BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int dept
 BOOL make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type);
 BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
+BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
+				char *signature, uint32 msg_type);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 
@@ -4173,6 +4178,7 @@ void readline_init(void);
 
 /*The following definitions come from  samrd/samrd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
@@ -4664,11 +4670,13 @@ int smbw_stat(const char *fname, struct stat *st);
 
 /*The following definitions come from  spoolssd/spoolssd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
@@ -4735,11 +4743,13 @@ void status_page(void);
 
 /*The following definitions come from  winregd/winregd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  wkssvcd/wkssvcd.c  */
 
+void msrpc_auth_init(rpcsrv_struct *l);
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 #endif /* _PROTO_H_ */

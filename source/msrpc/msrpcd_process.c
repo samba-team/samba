@@ -302,6 +302,29 @@ BOOL get_user_creds(int c, struct user_creds *usr)
 	return new_con;
 }
 
+static void free_srv_auth_fns_array(uint32 num_entries, srv_auth_fns **entries)
+{
+	free_void_array(num_entries, (void**)entries, NULL);
+}
+
+static srv_auth_fns* add_srv_auth_fns_to_array(uint32 *len,
+				srv_auth_fns ***array,
+				srv_auth_fns *name)
+{
+	return (srv_auth_fns*)add_item_to_array(len,
+	                     (void***)array, (void*)name);
+}
+
+void close_srv_auth_array(rpcsrv_struct *l)
+{
+	free_srv_auth_fns_array(l->num_auths, l->auth_fns);
+}
+
+void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn)
+{
+	add_srv_auth_fns_to_array(&l->num_auths, &l->auth_fns, fn);
+	DEBUG(10,("add_srv_auth_fn: %d\n", l->num_auths));
+}
 /****************************************************************************
   initialise from pipe
 ****************************************************************************/

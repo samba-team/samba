@@ -28,6 +28,15 @@ extern pstring debugf;
 extern BOOL append_log;
 extern int DEBUGLEVEL;
 
+/*****************************************************************************
+ initialise srv_auth_fns array
+ *****************************************************************************/
+void msrpc_auth_init(rpcsrv_struct *l)
+{
+	extern srv_auth_fns ntlmssp_fns;
+	add_srv_auth_fn(l, &ntlmssp_fns);
+}
+
 /*************************************************************************
  initialise an msrpc service
  *************************************************************************/

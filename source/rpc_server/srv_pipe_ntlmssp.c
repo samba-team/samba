@@ -435,7 +435,10 @@ static BOOL api_ntlmssp_bind_auth_resp(rpcsrv_struct *l)
 	smb_io_rpc_auth_verifier("", &auth_verifier, &l->data_i, 0);
 	if (l->data_i.offset == 0) return False;
 
-	if (!rpc_auth_ntlmssp_verifier_chk(&auth_verifier, "NTLMSSP", NTLMSSP_AUTH)) return False;
+	if (!rpc_auth_verifier_chk(&auth_verifier, "NTLMSSP", NTLMSSP_AUTH))
+	{
+		return False;
+	}
 	
 	return api_ntlmssp(l, auth_verifier.msg_type);
 }
@@ -606,9 +609,15 @@ static BOOL api_ntlmssp_decode_pdu(rpcsrv_struct *l)
 	return True;
 }
 
-static BOOL api_ntlmssp_hdr_chk(RPC_HDR_AUTH *auth_info)
+static BOOL api_ntlmssp_hdr_chk(RPC_HDR_AUTH *auth_info, void **auth_struct)
 {
-	return rpc_hdr_ntlmssp_auth_chk(auth_info);
+	DEBUG(10,("api_ntlmssp_hdr_chk:\n"));
+	if (!rpc_hdr_ntlmssp_auth_chk(auth_info))
+	{
+		return False;
+	}
+	(*auth_struct) = (void*)malloc(sizeof(ntlmssp_auth_struct));
+	return (*auth_struct) != NULL;
 }
 
 srv_auth_fns ntlmssp_fns = 

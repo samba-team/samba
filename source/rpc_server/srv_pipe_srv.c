@@ -226,25 +226,24 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 	if (l->hdr.auth_len != 0)
 	{
 		RPC_HDR_AUTH  auth_info;
-		extern srv_auth_fns ntlmssp_fns;
+		BOOL found = False;
+		int i;
 
 		/* decode the authentication verifier */
 		smb_io_rpc_hdr_auth    ("", &auth_info    , &l->data_i, 0);
 		if (l->data_i.offset == 0) return False;
 
-		if (ntlmssp_fns.api_is_auth(&(auth_info)))
+		for (i = 0; i < l->num_auths && !found; i++)
 		{
-			l->auth = &ntlmssp_fns;
-			l->auth_info = (void*)malloc(sizeof(ntlmssp_auth_struct));
-			if (l->auth_info == NULL)
+			if (l->auth_fns[i]->api_is_auth(&auth_info,
+			                                &l->auth_info))
 			{
-				DEBUG(10,("srv_pipe_bind_and_alt_req: malloc failed\n"));
-				return False;
+				l->auth = l->auth_fns[i];
+				assoc_gid = 0x7a77;
+				found = True;
 			}
-
-			assoc_gid = 0x7a77;
 		}
-		else
+		if (!found)
 		{
 			return False;
 		}

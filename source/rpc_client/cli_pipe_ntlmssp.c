@@ -402,7 +402,7 @@ static BOOL decode_ntlmssp_bind_resp(struct cli_connection *con,
 		RPC_AUTH_VERIFIER rhdr_verf;
 		smb_io_rpc_auth_verifier("", &rhdr_verf, rdata, 0);
 		if (rdata->offset == 0 ||
-		    !rpc_auth_ntlmssp_verifier_chk(&rhdr_verf,
+		    !rpc_auth_verifier_chk(&rhdr_verf,
 		                                   "NTLMSSP",
 		                                    NTLMSSP_CHALLENGE))
 		{

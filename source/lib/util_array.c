@@ -28,11 +28,14 @@ void free_void_array(uint32 num_entries, void **entries,
 	uint32 i;
 	if (entries != NULL)
 	{
-		for (i = 0; i < num_entries; i++)
+		if (free_item != NULL)
 		{
-			if (entries[i] != NULL)
+			for (i = 0; i < num_entries; i++)
 			{
-				free_item(entries[i]);
+				if (entries[i] != NULL)
+				{
+					free_item(entries[i]);
+				}
 			}
 		}
 		free(entries);

@@ -555,6 +555,7 @@ int msrpc_main(int argc,char *argv[])
 	fstrcpy(p.name, pipe_name);
 	if (msrpcd_init(ClientMSRPC, &p))
 	{
+		msrpc_auth_init(p.l);
 		reload_services(True);
 		msrpcd_process(ClientMSRPC, &p);
 	}
