@@ -36,7 +36,7 @@ flags can have:
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
-int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int flags)
+int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags)
 {
 	int len=0;
 
@@ -84,7 +84,7 @@ return the length that a string would occupy when copied with clistr_push()
   CLISTR_UPPER     means uppercase in the destination
 note that dest is only used for alignment purposes. No data is written.
 ****************************************************************************/
-int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len, int flags)
+int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, int dest_len, int flags)
 {
 	int len = strlen(src);
 	if (flags & CLISTR_TERMINATE) len++;
@@ -107,7 +107,7 @@ if CLISTR_TERMINATE is set then src_len is ignored
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
 ****************************************************************************/
-int clistr_pull(struct cli_state *cli, char *dest, void *src, int dest_len, int src_len, int flags)
+int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags)
 {
 	int len;
 
@@ -157,7 +157,7 @@ return the length that a string would occupy (not including the null)
 when copied with clistr_pull()
 if src_len is -1 then assume the source is null terminated
 ****************************************************************************/
-int clistr_pull_size(struct cli_state *cli, void *src, int src_len)
+int clistr_pull_size(struct cli_state *cli, const void *src, int src_len)
 {
 	if (clistr_align(cli, PTR_DIFF(cli->inbuf, src))) {
 		src++;

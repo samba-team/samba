@@ -906,10 +906,10 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 
 /*The following definitions come from  libsmb/clistr.c  */
 
-int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int flags);
-int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len, int flags);
-int clistr_pull(struct cli_state *cli, char *dest, void *src, int dest_len, int src_len, int flags);
-int clistr_pull_size(struct cli_state *cli, void *src, int src_len);
+int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags);
+int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, int dest_len, int flags);
+int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags);
+int clistr_pull_size(struct cli_state *cli, const void *src, int src_len);
 int clistr_align(struct cli_state *cli, int offset);
 
 /*The following definitions come from  libsmb/clitrans.c  */
