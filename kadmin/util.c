@@ -203,6 +203,22 @@ edit_entry(kadm5_principal_ent_t ent, int *mask)
     return 0;
 }
 
+static int
+is_expression(const char *string)
+{
+    const char *p;
+    int quote = 0;
+    for(p = string; *p; p++) {
+	if(quote)
+	    continue;
+	if(*p == '\\')
+	    quote++;
+	else if(strchr("[]*?", *p) != NULL) 
+	    return 1;
+    }
+    return 0;
+}
+
 /* loop over all principals matching exp */
 int
 foreach_principal(const char *exp, 
@@ -214,16 +230,26 @@ foreach_principal(const char *exp,
     int i;
     krb5_error_code ret;
     krb5_principal princ_ent;
-    ret = kadm5_get_principals(kadm_handle, exp, &princs, &num_princs);
-    if(ret == KADM5_AUTH_LIST) {
+    int is_expr;
+
+    /* if this isn't an expression, there is no point in wading
+       through the whole database looking for matches */
+    is_expr = is_expression(exp);
+    if(is_expr)
+	ret = kadm5_get_principals(kadm_handle, exp, &princs, &num_princs);
+    if(!is_expr || ret == KADM5_AUTH_LIST) {
 	/* we might be able to perform the requested opreration even
            if we're not allowed to list principals */
 	num_princs = 1;
 	princs = malloc(sizeof(*princs));
+	if(princs == NULL)
+	    return ENOMEM;
 	princs[0] = strdup(exp);
-	ret = 0;
-    }
-    if(ret) {
+	if(princs[0] == NULL){ 
+	    free(princs);
+	    return ENOMEM;
+	}
+    } else if(ret) {
 	krb5_warn(context, ret, "kadm5_get_principals");
 	return ret;
     }
@@ -234,10 +260,17 @@ foreach_principal(const char *exp,
 	    continue;
 	}
 	ret = (*func)(princ_ent, data);
-	krb5_free_principal(context, princ_ent);
 	if(ret) {
-	    krb5_warn(context, ret, "%s", princs[i]);
+	    char *tmp;
+	    ret = krb5_unparse_name(context, princ_ent, &tmp);
+	    if(ret) 
+		krb5_warn(context, ret, "krb5_unparse_name");
+	    else {
+		krb5_warn(context, ret, "%s", tmp);
+		free(tmp);
+	    }
 	}
+	krb5_free_principal(context, princ_ent);
     }
     kadm5_free_name_list(kadm_handle, princs, &num_princs);
     return 0;
