@@ -1117,7 +1117,7 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_i
 	if (psd->off_dacl==0)
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	
-	ret = set_nt_acl( fsp, security_info_sent, psd);
+	ret = fsp->conn->vfs_ops.fset_nt_acl( fsp, fsp->fd, security_info_sent, psd);
 
 	if (!ret) {
 		talloc_destroy(mem_ctx);
@@ -1625,7 +1625,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Get the permissions to return.
    */
 
-  if((sd_size = get_nt_acl(fsp, &psd)) == 0)
+  if((sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd)) == 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
   DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %d.\n",(int)sd_size));
