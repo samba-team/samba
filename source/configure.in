@@ -1302,13 +1302,14 @@ fi
 if test $BLDSHARED = true; then
 AC_CACHE_CHECK([whether building shared libraries actually works], 
                [ac_cv_shlib_works],[
-   ac_cv_shlib_works=no
    # try building a trivial shared library
+   ac_cv_shlib_works=no
+   # The $SHLD and $LDSHFLAGS variables may contain references to other
+   # variables so they need to be eval'ed.
    $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o \
 	shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c && \
-	$CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" \
-	shlib.$PICSUFFIX && \
-	ac_cv_shlib_works=yes
+   `eval echo $SHLD` `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" \
+        shlib.$PICSUFFIX && ac_cv_shlib_works=yes
    rm -f "shlib.$SHLIBEXT" shlib.$PICSUFFIX
 ])
 if test $ac_cv_shlib_works = no; then
