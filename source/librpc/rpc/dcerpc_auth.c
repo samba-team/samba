@@ -68,7 +68,17 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	}
 
 	p->auth_info->auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-	p->auth_info->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	
+	if (p->flags & DCERPC_SEAL) {
+		p->auth_info->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+		state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL;
+	} else if (p->flags & DCERPC_SIGN) {
+		state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		p->auth_info->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	} else {
+		state->neg_flags &= ~(NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL);
+		p->auth_info->auth_level = DCERPC_AUTH_LEVEL_NONE;
+	}
 	p->auth_info->auth_pad_length = 0;
 	p->auth_info->auth_reserved = 0;
 	p->auth_info->auth_context_id = random();
@@ -113,8 +123,13 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 
 	p->ntlmssp_state = state;
 
-	/* setup for signing */
-	status = ntlmssp_sign_init(state);
+	switch (p->auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* setup for signing */
+		status = ntlmssp_sign_init(state);
+		break;
+	}
 
 done:
 	talloc_destroy(mem_ctx);

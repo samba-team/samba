@@ -135,11 +135,30 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	/* check the signature */
-	status = ntlmssp_check_packet(p->ntlmssp_state, 
-				      pkt->u.response.stub_and_verifier.data, 
-				      pkt->u.response.stub_and_verifier.length, 
-				      &auth.credentials);
+
+	/* check signature or unseal the packet */
+	switch (p->auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = ntlmssp_unseal_packet(p->ntlmssp_state, 
+					       pkt->u.response.stub_and_verifier.data, 
+					       pkt->u.response.stub_and_verifier.length, 
+					       &auth.credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = ntlmssp_check_packet(p->ntlmssp_state, 
+					      pkt->u.response.stub_and_verifier.data, 
+					      pkt->u.response.stub_and_verifier.length, 
+					      &auth.credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		break;
+
+	default:
+		status = NT_STATUS_INVALID_LEVEL;
+		break;
+	}
 
 	/* remove the indicated amount of paddiing */
 	if (pkt->u.response.stub_and_verifier.length < auth.auth_pad_length) {
@@ -221,11 +240,31 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	p->auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
 	ndr_push_zero(ndr, p->auth_info->auth_pad_length);
 
-	/* sign the packet */
-	status = ntlmssp_sign_packet(p->ntlmssp_state, 
-				     ndr->data + DCERPC_REQUEST_LENGTH, 
-				     ndr->offset - DCERPC_REQUEST_LENGTH,
-				     &p->auth_info->credentials);
+	/* sign or seal the packet */
+	switch (p->auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = ntlmssp_seal_packet(p->ntlmssp_state, 
+					     ndr->data + DCERPC_REQUEST_LENGTH, 
+					     ndr->offset - DCERPC_REQUEST_LENGTH,
+					     &p->auth_info->credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = ntlmssp_sign_packet(p->ntlmssp_state, 
+					     ndr->data + DCERPC_REQUEST_LENGTH, 
+					     ndr->offset - DCERPC_REQUEST_LENGTH,
+					     &p->auth_info->credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		p->auth_info->credentials = data_blob(NULL, 0);
+		break;
+
+	default:
+		status = NT_STATUS_INVALID_LEVEL;
+		break;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}	

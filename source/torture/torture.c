@@ -150,6 +150,7 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 				 pipe_name, nt_errstr(status)));
 			return status;
 		}
+		DEBUG(1,("Mapped to DCERPC/TCP port %u\n", port));
 	}
 
 	DEBUG(2,("Connecting to dcerpc server %s:%u\n", host, port));
@@ -163,6 +164,9 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 
 	/* always do NDR validation in smbtorture */
 	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
+
+	/* enable signing on tcp connections */
+	(*p)->flags |= DCERPC_SIGN;
 
 	/* bind to the pipe, using the uuid as the key */
 	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
@@ -214,10 +218,7 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
         }
 
 	/* bind to the pipe, using the uuid as the key */
-	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
-				       lp_workgroup(),
-				       lp_parm_string(-1, "torture", "username"),
-				       lp_parm_string(-1, "torture", "password"));
+	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_pipe_close(*p);
 		return status;
