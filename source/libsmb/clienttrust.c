@@ -98,6 +98,8 @@ account password for domain %s.\n", domain));
    */
   generate_random_buffer( new_trust_passwd_hash, 16, True);
 
+	dump_data_pw("new trust password:\n", new_trust_passwd_hash, 16);
+
   while(remote_machine_list && 
 	next_token(&remote_machine_list, remote_machine, 
 		   LIST_SEP, sizeof(remote_machine))) {

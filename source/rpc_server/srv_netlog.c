@@ -547,7 +547,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
                                prs_struct *rdata)
 {
 	NET_Q_SRV_PWSET q_a;
-	uint32 status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
+	uint32 status = 0x0;
 	DOM_CRED srv_cred;
 	pstring trust_acct;
 	struct smb_passwd *smb_pass;
@@ -613,7 +613,10 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 				status = 0x0;
 			}
 		}
-
+		else
+		{
+			status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
+		}
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
 	}
