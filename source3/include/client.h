@@ -35,6 +35,7 @@
 #define CLISTR_CONVERT 2
 #define CLISTR_UPPER 4
 #define CLISTR_ASCII 8
+#define CLISTR_UNICODE 16
 
 /*
  * These definitions depend on smb.h

@@ -39,13 +39,12 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 	char *p = pattern, *n = string;
 	char c;
 
-	//	printf("ms_fnmatch_lanman_core(%s, %s)\n", pattern, string);
+	// printf("ms_fnmatch_lanman_core(%s, %s)\n", pattern, string);
 
 	while ((c = *p++)) {
 		switch (c) {
 		case '?':
-			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) return 0;
-			if (! *n && !*p) return 0;
+			if (! *n) return ms_fnmatch_lanman_core(p, n);
 			n++;
 			break;
 
@@ -124,12 +123,12 @@ static BOOL reg_match_one(char *pattern, char *file)
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
 
+	if (strcmp(file,"..") == 0) file = ".";
+	if (strcmp(pattern,".") == 0) return False;
+
 	if (max_protocol <= PROTOCOL_LANMAN2) {
 		return ms_fnmatch_lanman(pattern, file)==0;
 	}
-
-	if (strcmp(file,"..") == 0) file = ".";
-	if (strcmp(pattern,".") == 0) return False;
 
 	return ms_fnmatch(pattern, file)==0;
 }
@@ -263,6 +262,8 @@ void listfn(file_info *f, const char *s, void *state)
 static void get_real_name(struct cli_state *cli, 
 			  pstring long_name, fstring short_name)
 {
+	/* nasty hack to force level 260 listings - tridge */
+	cli->capabilities |= CAP_NT_SMBS;
 	if (max_protocol <= PROTOCOL_LANMAN1) {
 		cli_list_new(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
 	} else {

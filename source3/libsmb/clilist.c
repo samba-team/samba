@@ -133,10 +133,14 @@ static int interpret_long_filename(struct cli_state *cli,
 				p += 4; /* EA size */
 				slen = SVAL(p, 0);
 				p += 2; 
-				clistr_pull(cli, finfo->short_name, p,
-					    sizeof(finfo->short_name),
-					    24, 
-					    CLISTR_CONVERT);
+				{
+					/* stupid NT bugs. grr */
+					int flags = CLISTR_CONVERT;
+					if (p[1] == 0 && namelen > 1) flags |= CLISTR_UNICODE;
+					clistr_pull(cli, finfo->short_name, p,
+						    sizeof(finfo->short_name),
+						    24, flags);
+				}
 				p += 24; /* short name? */	  
 				clistr_pull(cli, finfo->name, p,
 					    sizeof(finfo->name),
@@ -159,8 +163,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
 	int max_matches = 512;
-	/* NT uses 260, OS/2 uses 2. Both accept 1. */
-	int info_level = cli->protocol<PROTOCOL_NT1?1:260; 
+	int info_level;
 	char *p, *p2;
 	pstring mask;
 	file_info finfo;
@@ -178,6 +181,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int param_len, data_len;	
 	uint16 setup;
 	pstring param;
+
+	/* NT uses 260, OS/2 uses 2. Both accept 1. */
+	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
 
 	pstrcpy(mask,Mask);
 	
