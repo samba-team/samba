@@ -78,7 +78,7 @@ static struct smbcli_request *smb_raw_qfsinfo_send(struct smbcli_tree *tree,
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.max_param = 0;
-	tp.in.max_data = smb_raw_max_trans_data(tree, 0);
+	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 	tp.in.data = data_blob(NULL, 0);
 	tp.in.timeout = 0;
