@@ -316,12 +316,13 @@ static void usage(char *pname)
 
 	/* Load smb.conf file */
 
+	charset_initialise();
+
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s\n", servicesf);
 	}
 
 	codepage_initialise(lp_client_code_page());
-	charset_initialise();
 	load_interfaces();
 
 	TimeInit();
