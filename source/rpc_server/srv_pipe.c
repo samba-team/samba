@@ -1590,9 +1590,11 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 		case PI_NETDFS:
 			netdfs_get_pipe_fns( &cmds, &n_cmds );
 			break;
+#ifdef DEVELOPER
 		case PI_ECHO:
 			echo_get_pipe_fns( &cmds, &n_cmds );
 			break;
+#endif
 		default:
 			DEBUG(0,("get_pipe_fns: Unknown pipe index! [%d]\n", idx));
 	}
