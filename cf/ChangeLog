@@ -3,6 +3,10 @@
 	* roken-frag.m4 (AC_BROKEN): test for
 	emalloc,ecalloc,erealloc,estrdup
 
+2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-frag.m4: bswap{16,32}
+	
 2001-03-26  Assar Westerlund  <assar@sics.se>
 
 	* broken-glob.m4: also test for GLOB_LIMIT
