@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDE_readline)
 
-sbin_PROGRAMS = kdb_edit
+sbin_PROGRAMS = kdb_edit ktutil
 
 kdb_edit_SOURCES = kdb_edit.c load.c ank.c dump.c init.c get.c delete.c \
 	extkeytab.c gettime.c util.c
