@@ -630,7 +630,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	BOOL got_kerberos_mechanism = False;
 	DATA_BLOB blob;
 
-	DEBUG(2,("Doing spnego session setup (blob length=%d)\n", cli->secblob.length));
+	DEBUG(2,("Doing spnego session setup (blob length=%l)\n", cli->secblob.length));
 
 	/* the server might not even do spnego */
 	if (cli->secblob.length <= 16) {

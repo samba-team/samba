@@ -2259,7 +2259,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 * now have some sainity-checking to match. 
 	 */
 
-	DEBUG(10,("checking account %s at pos %d for $ termination\n",account, strlen(account)-1));
+	DEBUG(10,("checking account %s at pos %l for $ termination\n",account, strlen(account)-1));
 	
 	/* 
 	 * we used to have code here that made sure the acb_info flags 

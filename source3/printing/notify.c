@@ -164,7 +164,7 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 		}
 	}
 
-	DEBUG(5, ("print_notify_send_messages_to_printer: sending %d print notify message%s to printer %s\n", 
+	DEBUG(5, ("print_notify_send_messages_to_printer: sending %l print notify message%s to printer %s\n", 
 		  msg_count, msg_count != 1 ? "s" : "", printer));
 
 	/*
@@ -272,7 +272,7 @@ in notify_queue\n", msg->type, msg->field, msg->printer));
 	/* allocate a new msg structure and copy the fields */
 	
 	if ( !(pnqueue->msg = (SPOOLSS_NOTIFY_MSG*)talloc(send_ctx, sizeof(SPOOLSS_NOTIFY_MSG))) ) {
-		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%d] failed!\n", 
+		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%l] failed!\n", 
 			sizeof(SPOOLSS_NOTIFY_MSG)));
 		return;
 	}

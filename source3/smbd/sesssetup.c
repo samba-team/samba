@@ -375,7 +375,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		}
 		free(OIDs[i]);
 	}
-	DEBUG(3,("Got secblob of size %d\n", secblob.length));
+	DEBUG(3,("Got secblob of size %l\n", secblob.length));
 
 #ifdef HAVE_KRB5
 	if (got_kerberos && (SEC_ADS == lp_security())) {

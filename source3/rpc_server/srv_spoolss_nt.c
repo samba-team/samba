@@ -478,7 +478,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	fstring sname;
 	BOOL found=False;
 	
-	DEBUG(4,("Setting printer name=%s (len=%d)\n", handlename, strlen(handlename)));
+	DEBUG(4,("Setting printer name=%s (len=%l)\n", handlename, strlen(handlename)));
 
 	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTSERVER) {
 		ZERO_STRUCT(Printer->dev.printerservername);
@@ -497,7 +497,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		aprinter=handlename;
 	}
 
-	DEBUGADD(5,("searching for [%s] (len=%d)\n", aprinter, strlen(aprinter)));
+	DEBUGADD(5,("searching for [%s] (len=%l)\n", aprinter, strlen(aprinter)));
 
 	/*
 	 * The original code allowed smbd to store a printer name that
@@ -1176,7 +1176,7 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	msg_count = IVAL(buf, 0);
 	msg_ptr = buf + 4;
 
-	DEBUG(5, ("receive_notify2_message_list: got %d messages in list\n", msg_count));
+	DEBUG(5, ("receive_notify2_message_list: got %l messages in list\n", msg_count));
 
 	if (msg_count == 0) {
 		DEBUG(0,("receive_notify2_message_list: bad message format (msg_count == 0) !\n"));
@@ -5135,7 +5135,7 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 		else
 			pstrcpy( line, v );
 			
-		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
+		DEBUGADD(6,("%d:%s:%l\n", i, line, strlen(line)));
 
 		/* add one extra unit16 for the second terminating NULL */
 		
@@ -9092,7 +9092,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	{
 		if ( (enum_values=talloc(p->mem_ctx, num_entries*sizeof(PRINTER_ENUM_VALUES))) == NULL )
 		{
-			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%d] bytes!\n",
+			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%l] bytes!\n",
 				num_entries*sizeof(PRINTER_ENUM_VALUES)));
 			result = WERR_NOMEM;
 			goto done;
