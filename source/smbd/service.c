@@ -278,6 +278,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	*user = 0;
 	fstrcpy(dev, pdev);
+	ZERO_STRUCT(st);
 
 	if (NT_STATUS_IS_ERR(*status = share_sanity_checks(snum, dev))) {
 		return NULL;
@@ -622,7 +623,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 #else
 	/* the alternative is just to check the directory exists */
-	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
+	if (SMB_VFS_STAT(conn, conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
 		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
 		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
