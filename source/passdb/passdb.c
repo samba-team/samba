@@ -500,9 +500,32 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
 
+static int algorithmic_rid_base(void)
+{
+	static int rid_offset = 0;
+
+	if (rid_offset != 0)
+		return rid_offset;
+
+	rid_offset = lp_algorithmic_rid_base();
+
+	if (rid_offset < BASE_RID) {  
+		/* Try to prevent admin foot-shooting, we can't put algorithmic
+		   rids below 1000, that's the 'well known RIDs' on NT */
+		DEBUG(0, ("'algorithmic rid base' must be equal to or above %ld\n", BASE_RID));
+		rid_offset = BASE_RID;
+	}
+	if (rid_offset & 1) {
+		DEBUG(0, ("algorithmic rid base must be even\n"));
+		rid_offset += 1;
+	}
+	return rid_offset;
+}
+
+
 uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 {
-	int rid_offset = lp_algorithmic_rid_base();
+	int rid_offset = algorithmic_rid_base();
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
 }
 
@@ -513,7 +536,7 @@ uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 
 uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
 {
-	int rid_offset = lp_algorithmic_rid_base();
+	int rid_offset = algorithmic_rid_base();
 	return (((((uint32)uid)*RID_MULTIPLIER) + rid_offset) | USER_RID_TYPE);
 }
 
@@ -523,7 +546,7 @@ uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
 
 gid_t pdb_group_rid_to_gid(uint32 group_rid)
 {
-	int rid_offset = lp_algorithmic_rid_base();
+	int rid_offset = algorithmic_rid_base();
 	return (gid_t)(((group_rid & (~GROUP_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
 }
 
@@ -537,7 +560,7 @@ gid_t pdb_group_rid_to_gid(uint32 group_rid)
 
 uint32 pdb_gid_to_group_rid(gid_t gid)
 {
-	int rid_offset = lp_algorithmic_rid_base();
+	int rid_offset = algorithmic_rid_base();
 	return (((((uint32)gid)*RID_MULTIPLIER) + rid_offset) | GROUP_RID_TYPE);
 }
 

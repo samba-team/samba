@@ -1200,28 +1200,29 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 		return False;
 	}
 		
-	if ((smbpasswd_state->permit_non_unix_accounts) 
-	    && (pw_buf->smb_userid >= smbpasswd_state->low_nua_userid) 
-	    && (pw_buf->smb_userid <= smbpasswd_state->high_nua_userid)) {
+	pwfile = getpwnam_alloc(pw_buf->smb_name);
+	if (pwfile == NULL) {
+		if ((smbpasswd_state->permit_non_unix_accounts) 
+		    && (pw_buf->smb_userid >= smbpasswd_state->low_nua_userid) 
+		    && (pw_buf->smb_userid <= smbpasswd_state->high_nua_userid)) {
 
-		pdb_set_user_sid_from_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid), PDB_SET);
-
-		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. 
-		   
-		   This was down the bottom for machines, but it looks pretty good as
-		   a general default for non-unix users. --abartlet 2002-01-08
-		*/
-		pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS, PDB_SET); 
-		pdb_set_username (sam_pass, pw_buf->smb_name, PDB_SET);
-		pdb_set_domain (sam_pass, lp_workgroup(), PDB_DEFAULT);
-	} else {
-
-		pwfile = getpwnam_alloc(pw_buf->smb_name);
-		if (pwfile == NULL) {
+			pdb_set_user_sid_from_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid), PDB_SET);
+			
+			/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. 
+			   
+			This was down the bottom for machines, but it looks pretty good as
+			a general default for non-unix users. --abartlet 2002-01-08
+			*/
+			pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS, PDB_SET); 
+			pdb_set_username (sam_pass, pw_buf->smb_name, PDB_SET);
+			pdb_set_domain (sam_pass, lp_workgroup(), PDB_DEFAULT);
+			
+		} else {
 			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid %u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;
 		}
-
+	} else {
+		
 		if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile))) {
 			return False;
 		}
@@ -1386,7 +1387,7 @@ static NTSTATUS smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUN
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
 
-	DEBUG(10, ("pdb_getsampwrid: search by rid: %d\n", rid));
+	DEBUG(10, ("smbpasswd_getsampwrid: search by rid: %d\n", rid));
 
 	/* More special case 'guest account' hacks... */
 	if (rid == DOMAIN_USER_RID_GUEST) {
