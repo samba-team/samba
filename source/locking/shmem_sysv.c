@@ -572,7 +572,8 @@ struct shmem_ops *sysv_shm_open(int ronly)
 			su.val = 1;
 			for (i=0;i<hash_size+1;i++) {
 				if (semctl(sem_id, i, SETVAL, su) != 0) {
-					DEBUG(1,("Failed to init semaphore %d\n", i));
+					DEBUG(1,("Failed to init semaphore %d. Error was %s\n",
+                          i, strerror(errno)));
 				}
 			}
 		}
@@ -581,14 +582,16 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		sem_id = semget(SEMAPHORE_KEY, 0, 0);
 	}
 	if (sem_id == -1) {
-		DEBUG(0,("Can't create or use semaphore %s\n", 
+		DEBUG(0,("Can't create or use semaphore.Error was %s\n", 
 			 strerror(errno)));
 		return NULL;
 	}   
 
 	su.buf = &sem_ds;
 	if (semctl(sem_id, 0, IPC_STAT, su) != 0) {
-		DEBUG(0,("ERROR shm_open : can't IPC_STAT\n"));
+		DEBUG(0,("ERROR semctl: can't IPC_STAT. Error was %s\n",
+              strerror(errno)));
+		return NULL;
 	}
 	hash_size = sem_ds.sem_nsems-1;
 
@@ -604,18 +607,18 @@ struct shmem_ops *sysv_shm_open(int ronly)
 				 pid));
 			su.val = 1;
 			if (semctl(sem_id, 0, SETVAL, su) != 0) {
-				DEBUG(0,("ERROR: Failed to clear global lock\n"));
+				DEBUG(0,("ERROR: Failed to clear global lock. Error was %s\n",
+                      strerror(errno)));
 			}
 		}
 
 		sem_ds.sem_perm.mode = SEMAPHORE_PERMS;
 		if (semctl(sem_id, 0, IPC_SET, su) != 0) {
-			DEBUG(0,("ERROR shm_open : can't IPC_SET\n"));
+			DEBUG(0,("ERROR shmctl : can't IPC_SET. Error was %s\n",
+                  strerror(errno)));
 		}
 	}
 
-	
-	
 	if (!global_lock())
 		return NULL;
 
@@ -627,7 +630,8 @@ struct shmem_ops *sysv_shm_open(int ronly)
 				 i, pid));
 			su.val = 1;
 			if (semctl(sem_id, i, SETVAL, su) != 0) {
-				DEBUG(0,("ERROR: Failed to clear IPC lock %d\n", i));
+				DEBUG(0,("ERROR: Failed to clear IPC lock %d. Error was %s\n",
+                      i, strerror(errno)));
 			}
 		}
 	}
@@ -674,7 +678,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	   we use a registration file containing the processids of the file
 	   mapping processes */
 	if (shmctl(shm_id, IPC_STAT, &shm_ds) != 0) {
-		DEBUG(0,("ERROR shm_open : can't IPC_STAT. Error was %s\n", strerror(errno)));
+		DEBUG(0,("ERROR shmctl : can't IPC_STAT. Error was %s\n", strerror(errno)));
 	}
 
 	if (!read_only) {

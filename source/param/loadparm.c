@@ -176,6 +176,7 @@ typedef struct
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
   int machine_password_timeout;
+  int change_notify_timeout;
 #ifdef WITH_LDAP
   int ldap_port;
 #endif /* WITH_LDAP */
@@ -223,6 +224,7 @@ typedef struct
   BOOL bUnixPasswdSync;
   BOOL bPasswdChatDebug;
   BOOL bOleLockingCompat;
+  BOOL bTimestampLogs;
 } global;
 
 static global Globals;
@@ -552,6 +554,7 @@ static struct parm_struct parm_table[] =
   {"syslog only",      P_BOOL,    P_GLOBAL, &Globals.bSyslogOnly,       NULL,   NULL,  0},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL,   NULL,  0},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL,   NULL,  0},
+  {"timestamp logs",   P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL},
 
   {"Protocol Options", P_SEP, P_SEPARATOR},
@@ -573,6 +576,7 @@ static struct parm_struct parm_table[] =
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL,  0},
 
   {"Tuning Options", P_SEP, P_SEPARATOR},
+  {"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL,   NULL,  0},
   {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL,  0},
   {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL,  0},
   {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
@@ -808,11 +812,13 @@ static void init_globals(void)
   Globals.bStripDot = False;
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
+  Globals.bTimestampLogs = True;
   Globals.os_level = 0;
-  Globals.max_ttl = 60*60*24*3; /* 3 days default */
-  Globals.max_wins_ttl = 60*60*24*6; /* 6 days default */
-  Globals.min_wins_ttl = 60*60*6; /* 6 hours default */
-  Globals.machine_password_timeout = 60*60*24*7; /* 7 days default */
+  Globals.max_ttl = 60*60*24*3; /* 3 days default. */
+  Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
+  Globals.min_wins_ttl = 60*60*6; /* 6 hours default. */
+  Globals.machine_password_timeout = 60*60*24*7; /* 7 days default. */
+  Globals.change_notify_timeout = 60; /* 1 minute default. */
   Globals.ReadSize = 16*1024;
   Globals.lm_announce = 2;   /* = Auto: send only if LM clients found */
   Globals.lm_interval = 60;
@@ -1115,6 +1121,7 @@ FN_GLOBAL_BOOL(lp_strip_dot,&Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted,&Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
+FN_GLOBAL_BOOL(lp_timestamp_logs,&Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
@@ -1150,6 +1157,7 @@ FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
+FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)

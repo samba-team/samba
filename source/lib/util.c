@@ -2334,7 +2334,7 @@ BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
  for processing.
 ****************************************************************************/
 
-typedef struct smb_message_list {
+typedef struct {
    ubi_slNode msg_next;
    char *msg_buf;
    int msg_len;

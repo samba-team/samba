@@ -1024,6 +1024,7 @@ BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
 BOOL lp_syslog_only(void);
+BOOL lp_timestamp_logs(void);
 BOOL lp_browse_list(void);
 BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
@@ -1058,6 +1059,7 @@ int lp_announce_as(void);
 int lp_lm_announce(void);
 int lp_lm_interval(void);
 int lp_machine_password_timeout(void);
+int lp_change_notify_timeout(void);
 int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
@@ -1603,6 +1605,9 @@ char *get_nt_error_msg(uint32 nt_code);
 int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_ntcancel(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_nttranss(char *inbuf,char *outbuf,int length,int bufsize);
+void remove_pending_change_notify_requests_by_fid(int fnum);
+void remove_pending_change_notify_requests_by_mid(int mid);
+void process_pending_change_notify_queue(time_t t);
 int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize);
 
 /*The following definitions come from  params.c  */

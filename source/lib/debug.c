@@ -477,8 +477,9 @@ BOOL dbghdr( int level, char *file, char *func, int line )
     return( True );
 
   /* Print it all out at once. */
-  Debug1( "[%s, %d] %s%s%s(%d)\n",
-          timestring(), level, file, (*file)?":":"", func, line );
+  if(lp_timestamp_logs())
+    Debug1( "[%s, %d] %s%s%s(%d)\n",
+            timestring(), level, file, (*file)?":":"", func, line );
   return( True );
   } /* dbghdr */
 

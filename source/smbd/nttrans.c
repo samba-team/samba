@@ -657,6 +657,9 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   chain_fnum = fnum;
 
+  DEBUG(5,("reply_ntcreate_and_X: open fnum = %d, name = %s\n",
+        fnum, fsp->name ));
+
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -737,12 +740,14 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
       return(ERROR(ERRSRV,ERRnofids));
     }
 
+    fsp = &Files[fnum];
+
     if (!check_name(fname,cnum)) { 
       if((errno == ENOENT) && bad_path) {
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
-      Files[fnum].reserved = False;
+      fsp->reserved = False;
 
       restore_case_semantics(file_attributes);
 
@@ -783,14 +788,12 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
       open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
                        oplock_request,&rmode,&smb_action);
 
-      fsp = &Files[fnum];
-    
       if (!fsp->open) { 
         if((errno == ENOENT) && bad_path) {
           unix_ERR_class = ERRDOS;
           unix_ERR_code = ERRbadpath;
         }
-        Files[fnum].reserved = False;
+        fsp->reserved = False;
 
         restore_case_semantics(file_attributes);
 
@@ -887,12 +890,22 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
 }
 
 /****************************************************************************
- Reply to a NT CANCEL request - just ignore it.
+ Reply to a NT CANCEL request.
 ****************************************************************************/
 
 int reply_ntcancel(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  DEBUG(4,("Ignoring ntcancel of length %d\n",length));
+  /*
+   * Go through and cancel any pending change notifies.
+   * TODO: When we add blocking locks we will add cancel
+   * for them here too.
+   */
+
+  int mid = SVAL(inbuf,smb_mid);
+  remove_pending_change_notify_requests_by_mid(mid);
+
+  DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", mid));
+
   return(-1);
 }
 
@@ -933,6 +946,10 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int length,
      * Rename was successful.
      */
     send_nt_replies(outbuf, bufsize, NULL, 0, NULL, 0);
+
+    DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
+          Files[fnum].name, new_name));
+
     outsize = -1;
   }
 
@@ -940,7 +957,175 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int length,
 }
    
 /****************************************************************************
- Reply to a notify change - we should never get this (for now) as we
+ This is the structure to queue to implement NT change
+ notify. It consists of smb_size bytes stored from the
+ transact command (to keep the mid, tid etc around).
+ Plus the fid to examine and the time to check next.
+*****************************************************************************/
+
+typedef struct {
+  ubi_slNode msg_next;
+  int fnum;
+  int cnum;
+  time_t next_check_time;
+  char request_buf[smb_size];
+} change_notify_buf;
+
+static ubi_slList change_notify_queue = { NULL, (ubi_slNodePtr)&change_notify_queue, 0};
+
+/****************************************************************************
+ Setup the common parts of the return packet and send it.
+ Code stolen from construct_reply() in server.c
+*****************************************************************************/
+
+static void change_notify_reply_packet(char *inbuf, int error_class, uint32 error_code)
+{
+  extern int Client;
+  char outbuf[smb_size];
+
+  bzero(outbuf,smb_size);
+
+  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+  set_message(outbuf,0,0,True);
+ 
+  memcpy(outbuf+4,inbuf+4,4);
+  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
+  CVAL(outbuf,smb_reh) = 0;
+  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set
+                                 means a reply */
+  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
+  SSVAL(outbuf,smb_err,SMB_SUCCESS);
+  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
+  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
+  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
+  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+
+  ERROR(error_class,error_code);
+  send_smb(Client,outbuf);
+}
+
+/****************************************************************************
+ Delete entries by fnum from the change notify pending queue.
+*****************************************************************************/
+
+void remove_pending_change_notify_requests_by_fid(int fnum)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  change_notify_buf *prev = NULL;
+
+  while(cnbp != NULL) {
+    if(cnbp->fnum == fnum) {
+      ubi_slRemNext( &change_notify_queue, prev);
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    prev = cnbp;
+    cnbp = (change_notify_buf *)ubi_slNext(cnbp);
+  }
+}
+
+/****************************************************************************
+ Delete entries by mid from the change notify pending queue. Always send reply.
+*****************************************************************************/
+
+void remove_pending_change_notify_requests_by_mid(int mid)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  change_notify_buf *prev = NULL;
+
+  while(cnbp != NULL) {
+    if(SVAL(cnbp->request_buf,smb_mid) == mid) {
+      change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
+      ubi_slRemNext( &change_notify_queue, prev);
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    prev = cnbp;
+    cnbp = (change_notify_buf *)ubi_slNext(cnbp);
+  }
+}
+
+/****************************************************************************
+ Process the change notify queue. Note that this is only called as root.
+*****************************************************************************/
+
+void process_pending_change_notify_queue(time_t t)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  change_notify_buf *prev = NULL;
+
+  if(cnbp == NULL)
+    return;
+
+  if(cnbp->next_check_time >= t)
+    return;
+
+  /*
+   * It's time to check. Go through the queue and see if
+   * the timestamps changed.
+   */
+
+  while((cnbp != NULL) && (cnbp->next_check_time <= t)) {
+    struct stat st;
+    int fnum = cnbp->fnum;
+    int cnum = cnbp->cnum;
+    files_struct *fsp = &Files[fnum];
+    uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
+                  SVAL(cnbp->request_buf,smb_uid);
+
+    if(!become_user(&Connections[cnum],cnum,vuid)) {
+      DEBUG(0,("process_pending_change_notify_queue: Unable to become user vuid=%d.\n",
+            vuid ));
+      /*
+       * Remove the entry and return an error to the client.
+       */
+      change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
+      ubi_slRemNext( &change_notify_queue, prev);
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    if(sys_stat(fsp->name, &st) < 0) {
+      DEBUG(0,("process_pending_change_notify_queue: Unable to stat directory %s. \
+Error was %s.\n", fsp->name, strerror(errno) ));
+      /*
+       * Remove the entry and return an error to the client.
+       */
+      change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
+      ubi_slRemNext( &change_notify_queue, prev);
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      unbecome_user();
+      continue;
+    }
+
+    if(fsp->f_u.dir_ptr->modify_time != st.st_mtime ||
+       fsp->f_u.dir_ptr->status_time != st.st_ctime) {
+      /*
+       * Remove the entry and return a change notify to the client.
+       */
+      DEBUG(5,("process_pending_change_notify_queue: directory fnum = %d, name = %s changed\n",
+            fnum, fsp->name ));
+      change_notify_reply_packet(cnbp->request_buf,ERRDOS,ERROR_NOTIFY_ENUM_DIR);
+      ubi_slRemNext( &change_notify_queue, prev);
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      unbecome_user();
+      continue;
+    }
+
+    unbecome_user();
+
+    /*
+     * Move to the next in the list.
+     */
+    prev = cnbp;
+    cnbp = (change_notify_buf *)ubi_slNext(cnbp);
+  }
+}
+
+/****************************************************************************
+ Reply to a notify change - queue the request and 
  don't allow a directory to be opened.
 ****************************************************************************/
 
@@ -948,10 +1133,83 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
                                           int bufsize, int cnum,
                                           char **ppsetup, char **ppparams, char **ppdata)
 {
+#if 0
   DEBUG(0,("call_nt_transact_notify_change: Should not be called !\n"));
   return(ERROR(ERRSRV,ERRnosupport));
+#else /* Under development. */
+  char *setup = *ppsetup;
+  files_struct *fsp;
+  int fnum = -1;
+  change_notify_buf *cnbp;
+  struct stat st;
+
+  fnum = SVAL(setup,4);
+
+  DEBUG(0,("call_nt_transact_notify_change: fnum = %d.\n", fnum));
+
+  if(!VALID_FNUM(fnum))
+    return(ERROR(ERRDOS,ERRbadfid));
+
+  fsp = &Files[fnum];
+
+  if((!fsp->open) || (!fsp->is_directory) || (cnum != fsp->cnum))
+    return(ERROR(ERRDOS,ERRbadfid));
+
+  /*
+   * Setup the current directory information in the
+   * directory entry in the files_struct. We will use
+   * this to check against when the timer expires.
+   */
+
+  if(sys_stat(fsp->name, &st) < 0) {
+			DEBUG(0,("call_nt_transact_notify_change: Unable to stat fnum = %d, name = %s. \
+		Error was %s\n", fnum, fsp->name, strerror(errno) ));
+			return -1;
+  }
+ 
+  if(fsp->f_u.dir_ptr == NULL) {
+    if((fsp->f_u.dir_ptr = (dir_status_struct *)malloc(sizeof(dir_status_struct))) == NULL) {
+      DEBUG(0,("call_nt_transact_notify_change: Malloc fail !\n" ));
+      return -1;
+    }
+  }
+
+  fsp->f_u.dir_ptr->modify_time = st.st_mtime;
+  fsp->f_u.dir_ptr->status_time = st.st_ctime;
+
+  /*
+   * Now queue an entry on the notify change stack. We timestamp
+   * the entry we are adding so that we know when to scan next.
+   * We only need to save smb_size bytes from this incoming packet
+   * as we will always by returning a 'read the directory yourself'
+   * error.
+   */
+
+  if((cnbp = (change_notify_buf *)malloc(sizeof(change_notify_buf))) == NULL) {
+    DEBUG(0,("call_nt_transact_notify_change: Malloc fail (2) !\n" ));
+    return -1;
+  }
+
+  memcpy(cnbp->request_buf, inbuf, smb_size);
+  cnbp->fnum = fnum;
+  cnbp->cnum = cnum;
+  cnbp->next_check_time = time(NULL) + lp_change_notify_timeout();
+
+  /*
+   * Adding to the tail enables us to check only
+   * the head when scanning for change, as this entry
+   * is forced to have the first timeout expiration.
+   */
+
+  ubi_slAddTail(&change_notify_queue, cnbp);
+
+  DEBUG(3,("call_nt_transact_notify_change: notify change called on directory fid=%d, name = %s\n",
+        fnum, fsp->name ));
+
+  return -1;
+#endif
 }
-   
+
 /****************************************************************************
  Reply to query a security descriptor - currently this is not implemented (it
  is planned to be though).
@@ -996,7 +1254,7 @@ static int call_nt_transact_ioctl(char *inbuf, char *outbuf, int length,
 
 int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int outsize = 0;
+  int  outsize = 0;
   int cnum = SVAL(inbuf,smb_tid);
 #if 0 /* Not used. */
   uint16 max_setup_count = CVAL(inbuf, smb_nt_MaxSetupCount);
@@ -1009,7 +1267,7 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
   uint32 parameter_offset = IVAL(inbuf,smb_nt_ParameterOffset);
   uint32 data_count = IVAL(inbuf,smb_nt_DataCount);
   uint32 data_offset = IVAL(inbuf,smb_nt_DataOffset);
-  uint16 setup_count = CVAL(inbuf,smb_nt_SetupCount);
+  uint16 setup_count = 2*CVAL(inbuf,smb_nt_SetupCount); /* setup count is in *words* */
   uint16 function_code = SVAL( inbuf, smb_nt_Function);
   char *params = NULL, *data = NULL, *setup = NULL;
   uint32 num_params_sofar, num_data_sofar;
@@ -1019,8 +1277,8 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
      * Queue this open message as we are the process of an oplock break.
      */
 
-    DEBUG( 2, ( "reply_nttrans: queueing message NT_TRANSACT_CREATE " ) );
-    DEBUGADD( 2, ( "due to being in oplock break state.\n" ) );
+    DEBUG(2,("reply_nttrans: queueing message NT_TRANSACT_CREATE \
+due to being in oplock break state.\n" ));
 
     push_oplock_pending_smb_message( inbuf, length);
     return -1;
@@ -1033,9 +1291,9 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
    * Ensure this is so as a sanity check.
    */
 
-  if(CVAL(inbuf, smb_wct) != 19 + setup_count) {
+  if(CVAL(inbuf, smb_wct) != 19 + (setup_count/2)) {
     DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
-          CVAL(inbuf, smb_wct), 19 + setup_count));
+          CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
     return(ERROR(ERRSRV,ERRerror));
   }
     
@@ -1062,12 +1320,21 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
   if (parameter_count > total_parameter_count || data_count > total_data_count)
     exit_server("reply_nttrans: invalid sizes in packet.\n");
 
-  if(setup)
+  if(setup) {
     memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
-  if(params)
+    DEBUG(10,("reply_nttrans: setup_count = %d\n", setup_count));
+    dump_data(10, setup, setup_count);
+  }
+  if(params) {
     memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
-  if(data)
+    DEBUG(10,("reply_nttrans: parameter_count = %d\n", parameter_count));
+    dump_data(10, params, parameter_count);
+  }
+  if(data) {
     memcpy( data, smb_base(inbuf) + data_offset, data_count);
+    DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
+    dump_data(10, data, data_count);
+  }
 
   if(num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
     /* We need to send an interim response then receive the rest
@@ -1145,8 +1412,7 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
       break;
     default:
       /* Error in request */
-      DEBUG( 0, ( "reply_nttrans: Unknown request %d in nttrans call\n",
-                  function_code ) );
+      DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));
       if(setup)
         free(setup);
       if(params)
