@@ -394,6 +394,32 @@ krb5_config_vget_string (krb5_config_section *c,
     return krb5_config_vget (c, STRING, args);
 }
 
+krb5_boolean
+krb5_config_vget_bool (krb5_config_section *c,
+		       va_list args)
+{
+    const char *str;
+    str = krb5_config_vget_string (c, ap);
+    if(str == NULL)
+	return FALSE;
+    if(strcmp(str, "yes") == 0 || strcmp(str, "true") == 0 || atoi(str))
+	return TRUE;
+    return FALSE;
+}
+
+krb5_boolean
+krb5_config_get_bool (krb5_config_section *c,
+		      ...)
+{
+    va_list ap;
+    krb5_boolean ret;
+    va_start(ap, c);
+    ret = krb5_config_vget_bool(c, ap);
+    va_end(ap);
+    return ret;
+}
+
+
 #ifdef TEST
 
 int
