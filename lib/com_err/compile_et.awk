@@ -99,7 +99,7 @@ END {
 	print "\tNULL" > c_file
 	print "};" > c_file
 	print "" > c_file
-	print "void initialize_" name "_error_table_r " > c_file
+	printf "void initialize_" name "_error_table_r " > c_file
 	print "(struct error_table **list)" > c_file
 	print "{" > c_file
 	printf "    initialize_error_table_r(list, text, " > c_file
