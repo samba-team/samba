@@ -30,9 +30,6 @@ extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
 
-extern fstring myworkgroup;
-extern char **my_netbios_names;
-
 /* This is the broadcast subnets database. */
 struct subnet_record *subnetlist = NULL;
 

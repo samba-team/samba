@@ -29,8 +29,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern pstring global_myname;
-
 #define MAX_MSDFS_JUNCTIONS 256
 
 /* This function does not return a WERROR or NTSTATUS code but rather 1 if
@@ -197,7 +195,7 @@ static BOOL init_reply_dfs_info_1(struct junction_map* j, DFS_INFO_1* dfs1, int 
     {
       pstring str;
       dfs1[i].ptr_entrypath = 1;
-      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname, 
+      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname(), 
 	       j[i].service_name, j[i].volume_name);
       DEBUG(5,("init_reply_dfs_info_1: %d) initing entrypath: %s\n",i,str));
       init_unistr2(&dfs1[i].entrypath,str,strlen(str)+1);
@@ -212,7 +210,7 @@ static BOOL init_reply_dfs_info_2(struct junction_map* j, DFS_INFO_2* dfs2, int 
     {
       pstring str;
       dfs2[i].ptr_entrypath = 1;
-      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname,
+      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname(),
 	       j[i].service_name, j[i].volume_name);
       init_unistr2(&dfs2[i].entrypath, str, strlen(str)+1);
       dfs2[i].ptr_comment = 0;
@@ -231,9 +229,9 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
       dfs3[i].ptr_entrypath = 1;
       if (j[i].volume_name[0] == '\0')
 	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s",
-		       global_myname, j[i].service_name);
+		       global_myname(), j[i].service_name);
       else
-	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname,
+	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname(),
 		       j[i].service_name, j[i].volume_name);
 
       init_unistr2(&dfs3[i].entrypath, str, strlen(str)+1);

@@ -105,26 +105,28 @@ static int ldap_ip_compare(struct ldap_ip *ip1, struct ldap_ip *ip2)
 /* try connecting to a ldap server via DNS */
 static BOOL ads_try_dns(ADS_STRUCT *ads)
 {
-	char *realm, *ptr;
+	const char *c_realm;
+	const char *ptr;
+	char *realm;
 	char *list = NULL;
 	pstring tok;
 	struct ldap_ip *ip_list;
 	int count, i=0;
 
-	realm = ads->server.realm;
-	if (!realm || !*realm) {
-		realm = lp_realm();
+	c_realm = ads->server.realm;
+	if (!c_realm || !*c_realm) {
+		c_realm = lp_realm();
 	}
-	if (!realm || !*realm) {
-		realm = ads->server.workgroup;
+	if (!c_realm || !*c_realm) {
+		c_realm = ads->server.workgroup;
 	}
-	if (!realm || !*realm) {
-		realm = lp_workgroup();
+	if (!c_realm || !*c_realm) {
+		c_realm = lp_workgroup();
 	}
-	if (!realm) {
+	if (!c_realm) {
 		return False;
 	}
-	realm = smb_xstrdup(realm);
+	realm = smb_xstrdup(c_realm);
 
 	DEBUG(6,("ads_try_dns: looking for realm '%s'\n", realm));
 	if (ldap_domain2hostlist(realm, &list) != LDAP_SUCCESS) {
@@ -183,7 +185,7 @@ static BOOL ads_try_netbios(ADS_STRUCT *ads)
 	struct in_addr *ip_list, pdc_ip;
 	int count;
 	int i;
-	char *workgroup = ads->server.workgroup;
+	const char *workgroup = ads->server.workgroup;
 
 	if (!workgroup) {
 		workgroup = lp_workgroup();
@@ -273,9 +275,8 @@ got_connection:
 
 	if (!ads->auth.user_name) {
 		/* by default use the machine account */
-		extern pstring global_myname;
 		fstring myname;
-		fstrcpy(myname, global_myname);
+		fstrcpy(myname, global_myname());
 		strlower(myname);
 		asprintf(&ads->auth.user_name, "HOST/%s", myname);
 	}
@@ -435,8 +436,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
-		if (!(str_list_copy(&search_attrs, attrs)))
-		{
+		if (!(str_list_copy(&search_attrs, attrs))) {
 			rc = LDAP_NO_MEMORY;
 			goto done;
 		}
@@ -1026,7 +1026,8 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ADS_MODLIST mods;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
-	char *servicePrincipalName[3] = {NULL, NULL, NULL};
+	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
+	char *psp;
 	unsigned acct_control;
 
 	if (!(ctx = talloc_init_named("machine_account")))
@@ -1046,10 +1047,11 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", hostname, ou_str, 
 				 ads->config.bind_path);
 	servicePrincipalName[0] = talloc_asprintf(ctx, "HOST/%s", hostname);
-	servicePrincipalName[1] = talloc_asprintf(ctx, "HOST/%s.%s", 
+	psp = talloc_asprintf(ctx, "HOST/%s.%s", 
 						  hostname, 
 						  ads->config.realm);
-	strlower(&servicePrincipalName[1][5]);
+	strlower(&psp[5]);
+	servicePrincipalName[1] = psp;
 
 	free(ou_str);
 	if (!new_dn)

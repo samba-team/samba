@@ -33,7 +33,6 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
-extern pstring global_myname;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 
@@ -356,7 +355,7 @@ int reply_ioctl(connection_struct *conn,
 		{
 			uint16 rap_jobid = pjobid_to_rap(SNUM(fsp->conn), fsp->print_jobid);
 			SSVAL(p,0,rap_jobid);             /* Job number */
-			srvstr_push(outbuf, p+2, global_myname, 15, STR_TERMINATE|STR_ASCII);
+			srvstr_push(outbuf, p+2, global_myname(), 15, STR_TERMINATE|STR_ASCII);
 			srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
 			break;
 		}

@@ -24,7 +24,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern pstring global_myname;
 extern userdom_struct current_user_info;
 
 /****************************************************************************
@@ -36,7 +35,8 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	struct cli_state *cli = NULL;
 	fstring desthost;
 	struct in_addr dest_ip;
-	char *p, *pserver;
+	const char *p;
+	char *pserver;
 	BOOL connected_ok = False;
 
 	if (!(cli = cli_initialise(cli)))
@@ -85,7 +85,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	
-	if (!attempt_netbios_session_request(cli, global_myname, 
+	if (!attempt_netbios_session_request(cli, global_myname(), 
 					     desthost, &dest_ip)) {
 		release_server_mutex();
 		DEBUG(1,("password server fails session request\n"));
@@ -231,7 +231,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * password file.
 	 */
 
-	if(is_netbios_alias_or_name(user_info->domain.str)) {
+	if(is_myname(user_info->domain.str)) {
 		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -275,7 +275,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 	if(baduser[0] == 0) {
 		fstrcpy(baduser, INVALID_USER_PREFIX);
-		fstrcat(baduser, global_myname);
+		fstrcat(baduser, global_myname());
 	}
 
 	/*

@@ -41,7 +41,7 @@ static void pwd_init(struct pwd_info *pwd)
  Makes lm and nt hashed passwords.
 ****************************************************************************/
 
-static void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
+static void pwd_make_lm_nt_16(struct pwd_info *pwd, const char *clr)
 {
 	pstring dos_passwd;
 
@@ -59,7 +59,7 @@ static void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
  Stores a cleartext password.
 ****************************************************************************/
 
-void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
+void pwd_set_cleartext(struct pwd_info *pwd, const char *clr)
 {
 	pwd_init(pwd);
 	push_ascii_fstring(pwd->password, clr);
@@ -138,13 +138,3 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24])
 	if (nt_owf != NULL)
 		memcpy(nt_owf, pwd->smb_nt_owf, 24);
 }
-
-
-
-
-
-
-
-
-
-

@@ -23,17 +23,14 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /* Election parameters. */
 extern time_t StartupTime;
 
 /****************************************************************************
   Send an election datagram packet.
 **************************************************************************/
-static void send_election_dgram(struct subnet_record *subrec, char *workgroup_name,
-                                uint32 criterion, int timeup,char *server_name)
+static void send_election_dgram(struct subnet_record *subrec, const char *workgroup_name,
+                                uint32 criterion, int timeup,const char *server_name)
 {
   pstring outbuf;
   char *p;
@@ -55,7 +52,7 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                global_myname, 0,
+                global_myname(), 0,
                 workgroup_name, 0x1e,
                 subrec->bcast_ip, subrec->myip, DGRAM_PORT);
 }
@@ -92,7 +89,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
     return;
   }
 
-  if (strequal(work->work_group, global_myworkgroup))
+  if (strequal(work->work_group, lp_workgroup()))
   {
 
     if (lp_local_master())
@@ -128,7 +125,7 @@ void check_master_browser_exists(time_t t)
 {
   static time_t lastrun=0;
   struct subnet_record *subrec;
-  char *workgroup_name = global_myworkgroup;
+  const char *workgroup_name = lp_workgroup();
 
   if (!lastrun)
     lastrun = t;
@@ -198,7 +195,7 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
         }
 
         send_election_dgram(subrec, work->work_group, work->ElectionCriterion,
-                      t - StartupTime, global_myname);
+                      t - StartupTime, global_myname());
 	      
         if (work->ElectionCount++ >= 4)
         {
@@ -238,7 +235,7 @@ static BOOL win_election(struct work_record *work, int version,
         version, ELECTION_VERSION,
         criterion, mycriterion,
         timeup, mytimeup,
-        server_name, global_myname));
+        server_name, global_myname()));
 
   if (version > ELECTION_VERSION)
     return(False);
@@ -255,7 +252,7 @@ static BOOL win_election(struct work_record *work, int version,
   if (timeup < mytimeup)
     return(True);
 
-  if (strcasecmp(global_myname, server_name) > 0)
+  if (strcasecmp(global_myname(), server_name) > 0)
     return(False);
   
   return(True);
@@ -290,7 +287,7 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
     goto done;
   }
 
-  if (!strequal(work->work_group, global_myworkgroup))
+  if (!strequal(work->work_group, lp_workgroup()))
   {
     DEBUG(3,("process_election: ignoring election request for workgroup %s on subnet %s as this \
 is not my workgroup.\n", work->work_group, subrec->subnet_name ));
@@ -396,7 +393,7 @@ void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len)
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			if (strequal(work->work_group, global_myworkgroup)) {
+			if (strequal(work->work_group, lp_workgroup())) {
 				work->needelection = True;
 				work->ElectionCount=0;
 				work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;

@@ -32,8 +32,6 @@
  * responsible.
  */
 
-extern pstring global_myname;
-
 /************************************************************
  Fill the SAM_ACCOUNT with default values.
  ***********************************************************/
@@ -237,28 +235,28 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 		pdb_set_profile_path(sam_account, 
 				     talloc_sub_specified((sam_account)->mem_ctx, 
 							    lp_logon_path(), 
-							    pwd->pw_name, global_myname, 
+							    pwd->pw_name, global_myname(), 
 							    pwd->pw_uid, pwd->pw_gid), 
 				     PDB_DEFAULT);
 		
 		pdb_set_homedir(sam_account, 
 				talloc_sub_specified((sam_account)->mem_ctx, 
 						       lp_logon_home(),
-						       pwd->pw_name, global_myname, 
+						       pwd->pw_name, global_myname(), 
 						       pwd->pw_uid, pwd->pw_gid),
 				PDB_DEFAULT);
 		
 		pdb_set_dir_drive(sam_account, 
 				  talloc_sub_specified((sam_account)->mem_ctx, 
 							 lp_logon_drive(),
-							 pwd->pw_name, global_myname, 
+							 pwd->pw_name, global_myname(), 
 							 pwd->pw_uid, pwd->pw_gid),
 				  PDB_DEFAULT);
 		
 		pdb_set_logon_script(sam_account, 
 				     talloc_sub_specified((sam_account)->mem_ctx, 
 							    lp_logon_script(),
-							    pwd->pw_name, global_myname, 
+							    pwd->pw_name, global_myname(), 
 							    pwd->pw_uid, pwd->pw_gid), 
 				     PDB_DEFAULT);
 		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT)) {
@@ -625,10 +623,10 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	DEBUG(5,("local_lookup_sid: looking up RID %u.\n", (unsigned int)rid));
 	
 	if (rid == DOMAIN_USER_RID_ADMIN) {
-		char **admin_list = lp_admin_users(-1);
+		const char **admin_list = lp_admin_users(-1);
 		*psid_name_use = SID_NAME_USER;
 		if (admin_list) {
-			char *p = *admin_list;
+			const char *p = *admin_list;
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Administrator");
 		} else {

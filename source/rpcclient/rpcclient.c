@@ -435,7 +435,8 @@ static void add_command_set(struct cmd_set *cmd_set)
 static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, 
                        char *cmd)
 {
-	char *p = cmd, **argv = NULL;
+	char **argv = NULL;
+	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
 	int argc = 0, i;
@@ -528,7 +529,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	struct cmd_list *temp_list;
 	BOOL found = False;
 	pstring buf;
-	char *p = cmd;
+	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_OK;
 	int len = 0;
 
@@ -578,7 +579,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 
  int main(int argc, char *argv[])
 {
-	extern pstring 		global_myname;
 	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
@@ -694,8 +694,8 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 
 	load_interfaces();
 
-	get_myname((*global_myname)?NULL:global_myname);
-	strupper(global_myname);
+	if (!init_names())
+		return 1;
 
 	/* Resolve the IP address */
 
@@ -719,7 +719,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	if (!strlen(username) && !got_pass)
 		get_username(username);
 		
-	nt_status = cli_full_connection(&cli, global_myname, server, 
+	nt_status = cli_full_connection(&cli, global_myname(), server, 
 					&server_ip, 0,
 					"IPC$", "IPC",  
 					username, domain,

@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 #define MAX_SID_NAMES	7
 
 typedef struct _known_sid_users {
@@ -98,16 +95,16 @@ static void init_sid_name_map (void)
 		/* This is not lp_workgroup() for good reason:
 		   it must stay around longer than the lp_*() 
 		   strings do */
-		sid_name_map[i].name = global_myworkgroup;
+		sid_name_map[i].name = strdup(lp_workgroup());
 		sid_name_map[i].known_users = NULL;
 		i++;
 		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = global_myname;
+		sid_name_map[i].name = strdup(global_myname());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	} else {
 		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = global_myname;
+		sid_name_map[i].name = strdup(global_myname());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	}
@@ -224,7 +221,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 	}
 
 	if (nt_domain[0] == 0) {
-		fstrcpy(nt_domain, global_myname);
+		fstrcpy(nt_domain, global_myname());
 		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n", nt_domain));
 		sid_copy(sid, get_global_sam_sid());
 		return True;

@@ -246,12 +246,8 @@ int main(int argc,char *argv[])
         translate_addresses = !translate_addresses;
 	break;
       case 'i':
-	      {
-		      extern pstring global_scope;
-		      pstrcpy(global_scope,optarg);
-		      strupper(global_scope);
-	      }
-	      break;
+	set_global_scope(optarg);
+	break;
       case 'M':
 	find_master = True;
 	break;

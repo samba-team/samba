@@ -445,8 +445,6 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 
 BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	extern pstring global_myname;
-	extern fstring global_myworkgroup;
 	fstring sid;
 	BOOL local_lookup = False;
 	
@@ -455,11 +453,11 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	/* If we are looking up a domain user, make sure it is
 	   for the local machine only */
 	
-	if (strequal(global_myname, domain)) {
+	if (strequal(global_myname(), domain)) {
 		local_lookup = True;
 	} else if (lp_server_role() == ROLE_DOMAIN_PDC || 
 		   lp_server_role() == ROLE_DOMAIN_BDC) {
-		if (strequal(domain, global_myworkgroup)) {
+		if (strequal(domain, lp_workgroup())) {
 			local_lookup = True;
 		}
 	}

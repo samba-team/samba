@@ -26,9 +26,6 @@
 
 extern int ClientNMB;
 
-extern fstring global_myworkgroup;
-extern char **my_netbios_names;
-
 int updatecount = 0;
 
 /*******************************************************************
@@ -91,7 +88,7 @@ static void add_server_to_workgroup(struct work_record *work,
   Find a server in a server list.
   **************************************************************************/
 
-struct server_record *find_server_in_workgroup(struct work_record *work, char *name)
+struct server_record *find_server_in_workgroup(struct work_record *work, const char *name)
 {
   struct server_record *ret;
   
@@ -128,8 +125,8 @@ void remove_server_from_workgroup(struct work_record *work, struct server_record
   ****************************************************************************/
 
 struct server_record *create_server_on_workgroup(struct work_record *work,
-                                                 char *name,int servertype, 
-                                                 int ttl,char *comment)
+                                                 const char *name,int servertype, 
+                                                 int ttl, const char *comment)
 {
   struct server_record *servrec;
   
@@ -256,7 +253,7 @@ static uint32 write_this_server_name( struct subnet_record *subrec,
 
 /*******************************************************************
  Decide if we should write out a workgroup record for this workgroup.
- We return zero if we should not. Don't write out global_myworkgroup (we've
+ We return zero if we should not. Don't write out lp_workgroup() (we've
  already done it) and also don't write out a second workgroup record
  on the unicast subnet that we've already written out on one of the
  broadcast subnets.
@@ -267,7 +264,7 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
 {
   struct subnet_record *ssub;
 
-  if(strequal(global_myworkgroup, work->work_group))
+  if(strequal(lp_workgroup(), work->work_group))
     return 0;
 
   /* This is a workgroup we have seen on a broadcast subnet. All
@@ -295,8 +292,8 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
   Write out the browse.dat file.
   ******************************************************************/
 
-void write_browse_list_entry(XFILE *fp, fstring name, uint32 rec_type,
-		fstring local_master_browser_name, fstring description)
+void write_browse_list_entry(XFILE *fp, const char *name, uint32 rec_type,
+		const char *local_master_browser_name, const char *description)
 {
 	fstring tmp;
 
@@ -368,10 +365,10 @@ void write_browse_list(time_t t, BOOL force_write)
    * subnet.
    */
 
-  if((work = find_workgroup_on_subnet(FIRST_SUBNET, global_myworkgroup)) == NULL)
+  if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup())) == NULL)
   { 
     DEBUG(0,("write_browse_list: Fatal error - cannot find my workgroup %s\n",
-             global_myworkgroup));
+             lp_workgroup()));
     x_fclose(fp);
     return;
   }
@@ -388,22 +385,22 @@ void write_browse_list(time_t t, BOOL force_write)
    * once.
    */
 
-  for (i=0; my_netbios_names[i]; i++)
+  for (i=0; my_netbios_names(i); i++)
   {
     stype = 0;
     for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
     {
-      if((work = find_workgroup_on_subnet( subrec, global_myworkgroup )) == NULL)
+      if((work = find_workgroup_on_subnet( subrec, lp_workgroup() )) == NULL)
         continue;
-      if((servrec = find_server_in_workgroup( work, my_netbios_names[i])) == NULL)
+      if((servrec = find_server_in_workgroup( work, my_netbios_names(i))) == NULL)
         continue;
 
       stype |= servrec->serv.type;
     }
 
     /* Output server details, plus what workgroup they're in. */
-    write_browse_list_entry(fp, my_netbios_names[i], stype,
-        string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), global_myworkgroup);
+    write_browse_list_entry(fp, my_netbios_names(i), stype,
+        string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), lp_workgroup());
   }
       
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) 

@@ -24,9 +24,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /* This is our local master browser list database. */
 extern ubi_dlList lmb_browserlist[];
 
@@ -129,7 +126,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
   SCVAL(p,0,ANN_MasterAnnouncement);
   p++;
 
-  StrnCpy(p,global_myname,15);
+  StrnCpy(p,global_myname(),15);
   strupper(p);
   p = skip_string(p,1);
 
@@ -142,7 +139,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
   }
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-		global_myname, 0x0, work->dmb_name.name, 0x0, 
+		global_myname(), 0x0, work->dmb_name.name, 0x0, 
 		work->dmb_addr, FIRST_SUBNET->myip, DGRAM_PORT);
 
 }
@@ -611,12 +608,12 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
     return;
 
   /* Check to see if we are a domain master browser on the unicast subnet. */
-  if((work = find_workgroup_on_subnet( unicast_subnet, global_myworkgroup)) == NULL)
+  if((work = find_workgroup_on_subnet( unicast_subnet, lp_workgroup())) == NULL)
   {
     if( DEBUGLVL( 0 ) )
     {
       dbgtext( "collect_all_workgroup_names_from_wins_server:\n" );
-      dbgtext( "Cannot find my workgroup %s ", global_myworkgroup );
+      dbgtext( "Cannot find my workgroup %s ", lp_workgroup() );
       dbgtext( "on subnet %s.\n", unicast_subnet->subnet_name );
     }
     return;
@@ -660,7 +657,7 @@ void sync_all_dmbs(time_t t)
 
 	/* Check to see if we are a domain master browser on the
            unicast subnet. */
-	work = find_workgroup_on_subnet(unicast_subnet, global_myworkgroup);
+	work = find_workgroup_on_subnet(unicast_subnet, lp_workgroup());
 	if (!work) return;
 
 	if (!AM_DOMAIN_MASTER_BROWSER(work))
@@ -671,14 +668,14 @@ void sync_all_dmbs(time_t t)
      
 	/* count how many syncs we might need to do */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(global_myworkgroup, work->work_group)) {
+		if (strcmp(lp_workgroup(), work->work_group)) {
 			count++;
 		}
 	}
 
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(global_myworkgroup, work->work_group)) {
+		if (strcmp(lp_workgroup(), work->work_group)) {
 			if (((unsigned)sys_random()) % count != 0) continue;
 
 			lastrun = t;

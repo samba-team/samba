@@ -36,7 +36,7 @@ extern BOOL		in_client;	/* Boolean for client library */
  */
 
 static void		list_devices(void);
-static struct cli_state	*smb_connect(char *, char *, char *, char *, char *);
+static struct cli_state	*smb_connect(const char *, const char *, const char *, const char *, const char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 
 
@@ -54,9 +54,9 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 		*sep,		/* Pointer to separator */
 		*username,	/* Username */
 		*password,	/* Password */
-		*workgroup,	/* Workgroup */
 		*server,	/* Server name */
 		*printer;	/* Printer name */
+  const char	*workgroup;	/* Workgroup */
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
@@ -265,11 +265,11 @@ list_devices(void)
  */
 
 static struct cli_state *		/* O - SMB connection */
-smb_connect(char *workgroup,		/* I - Workgroup */
-            char *server,		/* I - Server */
-            char *share,		/* I - Printer */
-            char *username,		/* I - Username */
-            char *password)		/* I - Password */
+smb_connect(const char *workgroup,		/* I - Workgroup */
+            const char *server,		/* I - Server */
+            const char *share,		/* I - Printer */
+            const char *username,		/* I - Username */
+            const char *password)		/* I - Password */
 {
   struct cli_state	*c;		/* New connection */
   pstring		myname;		/* Client name */

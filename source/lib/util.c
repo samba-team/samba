@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 2001
+   Copyright (C) Jeremy Allison 2001-2002
    Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
@@ -78,22 +78,212 @@ BOOL case_mangle;
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 pstring user_socket_options=DEFAULT_SOCKET_OPTIONS;   
 
-pstring global_myname = "";
-fstring global_myworkgroup = "";
-char **my_netbios_names;
+/***********************************************************************
+ Definitions for all names.
+***********************************************************************/
 
+static char *smb_myname;
+static char *smb_myworkgroup;
+static char *smb_scope;
+static int smb_num_netbios_names;
+static char **smb_my_netbios_names;
+
+/***********************************************************************
+ Allocate and set myname. Ensure upper case.
+***********************************************************************/
+
+BOOL set_global_myname(const char *myname)
+{
+	SAFE_FREE(smb_myname);
+	smb_myname = strdup(myname);
+	if (!smb_myname)
+		return False;
+	strupper(smb_myname);
+	return True;
+}
+
+const char *global_myname(void)
+{
+	return smb_myname;
+}
+
+/***********************************************************************
+ Allocate and set myworkgroup. Ensure upper case.
+***********************************************************************/
+
+BOOL set_global_myworkgroup(const char *myworkgroup)
+{
+	SAFE_FREE(smb_myworkgroup);
+	smb_myworkgroup = strdup(myworkgroup);
+	if (!smb_myworkgroup)
+		return False;
+	strupper(smb_myworkgroup);
+	return True;
+}
+
+const char *lp_workgroup(void)
+{
+	return smb_myworkgroup;
+}
+
+/***********************************************************************
+ Allocate and set scope. Ensure upper case.
+***********************************************************************/
+
+BOOL set_global_scope(const char *scope)
+{
+	SAFE_FREE(smb_scope);
+	smb_scope = strdup(scope);
+	if (!smb_scope)
+		return False;
+	strupper(smb_scope);
+	return True;
+}
+
+const char *global_scope(void)
+{
+	return smb_scope;
+}
+
+static void free_netbios_names_array(void)
+{
+	int i;
+
+	for (i = 0; i < smb_num_netbios_names; i++)
+		SAFE_FREE(smb_my_netbios_names[i]);
+
+	SAFE_FREE(smb_my_netbios_names);
+	smb_num_netbios_names = 0;
+}
+
+static BOOL allocate_my_netbios_names_array(size_t number)
+{
+	free_netbios_names_array();
+
+	smb_num_netbios_names = number + 1;
+	smb_my_netbios_names = (char **)malloc( sizeof(char *) * smb_num_netbios_names );
+
+	if (!smb_my_netbios_names)
+		return False;
+
+	memset(smb_my_netbios_names, '\0', sizeof(char *) * smb_num_netbios_names);
+	return True;
+}
+
+static BOOL set_my_netbios_names(const char *name, int i)
+{
+	SAFE_FREE(smb_my_netbios_names[i]);
+
+	smb_my_netbios_names[i] = strdup(name);
+	if (!smb_my_netbios_names[i])
+		return False;
+	strupper(smb_my_netbios_names[i]);
+	return True;
+}
+
+const char *my_netbios_names(int i)
+{
+	return smb_my_netbios_names[i];
+}
+
+BOOL set_netbios_aliases(const char **str_array)
+{
+	size_t namecount;
+
+	/* Work out the max number of netbios aliases that we have */
+	for( namecount=0; str_array && (str_array[namecount] != NULL); namecount++ )
+		;
+
+	if ( global_myname() && *global_myname())
+		namecount++;
+
+	/* Allocate space for the netbios aliases */
+	if (!allocate_my_netbios_names_array(namecount))
+		return False;
+
+	/* Use the global_myname string first */
+	namecount=0;
+	if ( global_myname() && *global_myname()) {
+		set_my_netbios_names( global_myname(), namecount );
+		namecount++;
+	}
+
+	if (str_array) {
+		size_t i;
+		for ( i = 0; str_array[i] != NULL; i++) {
+			size_t n;
+			BOOL duplicate = False;
+
+			/* Look for duplicates */
+			for( n=0; n<namecount; n++ ) {
+				if( strequal( str_array[i], my_netbios_names(n) ) ) {
+					duplicate = True;
+					break;
+				}
+			}
+			if (!duplicate) {
+				if (!set_my_netbios_names(str_array[i], namecount))
+					return False;
+				namecount++;
+			}
+		}
+	}
+	return True;
+}
 
 /****************************************************************************
+  Common name initialization code.
+****************************************************************************/
+
+BOOL init_names(void)
+{
+	extern fstring local_machine;
+	char *p;
+	int n;
+
+	if (global_myname() == NULL || *global_myname() == '\0') {
+		fstring name;
+
+		fstrcpy( name, myhostname() );
+		p = strchr( name, '.' );
+		if (p)
+			*p = 0;
+		if (!set_global_myname(name)) {
+			DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+			return False;
+		}
+	}
+
+	if (!set_netbios_aliases(lp_netbios_aliases())) {
+		DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+		return False;
+	}			
+
+	fstrcpy( local_machine, global_myname() );
+	trim_string( local_machine, " ", " " );
+	p = strchr( local_machine, ' ' );
+	if (p)
+		*p = 0;
+	strlower( local_machine );
+
+	DEBUG( 5, ("Netbios name list:-\n") );
+	for( n=0; my_netbios_names(n); n++ )
+		DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names(n) ) );
+
+	return( True );
+}
+
+/**************************************************************************n
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
 ****************************************************************************/
 
-char *tmpdir(void)
+const char *tmpdir(void)
 {
-  char *p;
+	char *p;
 	if ((p = getenv("TMPDIR")))
-    return p;
-  return "/tmp";
+		return p;
+	return "/tmp";
 }
 
 /****************************************************************************
@@ -130,8 +320,7 @@ static char *Atoic(char *p, int *n, char *c)
 	while ((*p) && isdigit((int)*p))
 		p++;
 
-	if (strchr_m(c, *p) == NULL)
-	{
+	if (strchr_m(c, *p) == NULL) {
 		DEBUG(5, ("Atoic: no separator characters (%s) not found\n", c));
 		return NULL;
 	}
@@ -157,8 +346,7 @@ char *get_numlist(char *p, uint32 **num, int *count)
 		uint32 *tn;
 		
 		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
-		if (tn == NULL)
-		{
+		if (tn == NULL) {
 			SAFE_FREE(*num);
 			return NULL;
 		} else
@@ -177,12 +365,12 @@ char *get_numlist(char *p, uint32 **num, int *count)
 
 BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st;
 	if (!sbuf)
 		sbuf = &st;
   
-  if (sys_stat(fname,sbuf) != 0) 
-    return(False);
+	if (sys_stat(fname,sbuf) != 0) 
+		return(False);
 
 	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
 }
@@ -193,12 +381,12 @@ BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 time_t file_modtime(const char *fname)
 {
-  SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st;
   
-  if (sys_stat(fname,&st) != 0) 
-    return(0);
+	if (sys_stat(fname,&st) != 0) 
+		return(0);
 
-  return(st.st_mtime);
+	return(st.st_mtime);
 }
 
 /*******************************************************************
@@ -207,60 +395,65 @@ time_t file_modtime(const char *fname)
 
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 {
-  SMB_STRUCT_STAT st2;
-  BOOL ret;
+	SMB_STRUCT_STAT st2;
+	BOOL ret;
 
-  if (!st) st = &st2;
+	if (!st)
+		st = &st2;
 
-  if (sys_stat(dname,st) != 0) 
-    return(False);
+	if (sys_stat(dname,st) != 0) 
+		return(False);
 
-  ret = S_ISDIR(st->st_mode);
-  if(!ret)
-    errno = ENOTDIR;
-  return ret;
+	ret = S_ISDIR(st->st_mode);
+	if(!ret)
+		errno = ENOTDIR;
+	return ret;
 }
 
 /*******************************************************************
-returns the size in bytes of the named file
+ Returns the size in bytes of the named file.
 ********************************************************************/
+
 SMB_OFF_T get_file_size(char *file_name)
 {
-  SMB_STRUCT_STAT buf;
-  buf.st_size = 0;
-  if(sys_stat(file_name,&buf) != 0)
-    return (SMB_OFF_T)-1;
-  return(buf.st_size);
+	SMB_STRUCT_STAT buf;
+	buf.st_size = 0;
+	if(sys_stat(file_name,&buf) != 0)
+		return (SMB_OFF_T)-1;
+	return(buf.st_size);
 }
 
 /*******************************************************************
-return a string representing an attribute for a file
+ Return a string representing an attribute for a file.
 ********************************************************************/
+
 char *attrib_string(uint16 mode)
 {
-  static fstring attrstr;
+	static fstring attrstr;
 
-  attrstr[0] = 0;
+	attrstr[0] = 0;
 
-  if (mode & aVOLID) fstrcat(attrstr,"V");
-  if (mode & aDIR) fstrcat(attrstr,"D");
-  if (mode & aARCH) fstrcat(attrstr,"A");
-  if (mode & aHIDDEN) fstrcat(attrstr,"H");
-  if (mode & aSYSTEM) fstrcat(attrstr,"S");
-  if (mode & aRONLY) fstrcat(attrstr,"R");	  
+	if (mode & aVOLID) fstrcat(attrstr,"V");
+	if (mode & aDIR) fstrcat(attrstr,"D");
+	if (mode & aARCH) fstrcat(attrstr,"A");
+	if (mode & aHIDDEN) fstrcat(attrstr,"H");
+	if (mode & aSYSTEM) fstrcat(attrstr,"S");
+	if (mode & aRONLY) fstrcat(attrstr,"R");	  
 
-  return(attrstr);
+	return(attrstr);
 }
 
 /*******************************************************************
-  show a smb message structure
+ Show a smb message structure.
 ********************************************************************/
+
 void show_msg(char *buf)
 {
 	int i;
 	int bcc=0;
 
-	if (!DEBUGLVL(5)) return;
+	if (!DEBUGLVL(5))
+		return;
 	
 	DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
 			smb_len(buf),
@@ -285,29 +478,33 @@ void show_msg(char *buf)
 
 	DEBUGADD(5,("smb_bcc=%d\n",bcc));
 
-	if (DEBUGLEVEL < 10) return;
+	if (DEBUGLEVEL < 10)
+		return;
 
-	if (DEBUGLEVEL < 50) bcc = MIN(bcc, 512);
+	if (DEBUGLEVEL < 50)
+		bcc = MIN(bcc, 512);
 
 	dump_data(10, smb_buf(buf), bcc);	
 }
 
 /*******************************************************************
-  set the length and marker of an smb packet
+ Set the length and marker of an smb packet.
 ********************************************************************/
+
 void smb_setlen(char *buf,int len)
 {
-  _smb_setlen(buf,len);
+	_smb_setlen(buf,len);
 
-  SCVAL(buf,4,0xFF);
-  SCVAL(buf,5,'S');
-  SCVAL(buf,6,'M');
-  SCVAL(buf,7,'B');
+	SCVAL(buf,4,0xFF);
+	SCVAL(buf,5,'S');
+	SCVAL(buf,6,'M');
+	SCVAL(buf,7,'B');
 }
 
 /*******************************************************************
-  setup the word count and byte count for a smb message
+ Setup the word count and byte count for a smb message.
 ********************************************************************/
+
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
 	if (zero)
@@ -319,8 +516,9 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 }
 
 /*******************************************************************
-  setup only the byte count for a smb message
+ Setup only the byte count for a smb message.
 ********************************************************************/
+
 int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
@@ -330,111 +528,117 @@ int set_message_bcc(char *buf,int num_bytes)
 }
 
 /*******************************************************************
-  setup only the byte count for a smb message, using the end of the
-  message as a marker
+ Setup only the byte count for a smb message, using the end of the
+ message as a marker.
 ********************************************************************/
+
 int set_message_end(void *outbuf,void *end_ptr)
 {
 	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
-reduce a file name, removing .. elements.
+ Reduce a file name, removing .. elements.
 ********************************************************************/
+
 void dos_clean_name(char *s)
 {
-  char *p=NULL;
+	char *p=NULL;
 
-  DEBUG(3,("dos_clean_name [%s]\n",s));
+	DEBUG(3,("dos_clean_name [%s]\n",s));
 
-  /* remove any double slashes */
-  all_string_sub(s, "\\\\", "\\", 0);
+	/* remove any double slashes */
+	all_string_sub(s, "\\\\", "\\", 0);
 
-  while ((p = strstr(s,"\\..\\")) != NULL)
-    {
-      pstring s1;
+	while ((p = strstr(s,"\\..\\")) != NULL) {
+		pstring s1;
 
-      *p = 0;
-      pstrcpy(s1,p+3);
+		*p = 0;
+		pstrcpy(s1,p+3);
 
-      if ((p=strrchr_m(s,'\\')) != NULL)
-	*p = 0;
-      else
-	*s = 0;
-      pstrcat(s,s1);
-    }  
+		if ((p=strrchr_m(s,'\\')) != NULL)
+			*p = 0;
+		else
+			*s = 0;
+		pstrcat(s,s1);
+	}  
 
-  trim_string(s,NULL,"\\..");
+	trim_string(s,NULL,"\\..");
 
-  all_string_sub(s, "\\.\\", "\\", 0);
+	all_string_sub(s, "\\.\\", "\\", 0);
 }
 
 /*******************************************************************
-reduce a file name, removing .. elements. 
+ Reduce a file name, removing .. elements. 
 ********************************************************************/
+
 void unix_clean_name(char *s)
 {
-  char *p=NULL;
+	char *p=NULL;
 
-  DEBUG(3,("unix_clean_name [%s]\n",s));
+	DEBUG(3,("unix_clean_name [%s]\n",s));
 
-  /* remove any double slashes */
-  all_string_sub(s, "//","/", 0);
+	/* remove any double slashes */
+	all_string_sub(s, "//","/", 0);
 
-  /* Remove leading ./ characters */
-  if(strncmp(s, "./", 2) == 0) {
-    trim_string(s, "./", NULL);
-    if(*s == 0)
-      pstrcpy(s,"./");
-  }
+	/* Remove leading ./ characters */
+	if(strncmp(s, "./", 2) == 0) {
+		trim_string(s, "./", NULL);
+		if(*s == 0)
+			pstrcpy(s,"./");
+	}
 
-  while ((p = strstr(s,"/../")) != NULL)
-    {
-      pstring s1;
+	while ((p = strstr(s,"/../")) != NULL) {
+		pstring s1;
 
-      *p = 0;
-      pstrcpy(s1,p+3);
+		*p = 0;
+		pstrcpy(s1,p+3);
 
-      if ((p=strrchr_m(s,'/')) != NULL)
-	*p = 0;
-      else
-	*s = 0;
-      pstrcat(s,s1);
-    }  
+		if ((p=strrchr_m(s,'/')) != NULL)
+			*p = 0;
+		else
+			*s = 0;
+		pstrcat(s,s1);
+	}  
 
-  trim_string(s,NULL,"/..");
+	trim_string(s,NULL,"/..");
 }
 
 /*******************************************************************
-convert '\' to '/'
-reduce a file name, removing or reducing /../ , /./ , // elements.
-remove also any trailing . and /
-return a new allocated string.
+ Convert '\' to '/'.
+ Reduce a file name, removing or reducing /../ , /./ , // elements.
+ Remove also any trailing . and /
+ Return a new allocated string.
 ********************************************************************/
+
 smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 {
 	smb_ucs2_t *ns;
 	smb_ucs2_t *p, *r, *t;
 
 	DEBUG(3, ("unix_clean_path\n")); /*  [%unicode]\n")); */
-	if(!s) return NULL;
+	if(!s)
+		return NULL;
 
 	/* convert '\' to '/' */
 	ns = strdup_w(s);
-	if (!ns) return NULL;
+	if (!ns)
+		return NULL;
 	unix_format_w(ns);
 
 	/* remove all double slashes */
 	p = ns;
 	ns = all_string_sub_wa(p, "//", "/");
 	SAFE_FREE(p);
-	if (!ns) return NULL;
+	if (!ns)
+		return NULL;
 
 	/* remove any /./ */
 	p = ns;
 	ns = all_string_sub_wa(p, "/./", "/");
 	SAFE_FREE(p);
-	if (!ns) return NULL;
+	if (!ns)
+		return NULL;
 
 	/* reduce any /../ */
 	t = ns;
@@ -443,9 +647,12 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 		if (*t == UCS2_CHAR('/') || *t == 0) {
 			*r = 0;
 			p = strrchr_w(ns, UCS2_CHAR('/'));
-			if (!p) p = ns;
-			if (*t == 0) *p = 0;
-			else memmove(p, t, (strlen_w(t) + 1) * sizeof(smb_ucs2_t));
+			if (!p)
+				p = ns;
+			if (*t == 0)
+				*p = 0;
+			else
+				memmove(p, t, (strlen_w(t) + 1) * sizeof(smb_ucs2_t));
 			t = p;
 		}
 	}
@@ -460,82 +667,82 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 }
 
 /****************************************************************************
-  make a dir struct
+ Make a dir struct.
 ****************************************************************************/
+
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date)
 {  
-  char *p;
-  pstring mask2;
+	char *p;
+	pstring mask2;
 
-  pstrcpy(mask2,mask);
+	pstrcpy(mask2,mask);
 
-  if ((mode & aDIR) != 0)
-    size = 0;
+	if ((mode & aDIR) != 0)
+		size = 0;
 
-  memset(buf+1,' ',11);
-  if ((p = strchr_m(mask2,'.')) != NULL)
-    {
-      *p = 0;
-      push_ascii(buf+1,mask2,8, 0);
-      push_ascii(buf+9,p+1,3, 0);
-      *p = '.';
-    }
-  else
-      push_ascii(buf+1,mask2,11, 0);
+	memset(buf+1,' ',11);
+	if ((p = strchr_m(mask2,'.')) != NULL) {
+		*p = 0;
+		push_ascii(buf+1,mask2,8, 0);
+		push_ascii(buf+9,p+1,3, 0);
+		*p = '.';
+	} else
+		push_ascii(buf+1,mask2,11, 0);
 
-  memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
-  SCVAL(buf,21,mode);
-  put_dos_date(buf,22,date);
-  SSVAL(buf,26,size & 0xFFFF);
-  SSVAL(buf,28,(size >> 16)&0xFFFF);
-  push_ascii(buf+30,fname,12, 0);
-  if (!case_sensitive)
-    strupper(buf+30);
-  DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
+	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
+	SCVAL(buf,21,mode);
+	put_dos_date(buf,22,date);
+	SSVAL(buf,26,size & 0xFFFF);
+	SSVAL(buf,28,(size >> 16)&0xFFFF);
+	push_ascii(buf+30,fname,12, case_sensitive ? 0 : STR_UPPER);
+	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
-
 /*******************************************************************
-close the low 3 fd's and open dev/null in their place
+ Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
+
 void close_low_fds(BOOL stderr_too)
 {
-  int fd;
-  int i;
-  close(0); close(1); 
+	int fd;
+	int i;
 
-  if (stderr_too) {
-	  close(2);
-  }
+	close(0);
+	close(1); 
 
-  /* try and use up these file descriptors, so silly
-     library routines writing to stdout etc won't cause havoc */
-  for (i=0;i<3;i++) {
-	  if (i == 2 && !stderr_too)
-		  continue;
+	if (stderr_too)
+		close(2);
 
-	  fd = sys_open("/dev/null",O_RDWR,0);
-	  if (fd < 0) fd = sys_open("/dev/null",O_WRONLY,0);
-	  if (fd < 0) {
-		  DEBUG(0,("Can't open /dev/null\n"));
-		  return;
-	  }
-	  if (fd != i) {
-		  DEBUG(0,("Didn't get file descriptor %d\n",i));
-		  return;
-	  }
-  }
+	/* try and use up these file descriptors, so silly
+		library routines writing to stdout etc won't cause havoc */
+	for (i=0;i<3;i++) {
+		if (i == 2 && !stderr_too)
+			continue;
+
+		fd = sys_open("/dev/null",O_RDWR,0);
+		if (fd < 0)
+			fd = sys_open("/dev/null",O_WRONLY,0);
+		if (fd < 0) {
+			DEBUG(0,("Can't open /dev/null\n"));
+			return;
+		}
+		if (fd != i) {
+			DEBUG(0,("Didn't get file descriptor %d\n",i));
+			return;
+		}
+	}
 }
 
 /****************************************************************************
-Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
-else
-if SYSV use O_NDELAY
-if BSD use FNDELAY
+ Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
+ else
+  if SYSV use O_NDELAY
+  if BSD use FNDELAY
 ****************************************************************************/
+
 int set_blocking(int fd, BOOL set)
 {
-  int val;
+	int val;
 #ifdef O_NONBLOCK
 #define FLAG_TO_SET O_NONBLOCK
 #else
@@ -546,13 +753,13 @@ int set_blocking(int fd, BOOL set)
 #endif
 #endif
 
-  if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
-	return -1;
-  if(set) /* Turn blocking on - ie. clear nonblock flag */
-	val &= ~FLAG_TO_SET;
-  else
-    val |= FLAG_TO_SET;
-  return sys_fcntl_long( fd, F_SETFL, val);
+	if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
+		return -1;
+	if(set) /* Turn blocking on - ie. clear nonblock flag */
+		val &= ~FLAG_TO_SET;
+	else
+		val |= FLAG_TO_SET;
+	return sys_fcntl_long( fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
 
@@ -660,9 +867,8 @@ void msleep(unsigned int t)
 
 void become_daemon(void)
 {
-	if (sys_fork()) {
+	if (sys_fork())
 		_exit(0);
-	}
 
   /* detach from the terminal */
 #ifdef HAVE_SETSID
@@ -682,22 +888,22 @@ void become_daemon(void)
 				  attach it to the logfile */
 }
 
-
 /****************************************************************************
- Put up a yes/no prompt
+ Put up a yes/no prompt.
 ****************************************************************************/
+
 BOOL yesno(char *p)
 {
-  pstring ans;
-  printf("%s",p);
+	pstring ans;
+	printf("%s",p);
 
-  if (!fgets(ans,sizeof(ans)-1,stdin))
-    return(False);
+	if (!fgets(ans,sizeof(ans)-1,stdin))
+		return(False);
 
-  if (*ans == 'y' || *ans == 'Y')
-    return(True);
+	if (*ans == 'y' || *ans == 'Y')
+		return(True);
 
-  return(False);
+	return(False);
 }
 
 /****************************************************************************
@@ -706,29 +912,29 @@ BOOL yesno(char *p)
 
 void *Realloc(void *p,size_t size)
 {
-  void *ret=NULL;
+	void *ret=NULL;
 
-  if (size == 0) {
-    SAFE_FREE(p);
-    DEBUG(5,("Realloc asked for 0 bytes\n"));
-    return NULL;
-  }
+	if (size == 0) {
+		SAFE_FREE(p);
+		DEBUG(5,("Realloc asked for 0 bytes\n"));
+		return NULL;
+	}
 
-  if (!p)
-    ret = (void *)malloc(size);
-  else
-    ret = (void *)realloc(p,size);
+	if (!p)
+		ret = (void *)malloc(size);
+	else
+		ret = (void *)realloc(p,size);
 
-  if (!ret)
-    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
+	if (!ret)
+		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
 
-  return(ret);
+	return(ret);
 }
 
 /****************************************************************************
  Free memory, checks for NULL.
-use directly SAFE_FREE()
-exist only because we need to pass a function pointer somewhere --SSS
+ Use directly SAFE_FREE()
+ Exists only because we need to pass a function pointer somewhere --SSS
 ****************************************************************************/
 
 void safe_free(void *p)
@@ -774,22 +980,22 @@ BOOL get_myname(char *my_name)
 
 int interpret_protocol(char *str,int def)
 {
-  if (strequal(str,"NT1"))
-    return(PROTOCOL_NT1);
-  if (strequal(str,"LANMAN2"))
-    return(PROTOCOL_LANMAN2);
-  if (strequal(str,"LANMAN1"))
-    return(PROTOCOL_LANMAN1);
-  if (strequal(str,"CORE"))
-    return(PROTOCOL_CORE);
-  if (strequal(str,"COREPLUS"))
-    return(PROTOCOL_COREPLUS);
-  if (strequal(str,"CORE+"))
-    return(PROTOCOL_COREPLUS);
+	if (strequal(str,"NT1"))
+		return(PROTOCOL_NT1);
+	if (strequal(str,"LANMAN2"))
+		return(PROTOCOL_LANMAN2);
+	if (strequal(str,"LANMAN1"))
+		return(PROTOCOL_LANMAN1);
+	if (strequal(str,"CORE"))
+		return(PROTOCOL_CORE);
+	if (strequal(str,"COREPLUS"))
+		return(PROTOCOL_COREPLUS);
+	if (strequal(str,"CORE+"))
+		return(PROTOCOL_COREPLUS);
   
-  DEBUG(0,("Unrecognised protocol level %s\n",str));
+	DEBUG(0,("Unrecognised protocol level %s\n",str));
   
-  return(def);
+	return(def);
 }
 
 /****************************************************************************
@@ -798,77 +1004,83 @@ int interpret_protocol(char *str,int def)
 
 BOOL is_ipaddress(const char *str)
 {
-  BOOL pure_address = True;
-  int i;
+	BOOL pure_address = True;
+	int i;
   
-  for (i=0; pure_address && str[i]; i++)
-    if (!(isdigit((int)str[i]) || str[i] == '.'))
-      pure_address = False;
+	for (i=0; pure_address && str[i]; i++)
+		if (!(isdigit((int)str[i]) || str[i] == '.'))
+			pure_address = False;
 
-  /* Check that a pure number is not misinterpreted as an IP */
-  pure_address = pure_address && (strchr_m(str, '.') != NULL);
+	/* Check that a pure number is not misinterpreted as an IP */
+	pure_address = pure_address && (strchr_m(str, '.') != NULL);
 
-  return pure_address;
+	return pure_address;
 }
 
 /****************************************************************************
-interpret an internet address or name into an IP address in 4 byte form
+ Interpret an internet address or name into an IP address in 4 byte form.
 ****************************************************************************/
 
 uint32 interpret_addr(const char *str)
 {
-  struct hostent *hp;
-  uint32 res;
+	struct hostent *hp;
+	uint32 res;
 
-  if (strcmp(str,"0.0.0.0") == 0) return(0);
-  if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
+	if (strcmp(str,"0.0.0.0") == 0)
+		return(0);
+	if (strcmp(str,"255.255.255.255") == 0)
+		return(0xFFFFFFFF);
 
   /* if it's in the form of an IP address then get the lib to interpret it */
-  if (is_ipaddress(str)) {
-    res = inet_addr(str);
-  } else {
-    /* otherwise assume it's a network name of some sort and use 
-       sys_gethostbyname */
-    if ((hp = sys_gethostbyname(str)) == 0) {
-      DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
-      return 0;
-    }
-    if(hp->h_addr == NULL) {
-      DEBUG(3,("sys_gethostbyname: host address is invalid for host %s\n",str));
-      return 0;
-    }
-    putip((char *)&res,(char *)hp->h_addr);
-  }
+	if (is_ipaddress(str)) {
+		res = inet_addr(str);
+	} else {
+		/* otherwise assume it's a network name of some sort and use 
+			sys_gethostbyname */
+		if ((hp = sys_gethostbyname(str)) == 0) {
+			DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
+			return 0;
+		}
 
-  if (res == (uint32)-1) return(0);
+		if(hp->h_addr == NULL) {
+			DEBUG(3,("sys_gethostbyname: host address is invalid for host %s\n",str));
+			return 0;
+		}
+		putip((char *)&res,(char *)hp->h_addr);
+	}
 
-  return(res);
+	if (res == (uint32)-1)
+		return(0);
+
+	return(res);
 }
 
 /*******************************************************************
-  a convenient addition to interpret_addr()
-  ******************************************************************/
+ A convenient addition to interpret_addr().
+******************************************************************/
+
 struct in_addr *interpret_addr2(const char *str)
 {
-  static struct in_addr ret;
-  uint32 a = interpret_addr(str);
-  ret.s_addr = a;
-  return(&ret);
+	static struct in_addr ret;
+	uint32 a = interpret_addr(str);
+	ret.s_addr = a;
+	return(&ret);
 }
 
 /*******************************************************************
- Check if an IP is the 0.0.0.0
-  ******************************************************************/
+ Check if an IP is the 0.0.0.0.
+******************************************************************/
+
 BOOL is_zero_ip(struct in_addr ip)
 {
-  uint32 a;
-  putip((char *)&a,(char *)&ip);
-  return(a == 0);
+	uint32 a;
+	putip((char *)&a,(char *)&ip);
+	return(a == 0);
 }
 
 /*******************************************************************
- Set an IP to 0.0.0.0
- ******************************************************************/
+ Set an IP to 0.0.0.0.
+******************************************************************/
 
 void zero_ip(struct in_addr *ip)
 {
@@ -891,20 +1103,19 @@ void zero_ip(struct in_addr *ip)
 
 static void strip_mount_options( pstring *str)
 {
-  if (**str == '-')
-  { 
-    char *p = *str;
-    while(*p && !isspace(*p))
-      p++;
-    while(*p && isspace(*p))
-      p++;
-    if(*p) {
-      pstring tmp_str;
+	if (**str == '-') { 
+		char *p = *str;
+		while(*p && !isspace(*p))
+			p++;
+		while(*p && isspace(*p))
+			p++;
+		if(*p) {
+			pstring tmp_str;
 
-      pstrcpy(tmp_str, p);
-      pstrcpy(*str, tmp_str);
-    }
-  }
+			pstrcpy(tmp_str, p);
+			pstrcpy(*str, tmp_str);
+		}
+	}
 }
 
 /*******************************************************************
@@ -917,127 +1128,118 @@ static void strip_mount_options( pstring *str)
 #ifdef WITH_NISPLUS_HOME
 char *automount_lookup(const char *user_name)
 {
-  static fstring last_key = "";
-  static pstring last_value = "";
+	static fstring last_key = "";
+	static pstring last_value = "";
  
-  char *nis_map = (char *)lp_nis_home_map_name();
+	char *nis_map = (char *)lp_nis_home_map_name();
  
-  char buffer[NIS_MAXATTRVAL + 1];
-  nis_result *result;
-  nis_object *object;
-  entry_obj  *entry;
+	char buffer[NIS_MAXATTRVAL + 1];
+	nis_result *result;
+	nis_object *object;
+	entry_obj  *entry;
  
-  if (strcmp(user_name, last_key))
-  {
-    slprintf(buffer, sizeof(buffer)-1, "[key=%s],%s", user_name, nis_map);
-    DEBUG(5, ("NIS+ querystring: %s\n", buffer));
+	if (strcmp(user_name, last_key)) {
+		slprintf(buffer, sizeof(buffer)-1, "[key=%s],%s", user_name, nis_map);
+		DEBUG(5, ("NIS+ querystring: %s\n", buffer));
  
-    if (result = nis_list(buffer, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP, NULL, NULL))
-    {
-       if (result->status != NIS_SUCCESS)
-      {
-        DEBUG(3, ("NIS+ query failed: %s\n", nis_sperrno(result->status)));
-        fstrcpy(last_key, ""); pstrcpy(last_value, "");
-      }
-      else
-      {
-        object = result->objects.objects_val;
-        if (object->zo_data.zo_type == ENTRY_OBJ)
-        {
-           entry = &object->zo_data.objdata_u.en_data;
-           DEBUG(5, ("NIS+ entry type: %s\n", entry->en_type));
-           DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
+		if (result = nis_list(buffer, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP, NULL, NULL)) {
+			if (result->status != NIS_SUCCESS) {
+				DEBUG(3, ("NIS+ query failed: %s\n", nis_sperrno(result->status)));
+				fstrcpy(last_key, ""); pstrcpy(last_value, "");
+			} else {
+				object = result->objects.objects_val;
+				if (object->zo_data.zo_type == ENTRY_OBJ) {
+					entry = &object->zo_data.objdata_u.en_data;
+					DEBUG(5, ("NIS+ entry type: %s\n", entry->en_type));
+					DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
  
-           pstrcpy(last_value, entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
-           pstring_sub(last_value, "&", user_name);
-           fstrcpy(last_key, user_name);
-        }
-      }
-    }
-    nis_freeresult(result);
-  }
+					pstrcpy(last_value, entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
+					pstring_sub(last_value, "&", user_name);
+					fstrcpy(last_key, user_name);
+				}
+			}
+		}
+		nis_freeresult(result);
+	}
 
-  strip_mount_options(&last_value);
+	strip_mount_options(&last_value);
 
-  DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
-  return last_value;
+	DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
+	return last_value;
 }
 #else /* WITH_NISPLUS_HOME */
+
 char *automount_lookup(const char *user_name)
 {
-  static fstring last_key = "";
-  static pstring last_value = "";
+	static fstring last_key = "";
+	static pstring last_value = "";
 
-  int nis_error;        /* returned by yp all functions */
-  char *nis_result;     /* yp_match inits this */
-  int nis_result_len;  /* and set this */
-  char *nis_domain;     /* yp_get_default_domain inits this */
-  char *nis_map = (char *)lp_nis_home_map_name();
+	int nis_error;        /* returned by yp all functions */
+	char *nis_result;     /* yp_match inits this */
+	int nis_result_len;  /* and set this */
+	char *nis_domain;     /* yp_get_default_domain inits this */
+	char *nis_map = (char *)lp_nis_home_map_name();
 
-  if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
-    DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
-    return last_value;
-  }
+	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
+		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+		return last_value;
+	}
 
-  DEBUG(5, ("NIS Domain: %s\n", nis_domain));
+	DEBUG(5, ("NIS Domain: %s\n", nis_domain));
 
-  if (!strcmp(user_name, last_key)) {
-	nis_result = last_value;
-    nis_result_len = strlen(last_value);
-    nis_error = 0;
+	if (!strcmp(user_name, last_key)) {
+		nis_result = last_value;
+		nis_result_len = strlen(last_value);
+		nis_error = 0;
+  	} else {
+		if ((nis_error = yp_match(nis_domain, nis_map, user_name, strlen(user_name),
+				&nis_result, &nis_result_len)) == 0) {
+			if (!nis_error && nis_result_len >= sizeof(pstring)) {
+				nis_result_len = sizeof(pstring)-1;
+			}
+			fstrcpy(last_key, user_name);
+			strncpy(last_value, nis_result, nis_result_len);
+			last_value[nis_result_len] = '\0';
+			strip_mount_options(&last_value);
 
-  } else {
+		} else if(nis_error == YPERR_KEY) {
 
-    if ((nis_error = yp_match(nis_domain, nis_map,
-                              user_name, strlen(user_name),
-                              &nis_result, &nis_result_len)) == 0) {
-       if (!nis_error && nis_result_len >= sizeof(pstring)) {
-               nis_result_len = sizeof(pstring)-1;
-       }
-       fstrcpy(last_key, user_name);
-       strncpy(last_value, nis_result, nis_result_len);
-       last_value[nis_result_len] = '\0';
-        strip_mount_options(&last_value);
+			/* If Key lookup fails user home server is not in nis_map 
+				use default information for server, and home directory */
+			last_value[0] = 0;
+			DEBUG(3, ("YP Key not found:  while looking up \"%s\" in map \"%s\"\n", 
+					user_name, nis_map));
+			DEBUG(3, ("using defaults for server and home directory\n"));
+		} else {
+			DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
+					yperr_string(nis_error), user_name, nis_map));
+		}
+	}
 
-    } else if(nis_error == YPERR_KEY) {
-
-    /* If Key lookup fails user home server is not in nis_map 
-       use default information for server, and home directory */
-       last_value[0] = 0;
-       DEBUG(3, ("YP Key not found:  while looking up \"%s\" in map \"%s\"\n", 
-                user_name, nis_map));
-       DEBUG(3, ("using defaults for server and home directory\n"));
-    } else {
-       DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
-               yperr_string(nis_error), user_name, nis_map));
-    }
-  }
-
-
-  DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
-  return last_value;
+	DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
+	return last_value;
 }
 #endif /* WITH_NISPLUS_HOME */
 #endif
 
-
 /*******************************************************************
-are two IPs on the same subnet?
+ Are two IPs on the same subnet?
 ********************************************************************/
+
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 {
-  uint32 net1,net2,nmask;
+	uint32 net1,net2,nmask;
 
-  nmask = ntohl(mask.s_addr);
-  net1  = ntohl(ip1.s_addr);
-  net2  = ntohl(ip2.s_addr);
+	nmask = ntohl(mask.s_addr);
+	net1  = ntohl(ip1.s_addr);
+	net2  = ntohl(ip2.s_addr);
             
-  return((net1 & nmask) == (net2 & nmask));
+	return((net1 & nmask) == (net2 & nmask));
 }
 
 
 /****************************************************************************
-check if a process exists. Does this work on all unixes?
+ Check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
 BOOL process_exists(pid_t pid)
@@ -1047,7 +1249,6 @@ BOOL process_exists(pid_t pid)
 	SMB_ASSERT(pid > 0);
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
-
 
 /*******************************************************************
  Convert a uid into a user name.
@@ -1130,8 +1331,9 @@ gid_t nametogid(const char *name)
 }
 
 /*******************************************************************
-something really nasty happened - panic!
+ Something really nasty happened - panic !
 ********************************************************************/
+
 void smb_panic(char *why)
 {
 	char *cmd = lp_panic_action();
@@ -1153,24 +1355,27 @@ void smb_panic(char *why)
 	abort();
 }
 
-
 /*******************************************************************
-a readdir wrapper which just returns the file name
+ A readdir wrapper which just returns the file name.
 ********************************************************************/
+
 char *readdirname(DIR *p)
 {
 	SMB_STRUCT_DIRENT *ptr;
 	char *dname;
 
-	if (!p) return(NULL);
+	if (!p)
+		return(NULL);
   
 	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
-	if (!ptr) return(NULL);
+	if (!ptr)
+		return(NULL);
 
 	dname = ptr->d_name;
 
 #ifdef NEXT2
-	if (telldir(p) < 0) return(NULL);
+	if (telldir(p) < 0)
+		return(NULL);
 #endif
 
 #ifdef HAVE_BROKEN_READDIR
@@ -1196,46 +1401,39 @@ char *readdirname(DIR *p)
 
 BOOL is_in_path(char *name, name_compare_entry *namelist)
 {
-  pstring last_component;
-  char *p;
+	pstring last_component;
+	char *p;
 
-  DEBUG(8, ("is_in_path: %s\n", name));
+	DEBUG(8, ("is_in_path: %s\n", name));
 
-  /* if we have no list it's obviously not in the path */
-  if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) 
-  {
-    DEBUG(8,("is_in_path: no name list.\n"));
-    return False;
-  }
+	/* if we have no list it's obviously not in the path */
+	if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) {
+		DEBUG(8,("is_in_path: no name list.\n"));
+		return False;
+	}
 
-  /* Get the last component of the unix name. */
-  p = strrchr_m(name, '/');
-  strncpy(last_component, p ? ++p : name, sizeof(last_component)-1);
-  last_component[sizeof(last_component)-1] = '\0'; 
+	/* Get the last component of the unix name. */
+	p = strrchr_m(name, '/');
+	strncpy(last_component, p ? ++p : name, sizeof(last_component)-1);
+	last_component[sizeof(last_component)-1] = '\0'; 
 
-  for(; namelist->name != NULL; namelist++)
-  {
-    if(namelist->is_wild)
-    {
-      if (mask_match(last_component, namelist->name, case_sensitive))
-      {
-         DEBUG(8,("is_in_path: mask match succeeded\n"));
-         return True;
-      }
-    }
-    else
-    {
-      if((case_sensitive && (strcmp(last_component, namelist->name) == 0))||
-       (!case_sensitive && (StrCaseCmp(last_component, namelist->name) == 0)))
-        {
-         DEBUG(8,("is_in_path: match succeeded\n"));
-         return True;
-        }
-    }
-  }
-  DEBUG(8,("is_in_path: match not found\n"));
+	for(; namelist->name != NULL; namelist++) {
+		if(namelist->is_wild) {
+			if (mask_match(last_component, namelist->name, case_sensitive)) {
+				DEBUG(8,("is_in_path: mask match succeeded\n"));
+				return True;
+			}
+		} else {
+			if((case_sensitive && (strcmp(last_component, namelist->name) == 0))||
+						(!case_sensitive && (StrCaseCmp(last_component, namelist->name) == 0))) {
+				DEBUG(8,("is_in_path: match succeeded\n"));
+				return True;
+			}
+		}
+	}
+	DEBUG(8,("is_in_path: match not found\n"));
  
-  return False;
+	return False;
 }
 
 /*******************************************************************
@@ -1253,99 +1451,92 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
  
 void set_namearray(name_compare_entry **ppname_array, char *namelist)
 {
-  char *name_end;
-  char *nameptr = namelist;
-  int num_entries = 0;
-  int i;
+	char *name_end;
+	char *nameptr = namelist;
+	int num_entries = 0;
+	int i;
 
-  (*ppname_array) = NULL;
+	(*ppname_array) = NULL;
 
-  if((nameptr == NULL ) || ((nameptr != NULL) && (*nameptr == '\0'))) 
-    return;
+	if((nameptr == NULL ) || ((nameptr != NULL) && (*nameptr == '\0'))) 
+		return;
 
-  /* We need to make two passes over the string. The
-     first to count the number of elements, the second
-     to split it.
-   */
-  while(*nameptr) 
-    {
-      if ( *nameptr == '/' ) 
-        {
-          /* cope with multiple (useless) /s) */
-          nameptr++;
-          continue;
-        }
-      /* find the next / */
-      name_end = strchr_m(nameptr, '/');
+	/* We need to make two passes over the string. The
+		first to count the number of elements, the second
+		to split it.
+	*/
 
-      /* oops - the last check for a / didn't find one. */
-      if (name_end == NULL)
-        break;
+	while(*nameptr) {
+		if ( *nameptr == '/' ) {
+			/* cope with multiple (useless) /s) */
+			nameptr++;
+			continue;
+		}
+		/* find the next / */
+		name_end = strchr_m(nameptr, '/');
 
-      /* next segment please */
-      nameptr = name_end + 1;
-      num_entries++;
-    }
+		/* oops - the last check for a / didn't find one. */
+		if (name_end == NULL)
+			break;
 
-  if(num_entries == 0)
-    return;
+		/* next segment please */
+		nameptr = name_end + 1;
+		num_entries++;
+	}
 
-  if(( (*ppname_array) = (name_compare_entry *)malloc( 
-           (num_entries + 1) * sizeof(name_compare_entry))) == NULL)
-        {
-    DEBUG(0,("set_namearray: malloc fail\n"));
-    return;
-        }
+	if(num_entries == 0)
+		return;
 
-  /* Now copy out the names */
-  nameptr = namelist;
-  i = 0;
-  while(*nameptr)
-             {
-      if ( *nameptr == '/' ) 
-      {
-          /* cope with multiple (useless) /s) */
-          nameptr++;
-          continue;
-      }
-      /* find the next / */
-      if ((name_end = strchr_m(nameptr, '/')) != NULL) 
-      {
-          *name_end = 0;
-         }
+	if(( (*ppname_array) = (name_compare_entry *)malloc(
+					(num_entries + 1) * sizeof(name_compare_entry))) == NULL) {
+		DEBUG(0,("set_namearray: malloc fail\n"));
+		return;
+	}
 
-      /* oops - the last check for a / didn't find one. */
-      if(name_end == NULL) 
-        break;
+	/* Now copy out the names */
+	nameptr = namelist;
+	i = 0;
+	while(*nameptr) {
+		if ( *nameptr == '/' ) {
+			/* cope with multiple (useless) /s) */
+			nameptr++;
+			continue;
+		}
+		/* find the next / */
+		if ((name_end = strchr_m(nameptr, '/')) != NULL)
+			*name_end = 0;
 
-      (*ppname_array)[i].is_wild = ms_has_wild(nameptr);
-      if(((*ppname_array)[i].name = strdup(nameptr)) == NULL)
-      {
-        DEBUG(0,("set_namearray: malloc fail (1)\n"));
-        return;
-      }
+		/* oops - the last check for a / didn't find one. */
+		if(name_end == NULL) 
+			break;
 
-      /* next segment please */
-      nameptr = name_end + 1;
-      i++;
-    }
+		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
+		if(((*ppname_array)[i].name = strdup(nameptr)) == NULL) {
+			DEBUG(0,("set_namearray: malloc fail (1)\n"));
+			return;
+		}
+
+		/* next segment please */
+		nameptr = name_end + 1;
+		i++;
+	}
   
-  (*ppname_array)[i].name = NULL;
+	(*ppname_array)[i].name = NULL;
 
-  return;
+	return;
 }
 
 /****************************************************************************
-routine to free a namearray.
+ Routine to free a namearray.
 ****************************************************************************/
 
 void free_namearray(name_compare_entry *name_array)
 {
-  if(name_array == NULL)
-    return;
+	if(name_array == NULL)
+		return;
 
-  SAFE_FREE(name_array->name);
-  SAFE_FREE(name_array);
+	SAFE_FREE(name_array->name);
+	SAFE_FREE(name_array);
 }
 
 /****************************************************************************
@@ -1355,50 +1546,47 @@ void free_namearray(name_compare_entry *name_array)
 
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-  SMB_STRUCT_FLOCK lock;
-  int ret;
+	SMB_STRUCT_FLOCK lock;
+	int ret;
 
-  DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
+	DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
 
-  lock.l_type = type;
-  lock.l_whence = SEEK_SET;
-  lock.l_start = offset;
-  lock.l_len = count;
-  lock.l_pid = 0;
+	lock.l_type = type;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = offset;
+	lock.l_len = count;
+	lock.l_pid = 0;
 
-  ret = sys_fcntl_ptr(fd,op,&lock);
+	ret = sys_fcntl_ptr(fd,op,&lock);
 
-  if (ret == -1 && errno != 0)
-    DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
+	if (ret == -1 && errno != 0)
+		DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
-  /* a lock query */
-  if (op == SMB_F_GETLK)
-  {
-    if ((ret != -1) &&
-        (lock.l_type != F_UNLCK) && 
-        (lock.l_pid != 0) && 
-        (lock.l_pid != sys_getpid()))
-    {
-      DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
-      return(True);
-    }
+	/* a lock query */
+	if (op == SMB_F_GETLK) {
+		if ((ret != -1) &&
+				(lock.l_type != F_UNLCK) && 
+				(lock.l_pid != 0) && 
+				(lock.l_pid != sys_getpid())) {
+			DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
+			return(True);
+		}
 
-    /* it must be not locked or locked by me */
-    return(False);
-  }
+		/* it must be not locked or locked by me */
+		return(False);
+	}
 
-  /* a lock set or unset */
-  if (ret == -1)
-  {
-    DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
-          (double)offset,(double)count,op,type,strerror(errno)));
-    return(False);
-  }
+	/* a lock set or unset */
+	if (ret == -1) {
+		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
+			(double)offset,(double)count,op,type,strerror(errno)));
+		return(False);
+	}
 
-  /* everything went OK */
-  DEBUG(8,("fcntl_lock: Lock call successful\n"));
+	/* everything went OK */
+	DEBUG(8,("fcntl_lock: Lock call successful\n"));
 
-  return(True);
+	return(True);
 }
 
 /*******************************************************************
@@ -1406,14 +1594,16 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
  Returns true if it is equal, false otherwise.
 ********************************************************************/
 
-BOOL is_myname(char *s)
+BOOL is_myname(const char *s)
 {
 	int n;
 	BOOL ret = False;
 
-	for (n=0; my_netbios_names[n]; n++) {
-		if (strequal(my_netbios_names[n], s))
+	for (n=0; my_netbios_names(n); n++) {
+		if (strequal(my_netbios_names(n), s)) {
 			ret=True;
+			break;
+		}
 	}
 	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
 	return(ret);
@@ -1437,12 +1627,10 @@ const char* get_my_primary_ip (void)
 	return ip_string;
 }
 
-BOOL is_myname_or_ipaddr(char *s)
+BOOL is_myname_or_ipaddr(const char *s)
 {
-	char **ptr;
-	
 	/* optimize for the common case */
-	if (strequal(s, global_myname)) 
+	if (strequal(s, global_myname())) 
 		return True;
 
 	/* maybe its an IP address? */
@@ -1463,11 +1651,8 @@ BOOL is_myname_or_ipaddr(char *s)
 	}	
 
 	/* check for an alias */
-  	ptr = lp_netbios_aliases();
-	for ( ; *ptr; ptr++ ) {
-		if (StrCaseCmp(s, *ptr) == 0)
-			return True;
-	}
+	if (is_myname(s))
+		return True;
 	
 	/* no match */
 	return False;
@@ -1609,15 +1794,14 @@ char *tab_depth(int depth)
 }
 
 /*****************************************************************************
- * Provide a checksum on a string
- *
- *  Input:  s - the null-terminated character string for which the checksum
- *              will be calculated.
- *
- *  Output: The checksum value calculated for s.
- *
- * ****************************************************************************
- */
+ Provide a checksum on a string
+
+ Input:  s - the null-terminated character string for which the checksum
+             will be calculated.
+
+  Output: The checksum value calculated for s.
+*****************************************************************************/
+
 int str_checksum(const char *s)
 {
 	int res = 0;
@@ -1631,23 +1815,22 @@ int str_checksum(const char *s)
 		i++;
 	}
 	return(res);
-} /* str_checksum */
-
-
+}
 
 /*****************************************************************
-zero a memory area then free it. Used to catch bugs faster
+ Zero a memory area then free it. Used to catch bugs faster.
 *****************************************************************/  
+
 void zero_free(void *p, size_t size)
 {
 	memset(p, 0, size);
 	SAFE_FREE(p);
 }
 
-
 /*****************************************************************
-set our open file limit to a requested max and return the limit
+ Set our open file limit to a requested max and return the limit.
 *****************************************************************/  
+
 int set_maxfiles(int requested_max)
 {
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
@@ -1662,7 +1845,7 @@ int set_maxfiles(int requested_max)
 	}
 
 	/* 
-     * Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
+	 * Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
 	 * account for the extra fd we need 
 	 * as well as the log files and standard
 	 * handles etc. Save the limit we want to set in case
@@ -1715,7 +1898,7 @@ int set_maxfiles(int requested_max)
 		return saved_current_limit;
 #endif
 
-    if((int)rlp.rlim_cur > saved_current_limit)
+	if((int)rlp.rlim_cur > saved_current_limit)
 		return saved_current_limit;
 
 	return rlp.rlim_cur;
@@ -1728,53 +1911,43 @@ int set_maxfiles(int requested_max)
 }
 
 /*****************************************************************
- splits out the start of the key (HKLM or HKU) and the rest of the key
- *****************************************************************/  
-BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
+ Splits out the start of the key (HKLM or HKU) and the rest of the key.
+*****************************************************************/  
+
+BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 {
 	pstring tmp;
 
 	if (!next_token(&full_keyname, tmp, "\\", sizeof(tmp)))
-	{
 		return False;
-	}
 
 	(*reg_type) = 0;
 
 	DEBUG(10, ("reg_split_key: hive %s\n", tmp));
 
 	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
-	{
 		(*reg_type) = HKEY_LOCAL_MACHINE;
-	}
 	else if (strequal(tmp, "HKU") || strequal(tmp, "HKEY_USERS"))
-	{
 		(*reg_type) = HKEY_USERS;
-	}
-	else
-	{
+	else {
 		DEBUG(10,("reg_split_key: unrecognised hive key %s\n", tmp));
 		return False;
 	}
 	
 	if (next_token(&full_keyname, tmp, "\n\r", sizeof(tmp)))
-	{
 		fstrcpy(key_name, tmp);
-	}
 	else
-	{
 		key_name[0] = 0;
-	}
 
 	DEBUG(10, ("reg_split_key: name %s\n", key_name));
 
 	return True;
 }
 
-
 /*****************************************************************
-possibly replace mkstemp if it is broken
+ Possibly replace mkstemp if it is broken.
 *****************************************************************/  
+
 int smb_mkstemp(char *template)
 {
 #if HAVE_SECURE_MKSTEMP
@@ -1783,7 +1956,8 @@ int smb_mkstemp(char *template)
 	/* have a reasonable go at emulating it. Hope that
 	   the system mktemp() isn't completly hopeless */
 	char *p = mktemp(template);
-	if (!p) return -1;
+	if (!p)
+		return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif
 }
@@ -1805,6 +1979,7 @@ void *smb_xmalloc(size_t size)
 /**
  Memdup with smb_panic on fail.
 **/
+
 void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
@@ -1816,6 +1991,7 @@ void *smb_xmemdup(const void *p, size_t size)
 /**
  strdup that aborts on malloc fail.
 **/
+
 char *smb_xstrdup(const char *s)
 {
 	char *s1 = strdup(s);
@@ -1827,6 +2003,7 @@ char *smb_xstrdup(const char *s)
 /**
  strndup that aborts on malloc fail.
 **/
+
 char *smb_xstrndup(const char *s, size_t n)
 {
 	char *s1 = strndup(s, n);
@@ -1838,6 +2015,7 @@ char *smb_xstrndup(const char *s, size_t n)
 /*
   vasprintf that aborts on malloc fail
 */
+
 int smb_xvasprintf(char **ptr, const char *format, va_list ap)
 {
 	int n;
@@ -1846,41 +2024,43 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap)
 	VA_COPY(ap2, ap);
 
 	n = vasprintf(ptr, format, ap2);
-	if (n == -1 || ! *ptr) {
+	if (n == -1 || ! *ptr)
 		smb_panic("smb_xvasprintf: out of memory");
-	}
 	return n;
 }
 
 /*****************************************************************
-like strdup but for memory
- *****************************************************************/  
+ Like strdup but for memory.
+*****************************************************************/  
+
 void *memdup(const void *p, size_t size)
 {
 	void *p2;
-	if (size == 0) return NULL;
+	if (size == 0)
+		return NULL;
 	p2 = malloc(size);
-	if (!p2) return NULL;
+	if (!p2)
+		return NULL;
 	memcpy(p2, p, size);
 	return p2;
 }
 
 /*****************************************************************
-get local hostname and cache result
- *****************************************************************/  
+ Get local hostname and cache result.
+*****************************************************************/  
+
 char *myhostname(void)
 {
 	static pstring ret;
-	if (ret[0] == 0) {
+	if (ret[0] == 0)
 		get_myname(ret);
-	}
 	return ret;
 }
 
-
 /*****************************************************************
-a useful function for returning a path in the Samba lock directory
- *****************************************************************/  
+ A useful function for returning a path in the Samba lock directory.
+*****************************************************************/  
+
 char *lock_path(const char *name)
 {
 	static pstring fname;
@@ -1888,9 +2068,8 @@ char *lock_path(const char *name)
 	pstrcpy(fname,lp_lockdir());
 	trim_string(fname,"","/");
 	
-	if (!directory_exist(fname,NULL)) {
+	if (!directory_exist(fname,NULL))
 		mkdir(fname,0755);
-	}
 	
 	pstrcat(fname,"/");
 	pstrcat(fname,name);
@@ -1899,8 +2078,9 @@ char *lock_path(const char *name)
 }
 
 /*****************************************************************
-a useful function for returning a path in the Samba pid directory
- *****************************************************************/
+ A useful function for returning a path in the Samba pid directory.
+*****************************************************************/
+
 char *pid_path(const char *name)
 {
 	static pstring fname;
@@ -1908,16 +2088,14 @@ char *pid_path(const char *name)
 	pstrcpy(fname,lp_piddir());
 	trim_string(fname,"","/");
 
-	if (!directory_exist(fname,NULL)) {
+	if (!directory_exist(fname,NULL))
 		mkdir(fname,0755);
-	}
 
 	pstrcat(fname,"/");
 	pstrcat(fname,name);
 
 	return fname;
 }
-
 
 /**
  * @brief Returns an absolute path to a file in the Samba lib directory.
@@ -1926,6 +2104,7 @@ char *pid_path(const char *name)
  *
  * @retval Pointer to a static #pstring containing the full path.
  **/
+
 char *lib_path(const char *name)
 {
 	static pstring fname;
@@ -1963,8 +2142,9 @@ char *parent_dirname(const char *path)
 
 
 /*******************************************************************
-determine if a pattern contains any Microsoft wildcard characters
- *******************************************************************/
+ Determine if a pattern contains any Microsoft wildcard characters.
+*******************************************************************/
+
 BOOL ms_has_wild(char *s)
 {
 	char c;
@@ -1999,19 +2179,21 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
 }
 
 /*******************************************************************
- a wrapper that handles case sensitivity and the special handling
-   of the ".." name
- *******************************************************************/
+ A wrapper that handles case sensitivity and the special handling
+ of the ".." name.
+*******************************************************************/
+
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 {
 	fstring p2, s2;
 
-	if (strcmp(string,"..") == 0) string = ".";
-	if (strcmp(pattern,".") == 0) return False;
+	if (strcmp(string,"..") == 0)
+		string = ".";
+	if (strcmp(pattern,".") == 0)
+		return False;
 	
-	if (is_case_sensitive) {
+	if (is_case_sensitive)
 		return ms_fnmatch(pattern, string, Protocol) == 0;
-	}
 
 	fstrcpy(p2, pattern);
 	fstrcpy(s2, string);
@@ -2153,6 +2335,7 @@ This routine is a trick to immediately catch errors when debugging
 with insure. A xterm with a gdb is popped up when insure catches
 a error. It is Linux specific.
 ********************************************************************/
+
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 {
 	static int (*fn)();
