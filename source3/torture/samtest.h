@@ -22,10 +22,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+struct samtest_state {
+	SAM_CONTEXT *context;
+	NT_USER_TOKEN *token;
+};
+
 struct cmd_set {
 	char *name;
-	NTSTATUS (*fn)(struct sam_context *sam, TALLOC_CTX *mem_ctx, int argc, 
+	NTSTATUS (*fn)(struct samtest_state *sam, TALLOC_CTX *mem_ctx, int argc, 
                        char **argv);
 	char *description;
 	char *usage;
 };
+
+

@@ -25,7 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SAM
 
-NTSTATUS sam_init_plugin(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const DOM_SID *domain, const char *module_params)
+NTSTATUS sam_init_plugin(SAM_METHODS *sam_methods, const char *module_params)
 {
 	void *dl_handle;
 	char *plugin_params, *plugin_name, *p;
@@ -74,6 +74,6 @@ NTSTATUS sam_init_plugin(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_metho
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(5, ("Starting sam plugin %s with parameters %s for domain %s\n", plugin_name, plugin_params, sid_string_static(domain)));
-	return plugin_init(sam_context, sam_method, domain, plugin_params);
+	DEBUG(5, ("Starting sam plugin %s with parameters %s for domain %s\n", plugin_name, plugin_params, sam_methods->domain_name));
+	return plugin_init(sam_methods, plugin_params);
 }

@@ -216,7 +216,8 @@ typedef struct sam_methods
 	struct sam_methods		*next;
 	struct sam_methods		*prev;
 	const char			*backendname;
-	struct sam_domain_handle	*domain;
+	const char			*domain_name;
+	DOM_SID				domain_sid;
 	void				*private_data;
 	
 	/* General API */
@@ -262,7 +263,7 @@ typedef struct sam_methods
 	void (*free_private_data)(void **);
 } SAM_METHODS;
 
-typedef NTSTATUS (*sam_init_function)(const SAM_CONTEXT *, SAM_METHODS **, const DOM_SID *domain, const char *);
+typedef NTSTATUS (*sam_init_function)(SAM_METHODS *, const char *);
 
 struct sam_init_function_entry {
 	char *module_name;

@@ -22,27 +22,7 @@
 #include "includes.h"
 #include "samtest.h"
 
-#if 0
-static struct cmd_popt_user_opts [] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, cmd_parse_user_opts },
-	{"username", 'u', POPT_ARG_STRING, NULL, 1, "Username to use"},
-};
-
-static void cmd_parse_user_opts(poptContext con,
-							enum poptCallbackReason reason,
-							const struct poptOption *opt,
-							const char *arg, const void *data)
-{
-	SAM_ACCOUNT_HANDLE *account = (SAM_ACCOUNT_HANDLE *)data;
-	switch(opt->val) {
-		case 'u':
-			sam_set_account_username(account, arg);
-			break;
-	}
-}
-#endif
-
-static NTSTATUS cmd_load_module(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_load_module(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	char *plugin_arg[2];
 	NTSTATUS status;
@@ -54,132 +34,158 @@ static NTSTATUS cmd_load_module(struct sam_context *c, TALLOC_CTX *mem_ctx, int 
 	asprintf(&plugin_arg[0], "plugin:%s", argv[1]);
 	plugin_arg[1] = NULL;
 	
-	if(!NT_STATUS_IS_OK(status = make_sam_context_list(&c, plugin_arg)))
-	{
+	if(!NT_STATUS_IS_OK(status = make_sam_context_list(&st->context, plugin_arg))) {
+		free(plugin_arg[0]);
 		return status;
 	}
+	
+	free(plugin_arg[0]);
+
 	printf("load: ok\n");
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_get_sec_desc(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_get_sec_desc(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_set_sec_desc(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_set_sec_desc(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_sid(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lookup_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	char *name;
+	uint32 type;
+	NTSTATUS status;
+	DOM_SID sid;
+	if(argc != 2) {
+		printf("Usage: lookup_sid <sid>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!string_to_sid(&sid, argv[1])){
+		printf("Unparseable SID specified!\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if(!NT_STATUS_IS_OK(status = context_sam_lookup_sid(st->context, st->token, &sid, &name, &type))) {
+		printf("context_sam_lookup_sid failed!\n");
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_lookup_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	if(argc != 2) {
+		printf("Usage: lookup_name <name>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS cmd_lookup_account(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_name(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lookup_group(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_account(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_update_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_group(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_update_domain(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_create_account(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_show_domain(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_update_account(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_create_account(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_delete_account(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_update_account(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_delete_account(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lookup_account_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_enum_accounts(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lookup_account_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_account_sid(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_create_group(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_account_name(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_update_group(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_create_group(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_delete_group(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_update_group(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_enum_groups(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_delete_group(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lookup_group_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_enum_groups(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_lookup_group_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_group_sid(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_group_add_member(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS cmd_lookup_group_name(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS cmd_group_add_member(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS cmd_group_del_member(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_group_del_member(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
-static NTSTATUS cmd_group_enum(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_group_enum(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
-static NTSTATUS cmd_get_sid_groups(struct sam_context *c, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_get_sid_groups(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
