@@ -251,7 +251,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		capabilities |= CAP_EXTENDED_SECURITY;
 	}
 	
-	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|CAP_UNICODE;
 
 	if (lp_unix_extensions()) {
 		capabilities |= CAP_UNIX;
@@ -266,10 +266,6 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if (lp_readraw() && lp_writeraw())
 		capabilities |= CAP_RAW_MODE;
 	
-	/* allow for disabling unicode */
-	if (lp_unicode())
-		capabilities |= CAP_UNICODE;
-
 	if (lp_nt_status_support())
 		capabilities |= CAP_STATUS32;
 	
