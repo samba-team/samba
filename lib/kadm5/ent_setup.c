@@ -96,31 +96,33 @@ _kadm5_setup_entry(hdb_entry *ent,
 	}
     }
     if(mask & KADM5_MAX_LIFE) {
-	if(princ_mask & KADM5_MAX_LIFE)
+	if(princ_mask & KADM5_MAX_LIFE) {
 	    if(princ->max_life)
 	      set_value(ent->max_life, princ->max_life);
 	    else
 	      set_null(ent->max_life);
-	else if(def_mask & KADM5_MAX_LIFE)
+	} else if(def_mask & KADM5_MAX_LIFE) {
 	    if(def->max_life)
 	      set_value(ent->max_life, def->max_life);
 	    else
 	      set_null(ent->max_life);
+	}
     }
     if(mask & KADM5_KVNO
        && princ_mask & KADM5_KVNO)
 	ent->kvno = princ->kvno;
     if(mask & KADM5_MAX_RLIFE) {
-	if(princ_mask & KADM5_MAX_RLIFE)
+	if(princ_mask & KADM5_MAX_RLIFE) {
 	  if(princ->max_renewable_life)
 	    set_value(ent->max_renew, princ->max_renewable_life);
 	  else
 	    set_null(ent->max_renew);
-	else if(def_mask & KADM5_MAX_RLIFE)
+	} else if(def_mask & KADM5_MAX_RLIFE) {
 	  if(def->max_renewable_life)
 	    set_value(ent->max_renew, def->max_renewable_life);
 	  else
 	    set_null(ent->max_renew);
+	}
     }
     if(mask & KADM5_KEY_DATA
        && princ_mask & KADM5_KEY_DATA) {
