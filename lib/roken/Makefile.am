@@ -35,9 +35,9 @@ libroken_la_SOURCES =		\
 	mini_inetd.c		\
 	net_read.c		\
 	net_write.c		\
+	parse_bytes.c		\
 	parse_time.c		\
 	parse_units.c		\
-	parse_units.h		\
 	print_version.c		\
 	resolve.c		\
 	roken_gethostby.c	\
@@ -125,7 +125,8 @@ libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 
-include_HEADERS = $(err_h) base64.h getarg.h parse_time.h parse_units.h \
+include_HEADERS = $(err_h) base64.h getarg.h \
+	parse_bytes.h parse_time.h parse_units.h \
 	resolve.h roken.h roken-common.h
 
 build_HEADERZ = $(err_h) $(fnmatch_h) $(glob_h) xdbm.h
