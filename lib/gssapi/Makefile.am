@@ -2,6 +2,8 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
+CFLAGS = @CFLAGS@ $(WFLAGS)
+
 INCLUDES = -I$(top_builddir)/include -I$(srcdir)/../krb5
 
 lib_LIBRARIES = libgssapi.a
