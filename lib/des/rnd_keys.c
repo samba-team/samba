@@ -44,7 +44,11 @@ RCSID("$Id$");
 
 #include <des.h>
 #include <des_locl.h>
+#ifdef KRB5
 #include <krb5-types.h>
+#elif defined(KRB4)
+#include <ktypes.h>
+#endif
 
 #include <string.h>
 
@@ -302,7 +306,7 @@ des_rand_data(unsigned char *data, int size)
 #ifdef HAVE_SIGACTION
     sigaction(SIGALRM, &osa, 0);
 #else
-    signal(SIGALRM, osa < 0 ? SIG_DFL : osa);
+    signal(SIGALRM, osa != SIG_ERR ? osa : SIG_DFL);
 #endif
 }
 #else
