@@ -142,6 +142,7 @@ o   J. Tournier <jerome.tournier@IDEALX.com>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Put functions for generating SQL queries in pdb_sql.c
     * Add pgSQL backend (based on patch by Hamish Friedlander)
+	* Fix -s option to smbcontrol (#908)
     
 
 

@@ -717,7 +717,7 @@ int main(int argc, const char **argv)
 			argc -= 2;
 			break;
 		case 's':	/* --configfile */
-			pstrcpy(dyn_CONFIGFILE, optarg);
+			pstrcpy(dyn_CONFIGFILE, poptGetOptArg(pc));
 			argc -= 2;
 			break;
 		default:
