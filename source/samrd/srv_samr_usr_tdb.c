@@ -402,11 +402,12 @@ uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+#if 0
 	if (!tdb_lookup_user_als(tdb, &sid->sid, num_aliases, rid))
 	{
 		return NT_STATUS_NO_SUCH_USER;
 	}
-
+#endif
 	return NT_STATUS_NOPROBLEMO;
 }
 

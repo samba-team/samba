@@ -547,6 +547,8 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 		SAMR_R_ENUM_DOM_USERS r_e;
 		BOOL p;
 
+		ZERO_STRUCT(r_e);
+
 		samr_io_r_enum_dom_users("", &r_e, &rdata, 0);
 
 		status = r_e.status;
@@ -566,8 +568,11 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 			uint32 name_idx = 0;
 
 			(*num_sam_users) += r_e.num_entries2;
-			(*sam) = (struct acct_info*) Realloc((*sam),
-			       sizeof(struct acct_info) * (*num_sam_users));
+			if ((*num_sam_users) != 0)
+			{
+				(*sam) = g_renew(struct acct_info, (*sam),
+			                 (*num_sam_users));
+			}
 				    
 			if ((*sam) == NULL)
 			{
@@ -595,14 +600,8 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 			status = NT_STATUS_INVALID_PARAMETER | 0xC0000000;
 		}
 
-		if (r_e.sam != NULL)
-		{
-			free(r_e.sam);
-		}
-		if (r_e.uni_acct_name != NULL)
-		{
-			free(r_e.uni_acct_name);
-		}
+		safe_free(r_e.sam);
+		safe_free(r_e.uni_acct_name);
 	}
 	else
 	{
