@@ -865,6 +865,12 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
+#ifndef HAVE_ASPRINTF_DECL
+int asprintf(char **ptr, const char *format, ...);
+#endif
+#ifndef HAVE_VASPRINTF_DECL
+int vasprintf(char **ptr, const char *format, va_list ap);
+#endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
