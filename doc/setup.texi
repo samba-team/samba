@@ -5,15 +5,16 @@
 @chapter Setting up a realm
 
 @menu
-* Configuration file::          
-* Creating the database::       
-* keytabs::                     
+* Configuration file::
+* Creating the database::
+* Modifying the database::
+* keytabs::
 * Serving Kerberos 4/524/kaserver::
-* Remote administration::       
-* Password changing::           
-* Testing clients and servers::  
-* Slave Servers::               
-* Incremental propagation::     
+* Remote administration::
+* Password changing::
+* Testing clients and servers::
+* Slave Servers::
+* Incremental propagation::
 * Salting::
 * Cross realm::
 * Transit policy::
@@ -100,7 +101,7 @@ If you use a realm name equal to your domain name, you can omit the
 SRV-record for your realm, or your Kerberos server has DNS CNAME
 @samp{kerberos.my.realm}, you can omit the @samp{realms} section too.
 
-@node Creating the database, keytabs, Configuration file, Setting up a realm
+@node Creating the database, Modifying the database, Configuration file, Setting up a realm
 @section Creating the database
 
 The database library will look for the database in the directory
@@ -184,7 +185,68 @@ krbtgt/MY.REALM@@MY.REALM 1:0:1:52b53b61c875ce16:-:0:7:c8943be ...
 kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 @end smallexample
 
-@node keytabs, Serving Kerberos 4/524/kaserver, Creating the database, Setting up a realm
+@node Modifying the database, keytabs, Creating the database, Setting up a realm
+@section Modifying the database
+
+All modifications of principals are done with with kadmin.
+
+A principal have several attributes and lifetimes associated with it.
+
+Principals are added, renamed, modified, and deleted with the kadmin
+commands @samp{add}, @samp{rename}, @samp{modify}, @samp{delete}.
+Both interactive editing and command switches can be used (use --help
+to list the available options).
+
+There are different kind of types for the fields in the database,
+attributes, absolute time times and relative times.
+
+@subsection Attributes
+
+When doing interactive editing, attributes are listed with @samp{?}.
+
+Attributes are removed from the list by prefixing them with @samp{-}.
+
+@smallexample
+kadmin> modify me
+Max ticket life [1 day]:
+Max renewable life [1 week]:
+Principal expiration time [never]:
+Password expiration time [never]:
+Attributes []:disallow-renewable
+kadmin> get me
+            Principal: me@@MY.REALM
+[...]
+           Attributes: disallow-renewable
+@end smallexample
+
+@subsection Absolute times
+
+The format for absolute times are any of the following
+
+@smallexample
+never
+now
+YYYY-mm-dd
+YYYY-mm-dd HH:MM:SS
+@end smallexample
+
+
+@subsection Relative times
+
+The format for relative times are any of the following combined
+
+@smallexample
+N year
+M month
+O day
+P hour
+Q minute
+R second
+@end smallexample
+
+@c Describe more of kadmin commands here...
+
+@node keytabs, Serving Kerberos 4/524/kaserver, Modifying the database, Setting up a realm
 @section keytabs
 
 To extract a service ticket from the database and put it in a keytab, you
