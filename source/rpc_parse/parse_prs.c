@@ -171,33 +171,31 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 /*******************************************************************
  Attempt to force a data buffer to grow by len bytes.
- We do this by setting the current offset to the end of the
- current buffer and then calling prs_grow().
- Also depends on the data stream mode (io).
+ This is only used when appending more data onto a prs_struct
+ when reading an rpc reply, before unmarshalling it.
  ********************************************************************/
 
 BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 {
-  uint32 save_current_offset = ps->data_offset;
-  BOOL saved_io = ps->io;
-  BOOL ret;
+	uint32 new_size = ps->buffer_size + extra_space;
+	char *new_data;
 
-  ps->data_offset = ps->buffer_size;
-  /* 
-   * Note we have to pretend we're marshalling in order
-   *  for prs_grow to work.
-   */
-  ps->io = MARSHALL;
+	if(!UNMARSHALLING(ps) || !ps->is_dynamic) {
+		DEBUG(0,("prs_force_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
+				(unsigned int)extra_space));
+		return False;
+	}
 
-  ret = prs_grow(ps, extra_space);
+	if((new_data = Realloc(ps->data_p, new_size)) == NULL) {
+		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
+			(unsigned int)new_size));
+		return False;
+	}
 
-  /*
-   * Restore the current offset and also the io method.
-   */
-  ps->data_offset = save_current_offset;
-  ps->io = saved_io;
+	ps->buffer_size = new_size;
+	ps->data_p = new_data;
 
-  return ret;
+	return True;
 }
 
 /*******************************************************************
