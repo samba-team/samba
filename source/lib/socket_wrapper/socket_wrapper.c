@@ -68,8 +68,10 @@ struct socket_info
 	int domain;
 	int type;
 	int protocol;
+	int bound;
 
 	char *path;
+	char *tmp_path;
 
 	struct sockaddr *myname;
 	socklen_t myname_len;
@@ -78,7 +80,9 @@ struct socket_info
 	socklen_t peername_len;
 
 	struct socket_info *prev, *next;
-} *sockets = NULL;
+};
+
+static struct socket_info *sockets = NULL;
 
 static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, socklen_t *len)
 {
@@ -95,11 +99,10 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 	p = strchr(un->sun_path, '/');
 	if (p) p++; else p = un->sun_path;
 
-	if(sscanf(p, "sock_ip_%d_%u", &type, &prt) == 1) 
-	{
+	if (sscanf(p, "sock_ip_%d_%u", &type, &prt) == 2) {
 		in->sin_port = htons(prt);
 	}
-	in->sin_addr.s_addr = INADDR_LOOPBACK;
+	in->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	*len = sizeof(struct sockaddr_in);
 	return 0;
 }
@@ -107,8 +110,8 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 static int convert_in_un(int type, const struct sockaddr_in *in, struct sockaddr_un *un)
 {
 	uint16_t prt = ntohs(in->sin_port);
-	/* FIXME: ENETUNREACH if in->sin_addr is not loopback */
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", getenv("SOCKET_WRAPPER_DIR"), type, prt);
+	snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", 
+		 getenv("SOCKET_WRAPPER_DIR"), type, prt);
 	return 0;
 }
 
@@ -146,13 +149,19 @@ static int sockaddr_convert_to_un(const struct socket_info *si, const struct soc
 }
 
 static int sockaddr_convert_from_un(const struct socket_info *si, 
-									const struct sockaddr_un *in_addr, 
-									int family,
-					 	 struct sockaddr *out_addr,
-						 socklen_t *out_len)
+				    const struct sockaddr_un *in_addr, 
+				    socklen_t un_addrlen,
+				    int family,
+				    struct sockaddr *out_addr,
+				    socklen_t *out_len)
 {
-	if (!out_addr) 
+	if (out_addr == NULL || out_len == NULL) 
 		return 0;
+
+	if (un_addrlen == 0) {
+		*out_len = 0;
+		return 0;
+	}
 
 	switch (family) {
 	case AF_INET:
@@ -180,11 +189,9 @@ int swrap_socket(int domain, int type, int protocol)
 	
 	fd = real_socket(AF_UNIX, type, 0);
 
-	if (fd < 0) 
-		return fd;
+	if (fd == -1) return -1;
 
-	si = malloc(sizeof(struct socket_info));
-	memset(si, 0, sizeof(*si));
+	si = calloc(1, sizeof(struct socket_info));
 
 	si->domain = domain;
 	si->type = type;
@@ -210,13 +217,13 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	}
 
 	ret = real_accept(s, (struct sockaddr *)&un_addr, &un_addrlen);
-	if (ret < 0) return ret;
+	if (ret == -1) return ret;
 
 	fd = ret;
 
-	ret = sockaddr_convert_from_un(parent_si, &un_addr, parent_si->domain, addr, addrlen);
-
-	if (ret < 0) return ret;
+	ret = sockaddr_convert_from_un(parent_si, &un_addr, un_addrlen,
+				       parent_si->domain, addr, addrlen);
+	if (ret == -1) return ret;
 
 	child_si = malloc(sizeof(struct socket_info));
 	memset(child_si, 0, sizeof(*child_si));
@@ -241,14 +248,20 @@ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 		return real_connect(s, serv_addr, addrlen);
 	}
 
+	/* only allow pseudo loopback connections */
+	if (((const struct sockaddr_in *)serv_addr)->sin_addr.s_addr != 
+	    htonl(INADDR_LOOPBACK)) {
+		errno = ENETUNREACH;
+		return -1;
+	}
+
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr);
-	if (ret < 0) return ret;
+	if (ret == -1) return -1;
 
-	ret = real_connect(s, 
-					   (struct sockaddr *)&un_addr, 
-					   sizeof(struct sockaddr_un));
+	ret = real_connect(s, (struct sockaddr *)&un_addr, 
+			   sizeof(struct sockaddr_un));
 
-	if (ret >= 0) {
+	if (ret == 0) {
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
 	}
@@ -267,17 +280,17 @@ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	}
 
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)myaddr, addrlen, &un_addr);
-	if (ret < 0) return ret;
+	if (ret == -1) return -1;
 
 	unlink(un_addr.sun_path);
 
-	ret = real_bind(s, 
-					(struct sockaddr *)&un_addr,
-					sizeof(struct sockaddr_un));
+	ret = real_bind(s, (struct sockaddr *)&un_addr,
+			sizeof(struct sockaddr_un));
 
-	if (ret >= 0) {
+	if (ret == 0) {
 		si->myname_len = addrlen;
 		si->myname = sockaddr_dup(myaddr, addrlen);
+		si->bound = 1;
 	}
 
 	return ret;
@@ -367,8 +380,8 @@ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, so
 
 ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
 {
-	socklen_t un_addrlen;
 	struct sockaddr_un un_addr;
+	socklen_t un_addrlen = sizeof(un_addr);
 	int ret;
 	struct socket_info *si = find_socket_info(s);
 
@@ -377,10 +390,13 @@ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr 
 	}
 
 	ret = real_recvfrom(s, buf, len, flags, (struct sockaddr *)&un_addr, &un_addrlen);
-	if (ret < 0) 
+	if (ret == -1) 
 		return ret;
 
-	ret = sockaddr_convert_from_un(si, &un_addr, si->domain, from, fromlen);
+	if (sockaddr_convert_from_un(si, &un_addr, un_addrlen,
+				     si->domain, from, fromlen) == -1) {
+		return -1;
+	}
 	
 	return ret;
 }
@@ -395,12 +411,37 @@ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const str
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
+	/* using sendto() on an unbound DGRAM socket would give the
+	   recipient no way to reply, as unlike UDP, a unix domain socket
+	   can't auto-assign emphemeral port numbers, so we need to assign
+	   it here */
+	if (si->bound == 0 && si->type == SOCK_DGRAM) {
+		int i;
+
+		un_addr.sun_family = AF_UNIX;
+
+		for (i=0;i<1000;i++) {
+			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
+				 "%s/sock_ip_%u_%u", getenv("SOCKET_WRAPPER_DIR"), 
+				 SOCK_DGRAM, i + 10000);
+			if (bind(si->fd, (struct sockaddr *)&un_addr, 
+				 sizeof(un_addr)) == 0) {
+				si->tmp_path = strdup(un_addr.sun_path);
+				si->bound = 1;
+				break;
+			}
+		}
+		if (i == 1000) {
+			return -1;
+		}
+	}
+	
+
 	ret = sockaddr_convert_to_un(si, to, tolen, &un_addr);
-	if (ret < 0) 
-		return ret;
+	if (ret == -1) return -1;
 
 	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
-	
+
 	return ret;
 }
 
@@ -414,6 +455,10 @@ int swrap_close(int fd)
 		free(si->path);
 		free(si->myname);
 		free(si->peername);
+		if (si->tmp_path) {
+			unlink(si->tmp_path);
+			free(si->tmp_path);
+		}
 		free(si);
 	}
 
