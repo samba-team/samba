@@ -567,6 +567,19 @@ char *
 strptime (const char *buf, const char *format, struct tm *timeptr);
 #endif
 
+#ifndef HAVE_EMALLOC
+void *emalloc (size_t);
+#endif
+#ifndef HAVE_ECALLOC
+void *ecalloc(size_t num, size_t sz);
+#endif
+#ifndef HAVE_EREALLOC
+void *erealloc (void *, size_t);
+#endif
+#ifndef HAVE_ESTRDUP
+char *estrdup (const char *);
+#endif
+
 /*
  * kludges and such
  */
