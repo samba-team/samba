@@ -246,6 +246,35 @@ PyObject *string_ptr_to_python(TALLOC_CTX *mem_ctx, char *obj)
 #define dom_sid2_ptr_to_python dom_sid_ptr_to_python
 #define dom_sid2_ptr_from_python dom_sid_ptr_from_python
 
+DATA_BLOB DATA_BLOB_from_python(PyObject *obj, char *name)
+{
+	DATA_BLOB ret;
+
+	/* Because we treat DATA_BLOB as a scalar type (why?) there 
+	   doesn't seem to be a way to pass back when an error has
+	   occured. */
+
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return;
+	}
+
+	if (!PyString_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting string value for key '%s'", name);
+		return;
+	}
+
+	ret.length = PyString_Size(obj);
+	ret.data = PyString_AsString(obj);
+
+	return ret;
+}
+
+PyObject *DATA_BLOB_to_python(DATA_BLOB obj)
+{
+	return PyString_FromStringAndSize(obj.data, obj.length);
+}
+
 %}
 
 %include "samba.i"
