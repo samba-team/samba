@@ -23,10 +23,7 @@
 #include "includes.h"
 
 #ifdef WITH_PROFILE
-
-#ifndef HAVE_SYSV_IPC
-#error "You must have SYSV shared memory to compile in the profiling code"
-#endif
+#include <sys/shm.h>
 
 extern int DEBUGLEVEL;
 
