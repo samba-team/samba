@@ -90,6 +90,7 @@ struct pvfs_search_state {
 	uint16_t handle;
 	uint_t current_index;
 	uint16_t search_attrib;
+	uint16_t must_attrib;
 	struct pvfs_dir *dir;
 };
 
