@@ -26,13 +26,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern userdom_struct current_user_info;
+
 /* Fill a pwent structure with information we have obtained */
 
 static BOOL winbindd_fill_pwent(char *dom_name, char *user_name, 
 				DOM_SID *user_sid, DOM_SID *group_sid,
 				char *full_name, struct winbindd_pw *pw)
 {
-	extern userdom_struct current_user_info;
 	fstring output_username;
 	pstring homedir;
 	fstring sid_string;
