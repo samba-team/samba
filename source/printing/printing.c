@@ -115,6 +115,37 @@ static struct printjob *print_job_find(int jobid)
 	return &pjob;
 }
 
+/* Convert a unix jobid to a smb jobid */
+
+static int sysjob_to_jobid_value;
+
+static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
+			       TDB_DATA data, void *state)
+{
+	struct printjob *pjob = (struct printjob *)data.dptr;
+	int *sysjob = (int *)state;
+
+	if (key.dsize != sizeof(int))
+		return 0;
+
+	if (*sysjob == pjob->sysjob) {
+		int *jobid = (int *)key.dptr;
+
+		sysjob_to_jobid_value = *jobid;
+		return 1;
+	}
+
+	return 0;
+}
+
+int sysjob_to_jobid(int unix_jobid)
+{
+	sysjob_to_jobid_value = -1;
+	tdb_traverse(tdb, unixjob_traverse_fn, &unix_jobid);
+
+	return sysjob_to_jobid_value;
+}
+
 /****************************************************************************
 send notifications based on what has changed after a pjob_store
 ****************************************************************************/
@@ -152,8 +183,9 @@ static uint32 map_to_spoolss_status(uint32 lpq_status)
 
 	return 0;
 }
+
 static void pjob_store_notify(int jobid, struct printjob *old_data,
-				   struct printjob *new_data)
+			      struct printjob *new_data)
 {
 	BOOL new_job = False;
 	int snum = print_job_snum(jobid);

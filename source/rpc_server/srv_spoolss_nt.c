@@ -728,6 +728,7 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 	for (p = printers_list; p; p = p->next) {
 		SPOOL_NOTIFY_INFO_DATA *data;
 		uint32 data_len = 1;
+		uint32 id;
 
 		/* Is there notification on this handle? */
 
@@ -752,7 +753,21 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 
 		ZERO_STRUCTP(data);
 
-		construct_info_data(data, msg->type, msg->field, msg->id);
+		/* Convert unix jobid to smb jobid */
+
+		id = msg->id;
+
+		if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
+
+			id = sysjob_to_jobid(msg->id);
+
+			if (id == -1) {
+				DEBUG(3, ("no such unix jobid %d\n", msg->id));
+				goto done;
+			}
+		}
+
+		construct_info_data(data, msg->type, msg->field, id);
 
 		switch(msg->type) {
 		case PRINTER_NOTIFY_TYPE:
@@ -804,6 +819,53 @@ done:
 	return;
 }
 
+/* Receive a notify2 message */
+
+static void receive_notify2_message(int msg_type, pid_t src, void *buf, 
+				    size_t len)
+{
+	struct spoolss_notify_msg msg;
+	int offset = 0;
+	TALLOC_CTX *mem_ctx = talloc_init();
+
+	/* Unpack message */
+
+	ZERO_STRUCT(msg);
+
+	offset += tdb_unpack((char *)buf + offset, len - offset, "f",
+			     msg.printer);
+	
+	offset += tdb_unpack((char *)buf + offset, len - offset, "ddddd",
+			     &msg.type, &msg.field, &msg.id, &msg.len, &msg.flags);
+
+	if (msg.len == 0)
+		tdb_unpack((char *)buf + offset, len - offset, "dd",
+			   &msg.notify.value[0], &msg.notify.value[1]);
+	else
+		tdb_unpack((char *)buf + offset, len - offset, "B", 
+			   &msg.len, &msg.notify.data);
+
+	DEBUG(3, ("got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
+		  msg.type, msg.field, msg.flags));
+
+	if (msg.len == 0)
+		DEBUG(3, ("value1 = %d, value2 = %d\n", msg.notify.value[0],
+			  msg.notify.value[1]));
+	else
+		dump_data(3, msg.notify.data, msg.len);
+
+	/* Process message */
+
+	process_notify2_message(&msg, mem_ctx);
+
+	/* Free message */
+
+	if (msg.len > 0)
+		free(msg.notify.data);
+
+	talloc_destroy(mem_ctx);
+}
+
 /***************************************************************************
  Server wrapper for cli_spoolss_routerreplyprinter() since the client 
  function can only send a single change notification at a time.
@@ -826,57 +888,6 @@ static WERROR srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLO
 			printer->info_2->changeid);
 
 	return result;
-}
-
-/***************************************************************************
- Receive the notify message and decode the message.  Do not send 
- notification if we sent this originally as that would result in 
- duplicates.
-****************************************************************************/
-
-static void receive_notify2_message(int msg_type, pid_t src, void *buf, 
-				    size_t len)
-{
-	struct spoolss_notify_msg msg;
-	int offset = 0;
-	TALLOC_CTX *mem_ctx = talloc_init();
-
-	/* Unpack message */
-
-	ZERO_STRUCT(msg);
-
-	offset += tdb_unpack((char *)buf + offset, len - offset, "f",
-			     msg.printer);
-	
-	offset += tdb_unpack((char *)buf + offset, len - offset, "dddd",
-			     &msg.type, &msg.field, &msg.id, &msg.len);
-
-	if (msg.len == 0)
-		tdb_unpack((char *)buf + offset, len - offset, "dd",
-			   &msg.notify.value[0], &msg.notify.value[1]);
-	else
-		tdb_unpack((char *)buf + offset, len - offset, "B", 
-			   &msg.len, &msg.notify.data);
-
-	DEBUG(3, ("got NOTIFY2 message, type %d, field 0x%02x\n",
-		  msg.type, msg.field));
-
-	if (msg.len == 0)
-		DEBUG(3, ("value1 = %d, value2 = %d\n", msg.notify.value[0],
-			  msg.notify.value[1]));
-	else
-		dump_data(3, msg.notify.data, msg.len);
-
-	/* Process message */
-
-	process_notify2_message(&msg, mem_ctx);
-
-	/* Free message */
-
-	if (msg.len > 0)
-		free(msg.notify.data);
-
-	talloc_destroy(mem_ctx);
 }
 
 /********************************************************************
