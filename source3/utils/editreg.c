@@ -341,7 +341,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 #define SSVAL(buf, val) \
             ((((unsigned char *)(buf))[0])=(unsigned char)((val)&0xFF),\
-             (((unsigned char *)(buf))[1])=(unsigned char)(((val)>>8)&0xFF))
+             (((unsigned char *)(buf))[1])=(unsigned char)((val)>>8))
 
 static int verbose = 0;
 static int print_security = 0;
