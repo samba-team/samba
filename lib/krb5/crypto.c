@@ -65,10 +65,11 @@ struct krb5_crypto_data {
 #define CRYPTO_ETYPE(C) ((C)->et->type)
 
 /* bits for `flags' below */
-#define F_KEYED		1	/* checksum is keyed */
-#define F_CPROOF	2	/* checksum is collision proof */
-#define F_DERIVED	4	/* uses derived keys */
-#define F_VARIANT	8	/* uses `variant' keys (6.4.3) */
+#define F_KEYED		 1	/* checksum is keyed */
+#define F_CPROOF	 2	/* checksum is collision proof */
+#define F_DERIVED	 4	/* uses derived keys */
+#define F_VARIANT	 8	/* uses `variant' keys (6.4.3) */
+#define F_PSEUDO	16	/* not a real protocol type */
 
 struct salt_type {
     krb5_salttype type;
@@ -1148,26 +1149,18 @@ get_checksum_key(krb5_context context,
 }
 
 static krb5_error_code
-create_checksum(krb5_context context,
-		krb5_crypto crypto,
-		unsigned usage, /* not krb5_key_usage */
-		krb5_cksumtype type, /* if crypto == NULL */
-		void *data,
-		size_t len,
-		Checksum *result)
+do_checksum (krb5_context context,
+	     struct checksum_type *ct,
+	     krb5_crypto crypto,
+	     unsigned usage,
+	     void *data,
+	     size_t len,
+	     Checksum *result)
 {
     krb5_error_code ret;
-    struct checksum_type *ct;
     struct key_data *dkey;
     int keyed_checksum;
-    if(crypto) {
-	ct = crypto->et->keyed_checksum;
-	if(ct == NULL)
-	    ct = crypto->et->cksumtype;
-    } else
-	ct = _find_checksum(type);
-    if(ct == NULL)
-	return KRB5_PROG_SUMTYPE_NOSUPP;
+
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL)
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
@@ -1179,6 +1172,28 @@ create_checksum(krb5_context context,
     krb5_data_alloc(&result->checksum, ct->checksumsize);
     (*ct->checksum)(context, dkey, data, len, result);
     return 0;
+}
+
+static krb5_error_code
+create_checksum(krb5_context context,
+		krb5_crypto crypto,
+		unsigned usage, /* not krb5_key_usage */
+		krb5_cksumtype type, /* if crypto == NULL */
+		void *data,
+		size_t len,
+		Checksum *result)
+{
+    struct checksum_type *ct;
+
+    if(crypto) {
+	ct = crypto->et->keyed_checksum;
+	if(ct == NULL)
+	    ct = crypto->et->cksumtype;
+    } else
+	ct = _find_checksum(type);
+    if(ct == NULL)
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    return do_checksum (context, ct, crypto, usage, data, len, result);
 }
 
 krb5_error_code
@@ -1208,12 +1223,7 @@ verify_checksum(krb5_context context,
     Checksum c;
     struct checksum_type *ct;
 
-    if(crypto) {
-	ct = crypto->et->keyed_checksum;
-	if(ct == NULL)
-	    ct = crypto->et->cksumtype;
-    } else
-	ct = _find_checksum(cksum->cksumtype);
+    ct = _find_checksum(cksum->cksumtype);
     if(ct == NULL)
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     if(ct->checksumsize != cksum->checksum.length)
@@ -1228,7 +1238,7 @@ verify_checksum(krb5_context context,
     if(ct->verify)
 	return (*ct->verify)(context, dkey, data, len, cksum);
 
-    ret = create_checksum(context, crypto, usage, ct->type, data, len, &c);
+    ret = do_checksum(context, ct, crypto, usage, data, len, &c);
     if(ret)
 	return ret;
     
@@ -1333,6 +1343,10 @@ DES3_CBC_encrypt(struct key_data *key,
     des_ede3_cbc_encrypt(data, data, len, s[0], s[1], s[2], &ivec, encrypt);
 }
 
+/*
+ * these should currently be in reverse preference order.
+ */
+
 static struct encryption_type etypes[] = {
     {
 	ETYPE_NULL,
@@ -1433,7 +1447,7 @@ static struct encryption_type etypes[] = {
 	&keytype_des,
 	&checksum_none,
 	NULL,
-	0,
+	F_PSEUDO,
 	DES_CBC_encrypt_null_ivec,
     },
     {
@@ -1444,7 +1458,7 @@ static struct encryption_type etypes[] = {
 	&keytype_des3_derived,
 	&checksum_none,
 	NULL,
-	0,
+	F_PSEUDO,
 	DES_CBC_encrypt_null_ivec,
     },
 };
@@ -1520,6 +1534,34 @@ krb5_keytype_to_enctype(krb5_context context,
 }
 #endif
     
+krb5_error_code
+krb5_keytype_to_enctypes (krb5_context context,
+			  krb5_keytype keytype,
+			  unsigned *len,
+			  int **val)
+{
+    int i;
+    unsigned n = 0;
+    int *ret;
+
+    for (i = num_etypes - 1; i >= 0; --i) {
+	if (etypes[i].keytype->type == keytype
+	    && !(etypes[i].flags & F_PSEUDO))
+	    ++n;
+    }
+    ret = malloc(n * sizeof(int));
+    if (ret == NULL && n != 0)
+	return ENOMEM;
+    n = 0;
+    for (i = num_etypes - 1; i >= 0; --i) {
+	if (etypes[i].keytype->type == keytype
+	    && !(etypes[i].flags & F_PSEUDO))
+	    ret[n++] = etypes[i].type;
+    }
+    *len = n;
+    *val = ret;
+    return 0;
+}
 
 krb5_error_code
 krb5_enctype_valid(krb5_context context, 
