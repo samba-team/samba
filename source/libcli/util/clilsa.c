@@ -297,3 +297,49 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 
 	return NT_STATUS_OK;	
 }
+
+
+/*
+  add a set of privileges to the given sid
+*/
+NTSTATUS smblsa_sid_add_privileges(struct smbcli_state *cli, struct dom_sid *sid, 
+				   TALLOC_CTX *mem_ctx,
+				   struct lsa_RightSet *rights)
+{
+	NTSTATUS status;
+	struct lsa_AddAccountRights r;
+
+	status = smblsa_connect(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	r.in.handle = &cli->lsa->handle;
+	r.in.sid = sid;
+	r.in.rights = rights;
+
+	return dcerpc_lsa_AddAccountRights(cli->lsa->pipe, mem_ctx, &r);
+}
+
+/*
+  remove a set of privileges from the given sid
+*/
+NTSTATUS smblsa_sid_del_privileges(struct smbcli_state *cli, struct dom_sid *sid, 
+				   TALLOC_CTX *mem_ctx,
+				   struct lsa_RightSet *rights)
+{
+	NTSTATUS status;
+	struct lsa_RemoveAccountRights r;
+
+	status = smblsa_connect(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	r.in.handle = &cli->lsa->handle;
+	r.in.sid = sid;
+	r.in.unknown = 0;
+	r.in.rights = rights;
+
+	return dcerpc_lsa_RemoveAccountRights(cli->lsa->pipe, mem_ctx, &r);
+}
