@@ -838,7 +838,9 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 
 	nt_status = make_server_info_sam(server_info, sampass);
 
-	(*server_info)->guest = True;
+	if (NT_STATUS_IS_OK(nt_status)) {
+		(*server_info)->guest = True;
+	}
 
 	return nt_status;
 }
