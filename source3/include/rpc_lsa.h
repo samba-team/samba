@@ -176,7 +176,7 @@ typedef struct lsa_secret_value_info
 {
 	uint32 ptr_secret;
 	STRHDR2 hdr_secret;
-	STRING2 secret;
+	STRING2 enc_secret; /* encrypted, see nt_encrypt_string2 */
 
 } LSA_SECRET_VALUE;
 

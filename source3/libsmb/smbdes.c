@@ -277,7 +277,7 @@ static void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw)
+void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw)
 {
 	int i;
 	char outb[64];
