@@ -186,6 +186,23 @@ sub substitute($)
 	die "ERROR: Uknown substitution variable $var\n";
 }
 
+
+####################################################################
+# substitute all variables in a string
+sub apply_substitutions($)
+{
+	my $data = shift;
+	my $res = "";
+	while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
+		my $sub = substitute($2);
+		$res .= "$1$sub";
+		$data = $3;
+	}
+	$res .= $data;
+	return $res;
+}
+
+
 #####################################################################
 # write a string into a file
 sub FileSave($$)
@@ -365,123 +382,62 @@ if (!$opt_adminpass) {
 	print "chose random Administrator password '$opt_adminpass'\n";
 }
 
-my $res = "";
-
-print "applying substitutions ...\n";
-
-while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
-	my $sub = substitute($2);
-	$res .= "$1$sub";
-	$data = $3;
-}
-$res .= $data;
-
-print "saving ldif to newsam.ldif ...\n";
-
-FileSave("newsam.ldif", $res);
-
-unlink("newsam.ldb");
-
-print "creating newsam.ldb ...\n";
-
 # allow provisioning to be run from the source directory
 $ENV{"PATH"} .= ":bin";
 
-system("ldbadd -H newsam.ldb newsam.ldif");
 
-print "done\n";
+my $res = apply_substitutions($data);
+
+my $newdb = "newdb." . int(rand(1000));
+
+print "Putting new database files in $newdb\n";
+
+mkdir($newdb) || die "Unable to create temporary directory $newdb\n";
+
+FileSave("$newdb/sam.ldif", $res);
+
+print "creating $newdb/sam.ldb ...\n";
+
+system("ldbadd -H $newdb/sam.ldb $newdb/sam.ldif") == 0 || die "Failed to create sam.ldb\n";
 
 $data = FileLoad("rootdse.ldif") || die "Unable to load rootdse.ldif\n";
 
-$res = "";
+$res = apply_substitutions($data);
 
-print "applying substitutions ...\n";
+FileSave("$newdb/rootdse.ldif", $res);
 
-while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
-	my $sub = substitute($2);
-	$res .= "$1$sub";
-	$data = $3;
-}
-$res .= $data;
+print "creating $newdb/rootdse.ldb ...\n";
 
-print "saving ldif to newrootdse.ldif ...\n";
-
-FileSave("newrootdse.ldif", $res);
-
-unlink("newrootdse.ldb");
-
-print "creating newrootdse.ldb ...\n";
-
-system("ldbadd -H newrootdse.ldb newrootdse.ldif");
-
-print "done\n";
+system("ldbadd -H $newdb/rootdse.ldb $newdb/rootdse.ldif") == 0 || die "Failed to create rootdse.ldb\n";
 
 $data = FileLoad("secrets.ldif") || die "Unable to load secrets.ldif\n";
 
-$res = "";
+$res = apply_substitutions($data);
 
-print "applying substitutions ...\n";
+FileSave("$newdb/secrets.ldif", $res);
 
-while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
-	my $sub = substitute($2);
-	$res .= "$1$sub";
-	$data = $3;
-}
-$res .= $data;
+print "creating $newdb/secrets.ldb ...\n";
 
-print "saving ldif to newsecrets.ldif ...\n";
-
-FileSave("newsecrets.ldif", $res);
-
-unlink("newsecrets.ldb");
-
-print "creating newsecrets.ldb ...\n";
-
-system("ldbadd -H newsecrets.ldb newsecrets.ldif");
-
-print "done\n";
-
-print "generating dns zone file ...\n";
+system("ldbadd -H $newdb/secrets.ldb $newdb/secrets.ldif") == 0 || die "Failed to create secrets.ldb\n";
 
 $data = FileLoad("provision.zone") || die "Unable to load provision.zone\n";
 
-$res = "";
+$res = apply_substitutions($data);
 
-print "applying substitutions ...\n";
-
-while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
-	my $sub = substitute($2);
-	$res .= "$1$sub";
-	$data = $3;
-}
-$res .= $data;
-
-print "saving dns zone to newdns.zone ...\n";
+print "saving dns zone to $newdb/dns.zone ...\n";
 
 FileSave("$dnsdomain.zone", $res);
 
-print "done\n";
+print "creating $newdb/hklm.ldb ... \n";
 
-unlink("newhklm.ldb");
-
-print "creating newhklm.ldb ... \n";
-
-system("ldbadd -H newhklm.ldb hklm.ldif");
-
-print "done\n";
+system("ldbadd -H $newdb/hklm.ldb hklm.ldif") == 0 || die "Failed to create hklm.ldb\n";
 
 print "
 
 Installation:
-- Please move newsam.ldb to sam.ldb in the private/ directory of your
+- Please move $newdb/*.ldb to the private/ directory of your
   Samba4 installation
-- Please move newrootdse.ldb to rootdse.ldb in the private/ directory
-  of your Samba4 installation
-- Please move newsecrets.ldb to secrets.ldb in the private/ directory
-  of your Samba4 installation
-- Please move newhklm.ldb to hklm.ldb in the private/ directory
-  of your Samba4 installation
-- Please use $dnsdomain.zone to in BIND dns server
+- Please use $newdb/dnsdomain.zone in BIND on your dns server
 ";
 
 
