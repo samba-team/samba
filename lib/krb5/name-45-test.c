@@ -46,18 +46,20 @@ static struct testcase {
     char *comp_val[MAX_COMPONENTS];
 
     const char *config_file;
-    krb5_error_code ret;
+    krb5_error_code ret;	/* expected error code from 524 */
+
+    krb5_error_code ret2;	/* expected error code from 425 */
 } tests[] = {
-    {"", "", "", "", 1, {""}, NULL, 0},
-    {"a", "", "", "", 1, {"a"}, NULL, 0},
-    {"a", "b", "", "", 2, {"a", "b"}, NULL, 0},
-    {"a", "b", "c", "c", 2, {"a", "b"}, NULL, 0},
+    {"", "", "", "", 1, {""}, NULL, 0, 0},
+    {"a", "", "", "", 1, {"a"}, NULL, 0, 0},
+    {"a", "b", "", "", 2, {"a", "b"}, NULL, 0, 0},
+    {"a", "b", "c", "c", 2, {"a", "b"}, NULL, 0, 0},
 
     {"krbtgt", "FOO.SE", "FOO.SE", "FOO.SE", 2,
-     {"krbtgt", "FOO.SE"}, NULL, 0},
+     {"krbtgt", "FOO.SE"}, NULL, 0, 0},
 
     {"foo", "bar", "BAZ", "BAZ", 2,
-     {"foo", "bar"}, NULL, 0},
+     {"foo", "bar"}, NULL, 0, 0},
     {"foo", "bar", "BAZ", "BAZ", 2,
      {"foo", "bar"},
      "[libdefaults]\n"
@@ -66,7 +68,7 @@ static struct testcase {
      "			foo = foo5\n"
      "		}\n"
      "}\n",
-    HEIM_ERR_V4_PRINC_NO_CONV},
+    HEIM_ERR_V4_PRINC_NO_CONV, 0},
     {"foo", "bar", "BAZ", "BAZ", 2,
      {"foo5", "bar.baz"},
      "[realms]\n"
@@ -80,10 +82,10 @@ static struct testcase {
      "			bar = bar.baz\n"
      "		}\n"
      "  }\n",
-     0},
+     0, 0},
 
     {"rcmd", "foo", "realm", "realm", 2, {"host", "foo"}, NULL,
-     HEIM_ERR_V4_PRINC_NO_CONV},
+     HEIM_ERR_V4_PRINC_NO_CONV, 0},
     {"rcmd", "foo", "realm", "realm", 2, {"host", "foo.realm"},
      "[realms]\n"
      "	realm = {\n"
@@ -91,25 +93,25 @@ static struct testcase {
      "			foo = foo.realm\n"
      "		}\n"
      "	}\n",
-     0},
+     0, 0},
 
     {"pop", "mail0", "NADA.KTH.SE", "NADA.KTH.SE", 2,
-     {"pop", "mail0.nada.kth.se"}, NULL, HEIM_ERR_V4_PRINC_NO_CONV},
+     {"pop", "mail0.nada.kth.se"}, NULL, HEIM_ERR_V4_PRINC_NO_CONV, 0},
     {"pop", "mail0", "NADA.KTH.SE", "NADA.KTH.SE", 2,
      {"pop", "mail0.nada.kth.se"},
      "[realms]\n"
      "	NADA.KTH.SE = {\n"
      "		default_domain = nada.kth.se\n"
      "	}\n",
-     0},
+     0, 0},
     {"pop", "mail0", "NADA.KTH.SE", "NADA.KTH.SE", 2,
      {"pop", "mail0.nada.kth.se"},
      "[libdefaults]\n"
      "	v4_instance_resolve = true\n",
-     HEIM_ERR_V4_PRINC_NO_CONV},
+     HEIM_ERR_V4_PRINC_NO_CONV, 0},
 
     {"rcmd", "ratatosk", "NADA.KTH.SE", "NADA.KTH.SE", 2,
-     {"host", "ratatosk.pdc.kth.se"}, NULL, HEIM_ERR_V4_PRINC_NO_CONV},
+     {"host", "ratatosk.pdc.kth.se"}, NULL, HEIM_ERR_V4_PRINC_NO_CONV, 0},
     {"rcmd", "ratatosk", "NADA.KTH.SE", "NADA.KTH.SE", 2,
      {"host", "ratatosk.pdc.kth.se"},
      "[libdefaults]\n"
@@ -123,14 +125,23 @@ static struct testcase {
      "		}\n"
      "		default_domain = pdc.kth.se\n"
      "	}\n",
-     0},
+     0, 0},
 
     {"0123456789012345678901234567890123456789",
      "0123456789012345678901234567890123456789",
      "0123456789012345678901234567890123456789",
      "0123456789012345678901234567890123456789",
      2, {"0123456789012345678901234567890123456789",
-	 "0123456789012345678901234567890123456789"}, NULL, 0},
+	 "0123456789012345678901234567890123456789"}, NULL,
+     0, KRB5_PARSE_MALFORMED},
+
+    {"012345678901234567890123456789012345678",
+     "012345678901234567890123456789012345678",
+     "012345678901234567890123456789012345678",
+     "012345678901234567890123456789012345678",
+     2, {"012345678901234567890123456789012345678",
+	 "012345678901234567890123456789012345678"}, NULL,
+     0, 0},
 
     {NULL, NULL, NULL, NULL, 0, {}, NULL, 0}
 };
@@ -146,6 +157,8 @@ main(int argc, char **argv)
     for (t = tests; t->v4_name; ++t) {
 	krb5_principal princ;
 	int i;
+	char name[40], inst[40], realm[40];
+	char printable_princ[256];
 
 	ret = krb5_init_context (&context);
 	if (ret)
@@ -232,6 +245,32 @@ main(int argc, char **argv)
 		}
 	    }
 	}
+	ret = krb5_524_conv_principal (context, princ,
+				       name, inst, realm);
+	if (krb5_unparse_name_fixed(context, princ,
+				    printable_princ, sizeof(printable_princ)))
+	    strlcpy(printable_princ, "unknown principal",
+		    sizeof(printable_princ));
+	if (ret) {
+	    if (ret != t->ret2) {
+		krb5_warn (context, ret,
+			   "krb5_524_conv_principal %s", printable_princ);
+		val = 1;
+	    }
+	} else {
+	    if (t->ret2) {
+		krb5_warnx (context,
+			    "krb5_524_conv_principal %s "
+			    "passed unexpected", printable_princ);
+		val = 1;
+		continue;
+	    }
+	}
+	if (ret) {
+	    krb5_free_principal (context, princ);
+	    continue;
+	}
+
 	krb5_free_principal (context, princ);
     }
     return val;
