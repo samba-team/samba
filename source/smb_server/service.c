@@ -143,6 +143,13 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 
+	if (!socket_check_access(req->smb_conn->connection->socket, 
+				 lp_servicename(snum), 
+				 lp_hostsallow(snum), 
+				 lp_hostsdeny(snum))) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	tcon = conn_new(req->smb_conn);
 	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
