@@ -1,0 +1,6 @@
+These docs are being converted to SGML/DocBook format.
+Please **do not** update documentation in this directory.
+Rather, please update the SGML/DocBook source in 
+docs/docbook/
+
+Thanks. jerry
