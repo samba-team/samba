@@ -37,13 +37,15 @@ static BOOL use_oplocks;
 #define LOCKBASE 0
 #define MINLENGTH 0
 
+#define ZERO_ZERO 1
+
 /*
 #define LOCKBASE (0x40000000 - 50)
 */
 
 #define READ_PCT 50
-#define LOCK_PCT 35
-#define UNLOCK_PCT 55
+#define LOCK_PCT 45
+#define UNLOCK_PCT 70
 #define RANGE_MULTIPLE 1
 #define NSERVERS 2
 #define NCONNECTIONS 2
@@ -52,9 +54,11 @@ static BOOL use_oplocks;
 
 #define NASTY_POSIX_LOCK_HACK 0
 
+enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
 struct record {
-	char r1, r2;
+	enum lock_op lock_op;
+	int lock_type;
 	char conn, f;
 	SMB_BIG_UINT start, len;
 	char needed;
@@ -64,10 +68,37 @@ struct record {
 
 #if PRESETS
 static struct record preset[] = {
-{36,  5, 0, 0, 0,  8, 1},
-{ 2,  6, 0, 1, 0,  1, 1},
-{53, 92, 0, 0, 0,  0, 1},
-{99, 11, 0, 0, 7,  1, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 2, 0, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 0, 0, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 3, 0, 1},
+{OP_UNLOCK, 0       , 0, 0, 2, 0, 1},
+{OP_REOPEN, 0, 0, 0, 0, 0, 1},
+
+{OP_LOCK, READ_LOCK, 0, 0, 2, 0, 1},
+{OP_LOCK, READ_LOCK, 0, 0, 1, 1, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 0, 0, 1},
+{OP_REOPEN, 0, 0, 0, 0, 0, 1},
+
+{OP_LOCK, READ_LOCK, 0, 0, 2, 0, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 3, 1, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 0, 0, 1},
+{OP_REOPEN, 0, 0, 0, 0, 0, 1},
+
+{OP_LOCK, READ_LOCK, 0, 0, 2, 0, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 1, 1, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 0, 0, 1},
+{OP_REOPEN, 0, 0, 0, 0, 0, 1},
+
+{OP_LOCK, WRITE_LOCK, 0, 0, 2, 0, 1},
+{OP_LOCK, READ_LOCK, 0, 0, 1, 1, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 0, 0, 1},
+{OP_REOPEN, 0, 0, 0, 0, 0, 1},
+
+{OP_LOCK, WRITE_LOCK, 0, 0, 2, 0, 1},
+{OP_LOCK, READ_LOCK, 0, 0, 3, 1, 1},
+{OP_LOCK, WRITE_LOCK, 0, 0, 0, 0, 1},
+{OP_REOPEN, 0, 0, 0, 0, 0, 1},
+
 };
 #endif
 
@@ -240,19 +271,12 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	unsigned f = rec->f;
 	SMB_BIG_UINT start = rec->start;
 	SMB_BIG_UINT len = rec->len;
-	unsigned r1 = rec->r1;
-	unsigned r2 = rec->r2;
-	unsigned op;
+	unsigned op = rec->lock_type;
 	int server;
 	BOOL ret[NSERVERS];
 
-	if (r1 < READ_PCT) {
-		op = READ_LOCK; 
-	} else {
-		op = WRITE_LOCK; 
-	}
-
-	if (r2 < LOCK_PCT) {
+	switch (rec->lock_op) {
+	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
 			ret[server] = cli_lock64(cli[server][conn], 
@@ -268,7 +292,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 		if (showall || ret[0] != ret[1]) show_locks();
 		if (ret[0] != ret[1]) return False;
-	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
+		break;
+		
+	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
 			ret[server] = cli_unlock64(cli[server][conn], 
@@ -283,7 +309,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 		if (showall || ret[0] != ret[1]) show_locks();
 		if (!hide_unlock_fails && ret[0] != ret[1]) return False;
-	} else {
+		break;
+
+	case OP_REOPEN:
 		/* reopen the file */
 		for (server=0;server<NSERVERS;server++) {
 			cli_close(cli[server][conn], fnum[server][conn][f]);
@@ -302,7 +330,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			       conn, f);
 			show_locks();
 		}
+		break;
 	}
+
 	return True;
 }
 
@@ -372,7 +402,7 @@ static void test_locks(char *share[NSERVERS])
 {
 	struct cli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
-	int n, i, n1, skip; 
+	int n, i, n1, skip, r1, r2; 
 
 	ZERO_STRUCT(fnum);
 	ZERO_STRUCT(cli);
@@ -392,9 +422,27 @@ static void test_locks(char *share[NSERVERS])
 				random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 			recorded[n].start *= RANGE_MULTIPLE;
 			recorded[n].len *= RANGE_MULTIPLE;
-			recorded[n].r1 = random() % 100;
-			recorded[n].r2 = random() % 100;
+			r1 = random() % 100;
+			r2 = random() % 100;
+			if (r1 < READ_PCT) {
+				recorded[n].lock_type = READ_LOCK;
+			} else {
+				recorded[n].lock_type = WRITE_LOCK;
+			}
+			if (r2 < LOCK_PCT) {
+				recorded[n].lock_op = OP_LOCK;
+			} else if (r2 < UNLOCK_PCT) {
+				recorded[n].lock_op = OP_UNLOCK;
+			} else {
+				recorded[n].lock_op = OP_REOPEN;
+			}
 			recorded[n].needed = True;
+#if !ZERO_ZERO
+			if (recorded[n].start == 0 &&
+			    recorded[n].len == 0) {
+				recorded[n].len = 1;
+			}
+#endif
 #if PRESETS
 		}
 #endif
@@ -416,8 +464,9 @@ static void test_locks(char *share[NSERVERS])
 		reconnect(cli, fnum, share);
 		open_files(cli, fnum);
 
-		for (i=0;i<n-skip;i++) {
+		for (i=0;i<n-skip;i+=skip) {
 			int m, j;
+			printf("excluding %d-%d\n", i, i+skip-1);
 			for (j=i;j<i+skip;j++) {
 				recorded[j].needed = False;
 			}
@@ -460,9 +509,9 @@ static void test_locks(char *share[NSERVERS])
 	close_files(cli, fnum);
 
 	for (i=0;i<n;i++) {
-		printf("{%u, %u, %u, %u, %.0f, %.0f, %u},\n",
-		       recorded[i].r1,
-		       recorded[i].r2,
+		printf("{%d, %d, %u, %u, %.0f, %.0f, %u},\n",
+		       recorded[i].lock_op,
+		       recorded[i].lock_type,
 		       recorded[i].conn,
 		       recorded[i].f,
 		       (double)recorded[i].start,
@@ -576,7 +625,6 @@ static void usage(void)
 	DEBUG(0,("seed=%u\n", seed));
 	srandom(seed);
 
-	locking_init(1);
 	test_locks(share);
 
 	return(0);

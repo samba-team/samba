@@ -205,8 +205,9 @@ typedef struct nttime_info
 {
   uint32 low;
   uint32 high;
-
 } NTTIME;
+
+typedef uint32 NTSTATUS;
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
@@ -370,7 +371,6 @@ typedef struct files_struct
 	SMB_OFF_T size;
 	mode_t mode;
 	uint16 vuid;
-	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;

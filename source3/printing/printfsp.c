@@ -65,7 +65,6 @@ files_struct *print_fsp_open(connection_struct *conn)
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,print_job_fname(jobid));
-	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
 	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;

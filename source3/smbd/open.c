@@ -200,7 +200,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
-	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
@@ -969,8 +968,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
-	fsp->wbmpx_ptr = NULL;
-    fsp->wcp = NULL; /* Write cache pointer. */
+	fsp->wcp = NULL; /* Write cache pointer. */
 
 	conn->num_files_open++;
 
@@ -1133,7 +1131,6 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
-	fsp->wbmpx_ptr = NULL;
 
 	conn->num_files_open++;
 

@@ -23,7 +23,6 @@
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
-extern uint32 global_client_caps;
 
 #ifdef WITH_MSDFS
 
@@ -596,17 +595,6 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	DEBUG(10,("DFS Referral pdata:\n"));
 	dump_data(10,*ppdata,reply_size);
 	return reply_size;
-}
-
-int dfs_path_error(char* inbuf, char* outbuf)
-{
-	enum remote_arch_types ra_type = get_remote_arch();
-	BOOL NT_arch = ((ra_type==RA_WINNT) || (ra_type == RA_WIN2K));
-	if(NT_arch && (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32)) ) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-		return(ERROR(0,0xc0000000|NT_STATUS_PATH_NOT_COVERED));
-	}
-	return(ERROR(ERRSRV,ERRbadpath)); 
 }
 
 /**********************************************************************

@@ -218,7 +218,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 	   fname,open_mode, open_attr, open_ofun, open_size));
 
   if (IS_IPC(conn)) {
-		return(ERROR(ERRSRV,ERRaccess));
+		return(ERROR_DOS(ERRSRV,ERRaccess));
   }
 
   /* XXXX we need to handle passed times, sattr and flags */
@@ -256,13 +256,13 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   inode = sbuf.st_ino;
   if (fmode & aDIR) {
     close_file(fsp,False);
-    return(ERROR(ERRDOS,ERRnoaccess));
+    return(ERROR_DOS(ERRDOS,ERRnoaccess));
   }
 
   /* Realloc the size of parameters and data we will return */
   params	= Realloc(*pparams, 28);
   if( params == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return(ERROR_DOS(ERRDOS,ERRnomem));
   }
   *pparams	= params;
 
@@ -669,7 +669,7 @@ static int call_trans2findfirst(connection_struct *conn,
     case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
       break;
     default:
-      return(ERROR(ERRDOS,ERRunknownlevel));
+      return(ERROR_DOS(ERRDOS,ERRunknownlevel));
     }
 
   srvstr_pull(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE);
@@ -710,15 +710,15 @@ static int call_trans2findfirst(connection_struct *conn,
 
   pdata	= Realloc(*ppdata, max_data_bytes + 1024);
   if( pdata == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return(ERROR_DOS(ERRDOS,ERRnomem));
   }
   *ppdata	= pdata;
   memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   /* Realloc the params space */
   params = Realloc(*pparams, 10);
-  if( params == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
+  if (params == NULL) {
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
 
@@ -731,7 +731,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   if(!(wcard = strdup(mask))) {
     dptr_close(&dptr_num);
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
 
   dptr_set_wcard(dptr_num, wcard);
@@ -803,10 +803,9 @@ static int call_trans2findfirst(connection_struct *conn,
    * from observation of NT.
    */
 
-  if(numentries == 0)
-  {
-    dptr_close(&dptr_num);
-    return(ERROR(ERRDOS,ERRbadfile));
+  if(numentries == 0) {
+	  dptr_close(&dptr_num);
+	  return ERROR_DOS(ERRDOS,ERRbadfile);
   }
 
   /* At this point pdata points to numentries directory entries. */
@@ -900,12 +899,12 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
     case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
       break;
     default:
-      return(ERROR(ERRDOS,ERRunknownlevel));
+      return ERROR_DOS(ERRDOS,ERRunknownlevel);
     }
 
   pdata = Realloc( *ppdata, max_data_bytes + 1024);
   if(pdata == NULL) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *ppdata	= pdata;
   memset((char *)pdata,'\0',max_data_bytes + 1024);
@@ -913,20 +912,20 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   /* Realloc the params space */
   params = Realloc(*pparams, 6*SIZEOFWORD);
   if( params == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
 
   /* Check that the dptr is valid */
   if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num)))
-    return(ERROR(ERRDOS,ERRnofiles));
+    return ERROR_DOS(ERRDOS,ERRnofiles);
 
   string_set(&conn->dirpath,dptr_path(dptr_num));
 
   /* Get the wildcard mask from the dptr */
   if((p = dptr_wcard(dptr_num))== NULL) {
     DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
-    return (ERROR(ERRDOS,ERRnofiles));
+    return ERROR_DOS(ERRDOS,ERRnofiles);
   }
   pstrcpy(mask, p);
   pstrcpy(directory,conn->dirpath);
@@ -1116,12 +1115,12 @@ static int call_trans2qfsinfo(connection_struct *conn,
 
   if(vfs_stat(conn,".",&st)!=0) {
     DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
-    return (ERROR(ERRSRV,ERRinvdevice));
+    return ERROR_DOS(ERRSRV,ERRinvdevice);
   }
 
   pdata = Realloc(*ppdata, max_data_bytes + 1024);
   if ( pdata == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *ppdata	= pdata;
   memset((char *)pdata,'\0',max_data_bytes + 1024);
@@ -1215,7 +1214,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	    }
 	    /* drop through */
   default:
-	  return(ERROR(ERRDOS,ERRunknownlevel));
+	  return ERROR_DOS(ERRDOS,ERRunknownlevel);
   }
 
 
@@ -1241,7 +1240,7 @@ static int call_trans2setfsinfo(connection_struct *conn,
   DEBUG(3,("call_trans2setfsinfo\n"));
 
   if (!CAN_WRITE(conn))
-    return(ERROR(ERRSRV,ERRaccess));
+    return ERROR_DOS(ERRSRV,ERRaccess);
 
   outsize = set_message(outbuf,10,0,True);
 
@@ -1308,7 +1307,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		   * Original code - this is an open file.
 		   */
 		  CHECK_FSP(fsp,conn);
-		  CHECK_ERROR(fsp);
 
 		  pstrcpy(fname, fsp->fsp_name);
 		  if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
@@ -1361,21 +1359,21 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
   params = Realloc(*pparams,2);
   if (params == NULL) {
-	  return(ERROR(ERRDOS,ERRnomem));
+	  return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
   memset((char *)params,'\0',2);
   data_size = max_data_bytes + 1024;
   pdata = Realloc(*ppdata, data_size); 
   if ( pdata == NULL ) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *ppdata = pdata;
 
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-    return(ERROR(ERRDOS,ERReasnotsupported));
+    return ERROR_DOS(ERRDOS,ERReasnotsupported);
   }
 
   memset((char *)pdata,'\0',data_size);
@@ -1419,7 +1417,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       break;
 
     case 6:
-      return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
+      return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
 
     case SMB_QUERY_FILE_BASIC_INFO:
 	case 1004:
@@ -1688,7 +1686,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 #endif
 
     default:
-      return(ERROR(ERRDOS,ERRunknownlevel));
+      return ERROR_DOS(ERRDOS,ERRunknownlevel);
     }
 
   send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, data_size);
@@ -1757,7 +1755,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
        * Original code - this is an open file.
        */
       CHECK_FSP(fsp,conn);
-      CHECK_ERROR(fsp);
 
       pstrcpy(fname, fsp->fsp_name);
       fd = fsp->fd;
@@ -1794,7 +1791,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   }
 
   if (!CAN_WRITE(conn))
-    return(ERROR(ERRSRV,ERRaccess));
+    return ERROR_DOS(ERRSRV,ERRaccess);
 
   DEBUG(3,("call_trans2setfilepathinfo(%d) %s info_level=%d totdata=%d\n",
 	   tran_call,fname,info_level,total_data));
@@ -1802,7 +1799,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   /* Realloc the parameter and data sizes */
   params = Realloc(*pparams,2);
   if(params == NULL) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
 
@@ -1816,7 +1813,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   if (total_data > 4 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-    return(ERROR(ERRDOS,ERReasnotsupported));
+    return ERROR_DOS(ERRDOS,ERReasnotsupported);
   }
 
   switch (info_level)
@@ -1891,7 +1888,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-         return(ERROR(ERRDOS,ERRunknownlevel));
+         return ERROR_DOS(ERRDOS,ERRunknownlevel);
 #endif /* LARGE_SMB_OFF_T */
       DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
                            fname, (double)size ));
@@ -1928,8 +1925,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         } else {
           ret = vfs_allocate_file_space(fsp, size);
         }
-        if (ret == -1)
-          return allocate_space_error(inbuf, outbuf, errno);
+        if (ret == -1) return ERROR_NT(NT_STATUS_DISK_FULL);
 
         sbuf.st_size = size;
       }
@@ -1944,7 +1940,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-         return(ERROR(ERRDOS,ERRunknownlevel));
+         return ERROR_DOS(ERRDOS,ERRunknownlevel);
 #endif /* LARGE_SMB_OFF_T */
       DEBUG(10,("call_trans2setfilepathinfo: Set end of file info for file %s to %.0f\n", fname, (double)size ));
       break;
@@ -1956,7 +1952,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
 
 		if (tran_call != TRANSACT2_SETFILEINFO)
-			return(ERROR(ERRDOS,ERRunknownlevel));
+			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 
 		if (fsp == NULL)
 			return(UNIXERROR(ERRDOS,ERRbadfid));
@@ -1968,7 +1964,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
 			DEBUG(10,("call_trans2setfilepathinfo: file %s delete on close flag set but delete access denied.\n",
 					fsp->fsp_name ));
-				return(ERROR(ERRDOS,ERRnoaccess));
+				return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 
 		if(fsp->is_directory) {
@@ -1996,13 +1992,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 						delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
 
 			if (lock_share_entry_fsp(fsp) == False)
-				return(ERROR(ERRDOS,ERRnoaccess));
+				return ERROR_DOS(ERRDOS,ERRnoaccess);
 
 			if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
 				DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close flag for file %s\n",
 						fsp->fsp_name ));
 				unlock_share_entry_fsp(fsp);
-				return(ERROR(ERRDOS,ERRnoaccess));
+				return ERROR_DOS(ERRDOS,ERRnoaccess);
 			}
 
 			/*
@@ -2039,7 +2035,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 	default:
 	{
-		return(ERROR(ERRDOS,ERRunknownlevel));
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
   }
 
@@ -2162,7 +2158,7 @@ static int call_trans2mkdir(connection_struct *conn,
   BOOL bad_path = False;
 
   if (!CAN_WRITE(conn))
-    return(ERROR(ERRSRV,ERRaccess));
+    return ERROR_DOS(ERRSRV,ERRaccess);
 
   srvstr_pull(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE);
 
@@ -2186,7 +2182,7 @@ static int call_trans2mkdir(connection_struct *conn,
   /* Realloc the parameter and data sizes */
   params = Realloc(*pparams,2);
   if(params == NULL) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
 
@@ -2218,13 +2214,13 @@ static int call_trans2findnotifyfirst(connection_struct *conn,
     case 2:
       break;
     default:
-      return(ERROR(ERRDOS,ERRunknownlevel));
+      return ERROR_DOS(ERRDOS,ERRunknownlevel);
     }
 
   /* Realloc the parameter and data sizes */
   params = Realloc(*pparams,6);
   if(params == NULL) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
 
@@ -2258,7 +2254,7 @@ static int call_trans2findnotifynext(connection_struct *conn,
   /* Realloc the parameter and data sizes */
   params = Realloc(*pparams,4);
   if(params == NULL) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
   *pparams	= params;
 
@@ -2286,12 +2282,12 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   DEBUG(10,("call_trans2getdfsreferral\n"));
 
   if(!lp_host_msdfs())
-    return(ERROR(ERRDOS,ERRbadfunc));
+    return ERROR_DOS(ERRDOS,ERRbadfunc);
 
   srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE);
 
   if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
-    return(ERROR(ERRDOS,ERRbadfile));
+    return ERROR_DOS(ERRDOS,ERRbadfile);
     
   SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
   send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
@@ -2317,7 +2313,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
       (SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
     pdata = Realloc(*ppdata, 32);
     if(pdata == NULL) {
-      return(ERROR(ERRDOS,ERRnomem));
+      return ERROR_DOS(ERRDOS,ERRnomem);
     }
     *ppdata = pdata;
 
@@ -2331,7 +2327,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
     return(-1);
   } else {
     DEBUG(2,("Unknown TRANS2_IOCTL\n"));
-    return(ERROR(ERRSRV,ERRerror));
+    return ERROR_DOS(ERRSRV,ERRerror);
   }
 }
 
@@ -2434,7 +2430,7 @@ int reply_trans2(connection_struct *conn,
 	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
             && (tran_call != TRANSACT2_GET_DFS_REFERRAL)) {
 		END_PROFILE(SMBtrans2);
-		return(ERROR(ERRSRV,ERRaccess));
+		return ERROR_DOS(ERRSRV,ERRaccess);
 	}
 
 	outsize = set_message(outbuf,0,0,True);
@@ -2458,7 +2454,7 @@ int reply_trans2(connection_struct *conn,
 			DEBUG(2,("Invalid smb_sucnt in trans2 call(%d)\n",suwcnt));
 			DEBUG(2,("Transaction is %d\n",tran_call));
 			END_PROFILE(SMBtrans2);
-			return(ERROR(ERRSRV,ERRerror));
+			return ERROR_DOS(ERRSRV,ERRerror);
 		}
 	}
     
@@ -2475,7 +2471,7 @@ int reply_trans2(connection_struct *conn,
 		if(data)
 		  free(data); 
 		END_PROFILE(SMBtrans2);
-		return(ERROR(ERRDOS,ERRnomem));
+		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
 
 	/* Copy the param and data bytes sent with this request into
@@ -2517,7 +2513,7 @@ int reply_trans2(connection_struct *conn,
 				if(data)
 					free(data);
 				END_PROFILE(SMBtrans2);
-				return(ERROR(ERRSRV,ERRerror));
+				return ERROR_DOS(ERRSRV,ERRerror);
 			}
       
 			/* Revise total_params and total_data in case
@@ -2641,7 +2637,7 @@ int reply_trans2(connection_struct *conn,
 		if(data)
 			free(data);
 		END_PROFILE(SMBtrans2);
-		return (ERROR(ERRSRV,ERRerror));
+		return ERROR_DOS(ERRSRV,ERRerror);
 	}
 	
 	/* As we do not know how many data packets will need to be

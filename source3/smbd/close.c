@@ -102,10 +102,6 @@ static int close_filestruct(files_struct *fsp)
 	fsp->stat_open = False; 
     
 	conn->num_files_open--;
-	if(fsp->wbmpx_ptr) {  
-		free((char *)fsp->wbmpx_ptr);
-		fsp->wbmpx_ptr = NULL; 
-	}  
 
 	return ret;
 }    

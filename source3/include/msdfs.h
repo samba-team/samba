@@ -64,13 +64,13 @@ struct dfs_path
 #define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
 { if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \
      dfs_redirect(name,conn)) \
-     return(dfs_path_error(inbuf,outbuf)); }
+     return ERROR_NT(NT_STATUS_PATH_NOT_COVERED); }
 
 #define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) \
 { if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) || \
      get_remote_arch()==RA_WIN95) \
       if(dfs_findfirst_redirect(directory,conn)) \
-	 return(dfs_path_error(inbuf,outbuf)); }
+	 return ERROR_NT(NT_STATUS_PATH_NOT_COVERED); }
  
 #define init_dfsroot(conn, inbuf, outbuf) \
 { if(lp_msdfs_root(SNUM(conn)) && lp_host_msdfs())  \
