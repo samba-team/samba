@@ -18,7 +18,7 @@
     <para>Disabling this option will also disable the <command
     moreinfo="none">client plaintext auth</command> option</para>
 
-    <para>Likewise, if the <command moreinfo="none">cleint ntlmv2
+    <para>Likewise, if the <command moreinfo="none">client ntlmv2
     auth</command> parameter is enabled, then only NTLMv2 logins will be
     attempted.  Not all servers support NTLMv2, and most will require
     special configuration to us it.</para>

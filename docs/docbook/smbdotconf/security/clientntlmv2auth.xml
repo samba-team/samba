@@ -1,4 +1,4 @@
-<samba:parameter name="ntlmv2 auth"
+<samba:parameter name="client ntlmv2 auth"
                  context="G"
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
@@ -21,6 +21,6 @@
     those following 'best practice' security polices) only allow NTLMv2
     responses, and not the weaker LM or NTLM.</para>
 
-    <para>Default : <command moreinfo="none">ntlmv2 auth = no</command></para>
+	<para>Default : <command moreinfo="none">client ntlmv2 auth = no</command></para>
 </listitem>
 </samba:parameter>
