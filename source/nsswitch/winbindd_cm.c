@@ -182,6 +182,35 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	return True;
 }
 
+/* Choose between anonymous or authenticated connections.  We need to use
+   an authenticated connection if DCs have the RestrictAnonymous registry
+   entry set > 0, or the "Additional restrictions for anonymous
+   connections" set in the win2k Local Security Policy. */
+
+void cm_init_creds(struct ntuser_creds *creds)
+{
+	char *username, *password;
+
+	ZERO_STRUCTP(creds);
+
+	creds->pwd.null_pwd = True; /* anonymoose */
+
+	username = secrets_fetch(SECRETS_AUTH_USER, NULL);
+	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+
+	if (username && *username) {
+		pwd_set_cleartext(&creds->pwd, password);
+		pwd_make_lm_nt_16(&creds->pwd, password);
+
+		fstrcpy(creds->user_name, username);
+		fstrcpy(creds->domain, lp_workgroup());
+
+		DEBUG(3, ("IPC$ connections done %s\\%s\n", creds->domain,
+			  creds->user_name));
+	} else 
+		DEBUG(3, ("IPC$ connections done anonymously\n"));
+}
+
 /* Open a new smb pipe connection to a DC on a given domain.  Cache
    negative creation attempts so we don't try and connect to broken
    machines too often. */
@@ -257,8 +286,7 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 	make_nmb_name(&called, dns_to_netbios_name(new_conn->controller), 0x20);
 	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
 
-	ZERO_STRUCT(creds);
-	creds.pwd.null_pwd = 1;
+	cm_init_creds(&creds);
 
 	cli_init_creds(new_conn->cli, &creds);
 

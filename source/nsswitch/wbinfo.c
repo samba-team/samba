@@ -420,12 +420,40 @@ static BOOL print_domain_groups(void)
 	return True;
 }
 
+/* Set the authorised user for winbindd access in secrets.tdb */
+
+static BOOL wbinfo_set_auth_user(char *username)
+{
+	char *password;
+
+	/* Separate into user and password */
+
+	password = strchr(username, '%');
+
+	if (password) {
+		*password = 0;
+		password++;
+	} else
+		password = "";
+
+	/* Store in secrets.tdb */
+
+	if (!secrets_init() ||
+	    !secrets_store(SECRETS_AUTH_USER, username, strlen(username) + 1) ||
+	    !secrets_store(SECRETS_AUTH_PASSWORD, password, strlen(password) + 1)) {
+		fprintf(stderr, "error storing authenticated user info\n");
+		return False;
+	}
+
+	return True;
+}
+
 /* Print program usage */
 
 static void usage(void)
 {
 	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
-               "| -a user%%password\n");
+               "| -aA user%%password\n");
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");
@@ -438,6 +466,7 @@ static void usage(void)
 	printf("\t-m\t\t\tlist trusted domains\n");
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
+	printf("\t-A user%%password\tstore session setup auth password\n");
 }
 
 /* Main program */
@@ -478,7 +507,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:A:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -571,6 +600,12 @@ int main(int argc, char **argv)
                         break;
 				
                 }
+		case 'A': {
+			if (!(wbinfo_set_auth_user(optarg))) {
+				return 1;
+			}
+			break;
+		}
                       /* Invalid option */
 
 		default:
