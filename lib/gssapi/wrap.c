@@ -302,7 +302,8 @@ wrap_des3
 	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
-  ret = krb5_crypto_init(gssapi_krb5_context, key, ETYPE_DES3_CBC_NONE,
+
+  ret = krb5_crypto_init(gssapi_krb5_context, key, ETYPE_DES3_CBC_NONE_IVEC,
 			 &crypto);
   if (ret) {
       free (output_message_buffer->value);
@@ -310,10 +311,16 @@ wrap_des3
       return GSS_S_FAILURE;
   }
 
-  ret = krb5_encrypt (gssapi_krb5_context,
-		      crypto,
-		      KRB5_KU_USAGE_SEQ,
-		      seq, 8, &encdata);
+  {
+      des_cblock ivec;
+
+      memcpy (&ivec, p + 8, 8);
+      ret = krb5_encrypt_ivec (gssapi_krb5_context,
+			       crypto,
+			       KRB5_KU_USAGE_SEQ,
+			       seq, 8, &encdata,
+			       &ivec);
+  }
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (ret) {
       free (output_message_buffer->value);
