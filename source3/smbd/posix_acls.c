@@ -289,21 +289,7 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 	if ((ace->perms & ALL_ACE_PERMS) == ALL_ACE_PERMS) {
 			nt_mask = UNIX_ACCESS_RWX;
 	} else if ((ace->perms & ALL_ACE_PERMS) == (mode_t)0) {
-		/*
-		 * Here we differentiate between the owner and any other user.
-		 */
-		if (sid_equal(powner_sid, &ace->sid)) {
-			nt_mask = UNIX_ACCESS_NONE;
-		} else {
-			/* Not owner, no access. */
-			if (ace->type == SMB_ACL_USER) {
-				/* user objects can be deny entries. */
-				*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
-				nt_mask = GENERIC_ALL_ACCESS;
-			}
-			else
-				nt_mask = UNIX_ACCESS_NONE;
-		}
+		nt_mask = UNIX_ACCESS_NONE;
 	} else {
 		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
 		nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
@@ -1255,9 +1241,6 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 	canon_ace *owner_ace = NULL;
 	canon_ace *other_ace = NULL;
 	canon_ace *ace = NULL;
-	mode_t owner_perms = 0;
-	mode_t group_perms = 0;
-	mode_t other_perms = 0;
 
 	for (ace = list_head; ace; ace = ace->next) {
 		if (ace->type == SMB_ACL_USER_OBJ)
@@ -1265,9 +1248,6 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 		else if (ace->type == SMB_ACL_OTHER) {
 			/* Last ace - this is "other" */
 			other_ace = ace;
-		} else {
-			/* Get the union of all the group and supplementary user perms. */
-			group_perms |= ace->perms;
 		}
 	}
 		
@@ -1288,47 +1268,6 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 
 	if (other_ace) {
 		DLIST_DEMOTE(list_head, other_ace, ace);
-	}
-
-	owner_perms = owner_ace->perms;
-	other_perms = other_ace->perms;
-
-	/*
-	 * We have to be clever here. NT4.x won't display anything other
-	 * Than an "Everyone, No access" DENY acl. Truncate blank perms
-	 * from the end, but we can't truncate blank permissions from
-	 * anywhere except the end, as they have an effect on allowing access
-	 * under POSIX.
-	 */
-
-	if ((owner_perms || group_perms) && !other_perms) {
-		DLIST_REMOVE(list_head, other_ace);
-		safe_free(other_ace);
-	}
-
-	if (owner_perms && !group_perms && !other_perms) {
-		/* Free everything except the list head. */
-		free_canon_ace_list(owner_ace->next);
-		owner_ace->next = NULL;
-	}
-
-	if (!owner_perms && !group_perms && !other_perms) {
-		/*
-		 * Special case - no one has any access.
-		 * Return a 1 element ACL - other has "no access".
-		 */
-
-		if (owner_ace->next) {
-			free_canon_ace_list(owner_ace->next);
-			owner_ace->next = NULL;
-		}
-
-		owner_ace->type = SMB_ACL_OTHER;
-		owner_ace->sid = global_sid_World;
-		owner_ace->unix_ug.world = -1;
-		owner_ace->owner_type = WORLD_ACE;
-		owner_ace->attr = DENY_ACE;
-		owner_ace->perms = 0;
 	}
 
 	/* We have probably changed the head of the list. */
@@ -1391,13 +1330,13 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	mode = psbuf->st_mode;
 
 	owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
-	owner_ace->attr = owner_ace->perms ? ALLOW_ACE : DENY_ACE;
+	owner_ace->attr = ALLOW_ACE;
 	
 	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
-	group_ace->attr = group_ace->perms ? ALLOW_ACE : DENY_ACE;
+	group_ace->attr = ALLOW_ACE;
 
 	other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
-	other_ace->attr = other_ace->perms ? ALLOW_ACE : DENY_ACE;
+	other_ace->attr = ALLOW_ACE;
 
 	DLIST_ADD(list_head, other_ace);
 	DLIST_ADD(list_head, group_ace);
@@ -2187,11 +2126,15 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 
 int chmod_acl(char *name, mode_t mode)
 {
+	int saved_errno = errno;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL)
+	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL) {
+		if (errno == ENOSYS)
+			errno = saved_errno;
 		return -1;
+	}
 
 	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
 		goto done;
@@ -2211,11 +2154,15 @@ int chmod_acl(char *name, mode_t mode)
 
 int fchmod_acl(int fd, mode_t mode)
 {
+	int saved_errno = errno;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_fd(fd)) == NULL)
+	if ((posix_acl = sys_acl_get_fd(fd)) == NULL) {
+		if (errno == ENOSYS)
+			errno = saved_errno;
 		return -1;
+	}
 
 	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
 		goto done;
