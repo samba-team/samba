@@ -73,7 +73,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
 {
     TDB_DATA data, key;
     fstring keystr;
-    BOOL result;
+    BOOL result = False;
 
     /* Check if rid is present in database */
 
