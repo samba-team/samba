@@ -26,11 +26,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/*
- * This is set on startup - it defines the SID for this
- * machine, and therefore the SAM database for which it is
- * responsible.
- */
+const char *get_global_sam_name() 
+{
+	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
+		return lp_workgroup();
+	}
+	return global_myname();
+}
 
 /************************************************************
  Fill the SAM_ACCOUNT with default values.
@@ -182,7 +184,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 
 	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
 
-	pdb_set_domain (sam_account, lp_workgroup(), PDB_DEFAULT);
+	pdb_set_domain (sam_account, get_global_sam_name(), PDB_DEFAULT);
 
 	pdb_set_uid(sam_account, pwd->pw_uid, PDB_SET);
 	pdb_set_gid(sam_account, pwd->pw_gid, PDB_SET);

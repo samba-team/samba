@@ -547,7 +547,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = lp_workgroup();
+				name = get_global_sam_name();
 				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
@@ -573,23 +573,8 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			return NT_STATUS_ACCESS_DENIED;
 
 		/* Request PolicyAccountDomainInformation. */
-		switch (lp_server_role()) {
-			case ROLE_DOMAIN_PDC:
-			case ROLE_DOMAIN_BDC:
-				name = lp_workgroup();
-				sid = get_global_sam_sid();
-				break;
-			case ROLE_DOMAIN_MEMBER:
-				name = global_myname();
-				sid = get_global_sam_sid();
-				break;
-			case ROLE_STANDALONE:
-				name = global_myname();
-				sid = get_global_sam_sid();
-				break;
-			default:
-				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		}
+		name = get_global_sam_name();
+		sid = get_global_sam_sid();
 		init_dom_query(&r_u->dom.id5, name, sid);
 		break;
 	case 0x06:
@@ -1240,7 +1225,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				nb_name = lp_workgroup();
+				nb_name = get_global_sam_name();
 				/* ugly temp hack for these next two */
 
 				/* This should be a 'netbios domain -> DNS domain' mapping */
