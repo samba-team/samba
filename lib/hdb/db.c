@@ -39,6 +39,8 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
 	err = d->del(d, &key, 0);
 	break;
     }
+    data.data = key.data;
+    data.length = key.size;
     krb5_data_free(&data);
     if(err < 0)
 	return errno;
@@ -88,11 +90,9 @@ DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
     data.data = key.data;
     data.length = key.size;
     hdb_key2principal(context, &data, &entry->principal);
-    krb5_data_free(&data);
     data.data = value.data;
     data.length = value.size;
     hdb_value2entry(context, &data, entry);
-    krb5_data_free(&data);
     return 0;
 }
 
