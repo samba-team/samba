@@ -588,17 +588,24 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
  between smbd instances.
 *******************************************************************************/
 
-BOOL secrets_named_mutex(const char *name, unsigned int timeout)
+BOOL secrets_named_mutex(const char *name, unsigned int timeout, size_t *p_ref_count)
 {
-	int ret;
+	size_t ref_count = *p_ref_count;
+	int ret = 0;
 
 	if (!message_init())
 		return False;
 
-	ret = tdb_lock_bystring(tdb, name, timeout);
-	if (ret == 0)
-		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
+	if (ref_count == 0) {
+		ret = tdb_lock_bystring(tdb, name, timeout);
+		if (ret == 0)
+			DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
+	}
 
+	if (ret == 0) {
+		*p_ref_count = ++ref_count;
+		DEBUG(10,("secrets_named_mutex: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
+	}
 	return (ret == 0);
 }
 
@@ -606,10 +613,19 @@ BOOL secrets_named_mutex(const char *name, unsigned int timeout)
  Unlock a named mutex.
 *******************************************************************************/
 
-void secrets_named_mutex_release(const char *name)
+void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 {
-	tdb_unlock_bystring(tdb, name);
-	DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
+	size_t ref_count = *p_ref_count;
+
+	SMB_ASSERT(ref_count != 0);
+
+	if (ref_count == 1) {
+		tdb_unlock_bystring(tdb, name);
+		DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
+	}
+
+	*p_ref_count = --ref_count;
+	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
 }
 
 /*********************************************************
