@@ -278,7 +278,8 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	/* Here, the flag is one, because we want to ignore the
            XXXXXXX'd out password */
 	ret = change_oem_password( smbpw, password, True);
-	if (ret == False) {
+	if (!ret)
+	{
 		DEBUG(3,("change_oem_password returned False\n"));
 	}
 
@@ -1181,7 +1182,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	* Now start the NT Domain stuff :-).
 	*/
 
-	if(cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum) == False) {
+	if (!cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum)) {
 	DEBUG(0,("domain_client_validate: unable to open the domain client session to \
 	machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
 	cli_nt_session_close(&cli, nt_pipe_fnum);
@@ -1191,7 +1192,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
-	   cli.mach_acct, global_myname, trust_passwd, SEC_CHAN_WKSTA) == False)
+	   cli.mach_acct, global_myname, trust_passwd, SEC_CHAN_WKSTA) != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 		%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
