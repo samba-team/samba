@@ -9,7 +9,7 @@ RCSID("$Header$");
 int
 utmpx_login(char *line, char *user, char *host)
 {
-#ifndef SYSV_UTMP
+#ifndef HAVE_UTMPX_H
     return 0;
 #else
     struct utmpx *ut;
@@ -43,5 +43,5 @@ utmpx_login(char *line, char *user, char *host)
     }
     endutxent();
     return (ret);
-#endif /* SYSV_UTMP */
+#endif /* HAVE_UTMPX_H */
 }
