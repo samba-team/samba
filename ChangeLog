@@ -1,3 +1,8 @@
+2002-03-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c (find_etype): unsigned -> krb5_enctype (from
+	Reinoud Zandijk)
+
 2002-03-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/asn1/k5.asn1: add the GSS-API checksum type here
