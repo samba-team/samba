@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    
    Copyright (C) Stefan Metzmacher	2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,21 +19,33 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct libnet_context {
-	TALLOC_CTX *mem_ctx;
-
-	/* here we need:
-	 * a client env context
-	 * a user env context
-	 */
-	struct {
-		const char *account_name;
-		const char *domain_name;
-		const char *password;
-	} user;
+/* struct and enum for doing a remote domain join */
+enum libnet_JoinDomain_level {
+	LIBNET_JOIN_DOMAIN_GENERIC,
+	LIBNET_JOIN_DOMAIN_SAMR,
 };
 
-#include "libnet/libnet_passwd.h"
-#include "libnet/libnet_time.h"
-#include "libnet/libnet_rpc.h"
-#include "libnet/libnet_join.h"
+union libnet_JoinDomain {
+	struct {
+		enum libnet_JoinDomain_level level;
+
+		struct _libnet_JoinDomain_in {
+			const char *domain_name;
+			const char *account_name;
+			uint32      acct_type;
+		} in;
+
+		struct _libnet_JoinDomain_out {
+			const char *error_string;
+			const char *join_password;
+		} out;
+	} generic;
+
+	struct {
+		enum libnet_JoinDomain_level level;
+		struct _libnet_JoinDomain_in in;
+		struct _libnet_JoinDomain_out out;
+	} samr;
+
+};
+
