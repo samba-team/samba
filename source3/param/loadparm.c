@@ -5,6 +5,8 @@
    Copyright (C) Karl Auer 1993-1998
 
    Largely re-written by Andrew Tridgell, September 1994
+
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -110,12 +112,8 @@ typedef struct
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szWorkGroup;
-	char *szDomainAdminGroup;
-	char *szDomainGuestGroup;
-	char *szDomainAdminUsers;
-	char *szDomainGuestUsers;
-	char *szDomainHostsallow;
-	char *szDomainHostsdeny;
+	char **szDomainAdminGroup;
+	char **szDomainGuestGroup;
 	char *szUsernameMap;
 #ifdef USING_GROUPNAME_MAP
 	char *szGroupnameMap;
@@ -278,9 +276,9 @@ typedef struct
 	char *szPath;
 	char *szUsername;
 	char *szGuestaccount;
-	char *szInvalidUsers;
-	char *szValidUsers;
-	char *szAdminUsers;
+	char **szInvalidUsers;
+	char **szValidUsers;
+	char **szAdminUsers;
 	char *szCopy;
 	char *szInclude;
 	char *szPreExec;
@@ -310,9 +308,9 @@ typedef struct
 	char *comment;
 	char *force_user;
 	char *force_group;
-	char *readlist;
-	char *writelist;
-	char *printer_admin;
+	char **readlist;
+	char **writelist;
+	char **printer_admin;
 	char *volume;
 	char *fstype;
 	char *szVfsObjectFile;
@@ -682,12 +680,12 @@ static struct parm_struct parm_table[] = {
 	{"users", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, 0},
 	
 	{"guest account", P_STRING, P_LOCAL, &sDefault.szGuestaccount, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_GLOBAL},
-	{"invalid users", P_STRING, P_LOCAL, &sDefault.szInvalidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"valid users", P_STRING, P_LOCAL, &sDefault.szValidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"admin users", P_STRING, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"read list", P_STRING, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"write list", P_STRING, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"printer admin", P_STRING, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_PRINT},
+	{"invalid users", P_LIST, P_LOCAL, &sDefault.szInvalidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"valid users", P_LIST, P_LOCAL, &sDefault.szValidUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"admin users", P_LIST, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"read list", P_LIST, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"write list", P_LIST, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"printer admin", P_LIST, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_PRINT},
 	{"force user", P_STRING, P_LOCAL, &sDefault.force_user, NULL, NULL, FLAG_SHARE},
 	{"force group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_SHARE},
 	{"group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, 0},
@@ -860,8 +858,8 @@ static struct parm_struct parm_table[] = {
 
 	{"Domain Options", P_SEP, P_SEPARATOR},
 	
-	{"domain admin group", P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL, NULL, 0},
-	{"domain guest group", P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL, NULL, 0},
+	{"domain admin group", P_LIST, P_GLOBAL, &Globals.szDomainAdminGroup, NULL, NULL, 0},
+	{"domain guest group", P_LIST, P_GLOBAL, &Globals.szDomainGuestGroup, NULL, NULL, 0},
 
 #ifdef USING_GROUPNAME_MAP
 	{"groupname map", P_STRING, P_GLOBAL, &Globals.szGroupnameMap, NULL, NULL, 0},
@@ -1456,8 +1454,8 @@ FN_GLOBAL_STRING(lp_deluserfromgroup_script, &Globals.szDelUserToGroupScript)
 FN_GLOBAL_STRING(lp_addmachine_script, &Globals.szAddMachineScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
-FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
+FN_GLOBAL_LIST(lp_domain_admin_group, &Globals.szDomainAdminGroup)
+FN_GLOBAL_LIST(lp_domain_guest_group, &Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_winbind_uid, &Globals.szWinbindUID)
 FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
@@ -1576,9 +1574,9 @@ FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_STRING(lp_guestaccount, szGuestaccount)
-FN_LOCAL_STRING(lp_invalid_users, szInvalidUsers)
-FN_LOCAL_STRING(lp_valid_users, szValidUsers)
-FN_LOCAL_STRING(lp_admin_users, szAdminUsers)
+FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
+FN_LOCAL_LIST(lp_valid_users, szValidUsers)
+FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
@@ -1596,9 +1594,9 @@ FN_LOCAL_STRING(lp_magicoutput, szMagicOutput)
 FN_LOCAL_STRING(lp_comment, comment)
 FN_LOCAL_STRING(lp_force_user, force_user)
 FN_LOCAL_STRING(lp_force_group, force_group)
-FN_LOCAL_STRING(lp_readlist, readlist)
-FN_LOCAL_STRING(lp_writelist, writelist)
-FN_LOCAL_STRING(lp_printer_admin, printer_admin)
+FN_LOCAL_LIST(lp_readlist, readlist)
+FN_LOCAL_LIST(lp_writelist, writelist)
+FN_LOCAL_LIST(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
 static FN_LOCAL_STRING(lp_volume, volume)
@@ -1723,7 +1721,7 @@ static void free_service(service * pservice)
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 		else if (parm_table[i].type == P_LIST &&
 			 parm_table[i].class == P_LOCAL)
-			     lp_list_free(*(char ***)
+			     lp_list_free((char ***)
 			     		    (((char *)pservice) +
 					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 	}
@@ -3558,10 +3556,14 @@ char **lp_list_make(char *string)
 	
 	if (!string || !*string) return NULL;
 	s = strdup(string);
-	if (!s || !*s) return NULL;
+	if (!s || !*s) {
+		DEBUG(0,("ERROR: Unable to allocate memory"));
+		return NULL;
+	}
 	
 	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
 	if (!list) {
+		DEBUG(0,("ERROR: Unable to allocate memory"));
 		free (s);
 		return NULL;
 	}
@@ -3579,7 +3581,8 @@ char **lp_list_make(char *string)
 			lsize += P_LIST_ABS;
 			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
 			if (!rlist) {
-				lp_list_free (list);
+				DEBUG(0,("ERROR: Unable to allocate memory"));
+				lp_list_free (&list);
 				free (s);
 				return NULL;
 			}
@@ -3589,7 +3592,8 @@ char **lp_list_make(char *string)
 		
 		list[num] = strdup(tok);
 		if (!list[num]) {
-			lp_list_free (list);
+			DEBUG(0,("ERROR: Unable to allocate memory"));
+			lp_list_free (&list);
 			free (s);
 			return NULL;
 		}
@@ -3610,7 +3614,10 @@ BOOL lp_list_copy(char ***dest, char **src)
 	if (!src) return False;
 	
 	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
-	if (!list) return False;
+	if (!list) {
+		DEBUG(0,("ERROR: Unable to allocate memory"));
+		return False;
+	}
 	memset (list, 0, ((sizeof(char**)) * P_LIST_ABS));
 	lsize = P_LIST_ABS;
 		
@@ -3620,7 +3627,8 @@ BOOL lp_list_copy(char ***dest, char **src)
 			lsize += P_LIST_ABS;
 			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
 			if (!rlist) {
-				lp_list_free (list);
+				DEBUG(0,("ERROR: Unable to allocate memory"));
+				lp_list_free (&list);
 				return False;
 			}
 			else list = rlist;
@@ -3629,7 +3637,8 @@ BOOL lp_list_copy(char ***dest, char **src)
 		
 		list[num] = strdup(src[num]);
 		if (!list[num]) {
-			lp_list_free (list);
+			DEBUG(0,("ERROR: Unable to allocate memory"));
+			lp_list_free (&list);
 			return False;
 		}
 	}
@@ -3654,11 +3663,75 @@ BOOL lp_list_compare(char **list1, char **list2)
 	return True;
 }
 
-void lp_list_free(char **list)
+void lp_list_free(char ***list)
 {
-	char **tlist = list;
+	char **tlist;
 	
-	if (!list) return;
+	if (!list || !*list) return;
+	tlist = *list;
 	for(; *tlist; tlist++) free(*tlist);
-	free (list);
+	free (*list);
+	*list = NULL;
 }
+
+BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
+{
+	char *p, *s, *t;
+	ssize_t ls, lp, li, ld, i, d;
+
+	if (!list || !*list) return False;
+	if (!pattern) return False;
+	if (!insert) return False;
+
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li -lp;
+			
+	while (*list)
+	{
+		s = *list;
+		ls = (ssize_t)strlen(s);
+
+		while ((p = strstr(s, pattern)))
+		{
+			t = *list;
+			d = p -t;
+			if (ld)
+			{
+				t = (char *) malloc(ls +ld +1);
+				if (!t) {
+					DEBUG(0,("ERROR: Unable to allocate memory"));
+					return False;
+				}
+				memcpy(t, *list, d);
+				memcpy(t +d +li, p +lp, ls -d -lp +1);
+				free (*list);
+				*list = t;
+				ls += ld;
+				s = t +d +li;
+			}
+			
+			for (i = 0; i < li; i++) {
+				switch (insert[i]) {
+					case '`':
+					case '"':
+					case '\'':
+					case ';':
+					case '$':
+					case '%':
+					case '\r':
+					case '\n':
+						t[d +i] = '_';
+						break;
+					default:
+						t[d +i] = insert[i];
+				}
+			}	
+		}
+		
+		list++;
+	}
+	
+	return True;
+}
+
