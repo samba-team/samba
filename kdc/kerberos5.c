@@ -142,7 +142,7 @@ find_keys(hdb_entry *client,
 	  krb5_enctype *cetype,
 	  Key **skey,
 	  krb5_enctype *setype, 
-	  unsigned *etypes,
+	  int *etypes,
 	  unsigned num_etypes)
 {
     int i;
