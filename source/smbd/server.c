@@ -44,14 +44,14 @@ static int binary_smbd_main(int argc,const char *argv[])
 	const char *model = "standard";
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
-	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-	{"port", 'p', POPT_ARG_STRING, NULL, 0, "Listen on the specified ports"},
-	{"model", 'M', POPT_ARG_STRING, &model, 0, "select process model"},
 	POPT_COMMON_SAMBA
-	{ NULL }
+	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" , NULL },
+	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)", NULL},
+	{"foreground", 'F', POPT_ARG_VAL, &Fork, True, "Run daemon in foreground (for daemontools & etc)" , NULL },
+	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout", NULL },
+	{"port", 'p', POPT_ARG_STRING, NULL, 0, "Listen on the specified ports", "PORTS"},
+	{"model", 'M', POPT_ARG_STRING, &model, True, "Select process model", "MODEL"},
+	POPT_TABLEEND
 	};
 	
 	pc = poptGetContext("smbd", argc, argv, long_options, 0);
