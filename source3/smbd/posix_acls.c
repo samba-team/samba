@@ -2165,7 +2165,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
  the UNIX style get ACL.
 ****************************************************************************/
 
-size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
+size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 {
 	extern DOM_SID global_sid_Builtin_Administrators;
 	extern DOM_SID global_sid_Builtin_Users;
@@ -2241,177 +2241,184 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		create_file_sids(&sbuf, &owner_sid, &group_sid);
 	}
 
-	/*
-	 * In the optimum case Creator Owner and Creator Group would be used for
-	 * the ACL_USER_OBJ and ACL_GROUP_OBJ entries, respectively, but this
-	 * would lead to usability problems under Windows: The Creator entries
-	 * are only available in browse lists of directories and not for files;
-	 * additionally the identity of the owning group couldn't be determined.
-	 * We therefore use those identities only for Default ACLs. 
-	 */
+	if (security_info & DACL_SECURITY_INFORMATION) {
 
-	/* Create the canon_ace lists. */
-	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf, &owner_sid, &group_sid, SMB_ACL_TYPE_ACCESS );
+		/*
+		 * In the optimum case Creator Owner and Creator Group would be used for
+		 * the ACL_USER_OBJ and ACL_GROUP_OBJ entries, respectively, but this
+		 * would lead to usability problems under Windows: The Creator entries
+		 * are only available in browse lists of directories and not for files;
+		 * additionally the identity of the owning group couldn't be determined.
+		 * We therefore use those identities only for Default ACLs. 
+		 */
 
-	/* We must have *some* ACLS. */
+		/* Create the canon_ace lists. */
+		file_ace = canonicalise_acl( fsp, posix_acl, &sbuf, &owner_sid, &group_sid, SMB_ACL_TYPE_ACCESS );
 
-	if (count_canon_ace_list(file_ace) == 0) {
-		DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", fsp->fsp_name ));
-		return 0;
-	}
-
-	if (fsp->is_directory && dir_acl) {
-		dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf,
-				&global_sid_Creator_Owner,
-				&global_sid_Creator_Group, SMB_ACL_TYPE_DEFAULT );
-	}
-
-	/*
-	 * Create the NT ACE list from the canonical ace lists.
-	 */
-
-	{
-		canon_ace *ace;
-		int nt_acl_type;
-		int i;
-
-		if (nt4_compatible_acls() && dir_ace) {
-			/*
-			 * NT 4 chokes if an ACL contains an INHERIT_ONLY entry
-			 * but no non-INHERIT_ONLY entry for one SID. So we only
-			 * remove entries from the Access ACL if the
-			 * corresponding Default ACL entries have also been
-			 * removed. ACEs for CREATOR-OWNER and CREATOR-GROUP
-			 * are exceptions. We can do nothing
-			 * intelligent if the Default ACL contains entries that
-			 * are not also contained in the Access ACL, so this
-			 * case will still fail under NT 4.
-			 */
-
-			ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(dir_ace, ace);
-				SAFE_FREE(ace);
-
-				ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
-				if (ace && !ace->perms) {
-					DLIST_REMOVE(file_ace, ace);
-					SAFE_FREE(ace);
-				}
-			}
-
-			/*
-			 * WinNT doesn't usually have Creator Group
-			 * in browse lists, so we send this entry to
-			 * WinNT even if it contains no relevant
-			 * permissions. Once we can add
-			 * Creator Group to browse lists we can
-			 * re-enable this.
-			 */
-
-#if 0
-			ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(dir_ace, ace);
-				SAFE_FREE(ace);
-			}
-#endif
-
-			ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(file_ace, ace);
-				SAFE_FREE(ace);
-			}
-		} else {
-
-			ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(dir_ace, ace);
-				SAFE_FREE(ace);
-			}
-			ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(dir_ace, ace);
-				SAFE_FREE(ace);
-			}
+		/* We must have *some* ACLS. */
+	
+		if (count_canon_ace_list(file_ace) == 0) {
+			DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", fsp->fsp_name ));
+			return 0;
 		}
 
-		num_acls = count_canon_ace_list(file_ace);
-		num_dir_acls = count_canon_ace_list(dir_ace);
-
-		/* Allocate the ace list. */
-		if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
-			DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
-			goto done;
+		if (fsp->is_directory && dir_acl) {
+			dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf,
+					&global_sid_Creator_Owner,
+					&global_sid_Creator_Group, SMB_ACL_TYPE_DEFAULT );
 		}
 
-		memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
-										                
 		/*
 		 * Create the NT ACE list from the canonical ace lists.
 		 */
 
-		ace = file_ace;
+		{
+			canon_ace *ace;
+			int nt_acl_type;
+			int i;
 
-		for (i = 0; i < num_acls; i++, ace = ace->next) {
-			SEC_ACCESS acc;
+			if (nt4_compatible_acls() && dir_ace) {
+				/*
+				 * NT 4 chokes if an ACL contains an INHERIT_ONLY entry
+				 * but no non-INHERIT_ONLY entry for one SID. So we only
+				 * remove entries from the Access ACL if the
+				 * corresponding Default ACL entries have also been
+				 * removed. ACEs for CREATOR-OWNER and CREATOR-GROUP
+				 * are exceptions. We can do nothing
+				 * intelligent if the Default ACL contains entries that
+				 * are not also contained in the Access ACL, so this
+				 * case will still fail under NT 4.
+				 */
 
-			acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
-			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
-		}
+				ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
+				if (ace && !ace->perms) {
+					DLIST_REMOVE(dir_ace, ace);
+					SAFE_FREE(ace);
 
-		/* The User must have access to a profile share - even if we can't map the SID. */
-		if (lp_profile_acls(SNUM(fsp->conn))) {
-			SEC_ACCESS acc;
+					ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
+					if (ace && !ace->perms) {
+						DLIST_REMOVE(file_ace, ace);
+						SAFE_FREE(ace);
+					}
+				}
 
-			init_sec_access(&acc,FILE_GENERIC_ALL);
-			init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc, 0);
-		}
+				/*
+				 * WinNT doesn't usually have Creator Group
+				 * in browse lists, so we send this entry to
+				 * WinNT even if it contains no relevant
+				 * permissions. Once we can add
+				 * Creator Group to browse lists we can
+				 * re-enable this.
+				 */
 
-		ace = dir_ace;
+#if 0
+				ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
+				if (ace && !ace->perms) {
+					DLIST_REMOVE(dir_ace, ace);
+					SAFE_FREE(ace);
+				}
+#endif
 
-		for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
-			SEC_ACCESS acc;
+				ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
+				if (ace && !ace->perms) {
+					DLIST_REMOVE(file_ace, ace);
+					SAFE_FREE(ace);
+				}
+			} else {
+	
+				ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
+				if (ace && !ace->perms) {
+					DLIST_REMOVE(dir_ace, ace);
+					SAFE_FREE(ace);
+				}
+				ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
+				if (ace && !ace->perms) {
+					DLIST_REMOVE(dir_ace, ace);
+					SAFE_FREE(ace);
+				}
+			}
+	
+			num_acls = count_canon_ace_list(file_ace);
+			num_dir_acls = count_canon_ace_list(dir_ace);
 
-			acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
-			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc,
-					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
-		}
+			/* Allocate the ace list. */
+			if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
+				goto done;
+			}
 
-		/* The User must have access to a profile share - even if we can't map the SID. */
-		if (lp_profile_acls(SNUM(fsp->conn))) {
-			SEC_ACCESS acc;
+			memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+											                
+			/*
+			 * Create the NT ACE list from the canonical ace lists.
+			 */
+	
+			ace = file_ace;
+
+			for (i = 0; i < num_acls; i++, ace = ace->next) {
+				SEC_ACCESS acc;
+
+				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
+			}
+
+			/* The User must have access to a profile share - even if we can't map the SID. */
+			if (lp_profile_acls(SNUM(fsp->conn))) {
+				SEC_ACCESS acc;
+
+				init_sec_access(&acc,FILE_GENERIC_ALL);
+				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc, 0);
+			}
+
+			ace = dir_ace;
+
+			for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
+				SEC_ACCESS acc;
+	
+				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc,
+						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+			}
+
+			/* The User must have access to a profile share - even if we can't map the SID. */
+			if (lp_profile_acls(SNUM(fsp->conn))) {
+				SEC_ACCESS acc;
 			
-			init_sec_access(&acc,FILE_GENERIC_ALL);
-			init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc,
-					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
-					SEC_ACE_FLAG_INHERIT_ONLY);
+				init_sec_access(&acc,FILE_GENERIC_ALL);
+				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc,
+						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
+						SEC_ACE_FLAG_INHERIT_ONLY);
+			}
+
+			/*
+			 * Merge POSIX default ACLs and normal ACLs into one NT ACE.
+			 * Win2K needs this to get the inheritance correct when replacing ACLs
+			 * on a directory tree. Based on work by Jim @ IBM.
+			 */
+
+			num_aces = merge_default_aces(nt_ace_list, num_aces);
+
+			/*
+			 * Sort to force deny entries to the front.
+			 */
+	
+			if (num_aces)
+				qsort( nt_ace_list, num_aces, sizeof(nt_ace_list[0]), QSORT_CAST nt_ace_comp);
 		}
 
-		/*
-		 * Merge POSIX default ACLs and normal ACLs into one NT ACE.
-		 * Win2K needs this to get the inheritance correct when replacing ACLs
-		 * on a directory tree. Based on work by Jim @ IBM.
-		 */
-
-		num_aces = merge_default_aces(nt_ace_list, num_aces);
-
-		/*
-		 * Sort to force deny entries to the front.
-		 */
-
-		if (num_aces)
-			qsort( nt_ace_list, num_aces, sizeof(nt_ace_list[0]), QSORT_CAST nt_ace_comp);
-	}
-
-	if (num_aces) {
-		if((psa = make_sec_acl( main_loop_talloc_get(), ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
-			DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
-			goto done;
+		if (num_aces) {
+			if((psa = make_sec_acl( main_loop_talloc_get(), ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
+				DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
+				goto done;
+			}
 		}
-	}
+	} /* security_info & DACL_SECURITY_INFORMATION */
 
-	*ppdesc = make_standard_sec_desc( main_loop_talloc_get(), &owner_sid, &group_sid, psa, &sd_size);
+	*ppdesc = make_standard_sec_desc( main_loop_talloc_get(),
+			(security_info & OWNER_SECURITY_INFORMATION) ? &owner_sid : NULL,
+			(security_info & GROUP_SECURITY_INFORMATION) ? &group_sid : NULL,
+			psa,
+			&sd_size);
 
 	if(!*ppdesc) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));

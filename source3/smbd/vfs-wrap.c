@@ -576,22 +576,22 @@ char *vfswrap_realpath(vfs_handle_struct *handle, connection_struct *conn, const
 	return result;
 }
 
-size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, SEC_DESC **ppdesc)
+size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
 {
 	size_t result;
 
 	START_PROFILE(fget_nt_acl);
-	result = get_nt_acl(fsp, ppdesc);
+	result = get_nt_acl(fsp, security_info, ppdesc);
 	END_PROFILE(fget_nt_acl);
 	return result;
 }
 
-size_t vfswrap_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, SEC_DESC **ppdesc)
+size_t vfswrap_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info, SEC_DESC **ppdesc)
 {
 	size_t result;
 
 	START_PROFILE(get_nt_acl);
-	result = get_nt_acl(fsp, ppdesc);
+	result = get_nt_acl(fsp, security_info, ppdesc);
 	END_PROFILE(get_nt_acl);
 	return result;
 }
