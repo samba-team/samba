@@ -141,6 +141,21 @@ NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, c
 	(*pdb_method)->delete_group_mapping_entry = pdb_nop_delete_group_mapping_entry;
 	(*pdb_method)->enum_group_mapping = pdb_nop_enum_group_mapping;
 	
+	/* we do not handle groups in guest backend */
+/*	FIXME
+	(*pdb_method)->get_group_info_by_sid = pdb_nop_get_group_info_by_sid;
+	(*pdb_method)->get_group_list = pdb_nop_get_group_list;
+	(*pdb_method)->get_group_sids = pdb_nop_get_group_sids;
+	(*pdb_method)->add_group = pdb_nop_add_group;
+	(*pdb_method)->update_group = pdb_nop_update_group;
+	(*pdb_method)->delete_group = pdb_nop_delete_group;
+	(*pdb_method)->add_sid_to_group = pdb_nop_add_sid_to_group;
+	(*pdb_method)->remove_sid_from_group = pdb_nop_remove_sid_from_group;
+	(*pdb_method)->get_group_info_by_name = pdb_nop_get_group_info_by_name;
+	(*pdb_method)->get_group_info_by_nt_name = pdb_nop_get_group_info_by_nt_name;
+	(*pdb_method)->get_group_uids = pdb_nop_get_group_uids;
+*/	
+	
 	
 	/* There's not very much to initialise here */
 	return NT_STATUS_OK;

@@ -118,7 +118,16 @@ int gen_parse_LUID(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 	return 0;
 }
 
+int gen_parse_DATA_BLOB(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
+{
+	return gen_parse_struct(mem_ctx, pinfo_data_blob_info, ptr, str);
+}
 
+int gen_parse_TALLOC_CTX(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
+{
+	(TALLOC_CTX *)ptr = NULL;
+	return 0;
+}
 
 /* DUMP functions */
 
@@ -198,3 +207,12 @@ int gen_dump_LUID(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, 
 	return addshort(mem_ctx, p, "%u,%u", high, low);
 }
 
+int gen_dump_DATA_BLOB(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
+{
+	return gen_dump_struct(mem_ctx, pinfo_data_blob_info, p, ptr, indent);
+}
+
+int gen_dump_TALLOC_CTX(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
+{
+	return addshort(mem_ctx, p, "TALLOC_CTX");
+}

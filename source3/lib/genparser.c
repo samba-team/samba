@@ -256,7 +256,6 @@ static int gen_dump_array(TALLOC_CTX *mem_ctx,
 		    addstr(mem_ctx, p, "}\n")) {
 			return -1;
 		}
-		free(s);
 		return 0;
 	}
 
@@ -673,7 +672,7 @@ int gen_parse(TALLOC_CTX *mem_ctx, const struct parse_struct *pinfo, char *data,
 {
 	char *str, *s0;
 	
-	s0 = strdup(s);
+	s0 = talloc_strdup(mem_ctx, s);
 	str = s0;
 
 	while (*str) {
@@ -706,12 +705,10 @@ int gen_parse(TALLOC_CTX *mem_ctx, const struct parse_struct *pinfo, char *data,
 		*str++ = 0;
 		
 		if (gen_parse_one(mem_ctx, pinfo, name, data, value) != 0) {
-			free(s0);
 			return -1;
 		}
 	}
 
-	free(s0);
 	return 0;
 }
 

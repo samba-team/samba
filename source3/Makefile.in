@@ -184,7 +184,8 @@ LIB_OBJ = lib/version.o lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o
+	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o \
+	  lib/genparser.o lib/genparser_samba.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
 
@@ -282,11 +283,14 @@ RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
+GUMS_OBJ = sam/gums.o sam/gums_api.o sam/gums_helper.o
+
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
-		passdb/privileges.o passdb/lookup_sid.o @PDB_STATIC@ 
+		passdb/privileges.o passdb/lookup_sid.o @PDB_STATIC@ \
+		$(GUMS_OBJ) @GUMS_STATIC@
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
@@ -1304,14 +1308,15 @@ clean: delheaders python_clean
 # afterwards.
 proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h smbd/build_options.c
+	client/client_proto.h utils/net_proto.h smbd/build_options.c \
+	include/tdbsam2_parse_info.h
 
 delheaders:
 	@echo Removing prototype headers
 	@rm -f include/proto.h include/build_env.h  include/wrepld_proto.h \
 		nsswitch/winbindd_proto.h web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
-		smbd/build_options.c
+		smbd/build_options.c include/tdbsam2_parse_info.h
 
 MKPROTO_SH = $(srcdir)/script/mkproto.sh
 
@@ -1352,6 +1357,15 @@ utils/net_proto.h:
 	  -h _CLIENT_PROTO_H_ $(builddir)/utils/net_proto.h \
 	  $(NET_OBJ1)
 
+include/tdbsam2_parse_info.h:
+	@if test -n "$(PERL)"; then \
+		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
+		-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
+		include/tdbsam2.h; \
+	else \
+		echo Unable to build $@, continuing; \
+	fi
+
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
@@ -1364,7 +1378,8 @@ headers:
 	$(MAKE) nsswitch/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
-	$(MAKE) utils/net_proto.h
+	$(MAKE) utils/net_proto.h; \
+	$(MAKE) include/tdbsam2_parse_info.h
 
 proto: headers 
 
