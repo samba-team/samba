@@ -106,7 +106,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		case SEC_ADS: {
 			extern struct winbindd_methods ads_methods;
 			/* always obey the lp_security parameter for our domain */
-			if ( strequal(lp_realm(), domain->alt_name) ) {
+			if ( strequal(lp_realm(), domain->alt_name) || strequal(lp_workgroup(), domain->name) ) {
 				domain->backend = &ads_methods;
 				break;
 			}

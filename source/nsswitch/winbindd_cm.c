@@ -152,7 +152,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		
 		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
 					     &dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
-					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK,
+					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, 
 					     Undefined, &retry);
 		
 		secrets_named_mutex_release(new_conn->controller);
@@ -192,6 +192,25 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	}
 
 	return NT_STATUS_OK;
+}
+
+/************************************************************************
+ Wrapper around statuc cm_open_connection to retreive a freshly
+ setup cli_state struct
+************************************************************************/
+
+NTSTATUS cm_fresh_connection(const char *domain, const int pipe_index,
+			       struct cli_state **cli)
+{
+	NTSTATUS result;
+	struct winbindd_cm_conn conn;
+	
+	result = cm_open_connection( domain, pipe_index, &conn );
+	
+	if ( NT_STATUS_IS_OK(result) ) 
+		*cli = conn.cli;
+
+	return result;
 }
 
 /* Return true if a connection is still alive */
@@ -326,13 +345,11 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 
 done:
 
-#if 0
-	/*
-	 * I don't think we need to shutdown here ? JRA.
-	 */
+	/* close the connection;  no other cals use this pipe and it is called only
+	   on reestablishing the domain list   --jerry */
+
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
-#endif
 	
 	return ret;
 }

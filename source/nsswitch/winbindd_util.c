@@ -111,7 +111,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		fstrcpy(domain->name, alt_name);
 		fstrcpy(domain->alt_name, domain_name);
 	} else {
-	fstrcpy(domain->name, domain_name);
+		fstrcpy(domain->name, domain_name);
 		if (alt_name) {
 			fstrcpy(domain->alt_name, alt_name);
 		}
@@ -183,8 +183,8 @@ void rescan_trusted_domains(BOOL force)
 			continue;
 		}
 
-		/* Add each domain to the trusted domain list. Each domain inherits
-		   the access methods of its parent */
+		/* Add each domain to the trusted domain list */
+		
 		for(i = 0; i < num_domains; i++) {
 			DEBUG(10,("Found domain %s\n", names[i]));
 			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
@@ -209,7 +209,7 @@ BOOL init_domain_list(void)
 	free_domain_list();
 
 	/* Add ourselves as the first entry */
-	domain = add_trusted_domain(lp_workgroup(), NULL, &cache_methods, NULL);
+	domain = add_trusted_domain( lp_workgroup(), NULL, &cache_methods, NULL);
 	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
 		DEBUG(1, ("Could not fetch sid for our domain %s\n",
 			  domain->name));
@@ -782,3 +782,53 @@ BOOL winbindd_upgrade_idmap(void)
 
 	return idmap_convert(idmap_name);
 }
+
+/*******************************************************************
+ wrapper around retrieving the trust account password
+*******************************************************************/
+
+BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
+                          time_t *pass_last_set_time, uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+
+	/* if we are a DC and this is not our domain, then lookup an account
+	   for the domain trust */
+	   
+	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
+	{
+		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
+			pass_last_set_time) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for trusted domain %s\n", domain));
+			return False;
+		}
+		
+		*channel = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
+
+		return True;
+	}
+	else 	/* just get the account for our domain (covers 
+		   ROLE_DOMAIN_MEMBER as well */
+	{
+		/* get the machine trust account for our domain */
+
+		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
+			pass_last_set_time, channel) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for my domain %s\n", domain));
+			return False;
+		}
+		
+		return True;
+	}
+	
+	/* Failure */
+	return False;
+}
+
