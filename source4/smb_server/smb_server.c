@@ -852,9 +852,6 @@ void smbsrv_accept(struct server_connection *conn)
 
 	conn->private_data = smb_conn;
 
-	/* setup the DCERPC server subsystem */
-	dcesrv_init_context(smb_conn, &smb_conn->dcesrv);
-
 	return;
 }
 

@@ -268,8 +268,6 @@ struct smbsrv_connection {
 
 	struct substitute_context substitute;
 
-	struct dcesrv_context *dcesrv;
-
 	/* the pid of the process handling this session */
 	pid_t pid;
 	
