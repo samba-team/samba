@@ -175,6 +175,21 @@ typedef union {
     krb5_flags i;
 } krb5_ticket_flags;
 
+/* options for krb5_get_in_tkt() */
+#define KDC_OPT_FORWARDABLE		(1 << 1)
+#define KDC_OPT_FORWARDED		(1 << 2)
+#define KDC_OPT_PROXIABLE		(1 << 3)
+#define KDC_OPT_PROXY			(1 << 4)
+#define KDC_OPT_ALLOW_POSTDATE		(1 << 5)
+#define KDC_OPT_POSTDATED		(1 << 6)
+#define KDC_OPT_RENEWABLE		(1 << 8)
+#define KDC_OPT_REQUEST_ANONYMOUS	(1 << 14)
+#define KDC_OPT_DISABLE_TRANSITED_CHECK	(1 << 26)
+#define KDC_OPT_RENEWABLE_OK		(1 << 27)
+#define KDC_OPT_ENC_TKT_IN_SKEY		(1 << 28)
+#define KDC_OPT_RENEW			(1 << 30)
+#define KDC_OPT_VALIDATE		(1 << 31)
+
 typedef union {
     KDCOptions b;
     krb5_flags i;
