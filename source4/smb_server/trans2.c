@@ -512,6 +512,7 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 				     union smb_fileinfo *st)
 {
 	uint_t i;
+	uint32_t list_size;
 	
 	switch (st->generic.level) {
 	case RAW_FILEINFO_GENERIC:
@@ -613,18 +614,12 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_EAS:
-		if (st->all_eas.out.num_eas == 0) {
-			trans2_setup_reply(req, trans, 2, 4, 0);
-			SSVAL(trans->out.params.data, 0, 0);
-			SIVAL(trans->out.data.data,  0, 0);
-		} else {
-			uint32_t list_size = ea_list_size(st->all_eas.out.num_eas,
+		list_size = ea_list_size(st->all_eas.out.num_eas,
 							st->all_eas.out.eas);
 			trans2_setup_reply(req, trans, 2, list_size, 0);
 			SSVAL(trans->out.params.data, 0, 0);
 			ea_put_list(trans->out.data.data, 
 				    st->all_eas.out.num_eas, st->all_eas.out.eas);
-		}
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
