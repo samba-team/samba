@@ -845,7 +845,7 @@ int main(int argc, char **argv)
 	if (!winbindd_upgrade_idmap())
 		return 1;
 
-	if (!idmap_init())
+	if (!idmap_init(lp_idmap_backend()))
 		return 1;
 
 	if (!idmap_init_wellknown_sids())

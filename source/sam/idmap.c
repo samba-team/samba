@@ -4,6 +4,7 @@
    Copyright (C) Tim Potter 2000
    Copyright (C) Anthony Liguori <aliguor@us.ibm.com>	2003
    Copyright (C) Simo Sorce 2003
+   Copyright (C) Jeremy Allison 2003.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,37 +33,37 @@ struct idmap_function_entry {
 
 static struct idmap_function_entry *backends = NULL;
 
-static struct idmap_methods *local_map;
+static struct idmap_methods *cache_map;
 static struct idmap_methods *remote_map;
 
-static void lazy_initialize_idmap(void)
-{
-	static BOOL initialized = False;
+/**********************************************************************
+ Get idmap methods. Don't allow tdb to be a remote method.
+**********************************************************************/
 
-	if(!initialized) {
-		idmap_init();
-		initialized = True;
-	}
-}
-
-static struct idmap_methods *get_methods(const char *name)
+static struct idmap_methods *get_methods(const char *name, BOOL cache_method)
 {
 	struct idmap_function_entry *entry = backends;
 
-	while(entry) {
-		if (strcmp(entry->name, name) == 0) return entry->methods;
-		entry = entry->next;
+	for(entry = backends; entry; entry = entry->next) {
+		if (!cache_method && strequal(entry->name, "tdb"))
+			continue; /* tdb is only cache method. */
+		if (strequal(entry->name, name))
+			return entry->methods;
 	}
 
 	return NULL;
 }
+
+/**********************************************************************
+ Allow a module to register itself as a method.
+**********************************************************************/
 
 NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods *methods)
 {
 	struct idmap_function_entry *entry;
 
  	if ((version != SMB_IDMAP_INTERFACE_VERSION)) {
-		DEBUG(0, ("Failed to register idmap module.\n"
+		DEBUG(0, ("smb_register_idmap: Failed to register idmap module.\n"
 		          "The module was compiled against SMB_IDMAP_INTERFACE_VERSION %d,\n"
 		          "current SMB_IDMAP_INTERFACE_VERSION is %d.\n"
 		          "Please recompile against the current version of samba!\n",  
@@ -71,12 +72,12 @@ NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods 
   	}
 
 	if (!name || !name[0] || !methods) {
-		DEBUG(0,("smb_register_idmap() called with NULL pointer or empty name!\n"));
+		DEBUG(0,("smb_register_idmap: called with NULL pointer or empty name!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (get_methods(name)) {
-		DEBUG(0,("idmap module %s already registered!\n", name));
+	if (get_methods(name, False)) {
+		DEBUG(0,("smb_register_idmap: idmap module %s already registered!\n", name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -85,67 +86,73 @@ NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods 
 	entry->methods = methods;
 
 	DLIST_ADD(backends, entry);
-	DEBUG(5, ("Successfully added idmap backend '%s'\n", name));
+	DEBUG(5, ("smb_register_idmap: Successfully added idmap backend '%s'\n", name));
 	return NT_STATUS_OK;
 }
 
-/* Initialize backend */
-BOOL idmap_init(void)
-{
-	const char *remote_backend = lp_idmap_backend();
+/**********************************************************************
+ Initialise idmap cache and a remote backend (if configured).
+**********************************************************************/
 
+BOOL idmap_init(const char *remote_backend)
+{
 	if (!backends)
 		static_init_idmap;
 
-	if (!local_map) {
-		local_map = get_methods("tdb");
+	if (!cache_map) {
+		cache_map = get_methods("tdb", True);
 
-		if (!local_map) {
-			DEBUG(0, ("idmap_init: could not find tdb backend!\n"));
+		if (!cache_map) {
+			DEBUG(0, ("idmap_init: could not find tdb cache backend!\n"));
 			return False;
 		}
 		
-		if (!NT_STATUS_IS_OK(local_map->init( NULL ))) {
-			DEBUG(0, ("idmap_init: could not load or create local backend!\n"));
+		if (!NT_STATUS_IS_OK(cache_map->init( NULL ))) {
+			DEBUG(0, ("idmap_init: could not initialise tdb cache backend!\n"));
 			return False;
 		}
 	}
 	
 	if (!remote_map && remote_backend && *remote_backend != 0) {
+		char *rem_backend = smb_xstrdup(remote_backend);
 		fstring params = "";
 		char *pparams;
 		
 		/* get any mode parameters passed in */
 		
-		if ( (pparams = strchr( remote_backend, ':' )) != NULL ) {
+		if ( (pparams = strchr( rem_backend, ':' )) != NULL ) {
 			*pparams = '\0';
 			pparams++;
 			fstrcpy( params, pparams );
 		}
 		
-		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", remote_backend));
+		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", rem_backend));
 		
-		if((remote_map = get_methods(remote_backend)) ||
-		    (NT_STATUS_IS_OK(smb_probe_module("idmap", remote_backend)) && 
-		    (remote_map = get_methods(remote_backend)))) {
+		if((remote_map = get_methods(rem_backend, False)) ||
+		    (NT_STATUS_IS_OK(smb_probe_module("idmap", rem_backend)) && 
+		    (remote_map = get_methods(rem_backend, False)))) {
 			remote_map->init(params);
 		} else {
-			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", remote_backend));
+			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", rem_backend));
+			SAFE_FREE(rem_backend);
 			return False;
 		}
-
+		SAFE_FREE(rem_backend);
 	}
 
 	return True;
 }
 
+/**************************************************************************
+ This is a rare operation, designed to allow an explicit mapping to be
+ set up for a sid to a POSIX id. Usually called to set up mappings for groups.
+**************************************************************************/
+
 NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
 	NTSTATUS ret;
 
-	lazy_initialize_idmap();
-
-	ret = local_map->set_mapping(sid, id, id_type);
+	ret = cache_map->set_mapping(sid, id, id_type);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG (0, ("idmap_set_mapping: Error, unable to modify local cache!\n"));
 		DEBUGADD(0, ("Error: %s", nt_errstr(ret)));
@@ -165,19 +172,21 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	return ret;
 }
 
-/* Get ID from SID */
+/**************************************************************************
+ Get ID from SID. This can create a mapping for a SID to a POSIX id.
+**************************************************************************/
+
 NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret;
 	int loc_type;
 
-	lazy_initialize_idmap();
-
 	loc_type = *id_type;
-	if (remote_map) { /* We have a central remote idmap */
+	if (remote_map) {
+		/* We have a central remote idmap so only look in cache not set. */
 		loc_type |= ID_QUERY_ONLY;
 	}
-	ret = local_map->get_id_from_sid(id, &loc_type, sid);
+	ret = cache_map->get_id_from_sid(id, &loc_type, sid);
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (remote_map) {
 			ret = remote_map->get_id_from_sid(id, id_type, sid);
@@ -185,6 +194,7 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 				DEBUG(3, ("idmap_get_id_from_sid: error fetching id!\n"));
 				return ret;
 			} else {
+				/* The remote backend gave us a valid mapping, cache it. */
 				loc_type |= ID_CACHE_SAVE;
 				idmap_set_mapping(sid, *id, loc_type);
 			}
@@ -196,19 +206,20 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 	return ret;
 }
 
-/* Get SID from ID */
+/**************************************************************************
+ Get SID from ID. This must have been created before.
+**************************************************************************/
+
 NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	NTSTATUS ret;
 	int loc_type;
 
-	lazy_initialize_idmap();
-
 	loc_type = id_type;
 	if (remote_map) {
 		loc_type = id_type | ID_QUERY_ONLY;
 	}
-	ret = local_map->get_sid_from_id(sid, id, loc_type);
+	ret = cache_map->get_sid_from_id(sid, id, loc_type);
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (remote_map) {
 			ret = remote_map->get_sid_from_id(sid, id, id_type);
@@ -216,8 +227,9 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 				DEBUG(3, ("idmap_get_sid_from_id: unable to fetch sid!\n"));
 				return ret;
 			} else {
+				/* The remote backend gave us a valid mapping, cache it. */
 				loc_type |= ID_CACHE_SAVE;
-				idmap_set_mapping(sid, id, loc_type);
+				ret = cache_map->set_mapping(sid, id, loc_type);
 			}
 		}
 	}
@@ -225,14 +237,17 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	return ret;
 }
 
-/* Close backend */
+/**************************************************************************
+ Shutdown maps.
+**************************************************************************/
+
 NTSTATUS idmap_close(void)
 {
 	NTSTATUS ret;
 
-	ret = local_map->close();
+	ret = cache_map->close();
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(3, ("idmap_close: failed to close local cache!\n"));
+		DEBUG(3, ("idmap_close: failed to close local tdb cache!\n"));
 	}
 
 	if (remote_map) {
@@ -245,11 +260,13 @@ NTSTATUS idmap_close(void)
 	return ret;
 }
 
-/* Dump backend status */
+/**************************************************************************
+ Dump backend status.
+**************************************************************************/
+
 void idmap_status(void)
 {
-	lazy_initialize_idmap();
-
-	local_map->status();
-	if (remote_map) remote_map->status();
+	cache_map->status();
+	if (remote_map)
+		remote_map->status();
 }

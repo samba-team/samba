@@ -157,7 +157,6 @@ static struct idmap_methods winbind_methods = {
 	db_set_mapping,
 	db_close,
 	db_status
-
 };
 
 NTSTATUS idmap_winbind_init(void)

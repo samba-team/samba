@@ -609,7 +609,7 @@ int main (int argc, char **argv)
 	if (!init_names())
 		exit(1);
 
-	if (!idmap_init())
+	if (!idmap_init(lp_idmap_backend()))
 		exit(1);
 
 	if (!idmap_init_wellknown_sids())
