@@ -1,3 +1,8 @@
+2002-06-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/changepw.c: make sure we return an error if there are
+	no changepw hosts found; from Wynn Wilkes
+
 2002-05-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/cache.c (krb5_cc_register): break out of loop when the
