@@ -833,7 +833,7 @@ end_login(void)
 }
 
 #ifdef KRB5
-int
+static int
 krb5_verify(struct passwd *pwd, char *passwd)
 {
    krb5_context context;  
