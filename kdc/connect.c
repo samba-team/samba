@@ -459,8 +459,10 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    kdc_log(0, "Failed to allocate %u bytes", strlen(t));
 	    goto out;
 	}
+	if(*t == '/')
+	    t++;
 	len = base64_decode(t, data);
-	if(len < 0){
+	if(len <= 0){
 	    const char *msg = 
 		"HTTP/1.1 404 Not found\r\n"
 		"Server: Heimdal/" VERSION "\r\n"
