@@ -564,6 +564,65 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	return NT_STATUS_OK;
 }
 
+/*
+  handle a bind request
+*/
+static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
+{
+	struct dcerpc_packet pkt;
+	struct dcesrv_call_reply *rep;
+	NTSTATUS status;
+	uint32_t result=0, reason=0;
+
+	/* handle any authentication that is being requested */
+	if (!dcesrv_auth_alter(call)) {
+		/* TODO: work out the right reject code */
+		return dcesrv_bind_nak(call, 0);
+	}
+
+	/* setup a alter_ack */
+	dcesrv_init_hdr(&pkt);
+	pkt.auth_length = 0;
+	pkt.call_id = call->pkt.call_id;
+	pkt.ptype = DCERPC_PKT_ALTER_ACK;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.u.alter_ack.max_xmit_frag = 0x2000;
+	pkt.u.alter_ack.max_recv_frag = 0x2000;
+	pkt.u.alter_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
+	pkt.u.alter_ack.secondary_address = NULL;
+	pkt.u.alter_ack.num_results = 1;
+	pkt.u.alter_ack.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
+	if (!pkt.u.alter_ack.ctx_list) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pkt.u.alter_ack.ctx_list[0].result = result;
+	pkt.u.alter_ack.ctx_list[0].reason = reason;
+	GUID_from_string(NDR_GUID, &pkt.u.alter_ack.ctx_list[0].syntax.uuid);
+	pkt.u.alter_ack.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
+	pkt.u.alter_ack.auth_info = data_blob(NULL, 0);
+
+	if (!dcesrv_auth_alter_ack(call, &pkt)) {
+		return dcesrv_bind_nak(call, 0);
+	}
+
+	rep = talloc_p(call, struct dcesrv_call_reply);
+	if (!rep) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_push_auth(&rep->data, call, &pkt, 
+				  call->conn->auth_state.auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	dcerpc_set_frag_length(&rep->data, rep->data.length);
+
+	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
+	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+
+	return NT_STATUS_OK;
+}
 
 /*
   handle a dcerpc request packet
@@ -847,6 +906,9 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		break;
 	case DCERPC_PKT_AUTH3:
 		status = dcesrv_auth3(call);
+		break;
+	case DCERPC_PKT_ALTER:
+		status = dcesrv_alter(call);
 		break;
 	case DCERPC_PKT_REQUEST:
 		status = dcesrv_request(call);
