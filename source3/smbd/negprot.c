@@ -288,10 +288,12 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (global_encrypted_passwords_negotiated) {
+			/* note that we do not send a challenge at all if
+			   we are using plaintext */
 			get_challenge(p);
+			SSVALS(outbuf,smb_vwv16+1,8);
+			p += 8;
 		}
-		SSVALS(outbuf,smb_vwv16+1,8);
-		p += 8;
 		p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
