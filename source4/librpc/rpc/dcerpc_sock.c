@@ -25,6 +25,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "lib/socket/socket.h"
 
 #define MIN_HDR_SIZE 16
 

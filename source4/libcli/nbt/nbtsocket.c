@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "dlinklist.h"
 #include "libcli/nbt/libnbt.h"
+#include "lib/socket/socket.h"
 
 #define NBT_MAX_PACKET_SIZE 2048
 #define NBT_MAX_REPLIES 1000
