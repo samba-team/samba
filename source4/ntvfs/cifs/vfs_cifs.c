@@ -168,8 +168,7 @@ static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 
-	smb_tree_disconnect(private->tree);
-	talloc_free(private->tree);
+	talloc_free(private);
 
 	return NT_STATUS_OK;
 }
