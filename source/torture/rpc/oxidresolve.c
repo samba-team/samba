@@ -232,24 +232,28 @@ BOOL torture_rpc_oxidresolve(void)
 		return False;
 	}
 
-	status = dcerpc_secondary_connection(premact, &p, 
+	status = torture_rpc_connection(&p, 
 					DCERPC_IOXIDRESOLVER_NAME, 
 					DCERPC_IOXIDRESOLVER_UUID, 
 					DCERPC_IOXIDRESOLVER_VERSION);
 
-	if(!test_RemoteActivation(premact, mem_ctx, &oxid, &oid))
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
 
 	if(!test_ServerAlive(p, mem_ctx))
 		ret = False;
+
+	if(!test_ServerAlive2(p, mem_ctx))
+		ret = False;
+
+	if(!test_RemoteActivation(premact, mem_ctx, &oxid, &oid))
+		return False;
 
 	if(!test_ComplexPing(p, mem_ctx, &setid, oid))
 		ret = False;
 
 	if(!test_SimplePing(p, mem_ctx, setid))
-		ret = False;
-
-	if(!test_ServerAlive2(p, mem_ctx))
 		ret = False;
 
 	if(!test_ResolveOxid(p, mem_ctx, oxid))
