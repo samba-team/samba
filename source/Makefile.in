@@ -62,6 +62,9 @@ SWATDIR = @swatdir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
+# libsmbclient support here
+BLDSHARED = @BLDSHARED@
+
 # The directory where code page definition files go
 CODEPAGEDIR = @codepagedir@
 
@@ -89,6 +92,7 @@ PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bi
 MPROGS = @MPROGS@
 LPROGS = @WINBIND_LTARGETS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
+SHLIBS = libsmbclient
 
 SCRIPTS = $(srcdir)/script/smbtar 
 
@@ -392,7 +396,7 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 # now the rules...
 ######################################################################
 
-all : CHECK $(SPROGS) $(PROGS) nsswitch
+all : CHECK $(SPROGS) $(PROGS) nsswitch $(SHLIBS)
 
 # The following "everything" is NOT needed except by Samba developers - so do not use this!
 everything : CHECK $(SPROGS) $(PROGS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
@@ -454,9 +458,9 @@ MAKEDIR = || exec false; \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAG@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
-	  -o $*.po.o 
+	  -o $*.@PICSUFFIX@ 
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@.o
-	@mv $*.po.o $@
+@POBAD_CC@	@mv $*.po.o $@
 
 # this is for IRIX
 .c.po32: 
@@ -598,9 +602,14 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
-bin/libsmbclient.so: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient shared library $@
-	@$(LD) -shared -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
+libsmbclient: $(LIBSMBCLIENT_PICOBJS)
+	if [ $(BLDSHARED) = true ]; then \
+	  echo Linking libsmbclient shared library bin/$@@shlibext@; \
+	  $(LD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
+	fi
+	@echo Linking libsmbclient non-shared library bin/$@.a
+	@$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
+
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
