@@ -40,12 +40,14 @@ PROG_BIN	= @MAKE_X_PROGS_BIN@
 PROG_LIBEXEC	= @MAKE_X_PROGS_LIBEXEC@
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
-SOURCES_KX     = kx.c @XauWriteAuth_c@
-SOURCES_KXD    = kxd.c @XauWriteAuth_c@
+WRITEAUTH = @NEED_WRITEAUTH_TRUE@ writeauth.o
+
+SOURCES_KX     = kx.c writeauth.c
+SOURCES_KXD    = kxd.c writeauth.c
 SOURCES_COMMON = common.c # encdata.c
 
-OBJECTS_KX     = kx.o common.o encdata.o @XauWriteAuth_o@
-OBJECTS_KXD    = kxd.o common.o encdata.o @XauWriteAuth_o@
+OBJECTS_KX     = kx.o common.o encdata.o $(WRITEAUTH)
+OBJECTS_KXD    = kxd.o common.o encdata.o $(WRITEAUTH)
 
 OBJECTS = $(OBJECTS_KX) $(OBJECTS_KXD)
 SOURCES = $(SOURCES_KX) $(SOURCES_KXD) $(SOURCES_COMMON)
