@@ -118,6 +118,76 @@ address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
   return True;
 }
 
+#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
+/****************************************************************************
+ * Deal with the IRIX kernel <--> smbd
+ * oplock break protocol.
+****************************************************************************/
+static BOOL irix_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len, int timeout)
+{
+     oplock_stat_t os;
+     SMB_DEV_T dev;
+     SMB_INO_T inode;
+     char dummy;
+
+     /*
+      * Read one byte of zero to clear the
+      * kernel break notify message.
+      */
+
+     if(read(oplock_pipe_read, &dummy, 1) != 1) {
+	     DEBUG(0,("receive_local_message: read of kernel notification failed. \
+Error was %s.\n", strerror(errno) ));
+	     smb_read_error = READ_ERROR;
+	     return False;
+     }
+
+     /*
+      * Do a query to get the
+      * device and inode of the file that has the break
+      * request outstanding.
+      */
+
+     if(fcntl(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
+	     DEBUG(0,("receive_local_message: fcntl of kernel notification failed. \
+Error was %s.\n", strerror(errno) ));
+	     if(errno == EAGAIN) {
+		     /*
+		      * Duplicate kernel break message - ignore.
+		      */
+		     memset(buffer, '\0', KERNEL_OPLOCK_BREAK_MSG_LEN);
+		     return True;
+	     }
+	     smb_read_error = READ_ERROR;
+	     return False;
+     }
+
+     dev = (SMB_DEV_T)os.os_dev;
+     inode = (SMB_INO_T)os.os_ino;
+     
+     DEBUG(5,("receive_local_message: kernel oplock break request received for \
+dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
+     
+     /*
+      * Create a kernel oplock break message.
+      */
+     
+     /* Setup the message header */
+     SIVAL(buffer,OPBRK_CMD_LEN_OFFSET,KERNEL_OPLOCK_BREAK_MSG_LEN);
+     SSVAL(buffer,OPBRK_CMD_PORT_OFFSET,0);
+     
+     buffer += OPBRK_CMD_HEADER_LEN;
+     
+     SSVAL(buffer,OPBRK_MESSAGE_CMD_OFFSET,KERNEL_OPLOCK_BREAK_CMD);
+     
+     memcpy(buffer + KERNEL_OPLOCK_BREAK_DEV_OFFSET, (char *)&dev, sizeof(dev));
+     memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&inode, sizeof(inode));	
+     
+     return True;
+}
+#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
+
+
 /****************************************************************************
  Read an oplock break message from the either the oplock UDP fd
  or the kernel oplock pipe fd (if kernel oplocks are supported).
@@ -164,74 +234,11 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
     }
   }
 
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-  if(FD_ISSET(oplock_pipe_read,fds)) {
-    /*
-     * Deal with the kernel <--> smbd
-     * oplock break protocol.
-     */
-
-    oplock_stat_t os;
-    SMB_DEV_T dev;
-    SMB_INO_T inode;
-    char dummy;
-
-    /*
-     * Read one byte of zero to clear the
-     * kernel break notify message.
-     */
-
-    if(read(oplock_pipe_read, &dummy, 1) != 1) {
-      DEBUG(0,("receive_local_message: read of kernel notification failed. \
-Error was %s.\n", strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return False;
-    }
-
-    /*
-     * Do a query to get the
-     * device and inode of the file that has the break
-     * request outstanding.
-     */
-
-    if(fcntl(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
-      DEBUG(0,("receive_local_message: fcntl of kernel notification failed. \
-Error was %s.\n", strerror(errno) ));
-      if(errno == EAGAIN) {
-        /*
-         * Duplicate kernel break message - ignore.
-         */
-        memset(buffer, '\0', KERNEL_OPLOCK_BREAK_MSG_LEN);
-        return True;
-      }
-      smb_read_error = READ_ERROR;
-      return False;
-    }
-
-    dev = (SMB_DEV_T)os.os_dev;
-    inode = (SMB_INO_T)os.os_ino;
-
-    DEBUG(5,("receive_local_message: kernel oplock break request received for \
-dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
-
-    /*
-     * Create a kernel oplock break message.
-     */
-
-    /* Setup the message header */
-    SIVAL(buffer,OPBRK_CMD_LEN_OFFSET,KERNEL_OPLOCK_BREAK_MSG_LEN);
-    SSVAL(buffer,OPBRK_CMD_PORT_OFFSET,0);
-
-    buffer += OPBRK_CMD_HEADER_LEN;
-
-    SSVAL(buffer,OPBRK_MESSAGE_CMD_OFFSET,KERNEL_OPLOCK_BREAK_CMD);
-
-    memcpy(buffer + KERNEL_OPLOCK_BREAK_DEV_OFFSET, (char *)&dev, sizeof(dev));
-    memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&inode, sizeof(inode));	
-
-    return True;
+#if HAVE_KERNEL_OPLOCKS_IRIX
+  if (FD_ISSET(oplock_pipe_read,fds)) {
+	  return irix_receive_message(fds, buffer, buffer_len, timeout);
   }
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
+#endif
 
   /*
    * From here down we deal with the smbd <--> smbd
@@ -281,7 +288,6 @@ static BOOL set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 #if defined(HAVE_KERNEL_OPLOCKS_IRIX)
   if(lp_kernel_oplocks()) {
-
     if(fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
       if(errno != EAGAIN) {
         DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
