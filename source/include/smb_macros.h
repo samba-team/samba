@@ -239,6 +239,12 @@ copy an IP address from one buffer to another
 #define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), fname,(st)))
 
 /*******************************************************************
+ vfs lstat wrapper that calls internal2unix.
+********************************************************************/
+
+#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), fname,(st)))
+
+/*******************************************************************
  vfs fstat wrapper
 ********************************************************************/
 
