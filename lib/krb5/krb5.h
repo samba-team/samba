@@ -137,13 +137,13 @@ typedef AP_REQ krb5_ap_req;
 
 struct krb5_cc_ops;
 
-typedef struct krb5_ccache_data{
+typedef struct krb5_ccache_data {
     char *residual;
     struct krb5_cc_ops *ops;
     krb5_data data;
 }krb5_ccache_data;
 
-typedef struct krb5_cc_cursor{
+typedef struct krb5_cc_cursor {
     union {
 	int fd;
 	void *v;
@@ -163,7 +163,7 @@ typedef const struct Principal *krb5_const_principal;
 typedef time_t krb5_deltat;
 typedef time_t krb5_timestamp;
 
-typedef struct krb5_times{
+typedef struct krb5_times {
   krb5_timestamp authtime;
   krb5_timestamp starttime;
   krb5_timestamp endtime;
@@ -195,7 +195,7 @@ typedef struct krb5_creds {
     krb5_ticket_flags flags;
 } krb5_creds;
 
-typedef struct krb5_cc_ops{
+typedef struct krb5_cc_ops {
     char *prefix;
     char* (*get_name)(krb5_context, krb5_ccache);
     krb5_error_code (*resolve)(krb5_context, krb5_ccache *, const char *);
@@ -233,7 +233,7 @@ typedef struct krb5_config_binding krb5_config_binding;
 
 typedef krb5_config_binding krb5_config_section;
 
-typedef struct krb5_context_data{
+typedef struct krb5_context_data {
     krb5_enctype *etypes;
     char *default_realm;
     time_t max_skew;
@@ -248,7 +248,7 @@ typedef struct krb5_context_data{
     int num_ops;
 } krb5_context_data;
 
-enum{
+enum {
   KRB5_NT_UNKNOWN	= 0,
   KRB5_NT_PRINCIPAL	= 1,
   KRB5_NT_SRV_INST	= 2,
@@ -268,7 +268,7 @@ typedef Authenticator krb5_authenticator_data;
 
 typedef krb5_authenticator_data *krb5_authenticator;
 
-typedef struct krb5_rcache{
+typedef struct krb5_rcache {
     int dummy;
 }krb5_rcache;
 
@@ -284,7 +284,7 @@ typedef struct krb5_keytab_entry {
     krb5_keyblock keyblock;
 } krb5_keytab_entry;
 
-typedef struct krb5_storage{
+typedef struct krb5_storage {
     void *data;
     size_t (*fetch)(struct krb5_storage*, void*, size_t);
     size_t (*store)(struct krb5_storage*, void*, size_t);
@@ -304,7 +304,7 @@ enum {
     KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8
 };
 
-typedef struct krb5_auth_context_data{
+typedef struct krb5_auth_context_data {
     int32_t flags;
     krb5_cksumtype cksumtype;
     krb5_enctype enctype;
@@ -336,7 +336,7 @@ extern char *heimdal_version, *heimdal_long_version;
 typedef void (*krb5_log_log_func_t)(const char*, const char*, void*);
 typedef void (*krb5_log_close_func_t)(void*);
 
-typedef struct krb5_log_facility{
+typedef struct krb5_log_facility {
     const char *program;
     int len;
     struct facility *val;
