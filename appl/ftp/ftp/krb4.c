@@ -52,7 +52,8 @@ RCSID("$Id$");
 #define LOCAL_ADDR myctladdr
 #define REMOTE_ADDR hisctladdr
 #endif
-extern struct sockaddr_in LOCAL_ADDR, REMOTE_ADDR;
+
+extern struct sockaddr *LOCAL_ADDR, *REMOTE_ADDR;
 
 struct krb4_data {
     des_cblock key;
@@ -78,10 +79,13 @@ krb4_decode(void *app_data, void *buf, int len, int level)
     struct krb4_data *d = app_data;
     
     if(level == prot_safe)
-	e = krb_rd_safe(buf, len, &d->key, &REMOTE_ADDR, &LOCAL_ADDR, &m);
+	e = krb_rd_safe(buf, len, &d->key,
+			(struct sockaddr_in *)REMOTE_ADDR,
+			(struct sockaddr_in *)LOCAL_ADDR, &m);
     else
 	e = krb_rd_priv(buf, len, d->schedule, &d->key, 
-			&REMOTE_ADDR, &LOCAL_ADDR, &m);
+			(struct sockaddr_in *)REMOTE_ADDR,
+			(struct sockaddr_in *)LOCAL_ADDR, &m);
     if(e){
 	return -1;
     }
@@ -102,10 +106,12 @@ krb4_encode(void *app_data, void *from, int length, int level, void **to)
     *to = malloc(length + 31);
     if(level == prot_safe)
 	return krb_mk_safe(from, *to, length, &d->key, 
-			   &LOCAL_ADDR, &REMOTE_ADDR);
+			   (struct sockaddr_in *)LOCAL_ADDR,
+			   (struct sockaddr_in *)REMOTE_ADDR);
     else if(level == prot_private)
 	return krb_mk_priv(from, *to, length, d->schedule, &d->key, 
-			   &LOCAL_ADDR, &REMOTE_ADDR);
+			   (struct sockaddr_in *)LOCAL_ADDR,
+			   (struct sockaddr_in *)REMOTE_ADDR);
     else
 	return -1;
 }
@@ -124,17 +130,18 @@ krb4_adat(void *app_data, void *buf, size_t len)
     int tmp_len;
     struct krb4_data *d = app_data;
     char inst[INST_SZ];
+    struct sockaddr_in *his_addr_sin = (struct sockaddr_in *)his_addr;
 
     memcpy(tkt.dat, buf, len);
     tkt.length = len;
 
     k_getsockinst(0, inst, sizeof(inst));
     kerror = krb_rd_req(&tkt, "ftp", inst, 
-			his_addr.sin_addr.s_addr, &auth_dat, "");
+			his_addr_sin->sin_addr.s_addr, &auth_dat, "");
     if(kerror == RD_AP_UNDEC){
 	k_getsockinst(0, inst, sizeof(inst));
 	kerror = krb_rd_req(&tkt, "rcmd", inst, 
-			    his_addr.sin_addr.s_addr, &auth_dat, "");
+			    his_addr_sin->sin_addr.s_addr, &auth_dat, "");
     }
 
     if(kerror){
@@ -153,7 +160,9 @@ krb4_adat(void *app_data, void *buf, size_t len)
     {
 	unsigned char tmp[4];
 	KRB_PUT_INT(cs, tmp, 4, sizeof(tmp));
-	tmp_len = krb_mk_safe(tmp, msg, 4, &d->key, &LOCAL_ADDR, &REMOTE_ADDR);
+	tmp_len = krb_mk_safe(tmp, msg, 4, &d->key,
+			      (struct sockaddr_in *)LOCAL_ADDR,
+			      (struct sockaddr_in *)REMOTE_ADDR);
     }
     if(tmp_len < 0){
 	reply(535, "Error creating reply: %s.", strerror(errno));
@@ -266,7 +275,8 @@ krb4_auth(void *app_data, char *host)
     }
     adat.length = len;
     ret = krb_rd_safe(adat.dat, adat.length, &d->key, 
-		      &hisctladdr, &myctladdr, &msg_data);
+		      (struct sockaddr_in *)hisctladdr, 
+		      (struct sockaddr_in *)myctladdr, &msg_data);
     if(ret){
 	printf("Error reading reply from server: %s.\n", 
 	       krb_get_err_text(ret));
