@@ -94,6 +94,11 @@ init the time differences
 void TimeInit(void)
 {
   serverzone = TimeZone(time(NULL));
+
+  if ((serverzone % 60) != 0) {
+	  DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
+  }
+
   DEBUG(4,("Serverzone is %d\n",serverzone));
 }
 
