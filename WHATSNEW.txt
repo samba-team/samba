@@ -209,6 +209,8 @@ Windows NT.
 versions of the NT logon packet.
 57). Correctly set parameter offset value for first trans2 reply.
 58). Win2K will only accept volume labels in UNICODE.
+59). Ensure nmbd doesn't attempt to use the loopback interface when
+registering names.
 
 Older release notes for Samba 2.0.x follow.
 
