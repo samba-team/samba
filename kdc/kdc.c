@@ -1,6 +1,5 @@
 #include "kdc_locl.h"
 
-#define MIN(x,y) (((x)<(y))?(x):(y))
 RCSID("$Id$");
 
 struct timeval now;
@@ -93,11 +92,11 @@ as_rep(krb5_context context,
     memset(rep, 0, sizeof(*rep));
     rep->pvno = 5;
     rep->msg_type = krb_as_rep;
-    rep->crealm = b->realm;
-    rep->cname = *b->cname;
+    copy_Realm(&b->realm, &rep->crealm);
+    copy_PrincipalName(b->cname, &rep->cname);
     rep->ticket.tkt_vno = 5;
-    rep->ticket.sname = *b->sname;
-    rep->ticket.realm = b->realm;
+    copy_Realm(&b->realm, &rep->ticket.realm);
+    copy_PrincipalName(b->sname, &rep->ticket.sname);
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey)
 	return KRB5KDC_ERR_BADOPTION;
@@ -108,9 +107,8 @@ as_rep(krb5_context context,
     et->flags.may_postdate = f.allow_postdate;
 
     mk_des_keyblock(&et->key);
-    
-    et->cname = *b->cname;
-    et->crealm = b->realm;
+    copy_PrincipalName(b->cname, &et->cname);
+    copy_Realm(&b->realm, &et->crealm);
     
     {
 	time_t start;
@@ -155,10 +153,13 @@ as_rep(krb5_context context,
 	    *et->renew_till = t;
 	}
     }
-    et->caddr = b->addresses;
+    if(b->addresses){
+	et->caddr = malloc(sizeof(*et->caddr));
+	copy_HostAddresses(b->addresses, et->caddr);
+    }
 
     memset(ek, 0, sizeof(*ek));
-    ek->key = et->key;
+    copy_EncryptionKey(&et->key, &ek->key);
     /* MIT must have at least one last_req */
     ek->last_req.len = 1;
     ek->last_req.val = malloc(sizeof(*ek->last_req.val));
@@ -170,26 +171,35 @@ as_rep(krb5_context context,
     ek->starttime = et->starttime;
     ek->endtime = et->endtime;
     ek->renew_till = et->renew_till;
-    ek->srealm = rep->ticket.realm;
-    ek->sname = rep->ticket.sname;
-    ek->caddr = et->caddr;
+    copy_Realm(&rep->ticket.realm, &ek->srealm);
+    copy_PrincipalName(&rep->ticket.sname, &ek->sname);
+    if(et->caddr){
+	ek->caddr = malloc(sizeof(*ek->caddr));
+	copy_HostAddresses(et->caddr, ek->caddr);
+    }
 
     {
 	unsigned char buf[1024]; /* XXX The data could be indefinite */
 	int len;
 	len = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et);
+	free_EncTicketPart(et);
+	free(et);
 	if(len < 0)
 	    return ASN1_OVERFLOW;
+
 	rep->ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
 	rep->ticket.enc_part.kvno = NULL;
 	krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
 		     &rep->ticket.enc_part.cipher);
 	
 	len = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
+	free_EncKDCRepPart(ek);
+	free(ek);
 	if(len < 0)
 	    return ASN1_OVERFLOW;
 	rep->enc_part.etype = ETYPE_DES_CBC_CRC;
 	rep->enc_part.kvno = NULL;
+
 	krb5_encrypt(context, buf + sizeof(buf) - len, len, &client->keyblock, 
 		     &rep->enc_part.cipher);
 	
