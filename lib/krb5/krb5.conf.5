@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 22, 2004
+.Dd October 31, 2004
 .Dt KRB5.CONF 5
 .Os HEIMDAL
 .Sh NAME
@@ -399,8 +399,14 @@ The time before expiration that the user should be warned that her
 password is about to expire.
 .It Li logging = Va Logging
 What type of logging the kdc should use, see also [logging]/kdc.
-.It Li use_2b = Va principal list
-List of principals to use AFS 2b tokens for.
+.It Li use_2b = {
+.Bl -tag -width "xxx" -offset indent
+.It Va principal Li = Va BOOL
+boolean value if the 524 daemon should return AFS 2b tokens for
+.Fa principal .
+.It ...
+.El
+.It Li }
 .It Li hdb-ldap-structural-object Va structural object
 If the LDAP backend is used for storing principals, this is the
 structural object that will be used when creating and when reading
