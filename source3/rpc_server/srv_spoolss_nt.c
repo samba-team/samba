@@ -1246,7 +1246,7 @@ void update_monitored_printq_cache( void )
 		if ( (printer->printer_type == PRINTER_HANDLE_IS_PRINTER) 
 			&& printer->notify.client_connected ) 
 		{
-			snum = print_queue_snum_dos(printer->dev.handlename);
+			snum = print_queue_snum(printer->dev.handlename);
 			print_queue_status( snum, NULL, NULL );
 		}
 		
