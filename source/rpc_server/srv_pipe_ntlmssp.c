@@ -256,7 +256,6 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 		if (lm_owf_len == 0) return False;
 		if (nt_owf_len == 0) return False;
 		if (ntlmssp_resp->hdr_usr    .str_str_len == 0) return False;
-		if (ntlmssp_resp->hdr_domain .str_str_len == 0) return False;
 		if (ntlmssp_resp->hdr_wks    .str_str_len == 0) return False;
 	}
 
