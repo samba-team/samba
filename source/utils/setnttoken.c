@@ -38,8 +38,11 @@ int main(int argc, char **argv)
 	struct ndr_push *ndr;
 	struct lsa_SidArray sidarray;
 	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
 
 	setup_logging("setnttoken", DEBUG_STDOUT);
+
+	mem_ctx = talloc_init("setnttoken");
 
 	ndr = ndr_push_init();
 
@@ -54,9 +57,8 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		sidarray.sids = talloc_realloc(
-			sidarray.sids, 
-			(sidarray.num_sids + 1) * sizeof(struct lsa_SidPtr));
+		sidarray.sids = talloc_realloc(mem_ctx, sidarray.sids,
+				(sidarray.num_sids + 1) * sizeof(struct lsa_SidPtr));
 
 		sidarray.sids[sidarray.num_sids].sid =
 			dom_sid_dup(ndr, sid);
