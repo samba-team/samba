@@ -53,8 +53,10 @@ typedef struct
 
 } prs_struct;
 
-typedef struct
+typedef struct pipes_struct
 {
+	struct pipes_struct *next, *prev;
+	int pnum;
 	connection_struct *conn;
 	int uid;
 	BOOL open; /* open connection */

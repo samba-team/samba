@@ -4700,7 +4700,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   chain_size = 0;
   chain_fsp = NULL;
-  reset_chain_pnum();
+  reset_chain_p();
 
   if (msg_type != 0)
     return(reply_special(inbuf,outbuf));  

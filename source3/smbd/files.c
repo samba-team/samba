@@ -28,6 +28,8 @@ extern int DEBUGLEVEL;
 
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_FNUMS))
 
+#define FILE_HANDLE_OFFSET 0x1000
+
 static struct bitmap *file_bmap;
 static struct bitmap *fd_bmap;
 
@@ -57,11 +59,6 @@ files_struct *file_new(void )
 	   than causing corruption */
 	if (first_file == 0) {
 		first_file = (getpid() ^ (int)time(NULL)) % MAX_FNUMS;
-		if (first_file == 0) first_file = 1;
-	}
-
-	if (first_file >= MAX_FNUMS) {
-		first_file = 1;
 	}
 
 	i = bitmap_find(file_bmap, first_file);
@@ -89,12 +86,14 @@ files_struct *file_new(void )
 	if (!fsp) return NULL;
 
 	memset(fsp, 0, sizeof(*fsp));
-	first_file = i+1;
-	fsp->fnum = i;
-	string_init(&fsp->fsp_name,"");
+
+	first_file = (i+1) % MAX_FNUMS;
 
 	bitmap_set(file_bmap, i);
 	files_used++;
+
+	fsp->fnum = i + FILE_HANDLE_OFFSET;
+	string_init(&fsp->fsp_name,"");
 	
 	/* hook into the front of the list */
 	if (!Files) {
@@ -245,8 +244,6 @@ files_struct *file_fsp(int fnum)
 {
 	files_struct *fsp;
 
-	if (!VALID_FNUM(fnum)) return NULL;
-	
 	for (fsp=Files;fsp;fsp=fsp->next) {
 		if (fsp->fnum == fnum) return fsp;
 	}
@@ -368,7 +365,7 @@ void file_free(files_struct *fsp)
 		fd_ptr_free(fsp->fd_ptr);
 	}
 
-	bitmap_clear(file_bmap, fsp->fnum);
+	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
 
 	DEBUG(5,("freed files structure %d (%d used)\n",

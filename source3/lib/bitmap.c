@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern int DEBUGLEVEL;
+
 /* these functions provide a simple way to allocate integers from a
    pool without repitition */
 
@@ -64,7 +66,11 @@ set a bit in a bitmap
 ****************************************************************************/
 BOOL bitmap_set(struct bitmap *bm, unsigned i)
 {
-	if (i >= bm->n) return False;
+	if (i >= bm->n) {
+		DEBUG(0,("Setting invalid bitmap entry %d (of %d)\n",
+		      i, bm->n));
+		return False;
+	}
 	bm->b[i/32] |= (1<<(i%32));
 	return True;
 }
@@ -74,7 +80,11 @@ clear a bit in a bitmap
 ****************************************************************************/
 BOOL bitmap_clear(struct bitmap *bm, unsigned i)
 {
-	if (i >= bm->n) return False;
+	if (i >= bm->n) {
+		DEBUG(0,("clearing invalid bitmap entry %d (of %d)\n",
+		      i, bm->n));
+		return False;
+	}
 	bm->b[i/32] &= ~(1<<(i%32));
 	return True;
 }
@@ -82,7 +92,7 @@ BOOL bitmap_clear(struct bitmap *bm, unsigned i)
 /****************************************************************************
 query a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_query(struct bitmap *bm, unsigned i)
+static BOOL bitmap_query(struct bitmap *bm, unsigned i)
 {
 	if (i >= bm->n) return False;
 	if (bm->b[i/32] & (1<<(i%32))) {
