@@ -1261,6 +1261,48 @@ BOOL spoolss_io_r_deleteprinterdata(char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, 
 }
 
 /*******************************************************************
+ * read a structure.
+ * called from spoolss_q_deleteprinterdataex (srv_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_q_deleteprinterdataex(char *desc, SPOOL_Q_DELETEPRINTERDATAEX *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdataex");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+	
+	if (!smb_io_unistr2("keyname  ", &q_u->keyname, True, ps, depth))
+		return False;
+	if (!smb_io_unistr2("valuename", &q_u->valuename, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ * called from spoolss_r_deleteprinterdataex (srv_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_r_deleteprinterdataex(char *desc, SPOOL_R_DELETEPRINTERDATAEX *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdataex");
+	depth++;
+	
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  * write a structure.
  * called from spoolss_r_getprinterdata (srv_spoolss.c)
  ********************************************************************/
@@ -1435,6 +1477,60 @@ BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdriver");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ * read a structure.
+ * called from api_spoolss_deleteprinterdriver (srv_spoolss.c)
+ * called from spoolss_deleteprinterdriver (cli_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_q_deleteprinterdriverex(char *desc, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdriverex");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("server_ptr", ps, depth, &q_u->server_ptr))
+		return False;		
+	if(!smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("arch", &q_u->arch, True, ps, depth))
+		return False;
+	if(!smb_io_unistr2("driver", &q_u->driver, True, ps, depth))
+		return False;
+	if(!prs_uint32("delete_flags ", ps, depth, &q_u->delete_flags))
+		return False;		
+	if(!prs_uint32("version      ", ps, depth, &q_u->version))
+		return False;		
+
+
+	return True;
+}
+
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/
+BOOL spoolss_io_r_deleteprinterdriverex(char *desc, SPOOL_R_DELETEPRINTERDRIVEREX *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdriverex");
 	depth++;
 
 	if (!prs_align(ps))
@@ -4935,60 +5031,56 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	if(!prs_align(ps))
 		return False;
 
+	/* 
+	 * I know this seems weird, but I have no other explanation.
+	 * This is observed behavior on both NT4 and 2K servers.
+	 * --jerry
+	 */
+	 
+	if (!prs_align_uint64(ps))
+		return False;
 
 	/* parse the main elements the packet */
 
-	if(!prs_uint32("version", ps, depth, &il->version))
+	if(!prs_uint32("cversion       ", ps, depth, &il->version))
 		return False;
-
-	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+	if(!prs_uint32("name           ", ps, depth, &il->name_ptr))
 		return False;	
-	/*
-	 * If name_ptr is NULL then the next 4 bytes are the name_ptr. A driver 
-	 * with a NULL name just isn't a driver For example: "HP LaserJet 4si"
-	 * from W2K CDROM (which uses unidriver). JohnR 010205
-	 */
-	if (!il->name_ptr) {
-		DEBUG(5,("spool_io_printer_driver_info_level_6: name_ptr is NULL! Get next value\n"));
-		if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+	if(!prs_uint32("environment    ", ps, depth, &il->environment_ptr))
 			return False;	
-	}
-	
-	if(!prs_uint32("environment_ptr", ps, depth, &il->environment_ptr))
+	if(!prs_uint32("driverpath     ", ps, depth, &il->driverpath_ptr))
 		return False;
-	if(!prs_uint32("driverpath_ptr", ps, depth, &il->driverpath_ptr))
+	if(!prs_uint32("datafile       ", ps, depth, &il->datafile_ptr))
 		return False;
-	if(!prs_uint32("datafile_ptr", ps, depth, &il->datafile_ptr))
+	if(!prs_uint32("configfile     ", ps, depth, &il->configfile_ptr))
 		return False;
-	if(!prs_uint32("configfile_ptr", ps, depth, &il->configfile_ptr))
+	if(!prs_uint32("helpfile       ", ps, depth, &il->helpfile_ptr))
 		return False;
-	if(!prs_uint32("helpfile_ptr", ps, depth, &il->helpfile_ptr))
+	if(!prs_uint32("monitorname    ", ps, depth, &il->monitorname_ptr))
 		return False;
-	if(!prs_uint32("monitorname_ptr", ps, depth, &il->monitorname_ptr))
+	if(!prs_uint32("defaultdatatype", ps, depth, &il->defaultdatatype_ptr))
 		return False;
-	if(!prs_uint32("defaultdatatype_ptr", ps, depth, &il->defaultdatatype_ptr))
+	if(!prs_uint32("dependentfiles ", ps, depth, &il->dependentfiles_len))
 		return False;
-	if(!prs_uint32("dependentfiles_len", ps, depth, &il->dependentfiles_len))
+	if(!prs_uint32("dependentfiles ", ps, depth, &il->dependentfiles_ptr))
 		return False;
-	if(!prs_uint32("dependentfiles_ptr", ps, depth, &il->dependentfiles_ptr))
+	if(!prs_uint32("previousnames  ", ps, depth, &il->previousnames_len))
 		return False;
-	if(!prs_uint32("previousnames_len", ps, depth, &il->previousnames_len))
+	if(!prs_uint32("previousnames  ", ps, depth, &il->previousnames_ptr))
 		return False;
-	if(!prs_uint32("previousnames_ptr", ps, depth, &il->previousnames_ptr))
+	if(!smb_io_time("driverdate    ", &il->driverdate, ps, depth))
 		return False;
-	if(!smb_io_time("driverdate", &il->driverdate, ps, depth))
+	if(!prs_uint32("dummy4         ", ps, depth, &il->dummy4))
 		return False;
-	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+	if(!prs_uint64("driverversion  ", ps, depth, &il->driverversion))
 		return False;
-	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
+	if(!prs_uint32("mfgname        ", ps, depth, &il->mfgname_ptr))
 		return False;
-	if(!prs_uint32("mfgname_ptr", ps, depth, &il->mfgname_ptr))
+	if(!prs_uint32("oemurl         ", ps, depth, &il->oemurl_ptr))
 		return False;
-	if(!prs_uint32("oemurl_ptr", ps, depth, &il->oemurl_ptr))
+	if(!prs_uint32("hardwareid     ", ps, depth, &il->hardwareid_ptr))
 		return False;
-	if(!prs_uint32("hardwareid_ptr", ps, depth, &il->hardwareid_ptr))
-		return False;
-	if(!prs_uint32("provider_ptr", ps, depth, &il->provider_ptr))
+	if(!prs_uint32("provider       ", ps, depth, &il->provider_ptr))
 		return False;
 
 	/* parse the structures in the packet */
@@ -5306,6 +5398,53 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterdriver");
+	depth++;
+
+	if(!prs_werror("status", ps, depth, &q_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ fill in the prs_struct for a ADDPRINTERDRIVER request PDU
+ ********************************************************************/  
+
+BOOL spoolss_io_q_addprinterdriverex(char *desc, SPOOL_Q_ADDPRINTERDRIVEREX *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_addprinterdriverex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("server_name_ptr", ps, depth, &q_u->server_name_ptr))
+		return False;
+	if(!smb_io_unistr2("server_name", &q_u->server_name, q_u->server_name_ptr, ps, depth))
+		return False;
+		
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("info_level", ps, depth, &q_u->level))
+		return False;
+
+	if(!spool_io_printer_driver_info_level("", &q_u->info, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("copy flags", ps, depth, &q_u->copy_flags))
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+
+BOOL spoolss_io_r_addprinterdriverex(char *desc, SPOOL_R_ADDPRINTERDRIVEREX *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterdriverex");
 	depth++;
 
 	if(!prs_werror("status", ps, depth, &q_u->status))
@@ -6874,6 +7013,44 @@ BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_st
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
 
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * read a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_q_deleteprinterkey(char *desc, SPOOL_Q_DELETEPRINTERKEY *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->keyname, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_r_deleteprinterkey(char *desc, SPOOL_R_DELETEPRINTERKEY *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
 

@@ -1399,6 +1399,119 @@ static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 	return True;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_deleteprinterdataex(pipes_struct *p)
+{
+	SPOOL_Q_DELETEPRINTERDATAEX q_u;
+	SPOOL_R_DELETEPRINTERDATAEX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_deleteprinterdataex("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteprinterdataex: unable to unmarshall SPOOL_Q_DELETEPRINTERDATAEX.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_deleteprinterdataex(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_deleteprinterdataex("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_deleteprinterdataex: unable to marshall SPOOL_R_DELETEPRINTERDATAEX.\n"));
+		return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_deleteprinterkey(pipes_struct *p)
+{
+	SPOOL_Q_DELETEPRINTERKEY q_u;
+	SPOOL_R_DELETEPRINTERKEY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_deleteprinterkey("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteprinterkey: unable to unmarshall SPOOL_Q_DELETEPRINTERKEY.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_deleteprinterkey(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_deleteprinterkey("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_deleteprinterkey: unable to marshall SPOOL_R_DELETEPRINTERKEY.\n"));
+		return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_addprinterdriverex(pipes_struct *p)
+{
+	SPOOL_Q_ADDPRINTERDRIVEREX q_u;
+	SPOOL_R_ADDPRINTERDRIVEREX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_addprinterdriverex("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_addprinterdriverex: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVEREX.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_addprinterdriverex(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_addprinterdriverex("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_addprinterdriverex: unable to marshall SPOOL_R_ADDPRINTERDRIVEREX.\n"));
+		return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_deleteprinterdriverex(pipes_struct *p)
+{
+	SPOOL_Q_DELETEPRINTERDRIVEREX q_u;
+	SPOOL_R_DELETEPRINTERDRIVEREX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_deleteprinterdriverex("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteprinterdriverex: unable to unmarshall SPOOL_Q_DELETEPRINTERDRIVEREX.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_deleteprinterdriverex(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_deleteprinterdriverex("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_deleteprinterdriverex: unable to marshall SPOOL_R_DELETEPRINTERDRIVEREX.\n"));
+		return False;
+	}
+	
+	return True;
+}
+
+
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
@@ -1449,9 +1562,13 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMPRINTPROCDATATYPES",    SPOOLSS_ENUMPRINTPROCDATATYPES,    api_spoolss_enumprintprocdatatypes    },
  {"SPOOLSS_GETPRINTERDATAEX",          SPOOLSS_GETPRINTERDATAEX,          api_spoolss_getprinterdataex          },
  {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
- {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
+ {"SPOOLSS_DELETEPRINTERDATAEX",       SPOOLSS_DELETEPRINTERDATAEX,       api_spoolss_deleteprinterdataex       },
  {"SPOOLSS_ENUMPRINTERDATAEX",         SPOOLSS_ENUMPRINTERDATAEX,         api_spoolss_enumprinterdataex         },
+ {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
+ {"SPOOLSS_DELETEPRINTERKEY",          SPOOLSS_DELETEPRINTERKEY,          api_spoolss_deleteprinterkey          },
  {"SPOOLSS_GETPRINTPROCESSORDIRECTORY",SPOOLSS_GETPRINTPROCESSORDIRECTORY,api_spoolss_getprintprocessordirectory},
+ {"SPOOLSS_ADDPRINTERDRIVEREX",        SPOOLSS_ADDPRINTERDRIVEREX,        api_spoolss_addprinterdriverex        },
+ {"SPOOLSS_DELETEPRINTERDRIVEREX",     SPOOLSS_DELETEPRINTERDRIVEREX,     api_spoolss_deleteprinterdriverex     },
  { NULL,                               0,                                 NULL                                  }
 };
 

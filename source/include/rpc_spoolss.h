@@ -49,9 +49,6 @@
 #define SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFICATION0x3e
 #define SPOOLSS_SPOOLERINIT				0x3f
 #define SPOOLSS_RESETPRINTEREX				0x40
-#define SPOOLSS_DELETEPRINTERDATAEX			0x51
-#define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
-#define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 */
 
 /* those are implemented */
@@ -107,6 +104,10 @@
 #define SPOOLSS_GETPRINTERDATAEX			0x4e
 #define SPOOLSS_ENUMPRINTERDATAEX			0x4f
 #define SPOOLSS_ENUMPRINTERKEY				0x50
+#define SPOOLSS_DELETEPRINTERDATAEX			0x51
+#define SPOOLSS_DELETEPRINTERKEY			0x52
+#define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
+#define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
@@ -398,6 +399,20 @@ PRINTER_MESSAGE_INFO;
 #define PRINTER_ENUM_ICON7		0x00400000
 #define PRINTER_ENUM_ICON8		0x00800000
 
+/* FLAGS for SPOOLSS_DELETEPRINTERDRIVEREX */
+
+#define DPD_DELETE_UNUSED_FILES          0x00000001
+#define DPD_DELETE_SPECIFIC_VERSION      0x00000002
+#define DPD_DELETE_ALL_FILES             0x00000004
+
+/* FLAGS for SPOOLSS_ADDPRINTERDRIVEREX */
+
+#define APD_STRICT_UPGRADE               0x00000001
+#define APD_STRICT_DOWNGRADE             0x00000002
+#define APD_COPY_ALL_FILES               0x00000004
+#define APD_COPY_NEW_FILES               0x00000008
+
+
 /* this struct is undocumented */
 /* thanks to the ddk ... */
 typedef struct spool_user_1
@@ -680,6 +695,23 @@ typedef struct spool_r_deleteprinterdriver
 	WERROR status;
 }
 SPOOL_R_DELETEPRINTERDRIVER;
+
+typedef struct spool_q_deleteprinterdriverex
+{
+	uint32 server_ptr;
+	UNISTR2 server;
+	UNISTR2 arch;
+	UNISTR2 driver;
+	uint32 delete_flags;
+	uint32 version;
+}
+SPOOL_Q_DELETEPRINTERDRIVEREX;
+
+typedef struct spool_r_deleteprinterdriverex
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERDRIVEREX;
 
 
 typedef struct spool_doc_info_1
@@ -1649,6 +1681,22 @@ typedef struct spool_r_addprinterdriver
 }
 SPOOL_R_ADDPRINTERDRIVER;
 
+typedef struct spool_q_addprinterdriverex
+{
+	uint32 server_name_ptr;
+	UNISTR2 server_name;
+	uint32 level;
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL info;
+	uint32 copy_flags;
+}
+SPOOL_Q_ADDPRINTERDRIVEREX;
+
+typedef struct spool_r_addprinterdriverex
+{
+	WERROR status;
+}
+SPOOL_R_ADDPRINTERDRIVEREX;
+
 
 typedef struct driver_directory_1
 {
@@ -2037,6 +2085,21 @@ typedef struct spool_r_setprinterdataex
 SPOOL_R_SETPRINTERDATAEX;
 
 
+typedef struct spool_q_deleteprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 keyname;
+	UNISTR2 valuename;
+}
+SPOOL_Q_DELETEPRINTERDATAEX;
+
+typedef struct spool_r_deleteprinterdataex
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERDATAEX;
+
+
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
@@ -2052,6 +2115,19 @@ typedef struct spool_r_enumprinterkey
 	WERROR status;
 }
 SPOOL_R_ENUMPRINTERKEY;
+
+typedef struct spool_q_deleteprinterkey
+{
+	POLICY_HND handle;
+	UNISTR2 keyname;
+}
+SPOOL_Q_DELETEPRINTERKEY;
+
+typedef struct spool_r_deleteprinterkey
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERKEY;
 
 typedef struct printer_enum_values
 {

@@ -426,6 +426,10 @@ BOOL prs_align(prs_struct *ps)
 	return True;
 }
 
+/******************************************************************
+ Align on a 2 byte boundary
+ *****************************************************************/
+
 BOOL prs_align_uint16(prs_struct *ps)
 {
 	BOOL ret;
@@ -434,6 +438,23 @@ BOOL prs_align_uint16(prs_struct *ps)
 	ps->align = 2;
 	ret = prs_align(ps);
 	ps->align = old_align;
+
+	return ret;
+}
+
+/******************************************************************
+ Align on a 8 byte boundary
+ *****************************************************************/
+
+BOOL prs_align_uint64(prs_struct *ps)
+{
+	BOOL ret;
+	uint8 old_align = ps->align;
+
+	ps->align = 8;
+	ret = prs_align(ps);
+	ps->align = old_align;
+
 	return ret;
 }
 
