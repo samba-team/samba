@@ -810,6 +810,11 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                                break;
                        }
                 }
+
+				if (i == rpc_lookup_size) {
+					DEBUG(0, ("module %s doesn't provide functions for pipe %s!\m", p->name, p->name));
+					return False;
+				}
 	}
 
 	/* decode the bind request */
