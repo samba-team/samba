@@ -539,16 +539,11 @@ cmd
 		}
 	| SYST CRLF
 		{
-#ifdef unix
-#ifdef BSD
-			reply(215, "UNIX Type: L%d Version: BSD-%d",
-				NBBY, BSD);
-#else /* BSD */
-			reply(215, "UNIX Type: L%d", NBBY);
-#endif /* BSD */
-#else /* unix */
-			reply(215, "UNKNOWN Type: L%d", NBBY);
-#endif /* unix */
+#if defined(unix) || defined(__unix__) || defined(_AIX) || defined(_CRAY)
+		    reply(215, "UNIX Type: L%d", NBBY);
+#else
+		    reply(215, "UNKNOWN Type: L%d", NBBY);
+#endif
 		}
 
 		/*
