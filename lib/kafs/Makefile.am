@@ -69,7 +69,7 @@ endif
 
 
 if do_roken_rename
-ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c strupr.c
+ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c
 endif
 
 libkafs_la_SOURCES =				\
