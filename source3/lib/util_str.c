@@ -1453,7 +1453,8 @@ int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
 		struct in_addr addr;
 
 		/* convert single token to ip address */
-		if (!inet_aton(token_str, &addr)) break;
+		if ( (addr.s_addr = inet_addr(token_str)) == INADDR_NONE )
+			break;
 		
 		/* prepare place for another in_addr structure */
 		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct in_addr));
