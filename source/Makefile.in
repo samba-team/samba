@@ -285,6 +285,7 @@ SRVSVCD_OBJ1 = srvsvcd/srvsvcd.o \
 		rpc_server/srv_srvsvc.o
 
 WINREGD_OBJ1 = winregd/winregd.o \
+		rpc_server/srv_reg_nt.o \
 		rpc_server/srv_reg.o
 
 NETLOGOND_OBJ1 = netlogond/netlogond.o \

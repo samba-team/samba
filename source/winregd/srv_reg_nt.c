@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -29,7 +28,7 @@
 
 extern int DEBUGLEVEL;
 
-
+#if 0
 /****************************************************************************
   set reg name 
 ****************************************************************************/
@@ -71,28 +70,50 @@ static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
 }
 
 /*******************************************************************
- api_reg_close
+ reg_reply_unknown_1
  ********************************************************************/
-static void api_reg_close( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static void reg_reply_close(REG_Q_CLOSE *q_r,
+				prs_struct *rdata)
 {
-        REG_Q_CLOSE q_r;
-        REG_R_CLOSE r_u;
-        ZERO_STRUCT(q_r);
-        ZERO_STRUCT(r_u);
- 
-        /* grab the reg unknown 1 */
-        reg_io_q_close("", &q_r, data, 0);
- 
-        memcpy(&r_u.pol, &q_r.pol, sizeof(POLICY_HND));
- 
-        /* construct reply.  always indicate success */
-        r_u.status = _reg_close(&r_u.pol);
- 
-        /* store the response in the SMB stream */
-        reg_io_r_close("", &r_u, rdata, 0);
-}            
+	REG_R_CLOSE r_u;
 
+	/* set up the REG unknown_1 response */
+	bzero(r_u.pol.data, POL_HND_SIZE);
+
+	/* close the policy handle */
+	if (close_policy_hnd(get_global_hnd_cache(), &(q_r->pol)))
+	{
+		r_u.status = NT_STATUS_NOPROBLEMO;
+	}
+	else
+	{
+		r_u.status = NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	DEBUG(5,("reg_unknown_1: %d\n", __LINE__));
+
+	/* store the response in the SMB stream */
+	reg_io_r_close("", &r_u, rdata, 0);
+
+	DEBUG(5,("reg_unknown_1: %d\n", __LINE__));
+}
+
+
+#endif
+/*******************************************************************
+ reg_reply_unknown_1
+ ********************************************************************/
+uint32 _reg_close(POLICY_HND *pol)
+{
+        /* close the policy handle */
+        if (!close_policy_hnd(get_global_hnd_cache(), pol))
+        {
+                return NT_STATUS_OBJECT_NAME_INVALID;
+        }
+	return NT_STATUS_NOPROBLEMO;
+}                                 
+
+#if 0
 /*******************************************************************
  reg_reply_open
  ********************************************************************/
@@ -103,7 +124,6 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r, prs_struct *rdata)
 	r_u.status = NT_STATUS_NOPROBLEMO;
 	/* get a (unique) handle.  open a policy on it. */
 	if (r_u.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(),
 	                                          &r_u.pol, q_r->access_mask))
 	{
 		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -151,8 +171,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		status = NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd_link(get_global_hnd_cache(),
-		&q_u->pol, &pol, q_u->access_mask))
+	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol, q_u->access_mask))
 	{
 		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -260,7 +279,7 @@ static void api_reg_info( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
-static const struct api_struct api_reg_cmds[] =
+static struct api_struct api_reg_cmds[] =
 {
 	{ "REG_CLOSE"        , REG_CLOSE        , api_reg_close        },
 	{ "REG_OPEN_ENTRY"   , REG_OPEN_ENTRY   , api_reg_open_entry   },
@@ -276,4 +295,4 @@ BOOL api_reg_rpc(rpcsrv_struct *p)
 {
 	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
 }
-
+#endif
