@@ -223,7 +223,7 @@ sub is_builtin_type($)
 
     return 1, if (is_scalar_type($type));
     return 1, if ($type =~ "unistr.*");
-    return 1, if ($type eq "policy_handle");
+    return 1, if ($type =~ "ascstr.*");
 
     return 0;
 }
@@ -329,6 +329,7 @@ sub c_pull_prefix($)
 
 	if ($e->{TYPE} =~ "unistr.*" ||
 	    $e->{TYPE} =~ "nstring.*" ||
+	    $e->{TYPE} =~ "ascstr.*" ||
 	    $e->{TYPE} =~ "lstring.*") {
 		return "&";
 	}
