@@ -482,12 +482,8 @@ handle_v5(krb5_context context,
 				      match_appl_version, &kadm_version,
 				      NULL, KRB5_RECVAUTH_IGNORE_VERSION, 
 				      keytab, &ticket);
-    if(ret == KRB5_KT_NOTFOUND) {
-	krb5_unparse_name(context, ticket->server, &server_name);
-	krb5_errx(context, 1, "krb5_recvauth: %s (%s)", 
-		  krb5_get_err_text(context, ret),
-		  server_name);
-    }
+    if(ret == KRB5_KT_NOTFOUND)
+	krb5_errx(context, 1, "krb5_recvauth: key no found");
     if(ret)
 	krb5_err(context, 1, ret, "krb5_recvauth");
 
