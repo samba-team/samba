@@ -686,8 +686,7 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 /*
   push a relative structure
 */
-NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p, 
-			   NTSTATUS (*fn)(struct ndr_push *, int , const void *))
+NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p)
 {
 	struct ndr_ofs_list *ofs;
 	if (ndr_flags & NDR_SCALARS) {
@@ -730,7 +729,6 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 		ndr->offset = ofs->offset;
 		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ofs->base));
 		ndr_push_restore(ndr, &save);
-		NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	}
 	return NT_STATUS_OK;
 }
