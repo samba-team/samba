@@ -155,9 +155,15 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 		return True;
 	}
 
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) || 
-	    size != sizeof(*pass))
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size))) {
+		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
+	}
+	
+	if (size != sizeof(*pass)) {
+		DEBUG(0, ("secrets were of incorrect size!\n"));
+		return False;
+	}
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
