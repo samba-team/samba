@@ -380,8 +380,7 @@ typedef struct
 
 #include "fake_file.h"
 
-typedef struct files_struct
-{
+typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
