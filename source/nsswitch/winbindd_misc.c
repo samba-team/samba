@@ -182,6 +182,7 @@ enum winbindd_result winbindd_check_machine_acct(
 	uint32 result = NT_STATUS_INTERNAL_ERROR;
 	uchar trust_passwd[16];
 	fstring trust_account;
+        BOOL use_dc_only = False;
         int num_retries = 0;
 	char *p;
 
@@ -203,7 +204,7 @@ enum winbindd_result winbindd_check_machine_acct(
 	/* Check secret */
 
 	p = lp_passwordserver();
-	if (strequal(p, ""))
+	if (strequal(p, "") || use_dc_only)
 		p = "*";
 
 	if (strequal(p, "*")) {
@@ -222,6 +223,7 @@ enum winbindd_result winbindd_check_machine_acct(
         if ((num_retries < MAX_RETRIES) && 
             result == NT_STATUS_ACCESS_DENIED) {
                 num_retries++;
+                use_dc_only = True;
                 goto again;
         }
 
