@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -3157,8 +3157,7 @@ decrypt_internal_special(krb5_context context,
     struct encryption_type *et = crypto->et;
     size_t cksum_sz = CHECKSUMSIZE(et->checksum);
     size_t sz = len - cksum_sz - et->confoundersize;
-    char *cdata = (char *)data;
-    char *tmp;
+    unsigned char *p;
     krb5_error_code ret;
 
     if ((len % et->padsize) != 0) {
@@ -3166,21 +3165,26 @@ decrypt_internal_special(krb5_context context,
 	return KRB5_BAD_MSIZE;
     }
 
-    tmp = malloc (sz);
-    if (tmp == NULL) {
+    p = malloc (len);
+    if (p == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
+    memcpy(p, data, len);
     
-    ret = (*et->encrypt)(context, &crypto->key, data, len, FALSE, usage, ivec);
+    ret = (*et->encrypt)(context, &crypto->key, p, len, FALSE, usage, ivec);
     if (ret) {
-	free(tmp);
+	free(p);
 	return ret;
     }
 
-    memcpy (tmp, cdata + cksum_sz + et->confoundersize, sz);
-
-    result->data   = tmp;
+    memmove (p, p + cksum_sz + et->confoundersize, sz);
+    result->data = realloc(p, sz);
+    if(result->data == NULL) {
+	free(p);
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
     result->length = sz;
     return 0;
 }
