@@ -39,7 +39,7 @@ struct change_data {
  Create the hash we will use to determine if the contents changed.
 *****************************************************************************/
 static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags, 
-			struct change_data *data)
+			struct change_data *data, struct change_data *old_data)
 {
 	SMB_STRUCT_STAT st;
 	pstring full_name;
@@ -52,10 +52,21 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	ZERO_STRUCTP(data);
 
 	if(dos_stat(path, &st) == -1) return False;
- 
+
 	data->modify_time = st.st_mtime;
 	data->status_time = st.st_ctime;
 
+	if (old_data) {
+		/*
+		 * Shortcut to avoid directory scan if the time
+		 * has changed - we always must return true then.
+		 */
+		if (old_data->modify_time != data->modify_time ||
+			old_data->status_time != data->status_time ) {
+				return True;
+		}
+	}
+ 
 	/*
 	 * If we are to watch for changes that are only stored
 	 * in inodes of files, not in the directory inode, we must
@@ -108,7 +119,7 @@ static void *hash_register_notify(connection_struct *conn, char *path, uint32 fl
 {
 	struct change_data data;
 
-	if (!notify_hash(conn, path, flags, &data)) return NULL;
+	if (!notify_hash(conn, path, flags, &data, NULL)) return NULL;
 
 	data.last_check_time = time(NULL);
 
@@ -132,7 +143,7 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 		return True;
 	}
 
-	if (!notify_hash(conn, path, flags, &data2) ||
+	if (!notify_hash(conn, path, flags, &data2, data) ||
 	    data2.modify_time != data->modify_time ||
 	    data2.status_time != data->status_time ||
 	    data2.total_time != data->total_time ||
