@@ -1344,14 +1344,27 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
  We have been asked to dynamcially determine the IP addresses of
  the PDC and BDC's for this DOMAIN, and query them in turn.
 ************************************************************************/
-static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd)
+static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd, time_t last_change_time)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 	int i;
 	BOOL connected_ok = False;
+	time_t time_now = time(NULL);
+	BOOL use_pdc_only = False;
 
-	if (!get_dc_list(lp_workgroup(), &ip_list, &count))
+	/*
+	 * If the time the machine password has changed
+	 * was less than an hour ago then we need to contact
+	 * the PDC only, as we cannot be sure domain replication
+	 * has yet taken place. Bug found by Gerald (way to go
+	 * Gerald !). JRA.
+	 */
+
+	if (time_now - last_change_time < 3600)
+		use_pdc_only = True;
+
+	if (!get_dc_list(use_pdc_only, lp_workgroup(), &ip_list, &count))
 		return False;
 
 	/*
@@ -1423,6 +1436,7 @@ BOOL domain_client_validate( char *user, char *domain,
   struct cli_state cli;
   uint32 smb_uid_low;
   BOOL connected_ok = False;
+  time_t last_change_time;
 
   if(user_exists != NULL)
     *user_exists = True; /* Only set false on a very specific error. */
@@ -1473,7 +1487,7 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password for our primary domain
    */
-  if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, NULL))
+  if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
   {
 	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup()));
 	  return False;
@@ -1501,7 +1515,7 @@ BOOL domain_client_validate( char *user, char *domain,
   while (!connected_ok &&
 	 next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 	  if(strequal(remote_machine, "*")) {
-		  connected_ok = find_connect_pdc(&cli, trust_passwd);
+		  connected_ok = find_connect_pdc(&cli, trust_passwd, last_change_time);
 	  } else {
 		  connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
 	  }

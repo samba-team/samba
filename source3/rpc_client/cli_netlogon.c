@@ -665,7 +665,8 @@ account password for domain %s.\n", domain));
       int count = 0;
       int i;
 
-      if(!get_dc_list(domain, &ip_list, &count))
+      /* Use the PDC *only* for this. */
+      if(!get_dc_list(True, domain, &ip_list, &count))
         continue;
 
       /*
