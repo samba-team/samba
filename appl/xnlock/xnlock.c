@@ -219,7 +219,8 @@ init_words (int argc, char **argv)
     int i = 0;
 
     while(argv[i]) {
-	if(strcmp(argv[i], "-p") == 0) {
+	if(strcmp(argv[i], "-p") == 0
+	   || strcmp(argv[i], "-prog") == 0) {
 	    i++;
 	    if(argv[i]) {
 		appres.text_prog = argv[i];
