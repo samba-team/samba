@@ -1781,7 +1781,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	opt_user_name = acct_name;
 
 	/* find the domain controller */
-	if (!net_find_dc(&server_ip, pdc_name, domain_name)) {
+	if (!net_find_pdc(&server_ip, pdc_name, domain_name)) {
 		DEBUG(0, ("Coulnd find domain controller for domain %s\n", domain_name));
 		return -1;
 	}

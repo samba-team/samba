@@ -113,7 +113,7 @@ static char* namecache_key(const char *name, int name_type)
  **/
 
 BOOL namecache_store(const char *name, int name_type,
-                     int num_names, struct in_addr *ip_list)
+                     int num_names, struct ip_service *ip_list)
 {
 	time_t expiry;
 	char *key, *value_string;
@@ -126,35 +126,18 @@ BOOL namecache_store(const char *name, int name_type,
 	 */
 	if (!gencache_init()) return False;
 
-	DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
-	          num_names, num_names == 1 ? "": "es", name, name_type));
+	if ( DEBUGLEVEL >= 5 ) {
+		DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
+			num_names, num_names == 1 ? "": "es", name, name_type));
 
-	for (i = 0; i < num_names; i++) 
-		DEBUGADD(5, ("%s%s", inet_ntoa(ip_list[i]),
-		             i == (num_names - 1) ? "" : ", "));
-
-	DEBUGADD(5, ("\n"));
-
+		for (i = 0; i < num_names; i++) 
+			DEBUGADD(5, ("%s:%d%s", inet_ntoa(ip_list[i].ip), 
+				ip_list[i].port, (i == (num_names - 1) ? "" : ",")));
+			
+		DEBUGADD(5, ("\n"));
+	}
+	
 	key = namecache_key(name, name_type);
-
-	/* 
-	 * Cache pdc location or dc lists for only a little while
-	 * otherwise if we lock on to a bad DC we can potentially be
-	 * out of action for the entire cache timeout time!
-	 */
-
-#if 0
-	        /*
-		 * I don't think we need to do this. We are
-		 * checking at a higher level for failed DC
-		 * connections. JRA.
-		 */
-
-	if (name_type == 0x1b || name_type == 0x1c)
-		expiry = time(NULL) + 10;
-	else
-		expiry = time(NULL) + lp_name_cache_timeout();
-#endif
 	expiry = time(NULL) + lp_name_cache_timeout();
 
 	/*
@@ -189,7 +172,7 @@ BOOL namecache_store(const char *name, int name_type,
  *         false if name isn't found in the cache or has expired
  **/
 
-BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
+BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_list,
                      int *num_names)
 {
 	char *key, *value;
@@ -224,7 +207,8 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 	*num_names = ipstr_list_parse(value, ip_list);
 	
 	SAFE_FREE(key);
-	SAFE_FREE(value);		 
+	SAFE_FREE(value);
+			 
 	return *num_names > 0;		/* true only if some ip has been fetched */
 }
 

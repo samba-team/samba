@@ -124,11 +124,11 @@ static int net_lookup_ldap(int argc, const char **argv)
 
 static int net_lookup_dc(int argc, const char **argv)
 {
-	struct in_addr *ip_list, addr;
+	struct ip_service *ip_list;
+	struct in_addr addr;
 	char *pdc_str = NULL;
 	const char *domain=opt_target_workgroup;
 	int count, i;
-	BOOL list_ordered;
 
 	if (argc > 0)
 		domain=argv[0];
@@ -140,12 +140,12 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!get_dc_list(domain, &ip_list, &count, &list_ordered)) {
+	if (!get_sorted_dc_list(domain, &ip_list, &count, False)) {
 		SAFE_FREE(pdc_str);
 		return 0;
 	}
 	for (i=0;i<count;i++) {
-		char *dc_str = inet_ntoa(ip_list[i]);
+		char *dc_str = inet_ntoa(ip_list[i].ip);
 		if (!strequal(pdc_str, dc_str))
 			d_printf("%s\n", dc_str);
 	}

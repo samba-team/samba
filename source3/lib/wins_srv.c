@@ -70,13 +70,23 @@
 
 static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
 {
-	char *keystr;
+	char *keystr = NULL, *wins_ip_addr = NULL, *src_ip_addr = NULL;
 
-	if (asprintf(&keystr, WINS_SRV_FMT, inet_ntoa(wins_ip),
-		     inet_ntoa(src_ip)) == -1) {
-		DEBUG(0, ("wins_srv_is_dead: malloc error\n"));
-		return NULL;
+	wins_ip_addr = strdup(inet_ntoa(wins_ip));
+	src_ip_addr = strdup(inet_ntoa(src_ip));
+
+	if ( !wins_ip_addr || !src_ip_addr ) {
+		DEBUG(0,("wins_srv_keystr: malloc error\n"));
+		goto done;
 	}
+
+	if (asprintf(&keystr, WINS_SRV_FMT, wins_ip_addr, src_ip_addr) == -1) {
+		DEBUG(0, (": ns_srv_keystr: malloc error for key string\n"));
+	}
+
+done:
+	SAFE_FREE(wins_ip_addr);
+	SAFE_FREE(src_ip_addr);
 
 	return keystr;
 }

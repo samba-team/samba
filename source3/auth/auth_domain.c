@@ -253,7 +253,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 	if (is_zero_ip(*ip))
 		return NT_STATUS_NO_LOGON_SERVERS;
 
-	if (!lookup_dc_name(global_myname(), domain, ip, dc_name))
+	if ( !name_status_find( domain, 0x1b, 0x20, *ip, dc_name) )
 		return NT_STATUS_NO_LOGON_SERVERS;
 
 	for (i = 0; (!NT_STATUS_IS_OK(ret)) && retry && (i < 3); i++)

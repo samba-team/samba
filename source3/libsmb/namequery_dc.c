@@ -24,137 +24,6 @@
 
 #include "includes.h"
 
-
-#define FAILED_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
-
-struct failed_connection_cache {
-	fstring domain_name;
-	fstring controller;
-	time_t lookup_time;
-	NTSTATUS nt_status;
-	struct failed_connection_cache *prev, *next;
-};
-
-static struct failed_connection_cache *failed_connection_cache;
-
-/**********************************************************************
- Check for a previously failed connection
-**********************************************************************/
-
-static NTSTATUS check_negative_conn_cache( const char *domain, const char *server )
-{
-	struct failed_connection_cache *fcc;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	
-	/* can't check if we don't have strings */
-	
-	if ( !domain || !server )
-		return NT_STATUS_OK;
-
-	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
-		
-		/* 
-		 * we have a match IFF the domain and server name matches
-		 *   (a) the domain matches, 
-		 *   (b) the IP address matches (if we have one)
-		 *   (c) the server name (if specified) matches
-		 */
-		 
-		if ( !strequal(domain, fcc->domain_name) || !strequal(server, fcc->controller) )
-			continue; /* no match; check the next entry */
-		
-		/* we have a match so see if it is still current */
-
-		if ((time(NULL) - fcc->lookup_time) > FAILED_CONNECTION_CACHE_TIMEOUT) 
-		{
-			/* Cache entry has expired, delete it */
-
-			DEBUG(10, ("check_negative_conn_cache: cache entry expired for %s, %s\n", 
-				domain, server ));
-
-			DLIST_REMOVE(failed_connection_cache, fcc);
-			SAFE_FREE(fcc);
-
-			return NT_STATUS_OK;
-		}
-
-		/* The timeout hasn't expired yet so return false */
-
-		DEBUG(10, ("check_negative_conn_cache: returning negative entry for %s, %s\n", 
-			domain, server ));
-
-		result = fcc->nt_status;
-		return result;
-	}
-
-	/* end of function means no cache entry */	
-	return NT_STATUS_OK;
-}
-
-/**********************************************************************
- Add an entry to the failed conneciton cache
-**********************************************************************/
-
-void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) 
-{
-	struct failed_connection_cache *fcc;
-
-	SMB_ASSERT(!NT_STATUS_IS_OK(result));
-
-	/* Check we already aren't in the cache.  We always have to have 
-	   a domain, but maybe not a specific DC name. */
-
-	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
-		if ( strequal(fcc->domain_name, domain) && strequal(fcc->controller, server) ) 
-		{
-			DEBUG(10, ("add_failed_connection_entry: domain %s (%s) already tried and failed\n",
-				   domain, server ));
-			return;
-		}
-	}
-
-	/* Create negative lookup cache entry for this domain and controller */
-
-	if ( !(fcc = (struct failed_connection_cache *)malloc(sizeof(struct failed_connection_cache))) ) 
-	{
-		DEBUG(0, ("malloc failed in add_failed_connection_entry!\n"));
-		return;
-	}
-	
-	ZERO_STRUCTP(fcc);
-	
-	fstrcpy( fcc->domain_name, domain );
-	fstrcpy( fcc->controller, server );
-	fcc->lookup_time = time(NULL);
-	fcc->nt_status = result;
-	
-	DEBUG(10,("add_failed_connection_entry: added domain %s (%s) to failed conn cache\n",
-		domain, server ));
-	
-	DLIST_ADD(failed_connection_cache, fcc);
-}
-
-/****************************************************************************
-****************************************************************************/
- 
-void flush_negative_conn_cache( void )
-{
-	struct failed_connection_cache *fcc;
-	
-	fcc = failed_connection_cache;
-
-	while (fcc) {
-		struct failed_connection_cache *fcc_next;
-
-		fcc_next = fcc->next;
-		DLIST_REMOVE(failed_connection_cache, fcc);
-		free(fcc);
-
-		fcc = fcc_next;
-	}
-
-}
-
 /****************************************************************************
  Utility function to return the name of a DC. The name is guaranteed to be 
  valid since we have already done a name_status_find on it 
@@ -162,9 +31,9 @@ void flush_negative_conn_cache( void )
 
 BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
-	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
+	struct ip_service *ip_list = NULL;
+	struct in_addr dc_ip, exclude_ip;
 	int count, i;
-	BOOL list_ordered;
 	BOOL use_pdc_only;
 	NTSTATUS result;
 	
@@ -181,7 +50,7 @@ BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 		/* check the connection cache and perform the node status 
 		   lookup only if the IP is not found to be bad */
 
-		if (name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name) ) {
+		if (name_status_find(domain, 0x1b, 0x20, dc_ip, srv_name) ) {
 			result = check_negative_conn_cache( domain, srv_name );
 			if ( NT_STATUS_IS_OK(result) )
 				goto done;
@@ -192,7 +61,7 @@ BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	/* get a list of all domain controllers */
 	
-	if (!get_dc_list( domain, &ip_list, &count, &list_ordered) ) {
+	if ( !get_sorted_dc_list(domain, &ip_list, &count, False) ) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
@@ -201,25 +70,19 @@ BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	if ( use_pdc_only ) {
 		for (i = 0; i < count; i++) {	
-			if (ip_equal( exclude_ip, ip_list[i]))
-				zero_ip(&ip_list[i]);
+			if (ip_equal( exclude_ip, ip_list[i].ip))
+				zero_ip(&ip_list[i].ip);
 		}
 	}
 
-	/* Pick a nice close server, but only if the list was not ordered */
-	
-	if (!list_ordered && (count > 1) ) {
-		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
-	}
-
 	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
+		if (is_zero_ip(ip_list[i].ip))
 			continue;
 
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i].ip, srv_name)) {
 			result = check_negative_conn_cache( domain, srv_name );
 			if ( NT_STATUS_IS_OK(result) ) {
-				dc_ip = ip_list[i];
+				dc_ip = ip_list[i].ip;
 				goto done;
 			}
 		}

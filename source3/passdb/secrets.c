@@ -252,8 +252,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time, 
 						   channel);
 	if (plaintext) {
-		/* we have an ADS password - use that */
-		DEBUG(4,("Using ADS machine password\n"));
+		DEBUG(4,("Using cleartext machine password\n"));
 		E_md4hash(plaintext, ret_pwd);
 		SAFE_FREE(plaintext);
 		return True;
