@@ -649,9 +649,7 @@ static void init_globals(void)
 
   DEBUG(3,("Initialising global parameters\n"));
 
-#ifdef SMB_PASSWD_FILE
   string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
-#endif
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, SMB_PASSWD);
