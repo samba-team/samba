@@ -537,7 +537,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 	return True;
 }
 
-
+#if defined(DEVELOPER)
 static void validate_my_share_entries(share_mode_entry *share_entry)
 {
 	files_struct *fsp;
@@ -547,16 +547,19 @@ static void validate_my_share_entries(share_mode_entry *share_entry)
 
 	fsp = file_find_dif(share_entry->dev, share_entry->inode, share_entry->share_file_id);
 	if (!fsp) {
+		DEBUG(0,("validate_my_share_entries: PANIC : %s\n", share_mode_str(num, share_entry) ));
 		smb_panic("validate_my_share_entries: Cannot match a share entry with an open file\n");
 	}
 
 	if (((uint16)fsp->oplock_type) != share_entry->op_type) {
 		pstring str;
+		DEBUG(0,("validate_my_share_entries: PANIC : %s\n", share_mode_str(num, share_entry) ));
 		slprintf(str, sizeof(str)-1, "validate_my_share_entries: file %s, oplock_type = 0x%x, op_type = 0x%x\n",
 				fsp->fsp_name, (unsigned int)fsp->oplock_type, (unsigned int)share_entry->op_type );
 		smb_panic(str);
 	}
 }
+#endif
 
 /****************************************************************************
  Deal with open deny mode and oplock break processing.
@@ -599,7 +602,7 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 			share_mode_entry *share_entry = &old_shares[i];
 
 #if defined(DEVELOPER)
-			validate_my_share_entries(share_entry);
+			validate_my_share_entries(i, share_entry);
 #endif
 
 			/* 
