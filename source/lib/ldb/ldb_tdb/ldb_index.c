@@ -77,11 +77,11 @@ static char *ldb_dn_key(struct ldb_context *ldb,
   see if a attribute value is in the list of indexed attributes
 */
 static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
-			    int *v_idx)
+			    int *v_idx, const char *key)
 {
 	int i, j;
 	for (i=0;i<msg->num_elements;i++) {
-		if (ldb_attr_cmp(msg->elements[i].name, LTDB_IDXATTR) == 0) {
+		if (ldb_attr_cmp(msg->elements[i].name, key) == 0) {
 			const struct ldb_message_element *el = 
 				&msg->elements[i];
 			for (j=0;j<el->num_values;j++) {
@@ -127,7 +127,7 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 
 	/* if the attribute isn't in the list of indexed attributes then
 	   this node needs a full search */
-	if (ldb_msg_find_idx(index_list, tree->u.simple.attr, NULL) == -1) {
+	if (ldb_msg_find_idx(index_list, tree->u.simple.attr, NULL, LTDB_IDXATTR) == -1) {
 		return -1;
 	}
 
@@ -711,7 +711,8 @@ int ltdb_index_add(struct ldb_context *ldb, const struct ldb_message *msg)
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		ret = ldb_msg_find_idx(&ltdb->cache.indexlist, msg->elements[i].name, NULL);
+		ret = ldb_msg_find_idx(&ltdb->cache.indexlist, msg->elements[i].name, 
+				       NULL, LTDB_IDXATTR);
 		if (ret == -1) {
 			continue;
 		}
@@ -751,13 +752,14 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	if (ret == 0) {
 		/* it wasn't indexed. Did we have an earlier error? If we did then
 		   its gone now */
-		ltdb_search_dn1_free(ldb, &msg);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ERROR: dn_key %s was not indexed\n", dn_key);
 		ldb_free(ldb, dn_key);
 		return 0;
 	}
 
-	i = ldb_msg_find_idx(&msg, dn, &j);
+	i = ldb_msg_find_idx(&msg, dn, &j, LTDB_IDX);
 	if (i == -1) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ERROR: dn %s not found in %s\n", dn, dn_key);
 		/* it ain't there. hmmm */
 		ltdb_search_dn1_free(ldb, &msg);
 		ldb_free(ldb, dn_key);
@@ -767,7 +769,7 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	if (j != msg.elements[i].num_values - 1) {
 		memmove(&msg.elements[i].values[j], 
 			&msg.elements[i].values[j+1], 
-			(msg.elements[i].num_values-1) * 
+			(msg.elements[i].num_values-(j+1)) * 
 			sizeof(msg.elements[i].values[0]));
 	}
 	msg.elements[i].num_values--;
@@ -800,7 +802,8 @@ int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		ret = ldb_msg_find_idx(&ltdb->cache.indexlist, msg->elements[i].name, NULL);
+		ret = ldb_msg_find_idx(&ltdb->cache.indexlist, msg->elements[i].name, 
+				       NULL, LTDB_IDXATTR);
 		if (ret == -1) {
 			continue;
 		}
