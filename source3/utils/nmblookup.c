@@ -261,14 +261,16 @@ int main(int argc,char *argv[])
       }
 
       p = strchr(lookup,'#');
-
       if (p) {
-        *p = 0;
-        sscanf(p+1,"%x",&lookup_type);
+        *p = '\0';
+        sscanf(++p,"%x",&lookup_type);
       }
 
       if (!query_one(lookup, lookup_type)) {
-	      printf("name_query failed to find name %s\n", lookup);
+	printf( "name_query failed to find name %s", lookup );
+        if( 0 != lookup_type )
+          printf( "#%02x", lookup_type );
+        printf( "\n" );
       }
   }
   
