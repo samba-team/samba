@@ -378,7 +378,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	}
 
 	become_root();
-	pass = getpwuid(user->uid);
+	pass = sys_getpwuid(user->uid);
 	if(pass == NULL) {
 		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
 				(unsigned int)user->uid ));
@@ -1109,7 +1109,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	get_short_archi(architecture, driver->environment);
 
 	become_root();
-	pass = getpwuid(user->uid);
+	pass = sys_getpwuid(user->uid);
 	if(pass == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to get passwd entry for uid %u\n",
 				(unsigned int)user->uid ));
