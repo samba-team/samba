@@ -1,5 +1,6 @@
 2001-02-20  Assar Westerlund  <assar@sics.se>
 
+	* warnerr.c (warnerr): do not use __progname
 	* roken.h.in (setprogname, getprogname): add prototypes
 	* warnerr.c (setprogname, getprogname): rename to. change all
 	callers
