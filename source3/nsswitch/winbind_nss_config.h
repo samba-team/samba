@@ -163,4 +163,14 @@ typedef int BOOL;
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
     
+/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
+
+#ifndef S_IFSOCK
+#define S_IFSOCK S_IFIFO
+#endif
+
+#ifndef S_ISSOCK
+#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
+#endif
+
 #endif
