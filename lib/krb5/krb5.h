@@ -362,6 +362,7 @@ typedef struct krb5_context_data {
     const char *default_keytab;
     krb5_boolean use_admin_kdc;
     krb5_addresses *extra_addresses;
+    krb5_boolean scan_interfaces;	/* `ifconfig -a' */
     krb5_boolean srv_lookup;		/* do SRV lookups */
     krb5_boolean srv_try_txt;		/* try TXT records also */
     krb5_boolean srv_try_rfc2052;	/* try RFC2052 compatible records */
