@@ -758,7 +758,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   for (i=0;(i<maxentries) && !finished && !out_of_space;i++)
   {
-    BOOL got_exact_match;
+    BOOL got_exact_match = False;
 
     /* this is a heuristic to avoid seeking the dirptr except when 
        absolutely necessary. It allows for a filename of about 40 chars */
@@ -1028,7 +1028,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
   for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++)
   {
-    BOOL got_exact_match;
+    BOOL got_exact_match = False;
 
     /* this is a heuristic to avoid seeking the dirptr except when 
        absolutely necessary. It allows for a filename of about 40 chars */
