@@ -1,7 +1,7 @@
 /* 
    Python wrappers for TDB module
 
-   Copyright (C) Tim Potter, 2002
+   Copyright (C) Tim Potter, 2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -481,6 +481,82 @@ PyObject *py_tdb_hnd_traverse(PyObject *self, PyObject *args, PyObject *kw)
 	return PyInt_FromLong(result);
 }
 
+PyObject *py_tdb_hnd_chainlock(PyObject *self, PyObject *args)
+{
+	tdb_hnd_object *obj = (tdb_hnd_object *)self;
+	TDB_DATA key;
+	int result;
+
+        if (!obj->tdb) {
+		PyErr_SetString(py_tdb_error, "tdb object has been closed"); 
+		return NULL;
+        }	
+
+	if (!PyArg_ParseTuple(args, "s#", &key.dptr, &key.dsize))
+		return NULL;
+
+	result = tdb_chainlock(obj->tdb, key);
+
+	return PyInt_FromLong(result != -1);
+}
+
+PyObject *py_tdb_hnd_chainunlock(PyObject *self, PyObject *args)
+{
+	tdb_hnd_object *obj = (tdb_hnd_object *)self;
+	TDB_DATA key;
+	int result;
+
+        if (!obj->tdb) {
+		PyErr_SetString(py_tdb_error, "tdb object has been closed"); 
+		return NULL;
+        }	
+
+	if (!PyArg_ParseTuple(args, "s#", &key.dptr, &key.dsize))
+		return NULL;
+
+	result = tdb_chainunlock(obj->tdb, key);
+
+	return PyInt_FromLong(result != -1);
+}
+
+PyObject *py_tdb_hnd_lock_bystring(PyObject *self, PyObject *args)
+{
+	tdb_hnd_object *obj = (tdb_hnd_object *)self;
+	int result, timeout = 30;
+	char *s;
+
+        if (!obj->tdb) {
+		PyErr_SetString(py_tdb_error, "tdb object has been closed"); 
+		return NULL;
+        }	
+
+	if (!PyArg_ParseTuple(args, "s|i", &s, &timeout))
+		return NULL;
+
+	result = tdb_lock_bystring(obj->tdb, s, timeout);
+
+	return PyInt_FromLong(result != -1);
+}
+
+PyObject *py_tdb_hnd_unlock_bystring(PyObject *self, PyObject *args)
+{
+	tdb_hnd_object *obj = (tdb_hnd_object *)self;
+	char *s;
+
+        if (!obj->tdb) {
+		PyErr_SetString(py_tdb_error, "tdb object has been closed"); 
+		return NULL;
+        }	
+
+	if (!PyArg_ParseTuple(args, "s", &s))
+		return NULL;
+
+	tdb_unlock_bystring(obj->tdb, s);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 /* 
  * Method dispatch table for this module
  */
@@ -505,6 +581,10 @@ static PyMethodDef tdb_hnd_methods[] = {
 	{ "lock", (PyCFunction)py_tdb_hnd_lock, METH_VARARGS },
 	{ "unlock", (PyCFunction)py_tdb_hnd_unlock, METH_VARARGS },
 	{ "traverse", (PyCFunction)py_tdb_hnd_traverse, METH_VARARGS | METH_KEYWORDS },
+	{ "chainlock", (PyCFunction)py_tdb_hnd_chainlock, METH_VARARGS | METH_KEYWORDS },
+	{ "chainunlock", (PyCFunction)py_tdb_hnd_chainunlock, METH_VARARGS | METH_KEYWORDS },
+	{ "lock_bystring", (PyCFunction)py_tdb_hnd_lock_bystring, METH_VARARGS | METH_KEYWORDS },
+	{ "unlock_bystring", (PyCFunction)py_tdb_hnd_unlock_bystring, METH_VARARGS | METH_KEYWORDS },
 	{ NULL }
 };
 
