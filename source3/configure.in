@@ -244,7 +244,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
+default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_guest rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_fake_perms vfs_netatalk"
@@ -689,7 +689,7 @@ test "${with_readline+set}" != "set" && with_readline=yes
 # test for where we get readline() from
 AC_MSG_CHECKING(whether to use readline)
 AC_ARG_WITH(readline,
-[  --with-readline[=DIR]   Look for readline include/libs in DIR (default=auto) ],
+[  --with-readline[=DIR]     Look for readline include/libs in DIR (default=auto) ],
 [  case "$with_readline" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2058,7 +2058,7 @@ with_ads_support=yes
 AC_MSG_CHECKING([whether to use Active Directory])
 
 AC_ARG_WITH(ads,
-[   --with-ads  Active Directory support (default yes)],
+[  --with-ads              Active Directory support (default yes)],
 [ case "$withval" in
     no)
 	with_ads_support=no
@@ -2256,7 +2256,7 @@ with_ldap_support=yes
 AC_MSG_CHECKING([whether to use LDAP])
 
 AC_ARG_WITH(ldap,
-[   --with-ldap  LDAP support (default yes)],
+[  --with-ldap             LDAP support (default yes)],
 [ case "$withval" in
     no)
 	with_ldap_support=no
@@ -2307,14 +2307,27 @@ if test x"$with_ads_support" = x"yes"; then
 fi
 
 ########################################################
-# Compile with MySQL support?
-AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
-CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-
-########################################################
-# Compile with XML support?
-AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
-CFLAGS="$CFLAGS $XML_CFLAGS"
+# Compile experimental passdb backends?
+# (pdb_xml, pdb_mysql)
+build_expsam=0
+AC_MSG_CHECKING(whether to build experimental passdb libraries)
+AC_ARG_WITH(expsam,
+[  --with-expsam           Include experimental passdb libraries (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    build_expsam=1
+    AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
+    CFLAGS="$CFLAGS $XML_CFLAGS"
+    AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
+    CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # check for automount support
@@ -2386,7 +2399,7 @@ AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is avai
 # check for pam_smbpass support
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
-[  --with-pam_smbpass      Build a PAM module to allow other applications to use our smbpasswd file (default=no)],
+[  --with-pam_smbpass      Build PAM module for authenticating against passdb backends (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2443,7 +2456,7 @@ fi
 # check for a LDAP password database configuration backwards compatibility
 AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
 AC_ARG_WITH(ldapsam,
-[  --with-ldapsam           Include LDAP SAM 2.2 compatible configuration (default=no)],
+[  --with-ldapsam          Include LDAP SAM 2.2 compatible configuration (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2463,7 +2476,7 @@ AC_DEFINE(WITH_IDMAP,1, [Include IDMAP support])
 
 AC_MSG_CHECKING(whether to use IDMAP only for [ug]id mapping)
 AC_ARG_WITH(idmap,
-[  --with-idmap           Include experimental IDMAP support (default=yes)],
+[  --with-idmap            Include experimental IDMAP support (default=yes)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2980,7 +2993,7 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
 with_sendfile_support=yes
 AC_MSG_CHECKING(whether to check to support sendfile)
 AC_ARG_WITH(sendfile-support,
-[  --with-sendfile-support      Check for sendfile support (default=yes)],
+[  --with-sendfile-support Check for sendfile support (default=yes)],
 [ case "$withval" in
   yes)
 
@@ -3425,10 +3438,21 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
-SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
+###########################################################################
+## experimental pdb_modules
+
+if test $build_expsam; then
+
+    SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
 		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
-SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
+    SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
 		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
+    SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
+fi
+
+## end of experiementlal pdb_modules
+###########################################################################
+
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
 		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
