@@ -1,3 +1,7 @@
+Tue Nov 24 23:20:54 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in: build and install pfrom
+
 Sun Nov 22 15:33:52 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* push.c: eliminate some warnings
