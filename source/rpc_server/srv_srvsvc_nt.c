@@ -490,7 +490,7 @@ static BOOL is_hidden_share(int snum)
 	pstring net_name;
 
 	pstrcpy(net_name, lp_servicename(snum));
-	return (net_name[strlen(net_name)] == '$') ? True : False;
+	return (net_name[strlen(net_name) - 1] == '$') ? True : False;
 }
 
 /*******************************************************************
