@@ -365,7 +365,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	case 3:
 		ctr.info3 = &dinfo.driver_3;
 
-		if (!py_to_DRIVER_INFO_3(&dinfo.driver_3, info)) {
+		if (!py_to_DRIVER_INFO_3(&dinfo.driver_3, info, mem_ctx)) {
 			PyErr_SetString(spoolss_error,
 					"error converting to driver info 3");
 			goto done;

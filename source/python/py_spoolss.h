@@ -67,7 +67,8 @@ BOOL py_to_DRIVER_INFO_1(DRIVER_INFO_1 *info, PyObject *dict);
 BOOL py_from_DRIVER_INFO_2(PyObject **dict, DRIVER_INFO_2 *info);
 BOOL py_to_DRIVER_INFO_2(DRIVER_INFO_2 *info, PyObject *dict);
 BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info);
-BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict);
+BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict,
+			 TALLOC_CTX *mem_ctx);
 BOOL py_from_DRIVER_INFO_6(PyObject **dict, DRIVER_INFO_6 *info);
 BOOL py_to_DRIVER_INFO_6(DRIVER_INFO_6 *info, PyObject *dict);
 BOOL py_from_DRIVER_DIRECTORY_1(PyObject **dict, DRIVER_DIRECTORY_1 *info);
