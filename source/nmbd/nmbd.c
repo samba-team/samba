@@ -68,7 +68,7 @@ static void sig_term(int sig)
   DEBUG(0,("Got SIGTERM: going down...\n"));
   
   /* Write out wins.dat file if samba is a WINS server */
-  wins_write_database();
+  wins_write_database(False);
   
   /* Remove all SELF registered names. */
   release_my_names();
