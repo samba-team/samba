@@ -1,5 +1,7 @@
 Fri Aug  1 17:23:56 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/roken/flock.c: new file
+
 	* kuser/kinit.c: check for and print expiry information in the
  	`kdc_rep'
 
