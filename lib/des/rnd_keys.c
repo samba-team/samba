@@ -13,21 +13,22 @@ RCSID("$Id$");
 static des_key_schedule sequence_seed;
 static u_int32_t sequence_index[2];
 
-/*
- * These guys are used for the clocked "non crypto" randomness.
- *
- * The method used is described on page 424 in
- * Applied Cryptography 2 ed. by Bruce Schneier.
+/* 
+ * Random number generator based on ideas from truerand in cryptolib
+ * as described on page 424 in Applied Cryptography 2 ed. by Bruce
+ * Schneier.
  */
+
 static volatile int counter;
 static volatile unsigned char *gdata; /* Global data */
 static volatile int igdata;	/* Index into global data */
+static int gsize;
 
 static
 RETSIGTYPE
 sigALRM(int sig)
 {
-    if (igdata < sizeof(des_cblock))
+    if (igdata < gsize)
 	gdata[igdata++] ^= counter & 0xff;
 
 #ifdef VOID_RETSIGTYPE
@@ -51,12 +52,13 @@ des_clock_rand(unsigned char *data, int size)
     int i;
   
     gdata = data;
+    gsize = size;
     igdata = 0;
-    counter = 0;
 
     /* Setup signal handler */
-    memset(&sa, 0, sizeof(sa));
     sa.sa_handler = sigALRM;
+    sa.sa_flags = 0;
+    sa.sa_mask = 0;
     sigaction(SIGALRM, &sa, &osa);
   
     /* Start timer */
@@ -67,9 +69,9 @@ des_clock_rand(unsigned char *data, int size)
 
     for(i = 0; i < 4; i++)
 	{
-	    for (igdata = 0; igdata < size;)
+	    for (igdata = 0; igdata < gsize;)
 		counter++;
-	    for (igdata = 0; igdata < size; igdata++)
+	    for (igdata = 0; igdata < gsize; igdata++)
 		gdata[igdata] = (gdata[igdata]>>2) | (gdata[igdata]<<6);
 	}
     setitimer(ITIMER_REAL, &otv, 0);
@@ -98,18 +100,20 @@ des_clock_rand_key(des_cblock *key)
 }
 
 /*
- * Generate 8 bytes of "random" data by checksumming the first 2
- * megabytes of /dev/mem.
- * It's neccessary to be root to run it.
+ * Generate "random" data by checksumming /dev/mem
+ *
+ * It's neccessary to be root to run it. Returns -1 if there were any
+ * problems with permissions.
  */
-void
+int
 des_mem_rand8(unsigned char *data)
 {
+  return 1;
 }
 #endif
 
 /*
- * In case the generator does not get initialized use this for backup.
+ * In case the generator does not get initialized use this as fallback.
  */
 static int initialized;
 
@@ -179,7 +183,7 @@ des_new_random_key(des_cblock *key)
  *
  * Initialize the sequence of random 64 bit blocks.  The input seed
  * can be a secret key since it should be well hidden and is also not
- * keept.
+ * kept.
  *
  */
 void 
