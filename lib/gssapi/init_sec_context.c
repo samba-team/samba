@@ -527,8 +527,7 @@ repl_mutual
 				  seq_number, 0);
     if (ret) {
 	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
-	gssapi_krb5_set_error_string ();
-	return GSS_S_FAILURE;
+	return ret;
     }
 	
     (*context_handle)->more_flags |= OPEN;
