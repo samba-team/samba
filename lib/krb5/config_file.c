@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,14 +38,14 @@ RCSID("$Id$");
 
 static krb5_error_code parse_section(char *p, krb5_config_section **s,
 				     krb5_config_section **res,
-				     char **error_message);
+				     const char **error_message);
 static krb5_error_code parse_binding(FILE *f, unsigned *lineno, char *p,
 				     krb5_config_binding **b,
 				     krb5_config_binding **parent,
-				     char **error_message);
+				     const char **error_message);
 static krb5_error_code parse_list(FILE *f, unsigned *lineno,
 				  krb5_config_binding **parent,
-				  char **error_message);
+				  const char **error_message);
 
 /*
  * Parse a section:
@@ -64,7 +64,7 @@ static krb5_error_code parse_list(FILE *f, unsigned *lineno,
 
 static krb5_error_code
 parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
-	      char **error_message)
+	      const char **error_message)
 {
     char *p1;
     krb5_config_section *tmp;
@@ -104,7 +104,7 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
 
 static int
 parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
-	   char **error_message)
+	   const char **error_message)
 {
     char buf[BUFSIZ];
     int ret;
@@ -144,7 +144,7 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
 static int
 parse_binding(FILE *f, unsigned *lineno, char *p,
 	      krb5_config_binding **b, krb5_config_binding **parent,
-	      char **error_message)
+	      const char **error_message)
 {
     krb5_config_binding *tmp;
     char *p1, *p2;
@@ -205,7 +205,7 @@ static krb5_error_code
 krb5_config_parse_file_debug (const char *fname,
 			      krb5_config_section **res,
 			      unsigned *lineno,
-			      char **error_message)
+			      const char **error_message)
 {
     FILE *f;
     krb5_config_section *s;
@@ -259,7 +259,7 @@ krb5_config_parse_file (krb5_context context,
 			const char *fname,
 			krb5_config_section **res)
 {
-    char *str;
+    const char *str;
     unsigned lineno;
     krb5_error_code ret;
 
