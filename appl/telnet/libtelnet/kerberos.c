@@ -101,6 +101,9 @@ static unsigned char str_name[1024] = { IAC, SB, TELOPT_AUTHENTICATION,
 static	KTEXT_ST auth;
 static	char name[ANAME_SZ];
 static	AUTH_DAT adat = { 0 };
+static des_cblock session_key;
+static des_key_schedule sched;
+static des_cblock challenge;
 
 	static int
 Data(ap, type, d, c)
@@ -211,6 +214,37 @@ kerberos4_send(ap)
 			printf("Not enough room for authentication data\r\n");
 		return(0);
 	}
+#ifdef ENCRYPTION
+	/* create challenge */
+	if ((ap->way & AUTH_HOW_MASK)==AUTH_HOW_MUTUAL) {
+	  int i;
+
+	  des_key_sched(&cred.session, sched);
+	  des_init_random_number_generator(&cred.session);
+	  des_new_random_key(&session_key);
+	  des_ecb_encrypt(&session_key, &session_key, sched, 0);
+	  des_ecb_encrypt(&session_key, &challenge, sched, 0);
+
+	  /*
+	    old code
+	    Some CERT Advisory thinks this is a bad thing...
+	    
+	    des_init_random_number_generator(&cred.session);
+	    des_new_random_key(&challenge);
+	    des_ecb_encrypt(&challenge, &session_key, sched, 1);
+	    */
+	  
+	  /*
+	   * Increment the challenge by 1, and encrypt it for
+	   * later comparison.
+	   */
+	  for (i = 7; i >= 0; --i) 
+	    if(++challenge[i] != 0) /* No carry! */
+	      break;
+	  des_ecb_encrypt(&challenge, &challenge, sched, 1);
+	}
+
+#endif
 
 	if (auth_debug_mode) {
 		printf("CK: %d:", kerberos4_cksum(auth.dat, auth.length));
@@ -258,6 +292,8 @@ kerberos4_is(ap, data, cnt)
 			auth_finished(ap, AUTH_REJECT);
 			return;
 		}
+		/* save the session key */
+		memmove(session_key, adat.session, sizeof(adat.session));
 		krb_kntoln(&adat, name);
 
 		if (UserNameRequested && !kuserok(&adat, UserNameRequested))
@@ -269,8 +305,38 @@ kerberos4_is(ap, data, cnt)
 		break;
 
 	case KRB_CHALLENGE:
-		Data(ap, KRB_RESPONSE, (void *)0, 0);
+#ifndef ENCRYPTION
+	  Data(ap, KRB_RESPONSE, (void *)0, 0);
+#else
+	  if(!VALIDKEY(session_key)){
+	    Data(ap, KRB_RESPONSE, NULL, 0);
+	    break;
+	  }
+	  des_key_sched(&session_key, sched);
+	  {
+	    des_cblock d_block;
+	    int i;
+	    Session_Key skey;
+
+	    memmove(d_block, data, sizeof(d_block));
+
+	    /* make a session key for encryption */
+	    des_ecb_encrypt(&d_block, &session_key, sched, 1);
+	    skey.type=SK_DES;
+	    skey.length=8;
+	    skey.data=session_key;
+	    encrypt_session_key(&skey, 1);
+
+	    /* decrypt challenge, add one and encrypt it */
+	    des_ecb_encrypt(&d_block, &challenge, sched, 0);
+	    for (i = 7; i >= 0; i--)
+	      if(++challenge[i] != 0)
 		break;
+	    des_ecb_encrypt(&challenge, &challenge, sched, 1);
+	    Data(ap, KRB_RESPONSE, (void *)challenge, sizeof(challenge));
+	  }
+#endif
+	    break;
 
 	default:
 		if (auth_debug_mode)
@@ -286,6 +352,7 @@ kerberos4_reply(ap, data, cnt)
 	unsigned char *data;
 	int cnt;
 {
+	Session_Key skey;
 
 	if (cnt-- < 1)
 		return;
@@ -304,16 +371,30 @@ kerberos4_reply(ap, data, cnt)
 			/*
 			 * Send over the encrypted challenge.
 		 	 */
-			Data(ap, KRB_CHALLENGE, (void *)0, 0);
+			Data(ap, KRB_CHALLENGE, session_key, 
+			     sizeof(session_key));
+#ifdef ENCRYPTION
+			des_ecb_encrypt(&session_key, &session_key, sched, 1);
+			skey.type = SK_DES;
+			skey.length = 8;
+			skey.data = session_key;
+			encrypt_session_key(&skey, 0);
+#endif
 			return;
 		}
 		auth_finished(ap, AUTH_USER);
 		return;
 	case KRB_RESPONSE:
-			printf("[ Kerberos V4 challenge failed!!! ]\r\n");
-			auth_send_retry();
-			return;
-		break;
+	  /* make sure the response is correct */
+	  if ((cnt != sizeof(des_cblock)) ||
+	      (memcmp(data, challenge, sizeof(challenge)))){
+	    printf("[ Kerberos V4 challenge failed!!! ]\r\n");
+	    auth_send_retry();
+	    return;
+	  }
+	  printf("[ Kerberos V4 challenge successful ]\r\n");
+	  auth_finished(ap, AUTH_USER);
+	  break;
 	default:
 		if (auth_debug_mode)
 			printf("Unknown Kerberos option %d\r\n", data[-1]);
