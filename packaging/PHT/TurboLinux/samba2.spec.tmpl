@@ -235,12 +235,14 @@ fi
 # Add swat entry to /etc/inetd.conf if needed
 if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
         echo 'swat      stream  tcp     nowait.400      root    /usr/sbin/swat swat' >> /etc/inetd.conf
-killall -1 inetd || :
+	killall -1 inetd || :
 fi
 
 # Now create the xinetd.conf file from our inetd.conf file, back up orig first.
-mv /etc/xinetd.conf /etc/xinetd.conf.presamba
-/usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
+if [ -f /etc/xinetd.conf ]; then
+	mv /etc/xinetd.conf /etc/xinetd.conf.presamba
+	/usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
+fi
 
 %preun
 if [ $1 = 0 ] ; then
