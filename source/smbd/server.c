@@ -1151,6 +1151,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   struct stat statbuf;
   file_fd_struct *fd_ptr;
   files_struct *fsp = &Files[fnum];
+  int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
   fsp->open = False;
   fsp->fd_ptr = 0;
@@ -1160,12 +1161,32 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   pstrcpy(fname,fname1);
 
   /* check permissions */
-  if ((flags != O_RDONLY) && !CAN_WRITE(cnum) && !Connections[cnum].printer)
-    {
+
+  /*
+   * This code was changed after seeing a client open request 
+   * containing the open mode of (DENY_WRITE/read-only) with
+   * the 'create if not exist' bit set. The previous code
+   * would fail to open the file read only on a read-only share
+   * as it was checking the flags parameter  directly against O_RDONLY,
+   * this was failing as the flags parameter was set to O_RDONLY|O_CREAT.
+   * JRA.
+   */
+
+  if (!CAN_WRITE(cnum) && !Connections[cnum].printer) {
+    /* It's a read-only share - fail if we wanted to write. */
+    if(accmode != O_RDONLY) {
       DEBUG(3,("Permission denied opening %s\n",fname));
       check_for_pipe(fname);
       return;
     }
+    else if(flags & O_CREAT) {
+      /* We don't want to write - but we must make sure that O_CREAT
+         doesn't create the file if we have write access into the
+         directory.
+       */
+      flags &= ~O_CREAT;
+    }
+  }
 
   /* this handles a bug in Win95 - it doesn't say to create the file when it 
      should */
@@ -1202,8 +1223,6 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
    * reference count (fd_get_already_open increments the ref_count).
    */
   if((fd_ptr = fd_get_already_open(sbuf))!= 0) {
-
-    int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
     /* File was already open. */
     if((flags & O_CREAT) && (flags & O_EXCL)) {
