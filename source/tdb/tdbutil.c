@@ -258,8 +258,8 @@ int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
 	TDB_DATA kbuf, dbuf;
 	kbuf.dptr = keystr;
 	kbuf.dsize = strlen(keystr)+1;
-	dbuf.dptr = ps->data_p;
-	dbuf.dsize = ps->data_offset;
+	dbuf.dptr = prs_data_p(ps);
+	dbuf.dsize = prs_offset(ps);
 
 	return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
@@ -275,12 +275,8 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
 	if (!dbuf.dptr) return -1;
 
 	ZERO_STRUCTP(ps);
-	ps->io = UNMARSHALL;
-	ps->align = 4;
-	ps->data_p = dbuf.dptr;
-	ps->data_offset = 0;
-	ps->buffer_size = dbuf.dsize;
-	ps->grow_size = dbuf.dsize;
+	prs_init(ps, 0, 4, UNMARSHALL);
+	prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
 
 	return 0;
 }

@@ -1971,6 +1971,8 @@ static BOOL construct_printer_info_3(fstring servername,
 		DEBUG(0,("construct_printer_info_3: malloc fail.\n"));
 		return False;
 	}
+
+	ZERO_STRUCTP(printer);
 	
 	printer->flags = 4; /* This is the offset to the SEC_DESC. */
 	if (ntprinter->info_2->secdesc_buf->len != 0) {

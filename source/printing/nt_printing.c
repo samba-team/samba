@@ -1465,7 +1465,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	fstring key;
 	uint32 status;
 
-	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec), 4, MARSHALL);
+	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec) + sizeof(SEC_DESC_BUF), 4, MARSHALL);
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &secdesc_ctr, &ps, 1)) {
 		status = ERROR_INVALID_FUNCTION;
@@ -1493,11 +1493,22 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
 	extern DOM_SID global_sid_World; 
+	SEC_ACE ace;
+	SEC_ACCESS sa;
+	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
+	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	SEC_DESC *psd = make_sec_desc(1, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-								&global_sid_World, &global_sid_World,
-								NULL, NULL, &sd_size);
+
+	init_sec_access(&sa,PRINTER_ALL_ACCESS);
+	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
+
+	if ((psa = make_sec_acl( 3, 1, &ace)) != NULL) {
+		psd = make_sec_desc(1, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+									&global_sid_World, &global_sid_World,
+									NULL, psa, &sd_size);
+		free_sec_acl(&psa);
+	}
 
 	if (!psd) {
 		DEBUG(0,("construct_default_printer_sd: Failed to make SEC_DESC.\n"));
@@ -1505,6 +1516,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	}
 
 	sdb = make_sec_desc_buf(sd_size, psd);
+
+	DEBUG(4,("construct_default_printer_sdb: size = %u.\n", (unsigned int)sd_size));
 
 	free_sec_desc(&psd);
 	return sdb;

@@ -487,6 +487,7 @@ to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,
   return smb_open_mode;
 }
 
+#if 0
 /*
  * This is a *disgusting* hack.
  * This is *so* bad that even I'm embarrassed (and I
@@ -547,7 +548,7 @@ BOOL should_fail_next_srvsvc_open(const char *pipename)
   }
   return False;
 }
-
+#endif
 
 /****************************************************************************
  Reply to an NT create and X call on a pipe.
@@ -573,8 +574,10 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	/* Strip \\ off the name. */
 	fname++;
     
+#if 0
 	if(should_fail_next_srvsvc_open(fname))
 		return (ERROR(ERRSRV,ERRaccess));
+#endif
 
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
