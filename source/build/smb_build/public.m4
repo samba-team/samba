@@ -48,7 +48,7 @@ dnl		2:default_build
 dnl		)
 dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(
-dnl 	1:name,
+dnl		1:name,
 dnl		2:pkg-config name
 dnl		)
 dnl
@@ -281,38 +281,39 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 [
 	dnl Figure out the correct variables and call SMB_EXT_LIB()
 
-    if test -z "$PKG_CONFIG"; then
-    	AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-    fi
+	if test -z "$PKG_CONFIG"; then
+		AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+	fi
 
-    if test "$PKG_CONFIG" = "no" ; then
-    	echo "*** The pkg-config script could not be found. Make sure it is"
-    	echo "*** in your path, or set the PKG_CONFIG environment variable"
-    	echo "*** to the full path to pkg-config."
-    	echo "*** Or see http://www.freedesktop.org/software/pkgconfig to get pkg-config."
+	if test "$PKG_CONFIG" = "no" ; then
+    		echo "*** The pkg-config script could not be found. Make sure it is"
+    		echo "*** in your path, or set the PKG_CONFIG environment variable"
+    		echo "*** to the full path to pkg-config."
+    		echo "*** Or see http://www.freedesktop.org/software/pkgconfig to get pkg-config."
 	else
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
-        	AC_MSG_CHECKING(for $2)
+        		AC_MSG_CHECKING(for $2)
 
-          	if $PKG_CONFIG --exists "$2" ; then
-            	AC_MSG_RESULT(yes)
+          		if $PKG_CONFIG --exists "$2" ; then
+            			AC_MSG_RESULT(yes)
 
 				SMB_EXT_LIB_ENABLE($1, YES)
-			  	SMB_EXT_LIB($1, [`$PKG_CONFIG --libs-only-l $2`], 
-						      [`$PKG_CONFIG --cflags-only-other $2`],
-							  [`$PKG_CONFIG --cflags-only-I $2`],
-							  [`$PKG_CONFIG --libs-only-other $2`])
+				SMB_EXT_LIB($1, 
+					[`$PKG_CONFIG --libs-only-l $2`], 
+					[`$PKG_CONFIG --cflags-only-other $2`],
+					[`$PKG_CONFIG --cflags-only-I $2`],
+					[`$PKG_CONFIG --libs-only-other $2` `$PKG_CONFIG --libs-only-L $2`])
 
 				# FIXME: Dirty hack
 				CFLAGS="$CFLAGS `$PKG_CONFIG --cflags $2`"
-        	else
+        		else
 				AC_MSG_RESULT(no)
-            	$PKG_CONFIG --errors-to-stdout --print-errors $2
-        	fi
-     	else
-        	echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
-        	echo "*** See http://www.freedesktop.org/software/pkgconfig"
-     	fi
+            			$PKG_CONFIG --errors-to-stdout --print-errors $2
+        		fi
+     		else
+        		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
+        		echo "*** See http://www.freedesktop.org/software/pkgconfig"
+     		fi
   	fi
 ])
 
