@@ -70,8 +70,15 @@ typedef struct getarg_strings {
     char **strings;
 } getarg_strings;
 
+typedef int (*getarg_collect_func)(int short_opt,
+				   int argc,
+				   char **argv,
+				   int *optind,
+				   int *optarg,
+				   void *data);
+
 typedef struct getarg_collect_info {
-    int (*func)(char *optarg, int argc, char **argv, int *optind, void *data);
+    getarg_collect_func func;
     void *data;
 } getarg_collect_info;
 
