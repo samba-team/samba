@@ -1633,6 +1633,18 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
   DEBUG(3,("Set password for <%s>\n",user));
 
   /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
+
+  map_username(user);
+
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
+
+  /*
    * Attempt the plaintext password change first.
    * Older versions of Windows seem to do this.
    */
@@ -1705,6 +1717,20 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
 
   fstrcpy(user,p);
   p = skip_string(p,1);
+
+  DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
+
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
+
+  map_username(user);
+
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
 
   if(check_oem_password( user, (unsigned char *)data, &sampw, 
                          new_passwd, (int)sizeof(new_passwd)) == False) {

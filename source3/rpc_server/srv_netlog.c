@@ -641,6 +641,16 @@ static void api_net_sam_logon( int uid,
 
     DEBUG(3,("User:[%s]\n", samlogon_user));
 
+    /*
+     * Convert to a UNIX username.
+     */
+    map_username(samlogon_user);
+
+    /*
+     * Do any case conversions.
+     */
+    (void)Get_Pwnam(samlogon_user, True);
+
     become_root(True);
     smb_pass = getsmbpwnam(samlogon_user);
     unbecome_root(True);

@@ -371,7 +371,18 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	/* convert received RIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)
 	{
-		char *user_name = unistr2(q_l.lookup_name[i].str.buffer);
+        fstring user_name;
+		fstrcpy(user_name, unistr2(q_l.lookup_name[i].str.buffer));
+        /*
+         * Map to the UNIX username.
+         */
+        map_username(user_name);
+
+        /*
+         * Do any case conversions.
+         */
+        (void)Get_Pwnam(user_name, True);
+
 		if (!pdb_name_to_rid(user_name, &dom_rids[i], &dummy_g_rid))
 		{
 			/* WHOOPS!  we should really do something about this... */
