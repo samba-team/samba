@@ -708,7 +708,11 @@ void del_share_mode(files_struct *fsp)
 	dbuf.dsize -= del_count * sizeof(*shares);
 
 	/* store it back in the database */
-	tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+	if (data->num_share_mode_entries == 0) {
+		tdb_delete(tdb, locking_key_fsp(fsp));
+	} else {
+		tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+	}
 
 	free(dbuf.dptr);
 }
@@ -815,7 +819,11 @@ static BOOL mod_share_mode(files_struct *fsp,
 
 	/* if the mod fn was called then store it back */
 	if (need_store) {
-		tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+		if (data->num_share_mode_entries == 0) {
+			tdb_delete(tdb, locking_key_fsp(fsp));
+		} else {
+			tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+		}
 	}
 
 	free(dbuf.dptr);
