@@ -343,7 +343,7 @@ static void cb_itemsignal( GtkWidget *item,
       g_print("cb_itemsignal: Could not open dir %s, %s\n", get_path(item), 
 	      strerror(errno));
 
-      slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not open dir %s, %s\n", get_path(item), strerror(errno));
+      snprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not open dir %s, %s\n", get_path(item), strerror(errno));
 
       error_message(errmsg);
 
@@ -362,7 +362,7 @@ static void cb_itemsignal( GtkWidget *item,
 	g_print("cb_itemsignal: Could not read dir smbc://, %s\n",
 		strerror(errno));
 
-	slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not read dir smbc://, %s\n", strerror(errno));
+	snprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not read dir smbc://, %s\n", strerror(errno));
 
 	error_message(errmsg);
 
