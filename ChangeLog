@@ -1,6 +1,32 @@
+2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* admin/ktutil.8: s/entype/enctype/, from Igor Sobrado
+	<sobrado@acm.org> via NetBSD
+
+	* lib/krb5/krb5_keytab.3: add documention for krb5_kt_get_type
+	
+	* lib/krb5/keytab.c (krb5_kt_get_type): get prefix/type of keytab
+	
+	* lib/krb5/krb5.h (KRB5_KT_PREFIX_MAX_LEN): max length of prefix
+	
+	* lib/krb5/krb5_ccache.3: document krb5_cc_get_ops, add more
+	types, add krb5_fcc_ops and krb5_mcc_ops
+	
+	* lib/krb5/cache.c (krb5_cc_get_ops): new function, return ops for
+	a id
+
+2003-03-15  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* doc/intro.texi: add reference to source code, binaries and the
+	manual
+
+	* lib/krb5/krb5.3: krb5.h isn't in krb5 directory in heimdal
+	
 2003-03-14  Love Hörnquist Åstrand <lha@it.su.se>
 
-	* kdc/kdc.8: . -> .\n copyright/license
+	* kdc/kdc.8: better/difrent english
+
+	* kdc/kdc.8: . -> .\n, copyright/license
 	
 	* kdc/kdc.8: changed configuration file -> restart kdc
 
