@@ -1667,4 +1667,8 @@ typedef struct {
 
 #define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
 
+/* Common popt structures */
+
+extern struct poptOption popt_common_debug[];
+
 #endif /* _SMB_H */
