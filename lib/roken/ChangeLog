@@ -1,3 +1,8 @@
+2000-05-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getusershell.c: implment the AIX version use
+	/etc/security/login.cfg
+
 2000-05-21  Assar Westerlund  <assar@sics.se>
 
 	* vsyslog.c (vsyslog): actually handle `%m'
