@@ -353,9 +353,8 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 		int ttl, enum name_source source, struct in_addr ip,
 		BOOL new_only,BOOL wins);
 void expire_names(time_t t);
-struct name_record *search_for_name(struct subnet_record **d,
-				    struct nmb_name *question,
-				    struct in_addr ip, int Time, int search);
+struct name_record *dns_name_search(struct nmb_name *question,
+				    int Time, int search);
 
 /*The following definitions come from  namedbresp.c  */
 
@@ -737,9 +736,6 @@ struct smb_passwd *get_smbpwnam(char *name);
 
 
 /*The following definitions come from  smbrun.c  */
-
-
-/*The following definitions come from  smbwizard.c  */
 
 
 /*The following definitions come from  status.c  */
