@@ -1671,7 +1671,7 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
-uint32 del_a_printer(char *portname);
+uint32 del_a_printer(char *sharename);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
@@ -3050,49 +3050,49 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 POLICY_HND *handle);
 uint32 _spoolss_closeprinter(POLICY_HND *handle);
 uint32 _spoolss_deleteprinter(POLICY_HND *handle);
-uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
+uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 in_size,
 				uint32 *type,
 				uint32 *out_size,
 				uint8 **data,
 				uint32 *needed);
-uint32 _spoolss_rffpcnex(const POLICY_HND *handle, uint32 flags, uint32 options,
+uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
 			 const UNISTR2 *localmachine, uint32 printerlocal,
 			 SPOOL_NOTIFY_OPTION *option);
-uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
+uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
 			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info);
 uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 level,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned);
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
+uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
 				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
-uint32 _spoolss_startpageprinter(const POLICY_HND *handle);
-uint32 _spoolss_endpageprinter(const POLICY_HND *handle);
-uint32 _spoolss_startdocprinter(const POLICY_HND *handle, uint32 level,
+uint32 _spoolss_startpageprinter(POLICY_HND *handle);
+uint32 _spoolss_endpageprinter(POLICY_HND *handle);
+uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 				pipes_struct *p, DOC_INFO *docinfo, 
 				uint32 *jobid);
-uint32 _spoolss_enddocprinter(const POLICY_HND *handle);
-uint32 _spoolss_writeprinter( const POLICY_HND *handle,
+uint32 _spoolss_enddocprinter(POLICY_HND *handle);
+uint32 _spoolss_writeprinter( POLICY_HND *handle,
 				uint32 buffer_size,
-				const uint8 *buffer,
+				uint8 *buffer,
 				uint32 *buffer_written);
-uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
+uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
 			   SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command, pipes_struct *p);
-uint32 _spoolss_fcpn(const POLICY_HND *handle);
-uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,
+uint32 _spoolss_fcpn(POLICY_HND *handle);
+uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
 			NEW_BUFFER *buffer, uint32 offered);
 uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			  
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);
-uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid);
-uint32 _spoolss_setjob( const POLICY_HND *handle,
+uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
+uint32 _spoolss_setjob( POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
 		                pipes_struct *p,
@@ -3101,7 +3101,7 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
-uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level, 
+uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level, 
 			       NEW_BUFFER *buffer, uint32 offered, 
 			       uint32 *needed, uint32 *numofforms);
 uint32 _spoolss_enumports( UNISTR2 *name, uint32 level, 
@@ -3118,22 +3118,22 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
 					NEW_BUFFER *buffer, uint32 offered, 
 					uint32 *needed);
-uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
+uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
 				uint32 *out_max_data_len, uint8  **data_out, uint32 *out_data_len);
-uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
+uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				const UNISTR2 *value,
 				uint32 type,
 				uint32 max_len,
 				const uint8 *data,
 				uint32 real_len,
 				uint32 numeric_data);
-uint32 _spoolss_addform( const POLICY_HND *handle,
+uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form);
-uint32 _spoolss_setform( const POLICY_HND *handle,
+uint32 _spoolss_setform( POLICY_HND *handle,
 				const UNISTR2 *uni_name,
 				uint32 level,
 				const FORM *form);

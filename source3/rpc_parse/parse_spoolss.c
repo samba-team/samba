@@ -4236,8 +4236,7 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	DEBUG(7,("Converting from UNICODE to ASCII\n"));
 	time_unix=time(NULL);
 	
-	if (*asc==NULL)
-	{
+	if (*asc==NULL) {
 		DEBUGADD(8,("allocating memory\n"));
 
 		*asc=(NT_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(NT_PRINTER_INFO_LEVEL_2));
@@ -4268,6 +4267,7 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	unistr2_to_ascii(d->sharename, &uni->sharename, sizeof(d->sharename)-1);
 	unistr2_to_ascii(d->portname, &uni->portname, sizeof(d->portname)-1);
 	unistr2_to_ascii(d->drivername, &uni->drivername, sizeof(d->drivername)-1);
+	unistr2_to_ascii(d->comment, &uni->comment, sizeof(d->comment)-1);
 	unistr2_to_ascii(d->location, &uni->location, sizeof(d->location)-1);
 	unistr2_to_ascii(d->sepfile, &uni->sepfile, sizeof(d->sepfile)-1);
 	unistr2_to_ascii(d->printprocessor, &uni->printprocessor, sizeof(d->printprocessor)-1);
