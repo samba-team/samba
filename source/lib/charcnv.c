@@ -143,7 +143,7 @@ size_t convert_string(charset_t from, charset_t to,
 		switch(errno)
 		{ case EINVAL: reason="Incomplete multibyte sequence"; break;
 		  case E2BIG:  reason="No more room"; 
-		   	       DEBUG(0, ("Required %d, available %d\n",
+		   	       DEBUG(0, ("convert_string: Required %d, available %d\n",
 			       srclen, destlen));
 			       /* we are not sure we need srclen bytes,
 			          may be more, may be less.
