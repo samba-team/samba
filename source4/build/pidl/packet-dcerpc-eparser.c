@@ -579,7 +579,8 @@ proto_tree *get_subtree(proto_tree *tree, char *name, struct e_ndr_pull *ndr,
 	/* Look for name */
 
 	for (l = list; l; l = g_slist_next(l)) {
-		info = list->data;
+		info = l->data;
+		
 		if (strcmp(name, info->name) == 0)
 			return info->subtree;
 	}
