@@ -1172,17 +1172,9 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 {
 	uchar new_lanman_p16[LM_HASH_LEN];
 	uchar new_nt_p16[NT_HASH_LEN];
-	uchar current_ntpw_copy[NT_HASH_LEN];
-	const uchar *current_ntpw;
 
 	if (!sampass || !plaintext)
 		return False;
-
-	/* Store the current password for history purposes. */
-	current_ntpw = pdb_get_nt_passwd(sampass);
-	if (current_ntpw) {
-		memcpy (current_ntpw_copy, current_ntpw, NT_HASH_LEN);
-	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(plaintext, new_nt_p16);
@@ -1233,11 +1225,13 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 					pwHistLen = current_history_len;
 				}
 			}
-			if (pwhistory && current_ntpw && pwHistLen){
+			if (pwhistory && pwHistLen){
+				/* Make room for the new password in the history list. */
 				if (pwHistLen > 1) {
 					memmove(&pwhistory[NT_HASH_LEN], pwhistory, (pwHistLen -1)*NT_HASH_LEN );
 				}
-				memcpy(pwhistory, current_ntpw_copy, NT_HASH_LEN);
+				/* Ensure we have a copy of the new password as the first history entry. */
+				memcpy(pwhistory, new_nt_p16, NT_HASH_LEN);
 				pdb_set_pw_history(sampass, pwhistory, pwHistLen, PDB_CHANGED);
 			} else {
 				DEBUG (10,("pdb_get_set.c: pdb_set_plaintext_passwd: pwhistory was NULL!\n"));
