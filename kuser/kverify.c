@@ -62,6 +62,7 @@ main(int argc, char **argv)
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     krb5_get_init_creds_opt get_options;
     krb5_verify_init_creds_opt verify_options;
+    int optind = 0;
 
     setprogname (argv[0]);
 
