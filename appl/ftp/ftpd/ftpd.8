@@ -63,16 +63,34 @@ service specification; see
 Available options:
 .Bl -tag -width Ds
 .It Fl a
-Select the level of authentication required. Recognised values are:
-.Bl -tag -width debug
-.It none
-Allows anyone to connect.
-.It otp
-Allows only OTP, kerberos authorized access and anonymous ftp.
-.It safe
-Allows only kerberos authorized access and anonymous ftp.
-.It user
-Allows only kerberos authorized access.
+Select the level of authentication required.  Kerberised login can not
+be turned off. The default is to only allow kerberised login.  Other
+possibilities can be turned on by giving a string of comma separated
+flags as argument to
+.Fl a .
+Recognised flags are:
+.Bl -tag -width plain
+.It Ar plain
+Allow logging in with plaintext password. The password can be a(n) OTP
+or an ordinary password.
+.It Ar otp
+Same as
+.Ar plain ,
+but only OTP is allowed.
+.It Ar ftp
+Allow anonymous login.
+.El
+
+The following combination modes exists for backwards compatibility:
+.Bl -tag -width plain
+.It Ar none
+Same as
+.Ar plain,ftp .
+.It Ar safe
+Same as 
+.Ar ftp .
+.It Ar user
+Ignored.
 .El
 .It Fl d
 Debugging information is written to the syslog using LOG_FTP.
@@ -422,9 +440,11 @@ Login access for Kerberos.
 .Xr getusershell 3 ,
 .Xr syslogd 8 ,
 .Sh STANDARDS
-.Bl -tag -compact -width RFC-959
-.It Cm RFC-959
+.Bl -tag -compact -width "RFC 1938"
+.It Cm RFC 959
 FTP PROTOCOL SPECIFICATION
+.It Cm RFC 1938
+OTP Specification
 .It Cm draft-ietf-cat-ftpsec-08
 FTP Security Extensions. This is work in progress and might change in
 the future.
