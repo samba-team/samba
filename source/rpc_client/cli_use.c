@@ -140,7 +140,7 @@ static struct cli_use *cli_find(const char *srv_name,
 		char *cli_name = NULL;
 		struct cli_use *c = clis[i];
 
-		if (c == NULL || !c->cli->initialised)
+		if (c == NULL || !c->cli->initialised || c->cli->fd == -1)
 		{
 			continue;
 		}
@@ -227,7 +227,6 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 	struct in_addr *dest_ip = NULL;
 	fstring dest_host;
 	struct in_addr ip;
-
 	struct cli_use *cli;
 
 	DEBUG(10, ("cli_net_use_add\n"));

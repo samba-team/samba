@@ -199,6 +199,7 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		char *ncacn_np_name = NULL;
 
 		if (c == NULL || c->cli == NULL || c->cli->smb == NULL ||
+		    c->cli->smb->fd == -1 ||
 		    !c->cli->initialised)
 		{
 			continue;

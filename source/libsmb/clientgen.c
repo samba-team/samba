@@ -48,6 +48,9 @@ BOOL cli_receive_smb(struct cli_state *cli)
 {
 	BOOL ret;
  again:
+	/* there might have been an error on the socket */
+	if (cli->fd == -1) return False;
+
 	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
 	
 	if (ret) {
@@ -63,6 +66,12 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		}
 	}
 
+	/* if the server is not responding, then note that now */
+	if (!ret) {
+		close(cli->fd);
+		cli->fd = -1;
+	}
+
 	return ret;
 }
 
@@ -76,6 +85,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 	ssize_t ret;
 	BOOL reestablished=False;
 
+	/* there might have been an error on the socket */
+	if (cli->fd == -1) return False;
+
 	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
@@ -88,6 +100,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 			}
 		}
 		if (ret <= 0) {
+			close(cli->fd);
+			cli->fd = -1;
 			DEBUG(0,("Error writing %d bytes to client. %d\n",
 				 (int)len,(int)ret));
 			return False;

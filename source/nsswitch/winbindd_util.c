@@ -87,6 +87,12 @@ static BOOL get_trusted_domains(void)
 	int i;
 	
 	DEBUG(1, ("getting trusted domain list\n"));
+
+	/* Add our workgroup - keep handle to look up trusted domains */
+	if (!add_trusted_domain(lp_workgroup())) {
+		DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
+		return False;
+	}
 	
 	/* Enumerate list of trusted domains */	
 	result = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
@@ -139,21 +145,52 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	return True;
 }
 
+static void winbindd_kill_connections(void)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(1,("killing winbindd connections\n"));
+
+	server_state.pwdb_initialised = False;
+	server_state.lsa_handle_open = False;
+	lsa_close(&server_state.lsa_handle);
+	
+	for (domain=domain_list; domain; domain=domain->next) {
+		if (domain->sam_handle_open) {
+			lsa_close(&domain->sam_handle);
+			domain->sam_handle_open = False;
+		}
+		if (domain->sam_dom_handle_open) {
+			lsa_close(&domain->sam_dom_handle);
+			domain->sam_dom_handle_open = False;
+		}
+		DLIST_REMOVE(domain_list, domain);
+		free(domain);
+	}
+}
 
 BOOL establish_connections(void) 
 {
 	struct winbindd_domain *domain;
-	static BOOL initialised;
 	static time_t lastt;
 	time_t t;
 
 	t = time(NULL);
 	if (t - lastt < WINBINDD_ESTABLISH_LOOP) {
-		return False;
+		return server_state.pwdb_initialised &&
+			server_state.lsa_handle_open &&
+			rpc_hnd_ok(&server_state.lsa_handle);
 	}
 	lastt = t;
 
-	if (!initialised) {
+	/* maybe the connection died - if so then close up and restart */
+	if (server_state.pwdb_initialised &&
+	    server_state.lsa_handle_open &&
+	    !rpc_hnd_ok(&server_state.lsa_handle)) {
+		winbindd_kill_connections();
+	}
+
+	if (!server_state.pwdb_initialised) {
 		fstrcpy(server_state.controller, lp_passwordserver());
 		if (strcmp(server_state.controller,"*") == 0) {
 			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
@@ -161,17 +198,6 @@ BOOL establish_connections(void)
 			}
 		}
 
-
-		/* Add our workgroup - keep handle to look up trusted domains */
-		if (!add_trusted_domain(lp_workgroup())) {
-			DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
-			return False;
-		}
-
-		initialised = True;
-	}
-	
-	if (!server_state.pwdb_initialised) {
 		server_state.pwdb_initialised = pwdb_initialise(False);
 		if (!server_state.pwdb_initialised) return False;
 	}

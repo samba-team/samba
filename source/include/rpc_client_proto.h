@@ -52,12 +52,14 @@ BOOL cli_con_deal_with_creds(struct cli_connection *con,
 			     DOM_CRED * rcv_srv_cred);
 BOOL cli_con_set_creds(const char *srv_name, const uchar sess_key[16],
 		       DOM_CRED * cred);
+BOOL rpc_hnd_ok(const POLICY_HND *hnd);
 BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 		      prs_struct * data, prs_struct * rdata);
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 		      prs_struct * data, prs_struct * rdata);
 BOOL rpc_api_write(struct cli_connection *con, prs_struct * data);
 BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata);
+BOOL rpc_con_ok(struct cli_connection *con);
 BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
 			  prs_struct * rdata);
 BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,

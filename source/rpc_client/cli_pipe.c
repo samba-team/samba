@@ -203,7 +203,10 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data,
 
 	prs_init(&rpdu, 0, 4, True);
 
-	rpc_api_send_rcv_pdu(con, data, &rpdu);
+	if (!rpc_api_send_rcv_pdu(con, data, &rpdu)) {
+		prs_free_data(&rpdu);
+		return False;
+	}
 
 	/**** parse the header: check it's a response record */
 

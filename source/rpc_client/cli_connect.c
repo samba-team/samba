@@ -711,6 +711,16 @@ BOOL cli_con_set_creds(const char *srv_name, const uchar sess_key[16],
 /****************************************************************************
  send a request on an rpc pipe.
  ****************************************************************************/
+BOOL rpc_hnd_ok(const POLICY_HND *hnd)
+{
+	struct cli_connection *con = NULL;
+
+	return cli_connection_get(hnd, &con) &&	rpc_con_ok(con);
+}
+
+/****************************************************************************
+ send a request on an rpc pipe.
+ ****************************************************************************/
 BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 		      prs_struct * data, prs_struct * rdata)
 {
@@ -720,6 +730,8 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 	{
 		return False;
 	}
+
+	if (!rpc_con_ok(con)) return False;
 
 	return rpc_con_pipe_req(con, op_num, data, rdata);
 }
@@ -787,6 +799,31 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata)
 	return False;
 }
 
+/* this allows us to detect dead servers. The cli->fd is set to -1 when
+   we get an error */
+BOOL rpc_con_ok(struct cli_connection *con)
+{
+	if (!con) return False;
+
+	switch (con->type)
+	{
+		case MSRPC_SMB:
+			{
+				struct cli_state *cli;
+				if (!con->msrpc.smb) return False;
+				cli = con->msrpc.smb->smb;
+				if (cli->fd == -1) return False;
+				return True;
+			}
+			break;
+
+		case MSRPC_LOCAL:
+			return True;
+	}
+	return False;
+}
+
+
 BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
 			  prs_struct * rdata)
 {
@@ -797,6 +834,7 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
 			struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 			struct cli_state *cli = con->msrpc.smb->smb;
 			int fnum = con->msrpc.smb->fnum;
+			if (cli->fd == -1) return False;
 			return cli_send_and_rcv_pdu(con, cli, fnum, data,
 						    rdata, nt->max_xmit_frag);
 		}
