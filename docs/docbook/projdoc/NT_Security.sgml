@@ -31,12 +31,6 @@
 	the security of the UNIX host Samba is running on, and 
 	still obeys all the file permission rules that a Samba 
 	administrator can set.</para>
-
-	<para>In Samba 2.0.4 and above the default value of the 
-	parameter <ulink url="smb.conf.5.html#NTACLSUPPORT"><parameter>
-	nt acl support</parameter></ulink> has been changed from 
-	<constant>false</constant> to <constant>true</constant>, so 
- 	manipulation of permissions is turned on by default.</para>
 </sect1>
 
 <sect1>
