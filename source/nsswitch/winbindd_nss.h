@@ -41,7 +41,9 @@ enum winbindd_cmd {
     WINBINDD_GETPWENT,
     WINBINDD_SETGRENT,               /* get/set/endgrent */
     WINBINDD_ENDGRENT,
-    WINBINDD_GETGRENT
+    WINBINDD_GETGRENT,
+    WINBINDD_PAM_AUTH,
+    WINBINDD_PAM_ACCOUNT
 };
 
 /* Winbind request structure */
@@ -55,6 +57,11 @@ struct winbindd_request {
 		fstring groupname;   /* getgrnam() */
 		uid_t uid;           /* getpwuid() */
 		gid_t gid;           /* getgrgid() */
+		struct {
+			/* the following is used by pam_winbind */
+			fstring user;
+			fstring pass;
+		} auth;
 	} data;
         fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };

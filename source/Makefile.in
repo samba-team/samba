@@ -371,7 +371,7 @@ SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(PROFILE_OBJ)  \
            $(LOCKING_OBJ) \
-  	   $(UBIQXLIB) \
+	   $(UBIQXLIB) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ)
 
@@ -412,7 +412,7 @@ SPOOLSSD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) \
-  	   $(UBIQXLIB) \
+	   $(UBIQXLIB) \
            $(SIDDB_OBJ) \
 		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
@@ -642,6 +642,8 @@ PAM_NTDOM_OBJ = pam_ntdom/pam_ntdom_auth.o \
 		$(STUB_UID_OBJ)
 PAM_NTDOM_LIBS = $(SAMBA_LIBS)
 
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/common.po
+
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
@@ -729,7 +731,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_idmap.o \
 		nsswitch/winbindd_util.o  \
-		nsswitch/winbindd_cache.o
+		nsswitch/winbindd_cache.o \
+		nsswitch/winbindd_pam.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) \
@@ -737,7 +740,7 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
-NTDOM_OBJ = nsswitch/ntdom.o
+NTDOM_OBJ = nsswitch/ntdom.o nsswitch/common.o
 
 NTDOM_ICOBJS = $(NTDOM_OBJ:.o=.po)
 
@@ -775,7 +778,7 @@ rpctorture : CHECK bin/rpctorture
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch: CHECK nsswitch/libnss_ntdom.so bin/winbindd
+nsswitch: CHECK nsswitch/libnss_ntdom.so bin/winbindd nsswitch/pam_winbind.so
 
 check: all nsswitch
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
@@ -1124,6 +1127,10 @@ nsswitch/libnss_ntdom.so: $(NTDOM_ICOBJS)
 bin/pam_ntdom_auth.so: $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -shared -Xlinker -x -o $@ $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ)
+
+nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -shared -o $@ $(PAM_WINBIND_OBJ)
 
 install: all \
 	installdirs \

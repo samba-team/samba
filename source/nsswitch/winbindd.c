@@ -239,6 +239,15 @@ static void process_request(struct winbindd_cli_state *state)
         state->response.result = winbindd_getgrent(state);
         break;
 
+	/* pam auth functions */
+    case WINBINDD_PAM_AUTH:
+        state->response.result = winbindd_pam_auth(state);
+        break;
+
+    case WINBINDD_PAM_ACCOUNT:
+        state->response.result = winbindd_pam_account(state);
+        break;
+
         /* Oops */
         
     default:
