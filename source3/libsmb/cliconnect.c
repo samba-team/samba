@@ -1119,11 +1119,6 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct in_addr ip;
 	extern pstring global_myname;
 
-	if (!output_cli) {
-		DEBUG(0, ("output_cli is NULL!?!"));
-		SMB_ASSERT("output_cli for cli_full_connection was NULL.\n");
-	}
-
 	if (!my_name) 
 		my_name = global_myname;
 	
