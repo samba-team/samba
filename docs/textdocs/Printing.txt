@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release 1.9.18p3 19 Feb 1998
+!== Printing.txt for Samba release 1.9.18p8 13 Jun 1998
 !==
 Contributor:	Unknown <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
@@ -109,10 +109,10 @@ The best way to start is to use printtool under X to create a new entry specific
 Next, go into "/etc" and edit the printcap entry you just created, changing it to look like this (if you named it something other than raw, the entry name and spool directory should be changed here to match):
 
 raw:\
-:rw:sh:
-:lp=/dev/lp1
-:sd=/var/spool/lpd/raw
-:fx=flp
+	:rw:sh: \
+	:lp=/dev/lp1: \
+	:sd=/var/spool/lpd/raw: \
+	:fx=flp:
 
 When this is done and saved, edit the section of the smb.conf file that applies to the printer. Make sure the name of the section (enclosed in brackets) matches the name of the raw printer you just set up, then go down a line or two and add this line:
  
