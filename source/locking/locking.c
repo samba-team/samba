@@ -1043,18 +1043,6 @@ int get_deferred_opens(connection_struct *conn,
 
 static BOOL deferred_open_entries_identical( deferred_open_entry *e1, deferred_open_entry *e2)
 {
-#if 1 /* JRA PARANOIA TEST - REMOVE LATER */
-	if (e1->pid == e2->pid &&
-		e1->port == e2->port &&
-		e1->dev == e2->dev &&
-		e1->inode == e2->inode &&
-		((e1->time.tv_sec != e2->time.tv_sec) ||
-		 (e1->time.tv_usec != e2->time.tv_usec) ||
-		 (e1->mid != e2->mid))) {
-		smb_panic("PANIC: deferred_open_entries_identical: logic error.\n");
-	}
-#endif
-
 	return (e1->pid == e2->pid &&
 		e1->mid == e2->mid &&
 		e1->port == e2->port &&
@@ -1063,7 +1051,6 @@ static BOOL deferred_open_entries_identical( deferred_open_entry *e1, deferred_o
 		e1->time.tv_sec == e2->time.tv_sec &&
 		e1->time.tv_usec == e2->time.tv_usec);
 }
-
 
 /*******************************************************************
  Delete a specific deferred open entry.
