@@ -1,3 +1,7 @@
+Sun Aug  9 14:53:44 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* Makefile.am: net_{read,write}.c
+
 Fri Jul 24 21:56:02 1998  Assar Westerlund  <assar@sics.se>
 
 	* simple_exec.c (simple_execvp): loop around waitpid when errno ==
