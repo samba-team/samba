@@ -48,6 +48,7 @@ enum SID_NAME_USE
 #define LSA_OPENPOLICY         0x06
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_OPENSECRET         0x1C
+#define LSA_UNK_GET_CONNUSER   0x2d /* LsaGetConnectedCredentials ? */
 
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
@@ -379,5 +380,32 @@ typedef struct lsa_r_open_secret
 	uint32 dummy4;
 	uint32 status;
 } LSA_R_OPEN_SECRET;
+
+/* LSA_Q_UNK_GET_CONNUSER - gets username\domain of connected user
+                  called when "Take Ownership" is clicked -SK */
+typedef struct lsa_q_unk_get_connuser
+{
+  uint32 ptr_srvname;
+  UNISTR2 uni2_srvname;
+  uint32 unk1; /* 3 unknown uint32's are seen right after uni2_srvname */
+  uint32 unk2; /* unk2 appears to be a ptr, unk1 = unk3 = 0 usually */
+  uint32 unk3; 
+} LSA_Q_UNK_GET_CONNUSER;
+
+/* LSA_R_UNK_GET_CONNUSER */
+typedef struct lsa_r_unk_get_connuser
+{
+  uint32 ptr_user_name;
+  UNIHDR hdr_user_name;
+  UNISTR2 uni2_user_name;
+  
+  uint32 unk1;
+  
+  uint32 ptr_dom_name;
+  UNIHDR hdr_dom_name;
+  UNISTR2 uni2_dom_name;
+
+  uint32 status;
+} LSA_R_UNK_GET_CONNUSER;
 
 #endif /* _RPC_LSA_H */
