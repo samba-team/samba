@@ -375,7 +375,7 @@ void pcap_printer_fn(void (*fn)())
 	      continue;
 	    }
 
-	  if (strlen(p) <= 8 && strlen(p)>strlen(name) && !has_punctuation)
+	  if (strlen(p) <= MAXPRINTERLEN && strlen(p)>strlen(name) && !has_punctuation)
 	    {
 	      if (!*comment) pstrcpy(comment,name);
 	      pstrcpy(name,p);
@@ -391,7 +391,7 @@ void pcap_printer_fn(void (*fn)())
 	}
 
       comment[60] = 0;
-      name[8] = 0;
+      name[MAXPRINTERLEN] = 0;
 
       if (*name)
 	fn(name,comment);
