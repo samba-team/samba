@@ -1194,52 +1194,6 @@ BOOL smb_io_sid_array(const char *desc, SID_ARRAY *array, prs_struct *ps, int de
 	return True;
 }
 
-
-/*******************************************************************
- Reads or writes a SID_ARRAY structure.
-********************************************************************/
-BOOL smb_io_sid_array(const char *desc, SID_ARRAY *array, prs_struct *ps, int depth)
-{
-	int i;
-
-	prs_debug(ps, depth, desc, "smb_io_sid_array");
-	depth++;
-
-	if(!prs_uint32("ref_id", ps, depth, &array->ref_id))
-		return False;
-
-	if (! array->ref_id) {
-		return True;
-	}
-
-	if(!prs_uint32("count", ps, depth, &array->count))
-		return False;
-
-	if (array->count == 0) {
-		return True;
-	}
-
-	if (UNMARSHALLING(ps)) {
-		array->sids = talloc_zero(get_talloc_ctx(), array->count * sizeof(array->sids[0]));
-	}
-	if (! array->sids) {
-		return False;
-	}
-
-	for (i=0;i<array->count;i++) {
-		if(!prs_uint32("ref_id", ps, depth, &array->sids[i].ref_id))
-			return False;
-	}
-
-	for (i=0;i<array->count;i++) {
-		if (!smb_io_dom_sid2("sid", &array->sids[i].sid, ps, depth)) 
-			return False;
-	}
-	
-	return True;
-}
-
-
 /*******************************************************************
  Inits a DOM_RID2 structure.
 ********************************************************************/
