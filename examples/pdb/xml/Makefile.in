@@ -2,8 +2,6 @@ PDB_OBJS	= pdb_xml.so
 PDB_CFLAGS	= `xml2-config --cflags`
 PDB_LDFLAGS	= `xml2-config --libs`
 
-include	$(MAKEFILE)
-
 CC		= @CC@
 LIBTOOL		= libtool
 CFLAGS		= @CFLAGS@ $(PDB_CFLAGS)
