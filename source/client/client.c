@@ -2921,7 +2921,7 @@ static BOOL send_session_request(char *inbuf,char *outbuf)
 
   /* put in the destination name */
   p = outbuf+len;
-  name_mangle(dest,p,name_type);
+  name_mangle(dest,p,0x20); /* 0x20 is the SMB server NetBIOS type. */
   len += name_len(p);
 
   /* and my name */
@@ -4011,7 +4011,7 @@ static BOOL open_sockets(int port )
 				    interpret_addr(lp_socket_address()))) != -1) {
 	  set_socket_options(bcast, "SO_BROADCAST");
 
-	  if (name_query(bcast, host, 0x20, True, True, *iface_bcast(dest_ip),
+	  if (name_query(bcast, host, name_type, True, True, *iface_bcast(dest_ip),
 			 &dest_ip,0)) {
 	    failed = False;
 	  }
@@ -4392,7 +4392,7 @@ static void usage(char *pname)
 	strcpy(user_socket_options,optarg);
 	break;	
       case 'M':
-	name_type = 3;
+	name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
 	strcpy(desthost,optarg);
 	strupper(desthost);
 	message = True;
