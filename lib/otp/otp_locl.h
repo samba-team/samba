@@ -63,6 +63,7 @@
 #include <io.h>
 #endif
 
+#include <roken.h>
 #include <protos.h>
 
 #include <otp.h>
