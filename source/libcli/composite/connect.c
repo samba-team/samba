@@ -219,18 +219,21 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 	state->transport = smbcli_transport_init(state->sock);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
-	/* we have a connected socket - next step is a session
-	   request, if needed. Port 445 doesn't need it, so it goes
-	   straight to the negprot */
-	if (state->sock->port == 445) {
-		return connect_send_negprot(c, io);
-	}
-
 	calling.name = io->in.calling_name;
 	calling.type = NBT_NAME_CLIENT;
 	calling.scope = NULL;
 
 	nbt_choose_called_name(state, &called, io->in.called_name, NBT_NAME_SERVER);
+
+	/* we have a connected socket - next step is a session
+	   request, if needed. Port 445 doesn't need it, so it goes
+	   straight to the negprot */
+	if (state->sock->port == 445) {
+		status = nbt_name_dup(state->transport, &called, 
+				      &state->transport->called);
+		NT_STATUS_NOT_OK_RETURN(status);
+		return connect_send_negprot(c, io);
+	}
 
 	state->req = smbcli_transport_connect_send(state->transport, &calling, &called);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
