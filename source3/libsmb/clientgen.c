@@ -31,26 +31,6 @@ extern int DEBUGLEVEL;
  * set the port that will be used for connections by the client
  */
 
-void copy_user_creds(struct user_credentials *to,
-				const struct user_credentials *from)
-{
-	if (from == NULL)
-	{
-		to->domain[0] = 0;
-		to->user_name[0] = 0;
-		pwd_set_nullpwd(&to->pwd);
-		to->ntlmssp_flags = 0;
-		to->reuse = False;
-
-		return;
-	}
-	safe_strcpy(to->domain   , from->domain   , sizeof(from->domain   )-1);
-	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
-	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
-	to->ntlmssp_flags = from->ntlmssp_flags;
-	to->reuse = from->reuse;
-};
-	
 int cli_set_port(struct cli_state *cli, int port)
 {
 
@@ -787,7 +767,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 	char *p;
 	BOOL esec = cli->capabilities & CAP_EXTENDED_SECURITY;
 
-	if (cli->usr.reuse)
+	if (cli->reuse)
 	{
 		DEBUG(3,("cli_session_setup_x: reuse enabled, skipping SMBsesssetupX\n"));
 		return True;
@@ -1071,7 +1051,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 BOOL cli_ulogoff(struct cli_state *cli)
 {
-	if (cli->usr.reuse)
+	if (cli->reuse)
 	{
 		DEBUG(3,("cli_ulogoff: reuse enabled, skipping SMBulogoff\n"));
 		return True;
@@ -2697,9 +2677,9 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 /****************************************************************************
 initialise a client structure
 ****************************************************************************/
-void cli_init_creds(struct cli_state *cli, const struct user_credentials *usr)
+void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
-	copy_user_creds(&cli->usr, usr);
+	copy_nt_creds(&cli->usr, usr);
 }
 
 /****************************************************************************
@@ -2946,18 +2926,19 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 
 static int cli_init_redirect(struct cli_state *cli,
 				const char* srv_name, struct in_addr *destip,
-				const struct user_credentials *usr)
+				const struct ntuser_creds *usr)
 {
 	int sock;
 	fstring ip_name;
 	struct cli_state cli_redir;
 	fstring path;
 
-	pstring data;
 	uint32 len;
-	char *p;
+	char *data;
 	char *in = cli->inbuf;
 	char *out = cli->outbuf;
+	prs_struct ps;
+	uint16 command;
 
 	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", getuid());
 
@@ -2975,41 +2956,24 @@ static int cli_init_redirect(struct cli_state *cli,
 		return sock;
 	}
 
-	ZERO_STRUCT(data);
+	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
 
-	p = &data[4];
-	SSVAL(p, 0, 0);
-	p += 2;
-
-	SSVAL(p, 0, usr->reuse ? AGENT_CMD_CON_REUSE : AGENT_CMD_CON);
-	p += 2;
-
-	safe_strcpy(p, srv_name, 16);
-	p = skip_string(p, 1);
-	safe_strcpy(p, usr != NULL ? usr->user_name : "", 16);
-	p = skip_string(p, 1);
-	safe_strcpy(p, usr != NULL ? usr->domain : "", 16);
-	p = skip_string(p, 1);
-
-	if (usr != NULL && !pwd_is_nullpwd(&usr->pwd))
+	if (!create_ntuser_creds(&ps, srv_name, 0x0, command, usr, cli->reuse))
 	{
-		uchar lm16[16];
-		uchar nt16[16];
-
-		pwd_get_lm_nt_16(&usr->pwd, lm16, nt16);
-		memcpy(p, lm16, 16);
-		p += 16;
-		memcpy(p, nt16, 16);
-		p += 16;
+		DEBUG(0,("could not parse credentials\n"));
+		close(sock);
+		return False;
 	}
 
-	len = PTR_DIFF(p, data);
-	SIVAL(data, 0, len);
+	len = ps.offset;
+	data = mem_data(&ps.data, 0);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("data len: %d\n", len));
 	dump_data(100, data, len);
 #endif
+
+	SIVAL(data, 0, len);
 
 	if (write(sock, data, len) <= 0)
 	{
@@ -3031,7 +2995,7 @@ static int cli_init_redirect(struct cli_state *cli,
 	cli->inbuf = in;
 	cli->outbuf = out;
 	cli->fd = sock;
-	cli->usr.reuse = False;
+	cli->reuse = False;
 
 	return sock;
 }
@@ -3449,7 +3413,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 BOOL cli_connect_auth(struct cli_state *cli,
 				const char* desthost,
 				struct in_addr *dest_ip,
-				const struct user_credentials *usr)
+				const struct ntuser_creds *usr)
 {
 	extern pstring global_myname;
 	extern pstring scope;
@@ -3484,7 +3448,7 @@ BOOL cli_connect_auth(struct cli_state *cli,
 ****************************************************************************/
 BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *p,
-				const struct user_credentials *usr)
+				const struct ntuser_creds *usr)
 {
 	fstring remote_host;
 	BOOL connected_ok = False;

@@ -134,7 +134,7 @@ BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name)
 /****************************************************************************
 initialise a msrpcent structure
 ****************************************************************************/
-void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_credentials *usr)
+void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr)
 {
 	copy_user_creds(&msrpc->usr, usr);
 }
@@ -161,58 +161,39 @@ void msrpc_sockopt(struct msrpc_state *msrpc, char *options)
 }
 
 
-static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
-				const char* pipe_name, 
-				const struct user_credentials *usr)
+static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
+				const struct user_creds *usr)
 {
-	int sock;
 	struct msrpc_state msrpc_redir;
-	fstring path;
 
-	pstring data;
+	int sock = msrpc->fd;
+	char *data;
+	prs_struct ps;
 	uint32 len;
-	char *p;
 	char *in = msrpc->inbuf;
 	char *out = msrpc->outbuf;
+	uint16 command;
 
-	slprintf(path, sizeof(path)-1, "/tmp/.msrpc/.%s/agent", pipe_name);
+	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
 
-	sock = open_pipe_sock(path);
-
-	if (sock < 0)
+	if (usr != NULL)
 	{
+		usr->ptr_ntc = 1;
+		usr->ptr_uxc = 1;
+		usr->ptr_nts = 0;
+		usr->ptr_uxs = 0;
+	}
+
+	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command, usr))
+	{
+		DEBUG(0,("could not parse credentials\n"));
+		close(sock);
 		return False;
 	}
 
-	ZERO_STRUCT(data);
+	len = ps.offset;
+	data = mem_data(&ps.data, 0);
 
-	p = &data[4];
-	SSVAL(p, 0, 0);
-	p += 2;
-
-	SSVAL(p, 0, usr->reuse ? AGENT_CMD_CON_REUSE : AGENT_CMD_CON);
-	p += 2;
-
-	safe_strcpy(p, pipe_name, 16);
-	p = skip_string(p, 1);
-	safe_strcpy(p, usr != NULL ? usr->user_name : "", 16);
-	p = skip_string(p, 1);
-	safe_strcpy(p, usr != NULL ? usr->domain : "", 16);
-	p = skip_string(p, 1);
-
-	if (usr != NULL && !pwd_is_nullpwd(&usr->pwd))
-	{
-		uchar lm16[16];
-		uchar nt16[16];
-
-		pwd_get_lm_nt_16(&usr->pwd, lm16, nt16);
-		memcpy(p, lm16, 16);
-		p += 16;
-		memcpy(p, nt16, 16);
-		p += 16;
-	}
-
-	len = PTR_DIFF(p, data);
 	SIVAL(data, 0, len);
 
 #ifdef DEBUG_PASSWORD
@@ -223,31 +204,67 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 	if (write(sock, data, len) <= 0)
 	{
 		DEBUG(0,("write failed\n"));
-		close(sock);
 		return False;
 	}
 
-	len = read(sock, &msrpc_redir, sizeof(msrpc_redir));
-
-	if (len != sizeof(msrpc_redir))
+	if (msrpc->redirect)
 	{
-		DEBUG(0,("read failed\n"));
-		close(sock);
+		len = read(sock, &msrpc_redir, sizeof(msrpc_redir));
+
+		if (len != sizeof(msrpc_redir))
+		{
+			DEBUG(0,("read failed\n"));
+			return False;
+		}
+		
+		memcpy(msrpc, &msrpc_redir, sizeof(msrpc_redir));
+		msrpc->inbuf = in;
+		msrpc->outbuf = out;
+		msrpc->fd = sock;
+		msrpc->usr.reuse = False;
+	}
+	else
+	{
+		uint32 status;
+		len = read(sock, &status, sizeof(status));
+
+		return len == sizeof(status) && status == 0x0;
+	}
+	return True;
+}
+
+static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
+				const char* pipe_name,
+				const struct user_creds *usr)
+{
+	int sock;
+	fstring path;
+
+	slprintf(path, sizeof(path)-1, "/tmp/.msrpc/.%s/agent", pipe_name);
+
+	sock = open_pipe_sock(path);
+
+	if (sock < 0)
+	{
 		return False;
 	}
-	
-	memcpy(msrpc, &msrpc_redir, sizeof(msrpc_redir));
-	msrpc->inbuf = in;
-	msrpc->outbuf = out;
+
 	msrpc->fd = sock;
-	msrpc->usr.reuse = False;
+
+	if (!msrpc_authenticate(msrpc, usr))
+	{
+		DEBUG(0,("authenticate failed\n"));
+		close(msrpc->fd);
+		msrpc->fd = -1;
+		return False;
+	}
 
 	return True;
 }
 
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 				const char* pipename,
-				const struct user_credentials *usr)
+				const struct user_creds *usr)
 {
 	ZERO_STRUCTP(msrpc);
 	if (!msrpc_initialise(msrpc))
@@ -326,7 +343,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 {
 	DEBUG(5,("msrpc_establish_connection: connecting to %s (%s) - %s\n",
 		          pipe_name,
-	              msrpc->usr.user_name, msrpc->usr.domain));
+	              msrpc->usr.ntc.user_name, msrpc->usr.ntc.domain));
 
 	/* establish connection */
 
@@ -357,6 +374,14 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 					  
 			return False;
 		}
+	}
+
+	if (!msrpc_authenticate(msrpc, &msrpc->usr))
+	{
+		DEBUG(0,("authenticate failed\n"));
+		close(msrpc->fd);
+		msrpc->fd = -1;
+		return False;
 	}
 
 	return True;

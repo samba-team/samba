@@ -24,7 +24,7 @@
 
 #include "includes.h"
 
-struct user_credentials *usr_creds = NULL;
+struct ntuser_creds *usr_creds = NULL;
 
 extern int DEBUGLEVEL;
 extern pstring scope;
@@ -35,7 +35,7 @@ struct cli_connection
 	uint32 num_connections;
 	char *srv_name;
 	char *pipe_name;
-	struct user_credentials usr_creds;
+	struct ntuser_creds usr_creds;
 	struct cli_state *cli;
 	uint16 fnum;
 };
@@ -74,7 +74,7 @@ void free_connections(void)
 }
 
 static struct cli_connection *cli_con_get(const char* srv_name,
-				const char* pipe_name)
+				const char* pipe_name, BOOL reuse)
 {
 	struct cli_connection *con = NULL;
 
@@ -96,7 +96,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
-	con->cli = cli_net_use_add(srv_name, usr_creds, True);
+	con->cli = cli_net_use_add(srv_name, usr_creds, True, reuse);
 
 	if (con->cli == NULL)
 	{
@@ -181,12 +181,13 @@ BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con)
 {
 	BOOL res = True;
+	BOOL reuse = False;
 
 	/*
 	 * allocate
 	 */
 
-	*con = cli_con_get(srv_name, pipe_name);
+	*con = cli_con_get(srv_name, pipe_name, reuse);
 
 	if ((*con) == NULL)
 	{

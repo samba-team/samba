@@ -291,12 +291,12 @@ BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps);
 BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps);
 BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show);
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
-void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_credentials *usr);
+void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 				const char* pipename,
-				const struct user_credentials *usr);
+				const struct user_creds *usr);
 struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
@@ -307,10 +307,10 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
-				const struct user_credentials *usr_creds,
+				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
-				const struct user_credentials *usr_creds,
+				const struct user_creds *usr_creds,
 				BOOL force_close,
 				BOOL *connection_closed);
 void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
@@ -427,14 +427,6 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs);
 /*The following definitions come from  lib/ufc.c  */
 
 char *ufc_crypt(char *key,char *salt);
-
-/*The following definitions come from  lib/unix_sec_ctxt.c  */
-
-void init_sec_ctxt(void);
-BOOL become_unix_sec_ctxt(struct unix_sec_ctxt const *ctxt);
-BOOL unbecome_unix_sec_ctxt(void);
-void become_unix_root_sec_ctxt(void) ;
-void unbecome_unix_root_sec_ctxt(void);
 
 /*The following definitions come from  lib/username.c  */
 
@@ -740,8 +732,6 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
-void copy_user_creds(struct user_credentials *to,
-				const struct user_credentials *from);
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
@@ -821,7 +811,7 @@ BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
-void cli_init_creds(struct cli_state *cli, const struct user_credentials *usr);
+void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
@@ -837,10 +827,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 BOOL cli_connect_auth(struct cli_state *cli,
 				const char* desthost,
 				struct in_addr *dest_ip,
-				const struct user_credentials *usr);
+				const struct ntuser_creds *usr);
 BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *p,
-				const struct user_credentials *usr);
+				const struct ntuser_creds *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
 int cli_printjob_del(struct cli_state *cli, int job);
 int cli_print_queue(struct cli_state *cli, 
@@ -2263,10 +2253,11 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_add(const char* srv_name,
-				const struct user_credentials *usr_creds,
-				BOOL redir);
+				const struct ntuser_creds *usr_creds,
+				BOOL redir,
+				BOOL reuse);
 BOOL cli_net_use_del(const char* srv_name,
-				const struct user_credentials *usr_creds,
+				const struct ntuser_creds *usr_creds,
 				BOOL force_close,
 				BOOL *connection_closed);
 void cli_net_use_enum(uint32 *num_cons, struct use_info ***use);
@@ -2476,6 +2467,40 @@ BOOL make_brs_r_query_info(BRS_R_QUERY_INFO *r_u,
 				uint32 switch_value, void *inf,
 				int status)  ;
 BOOL brs_io_r_query_info(char *desc,  BRS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_parse/parse_creds.c  */
+
+BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name);
+BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth);
+void creds_free_unix(CREDS_UNIX *r_u);
+BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
+		uint32 uid, uint32 gid, uint32 num_grps, uint32 *grps);
+BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int depth);
+void creds_free_unix_sec(CREDS_UNIX_SEC *r_u);
+BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth);
+void creds_free_nt_sec(CREDS_NT_SEC *r_u);
+BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int depth);
+BOOL creds_io_nt(char *desc, CREDS_NT *r_u, prs_struct *ps, int depth);
+void creds_free_nt(CREDS_NT *r_u);
+BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth);
+void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from);
+void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from);
+void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from);
+void copy_nt_creds(struct ntuser_creds *to,
+				const struct ntuser_creds *from);
+void copy_user_creds(struct user_creds *to,
+				const struct user_creds *from);
+void free_user_creds(struct user_creds *creds);
+BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
+BOOL create_ntuser_creds( prs_struct *ps,
+				const char* name, 
+				uint16 version, uint16 command,
+				const struct ntuser_creds *ntu,
+				BOOL reuse);
+BOOL create_user_creds( prs_struct *ps,
+				const char* name, 
+				uint16 version, uint16 command,
+				const struct user_creds *usr);
 
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */
 

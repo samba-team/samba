@@ -56,38 +56,6 @@ struct print_job_info
 	time_t t;
 };
 
-struct pwd_info
-{
-	BOOL null_pwd;
-	BOOL cleartext;
-	BOOL crypted;
-
-	fstring password;
-
-	uchar smb_lm_pwd[16];
-	uchar smb_nt_pwd[16];
-
-	uchar smb_lm_owf[24];
-	uchar smb_nt_owf[128];
-	size_t nt_owf_len;
-
-	uchar lm_cli_chal[8];
-	uchar nt_cli_chal[128];
-	size_t nt_cli_chal_len;
-
-	uchar sess_key[16];
-};
-
-struct user_credentials
-{
-	fstring user_name;
-	fstring domain;
-	struct pwd_info pwd;
-
-	uint32 ntlmssp_flags;
-	BOOL reuse;
-};
-
 struct cli_state
 {
 	int port;
@@ -101,7 +69,8 @@ struct cli_state
 	int rap_error;
 	int privileges;
 
-	struct user_credentials usr;
+	struct ntuser_creds usr;
+	BOOL retry;
 
 	fstring eff_name;
 	fstring desthost;
@@ -128,6 +97,7 @@ struct cli_state
 
 	BOOL use_ntlmv2;
 	BOOL redirect;
+	BOOL reuse;
 
 	uint32 sesskey;
 	int serverzone;

@@ -48,7 +48,7 @@ static void cmd_quit(struct client_info *info, int argc, char *argv[]);
 static void cmd_set (struct client_info *info, int argc, char *argv[]);
 static void cmd_net (struct client_info *info, int argc, char *argv[]);
 
-static struct user_credentials usr;
+static struct ntuser_creds usr;
 
 static struct client_info cli_info;
 
@@ -1322,7 +1322,7 @@ static char *complete_cmd_null(char *text, int state)
 
 #endif /* HAVE_LIBREADLINE */
 
-static void set_user_password(struct user_credentials *u,
+static void set_user_password(struct ntuser_creds *u,
 				BOOL got_pass, char *password)
 {
 	/* set the password cache info */
@@ -1350,19 +1350,19 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 	BOOL net_use = False;
 	BOOL net_use_add = True;
 	BOOL force_close = False;
-	struct user_credentials u;
+	struct ntuser_creds u;
 	fstring dest_host;
 	fstring srv_name;
 	BOOL null_pwd = False;
 	BOOL got_pwd = False;
 	pstring password;
-	extern struct user_credentials *usr_creds;
+	extern struct ntuser_creds *usr_creds;
 
-	copy_user_creds(&u, usr_creds);
+	copy_nt_creds(&u, usr_creds);
 
 	pstrcpy(dest_host, cli_info.dest_host);
 	pstrcpy(u.user_name,optarg);
-	u.reuse = False;
+	info->reuse = False;
 
 	if (argc <= 1)
 	{
@@ -1494,7 +1494,7 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 		                 srv_name, u.user_name, u.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add(srv_name, &u, True) != NULL)
+		if (cli_net_use_add(srv_name, &u, True, info->reuse) != NULL)
 		{
 			report(out_hnd, "OK\n");
 		}
@@ -1561,6 +1561,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	pstring password; /* local copy only, if one is entered */
+	info->reuse = False;
 
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
@@ -1568,7 +1569,6 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	*term_code = 0;
 #endif /* KANJI */
 
-	usr.reuse = False;
 
 	if (argc > 1 && *argv[1] != '-')
 	{
@@ -1588,7 +1588,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		{
 			case 'R':
 			{
-				usr.reuse = True;
+				info->reuse = True;
 				break;
 			}
 
@@ -1793,7 +1793,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 }
 
-static void read_user_env(struct user_credentials *u)
+static void read_user_env(struct ntuser_creds *u)
 {
 	pstring password;
 
@@ -1860,7 +1860,7 @@ void readline_init(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	extern struct user_credentials *usr_creds;
+	extern struct ntuser_creds *usr_creds;
 	mode_t myumask = 0755;
 
 	DEBUGLEVEL = 2;

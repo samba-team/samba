@@ -678,9 +678,7 @@ static void usage(char *pname)
 	}
 #endif        /* WITH_SSL */
 
-#if 0
 	start_msrpc_agent("lsarpc");
-#endif
 	add_msrpc_command_processor( "samr",     "lsass",   api_samr_rpc );
 	add_msrpc_command_processor( "srvsvc",   "ntsvcs",  api_srvsvc_rpc );
 	add_msrpc_command_processor( "wkssvc",   "ntsvcs",  api_wkssvc_rpc );

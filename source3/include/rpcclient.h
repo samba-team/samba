@@ -68,6 +68,7 @@ struct nt_client_info
     /* domain controller */
     fstring level3_dom;
     fstring level5_dom;
+
 };
 
 struct client_info
@@ -80,6 +81,8 @@ struct client_info
 
     struct tar_client_info tar;
     struct nt_client_info dom;
+
+	BOOL reuse;
 };
 
 enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};
