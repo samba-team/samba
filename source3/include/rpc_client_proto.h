@@ -8,6 +8,16 @@
 void init_connections(void);
 void free_connections(void);
 void cli_connection_free(struct cli_connection *con);
+void cli_connection_unlink(struct cli_connection *con);
+BOOL cli_connection_init(const char *srv_name, const char *pipe_name,
+                         struct cli_connection **con);
+BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
+                              struct cli_connection **con,
+                              cli_auth_fns * auth, void *auth_creds);
+struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
+void *cli_conn_get_auth_creds(struct cli_connection *con);
+BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
+                      prs_struct * data, prs_struct * rdata);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
@@ -55,6 +65,7 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
+BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
@@ -143,6 +154,12 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
 #endif
 
+/*The following definitions come from  rpc_client/cli_spoolss.c  */
+
+uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
+                             NEW_BUFFER *buffer, uint32 offered,
+                             uint32 *needed, uint32 *returned);
+
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
 BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
@@ -191,9 +208,19 @@ BOOL do_wks_query_info(struct cli_state *cli,
 BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
                       const vuser_key * key,
                       BOOL force_close, BOOL *connection_closed);
+struct ncacn_np *ncacn_np_initialise(struct ncacn_np *msrpc,
+                                     const vuser_key * key);
+struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
+                                  const vuser_key * key,
+                                  const char *srv_name,
+                                  const struct ntuser_creds *ntc,
+                                  BOOL reuse, BOOL *is_new_connection);
 
 /*The following definitions come from  rpc_client/ncalrpc_l_use.c  */
 
+struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
+                                      const vuser_key * key,
+                                      BOOL reuse, BOOL *is_new);
 BOOL ncalrpc_l_use_del(const char *pipe_name,
                        const vuser_key * key,
                        BOOL force_close, BOOL *connection_closed);

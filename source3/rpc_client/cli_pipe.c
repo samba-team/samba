@@ -1079,7 +1079,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
  Do an rpc bind.
 ****************************************************************************/
 
-static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
+BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;

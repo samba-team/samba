@@ -425,6 +425,30 @@ void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
 	}
 };
 
+void create_ntc_from_cli_state (CREDS_NT *to, const struct cli_state *cli_from)
+{
+	/* 
+	 * NULL credentials -- 
+	 * if this gets executed, it is a programming error.
+         * fall through to copy_nt_creds() 
+         */
+        if (cli_from == NULL)
+        {
+		copy_nt_creds (to, cli_from);
+                return;
+        }
+
+        safe_strcpy(to->domain   , cli_from->domain   , sizeof(cli_from->domain   )-1);
+        safe_strcpy(to->user_name, cli_from->user_name, sizeof(cli_from->user_name)-1);
+        memcpy(&to->pwd, &cli_from->pwd, sizeof(cli_from->pwd));
+        to->ntlmssp_flags = cli_from->ntlmssp_flags;
+        DEBUG(10,("create_ntc_fromcli_state: user %s domain %s flgs: %x\n",
+               to->user_name, to->domain,
+               to->ntlmssp_flags));
+
+};
+
+
 void copy_nt_creds(struct ntuser_creds *to,
 				const struct ntuser_creds *from)
 {

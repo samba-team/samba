@@ -222,6 +222,52 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 }
 
 /*******************************************************************
+ Put an ASCII string into a UNICODE array (uint16's).
+ ********************************************************************/
+void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
+{
+        uint16 *destend = dest + maxlen;
+        register char c;
+
+        while (dest < destend)
+        {
+                c = *(src++);
+                if (c == 0)
+                {
+                        break;
+                }
+
+                *(dest++) = (uint16)c;
+        }
+
+        *dest = 0;
+}
+
+
+/*******************************************************************
+ Pull an ASCII string out of a UNICODE array (uint16's).
+ ********************************************************************/
+
+void unistr_to_ascii(char *dest, const uint16 *src, int len)
+{
+        char *destend = dest + len;
+        register uint16 c;
+
+        while (dest < destend)
+        {
+                c = *(src++);
+                if (c == 0)
+                {
+                        break;
+                }
+
+                *(dest++) = (char)c;
+        }
+
+        *dest = 0;
+}
+
+/*******************************************************************
  Convert a UNISTR2 structure to an ASCII string
  Warning: this version does DOS codepage.
 ********************************************************************/
