@@ -99,21 +99,18 @@ PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBAS
 PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGFIR)\"
 PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
-WINBIND_PROGS = @WINBIND_TARGETS@
-WINBIND_SPROGS = @WINBIND_STARGETS@
-WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
-WINBIND_LPROGS = @WINBIND_LTARGETS@
+SBIN_PROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @EXTRA_SBIN_PROGS@
 
-SPROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @WINBIND_STARGETS@
-PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree bin/tdbbackup @RUNPROG@ @WINBIND_TARGETS@
-PROGS2 = bin/smbpasswd bin/rpcclient bin/smbcacls @WRAPPROG@ @WRAP@ @WRAP32@ @PAM_MOD@
-MPROGS = @MPROGS@
-LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
+BIN_PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus 
+BIN_PROGS2 = bin/smbcontrol bin/smbtree bin/tdbbackup bin/nmblookup bin/pdbedit
+BIN_PROGS3 = bin/smbpasswd bin/rpcclient bin/smbcacls bin/smbgroupedit
 
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/pdbedit bin/smbgroupedit
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest \
 	bin/locktest2 bin/nsstest bin/vfstest
-SHLIBS = @LIBSMBCLIENT@
+
+BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
+
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
 	  $(builddir)/script/findsmb
@@ -152,7 +149,7 @@ LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
 READLINE_OBJ = lib/readline.o
 
-POPT_LIB_OBJ = lib/popt_common.o
+POPT_LIB_OBJ = lib/popt_common.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
@@ -382,6 +379,18 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   libsmb/libsmb_cache.o $(LIB_OBJ) \
 	  	   $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
+# This shared library is intended for linking with unit test programs
+# to test Samba internals.  It's called libbigballofmud.so to
+# discourage casual usage.
+
+LIBBIGBALLOFMUD_MAJOR = 0
+
+LIBBIGBALLOFMUD_OBJ = $(LIB_OBJ) $(UBIQX_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
+	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
+	$(GROUPDB_OBJ)
+
+LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.po)
+
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
@@ -524,11 +533,12 @@ TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) $(SHLIBS)
+all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
+	$(TORTURE_PROGS) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
-smbwrapper : SHOWFLAGS @WRAPPROG@ @WRAP@ @WRAP32@
+smbwrapper : SHOWFLAGS @SMBWRAPPER@
 
 torture : SHOWFLAGS $(TORTURE_PROGS)
 
@@ -552,7 +562,7 @@ smbfilter : SHOWFLAGS bin/smbfilter
 
 talloctort : SHOWFLAGS bin/talloctort
 
-nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
+nsswitch : SHOWFLAGS bin/winbindd bin/wbinfo nsswitch/libnss_winbind.so nsswitch/pam_winbind.so
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
@@ -776,7 +786,7 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 		@SONAMEFLAG@`basename $@`
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
-	echo Linking libsmbclient shared library $@
+	@echo Linking libsmbclient shared library $@
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
@@ -784,8 +794,12 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS) 
 
-libsmbclient: bin/libsmbclient.a bin/libsmbclient.@SHLIBEXT@
+bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
+	@echo Linking bigballofmud shared library $@
+	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
+		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 
+libsmbclient: bin/libsmbclient.a bin/libsmbclient.@SHLIBEXT@
 
 nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@echo "Linking $@"
@@ -927,11 +941,17 @@ python_common_proto:
 		$(PY_COMMON_PROTO_OBJ)
 
 python_ext: $(PYTHON_OBJS)
+	@if test -z "$(PYTHON)"; then \
+		echo Use the option --with-python to configure python; \
+		exit 1; fi
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py build
 
 python_install: $(PYTHON_OBJS)
+	@if test -z "$(PYTHON)"; then \
+		echo Use the option --with-python to configure python; \
+		exit 1; fi
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py install
@@ -979,7 +999,7 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(PROGS) $(SPROGS) $(MODULES) .headers.stamp
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -1056,7 +1076,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log $(PROGS) $(MODULES) $(SPROGS) bin/.dummy script/findsmb
+	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy script/findsmb
 
 distclean: realclean
 	-rm -f include/stamp-h
