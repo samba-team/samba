@@ -377,7 +377,7 @@ MNT_OBJ = client/smbmnt.o \
              $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o \
-             $(PARAM_OBJ) $(LIB_OBJ)
+             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
