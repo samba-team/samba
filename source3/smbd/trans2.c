@@ -1437,12 +1437,10 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	if(!(wcard = SMB_STRDUP(mask))) {
+	if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
 		dptr_close(&dptr_num);
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
-
-	dptr_set_wcard_and_attributes(dptr_num, wcard, dirtype);
 
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, wcard, dirtype));
 

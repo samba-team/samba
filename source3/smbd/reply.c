@@ -899,7 +899,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 				END_PROFILE(SMBsearch);
 				return ERROR_DOS(ERRDOS,ERRnofids);
 			}
-			dptr_set_wcard_and_attributes(dptr_num, SMB_STRDUP(mask), dirtype);
+			if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
+				END_PROFILE(SMBsearch);
+				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 		} else {
 			dirtype = dptr_attr(dptr_num);
 		}
