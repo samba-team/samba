@@ -1,3 +1,8 @@
+Sat Dec  6 10:09:40 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/keyblock.c (krb5_free_keyblock): check for NULL
+	keyblock
+
 Sat Dec  6 08:26:10 1997  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.0l
