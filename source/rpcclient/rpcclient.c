@@ -462,6 +462,7 @@ extern struct cmd_set dfs_commands[];
 extern struct cmd_set reg_commands[];
 extern struct cmd_set ds_commands[];
 extern struct cmd_set echo_commands[];
+extern struct cmd_set epm_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -474,6 +475,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	dfs_commands,
 	reg_commands,
 	echo_commands,
+	epm_commands,
 	NULL
 };
 
