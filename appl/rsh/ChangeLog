@@ -1,3 +1,9 @@
+2003-03-18  Love  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* rshd.c: do krb5_afslog when compling with afs support
+
+	* rsh_locl.h: always include kafs.h
+	
 2002-11-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rshd.8: clarify -x and kerberos 5

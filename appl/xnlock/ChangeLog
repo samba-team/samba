@@ -1,3 +1,7 @@
+2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* xnlock.c: do krb5_afslog when compling with afs support
+	
 2003-02-10  Assar Westerlund  <assar@kth.se>
 
 	* xnlock.c (verify): move ret to where it's used

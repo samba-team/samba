@@ -1,3 +1,17 @@
+2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftpd/ftpd.c (krb5_verify): always do krb5_afslog, remove setpag
+	(its done in main)
+
+	* ftpd/gss_userok.c: drop setpag
+	
+	* ftpd/ftpd.c (main): set afs PAG
+
+	* ftpd/gss_userok.c: always try krb5_afslog, and while here do a
+	setpag too
+
+	* ftpd/ftpd_locl.h: always include kafs
+	
 2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/gssapi.c (gss_adat): now that gss_export_name exports a
