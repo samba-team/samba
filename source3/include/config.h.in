@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -294,6 +294,7 @@
 #undef LINUX_BROKEN_SENDFILE_API
 #undef WITH_SENDFILE
 #undef FREEBSD_SENDFILE_API
+#undef HPUX_SENDFILE_API
 #undef WITH_ADS
 
 /* The number of bytes in a int.  */
