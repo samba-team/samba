@@ -342,10 +342,11 @@ lstat_file (const char *file, struct stat *sb)
 #ifdef KRB4
     if (k_hasafs() 
 	&& strcmp(file, ".")
-	&& strcmp(file, "..")) 
+	&& strcmp(file, "..")
+	&& strcmp(file, "/"))
     {
 	struct ViceIoctl    a_params;
-	char               *last;
+	char               *dir, *last;
 	char               *path_bkp;
 	static ino_t	   ino_counter = 0, ino_last = 0;
 	int		   ret;
@@ -365,16 +366,28 @@ lstat_file (const char *file, struct stat *sb)
 	
 	last = strrchr (path_bkp, '/');
 	if (last != NULL) {
-	    *last = '\0';
-	    a_params.in = last + 1;
-	} else
-	    a_params.in = (char *)file;
+	    if(last[1] == '\0')
+		/* if path ended in /, replace with `.' */
+		a_params.in = ".";
+	    else
+		a_params.in = last + 1;
+	    while(last > path_bkp && *--last == '/');
+	    if(last != path_bkp) {
+		*++last = '\0';
+		dir = path_bkp;
+	    } else
+		/* we got to the start, so this must be the root dir */
+		dir = "/";
+	} else {
+	    /* file is relative to cdir */
+	    dir = ".";
+	    a_params.in = path_bkp;
+	}
 	
 	a_params.in_size  = strlen (a_params.in) + 1;
 	a_params.out_size = maxsize;
 	
-	ret = k_pioctl (last ? path_bkp : "." ,
-			VIOC_AFS_STAT_MT_PT, &a_params, 0);
+	ret = k_pioctl (dir, VIOC_AFS_STAT_MT_PT, &a_params, 0);
 	free (a_params.out);
 	if (ret < 0) {
 	    free (path_bkp);
@@ -391,7 +404,7 @@ lstat_file (const char *file, struct stat *sb)
 	 * use . as a prototype
 	 */
 
-	ret = lstat (path_bkp, sb);
+	ret = lstat (dir, sb);
 	free (path_bkp);
 	if (ret < 0)
 	    return ret;
