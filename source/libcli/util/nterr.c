@@ -646,8 +646,6 @@ const char *nt_errstr(NTSTATUS nt_code)
         static pstring msg;
         int idx = 0;
 
-	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
-
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
                     NT_STATUS_V(nt_code)) {
@@ -655,6 +653,8 @@ const char *nt_errstr(NTSTATUS nt_code)
 		}
 		idx++;
 	}
+
+	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
         return msg;
 }
