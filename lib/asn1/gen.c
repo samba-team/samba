@@ -272,7 +272,7 @@ define_asn1 (int level, Type *t)
 	break;
     case TUTF8String:
 	space(level);
-	fprintf (headerfile, "heiml_utf8_string");
+	fprintf (headerfile, "heim_utf8_string");
 	break;
     case TNull:
 	space(level);
