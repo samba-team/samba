@@ -879,8 +879,10 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		break;
 	}
 
-	case ASN1_APPLICATION(LDAP_TAG_UnbindRequest): {
+	case ASN1_APPLICATION_SIMPLE(LDAP_TAG_UnbindRequest): {
 		msg->type = LDAP_TAG_UnbindRequest;
+		asn1_start_tag(data, ASN1_APPLICATION_SIMPLE(LDAP_TAG_UnbindRequest));
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1087,8 +1089,29 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ExtendedRequest): {
-/*		struct ldap_ExtendedRequest *r = &msg->r.ExtendedRequest; */
+		struct ldap_ExtendedRequest *r = &msg->r.ExtendedRequest;
+		DATA_BLOB tmp_blob = data_blob(NULL, 0);
+
 		msg->type = LDAP_TAG_ExtendedRequest;
+		asn1_start_tag(data,ASN1_APPLICATION(LDAP_TAG_ExtendedRequest));
+		if (!asn1_read_ContextSimple(data, 0, &tmp_blob)) {
+			return False;
+		}
+		r->oid = blob2string_talloc(msg->mem_ctx, tmp_blob);
+		data_blob_free(&tmp_blob);
+		if (!r->oid) {
+			return False;
+		}
+
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(1))) {
+			asn1_read_ContextSimple(data, 1, &tmp_blob);
+			r->value = data_blob_talloc(msg->mem_ctx, tmp_blob.data, tmp_blob.length);
+			data_blob_free(&tmp_blob);
+		} else {
+			r->value = data_blob(NULL, 0);
+		}
+
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1105,7 +1128,8 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		r->value.length = 0;
 		break;
 	}
-
+	default: 
+		return False;
 	}
 
 	asn1_end_tag(data);
