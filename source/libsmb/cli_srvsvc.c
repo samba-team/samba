@@ -190,6 +190,87 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				const char *sharename)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_DEL q;
+	SRV_R_NET_SHARE_DEL r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_share_del(&q, cli->srv_name_slash, sharename);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_share_del("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_DEL, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_share_del("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				char *netname, uint32 type, char *remark, 
+				uint32 perms, uint32 max_uses, uint32 num_uses,
+				char *path, char *passwd)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_ADD q;
+	SRV_R_NET_SHARE_ADD r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	init_srv_q_net_share_add(&q,cli->srv_name_slash, netname, type, remark,
+				 perms, max_uses, num_uses, path, passwd);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_share_add("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_ADD, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_share_add("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
 WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 char *server, TIME_OF_DAY_INFO *tod)
 {
