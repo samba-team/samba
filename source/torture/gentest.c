@@ -175,7 +175,7 @@ static BOOL connect_servers(void)
 						     "gentest",
 						     servers[i].server_name, NULL, 
 						     servers[i].share_name, "?????", 
-						     servers[i].username, "",
+						     servers[i].username, lp_workgroup(),
 						     servers[i].password, 0, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
@@ -989,7 +989,11 @@ again:
 } while(0)
 
 #define CHECK_WSTR_EQUAL(field) do { \
-	if (strcmp(parm[0].field.s, parm[1].field.s) != 0 && !ignore_pattern(#field)) { \
+	if ((!parm[0].field.s && parm[1].field.s) || (parm[0].field.s && !parm[1].field.s)) { \
+		printf("%s is NULL!\n", #field); \
+		return False; \
+	} \
+	if (parm[0].field.s && strcmp(parm[0].field.s, parm[1].field.s) != 0 && !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - %s %s\n", #field, \
 		       parm[0].field.s, parm[1].field.s); \
 		return False; \
