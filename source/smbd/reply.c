@@ -1567,8 +1567,13 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 	if (nread > 0) {
 		ret = read_file(fsp,outbuf+4,startpos,nread);
+#if 0 /* mincount appears to be ignored in a W2K server. JRA. */
 		if (ret < mincount)
 			ret = 0;
+#else
+		if (ret < nread)
+			ret = 0;
+#endif
 	}
 
 	_smb_setlen(outbuf,ret);
@@ -1668,7 +1673,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
-	maxcount = MAX(mincount,maxcount);
 
 	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
 		SMB_OFF_T size = fsp->size;
@@ -1688,8 +1692,10 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 			nread = MIN(maxcount,(size - startpos));	  
 	}
 
+#if 0 /* mincount appears to be ignored in a W2K server. JRA. */
 	if (nread < mincount)
 		nread = 0;
+#endif
   
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
@@ -1714,6 +1720,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	size_t numtoread;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	BOOL my_lock_ctx = False;
 	START_PROFILE(SMBlockread);
 
 	CHECK_FSP(fsp,conn);
@@ -1733,13 +1740,21 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * protocol request that predates the read/write lock concept. 
 	 * Thus instead of asking for a read lock here we need to ask
 	 * for a write lock. JRA.
+	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 	
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), 
-			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK);
+			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &my_lock_ctx);
 
 	if (NT_STATUS_V(status)) {
-		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+#if 0
+		/*
+		 * We used to make lockread a blocking lock. It turns out
+		 * that this isn't on W2k. Found by the Samba 4 RAW-READ torture
+		 * tester. JRA.
+		 */
+
+		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -1751,10 +1766,16 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 				return -1;
 			}
 		}
+#endif
 		END_PROFILE(SMBlockread);
 		return ERROR_NT(status);
 	}
 
+	/*
+	 * However the requested READ size IS affected by max_recv. Insanity.... JRA.
+	 */
+
+	numtoread = MIN(numtoread,max_recv);
 	nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
@@ -1796,6 +1817,11 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 
 	outsize = set_message(outbuf,5,3,True);
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
+	/*
+	 * The requested read size cannot be greater than max_recv. JRA.
+	 */
+	numtoread = MIN(numtoread,max_recv);
+
 	data = smb_buf(outbuf) + 3;
   
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
@@ -1863,6 +1889,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		 * correct amount of data).
 		 */
 
+		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
@@ -1901,6 +1928,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
+	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,nread);
 	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 	SSVAL(smb_buf(outbuf),-2,nread);
@@ -1993,7 +2021,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	START_PROFILE(SMBwritebraw);
 
 	if (srv_is_signing_active()) {
-		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+		exit_server("reply_writebraw: SMB signing is active - raw reads/writes are disallowed.");
 	}
 
 	CHECK_FSP(fsp,conn);
@@ -2626,6 +2654,8 @@ int reply_lock(connection_struct *conn,
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	BOOL my_lock_ctx = False;
+
 	START_PROFILE(SMBlock);
 
 	CHECK_FSP(fsp,conn);
@@ -2638,9 +2668,9 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK);
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
 	if (NT_STATUS_V(status)) {
-		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -4140,6 +4170,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	char *data;
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 	BOOL err;
+	BOOL my_lock_ctx = False;
 	NTSTATUS status;
 
 	START_PROFILE(SMBlockingX);
@@ -4260,9 +4291,9 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			fsp->fsp_name, (int)lock_timeout ));
 		
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
+				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
 		if (NT_STATUS_V(status)) {
-			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 				/*
 				 * A blocking lock was requested. Package up
 				 * this smb into a queued request and push it

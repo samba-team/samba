@@ -98,7 +98,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
 {
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
@@ -114,7 +114,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
 				  lock_pid, sys_getpid(), conn->cnum, 
 				  offset, count, 
-				  lock_type);
+				  lock_type, my_lock_ctx);
 
 		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
 
@@ -153,7 +153,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 ****************************************************************************/
 
 NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
 {
 	int j, maxj = lp_lock_spin_count();
 	int sleeptime = lp_lock_sleep_time();
@@ -165,7 +165,7 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
 
 	for (j = 0; j < maxj; j++) {
-		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type);
+		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type, my_lock_ctx);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			return status;
@@ -173,6 +173,9 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 		/* if we do fail then return the first error code we got */
 		if (j == 0) {
 			ret = status;
+			/* Don't spin if we blocked ourselves. */
+			if (*my_lock_ctx)
+				return ret;
 		}
 		if (sleeptime)
 			sys_usleep(sleeptime);

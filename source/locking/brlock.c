@@ -172,7 +172,8 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 	}
 
 	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size)) return False;
+	    lck2->start >= (lck1->start + lck1->size))
+		return False;
 	    
 	return True;
 } 
@@ -305,7 +306,7 @@ static int lock_compare(struct lock_struct *lck1,
 NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type)
+		  enum brl_type lock_type, BOOL *my_lock_ctx)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -315,6 +316,7 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	static int last_failed = -1;
 	static br_off last_failed_start;
 
+	*my_lock_ctx = False;
 	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
@@ -343,6 +345,9 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		for (i=0; i<count; i++) {
 			if (brl_conflict(&locks[i], &lock)) {
 				status = NT_STATUS_LOCK_NOT_GRANTED;
+				/* Did we block ourselves ? */
+				if (brl_same_context(&locks[i].context, &lock.context))
+					*my_lock_ctx = True;
 				goto fail;
 			}
 #if ZERO_ZERO
