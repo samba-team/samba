@@ -53,8 +53,9 @@ struct winbindd_domain *domain_list(void)
 {
 	/* Initialise list */
 
-	if (!_domain_list)
-		init_domain_list();
+	if (!_domain_list) 
+		if (!init_domain_list()) 
+			return NULL;
 
 	return _domain_list;
 }
@@ -167,9 +168,9 @@ void rescan_trusted_domains( void )
 	if ( (now > last_scan) && ((now-last_scan) < WINBINDD_RESCAN_FREQ) )
 		return;
 		
-	/* get the handle for our domain */
+	/* get the handle for our domain (it is always the first in the list) */
 	
-	if ( (mydomain = find_domain_from_name(lp_workgroup())) == NULL ) {
+	if ( (mydomain = domain_list()) == NULL ) {
 		DEBUG(0,("rescan_trusted_domains: Can't find my own domain!\n"));
 		return;
 	}
@@ -267,7 +268,7 @@ BOOL init_domain_list(void)
 	/* Free existing list */
 	free_domain_list();
 
-	/* Add ourselves as the first entry */
+	/* Add ourselves as the first entry.  It *must* be the first entry */
 	
 	domain = add_trusted_domain( lp_workgroup(), lp_realm(), &cache_methods, NULL);
 	
@@ -292,8 +293,17 @@ BOOL init_domain_list(void)
 	return True;
 }
 
-/* Given a domain name, return the struct winbindd domain info for it 
-   if it is actually working. */
+/** 
+ * Given a domain name, return the struct winbindd domain info for it 
+ *
+ * @note Do *not* pass lp_workgroup() to this function.  domain_list
+ *       may modify it's value, and free that pointer.  Instead, our local
+ *       domain may be found by looking at the first entry in domain_list()
+ *       directly.
+ *
+ *
+ * @return The domain structure for the named domain, if it is working.
+ */
 
 struct winbindd_domain *find_domain_from_name(const char *domain_name)
 {
@@ -303,8 +313,9 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		if (strequal(domain_name, domain->name) ||
-		    (domain->alt_name[0] && strequal(domain_name, domain->alt_name)))
+		    (domain->alt_name[0] && strequal(domain_name, domain->alt_name))) {
 			return domain;
+		}
 	}
 
 	/* Not found */
@@ -472,6 +483,20 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	return False;
 }
 
+/* Is this a domain which we may assume no DOMAIN\ prefix? */
+
+static BOOL assume_domain(const char *domain) {
+	if ((lp_winbind_use_default_domain()  
+		  || lp_winbind_trusted_domains_only()) &&
+	    strequal(lp_workgroup(), domain)) 
+		return True;
+
+	if (strequal(get_global_sam_name(), domain)) 
+		return True;
+	
+	return False;
+}
+
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
@@ -481,10 +506,13 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 	if ( !p ) {
 		fstrcpy(user, domuser);
 		
-		if ( lp_winbind_use_default_domain() )
+		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
-		else
-			fstrcpy( domain, "" );
+		} else if (assume_domain(get_global_sam_name())) {
+			fstrcpy( domain, get_global_sam_name() ); 
+		} else {
+			fstrcpy( domain, "");
+		}
 	} 
 	else {
 		fstrcpy(user, p+1);
@@ -502,13 +530,17 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
     'winbind separator' options.
     This means:
 	- omit DOMAIN when 'winbind use default domain = true' and DOMAIN is
-	lp_workgroup
+	lp_workgroup()
+
+    If we are a PDC or BDC, and this is for our domain, do likewise.
+
+    Also, if omit DOMAIN if 'winbind trusted domains only = true', as the 
+    username is then unqualified in unix
 	 
 */
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
-	if(lp_winbind_use_default_domain() &&
-	    !strcmp(lp_workgroup(), domain)) {
+	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%s%s",

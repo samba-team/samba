@@ -714,7 +714,7 @@ char *ads_get_dn(ADS_STRUCT *ads, void *msg)
 		return NULL;
 	}
 
-	if (pull_utf8_allocate((void **) &unix_dn, utf8_dn) == (size_t)-1) {
+	if (pull_utf8_allocate(&unix_dn, utf8_dn) == (size_t)-1) {
 		DEBUG(0,("ads_get_dn: string conversion failure utf8 [%s]\n",
 			utf8_dn ));
 		return NULL;

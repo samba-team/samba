@@ -2661,13 +2661,13 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	/* Now convert to CH_UNIX. */
-	if (pull_utf8_allocate((void **) &srv_dn, srv_dn_utf8) == (size_t)-1) {
+	if (pull_utf8_allocate(&srv_dn, srv_dn_utf8) == (size_t)-1) {
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
 		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	if (pull_utf8_allocate((void **) &srv_cn_0, srv_cn_utf8[0]) == (size_t)-1) {
+	if (pull_utf8_allocate(&srv_cn_0, srv_cn_utf8[0]) == (size_t)-1) {
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
 		ads_destroy(&ads);
