@@ -153,6 +153,9 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	unistr2_to_ascii(name, &info2->uni_server, sizeof(name) - 1); 
 	printf("Server:\t%s\n", name);
 
+	unistr2_to_ascii(name, &info2->uni_comment, sizeof(name) - 1); 
+	printf("Comment:\t%s\n", name);
+
 	printf("Total Users:\t%d\n", info2->num_domain_usrs);
 	printf("Total Groups:\t%d\n", info2->num_domain_grps);
 	printf("Total Aliases:\t%d\n", info2->num_local_grps);
@@ -161,7 +164,6 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	
 	printf("Unknown 0:\t0x%x\n", info2->unknown_0);
 	printf("Unknown 1:\t0x%x\n", info2->unknown_1);
-	printf("Unknown 2:\t0x%x\n", info2->unknown_2);
 	printf("Unknown 3:\t0x%x\n", info2->unknown_3);
 	printf("Unknown 4:\t0x%x\n", info2->unknown_4);
 	printf("Unknown 5:\t0x%x\n", info2->unknown_5);
