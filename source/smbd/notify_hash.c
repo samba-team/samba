@@ -116,7 +116,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
 			int i;
 			unsigned char tmp_hash[16];
-			mdfour(tmp_hash, (const unsigned char *)fname, strlen(fname));
+			mdfour(tmp_hash, (unsigned char *)fname, strlen(fname));
 			for (i=0;i<16;i++)
 				data->name_hash[i] ^= tmp_hash[i];
 		}
@@ -195,7 +195,7 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 
 static void hash_remove_notify(void *datap)
 {
-	SAFE_FREE(datap);
+	free(datap);
 }
 
 /****************************************************************************
