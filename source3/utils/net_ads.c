@@ -3,6 +3,7 @@
    net ads commands
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
    Copyright (C) 2001 Remus Koos (remuskoos@yahoo.com)
+   Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,6 +44,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\t(note: use realm in UPPERCASE)\n"
 "\nnet ads chostpass"
 "\n\tchange the trust account password of this machine in the AD tree\n"
+"\nnet ads printer [info | publish | remove] <printername> <servername>"
+"\n\t lookup, add, or remove directory entry for a printer\n"
 		);
 	return -1;
 }
@@ -293,6 +296,169 @@ static int net_ads_join(int argc, const char **argv)
 	return 0;
 }
 
+int net_ads_printer_usage(int argc, const char **argv)
+{
+	d_printf(
+"\nnet ads printer info <printer> <server>"
+"\n\tlookup info in directory for printer on server"
+"\n\t(note: printer defaults to \"*\", server defaults to local)\n"
+"\nnet ads printer publish <printername>"
+"\n\tpublish printer in directory"
+"\n\t(note: printer name is required)\n"
+"\nnet ads printer remove <printername>"
+"\n\tremove printer from directory"
+"\n\t(note: printer name is required)\n");
+	return -1;
+}
+
+static int net_ads_printer_info(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	char *servername, *printername;
+	extern pstring global_myname;
+	void *res = NULL;
+
+	if (!(ads = ads_startup())) return -1;
+
+	if (argc > 0)
+		printername = argv[0];
+	else
+		printername = "*";
+
+	if (argc > 1)
+		servername =  argv[1];
+	else
+		servername = global_myname;
+
+	rc = ads_find_printer_on_server(ads, &res, printername, servername);
+
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_find_printer_on_server: %s\n", ads_errstr(rc));
+		ads_msgfree(ads, res);
+		return -1;
+	}
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("Printer '%s' not found\n", printername);
+		ads_msgfree(ads, res);
+		return -1;
+	}
+
+	ads_dump(ads, res);
+	/* I wanted to do this ads_msgfree, but it coredumps...why? 
+	   the ads_dump routine doesn't free it, or does it partially
+	   free it as it walks through the result?
+	ads_msgfree(ads, res); */
+
+	return 0;
+}
+
+static int net_ads_printer_publish(int argc, const char **argv)
+{
+        ADS_STRUCT *ads;
+        ADS_STATUS rc;
+	char *uncname, *servername;
+	ADS_PRINTER_ENTRY prt;
+	extern pstring global_myname;
+
+	/* 
+	   these const strings are only here as an example.  The attributes
+	   they represent are not implemented yet
+	*/
+	const char *bins[] = {"Tray 21", NULL};
+	const char *media[] = {"Letter", NULL};
+	const char *orients[] = {"PORTRAIT", NULL};
+	const char *ports[] = {"Samba", NULL};
+
+	if (!(ads = ads_startup())) return -1;
+
+	if (argc < 1)
+		return net_ads_printer_usage(argc, argv);
+
+	memset(&prt, 0, sizeof(ADS_PRINTER_ENTRY));
+
+	prt.printerName = argv[0];
+	asprintf(&servername, "%s.%s", global_myname, ads->realm);
+	prt.serverName = servername;
+	prt.shortServerName = global_myname;
+	prt.versionNumber = "4";
+	asprintf(&uncname, "\\\\%s\\%s", global_myname, argv[0]);
+	prt.uNCName=uncname;
+	prt.printBinNames = (char **) bins;
+	prt.printMediaSupported = (char **) media;
+	prt.printOrientationsSupported = (char **) orients;
+	prt.portName = (char **) ports;
+	prt.printSpooling = "PrintAfterSpooled";
+ 
+        rc = ads_add_printer(ads, &prt);
+        if (!ADS_ERR_OK(rc)) {
+                d_printf("ads_publish_printer: %s\n", ads_errstr(rc));
+                return -1;
+        }
+ 
+        d_printf("published printer\n");
+ 
+	return 0;
+}
+
+static int net_ads_printer_remove(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	char *servername, *prt_dn;
+	extern pstring global_myname;
+	void *res = NULL;
+
+	if (!(ads = ads_startup())) return -1;
+
+	if (argc < 1)
+		return net_ads_printer_usage(argc, argv);
+
+	if (argc > 1)
+		servername = argv[1];
+	else
+		servername = global_myname;
+
+	rc = ads_find_printer_on_server(ads, &res, argv[0], servername);
+
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_find_printer_on_server: %s\n", ads_errstr(rc));
+		ads_msgfree(ads, res);
+		return -1;
+	}
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("Printer '%s' not found\n", argv[1]);
+		ads_msgfree(ads, res);
+		return -1;
+	}
+
+	prt_dn = ads_get_dn(ads, res);
+	ads_msgfree(ads, res);
+	rc = ads_del_dn(ads, prt_dn);
+	ads_memfree(ads, prt_dn);
+
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_del_dn: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	return 0;
+}
+
+static int net_ads_printer(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"INFO", net_ads_printer_info},
+		{"PUBLISH", net_ads_printer_publish},
+		{"REMOVE", net_ads_printer_remove},
+		{NULL, NULL}
+	};
+	
+	return net_run_function(argc, argv, func, net_ads_printer_usage);
+}
+
 
 static int net_ads_password(int argc, const char **argv)
 {
@@ -387,6 +553,7 @@ int net_ads(int argc, const char **argv)
 		{"GROUP", net_ads_group},
 		{"PASSWORD", net_ads_password},
 		{"CHOSTPASS", net_ads_change_localhost_pass},
+		{"PRINTER", net_ads_printer},
 		{NULL, NULL}
 	};
 	
