@@ -115,9 +115,9 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	
 	asprintf(&valstr, CACHE_DATA_FMT, (int)timeout, value);
 	keybuf.dptr = strdup(keystr);
-	keybuf.dsize = strlen(keystr);
+	keybuf.dsize = strlen(keystr)+1;
 	databuf.dptr = strdup(valstr);
-	databuf.dsize = strlen(valstr);
+	databuf.dsize = strlen(valstr)+1;
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout \
 	           = %s (%d seconds %s)\n", keybuf.dptr, value, ctime(&timeout),
 	           (int)(timeout - time(NULL)), timeout > time(NULL) ? "ahead" : "in the past"));
@@ -167,9 +167,9 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 
 	asprintf(&datastr, CACHE_DATA_FMT, (int)timeout, valstr);
 	keybuf.dptr = strdup(keystr);
-	keybuf.dsize = strlen(keystr);
+	keybuf.dsize = strlen(keystr)+1;
 	databuf.dptr = strdup(datastr);
-	databuf.dsize = strlen(datastr);
+	databuf.dsize = strlen(datastr)+1;
 	DEBUGADD(10, ("New value = %s, new timeout = %s (%d seconds %s)", valstr,
 	              ctime(&timeout), (int)(timeout - time(NULL)),
 	              timeout > time(NULL) ? "ahead" : "in the past"));
@@ -206,7 +206,7 @@ BOOL gencache_del(const char *keystr)
 	if (!gencache_init()) return False;	
 	
 	keybuf.dptr = strdup(keystr);
-	keybuf.dsize = strlen(keystr);
+	keybuf.dsize = strlen(keystr)+1;
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
 	ret = tdb_delete(cache, keybuf);
 	
@@ -239,7 +239,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		return False;
 	
 	keybuf.dptr = strdup(keystr);
-	keybuf.dsize = strlen(keystr);
+	keybuf.dsize = strlen(keystr)+1;
 	databuf = tdb_fetch(cache, keybuf);
 	
 	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {

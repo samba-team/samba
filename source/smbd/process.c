@@ -1249,11 +1249,15 @@ void smbd_process(void)
 	extern int smb_echo_count;
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
+	const size_t total_buffer_size = BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN;
 
-	InBuffer = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
-	OutBuffer = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+	InBuffer = (char *)malloc(total_buffer_size);
+	OutBuffer = (char *)malloc(total_buffer_size);
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
+
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
@@ -1278,6 +1282,8 @@ void smbd_process(void)
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
+		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
+
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
@@ -1294,6 +1300,8 @@ void smbd_process(void)
 		 * the timeout code does. JRA.
 		 */ 
 		num_echos = smb_echo_count;
+
+		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
 
 		process_smb(InBuffer, OutBuffer);
 

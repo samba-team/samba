@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    client string routines
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
