@@ -486,6 +486,62 @@ BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int dept
 
 
 /*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
+{
+	int old_align;
+	if (q_a == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_auth");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+    
+	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
+		return False;
+	/* client challenge is _not_ aligned */
+	old_align = ps->align;
+	ps->align = 0;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
+		/* client-calculated credentials */
+		ps->align = old_align;
+		return False;
+	}
+	ps->align = old_align;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_r_auth(char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
+{
+	if (r_a == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_auth");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+    
+	if(!smb_io_chal("", &r_a->srv_chal, ps, depth)) /* server challenge */
+		return False;
+
+	if(!prs_uint32("status", ps, depth, &r_a->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+/*******************************************************************
  Inits a NET_Q_AUTH_2 struct.
 ********************************************************************/
 
