@@ -1338,13 +1338,55 @@ BOOL is_myname(char *s)
 {
   int n;
   BOOL ret = False;
-
+  
   for (n=0; my_netbios_names[n]; n++) {
     if (strequal(my_netbios_names[n], s))
       ret=True;
   }
   DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
   return(ret);
+}
+
+BOOL is_myname_or_ipaddr(char *s)
+{
+	fstring temp;
+	char *ptr;
+	pstring nbname;
+	
+	/* optimize for the common case */
+	if (strequal(s, global_myname)) 
+		return True;
+
+	/* maybe its an IP address? */
+	if (is_ipaddress(s))
+	{
+		struct iface_struct nics[MAX_INTERFACES];
+		int i, n;
+		uint32 ip;
+		
+		ip = interpret_addr(s);
+		if ((ip==0) || (ip==0xffffffff))
+			return False;
+			
+		n = get_interfaces(nics, MAX_INTERFACES);
+		for (i=0; i<n; i++) {
+			if (ip == nics[i].ip.s_addr)
+				return True;
+		}
+	}	
+
+	/* check for an alias */
+  	ptr = lp_netbios_aliases();
+	while ( next_token(&ptr, nbname, NULL, sizeof(nbname)) )
+	{
+		if (StrCaseCmp(s, nbname) == 0)
+			return True;
+	}
+	
+	
+	/* no match */
+	return False;
+
 }
 
 /*******************************************************************

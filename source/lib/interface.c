@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-#define MAX_INTERFACES 128
-
 static struct iface_struct *probed_ifaces;
 static int total_probed;
 

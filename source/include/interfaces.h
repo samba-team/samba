@@ -3,6 +3,8 @@
    interfaces on the machine
 */
 
+#define MAX_INTERFACES 128
+
 struct iface_struct {
 	char name[16];
 	struct in_addr ip;
