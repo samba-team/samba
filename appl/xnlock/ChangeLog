@@ -1,0 +1,4 @@
+Sat Nov 29 04:58:19 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* xnlock.c: Make it build w/o krb4.
+
