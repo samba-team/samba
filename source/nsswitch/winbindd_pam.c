@@ -56,7 +56,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	
 	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
 			       name_user)) {
-		DEBUG(5,("no domain seperator (%s) in username (%s) - failing fauth\n", lp_winbind_separator(), state->request.data.auth.user));
+		DEBUG(5,("no domain seperator (%s) in username (%s) - failing auth\n", lp_winbind_separator(), state->request.data.auth.user));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
@@ -131,6 +131,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx;
+	const char *domain = NULL;
 
 	DATA_BLOB lm_resp, nt_resp;
 
@@ -141,6 +142,22 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if (*state->request.data.auth_crap.domain) {
+		domain = talloc_strdup(mem_ctx, state->request.data.auth_crap.domain);
+	} else if (lp_winbind_use_default_domain()) {
+		domain = talloc_strdup(mem_ctx, lp_workgroup());
+	} else {
+		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth.user));
+		talloc_destroy(mem_ctx);
+		return WINBINDD_ERROR;
+	}
+
+	if (!domain) {
+		DEBUG(0,("winbindd_pam_auth_crap: talloc_strdup failed!\n"));
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
@@ -169,7 +186,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         }
 
 	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						state->request.data.auth_crap.user, state->request.data.auth_crap.domain, 
+						state->request.data.auth_crap.user, domain,
 						global_myname, state->request.data.auth_crap.chal, 
 						lm_resp, nt_resp, 
 						&info3);

@@ -128,8 +128,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 		/* Append domain name */
 
-		snprintf(name, sizeof(name), "%s%s%s", domain->name,
-			 lp_winbind_separator(), the_name);
+		fill_domain_username(name, domain->name, the_name);
 
 		len = strlen(name);
 		
@@ -299,6 +298,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	if (strcmp(lp_winbind_separator(),"\\"))
 		string_sub(group_name, "\\", lp_winbind_separator(), 
 			   sizeof(fstring));
+	strip_domain_name_if_needed(&group_name);
 
 	if (!((name_type == SID_NAME_ALIAS) || 
 	      (name_type == SID_NAME_DOM_GRP))) {
@@ -558,10 +558,9 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		
 		/* Fill in group entry */
 
-		slprintf(domain_group_name, sizeof(domain_group_name) - 1,
-			 "%s%s%s", ent->domain_name, lp_winbind_separator(), 
+		fill_domain_username(domain_group_name, ent->domain_name, 
 			 name_list[ent->sam_entry_index].acct_name);
-   
+
 		result = fill_grent(&group_list[group_list_ndx], 
 				    domain_group_name, group_gid);
 
@@ -732,8 +731,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 					    groups.sam_entries)[i].acct_name; 
 			fstring name;
 
-			snprintf(name, sizeof(name), "%s%s%s", domain->name, 
-				lp_winbind_separator(), group_name);
+			fill_domain_username(name, domain->name, group_name);
 
 			/* Append to extra data */			
 			memcpy(&extra_data[extra_data_len], name, 

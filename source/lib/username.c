@@ -33,7 +33,7 @@ static struct passwd *uname_string_combinations2(char *s, int offset, struct pas
 
 BOOL name_is_local(const char *name)
 {
-	return !strchr_m(name, *lp_winbind_separator());
+	return !(strchr_m(name, *lp_winbind_separator()) || lp_winbind_use_default_domain());
 }
 
 /****************************************************************************

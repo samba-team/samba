@@ -32,19 +32,45 @@ NSS_STATUS winbindd_request(int req_type,
 
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
+extern fstring global_myworkgroup;
 
 static BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
 	char *p = strchr(domuser,*lp_winbind_separator());
 
-	if (!p)
+	if (!(p || lp_winbind_use_default_domain()))
 		return False;
-        
-	fstrcpy(user, p+1);
-	fstrcpy(domain, domuser);
-	domain[PTR_DIFF(p, domuser)] = 0;
+	
+	if(!p && lp_winbind_use_default_domain()) {
+		fstrcpy(user, domuser);
+		fstrcpy(domain, global_myworkgroup);
+	} else {
+		fstrcpy(user, p+1);
+		fstrcpy(domain, domuser);
+		domain[PTR_DIFF(p, domuser)] = 0;
+	}
 	strupper(domain);
 	return True;
+}
+
+/*
+     Fill DOMAIN\\USERNAME entry accounting 'winbind use default domain' and
+     'winbind separator' options.
+     This means:
+ 	- omit DOMAIN when 'winbind use default domain = true' and DOMAIN is
+ 	global_myworkgroup
+ 	 
+*/
+static void fill_domain_username(fstring name, const char *domain, const char *user)
+{
+ 	if(lp_winbind_use_default_domain() &&
+ 	    !strcmp(global_myworkgroup, domain)) {
+ 		strlcpy(name, user, sizeof(fstring));
+ 	} else {
+ 		slprintf(name, sizeof(fstring) - 1, "%s%s%s",
+ 			 domain, lp_winbind_separator(),
+ 			 user);
+ 	}
 }
 
 /* Call winbindd to convert a name to a sid */
@@ -60,10 +86,11 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid,
 		return False;
 
 	/*
-	 * Don't do the lookup if the name has no separator.
+	 * Don't do the lookup if the name has no separator _and_ we are not in
+	 * 'winbind use default domain' mode.
 	 */
 
-	if (!strchr(name, *lp_winbind_separator()))
+	if (!(strchr(name, *lp_winbind_separator()) || lp_winbind_use_default_domain()))
 		return False;
 
 	/* Send off request */
@@ -291,7 +318,7 @@ int winbind_initgroups(char *user, gid_t gid)
 
 	/* Call normal initgroups if we are a local user */
 
-	if (!strchr(user, *lp_winbind_separator())) {
+	if (!(strchr(user, *lp_winbind_separator()) || lp_winbind_use_default_domain())) {
 		return initgroups(user, gid);
 	}
 
@@ -337,11 +364,17 @@ int winbind_initgroups(char *user, gid_t gid)
 		}
 
 	} else {
-		
-		/* The call failed.  Set errno to something so we don't get
-		   a bogus value from the last failed system call. */
+		/* The call failed but if 'winbind use default domain' is 'true', we
+		    should call normal initgroups. */
+		    
+		if (lp_winbind_use_default_domain()) {
+			return initgroups(user, gid);
+		} else {
+			/* The call failed.  Set errno to something so we don't get
+			   a bogus value from the last failed system call. */
 
-		errno = EIO;
+			errno = EIO;
+		}
 	}
 
 	/* Free response data if necessary */
@@ -363,10 +396,11 @@ int winbind_getgroups(const char *user, int size, gid_t *list)
 	int result, i;
 
 	/*
-	 * Don't do the lookup if the name has no separator.
+	 * Don't do the lookup if the name has no separator _and_ we are not in
+	 * 'winbind use default domain' mode.
 	 */
 
-	if (!strchr(user, *lp_winbind_separator()))
+	if (!(strchr(user, *lp_winbind_separator()) || lp_winbind_use_default_domain()))
 		return -1;
 
 	/* Fetch list of groups */
@@ -410,8 +444,7 @@ BOOL winbind_uidtoname(fstring name, uid_t uid)
 	if (name_type != SID_NAME_USER)
 		return False;
 
-	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, 
-                 lp_winbind_separator(), user_name);
+	fill_domain_username(name, dom_name, user_name);
 
 	return True;
 }
@@ -433,8 +466,7 @@ BOOL winbind_gidtoname(fstring name, gid_t gid)
 	if (name_type != SID_NAME_DOM_GRP)
 		return False;
 
-	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, 
-                 lp_winbind_separator(), group_name);
+	fill_domain_username(name, dom_name, group_name);
 
 	return True;
 }

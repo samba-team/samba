@@ -509,8 +509,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  **/
 
 NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					char *username, char *domain, char *workstation, 
-					uint8 chal[8],
+					const char *username, const char *domain, const char *workstation, 
+					const uint8 chal[8],
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
 					NET_USER_INFO_3 *info3)
 
@@ -554,7 +554,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	init_id_info2(&ctr.auth.id2, domain,
 		      0, /* param_ctrl */
 		      0xdead, 0xbeef, /* LUID? */
-		      username, workstation_name_slash, (uchar*)chal,
+		      username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
         init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
