@@ -95,6 +95,7 @@ char *getsmbpass(char *prompt)    ;
 /*The following definitions come from  lib/interface.c  */
 
 void load_interfaces(void);
+BOOL interfaces_changed(void);
 BOOL ismyip(struct in_addr ip);
 BOOL is_local_net(struct in_addr from);
 int iface_count(void);
@@ -288,6 +289,7 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 char *smbd_mktemp(char *template);
+void *memdup(void *p, size_t size);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -392,6 +394,7 @@ void fstring_sub(char *s,const char *pattern,const char *insert);
 void pstring_sub(char *s,const char *pattern,const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
+char *octal_string(int i);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
@@ -723,6 +726,7 @@ void add_logon_names(void);
 
 /*The following definitions come from  nmbd/nmbd_mynames.c  */
 
+void register_my_workgroup_one_subnet(struct subnet_record *subrec);
 BOOL register_my_workgroup_and_names(void);
 void release_my_names(void);
 void refresh_my_names(time_t t);
@@ -922,6 +926,7 @@ void write_browse_list(time_t t, BOOL force_write);
 
 /*The following definitions come from  nmbd/nmbd_subnetdb.c  */
 
+struct subnet_record *make_normal_subnet(struct interface *iface);
 BOOL create_subnets(void);
 BOOL we_are_a_wins_client(void);
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
