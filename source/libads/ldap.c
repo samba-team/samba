@@ -66,11 +66,13 @@ int ads_connect(ADS_STRUCT *ads)
 
 	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
 	if (!ads->ld) {
-		return errno;
+		return LDAP_SERVER_DOWN;
 	}
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	if (ads->password) {
+		/* the machine acct password might have changed */
+		ads->password = secrets_fetch_machine_password();
 		kerberos_kinit_password(ads);
 	}
 
