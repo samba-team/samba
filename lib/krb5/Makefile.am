@@ -10,7 +10,7 @@ libkrb5_a_SOURCES = \
 	address.c asn1_glue.c auth_context.c \
 	build_ap_req.c build_auth.c cache.c checksum.c \
 	config_file.c constants.c context.c \
-	crc.c creds.c data.c encrypt.c fcache.c \
+	crc.c creds.c data.c encrypt.c fcache.c free.c \
 	generate_seq_number.c generate_subkey.c \
 	get_addrs.c get_cred.c get_default_realm.c \
 	get_host_realm.c get_in_tkt.c get_in_tkt_pw.c \
