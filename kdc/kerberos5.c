@@ -115,11 +115,23 @@ find_etype(hdb_entry *princ, unsigned *etypes, unsigned len,
 	   Key **key, int *index)
 {
     int i;
-    krb5_error_code ret = -1;
-    for(i = 0; i < len ; i++)
-	if((ret = hdb_enctype2key(context, princ, etypes[i], key)) == 0)
-	    break;
-    if(index) *index = i;
+    krb5_error_code ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+
+    for(i = 0; i < len ; i++) {
+	krb5_error_code tmp;
+
+	tmp = hdb_enctype2key(context, princ, etypes[i], key);
+	if (tmp == 0) {
+	    if ((*key)->key.keyvalue.length != 0) {
+		ret = 0;
+		break;
+	    } else {
+		ret = KRB5KDC_ERR_NULL_KEY;
+	    }
+	}
+    }
+    if(index)
+	*index = i;
     return ret;
 }
 
@@ -138,9 +150,9 @@ find_keys(hdb_entry *client,
     if(client){
 	/* find client key */
 	ret = find_etype(client, etypes, num_etypes, ckey, &i);
-	if(ret){
+	if (ret) {
 	    kdc_log(0, "Client has no support for etypes");
-	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	    return ret;
 	}
 	*cetype = etypes[i];
     }
@@ -148,9 +160,9 @@ find_keys(hdb_entry *client,
     if(server){
 	/* find server key */
 	ret = find_etype(server, etypes, num_etypes, skey, NULL);
-	if(ret){
+	if (ret) {
 	    kdc_log(0, "Server has no support for etypes");
-	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	    return ret;
 	}
 	*setype = (*skey)->key.keytype;
     }
