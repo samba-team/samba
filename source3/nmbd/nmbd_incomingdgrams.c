@@ -135,6 +135,17 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
   work_name = dgram->dest_name.name;
 
   /*
+   * Syntax servers version 5.1 send HostAnnounce packets to
+   * *THE WRONG NAME*. They send to LOCAL_MASTER_BROWSER_NAME<00>
+   * instead of WORKGROUP<1d> name. So to fix this we check if
+   * the workgroup name is our own name, and if so change it
+   * to be our primary workgroup name.
+   */
+
+  if(strequal(work_name, myname))
+    work_name = myworkgroup;
+
+  /*
    * We are being very agressive here in adding a workgroup
    * name on the basis of a host announcing itself as being
    * in that workgroup. Maybe we should wait for the workgroup

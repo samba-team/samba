@@ -213,7 +213,19 @@ IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_nam
   
   /* See if the name already exists. */
   namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
-  
+ 
+  /* 
+   * If the name being registered exists and is a WINS_PROXY_NAME 
+   * then delete the WINS proxy name entry so we don't reply erroneously
+   * later to queries.
+   */
+
+  if((namerec != NULL) && (namerec->source == WINS_PROXY_NAME))
+  {
+    remove_name_from_namelist( subrec, namerec );
+    namerec = NULL;
+  }
+
   if (!group)
   {
     /* Unique name. */
@@ -468,6 +480,28 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
       
       /* The requested name is a directed query, or it's SELF or PERMANENT or WINS_PROXY, 
          or it's a Domain Master type. */
+
+      /*
+       * If this is a WINS_PROXY_NAME, then ceck that none of the IP 
+       * addresses we are returning is on the same broadcast subnet 
+       * as the requesting packet. If it is then don't reply as the 
+       * actual machine will be replying also and we don't want two 
+       * replies to a broadcast query.
+       */
+
+      if(namerec->source == WINS_PROXY_NAME)
+      {
+        for( i = 0; i < namerec->num_ips; i++)
+        {
+          if(same_net( namerec->ip[i], subrec->myip, subrec->mask_ip ))    
+          {
+            DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also \
+on the same subnet (%s) as the requestor. Not replying.\n", 
+                   namestr(&namerec->name), subrec->subnet_name ));
+            return;
+          }
+        }   
+      }     
 
       ttl = (namerec->death_time != PERMANENT_TTL) ?
                      namerec->death_time - p->timestamp : lp_max_ttl();

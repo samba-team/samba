@@ -35,6 +35,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
 {
   struct packet_struct *original_packet;
   struct subnet_record *orig_broadcast_subnet;
+  struct name_record *namerec;
   uint16 nb_flags;
   int num_ips;
   int i;
@@ -77,11 +78,33 @@ returned for name %s.\n", namestr(nmbname) ));
   if(rrec == PERMANENT_TTL)
     ttl = lp_max_ttl();
 
-  add_name_to_subnet( orig_broadcast_subnet, nmbname->name, nmbname->name_type,
+  namerec = add_name_to_subnet( orig_broadcast_subnet, nmbname->name, nmbname->name_type,
                          nb_flags, ttl, WINS_PROXY_NAME, num_ips, iplist);
 
   if(iplist != &ip)
     free((char *)iplist);
+
+  /*
+   * Check that none of the IP addresses we are returning is on the
+   * same broadcast subnet as the original requesting packet. If it
+   * is then don't reply (although we still need to add the name
+   * to the cache) as the actual machine will be replying also
+   * and we don't want two replies to a broadcast query.
+   */
+
+  if(namerec && original_packet->packet.nmb.header.nm_flags.bcast)
+  {
+    for( i = 0; i < namerec->num_ips; i++)
+    {
+      if(same_net( namerec->ip[i], orig_broadcast_subnet->myip, orig_broadcast_subnet->mask_ip ))
+      {
+        DEBUG(5,("wins_proxy_name_query_request_success: name %s is a WINS proxy name and is also \
+on the same subnet (%s) as the requestor. Not replying.\n", 
+                  namestr(&namerec->name), orig_broadcast_subnet->subnet_name ));
+        return;
+      }
+    }
+  }
 
   /* Finally reply to the original name query. */
   reply_netbios_packet(original_packet,                /* Packet to reply to. */
