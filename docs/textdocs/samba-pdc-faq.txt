@@ -7,8 +7,10 @@ David Bannon
      _________________________________________________________________
      _________________________________________________________________
    
-   Comments, corrections and additions to <D.Bannon@latrobe.edu.au>
+   Comments, corrections and additions to <D.Bannon@samba.org>
    
+     Note: Please read the Introduction for the current state of play.
+     
    This is the FAQ for Samba 2.2 as an NTDomain controller. This document
    is derived from the origional FAQ that was built and maintained by
    Gerald Carter from the early days of Samba NTDomain development up
@@ -26,8 +28,6 @@ David Bannon
    over the process of setting up a very basic Samba 2.2 Primary Domain
    Controller
    
-     Note: Please read the Introduction for the current state of play.
-     
    Table of Contents
    1. Introduction
           
@@ -42,6 +42,7 @@ David Bannon
               Can I have a Windows 2000 client logon to a Samba
                       controlled domain?
                       
+              Can a samba server join a Win2000 domain ?
               What's the status of print spool (spoolss) support in the
                       NTDOM code?
                       
@@ -86,6 +87,9 @@ David Bannon
               The roaming profiles do not seem to be updating on the
                       server.
                       
+              Is it possible to store the users profile on workstation
+                      and not on server?
+                      
         Policies
                 
               What are 'Policies' ?.
@@ -101,10 +105,14 @@ David Bannon
                       
    5. Miscellaneous
           
+              How do I send a message to a PC running windows from a
+                      samba server ?
+                      
               What editor can I use in DOS/Windows that won't mess with
                       my unix EOF
                       
               How do I get 'User Manager' and 'Server Manager'
+              Can I make my samba server a Time server too ?
               The time setting from a Samba server does not work.
               "trust account xxx should be in DOMAIN_GROUP_RID_USERS"
               How do I get my samba server to become a member ( not PDC )
@@ -138,7 +146,16 @@ State of Play
    
    Comments here about W2K joining the domain apply only to Samba 2.2
    from the CVS after November 27th. The 'snapshot' release
-   Samba2.2alpha1 does not work !!! See below on how to get a CVS tree.
+   Samba2.2alpha1 (typically obtained via FTP) does not work !!! See
+   below on how to get a CVS tree.
+   
+   Bug ListI would really appriciate some confirmation that some of these
+   bugs are fixed. I don't have a usefull test setup at present so need a
+   bit of feedback.
+   
+   Know Bug ?There has been a suggestion that some of the problems that
+   some people have experienced may be due to using gcc from RedHat 7.0.
+   The alternative is to use kgcc - feedback desperatly needed !
    
    Known Bug !W2K machines will not successfully join a domain with a
    name that is made up from an even number of characters. Yep, thats
@@ -225,6 +242,7 @@ What can Samba Primary Domain Controller (PDC) do ?
      * Machine account password updates.
      * Changing of user passwords from an NT client.
      * Partial support for Windows NT group and username mapping.
+     * Join a W2000 controlled domain. See below.
      * Support for a LDAP password database backend.
      * Printing.
        
@@ -240,6 +258,15 @@ Can I have a Windows 2000 client logon to a Samba controlled domain?
 
    The 2.2 release branch of Samba supports Windows 2000 domain clients
    in legacy mode, ie as if the PDC is a NTServer, not a W2K server.
+     _________________________________________________________________
+   
+Can a samba server join a Win2000 domain ?
+
+   Yes, a samba server, (2.0.7, 2.2 or Head) will join and be part of a
+   Win2000 domain as long as the Win2000 PDC has NetBios and NTLMv1
+   enabled. You don't need a 'mixed mode' DC unless there is also a NT4
+   BDC in the domain. Samba will not particate in a 'Native Win2000'
+   Active Directory controlled domain.
      _________________________________________________________________
    
 What's the status of print spool (spoolss) support in the NTDOM code?
@@ -486,6 +513,14 @@ The roaming profiles do not seem to be updating on the server.
    try.
      _________________________________________________________________
    
+Is it possible to store the users profile on workstation and not on server?
+
+   Hergen Lange suggested that for 2.0.7 you can set logon drive = , ie
+   to blank. Can someone confirm this works in 2.2 ? Other wise, use the
+   registery settings (perhaps via policies) to not save profiles on the
+   server.
+     _________________________________________________________________
+   
 Policies
 
 What are 'Policies' ?.
@@ -618,6 +653,16 @@ How do I get remote password (unix and SMB) changing working ?
    
 Chapter 5. Miscellaneous
 
+How do I send a message to a PC running windows from a samba server ?
+
+   echo "message" | smbclient -M PC_NETBIOS_NAME_HERE -U "from" -I "to"
+   The limit on message length is 1600 characters. -U and -I are optional
+   and purely cosmetic.[Time Cole]
+   
+   Although this will always work with NTs and W2K, W95/98 require
+   Winpopup (or something similar) to be running.
+     _________________________________________________________________
+   
 What editor can I use in DOS/Windows that won't mess with my unix EOF
 
    There are a number of Windows or DOS based editors that will
@@ -647,6 +692,15 @@ How do I get 'User Manager' and 'Server Manager'
    The Windows NT 4.0 version of the 'User Manager for Domains' and
    'Server Manager' are available from Microsoft via ftp from
    ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE
+     _________________________________________________________________
+   
+Can I make my samba server a Time server too ?
+
+   Yep, add a line to smb.conf time server = True under the Global
+   section. Then Windows machines can use it to set the time with a
+   command like net time \\server_name /set /yes. NTs and W2K machines
+   will have to have been told to allow ordinary users to change the
+   system time/date. See next item.
      _________________________________________________________________
    
 The time setting from a Samba server does not work.

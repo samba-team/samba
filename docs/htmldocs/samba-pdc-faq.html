@@ -47,10 +47,23 @@ NAME="AEN12"
 >Comments, corrections and additions to <TT
 CLASS="EMAIL"
 >&#60;<A
-HREF="mailto:D.Bannon@latrobe.edu.au"
->D.Bannon@latrobe.edu.au</A
+HREF="mailto:D.Bannon@samba.org"
+>D.Bannon@samba.org</A
 >&#62;</TT
 ></P
+><DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>Please read the Introduction for the current <A
+HREF="#AEN27"
+> state of play</A
+>.</P
+></BLOCKQUOTE
+></DIV
 ><P
 >This is the FAQ for Samba 2.2 as an NTDomain controller. 
 	This document is derived from the origional FAQ that was built and 
@@ -70,19 +83,6 @@ TARGET="_top"
 > that takes you, step
     by step, over the process of setting up a very basic Samba 2.2 Primary Domain Controller
     </P
-><DIV
-CLASS="NOTE"
-><BLOCKQUOTE
-CLASS="NOTE"
-><P
-><B
->Note: </B
->Please read the Introduction for the current <A
-HREF="#AEN27"
-> state of play</A
->.</P
-></BLOCKQUOTE
-></DIV
 ><DIV
 CLASS="TOC"
 ><DL
@@ -104,57 +104,62 @@ HREF="#AEN27"
 ></DT
 ><DT
 ><A
-HREF="#AEN50"
+HREF="#AEN54"
 >Introduction</A
 ></DT
 ></DL
 ></DD
 ><DT
 >2. <A
-HREF="#AEN55"
+HREF="#AEN59"
 >General Information</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN57"
+HREF="#AEN61"
 >What can we do ?</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN59"
+HREF="#AEN63"
 >What can Samba Primary Domain Controller (PDC) do ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN92"
+HREF="#AEN98"
 >Can I have a Windows 2000 client logon to a Samba controlled domain?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN95"
+HREF="#AEN101"
+>Can a samba server join a Win2000 domain ?</A
+></DT
+><DT
+><A
+HREF="#AEN104"
 >What's the status of print spool (spoolss) support in the NTDOM code?</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN98"
+HREF="#AEN107"
 >CVS</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN101"
+HREF="#AEN110"
 >What are the different Samba branches available in CVS ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN124"
+HREF="#AEN133"
 >What are the CVS commands ?</A
 ></DT
 ></DL
@@ -163,58 +168,58 @@ HREF="#AEN124"
 ></DD
 ><DT
 >3. <A
-HREF="#AEN155"
+HREF="#AEN164"
 >Establishing Connections</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN157"
+HREF="#AEN166"
 ></A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN159"
+HREF="#AEN168"
 >How do I get my NT4 or W2000 Workstation to login to the Samba controlled Domain?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN164"
+HREF="#AEN173"
 >What is a 'machine account' ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN171"
+HREF="#AEN180"
 >"The machine account for this computer either does not exist or is not accessable."</A
 ></DT
 ><DT
 ><A
-HREF="#AEN177"
+HREF="#AEN186"
 >How do I create machine accounts manually ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN190"
+HREF="#AEN199"
 >I cannot include a '$' in a machine name.</A
 ></DT
 ><DT
 ><A
-HREF="#AEN196"
+HREF="#AEN205"
 >I get told "You already have a connection to the Domain...." when creating a
 	 machine account.</A
 ></DT
 ><DT
 ><A
-HREF="#AEN200"
+HREF="#AEN209"
 >I get told "Cannot join domain, the credentials supplied conflict
                 with an existing set.."</A
 ></DT
 ><DT
 ><A
-HREF="#AEN204"
+HREF="#AEN213"
 >"The system can not log you on (C000019B)...."</A
 ></DT
 ></DL
@@ -223,93 +228,98 @@ HREF="#AEN204"
 ></DD
 ><DT
 >4. <A
-HREF="#AEN208"
+HREF="#AEN217"
 >User Account Management</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN210"
+HREF="#AEN219"
 >Domain Admins</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN212"
+HREF="#AEN221"
 >How do I configure an account as a domain administrator?</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN216"
+HREF="#AEN225"
 >Profiles</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN218"
+HREF="#AEN227"
 >Why is it bad to set "logon path = \\%N\%U\profile" in smb.conf? ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN232"
+HREF="#AEN241"
 >Why are all the users listed in the "domain admin users" using the same profile?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN235"
+HREF="#AEN244"
 >The roaming profiles do not seem to be updating on the server.</A
+></DT
+><DT
+><A
+HREF="#AEN252"
+>Is it possible to store the users profile on workstation and not on server?</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN243"
+HREF="#AEN256"
 >Policies</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN245"
+HREF="#AEN258"
 >What are 'Policies' ?.</A
 ></DT
 ><DT
 ><A
-HREF="#AEN252"
+HREF="#AEN265"
 >I can't get system policies to work.</A
 ></DT
 ><DT
 ><A
-HREF="#AEN266"
+HREF="#AEN279"
 >What about Windows NT Policy Editor ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN280"
+HREF="#AEN293"
 >Can Win95 do Policies ?</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN286"
+HREF="#AEN299"
 >Passwords</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN288"
+HREF="#AEN301"
 >What is password sync and should I use it ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN301"
+HREF="#AEN314"
 >How do I get remote password (unix and SMB) changing working ?</A
 ></DT
 ></DL
@@ -318,41 +328,51 @@ HREF="#AEN301"
 ></DD
 ><DT
 >5. <A
-HREF="#AEN307"
+HREF="#AEN320"
 >Miscellaneous</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN309"
+HREF="#AEN322"
 ></A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN311"
+HREF="#AEN324"
+>How do I send a message to a PC running windows from a samba server ?</A
+></DT
+><DT
+><A
+HREF="#AEN329"
 >What editor can I use in DOS/Windows that won't mess with my unix EOF</A
 ></DT
 ><DT
 ><A
-HREF="#AEN324"
+HREF="#AEN342"
 >How do I get 'User Manager' and 'Server Manager'</A
 ></DT
 ><DT
 ><A
-HREF="#AEN339"
+HREF="#AEN357"
+>Can I make my samba server a Time server too ?</A
+></DT
+><DT
+><A
+HREF="#AEN362"
 >The time setting from a Samba server does not work.</A
 ></DT
 ><DT
 ><A
-HREF="#AEN343"
+HREF="#AEN366"
 >"trust account xxx should be in DOMAIN_GROUP_RID_USERS"</A
 ></DT
 ><DT
 ><A
-HREF="#AEN347"
+HREF="#AEN370"
 >How do I get my samba server to become a member ( not PDC ) of an NT domain?</A
 ></DT
 ></DL
@@ -361,51 +381,51 @@ HREF="#AEN347"
 ></DD
 ><DT
 >6. <A
-HREF="#AEN382"
+HREF="#AEN405"
 >Troubleshooting and Bug Reporting</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN384"
+HREF="#AEN407"
 >Diagnostic tools</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN386"
+HREF="#AEN409"
 >What are some diagnostics tools I can use to debug the domain logon process and where can I
 	find them?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN400"
+HREF="#AEN423"
 >How do I install 'Network Monitor' on an NT Workstation or a Windows 9x box?</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN429"
+HREF="#AEN452"
 >What other help can I get ?</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN432"
+HREF="#AEN455"
 >URLs and similar</A
 ></DT
 ><DT
 ><A
-HREF="#AEN481"
+HREF="#AEN504"
 >How do I get help from the mailing lists ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN510"
+HREF="#AEN533"
 >How do I get off the mailing lists ?</A
 ></DT
 ></DL
@@ -438,7 +458,21 @@ CLASS="EMPHASIS"
 ></P
 ><P
 >Comments here about W2K joining the domain apply only to Samba 2.2 from the CVS after November 27th. The
-    'snapshot' release Samba2.2alpha1 does not work !!! See below on how to get a CVS tree.</P
+    'snapshot' release Samba2.2alpha1 (typically obtained via FTP) does not work !!! See below on how to get a CVS tree.</P
+><P
+><B
+CLASS="COMMAND"
+>Bug List</B
+>I would really appriciate some confirmation that
+	some of these bugs are fixed. I don't have a usefull test setup at
+	present so need a bit of feedback.</P
+><P
+><B
+CLASS="COMMAND"
+>Know Bug ?</B
+>There has been a suggestion that some of the problems
+	that some people have experienced may be due to using gcc from RedHat 7.0.
+	The alternative is to use kgcc - feedback desperatly needed !</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -518,7 +552,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN50"
+NAME="AEN54"
 >Introduction</A
 ></H1
 ><P
@@ -539,7 +573,7 @@ NAME="AEN50"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN55"
+NAME="AEN59"
 >Chapter 2. General Information</A
 ></H1
 ><DIV
@@ -547,7 +581,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN57"
+NAME="AEN61"
 >What can we do ?</A
 ></H1
 ><DIV
@@ -555,7 +589,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN59"
+NAME="AEN63"
 >What can Samba Primary Domain Controller (PDC) do ?</A
 ></H2
 ><P
@@ -602,6 +636,10 @@ NAME="AEN59"
 ></LI
 ><LI
 ><P
+>Join a W2000 controlled domain. See below.</P
+></LI
+><LI
+><P
 >Support for a LDAP password database backend.</P
 ></LI
 ><LI
@@ -640,7 +678,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN92"
+NAME="AEN98"
 >Can I have a Windows 2000 client logon to a Samba controlled domain?</A
 ></H2
 ><P
@@ -653,7 +691,22 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN95"
+NAME="AEN101"
+>Can a samba server join a Win2000 domain ?</A
+></H2
+><P
+>Yes, a samba server, (2.0.7, 2.2 or Head) will join and be part of 
+		a Win2000 domain as long as the Win2000 PDC has NetBios and 
+		NTLMv1 enabled. You don't need a 'mixed mode' DC unless there is 
+		also a NT4 BDC in the domain. Samba will not particate in a 'Native
+		Win2000' Active Directory controlled domain.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN104"
 >What's the status of print spool (spoolss) support in the NTDOM code?</A
 ></H2
 ><P
@@ -667,7 +720,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN98"
+NAME="AEN107"
 >CVS</A
 ></H1
 ><P
@@ -679,7 +732,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN101"
+NAME="AEN110"
 >What are the different Samba branches available in CVS ?</A
 ></H2
 ><P
@@ -752,7 +805,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN124"
+NAME="AEN133"
 >What are the CVS commands ?</A
 ></H2
 ><P
@@ -839,7 +892,7 @@ CLASS="COMMAND"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN155"
+NAME="AEN164"
 >Chapter 3. Establishing Connections</A
 ></H1
 ><DIV
@@ -847,7 +900,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN157"
+NAME="AEN166"
 ></A
 ></H1
 ><DIV
@@ -855,7 +908,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN159"
+NAME="AEN168"
 >How do I get my NT4 or W2000 Workstation to login to the Samba controlled Domain?</A
 ></H2
 ><P
@@ -876,7 +929,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN164"
+NAME="AEN173"
 >What is a 'machine account' ?</A
 ></H2
 ><P
@@ -890,7 +943,7 @@ CLASS="FILENAME"
 >/usr/local/samba/private/smbpasswd</TT
 >. Under 
     some circumstances these entries are made <A
-HREF="#AEN177"
+HREF="#AEN186"
 >manually</A
 >, the 
     <A
@@ -904,7 +957,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN171"
+NAME="AEN180"
 >"The machine account for this computer either does not exist or is not accessable."</A
 ></H2
 ><P
@@ -933,7 +986,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN177"
+NAME="AEN186"
 >How do I create machine accounts manually ?</A
 ></H2
 ><P
@@ -978,7 +1031,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN190"
+NAME="AEN199"
 >I cannot include a '$' in a machine name.</A
 ></H2
 ><P
@@ -1002,7 +1055,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN196"
+NAME="AEN205"
 >I get told "You already have a connection to the Domain...." when creating a
 	 machine account.</A
 ></H2
@@ -1022,13 +1075,13 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN200"
+NAME="AEN209"
 >I get told "Cannot join domain, the credentials supplied conflict
                 with an existing set.."</A
 ></H2
 ><P
 >This is the same basic problem as mentioned above, <A
-HREF="#AEN196"
+HREF="#AEN205"
 >        "You already have a connection..."</A
 ></P
 ></DIV
@@ -1037,7 +1090,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN204"
+NAME="AEN213"
 >"The system can not log you on (C000019B)...."</A
 ></H2
 ><P
@@ -1057,7 +1110,7 @@ NAME="AEN204"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN208"
+NAME="AEN217"
 >Chapter 4. User Account Management</A
 ></H1
 ><DIV
@@ -1065,7 +1118,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN210"
+NAME="AEN219"
 >Domain Admins</A
 ></H1
 ><DIV
@@ -1073,7 +1126,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN212"
+NAME="AEN221"
 >How do I configure an account as a domain administrator?</A
 ></H2
 ><P
@@ -1089,7 +1142,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN216"
+NAME="AEN225"
 >Profiles</A
 ></H1
 ><DIV
@@ -1097,7 +1150,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN218"
+NAME="AEN227"
 >Why is it bad to set "logon path = \\%N\%U\profile" in smb.conf? ?</A
 ></H2
 ><P
@@ -1144,7 +1197,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN232"
+NAME="AEN241"
 >Why are all the users listed in the "domain admin users" using the same profile?</A
 ></H2
 ><P
@@ -1155,7 +1208,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN235"
+NAME="AEN244"
 >The roaming profiles do not seem to be updating on the server.</A
 ></H2
 ><P
@@ -1167,7 +1220,7 @@ CLASS="COMMAND"
 >net time  \\server /set /yes</B
 > replacing server with the 
 	name of your PDC (or another synchronized SMB server). See <A
-HREF="#AEN339"
+HREF="#AEN362"
 >    about Setting Time</A
 ></P
 ><P
@@ -1179,13 +1232,31 @@ HREF="#AEN339"
 >Some people have reported that the logon path location should also be browseable.   
 	I (GC) have yet to emperically verify this, but you can try.</P
 ></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN252"
+>Is it possible to store the users profile on workstation and not on server?</A
+></H2
+><P
+>Hergen Lange suggested that for 2.0.7 you can set <TT
+CLASS="FILENAME"
+>logon
+   	 drive = </TT
+>, ie to blank.  Can someone confirm this works in 2.2 ? Other
+	wise, use the registery settings (perhaps via policies) to not save 
+	profiles on the server.
+    </P
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN243"
+NAME="AEN256"
 >Policies</A
 ></H1
 ><DIV
@@ -1193,7 +1264,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN245"
+NAME="AEN258"
 >What are 'Policies' ?.</A
 ></H2
 ><P
@@ -1211,7 +1282,7 @@ CLASS="COMMAND"
 >[netlogon]</B
 >share. The file is created with a policy editor
     and must be readable by anyone and writeable by only root. See <A
-HREF="#AEN266"
+HREF="#AEN279"
 >    below</A
 > for how  to get a suitable editor.</P
 ></DIV
@@ -1220,7 +1291,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN252"
+NAME="AEN265"
 >I can't get system policies to work.</A
 ></H2
 ><P
@@ -1242,7 +1313,7 @@ CLASS="COMMAND"
 > share and must be 
     readable by everyone and writeable by only root. The file must be created
     by an NTServer <A
-HREF="#AEN266"
+HREF="#AEN279"
 >Policy Editor</A
 >.</P
 ><P
@@ -1279,7 +1350,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN266"
+NAME="AEN279"
 >What about Windows NT Policy Editor ?</A
 ></H2
 ><P
@@ -1341,7 +1412,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN280"
+NAME="AEN293"
 >Can Win95 do Policies ?</A
 ></H2
 ><P
@@ -1366,7 +1437,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN286"
+NAME="AEN299"
 >Passwords</A
 ></H1
 ><DIV
@@ -1374,7 +1445,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN288"
+NAME="AEN301"
 >What is password sync and should I use it ?</A
 ></H2
 ><P
@@ -1423,7 +1494,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN301"
+NAME="AEN314"
 >How do I get remote password (unix and SMB) changing working ?</A
 ></H2
 ><P
@@ -1453,7 +1524,7 @@ CLASS="PROGRAMLISTING"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN307"
+NAME="AEN320"
 >Chapter 5. Miscellaneous</A
 ></H1
 ><DIV
@@ -1461,7 +1532,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN309"
+NAME="AEN322"
 ></A
 ></H1
 ><DIV
@@ -1469,7 +1540,26 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN311"
+NAME="AEN324"
+>How do I send a message to a PC running windows from a samba server ?</A
+></H2
+><P
+><TT
+CLASS="FILENAME"
+>echo "message" | smbclient -M PC_NETBIOS_NAME_HERE -U "from" -I "to"</TT
+>
+	The limit on message length is 1600 characters.  -U and -I are
+	optional and purely cosmetic.[Time Cole]</P
+><P
+>Although this will always work with NTs and W2K, W95/98 require Winpopup
+	(or something similar) to be running.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN329"
 >What editor can I use in DOS/Windows that won't mess with my unix EOF</A
 ></H2
 ><P
@@ -1509,7 +1599,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN324"
+NAME="AEN342"
 >How do I get 'User Manager' and 'Server Manager'</A
 ></H2
 ><P
@@ -1557,7 +1647,29 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN339"
+NAME="AEN357"
+>Can I make my samba server a Time server too ?</A
+></H2
+><P
+>Yep, add a line to smb.conf <TT
+CLASS="FILENAME"
+>time server = True </TT
+> under the Global
+	section. Then Windows machines can use it to set the time with a command like
+	<TT
+CLASS="FILENAME"
+>net time \\server_name /set /yes</TT
+>. NTs and W2K machines will have
+	to have been told to allow ordinary users to change the system time/date. See next 
+	item.
+    </P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN362"
 >The time setting from a Samba server does not work.</A
 ></H2
 ><P
@@ -1574,7 +1686,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN343"
+NAME="AEN366"
 >"trust account xxx should be in DOMAIN_GROUP_RID_USERS"</A
 ></H2
 ><P
@@ -1589,7 +1701,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN347"
+NAME="AEN370"
 >How do I get my samba server to become a member ( not PDC ) of an NT domain?</A
 ></H2
 ><P
@@ -1630,7 +1742,7 @@ CLASS="EMPHASIS"
 >sleepy$</I
 >. It would have to be
     created <A
-HREF="#AEN177"
+HREF="#AEN186"
 >manually</A
 >. </P
 ><P
@@ -1730,7 +1842,7 @@ CLASS="PROGRAMLISTING"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN382"
+NAME="AEN405"
 >Chapter 6. Troubleshooting and Bug Reporting</A
 ></H1
 ><DIV
@@ -1738,7 +1850,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN384"
+NAME="AEN407"
 >Diagnostic tools</A
 ></H1
 ><DIV
@@ -1746,7 +1858,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN386"
+NAME="AEN409"
 >What are some diagnostics tools I can use to debug the domain logon process and where can I
 	find them?</A
 ></H2
@@ -1811,7 +1923,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN400"
+NAME="AEN423"
 >How do I install 'Network Monitor' on an NT Workstation or a Windows 9x box?</A
 ></H2
 ><P
@@ -1896,7 +2008,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN429"
+NAME="AEN452"
 >What other help can I get ?</A
 ></H1
 ><P
@@ -1908,7 +2020,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN432"
+NAME="AEN455"
 >URLs and similar</A
 ></H2
 ><P
@@ -2051,7 +2163,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN481"
+NAME="AEN504"
 >How do I get help from the mailing lists ?</A
 ></H2
 ><P
@@ -2154,7 +2266,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN510"
+NAME="AEN533"
 >How do I get off the mailing lists ?</A
 ></H2
 ><P

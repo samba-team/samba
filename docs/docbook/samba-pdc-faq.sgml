@@ -15,7 +15,9 @@
 
 <dedication><title></>
 
-    <para>Comments, corrections and additions to <email>D.Bannon@latrobe.edu.au</email></para>
+    <para>Comments, corrections and additions to <email>D.Bannon@samba.org</email></para>
+	
+    <note><para>Please read the Introduction for the current <link linkend=stateofplay> state of play</>.</para></note>
 
 	<para>This is the FAQ for Samba 2.2 as an NTDomain controller. 
 	This document is derived from the origional FAQ that was built and 
@@ -32,7 +34,6 @@
     by step, over the process of setting up a very basic Samba 2.2 Primary Domain Controller
     </para>
 
-	<note><para>Please read the Introduction for the current <link linkend=stateofplay> state of play</>.</para></>
 </dedication>
 
 <toc></toc> 
@@ -48,7 +49,15 @@
 	At the time of this update (December 15, 2000) the current state of play is :</emphasis></para>
 
     <para>Comments here about W2K joining the domain apply only to Samba 2.2 from the CVS after November 27th. The
-    'snapshot' release Samba2.2alpha1 does not work !!! See below on how to get a CVS tree.</para>
+    'snapshot' release Samba2.2alpha1 (typically obtained via FTP) does not work !!! See below on how to get a CVS tree.</para>
+
+    <para><command>Bug List</>I would really appriciate some confirmation that
+	some of these bugs are fixed. I don't have a usefull test setup at
+	present so need a bit of feedback.</para>
+
+    <para><command>Know Bug ?</>There has been a suggestion that some of the problems
+	that some people have experienced may be due to using gcc from RedHat 7.0.
+	The alternative is to use kgcc - feedback desperatly needed !</para>
 
     <para><command>Known Bug !</>W2K machines will not successfully join a domain with a name that
     is made up from an even number of characters. Yep, thats right ! BIOTEST is OK as is MYDOMAI
@@ -139,7 +148,7 @@
 	but will not currently allow browsing of accounts.</para></listitem>  
      <listitem><para>Machine account password updates.</para></listitem>  
      <listitem><para>Changing of user passwords from an NT client.</para></listitem>  
-     <listitem><para>Partial support for Windows NT group and username mapping.</para></listitem>  
+     <listitem><para>Partial support for Windows NT group and username mapping.</para></listitem>      <listitem><para>Join a W2000 controlled domain. See below.</para></listitem>
      <listitem><para>Support for a LDAP password database backend.</para></listitem>
      <listitem><para>Printing.</para></listitem>
 </itemizedlist>
@@ -159,6 +168,15 @@
 	<para>The 2.2 release branch of Samba  supports Windows 2000 domain 
 		clients in legacy mode, ie as if the PDC is a NTServer, not a
         W2K server.</para>
+</sect2>
+
+<sect2><title>Can a samba server join a Win2000 domain ?</>
+
+	<para>Yes, a samba server, (2.0.7, 2.2 or Head) will join and be part of 
+		a Win2000 domain as long as the Win2000 PDC has NetBios and 
+		NTLMv1 enabled. You don't need a 'mixed mode' DC unless there is 
+		also a NT4 BDC in the domain. Samba will not particate in a 'Native
+		Win2000' Active Directory controlled domain.</para>
 </sect2>
 
 <sect2><title>What's the status of print spool (spoolss) support in the NTDOM code? </>
@@ -416,6 +434,15 @@
     <para>Some people have reported that the logon path location should also be browseable.   
 	I (GC) have yet to emperically verify this, but you can try.</para> 
 </sect2>
+
+<sect2><title>Is it possible to store the users profile on workstation and not on server?</>
+    <para>Hergen Lange suggested that for 2.0.7 you can set <filename>logon
+   	 drive = </>, ie to blank.  Can someone confirm this works in 2.2 ? Other
+	wise, use the registery settings (perhaps via policies) to not save 
+	profiles on the server.
+    </para>
+</sect2>
+
 </sect1>
 
 <sect1><title>Policies</title>
@@ -567,6 +594,16 @@
 
 <chapter><title>Miscellaneous</title>
 <sect1><title></title>
+
+<sect2><title>How do I send a message to a PC running windows from a samba server ?</>
+    <para><filename>echo "message" | smbclient -M PC_NETBIOS_NAME_HERE -U "from" -I "to"</>
+	The limit on message length is 1600 characters.  -U and -I are
+	optional and purely cosmetic.[Time Cole]</para>
+    <para>Although this will always work with NTs and W2K, W95/98 require Winpopup
+	(or something similar) to be running.</para>
+</sect2>
+
+
 <sect2><title>What editor can I use in DOS/Windows that won't mess with my unix EOF</title>
     <para>There are a number of Windows or DOS based editors that will understand, and
     leave intact, the unix eof (as opposed to a DOS CL/LF). List members suggested :</para>
@@ -605,6 +642,14 @@
         ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE</ulink></para>
 </sect2>
 
+<sect2><title>Can I make my samba server a Time server too ?</title>
+    <para>Yep, add a line to smb.conf <filename>time server = True </> under the Global
+	section. Then Windows machines can use it to set the time with a command like
+	<filename>net time \\server_name /set /yes</>. NTs and W2K machines will have
+	to have been told to allow ordinary users to change the system time/date. See next 
+	item.
+    </para>
+</sect2>
 
 <sect2><title id="SettingTime">The time setting from a Samba server does not work.</title>
 	<para>If it works OK when you log on as Domain Admin then the problem is that ordinary users
