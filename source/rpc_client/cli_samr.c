@@ -691,7 +691,7 @@ NTSTATUS cli_samr_set_aliasinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Query user aliases */
 
 NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                                   POLICY_HND *user_pol, uint32 num_sids, DOM_SID2 *sid,
+                                   POLICY_HND *dom_pol, uint32 num_sids, DOM_SID2 *sid,
 				   uint32 *num_aliases, uint32 **als_rids)
 {
 	prs_struct qbuf, rbuf;
@@ -720,7 +720,7 @@ NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_samr_q_query_useraliases(&q, user_pol, num_sids, sid_ptrs, sid);
+	init_samr_q_query_useraliases(&q, dom_pol, num_sids, sid_ptrs, sid);
 
 	if (!samr_io_q_query_useraliases("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_USERALIASES, &qbuf, &rbuf))
