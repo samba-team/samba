@@ -289,19 +289,9 @@ struct getargs args[] = {
 int nargs = sizeof(args) / sizeof(args[0]);
 
 static void
-update_utmp(const char *username, const char *hostname)
+update_utmp(const char *username, const char *hostname,
+	    char *tty, char *ttyn)
 {
-    char *tty, *ttyn, ttname[32];
-    ttyn = ttyname(STDIN_FILENO);
-    if(ttyn == NULL){
-	snprintf(ttname, sizeof(ttname), "%s??", _PATH_TTY);
-	ttyn = ttname;
-    }
-    if((tty = strrchr(ttyn, '/')))
-	tty++;
-    else
-	tty = ttyn;
-    
     /*
      * Update the utmp files, both BSD and SYSV style.
      */
@@ -330,14 +320,15 @@ checknologin(void)
 
 
 static void
-do_login(struct passwd *pwd)
+do_login(struct passwd *pwd, char *tty, char *ttyn)
 {
     int rootlogin = (pwd->pw_uid == 0);
 
     if(pwd->pw_uid != 0)
 	checknologin();
     
-    update_utmp(pwd->pw_name, remote_host ? remote_host : "");
+    update_utmp(pwd->pw_name, remote_host ? remote_host : "",
+		tty, ttyn);
 #ifdef HAVE_SETLOGIN
     if(setlogin(pwd->pw_name)){
 	warn("setlogin(%s)", pwd->pw_name);
@@ -506,6 +497,9 @@ main(int argc, char **argv)
 	struct passwd *pwd;
 	char password[128];
 	int ret;
+	char ttname[32];
+	char *tty, *ttyn;
+
 	if(ask){
 	    f_flag = r_flag = 0;
 	    ret = read_string("login: ", username, sizeof(username), 1);
@@ -530,7 +524,27 @@ main(int argc, char **argv)
 	    fprintf(stderr, "Login incorrect.\n");
 	    continue;
 	}
-	do_login(pwd);
+	ttyn = ttyname(STDIN_FILENO);
+	if(ttyn == NULL){
+	    snprintf(ttname, sizeof(ttname), "%s??", _PATH_TTY);
+	    ttyn = ttname;
+	}
+	if((tty = strrchr(ttyn, '/')))
+	    tty++;
+	else
+	    tty = ttyn;
+    
+	if (login_access (pwd, remote_host ? remote_host : tty)) {
+	    fprintf(stderr, "Permission denied\n");
+	    if (remote_host)
+		syslog(LOG_NOTICE, "%s LOGIN REFUSED FROM %s",
+		       pwd->pw_name, remote_host);
+	    else
+		syslog(LOG_NOTICE, "%s LOGIN REFUSED ON %s",
+		       pwd->pw_name, tty);
+	    exit (1);
+	}
+	do_login(pwd, tty, ttyn);
     }
     exit(1);
 }

@@ -111,6 +111,10 @@
 #endif
 #endif
 
+#ifndef _PATH_LOGACCESS
+#define _PATH_LOGACCESS "/etc/login.access"
+#endif /* _PATH_LOGACCESS */
+
 int   do_osfc2_magic(uid_t);
 char *clean_ttyname (char*);
 char *make_id (char*);
@@ -119,5 +123,7 @@ int   read_string (const char*, char*, size_t, int);
 void  stty_default (void);
 void  utmp_login (char*, const char*, const char*);
 int   utmpx_login (char*, const char*, const char*);
+
+int login_access(struct passwd *user, char *from);
 
 #endif /* __LOGIN_LOCL_H__ */

@@ -6,7 +6,7 @@ INCLUDES += $(INCLUDE_krb4)
 
 bin_PROGRAMS = login
 login_SOURCES = login.c osfc2.c read_string.c utmp_login.c utmpx_login.c \
-	tty.c stty_default.c login_locl.h
+	tty.c stty_default.c login_access.c login_locl.h
 
 LDADD = $(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
