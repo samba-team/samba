@@ -81,7 +81,7 @@ BOOL py_to_FORM(FORM *form, PyObject *dict)
 	obj = PyDict_GetItemString(dict, "name");
 	name = PyString_AsString(obj);
 
-	init_unistr2(&form->name, name, strlen(name) + 1);
+	init_unistr2(&form->name, name, UNI_STR_TERMINATE);
 	
 	result = True;
 

@@ -728,5 +728,3 @@ typedef struct lsa_r_removeprivs
 
 
 #endif /* _RPC_LSA_H */
-
-

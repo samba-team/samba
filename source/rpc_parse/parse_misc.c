@@ -361,11 +361,11 @@ BOOL smb_io_strhdr(const char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
  Inits a UNIHDR structure.
 ********************************************************************/
 
-void init_uni_hdr(UNIHDR *hdr, int len)
+void init_uni_hdr(UNIHDR *hdr, UNISTR2 *str2)
 {
-	hdr->uni_str_len = 2 * len;
-	hdr->uni_max_len = 2 * len;
-	hdr->buffer      = len != 0 ? 1 : 0;
+	hdr->uni_str_len = 2 * (str2->uni_str_len);
+	hdr->uni_max_len = 2 * (str2->uni_max_len);
+	hdr->buffer = (str2->uni_str_len != 0) ? 1 : 0;
 }
 
 /*******************************************************************
@@ -482,10 +482,10 @@ BOOL smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
 creates a UNIHDR2 structure.
 ********************************************************************/
 
-void init_uni_hdr2(UNIHDR2 *hdr, int len)
+void init_uni_hdr2(UNIHDR2 *hdr, UNISTR2 *str2)
 {
-	init_uni_hdr(&hdr->unihdr, len);
-	hdr->buffer = (len > 0) ? 1 : 0;
+	init_uni_hdr(&hdr->unihdr, str2);
+	hdr->buffer = (str2->uni_str_len > 0) ? 1 : 0;
 }
 
 /*******************************************************************
@@ -703,7 +703,7 @@ void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
 
 	/* max buffer size (allocated size) */
 	str->buf_max_len = len;
-	str->undoc       = 0;
+	str->offset = 0;
 	str->buf_len = buf != NULL ? len : 0;
 
 	if (buf != NULL) {
@@ -737,7 +737,7 @@ BOOL smb_io_buffer2(const char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *
 		
 		if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
 			return False;
-		if(!prs_uint32("undoc      ", ps, depth, &buf2->undoc))
+		if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
 			return False;
 		if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
 			return False;
@@ -765,14 +765,11 @@ creates a UNISTR2 structure: sets up the buffer, too
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 {
 	if (buf != NULL) {
-
 		*ptr = 1;
-		init_unistr2(str, buf, strlen(buf)+1);
-
+		init_unistr2(str, buf, UNI_STR_TERMINATE);
 	} else {
-
 		*ptr = 0;
-		init_unistr2(str, "", 0);
+		init_unistr2(str, NULL, UNI_FLAGS_NONE);
 
 	}
 }
@@ -783,10 +780,8 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
-
-	/* set up string lengths. add one if string is not null-terminated */
 	str->uni_max_len = from->uni_max_len;
-	str->undoc       = from->undoc;
+	str->offset      = from->offset;
 	str->uni_str_len = from->uni_str_len;
 
 	if (from->buffer == NULL)
@@ -803,8 +798,7 @@ void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 		len *= sizeof(uint16);
 
    		str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
-		if ((str->buffer == NULL) && (len > 0 ))
-		{
+		if ((str->buffer == NULL) && (len > 0 )) {
 			smb_panic("copy_unistr2: talloc fail\n");
 			return;
 		}
@@ -824,7 +818,7 @@ void init_string2(STRING2 *str, const char *buf, int max_len, int str_len)
 
 	/* set up string lengths. */
 	str->str_max_len = max_len;
-	str->undoc       = 0;
+	str->offset = 0;
 	str->str_str_len = str_len;
 
 	/* store the string */
@@ -835,7 +829,7 @@ void init_string2(STRING2 *str, const char *buf, int max_len, int str_len)
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, str_len);
-  }
+	}
 }
 
 /*******************************************************************
@@ -860,7 +854,7 @@ BOOL smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *
 		
 		if(!prs_uint32("str_max_len", ps, depth, &str2->str_max_len))
 			return False;
-		if(!prs_uint32("undoc      ", ps, depth, &str2->undoc))
+		if(!prs_uint32("offset     ", ps, depth, &str2->offset))
 			return False;
 		if(!prs_uint32("str_str_len", ps, depth, &str2->str_str_len))
 			return False;
@@ -885,34 +879,43 @@ BOOL smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *
  Inits a UNISTR2 structure.
 ********************************************************************/
 
-void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
+void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 {
-	ZERO_STRUCTP(str);
+	size_t len = 0;
+	uint32 num_chars = 0;
 
-	/* set up string lengths. */
-	str->uni_max_len = (uint32)len;
-	str->undoc       = 0;
-	str->uni_str_len = (uint32)len;
+	if (buf) {
+		/* We always null terminate the copy. */
+		len = strlen(buf) + 1;
+	}
 
 	if (len < MAX_UNISTRLEN)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
 	str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
-	if ((str->buffer == NULL) && (len > 0))
-	{
+	if ((str->buffer == NULL) && (len > 0)) {
 		smb_panic("init_unistr2: malloc fail\n");
 		return;
 	}
 
 	/*
-	 * don't move this test above ! The UNISTR2 must be initialized !!!
+	 * The UNISTR2 must be initialized !!!
 	 * jfm, 7/7/2001.
 	 */
-	if (buf==NULL)
-		return;
+	if (buf) {
+		rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
+		num_chars = strlen_w(str->buffer);
+		if (flags == STR_TERMINATE || flags == UNI_MAXLEN_TERMINATE) {
+			num_chars++;
+		}
+	}
 
-	rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
+	str->uni_max_len = num_chars;
+	str->offset = 0;
+	str->uni_str_len = num_chars;
+	if (num_chars && (flags == UNI_MAXLEN_TERMINATE))
+		str->uni_max_len++;
 }
 
 /** 
@@ -932,7 +935,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 
 	/* set up string lengths. */
 	str->uni_max_len = len;
-	str->undoc       = 0;
+	str->offset = 0;
 	str->uni_str_len = len;
 
 	if (max_len < MAX_UNISTRLEN)
@@ -941,8 +944,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 	alloc_len = (max_len + 1) * sizeof(uint16);
 
 	str->buffer = (uint16 *)talloc_zero(ctx, alloc_len);
-	if ((str->buffer == NULL) && (alloc_len > 0))
-	{
+	if ((str->buffer == NULL) && (alloc_len > 0)) {
 		smb_panic("init_unistr2_w: malloc fail\n");
 		return;
 	}
@@ -963,9 +965,9 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 /*******************************************************************
  Inits a UNISTR2 structure from a UNISTR
 ********************************************************************/
-void init_unistr2_from_unistr (UNISTR2 *to, const UNISTR *from)
-{
 
+void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
+{
 	uint32 i;
 
 	/* the destination UNISTR2 should never be NULL.
@@ -987,7 +989,7 @@ void init_unistr2_from_unistr (UNISTR2 *to, const UNISTR *from)
 	/* set up string lengths; uni_max_len is set to i+1
            because we need to account for the final NULL termination */
 	to->uni_max_len = i;
-	to->undoc       = 0;
+	to->offset = 0;
 	to->uni_str_len = i;
 
 	/* allocate the space and copy the string buffer */
@@ -995,10 +997,8 @@ void init_unistr2_from_unistr (UNISTR2 *to, const UNISTR *from)
 	if (to->buffer == NULL)
 		smb_panic("init_unistr2_from_unistr: malloc fail\n");
 	memcpy(to->buffer, from->buffer, to->uni_max_len*sizeof(uint16));
-		
 	return;
 }
-
 
 /*******************************************************************
  Reads or writes a UNISTR2 structure.
@@ -1022,7 +1022,7 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 		
 		if(!prs_uint32("uni_max_len", ps, depth, &uni2->uni_max_len))
 			return False;
-		if(!prs_uint32("undoc      ", ps, depth, &uni2->undoc))
+		if(!prs_uint32("offset     ", ps, depth, &uni2->offset))
 			return False;
 		if(!prs_uint32("uni_str_len", ps, depth, &uni2->uni_str_len))
 			return False;
@@ -1064,7 +1064,7 @@ BOOL init_unistr2_array(UNISTR2_ARRAY *array,
 	}
 
 	for (i=0;i<count;i++) {
-		init_unistr2(&array->strings[i].string, strings[i], strlen(strings[i]));
+		init_unistr2(&array->strings[i].string, strings[i], UNI_FLAGS_NONE);
 		array->strings[i].size = array->strings[i].string.uni_max_len*2;
 		array->strings[i].length = array->strings[i].size;
 		array->strings[i].ref_id = 1;
@@ -1223,14 +1223,14 @@ static void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv, const cha
 
 	if (logon_srv != NULL) {
 		logcln->undoc_buffer = 1;
-		init_unistr2(&logcln->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
+		init_unistr2(&logcln->uni_logon_srv, logon_srv, UNI_STR_TERMINATE);
 	} else {
 		logcln->undoc_buffer = 0;
 	}
 
 	if (comp_name != NULL) {
 		logcln->undoc_buffer2 = 1;
-		init_unistr2(&logcln->uni_comp_name, comp_name, strlen(comp_name)+1);
+		init_unistr2(&logcln->uni_comp_name, comp_name, UNI_STR_TERMINATE);
 	} else {
 		logcln->undoc_buffer2 = 0;
 	}
@@ -1284,12 +1284,12 @@ void init_log_info(DOM_LOG_INFO *loginfo, const char *logon_srv, const char *acc
 
 	loginfo->undoc_buffer = 1;
 
-	init_unistr2(&loginfo->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
-	init_unistr2(&loginfo->uni_acct_name, acct_name, strlen(acct_name)+1);
+	init_unistr2(&loginfo->uni_logon_srv, logon_srv, UNI_STR_TERMINATE);
+	init_unistr2(&loginfo->uni_acct_name, acct_name, UNI_STR_TERMINATE);
 
 	loginfo->sec_chan = sec_chan;
 
-	init_unistr2(&loginfo->uni_comp_name, comp_name, strlen(comp_name)+1);
+	init_unistr2(&loginfo->uni_comp_name, comp_name, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************

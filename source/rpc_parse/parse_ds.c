@@ -138,8 +138,6 @@ BOOL ds_io_r_getprimdominfo( const char *desc, prs_struct *ps, int depth, DS_R_G
 BOOL init_q_ds_enum_domain_trusts( DS_Q_ENUM_DOM_TRUSTS *q, const char *server, 
                                  uint32 flags )
 {
-	int len;
-
 	q->flags = flags;
 	
 	if ( server && *server )
@@ -147,9 +145,7 @@ BOOL init_q_ds_enum_domain_trusts( DS_Q_ENUM_DOM_TRUSTS *q, const char *server,
 	else
 		q->server_ptr = 0;
 
-	len = q->server_ptr ? strlen(server)+1 : 0;
-
-	init_unistr2( &q->server, server, len );
+	init_unistr2( &q->server, server, UNI_STR_TERMINATE);
 		
 	return True;
 }
