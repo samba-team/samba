@@ -2080,7 +2080,11 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	else
 		fstrcpy(sl, '\0');
 
-	snprintf(chaine2, sizeof(chaine)-1, "%s%s%s", servername, sl, ntprinter->info_2->printername);
+	if (!strchr(ntprinter->info_2->printername, '\\')) {
+		snprintf(chaine2, sizeof(chaine)-1, "%s%s%s", servername, sl, ntprinter->info_2->printername);
+	} else {
+		pstrcpy(chaine2, ntprinter->info_2->printername);
+	}
 
 	init_unistr(&printer->servername, chaine);				/* servername*/
 	init_unistr(&printer->printername, chaine2);				/* printername*/
