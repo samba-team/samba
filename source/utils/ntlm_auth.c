@@ -332,6 +332,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		    (strncmp(buf, "KK ", 3) != 0) &&
 		    (strncmp(buf, "AF ", 3) != 0) &&
 		    (strncmp(buf, "NA ", 3) != 0) && 
+		    (strncmp(buf, "UG", 2) != 0) && 
 		    (strncmp(buf, "PW ", 3) != 0)) {
 		DEBUG(1, ("SPNEGO request [%s] invalid\n", buf));
 		mux_printf(mux_id, "BH\n");
@@ -405,13 +406,40 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 							 talloc_strndup((*gensec_state), 
 									(const char *)in.data, 
 									in.length)))) {
-			DEBUG(1, ("Out of memory\n"));
-			mux_printf(mux_id, "BH\n");
+			DEBUG(1, ("gensec_set_password failed: %s\n", nt_errstr(nt_status)));
+			mux_printf(mux_id, "BH %s\n", nt_errstr(nt_status));
 			data_blob_free(&in);
 			return;
 		}
 
 		mux_printf(mux_id, "OK\n");
+		data_blob_free(&in);
+		return;
+	}
+
+	if (strncmp(buf, "UG", 2) == 0) {
+		int i;
+		char *grouplist = NULL;
+		struct auth_session_info *session_info;
+
+		if (!NT_STATUS_IS_OK(gensec_session_info(*gensec_state, &session_info))) { 
+			DEBUG(1, ("gensec_session_info failed: %s\n", nt_errstr(nt_status)));
+			mux_printf(mux_id, "BH %s\n", nt_errstr(nt_status));
+			data_blob_free(&in);
+			return;
+		}
+		
+		/* get the string onto the context */
+		grouplist = talloc_strdup(session_info, "");
+		
+		for (i=0; i< session_info->nt_user_token->num_sids; i++) {
+			grouplist = talloc_asprintf_append(grouplist, "%s,", 
+							   dom_sid_string(session_info, 
+									  session_info->nt_user_token->user_sids[i]));
+		}
+
+		mux_printf(mux_id, "GL %s\n", grouplist);
+		free_session_info(&session_info);
 		data_blob_free(&in);
 		return;
 	}
