@@ -195,7 +195,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 	int i;
 	fstring srv_name;
 	int num_names = 0;
-	char *names[10];
+	char **names;
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
 #if 0
@@ -210,13 +210,13 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(4,("cmd_lsa_lookup_names: server: %s\n", srv_name));
 
-	while (num_names < 10 && next_token(NULL, temp, NULL, sizeof(temp)))
-	{
-		names[num_names] = strdup(temp);
-		num_names++;
-	}
+	argc--;
+	argv++;
 
-	if (num_names == 0)
+	num_names = argc;
+	names = argv;
+
+	if (num_names <= 0)
 	{
 		report(out_hnd, "lookupnames <name> [<name> ...]\n");
 		return;
@@ -266,14 +266,6 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 		}
 		free(sids);
 	}
-
-	for (i = 0; i < num_names; i++)
-	{
-		if (names[i] != NULL)
-		{
-			free(((char **)names)[i]);
-		}
-	}
 }
 
 /****************************************************************************
@@ -282,13 +274,11 @@ lookup sids
 void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
-	fstring temp;
 	int i;
 	pstring sid_name;
 	fstring srv_name;
-	DOM_SID sid[10];
-	DOM_SID *sids[10];
-	int num_sids = 0;
+	DOM_SID **sids = NULL;
+	uint32 num_sids = 0;
 	char **names = NULL;
 	int num_names = 0;
 
@@ -300,11 +290,15 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(4,("cmd_lsa_lookup_sids: server: %s\n", srv_name));
 
-	while (num_sids < 10 && next_token(NULL, temp, NULL, sizeof(temp)))
+	argv++;
+	argc--;
+
+	while (argc > 0)
 	{
-		if (strnequal("S-", temp, 2))
+		DOM_SID sid;
+		if (strnequal("S-", argv[0], 2))
 		{
-			fstrcpy(sid_name, temp);
+			fstrcpy(sid_name, argv[0]);
 		}
 		else
 		{
@@ -317,11 +311,14 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 			}
 				
 			fstrcat(sid_name, "-");
-			fstrcat(sid_name, temp);
+			fstrcat(sid_name, argv[0]);
 		}
-		string_to_sid(&sid[num_sids], sid_name);
-		sids[num_sids] = &sid[num_sids];
-		num_sids++;
+		string_to_sid(&sid, sid_name);
+		
+		add_sid_to_array(&num_sids, &sids, &sid);
+
+		argc--;
+		argv++;
 	}
 
 	if (num_sids == 0)
@@ -362,6 +359,7 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 		report(out_hnd, "Lookup SIDS:\n");
 		for (i = 0; i < num_names; i++)
 		{
+			fstring temp;
 			sid_to_string(temp, sids[i]);
 			report(out_hnd, "SID: %s -> %s\n", temp, names[i]);
 			if (names[i] != NULL)
@@ -371,6 +369,8 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 		}
 		free(names);
 	}
+
+	free_sid_array(num_sids, sids);
 }
 
 /****************************************************************************
@@ -386,16 +386,18 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 	uint32 i;
 
 	POLICY_HND hnd_secret;
-	fstring secret_name;
+	char *secret_name;
 	STRING2 enc_secret;
 	STRING2 secret;
 	NTTIME last_update;
 
-	if (!next_token(NULL, secret_name, NULL, sizeof(secret_name)))
+	if (argc > 2)
 	{
 		report(out_hnd, "querysecret <secret name>\n");
 		return;
 	}
+
+	secret_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
