@@ -1399,6 +1399,8 @@ static char *lp_string(const char *s)
 
 #define FN_LOCAL_STRING(fn_name,val) \
  char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val));}
+#define FN_LOCAL_CONST_STRING(fn_name,val) \
+ const char *fn_name(int i) {return((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
@@ -1570,6 +1572,7 @@ FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
 FN_LOCAL_STRING(lp_rootpostexec, szRootPostExec)
 FN_LOCAL_STRING(lp_servicename, szService)
+FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)
@@ -3396,7 +3399,7 @@ int lp_servicenumber(char *pszServiceName)
 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
 		if (VALID(iService) &&
-		    strequal(lp_servicename(iService), pszServiceName))
+		    strequal(lp_const_servicename(iService), pszServiceName))
 			break;
 
 	if (iService < 0)
