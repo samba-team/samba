@@ -74,15 +74,124 @@ static BOOL become_uid(int uid)
 #ifdef AIX
   {
     /* AIX 3 stuff - inspired by a code fragment in wu-ftpd */
+    /* MWW: This is all undocumented, of course.  There's a patch to WU-ftpd
+       in the AIX FAQ which does the setpriv, then sets the gid stuff, then
+       sets uid.  Since Samba separates setting the gid and setting the uid,
+       I've duplicated the setpriv code in become_gid.  I've also made the
+       requisite changes to become_gid to match the WU-ftpd patch.
+
+       I believe we'll still get errors in the Samba logs.  This setpriv
+       call is supposed to disable "trapdooring" on AIX - ie. normally
+       once a seteuid / setegid is done, the effective ID can't be set back
+       to what it was before.  See the comments in become_root / unbecome_root.
+       I *think* that we may have to do something additional here to prevent
+       the "Can't set uid (AIX3)" messages, though - possibly change the
+       values of priv.pv_priv to keep the SET_PROC_DAC privilege, and
+       possibly SET_OBJ_DAC and SET_OBJ_STAT as well.
+
+       The pv_priv array is two longwords, and the constants in sys/priv.h
+       have values between 1 and 64, according to the comments in priv.h.
+       This strongly suggests a bit vector - but does BYPASS_DAC_WRITE
+       (#define'd to 1) mean 1<<0 or 1<<1?  Unfortunately, nothing's
+       defined to 0 or 64, which would be a dead giveaway.  Also, what's the
+       fullword-boundary endianness?  That is, is pv_priv[0] the high or
+       the low 32 bits?  Fortunately, the values used by "su" (see below)
+       don't make much sense if pv_priv[0] is the high bits.  Also, based
+       on analysis of the values used by su, I concluded that, for example,
+       BYPASS_DAC_READ (defined to 2) is bit "2" counting from 1 - ie.
+       if (pv_priv[0] & (1 << (BYPASS_DAC_READ - 1))) then BYPASS_DAC_READ
+       is on.  That's a bit odd, but it makes more sense than if the
+       privilege constants are meant to be taken as exponents of 2.
+
+       For analysis, I ran "su" as root under dbx, and stopped in setpriv.
+       The first argument to setpriv can be examined using
+
+          print $r3   (eg. "0x30009" = PRIV_SET|PRIV_MAXIMUM|PRIV_EFFECTIV)
+
+       the contents of the pv_priv array can be examined using
+
+          ($r4)/2X
+
+       Here's what su does:
+
+          setpriv(PRIV_SET | PRIV_INHERITED | PRIV_BEQUEATH, {0,0})
+          setpriv(PRIV_SET | PRIV_EFFECTIVE | PRIV_MAXIMUM,
+                  {0x02800006, 0x00040000})
+             0x02800006 = SET_PROC_AUDIT | SET_PROC_ENV |
+                          BYPASS_DAC_EXEC | BYPASS_DAC_READ
+             0x00040000 = TPATH_CONFIG
+          setpriv(PRIV_SET | PRIV_EFFECTIVE, {0, 0})
+
+       Analysis:
+
+          Reduce inherited privileges to none, so the child doesn't inherit
+             anything special.
+          Change su's privileges so it can execute the shell even if someone
+             has goofed up the permissions to it or to directories on the
+             search path; so it can set the process auditing characteristics
+             and privileged environment (stuff in /etc/security/environ with
+             the sysenv attribute); and so that it can set the trusted path
+             characteristics for this login.
+          Zap those privileges back off when we don't need them any more.
+
+       I'm guessing we want to keep SET_PROC_DAC in the current priv set,
+       but not in the inherited one.  That is, set PRIV_INHERITED and
+       PRIV_BEQUEATH to 0.  We also probably want to set PRIV_MAXIMUM and
+       PRIV_EFFECTIVE to only the privs we need, which at this point would
+       appear to be just SET_PROC_DAC.  *Note*: setting PRIV_MAXIMUM
+       with any of the privilege sets higher than what you're trying to
+       set the maximum to will produce an EINVAL.  For example, if we
+       try to set PRIV_MAXIMUM to SET_PROC_DAC *before* we reduce
+       PRIV_INHERITED and PRIV_BEQUEATH, it won't work.  Zero out the
+       inherited privileges first.
+
+       Some experimentation with simple programs confirms that if we're
+       running with an EUID of 0 we can switch our UID/EUID back and
+       forth with setuidx - *unless* we call setpriv({0,0}, ...) first.
+       In other words, by default root has SET_PROC_DAT set, but we can
+       remove it from our privilege set.  This is what we want to do for
+       child processes, I believe.
+
+       Also, calling setpriv(PRIV_SUB|PRIV_EFFECTIVE,...) with pv_priv[0]
+       set to SET_PROC_DAC (1 << (SET_PROC_DAC - 1)) will prevent an
+       EUID-root process from switching its EUID back with setuidx.
+
+       In other words, setuidx on AIX is *not* trapdoor.  setuid is
+       trapdoor.  We need a non-trapdoor setuid function, but we don't
+       want processes we fork to have access to it.  Thus we use setuidx
+       but first we disable it for our children.
+
+       Note, however, that we can only increase our privileges (as we
+       do in the first call to setpriv) if we're EUID-root.  If we
+       started out as root, and then switched to a non-root user ID,
+       that's OK; we've already set them.  Just don't try to set them
+       again.
+
+       Also, I suspect that after using setpriv / setuidx / etc. here in
+       the AIX-specific code we DON'T want to fall through to the code that
+       calls setuid, etc.  However, I haven't noticed any more problems with
+       the code the way it is here.
+       */
+
     priv_t priv;
 
     priv.pv_priv[0] = 0;
     priv.pv_priv[1] = 0;
-    if (setpriv(PRIV_SET|PRIV_INHERITED|PRIV_EFFECTIVE|PRIV_BEQUEATH,
-		&priv, sizeof(priv_t)) < 0 ||
-	setuidx(ID_REAL|ID_EFFECTIVE, (uid_t)uid) < 0 ||
-	seteuid((uid_t)uid) < 0) 
+    if (setpriv(PRIV_SET|PRIV_INHERITED|PRIV_BEQUEATH,
+		&priv, sizeof(priv_t)) < 0) {
+       DEBUG(1, ("Can't set child privileges (AIX3): %s\n", strerror(errno)));
+    }
+
+    priv.pv_priv[0] = (1 << (SET_PROC_DAC - 1));
+    if (setpriv(PRIV_SET|PRIV_EFFECTIVE|PRIV_MAXIMUM,
+		&priv, sizeof(priv_t)) < 0) {
+       DEBUG(1, ("Can't set own privileges (AIX3): %s\n", strerror(errno)));
+    }
+
+    if (setuidx(ID_REAL|ID_EFFECTIVE, (uid_t)uid) < 0 ||
+	seteuid((uid_t)uid) < 0) {
       DEBUG(1,("Can't set uid (AIX3)\n"));
+    }
   }
 #endif
 
@@ -125,6 +234,24 @@ static BOOL become_gid(int gid)
     DEBUG(1,("WARNING: using gid %d is a security risk\n",gid));    
   }
   
+#ifdef AIX
+  {
+    /* MWW: See comment above in become_uid. */
+    priv_t priv;
+
+    priv.pv_priv[0] = 0;
+    priv.pv_priv[1] = 0;
+    if (setpriv(PRIV_SET|PRIV_INHERITED|PRIV_EFFECTIVE|PRIV_BEQUEATH,
+		&priv, sizeof(priv_t)) < 0) {
+       DEBUG(1, ("Can't set privilege (AIX3)\n"));
+       }
+    if (setgidx(ID_REAL|ID_EFFECTIVE, (gid_t)gid) < 0 ||
+	setegid((gid_t)gid) < 0) {
+      DEBUG(1,("Can't set gid (AIX3)\n"));
+    }
+  }
+#endif
+
 #ifdef USE_SETRES 
   if (setresgid(-1,gid,-1) != 0)
 #elif defined(USE_SETFS)
@@ -169,6 +296,10 @@ BOOL become_guest(void)
     pass = Get_Pwnam(lp_guestaccount(-1),True);
   if (!pass) return(False);
 
+#ifdef AIX
+  /* MWW: From AIX FAQ patch to WU-ftpd: call initgroups before setting IDs */
+  initgroups(pass->pw_name, (gid_t)pass->pw_gid);
+#endif
   ret = become_id(pass->pw_uid,pass->pw_gid);
 
   if (!ret)
