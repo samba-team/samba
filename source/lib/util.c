@@ -46,10 +46,6 @@
 
 #include <rpcsvc/nis.h>
 
-#else /* !WITH_NISPLUS_HOME */
-
-#include "rpcsvc/ypclnt.h"
-
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
@@ -1123,7 +1119,7 @@ static void strip_mount_options( pstring *str)
 *******************************************************************/
 
 #ifdef WITH_NISPLUS_HOME
-char *automount_lookup(const char *user_name)
+char *automount_lookup( char *user_name)
 {
 	static fstring last_key = "";
 	static pstring last_value = "";
@@ -1166,7 +1162,7 @@ char *automount_lookup(const char *user_name)
 }
 #else /* WITH_NISPLUS_HOME */
 
-char *automount_lookup(const char *user_name)
+char *automount_lookup( char *user_name)
 {
 	static fstring last_key = "";
 	static pstring last_value = "";

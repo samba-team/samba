@@ -106,9 +106,10 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 
 /***********************************************************************
  Store a NET_USER_INFO_3 structure in a tdb for later user 
+ username should be in UTF-8 format
 ***********************************************************************/
 
-BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
+BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USER_INFO_3 *user)
 {
 	TDB_DATA 	data;
         fstring 	keystr;
@@ -130,6 +131,14 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 	slprintf(keystr, sizeof(keystr), "%s", sid_string_static(&user_sid));
 
 	DEBUG(10,("netsamlogon_cache_store: SID [%s]\n", keystr));
+	
+	/* only Samba fills in the username, not sure why NT doesn't */
+	/* so we fill it in since winbindd_getpwnam() makes use of it */
+	
+	if ( !user->uni_user_name.buffer ) {
+		init_unistr2( &user->uni_user_name, username, STR_TERMINATE );
+		init_uni_hdr( &user->hdr_user_name, &user->uni_user_name );
+	}
 		
 	/* Prepare data */
 	

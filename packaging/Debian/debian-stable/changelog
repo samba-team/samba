@@ -1,3 +1,16 @@
+samba (3.0.6-1) stable; urgency=low
+
+  * samba 3.0.6 release
+
+ -- Simo Sorce <idra@samba.org>  Fri, 20 August 2004 10:19:00 +0200
+
+samba (3.0.5-1) stable; urgency=low
+
+  * samba 3.0.5 release
+  * Security Fix Release
+
+ -- Simo Sorce <idra@samba.org>  Tue, 27 July 2004 15:15:00 +0200
+
 samba (3.0.4-1) stable; urgency=low
 
   * samba 3.0.4 release

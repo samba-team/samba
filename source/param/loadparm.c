@@ -200,7 +200,6 @@ typedef struct
 	int lpqcachetime;
 	int iMaxSmbdProcesses;
 	BOOL bDisableSpoolss;
-	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
 	int enhanced_browsing;
@@ -1199,24 +1198,18 @@ static void init_printer_values(service *pService)
 		case PRINT_LPROS2:
 			string_set(&pService->szLpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand,
-				   "lpr -r -P'%p' %s");
+			string_set(&pService->szPrintcommand, "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
 			string_set(&pService->szLpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand,
-				   "lpr -r -P'%p' %s");
-			string_set(&pService->szQueuepausecommand,
-				   "lpc stop '%p'");
-			string_set(&pService->szQueueresumecommand,
-				   "lpc start '%p'");
-			string_set(&pService->szLppausecommand,
-				   "lpc hold '%p' %j");
-			string_set(&pService->szLpresumecommand,
-				   "lpc release '%p' %j");
+			string_set(&pService->szPrintcommand, "lpr -r -P'%p' %s");
+			string_set(&pService->szQueuepausecommand, "lpc stop '%p'");
+			string_set(&pService->szQueueresumecommand, "lpc start '%p'");
+			string_set(&pService->szLppausecommand, "lpc hold '%p' %j");
+			string_set(&pService->szLpresumecommand, "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
@@ -1231,20 +1224,13 @@ static void init_printer_values(service *pService)
 
 	                string_set(&Globals.szPrintcapname, "cups");
 #else
-			string_set(&pService->szLpqcommand,
-			           "/usr/bin/lpstat -o '%p'");
-			string_set(&pService->szLprmcommand,
-			           "/usr/bin/cancel '%p-%j'");
-			string_set(&pService->szPrintcommand,
-			           "/usr/bin/lp -d '%p' %s; rm %s");
-			string_set(&pService->szLppausecommand,
-				   "lp -i '%p-%j' -H hold");
-			string_set(&pService->szLpresumecommand,
-				   "lp -i '%p-%j' -H resume");
-			string_set(&pService->szQueuepausecommand,
-			           "/usr/bin/disable '%p'");
-			string_set(&pService->szQueueresumecommand,
-			           "/usr/bin/enable '%p'");
+			string_set(&pService->szLpqcommand, "/usr/bin/lpstat -o '%p'");
+			string_set(&pService->szLprmcommand, "/usr/bin/cancel '%p-%j'");
+			string_set(&pService->szPrintcommand, "/usr/bin/lp -d '%p' %s; rm %s");
+			string_set(&pService->szLppausecommand, "lp -i '%p-%j' -H hold");
+			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
+			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
+			string_set(&pService->szQueueresumecommand, "/usr/bin/enable '%p'");
 			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
 			break;
@@ -1253,17 +1239,12 @@ static void init_printer_values(service *pService)
 		case PRINT_HPUX:
 			string_set(&pService->szLpqcommand, "lpstat -o%p");
 			string_set(&pService->szLprmcommand, "cancel %p-%j");
-			string_set(&pService->szPrintcommand,
-				   "lp -c -d%p %s; rm %s");
-			string_set(&pService->szQueuepausecommand,
-				   "disable %p");
-			string_set(&pService->szQueueresumecommand,
-				   "enable %p");
+			string_set(&pService->szPrintcommand, "lp -c -d%p %s; rm %s");
+			string_set(&pService->szQueuepausecommand, "disable %p");
+			string_set(&pService->szQueueresumecommand, "enable %p");
 #ifndef HPUX
-			string_set(&pService->szLppausecommand,
-				   "lp -i %p-%j -H hold");
-			string_set(&pService->szLpresumecommand,
-				   "lp -i %p-%j -H resume");
+			string_set(&pService->szLppausecommand, "lp -i %p-%j -H hold");
+			string_set(&pService->szLpresumecommand, "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
@@ -1316,6 +1297,8 @@ static void init_globals(void)
 				string_set(parm_table[i].ptr, "");
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
+
+		init_printer_values(&sDefault);
 
 		done_init = True;
 	}
@@ -1390,7 +1373,6 @@ static void init_globals(void)
 	Globals.lpqcachetime = 10;
 	Globals.bDisableSpoolss = False;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
-	Globals.iTotalPrintJobs = 0;  /* no limit specified */
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
@@ -2305,6 +2287,10 @@ static int add_a_service(const service *pservice, const char *name)
 	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
 		string_set(&ServicePtrs[i]->szService, name);
+		
+	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
+		i, ServicePtrs[i]->szService));
+		
 	return (i);
 }
 
@@ -2344,7 +2330,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	ServicePtrs[i]->autoloaded = True;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
-	       user, newHomedir));
+	       user, ServicePtrs[i]->szPath ));
 	
 	return (True);
 }
@@ -3966,9 +3952,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	init_iconv();
-#if 0	/* JERRY */
-	init_printer_values(&sDefault);
-#endif
 
 	return (bRetval);
 }

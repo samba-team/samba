@@ -3245,9 +3245,6 @@ static void add_uid_to_array_unique(uid_t uid, uid_t **uids, int *num)
 {
 	int i;
 
-	if ((*num) >= groups_max())
-		return;
-
 	for (i=0; i<*num; i++) {
 		if ((*uids)[i] == uid)
 			return;

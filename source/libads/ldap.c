@@ -2184,13 +2184,19 @@ BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
  */
 char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
 {
+#if 0	/* JERRY */
 	char *ret, *p;
+
+	/* lookup_name() only works on the sAMAccountName to 
+	   returning the username portion of userPrincipalName
+	   breaks winbindd_getpwnam() */
 
 	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
 	if (ret && (p = strchr(ret, '@'))) {
 		*p = 0;
 		return ret;
 	}
+#endif
 	return ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 }
 
