@@ -237,7 +237,7 @@ define_type (int level, char *name, Type *t, int typedefp)
 	Type i;
 	int tag = -1;
 
-	i.type = TInteger;
+	i.type = TUInteger;
 	space(level);
 	fprintf (headerfile, "struct %s {\n", typedefp ? name : "");
 	for (m = t->members; m && m->val != tag; m = m->next) {
