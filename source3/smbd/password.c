@@ -85,7 +85,7 @@ get the last challenge sent
 ********************************************************************/
 static BOOL last_challenge(unsigned char *challenge)
 {
-  if (!challenge_sent) return(False);
+  if (!challenge_sent) return False;
   memcpy(challenge,saved_challenge,8);
   return(True);
 }
@@ -367,7 +367,10 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 {
 	uchar challenge[8];
 
-	if (!lm_pass || !smb_pass) return(False);
+	if (smb_pass == NULL)
+	{
+		return False;
+	}
 
 	DEBUG(4,("Checking SMB password for user %s\n", 
 		 smb_pass->unix_name));
@@ -376,7 +379,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	{
 		DEBUG(3,("account for user %s was disabled.\n", 
 			 smb_pass->unix_name));
-		return(False);
+		return False;
 	}
 
 	if (chal == NULL)
@@ -473,7 +476,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 
 	if (!lm_pwd || !nt_pwd)
 	{
-		return(False);
+		return False;
 	}
 
 	if (pwd != NULL && user == NULL)
@@ -489,7 +492,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	if (pass == NULL)
 	{
 		DEBUG(3,("Couldn't find user %s\n",user));
-		return(False);
+		return False;
 	}
 
 	smb_pass = getsmbpwnam(user);
@@ -497,20 +500,20 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	if (smb_pass == NULL)
 	{
 		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
-		return(False);
+		return False;
 	}
 
 	/* Quit if the account was disabled. */
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
 		DEBUG(3,("account for user %s was disabled.\n", user));
-		return(False);
+		return False;
         }
 
 	/* Ensure the uid's match */
 	if (smb_pass->unix_uid != pass->pw_uid)
 	{
 		DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
-		return(False);
+		return False;
 	}
 
 	if (lm_pwd[0] == '\0' && IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ) && lp_null_passwords())
@@ -722,7 +725,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
     {
       char *auser;
       char *user_list = strdup(session_users);
-      if (!user_list) return(False);
+      if (!user_list) return False;
 
       for (auser=strtok(user_list,LIST_SEP); 
            !ok && auser; 
@@ -937,7 +940,7 @@ BOOL check_hosts_equiv(char *user)
   const struct passwd *pass = Get_Pwnam(user,True);
 
   if (!pass) 
-    return(False);
+    return False;
 
   fname = lp_hosts_equiv();
 
@@ -959,7 +962,7 @@ BOOL check_hosts_equiv(char *user)
       }
     }
 
-  return(False);
+  return False;
 }
 
 
@@ -1000,7 +1003,7 @@ BOOL server_validate(char *user, char *domain,
 
   if (!cli->initialised) {
     DEBUG(1,("password server %s is not connected\n", cli->desthost));
-    return(False);
+    return False;
   }  
 
   if(badpass[0] == 0)
@@ -1075,7 +1078,7 @@ use this machine as the password server.\n"));
   if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
     DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
     cli_ulogoff(cli);
-    return(False);
+    return False;
   }
 
 
