@@ -4,7 +4,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 XINCS = @X_CFLAGS@
-XLIBS = @X_LIBS@ @X_PRE_LIBS@ -lXt -lX11 @X_EXTRA_LIBS@
+XLIBS = @X_LIBS@ -lXt @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
 
 CC = @CC@
 RANLIB = @RANLIB@
