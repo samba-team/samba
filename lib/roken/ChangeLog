@@ -1,3 +1,7 @@
+2001-01-29  Assar Westerlund  <assar@sics.se>
+
+	* roken-common.h (_PATH_BSHELL): add
+
 2001-01-27  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in: move __attribute__ to roken-common.h

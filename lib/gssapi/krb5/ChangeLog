@@ -1,3 +1,9 @@
+2001-01-27  Assar Westerlund  <assar@sics.se>
+
+	* get_mic.c: cast parameters to des function to non-const pointers
+ 	to handle the case where these functions actually take non-const
+ 	des_cblock *
+
 2001-01-09  Assar Westerlund  <assar@sics.se>
 
 	* accept_sec_context.c (gss_accept_sec_context): use krb5_rd_cred2
