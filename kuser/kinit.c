@@ -227,7 +227,7 @@ static struct getargs args[] = {
       "validate TGT" },
 
     { "enctypes",	'e', arg_strings, &etype_str,
-      "encryption type to use", "enctype" },
+      "encryption types to use", "enctypes" },
 
     { "fcache-version", 0,   arg_integer, &fcache_version,
       "file cache version to create" },
