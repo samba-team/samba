@@ -4,6 +4,8 @@
 
 RCSID("$Id$");
 
+#include <stdlib.h>
+
 /*
  * This is the easy way out, use putenv to implement setenv. We might
  * leak some memory but that is ok since we are usally about to exec
