@@ -1729,12 +1729,13 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 #if defined(WITH_SENDFILE)
 	/*
-	 * We can only use sendfile on a non-chained packet and on a file
-	 * that is exclusively oplocked. reply_readbraw has already checked the length.
+	 * We can only use sendfile on a non-chained packet 
+	 * but we can use on a non-oplocked file. tridge proved this
+	 * on a train in Germany :-). JRA.
+	 * reply_readbraw has already checked the length.
 	 */
 
-	if ((nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) &&
-			EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_use_sendfile(SNUM(conn)) ) {
+	if ((nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) && lp_use_sendfile(SNUM(conn)) ) {
 		DATA_BLOB header;
 
 		_smb_setlen(outbuf,nread);
@@ -2067,12 +2068,13 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 #if defined(WITH_SENDFILE)
 	/*
-	 * We can only use sendfile on a non-chained packet and on a file
-	 * that is exclusively oplocked.
+	 * We can only use sendfile on a non-chained packet 
+	 * but we can use on a non-oplocked file. tridge proved this
+	 * on a train in Germany :-). JRA.
 	 */
 
-	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
-			lp_use_sendfile(SNUM(conn)) && (lp_write_cache_size(SNUM(conn)) == 0) ) {
+	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && lp_use_sendfile(SNUM(conn)) &&
+			(lp_write_cache_size(SNUM(conn)) == 0) ) {
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
