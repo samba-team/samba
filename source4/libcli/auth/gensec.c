@@ -471,6 +471,21 @@ void gensec_want_feature(struct gensec_security *gensec_security,
 }
 
 /** 
+ * Check the requirement for a certain feature on the connection
+ *
+ */
+
+BOOL gensec_have_feature(struct gensec_security *gensec_security,
+			 uint32 feature) 
+{
+	if (gensec_security->want_features & feature) {
+		return True;
+	}
+
+	return False;
+}
+
+/** 
  * Set a username on a GENSEC context - ensures it is talloc()ed 
  *
  */
