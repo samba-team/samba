@@ -680,7 +680,7 @@ cups_job_submit(int snum, struct printjob *pjob)
 			*response;	/* IPP Response */
 	cups_lang_t	*language;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
+	char 		*clientname; 	/* hostname of client for job-originating-host attribute */
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -734,9 +734,14 @@ cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, pjob->user);
 
+	clientname = client_name();
+	if (strcmp(clientname, "UNKNOWN") == 0) {
+		clientname = client_addr();
+	}
+
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
 	             "job-originating-host-name", NULL,
-		     get_remote_machine_name());
+		      clientname);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     pjob->jobname);
