@@ -37,12 +37,10 @@ int connect_sock(void)
     strncpy(sunaddr.sun_path, SOCKET_NAME, sizeof(sunaddr.sun_path));
 
     if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-        perror("socket");
         return -1;
     }
 
     if (connect(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
-        perror("connect");
         return -1;
     }
 
