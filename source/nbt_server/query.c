@@ -81,9 +81,10 @@ void nbt_request_query(struct nbt_name_socket *nbtsock,
 		       struct nbt_name_packet *packet, 
 		       const char *src_address, int src_port)
 {
-	struct nbt_interface *iface;
 	struct nbt_iface_name *iname;
 	struct nbt_name *name;
+	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						      struct nbt_interface);
 
 	/* see if its a node status query */
 	if (packet->qdcount == 1 &&
@@ -98,9 +99,6 @@ void nbt_request_query(struct nbt_name_socket *nbtsock,
 		nbt_query_wins(nbtsock, packet, src_address, src_port);
 		return;
 	}
-
-	/* find the interface for this query */
-	iface = nbt_iface_find(nbtsock, src_address);
 
 	NBT_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
 	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_type == NBT_QTYPE_NETBIOS);

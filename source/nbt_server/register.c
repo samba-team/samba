@@ -209,7 +209,10 @@ static void nbt_register_name(struct nbt_server *nbtsrv,
 	}
 
 	/* register on our general broadcast interface as a permanent name */
-	nbt_register_name_iface(nbtsrv->bcast_interface, name, type, nb_flags | NBT_NM_PERMANENT);
+	if (nbtsrv->bcast_interface) {
+		nbt_register_name_iface(nbtsrv->bcast_interface, name, type, 
+					nb_flags | NBT_NM_PERMANENT);
+	}
 
 	/* TODO: register with our WINS servers */
 }
