@@ -680,8 +680,7 @@ static void add_socket(struct server_service *service,
 		       struct socket_context *socket_ctx, 
 		       struct in_addr *ifip)
 {
-	char *ptr, *tok;
-	char **ports = lp_smb_ports();
+	const char **ports = lp_smb_ports();
 	int i;
 
 	for (i=0;ports[i];i++) {
