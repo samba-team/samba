@@ -858,7 +858,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 /***************************************************************
  calls nis_list, returns results.
  ****************************************************************/
-static nis_result *nisp_get_nis_list(char *nis_name, uint_t flags)
+static nis_result *nisp_get_nis_list(char *nis_name, unsigned int flags)
 {
 	nis_result *result;
 	int i;
