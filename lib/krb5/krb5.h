@@ -84,7 +84,7 @@ typedef struct krb5_addresses {
     krb5_address *addrs;
 } krb5_addresses;
 
-typedef enum krb5_keytype { KEYTYPE_DES } krb5_keytype;
+typedef enum krb5_keytype { KEYTYPE_DES = 1 } krb5_keytype;
 
 typedef struct krb5_keyblock{
   krb5_keytype keytype;
@@ -133,9 +133,14 @@ typedef const krb5_principal_data *krb5_const_principal;
 typedef krb5_data krb5_realm;
 
 typedef struct krb5_ticket {
+#if 0
     krb5_principal server;
     krb5_data enc_part;
     krb5_data enc_part2;
+#endif
+  struct {
+    krb5_principal client;
+  } enc_part2;
 } krb5_ticket;
 
 
@@ -189,7 +194,9 @@ typedef struct krb5_keytab_data {
 typedef struct krb5_keytab_data *krb5_keytab;
 
 typedef struct krb5_keytab_entry {
-  int foo;
+  krb5_principal principal;
+  krb5_kvno vno;
+  krb5_keyblock keyblock;
 } krb5_keytab_entry;
 
 typedef struct krb5_kt_cursor {
@@ -370,6 +377,11 @@ krb5_mk_req(krb5_context context,
 	    char *hostname,
 	    krb5_data *in_data,
 	    krb5_ccache ccache,
+	    krb5_data *outbuf);
+
+krb5_error_code
+krb5_mk_rep(krb5_context context,
+	    krb5_auth_context *auth_context,
 	    krb5_data *outbuf);
 
 krb5_error_code
