@@ -60,20 +60,61 @@ shrink.
 	<itemizedlist>
 	<title>Samba Access Control Facilities</title>
 		<listitem><para>
-		Unix file and directory permissions
-		</para></listitem>
+		<emphasis>Unix File and Directory Permissions</emphasis>
+		</para>
+
+			<para>
+			Samba honours and implements Unix file system access controls. Users
+			who access a Samba server will do so as a particular MS Windows user.
+			This information is passed to the Samba server as part of the logon orr
+			connection setup process. Samba uses this user identity to validate
+			whether or not the user should be given access to file system resources
+			(files and directories). This chapter provides an overview for those
+			to whom the Unix permissions and controls are a little strange or unknown.
+			</para>
+		</listitem>
 
 		<listitem><para>
-		Samba Share Definitions
-		</para></listitem>
+		<emphasis>Samba Share Definitions</emphasis>
+		</para>
+
+			<para>
+			In configuring share settings and controls in the &smb.conf; file
+			the network administrator can exercise over-rides to native file
+			system permissions and behaviours. This can be handy and convenient
+			to affect behaviour that is more like what MS Windows NT users expect
+			but it is seldom the <emphasis>best</emphasis> way to achieve this.
+			The basic options and techniques are described herein.
+			</para>
+		</listitem>
 
 		<listitem><para>
-		Samba Share ACLs
-		</para></listitem>
+		<emphasis>Samba Share ACLs</emphasis>
+		</para>
+
+			<para>
+			Just like it is possible in MS Windows NT to set ACLs on shares
+			themselves, so it is possible to do this in Samba.
+			Very few people make use of this facility, yet it remains on of the
+			easiest ways to affect access controls (restrictions) and can often
+			do so with minimum invasiveness compared with other methods.
+			</para>
+		</listitem>
 
 		<listitem><para>
-		MS Windows ACLs through Unix POSIX ACLs
-		</para></listitem>
+		<emphasis>MS Windows ACLs through Unix POSIX ACLs</emphasis>
+		</para>
+
+			<para>
+			The use of POSIX ACLs on Unix/Linux is possible ONLY if the underlying
+			operating system supports them. If not, then this option will not be
+			available to you. Current Unix technology platforms have native support
+			for POSIX ACLs. There are patches for the Linux kernel that provide
+			this also. Sadly, few Linux paltforms ship today with native ACLs and
+			Extended Attributes enabled. This chapter has pertinent information
+			for users of platforms that support them.
+			</para>
+		</listitem>
 	</itemizedlist>
 
 </sect1>
@@ -82,8 +123,148 @@ shrink.
 <title>File System Access Controls</title>
 
 <para>
-Explain here how Unix file and permissions work
+Perhaps the most important recognition to be made is the simple fact that MS Windows NT4 / 200x / XP
+implement a totally divergent file system technology from what is provided in the Unix operating system
+environment. Firstly we should consider what the most significant differences are, then we shall look
+at how Samba helps to bridge the differences.
 </para>
+
+	<sect2>
+	<title>MS Windows NTFS Comparison with Unix File Systems</title>
+
+	<para>
+	Samba operates on top of the Unix file system. This means it is subject to Unix file system conventions
+	and permissions. It also means that if the MS Windows networking environment requires file system
+	behaviour that differs from unix file system behaviour then somehow Samba is responsible for emulating
+	that in a transparent and consistent manner.
+	</para>
+
+	<para>
+	It is good news that Samba does this to a very large extent and on top of that provides a high degree
+	of optional configuration to over-ride the default behaviour. We will look at some of these over-rides,
+	but for the greater part we will stay withing the bounds of default behaviour. Those wishing to explore
+	to depths of control ability should review the &smb.conf; man page.
+	</para>
+
+	<itemizedlist>
+	<title>File System Feature Comparison</title>
+		<listitem>
+		<para><emphasis>Name Space</emphasis></para>
+		<para>
+		MS Windows NT4 / 200x/ XP files names may be up to 254 characters long, Unix file names
+		may be 1023 characters long. In MS Windows file extensions indicate particular file types,
+		in Unix this is not so rigorously observed as all names are considered arbitrary. 
+		</para>
+		<para>
+		What MS Windows calls a Folder, Unix calls a directory,
+		</para>
+		</listitem>
+
+		<listitem>
+		<para><emphasis>Case Sensitivity</emphasis></para>
+		<para>
+		MS Windows file names are generally Upper Case if made up of 8.3 (ie: 8 character file name
+		and 3 character extension. If longer than 8.3 file names are Case Preserving, and Case
+		Insensitive.
+		</para>
+		<para>
+		Unix file and directory names are Case Sensitive and Case Preserving. Samba implements the
+		MS Windows file name behaviour, but it does so as a user application. The Unix file system
+		provides no mechanism to perform case insensitive file name lookups. MS Windows does this
+		by default. This means that Samba has to carry the processing overhead to provide features
+		that are NOT native to the Unix operating system environment.
+		</para>
+		<para>
+		Consider the following, all are unique Unix names but one single MS Windows file name:
+			<programlisting>
+				MYFILE.TXT
+				MyFile.txt
+				myfile.txt
+			</programlisting>
+		So clearly, In an MS Windows file name space these three files CAN NOT co-exist! But in Unix 
+		they can. So what should Samba do if all three are present? Answer, the one that is lexically
+		first will be accessible to MS Windows users, the others are invisible and unaccessible - any
+		other solution would be suicidal.
+		</para>
+		</listitem>
+
+		<listitem>
+		<para><emphasis>Directory Separators</emphasis></para>
+		<para>
+		MS Windows and DOS uses the back-slash '\' as a directory delimiter, Unix uses the forward-slash '/'
+		as it's directory delimiter. This is transparently handled by Samba.
+		</para>
+		</listitem>
+
+		<listitem>
+		<para><emphasis>Drive Identification</emphasis></para>
+		<para>
+		MS Windows products support a notion of drive letters, like <command>C:</command> to represent
+		disk partitions. Unix has NO concept if separate identifiers for file partitions since each
+		such file system is <filename>mounted</filename> to become part of the over-all directory tree.
+		The Unix directory tree begins at '/', just like the root of a DOS drive is specified like
+		<command>C:\</command>.
+		</para>
+		</listitem>
+
+		<listitem>
+		<para><emphasis>File Naming Conventions</emphasis></para>
+		<para>
+		MS Windows generally never experiences file names that begin with a '.', while in Unix these
+		are commonly found in a user's home directory. Files that begin with a '.' are typically
+		either start up files for various Unix applications, or they may be files that contain
+		start-up configuration data.
+		</para>
+		</listitem>
+	
+		<listitem>
+		<para><emphasis>Links and Short-Cuts</emphasis></para>
+		<para>
+		MS Windows make use of "links and Short-Cuts" that are actually special types of files that will
+		redirect an attempt to execute the file to the real location of the file. Unix knows of file and directory
+		links, but they are entirely different from what MS Windows users are used to.
+		</para>
+		<para>
+		Symbolic links are files in Unix that contain the actual location of the data (file OR directory). An
+		operation (like read or write) will operate directly on the file referenced. Symbolic links are also
+		referred to as 'soft links'. A hard link is something that MS Windows is NOT familiar with. It allows
+		one physical file to be known simulataneously by more than one file name.
+		</para>
+		</listitem>
+	</itemizedlist>
+
+	<para>
+	There are many other subtle differences that may cause the MS Windows administrator some temporary discomfort
+	in the process of becoming familiar with Unix/Linux. These are best left for a text that is dedicated to the
+	purpose of Unix/Linux training/education.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Managing Directories</title>
+
+	<para>
+	There are three basic operations for managing directories, <command>create, delete, rename</command>.
+	<programlisting>
+		Action    MS Windows Command         Unix Command
+		------    ------------------         ------------
+		create    md folder                 mkdir folder
+		delete    rd folder                 rmdir folder
+		rename    rename oldname newname    mv oldname newname
+	</programlisting>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>File and Directory Access Control</title>
+
+	<para>
+	Explain the anatomy of a directory listing, permissions and what they mean.
+	</para>
+
+	</sect2>
 
 </sect1>
 
@@ -91,7 +272,7 @@ Explain here how Unix file and permissions work
 <title>Share Definition Access Controls</title>
 
 <para>
-Explain here about the smb.conf [share] parameters
+Explain here about the smb.conf [share] Access Control parameters, Mode and Mask parameters, force user/group, valid/invalid users, etc.
 </para>
 
 </sect1>
@@ -241,7 +422,7 @@ Explain here about the smb.conf [share] parameters
 		on the <emphasis>Properties</emphasis> entry at the bottom of 
 		the menu. This brings up the file properties dialog
 		box. Click on the tab <emphasis>Security</emphasis> and you 
-		will see three buttons, <emphasis>Permissions</emphasis>, 	
+		will see three buttons, <emphasis>Permissions</emphasis>,	 
 		<emphasis>Auditing</emphasis>, and <emphasis>Ownership</emphasis>. 
 		The <emphasis>Auditing</emphasis> button will cause either 
 		an error message <errorname>A requested privilege is not held 
@@ -539,7 +720,7 @@ Explain here about the smb.conf [share] parameters
 <title>Common Errors</title>
 
 <para>
-Stuff here
+Stuff from mailing lists here
 </para>
 
 </sect1>
