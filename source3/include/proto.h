@@ -3571,6 +3571,7 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
+void split_server_keyname(char *srv_name, char *key, const char* arg);
 BOOL msrpc_reg_enum_key(const char* srv_name, const char* full_keyname,
 				REG_FN(reg_fn),
 				REG_KEY_FN(reg_key_fn),

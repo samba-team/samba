@@ -649,18 +649,13 @@ static int process_tok(char *tok)
     return(-2);
 }
 
-/* command options mask */
-static uint32 cmd_set_options = 0xffffffff;
-
 /****************************************************************************
-  process commands from the client
+  turn command line into command argument array
 ****************************************************************************/
-static BOOL do_command(struct client_info *info, char *line)
+static BOOL get_cmd_args(char *line)
 {
-	int i;
 	char *ptr = line;
 	pstring tok;
-
 	cmd_argc = 0;
 	cmd_argv = NULL;
 
@@ -675,6 +670,21 @@ static BOOL do_command(struct client_info *info, char *line)
 		add_chars_to_array(&cmd_argc, &cmd_argv, tok);
 
 	} while (next_token(NULL, tok, NULL, sizeof(tok)));
+
+	return True;
+}
+
+/* command options mask */
+static uint32 cmd_set_options = 0xffffffff;
+
+/****************************************************************************
+  process commands from the client
+****************************************************************************/
+static BOOL do_command(struct client_info *info, char *line)
+{
+	int i;
+
+	if (!get_cmd_args(line)) return False;
 
 	if (cmd_argc == 0)
 	{
@@ -693,11 +703,13 @@ static BOOL do_command(struct client_info *info, char *line)
 	}
 	else if (i == -2)
 	{
-		fprintf(out_hnd, "%s: command abbreviation ambiguous\n", CNV_LANG(tok));
+		fprintf(out_hnd, "%s: command abbreviation ambiguous\n",
+		                 CNV_LANG(cmd_argv[0]));
 	}
 	else
 	{
-		fprintf(out_hnd, "%s: command not found\n", CNV_LANG(tok));
+		fprintf(out_hnd, "%s: command not found\n",
+		                 CNV_LANG(cmd_argv[0]));
 	}
 
 	free_char_array(cmd_argc, cmd_argv);
@@ -916,20 +928,22 @@ static char *complete_regenum(char *text, int state)
 	if (state == 0)
 	{
 		fstring srv_name;
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
 		if (cmd_argc >= 2 && cmd_argv != NULL && cmd_argv[1] != NULL)
 		{
 			char *sep;
-			pstrcpy(full_keyname, cmd_argv[1]);
+			split_server_keyname(srv_name, full_keyname,
+			                     cmd_argv[1]);
+
 			sep = strrchr(full_keyname, '\\');
 			if (sep != NULL)
 			{
 				*sep = 0;
 			}
 		}
-
-		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, cli_info.dest_host);
-		strupper(srv_name);
 
 		/* Iterate all keys / values */
 		if (!msrpc_reg_enum_key(srv_name, full_keyname,
@@ -1249,6 +1263,8 @@ static char **completion_fn(char *text, int start, int end)
     int i;
     char lastch = ' ';
 
+	(void)get_cmd_args(rl_line_buffer);
+
 	safe_strcpy(cmd_partial, rl_line_buffer,
 	            MAX(sizeof(cmd_partial),end)-1);
 
@@ -1354,7 +1370,6 @@ static void set_user_password(struct user_credentials *u,
 	}
 }
 
-#define CMD_INTER 0x0
 #define CMD_STR 0x1
 #define CMD_DBF 0x2
 #define CMD_SVC 0x4
@@ -1372,6 +1387,7 @@ static void set_user_password(struct user_credentials *u,
 #define CMD_NAME 0x4000
 #define CMD_DBG 0x8000
 #define CMD_SCOPE 0x10000
+#define CMD_INTER 0x20000
 
 static void cmd_set(struct client_info *info, int argc, char *argv[])
 {
@@ -1390,7 +1406,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	*term_code = 0;
 #endif /* KANJI */
 
-	if (*argv[1] != '-')
+	if (argc > 1 && *argv[1] != '-')
 	{
 		if (argc > 1 && (*argv[1] != '-'))
 		{
@@ -1456,6 +1472,10 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 					pstrcpy(password,lp+1);
 					cmd_set_options |= CMD_PASS;
 					memset(strchr(optarg,'%')+1,'X',strlen(password));
+				}
+				if (usr.user_name[0] == 0 && password[0] == 0)
+				{
+					cmd_set_options |= CMD_NOPW;
 				}
 				break;
 			}
@@ -1554,13 +1574,18 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
+	DEBUG(10,("cmd_set: options: %x\n", cmd_set_options));
+
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
 	{
 		return;
 	}
 
-	setup_logging(debugf, interactive);
-	reopen_logs();
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
+	{
+		setup_logging(debugf, interactive);
+		reopen_logs();
+	}
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
 	{
@@ -1577,12 +1602,19 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	strupper(global_myname);
 	fstrcpy(cli_info.myhostname, global_myname);
 
-	if (!lp_load(servicesf,True, False, False))
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_SVC))
 	{
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+		if (!lp_load(servicesf,True, False, False))
+		{
+			fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+		}
+
 	}
 
-	load_interfaces();
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
+	{
+		load_interfaces();
+	}
 
 	fstrcpy(cli_info.mach_acct, cli_info.myhostname);
 	strupper(cli_info.mach_acct);
@@ -1636,6 +1668,26 @@ static void read_user_env(struct user_credentials *u)
 	bzero(password, sizeof(password)); 
 }
 
+void readline_init(void)
+{
+#ifdef HAVE_LIBREADLINE
+
+	/* Initialise GNU Readline */
+	
+	rl_readline_name = "rpcclient";
+	rl_attempted_completion_function = completion_fn;
+	rl_completion_entry_function = (Function *)complete_cmd_null;
+	
+	/* Initialise history list */
+	
+	using_history();
+
+#else
+	int x;
+	x = 0; /* stop compiler warnings */
+#endif /* HAVE_LIBREADLINE */
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -1666,20 +1718,7 @@ static void read_user_env(struct user_credentials *u)
 	fstrcpy(cli_info.dom.level3_dom, "");
 	fstrcpy(cli_info.dom.level5_dom, "");
 
-#ifdef HAVE_LIBREADLINE
-
-	/* Initialise GNU Readline */
-	
-	rl_readline_name = "rpcclient";
-	rl_attempted_completion_function = completion_fn;
-	rl_completion_entry_function = (Function *)complete_cmd_null;
-	
-	/* Initialise history list */
-	
-	using_history();
-
-#endif /* HAVE_LIBREADLINE */
-
+	readline_init();
 	TimeInit();
 	charset_initialise();
 
