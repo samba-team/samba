@@ -357,7 +357,7 @@ tgs_rep(krb5_context context,
 	if(ret) 
 	    return ret;
 
-	tgt = &ticket->tkt;
+	tgt = &ticket->ticket;
 
 	{
 	    krb5_authenticator auth;
@@ -596,7 +596,7 @@ tgs_rep(krb5_context context,
 	    krb5_data_copy(data, buf + sizeof(buf) - len, len);
 	}
 	free_EncTicketPart(tgt);
-	krb5_free_principal(context, ticket->enc_part2.client);
+	krb5_free_principal(context, ticket->client);
 	free(ticket);
 	
 	hdb_free_entry(context, krbtgt);
