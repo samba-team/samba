@@ -3794,6 +3794,14 @@ static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const S
 }
 
 
+/**
+ * Deletes trust password entry from the directory
+ *
+ * @param methods passdb backend methods related to current context
+ * @param trust trust password to delete (only the name is actually used)
+ * @return nt status code of operation
+ */
+
 static NTSTATUS ldapsam_delete_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
