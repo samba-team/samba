@@ -114,12 +114,12 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.15 NAME 'primaryGroupID'
 ## The smbPasswordEntry objectclass has been depreciated in favor of the
 ## sambaAccount objectclass
 ##
-#objectclass ( 1.3.1.5.1.4.1.7165.2.2.1 NAME 'smbPasswordEntry' SUP top AUXILIARY
+#objectclass ( 1.3.6.1.4.1.7165.2.2.1 NAME 'smbPasswordEntry' SUP top AUXILIARY
 #        DESC 'Samba smbpasswd entry'
 #        MUST ( uid $ uidNumber )
 #        MAY  ( lmPassword $ ntPassword $ pwdLastSet $ acctFlags ))
 
-objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
+objectclass ( 1.3.6.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
 	DESC 'Samba Account'
 	MUST ( uid $ rid ) 
 	MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
@@ -130,11 +130,11 @@ objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
 ##
 ## Used for Winbind experimentation
 ##
-objectclass ( 1.3.1.5.1.4.1.7165.1.2.2.3 NAME 'uidPool' SUP top AUXILIARY
+objectclass ( 1.3.6.1.4.1.7165.1.2.2.3 NAME 'uidPool' SUP top AUXILIARY
 	DESC 'Pool for allocating UNIX uids'
 	MUST ( uidNumber $ cn ) )
 
-objectclass ( 1.3.1.5.1.4.1.7165.1.2.2.4 NAME 'gidPool' SUP top AUXILIARY
+objectclass ( 1.3.6.1.4.1.7165.1.2.2.4 NAME 'gidPool' SUP top AUXILIARY
 	DESC 'Pool for allocating UNIX gids'
 	MUST ( gidNumber $ cn ) )
 
