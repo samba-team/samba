@@ -553,9 +553,24 @@ void *dptr_fetch_lanman2(int dptr_num)
 
 BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int dirtype)
 {
-  if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
-    return False;
-  return True;
+	int mask;
+
+	/* Check the "may have" search bits. */
+	if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
+		return False;
+
+	/* Check the "must have" bits, which are the may have bits shifted eight */
+	/* If must have bit is set, the file/dir can not be returned in search unless the matching
+		file attribute is set */
+	mask = ((dirtype >> 8) & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM)); /* & 0x37 */
+	if(mask) {
+		if((mask & (mode & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM))) == mask)   /* check if matching attribute present */
+			return True;
+		else
+			return False;
+	}
+
+	return True;
 }
 
 static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mask)

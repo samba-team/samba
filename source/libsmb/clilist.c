@@ -22,13 +22,13 @@
 
 #include "includes.h"
 
-
 /****************************************************************************
-interpret a long filename structure - this is mostly guesses at the moment
-The length of the structure is returned
-The structure of a long filename depends on the info level. 260 is used
-by NT and 2 is used by OS/2
+ Interpret a long filename structure - this is mostly guesses at the moment.
+ The length of the structure is returned
+ The structure of a long filename depends on the info level. 260 is used
+ by NT and 2 is used by OS/2
 ****************************************************************************/
+
 static int interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
@@ -41,8 +41,7 @@ static int interpret_long_filename(struct cli_state *cli,
 
 	memcpy(finfo,&def_finfo,sizeof(*finfo));
 
-	switch (level)
-		{
+	switch (level) {
 		case 1: /* OS/2 understands this */
 			/* these dates are converted to GMT by
                            make_unix_date */
@@ -126,16 +125,16 @@ static int interpret_long_filename(struct cli_state *cli,
 				    namelen, 0);
 			return SVAL(base, 0);
 		}
-		}
+	}
 	
 	DEBUG(1,("Unknown long filename format %d\n",level));
 	return(SVAL(p,0));
 }
 
-
 /****************************************************************************
-  do a directory listing, calling fn on each file found
-  ****************************************************************************/
+ Do a directory listing, calling fn on each file found.
+****************************************************************************/
+
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
@@ -307,12 +306,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	return(total_received);
 }
 
-
-
 /****************************************************************************
-interpret a short filename structure
-The length of the structure is returned
+ Interpret a short filename structure.
+ The length of the structure is returned.
 ****************************************************************************/
+
 static int interpret_short_filename(struct cli_state *cli, char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
@@ -334,10 +332,11 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 
 
 /****************************************************************************
-  do a directory listing, calling fn on each file found
-  this uses the old SMBsearch interface. It is needed for testing Samba,
-  but should otherwise not be used
-  ****************************************************************************/
+ Do a directory listing, calling fn on each file found.
+ this uses the old SMBsearch interface. It is needed for testing Samba,
+ but should otherwise not be used.
+****************************************************************************/
+
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
@@ -453,16 +452,15 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	return(num_received);
 }
 
-
 /****************************************************************************
-  do a directory listing, calling fn on each file found
-  this auto-switches between old and new style
-  ****************************************************************************/
+ Do a directory listing, calling fn on each file found.
+ This auto-switches between old and new style.
+****************************************************************************/
+
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *, void *), void *state)
 {
-	if (cli->protocol <= PROTOCOL_LANMAN1) {
+	if (cli->protocol <= PROTOCOL_LANMAN1)
 		return cli_list_old(cli, Mask, attribute, fn, state);
-	}
 	return cli_list_new(cli, Mask, attribute, fn, state);
 }
