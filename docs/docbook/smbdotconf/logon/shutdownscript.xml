@@ -3,7 +3,7 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+	<para>
 	This a full path name to a script called by <citerefentry><refentrytitle>smbd</refentrytitle>                                                    
         <manvolnum>8</manvolnum></citerefentry> that should start a shutdown procedure.</para>
 

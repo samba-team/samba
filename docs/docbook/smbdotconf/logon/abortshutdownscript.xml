@@ -3,13 +3,13 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+	<para>
 	This a full path name to a script called by <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> that
 	should stop a shutdown procedure issued by the <link linkend="SHUTDOWNSCRIPT">
 	<parameter moreinfo="none">shutdown script</parameter></link>.</para>
 		
-	<para>This command will be run as user.</para>
+	<para>This command will be run as the user connected to the server.</para>
 
 	<para>Default: <emphasis>None</emphasis>.</para>
 

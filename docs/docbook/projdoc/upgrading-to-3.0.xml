@@ -279,7 +279,7 @@ complete descriptions of new or modified parameters.
 
 <itemizedlist>
 	<listitem><para>preload modules </para></listitem>
-	<listitem><para>privatedir </para></listitem>
+	<listitem><para>private dir </para></listitem>
 </itemizedlist>
 
 </sect2>
