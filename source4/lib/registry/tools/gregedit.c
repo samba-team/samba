@@ -47,8 +47,8 @@ GtkWidget *rpcwin_user;
 GtkWidget *rpcwin_password;
 GtkWidget *save;
 GtkWidget *save_as;
-GtkWidget* create_openfilewin (void);
-GtkWidget* create_savefilewin (void);
+static GtkWidget* create_openfilewin (void);
+static GtkWidget* create_savefilewin (void);
 static GtkWidget* create_aboutwin (void);
 REG_HANDLE *registry = NULL;
 
