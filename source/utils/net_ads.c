@@ -588,6 +588,11 @@ int net_ads_usage(int argc, const char **argv)
 	return -1;
 }
 
+int net_ads_join(int argc, const char **argv)
+{
+	return -1;
+}
+
 int net_ads(int argc, const char **argv)
 {
 	return net_ads_usage(argc, argv);
