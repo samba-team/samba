@@ -21,6 +21,54 @@
 #include "includes.h"
 #include "ldap_parse.h"
 
+char char_from_hex(char a, char b) {
+	char m, l;
+
+	if ('0' <= a  && a <= '9') {
+		m = a - '0';
+	} else if ('A' <= a && a <= 'F') {
+		m = 10 + (a - 'A');
+	} else if ('a' <= a && a <= 'f') {
+		m = 10 + (a - 'a');
+	} else {
+		return a;
+	}
+
+	if ('0' <= b  && b <= '9') {
+		l = b - '0';
+	} else if ('A' <= b && b <= 'F') {
+		l = 10 + (b - 'A');
+	} else if ('a' <= b && b <= 'f') {
+		l = 10 + (b - 'a');
+	} else {
+		return a;
+	}
+
+	return ((m << 4) + l);
+}
+
+char *parse_slash(char *p, char *end) {
+	switch (*(p + 1)) {
+	case ',':
+	case '=':
+	case '\n':
+	case '+':
+	case '<':
+	case '>':
+	case '#':
+	case ';':
+	case '\\':
+	case '"':
+		memmove(p, p + 1, end - (p + 1));
+		return (end - 1);
+	default:
+		*p = char_from_hex(*(p + 1), *(p + 2));
+		memmove(p + 1, p + 3, end - (p + 3));
+		return (end - 2);
+	}
+}
+
+
 struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 {
 	struct ldap_dn *dn;
@@ -29,17 +77,17 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 	char *p, *start, *separator, *src, *dest, *dn_copy, *dn_end;
 	int i, size;
 
-	dn = talloc(mem_ctx, sizeof(struct ldap_dn));
+	dn = talloc_p(mem_ctx, struct ldap_dn);
 	dn->comp_num = 0;
-	dn->components = talloc(dn, sizeof(struct dn_component *));
-	component = talloc(dn, sizeof(struct dn_component));
+	dn->components = talloc_array_p(dn, struct dn_component *, 1);
+	component = talloc_p(dn, struct dn_component);
 	component->attr_num = 0;
 
 	dn_copy = p = talloc_strdup(mem_ctx, orig_dn);
-	dn_end = dn_copy + strlen(orig_dn);
+	dn_end = dn_copy + strlen(orig_dn) + 1;
 	do {
-		component->attributes = talloc(component, sizeof(struct dn_attribute *));
-		attribute = talloc(component, sizeof(struct dn_attribute));
+		component->attributes = talloc_array_p(component, struct dn_attribute *, 1);
+		attribute = talloc_p(component, struct dn_attribute);
 
 		/* skip "spaces" */
 		while (*p == ' ' || *p == '\n') {
@@ -53,9 +101,7 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 			/* find out key separator '=' */
 			while (*p && *p != '=') {
 				if (*p == '\\') {
-					/* TODO: handle \XX cases too */
-					memmove(p, p + 1, dn_end - p);
-					dn_end--;
+					dn_end = parse_slash(p, dn_end);
 				}
 				p++;
 			}
@@ -81,9 +127,7 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 				start = p + 1;
 				while (*p && *p != '"') {
 					if (*p == '\\') {
-						/* TODO: handle \XX cases too */
-						memmove(p, p + 1, dn_end - p);
-						dn_end--;
+						dn_end = parse_slash(p, dn_end);
 					}
 					p++;
 				}
@@ -99,9 +143,7 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 			} else {
 				while (*p && !(*p == ',' || *p == ';' || *p == '+')) {
 					if (*p == '\\') {
-						/* TODO: handle \XX cases too */
-						memmove(p, p + 1, dn_end - p);
-						dn_end--;
+						dn_end = parse_slash(p, dn_end);
 					}
 					p++;
 				} /* found separator */
@@ -126,10 +168,10 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 			component->attr_num++;
 
 			if (*separator == '+') { /* expect other attributes in this component */
-				component->attributes = talloc_realloc(component, component->attributes, sizeof(struct dn_attribute *) * (component->attr_num + 1));
+				component->attributes = talloc_realloc_p(component, component->attributes, struct dn_attribute *, component->attr_num + 1);
 
 				/* allocate new attribute structure */
-				attribute = talloc(component, sizeof(struct dn_attribute));
+				attribute = talloc_p(component, struct dn_attribute);
 
 				/* skip spaces past the separator */
 				p = separator + strspn(p, " \n");
@@ -161,8 +203,8 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 		dn->comp_num++;
 
 		if (*separator == ',' || *separator == ';') {
-			dn->components = talloc_realloc(dn, dn->components, sizeof(struct dn_component *) * (dn->comp_num + 1));
-			component = talloc(dn, sizeof(struct dn_component));
+			dn->components = talloc_realloc_p(dn, dn->components, struct dn_component *, dn->comp_num + 1);
+			component = talloc_p(dn, struct dn_component);
 			component->attr_num = 0;
 		}
 		p = separator + 1;
