@@ -27,7 +27,7 @@
  RAP error codes - a small start but will be extended.
 *******************************************************/
 
-static struct
+static const struct
 {
   int err;
   char *message;

@@ -24,7 +24,7 @@
 #include "includes.h"
 
 
-static  struct {
+static const struct {
     int prot;
     const char *name;
   }
