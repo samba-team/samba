@@ -490,7 +490,7 @@ static uint32 lookup_added_alias_name(const char *als_name,
 /*******************************************************************
  lookup_added_user_rid
  ********************************************************************/
-uint32 lookup_added_user_rids(char *nt_name, uint32 *usr_rid, uint32 *grp_rid)
+static uint32 lookup_added_user_rids(char *nt_name, uint32 *usr_rid, uint32 *grp_rid)
 {
 	struct sam_passwd *sam_pass;
 	(*usr_rid) = 0;

@@ -2110,7 +2110,6 @@ BOOL api_brs_rpc(rpcsrv_struct * p);
 
 uint32 make_dom_gids(DOMAIN_GRP * mem, int num_members, DOM_GID ** ppgids);
 uint32 lookup_sid(DOM_SID *sid, char *name, uint32 *type);
-uint32 lookup_added_user_rids(char *nt_name, uint32 *usr_rid, uint32 *grp_rid);
 uint32 lookup_name(const char *name, DOM_SID *sid, uint32 *type);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
