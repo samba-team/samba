@@ -137,10 +137,13 @@ krb5_ret_data(krb5_storage *sp,
     if(ret)
 	return ret;
     data->length = size;
-    data->data = malloc(size);
-    ret = sp->fetch(sp, data->data, size);
-    if(ret != size)
-	return (ret < 0)? errno : KRB5_CC_END;
+    if (size) {
+	data->data = malloc(size);
+	ret = sp->fetch(sp, data->data, size);
+	if(ret != size)
+	    return (ret < 0)? errno : KRB5_CC_END;
+    } else
+	data->data = NULL;
     return 0;
 }
 
