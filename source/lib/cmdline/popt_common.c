@@ -213,26 +213,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 	case 'P':
 	        {
-			char *opt_password = NULL;
-			/* it is very useful to be able to make ads queries as the
-			   machine account for testing purposes and for domain leave */
-			
-			if (!secrets_init()) {
-				d_printf("ERROR: Unable to open secrets database\n");
-				exit(1);
-			}
-			
-			opt_password = secrets_fetch_machine_password(lp_workgroup());
-			
-			if (!opt_password) {
-				d_printf("ERROR: Unable to fetch machine password\n");
-				exit(1);
-			}
-			cmdline_credentials->username = talloc_asprintf(cmdline_credentials, "%s$", lp_netbios_name());
-			cmdline_credentials->username_obtained = CRED_SPECIFIED;
-			cli_credentials_set_password(cmdline_credentials, opt_password, CRED_SPECIFIED);
-			free(opt_password);
-			
+			cli_credentials_set_machine_account(cmdline_credentials);
 		}
 		/* machine accounts only work with kerberos */
 

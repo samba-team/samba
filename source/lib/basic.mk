@@ -65,8 +65,10 @@ ADD_OBJ_FILES = \
 		lib/unix_privs.o \
 		lib/db_wrap.o \
 		lib/gencache.o \
+		lib/gendb.o \
 		lib/credentials.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC
 # End SUBSYSTEM LIBBASIC
 ##############################
+

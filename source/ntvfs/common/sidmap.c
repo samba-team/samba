@@ -102,7 +102,7 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 	int ret;
 	struct ldb_message **res;
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "(&(objectClass=domain)(name=%s))", lp_workgroup());
 	if (ret != 1) {
 		talloc_free(ctx);
@@ -148,7 +148,7 @@ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sidstr);
 	if (ret != 1) {
 		goto allocated_sid;
@@ -247,7 +247,7 @@ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sidstr);
 	if (ret != 1) {
 		goto allocated_sid;
@@ -360,7 +360,7 @@ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
                   given uid
 	*/
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "unixID=%u", (unsigned int)uid);
 	for (i=0;i<ret;i++) {
 		const char *sidstr;
@@ -387,7 +387,7 @@ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 		goto allocate_sid;
 	}
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "(|(unixName=%s)(sAMAccountName=%s))", 
 			   pwd->pw_name, pwd->pw_name);
 	for (i=0;i<ret;i++) {
@@ -472,7 +472,7 @@ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
                   given gid
 	*/
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "unixID=%u", (unsigned int)gid);
 	for (i=0;i<ret;i++) {
 		const char *sidstr;
@@ -499,7 +499,7 @@ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 		goto allocate_sid;
 	}
 
-	ret = samdb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "(|(unixName=%s)(sAMAccountName=%s))", 
 			   grp->gr_name, grp->gr_name);
 	for (i=0;i<ret;i++) {

@@ -57,3 +57,24 @@ int gendb_search_v(struct ldb_context *ldb,
 
 	return count;
 }
+
+/*
+  search the LDB for the specified attributes - varargs variant
+*/
+int gendb_search(struct ldb_context *sam_ldb,
+		 TALLOC_CTX *mem_ctx, 
+		 const char *basedn,
+		 struct ldb_message ***res,
+		 const char * const *attrs,
+		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
+{
+	va_list ap;
+	int count;
+
+	va_start(ap, format);
+	count = gendb_search_v(sam_ldb, mem_ctx, basedn, res, attrs, format, ap);
+	va_end(ap);
+
+	return count;
+}
+

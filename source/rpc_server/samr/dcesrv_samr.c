@@ -288,7 +288,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ret = samdb_search(c_state->sam_ctx,
+	ret = gendb_search(c_state->sam_ctx,
 			   mem_ctx, NULL, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=domain))", 
 			   sidstr);
@@ -343,7 +343,7 @@ static NTSTATUS samr_info_DomInfo1(struct samr_domain_state *state,
 	int ret;
 	struct ldb_message **res;
 
-	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
 			   "dn=%s", state->domain_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -373,7 +373,7 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 	int ret;
 	struct ldb_message **res;
 
-	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
 			   "dn=%s", state->domain_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -887,7 +887,7 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 	
 	/* search for all users in this domain. This could possibly be cached and 
 	   resumed based on resume_key */
-	count = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
+	count = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
 			     "objectclass=user");
 	if (count == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1288,7 +1288,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		r->out.rids.ids[i] = 0;
 		r->out.types.ids[i] = SID_NAME_UNKNOWN;
 
-		count = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
+		count = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
 				     "sAMAccountName=%s", r->in.names[i].string);
 		if (count != 1) {
 			status = STATUS_SOME_UNMAPPED;
@@ -1367,7 +1367,7 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 		ids[i] = SID_NAME_UNKNOWN;
 
-		count = samdb_search(d_state->sam_ctx, mem_ctx,
+		count = gendb_search(d_state->sam_ctx, mem_ctx,
 				     d_state->domain_dn, &res, attrs,
 				     "(objectSid=%s-%u)", d_state->domain_sid,
 				     r->in.rids[i]);
@@ -1431,7 +1431,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	/* search for the group record */
-	ret = samdb_search(d_state->sam_ctx,
+	ret = gendb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
 			   "(grouptype=%s))",
@@ -1547,7 +1547,7 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 
 	/* pull all the group attributes */
-	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
 			   "dn=%s", a_state->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1667,7 +1667,7 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
-	ret = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
 			   &msgs, attrs, "(&(objectSid=%s)(objectclass=user))",
 			   membersidstr);
 
@@ -1755,7 +1755,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
-	ret = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
 			   &msgs, attrs, "(&(objectSid=%s)(objectclass=user))",
 			   membersidstr);
 
@@ -1807,7 +1807,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 	a_state = h->data;
 
 	/* pull the member attribute */
-	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
 			   "dn=%s", a_state->account_dn);
 
 	if (ret != 1) {
@@ -1841,7 +1841,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 		for (i=0; i<el->num_values; i++) {
 			struct ldb_message **res2;
 			const char * const attrs2[2] = { "objectSid", NULL };
-			ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL,
+			ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL,
 					   &res2, attrs2, "dn=%s",
 					   (char *)el->values[i].data);
 			if (ret != 1)
@@ -1902,7 +1902,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_NO_MEMORY;
 
 	/* search for the group record */
-	ret = samdb_search(d_state->sam_ctx,
+	ret = gendb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
 			   "(|(grouptype=%s)(grouptype=%s)))",
@@ -1973,7 +1973,7 @@ static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 
 	/* pull all the alias attributes */
-	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
 			   "dn=%s", a_state->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2092,7 +2092,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	if (sidstr == NULL)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	ret = samdb_search(d_state->sam_ctx, mem_ctx, NULL,
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL,
 			   &msgs, attrs, "(objectsid=%s)", sidstr);
 
 	if (ret == 1) {
@@ -2269,7 +2269,7 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	ret = samdb_search(d_state->sam_ctx, mem_ctx, NULL, &msgs, attrs,
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL, &msgs, attrs,
 			   "dn=%s", a_state->account_dn);
 
 	if (ret != 1)
@@ -2292,7 +2292,7 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 		for (i=0; i<el->num_values; i++) {
 			struct ldb_message **msgs2;
 			const char * const attrs2[2] = { "objectSid", NULL };
-			ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL,
+			ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL,
 					   &msgs2, attrs2, "dn=%s",
 					   (char *)el->values[i].data);
 			if (ret != 1)
@@ -2339,7 +2339,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	}
 
 	/* search for the user record */
-	ret = samdb_search(d_state->sam_ctx,
+	ret = gendb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=user))", 
 			   sidstr);
@@ -2431,7 +2431,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	a_state = h->data;
 
 	/* pull all the user attributes */
-	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, NULL,
+	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, NULL,
 			   "dn=%s", a_state->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -3362,7 +3362,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	ret = samdb_search(sam_ctx, 
+	ret = gendb_search(sam_ctx, 
 			   mem_ctx, NULL, &msgs, attrs, 
 			   "(&(name=%s)(objectclass=domain))",
 			   lp_workgroup());

@@ -143,7 +143,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	}
 
 	/* if we have a domain_filter look it up and set the result_basedn and the dns_domain_name */
-	ret = samdb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
+	ret = gendb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
 				"%s", domain_filter);
 	switch (ret) {
 		case 1:
@@ -166,7 +166,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	if (result_filter) {
 		result_basedn = samdb_result_string(domain_res[0], "dn", NULL);
 
-		ret = samdb_search(b_state->sam_ctx, mem_ctx, result_basedn, &result_res,
+		ret = gendb_search(b_state->sam_ctx, mem_ctx, result_basedn, &result_res,
 					result_attrs, "%s", result_filter);
 		switch (ret) {
 			case 1:

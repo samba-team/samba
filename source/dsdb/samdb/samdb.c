@@ -37,26 +37,6 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx)
 }
 
 /*
-  search the sam for the specified attributes - varargs variant
-*/
-int samdb_search(struct ldb_context *sam_ldb,
-		 TALLOC_CTX *mem_ctx, 
-		 const char *basedn,
-		 struct ldb_message ***res,
-		 const char * const *attrs,
-		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
-{
-	va_list ap;
-	int count;
-
-	va_start(ap, format);
-	count = gendb_search_v(sam_ldb, mem_ctx, basedn, res, attrs, format, ap);
-	va_end(ap);
-
-	return count;
-}
-
-/*
   search the sam for the specified attributes in a specific domain, filter on
   objectSid being in domain_sid.
 */
@@ -585,7 +565,7 @@ int samdb_copy_template(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 	
 
 	/* pull the template record */
-	ret = samdb_search(sam_ldb, mem_ctx, NULL, &res, NULL, "%s", expression);
+	ret = gendb_search(sam_ldb, mem_ctx, NULL, &res, NULL, "%s", expression);
 	if (ret != 1) {
 		DEBUG(1,("samdb: ERROR: template '%s' matched %d records\n", 
 			 expression, ret));

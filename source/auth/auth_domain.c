@@ -40,17 +40,6 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
-	const char *machine_account;
-	const char *password;
-	struct ldb_context *ldb;
-	int ldb_ret;
-	struct ldb_message **msgs;
-	const char *base_dn = SECRETS_PRIMARY_DOMAIN_DN;
-	const char *attrs[] = {
-		"secret",
-		"samAccountName",
-		NULL
-	};
 
 	struct creds_CredentialState *creds;
 	struct cli_credentials *credentials;
@@ -63,49 +52,11 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 	}
 
 	credentials = cli_credentials_init(mem_ctx);
+	status = cli_credentials_set_machine_account(credentials);
 
-	/* Fetch join password */
-
-	/* Local secrets are stored in secrets.ldb */
-	ldb = secrets_db_connect(mem_ctx);
-	if (!ldb) {
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	/* search for the secret record */
-	ldb_ret = samdb_search(ldb,
-			       mem_ctx, base_dn, &msgs, attrs,
-			       "(&(flatname=%s)(objectclass=primaryDomain))", 
-			       lp_workgroup());
-	if (ldb_ret == 0) {
-		DEBUG(1, ("Could not find join record to domain: %s\n",
-			  lp_workgroup()));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	} else if (ldb_ret != 1) {
-		DEBUG(1, ("Found %d records matching flatname=%s under DN %s\n", ldb_ret, 
-			  lp_workgroup(), base_dn));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	password = ldb_msg_find_string(msgs[0], "secret", NULL);
-	if (!password) {
-		DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
-			  lp_workgroup()));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-		
-	machine_account = ldb_msg_find_string(msgs[0], "samAccountName", NULL);
-	if (!machine_account) {
-		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
-			  lp_workgroup()));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
-	cli_credentials_set_username(credentials, machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(credentials, password, CRED_SPECIFIED);
-	
-	cli_credentials_guess(credentials);
 
 	/* Connect to DC (take a binding string for now) */
 
