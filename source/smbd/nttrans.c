@@ -48,6 +48,189 @@ static char *known_nt_pipes[] = {
 };
 
 /****************************************************************************
+  Send the required number of replies back.
+  We assume all fields other than the data fields are
+  set correctly for the type of call.
+  HACK ! Always assumes smb_setup field is zero.
+****************************************************************************/
+static int send_nt_replies(char *outbuf, int bufsize, char *params,
+                           int paramsize, char *pdata, int datasize)
+{
+  extern int max_send;
+  int data_to_send = datasize;
+  int params_to_send = paramsize;
+  int useable_space;
+  char *pp = params;
+  char *pd = pdata;
+  int params_sent_thistime, data_sent_thistime, total_sent_thistime;
+  int alignment_offset = 3;
+  int data_alignment_offset = 0;
+
+  /*
+   * Initially set the wcnt area to be 18 - this is true for all
+   * transNT replies.
+   */
+
+  set_message(outbuf,18,0,True);
+
+  /* 
+   * If there genuinely are no parameters or data to send just send
+   * the empty packet.
+   */
+
+  if(params_to_send == 0 && data_to_send == 0) {
+    send_smb(Client,outbuf);
+    return 0;
+  }
+
+  /*
+   * When sending params and data ensure that both are nicely aligned.
+   * Only do this alignment when there is also data to send - else
+   * can cause NT redirector problems.
+   */
+
+  if (((params_to_send % 4) != 0) && (data_to_send != 0))
+    data_alignment_offset = 4 - (params_to_send % 4);
+
+  /* 
+   * Space is bufsize minus Netbios over TCP header minus SMB header.
+   * The alignment_offset is to align the param bytes on a four byte
+   * boundary (2 bytes for data len, one byte pad). 
+   * NT needs this to work correctly.
+   */
+
+  useable_space = bufsize - ((smb_buf(outbuf)+
+                    alignment_offset+data_alignment_offset) -
+                    outbuf);
+
+  /*
+   * useable_space can never be more than max_send minus the
+   * alignment offset.
+   */
+
+  useable_space = MIN(useable_space,
+                      max_send - (alignment_offset+data_alignment_offset));
+
+
+  while (params_to_send || data_to_send) {
+
+    /*
+     * Calculate whether we will totally or partially fill this packet.
+     */
+
+    total_sent_thistime = params_to_send + data_to_send +
+                            alignment_offset + data_alignment_offset;
+
+    /* 
+     * We can never send more than useable_space.
+     */
+
+    total_sent_thistime = MIN(total_sent_thistime, useable_space);
+
+    set_message(outbuf, 18, total_sent_thistime, True);
+
+    /*
+     * Set total params and data to be sent.
+     */
+
+    SIVAL(outbuf,smb_ntr_TotalParameterCount,paramsize);
+    SIVAL(outbuf,smb_ntr_TotalDataCount,datasize);
+
+    /* 
+     * Calculate how many parameters and data we can fit into
+     * this packet. Parameters get precedence.
+     */
+
+    params_sent_thistime = MIN(params_to_send,useable_space);
+    data_sent_thistime = useable_space - params_sent_thistime;
+    data_sent_thistime = MIN(data_sent_thistime,data_to_send);
+
+    SIVAL(outbuf,smb_ntr_ParameterCount,params_sent_thistime);
+
+    if(params_sent_thistime == 0) {
+      SIVAL(outbuf,smb_ntr_ParameterOffset,0);
+      SIVAL(outbuf,smb_ntr_ParameterDisplacement,0);
+    } else {
+      /*
+       * smb_ntr_ParameterOffset is the offset from the start of the SMB header to the
+       * parameter bytes, however the first 4 bytes of outbuf are
+       * the Netbios over TCP header. Thus use smb_base() to subtract
+       * them from the calculation.
+       */
+
+      SIVAL(outbuf,smb_ntr_ParameterOffset,
+            ((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
+      /* 
+       * Absolute displacement of param bytes sent in this packet.
+       */
+
+      SIVAL(outbuf,smb_ntr_ParameterDisplacement,pp - params);
+    }
+
+    /*
+     * Deal with the data portion.
+     */
+
+    SIVAL(outbuf,smb_ntr_DataCount, data_sent_thistime);
+
+    if(data_sent_thistime == 0) {
+      SIVAL(outbuf,smb_ntr_DataOffset,0);
+      SIVAL(outbuf,smb_ntr_DataDisplacement, 0);
+    } else {
+      /*
+       * The offset of the data bytes is the offset of the
+       * parameter bytes plus the number of parameters being sent this time.
+       */
+
+      SIVAL(outbuf,smb_ntr_DataOffset,((smb_buf(outbuf)+alignment_offset) -
+            smb_base(outbuf)) + params_sent_thistime + data_alignment_offset);
+      SIVAL(outbuf,smb_ntr_DataDisplacement, pd - pdata);
+    }
+
+    /* 
+     * Copy the param bytes into the packet.
+     */
+
+    if(params_sent_thistime)
+      memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
+
+    /*
+     * Copy in the data bytes
+     */
+
+    if(data_sent_thistime)
+      memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
+             data_alignment_offset,pd,data_sent_thistime);
+    
+    DEBUG(9,("nt_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
+          params_sent_thistime, data_sent_thistime, useable_space));
+    DEBUG(9,("nt_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
+          params_to_send, data_to_send, paramsize, datasize));
+    
+    /* Send the packet */
+    send_smb(Client,outbuf);
+    
+    pp += params_sent_thistime;
+    pd += data_sent_thistime;
+    
+    params_to_send -= params_sent_thistime;
+    data_to_send -= data_sent_thistime;
+
+    /*
+     * Sanity check
+     */
+
+    if(params_to_send < 0 || data_to_send < 0) {
+      DEBUG(0,("send_nt_replies failed sanity check pts = %d, dts = %d\n!!!",
+            params_to_send, data_to_send));
+      return -1;
+    }
+  } 
+
+  return 0;
+}
+
+/****************************************************************************
  Save case statics.
 ****************************************************************************/
 
@@ -216,7 +399,7 @@ static int nt_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if((smb_ofun = map_create_disposition( create_disposition )) == -1)
     return(ERROR(ERRDOS,ERRbadaccess));
-  smb_ofun |= 0x10;     /* Add Create it not exists flag */
+  smb_ofun |= 0x10;     /* Add Create if not exists flag */
     
   pnum = open_rpc_pipe_hnd(p, cnum, vuid);
   if (pnum < 0)
@@ -508,6 +691,36 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int c
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   } 
 
+  /* Realloc the size of parameters and data we will return */
+  params = *pparams = Realloc(*pparams, 69);
+  if(params == NULL)
+    return(ERROR(ERRDOS,ERRnomem));
+
+  p = params;
+  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 3 : 0));
+  p += 2;
+  SSVAL(p,0,fnum);
+  p += 2;
+  SIVAL(p,0,smb_action);
+  p += 8;
+  /* Create time. */
+  put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(cnum))));
+  p += 8;
+  put_long_date(p,sbuf.st_atime); /* access time */
+  p += 8;
+  put_long_date(p,sbuf.st_mtime); /* write time */
+  p += 8;
+  put_long_date(p,sbuf.st_mtime); /* change time */
+  p += 8;
+  SIVAL(p,0,fmode); /* File Attributes. */
+  p += 12;
+  SIVAL(p,0, size & 0xFFFFFFFF);
+  SIVAL(p,4, (size >> 32));
+
+  /* Send the required number of replies */
+  send_nt_replies(outbuf, bufsize, params, 69, *ppdata, 0);
+
+  return -1;
 }
 
 /****************************************************************************

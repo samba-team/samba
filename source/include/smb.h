@@ -1034,6 +1034,16 @@ struct parm_struct
 #define smb_nts_DataOffset (smb_vwv0 + 27)
 #define smb_nts_DataDisplacement (smb_vwv0 + 31)
 
+/* these are for the NT trans reply. */
+#define smb_ntr_TotalParameterCount (smb_vwv0 + 3)
+#define smb_ntr_TotalDataCount (smb_vwv0 + 7)
+#define smb_ntr_ParameterCount (smb_vwv0 + 11)
+#define smb_ntr_ParameterOffset (smb_vwv0 + 15)
+#define smb_ntr_ParameterDisplacement (smb_vwv0 + 19)
+#define smb_ntr_DataCount (smb_vwv0 + 23)
+#define smb_ntr_DataOffset (smb_vwv0 + 27)
+#define smb_ntr_DataDisplacement (smb_vwv0 + 31)
+
 /* these are for the NT create_and_X */
 #define smb_ntcreate_NameLength (smb_vwv0 + 5)
 #define smb_ntcreate_Flags (smb_vwv0 + 7)
