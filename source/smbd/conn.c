@@ -164,7 +164,7 @@ BOOL conn_idle_all(time_t t, int deadtime)
 void conn_free(connection_struct *conn)
 {
  	smb_vfs_handle_struct *handle, *thandle;
- 	void (*done_fptr)(connection_struct *conn);
+ 	void (*done_fptr)(connection_struct *the_conn);
 
 	/* Free vfs_connection_struct */
 	handle = conn->vfs_private;
