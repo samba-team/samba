@@ -33,6 +33,185 @@ extern int DEBUGLEVEL;
 
 
 /****************************************************************************
+ obtain the sid from the PDC.  do some verification along the way...
+****************************************************************************/
+BOOL get_domain_sids(const char *myname,
+				DOM_SID *sid3, DOM_SID *sid5, char *servers)
+{
+	uint16 nt_pipe_fnum;
+	POLICY_HND pol;
+	fstring srv_name;
+	struct cli_state cli;
+	BOOL res = True;
+	fstring dom3;
+	fstring dom5;
+
+	if (sid3 == NULL && sid5 == NULL)
+	{
+		/* don't waste my time... */
+		return False;
+	}
+
+	if (!cli_connect_serverlist(&cli, servers))
+	{
+		DEBUG(0,("get_domain_sids: unable to initialise client connection.\n"));
+		return False;
+	}
+
+	/*
+	 * Ok - we have an anonymous connection to the IPC$ share.
+	 * Now start the NT Domain stuff :-).
+	 */
+
+	fstrcpy(dom3, "");
+	fstrcpy(dom5, "");
+	if (sid3 != NULL)
+	{
+		ZERO_STRUCTP(sid3);
+	}
+	if (sid5 != NULL)
+	{
+		ZERO_STRUCTP(sid5);
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, myname);
+	strupper(srv_name);
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(&cli, nt_pipe_fnum, srv_name, &pol, False) : False;
+
+	if (sid3 != NULL)
+	{
+		/* send client info query, level 3.  receive domain name and sid */
+		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 3, dom3, sid3) : False;
+	}
+
+	if (sid5 != NULL)
+	{
+		/* send client info query, level 5.  receive domain name and sid */
+		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 5, dom5, sid5) : False;
+	}
+
+	/* close policy handle */
+	res = res ? lsa_close(&cli, nt_pipe_fnum, &pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(&cli, nt_pipe_fnum);
+	cli_ulogoff(&cli);
+	cli_shutdown(&cli);
+
+	if (res)
+	{
+		pstring sid;
+		DEBUG(2,("LSA Query Info Policy\n"));
+		if (sid3 != NULL)
+		{
+			sid_to_string(sid, sid3);
+			DEBUG(2,("Domain Member     - Domain: %s SID: %s\n", dom3, sid));
+		}
+		if (sid5 != NULL)
+		{
+			sid_to_string(sid, sid5);
+			DEBUG(2,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
+		}
+	}
+	else
+	{
+		DEBUG(1,("lsa query info failed\n"));
+	}
+
+	return res;
+}
+
+/****************************************************************************
+ obtain a sid and domain name from a Domain Controller.  
+****************************************************************************/
+BOOL get_trust_sid_and_domain(const char* myname, char *server,
+				DOM_SID *sid,
+				char *domain, size_t len)
+{
+	uint16 nt_pipe_fnum;
+	POLICY_HND pol;
+	fstring srv_name;
+	struct cli_state cli;
+	BOOL res = True;
+	BOOL res1 = True;
+	DOM_SID sid3;
+	DOM_SID sid5;
+	fstring dom3;
+	fstring dom5;
+
+	if (!cli_connect_serverlist(&cli, server))
+	{
+		DEBUG(0,("get_trust_sid: unable to initialise client connection.\n"));
+		return False;
+	}
+
+	fstrcpy(dom3, "");
+	fstrcpy(dom5, "");
+	ZERO_STRUCT(sid3);
+	ZERO_STRUCT(sid5);
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, myname);
+	strupper(srv_name);
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(&cli, nt_pipe_fnum, srv_name, &pol, False) : False;
+
+	/* send client info query, level 3.  receive domain name and sid */
+	res1 = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 3, dom3, &sid3) : False;
+
+	/* send client info query, level 5.  receive domain name and sid */
+	res1 = res1 ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 5, dom5, &sid5) : False;
+
+	/* close policy handle */
+	res = res ? lsa_close(&cli, nt_pipe_fnum, &pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(&cli, nt_pipe_fnum);
+	cli_ulogoff(&cli);
+	cli_shutdown(&cli);
+
+	if (res1)
+	{
+		pstring sid_str;
+		DEBUG(2,("LSA Query Info Policy\n"));
+		sid_to_string(sid_str, &sid3);
+		DEBUG(2,("Domain Member     - Domain: %s SID: %s\n",
+		          dom3, sid_str));
+		sid_to_string(sid_str, &sid5);
+		DEBUG(2,("Domain Controller - Domain: %s SID: %s\n",
+		          dom5, sid_str));
+
+		if (dom5[0] != 0 && sid_equal(&sid3, &sid5))
+		{
+			safe_strcpy(domain, dom5, len);
+			sid_copy(sid, &sid5);
+		}
+		else
+		{
+			DEBUG(2,("Server %s is not a PDC\n", server));
+			return False;
+		}
+
+	}
+	else
+	{
+		DEBUG(1,("lsa query info failed\n"));
+	}
+
+	return res1;
+}
+
+/****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
 BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
