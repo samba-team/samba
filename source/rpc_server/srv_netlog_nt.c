@@ -566,6 +566,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
                  nt_workstation, nt_domain));
    	
 	pstrcpy(current_user_info.smb_name, nt_username);
+	sub_set_smb_name(nt_username);
      
 	/*
 	 * Convert to a UNIX username.
