@@ -309,9 +309,9 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
  Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 
-static char *Atoic(char *p, int *n, char *c)
+static const char *Atoic(const char *p, int *n, const char *c)
 {
-	if (!isdigit((int)*p)) {
+	if (!isdigit((const int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
@@ -333,7 +333,7 @@ static char *Atoic(char *p, int *n, char *c)
  Reads a list of numbers.
  *************************************************************************/
 
-char *get_numlist(char *p, uint32 **num, int *count)
+const char *get_numlist(const char *p, uint32 **num, int *count)
 {
 	int val;
 
@@ -2400,7 +2400,7 @@ static BOOL unix_do_match(char *regexp, char *str)
  Simple case insensitive interface to a UNIX wildcard matcher.
 *******************************************************************/
 
-BOOL unix_wild_match(char *pattern, char *string)
+BOOL unix_wild_match(const char *pattern, const char *string)
 {
 	pstring p2, s2;
 	char *p;
