@@ -28,20 +28,21 @@
 NTSTATUS rap_netshareenum(struct smbsrv_request *req,
 			  struct rap_NetShareEnum *r)
 {
+	int i;
 	r->out.status = 0;
-	r->out.available = 2;
+	r->out.available = dcesrv_common_get_count_of_shares(req, NULL);
 	r->out.info = talloc_array_p(req,
-				     union rap_shareenum_info, 2);
+				     union rap_shareenum_info, r->out.available);
 
-	strncpy(r->out.info[0].info1.name, "C$", sizeof(r->out.info[0].info1.name));
-	r->out.info[0].info1.pad = 0;
-	r->out.info[0].info1.type = 0;
-	r->out.info[0].info1.comment = talloc_strdup(req, "Bla");
-	
-	strncpy(r->out.info[1].info1.name, "IPC$", sizeof(r->out.info[0].info1.name));
-	r->out.info[1].info1.pad = 0;
-	r->out.info[1].info1.type = 1;
-	r->out.info[1].info1.comment = talloc_strdup(req, "Blub");
+	for (i=0;i<r->out.available;i++) {
+		strncpy(r->out.info[i].info1.name, 
+			dcesrv_common_get_share_name(req, NULL, i),
+			sizeof(r->out.info[0].info1.name));
+		r->out.info[i].info1.pad = 0;
+		r->out.info[i].info1.type = dcesrv_common_get_share_type(req, NULL, i);
+		r->out.info[i].info1.comment = talloc_strdup(req, 
+							     dcesrv_common_get_share_comment(req, NULL, i));
+	}
 	
 	return NT_STATUS_OK;
 }
