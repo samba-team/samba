@@ -683,49 +683,75 @@ static NTSTATUS context_add_trust_passwd(struct pdb_context *context,
                                          SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *cur_methods;
 	
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return ret;
 	}
 	
-	return context->pdb_methods->add_trust_passwd(context->pdb_methods, trust);
+	cur_methods = context->pdb_methods;
+
+	while (cur_methods) {
+		ret = cur_methods->add_trust_passwd(cur_methods, trust);
+		if (NT_STATUS_IS_OK(ret)) {
+			trust->methods = cur_methods;
+			return ret;
+		}
+		cur_methods = cur_methods->next;
+	}
+
+	return ret;
 }
 
 static NTSTATUS context_update_trust_passwd(struct pdb_context *context,
                                             SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *cur_methods;
 	
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return ret;
 	}
 	
-	if (!trust || !trust->methods) {
-		DEBUG(0, ("invalid trust pointer specified!\n"));
-		return ret;
+	cur_methods = context->pdb_methods;
+
+	while (cur_methods) {
+		ret = cur_methods->update_trust_passwd(cur_methods, trust);
+		if (NT_STATUS_IS_OK(ret)) {
+			trust->methods = cur_methods;
+			return ret;
+		}
+		cur_methods = cur_methods->next;
 	}
-	
-	return trust->methods->update_trust_passwd(trust->methods, trust);
+
+	return ret;
 }
 
 static NTSTATUS context_delete_trust_passwd(struct pdb_context *context,
                                             SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_methods *cur_methods;
 	
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return ret;
 	}
 	
-	if (!trust || !trust->methods) {
-		DEBUG(0, ("invalid trust pointer specified!\n"));
-		return ret;
+	cur_methods = context->pdb_methods;
+
+	while (cur_methods) {
+		ret = cur_methods->delete_trust_passwd(cur_methods, trust);
+		if (NT_STATUS_IS_OK(ret)) {
+			trust->methods = cur_methods;
+			return ret;
+		}
+		cur_methods = cur_methods->next;
 	}
-	
-	return trust->methods->delete_trust_passwd(trust->methods, trust);
+
+	return ret;
 }
 
 static NTSTATUS context_add_privilege_to_sid(struct pdb_context *context, const char *priv_name, const DOM_SID *sid)
