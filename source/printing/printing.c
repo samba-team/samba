@@ -848,6 +848,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 		print_queue_update(snum);
  
 	/* also fetch the queue status */
+	memset(&status, 0, sizeof(status));
 	len = get_queue_status(snum, &status);
 	if (pstatus)
 		*pstatus = status;
