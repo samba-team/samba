@@ -525,43 +525,6 @@ BOOL process_exists(pid_t pid)
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
-/*******************************************************************
- Convert a gid into a group name.
-********************************************************************/
-
-char *gidtoname(TALLOC_CTX *mem_ctx, gid_t gid)
-{
-	char *name;
-	struct group *grp;
-
-	grp = getgrgid(gid);
-	if (grp)
-		return(grp->gr_name);
-	name = talloc_asprintf(mem_ctx, "%d",(int)gid);
-	return(name);
-}
-
-
-/*******************************************************************
- Convert a name to a gid_t if possible. Return -1 if not a group. 
-********************************************************************/
-
-gid_t nametogid(const char *name)
-{
-	struct group *grp;
-	char *p;
-	gid_t g;
-
-	g = (gid_t)strtol(name, &p, 0);
-	if ((p != name) && (*p == '\0'))
-		return g;
-
-	grp = sys_getgrnam(name);
-	if (grp)
-		return(grp->gr_gid);
-	return (gid_t)-1;
-}
-
 /****************************************************************************
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
@@ -653,7 +616,7 @@ void set_remote_arch(struct smbsrv_connection *smb, enum remote_arch_types type)
 }
 
 
-void print_asc(int level, const uint8_t *buf,int len)
+static void print_asc(int level, const uint8_t *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -749,23 +712,6 @@ char *smb_xstrdup(const char *s)
 	return s1;
 }
 
-
-/*
-  vasprintf that aborts on malloc fail
-*/
-
- int smb_xvasprintf(char **ptr, const char *format, va_list ap)
-{
-	int n;
-	va_list ap2;
-
-	VA_COPY(ap2, ap);
-
-	n = vasprintf(ptr, format, ap2);
-	if (n == -1 || ! *ptr)
-		smb_panic("smb_xvasprintf: out of memory");
-	return n;
-}
 
 /*****************************************************************
  Like strdup but for memory.
