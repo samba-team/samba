@@ -83,3 +83,28 @@ NTSTATUS ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr,
 	NDR_CHECK(ndr_pull_status(ndr, &r->out.status));
 	return NT_STATUS_OK;
 }
+
+/*
+  push a openpolicy2
+*/
+NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, 
+				  struct lsa_OpenPolicy2 *r)
+{
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.system_name));
+	NDR_CHECK(ndr_push_unistr(ndr, r->in.system_name));
+	NDR_CHECK(ndr_push_lsa_ObjectAttribute(ndr, r->in.attr));
+	NDR_CHECK(ndr_push_u32(ndr, r->in.desired_access));
+	return NT_STATUS_OK;
+}
+
+
+/*
+  parse a openpolicy2
+*/
+NTSTATUS ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr,
+				 struct lsa_OpenPolicy2 *r)
+{
+	NDR_CHECK(ndr_pull_policy_handle(ndr, &r->out.handle));
+	NDR_CHECK(ndr_pull_status(ndr, &r->out.status));
+	return NT_STATUS_OK;
+}

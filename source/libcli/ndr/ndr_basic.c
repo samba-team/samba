@@ -177,6 +177,7 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 */
 NTSTATUS ndr_push_length4_start(struct ndr_push *ndr, struct ndr_push_save *save)
 {
+	NDR_PUSH_ALIGN(ndr, 4);
 	save->offset = ndr->offset;
 	return ndr_push_u32(ndr, 0);
 }
@@ -203,21 +204,16 @@ NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 */
 NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
 {
-	smb_ucs2_t *ws;
+	char *ws;
 	ssize_t len;
-	int i;
-	len = push_ucs2_talloc(ndr->mem_ctx, &ws, s);
+	len = push_ucs2_talloc(ndr->mem_ctx, (smb_ucs2_t **)&ws, s);
 	if (len == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	NDR_CHECK(ndr_push_u32(ndr, len));
+	NDR_CHECK(ndr_push_u32(ndr, len/2));
 	NDR_CHECK(ndr_push_u32(ndr, 0));
-	NDR_CHECK(ndr_push_u32(ndr, len-2));
-	NDR_PUSH_NEED_BYTES(ndr, len);
-	for (i=0;i<len;i+=2) {
-		SSVAL(ndr->data, ndr->offset + i, ws[i]);
-	}
-	ndr->offset += i;
+	NDR_CHECK(ndr_push_u32(ndr, len/2));
+	NDR_CHECK(ndr_push_bytes(ndr, ws, len));
 	return NT_STATUS_OK;
 }
 
