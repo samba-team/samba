@@ -42,10 +42,11 @@ RCSID("$Id$");
 
 ssize_t
 krb5_net_write (krb5_context context,
-		int fd,
+		void *p_fd,
 		const void *buf,
 		size_t len)
 {
+  int fd = *((int *)p_fd);
   char *cbuf = (char *)buf;
   ssize_t count;
   size_t rem = len;
