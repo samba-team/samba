@@ -770,9 +770,12 @@ static BOOL create_rpc_request(prs_struct *rpc_out, uint8 op_num, int data_len, 
 }
 
 
-/****************************************************************************
- Send a request on an rpc pipe.
- ****************************************************************************/
+/**
+ * Send a request on an RPC pipe and get a response.
+ *
+ * @param data NDR contents of the request to be sent.
+ * @param rdata Unparsed NDR response data.
+**/
 
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
@@ -785,9 +788,15 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	BOOL auth_seal;
 	uint32 crc32 = 0;
 	char *pdata_out = NULL;
+	fstring dump_name;
 
 	auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	auth_seal   = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
+
+	/* Optionally capture for use in debugging */
+	slprintf(dump_name, sizeof(dump_name) - 1, "call_%s",
+		 cli_pipe_get_name(cli));
+	prs_dump(dump_name, op_num, data);
 
 	/*
 	 * The auth_len doesn't include the RPC_HDR_AUTH_LEN.
@@ -1246,8 +1255,18 @@ BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name)
 	fstrcat(cli->mach_acct, "$");
 	strupper(cli->mach_acct);
 
+	/* Remember which pipe we're talking to */
+	fstrcpy(cli->pipe_name, pipe_name);
+
 	return True;
 }
+
+
+const char *cli_pipe_get_name(struct cli_state *cli)
+{
+	return cli->pipe_name;
+}
+
 
 /****************************************************************************
 close the session
