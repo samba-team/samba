@@ -70,7 +70,7 @@ sha_init (struct sha *m)
   E = 0xc3d2e1f0;
 }
 
-static u_int32_t
+static inline u_int32_t
 cshift (u_int32_t x, unsigned n)
 {
   return (x << n) | (x >> (32 - n));
@@ -98,7 +98,7 @@ do { \
   AA = temp; \
 } while(0)
 
-static void
+static inline void
 calc (struct sha *m, u_int32_t *in)
 {
   u_int32_t AA, BB, CC, DD, EE;
@@ -219,7 +219,7 @@ calc (struct sha *m, u_int32_t *in)
  * From `Performance analysis of SHA' by Joseph D. Touch <touch@isi.edu>
  */
 
-static u_int32_t
+static inline u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
 #if !defined(WORDS_BIGENDIAN)

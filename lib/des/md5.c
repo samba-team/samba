@@ -68,7 +68,7 @@ md5_init (struct md5 *m)
   A = 0x67452301;
 }
 
-static u_int32_t
+static inline u_int32_t
 cshift (u_int32_t x, unsigned n)
 {
   return (x << n) | (x >> (32 - n));
@@ -87,7 +87,7 @@ a = b + cshift(a + OP(b,c,d) + X[k] + (i), s)
 #define DO3(a,b,c,d,k,s,i) DOIT(a,b,c,d,k,s,i,H)
 #define DO4(a,b,c,d,k,s,i) DOIT(a,b,c,d,k,s,i,I)
 
-static void
+static inline void
 calc (struct md5 *m, u_int32_t *data)
 {
   u_int32_t AA, BB, CC, DD;
@@ -195,7 +195,7 @@ calc (struct md5 *m, u_int32_t *data)
  * From `Performance analysis of MD5' by Joseph D. Touch <touch@isi.edu>
  */
 
-static u_int32_t
+static inline u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
 #if defined(WORDS_BIGENDIAN)
