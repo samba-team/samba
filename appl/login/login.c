@@ -77,8 +77,11 @@ start_logout_process(void)
 	argv0 = prog;
 
     pid = fork();
-    if(pid == 0)
+    if(pid == 0) {
+	/* avoid getting signals sent to the shell */
+	setpgid(0, getpid());
 	return 0;
+    }
     if(pid == -1)
 	err(1, "fork");
     /* wait for the real login process to exit */
@@ -562,6 +565,8 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 #ifdef KRB4
     krb4_get_afs_tokens (pwd);
 #endif /* KRB4 */
+
+    add_env("PATH", _PATH_DEFPATH);
 
     {
 	const char *str = login_conf_get_string("environment");
