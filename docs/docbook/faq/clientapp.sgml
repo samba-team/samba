@@ -1,8 +1,8 @@
-<chapter id="ClientApp">
+<chapter id="FAQ-ClientApp">
 <title>Specific client application problems</title>
 
 <sect1>
-<title>MS Office Setup reports "Cannot change properties of '\MSOFFICE\SETUP.INI'"</title>
+<title>MS Office Setup reports "Cannot change properties of '\\MSOFFICE\\SETUP.INI'"</title>
 <para>
 When installing MS Office on a Samba drive for which you have admin
 user permissions, ie. admin users = username, you will find the
@@ -60,16 +60,16 @@ set the following parameters on the share containing it:
 </para>
 
 <para><programlisting>
-	[MSOP95]
-		path = /where_you_put_it
-		comment = Your comment
-		volume = "The_CD_ROM_Label"
-		read only = yes
-		available = yes
-		share modes = no
-		locking = no
-		browseable = yes
-		public = yes
+[MSOP95]
+	path = /where_you_put_it
+	comment = Your comment
+	volume = "The_CD_ROM_Label"
+	read only = yes
+	available = yes
+	share modes = no
+	locking = no
+	browseable = yes
+	public = yes
 </programlisting></para>
 
 </listitem>
