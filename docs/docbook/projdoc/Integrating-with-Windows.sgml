@@ -66,8 +66,15 @@ We will examine:
 <title>Name Resolution in a pure Unix/Linux world</title>
 
 <para>
-The key configuration files : 
+The key configuration files covered in this section are:
 </para>
+
+<itemizedlist>
+	<listitem><para><filename>/etc/hosts</filename></para></listitem>
+	<listitem><para><filename>/etc/resolv.conf</filename></para></listitem>
+	<listitem><para><filename>/etc/host.conf</filename></para></listitem>
+	<listitem><para><filename>/etc/nsswitch.conf</filename></para></listitem>
+</itemizedlist>
 
 <sect2>
 <title><filename>/etc/hosts</filename></title>
@@ -515,8 +522,7 @@ lookup is used.
 <title>WINS Lookup</title>
 
 <para>
-Refer to above details for section <emphasis>DNS Lookups</emphasis>. A 
-WINS (Windows Internet Name Server) service is the equivaent of the 
+A WINS (Windows Internet Name Server) service is the equivaent of the 
 rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
 the names and IP addresses that are registered by a Windows client 
 if the TCP/IP setup has been given at least one WINS Server IP Address.
@@ -630,26 +636,37 @@ and so on.
 Samba for seemless integration</title>
 
 <para>
-MS Windows clients may use encrypted passwords alone, or encrypted 
-as well as plain text passwords in the authentication process. It 
-should be realized that with the SMB protocol the password is passed 
-over the network either in plain text or encrypted. When encrypted 
-passwords are used a password that has been entered by the user is 
-encrypted in two ways:
+MS Windows clients may use encrypted passwords as part of a 
+challenege/response authentication model (a.k.a. NTLMv1) or 
+alone, or clear text strings for simple password based 
+authentication. It should be realized that with the SMB 
+protocol the password is passed over the network either 
+in plain text or encrypted, but not both in the same 
+authentication requets.
+</para>
+
+<para>
+When encrypted passwords are used a password that has been 
+entered by the user is encrypted in two ways:
 </para>
 
 <itemizedlist>
-	<listitem><para>The case preserved password is encrypted 
-	using an MD5/DES one way hash
+	<listitem><para>An MD4 hash of the UNICODE of the password
+	string.  This is known as the NT hash.
 	</para></listitem>
 
-	<listitem><para>The case is converted to upper case and then 
-	encrypted using an MD5/DES one way hash</para></listitem>
+	<listitem><para>The password is converted to upper case,
+	and then padded or trucated to 14 bytes.  This string is 
+	then appended with 5 bytes of NULL characters and split to
+	form two 56 bit DES keys to encrypt a "magic" 8 byte value.
+	The resulting 16 bytes for the LanMan hash.
+	</para></listitem>	
 </itemizedlist>
-	
+
 <para>
-Both of these enrypted passwords are sent over the network 
-in the one authentication datagram.
+You should refer to the <ulink url="ENCRYPTION.html">
+Password Encryption</ulink> chapter in this HOWTO collection
+for more details on the inner workings
 </para>
 
 <para>
@@ -678,22 +695,37 @@ password support in such clients.
 </para>
 
 <para>
-It is recommended that the following parameters be added to the 
-smb.conf file:
+The following parameters can be used to work around the 
+issue of Windows 9x client upper casing usernames and
+password before transmitting them to the SMB server
+when using clear text authentication.
 </para>
 
 <para><programlisting>
-	passsword level = 8
-	username level = 8
+	<ulink url="smb.conf.5.html#PASSWORDLEVEL">passsword level</ulink> = <replaceable>integer</replaceable>
+	<ulink url="smb.conf.5.html#USERNAMELEVEL">username level</ulink> = <replaceable>integer</replaceable>
 </programlisting></para>
 
 <para>
-these configuration parameters will compensate for the fact that 
-in some circumstances MS Windows and MS DOS clients may twiddle the 
-password that has been supplied by the user by converting characters to 
-upper case. The above entries will try every combination of upper and 
-lower case for the first 8 characters. Please refer to the man page 
-for smb.conf for more information on use of these parameters.
+By default Samba will lower case the username before attempting
+to lookup the user in the database of local system accounts.
+Because UNIX usernames conventionally only contain lower case
+character, the <parameter>username level</parameter> parameter
+is rarely even needed.
+</para>
+
+<para>
+However, password on UNIX systems often make use of mixed case
+characters.  This means that in order for a user on a Windows 9x
+client to connect to a Samba server using clear text authentication,
+the <parameter>password level</parameter> must be set to the maximum
+number of upper case letter which <emphasis>could</emphasis> appear
+is a password.  Note that is the server OS uses the traditional
+DES version of crypt(), then a <parameter>password level</parameter>
+of 8 will result in case insensitive passwords as seen from Windows
+users.  This will also result in longer login times as Samba
+hash to compute the permutations of the password string and 
+try them one by one until a match is located (or all combinations fail).
 </para>
 
 <para>
@@ -780,9 +812,20 @@ MS Windows NT security domain. This is done as follows:
 
 <para>
 Use of this mode of authentication does require there to be 
-a standard Unix account for the user, this account can be 
-blocked to prevent logons by other than MS Windows clients.
+a standard Unix account for the user in order to assign
+a uid once the account has been authenticated by the remote
+Windows DC.  This account can be blocked to prevent logons by 
+other than MS Windows clients by things such as setting an invalid
+shell in the <filename>/etc/passwd</filename> entry.
 </para>
+
+<para>
+An alternative to assigning UIDs to Windows users on a 
+Samba member server is presented in the <ulink
+url="winbind.html">Winbind Overview</ulink> chapter in
+this HOWTO collection.
+</para>
+
 
 </sect2>
 
@@ -804,8 +847,18 @@ the smb.conf file:
 </para>
 
 <para><programlisting>
+## please refer to the Samba PDC HOWTO chapter later in 
+## this collection for more details
+[global]
 	encrypt passwords = Yes
 	security = user
+	domain logons = Yes
+	; an OS level of 33 or more is recommended
+	os level = 33
+
+[NETLOGON]
+	path = /somewhare/in/file/system
+	read only = yes
 </programlisting></para>
 
 <para>
@@ -826,10 +879,10 @@ the procedure for creating an account.
 <para><programlisting>
 	# useradd -s /bin/bash -d /home/"userid" -m
 	# passwd "userid"
-	  Enter Password: <userinput>pass</userinput>
+	  Enter Password: &lt;pw&gt;
 	  
 	# smbpasswd -a "userid"
-	  Enter Password: <userinput>pass</userinput>
+	  Enter Password: &lt;pw&gt;
 </programlisting></para>
 </sect3>
 
@@ -852,7 +905,11 @@ controller.  Refer to the Samba-PDC-HOWTO for more details.
 
 
 <sect1>
-<title>Configuration of Samba as ...</title>
+<title>Conclusions</title>
+
+<para>
+Samba provides a flexible means to operate as...
+</para>
 
 <itemizedlist>
 	<listitem><para>A Stand-alone server - No special action is needed 
@@ -863,29 +920,15 @@ controller.  Refer to the Samba-PDC-HOWTO for more details.
 	workstation/server.
 	</para></listitem>
 	
-	<listitem><para>An MS Windows NT 3.x/4.0 security domain member - 
-	Refer to the previous section(s) above.
+	<listitem><para>An MS Windows NT 3.x/4.0 security domain member.
 	</para></listitem>
 	
 
 	<listitem><para>An alternative to an MS Windows NT 3.x/4.0 
-	Domain Controller - In the smb.conf file the following parameters 
-	should be added:</para></listitem>
+	Domain Controller.
+	</para></listitem>
+
 </itemizedlist>
-
-<para><programlisting>
-## please refer to the Samba PDC HOWTO chapter later in 
-## this collection for more details
-[global]
-	domain logons = Yes
-	; an OS level of 33 or more is recommended
-	os level = 33
-
-	[NETLOGON]
-		path = /somewhare/in/file/system
-		read only = yes
-		available = yes
-</programlisting></para>
 
 </sect1>
 
