@@ -761,6 +761,9 @@ int main(int argc, char **argv)
 	BOOL interactive = False;
 	int opt;
 
+	/* For the PSA ensure that dual_daemon is always true. */
+	opt_dual_daemon = True;
+
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */
 
