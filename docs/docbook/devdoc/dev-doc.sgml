@@ -14,6 +14,7 @@
 <!ENTITY encryption SYSTEM "encryption.sgml">
 <!ENTITY rpc-plugin SYSTEM "rpc_plugin.sgml">
 <!ENTITY modules SYSTEM "modules.sgml">
+<!ENTITY packagers SYSTEM "packagers.sgml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -70,5 +71,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &encryption;
 &modules;
 &rpc-plugin;
+&packagers;
 
 </book>
