@@ -99,12 +99,15 @@ returns:
     buffer -- string containing packed data
 
 raises:
-    IndexError -- if there are not the same number of format codes as of
-        values
+    IndexError -- if there are too few values for the format
     ValueError -- if any of the format characters is illegal
     TypeError  -- if the format is not a string, or values is not a sequence,
         or any of the values is of the wrong type for the corresponding
         format character
+
+notes:
+    For historical reasons, it is not an error to pass more values than are consumed
+    by the format.
 ";
 
 
