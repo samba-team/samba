@@ -46,13 +46,14 @@ FILE *headerfile, *codefile, *logfile;
 
 static char *orig_filename;
 static char header[1024];
+static char basename[1024] = STEM;
 
 void
-init_generate (char *filename, char *basename)
+init_generate (char *filename, char *base)
 {
     orig_filename = filename;
-    if(basename == NULL)
-	basename = STEM;
+    if(base)
+	strcpy(basename, base);
     sprintf(header, "%s.h", basename);
     headerfile = fopen (header, "w");
     if (headerfile == NULL)
@@ -94,7 +95,7 @@ init_generate (char *filename, char *basename)
 void
 close_generate ()
 {
-    fprintf (headerfile, "#endif /* __%s_h__ */\n", header);
+    fprintf (headerfile, "#endif /* __%s_h__ */\n", basename);
 
     fclose (headerfile);
     fprintf (logfile, "\n");
