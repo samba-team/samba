@@ -62,14 +62,27 @@ static void add_socket_rpc(struct server_service *service,
 	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		if (e->ep_description.type == NCACN_IP_TCP) {
+		if (e->ep_description.transport == NCACN_IP_TCP) {
 			struct server_socket *sock;
 			struct dcesrv_socket_context *dcesrv_sock;
+			uint16_t port = 0;
+			
+			if (e->ep_description.options && e->ep_description.options[0]) 
+				port = atoi(e->ep_description.options[0]);
 
-			sock = service_setup_socket(service,model_ops, ip_str, &e->ep_description.info.tcp_port);
+			sock = service_setup_socket(service,model_ops, ip_str, &port);
 			if (!sock) {
-				DEBUG(0,("service_setup_socket(port=%u) failed\n",e->ep_description.info.tcp_port));
+				DEBUG(0,("service_setup_socket(port=%u) failed\n",port));
 				continue;
+			}
+
+			/* And put the settings back into the binding. This will 
+			 * go away once we store the 'encoded' endpoint instead of a 
+			 * string describing it */
+			if (e->ep_description.options == NULL) {
+				e->ep_description.options = talloc_array_p(dce_ctx, const char *, 2);
+				e->ep_description.options[0] = talloc_asprintf(dce_ctx, "%d", port);
+				e->ep_description.options[1] = NULL;
 			}
 
 			dcesrv_sock = talloc_p(sock, struct dcesrv_socket_context);
