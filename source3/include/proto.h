@@ -3232,6 +3232,9 @@ BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
 				uint32 **rid_mem,
 				char ***name,
 				uint32 **type);
+BOOL msrpc_sam_enum_groups(struct client_info *info,
+				BOOL request_member_info,
+				BOOL request_group_info);
 void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
