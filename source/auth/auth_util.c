@@ -952,14 +952,16 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
- Wrapper to allow the getpwnam() call to styrip the domain name and 
- try again in case a local UNIX user is already there.
+ Wrapper to allow the getpwnam() call to strip the domain name and 
+ try again in case a local UNIX user is already there.  Also run through 
+ the username if we fallback to the username only.
  ****************************************************************************/
  
 struct passwd *smb_getpwnam( char *domuser )
 {
 	struct passwd *pw;
 	char *p;
+	fstring mapped_username;
 
 	pw = Get_Pwnam( domuser );
 	if ( pw )
@@ -969,8 +971,11 @@ struct passwd *smb_getpwnam( char *domuser )
 
 	p = strchr( domuser, *lp_winbind_separator() );
 
-	if ( p )
-		return Get_Pwnam(p+1);
+	if ( p ) {
+		fstrcpy( mapped_username, p );
+		map_username( mapped_username );	
+		return Get_Pwnam(mapped_username);
+	}
 
 	return NULL;
 }
