@@ -180,6 +180,7 @@ static BOOL proc_pam_start(pam_handle_t **pamh, char *user)
        }
 #endif
 #ifdef PAM_TTY
+       DEBUG(4,("PAM: setting tty\n"));
        pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
        if (!pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
 	       proc_pam_end(*pamh);
@@ -272,6 +273,7 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password)
 	 * exporting an AFS cell, be able to /write/ to this cell.
 	 */
 
+        DEBUG(4,("PAM: Account Management SetCredentials for User: %s\n", user));
 	pam_error = pam_setcred(pamh, (PAM_ESTABLISH_CRED|PAM_SILENT)); 
 	if(!pam_error_handler(pamh, pam_error, "Set Credential Failure", 2)) {
 		proc_pam_end(pamh);
