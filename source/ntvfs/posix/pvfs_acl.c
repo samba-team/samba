@@ -33,7 +33,7 @@
 static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 				 struct smbsrv_request *req,
 				 struct pvfs_filename *name, int fd, 
-				 struct xattr_DosAcl *acl)
+				 struct xattr_NTACL *acl)
 {
 	struct security_descriptor *sd;
 	struct nt_user_token *token = req->session->session_info->nt_user_token;
@@ -103,12 +103,12 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		      struct pvfs_filename *name, int fd, 
 		      union smb_setfileinfo *info)
 {
-	struct xattr_DosAcl *acl;
+	struct xattr_NTACL *acl;
 	uint32_t secinfo_flags = info->set_secdesc.in.secinfo_flags;
 	struct security_descriptor *new_sd, *sd;
 	NTSTATUS status;
 
-	acl = talloc_p(req, struct xattr_DosAcl);
+	acl = talloc_p(req, struct xattr_NTACL);
 	if (acl == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -159,11 +159,11 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 			struct pvfs_filename *name, int fd, 
 			union smb_fileinfo *info)
 {
-	struct xattr_DosAcl *acl;
+	struct xattr_NTACL *acl;
 	NTSTATUS status;
 	struct security_descriptor *sd;
 
-	acl = talloc_p(req, struct xattr_DosAcl);
+	acl = talloc_p(req, struct xattr_NTACL);
 	if (acl == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

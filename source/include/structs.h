@@ -112,7 +112,7 @@ struct file_info;
 
 struct xattr_DosEAs;
 struct xattr_DosStreams;
-struct xattr_DosAcl;
+struct xattr_NTACL;
 
 struct test_join;
 
