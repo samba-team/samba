@@ -1482,26 +1482,47 @@ if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
 fi 
 
 
-#################################################
-# check for libiconv support
-AC_MSG_CHECKING(whether to use libiconv)
+ICONV_LOCATION=standard
+LOOK_DIRS="/usr /usr/local /sw"
 AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
-[ case "$withval" in
-  no)
-    AC_MSG_RESULT(no)
-    ;;
-  *)
-    AC_MSG_RESULT(yes)
-    CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    AC_CHECK_LIB(iconv, iconv_open)
-    AC_DEFINE_UNQUOTED(WITH_LIBICONV, "${withval}",[Path to iconv])
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+[
+  if test "$withval" = "no" ; then
+    AC_MSG_ERROR(I won't take no for an answer)
+  else
+     if test "$withval" != "yes" ; then
+        LOOK_DIRS="$withval $LOOK_DIRS"
+     fi
+  fi
+])
 
+ICONV_FOUND="no"
+for i in $LOOK_DIRS ; do
+    save_LIBS=$LIBS
+    save_LDFLAGS=$LDFLAGS
+    save_CPPFLAGS=$CPPFLAGS
+    CPPFLAGS="-I$i/include"
+    LDFLAGS="-L$i/lib"
+    LIBS=
+    export LDFLAGS LIBS CPPFLAGS
+dnl Try to find iconv(3)
+    jm_ICONV($i)
+
+    CPPFLAGS=$save_CPPFLAGS
+    if test -n "$ICONV_FOUND" ; then
+        LDFLAGS=$save_LDFLAGS
+        LIB_ADD_DIR(LDFLAGS, "$i/lib")
+        CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+        LIBS="$save_LIBS $LIBS"
+        ICONV_LOCATION=$i
+        export LDFLAGS LIBS CPPFLAGS
+        break
+    else
+	LDFLAGS=$save_LDFLAGS
+        LIBS=$save_LIBS
+        export LDFLAGS LIBS CPPFLAGS
+    fi
+done
 
 ############
 # check for iconv in libc
@@ -1517,6 +1538,11 @@ main() {
 samba_cv_HAVE_NATIVE_ICONV=yes,samba_cv_HAVE_NATIVE_ICONV=no,samba_cv_HAVE_NATIVE_ICONV=cross)])
 if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
     AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
+fi
+
+if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
+    AC_MSG_WARN([Sufficient support for iconv function was not found. 
+    Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
 fi
 
 
