@@ -2120,6 +2120,7 @@ int net_rpc_usage(int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
+	d_printf("  net rpc testjoin \t\t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc group \t\tto list groups\n");
 	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
@@ -2182,6 +2183,7 @@ int net_rpc(int argc, const char **argv)
 	struct functable func[] = {
 		{"info", net_rpc_info},
 		{"join", net_rpc_join},
+		{"testjoin", net_rpc_testjoin},
 		{"user", net_rpc_user},
 		{"group", net_rpc_group},
 		{"share", net_rpc_share},
