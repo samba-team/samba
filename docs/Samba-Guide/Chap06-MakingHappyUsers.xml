@@ -452,12 +452,12 @@
 	</para>
 
 	<para>
+	<indexterm><primary>interoperability</primary></indexterm>
 	For those who are willing to brave the process of installing and configuring LDAP and Samba-3 interoperability,
 	there are a few nice Web-based tools that may help you to manage your users and groups more effectively.
-	The Web-based tools you might like to consider include: The <ulink
-	  url="http://lam.sourceforge.net/">LDAP 
-	Account Manager</ulink> (LAM), as well as the <ulink
-	  url="http://www.webmin.com">Webmin</ulink>-based Idealx
+	The Web-based tools you might like to consider include: The
+	<ulink url="http://lam.sourceforge.net/">LDAP Account Manager</ulink> (LAM), as well as the
+	<ulink url="http://www.webmin.com">Webmin</ulink>-based Idealx
 	<ulink url="http://webmin.idealx.org/index.en.html">CGI tools.</ulink>
 	</para>
 
@@ -471,18 +471,17 @@
 	</para>
 
 	<note><para>
-	The following prescriptive guidance is not an LDAP tutorial. The LDAP implementation expressly lacks
-	security. No form of secure LDAP communications is attempted. The LDAP configuration information provided
+	The following prescriptive guidance is not an LDAP tutorial. The LDAP implementation expressly uses minimal
+	security controls. No form of secure LDAP communications is attempted. The LDAP configuration information provided
 	is considered to consist of the barest essentials only. You are strongly encouraged to learn more about
 	LDAP before attempting to deploy it in a business-critical environment.
 	</para></note>
 
 	<para>
 	Information to help you get started with OpenLDAP is available from the
-	<ulink url="http://www.openldap.org/pub/">
-	OpenLDAP Web Site.</ulink> Many people have found the book <ulink
-	  url="http://www.booksense.com/product/info.jsp?isbn=1565924916">
-	LDAP System Administration,</ulink> written by Jerry Carter, quite useful.
+	<ulink url="http://www.openldap.org/pub/">OpenLDAP Web Site.</ulink> Many people have found the book
+	<ulink url="http://www.booksense.com/product/info.jsp?isbn=1565924916">LDAP System Administration,</ulink>
+	written by Jerry Carter, quite useful.
 	</para>
 
       <para><indexterm>
@@ -635,6 +634,66 @@
 	A network logon script is used to deliver flexible but consistent network drive
 	connections.
 	</para>
+
+		<sect3>
+		<title>Addition of Machines to the Domain</title>
+
+		<para>
+		<indexterm><primary></primary></indexterm>
+		<indexterm><primary></primary></indexterm>
+		<indexterm><primary></primary></indexterm>
+		<indexterm><primary></primary></indexterm>
+		Samba versions prior to 3.0.11 necessitated the use of a domain administrator account
+		that maps to the UNIX UID=0. The UNIX operating system permits only the <constant>root</constant>
+		user to add user and group accounts. Samba 3.0.11 introduced a new facility known as
+		<constant>Privilieges</constant>. This new facility introduced four new privileges that
+		can be assigned to users and/or groups:
+		</para>
+
+
+		<table id="ch6-privs">
+			<title>Current Privilege Capabilities</title>
+			<tgroup cols="2">
+				<colspec align="left"/>
+				<colspec align="left"/>
+				<thead>
+					<row>
+						<entry align="left">Privilege</entry>
+						<entry align="left">Description</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry><para>SeMachineAccountPrivilege</para></entry>
+						<entry><para>Add machines to domain</para></entry>
+					</row>
+					<row>
+						<entry><para>SePrintOperatorPrivilege</para></entry>
+						<entry><para>Manage printers</para></entry>
+					</row>
+					<row>
+						<entry><para>SeAddUsersPrivilege</para></entry>
+						<entry><para>Add users and groups to the domain</para></entry>
+					</row>
+					<row>
+						<entry><para>SeRemoteShutdownPrivilege</para></entry>
+						<entry><para>Force shutdown from a remote system</para></entry>
+					</row>
+					<row>
+						<entry><para>SeDiskOperatorPrivilege</para></entry>
+						<entry><para>Manage disk share</para></entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+
+		<para>
+		In this network example use will be made of one of the supported privileges purely to demonstrate
+		how any user can now be given the ability to add machines to the domain using a normal user account
+		that has been given the appropriate privileges.
+		</para>
+
+		</sect3>
 
 		<sect3>
 		<title>Roaming Profile Background</title>
@@ -3178,6 +3237,97 @@ structuralObjectClass: organizationalUnit
 	Section 21.4. A quick Web search will bring up a host of options. One of the most popular logon
 	facilities in use today is called <ulink url="http://www.kixtart.org">KiXtart.</ulink>
 	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Assigning Domain Privileges</title>
+
+	<para>
+	The ability to perform tasks such as joining Windows clients to the domain can be assigned to
+	normal user accounts. By default, only the domain administrator account (<constant>root</constant> on UNIX
+	systems because it has UID=0) can add accounts. New to Samba 3.0.11 is the ability to grant
+	this privilege in a very limited fashion to particular accounts.
+	</para>
+
+	<para>
+	By default, even Samba 3.0.11 does not grant any rights even to the <constant>Domain Admins</constant>
+	group. Here we will grant this group all privileges.
+	</para>
+
+	<para>
+	Samba limits privileges on a per-server basis. This is a deliberate limitation so that users who
+	are granted rights can be restricted to particular machines. It is left to the network administrator
+	to determine which rights should be provided and to whom.
+	</para>
+
+	<procedure>
+		<step><para>
+		Log onto the primary domain controller (PDC) as the <constant>root</constant> account.
+		</para></step>
+
+		<step><para>
+		Execute the following command to grant the <constant>Domain Admins</constant> group all
+		rights and privileges:
+<screen>
+&rootprompt; net -S MASSIVE  -U root%not24get rpc rights grant \
+        "MEGANET2\Domain Admins" SeMachineAccountPrivilege SePrintOperatorPrivilege \
+         SeAddUsersPrivilege SeDiskOperatorPrivilege SeRemoteShutdownPrivilege
+Successfully granted rights.
+</screen>
+		Repeat this step on each domain controller in each case substituting the name of the server
+		(e.g.: BLDG1, BLDG2) in place of the PDC called MASSIVE.
+		</para></step>
+
+		<step><para>
+		In this step the privilege will be granted to Bob Jordan (bobj) to add Windows workstations
+		to the domain. Execute the following only on the PDC. It is not necessary to do this on
+		BDCs or on DMS machines because machine accounts are only ever added by the PDC:
+<screen>
+&rootprompt; net -S MASSIVE  -U root%not24get rpc rights grant \
+                            "MEGANET2\bobj" SeMachineAccountPrivilege
+Successfully granted rights.
+</screen>
+		</para></step>
+
+		<step><para>
+		Verify that the assignment of privileges have been correctly applied by executing:
+<screen>
+net rpc rights list accounts -Uroot%not24get
+MEGANET2\bobj
+SeMachineAccountPrivilege
+
+S-0-0
+No privileges assigned
+
+BUILTIN\Print Operators
+No privileges assigned
+
+BUILTIN\Account Operators
+No privileges assigned
+
+BUILTIN\Backup Operators
+No privileges assigned
+
+BUILTIN\Server Operators
+No privileges assigned
+
+BUILTIN\Administrators
+No privileges assigned
+
+Everyone
+No privileges assigned
+
+MEGANET2\Domain Admins
+SeMachineAccountPrivilege
+SePrintOperatorPrivilege
+SeAddUsersPrivilege
+SeRemoteShutdownPrivilege
+SeDiskOperatorPrivilege
+</screen>
+		</para></step>
+
+	</procedure>
 
 	</sect2>
 
