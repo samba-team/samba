@@ -1,3 +1,8 @@
+2003-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* destroy_c.c (kadm5_c_destroy): fix memory leaks, From Panasas,
+	Inc
+
 2003-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* iprop.h: don't include <krb5-private.h>
@@ -9,6 +14,10 @@
 	functions and replace them with with krb5_storage
 	
 2003-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ipropd_slave.c (receive_loop): when seeking over the entries we
+	already have, skip over the trailer.  From: Jeffrey Hutzelman
+	<jhutz@cmu.edu>
 
 	* dump_log.c,ipropd_master.c,ipropd_slave.c,
 	replay_log.c,truncate_log.c: parse kdc.conf
