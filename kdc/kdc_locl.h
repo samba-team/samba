@@ -89,6 +89,7 @@ extern int require_preauth;
 extern sig_atomic_t exit_flag;
 extern char *keyfile;
 extern size_t max_request;
+extern time_t kdc_warn_pwexpire;
 
 #ifdef KRB4
 extern char *v4_realm;
