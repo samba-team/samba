@@ -404,30 +404,31 @@ static uint32 process(struct client_info *info, char *cmd_str)
 #endif
 			pstring pline;
 			BOOL at_sym = False;
+			
 			pline[0] = 0;
-			safe_strcat(pline, "[", sizeof(pline) - 1);
-			if (usr.ntc.domain[0] != 0)
+			if (info->show_prompt)
 			{
-				safe_strcat(pline, usr.ntc.domain,
+				safe_strcat(pline, "[", sizeof(pline) - 1);
+				if (usr.ntc.domain[0] != 0)
+				{
+					safe_strcat(pline, usr.ntc.domain,
+						    sizeof(pline) - 1);
+					safe_strcat(pline, "\\", sizeof(pline) - 1);
+					at_sym = True;
+				}
+				if (usr.ntc.user_name[0] != 0)
+				{
+					safe_strcat(pline, usr.ntc.user_name,
+						    sizeof(pline) - 1);
+					at_sym = True;
+				}
+				if (at_sym)
+					safe_strcat(pline, "@", sizeof(pline) - 1);
+						
+				safe_strcat(pline, cli_info.dest_host,
 					    sizeof(pline) - 1);
-				safe_strcat(pline, "\\", sizeof(pline) - 1);
-				at_sym = True;
+				safe_strcat(pline, "]$ ", sizeof(pline) - 1);
 			}
-			if (usr.ntc.user_name[0] != 0)
-			{
-				safe_strcat(pline, usr.ntc.user_name,
-					    sizeof(pline) - 1);
-				at_sym = True;
-			}
-			if (at_sym)
-			{
-				safe_strcat(pline, "@", sizeof(pline) - 1);
-			}
-
-			safe_strcat(pline, cli_info.dest_host,
-				    sizeof(pline) - 1);
-			safe_strcat(pline, "]$ ", sizeof(pline) - 1);
-
 #ifndef HAVE_LIBREADLINE
 
 			/* display a prompt */
@@ -491,7 +492,7 @@ static void usage(char *pname)
 	fprintf(out_hnd, "\nVersion %s\n", VERSION);
 	fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
 	fprintf(out_hnd,
-		"\t-S <\\>server         Server to connect to (\\. or . for localhost)\n");
+		"\t-S <\\>server         Server to connect to\n");
 	fprintf(out_hnd,
 		"\t-l log basename.      Basename for log/debug files\n");
 	fprintf(out_hnd,
@@ -504,6 +505,10 @@ static void usage(char *pname)
 		"\t-I dest IP            use this IP to connect to\n");
 	fprintf(out_hnd,
 		"\t-E                    write messages to stderr instead of stdout\n");
+	fprintf(out_hnd,
+		"\t-A filename           file from which to read the authentication credentials\n");
+	fprintf(out_hnd,
+		"\t-P                    hide prompt (used for shell scripts)\n");
 	fprintf(out_hnd,
 		"\t-U username           set the network username\n");
 	fprintf(out_hnd,
@@ -942,7 +947,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 
 	while ((opt = getopt(argc, argv,
-			     "Rs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) !=
+			     "PRs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:A:")) !=
 	       EOF)
 	{
 		switch (opt)
@@ -995,11 +1000,74 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				}
 				break;
 			}
+			case 'A':
+			{
+ 	 			FILE *auth;
+        	                fstring buf;
+                        	uint16 len = 0;
+				char *ptr, *val, *param;
+                               
+	                        if ((auth=sys_fopen(optarg, "r")) == NULL)
+				{
+					/* fail if we can't open the credentials file */
+					DEBUG(0,("ERROR: Unable to open credentials file!\n"));
+					exit (-1);
+				}
+                                
+				while (!feof(auth))
+				{  
+					/* get a line from the file */
+					if (!fgets (buf, sizeof(buf), auth))
+						continue;
+					len = strlen(buf);
+					
+					if ((len) && (buf[len-1]=='\n'))
+					{
+						buf[len-1] = '\0';
+						len--;
+					}	
+					if (len == 0)
+						continue;
+					
+					/* break up the line into parameter & value.
+					   will need to eat a little whitespace possibly */
+					param = buf;
+					if (!(ptr = strchr (buf, '=')))
+						continue;
+					val = ptr+1;
+					*ptr = '\0';
+					
+					/* eat leading white space */
+					while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
+						val++;
+					
+					if (strwicmp("password", param) == 0)
+					{
+						pstrcpy(password, val);
+						cmd_set_options |= CMD_PASS;
+					}
+					else if (strwicmp("username", param) == 0)
+					{
+						pstrcpy(usr.ntc.user_name, val);
+						cmd_set_options |= CMD_USER;
+					}
+						
+					memset(buf, 0, sizeof(buf));
+				}
+				fclose(auth);
+				break;
+			}
 
 			case 'W':
 			{
 				cmd_set_options |= CMD_DOM;
 				pstrcpy(usr.ntc.domain, optarg);
+				break;
+			}
+			
+			case 'P':
+			{ /* optarg == prompt string ? */
+				info->show_prompt = False;
 				break;
 			}
 
@@ -1268,6 +1336,8 @@ int command_main(int argc, char *argv[])
 	pstrcpy(cli_info.myhostname, "");
 	pstrcpy(cli_info.dest_host, "");
 	cli_info.dest_ip.s_addr = 0;
+	
+	cli_info.show_prompt = True;
 
 	ZERO_STRUCT(cli_info.dom.level3_sid);
 	ZERO_STRUCT(cli_info.dom.level5_sid);
