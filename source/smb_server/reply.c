@@ -2378,14 +2378,17 @@ void reply_special(struct smbsrv_request *req)
 	switch (msg_type) {
 	case 0x81: /* session request */
 		if (req->smb_conn->negotiate.done_nbt_session) {
-			smbsrv_terminate_connection(req->smb_conn, "multiple session request not permitted");
+			smbsrv_terminate_connection(req->smb_conn, 
+						    "multiple session request not permitted");
+			return;
 		}
 		
 		SCVAL(buf,0,0x82);
 		SCVAL(buf,3,0);
 		
 		DEBUG(0,("REWRITE: not parsing netbios names in NBT session request!\n"));
-		/* TODO: store the name for the session setup 'remote machine' code, as well as smbstatus */
+		/* TODO: store the name for the session setup 'remote
+		   machine' code, as well as smbstatus */
 
 		req->smb_conn->negotiate.done_nbt_session = True;
 		

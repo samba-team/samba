@@ -86,6 +86,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
 	req->out.buffer = talloc_realloc(req, req->out.buffer, req->out.allocated);
 	if (!req->out.buffer) {
 		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
+		return;
 	}
 
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
@@ -120,6 +121,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 	req->out.buffer = talloc(req, req->out.allocated);
 	if (!req->out.buffer) {
 		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
+		return;
 	}
 
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
