@@ -267,6 +267,7 @@ int smb_buflen(char *buf);
 char *smb_buf(char *buf);
 int smb_offset(char *p,char *buf);
 char *skip_string(char *buf,int n);
+size_t str_charnum(char *s);
 BOOL trim_string(char *s,char *front,char *back);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
@@ -1594,7 +1595,7 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 				char *domain, char *user, char *wks,
 				uint32 neg_flags);
 void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
-BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 *seq_num);
+BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_num);
 void make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
 				uint32 ver, uint32 crc32, uint32 seq_num);
 void smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);

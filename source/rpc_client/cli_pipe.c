@@ -196,10 +196,11 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	if (auth_verify)
 	{
 		crc32 = crc32_calc_buffer(data_len, reply_data);
-		if (!rpc_auth_ntlmssp_chk(&chk, crc32 , &cli->ntlmssp_seq_num))
+		if (!rpc_auth_ntlmssp_chk(&chk, crc32 , cli->ntlmssp_seq_num))
 		{
 			return False;
 		}
+		cli->ntlmssp_seq_num++;
 	}
 	return True;
 }
