@@ -215,8 +215,8 @@ static void netsechash(uchar * key, uchar * data, int data_len)
 BOOL netsec_encode(struct netsec_auth_struct *a,
 		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len)
 {
-	char dataN[4];
-	char digest1[16];
+	uchar dataN[4];
+	uchar digest1[16];
 	struct MD5Context ctx3;
 	uchar sess_kf0[16];
 	int i;
@@ -282,8 +282,8 @@ BOOL netsec_encode(struct netsec_auth_struct *a,
 BOOL netsec_decode(struct netsec_auth_struct *a,
 		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len)
 {
-	char dataN[4];
-	char digest1[16];
+	uchar dataN[4];
+	uchar digest1[16];
 	struct MD5Context ctx3;
 	uchar sess_kf0[16];
 	int i;
@@ -330,7 +330,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a,
 
 	MD5Update(&ctx3, data, data_len);
 	{
-		char digest_tmp[16];
+		uchar digest_tmp[16];
 		MD5Final(digest_tmp, &ctx3);
 		hmac_md5(a->sess_key, digest_tmp, 16, digest1);
 		dump_data_pw("digest_tmp:\n", digest_tmp, sizeof(digest_tmp));
