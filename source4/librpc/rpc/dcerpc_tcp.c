@@ -22,136 +22,239 @@
 
 #include "includes.h"
 
+#define MIN_HDR_SIZE 16
+
+struct tcp_blob {
+	struct tcp_blob *next, *prev;
+	DATA_BLOB data;
+};
+
 /* transport private information used by TCP pipe transport */
 struct tcp_private {
+	struct event_context *event_ctx;
+	struct fd_event *fde;
 	int fd;
 	char *server_name;
 	uint32_t port;
+
+	struct tcp_blob *pending_send;
+
+	struct {
+		size_t received;
+		DATA_BLOB data;
+		uint_t pending_count;
+	} recv;
 };
 
 
 /*
   mark the socket dead
 */
-static void tcp_sock_dead(struct tcp_private *tcp)
+static void tcp_sock_dead(struct dcerpc_pipe *p, NTSTATUS status)
 {
+	struct tcp_private *tcp = p->transport.private;
+
 	if (tcp && tcp->fd != -1) {
 		close(tcp->fd);
 		tcp->fd = -1;
 	}
+
+	/* wipe any pending sends */
+	while (tcp->pending_send) {
+		struct tcp_blob *blob = tcp->pending_send;
+		DLIST_REMOVE(tcp->pending_send, blob);
+		talloc_free(blob);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		p->transport.recv_data(p, NULL, status);
+	}
 }
 
-static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p, 
-			     TALLOC_CTX *mem_ctx,
-			     DATA_BLOB *blob)
-{
-	struct tcp_private *tcp = p->transport.private;
-	ssize_t ret;
-	uint32_t frag_length;
-	DATA_BLOB blob1;
-
-	blob1 = data_blob_talloc(mem_ctx, NULL, 16);
-	if (!blob1.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = read_data(tcp->fd, blob1.data, blob1.length);
-	if (ret != blob1.length) {
-		tcp_sock_dead(tcp);
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-
-	/* this could be a ncacn_http endpoint - this doesn't work
-	   yet, but it goes close */
-	if (strncmp(blob1.data, "ncacn_http/1.0", 14) == 0) {
-		memmove(blob1.data, blob1.data+14, 2);
-		ret = read_data(tcp->fd, blob1.data+2, 14);
-		if (ret != 14) {
-			tcp_sock_dead(tcp);
-			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-		}
-	}
-
-	/* we might have recieved a partial fragment, in which case we
-	   need to pull the rest of it */
-	frag_length = dcerpc_get_frag_length(&blob1);
-	if (frag_length == blob1.length) {
-		*blob = blob1;
-		return NT_STATUS_OK;
-	}
-
-	*blob = data_blob_talloc(mem_ctx, NULL, frag_length);
-	if (!blob->data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	memcpy(blob->data, blob1.data, blob1.length);
-
-	ret = read_data(tcp->fd, blob->data + blob1.length, frag_length - blob1.length);
-	if (ret != frag_length - blob1.length) {
-		tcp_sock_dead(tcp);
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS tcp_full_request(struct dcerpc_pipe *p, 
-				 TALLOC_CTX *mem_ctx,
-				 DATA_BLOB *request_blob,
-				 DATA_BLOB *reply_blob)
-{
-	struct tcp_private *tcp = p->transport.private;
-	ssize_t ret;
-
-	ret = write_data(tcp->fd, request_blob->data, request_blob->length);
-	if (ret != request_blob->length) {
-		tcp_sock_dead(tcp);
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-
-	return tcp_raw_recv(p, mem_ctx, reply_blob);
-}
-	      
-
-/* 
-   retrieve a secondary pdu from a pipe 
+/*
+  process send requests
 */
-static NTSTATUS tcp_secondary_request(struct dcerpc_pipe *p, 
-			       TALLOC_CTX *mem_ctx,
-			       DATA_BLOB *blob)
+static void tcp_process_send(struct dcerpc_pipe *p)
 {
-	return tcp_raw_recv(p, mem_ctx, blob);
+	struct tcp_private *tcp = p->transport.private;
+
+	while (tcp->pending_send) {
+		struct tcp_blob *blob = tcp->pending_send;
+		ssize_t ret = write(tcp->fd, blob->data.data, blob->data.length);
+		if (ret == -1) {
+			if (errno != EAGAIN && errno != EINTR) {
+				tcp_sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
+			}
+			break;
+		}
+
+		blob->data.data += ret;
+		blob->data.length -= ret;
+
+		if (blob->data.length != 0) {
+			break;
+		}
+
+		DLIST_REMOVE(tcp->pending_send, blob);
+		talloc_free(blob);
+	}
+
+	if (tcp->pending_send == NULL) {
+		tcp->fde->flags &= ~EVENT_FD_WRITE;
+	}
 }
 
+
+/*
+  process recv requests
+*/
+static void tcp_process_recv(struct dcerpc_pipe *p)
+{
+	struct tcp_private *tcp = p->transport.private;
+	ssize_t ret;
+
+	/* read in the base header to get the fragment length */
+	if (tcp->recv.received < MIN_HDR_SIZE) {
+		uint32_t frag_length;
+
+		ret = read(tcp->fd, tcp->recv.data.data, 
+			   MIN_HDR_SIZE - tcp->recv.received);
+		if (ret == -1) {
+			if (errno != EAGAIN && errno != EINTR) {
+				tcp_sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
+			}
+			return;
+		}
+		if (ret == 0) {
+			tcp_sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
+			return;
+		}
+
+		tcp->recv.received += ret;
+
+		if (tcp->recv.received != MIN_HDR_SIZE) {
+			return;
+		}
+		frag_length = dcerpc_get_frag_length(&tcp->recv.data);
+
+		tcp->recv.data.data = talloc_realloc(tcp->recv.data.data,
+						     frag_length);
+		if (tcp->recv.data.data == NULL) {
+			tcp_sock_dead(p, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		tcp->recv.data.length = frag_length;
+	}
+
+	/* read in the rest of the packet */
+	ret = read(tcp->fd, tcp->recv.data.data + tcp->recv.received,
+		   tcp->recv.data.length - tcp->recv.received);
+	if (ret == -1) {
+		if (errno != EAGAIN && errno != EINTR) {
+			tcp_sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
+		}
+		return;
+	}
+	if (ret == 0) {
+		tcp_sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	tcp->recv.received += ret;
+
+	if (tcp->recv.received != tcp->recv.data.length) {
+		return;
+	}
+
+	/* we have a full packet */
+	p->transport.recv_data(p, &tcp->recv.data, NT_STATUS_OK);
+
+	tcp->recv.received = 0;
+	tcp->recv.pending_count--;
+	if (tcp->recv.pending_count == 0) {
+		tcp->fde->flags &= ~EVENT_FD_READ;
+	}
+}
+
+/*
+  called when a IO is triggered by the events system
+*/
+static void tcp_io_handler(struct event_context *ev, struct fd_event *fde, 
+			   time_t t, uint16_t flags)
+{
+	struct dcerpc_pipe *p = fde->private;
+	struct tcp_private *tcp = p->transport.private;
+
+	if (flags & EVENT_FD_WRITE) {
+		tcp_process_send(p);
+	}
+
+	if (tcp->fd == -1) {
+		return;
+	}
+
+	if (flags & EVENT_FD_READ) {
+		tcp_process_recv(p);
+	}
+}
 
 /* 
    send an initial pdu in a multi-pdu sequence
 */
-static NTSTATUS tcp_initial_request(struct dcerpc_pipe *p, 
-				    TALLOC_CTX *mem_ctx,
-				    DATA_BLOB *blob)
+static NTSTATUS tcp_send_request(struct dcerpc_pipe *p, 
+				 DATA_BLOB *data)
 {
 	struct tcp_private *tcp = p->transport.private;
-	ssize_t ret;
+	struct tcp_blob *blob;
 
-	ret = write_data(tcp->fd, blob->data, blob->length);
-	if (ret != blob->length) {
-		tcp_sock_dead(tcp);
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	blob = talloc_p(tcp, struct tcp_blob);
+	if (blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
+
+	blob->data = data_blob_talloc(blob, data->data, data->length);
+	if (blob->data.data == NULL) {
+		talloc_free(blob);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DLIST_ADD_END(tcp->pending_send, blob, struct tcp_blob *);
+
+	tcp->fde->flags |= EVENT_FD_WRITE;
 
 	return NT_STATUS_OK;
 }
 
+/* 
+   initiate a read request 
+*/
+static NTSTATUS tcp_send_read(struct dcerpc_pipe *p)
+{
+	struct tcp_private *tcp = p->transport.private;
+
+	tcp->recv.pending_count++;
+	if (tcp->recv.pending_count == 1) {
+		tcp->fde->flags |= EVENT_FD_READ;
+	}
+	return NT_STATUS_OK;
+}
+
+/* 
+   return the event context so the caller can process asynchronously
+*/
+static struct event_context *tcp_event_context(struct dcerpc_pipe *p)
+{
+	struct tcp_private *tcp = p->transport.private;
+
+	return tcp->event_ctx;
+}
 
 /* 
    shutdown TCP pipe connection
 */
 static NTSTATUS tcp_shutdown_pipe(struct dcerpc_pipe *p)
 {
-	struct tcp_private *tcp = p->transport.private;
-
-	tcp_sock_dead(tcp);
+	tcp_sock_dead(p, NT_STATUS_OK);
 
 	return NT_STATUS_OK;
 }
@@ -176,6 +279,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	struct tcp_private *tcp;
 	int fd;
 	struct in_addr addr;
+	struct fd_event fde;
 
 	if (port == 0) {
 		port = EPMAPPER_PORT;
@@ -191,6 +295,8 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 		return NT_STATUS_PORT_CONNECTION_REFUSED;
 	}
 
+	set_blocking(fd, False);
+
         if (!(*p = dcerpc_pipe_init())) {
                 return NT_STATUS_NO_MEMORY;
 	}
@@ -200,20 +306,35 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	*/
 	(*p)->transport.transport = NCACN_IP_TCP;
 	(*p)->transport.private = NULL;
-	(*p)->transport.full_request = tcp_full_request;
-	(*p)->transport.secondary_request = tcp_secondary_request;
-	(*p)->transport.initial_request = tcp_initial_request;
+
+	(*p)->transport.send_request = tcp_send_request;
+	(*p)->transport.send_read = tcp_send_read;
+	(*p)->transport.event_context = tcp_event_context;
+	(*p)->transport.recv_data = NULL;
+
 	(*p)->transport.shutdown_pipe = tcp_shutdown_pipe;
 	(*p)->transport.peer_name = tcp_peer_name;
 	
-	tcp = talloc((*p)->mem_ctx, sizeof(*tcp));
+	tcp = talloc((*p), sizeof(*tcp));
 	if (!tcp) {
 		dcerpc_pipe_close(*p);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	tcp->fd = fd;
-	tcp->server_name = talloc_strdup((*p)->mem_ctx, server);
+	tcp->server_name = talloc_strdup((*p), server);
+	tcp->event_ctx = event_context_init();
+	tcp->pending_send = NULL;
+	tcp->recv.received = 0;
+	tcp->recv.data = data_blob_talloc(tcp, NULL, MIN_HDR_SIZE);
+	tcp->recv.pending_count = 0;
+
+	fde.fd = fd;
+	fde.flags = 0;
+	fde.handler = tcp_io_handler;
+	fde.private = *p;
+
+	tcp->fde = event_add_fd(tcp->event_ctx, &fde);
 
 	(*p)->transport.private = tcp;
 
