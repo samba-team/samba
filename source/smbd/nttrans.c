@@ -1619,6 +1619,8 @@ static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w
 
 	if((perm & (r_mask|w_mask|x_mask)) == (r_mask|w_mask|x_mask)) {
 		nt_mask = UNIX_ACCESS_RWX;
+	} else if((perm & (r_mask|w_mask|x_mask)) == 0) {
+		nt_mask = UNIX_ACCESS_NONE;
 	} else {
 		nt_mask |= (perm & r_mask) ? UNIX_ACCESS_R : 0;
 		if(is_directory)
@@ -1947,7 +1949,19 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
       return False;
     }
 
-    if(psa->info.mask & ~(GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
+    /*
+     * The security mask may be UNIX_ACCESS_NONE which should map into
+     * no permissions (we overload the WRITE_OWNER bit for this) or it
+     * should be one of the ALL/EXECUTE/READ/WRITE bits. Fail if not.
+     */
+
+    if(psa->info.mask & UNIX_ACCESS_NONE) {
+      /* Ensure no other bits are set. */
+      if(psa->info.mask & ~UNIX_ACCESS_NONE) {
+        DEBUG(3,("unpack_unix_permissions: UNIX_ACCESS_NONE must be set alone.\n"));
+        return False;
+      }
+    } else if(psa->info.mask & ~(GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
                      GENERIC_READ_ACCESS)) {
       DEBUG(3,("unpack_unix_permissions: can only set generic permissions on an ACE.\n"));
       return False;
