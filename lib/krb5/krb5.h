@@ -608,6 +608,7 @@ typedef struct _krb5_get_init_creds_opt {
 #define KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST	0x0040
 #define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080
 #define KRB5_GET_INIT_CREDS_OPT_ANONYMOUS	0x0100
+#define KRB5_GET_INIT_CREDS_OPT_DISABLE_TRANSITED_CHECK	0x0200
 
 typedef struct _krb5_verify_init_creds_opt {
     krb5_flags flags;
@@ -637,11 +638,17 @@ extern const krb5_kt_ops krb4_fkt_ops;
 extern const krb5_kt_ops krb5_srvtab_fkt_ops;
 extern const krb5_kt_ops krb5_any_ops;
 
+#define KRB5_KPASSWD_VERS_CHANGEPW      1
+#define KRB5_KPASSWD_VERS_SETPW         0xff80
+
 #define KRB5_KPASSWD_SUCCESS	0
 #define KRB5_KPASSWD_MALFORMED	1
 #define KRB5_KPASSWD_HARDERROR	2
 #define KRB5_KPASSWD_AUTHERROR	3
 #define KRB5_KPASSWD_SOFTERROR	4
+#define KRB5_KPASSWD_ACCESSDENIED 5
+#define KRB5_KPASSWD_BAD_VERSION 6
+#define KRB5_KPASSWD_INITIAL_FLAG_NEEDED 7
 
 #define KPASSWD_PORT 464
 
