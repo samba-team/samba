@@ -426,14 +426,22 @@ If the saved_last_component != 0, then the unmodified last component
 of the pathname is returned there. This is used in an exceptional
 case in reply_mv (so far). If saved_last_component == 0 then nothing
 is returned there.
+
+The bad_path arg is set to True if the filename walk failed. This is
+used to pick the correct error code to return between ENOENT and ENOTDIR
+as Windows applications depend on ERRbadpath being returned if a component
+of a pathname does not exist.
 ****************************************************************************/
-BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
+BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_path)
 {
   struct stat st;
   char *start, *end;
   pstring dirpath;
+  int saved_errno;
 
   *dirpath = 0;
+  *bad_path = False;
+
   if(saved_last_component)
     *saved_last_component = 0;
 
@@ -480,12 +488,14 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
   if (sys_stat(name,&st) == 0)
     return(True);
 
+  saved_errno = errno;
+
   DEBUG(5,("unix_convert(%s,%d)\n",name,cnum));
 
   /* a special case - if we don't have any mangling chars and are case
      sensitive then searching won't help */
   if (case_sensitive && !is_mangled(name) && 
-      !lp_strip_dot() && !use_mangled_map)
+      !lp_strip_dot() && !use_mangled_map && (saved_errno != ENOENT))
     return(False);
 
   /* now we need to recursively match the name against the real 
@@ -506,7 +516,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
       if (end) 	*end = 0;
 
       if(saved_last_component != 0)
-	strcpy(saved_last_component, end ? end + 1 : start);
+        strcpy(saved_last_component, end ? end + 1 : start);
 
       /* check if the name exists up to this point */
       if (sys_stat(name, &st) == 0) 
@@ -540,6 +550,13 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
 		  /* an intermediate part of the name can't be found */
 		  DEBUG(5,("Intermediate not found %s\n",start));
 		  *end = '/';
+                  /* We need to return the fact that the intermediate
+                     name resolution failed. This is used to return an
+                     error of ERRbadpath rather than ERRbadfile. Some
+                     Windows applications depend on the difference between
+                     these two errors.
+                   */
+                  *bad_path = True;
 		  return(False);
 		}
 	      
@@ -1940,7 +1957,7 @@ struct
   {EPERM,ERRDOS,ERRnoaccess},
   {EACCES,ERRDOS,ERRnoaccess},
   {ENOENT,ERRDOS,ERRbadfile},
-  {ENOTDIR,ERRDOS,ERRbadpath},
+  {ENOTDIR,ERRDOS,ERRbaddirectory},
   {EIO,ERRHRD,ERRgeneral},
   {EBADF,ERRSRV,ERRsrverror},
   {EINVAL,ERRSRV,ERRsrverror},
