@@ -162,6 +162,16 @@ kadm5_log_flush (kadm5_log_context *log_context,
 	krb5_data_free(&data);
 	return errno;
     }
+    /*
+     * Try to send a signal to any running `ipropd-master'
+     */
+    sendto (log_context->socket_fd,
+	    &log_context->version,
+	    sizeof(log_context->version),
+	    0,
+	    (struct sockaddr *)&log_context->socket_name,
+	    sizeof(log_context->socket_name));
+
     krb5_data_free(&data);
     return 0;
 }
