@@ -36,6 +36,8 @@
 .Dt KRB5_CONFIG_GET 3
 .Os HEIMDAL
 .Sh NAME
+.Nm krb5_config_file_free ,
+.Nm krb5_config_free_strings ,
 .Nm krb5_config_get ,
 .Nm krb5_config_get_bool ,
 .Nm krb5_config_get_bool_default ,
@@ -67,6 +69,15 @@
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
+.Ft krb5_error_code
+.Fo krb5_config_file_free
+.Fa "krb5_context context"
+.Fa "krb5_config_section *s"
+.Fc
+.Ft void
+.Fo krb5_config_free_strings
+.Fa "char **strings"
+.Fc
 .Ft "const void *"
 .Fo krb5_config_get
 .Fa "krb5_context context"
@@ -260,6 +271,20 @@ seconds, so the string
 .Sq 2 weeks
 will be converted to
 1209600 (2 * 7 * 24 * 60 * 60).
+.Pp
+.Fn krb5_config_free_strings
+free
+.Fa strings
+as returned by
+.Fn krb5_config_get_strings
+and
+.Fn krb5_config_vget_strings .
+.Pp
+.Fn krb5_config_file_free
+free the result of
+.Fn krb5_config_parse_file
+and
+.Fa krb5_config_parse_file_multi .
 .Sh SEE ALSO
 .Xr krb5_appdefault 3 ,
 .Xr krb5_init_context 3 ,
