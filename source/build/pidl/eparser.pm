@@ -324,9 +324,7 @@ sub RewriteHeader($$$)
     open(IN, "<$input") || die "can't open $input for reading";
     open(OUT, ">$output") || die "can't open $output for writing";    
    
-    # Read in entire file
-
-    undef $/;
+    # Read through file
 
     while(<IN>) {
 
@@ -338,8 +336,8 @@ sub RewriteHeader($$$)
 
 	# Get rid of async send and receive function.
 
-	s/^NTSTATUS dcerpc_.*?;\n//smg;
-	s/^struct rpc_request.*?;\n\n//smg;
+	s/^NTSTATUS dcerpc_.*?;//smg;
+	s/^struct rpc_request.*?;//smg;
 
 	# Rewrite librpc includes
 
@@ -414,9 +412,7 @@ sub RewriteC($$$)
 
     pidl "\n";
 
-    # Read in entire file for post-processing
-
-    undef $/;
+    # Read through file
 
     while(<IN>) {
 
@@ -433,19 +429,19 @@ sub RewriteC($$$)
 	# We're not interested in ndr_{print,push,size} functions so
 	# just delete them.
 
-	s/^(static )?NTSTATUS (ndr_push[^\(]+).*?^\}\n\n//smg;
-	s/^void (ndr_print[^\(]+).*?^\}\n\n//smg;
-	s/^size_t (ndr_size[^\(]+).*?^\}\n\n//smg;
+	next, if /^(static )?NTSTATUS ndr_push/ .. /^}/;
+        next, if /^void ndr_print/ .. /^}/;
+        next, if /^size_t ndr_size/ .. /^}/;
 
 	# Get rid of dcerpc interface structures and functions since
 	# they are also not very interesting.
 
-	s/^static const struct dcerpc_interface_call .*?^\};\n\n//smg;	
-	s/^static const char \* const ([a-z]+)_endpoint_strings.*?^\};\n\n//smgx;
-	s/^static const struct dcerpc_endpoint_list .*?^\};\n\n\n//smg;	
-	s/^const struct dcerpc_interface_table .*?^\};\n\n//smg;	
-	s/^static NTSTATUS dcerpc_ndr_([a-z]+)_init.*?^\}\n\n//smg;	
-	s/^NTSTATUS dcerpc_([a-z]+)_init.*?^\}\n\n//smg;	
+next, if /^static const struct dcerpc_interface_call/ .. /^};/;
+next, if /^static const char \* const [a-z]+_endpoint_strings/ ../^};/;
+next, if /^static const struct dcerpc_endpoint_list/ .. /^};/;
+next, if /^const struct dcerpc_interface_table/ .. /^};/;
+next, if /^static NTSTATUS dcerpc_ndr_[a-z]+_init/ .. /^}/;
+next, if /^NTSTATUS dcerpc_[a-z]+_init/ .. /^}/;
 
 	# Rewrite includes to packet-dcerpc-foo.h instead of ndr_foo.h
 
@@ -563,7 +559,7 @@ sub RewriteC($$$)
 				
 	# Enums
 
-        s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ (enum .+?)\))
+        s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ (enum\ .+?)\))
 	    /static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smgx;
 	s/uint(8|16|32) v;/uint$1_t v;/smg;
 	s/(ndr_pull_([^\)]*?)\(ndr,\ &v\);)
@@ -574,8 +570,8 @@ sub RewriteC($$$)
 
 	# Bitmaps
 
-	s/(^NTSTATUS\ ndr_pull_(.+?),\ uint32\ \*r\))
-	    /NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, uint32_t *r)/smgx;
+s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint32\ \*r\))
+	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint32_t *r)/smgx;
 
 	pidl $_;
     }
