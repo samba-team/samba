@@ -226,7 +226,6 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		}
 
 		fstrcpy(gp_buf.name, gmep.nt_name);
-		grps->grp_idx++;
 		break;
 	}
 
@@ -252,6 +251,7 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		DEBUG(10,("line: '%s'\n", linebuf));
 	}
 
+	grps->grp_idx++; /* advance so next enum gets next entry */
 	return &gp_buf;
 }
 
