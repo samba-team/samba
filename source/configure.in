@@ -1151,31 +1151,6 @@ AC_ARG_WITH(afs,
 )
 
 #################################################
-# check for the AFS tickets from srvtabs
-AC_MSG_CHECKING(whether to use AFS tickets from srvtabs)
-AC_ARG_WITH(srvtab,
-[  --with-srvtab[=instance]    Include renewable AFS tickets
-  --without-srvtab            Don't renewable AFS tickets (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(USE_RENEWABLE_AFS_TICKET,"")
-    LIBS="$LIBS -lkafs"
-    ;;
-  no)
-    AC_MSG_RESULT(no)
-    ;;
-  *)
-    AC_MSG_RESULT(yes using instance $withval)
-    AC_DEFINE_UNQUOTED(USE_RENEWABLE_AFS_TICKET,$withval)
-    LIBS="$LIBS -lkafs"
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-
-#################################################
 # check for the DFS auth system
 AC_MSG_CHECKING(whether to use DFS auth)
 AC_ARG_WITH(dfs,
@@ -1210,8 +1185,7 @@ AC_ARG_WITH(krb4,
       samba_cv_no_kerberos_inconsistency,[
       AC_TRY_COMPILE([#include<kerberos/krb.h>
 #include<krb.h>],
-         [],samba_cv_no_kerberos_inconsistency=yes,samba_cv_no_kerberos_inconsi
-stency=no)
+         [],samba_cv_no_kerberos_inconsistency=yes,samba_cv_no_kerberos_inconsistency=no)
     ])
     if test x"$samba_cv_no_kerberos_inconsistency" = x"no"; then
       AC_CACHE_CHECK([whether a Kerberos define work around is needed],
@@ -1225,6 +1199,30 @@ stency=no)
         AC_DEFINE(USE_KRB4_DEFINE_WORK_AROUND)
       fi
     fi)],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for the AFS tickets from srvtabs
+AC_MSG_CHECKING(whether to use AFS tickets from srvtabs)
+AC_ARG_WITH(srvtab,
+[  --with-srvtab[=instance]    Include renewable AFS tickets
+  --without-srvtab            Don't renewable AFS tickets (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(USE_RENEWABLE_AFS_TICKET,"")
+    LIBS="$LIBS -lkafs"
+    ;;
+  no)
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_RESULT(yes using instance $withval)
+    AC_DEFINE_UNQUOTED(USE_RENEWABLE_AFS_TICKET,$withval)
+    LIBS="$LIBS -lkafs"
+    ;;
+  esac ],
   AC_MSG_RESULT(no)
 )
 

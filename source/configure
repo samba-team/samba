@@ -31,14 +31,14 @@ ac_help="$ac_help
   --with-afs     Include AFS support
   --without-afs  Don't include AFS support (default)"
 ac_help="$ac_help
-  --with-srvtab[=instance]    Include renewable AFS tickets
-  --without-srvtab            Don't renewable AFS tickets (default)"
-ac_help="$ac_help
   --with-dfs     Include DFS support
   --without-dfs  Don't include DFS support (default)"
 ac_help="$ac_help
   --with-krb4=base-dir     Include Kerberos IV support
   --without-krb4          Don't include Kerberos IV support (default)"
+ac_help="$ac_help
+  --with-srvtab[=instance]    Include renewable AFS tickets
+  --without-srvtab            Don't renewable AFS tickets (default)"
 ac_help="$ac_help
   --with-krb5=base-dir     Include Kerberos 5 support
   --without-krb5          Don't include Kerberos 5 support (default)"
@@ -10123,44 +10123,9 @@ fi
 
 
 #################################################
-# check for the AFS tickets from srvtabs
-echo $ac_n "checking whether to use AFS tickets from srvtabs""... $ac_c" 1>&6
-echo "configure:10129: checking whether to use AFS tickets from srvtabs" >&5
-# Check whether --with-srvtab or --without-srvtab was given.
-if test "${with_srvtab+set}" = set; then
-  withval="$with_srvtab"
-   case "$withval" in
-  yes)
-    echo "$ac_t""yes" 1>&6
-    cat >> confdefs.h <<\EOF
-#define USE_RENEWABLE_AFS_TICKET ""
-EOF
-
-    LIBS="$LIBS -lkafs"
-    ;;
-  no)
-    echo "$ac_t""no" 1>&6
-    ;;
-  *)
-    echo "$ac_t""yes using instance $withval" 1>&6
-    cat >> confdefs.h <<EOF
-#define USE_RENEWABLE_AFS_TICKET $withval
-EOF
-
-    LIBS="$LIBS -lkafs"
-    ;;
-  esac 
-else
-  echo "$ac_t""no" 1>&6
-
-fi
-
-
-
-#################################################
 # check for the DFS auth system
 echo $ac_n "checking whether to use DFS auth""... $ac_c" 1>&6
-echo "configure:10164: checking whether to use DFS auth" >&5
+echo "configure:10129: checking whether to use DFS auth" >&5
 # Check whether --with-dfs or --without-dfs was given.
 if test "${with_dfs+set}" = set; then
   withval="$with_dfs"
@@ -10185,7 +10150,7 @@ fi
 #################################################
 # check for Kerberos IV auth system
 echo $ac_n "checking whether to use Kerberos IV""... $ac_c" 1>&6
-echo "configure:10189: checking whether to use Kerberos IV" >&5
+echo "configure:10154: checking whether to use Kerberos IV" >&5
 # Check whether --with-krb4 or --without-krb4 was given.
 if test "${with_krb4+set}" = set; then
   withval="$with_krb4"
@@ -10195,7 +10160,7 @@ if test "${with_krb4+set}" = set; then
 EOF
 
     echo $ac_n "checking for dn_expand in -lresolv""... $ac_c" 1>&6
-echo "configure:10199: checking for dn_expand in -lresolv" >&5
+echo "configure:10164: checking for dn_expand in -lresolv" >&5
 ac_lib_var=`echo resolv'_'dn_expand | sed 'y%./+-%__p_%'`
 if eval "test \"\${ac_cv_lib_$ac_lib_var+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -10203,7 +10168,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lresolv  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 10207 "configure"
+#line 10172 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -10214,7 +10179,7 @@ int main() {
 dn_expand()
 ; return 0; }
 EOF
-if { (eval echo configure:10218: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:10183: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -10246,17 +10211,17 @@ fi
     LDFLAGS="$LDFLAGS -L$withval/lib"
     ac_safe=`echo "kerberos/krb.h" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for kerberos/krb.h""... $ac_c" 1>&6
-echo "configure:10250: checking for kerberos/krb.h" >&5
+echo "configure:10215: checking for kerberos/krb.h" >&5
 if eval "test \"\${ac_cv_header_$ac_safe+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 10255 "configure"
+#line 10220 "configure"
 #include "confdefs.h"
 #include <kerberos/krb.h>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:10260: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:10225: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -10273,13 +10238,13 @@ fi
 if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
   echo "$ac_t""yes" 1>&6
   echo $ac_n "checking whether both krb.h and kerberos/krb.h can be included""... $ac_c" 1>&6
-echo "configure:10277: checking whether both krb.h and kerberos/krb.h can be included" >&5
+echo "configure:10242: checking whether both krb.h and kerberos/krb.h can be included" >&5
 if eval "test \"\${samba_cv_no_kerberos_inconsistency+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
       cat > conftest.$ac_ext <<EOF
-#line 10283 "configure"
+#line 10248 "configure"
 #include "confdefs.h"
 #include<kerberos/krb.h>
 #include<krb.h>
@@ -10287,15 +10252,14 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:10291: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:10256: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_no_kerberos_inconsistency=yes
 else
   echo "configure: failed program was:" >&5
   cat conftest.$ac_ext >&5
   rm -rf conftest*
-  samba_cv_no_kerberos_inconsi
-stency=no
+  samba_cv_no_kerberos_inconsistency=no
 fi
 rm -f conftest*
     
@@ -10304,13 +10268,13 @@ fi
 echo "$ac_t""$samba_cv_no_kerberos_inconsistency" 1>&6
     if test x"$samba_cv_no_kerberos_inconsistency" = x"no"; then
       echo $ac_n "checking whether a Kerberos define work around is needed""... $ac_c" 1>&6
-echo "configure:10308: checking whether a Kerberos define work around is needed" >&5
+echo "configure:10272: checking whether a Kerberos define work around is needed" >&5
 if eval "test \"\${samba_cv_kerberos_define_workaround+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
         cat > conftest.$ac_ext <<EOF
-#line 10314 "configure"
+#line 10278 "configure"
 #include "confdefs.h"
 #define _KERBEROS_KRB_H
 #include<kerberos/krb.h>
@@ -10319,7 +10283,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:10323: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:10287: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_kerberos_define_workaround=yes
 else
@@ -10351,9 +10315,43 @@ fi
 
 
 #################################################
+# check for the AFS tickets from srvtabs
+echo $ac_n "checking whether to use AFS tickets from srvtabs""... $ac_c" 1>&6
+echo "configure:10321: checking whether to use AFS tickets from srvtabs" >&5
+# Check whether --with-srvtab or --without-srvtab was given.
+if test "${with_srvtab+set}" = set; then
+  withval="$with_srvtab"
+   case "$withval" in
+  yes)
+    echo "$ac_t""yes" 1>&6
+    cat >> confdefs.h <<\EOF
+#define USE_RENEWABLE_AFS_TICKET ""
+EOF
+
+    LIBS="$LIBS -lkafs"
+    ;;
+  no)
+    echo "$ac_t""no" 1>&6
+    ;;
+  *)
+    echo "$ac_t""yes using instance $withval" 1>&6
+    cat >> confdefs.h <<EOF
+#define USE_RENEWABLE_AFS_TICKET $withval
+EOF
+
+    LIBS="$LIBS -lkafs"
+    ;;
+  esac 
+else
+  echo "$ac_t""no" 1>&6
+
+fi
+
+
+#################################################
 # check for Kerberos 5 auth system
 echo $ac_n "checking whether to use Kerberos 5""... $ac_c" 1>&6
-echo "configure:10357: checking whether to use Kerberos 5" >&5
+echo "configure:10355: checking whether to use Kerberos 5" >&5
 # Check whether --with-krb5 or --without-krb5 was given.
 if test "${with_krb5+set}" = set; then
   withval="$with_krb5"
@@ -10374,7 +10372,7 @@ fi
 #################################################
 # check for automount support
 echo $ac_n "checking whether to use AUTOMOUNT""... $ac_c" 1>&6
-echo "configure:10378: checking whether to use AUTOMOUNT" >&5
+echo "configure:10376: checking whether to use AUTOMOUNT" >&5
 # Check whether --with-automount or --without-automount was given.
 if test "${with_automount+set}" = set; then
   withval="$with_automount"
@@ -10399,7 +10397,7 @@ fi
 #################################################
 # check for smbmount support
 echo $ac_n "checking whether to use SMBMOUNT""... $ac_c" 1>&6
-echo "configure:10403: checking whether to use SMBMOUNT" >&5
+echo "configure:10401: checking whether to use SMBMOUNT" >&5
 # Check whether --with-smbmount or --without-smbmount was given.
 if test "${with_smbmount+set}" = set; then
   withval="$with_smbmount"
@@ -10428,7 +10426,7 @@ fi
 #################################################
 # check for a PAM password database
 echo $ac_n "checking whether to use PAM password database""... $ac_c" 1>&6
-echo "configure:10432: checking whether to use PAM password database" >&5
+echo "configure:10430: checking whether to use PAM password database" >&5
 # Check whether --with-pam or --without-pam was given.
 if test "${with_pam+set}" = set; then
   withval="$with_pam"
@@ -10455,7 +10453,7 @@ fi
 #################################################
 # check for a LDAP password database
 echo $ac_n "checking whether to use LDAP password database""... $ac_c" 1>&6
-echo "configure:10459: checking whether to use LDAP password database" >&5
+echo "configure:10457: checking whether to use LDAP password database" >&5
 # Check whether --with-ldap or --without-ldap was given.
 if test "${with_ldap+set}" = set; then
   withval="$with_ldap"
@@ -10481,7 +10479,7 @@ fi
 #################################################
 # check for a LDAP password database
 echo $ac_n "checking whether to use LDAP password database""... $ac_c" 1>&6
-echo "configure:10485: checking whether to use LDAP password database" >&5
+echo "configure:10483: checking whether to use LDAP password database" >&5
 # Check whether --with-nt5ldap or --without-nt5ldap was given.
 if test "${with_nt5ldap+set}" = set; then
   withval="$with_nt5ldap"
@@ -10507,7 +10505,7 @@ fi
 #################################################
 # check for a LDAP password database
 echo $ac_n "checking whether to use LDAP password database""... $ac_c" 1>&6
-echo "configure:10511: checking whether to use LDAP password database" >&5
+echo "configure:10509: checking whether to use LDAP password database" >&5
 # Check whether --with-nt5ldap or --without-nt5ldap was given.
 if test "${with_nt5ldap+set}" = set; then
   withval="$with_nt5ldap"
@@ -10533,7 +10531,7 @@ fi
 #################################################
 # check for a NISPLUS password database
 echo $ac_n "checking whether to use NISPLUS password database""... $ac_c" 1>&6
-echo "configure:10537: checking whether to use NISPLUS password database" >&5
+echo "configure:10535: checking whether to use NISPLUS password database" >&5
 # Check whether --with-nisplus or --without-nisplus was given.
 if test "${with_nisplus+set}" = set; then
   withval="$with_nisplus"
@@ -10558,7 +10556,7 @@ fi
 #################################################
 # decide for the default sam-password-database
 echo $ac_n "checking which sam password database to use""... $ac_c" 1>&6
-echo "configure:10562: checking which sam password database to use" >&5
+echo "configure:10560: checking which sam password database to use" >&5
 # Check whether --with-sam_pwdb or --without-sam_pwdb was given.
 if test "${with_sam_pwdb+set}" = set; then
   withval="$with_sam_pwdb"
@@ -10594,7 +10592,7 @@ echo "$ac_t""$sampwlibname" 1>&6
 #################################################
 # check to use a tdb surs database
 echo $ac_n "checking whether to use SURS tdb database""... $ac_c" 1>&6
-echo "configure:10598: checking whether to use SURS tdb database" >&5
+echo "configure:10596: checking whether to use SURS tdb database" >&5
 # Check whether --with-surstdb or --without-surstdb was given.
 if test "${with_surstdb+set}" = set; then
   withval="$with_surstdb"
@@ -10620,7 +10618,7 @@ fi
 #################################################
 # check for a NISPLUS_HOME support 
 echo $ac_n "checking whether to use NISPLUS_HOME""... $ac_c" 1>&6
-echo "configure:10624: checking whether to use NISPLUS_HOME" >&5
+echo "configure:10622: checking whether to use NISPLUS_HOME" >&5
 # Check whether --with-nisplus-home or --without-nisplus-home was given.
 if test "${with_nisplus_home+set}" = set; then
   withval="$with_nisplus_home"
@@ -10645,7 +10643,7 @@ fi
 #################################################
 # check for the secure socket layer
 echo $ac_n "checking whether to use SSL""... $ac_c" 1>&6
-echo "configure:10649: checking whether to use SSL" >&5
+echo "configure:10647: checking whether to use SSL" >&5
 # Check whether --with-ssl or --without-ssl was given.
 if test "${with_ssl+set}" = set; then
   withval="$with_ssl"
@@ -10704,7 +10702,7 @@ fi
 #################################################
 # check for syslog logging
 echo $ac_n "checking whether to use syslog logging""... $ac_c" 1>&6
-echo "configure:10708: checking whether to use syslog logging" >&5
+echo "configure:10706: checking whether to use syslog logging" >&5
 # Check whether --with-syslog or --without-syslog was given.
 if test "${with_syslog+set}" = set; then
   withval="$with_syslog"
@@ -10729,7 +10727,7 @@ fi
 #################################################
 # check for a shared memory profiling support
 echo $ac_n "checking whether to use profiling""... $ac_c" 1>&6
-echo "configure:10733: checking whether to use profiling" >&5
+echo "configure:10731: checking whether to use profiling" >&5
 # Check whether --with-profile or --without-profile was given.
 if test "${with_profile+set}" = set; then
   withval="$with_profile"
@@ -10755,7 +10753,7 @@ fi
 #################################################
 # check for experimental netatalk resource fork support
 echo $ac_n "checking whether to support netatalk""... $ac_c" 1>&6
-echo "configure:10759: checking whether to support netatalk" >&5
+echo "configure:10757: checking whether to support netatalk" >&5
 # Check whether --with-netatalk or --without-netatalk was given.
 if test "${with_netatalk+set}" = set; then
   withval="$with_netatalk"
@@ -10782,7 +10780,7 @@ fi
 QUOTAOBJS=noquotas.o
 
 echo $ac_n "checking whether to support disk-quotas""... $ac_c" 1>&6
-echo "configure:10786: checking whether to support disk-quotas" >&5
+echo "configure:10784: checking whether to support disk-quotas" >&5
 # Check whether --with-quotas or --without-quotas was given.
 if test "${with_quotas+set}" = set; then
   withval="$with_quotas"
@@ -10806,7 +10804,7 @@ fi
 # check for experimental utmp accounting
 
 echo $ac_n "checking whether to support utmp accounting""... $ac_c" 1>&6
-echo "configure:10810: checking whether to support utmp accounting" >&5
+echo "configure:10808: checking whether to support utmp accounting" >&5
 # Check whether --with-utmp or --without-utmp was given.
 if test "${with_utmp+set}" = set; then
   withval="$with_utmp"
@@ -10832,7 +10830,7 @@ fi
 # check for MS Dfs support
 
 echo $ac_n "checking whether to support MS Dfs""... $ac_c" 1>&6
-echo "configure:10836: checking whether to support MS Dfs" >&5
+echo "configure:10834: checking whether to support MS Dfs" >&5
 # Check whether --with-msdfs or --without-msdfs was given.
 if test "${with_msdfs+set}" = set; then
   withval="$with_msdfs"
@@ -10932,14 +10930,14 @@ fi
 #################################################
 # these tests are taken from the GNU fileutils package
 echo "checking how to get filesystem space usage" 1>&6
-echo "configure:10936: checking how to get filesystem space usage" >&5
+echo "configure:10934: checking how to get filesystem space usage" >&5
 space=no
 
 # Test for statvfs64.
 if test $space = no; then
   # SVR4
   echo $ac_n "checking statvfs64 function (SVR4)""... $ac_c" 1>&6
-echo "configure:10943: checking statvfs64 function (SVR4)" >&5
+echo "configure:10941: checking statvfs64 function (SVR4)" >&5
 if eval "test \"\${fu_cv_sys_stat_statvfs64+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -10947,7 +10945,7 @@ else
   fu_cv_sys_stat_statvfs64=cross
 else
   cat > conftest.$ac_ext <<EOF
-#line 10951 "configure"
+#line 10949 "configure"
 #include "confdefs.h"
 
 #if defined(HAVE_UNISTD_H)
@@ -10961,7 +10959,7 @@ else
     exit (statvfs64 (".", &fsd));
   }
 EOF
-if { (eval echo configure:10965: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:10963: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   fu_cv_sys_stat_statvfs64=yes
 else
@@ -10994,12 +10992,12 @@ fi
 if test $space = no; then
   # SVR4
   echo $ac_n "checking statvfs function (SVR4)""... $ac_c" 1>&6
-echo "configure:10998: checking statvfs function (SVR4)" >&5
+echo "configure:10996: checking statvfs function (SVR4)" >&5
 if eval "test \"\${fu_cv_sys_stat_statvfs+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 11003 "configure"
+#line 11001 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <sys/statvfs.h>
@@ -11007,7 +11005,7 @@ int main() {
 struct statvfs fsd; statvfs (0, &fsd);
 ; return 0; }
 EOF
-if { (eval echo configure:11011: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:11009: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   fu_cv_sys_stat_statvfs=yes
 else
@@ -11032,7 +11030,7 @@ fi
 if test $space = no; then
   # DEC Alpha running OSF/1
   echo $ac_n "checking for 3-argument statfs function (DEC OSF/1)""... $ac_c" 1>&6
-echo "configure:11036: checking for 3-argument statfs function (DEC OSF/1)" >&5
+echo "configure:11034: checking for 3-argument statfs function (DEC OSF/1)" >&5
   if eval "test \"\${fu_cv_sys_stat_statfs3_osf1+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -11040,7 +11038,7 @@ else
   fu_cv_sys_stat_statfs3_osf1=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 11044 "configure"
+#line 11042 "configure"
 #include "confdefs.h"
 
 #include <sys/param.h>
@@ -11053,7 +11051,7 @@ else
     exit (statfs (".", &fsd, sizeof (struct statfs)));
   }
 EOF
-if { (eval echo configure:11057: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11055: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   fu_cv_sys_stat_statfs3_osf1=yes
 else
@@ -11080,7 +11078,7 @@ fi
 if test $space = no; then
 # AIX
   echo $ac_n "checking for two-argument statfs with statfs.bsize member (AIX, 4.3BSD)""... $ac_c" 1>&6
-echo "configure:11084: checking for two-argument statfs with statfs.bsize member (AIX, 4.3BSD)" >&5
+echo "configure:11082: checking for two-argument statfs with statfs.bsize member (AIX, 4.3BSD)" >&5
   if eval "test \"\${fu_cv_sys_stat_statfs2_bsize+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -11088,7 +11086,7 @@ else
   fu_cv_sys_stat_statfs2_bsize=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 11092 "configure"
+#line 11090 "configure"
 #include "confdefs.h"
 
 #ifdef HAVE_SYS_PARAM_H
@@ -11107,7 +11105,7 @@ else
   exit (statfs (".", &fsd));
   }
 EOF
-if { (eval echo configure:11111: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11109: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   fu_cv_sys_stat_statfs2_bsize=yes
 else
@@ -11134,7 +11132,7 @@ fi
 if test $space = no; then
 # SVR3
   echo $ac_n "checking for four-argument statfs (AIX-3.2.5, SVR3)""... $ac_c" 1>&6
-echo "configure:11138: checking for four-argument statfs (AIX-3.2.5, SVR3)" >&5
+echo "configure:11136: checking for four-argument statfs (AIX-3.2.5, SVR3)" >&5
   if eval "test \"\${fu_cv_sys_stat_statfs4+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -11142,7 +11140,7 @@ else
   fu_cv_sys_stat_statfs4=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 11146 "configure"
+#line 11144 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <sys/statfs.h>
@@ -11152,7 +11150,7 @@ else
   exit (statfs (".", &fsd, sizeof fsd, 0));
   }
 EOF
-if { (eval echo configure:11156: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11154: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   fu_cv_sys_stat_statfs4=yes
 else
@@ -11179,7 +11177,7 @@ fi
 if test $space = no; then
 # 4.4BSD and NetBSD
   echo $ac_n "checking for two-argument statfs with statfs.fsize member (4.4BSD and NetBSD)""... $ac_c" 1>&6
-echo "configure:11183: checking for two-argument statfs with statfs.fsize member (4.4BSD and NetBSD)" >&5
+echo "configure:11181: checking for two-argument statfs with statfs.fsize member (4.4BSD and NetBSD)" >&5
   if eval "test \"\${fu_cv_sys_stat_statfs2_fsize+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -11187,7 +11185,7 @@ else
   fu_cv_sys_stat_statfs2_fsize=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 11191 "configure"
+#line 11189 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #ifdef HAVE_SYS_PARAM_H
@@ -11203,7 +11201,7 @@ else
   exit (statfs (".", &fsd));
   }
 EOF
-if { (eval echo configure:11207: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11205: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   fu_cv_sys_stat_statfs2_fsize=yes
 else
@@ -11230,7 +11228,7 @@ fi
 if test $space = no; then
   # Ultrix
   echo $ac_n "checking for two-argument statfs with struct fs_data (Ultrix)""... $ac_c" 1>&6
-echo "configure:11234: checking for two-argument statfs with struct fs_data (Ultrix)" >&5
+echo "configure:11232: checking for two-argument statfs with struct fs_data (Ultrix)" >&5
   if eval "test \"\${fu_cv_sys_stat_fs_data+set}\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -11238,7 +11236,7 @@ else
   fu_cv_sys_stat_fs_data=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 11242 "configure"
+#line 11240 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #ifdef HAVE_SYS_PARAM_H
@@ -11258,7 +11256,7 @@ else
   exit (statfs (".", &fsd) != 1);
   }
 EOF
-if { (eval echo configure:11262: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11260: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   fu_cv_sys_stat_fs_data=yes
 else
@@ -11292,7 +11290,7 @@ fi
 #
 echo "checking if large file support can be enabled"
 cat > conftest.$ac_ext <<EOF
-#line 11296 "configure"
+#line 11294 "configure"
 #include "confdefs.h"
 
 #if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8)))
@@ -11305,7 +11303,7 @@ int main() {
 int i
 ; return 0; }
 EOF
-if { (eval echo configure:11309: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:11307: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=yes
 else
@@ -11330,11 +11328,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 11334 "configure"
+#line 11332 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:11338: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11336: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
