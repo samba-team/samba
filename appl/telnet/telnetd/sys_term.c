@@ -101,7 +101,9 @@ extern struct sysv sysv;
 #include <sys/proc.h>
 #undef SE
 #endif
+#ifndef __sgi
 #include <sys/tty.h>
+#endif
 #ifdef	t_erase
 #undef	t_erase
 #undef	t_kill
@@ -1354,7 +1356,7 @@ login_tty(t)
 	 * setsid() call above may have set our pgrp, so clear
 	 * it out before opening the tty...
 	 */
-#  if defined(SOLARIS) || defined(__hpux)
+#  if defined(SOLARIS) || defined(__hpux) || defined(__sgi)
 	(void) setpgrp();
 #  else
 	(void) setpgrp(0, 0);
