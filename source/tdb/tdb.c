@@ -84,6 +84,9 @@ static void *tdb_mmap(tdb_len size, int readonly, int fd)
 	void *ret = NULL;
 #ifdef HAVE_MMAP
 	ret = mmap(NULL, size, PROT_READ | (readonly ? 0 : PROT_WRITE), MAP_SHARED|MAP_FILE, fd, 0);
+
+	if (ret == (void *)-1)
+		ret = NULL;
 #endif
 	return ret;
 }
