@@ -88,12 +88,9 @@ static TDB_DATA null_data;
 static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, 
 		      int set, int rw_type, int lck_type)
 {
-#if NOLOCK
-	return 0;
-#else
 	struct flock fl;
 
-        if (tdb->fd == -1) return 0;   /* for in memory tdb */
+        if (tdb->flags & TDB_NOLOCK) return 0;
 
 	if (tdb->read_only) return -1;
 
@@ -114,7 +111,6 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 		return -1;
 	}
 	return 0;
-#endif
 }
 
 /* lock a list in the database. list -1 is the alloc list */
@@ -126,6 +122,9 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list)
 #endif
 		return -1;
 	}
+
+	if (tdb->flags & TDB_NOLOCK) return 0;
+
 	if (tdb->locked[list+1] == 0) {
 		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, LOCK_SET, 
 			       F_WRLCK, F_SETLKW) != 0) {
@@ -145,6 +144,8 @@ static int tdb_unlock(TDB_CONTEXT *tdb, int list)
 #endif
 		return -1;
 	}
+
+	if (tdb->flags & TDB_NOLOCK) return 0;
 
 	if (tdb->locked[list+1] == 0) {
 #if TDB_DEBUG
@@ -197,7 +198,9 @@ static tdb_off tdb_hash_top(TDB_CONTEXT *tdb, unsigned hash)
 static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 {
 	struct stat st;
-	if ((offset <= tdb->map_size) || (tdb->fd == -1)) return 0;
+	if (offset <= tdb->map_size) return 0;
+
+	if (tdb->flags & TDB_INTERNAL) return 0;
 
 	fstat(tdb->fd, &st);
 	if (st.st_size <= (size_t)offset) {
@@ -214,9 +217,11 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 
 	tdb->map_size = st.st_size;
 #if HAVE_MMAP
-	tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
-				    tdb->read_only?PROT_READ:PROT_READ|PROT_WRITE,
-				    MAP_SHARED | MAP_FILE, tdb->fd, 0);
+	if (!(tdb->flags & TDB_NOMMAP)) {
+		tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
+					    tdb->read_only?PROT_READ:PROT_READ|PROT_WRITE,
+					    MAP_SHARED | MAP_FILE, tdb->fd, 0);
+	}
 #endif	
 	return 0;
 }
@@ -340,9 +345,9 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	length = ((tdb->map_size + length + TDB_PAGE_SIZE) & ~(TDB_PAGE_SIZE - 1)) - tdb->map_size;
 
 	/* expand the file itself */
-        if (tdb->fd != -1) {
-            lseek(tdb->fd, tdb->map_size + length - 1, SEEK_SET);
-            if (write(tdb->fd, &b, 1) != 1) goto fail;
+        if (!(tdb->flags & TDB_INTERNAL)) {
+		lseek(tdb->fd, tdb->map_size + length - 1, SEEK_SET);
+		if (write(tdb->fd, &b, 1) != 1) goto fail;
         }
 
 	/* form a new freelist record */
@@ -354,7 +359,7 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	}
 
 #if HAVE_MMAP
-	if (tdb->fd != -1 && tdb->map_ptr) {
+	if (!(tdb->flags & TDB_INTERNAL) && tdb->map_ptr) {
 		munmap(tdb->map_ptr, tdb->map_size);
 		tdb->map_ptr = NULL;
 	}
@@ -362,8 +367,8 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 
 	tdb->map_size += length;
 
-        if (tdb->fd == -1) {
-            tdb->map_ptr = realloc(tdb->map_ptr, tdb->map_size);
+        if (tdb->flags & TDB_INTERNAL) {
+		tdb->map_ptr = realloc(tdb->map_ptr, tdb->map_size);
         }
 
 	/* write it out */
@@ -376,10 +381,10 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	if (ofs_write(tdb, offset, &ptr) == -1) goto fail;
 
 #if HAVE_MMAP
-        if (tdb->fd != -1) {
-            tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
-                                        PROT_READ|PROT_WRITE,
-                                        MAP_SHARED | MAP_FILE, tdb->fd, 0);
+        if (!(tdb->flags & TDB_NOMMAP)) {
+		tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
+					    PROT_READ|PROT_WRITE,
+					    MAP_SHARED | MAP_FILE, tdb->fd, 0);
         }
 #endif
 
@@ -498,8 +503,10 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
         memcpy(header.magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
         header.version = TDB_VERSION;
         header.hash_size = hash_size;
-        lseek(tdb->fd, 0, SEEK_SET);
-        if (tdb->fd != -1) ftruncate(tdb->fd, 0);
+        if (tdb->fd != -1) {
+		lseek(tdb->fd, 0, SEEK_SET);
+		ftruncate(tdb->fd, 0);
+	}
         
         if (tdb->fd != -1 && write(tdb->fd, &header, sizeof(header)) != 
             sizeof(header)) {
@@ -527,14 +534,14 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
             } else size += sizeof(tdb_off);
         }
 
-        if (tdb->fd == -1) {
-            tdb->map_ptr = calloc(size, 1);
-            tdb->map_size = size;
-            if (tdb->map_ptr == NULL) {
-                tdb->ecode = TDB_ERR_IO;
-                return -1;
-            }
-            memcpy(&tdb->header, &header, sizeof(header));
+        if (tdb->flags & TDB_INTERNAL) {
+		tdb->map_ptr = calloc(size,1);
+		tdb->map_size = size;
+		if (tdb->map_ptr == NULL) {
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+		}
+		memcpy(&tdb->header, &header, sizeof(header));
         }
 
 #if TDB_DEBUG
@@ -1141,6 +1148,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.fd = -1;
 	tdb.name = NULL;
 	tdb.map_ptr = NULL;
+	tdb.flags = tdb_flags;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		goto fail;
@@ -1150,7 +1158,20 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 
 	tdb.read_only = ((open_flags & O_ACCMODE) == O_RDONLY);
 
-        if (name == NULL) goto in_memory;
+	/* internal databases don't use mmap or locking,
+	   and start off cleared */
+	if (tdb.flags & TDB_INTERNAL) {
+		tdb.flags |= (TDB_NOLOCK | TDB_NOMMAP);
+		tdb.flags &= ~TDB_CLEAR_IF_FIRST;
+	}
+	
+	/* read only databases don't do locking */
+	if (tdb.read_only) tdb.flags |= TDB_NOLOCK;
+
+        if (tdb.flags & TDB_INTERNAL) {
+		tdb_new_database(&tdb, hash_size);
+		goto internal;
+	}
 
 	tdb.fd = open(name, open_flags, mode);
 	if (tdb.fd == -1) {
@@ -1195,16 +1216,18 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
         tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
                                    sizeof(tdb.locked[0]));
         if (!tdb.locked) {
-            goto fail;
+		goto fail;
         }
 
 #if HAVE_MMAP
-	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
-				   tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
-				   MAP_SHARED | MAP_FILE, tdb.fd, 0);
+	if (!(tdb.flags & TDB_NOMMAP)) {
+		tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
+					   tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
+					   MAP_SHARED | MAP_FILE, tdb.fd, 0);
+	}
 #endif
 
- in_memory:
+ internal:
 	ret = (TDB_CONTEXT *)malloc(sizeof(tdb));
 	if (!ret) goto fail;
 
@@ -1236,11 +1259,11 @@ int tdb_close(TDB_CONTEXT *tdb)
 	if (tdb->locked) free(tdb->locked);
 
 	if (tdb->map_ptr) {
-            if (tdb->fd != -1) {
-                munmap(tdb->map_ptr, tdb->map_size);
-            } else {
-                free(tdb->map_ptr);
-            }
+		if (tdb->flags & TDB_INTERNAL) {
+			free(tdb->map_ptr);
+		} else {
+			munmap(tdb->map_ptr, tdb->map_size);
+		}
         }
 
 	memset(tdb, 0, sizeof(*tdb));

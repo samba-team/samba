@@ -46,6 +46,7 @@ typedef struct {
 	int *locked; /* set if we have a chain locked */
 	int ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
+	unsigned flags; /* the flags passed to tdb_open */
 } TDB_CONTEXT;
 
 /* flags to tdb_store() */
@@ -55,6 +56,9 @@ typedef struct {
 
 /* flags for tdb_open() */
 #define TDB_CLEAR_IF_FIRST 1
+#define TDB_INTERNAL 2 /* don't store on disk */
+#define TDB_NOLOCK   4 /* don't do any locking */
+#define TDB_NOMMAP   8 /* don't use mmap */
 
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
