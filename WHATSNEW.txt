@@ -1,6 +1,6 @@
                   =============================
                   Release Notes for Samba 3.0.6
-                            Aug 18, 2004
+                            Aug 19, 2004
                   =============================
 
 This is the latest stable release of Samba. This is the version
@@ -52,7 +52,7 @@ New features introduced in this release include:
 unix extensions = yes (default) and symlinks
 --------------------------------------------
 
-Beginning with Samba 3.0.6pre1 (formally known as 3.0.5pre1), 
+Beginning with Samba 3.0.6pre1 (formerly known as 3.0.5pre1), 
 clients supporting the UNIX extensions to the CIFS protocol 
 can create symlinks to absolute paths which will be **followed** 
 by the server.  This functionality has been requested in order 
@@ -86,7 +86,7 @@ following attributes from access by non-administrative users:
    * sambaPasswordHistory
 
 You should refer to your directory server's documentation on how 
-to implement this restriction).
+to implement this restriction.
   
 
 ######################################################################
@@ -115,17 +115,19 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Tighten the cache consistency with the ntprinters.tdb entry 
       an the in memory cache associated with open printer handles.
     * Make sure that register_messages_flags() doesn't overwrite 
-      the originally registers flags.
+      the originally registered flags.
+
+
+o   Guenther Deschner <gd@sernet.de>
+    * Correct infinite loop in pam_winbind's verification of 
+      group membership in the 'other sids' field in the user_info3 
+      struct.
 
 
 o   Steve French <sfrench@us.ibm.com>
     * prevent infinite recusion in reopen_logs() when expanding 
       the smb.conf variable %I.
       
-o   Luke Howard <lukeh@padl.com>
-    * Correctly use uid_to_sid() and gid_to_sid() in 
-      pdb_set_sam_sids().
-
 
 o   Volker Lendecke <vl@samba.org>
     * Improved NT->AFS ACL mapping VFS module.
@@ -138,12 +140,12 @@ o   Lars Mueller <lmuelle@suse.de>
 o   James Peach <jpeach@sgi.com>
     * Prevent smbd from attempting to use sendfile at all if it is not
       supported by the server's OS.
-    * Allow SWAT to search for index.html when searving html files 
+    * Allow SWAT to search for index.html when serving html files 
       in a directory.
 
 
 o   Jelmer Vernooij <jelmer@samba.org>
-    * BUG 1474: Fix build of --with-expsma stuff on Solaris.
+    * BUG 1474: Fix build of --with-expsam stuff on Solaris.
 
 
 Changes since 3.0.5

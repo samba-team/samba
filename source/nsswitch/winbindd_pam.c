@@ -123,7 +123,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
            http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
          */
 
-	for (i = 0; i < info3->num_other_sids; j++) {
+	for (i = 0; i < info3->num_other_sids; i++) {
 		sid_copy(&all_sids[info3->num_groups2 + i + 2],
 			 &info3->other_sids[j].sid);
 		j++;
