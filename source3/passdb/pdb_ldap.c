@@ -368,13 +368,13 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	}
 	ldap_value_free(ldap_values);
 
-	if ( !smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if ( !smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_UNIX_HOME), homedir) ) 
 	{
 		return False;
 	}
 	
-	if ( !smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if ( !smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_GIDNUMBER), temp) )
 	{
 		return False;
@@ -454,7 +454,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		return False;
 	}
 	
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, "uid", username)) {
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, "uid", username)) {
 		DEBUG(1, ("init_sam_from_ldap: No uid attribute found for this user!\n"));
 		return False;
 	}
@@ -473,25 +473,25 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	/* deal with different attributes between the schema first */
 	
 	if ( ldap_state->schema_ver == SCHEMAVER_SAMBASAMACCOUNT ) {
-		if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+		if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), temp)) {
 			pdb_set_user_sid_from_string(sampass, temp, PDB_SET);
 		}
 		
-		if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+		if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), temp)) {
 			pdb_set_group_sid_from_string(sampass, temp, PDB_SET);			
 		} else {
 			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		}
 	} else {
-		if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+		if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_RID), temp)) {
 			user_rid = (uint32)atol(temp);
 			pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
 		}
 		
-		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+		if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_RID), temp)) {
 			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		} else {
@@ -539,7 +539,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 #endif
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_LAST_SET), temp)) {
 		/* leave as default */
 	} else {
@@ -547,7 +547,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_TIME), temp)) {
 		/* leave as default */
 	} else {
@@ -555,7 +555,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_logon_time(sampass, logon_time, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGOFF_TIME), temp)) {
 		/* leave as default */
 	} else {
@@ -563,7 +563,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_KICKOFF_TIME), temp)) {
 		/* leave as default */
 	} else {
@@ -571,7 +571,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_CAN_CHANGE), temp)) {
 		/* leave as default */
 	} else {
@@ -579,7 +579,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_MUST_CHANGE), temp)) {	
 		/* leave as default */
 	} else {
@@ -593,9 +593,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	 * that fits your needs; using cn then displayName rather than 'userFullName'
 	 */
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_DISPLAY_NAME), fullname)) {
-		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+		if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_CN), fullname)) {
 			/* leave as default */
 		} else {
@@ -605,7 +605,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_fullname(sampass, fullname, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_DRIVE), dir_drive)) 
 	{
 		pdb_set_dir_drive( sampass, 
@@ -615,7 +615,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_PATH), homedir)) 
 	{
 		pdb_set_homedir( sampass, 
@@ -625,7 +625,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_SCRIPT), logon_script)) 
 	{
 		pdb_set_logon_script( sampass, 
@@ -635,7 +635,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PROFILE_PATH), profile_path)) 
 	{
 		pdb_set_profile_path( sampass, 
@@ -645,7 +645,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_DESC), acct_desc)) 
 	{
 		/* leave as default */
@@ -653,7 +653,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_WKS), workstations)) {
 		/* leave as default */;
 	} else {
@@ -661,7 +661,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
-		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_MUNGED_DIAL), munged_dial)) {
+		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_MUNGED_DIAL), munged_dial, sizeof(munged_dial))) {
 		/* leave as default */;
 	} else {
 		pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
@@ -673,7 +673,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	hours_len = 21;
 	memset(hours, 0xff, hours_len);
 
-	if (!smbldap_get_single_attribute (ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LMPW), temp)) {
 		/* leave as default */
 	} else {
@@ -684,7 +684,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		ZERO_STRUCT(smblmpwd);
 	}
 
-	if (!smbldap_get_single_attribute (ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry,
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_NTPW), temp)) {
 		/* leave as default */
 	} else {
@@ -695,7 +695,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		ZERO_STRUCT(smbntpwd);
 	}
 
-	if (!smbldap_get_single_attribute (ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ACB_INFO), temp)) {
 		acct_ctrl |= ACB_NORMAL;
 	} else {
@@ -712,7 +712,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 /*	pdb_set_munged_dial(sampass, munged_dial, PDB_SET); */
 	
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_BAD_PASSWORD_COUNT), temp)) {
 			/* leave as default */
 	} else {
@@ -720,7 +720,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_COUNT), temp)) {
 			/* leave as default */
 	} else {
@@ -1686,7 +1686,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 		return False;
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER), temp)) {
 		DEBUG(0, ("init_group_from_ldap: Mandatory attribute %s not found\n", 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GIDNUMBER)));
@@ -1696,7 +1696,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 
 	map->gid = (gid_t)atol(temp);
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_SID), temp)) {
 		DEBUG(0, ("init_group_from_ldap: Mandatory attribute %s not found\n",
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_SID)));
@@ -1708,7 +1708,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 		return False;
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE), temp)) {
 		DEBUG(0, ("init_group_from_ldap: Mandatory attribute %s not found\n",
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE)));
@@ -1722,10 +1722,10 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 		return False;
 	}
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_DISPLAY_NAME), temp)) {
 		temp[0] = '\0';
-		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+		if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_CN), temp)) 
 		{
 			DEBUG(0, ("init_group_from_ldap: Attributes cn not found either \
@@ -1735,7 +1735,7 @@ for gidNumber(%lu)\n",(unsigned long)map->gid));
 	}
 	fstrcpy(map->nt_name, temp);
 
-	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_DESC), temp)) {
 		temp[0] = '\0';
 	}
@@ -2372,7 +2372,7 @@ and will risk BDCs having inconsistant SIDs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
 				 domain_sid_string)) {
 		BOOL found_sid;
@@ -2395,7 +2395,7 @@ and will risk BDCs having inconsistant SIDs\n"));
 		sid_copy(&ldap_state->domain_sid, &ldap_domain_sid);
 	}
 
-	if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
 				 alg_rid_base_string)) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
