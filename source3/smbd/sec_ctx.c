@@ -159,7 +159,7 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
 
-	DEBUG( 3, ( "get_current_groups: uid %u is in %u groups: ", (unsigned int)getuid() , ngroups ) );
+	DEBUG( 3, ( "get_current_groups: user is in %u groups: ", ngroups));
 	for (i = 0; i < ngroups; i++ ) {
 		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
 	}
