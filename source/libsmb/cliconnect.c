@@ -146,7 +146,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SSVAL(cli->outbuf,smb_vwv11,0);
+		SSVAL(cli->outbuf,smb_vwv11,CAP_NT_SMBS|(cli->use_level_II_oplocks ? CAP_LEVEL_II_OPLOCKS : 0));
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);

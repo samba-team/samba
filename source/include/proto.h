@@ -346,7 +346,6 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 void msleep(int t);
 void become_daemon(void);
 BOOL yesno(char *p);
-int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p,size_t size);
 void safe_free(void *p);
 BOOL get_myname(char *my_name);
@@ -3636,13 +3635,14 @@ int32 get_number_of_exclusive_open_oplocks(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
-BOOL remove_oplock(files_struct *fsp);
+BOOL remove_oplock(files_struct *fsp, BOOL break_to_none);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
 BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
+void release_level_2_oplocks_on_change(files_struct *fsp);
 BOOL init_oplocks(void);
 #endif
 
@@ -3905,7 +3905,7 @@ int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid);
 int vfswrap_chdir(connection_struct *conn, char *path);
 char *vfswrap_getwd(connection_struct *conn, char *path);
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);
-int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T offset);
+int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len);
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
@@ -3922,6 +3922,7 @@ char *vfs_getwd(connection_struct *conn, char *unix_path);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
+int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
 			    int out_fd, files_struct *out_fsp,
 			    SMB_OFF_T n, char *header, int headlen, int align);
