@@ -179,7 +179,6 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 }
 
 /* Server query info */
-
 static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, char **argv)
