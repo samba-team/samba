@@ -270,10 +270,13 @@ _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 		&errnop);
 
 	/*
-	* Always return NOTFOUND so nsswitch will get info from all
-	* the database backends specified in the nsswitch.conf file.
-	*/
-	return NSS_STATUS_NOTFOUND;
+	 * If the maximum number of gids have been found, return
+	 * SUCCESS so the switch engine will stop searching. Otherwise
+	 * return NOTFOUND so nsswitch will continue to get groups
+	 * from the remaining database backends specified in the
+	 * nsswitch.conf file.
+	 */
+	return (gmem->numgids == gmem->maxgids ? NSS_STATUS_SUCCESS : NSS_STATUS_NOTFOUND);
 }
 
 static NSS_STATUS
