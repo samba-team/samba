@@ -237,7 +237,7 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 	int		buffer_size = 0;
 	int 		i, length;
 	char 		*filename;
-	UNISTR2		data_buffer;
+	UNISTR2		data;;
 	
 	DEBUG(8,("print_subpath_values_environments: Enter key => [%s]\n", key ? key : "NULL"));
 	
@@ -285,23 +285,23 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 	info3 = driver_ctr.info_3;
 	
 	filename = dos_basename( info3->driverpath );
-	init_unistr2( &data_buffer, filename, strlen(filename)+1 ); 
-	regval_ctr_addvalue( val, "Driver",             REG_SZ,       (char*)data_buffer.buffer, data_buffer.uni_str_len );
+	init_unistr2( &data, filename, strlen(filename)+1 ); 
+	regval_ctr_addvalue( val, "Driver",             REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 	
 	filename = dos_basename( info3->configfile );
-	init_unistr2( &data_buffer, filename, strlen(filename)+1 );
-	regval_ctr_addvalue( val, "Configuration File", REG_SZ,       (char*)data_buffer.buffer, data_buffer.uni_str_len );
+	init_unistr2( &data, filename, strlen(filename)+1 );
+	regval_ctr_addvalue( val, "Configuration File", REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 	
 	filename = dos_basename( info3->datafile );
-	init_unistr2( &data_buffer, filename, strlen(filename)+1 );
-	regval_ctr_addvalue( val, "Data File",          REG_SZ,       (char*)data_buffer.buffer, data_buffer.uni_str_len );
+	init_unistr2( &data, filename, strlen(filename)+1 );
+	regval_ctr_addvalue( val, "Data File",          REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 	
 	filename = dos_basename( info3->helpfile );
-	init_unistr2( &data_buffer, filename, strlen(filename)+1 );
-	regval_ctr_addvalue( val, "Help File",          REG_SZ,       (char*)data_buffer.buffer, data_buffer.uni_str_len );
+	init_unistr2( &data, filename, strlen(filename)+1 );
+	regval_ctr_addvalue( val, "Help File",          REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 	
-	init_unistr2( &data_buffer, info3->defaultdatatype, strlen(info3->defaultdatatype)+1 );
-	regval_ctr_addvalue( val, "Data Type",          REG_SZ,       (char*)data_buffer.buffer, data_buffer.uni_str_len );
+	init_unistr2( &data, info3->defaultdatatype, strlen(info3->defaultdatatype)+1 );
+	regval_ctr_addvalue( val, "Data Type",          REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 	
 	regval_ctr_addvalue( val, "Version",            REG_DWORD,    (char*)&info3->cversion, sizeof(info3->cversion) );
 	
@@ -319,19 +319,20 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 			
 			length = strlen(filename);
 		
-			buffer2 = Realloc( buffer, buffer_size + length + 1 );
+			buffer2 = Realloc( buffer, buffer_size + (length + 1)*sizeof(uint16) );
 			if ( !buffer2 )
 				break;
 			buffer = buffer2;
+			
+			init_unistr2( &data, filename, length+1 );
+			memcpy( buffer+buffer_size, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		
-			memcpy( buffer+buffer_size, filename, length+1 );
-		
-			buffer_size += length + 1;
+			buffer_size += (length + 1)*sizeof(uint16);
 		}
 		
 		/* terminated by double NULL.  Add the final one here */
 		
-		buffer2 = Realloc( buffer, buffer_size + 1 );
+		buffer2 = Realloc( buffer, buffer_size + 2 );
 		if ( !buffer2 ) {
 			SAFE_FREE( buffer );
 			buffer_size = 0;
@@ -339,12 +340,14 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 		else {
 			buffer = buffer2;
 			buffer[buffer_size++] = '\0';
+			buffer[buffer_size++] = '\0';
 		}
 	}
 	
 	regval_ctr_addvalue( val, "Dependent Files",    REG_MULTI_SZ, buffer, buffer_size );
 	
 	free_a_printer_driver( driver_ctr, 3 );
+	
 	SAFE_FREE( key2 );
 	SAFE_FREE( buffer );
 		
@@ -568,25 +571,25 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 		regval_ctr_addvalue( val, "AveragePPM",       REG_DWORD, (char*)&info2->averageppm,       sizeof(info2->averageppm) );
 
 		init_unistr2( &data, info2->printername, strlen(info2->printername)+1 );
-		regval_ctr_addvalue( val, "Name",             REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Name",             REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->location, strlen(info2->location)+1 );
-		regval_ctr_addvalue( val, "Location",         REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Location",         REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->comment, strlen(info2->comment)+1 );
-		regval_ctr_addvalue( val, "Comment",          REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Comment",          REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->parameters, strlen(info2->parameters)+1 );
-		regval_ctr_addvalue( val, "Parameters",       REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Parameters",       REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->portname, strlen(info2->portname)+1 );
-		regval_ctr_addvalue( val, "Port",             REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Port",             REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->servername, strlen(info2->servername)+1 );
-		regval_ctr_addvalue( val, "Server",           REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Server",           REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->sharename, strlen(info2->sharename)+1 );
-		regval_ctr_addvalue( val, "Share",            REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Share",            REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->drivername, strlen(info2->drivername)+1 );
-		regval_ctr_addvalue( val, "Driver",           REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Driver",           REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, info2->sepfile, strlen(info2->sepfile)+1 );
-		regval_ctr_addvalue( val, "Separator File",   REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Separator File",   REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		init_unistr2( &data, "winprint", strlen("winprint")+1 );
-		regval_ctr_addvalue( val, "Print Processor",  REG_SZ, (char*)data.buffer, data.uni_str_len );
+		regval_ctr_addvalue( val, "Print Processor",  REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 		
 		
 		/* use a prs_struct for converting the devmode and security 
