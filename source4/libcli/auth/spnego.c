@@ -465,11 +465,19 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return nt_status;
 		} else {
 			const char **mechlist = gensec_security_oids(out_mem_ctx, OID_SPNEGO);
+			const char *mechListMIC;
+
+			mechListMIC = talloc_asprintf(out_mem_ctx,"%s$@%s",
+							lp_netbios_name(),
+							lp_realm());
+			if (!mechListMIC) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 			spnego_out.negTokenInit.mechTypes = mechlist;
 			spnego_out.negTokenInit.reqFlags = 0;
-			spnego_out.negTokenInit.mechListMIC = null_data_blob;
+			spnego_out.negTokenInit.mechListMIC = data_blob(mechListMIC, strlen(mechListMIC));
 			spnego_out.negTokenInit.mechToken = unwrapped_out;
 			
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
