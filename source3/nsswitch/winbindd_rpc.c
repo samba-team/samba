@@ -817,7 +817,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	SAM_UNK_CTR ctr;
 	uint16 switch_value = 2;
 	NTSTATUS result;
-	uint32 seqnum = DOM_SEQUENCE_NONE;
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -868,11 +867,11 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 					 switch_value, &ctr);
 
 	if (NT_STATUS_IS_OK(result)) {
-		seqnum = ctr.info.inf2.seq_num;
-		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)seqnum ));
+		*seq = ctr.info.inf2.seq_num;
+		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)*seq));
 	} else {
 		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",
-			(unsigned)seqnum, domain->name ));
+			(unsigned)*seq, domain->name ));
 	}
 
   done:
@@ -881,8 +880,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 
 	talloc_destroy(mem_ctx);
-
-	*seq = seqnum;
 
 	return result;
 }
