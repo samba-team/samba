@@ -28,34 +28,34 @@
 /* winreg pipe defines 
    NOT IMPLEMENTED !!
 #define _REG_UNK_01		0x01
-#define _REG_UNK_03		0x03
-#define REG_CREATE_KEY		0x06
-#define REG_DELETE_KEY		0x07
-#define REG_DELETE_VALUE	0x08
-#define REG_FLUSH_KEY		0x0b
-#define REG_GET_KEY_SEC		0x0c
 #define	_REG_UNK_0D		0x0d
 #define _REG_UNK_0E		0x0e
 #define	_REG_UNK_12		0x12
 #define _REG_UNK_13		0x13
-#define REG_SET_KEY_SEC		0x15
-#define REG_CREATE_VALUE	0x16
 #define	_REG_UNK_17		0x17
 */
 
 /* Implemented */
 #define REG_OPEN_HKCR		0x00
 #define REG_OPEN_HKLM		0x02
+#define REG_OPEN_HKPD		0x03
 #define REG_OPEN_HKU		0x04
 #define REG_CLOSE		0x05
+#define REG_CREATE_KEY		0x06
+#define REG_DELETE_KEY		0x07
+#define REG_DELETE_VALUE	0x08
 #define REG_ENUM_KEY		0x09
 #define REG_ENUM_VALUE		0x0a
+#define REG_FLUSH_KEY		0x0b
+#define REG_GET_KEY_SEC		0x0c
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
 #define REG_INFO		0x11
+#define REG_SAVE_KEY		0x14	/* no idea what the real name is */
+#define REG_SET_KEY_SEC		0x15
+#define REG_CREATE_VALUE	0x16
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
-#define	REG_SAVE_KEY		0x14	/* no idea what the real name is */
 #define REG_UNKNOWN_1A		0x1a
 
 
@@ -63,6 +63,7 @@
 #define HKEY_CURRENT_USER	0x80000001
 #define HKEY_LOCAL_MACHINE 	0x80000002
 #define HKEY_USERS         	0x80000003
+#define HKEY_PERFORMANCE_DATA	0x80000004
 
 #define KEY_HKLM	"HKLM"
 #define KEY_HKU		"HKU"
@@ -145,63 +146,23 @@ typedef struct _RegistryKey {
 } REGISTRY_KEY;
 
 
-/* REG_Q_OPEN_HKCR   */
-typedef struct q_reg_open_hkcr_info
+/* REG_Q_OPEN_HIVE   */
+typedef struct q_reg_open_hive_info
 {
 	uint32 ptr;
-	uint16 unknown_0; /* 0x5428      - 16 bit unknown */
+	uint16 unknown_0; /* varies depending on hive */
 	uint16 unknown_1; /* random.  changes */
-	uint32 level;     /* 0x0000 0002 - 32 bit unknown */
+	uint32 level;     
 
-} REG_Q_OPEN_HKCR  ;
+} REG_Q_OPEN_HIVE;
 
-/* REG_R_OPEN_HKCR   */
-typedef struct r_reg_open_hkcr_info
+/* REG_R_OPEN_HIVE   */
+typedef struct r_reg_open_hive_info
 {
 	POLICY_HND pol;       /* policy handle */
 	WERROR status;         /* return status */
 
-} REG_R_OPEN_HKCR;
-
-
-/* REG_Q_OPEN_HKLM   */
-typedef struct q_reg_open_hklm_info
-{
-	uint32 ptr;
-	uint16 unknown_0;	/* 0xE084      - 16 bit unknown */
-	uint16 unknown_1;	/* random.  changes */
-	uint32 access_mask;
-
-}
-REG_Q_OPEN_HKLM;
-
-/* REG_R_OPEN_HKLM   */
-typedef struct r_reg_open_hklm_info
-{
-	POLICY_HND pol;		/* policy handle */
-	WERROR status;		/* return status */
-
-}
-REG_R_OPEN_HKLM;
-
-
-/* REG_Q_OPEN_HKU */
-typedef struct q_reg_open_hku_info
-{
-	uint32 ptr;
-	uint16 unknown_0; 
-	uint16 unknown_1; 
-	uint32 access_mask;    
-
-} REG_Q_OPEN_HKU;
-
-/* REG_R_OPEN_HKU */
-typedef struct r_reg_open_hku_info
-{
-	POLICY_HND pol;      /* policy handle */
-	WERROR status;     /* return status */
-
-} REG_R_OPEN_HKU;
+} REG_R_OPEN_HIVE;
 
 
 /* REG_Q_FLUSH_KEY */

@@ -57,6 +57,7 @@ static void cmd_reg_enum(struct client_info *info)
 	POLICY_HND key_pol;
 	fstring full_keyname;
 	fstring key_name;
+	uint32 reg_type;
 
 	/*
 	 * query key info
@@ -84,6 +85,11 @@ static void cmd_reg_enum(struct client_info *info)
 	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regenum <key_name>\n");
+		return;
+	}
+
+	if (!reg_split_key(full_keyname, &reg_type, key_name)) {
+		fprintf(out_hnd, "Unknown registry hive '%s'\n", key_name);
 		return;
 	}
 

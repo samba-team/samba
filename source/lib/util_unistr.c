@@ -283,6 +283,19 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 }
 
 /*******************************************************************
+ Convert a (little-endian) UNISTR3 structure to an ASCII string
+********************************************************************/
+void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
+{
+	if (str == NULL) {
+		*dest='\0';
+		return;
+	}
+	pull_ucs2(NULL, dest, str->str.buffer, maxlen, str->uni_str_len*2,
+	          STR_NOALIGN);
+}
+	
+/*******************************************************************
 give a static string for displaying a UNISTR2
 ********************************************************************/
 const char *unistr2_static(const UNISTR2 *str)

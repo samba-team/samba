@@ -291,7 +291,7 @@ WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
+WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
 	return open_registry_key( p, &r_u->pol, NULL, KEY_HKLM, 0x0 );
 }
@@ -299,7 +299,7 @@ WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_
 /*******************************************************************
  ********************************************************************/
 
-WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HKCR *q_u, REG_R_OPEN_HKCR *r_u)
+WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
 	return open_registry_key( p, &r_u->pol, NULL, KEY_HKCR, 0x0 );
 }
@@ -307,7 +307,7 @@ WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HKCR *q_u, REG_R_OPEN_HKCR *r_
 /*******************************************************************
  ********************************************************************/
 
-WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HKU *q_u, REG_R_OPEN_HKU *r_u)
+WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
 	return open_registry_key( p, &r_u->pol, NULL, KEY_HKU, 0x0 );
 }

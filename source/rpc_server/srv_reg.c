@@ -63,8 +63,8 @@ static BOOL api_reg_close(pipes_struct *p)
 
 static BOOL api_reg_open_hklm(pipes_struct *p)
 {
-	REG_Q_OPEN_HKLM q_u;
-	REG_R_OPEN_HKLM r_u;
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -72,12 +72,12 @@ static BOOL api_reg_open_hklm(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg open */
-	if(!reg_io_q_open_hklm("", &q_u, data, 0))
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
 		return False;
 
 	r_u.status = _reg_open_hklm(p, &q_u, &r_u);
 
-	if(!reg_io_r_open_hklm("", &r_u, rdata, 0))
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -89,8 +89,8 @@ static BOOL api_reg_open_hklm(pipes_struct *p)
 
 static BOOL api_reg_open_hku(pipes_struct *p)
 {
-	REG_Q_OPEN_HKU q_u;
-	REG_R_OPEN_HKU r_u;
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -98,12 +98,12 @@ static BOOL api_reg_open_hku(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg open */
-	if(!reg_io_q_open_hku("", &q_u, data, 0))
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
 		return False;
 
 	r_u.status = _reg_open_hku(p, &q_u, &r_u);
 
-	if(!reg_io_r_open_hku("", &r_u, rdata, 0))
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -115,8 +115,8 @@ static BOOL api_reg_open_hku(pipes_struct *p)
 
 static BOOL api_reg_open_hkcr(pipes_struct *p)
 {
-	REG_Q_OPEN_HKCR q_u;
-	REG_R_OPEN_HKCR r_u;
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -124,12 +124,12 @@ static BOOL api_reg_open_hkcr(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg open */
-	if(!reg_io_q_open_hkcr("", &q_u, data, 0))
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
 		return False;
 
 	r_u.status = _reg_open_hkcr(p, &q_u, &r_u);
 
-	if(!reg_io_r_open_hkcr("", &r_u, rdata, 0))
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;

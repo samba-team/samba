@@ -806,6 +806,9 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	memset((char *)&sock_out,'\0',sizeof(sock_out));
 	putip((char *)&sock_out.sin_addr,(char *)addr);
   
+#ifdef HAVE_SOCK_SIN_LEN
+	sock_out.sin_len = sizeof(sock_out);
+#endif
 	sock_out.sin_port = htons( port );
 	sock_out.sin_family = PF_INET;
 

@@ -2172,8 +2172,12 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 
 	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
 		(*reg_type) = HKEY_LOCAL_MACHINE;
+	else if (strequal(tmp, "HKCR") || strequal(tmp, "HKEY_CLASSES_ROOT"))
+		(*reg_type) = HKEY_CLASSES_ROOT;
 	else if (strequal(tmp, "HKU") || strequal(tmp, "HKEY_USERS"))
 		(*reg_type) = HKEY_USERS;
+	else if (strequal(tmp, "HKPD")||strequal(tmp, "HKEY_PERFORMANCE_DATA"))
+		(*reg_type) = HKEY_PERFORMANCE_DATA;
 	else {
 		DEBUG(10,("reg_split_key: unrecognised hive key %s\n", tmp));
 		return False;
