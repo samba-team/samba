@@ -201,10 +201,11 @@ void conn_free(connection_struct *conn)
 	/* Free vfs_connection_struct */
 	handle = conn->vfs_private;
 	while(handle) {
+		/* Only call dlclose for the old modules */
 		if (handle->handle) {
 			/* Close dlopen() handle */
 			done_fptr = (void (*)(connection_struct *))sys_dlsym(handle->handle, "vfs_done");
-			
+
 			if (done_fptr == NULL) {
 				DEBUG(3, ("No vfs_done() symbol found in module with handle %p, ignoring\n", handle->handle));
 			} else {
@@ -212,7 +213,6 @@ void conn_free(connection_struct *conn)
 			}
 			sys_dlclose(handle->handle);
 		}
-
 		DLIST_REMOVE(conn->vfs_private, handle);
 		thandle = handle->next;
 		SAFE_FREE(handle);
