@@ -87,9 +87,9 @@ Changes since 3.0rc4
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
 
-1)  Fix bug that prevented restoring filenames of length
-    >100 characters.
-2)  Fix bug that prevented fast path code in strchr_m 
+1)  Fix bug that prevented filenames of length >100 characters
+    from being restored using smbclient's tar functionality.
+2)  Fix bug that prevented fast path code in strchr_m()
     from being used.
 3)  Make sure we store the desired access flag on incoming 
     SAMR rpc calls.
@@ -105,7 +105,7 @@ details:
     if one of the SIDs could not be resolved (bug 470).
 10) Remove -P option from smbclient printing scripts since it
     has a different meaning in Samba 3.0 (bug 473).
-11) Sync smbldap-tools with latest version 
+11) Sync smbldap-tools with latest version from idealx cvs tree.
 12) Cleanup some warnings produced by the Sun C compiler.
 13) Several fixes for SWAT relating to international character 
     sets.
