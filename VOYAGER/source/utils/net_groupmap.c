@@ -791,7 +791,6 @@ static int net_groupmap_newalias(int argc, const char **argv)
 
 static int net_groupmap_delalias(int argc, const char **argv)
 {
-	uint32 rid;
 	DOM_SID sid;
 
 	if (argc != 1) {
@@ -811,11 +810,11 @@ static int net_groupmap_delalias(int argc, const char **argv)
 	}
 
 	if (!pdb_delete_alias(&sid)) {
-		d_printf("Could not delete %s\n");
+		d_printf("Could not delete %s\n", argv[0]);
 		return -1;
 	}
 
-	printf("Deleted alias %s\n");
+	printf("Deleted alias %s\n", argv[0]);
 	return 0;
 }
 
