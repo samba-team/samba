@@ -1192,7 +1192,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
-	uint32 flags = 0x02000000; /* maximum allowed. */
+	uint32 flags = 0x304; /* access control permissions */
 	fstring tmp;
 	int i;
 
@@ -1531,7 +1531,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x02000000; /* maximum allowed. */
+	uint32 flags = 0x200003f3; /* access control permissions */
 	fstring tmp;
 	uint32 alias_idx;
 
@@ -1740,7 +1740,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x02000000; /* maximum allowed. */
+	uint32 flags = 0x200003f3; /* access control permissions. */
 	fstring tmp;
 	uint32 group_idx;
 
