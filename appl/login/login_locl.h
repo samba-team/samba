@@ -67,6 +67,9 @@
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 #endif
+#ifdef KRB4
+#include <krb.h>
+#endif
 #ifdef KRB5
 #include <krb5.h>
 #endif
