@@ -11,18 +11,24 @@ interface drsuapi
 {
 	/*****************/
         /* Function 0x00 */
-	void DRSUAPI_BIND(
-		/* [in] 8-60 bytes are possible
-		 *      but I saw 56 bytes
-		 */
-		[in]	uint8 blob[56],
-		/* [out] 60 bytes */
-		[out]	uint8 blob[60]
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint32 length;
+		[size_is(length)] uint8 data[];
+	} drsuapi_BindInfo;
+
+	NTSTATUS drsuapi_Bind(
+		[in]	    GUID *server_guid,
+		[in]	    uint32 unknown,
+		[out]       drsuapi_BindInfo *info,
+		[out,ref]   policy_handle *handle
 		);
 
 	/*****************/
         /* Function 0x01 */
-	void DRSUAPI_UNBIND();
+	NTSTATUS drsuapi_Unbind(
+		[in,out,ref] policy_handle *handle
+		);
 
 	/*****************/
         /* Function 0x02 */
