@@ -455,6 +455,7 @@ void reply_negprot(struct smbsrv_request *req)
 
 	if (req->smb_conn->negotiate.done_negprot) {
 		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
+		return;
 	}
 	req->smb_conn->negotiate.done_negprot = True;
 
