@@ -782,7 +782,7 @@ ctags:
 gcovclean: clean
 	-rm -f */*.bb */*.bbg */*.da *.c.gcov */*.c.gcov
 
-realclean: clean gcovclean
+realclean: clean gcovclean delheaders
 	-rm -f config.log $(PROGS) $(SPROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) bin/.dummy
 	-rm -f bin/*
 	-rmdir bin
