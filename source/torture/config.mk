@@ -68,6 +68,16 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
+# Start SUBSYSTEM TORTURE_AUTH
+[SUBSYSTEM::TORTURE_AUTH]
+#ADD_OBJ_FILES = \
+#		torture/auth/ntlmssp.o
+REQUIRED_SUBSYSTEMS = \
+		LIBSMB
+# End SUBSYSTEM TORTURE_AUTH
+#################################
+
+#################################
 # Start SUBSYSTEM TORTURE_NBENCH
 [SUBSYSTEM::TORTURE_NBENCH]
 ADD_OBJ_FILES = \
@@ -81,12 +91,12 @@ ADD_OBJ_FILES = \
 [BINARY::smbtorture]
 OBJ_FILES = \
 		torture/torture.o \
-		torture/torture_util.o \
-		torture/ntlmssp.o
+		torture/torture_util.o
 REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \
 		TORTURE_RPC \
+		TORTURE_AUTH \
 		TORTURE_NBENCH \
 		CONFIG \
 		LIBCMDLINE \
