@@ -149,6 +149,9 @@ int main(int argc, char **argv)
 #ifdef HAVE_SYS_BITYPES_H
     fprintf(f, "#include <sys/bitypes.h>\n");
 #endif
+#ifdef HAVE_BIND_BITYPES_H
+    fprintf(f, "#include <bind/bitypes.h>\n");
+#endif
 #ifdef HAVE_NETINET_IN6_MACHTYPES_H
     fprintf(f, "#include <netinet/in6_machtypes.h>\n");
 #endif
