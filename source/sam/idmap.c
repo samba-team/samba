@@ -36,6 +36,8 @@ static struct idmap_function_entry *backends = NULL;
 static struct idmap_methods *cache_map;
 static struct idmap_methods *remote_map;
 
+static BOOL proxyonly = False;
+
 /**********************************************************************
  Get idmap methods. Don't allow tdb to be a remote method.
 **********************************************************************/
@@ -144,6 +146,15 @@ BOOL idmap_init(const char *remote_backend)
 }
 
 /**************************************************************************
+ Don't do id mapping. This is used to make winbind a netlogon proxy only.
+**************************************************************************/
+
+void idmap_proxyonly(void)
+{
+	proxyonly = True;
+}
+
+/**************************************************************************
  This is a rare operation, designed to allow an explicit mapping to be
  set up for a sid to a POSIX id.
 **************************************************************************/
@@ -152,6 +163,9 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
 	struct idmap_methods *map = remote_map;
 	DOM_SID tmp_sid;
+
+	if (proxyonly)
+		return NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(10, ("idmap_set_mapping: Set %s to %s %lu\n",
 		   sid_string_static(sid),
@@ -185,6 +199,9 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret;
 	int loc_type;
+
+	if (proxyonly)
+		return NT_STATUS_UNSUCCESSFUL;
 
 	loc_type = *id_type;
 
@@ -227,6 +244,9 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	NTSTATUS ret;
 	int loc_type;
 
+	if (proxyonly)
+		return NT_STATUS_UNSUCCESSFUL;
+
 	loc_type = id_type;
 	if (remote_map) {
 		loc_type = id_type | ID_QUERY_ONLY;
@@ -260,6 +280,9 @@ NTSTATUS idmap_allocate_id(unid_t *id, int id_type)
 {
 	/* we have to allocate from the authoritative backend */
 	
+	if (proxyonly)
+		return NT_STATUS_UNSUCCESSFUL;
+
 	if ( remote_map )
 		return remote_map->allocate_id( id, id_type );
 
@@ -274,6 +297,9 @@ NTSTATUS idmap_allocate_rid(uint32 *rid, int type)
 {
 	/* we have to allocate from the authoritative backend */
 	
+	if (proxyonly)
+		return NT_STATUS_UNSUCCESSFUL;
+
 	if ( remote_map )
 		return remote_map->allocate_rid( rid, type );
 
@@ -287,6 +313,9 @@ NTSTATUS idmap_allocate_rid(uint32 *rid, int type)
 NTSTATUS idmap_close(void)
 {
 	NTSTATUS ret;
+
+	if (proxyonly)
+		return NT_STATUS_OK;
 
 	ret = cache_map->close();
 	if (!NT_STATUS_IS_OK(ret)) {
