@@ -82,6 +82,33 @@ static ubi_dlList counter_list;
 
 #define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False))
 
+/* translate between internal status numbers and NT status numbers */
+static int nt_printj_status(int v)
+{
+	switch (v) {
+	case LPQ_PAUSED:
+		return PRINTER_STATUS_PAUSED;
+	case LPQ_QUEUED:
+	case LPQ_SPOOLING:
+	case LPQ_PRINTING:
+		return 0;
+	}
+	return 0;
+}
+
+static int nt_printq_status(int v)
+{
+	switch (v) {
+	case LPQ_PAUSED:
+		return PRINTER_STATUS_ERROR;
+	case LPQ_QUEUED:
+	case LPQ_SPOOLING:
+	case LPQ_PRINTING:
+		return 0;
+	}
+	return 0;
+}
+
 /****************************************************************************
   initialise printer handle states...
 ****************************************************************************/
@@ -1073,7 +1100,7 @@ static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
  ********************************************************************/
 static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
-	data->notify_data.value[0]=queue->status;
+	data->notify_data.value[0]=nt_printj_status(queue->status);
 }
 
 /*******************************************************************
@@ -1090,8 +1117,23 @@ static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
  ********************************************************************/
 static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
-	data->notify_data.data.length=strlen("En attente");
-	ascii_to_unistr(data->notify_data.data.string, "En attente", sizeof(data->notify_data.data.string)-1);
+	char *p = "unknown";
+	switch (queue->status) {
+	case LPQ_QUEUED:
+		p = "QUEUED";
+		break;
+	case LPQ_PAUSED:
+		p = "PAUSED";
+		break;
+	case LPQ_SPOOLING:
+		p = "SPOOLING";
+		break;
+	case LPQ_PRINTING:
+		p = "PRINTING";
+		break;
+	}
+	data->notify_data.data.length=strlen(p);
+	ascii_to_unistr(data->notify_data.data.string, p, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -1636,7 +1678,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring 
 	printer->unknown16 = 0x0;
 	printer->change_id = ntprinter.info_2->changeid; /* ChangeID in milliseconds*/
 	printer->unknown18 = 0x0;
-	printer->status = status.status;
+	printer->status = nt_printq_status(status.status);
 	printer->unknown20 = 0x0;
 	printer->c_setprinter = ntprinter.info_2->c_setprinter; /* how many times setprinter has been called */
 	printer->unknown22 = 0x0;
@@ -1800,7 +1842,7 @@ static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer
 	printer->defaultpriority = ntprinter.info_2->default_priority;		/* default priority */
 	printer->starttime = ntprinter.info_2->starttime;			/* starttime */
 	printer->untiltime = ntprinter.info_2->untiltime;			/* untiltime */
-	printer->status = status.status;					/* status */
+	printer->status = nt_printq_status(status.status);			/* status */
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter.info_2->averageppm;			/* average pages per minute */
 			
@@ -2915,7 +2957,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	init_unistr(&(job_info->document), queue->file);
 	init_unistr(&(job_info->datatype), "RAW");
 	init_unistr(&(job_info->text_status), "");
-	job_info->status=queue->status;
+	job_info->status=nt_printj_status(queue->status);
 	job_info->priority=queue->priority;
 	job_info->position=position;
 	job_info->totalpages=0;
@@ -2959,7 +3001,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	
 /* and here the security descriptor */
 
-	job_info->status=queue->status;
+	job_info->status=nt_printj_status(queue->status);
 	job_info->priority=queue->priority;
 	job_info->position=position;
 	job_info->starttime=0;
