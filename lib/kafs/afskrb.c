@@ -51,7 +51,7 @@ RCSID("$Id$");
 #define ToAsciiUpper(c) ((c) - 'a' + 'A')
 
 static void
-foldup(char *a, char *b)
+foldup(char *a, const char *b)
 {
   for (; *b; a++, b++)
     if (IsAsciiLower(*b))
@@ -62,15 +62,16 @@ foldup(char *a, char *b)
 }
 
 static int
-get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
+get_cred(const char *princ, const char *inst, const char *krealm, 
+	 CREDENTIALS *c, KTEXT_ST *tkt)
 {
-  int k_errno = krb_get_cred(princ, inst, krealm, c);
+  int k_errno = krb_get_cred((char*)princ, (char*)inst, (char*)krealm, c);
 
   if (k_errno != KSUCCESS)
     {
-      k_errno = krb_mk_req(tkt, princ, inst, krealm, 0);
+      k_errno = krb_mk_req(tkt, (char*)princ, (char*)inst, (char*)krealm, 0);
       if (k_errno == KSUCCESS)
-	k_errno = krb_get_cred(princ, inst, krealm, c);
+	k_errno = krb_get_cred((char*)princ, (char*)inst, (char*)krealm, c);
     }
   return k_errno;
 }
@@ -98,7 +99,7 @@ ip_aton(char *ip)
 /* Try to get a db-server for an AFS cell from a AFSDB record */
 
 static int
-dns_find_cell(char *cell, char *dbserver)
+dns_find_cell(const char *cell, char *dbserver)
 {
     struct dns_reply *r;
     int ok = -1;
@@ -129,7 +130,7 @@ dns_find_cell(char *cell, char *dbserver)
    */
 
 static char*
-realm_of_cell(char *cell)
+realm_of_cell(const char *cell)
 {
     FILE *F;
     char buf[1024];
@@ -169,7 +170,7 @@ realm_of_cell(char *cell)
  * Get tokens for all cells[]
  */
 static int
-k_afslog_cells(char *cells[], int max, char *krealm, uid_t uid)
+k_afslog_cells(char *cells[], int max, const char *krealm, uid_t uid)
 {
     int err = KSUCCESS;
     int i;
@@ -203,7 +204,7 @@ k_find_cells(char *file, char *cells[], int size, int *index)
 }
 
 static int
-k_afsklog_all_local_cells(char *krealm, uid_t uid)
+k_afsklog_all_local_cells(const char *krealm, uid_t uid)
 {
     int err;
     char *cells[32]; /* XXX */
@@ -228,7 +229,7 @@ k_afsklog_all_local_cells(char *krealm, uid_t uid)
 }
 
 int
-k_afsklog_uid(char *cell, char *krealm, uid_t uid)
+k_afsklog_uid(const char *cell, const char *krealm, uid_t uid)
 {
   int k_errno;
   CREDENTIALS c;
@@ -361,7 +362,7 @@ k_afsklog_uid(char *cell, char *krealm, uid_t uid)
 }
 
 int
-k_afsklog(char *cell, char *krealm)
+k_afsklog(const char *cell, const char *krealm)
 {
   return k_afsklog_uid (cell, krealm, getuid());
 }

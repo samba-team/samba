@@ -211,7 +211,7 @@ parse_reply(unsigned char *data, int len)
 
 
 struct dns_reply *
-dns_lookup(char *domain, char *type_name)
+dns_lookup(const char *domain, const char *type_name)
 {
     unsigned char reply[1024];
     int len;

@@ -103,7 +103,7 @@ struct dns_reply{
 };
 
 
-struct dns_reply* dns_lookup(char *, char *);
+struct dns_reply* dns_lookup(const char *, const char *);
 
 void dns_free_data(struct dns_reply *r);
 
