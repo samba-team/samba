@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,18 +78,20 @@ _kadm5_setup_entry(hdb_entry *ent, kadm5_principal_ent_t princ,
 	ent->flags.renewable = 1;
 	ent->flags.postdate = 1;
     }
-    if(mask & KADM5_MAX_LIFE)
+    if(mask & KADM5_MAX_LIFE) {
 	if(princ->max_life)
 	    set_value(ent->max_life, princ->max_life);
-    else if(def && def->max_life)
-	set_value(ent->max_life, def->max_life);
+	else if(def && def->max_life)
+	    set_value(ent->max_life, def->max_life);
+    }
     if(mask & KADM5_KVNO)
 	ent->kvno = princ->kvno;
-    if(mask & KADM5_MAX_RLIFE)
+    if(mask & KADM5_MAX_RLIFE) {
 	if(princ->max_renewable_life)
 	    set_value(ent->max_renew, princ->max_renewable_life);
-    else if(def && def->max_renewable_life)
-	set_value(ent->max_renew, def->max_renewable_life);
+	else if(def && def->max_renewable_life)
+	    set_value(ent->max_renew, def->max_renewable_life);
+    }
     if(mask & KADM5_TL_DATA){
 	/* XXX */
     }
