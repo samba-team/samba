@@ -450,20 +450,18 @@ typedef struct sam_group_info_info
 /* SAM_PWD */
 typedef struct sam_passwd_info
 {
+	/* this structure probably contains password history */
+	/* this is probably a count of lm/nt pairs */
 	uint32 unk_0; /* 0x0000 0002 */
 
 	UNIHDR hdr_lm_pwd;
 	uint8  buf_lm_pwd[16];
 
-	uint32 ptr_1; 
-
 	UNIHDR hdr_nt_pwd;
 	uint8  buf_nt_pwd[16];
 
-	uint32 ptr_2; 
-	uint32 ptr_3; 
-	uint32 ptr_4; 
-	uint32 ptr_5; 
+	UNIHDR hdr_empty_lm;
+	UNIHDR hdr_empty_nt;
 
 } SAM_PWD;
 

@@ -791,6 +791,7 @@ void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw);
 void SamOEMhash( unsigned char *data, unsigned char *key, int val);
+void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
 
@@ -1765,6 +1766,7 @@ BOOL do_sam_sync(struct cli_state *cli,
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
 				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
 				uint32 *num_deltas);
+BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
