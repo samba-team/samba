@@ -284,21 +284,21 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	}
 
 	src = str->buffer;
-	len = MIN(str->uni_str_len, maxlen);
 
+	len = MIN(str->uni_str_len, maxlen);
 	if (len == 0) {
 		*dest='\0';
 		return;
 	}
 
-	for (p = dest; (p-dest < len) && *src; src++) {
+	for (p = dest; (p-dest < maxlen-3) && (src - str->buffer < str->uni_str_len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
 		else {
-			*p   = (cp_val >> 8) & 0xff;
+			*p++ = (cp_val >> 8) & 0xff;
 			*p++ = (cp_val & 0xff);
 		}
 	}
