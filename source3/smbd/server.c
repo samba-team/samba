@@ -125,6 +125,8 @@ static BOOL open_sockets(BOOL is_daemon,int port,int port445)
 	int s;
 	int i;
 
+	memset(&fd_listenset, 0, sizeof(fd_listenset));
+
 	if (!is_daemon) {
 		return open_sockets_inetd();
 	}
@@ -186,11 +188,13 @@ max can be %d\n",
 			return(False);
 		fd_listenset[0] = s;
 		FD_SET(s,&listen_set);
+#if 0
 		s = open_server_socket(port445, interpret_addr(lp_socket_address()));
 		if (s == -1)
 			return(False);
 		fd_listenset[1] = s;
 		FD_SET(s,&listen_set);
+#endif
 	} 
 
 	/* now accept incoming connections - forking a new process
@@ -221,11 +225,13 @@ max can be %d\n",
 					ClientPort = SMB_PORT;
 					break;
 				}
+#if 0
 				if(FD_ISSET(fd_listenset[i * 2 + 1],&lfds)) {
 					s = fd_listenset[i * 2 + 1];
 					ClientPort = SMB_PORT2;
 					break;
 				}
+#endif
 			}
 
 			/* Clear this so we don't look
