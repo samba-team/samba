@@ -1200,7 +1200,7 @@ verify_checksum(krb5_context context,
 		unsigned usage, /* not krb5_key_usage */
 		void *data,
 		size_t len,
-		Checksum *C)
+		Checksum *cksum)
 {
     krb5_error_code ret;
     struct key_data *dkey;
@@ -1212,10 +1212,10 @@ verify_checksum(krb5_context context,
 	if(ct == NULL)
 	    ct = crypto->et->cksumtype;
     } else
-	ct = _find_checksum(C->cksumtype);
+	ct = _find_checksum(cksum->cksumtype);
     if(ct == NULL)
 	return KRB5_PROG_SUMTYPE_NOSUPP;
-    if(ct->checksumsize != C->checksum.length)
+    if(ct->checksumsize != cksum->checksum.length)
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL)
@@ -1225,14 +1225,14 @@ verify_checksum(krb5_context context,
     else
 	dkey = NULL;
     if(ct->verify)
-	return (*ct->verify)(context, dkey, data, len, C);
+	return (*ct->verify)(context, dkey, data, len, cksum);
 
     ret = create_checksum(context, crypto, usage, ct->type, data, len, &c);
     if(ret)
 	return ret;
     
-    if(c.checksum.length != C->checksum.length || 
-       memcmp(c.checksum.data, C->checksum.data, c.checksum.length))
+    if(c.checksum.length != cksum->checksum.length || 
+       memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length))
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     else
 	ret = 0;
@@ -1246,10 +1246,10 @@ krb5_verify_checksum(krb5_context context,
 		     krb5_key_usage usage, 
 		     void *data,
 		     size_t len,
-		     Checksum *C)
+		     Checksum *cksum)
 {
     return verify_checksum(context, crypto, 
-			   CHECKSUM_USAGE(usage), data, len, C);
+			   CHECKSUM_USAGE(usage), data, len, cksum);
 }
 
 krb5_error_code
