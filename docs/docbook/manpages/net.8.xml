@@ -132,12 +132,6 @@
 <title>COMMANDS</title>
 
 <refsect2>
-	<title>TIME</title>
-
-	<para>The <command>NET TIME</command> command allows you to view the time on a remote server
-	or synchronise the time on the local server with the time on the remote server.</para>
-
-<refsect3>
 <title>CHANGESECRETPW</title>
 
 <para>This command allows the Samba machine account password to be set from an external application
@@ -149,7 +143,13 @@ this without care and attention as it will overwrite a legitimate machine passwo
 YOU HAVE BEEN WARNED.
 </para>
 
-</refsect3>
+</refsect2>
+
+<refsect2>
+	<title>TIME</title>
+
+	<para>The <command>NET TIME</command> command allows you to view the time on a remote server
+	or synchronise the time on the local server with the time on the remote server.</para>
 
 <refsect3>
 <title>TIME</title>
