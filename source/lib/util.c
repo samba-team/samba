@@ -154,11 +154,17 @@ BOOL set_global_myworkgroup_unix(const char *myworkgroup_unix)
 
 const char *global_scope_dos(void)
 {
+	if (!smb_scope_dos)
+		set_global_scope_unix("");
+
 	return smb_scope_dos;
 }
 
 const char *global_scope_unix(void)
 {
+	if (!smb_scope_unix)
+		set_global_scope_unix("");
+
 	return smb_scope_unix;
 }
 
