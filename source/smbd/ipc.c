@@ -574,5 +574,5 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	SAFE_FREE(params);
 	SAFE_FREE(setup);
 	END_PROFILE(SMBtrans);
-	return ERROR_DOS(ERRDOS,ERRinvalidparam);
+	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 }

@@ -2108,5 +2108,5 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 	SAFE_FREE(data);
 	SAFE_FREE(setup);
 	END_PROFILE(SMBnttrans);
-	return ERROR_DOS(ERRDOS,ERRinvalidparam);
+	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 }
