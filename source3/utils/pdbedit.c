@@ -610,6 +610,12 @@ int main (int argc, char **argv)
 	if (!init_names())
 		exit(1);
 
+	if (!idmap_init())
+		exit(1);
+
+	if (!idmap_init_wellknown_sids())
+		exit(1);
+
 	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +
 			(spstyle ? BIT_SPSTYLE : 0) +
