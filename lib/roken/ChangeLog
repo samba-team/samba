@@ -1374,7 +1374,7 @@ Thu Mar 19 20:41:25 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 Fri Mar  6 00:21:53 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
-	* roken_gethostby.c: Make `roken_gethostby_setup' take url-like
+	* roken_gethostby.c: Make `roken_gethostby_setup' take URL-like
  	specification instead of split up versions. Makes it easier for
  	calling applications.
 
