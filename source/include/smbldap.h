@@ -19,10 +19,10 @@
    
 */
 
-#ifdef HAVE_LDAP
-
 #ifndef _SMBLDAP_H
 #define _SMBLDAP_H
+
+#ifdef HAVE_LDAP
 
 /* specify schema versions between 2.2. and 3.0 */
 
@@ -92,6 +92,7 @@ typedef struct _attrib_map_entry {
 	const char 	*name;
 } ATTRIB_MAP_ENTRY;
 
+
 /* structures */
 
 extern ATTRIB_MAP_ENTRY attrib_map_v22[];
@@ -108,10 +109,30 @@ extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
 const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key );
 char** get_attr_list( ATTRIB_MAP_ENTRY table[] );
 void free_attr_list( char **list );
-BOOL fetch_ldap_pw(char **dn, char** pw);
-void ldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
+void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
+void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
+		      LDAPMod ***mods,
+		      const char *attribute, const char *newval);
 
+/**
+ * Struct to keep the state for all the ldap stuff 
+ *
+ */
+
+struct smbldap_state {
+	LDAP *ldap_struct;
+	time_t last_ping;
+	/* retrive-once info */
+	const char *uri;
+	char *bind_dn;
+	char *bind_secret;
+
+	unsigned int num_failures;
+};
+
+#endif 	/* HAVE_LDAP */
+
+struct smbldap_state;
 
 #endif	/* _SMBLDAP_H */
 
-#endif 	/* HAVE_LDAP */

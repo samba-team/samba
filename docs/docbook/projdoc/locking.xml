@@ -150,8 +150,8 @@ other processes.
 		The redirector sees that the file was opened with deny
                 none (allowing concurrent access), verifies that no
                 other process is accessing the file, checks that
-                oplocks are enabled, then grants deny-all/read-write/ex-
-                clusive access to the file.  The client now performs
+                oplocks are enabled, then grants deny-all/read-write/exclusive
+                access to the file.  The client now performs
                 operations on the cached local file.
 		</para>
 
@@ -340,7 +340,7 @@ exposes the file to likely data corruption.
 </para>
 
 <para>
-If files are shared between Windows clients, and either loca Unix 
+If files are shared between Windows clients, and either local Unix 
 or NFS users, then turn opportunistic locking off.
 </para>
 
@@ -543,7 +543,7 @@ Level1 Oplocks (aka just plain "oplocks") is another term for opportunistic lock
 </para>
 
 <para>
-Level2 Oplocks provids opportunistic locking for a file that will be treated as
+Level2 Oplocks provides opportunistic locking for a file that will be treated as
 <emphasis>read only</emphasis>. Typically this is used on files that are read-only or
 on files that the client has no initial intention to write to at time of opening the file.
 </para>
@@ -560,7 +560,7 @@ Unless your system supports kernel oplocks, you should disable oplocks if you ar
 accessing the same files from both Unix/Linux and SMB clients. Regardless, oplocks should
 always be disabled if you are sharing a database file (e.g., Microsoft Access) between
 multiple clients, as any break the first client receives will affect synchronisation of
-the entire file (not just the single record), which will result in a noticable performance
+the entire file (not just the single record), which will result in a noticeable performance
 impairment and, more likely, problems accessing the database in the first place. Notably,
 Microsoft Outlook's personal folders (*.pst) react very badly to oplocks. If in doubt,
 disable oplocks and tune your system from that point.
@@ -583,7 +583,7 @@ measurable speed benefit on your network, it might not be worth the hassle of de
 <title>Example Configuration</title>
 
 <para>
-In the following we examine two destinct aspects of samba locking controls.
+In the following we examine two distinct aspects of Samba locking controls.
 </para>
 
 <sect3>
@@ -940,8 +940,8 @@ our Knowledge Base.
 
 <para>
 In some sites locking problems surface as soon as a server is installed, in other sites
-locking problems may not surface for a long time. Almost without exeception, when a locking
-problem does surface it will cause embarassment and potential data corruption.
+locking problems may not surface for a long time. Almost without exception, when a locking
+problem does surface it will cause embarrassment and potential data corruption.
 </para>
 
 <para>
@@ -995,7 +995,7 @@ so far:
 	</para>
 
 	<para>
-	Corrupted tdb.  Stop all instancesd of smbd, delete locking.tdb, restart smbd.
+	Corrupted tdb.  Stop all instances of smbd, delete locking.tdb, restart smbd.
 	</para>
 
 	</sect2>

@@ -377,7 +377,7 @@ int main(int argc, char ** argv)
 			test_opts = xstrdup(optarg);
 		break;*/
 		case 'r':  /* mount readonly */
-			flags |= MS_RDONLY;;
+			flags |= MS_RDONLY;
 			break;
 		case 'U':
 			uuid = optarg;
@@ -389,7 +389,7 @@ int main(int argc, char ** argv)
 		printf ("mount: %s\n", version);
 		exit (0);*/
 		case 'w':
-			flags &= ~MS_RDONLY;;
+			flags &= ~MS_RDONLY;
 			break;
 /*	case 0:
 		break;

@@ -152,7 +152,7 @@ Modifications to the swat setup are as following:
 </procedure>
 
 <para>
-afterwards simply contact to swat by using the URL <ulink url="https://myhost:901">https://myhost:901</ulink>, accept the certificate
+afterwords simply contact to swat by using the URL <ulink url="https://myhost:901">https://myhost:901</ulink>, accept the certificate
 and the SSL connection is up.
 </para>
 
@@ -169,7 +169,7 @@ document) as well as the O'Reilly book "Using Samba".
 
 <para>
 Administrators who wish to validate their samba configuration may obtain useful information
-from the man pages for the diganostic utilities. These are available from the SWAT home page
+from the man pages for the diagnostic utilities. These are available from the SWAT home page
 also. One diagnostic tool that is NOT mentioned on this page, but that is particularly
 useful is <command>ethereal</command>, available from <ulink url="http://www.ethereal.com">
 http://www.ethereal.com</ulink>.
@@ -178,7 +178,7 @@ http://www.ethereal.com</ulink>.
 <warning><para>
 SWAT can be configured to run in <emphasis>demo</emphasis> mode. This is NOT recommended
 as it runs SWAT without authentication and with full administrative ability. ie: Allows
-changes to smb.conf as well as general operation with root privilidges. The option that
+changes to smb.conf as well as general operation with root privileges. The option that
 creates this ability is the <option>-a</option> flag to swat. <emphasis>Do not use this in any 
 production environment.</emphasis>
 </para></warning>
@@ -223,7 +223,7 @@ your changes will be immediately lost.
 
 <note><para>
 SWAT has context sensitive help. To find out what each parameter is for simply click the
-<guibutton>Help</guibutton> link to the left of the configurartion parameter.
+<guibutton>Help</guibutton> link to the left of the configuration parameter.
 </para></note>
 
 </sect2>
@@ -232,7 +232,7 @@ SWAT has context sensitive help. To find out what each parameter is for simply c
 <title>Share Settings</title>
 
 <para>
-To affect a currenly configured share, simply click on the pull down button between the
+To affect a currently configured share, simply click on the pull down button between the
 <guibutton>Choose Share</guibutton> and the <guibutton>Delete Share</guibutton> buttons,
 select the share you wish to operate on, then to edit the settings click on the
 <guibutton>Choose Share</guibutton> button, to delete the share simply press the
@@ -251,7 +251,7 @@ into the text field the name of the share to be created, then click on the
 <title>Printers Settings</title>
 
 <para>
-To affect a currenly configured printer, simply click on the pull down button between the
+To affect a currently configured printer, simply click on the pull down button between the
 <guibutton>Choose Printer</guibutton> and the <guibutton>Delete Printer</guibutton> buttons,
 select the printer you wish to operate on, then to edit the settings click on the
 <guibutton>Choose Printer</guibutton> button, to delete the share simply press the
@@ -270,12 +270,12 @@ into the text field the name of the share to be created, then click on the
 <title>The SWAT Wizard</title>
 
 <para>
-The purpose if the SWAT Wizard is to help the Microsoft knowledgable network administrator
+The purpose if the SWAT Wizard is to help the Microsoft knowledgeable network administrator
 to configure Samba with a minimum of effort.
 </para>
 
 <para>
-The Wizard page provides a tool for rewiting the smb.conf file in fully optimised format.
+The Wizard page provides a tool for rewriting the smb.conf file in fully optimised format.
 This will also happen if you press the commit button. The two differ in the the rewrite button
 ignores any changes that may have been made, while the Commit button causes all changes to be
 affected.
@@ -283,13 +283,13 @@ affected.
 
 <para>
 The <guibutton>Edit</guibutton> button permits the editing (setting) of the minimal set of
-options that may be necessary to create a working samba server.
+options that may be necessary to create a working Samba server.
 </para>
 
 <para>
-Finally, there are a limited set of options that will determine what type of server samba
+Finally, there are a limited set of options that will determine what type of server Samba
 will be configured for, whether it will be a WINS server, participate as a WINS client, or
-operate with no WINS support. By clicking on one button you can elect to epose (or not) user
+operate with no WINS support. By clicking on one button you can elect to expose (or not) user
 home directories.
 </para>
 
@@ -321,8 +321,8 @@ free files that may be locked.
 <title>The View Page</title>
 
 <para>
-This page allows the administrator to view the optimised &smb.conf; file and if you are
-particularly massochistic will permit you also to see all possible global configuration
+This page allows the administrator to view the optimised &smb.conf; file and, if you are
+particularly masochistic, will permit you also to see all possible global configuration
 parameters and their settings.
 </para>
 

@@ -8,6 +8,7 @@
 			<address><email>kpfeifle@danka.de</email></address>
 		</affiliation>
 	</author>
+	&author.jerry;
 	<pubdate>May 32, 2003</pubdate>
 </chapterinfo>
 
@@ -35,7 +36,7 @@ install drivers and printers through their familiar "Point'n'Print"
 mechanism. Printer installations executed by "Logon Scripts" are no
 problem. Administrators can upload and manage drivers to be used by
 clients through the familiar "Add Printer Wizard". As an additional
-benefit, driver and printer management may be run from the commandline
+benefit, driver and printer management may be run from the command line
 or through scripts, making it more efficient in case of large numbers
 of printers. If a central accounting of print jobs (tracking every
 single page and supplying the raw data for all sorts of statistical
@@ -112,7 +113,7 @@ to the UNIX print subsystem's spooling area</para></listitem>
 <listitem><para>The Unix print subsystem processes the print
 job</para></listitem>
 
-<listitem><para>The printfile may need to be explicitely deleted
+<listitem><para>The printfile may need to be explicitly deleted
 from the Samba spooling area.</para></listitem>
 
 </orderedlist>
@@ -531,7 +532,7 @@ line consisting of, for example,
 </para>
 
 <para><screen>
-printing =lprng     #This defines LPRng as the printing system"
+printing = lprng     #This defines LPRng as the printing system"
 </screen></para>
 
 <para>
@@ -803,7 +804,7 @@ yes</parameter>. Since we have <parameter>guest ok = yes</parameter>,
 it really doesn't need to be here! (This leads to the interesting
 question: <quote>What, if I by accident have to contradictory settings
 for the same share?</quote> The answer is: the last one encountered by
-Sambe wins. The "winner" is shown by testparm. Testparm doesn't
+Samba wins. The "winner" is shown by testparm. Testparm doesn't
 complain about different settings of the same parameter for the same
 share! You can test this by setting up multiple lines for the "guest
 account" parameter with different usernames, and then run testparm to
@@ -1206,7 +1207,7 @@ server to have printers listed in the Printers folder which are
 <emphasis>not</emphasis> shared. Samba does not make this
 distinction. By definition, the only printers of which Samba is aware
 are those which are specified as shares in
-. The reason is that Windows NT/2k/XPprof
+. The reason is that Windows NT/200x/XP Professional
 clients do not normally need to use the standard SMB printer share;
 rather they can print directly to any printer on another Windows NT
 host using MS-RPC. This of course assumes that the printing client has
@@ -1249,7 +1250,7 @@ different means:
 
 <itemizedlist>
 <listitem><para>running the <emphasis>APW</emphasis> on an
-NT/2k/XPprof client (this doesn't work from 95/98/ME
+NT/200x/XP Professional client (this doesn't work from 95/98/ME
 clients);</para></listitem>
 
 <listitem><para>using the <emphasis>Imprints</emphasis>
@@ -1268,7 +1269,7 @@ etc.).</para></listitem>
 Please take additional note of the following fact: <emphasis>Samba
 does not use these uploaded drivers in any way to process spooled
 files</emphasis>. Drivers are utilized entirely by the clients, who
-download and install them via the "Point 'n'Print" mechanism supported
+download and install them via the "Point'n'Print" mechanism supported
 by Samba. The clients use these drivers to generate print files in the
 format the printer (or the Unix print system) requires. Print files
 received by Samba are handed over to the Unix printing system, which
@@ -1317,7 +1318,7 @@ clients are thrown aside now. They can use Samba's
 In order to support the up- and downloading of printer driver files,
 you must first configure a file share named
 <parameter>[print$]</parameter>. The "public" name of this share is
-hard coded in Samba's internals (because it is hardcoded in the MS
+hard coded in Samba's internals (because it is hard coded in the MS
 Windows clients too). It cannot be renamed since Windows clients are
 programmed to search for a service of exactly this name if they want
 to retrieve printer driver files.
@@ -1507,7 +1508,7 @@ You have successfully created the <parameter>[print$]</parameter>
 share in ?  And Samba has re-read its
 configuration? Good. But you are not yet ready to take off. The
 <emphasis>driver files</emphasis> need to be present in this share,
-too! So far it is still an empty share. Unfortunatly, it is not enough
+too! So far it is still an empty share. Unfortunately, it is not enough
 to just copy the driver files over. They need to be <emphasis>set
 up</emphasis> too.  And that is a bit tricky, to say the least. We
 will now discuss two alternative ways to install the drivers into
@@ -1570,7 +1571,7 @@ either:
 </para>
 
 <itemizedlist>
-<listitem><para>select a driver from the popup list of installed
+<listitem><para>select a driver from the pop-up list of installed
 drivers.  <emphasis>Initially this list will be empty.</emphasis>
 Or</para></listitem>
 
@@ -1581,7 +1582,7 @@ APW).</para></listitem>
 
 <para>
 Once the APW is started, the procedure is exactly the same as the one
-you are familiar with in Wiindows (we assume here that you are
+you are familiar with in Windows (we assume here that you are
 familiar with the printer driver installations procedure on Windows
 NT). Make sure your connection is in fact setup as a user with
 <parameter>printer admin</parameter> privileges (if in doubt, use
@@ -1619,7 +1620,7 @@ and collecting the files together;</para></listitem>
 (possibly by using <command>smbclient</command>);</para></listitem>
 
 <listitem><para>running the <command>rpcclient</command>
-commandline utility once with the <command>addriver</command>
+commandline utility once with the <command>adddriver</command>
 subcommand,</para></listitem>
 
 <listitem><para>running <command>rpcclient</command> a second
@@ -1745,7 +1746,7 @@ access them will be
 <filename>\\WINDOWSHOST\print$\WIN40\0\</filename>.
 </para>
 
-<note><para> more recent drivers on Windows 2000 and Wndows XP are
+<note><para> more recent drivers on Windows 2000 and Windows XP are
 installed into the "3" subdirectory instead of the "2". The version 2
 of drivers, as used in Windows NT, were running in Kernel Mode.
 Windows 2000 changed this. While it still can use the Kernel Mode
@@ -1979,7 +1980,7 @@ again, for readability:
 
 <para>
 After this step the driver should be recognized by Samba on the print
-server. You need to be very carefull when typing the command. Don't
+server. You need to be very careful when typing the command. Don't
 exchange the order of the fields. Some changes would lead to a
 <computeroutput>NT_STATUS_UNSUCCESSFUL</computeroutput> error
 message. These become obvious. Other changes might install the driver
@@ -2061,12 +2062,12 @@ files by at least three methods:
 
 <itemizedlist>
 <listitem><para>from any Windows client browse Network Neighbourhood,
-finde the Samba host and open the Samba <guiicon>Printers and
+find the Samba host and open the Samba <guiicon>Printers and
 Faxes</guiicon> folder. Select any printer icon, right-click and
 select the printer <guimenuitem>Properties</guimenuitem>. Click on the
 <guilabel>Advanced</guilabel> tab. Here is a field indicating the
 driver for that printer. A drop down menu allows you to change that
-driver (be carefull to not do this unwittingly.).  You can use this
+driver (be careful to not do this unwittingly.).  You can use this
 list to view all drivers know to Samba. Your new one should be amongst
 them. (Each type of client will only see his own architecture's
 list. If you don't have every driver installed for each platform, the
@@ -2114,7 +2115,7 @@ have to repeat the whole procedure with the WIN40 architecture and subdirectory.
 </sect3>
 
 <sect3>
-<title>A sidenote: you are not bound to specific driver names</title>
+<title>A side note: you are not bound to specific driver names</title>
 
 <para>
 You can name the driver as you like. If you repeat the
@@ -2153,7 +2154,7 @@ repeatedly. Each run "consumes" the files you had put into the
 <parameter>[print$]</parameter> share by moving them into the
 respective subdirectories. So you <emphasis>must</emphasis> precede an
 <command>smbclient ... put</command> command before each
-<command>rpcclient ...  addriver</command>" command.
+<command>rpcclient ...  adddriver</command>" command.
 </para>
 </sect3>
 
@@ -2182,7 +2183,7 @@ name I intended:
 <para><screen>
 &rootprompt;<userinput>rpcclient -U'root%xxxx' -c 'setdriver dm9110 dm9110' <replaceable>SAMBA-CUPS</replaceable></userinput>
  cmd = setdriver dm9110 dm9110
- Succesfully set dm9110 to driver dm9110.
+ Successfully set dm9110 to driver dm9110.
 </screen></para>
 
 <para>
@@ -2206,7 +2207,7 @@ signal to all running smbd processes to work around this:
 </sect1>
 
 <sect1>
-<title>"The Proof of the Pudding lies in the Eating" (Client Driver Insta
+<title>"The Proof of the Pudding lies in the Eating" (Client Driver Install
 Procedure)</title>
 
 <para>
@@ -2507,7 +2508,7 @@ now. You <emphasis>may</emphasis> have tried to download and use it
 onto your first client machine now. But wait... let's make you
 acquainted first with a few tips and tricks you may find useful.  For
 example, suppose you didn't manage to "set the defaults" on the
-printer, as advised in the preceeding paragraphs? And your users
+printer, as advised in the preceding paragraphs? And your users
 complain about various issues (such as <quote>We need to set the paper
 size for each job from Letter to A4 and it won't store it!</quote>)
 </para>
@@ -2611,8 +2612,8 @@ defaults, you need to conduct these steps as administrator
 (<parameter>printer admin</parameter> in )
 <emphasis>before</emphasis> a client downloads the driver (the clients
 can later set their own <emphasis>per-user defaults</emphasis> by
-following the procedures<emphasis>A.</emphasis>
-or<emphasis>B.</emphasis> above...). (This is new: Windows 2000 and
+following the procedures <emphasis>A.</emphasis>
+or <emphasis>B.</emphasis> above...). (This is new: Windows 2000 and
 Windows XP allow <emphasis>per-user</emphasis> default settings and
 the ones the administrator gives them, before they set up their own).
 The "parents" of the identically looking dialogs have a slight
@@ -2752,7 +2753,7 @@ empty string where the driver should have been listed (between the 2
 commas in the "description" field). After the
 <command>setdriver</command> command succeeded, all is well.  (The
 CUPS Printing chapter has more info about the installation of printer
-drivers with the help of <command>rpccclient</command>).
+drivers with the help of <command>rpcclient</command>).
 </para>
 </sect2>
 
@@ -3325,15 +3326,15 @@ in.</para></listitem>
 
 <listitem><para>Line 3 sets the default printer to this new network
 printer (there might be several other printers installed with this
-same method and some may be local as well -- so we deside for a
+same method and some may be local as well -- so we decide for a
 default printer). The default printer selection may of course be
 different for different users.</para></listitem>
 </itemizedlist>
 
 <para>
 Note that the second line only works if the printer
-<emphasis>infotec2105-PS</emphasis> has an already working printqueue
-on "sambacupsserver", and if the printer drivers have sucessfully been
+<emphasis>infotec2105-PS</emphasis> has an already working print queue
+on "sambacupsserver", and if the printer drivers have successfully been
 uploaded (via <command>APW</command> ,
 <command>smbclient/rpcclient</command> or
 <command>cupsaddsmb</command>) into the
@@ -3413,7 +3414,7 @@ driver file</parameter>", " <parameter>printer driver</parameter>" and
 supported.</para></listitem>
 
 <listitem><para>If you want to take advantage of WinNT printer driver
-support you also need to migrate theWin9x/ME drivers to the new
+support you also need to migrate the Win9x/ME drivers to the new
 setup.</para></listitem>
 
 <listitem><para>An existing <filename>printers.def</filename> file

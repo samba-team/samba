@@ -9,6 +9,14 @@
                         <address><email>kpfeifle@danka.de</email></address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Ciprian</firstname><surname>Vizitiu</surname>
+		<affiliation>
+			<address><email>CVizitiu@gbif.org</email></address>
+		</affiliation>
+		<contrib>drawings</contrib>
+	</author>
+
 	<pubdate> (3 June 2003) </pubdate>
 </chapterinfo>
 
@@ -16,190 +24,190 @@
 
 <sect1>
 
-<title>Introduction</title>
+	<title>Introduction</title>
 
-<sect2>
-<title>Features and Benefits</title>
+	<sect2>
+		<title>Features and Benefits</title>
 
-<para>
-The Common Unix Print System (<ulink
-url="http://www.cups.org/">CUPS</ulink>) has become very popular. All
-big Linux distributions now ship it as their default printing
-system. But to many it is still a very mystical tool.  Normally it
-"just works" (TM). People tend to regard it as a sort of "black box",
-which they don't want to look into, as long as it works OK. But once
-there is a little problem, they are in trouble to find out where to
-start debugging it. Also, even the most recent and otherwise excellent
-printed Samba documentation has only limited attention paid to CUPS
-printing, leaving out important pieces or even writing plain wrong
-things about it. This demands rectification.  But before you dive into
-this chapter, make sure that you don't forget to refer to the
-"Classical Printing" chapter also. It contains a lot of information
-that is relevant for CUPS too.
-</para>
+		<para>
+			The Common Unix Print System (<ulink
+				url="http://www.cups.org/">CUPS</ulink>) has become very popular. All
+			big Linux distributions now ship it as their default printing
+			system. But to many it is still a very mystical tool.  Normally it
+			"just works" (TM). People tend to regard it as a sort of "black box",
+			which they don't want to look into, as long as it works OK. But once
+			there is a little problem, they are in trouble to find out where to
+			start debugging it. Also, even the most recent and otherwise excellent
+			printed Samba documentation has only limited attention paid to CUPS
+			printing, leaving out important pieces or even writing plain wrong
+			things about it. This demands rectification.  But before you dive into
+			this chapter, make sure that you don't forget to refer to the
+			"Classical Printing" chapter also. It contains a lot of information
+			that is relevant for CUPS too.
+		</para>
 
-<para>
-CUPS sports quite a few unique and powerful features. While their
-basic functions may be grasped quite easily, they are also
-new. Because they are different from other, more traditional printing
-systems, it is best to try and not apply any prior knowledge about
-printing upon this new system. Rather try to start understand CUPS
-from the beginning. This documentation will lead you here to a
-complete understanding of CUPS, if you study all of the material
-contained. But lets start with the most basic things first. Maybe this
-is all you need for now. Then you can skip most of the other
-paragraphs.
-</para>
+		<para>
+			CUPS sports quite a few unique and powerful features. While their
+			basic functions may be grasped quite easily, they are also
+			new. Because they are different from other, more traditional printing
+			systems, it is best to try and not apply any prior knowledge about
+			printing upon this new system. Rather try to start understand CUPS
+			from the beginning. This documentation will lead you here to a
+			complete understanding of CUPS, if you study all of the material
+			contained. But lets start with the most basic things first. Maybe this
+			is all you need for now. Then you can skip most of the other
+			paragraphs.
+		</para>
 
-</sect2>
+	</sect2>
 
-<sect2>
-<title>Overview</title>
+	<sect2>
+		<title>Overview</title>
 
-<para>
-CUPS is more than just a print spooling system. It is a complete
-printer management system that complies with the new IPP
-(<emphasis>Internet Printing Protocol</emphasis>). IPP is an industry
-and IETF (<emphasis>Internet Engineering Task Force</emphasis>)
-standard for network printing. Many of its functions can be managed
-remotely (or locally) via a web browser (giving you a
-platform-independent access to the CUPS print server). In addition it
-has the traditional commandline and several more modern GUI interfaces
-(GUI interfaces developed by 3rd parties, like KDE's
-overwhelming <ulink
-url="http://printing.kde.org/">KDEPrint</ulink>).
-</para>
+		<para>
+			CUPS is more than just a print spooling system. It is a complete
+			printer management system that complies with the new IPP
+			(<emphasis>Internet Printing Protocol</emphasis>). IPP is an industry
+			and IETF (<emphasis>Internet Engineering Task Force</emphasis>)
+			standard for network printing. Many of its functions can be managed
+			remotely (or locally) via a web browser (giving you a
+			platform-independent access to the CUPS print server). In addition it
+			has the traditional commandline and several more modern GUI interfaces
+			(GUI interfaces developed by 3rd parties, like KDE's
+			overwhelming <ulink
+				url="http://printing.kde.org/">KDEPrint</ulink>).
+		</para>
 
-<para>
-CUPS allows creation of "raw" printers (ie: NO print file
-format translation) as well as "smart" printers (i.e. CUPS does
-file format conversion as required for the printer). In many ways
-this gives CUPS similar capabilities to the MS Windows print
-monitoring system. Of course, if you are a CUPS advocate, you would
-argue that CUPS is better! In any case, let us now move on to
-explore how one may configure CUPS for interfacing with MS Windows
-print clients via Samba.
-</para>
-</sect2>
+		<para>
+			CUPS allows creation of "raw" printers (ie: NO print file
+			format translation) as well as "smart" printers (i.e. CUPS does
+			file format conversion as required for the printer). In many ways
+			this gives CUPS similar capabilities to the MS Windows print
+			monitoring system. Of course, if you are a CUPS advocate, you would
+			argue that CUPS is better! In any case, let us now move on to
+			explore how one may configure CUPS for interfacing with MS Windows
+			print clients via Samba.
+		</para>
+	</sect2>
 </sect1>
 
 <sect1>
-<title>Basic Configuration of CUPS support</title>
+	<title>Basic Configuration of CUPS support</title>
 
-<para>
-Printing with CUPS in the most basic <filename>smb.conf</filename>
-setup in Samba 3.0 (as was true for 2.2.x) only needs two
-settings: <parameter>printing = cups</parameter> and <parameter>printcap
-= cups</parameter>. CUPS itself doesn't need a printcap file
-anymore. However, the <filename>cupsd.conf</filename> configuration
-file knows two related directives: they control if such a file should
-be automatically created and maintained by CUPS for the convenience of
-third party applications (example: <parameter>Printcap
-/etc/printcap</parameter> and <parameter>PrintcapFormat
-BSD</parameter>). These legacy programs often require the existence of
-printcap file containing printernames or they will refuse to
-print. Make sure CUPS is set to generate and maintain a printcap! For
-details see <command>man cupsd.conf</command> and other CUPS-related
-documentation, like the wealth of documents on your CUPS server
-itself: <ulink
-url="http://localhost:631/documentation.html">http://localhost:631/documentation.html</ulink>.
-</para>
+	<para>
+		Printing with CUPS in the most basic <filename>smb.conf</filename>
+		setup in Samba 3.0 (as was true for 2.2.x) only needs two
+		settings: <parameter>printing = cups</parameter> and <parameter>printcap
+			= cups</parameter>. CUPS itself doesn't need a printcap file
+		anymore. However, the <filename>cupsd.conf</filename> configuration
+		file knows two related directives: they control if such a file should
+		be automatically created and maintained by CUPS for the convenience of
+		third party applications (example: <parameter>Printcap
+			/etc/printcap</parameter> and <parameter>PrintcapFormat
+			BSD</parameter>). These legacy programs often require the existence of
+		printcap file containing printernames or they will refuse to
+		print. Make sure CUPS is set to generate and maintain a printcap! For
+		details see <command>man cupsd.conf</command> and other CUPS-related
+		documentation, like the wealth of documents on your CUPS server
+		itself: <ulink
+			url="http://localhost:631/documentation.html">http://localhost:631/documentation.html</ulink>.
+	</para>
 
-<sect2>
-<title>Linking of smbd with <filename>libcups.so</filename></title>
+	<sect2>
+		<title>Linking of smbd with libcups.so</title>
 
-<para>
-Samba has a very special relationship to CUPS. The reason is: Samba
-can be compiled with CUPS library support. Most recent installations
-have this support enabled, and per default CUPS linking is compiled
-into smbd and other Samba binaries. Of course, you can use CUPS even
-if Samba is not linked against <filename>libcups.so</filename> -- but
-there are some differences in required or supported configuration
-then.
-</para>
+		<para>
+			Samba has a very special relationship to CUPS. The reason is: Samba
+			can be compiled with CUPS library support. Most recent installations
+			have this support enabled, and per default CUPS linking is compiled
+			into smbd and other Samba binaries. Of course, you can use CUPS even
+			if Samba is not linked against <filename>libcups.so</filename> -- but
+			there are some differences in required or supported configuration
+			then.
+		</para>
 
-<para>
-If SAMBA is compiled against libcups, then <parameter>printcap =
-cups</parameter> uses the CUPS API to list printers, submit jobs,
-query queues, etc.  Otherwise it maps to the System V commands with an
-additional <command>-oraw</command> option for printing. On a Linux
-system, you can use the <command>ldd</command> utility to find out
-details (ldd may not be present on other OS platforms, or its function
-may be embodied by a different command):
-</para>
+		<para>
+			If SAMBA is compiled against libcups, then <parameter>printcap =
+				cups</parameter> uses the CUPS API to list printers, submit jobs,
+			query queues, etc.  Otherwise it maps to the System V commands with an
+			additional <command>-oraw</command> option for printing. On a Linux
+			system, you can use the <command>ldd</command> utility to find out
+			details (ldd may not be present on other OS platforms, or its function
+			may be embodied by a different command):
+		</para>
 
-<para><screen>
- transmeta:/home/kurt # ldd `which smbd`
-        libssl.so.0.9.6 =&gt; /usr/lib/libssl.so.0.9.6 (0x4002d000)
-        libcrypto.so.0.9.6 =&gt; /usr/lib/libcrypto.so.0.9.6 (0x4005a000)
-        libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
-        [....]
-</screen></para>
+		<para><screen>
+				transmeta:/home/kurt # ldd `which smbd`
+				libssl.so.0.9.6 =&gt; /usr/lib/libssl.so.0.9.6 (0x4002d000)
+				libcrypto.so.0.9.6 =&gt; /usr/lib/libcrypto.so.0.9.6 (0x4005a000)
+				libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
+				[....]
+		</screen></para>
 
-<para>
-The line <computeroutput>libcups.so.2 =&gt; /usr/lib/libcups.so.2
-(0x40123000)</computeroutput> shows there is CUPS support compiled
-into this version of Samba. If this is the case, and printing = cups
-is set, then <emphasis>any otherwise manually set print command in
-<filename>smb.conf</filename> is ignored</emphasis>. This is an
-important point to remember!
-</para>
+		<para>
+			The line <computeroutput>libcups.so.2 =&gt; /usr/lib/libcups.so.2
+				(0x40123000)</computeroutput> shows there is CUPS support compiled
+			into this version of Samba. If this is the case, and printing = cups
+			is set, then <emphasis>any otherwise manually set print command in
+				<filename>smb.conf</filename> is ignored</emphasis>. This is an
+			important point to remember!
+		</para>
 
-<tip><para> Should you require -- for any reason -- to set your own
-print commands, you can still do this by setting <parameter>printing =
-sysv</parameter>. However, you'll loose all the benefits from the
-close CUPS/Samba integration. You are on your own then to manually
-configure the rest of the printing system commands (most important:
-<parameter>print command</parameter>; other commands are
-<parameter>lppause command, lpresume command, lpq command, lprm
-command, queuepause command </parameter> and <parameter>queue resume
-command</parameter>).</para></tip>
-</sect2>
+		<tip><para> Should you require -- for any reason -- to set your own
+				print commands, you can still do this by setting <parameter>printing =
+					sysv</parameter>. However, you'll loose all the benefits from the
+				close CUPS/Samba integration. You are on your own then to manually
+				configure the rest of the printing system commands (most important:
+				<parameter>print command</parameter>; other commands are
+				<parameter>lppause command, lpresume command, lpq command, lprm
+					command, queuepause command </parameter> and <parameter>queue resume
+					command</parameter>).</para></tip>
+	</sect2>
 
-<sect2>
-<title>Simple <filename>smb.conf</filename> Settings for CUPS</title>
+	<sect2>
+		<title>Simple <filename>smb.conf</filename> Settings for CUPS</title>
 
-<para>
-To summarize, here is the simplest printing-related setup
-for<filename>smb.conf</filename> to enable basic CUPS support:
-</para>
+		<para>
+			To summarize, here is the simplest printing-related setup
+			for <filename>smb.conf</filename> to enable basic CUPS support:
+		</para>
 
-<para><screen>
+		<para><screen>
 
- [global]
-         load printers = yes
-         printing = cups
-         printcap name = cups
+				[global]
+				load printers = yes
+				printing = cups
+				printcap name = cups
 
- [printers]
-         comment = All Printers
-         path = /var/spool/samba
-         browseable = no
-         public = yes
-         guest ok = yes
-         writable = no
-         printable = yes
-         printer admin = root, @ntadmins
+				[printers]
+				comment = All Printers
+				path = /var/spool/samba
+				browseable = no
+				public = yes
+				guest ok = yes
+				writable = no
+				printable = yes
+				printer admin = root, @ntadmins
 
-</screen></para>
+		</screen></para>
 
-<para>
-This is all you need for basic printing setup for CUPS. It will print
-all Graphic, Text, PDF and PostScript file submitted from Windows
-clients. However, most of your Windows users would not know how to
-send these kind of files to print without opening a GUI
-application. Windows clients tend to have local printer drivers
-installed. And the GUI application's print buttons start a printer
-driver. Your users also very rarely send files from the command
-line. Unlike UNIX clients, they hardly submit graphic, text or PDF
-formatted files directly to the spooler. They nearly exclusively print
-from GUI applications, with a "printer driver" hooked in between the
-applications native format and the print data stream.  If the backend
-printer is not a PostScript device, the print data stream is "binary",
-sensible only for the target printer. Read on to learn which problem
-this may cause and how to avoid it.
-</para>
-</sect2>
+		<para>
+			This is all you need for basic printing setup for CUPS. It will print
+			all Graphic, Text, PDF and PostScript file submitted from Windows
+			clients. However, most of your Windows users would not know how to
+			send these kind of files to print without opening a GUI
+			application. Windows clients tend to have local printer drivers
+			installed. And the GUI application's print buttons start a printer
+			driver. Your users also very rarely send files from the command
+			line. Unlike UNIX clients, they hardly submit graphic, text or PDF
+			formatted files directly to the spooler. They nearly exclusively print
+			from GUI applications, with a "printer driver" hooked in between the
+			applications native format and the print data stream.  If the backend
+			printer is not a PostScript device, the print data stream is "binary",
+			sensible only for the target printer. Read on to learn which problem
+			this may cause and how to avoid it.
+		</para>
+	</sect2>
 
 <sect2>
 <title>More complex <filename>smb.conf</filename> Settings for
@@ -207,7 +215,7 @@ CUPS</title>
 
 <para>
 Here is a slightly more complex printing-related setup
-for<filename>smb.conf</filename>. It enables general CUPS printing
+for <filename>smb.conf</filename>. It enables general CUPS printing
 support for all printers, but defines one printer share which is set
 up differently.
 </para>
@@ -249,7 +257,7 @@ up differently.
 
 <para>
 This special share is only there for my testing purposes. It doesn't
-even write the printjob to a file. It just logs the job parameters
+even write the print job to a file. It just logs the job parameters
 known to Samba into the <filename>/tmp/smbprn.log</filename> file and
 deletes the jobfile. Moreover, the <parameter>printer
 admin</parameter> of this share is "kurt" (not the "@ntadmins" group);
@@ -301,7 +309,7 @@ Most traditionally configured Unix print servers acting on behalf of
 Samba's Windows clients represented a really simple setup. Their only
 task was to manage the "raw" spooling of all jobs handed to them by
 Samba. This approach meant that the Windows clients were expected to
-prepare the printjob file in such a way that it became fit to be fed to
+prepare the print job file in such a way that it became fit to be fed to
 the printing device. Here a native (vendor-supplied) Windows printer
 driver for the target device needed to be installed on each and every
 client.
@@ -531,8 +539,8 @@ You can't expect for most file formats to just throw them towards
 printers and they get printed. There needs to be a file format
 conversion in between. The problem is: there is no common standard for
 print file formats across all manufacturers and printer types.  While
-<emphasis>PostScript</emphasis> (trademark held by Adobe), and to an
-extend<emphasis>PCL</emphasis> (trademark held by HP), have developed
+<emphasis>PostScript</emphasis> (trademark held by Adobe), and, to an
+extent, <emphasis>PCL</emphasis> (trademark held by HP), have developed
 into semi-official "standards", by being the most widely used PDLs
 (<emphasis>Page Description Languages</emphasis>), there are still
 many manufacturers who "roll their own" (their reasons may be
@@ -680,7 +688,7 @@ on the host, before you can send it away.
 <title>Ghostscript -- the Software RIP for non-PostScript Printers</title>
 
 <para>
-Here is where<emphasis>Ghostscript</emphasis> kicks in. Ghostscript is
+Here is where <emphasis>Ghostscript</emphasis> kicks in. Ghostscript is
 the traditional (and quite powerful) PostScript interpreter used on
 Unix platforms. It is a RIP in software, capable to do a
 <emphasis>lot</emphasis> of file format conversions, for a very broad
@@ -1236,7 +1244,7 @@ filtering:
 </sect2>
 
 <sect2>
-<title>rasterto [printerspecific]</title>
+<title>rasterto [printers specific]</title>
 
 <para>
 CUPS ships with quite some different raster drivers processing CUPS
@@ -1370,8 +1378,8 @@ PDF (through a "pdfgen:/" backend) or dump them to "/dev/null" (In
 fact I have the system-wide default printer set up to be connected to
 a "devnull:/" backend: there are just too many people sending jobs
 without specifying a printer, or scripts and programs which don't name
-a printer. The system-wided default deletes the job and sends a polite
-mail back to the $USER asking him to alsways specify a correct
+a printer. The system-wide default deletes the job and sends a polite
+mail back to the $USER asking him to always specify a correct
 printername).
 </para>
 
@@ -1420,7 +1428,7 @@ You can recognize these PPDs from the line calling the
 This line you may find amongst the first 40 or so lines of the PPD
 file. If you have such a PPD installed, the printer shows up in the
 CUPS web interface with a <emphasis>foomatic</emphasis> namepart for
-the driver description. cupsomatic is a Perlscript that runs
+the driver description. cupsomatic is a Perl script that runs
 Ghostscript, with all the complicated commandline options
 auto-constructed from the selected PPD and commandline options give to
 the printjob.
@@ -1608,7 +1616,7 @@ does not by default allow one to send deliberate (possibly binary)
 data to printing devices.  (This could be easily abused to launch a
 Denial of Service attack on your printer(s), causing at least the loss
 of a lot of paper and ink...) "Unknown" data are regarded by CUPS
-as<emphasis>MIME type</emphasis>
+as <emphasis>MIME type</emphasis>
 <emphasis>application/octet-stream</emphasis>. While you
 <emphasis>can</emphasis> send data "raw", the MIME type for these must
 be one that is known to CUPS and an allowed one. The file
@@ -1722,7 +1730,7 @@ specific model supports):
 </varlistentry>
 
 <varlistentry><term>laserjet.ppd</term>
-<listitem><para>all PCL printersFurther below is a discussion
+<listitem><para>all PCL printers. Further below is a discussion
 of several other driver/PPD-packages suitable fur use with CUPS.
 </para></listitem>
 </varlistentry>
@@ -1775,7 +1783,7 @@ supported. It has now been replaced by
 <emphasis>foomatic-rip</emphasis>. foomatic-rip is a complete re-write
 of the old cupsomatic idea, but very much improved and generalized to
 other (non-CUPS) spoolers. An upgrade to foomatic-rip is strongly
-adviced, especially if you are upgrading to a recent version of CUPS
+advised, especially if you are upgrading to a recent version of CUPS
 too.
 </para>
 
@@ -1798,7 +1806,7 @@ which works best for you.
 <para>
 cupsomatic "kidnaps" the printfile after the
 <emphasis>application/vnd.cups-postscript</emphasis> stage and
-deviates it through the CUPS-external, systemwide Ghostscript
+deviates it through the CUPS-external, system wide Ghostscript
 installation: Therefore the printfile bypasses the "pstoraster" filter
 (and thus also bypasses the CUPS-raster-drivers
 "rastertosomething"). After Ghostscript finished its rasterization,
@@ -1939,7 +1947,7 @@ quality;</para></listitem>
 url="http://www-124.ibm.com/developerworks/oss/linux/projects/omni/">OMNI
 (http://www-124.ibm.com/developerworks/oss/linux/projects/omni/)</ulink>
 (LPGL, Free) is a package made by IBM, now containing support for more
-than 400 printers, stemming from the inheritance of IBM OS/2 KnowHow
+than 400 printers, stemming from the inheritance of IBM OS/2 Know-How
 ported over to Linux (CUPS support is in a Beta-stage at
 present);</para></listitem>
 
@@ -2161,7 +2169,7 @@ simply use <parameter>printing = sysv</parameter>).
 <title>Samba receiving Jobfiles and passing them to CUPS</title>
 
 <para>
-Samba<emphasis>must</emphasis> use its own spool directory (it is set
+Samba <emphasis>must</emphasis> use its own spool directory (it is set
 by a line similar to <parameter>path = /var/spool/samba</parameter>,
 in the <parameter>[printers]</parameter> or
 <parameter>[printername]</parameter> section of
@@ -2395,7 +2403,7 @@ named in its man page.
 <para>
 The CUPS printer driver is available from the CUPS download site. Its
 package name is <filename>cups-samba-[version].tar.gz</filename> . It
-is prefered over the Adobe drivers since it has a number of
+is preferred over the Adobe drivers since it has a number of
 advantages:
 </para>
 
@@ -2749,11 +2757,11 @@ the more special MIME type
 <emphasis>application/cups.vnd-postscript</emphasis>),
 which therefore also leads to the page accounting in
 <emphasis>/var/log/cups/page_log</emphasis> not
-receiving the exact mumber of pages; instead the dummy page number
+receiving the exact number of pages; instead the dummy page number
 of "1" is logged in a standard setup)</para></listitem>
 
 <listitem><para>the Adobe driver has more options to "mis-configure" the
-PostScript generated by it (like setting it inadvertedly to
+PostScript generated by it (like setting it inadvertently to
 <emphasis>Optimize for Speed</emphasis>, instead of
 <emphasis>Optimize for Portability</emphasis>, which
 could lead to CUPS being unable to process it)</para></listitem>
@@ -2827,7 +2835,7 @@ Here is an example of a successfully run cupsaddsmb command.
 </screen></para>
 
 <para>
-To share<emphasis>all</emphasis> printers and drivers, use the
+To share <emphasis>all</emphasis> printers and drivers, use the
 <parameter>-a</parameter> parameter instead of a printer name. Since
 cupsaddsmb "exports" the printer drivers to Samba, it should be
 obvious that it only works for queues with a CUPS driver associated.
@@ -2917,7 +2925,7 @@ unencrypted!
   Running command: rpcclient localhost -N -U'root%secret'                                  \
                              -c 'setdriver infotec_2105 infotec_2105'
   cmd = setdriver infotec_2105 infotec_2105
-  Succesfully set infotec_2105 to driver infotec_2105.
+  Successfully set infotec_2105 to driver infotec_2105.
 
 </screen></para>
 
@@ -2996,7 +3004,7 @@ architecture...)</para></listitem>
 installed.</emphasis> # (for the WIN40 == Win9x/ME
 architecture...)</para></listitem>
 
-<listitem><para><emphasis>Succesfully set [printerXPZ] to driver
+<listitem><para><emphasis>Successfully set [printerXPZ] to driver
 [printerXYZ].</emphasis></para></listitem>
 </orderedlist>
 
@@ -3136,7 +3144,7 @@ driver settings produce. Treat it well:
 
 <itemizedlist>
 <listitem><para>Avoid the <emphasis>PostScript Output Option: Optimize
-for Speed</emphasis> settting. Rather use the <emphasis>Optimize for
+for Speed</emphasis> setting. Rather use the <emphasis>Optimize for
 Portability</emphasis> instead (Adobe PostScript
 driver).</para></listitem>
 
@@ -3158,7 +3166,7 @@ get a printout at all) (Adobe)</para></listitem>
 <listitem><para>Sometimes you can choose <emphasis>PostScript Language
 Level</emphasis>: in case of problems try <emphasis>2</emphasis>
 instead of <emphasis>3</emphasis> (the latest ESP Ghostscript package
-handels Level 3 PostScript very well) (Adobe).</para></listitem>
+handles Level 3 PostScript very well) (Adobe).</para></listitem>
 
 <listitem><para>Say <emphasis>Yes</emphasis> to <emphasis>PostScript
 Error Handler</emphasis> (Adobe)</para></listitem>
@@ -3200,7 +3208,7 @@ sub-commands. <command>enumprinters</command>,
 the most interesting ones. rpcclient implements an important part of
 the MS-RPC protocol. You can use it to query (and command) a Win NT
 (or 2K/XP) PC too. MS-RPC is used by Windows clients, amongst other
-things, to benefit from the "Point'n' Print" features. Samba can now
+things, to benefit from the "Point'n'Print" features. Samba can now
 mimic this too.
 </para>
 
@@ -3368,7 +3376,7 @@ PostScript driver): therefore the field will get a "NULL" entry.
 
 <para>
 From the manpage (and from the quoted output
-of<emphasis>cupsaddsmb</emphasis>, above) it becomes clear that you
+of <emphasis>cupsaddsmb</emphasis>, above) it becomes clear that you
 need to have certain conditions in order to make the manual uploading
 and initializing of the driver files succeed. The two rpcclient
 subcommands (<command>adddriver</command> and
@@ -3742,7 +3750,7 @@ back.
 </sect3>
 
 <sect3>
-<title>Twelveth Step: Install the Printer on a Client
+<title>Twelfth Step: Install the Printer on a Client
 ("Point'n'Print")</title>
 
 <para><screen>
@@ -3952,7 +3960,7 @@ with no argument, it prints a little usage message:
  Version:3.0a
    -h            this help message
    -s suffix     set the backup suffix
-   -v            veryify mode (restore if corrupt)
+   -v            verify mode (restore if corrupt)
 
 </screen></para>
 
@@ -4036,7 +4044,7 @@ to create their printing related software (which, BTW, works on all
 UNIXes and on Mac OS X or Darwin too). It is not known as well as it
 should be, that it also has a very end-user friendly interface which
 allows for an easy update of drivers and PPDs, for all supported
-models, all spoolers, all operatings systems and all package formats
+models, all spoolers, all operating systems and all package formats
 (because there is none). Its history goes back a few years.
 </para>
 
@@ -4065,7 +4073,7 @@ automatically supported supported by CUPS to perfection, by using
 their own manufacturer-provided Windows-PPD...), and that a
 multifunctional device never qualifies as working "perfectly" if it
 doesn't also scan and copy and fax under GNU/Linux: then this is a
-truely astonishing achievement. Three years ago the number was not
+truly astonishing achievement. Three years ago the number was not
 more than 500, and Linux or UNIX "printing" at the time wasn't
 anywhere near the quality it is today!
 </para>

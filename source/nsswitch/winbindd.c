@@ -135,8 +135,17 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
+#if 0
 	/* Clear cached user and group enumation info */	
-	wcache_flush_cache();
+	if (!opt_dual_daemon) /* Until we have coherent cache flush. */
+		wcache_flush_cache();
+#endif
+
+	/* We need to invalidate cached user list entries on a SIGHUP 
+           otherwise cached access denied errors due to restrict anonymous
+           hang around until the sequence number changes. */
+
+	wcache_invalidate_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -833,7 +842,10 @@ int main(int argc, char **argv)
 
 	/* Winbind daemon initialisation */
 
-	if (!idmap_init())
+	if (!winbindd_upgrade_idmap())
+		return 1;
+
+	if (!idmap_init(lp_idmap_backend()))
 		return 1;
 
 	if (!idmap_init_wellknown_sids())
@@ -886,12 +898,13 @@ int main(int argc, char **argv)
 	}
 	poptFreeContext(pc);
 
+	netsamlogon_cache_init(); /* Non-critical */
+	
 	/* Loop waiting for requests */
 
 	process_loop();
 
 	trustdom_cache_shutdown();
-	uni_group_cache_shutdown();
 
 	return 0;
 }

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon - pam auth funcions
@@ -53,7 +53,61 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* Return a password structure from a username.  */
+/*******************************************************************
+ wrapper around retreiving the trsut account password 
+*******************************************************************/
+
+static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
+                          time_t *pass_last_set_time, uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+
+	if ( lp_server_role()==ROLE_DOMAIN_MEMBER || strequal(domain, lp_workgroup()) ) 
+	{
+		/*
+		 * Get the machine account password for the domain to contact.
+		 * This is either our own domain for a workstation, or possibly
+		 * any domain for a PDC with trusted domains.
+		 */
+
+		if ( !secrets_fetch_trust_account_password (domain, ret_pwd,
+			pass_last_set_time, channel) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for my domain %s\n", domain));
+			return False;
+		}
+		
+		return True;
+	}
+	else if ( lp_allow_trusted_domains() ) 
+	{
+		/* if we are not a domain member, then we must be a DC and 
+		   this must be a trusted domain */
+
+		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
+			pass_last_set_time) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for trusted domain %s\n", domain));
+			return False;
+		}
+		
+		*channel = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
+
+		return True;
+	}
+	
+	/* Failure */
+	return False;
+}
+
+/**********************************************************************
+ Authenticate a user with a clear test password
+**********************************************************************/
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
@@ -70,6 +124,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	DATA_BLOB nt_resp;
 	DOM_CRED ret_creds;
 	int attempts = 0;
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
 
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
@@ -95,38 +151,29 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	{
-		unsigned char local_lm_response[24];
-		unsigned char local_nt_response[24];
-		
-		generate_random_buffer(chal, 8, False);
-		SMBencrypt(state->request.data.auth.pass, chal, local_lm_response);
-		
-		SMBNTencrypt(state->request.data.auth.pass, chal, local_nt_response);
-
-		lm_resp = data_blob_talloc(mem_ctx, local_lm_response, sizeof(local_lm_response));
-		nt_resp = data_blob_talloc(mem_ctx, local_nt_response, sizeof(local_nt_response));
-	}
+	/* do password magic */
 	
-	/*
-	 * Get the machine account password for our primary domain
-	 */
+	generate_random_buffer(chal, 8, False);
+	SMBencrypt(state->request.data.auth.pass, chal, local_lm_response);
+		
+	SMBNTencrypt(state->request.data.auth.pass, chal, local_nt_response);
 
-	if (!secrets_fetch_trust_account_password(
-                lp_workgroup(), trust_passwd, &last_change_time,
-		&sec_channel_type)) {
-		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
-                          "password for domain %s\n", lp_workgroup()));
+	lm_resp = data_blob_talloc(mem_ctx, local_lm_response, sizeof(local_lm_response));
+	nt_resp = data_blob_talloc(mem_ctx, local_nt_response, sizeof(local_nt_response));
+	
+	if ( !get_trust_pw(name_domain, trust_passwd, &last_change_time, &sec_channel_type) ) {
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		goto done;
 	}
+
+	/* check authentication loop */
 
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
 	
 		/* Don't shut this down - it belongs to the connection cache code */
-		result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, 
+		result = cm_get_netlogon_cli(name_domain, trust_passwd, 
 					     sec_channel_type, False, &cli);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -151,7 +198,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
         
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
-	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
 	
 	/* give us a more useful (more correct?) error code */
@@ -174,8 +220,10 @@ done:
 	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
-	
-/* Challenge Response Authentication Protocol */
+
+/**********************************************************************
+ Challenge Response Authentication Protocol 
+**********************************************************************/
 
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
@@ -188,7 +236,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	TALLOC_CTX *mem_ctx = NULL;
 	char *user = NULL;
 	const char *domain = NULL;
-	const char *contact_domain;
 	const char *workstation;
 	DOM_CRED ret_creds;
 	int attempts = 0;
@@ -236,11 +283,10 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
 		  domain, user));
-
-	if (lp_allow_trusted_domains() && (state->request.data.auth_crap.flags & WINBIND_PAM_CONTACT_TRUSTDOM)) {
-		contact_domain = domain;
-	} else {
-		contact_domain = lp_workgroup();
+	   
+	if ( !get_trust_pw(domain, trust_passwd, &last_change_time, &sec_channel_type) ) {
+		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto done;
 	}
 
 	if (*state->request.data.auth_crap.workstation) {
@@ -265,28 +311,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	lm_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
 	nt_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
 	
-	/*
-	 * Get the machine account password for the domain to contact.
-	 * This is either our own domain for a workstation, or possibly
-	 * any domain for a PDC with trusted domains.
-	 */
-
-	if (!secrets_fetch_trust_account_password (
-                contact_domain, trust_passwd, &last_change_time,
-		&sec_channel_type)) {
-		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
-                          "password for domain %s\n", contact_domain));
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		goto done;
-	}
-
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
 
 		/* Don't shut this down - it belongs to the connection cache code */
-		result = cm_get_netlogon_cli(contact_domain, trust_passwd,
-					     sec_channel_type, False, &cli);
+		result = cm_get_netlogon_cli(domain, trust_passwd, sec_channel_type, False, &cli);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
@@ -313,11 +343,13 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
 	if (NT_STATUS_IS_OK(result)) {
-		uni_group_cache_store_netlogon(mem_ctx, &info3);
+		netsamlogon_cache_store( cli->mem_ctx, &info3 );
+		wcache_invalidate_samlogon(find_domain_from_name(domain), &info3);
+		
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_INFO3_NDR) {
 			result = append_info3_as_ndr(mem_ctx, state, &info3);
 		}
-
+		
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_NTKEY) {
 			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
 		}
@@ -382,9 +414,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if (!(hnd = cm_get_sam_handle(domain))) {
+	if ( NT_STATUS_IS_ERR(result = cm_get_sam_handle(domain, &hnd)) ) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 

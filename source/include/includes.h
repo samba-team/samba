@@ -441,6 +441,14 @@
 #include <attr/xattr.h>
 #endif
 
+#if HAVE_LOCALE_H
+#include <locale.h>
+#endif
+
+#if HAVE_LANGINFO_H
+#include <langinfo.h>
+#endif
+
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H
@@ -1033,10 +1041,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 #ifndef HAVE_VASPRINTF_DECL
 int vasprintf(char **ptr, const char *format, va_list ap);
-#endif
-
-#if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
-#define bzero(a,b) memset((a),'\0',(b))
 #endif
 
 #ifdef REPLACE_GETPASS

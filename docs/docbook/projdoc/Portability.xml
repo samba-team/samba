@@ -37,8 +37,8 @@ allowed range.
 </para>
 
 <para>
-On HPUX you must use gcc or the HP Ansi compiler. The free compiler
-that comes with HP-UX is not Ansi compliant and cannot compile
+On HPUX you must use gcc or the HP ANSI compiler. The free compiler
+that comes with HP-UX is not ANSI compliant and cannot compile
 Samba.
 </para>
 
@@ -186,7 +186,7 @@ Corrective Action:	Delete the entry after the word loopback
 <!-- From an email by William Jojo <jojowil@hvcc.edu> -->
 <para>
 Disabling Sequential Read Ahead using <userinput>vmtune -r 0</userinput> improves 
-samba performance significally.
+Samba performance significantly.
 </para>
 </sect2>
 </sect1>
@@ -198,9 +198,9 @@ samba performance significally.
 <title>Locking improvements</title>
 
 <para>Some people have been experiencing problems with F_SETLKW64/fcntl 
-when running samba on solaris. The built in file locking mechanism was
+when running Samba on Solaris. The built in file locking mechanism was
 not scalable. Performance would degrade to the point where processes would
-get into loops of trying to lock a file. It woul try a lock, then fail,
+get into loops of trying to lock a file. It would try a lock, then fail,
 then try again. The lock attempt was failing before the grant was
 occurring. So the visible manifestation of this would be a handful of
 processes stealing all of the CPU, and when they were trussed they would

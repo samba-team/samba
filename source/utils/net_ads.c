@@ -899,20 +899,34 @@ static int net_ads_password(int argc, const char **argv)
     const char *auth_password = opt_password;
     char *realm = NULL;
     char *new_password = NULL;
-    char *c;
-    char *prompt;
+    char *c, *prompt;
+    const char *user;
     ADS_STATUS ret;
 
+    if (opt_user_name == NULL || opt_password == NULL) {
+	    d_printf("You must supply an administrator username/password\n");
+	    return -1;
+    }
+
     
-    if ((argc != 1) || (opt_user_name == NULL) || 
-	(opt_password == NULL) || (strchr(opt_user_name, '@') == NULL) ||
-	(strchr(argv[0], '@') == NULL)) {
-	return net_ads_usage(argc, argv);
+    if (argc != 1) {
+	    d_printf("ERROR: You must say which username to change password for\n");
+	    return -1;
+    }
+
+    user = argv[0];
+    if (!strchr(user, '@')) {
+	    asprintf(&c, "%s@%s", argv[0], lp_realm());
+	    user = c;
     }
 
     use_in_memory_ccache();    
     c = strchr(auth_principal, '@');
-    realm = ++c;
+    if (c) {
+	    realm = ++c;
+    } else {
+	    realm = lp_realm();
+    }
 
     /* use the realm so we can eventually change passwords for users 
     in realms other than default */
@@ -927,12 +941,12 @@ static int net_ads_password(int argc, const char **argv)
 	    return -1;
     }
 
-    asprintf(&prompt, "Enter new password for %s:", argv[0]);
+    asprintf(&prompt, "Enter new password for %s:", user);
 
     new_password = getpass(prompt);
 
     ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
-				auth_password, argv[0], new_password, ads->auth.time_offset);
+				auth_password, user, new_password, ads->auth.time_offset);
     if (!ADS_ERR_OK(ret)) {
 	d_printf("Password change failed :-( ...\n");
 	ads_destroy(&ads);
@@ -940,7 +954,7 @@ static int net_ads_password(int argc, const char **argv)
 	return -1;
     }
 
-    d_printf("Password change for %s completed.\n", argv[0]);
+    d_printf("Password change for %s completed.\n", user);
     ads_destroy(&ads);
     free(prompt);
 
@@ -1018,7 +1032,7 @@ static int net_ads_search(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	const char *exp;
+	const char *ldap_exp;
 	const char **attrs;
 	void *res = NULL;
 
@@ -1030,12 +1044,12 @@ static int net_ads_search(int argc, const char **argv)
 		return -1;
 	}
 
-	exp = argv[0];
+	ldap_exp = argv[0];
 	attrs = (argv + 1);
 
 	rc = ads_do_search_all(ads, ads->config.bind_path,
 			       LDAP_SCOPE_SUBTREE,
-			       exp, attrs, &res);
+			       ldap_exp, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("search failed: %s\n", ads_errstr(rc));
 		return -1;

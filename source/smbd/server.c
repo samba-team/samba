@@ -845,8 +845,12 @@ void build_options(BOOL screen);
 	if(!initialize_password_db(False))
 		exit(1);
 
-	if (!idmap_init())
-		exit(1);
+	{
+		const char *idmap_back = lp_idmap_backend();
+
+		if (!idmap_init((idmap_back && *idmap_back) ? "winbind" : NULL))
+			exit(1);
+	}
 
 	if (!idmap_init_wellknown_sids())
 		exit(1);
@@ -855,8 +859,6 @@ void build_options(BOOL screen);
 
 	init_modules();
 
-	uni_group_cache_init(); /* Non-critical */
-	
 	/* possibly reload the services file. */
 	reload_services(True);
 
@@ -891,7 +893,6 @@ void build_options(BOOL screen);
 
 	smbd_process();
 	
-	uni_group_cache_shutdown();
 	namecache_shutdown();
 	exit_server("normal exit");
 	return(0);

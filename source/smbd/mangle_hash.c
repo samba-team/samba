@@ -217,7 +217,7 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards)
 		return NT_STATUS_UNSUCCESSFUL;
 	
 	ret = has_valid_chars(fname, allow_wildcards);
-	if (NT_STATUS_IS_ERR(ret))
+	if (!NT_STATUS_IS_OK(ret))
 		return ret;
 
 	str = strdup_w(fname);
@@ -285,10 +285,10 @@ static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, BOOL allow_wildcards)
 	if (strcmp_wa(fname, ".") == 0 || strcmp_wa(fname, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (NT_STATUS_IS_ERR(is_valid_name(fname, allow_wildcards)))
+	if (!NT_STATUS_IS_OK(is_valid_name(fname, allow_wildcards)))
 		goto done;
 
-	if (NT_STATUS_IS_ERR(mangle_get_prefix(fname, &pref, &ext, allow_wildcards)))
+	if (!NT_STATUS_IS_OK(mangle_get_prefix(fname, &pref, &ext, allow_wildcards)))
 		goto done;
 	plen = strlen_w(pref);
 
@@ -735,7 +735,7 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83)
 		return;
 	}
 
-	if( !need83 && NT_STATUS_IS_ERR(is_valid_name(OutName_ucs2, False)))
+	if( !need83 && !NT_STATUS_IS_OK(is_valid_name(OutName_ucs2, False)))
 		need83 = True;
 
 	/* check if it's already in 8.3 format */

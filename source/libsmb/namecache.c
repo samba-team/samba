@@ -113,7 +113,7 @@ static char* namecache_key(const char *name, int name_type)
  **/
 
 BOOL namecache_store(const char *name, int name_type,
-                     int num_names, struct in_addr *ip_list)
+                     int num_names, struct ip_service *ip_list)
 {
 	time_t expiry;
 	char *key, *value_string;
@@ -126,27 +126,19 @@ BOOL namecache_store(const char *name, int name_type,
 	 */
 	if (!gencache_init()) return False;
 
-	DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
-	          num_names, num_names == 1 ? "": "es", name, name_type));
+	if ( DEBUGLEVEL >= 5 ) {
+		DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
+			num_names, num_names == 1 ? "": "es", name, name_type));
 
-	for (i = 0; i < num_names; i++) 
-		DEBUGADD(5, ("%s%s", inet_ntoa(ip_list[i]),
-		             i == (num_names - 1) ? "" : ", "));
-
-	DEBUGADD(5, ("\n"));
-
+		for (i = 0; i < num_names; i++) 
+			DEBUGADD(5, ("%s:%d%s", inet_ntoa(ip_list[i].ip), 
+				ip_list[i].port, (i == (num_names - 1) ? "" : ",")));
+			
+		DEBUGADD(5, ("\n"));
+	}
+	
 	key = namecache_key(name, name_type);
-
-	/* 
-	 * Cache pdc location or dc lists for only a little while
-	 * otherwise if we lock on to a bad DC we can potentially be
-	 * out of action for the entire cache timeout time!
-	 */
-
-	if (name_type == 0x1b || name_type == 0x1c)
-		expiry = time(NULL) + 10;
-	else
-		expiry = time(NULL) + lp_name_cache_timeout();
+	expiry = time(NULL) + lp_name_cache_timeout();
 
 	/*
 	 * Generate string representation of ip addresses list
@@ -180,7 +172,7 @@ BOOL namecache_store(const char *name, int name_type,
  *         false if name isn't found in the cache or has expired
  **/
 
-BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
+BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_list,
                      int *num_names)
 {
 	char *key, *value;
@@ -201,7 +193,9 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
+		gencache_del(key);
 		SAFE_FREE(key);
+		SAFE_FREE(value);		 
 		return False;
 	} else {
 		DEBUG(5, ("name %s#%02X found.\n", name, name_type));
@@ -213,7 +207,8 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 	*num_names = ipstr_list_parse(value, ip_list);
 	
 	SAFE_FREE(key);
-	SAFE_FREE(value);		 
+	SAFE_FREE(value);
+			 
 	return *num_names > 0;		/* true only if some ip has been fetched */
 }
 
@@ -252,3 +247,75 @@ void namecache_flush(void)
 	DEBUG(5, ("Namecache flushed\n"));
 }
 
+/* Construct a name status record key. */
+
+static char *namecache_status_record_key(const char *name, int name_type1,
+				int name_type2, struct in_addr keyip)
+{
+	char *keystr;
+
+	asprintf(&keystr, "NBT/%s#%02X.%02X.%s",
+			strupper_static(name), name_type1, name_type2, inet_ntoa(keyip));
+	return keystr;
+}
+
+/* Store a name status record. */
+
+BOOL namecache_status_store(const char *keyname, int keyname_type,
+		int name_type, struct in_addr keyip,
+		const char *srvname)
+{
+	char *key;
+	time_t expiry;
+	BOOL ret;
+
+	if (!gencache_init())
+		return False;
+
+	key = namecache_status_record_key(keyname, keyname_type, name_type, keyip);
+	if (!key)
+		return False;
+
+	expiry = time(NULL) + lp_name_cache_timeout();
+	ret = gencache_set(key, srvname, expiry);
+
+	if (ret)
+		DEBUG(5, ("namecache_status_store: entry %s -> %s\n", key, srvname ));
+	else
+		DEBUG(5, ("namecache_status_store: entry %s store failed.\n", key ));
+
+	SAFE_FREE(key);
+	return ret;
+}
+
+/* Fetch a name status record. */
+
+BOOL namecache_status_fetch(const char *keyname, int keyname_type,
+			int name_type, struct in_addr keyip, char *srvname_out)
+{
+	char *key = NULL;
+	char *value = NULL;
+	time_t timeout;
+
+	if (!gencache_init())
+		return False;
+
+	key = namecache_status_record_key(keyname, keyname_type, name_type, keyip);
+	if (!key)
+		return False;
+
+	if (!gencache_get(key, &value, &timeout)) {
+		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n", key));
+		gencache_del(key);
+		SAFE_FREE(key);
+		SAFE_FREE(value);
+		return False;
+	} else {
+		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n", key, value ));
+	}
+
+	strlcpy(srvname_out, value, 16);
+	SAFE_FREE(key);
+	SAFE_FREE(value);
+	return True;
+}

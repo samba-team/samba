@@ -242,6 +242,8 @@ done:
 	SAFE_FREE(acct_desc);
 	SAFE_FREE(workstations);
 	SAFE_FREE(munged_dial);
+	SAFE_FREE(unknown_str);
+	SAFE_FREE(hours);
 
 	return ret;
 }
@@ -488,6 +490,7 @@ static void close_tdb(struct tdbsam_privates *tdb_state)
 static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	SAFE_FREE(tdb_state->key.dptr);
 	close_tdb(tdb_state);
 	
 	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
@@ -501,7 +504,7 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
-	TDB_DATA 	data;
+	TDB_DATA 	data, old_key;
 	const char *prefix = USERPREFIX;
 	int  prefixlen = strlen (prefix);
 
@@ -512,9 +515,15 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	}
 
 	/* skip all non-USER entries (eg. RIDs) */
-	while ((tdb_state->key.dsize != 0) && (strncmp(tdb_state->key.dptr, prefix, prefixlen)))
+	while ((tdb_state->key.dsize != 0) && (strncmp(tdb_state->key.dptr, prefix, prefixlen))) {
+
+		old_key = tdb_state->key;
+
 		/* increment to next in line */
 		tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
+
+		SAFE_FREE(old_key.dptr);
+	}
 
 	/* do we have an valid iteration pointer? */
 	if(tdb_state->passwd_tdb == NULL) {
@@ -536,8 +545,12 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	}
 	SAFE_FREE(data.dptr);
 	
+	old_key = tdb_state->key;
+	
 	/* increment to next in line */
 	tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
+
+	SAFE_FREE(old_key.dptr);
 
 	return NT_STATUS_OK;
 }
@@ -912,7 +925,7 @@ static void free_private_data(void **vp)
 }
 
 
-NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
@@ -955,7 +968,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->free_private_data = free_private_data;
 
 	if (lp_idmap_uid(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
+		DEBUG(3, ("idmap uid range defined, non unix accounts enabled\n"));
 
 		tdb_state->permit_non_unix_accounts = True;
 
@@ -970,9 +983,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	return NT_STATUS_OK;
 }
 
-int pdb_tdbsam_init(void)
+NTSTATUS pdb_tdbsam_init(void)
 {
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
-	return True;
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
 }
 

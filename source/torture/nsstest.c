@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    nss tester for winbindd
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Tim Potter 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,6 +45,7 @@ static void *find_fn(const char *name)
 	res = sys_dlsym(h, s);
 	if (!res) {
 		printf("Can't find function %s\n", s);
+		total_errors++;
 		return NULL;
 	}
 	return res;
@@ -65,6 +67,9 @@ static struct passwd *nss_getpwent(void)
 	static char buf[1000];
 	NSS_STATUS status;
 
+	if (!_nss_getpwent_r)
+		return NULL;
+
 	status = _nss_getpwent_r(&pwd, buf, sizeof(buf), &nss_errno);
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
@@ -83,6 +88,9 @@ static struct passwd *nss_getpwnam(const char *name)
 	static struct passwd pwd;
 	static char buf[1000];
 	NSS_STATUS status;
+
+	if (!_nss_getpwnam_r)
+		return NULL;
 	
 	status = _nss_getpwnam_r(name, &pwd, buf, sizeof(buf), &nss_errno);
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -102,6 +110,9 @@ static struct passwd *nss_getpwuid(uid_t uid)
 	static struct passwd pwd;
 	static char buf[1000];
 	NSS_STATUS status;
+
+	if (!_nss_getpwuid_r)
+		return NULL;
 	
 	status = _nss_getpwuid_r(uid, &pwd, buf, sizeof(buf), &nss_errno);
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -118,6 +129,10 @@ static void nss_setpwent(void)
 {
 	NSS_STATUS (*_nss_setpwent)(void) = find_fn("setpwent");
 	NSS_STATUS status;
+	
+	if (!_nss_setpwent)
+		return;
+
 	status = _nss_setpwent();
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("setpwent", status);
@@ -128,6 +143,10 @@ static void nss_endpwent(void)
 {
 	NSS_STATUS (*_nss_endpwent)(void) = find_fn("endpwent");
 	NSS_STATUS status;
+
+	if (!_nss_endpwent)
+		return;
+
 	status = _nss_endpwent();
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("endpwent", status);
@@ -144,7 +163,11 @@ static struct group *nss_getgrent(void)
 	static int buflen = 1024;
 	NSS_STATUS status;
 
-	if (!buf) buf = malloc(buflen);
+	if (!_nss_getgrent_r)
+		return NULL;
+
+	if (!buf) 
+		buf = malloc(buflen);
 
 again:	
 	status = _nss_getgrent_r(&grp, buf, buflen, &nss_errno);
@@ -172,7 +195,11 @@ static struct group *nss_getgrnam(const char *name)
 	static int buflen = 1000;
 	NSS_STATUS status;
 
-	if (!buf) buf = malloc(buflen);
+	if (!_nss_getgrnam_r)
+		return NULL;
+
+	if (!buf) 
+		buf = malloc(buflen);
 again:	
 	status = _nss_getgrnam_r(name, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
@@ -199,7 +226,12 @@ static struct group *nss_getgrgid(gid_t gid)
 	static int buflen = 1000;
 	NSS_STATUS status;
 	
-	if (!buf) buf = malloc(buflen);
+	if (!_nss_getgrgid_r)
+		return NULL;
+
+	if (!buf) 
+		buf = malloc(buflen);
+
 again:	
 	status = _nss_getgrgid_r(gid, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
@@ -221,6 +253,10 @@ static void nss_setgrent(void)
 {
 	NSS_STATUS (*_nss_setgrent)(void) = find_fn("setgrent");
 	NSS_STATUS status;
+
+	if (!_nss_setgrent)
+		return;
+
 	status = _nss_setgrent();
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("setgrent", status);
@@ -231,6 +267,10 @@ static void nss_endgrent(void)
 {
 	NSS_STATUS (*_nss_endgrent)(void) = find_fn("endgrent");
 	NSS_STATUS status;
+
+	if (!_nss_endgrent)
+		return;
+
 	status = _nss_endgrent();
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("endgrent", status);
@@ -244,7 +284,8 @@ static int nss_initgroups(char *user, gid_t group, gid_t **groups, long int *sta
 		find_fn("initgroups_dyn");
 	NSS_STATUS status;
 
-	if (!_nss_initgroups) return NSS_STATUS_UNAVAIL;
+	if (!_nss_initgroups) 
+		return NSS_STATUS_UNAVAIL;
 
 	status = _nss_initgroups(user, group, start, size, groups, 0, &nss_errno);
 	if (status != NSS_STATUS_SUCCESS) {

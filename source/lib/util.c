@@ -2345,9 +2345,9 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
  Recursive routine that is called by unix_wild_match.
 *********************************************************/
 
-static BOOL unix_do_match(char *regexp, char *str)
+static BOOL unix_do_match(const char *regexp, const char *str)
 {
-	char *p;
+	const char *p;
 
 	for( p = regexp; *p && *str; ) {
 
@@ -2466,6 +2466,7 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 
 	return unix_do_match(p2, s2) == 0;	
 }
+
 
 #ifdef __INSURE__
 

@@ -30,7 +30,7 @@ NetBIOS over TCP/IP then this section may help you to resolve networking problem
 <para>
 Many MS Windows network administrators have never been exposed to basic TCP/IP
 networking as it is implemented in a Unix/Linux operating system. Likewise, many Unix and
-Linux adminsitrators have not been exposed to the intricacies of MS Windows TCP/IP based
+Linux administrators have not been exposed to the intricacies of MS Windows TCP/IP based
 networking (and may have no desire to be either).
 </para>
 
@@ -121,7 +121,7 @@ as two digit hexadecimal numbers separated by colons. eg:
 Every network interface must have an MAC address. Associated with 
 a MAC address there may be one or more IP addresses. There is NO 
 relationship between an IP address and a MAC address, all such assignments 
-are arbitary or discretionary in nature. At the most basic level all 
+are arbitrary or discretionary in nature. At the most basic level all 
 network communications takes place using MAC addressing. Since MAC 
 addresses must be globally unique, and generally remains fixed for 
 any particular interface, the assignment of an IP address makes sense 
@@ -154,7 +154,7 @@ interface.
 
 <para>
 The <filename>/etc/hosts</filename> file is foundational to all 
-Unix/Linux TCP/IP installations and as a minumum will contain 
+Unix/Linux TCP/IP installations and as a minimum will contain 
 the localhost and local network interface IP addresses and the 
 primary names by which they are known within the local machine. 
 This file helps to prime the pump so that a basic level of name 
@@ -199,7 +199,7 @@ This file tells the name resolution libraries:
 <filename>/etc/host.conf</filename> is the primary means by 
 which the setting in /etc/resolv.conf may be affected. It is a 
 critical configuration file.  This file controls the order by 
-which name resolution may procede. The typical structure is:
+which name resolution may proceed. The typical structure is:
 </para>
 
 <para><screen>
@@ -240,7 +240,7 @@ file typically has resolver object specifications as follows:
 
 	hosts:		files nis dns
 	# Alternative entries for host name resolution are:
-	# hosts:	files dns nis nis+ hesoid db compat ldap wins
+	# hosts:	files dns nis nis+ hesiod db compat ldap wins
 	networks:	nis files dns
 
 	ethers:		nis files
@@ -422,7 +422,7 @@ It typically looks like:
 	# This file contains the mappings of IP addresses to NT computernames
 	# (NetBIOS) names.  Each entry should be kept on an individual line.
 	# The IP address should be placed in the first column followed by the
-	# corresponding computername. The address and the comptername
+	# corresponding computername. The address and the computername
 	# should be separated by at least one space or tab. The "#" character
 	# is generally used to denote the start of a comment (see the exceptions
 	# below).
@@ -454,7 +454,7 @@ It typically looks like:
 	# centralized lmhosts file to be maintained on a server.
 	# It is ALWAYS necessary to provide a mapping for the IP address of the
 	# server prior to the #INCLUDE. This mapping must use the #PRE directive.
-	# In addtion the share "public" in the example below must be in the
+	# In addition the share "public" in the example below must be in the
 	# LanManServer list of "NullSessionShares" in order for client machines to
 	# be able to read the lmhosts file successfully. This key is under
 	# \machine\system\currentcontrolset\services\lanmanserver\parameters\nullsessionshares
@@ -530,7 +530,7 @@ lookup is used.
 <title>WINS Lookup</title>
 
 <para>
-A WINS (Windows Internet Name Server) service is the equivaent of the 
+A WINS (Windows Internet Name Server) service is the equivalent of the 
 rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
 the names and IP addresses that are registered by a Windows client 
 if the TCP/IP setup has been given at least one WINS Server IP Address.
@@ -568,8 +568,8 @@ of the WINS server.
 
 <para>
 TCP/IP network configuration problems find every network administrator sooner or later.
-The cause can be anything from keybaord mishaps, forgetfulness, simple mistakes, and
-carelessness. Of course, noone is every deliberately careless!
+The cause can be anything from keyboard mishaps, forgetfulness, simple mistakes, and
+carelessness. Of course, no one is every deliberately careless!
 </para>
 
 	<sect2>
@@ -582,7 +582,7 @@ carelessness. Of course, noone is every deliberately careless!
 
 	<para>
 	The Windows machine was at IP Address 192.168.1.2 with netmask 255.255.255.0, the
-	Samba server (Linux) was at IP Address 192.168.1.130 with netmast 255.255.255.128.
+	Samba server (Linux) was at IP Address 192.168.1.130 with netmask 255.255.255.128.
 	The machines were on a local network with no external connections.
 	</para>
 
@@ -643,7 +643,7 @@ carelessness. Of course, noone is every deliberately careless!
 	   Name                 Type          Status
 	------------------------------------------------
 	SLACK            &lt;03&gt;  UNIQUE      Registered
-	ADMININSTRATOR   &lt;03&gt;  UNIQUE      Registered
+	ADMINISTRATOR    &lt;03&gt;  UNIQUE      Registered
 	SLACK            &lt;00&gt;  UNIQUE      Registered
 	SARDON           &lt;00&gt;  GROUP       Registered
 	SLACK            &lt;20&gt;  UNIQUE      Registered

@@ -27,6 +27,30 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
+/******************************************************************
+ get the default domain/netbios name to be used when 
+ testing authentication.  For example, if you connect
+ to a Windows member server using a bogus domain name, the
+ Windows box will map the BOGUS\user to DOMAIN\user.  A 
+ standalone box will map to WKS\user.
+******************************************************************/
+
+const char *get_default_sam_name(void)
+{
+	/* standalone servers can only use the local netbios name */
+	if ( lp_server_role() == ROLE_STANDALONE )
+		return global_myname();
+
+	/* Windows domain members default to the DOMAIN
+	   name when not specified */
+	return lp_workgroup();
+}
+
+/******************************************************************
+ get the default domain/netbios name to be used when dealing 
+ with our passdb list of accounts
+******************************************************************/
+
 const char *get_global_sam_name(void) 
 {
 	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
@@ -190,7 +214,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	*/
 
 	ret = pdb_set_sam_sids(sam_account, pwd);
-	if (NT_STATUS_IS_ERR(ret)) return ret;
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	/* check if this is a user account or a machine account */
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
@@ -413,7 +437,7 @@ NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 	}
 	
 	/* call the mapping code here */
-	if(pdb_getgrgid(&map, pwd->pw_gid, MAPPING_WITHOUT_PRIV)) {
+	if(pdb_getgrgid(&map, pwd->pw_gid)) {
 		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
 			DEBUG(0,("Can't set Group SID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -717,7 +741,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 
 	pdb_free_sam(&sam_account);
 		
-	if (pdb_getgrsid(&map, *sid, MAPPING_WITHOUT_PRIV)) {
+	if (pdb_getgrsid(&map, *sid)) {
 		if (map.gid!=(gid_t)-1) {
 			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
 		} else {
@@ -827,7 +851,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	 */
 
 	/* check if it's a mapped group */
-	if (pdb_getgrnam(&map, user, MAPPING_WITHOUT_PRIV)) {
+	if (pdb_getgrnam(&map, user)) {
 		/* yes it's a mapped group */
 		sid_copy(&local_sid, &map.sid);
 		*psid_name_use = map.sid_name_use;
@@ -849,7 +873,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		 * JFM, 30/11/2001
 		 */
 		
-		if (pdb_getgrgid(&map, grp->gr_gid, MAPPING_WITHOUT_PRIV)){
+		if (pdb_getgrgid(&map, grp->gr_gid)){
 			return False;
 		}
 		

@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Jeremy Allison 2001.
+   Copyright (C) Gerald (Jerry) Carter 2003.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -75,9 +76,12 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 	*num_gr_mem = 0;
 	
-	if (group_name_type != SID_NAME_DOM_GRP) {
-		DEBUG(1, ("SID %s in domain %s isn't a domain group\n", 
-			  sid_to_string(sid_string, group_sid), domain->name));
+	if ( !((group_name_type==SID_NAME_DOM_GRP) ||
+		((group_name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
+		DEBUG(1, ("SID %s in domain %s isn't a domain group (%d)\n", 
+			  sid_to_string(sid_string, group_sid), domain->name, 
+			  group_name_type));
                 goto done;
 	}
 
@@ -210,6 +214,15 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	if (!parse_domain_user(tmp, name_domain, name_group))
 		return WINBINDD_ERROR;
 
+	/* don't handle our own domain if we are a DC.  This code handles cases where
+	   the account doesn't exist anywhere and gets passed on down the NSS layer */
+
+	if ( IS_DC_FOR_DOMAIN(domain->name) ) {
+		DEBUG(7,("winbindd_getgrnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
+			name_domain, name_group));
+		return WINBINDD_ERROR;
+	}	
+	
 	/* Get info for the domain */
 
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
@@ -227,13 +240,15 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if ((name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_DOM_GRP)) {
+	if ( !((name_type==SID_NAME_DOM_GRP) ||
+		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  name_group, name_type));
 		return WINBINDD_ERROR;
 	}
 
-	if (NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &gid))) {
+	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid))) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
 		return WINBINDD_ERROR;
 	}
@@ -278,7 +293,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	/* Get rid from gid */
-	if (NT_STATUS_IS_ERR(uid_to_sid(&group_sid, state->request.data.gid))) {
+	if (!NT_STATUS_IS_OK(gid_to_sid(&group_sid, state->request.data.gid))) {
 		DEBUG(1, ("could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
@@ -291,19 +306,20 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (!((name_type == SID_NAME_ALIAS) || 
-	      (name_type == SID_NAME_DOM_GRP))) {
-		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
-			  group_name, name_type));
-		return WINBINDD_ERROR;
-	}
-
 	/* Fill in group structure */
 
 	domain = find_domain_from_sid(&group_sid);
 
 	if (!domain) {
 		DEBUG(1,("Can't find domain from sid\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if ( !((name_type==SID_NAME_DOM_GRP) ||
+		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
+		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
+			  group_name, name_type));
 		return WINBINDD_ERROR;
 	}
 
@@ -353,6 +369,12 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
 		
+		
+		/* don't add our domaina if we are a PDC */
+		
+		if ( IS_DC_FOR_DOMAIN(domain->name) )
+			continue;
+						
 		/* Create a state record for this domain */
 		
 		if ((domain_state = (struct getent_state *)
@@ -450,10 +472,10 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	
 	ent->num_sam_entries = num_entries;
 	
-	/* get the domain local groups if we are a member of a native win2k domain */
+	/* get the domain local groups if we are a member of a native win2k domain
+	   and are not using LDAP to get the groups */
 	   
-	if ( domain->native_mode 
-		&& domain->methods->enum_local_groups 
+	if ( lp_security() != SEC_ADS && domain->native_mode 
 		&& strequal(lp_workgroup(), domain->name) )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
@@ -590,7 +612,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &group_gid))) {
+		if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &group_gid))) {
 			
 			DEBUG(1, ("could not look up gid for group %s\n", 
 				  name_list[ent->sam_entry_index].acct_name));
@@ -743,7 +765,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		ZERO_STRUCT(groups);
 
 		/* Get list of sam groups */
-		ZERO_STRUCT(groups);
+		
 		fstrcpy(groups.domain_name, domain->name);
 
 		get_sam_group_entries(&groups);
@@ -799,21 +821,26 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 }
 
 /* Get user supplementary groups.  This is much quicker than trying to
-   invert the groups database. */
+   invert the groups database.  We merge the groups from the gids and
+   other_sids info3 fields as trusted domain, universal group
+   memberships, and nested groups (win2k native mode only) are not
+   returned by the getgroups RPC call but are present in the info3. */
 
 enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 {
 	fstring name_domain, name_user;
-	DOM_SID user_sid;
+	DOM_SID user_sid, group_sid;
 	enum SID_NAME_USE name_type;
-	uint32 num_groups, num_gids;
+	uint32 num_groups = 0;
+	uint32 num_gids = 0;
 	NTSTATUS status;
-	DOM_SID **user_gids;
+	DOM_SID **user_grpsids;
 	struct winbindd_domain *domain;
 	enum winbindd_result result = WINBINDD_ERROR;
 	gid_t *gid_list;
 	unsigned int i;
 	TALLOC_CTX *mem_ctx;
+	NET_USER_INFO_3 *info3 = NULL;
 	
 	/* Ensure null termination */
 	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
@@ -853,32 +880,109 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	status = domain->methods->lookup_usergroups(domain, mem_ctx, 
-						    &user_sid, &num_groups, 
-						    &user_gids);
-	if (!NT_STATUS_IS_OK(status)) goto done;
+	/* Treat the info3 cache as authoritative as the
+	   lookup_usergroups() function may return cached data. */
 
-	/* Copy data back to client */
+	if ((info3 = netsamlogon_cache_get(mem_ctx, &user_sid))) {
 
-	num_gids = 0;
-	gid_list = malloc(sizeof(gid_t) * num_groups);
+		DEBUG(10, ("winbindd_getgroups: info3 has %d groups, %d other sids\n",
+			   info3->num_groups2, info3->num_other_sids));
 
-	if (state->response.extra_data)
-		goto done;
+		num_groups = info3->num_other_sids + info3->num_groups2;
+		gid_list = calloc(sizeof(gid_t), num_groups);
 
-	for (i = 0; i < num_groups; i++) {
-		gid_t gid;
-		
-		if (NT_STATUS_IS_ERR(sid_to_gid(user_gids[i], &gid))) {
-			fstring sid_string;
+		/* Go through each other sid and convert it to a gid */
 
-			DEBUG(1, ("unable to convert group sid %s to gid\n", 
-				  sid_to_string(sid_string, user_gids[i])));
-			continue;
+		for (i = 0; i < info3->num_other_sids; i++) {
+			fstring name;
+			fstring dom_name;
+			enum SID_NAME_USE sid_type;
+
+			/* Is this sid known to us?  It can either be
+                           a trusted domain sid or a foreign sid. */
+
+			if (!winbindd_lookup_name_by_sid( &info3->other_sids[i].sid, 
+				dom_name, name, &sid_type))
+			{
+				DEBUG(10, ("winbindd_getgroups: could not lookup name for %s\n", 
+					   sid_string_static(&info3->other_sids[i].sid)));
+				continue;
+			}
+
+			/* Check it is a domain group or an alias (domain local group) 
+			   in a win2k native mode domain. */
+			
+			if ( !((sid_type==SID_NAME_DOM_GRP) ||
+				((sid_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+			{
+				DEBUG(10, ("winbindd_getgroups: sid type %d "
+					   "for %s is not a domain group\n",
+					   sid_type,
+					   sid_string_static(
+						   &info3->other_sids[i].sid)));
+				continue;
+			}
+
+			/* Map to a gid */
+
+			if (!NT_STATUS_IS_OK(sid_to_gid(&info3->other_sids[i].sid, 
+				&gid_list[num_gids])) )
+			{
+				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
+					   sid_string_static(&info3->other_sids[i].sid)));
+				continue;
+			}
+
+			/* We've jumped through a lot of hoops to get here */
+
+			DEBUG(10, ("winbindd_getgroups: mapped other sid %s to "
+				   "gid %d\n", sid_string_static(
+					   &info3->other_sids[i].sid),
+				   gid_list[num_gids]));
+
+			num_gids++;
 		}
-		gid_list[num_gids] = gid;
-		num_gids++;
+
+		for (i = 0; i < info3->num_groups2; i++) {
+		
+			/* create the group SID */
+			
+			sid_copy( &group_sid, &domain->sid );
+			sid_append_rid( &group_sid, info3->gids[i].g_rid );
+
+			if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid_list[num_gids])) ) {
+				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
+					   sid_string_static(&group_sid)));
+			}
+
+			num_gids++;
+		}
+
+		SAFE_FREE(info3);
+
+	} else {
+		status = domain->methods->lookup_usergroups(domain, mem_ctx, 
+						    &user_sid, &num_groups, 
+						    &user_grpsids);
+		if (!NT_STATUS_IS_OK(status)) 
+			goto done;
+
+		gid_list = malloc(sizeof(gid_t) * num_groups);
+
+		if (state->response.extra_data)
+			goto done;
+
+		for (i = 0; i < num_groups; i++) {
+			if (!NT_STATUS_IS_OK(sid_to_gid(user_grpsids[i], &gid_list[num_gids]))) {
+				DEBUG(1, ("unable to convert group sid %s to gid\n", 
+					  sid_string_static(user_grpsids[i])));
+				continue;
+			}
+			num_gids++;
+		}
 	}
+
+	/* Send data back to client */
 
 	state->response.data.num_entries = num_gids;
 	state->response.extra_data = gid_list;

@@ -308,7 +308,8 @@ time_t nt_time_to_unix(NTTIME *nt)
   time_t l_time_min = TIME_T_MIN;
   time_t l_time_max = TIME_T_MAX;
 
-  if (nt->high == 0) return(0);
+  if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff))
+	  return(0);
 
   d = ((double)nt->high)*4.0*(double)(1<<30);
   d += (nt->low&0xFFF00000);

@@ -126,7 +126,6 @@ typedef struct
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szRealm;
-	char *szADSserver;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -276,6 +275,7 @@ typedef struct
 	BOOL bUseSpnego;
 	BOOL bClientLanManAuth;
 	BOOL bClientNTLMv2Auth;
+	BOOL bClientPlaintextAuth;
 	BOOL bClientUseSpnego;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
@@ -412,6 +412,7 @@ typedef struct
 	BOOL bNTAclSupport;
 	BOOL bUseSendfile;
 	BOOL bProfileAcls;
+	BOOL bMap_acl_inherit;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -531,6 +532,7 @@ static service sDefault = {
 	True,			/* bNTAclSupport */
 	False,			/* bUseSendfile */
 	False,			/* bProfileAcls */
+	False,			/* bMap_acl_inherit */
 	
 	NULL,			/* Parametric options */
 
@@ -567,6 +569,7 @@ static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
+static void set_allowed_client_auth(void);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
@@ -732,7 +735,6 @@ static struct parm_struct parm_table[] = {
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE},
 	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkgroup, handle_workgroup, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"realm", P_USTRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"ADS server", P_STRING, P_GLOBAL, &Globals.szADSserver, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios name", P_USTRING, P_GLOBAL, &Globals.szNetbiosName, handle_netbios_name, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios scope", P_USTRING, P_GLOBAL, &Globals.szNetbiosScope, handle_netbios_scope, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -778,6 +780,7 @@ static struct parm_struct parm_table[] = {
 	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, &Globals.bClientNTLMv2Auth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client lanman auth", P_BOOL, P_GLOBAL, &Globals.bClientLanManAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client plaintext auth", P_BOOL, P_GLOBAL, &Globals.bClientPlaintextAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"username", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"user", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_HIDE},
@@ -859,6 +862,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, FLAG_DEVELOPER},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, FLAG_DEVELOPER},
+	{"map acl inherit", P_BOOL, P_LOCAL, &sDefault.bMap_acl_inherit, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"max xmit", P_INTEGER, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
@@ -1118,8 +1122,8 @@ static struct parm_struct parm_table[] = {
 	{"idmap only", P_BOOL, P_GLOBAL, &Globals.bIdmapOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED },
+	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED },
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1277,8 +1281,13 @@ static void init_globals(void)
 	/* using UTF8 by default allows us to support all chars */
 	string_set(&Globals.unix_charset, "UTF8");
 
-	/* using UTF8 by default allows us to support all chars */
+#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
+	/* If the system supports nl_langinfo(), try to grab the value
+	   from the user's locale */
+	string_set(&Globals.display_charset, "LOCALE");
+#else
 	string_set(&Globals.display_charset, "ASCII");
+#endif
 
 	/* Use codepage 850 as a default for the dos character set */
 	string_set(&Globals.dos_charset, "CP850");
@@ -1386,6 +1395,7 @@ static void init_globals(void)
 	Globals.bStatCache = True;	/* use stat cache by default */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = True;	/* Do use the LanMan hash if it is available */
+	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
 	
@@ -1409,9 +1419,9 @@ static void init_globals(void)
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
-	Globals.szPassdbBackend = str_list_make("ldapsam_compat guest", NULL);
+	Globals.szPassdbBackend = str_list_make("ldapsam_compat", NULL);
 #else
-	Globals.szPassdbBackend = str_list_make("smbpasswd guest", NULL);
+	Globals.szPassdbBackend = str_list_make("smbpasswd", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
 
 	string_set(&Globals.szLdapSuffix, "");
@@ -1590,7 +1600,6 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-FN_GLOBAL_STRING(lp_ads_server, &Globals.szADSserver)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1695,6 +1704,7 @@ FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.restrict_anonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
+FN_GLOBAL_BOOL(lp_client_plaintext_auth, &Globals.bClientPlaintextAuth)
 FN_GLOBAL_BOOL(lp_client_lanman_auth, &Globals.bClientLanManAuth)
 FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, &Globals.bClientNTLMv2Auth)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
@@ -1826,6 +1836,7 @@ FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
+FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
@@ -3821,6 +3832,19 @@ static void set_server_role(void)
 	}
 }
 
+/***********************************************************
+ If we should send plaintext/LANMAN passwords in the clinet
+************************************************************/
+static void set_allowed_client_auth(void)
+{
+	if (Globals.bClientNTLMv2Auth) {
+		Globals.bClientLanManAuth = False;
+	}
+	if (!Globals.bClientLanManAuth) {
+		Globals.bClientPlaintextAuth = False;
+	}
+}
+
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
@@ -3888,6 +3912,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	set_server_role();
 	set_default_server_announce_type();
+	set_allowed_client_auth();
 
 	bLoaded = True;
 

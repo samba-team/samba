@@ -269,11 +269,8 @@ static int wb_getgroups(const char *user, gid_t **groups)
    time consuming.  If size is zero, list is not modified and the total
    number of groups for the user is returned. */
 
-int winbind_getgroups(const char *user, int size, gid_t *list)
+int winbind_getgroups(const char *user, gid_t **list)
 {
-	gid_t *groups = NULL;
-	int result, i;
-
 	/*
 	 * Don't do the lookup if the name has no separator _and_ we are not in
 	 * 'winbind use default domain' mode.
@@ -284,24 +281,19 @@ int winbind_getgroups(const char *user, int size, gid_t *list)
 
 	/* Fetch list of groups */
 
-	result = wb_getgroups(user, &groups);
-
-	if (size == 0)
-		goto done;
-
-	if (result > size) {
-		result = -1;
-		errno = EINVAL; /* This is what getgroups() does */
-		goto done;
-	}
-
-	/* Copy list of groups across */
-
-	for (i = 0; i < result; i++) {
-		list[i] = groups[i];
-	}
-
- done:
-	SAFE_FREE(groups);
-	return result;
+	return wb_getgroups(user, list);
 }
+
+/**********************************************************************
+ simple wrapper function to see if winbindd is alive
+**********************************************************************/
+
+BOOL winbind_ping( void )
+{
+	NSS_STATUS result;
+
+	result = winbindd_request(WINBINDD_PING, NULL, NULL);
+
+	return result == NSS_STATUS_SUCCESS;
+}
+

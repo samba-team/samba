@@ -325,11 +325,12 @@ static BOOL user_in_netgroup_list(const char *user, const char *ngname)
   
 static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL *winbind_answered)
 {
-	int num_groups;
 	int i;
- 	gid_t *groups = NULL;
  	gid_t gid, gid_low, gid_high;
  	BOOL ret = False;
+	static gid_t *groups = NULL;
+	static int num_groups = 0;
+	static fstring last_user = "";
  
  	*winbind_answered = False;
  
@@ -349,27 +350,44 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
  		goto err;
 	}
  
- 	/*
- 	 * Get the gid's that this user belongs to.
- 	 */
+	/* try to user the last user we looked up */
+	/* otherwise fall back to lookups */
+	
+	if ( !strequal( last_user, user ) || !groups )
+ 	{
+		/* clear any cached information */
+		
+ 	 	SAFE_FREE(groups);
+		fstrcpy( last_user, "" );
+
+	 	/*
+ 		 * Get the gid's that this user belongs to.
+ 		 */
  
- 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
- 		return False;
+	 	if ((num_groups = winbind_getgroups(user, &groups)) == -1)
+ 			return False;
+			
+		if ( num_groups == -1 )
+			return False;
  
- 	if (num_groups == 0) {
- 		*winbind_answered = True;
- 		return False;
- 	}
+	 	if ( num_groups == 0 ) {
+ 			*winbind_answered = True;
+ 			return False;
+ 		}
+ 		
+		/* save the last username */
+		
+		fstrcpy( last_user, user );
+		
+	}
+	else 
+		DEBUG(10,("user_in_winbind_group_list: using cached user groups for [%s]\n", user));
  
- 	if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
- 		DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
- 		goto err;
- 	}
- 
- 	if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
- 		DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call \
-failed with error %s\n", strerror(errno) ));
- 		goto err;
+ 	if ( DEBUGLEVEL >= 10 ) {
+		DEBUG(10,("user_in_winbind_group_list: using groups -- "));
+	 	for ( i=0; i<num_groups; i++ )
+			DEBUGADD(10,("%d ", groups[i]));
+		DEBUGADD(10,("\n"));	
 	}
  
 	/*
@@ -571,10 +589,16 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				fstrcpy(domain, *list);
 				domain[PTR_DIFF(p, *list)] = 0;
 
-				/* Check to see if name is a Windows group */
-				if (winbind_lookup_name(domain, groupname, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+				/* Check to see if name is a Windows group;  Win2k native mode DCs
+				   will return domain local groups; while NT4 or mixed mode 2k DCs
+				   will not */
+			
+				if ( winbind_lookup_name(NULL, *list, &g_sid, &name_type) 
+					&& ( name_type==SID_NAME_DOM_GRP || 
+					   (strequal(lp_workgroup(), domain) && name_type==SID_NAME_ALIAS) ) )
+				{
 					
-				/* Check if user name is in the Windows group */
+					/* Check if user name is in the Windows group */
 					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
 					
 					if (winbind_answered && ret == True) {

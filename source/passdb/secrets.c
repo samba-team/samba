@@ -151,7 +151,7 @@ BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
 	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
 
 	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
-		uuid_generate_random(&new_guid);
+		smb_uuid_generate_random(&new_guid);
 		if (!secrets_store_domain_guid(domain, &new_guid))
 			return False;
 		dyn_guid = (GUID *)secrets_fetch(key, &size);
@@ -252,8 +252,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time, 
 						   channel);
 	if (plaintext) {
-		/* we have an ADS password - use that */
-		DEBUG(4,("Using ADS machine password\n"));
+		DEBUG(4,("Using cleartext machine password\n"));
 		E_md4hash(plaintext, ret_pwd);
 		SAFE_FREE(plaintext);
 		return True;
@@ -453,6 +452,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		last_set_time = secrets_fetch(key, &size);
 		if (last_set_time) {
 			*pass_last_set_time = IVAL(last_set_time,0);
+			SAFE_FREE(last_set_time);
 		} else {
 			*pass_last_set_time = 0;
 		}
@@ -467,6 +467,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		channel_type = secrets_fetch(key, &size);
 		if (channel_type) {
 			*channel = IVAL(channel_type,0);
+			SAFE_FREE(channel_type);
 		} else {
 			*channel = get_default_sec_channel();
 		}
@@ -614,7 +615,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 			DEBUG(0, ("strndup failed!\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
-				
+
 		packed_pass = secrets_fetch(secrets_key, &size);
 		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size, pass);
 		/* packed representation isn't needed anymore */

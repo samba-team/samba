@@ -11,7 +11,7 @@
 This chapter provides information regarding the types of server that Samba may be
 configured to be. A Microsoft network administrator who wishes to migrate to or to
 use Samba will want to know what, within a Samba context, terms familiar to MS Windows
-adminstrator mean. This means that it is essential also to define how critical security
+administrator mean. This means that it is essential also to define how critical security
 modes function BEFORE we get into the details of how to configure the server itself.
 </para>
 
@@ -31,7 +31,7 @@ features and benefits. These may be for or against Samba.
 
 <para>
 Two men were walking down a dusty road, when one suddenly kicked up a small red stone. It
-hurt his toe and lodged in his sandle. He took the stone out and cursed it with a passion
+hurt his toe and lodged in his sandal. He took the stone out and cursed it with a passion
 and fury fitting his anguish. The other looked at the stone and said, that is a garnet - I
 can turn that into a precious gem and some day it will make a princess very happy!
 </para>
@@ -92,7 +92,7 @@ So now, what are the benefits of features mentioned in this chapter?
 <sect1>
 <title>Server Types</title>
 
-<para>Adminstrators of Microsoft networks often refer to three
+<para>Administrators of Microsoft networks often refer to three
 different type of servers:</para>
 
 <itemizedlist>
@@ -496,7 +496,7 @@ is encrypted in two ways:
         </para></listitem>
 
         <listitem><para>The password is converted to upper case,
-        and then padded or trucated to 14 bytes.  This string is
+        and then padded or truncated to 14 bytes.  This string is
         then appended with 5 bytes of NULL characters and split to
         form two 56 bit DES keys to encrypt a "magic" 8 byte value.
         The resulting 16 bytes form the LanMan hash.
@@ -533,7 +533,7 @@ when using clear text authentication.
 </para>
 
 <para><programlisting>
-        <ulink url="smb.conf.5.html#PASSWORDLEVEL">passsword level</ulink> = <replaceable>integer</replaceable>
+        <ulink url="smb.conf.5.html#PASSWORDLEVEL">password level</ulink> = <replaceable>integer</replaceable>
         <ulink url="smb.conf.5.html#USERNAMELEVEL">username level</ulink> = <replaceable>integer</replaceable>
 </programlisting></para>
 
@@ -576,7 +576,7 @@ made in a developmental test lab is expected.
 <para>
 Here we look at common mistakes and misapprehensions that have been the subject of discussions
 on the Samba mailing lists. Many of these are avoidable by doing you homework before attempting
-a Samba implementation. Some are the result of misundertanding of the English language. The
+a Samba implementation. Some are the result of misunderstanding of the English language. The
 English language has many turns of phrase that are potentially vague and may be highly confusing
 to those for whom English is not their native tongue.
 </para>

@@ -51,9 +51,6 @@
      - I'm pretty annoyed by all the make_nmb_name() stuff.  It should be
        moved down into another function.
 
-     - There needs to be a utility function in libsmb/namequery.c that does
-       cm_get_dc_name() 
-
      - Take care when destroying cli_structs as they can be shared between
        various sam handles.
 
@@ -79,139 +76,6 @@ struct winbindd_cm_conn {
 
 static struct winbindd_cm_conn *cm_conns = NULL;
 
-/* Get a domain controller name.  Cache positive and negative lookups so we
-   don't go to the network too often when something is badly broken. */
-
-#define GET_DC_NAME_CACHE_TIMEOUT 30 /* Seconds between dc lookups */
-
-struct get_dc_name_cache {
-	fstring domain_name;
-	fstring srv_name;
-	time_t lookup_time;
-	struct get_dc_name_cache *prev, *next;
-};
-
-/*
-  find the DC for a domain using methods appropriate for a ADS domain
-*/
-static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
-{
-	ADS_STRUCT *ads;
-	const char *realm = domain;
-
-	if (strcasecmp(realm, lp_workgroup()) == 0)
-		realm = lp_realm();
-
-	ads = ads_init(realm, domain, NULL);
-	if (!ads)
-		return False;
-
-	/* we don't need to bind, just connect */
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-	DEBUG(4,("cm_ads_find_dc: domain=%s\n", domain));
-
-#ifdef HAVE_ADS
-	/* a full ads_connect() is actually overkill, as we don't srictly need
-	   to do the SASL auth in order to get the info we need, but libads
-	   doesn't offer a better way right now */
-	ads_connect(ads);
-#endif
-
-	if (!ads->config.realm)
-		return False;
-
-	fstrcpy(srv_name, ads->config.ldap_server_name);
-	strupper(srv_name);
-	*dc_ip = ads->ldap_ip;
-	ads_destroy(&ads);
-	
-	DEBUG(4,("cm_ads_find_dc: using server='%s' IP=%s\n",
-		 srv_name, inet_ntoa(*dc_ip)));
-	
-	return True;
-}
-
-
-
-static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
-{
-	static struct get_dc_name_cache *get_dc_name_cache;
-	struct get_dc_name_cache *dcc;
-	struct in_addr dc_ip;
-	BOOL ret;
-
-	/* Check the cache for previous lookups */
-
-	for (dcc = get_dc_name_cache; dcc; dcc = dcc->next) {
-
-		if (!strequal(domain, dcc->domain_name))
-			continue; /* Not our domain */
-
-		if ((time(NULL) - dcc->lookup_time) > 
-		    GET_DC_NAME_CACHE_TIMEOUT) {
-
-			/* Cache entry has expired, delete it */
-
-			DEBUG(10, ("get_dc_name_cache entry expired for %s\n", domain));
-
-			DLIST_REMOVE(get_dc_name_cache, dcc);
-			SAFE_FREE(dcc);
-
-			break;
-		}
-
-		/* Return a positive or negative lookup for this domain */
-
-		if (dcc->srv_name[0]) {
-			DEBUG(10, ("returning positive get_dc_name_cache entry for %s\n", domain));
-			fstrcpy(srv_name, dcc->srv_name);
-			return True;
-		} else {
-			DEBUG(10, ("returning negative get_dc_name_cache entry for %s\n", domain));
-			return False;
-		}
-	}
-
-	/* Add cache entry for this lookup. */
-
-	DEBUG(10, ("Creating get_dc_name_cache entry for %s\n", domain));
-
-	if (!(dcc = (struct get_dc_name_cache *) 
-	      malloc(sizeof(struct get_dc_name_cache))))
-		return False;
-
-	ZERO_STRUCTP(dcc);
-
-	fstrcpy(dcc->domain_name, domain);
-	dcc->lookup_time = time(NULL);
-
-	DLIST_ADD(get_dc_name_cache, dcc);
-
-	zero_ip(&dc_ip);
-
-	ret = False;
-	if (lp_security() == SEC_ADS)
-		ret = cm_ads_find_dc(domain, &dc_ip, srv_name);
-
-	if (!ret) {
-		/* fall back on rpc methods if the ADS methods fail */
-		ret = rpc_find_dc(domain, srv_name, &dc_ip);
-	}
-
-	if (!ret)
-		return False;
-
-	/* We have a name so make the cache entry positive now */
-	fstrcpy(dcc->srv_name, srv_name);
-
-	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
-		  inet_ntoa(dc_ip), domain));
-
-	*ip_out = dc_ip;
-
-	return True;
-}
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
@@ -265,7 +129,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	/* connection failure cache has been moved inside of get_dc_name
 	   so we can deal with half dead DC's   --jerry */
 
-	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
+	if (!get_dc_name(domain, new_conn->controller, &dc_ip)) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		add_failed_connection_entry(domain, "", result);
 		return result;
@@ -455,8 +319,14 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 		ret = True;
 
 done:
+
+#if 0
+	/*
+	 * I don't think we need to shutdown here ? JRA.
+	 */
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
+#endif
 	
 	return ret;
 }
@@ -465,7 +335,7 @@ done:
 
 /* Return a LSA policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
+NTSTATUS cm_get_lsa_handle(const char *domain, CLI_POLICY_HND **return_hnd)
 {
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -475,13 +345,16 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 	/* Look for existing connections */
 
 	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
-		return NULL;
+		return result;
 
 	/* This *shitty* code needs scrapping ! JRA */
+	
 	if (policy_handle_is_valid(&conn->pol)) {
 		hnd.pol = conn->pol;
 		hnd.cli = conn->cli;
-		return &hnd;
+		*return_hnd = &hnd;
+
+		return NT_STATUS_OK;
 	}
 	
 	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
@@ -491,7 +364,7 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
 			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
-				return NULL;
+				return result;
 
 			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
 						     des_access, &conn->pol);
@@ -501,19 +374,21 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
-			return NULL;
+			return result;
 		}
 	}	
 
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;
+	*return_hnd = &hnd;
+
+	return NT_STATUS_OK;
 }
 
 /* Return a SAM policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_sam_handle(char *domain)
+NTSTATUS cm_get_sam_handle(char *domain, CLI_POLICY_HND **return_hnd)
 { 
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -523,39 +398,49 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 	/* Look for existing connections */
 
 	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
-		return NULL;
+		return result;
 	
 	/* This *shitty* code needs scrapping ! JRA */
+	
 	if (policy_handle_is_valid(&conn->pol)) {
 		hnd.pol = conn->pol;
 		hnd.cli = conn->cli;
-		return &hnd;
+		
+		*return_hnd = &hnd;
+
+		return NT_STATUS_OK;
 	}
+	
 	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 				  des_access, &conn->pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
+		
 			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
-				return NULL;
+				return result;
 
 			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 						  des_access, &conn->pol);
 		}
 
 		if (!NT_STATUS_IS_OK(result)) {
+		
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
-			return NULL;
+			
+			return result;
 		}
 	}	
 
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;
+	*return_hnd = &hnd;
+
+	return NT_STATUS_OK;
 }
 
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
@@ -608,6 +493,9 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
 		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
 	}
+	
+	if ( sec_channel_type == SEC_CHAN_DOMAIN )
+		snprintf(conn->cli->mach_acct, sizeof(conn->cli->mach_acct) - 1, "%s$", lp_workgroup());
 			
 	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	
@@ -658,4 +546,35 @@ void winbindd_cm_status(void)
 		dump_conn_list();
 	else
 		DEBUG(0, ("\tNo active connections\n"));
+}
+
+/* Close all cached connections */
+
+void winbindd_cm_flush(void)
+{
+	struct winbindd_cm_conn *conn, tmp;
+
+	/* Flush connection cache */
+
+	for (conn = cm_conns; conn; conn = conn->next) {
+
+		if (!connection_ok(conn))
+			continue;
+
+		DEBUG(10, ("Closing connection to %s on %s\n",
+			conn->pipe_name, conn->controller));
+
+		if (conn->cli)
+			cli_shutdown(conn->cli);
+
+		tmp.next = conn->next;
+
+		DLIST_REMOVE(cm_conns, conn);
+		SAFE_FREE(conn);
+		conn = &tmp;
+	}
+
+	/* Flush failed connection cache */
+
+	flush_negative_conn_cache();
 }

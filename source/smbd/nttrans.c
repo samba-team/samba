@@ -1753,7 +1753,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		   but works ok like this --metze
 		 */
 
-		DEBUG(1,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return -1;
 
@@ -1762,7 +1762,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * --metze
 		 */
 
-		DEBUG(1,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
 		return -1;
 
@@ -1771,7 +1771,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * --metze
 		 */
 
-		DEBUG(1,("FSCTL_SET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_SET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
 		return -1;
 			
@@ -1788,16 +1788,16 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		uid_t uid;
 		size_t sid_len=SID_MAX_SIZE;
 		
-		DEBUG(1,("FSCTL_FIND_FILES_BY_SID: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: fnum=%d control=0x%08x\n",fnum,control));
 		
 		/* this is not the length of the sid :-( so unknown 4 bytes */
 		/*sid_len = IVAL(pdata,0);	
 		DEBUGADD(0,("sid_len: (%u)\n",sid_len));*/
 		
 		sid_parse(pdata+4,sid_len,&sid);
-		DEBUGADD(2,("SID: %s\n",sid_string_static(&sid)));
+		DEBUGADD(10,("SID: %s\n",sid_string_static(&sid)));
 
-		if (NT_STATUS_IS_ERR(sid_to_uid(&sid, &uid))) {
+		if (!NT_STATUS_IS_OK(sid_to_uid(&sid, &uid))) {
 			DEBUG(0,("sid_to_uid: failed, sid[%s]\n",
 				sid_string_static(&sid)));
 			uid = (-1);

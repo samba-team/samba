@@ -30,7 +30,6 @@ static int test_args = False;
 static TALLOC_CTX *ctx;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
-#define CREATE_ACCESS_WRITE (WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS)
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
@@ -506,11 +505,11 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	}
 
 	sd = make_sec_desc(ctx,old->revision,
-				(change_mode == REQUEST_CHOWN) ? &sid : old->owner_sid,
-				(change_mode == REQUEST_CHGRP) ? &sid : old->grp_sid,
-			   NULL, old->dacl, &sd_size);
+				(change_mode == REQUEST_CHOWN) ? &sid : NULL,
+				(change_mode == REQUEST_CHGRP) ? &sid : NULL,
+			   NULL, NULL, &sd_size);
 
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_WRITE);
+	fnum = cli_nt_create(cli, filename, WRITE_OWNER_ACCESS);
 
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
@@ -680,10 +679,10 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	sort_acl(old->dacl);
 
 	/* Create new security descriptor and set it */
-	sd = make_sec_desc(ctx,old->revision, old->owner_sid, old->grp_sid, 
+	sd = make_sec_desc(ctx,old->revision, NULL, NULL,
 			   NULL, old->dacl, &sd_size);
 
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_WRITE);
+	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS);
 
 	if (fnum == -1) {
 		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));

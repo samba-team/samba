@@ -31,7 +31,7 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 				      const char *printer, const char *servername)
 {
 	ADS_STATUS status;
-	char *srv_dn, **srv_cn, *exp;
+	char *srv_dn, **srv_cn, *s;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	status = ads_find_machine_acct(ads, res, servername);
@@ -44,12 +44,12 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 	ads_msgfree(ads, *res);
 
-	asprintf(&exp, "(cn=%s-%s)", srv_cn[0], printer);
-	status = ads_search(ads, res, exp, attrs);
+	asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer);
+	status = ads_search(ads, res, s, attrs);
 
 	ldap_memfree(srv_dn);
 	ldap_value_free(srv_cn);
-	free(exp);
+	free(s);
 	return status;	
 }
 

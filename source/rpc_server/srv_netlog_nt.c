@@ -524,6 +524,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	auth_serversupplied_info *server_info = NULL;
 	extern userdom_struct current_user_info;
 	SAM_ACCOUNT *sampw;
+	struct auth_context *auth_context = NULL;
 	        
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
@@ -598,10 +599,11 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
 
+	status = NT_STATUS_OK;
+	
 	switch (ctr->switch_value) {
 	case NET_LOGON_TYPE:
 	{
-		struct auth_context *auth_context = NULL;
 		if (!NT_STATUS_IS_OK(status = make_auth_context_fixed(&auth_context, ctr->auth.id2.lm_chal))) {
 			return status;
 		}
@@ -615,11 +617,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 						     ctr->auth.id2.nt_chal_resp.buffer,
 						     ctr->auth.id2.nt_chal_resp.str_str_len)) {
 			status = NT_STATUS_NO_MEMORY;
-		} else {
-			status = auth_context->check_ntlm_password(auth_context, user_info, &server_info);
-		}
-		(auth_context->free)(&auth_context);
-			
+		}	
 		break;
 	}
 	case INTERACTIVE_LOGON_TYPE:
@@ -628,8 +626,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		   convert this to chellange/responce for the auth
 		   subsystem to chew on */
 	{
-		struct auth_context *auth_context = NULL;
 		const uint8 *chal;
+		
 		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
 			return status;
 		}
@@ -643,12 +641,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 							 ctr->auth.id1.nt_owf.data, 
 							 p->dc.sess_key)) {
 			status = NT_STATUS_NO_MEMORY;
-		} else {
-			status = auth_context->check_ntlm_password(auth_context, user_info, &server_info);
 		}
-
-		(auth_context->free)(&auth_context);
-
 		break;
 	}
 	default:
@@ -656,6 +649,14 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 	
+	if ( NT_STATUS_IS_OK(status) ) {
+		become_root();
+		status = auth_context->check_ntlm_password(auth_context, 
+			user_info, &server_info);
+		unbecome_root();
+	}
+
+	(auth_context->free)(&auth_context);	
 	free_user_info(&user_info);
 	
 	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 

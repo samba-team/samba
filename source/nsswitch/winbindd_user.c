@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Jeremy Allison 2001.
+   Copyright (C) Gerald (Jerry) Carter 2003.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,13 +27,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern userdom_struct current_user_info;
+
 /* Fill a pwent structure with information we have obtained */
 
 static BOOL winbindd_fill_pwent(char *dom_name, char *user_name, 
 				DOM_SID *user_sid, DOM_SID *group_sid,
 				char *full_name, struct winbindd_pw *pw)
 {
-	extern userdom_struct current_user_info;
 	fstring output_username;
 	pstring homedir;
 	fstring sid_string;
@@ -42,14 +44,14 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	/* Resolve the uid number */
 
-	if (NT_STATUS_IS_ERR(sid_to_uid(user_sid, &(pw->pw_uid)))) {
+	if (!NT_STATUS_IS_OK(sid_to_uid(user_sid, &(pw->pw_uid)))) {
 		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 
-	if (NT_STATUS_IS_ERR(sid_to_gid(group_sid, &(pw->pw_gid)))) {
+	if (!NT_STATUS_IS_OK(sid_to_gid(group_sid, &(pw->pw_gid)))) {
 		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
@@ -113,6 +115,15 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	if (!parse_domain_user(state->request.data.username, name_domain, 
 			       name_user))
 		return WINBINDD_ERROR;
+	
+	/* don't handle our own domain if we are a DC.  This code handles cases where
+	   the account doesn't exist anywhere and gets passed on down the NSS layer */
+
+	if ( IS_DC_FOR_DOMAIN(domain->name) ) {
+		DEBUG(7,("winbindd_getpwnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
+			name_domain, name_user));
+		return WINBINDD_ERROR;
+	}	
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(5, ("no such domain: %s\n", name_domain));
@@ -191,7 +202,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get rid from uid */
 
-	if (NT_STATUS_IS_ERR(uid_to_sid(&user_sid, state->request.data.uid))) {
+	if (!NT_STATUS_IS_OK(uid_to_sid(&user_sid, state->request.data.uid))) {
 		DEBUG(1, ("could not convert uid %d to SID\n", 
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -235,7 +246,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Check group has a gid number */
 
-	if (NT_STATUS_IS_ERR(sid_to_gid(user_info.group_sid, &gid))) {
+	if (!NT_STATUS_IS_OK(sid_to_gid(user_info.group_sid, &gid))) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
@@ -284,6 +295,12 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 	for(domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
                 
+		
+		/* don't add our domaina if we are a PDC */
+		
+		if ( IS_DC_FOR_DOMAIN( domain->name ) )
+			continue; 
+						
 		/* Create a state record for this domain */
                 
 		if ((domain_state = (struct getent_state *)

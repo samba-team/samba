@@ -304,7 +304,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 
 	become_root();
 
-	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED)) {
 		DEBUG(1, ("load_group_domain_entries: pdb_enum_group_mapping() failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -900,7 +900,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		pdb_enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+		pdb_enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED);
 		
 		if (num_entries != 0) {		
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
@@ -937,7 +937,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			uint32 trid;
 			
-			if(!pdb_getgrgid(&smap, grp->gr_gid, MAPPING_WITHOUT_PRIV))
+			if(!pdb_getgrgid(&smap, grp->gr_gid))
 				continue;
 			
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
@@ -1018,7 +1018,7 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*p_num_entries = 0;
 
-	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
 
 	num_entries=group_entries-start_idx;
 
@@ -1346,7 +1346,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	    !sid_check_is_in_builtin(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if (!pdb_getgrsid(&map, sid, MAPPING_WITHOUT_PRIV))
+	if (!pdb_getgrsid(&map, sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
@@ -2731,6 +2731,41 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, DOM_SID *sid)
 }
 
 /*******************************************************************
+ The GROUPSID field in the SAM_ACCOUNT changed. Try to tell unix.
+ ********************************************************************/
+static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
+{
+	struct group *grp;
+	gid_t gid;
+
+	if (!NT_STATUS_IS_OK(sid_to_gid(pdb_get_group_sid(sampass),
+					&gid))) {
+		DEBUG(2,("Could not get gid for primary group of "
+			 "user %s\n", pdb_get_username(sampass)));
+		return False;
+	}
+
+	grp = getgrgid(gid);
+
+	if (grp == NULL) {
+		DEBUG(2,("Could not find primary group %d for "
+			 "user %s\n", gid, pdb_get_username(sampass)));
+		return False;
+	}
+
+	if (smb_set_primary_group(grp->gr_name,
+				  pdb_get_username(sampass)) != 0) {
+		DEBUG(2,("Could not set primary group for user %s to "
+			 "%s\n",
+			 pdb_get_username(sampass), grp->gr_name));
+		return False;
+	}
+
+	return True;
+}
+	
+
+/*******************************************************************
  set_user_info_21
  ********************************************************************/
 
@@ -2759,6 +2794,9 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *sid)
 	 * id21.  I don't know if they need to be set.    --jerry
 	 */
  
+	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID))
+		set_unix_primary_group(pwd);
+
 	/* write the change out */
 	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
@@ -2826,6 +2864,9 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
  
 	ZERO_STRUCT(plaintext_buf);
  
+	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID))
+		set_unix_primary_group(pwd);
+
 	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
@@ -3174,12 +3215,12 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	if (sid_equal(&alias_sid, &global_sid_Builtin)) {
 		DEBUG(10, ("lookup on Builtin SID (S-1-5-32)\n"));
-		if(!get_builtin_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
+		if(!get_builtin_group_from_sid(als_sid, &map))
 			return NT_STATUS_NO_SUCH_ALIAS;
 	} else {
 		if (sid_equal(&alias_sid, get_global_sam_sid())) {
 			DEBUG(10, ("lookup on Server SID\n"));
-			if(!get_local_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
+			if(!get_local_group_from_sid(als_sid, &map))
 				return NT_STATUS_NO_SUCH_ALIAS;
 		}
 	}
@@ -3280,7 +3321,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	sid_append_rid(&group_sid, group_rid);
 	DEBUG(10, ("lookup on Domain SID\n"));
 
-	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
+	if(!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
@@ -3364,13 +3405,13 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 
 	if (sid_compare(&alias_sid, get_global_sam_sid())>0) {
 		DEBUG(10, ("adding member on Server SID\n"));
-		if(!get_local_group_from_sid(alias_sid, &map, MAPPING_WITHOUT_PRIV))
+		if(!get_local_group_from_sid(alias_sid, &map))
 			return NT_STATUS_NO_SUCH_ALIAS;
 	
 	} else {
 		if (sid_compare(&alias_sid, &global_sid_Builtin)>0) {
 			DEBUG(10, ("adding member on BUILTIN SID\n"));
-			if( !get_local_group_from_sid(alias_sid, &map, MAPPING_WITHOUT_PRIV))
+			if( !get_local_group_from_sid(alias_sid, &map))
 				return NT_STATUS_NO_SUCH_ALIAS;
 
 		} else
@@ -3389,7 +3430,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	}
 
 	/* check a real user exist before we run the script to add a user to a group */
-	if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
+	if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3461,7 +3502,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	if( !get_local_group_from_sid(alias_sid, &map, MAPPING_WITHOUT_PRIV))
+	if( !get_local_group_from_sid(alias_sid, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ((grp=getgrgid(map.gid)) == NULL)
@@ -3531,7 +3572,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	DEBUG(10, ("lookup on Domain SID\n"));
 
-	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
+	if(!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	sid_copy(&user_sid, get_global_sam_sid());
@@ -3549,7 +3590,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	}
 
 	/* check a real user exist before we run the script to add a user to a group */
-	if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
+	if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3626,7 +3667,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, q_u->rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	if ((grp=getgrgid(map.gid)) == NULL)
@@ -3771,7 +3812,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 
 	DEBUG(10, ("lookup on Domain SID\n"));
 
-	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
+	if(!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	gid=map.gid;
@@ -3833,7 +3874,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 
 	DEBUG(10, ("lookup on Local SID\n"));
 
-	if(!get_local_group_from_sid(alias_sid, &map, MAPPING_WITHOUT_PRIV))
+	if(!get_local_group_from_sid(alias_sid, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	gid=map.gid;
@@ -3870,11 +3911,8 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	fstring sid_string;
 	struct group *grp;
 	struct samr_info *info;
-	PRIVILEGE_SET priv_set;
 	uint32 acc_granted;
 	gid_t gid;
-
-	init_privilege(&priv_set);
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid, &acc_granted)) 
@@ -3910,7 +3948,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	sid_append_rid(&info_sid, r_u->rid);
 	sid_to_string(sid_string, &info_sid);
 
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL, priv_set, PR_ACCESS_FROM_NETWORK))
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
@@ -3935,11 +3973,8 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	fstring sid_string;
 	struct group *grp;
 	struct samr_info *info;
-	PRIVILEGE_SET priv_set;
 	uint32 acc_granted;
 	gid_t gid;
-
-	init_privilege(&priv_set);
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted)) 
@@ -3975,7 +4010,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	sid_to_string(sid_string, &info_sid);
 
 	/* add the group to the mapping table */
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, name, NULL, priv_set, PR_ACCESS_FROM_NETWORK))
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, name, NULL))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
@@ -4011,7 +4046,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 		return r_u->status;
 	}
 		
-	if (!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_INVALID_HANDLE;
 
 	ctr=(GROUP_INFO_CTR *)talloc_zero(p->mem_ctx, sizeof(GROUP_INFO_CTR));
@@ -4063,7 +4098,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 		return r_u->status;
 	}
 		
-	if (!get_domain_group_from_sid(group_sid, &map, MAPPING_WITH_PRIV))
+	if (!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=q_u->ctr;
@@ -4076,16 +4111,12 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		default:
-			free_privilege(&map.priv_set);
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if(!pdb_update_group_mapping_entry(&map)) {
-		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
-
-	free_privilege(&map.priv_set);
 
 	return NT_STATUS_OK;
 }
@@ -4110,7 +4141,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		return r_u->status;
 	}
 		
-	if (!get_local_group_from_sid(group_sid, &map, MAPPING_WITH_PRIV))
+	if (!get_local_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=&q_u->ctr;
@@ -4120,16 +4151,12 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			unistr2_to_ascii(map.comment, &(ctr->alias.info3.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		default:
-			free_privilege(&map.priv_set);
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if(!pdb_update_group_mapping_entry(&map)) {
-		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
-
-	free_privilege(&map.priv_set);
 
 	return NT_STATUS_OK;
 }
@@ -4205,7 +4232,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	DEBUG(10, ("_samr_open_group:Opening SID: %s\n", sid_string));
 
 	/* check if that group really exists */
-	if (!get_domain_group_from_sid(info->sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!get_domain_group_from_sid(info->sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/* get a (unique) handle.  open a policy on it. */

@@ -36,7 +36,7 @@ struct tree_data {
 
 };
 
-void error_message(gchar *message) {
+static void tree_error_message(gchar *message) {
 
   GtkWidget *dialog, *label, *okay_button;
      
@@ -344,7 +344,7 @@ static void cb_itemsignal( GtkWidget *item,
 
       slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not open dir %s, %s\n", get_path(item), strerror(errno));
 
-      error_message(errmsg);
+      tree_error_message(errmsg);
 
       /*      gtk_main_quit();*/
 
@@ -363,7 +363,7 @@ static void cb_itemsignal( GtkWidget *item,
 
 	slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not read dir smbc://, %s\n", strerror(errno));
 
-	error_message(errmsg);
+	tree_error_message(errmsg);
 
 	/*	gtk_main_quit();*/
 

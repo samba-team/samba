@@ -91,7 +91,7 @@ static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 
 	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
 							&maps, &entries,
-							False, False))) {
+							False))) {
 		fprintf(stderr, "Can't get group mappings!\n");
 		return 1;
 	}
@@ -485,7 +485,7 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
 		return -1;
 	}
 
-	if (NT_STATUS_IS_ERR(in->pdb_getsampwnam(in, samaccount, username))) {
+	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, username))) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
 		return -1;
 	}
@@ -511,7 +511,7 @@ static int delete_machine_entry (struct pdb_context *in, const char *machinename
 		return -1;
 	}
 
-	if (NT_STATUS_IS_ERR(in->pdb_getsampwnam(in, samaccount, name))) {
+	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, name))) {
 		fprintf (stderr, "machine %s does not exist in the passdb\n", name);
 		return -1;
 	}
@@ -609,7 +609,7 @@ int main (int argc, char **argv)
 	if (!init_names())
 		exit(1);
 
-	if (!idmap_init())
+	if (!idmap_init(lp_idmap_backend()))
 		exit(1);
 
 	if (!idmap_init_wellknown_sids())

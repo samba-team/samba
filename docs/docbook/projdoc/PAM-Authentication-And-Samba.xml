@@ -21,8 +21,8 @@ controls that are appropriate to your Samba configuration.
 </para>
 
 <para>
-In addition to knowing how to configure winbind into PAM, you will learn generic PAM managment
-possibilities and in particular how to deploy tools like pam_smbpass.so to your adavantage.
+In addition to knowing how to configure winbind into PAM, you will learn generic PAM management
+possibilities and in particular how to deploy tools like pam_smbpass.so to your advantage.
 </para>
 
 <note><para>
@@ -240,8 +240,8 @@ Once we have explained the meaning of the above tokens, we will describe this me
 
 			<listitem><para>
 			<emphasis>session:</emphasis> primarily, this module is associated with doing things that need
-			to be done for the user before/after they can be given service. Such things include the loggin
-			of information concerning the opening/closing of some data exchange with a user, mountin
+			to be done for the user before/after they can be given service. Such things include the logging
+			of information concerning the opening/closing of some data exchange with a user, mounting
 			directories, etc.
 			</para></listitem>
 
@@ -312,7 +312,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 
 		<para>
 		The more elaborate (newer) syntax is much more specific and gives the administrator a great deal of control
-		over how the user is authenticated. This form of the control flag is delimeted with square brackets and
+		over how the user is authenticated. This form of the control flag is delimited with square brackets and
 		consists of a series of value=action tokens:
 		</para>
 
@@ -321,7 +321,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		</screen></para>
 
 		<para>
-		Here, valueI is one of the following return values: success; open_err; symbol_err; service_err;
+		Here, value1 is one of the following return values: success; open_err; symbol_err; service_err;
 		system_err; buf_err; perm_denied; auth_err; cred_insufficient; authinfo_unavail; user_unknown; maxtries;
 		new_authtok_reqd; acct_expired; session_err; cred_unavail; cred_expired; cred_err; no_module_data; conv_err;
 		authtok_err; authtok_recover_err; authtok_lock_busy; authtok_disable_aging; try_again; ignore; abort;
@@ -330,7 +330,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		</para>
 
 		<para>
-		The actionI can be a positive integer or one of the following tokens: ignore; ok; done; bad; die; and reset.
+		The action1 can be a positive integer or one of the following tokens: ignore; ok; done; bad; die; and reset.
 		A positive integer, J, when specified as the action, can be used to indicate that the next J modules of the
 		current module-type will be skipped. In this way, the administrator can develop a moderately sophisticated
 		stack of modules with a number of different paths of execution. Which path is taken can be determined by the
@@ -492,7 +492,7 @@ password     required    pam_pwdb.so shadow md5
 <title>PAM: login using pam_smbpass</title>
 
 <para>
-PAM allows use of replacable modules. Those available on a sample system include:
+PAM allows use of replaceable modules. Those available on a sample system include:
 </para>
 
 <para><prompt>$</prompt><userinput>/bin/ls /lib/security</userinput>
@@ -579,7 +579,7 @@ password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
 also possible to pass information obtained within one PAM module through 
 to the next module in the PAM stack. Please refer to the documentation for 
 your particular system implementation for details regarding the specific 
-capabilities of PAM in this environment. Some Linux implmentations also 
+capabilities of PAM in this environment. Some Linux implementations also 
 provide the <filename>pam_stack.so</filename> module that allows all 
 authentication to be configured in a single central file. The 
 <filename>pam_stack.so</filename> method has some very devoted followers 
@@ -623,7 +623,7 @@ password encryption.
 <title>Remote CIFS Authentication using winbindd.so</title>
 
 <para>
-All operating systems depend on the provision of users credentials accecptable to the platform.
+All operating systems depend on the provision of users credentials acceptable to the platform.
 Unix requires the provision of a user identifier (UID) as well as a group identifier (GID).
 These are both simple integer type numbers that are obtained from a password backend such
 as <filename>/etc/passwd</filename>.

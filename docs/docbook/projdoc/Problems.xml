@@ -52,7 +52,7 @@ Some useful samba commands worth investigating:
 </para>
 	
 <screen>
-	<prompt>$ </prompt><userinput>testparam | more</userinput>
+	<prompt>$ </prompt><userinput>testparm | more</userinput>
 	<prompt>$ </prompt><userinput>smbclient -L //{netbios name of server}</userinput>
 </screen>
    
@@ -155,7 +155,7 @@ Netmon installation.
 </sect1>
 
 <sect1>
-<title>Useful URL's</title>
+<title>Useful URLs</title>
 <itemizedlist>
 
 <listitem><para>See how Scott Merrill simulates a BDC behavior at 
@@ -240,7 +240,7 @@ smb.conf in their attach directory?</para></listitem>
 </sect1>
 
 <sect1>
-<title>How to get off the mailinglists</title>
+<title>How to get off the mailing lists</title>
 
 <para>To have your name removed from a samba mailing list, go to the
 same place you went to to get on it. Go to <ulink 

@@ -2108,7 +2108,7 @@ static struct
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
-  {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
+  {NULL,NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
 
 
@@ -2328,7 +2328,7 @@ static char **completion_fn(const char *text, int start, int end)
 		if (sp == NULL)
 			return NULL;
 		
-		for (i = 0; commands[i].description; i++)
+		for (i = 0; commands[i].name; i++)
 			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
 				break;
 		if (commands[i].name == NULL)
@@ -2747,7 +2747,7 @@ static void remember_query_host(const char *arg,
 		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
-		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
+		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
@@ -2820,9 +2820,6 @@ static void remember_query_host(const char *arg,
 			break;
 		case 'D':
 			fstrcpy(base_directory,poptGetOptArg(pc));
-			break;
-		case 'b':
-			io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
 			break;
 		}
 	}

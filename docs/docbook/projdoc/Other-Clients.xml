@@ -14,7 +14,7 @@
 <title>Macintosh clients?</title>
 
 <para>
-Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> now have a CIFS Client / Server called <ulink url="http://www.thursby.com/products/dave.html">DAVE</ulink>
+Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> now has a CIFS Client / Server called <ulink url="http://www.thursby.com/products/dave.html">DAVE</ulink>
 </para>
 
 <para>
@@ -27,10 +27,10 @@ enhanced, and there are bug-fixes included).
 
 <para> 
 Alternatives - There are two free implementations of AppleTalk for
-several kinds of UNIX machnes, and several more commercial ones.
+several kinds of UNIX machines, and several more commercial ones.
 These products allow you to run file services and print services
 natively to Macintosh users, with no additional support required on
-the Macintosh.  The two free omplementations are 
+the Macintosh.  The two free implementations are 
 <ulink url="http://www.umich.edu/~rsug/netatalk/">Netatalk</ulink>, and 
 <ulink url="http://www.cs.mu.oz.au/appletalk/atalk.html">CAP</ulink>.  
 What Samba offers MS
@@ -150,8 +150,8 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 <sect2>
 <title>Use latest TCP/IP stack from Microsoft</title>
 
-<para>Use the latest TCP/IP stack from microsoft if you use Windows
-for workgroups. 
+<para>Use the latest TCP/IP stack from Microsoft if you use Windows
+for Workgroups. 
 </para>
 
 <para>The early TCP/IP stacks had lots of bugs.</para>
@@ -220,7 +220,7 @@ for use with <parameter>security = user</parameter>
 
 <para>To support print queue reporting you may find
 that you have to use TCP/IP as the default protocol under
-WfWg. For some reason if you leave Netbeui as the default
+WfWg. For some reason if you leave NetBEUI as the default
 it may break the print queue reporting on some systems.
 It is presumably a WfWg bug.</para>
 
@@ -237,9 +237,9 @@ big improvement. I don't know why.
 </para>
 
 <para>
-My own experience wth DefaultRcvWindow is that I get much better
+My own experience with DefaultRcvWindow is that I get much better
 performance with a large value (16384 or larger). Other people have
-reported that anything over 3072 slows things down enourmously. One
+reported that anything over 3072 slows things down enormously. One
 person even reported a speed drop of a factor of 30 when he went from
 3072 to 8192. I don't know why.
 </para>
@@ -270,10 +270,10 @@ of Windows 95.
 </simplelist>
 
 <para>
-Also, if using <application>MS OutLook</application> it is desirable to 
+Also, if using <application>MS Outlook</application> it is desirable to 
 install the <command>OLEUPD.EXE</command> fix. This
 fix may stop your machine from hanging for an extended period when exiting
-OutLook and you may also notice a significant speedup when accessing network
+Outlook and you may also notice a significant speedup when accessing network
 neighborhood services.
 </para>
 

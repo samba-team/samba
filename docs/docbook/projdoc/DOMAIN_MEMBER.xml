@@ -59,7 +59,7 @@ Domain membership has many advantages:
 
 	<listitem><para>
 	Domain user access rights and file ownership / access controls can be set
-	from the single Domain SAM (Security Accounts Management) database 
+	from the single Domain SAM (Security Account Manager) database 
 	(works with Domain member servers as well as with MS Windows workstations
 	that are domain members)
 	</para></listitem>
@@ -76,7 +76,7 @@ Domain membership has many advantages:
 	</para></listitem>
 
 	<listitem><para>
-	Through the use of logon scripts users can be given transparent access to network
+	Through the use of logon scripts, users can be given transparent access to network
 	applications that run off application servers
 	</para></listitem>
 
@@ -236,7 +236,7 @@ as shown here:
 <para>
 <screen>
 &rootprompt;<userinput>smbpasswd -a -m <replaceable>machine_name</replaceable></userinput>
-</screen>>
+</screen>
 </para>
 
 <para>
@@ -412,19 +412,19 @@ with the version of Windows:
 <sect3>
 	<title>Samba</title>
 
-	<para>Joining a samba client to a domain is documented in 
-	the <link linkend="domain-member">Domain Member</link> chapter.
+	<para>Joining a Samba client to a domain is documented in 
+	the <link linkend="domain-member-server">Domain Member Server</link> section of this chapter chapter.
 	</para>
 </sect3>
 
 </sect2>
 </sect1>
 
-<sect1>
+<sect1 id="domain-member-server">
 <title>Domain Member Server</title>
 
 <para>
-This mode of server operation involves the samba machine being made a member
+This mode of server operation involves the Samba machine being made a member
 of a domain security context. This means by definition that all user
 authentication will be done from a centrally defined authentication regime. 
 The authentication regime may come from an NT3/4 style (old domain technology)
@@ -445,7 +445,7 @@ Server, etc.
 Please refer to the <link linkend="samba-pdc">Domain Control chapter</link>
 for more information regarding how to create a domain
 machine account for a domain member server as well as for information
-regarding how to enable the samba domain member machine to join the domain and
+regarding how to enable the Samba domain member machine to join the domain and
 to be fully trusted by it.
 </para>
 
@@ -537,7 +537,7 @@ password server = *
 </para>
 
 <para>
-This method, allows Samba to use exactly the same mechanism that NT does. This 
+This method allows Samba to use exactly the same mechanism that NT does. This 
 method either broadcasts or uses a WINS database in order to
 find domain controllers to authenticate against.
 </para>
@@ -560,7 +560,8 @@ the domain name will be obtained from &smb.conf;.
 <para>
 As we are joining the domain DOM and the PDC for that domain 
 (the only machine that has write access to the domain SAM database) 
-is DOMPDC. The <replaceable>Administrator%password</replaceable> is 
+is DOMPDC, we use it for the <option>-S</option> option. 
+The <replaceable>Administrator%password</replaceable> is 
 the login name and password for an account which has the necessary 
 privilege to add machines to the domain.  If this is successful 
 you will see the message:
@@ -585,7 +586,7 @@ trust account on the PDC beforehand.
 This command goes through the machine account password 
 change protocol, then writes the new (random) machine account 
 password for this Samba server into a file in the same directory 
-in which an smbpasswd file would be stored - normally :
+in which an smbpasswd file would be stored - normally:
 </para>
 
 <para>
@@ -622,8 +623,8 @@ NT server in the same way as a Windows 95 or Windows 98 server would.
 </para>
 
 <para>
-Please refer to the <ulink url="winbind.html">Winbind 
-paper</ulink> for information on a system to automatically
+Please refer to the <link linkend="winbind">Winbind</link> chapter 
+for information on a system to automatically
 assign UNIX uids and gids to Windows NT Domain users and groups.
 </para>
 
@@ -672,8 +673,8 @@ the NIS/NT Samba</ulink>.
 <title>Samba ADS Domain Membership</title>
 
 <para>
-This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
-Windows2000 KDC. 
+This is a rough guide to setting up Samba 3.0 with Kerberos authentication against a
+Windows2000 KDC. A familiarity with Kerberos is assumed.
 </para> 
 
 <sect2>
@@ -729,7 +730,7 @@ making sure that your password is accepted by the Win2000 KDC.
 
 <note><para>
 The realm must be uppercase or you will get <errorname>Cannot find KDC for
-requested realm while getting initial credentials</errorname> error
+requested realm while getting initial credentials</errorname> error.
 </para></note>
 
 <note><para>
@@ -741,24 +742,24 @@ if the time difference is more than five minutes.
 <para>
 You also must ensure that you can do a reverse DNS lookup on the IP
 address of your KDC. Also, the name that this reverse lookup maps to
-must either be the netbios name of the KDC (ie. the hostname with no
-domain attached) or it can alternatively be the netbios name
+must either be the NetBIOS name of the KDC (ie. the hostname with no
+domain attached) or it can alternatively be the NetBIOS name
 followed by the realm. 
 </para>
 
 <para>
 The easiest way to ensure you get this right is to add a 
 <filename>/etc/hosts</filename> entry mapping the IP address of your KDC to 
-its netbios name. If you don't get this right then you will get a 
+its NetBIOS name. If you don't get this right then you will get a 
 <errorname>local error</errorname> when you try to join the realm.
 </para>
 
 <para>
-If all you want is kerberos support in &smbclient; then you can skip
+If all you want is Kerberos support in &smbclient; then you can skip
 straight to <link linkend="ads-test-smbclient">Test with &smbclient;</link> now. 
 <link linkend="ads-create-machine-account">Creating a computer account</link> 
 and <link linkend="ads-test-server">testing your servers</link>
-is only needed if you want kerberos support for &smbd; and &winbindd;.
+is only needed if you want Kerberos support for &smbd; and &winbindd;.
 </para>
 
 </sect2>
@@ -770,7 +771,7 @@ is only needed if you want kerberos support for &smbd; and &winbindd;.
 As a user that has write permission on the Samba private directory
 (usually root) run:
 <programlisting>
-	<userinput>net join -U Administrator%password</userinput>
+	&rootprompt;<userinput>net join -U Administrator%password</userinput>
 </programlisting>
 </para>
 
@@ -781,7 +782,7 @@ As a user that has write permission on the Samba private directory
 <variablelist>
 	<varlistentry><term><errorname>ADS support not compiled in</errorname></term>
 	<listitem><para>Samba must be reconfigured (remove config.cache) and recompiled
-	(make clean all install) after the kerberos libs and headers are installed.
+	(make clean all install) after the Kerberos libs and headers are installed.
 	</para></listitem></varlistentry>
 
 	<varlistentry><term><errorname>net join prompts for user name</errorname></term>
@@ -807,7 +808,7 @@ folder under Users and Computers.
 
 <para>
 On a Windows 2000 client try <userinput>net use * \\server\share</userinput>. You should
-be logged in with kerberos without needing to know a password. If
+be logged in with Kerberos without needing to know a password. If
 this fails then run <userinput>klist tickets</userinput>. Did you get a ticket for the
 server? Does it have an encoding type of DES-CBC-MD5 ? 
 </para>
@@ -819,8 +820,8 @@ server? Does it have an encoding type of DES-CBC-MD5 ?
 
 <para>
 On your Samba server try to login to a Win2000 server or your Samba
-server using &smbclient; and kerberos. Use &smbclient; as usual, but
-specify the <parameter>-k</parameter> option to choose kerberos authentication.
+server using &smbclient; and Kerberos. Use &smbclient; as usual, but
+specify the <parameter>-k</parameter> option to choose Kerberos authentication.
 </para>
 
 </sect2>
@@ -846,7 +847,7 @@ their defaults DNS setup. Maybe fixed in service packs?
 
 <para>
 In the process of adding / deleting / re-adding domain member machine accounts there are
-many traps for the unwary player and there are many "little" things that can go wrong.
+many traps for the unwary player and there are many <quote>little</quote> things that can go wrong.
 It is particularly interesting how often subscribers on the samba mailing list have concluded
 after repeated failed attempts to add a machine account that it is necessary to "re-install"
 MS Windows on t he machine. In truth, it is seldom necessary to reinstall because of this type
@@ -861,7 +862,7 @@ networking functions. easily overcome.
 <emphasis>Problem:</emphasis> A Windows workstation was reinstalled. The original domain machine
 account was deleted and added immediately. The workstation will not join the domain if I use 
 the same machine name. Attempts to add the machine fail with a message that the machine already
-exists on the network - I know it doen't. Why is this failing?
+exists on the network - I know it doesn't. Why is this failing?
 </para>
 
 <para>

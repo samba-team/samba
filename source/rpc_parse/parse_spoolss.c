@@ -645,7 +645,7 @@ static BOOL spool_io_user_level(const char *desc, SPOOL_USER_CTR *q_u, prs_struc
 
 BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
-	uint32 available_space;		/* size of the device mode left to parse */
+	int available_space;		/* size of the device mode left to parse */
 					/* only important on unmarshalling       */
 	int i = 0;
 					

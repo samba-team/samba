@@ -650,7 +650,7 @@ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 			const char *connectpath,
 			gid_t gid,
 			const char *smb_name,
-			char *str)
+			const char *str)
 {
 	char *a, *t;
        	a = alloc_sub_advanced(snum, user, connectpath, gid, smb_name, str);
@@ -662,7 +662,7 @@ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 
 char *alloc_sub_advanced(int snum, const char *user, 
 				  const char *connectpath, gid_t gid, 
-				  const char *smb_name, char *str)
+				  const char *smb_name, const char *str)
 {
 	char *a_string, *ret_string;
 	char *b, *p, *s, *t, *h;
@@ -736,14 +736,14 @@ void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 			conn->gid, smb_user_name, str, len);
 }
 
-char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, char *str)
+char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, const char *str)
 {
 	return talloc_sub_advanced(mem_ctx, SNUM(conn), conn->user,
 			conn->connectpath, conn->gid,
 			smb_user_name, str);
 }
 
-char *alloc_sub_conn(connection_struct *conn, char *str)
+char *alloc_sub_conn(connection_struct *conn, const char *str)
 {
 	return alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
 			conn->gid, smb_user_name, str);

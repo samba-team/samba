@@ -284,7 +284,7 @@ is discovered.
 <para>
 If all of samba and host platform configuration were really as intuitive as one might like then this
 section would not be necessary. Security issues are often vexing for a support person to resolve, not
-because of the complexity of the problem, but for reason that most admininstrators who post what turns
+because of the complexity of the problem, but for reason that most administrators who post what turns
 out to be a security problem request are totally convinced that the problem is with Samba.
 </para>
 
@@ -319,7 +319,7 @@ out to be a security problem request are totally convinced that the problem is w
 
 	<para><quote>
 	User xyzzy can map his home directory. Once mapped user xyzzy can also map
-	*anyone* elses home directory!
+	*anyone* else's home directory!
 	</quote></para>
 
 	<para>

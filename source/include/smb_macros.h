@@ -202,6 +202,7 @@ true if two IP addresses are equal
 ****************************************************************************/
 
 #define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+#define ip_service_equal(ip1,ip2) ( ((ip1).ip.s_addr == (ip2).ip.s_addr) && ((ip1).port == (ip2).port) )
 
 /*****************************************************************
  splits out the last subkey of a key
@@ -246,5 +247,12 @@ copy an IP address from one buffer to another
 ****************************************************************************/
 
 #define dos_format(fname) string_replace(fname,'/','\\')
+
+/*****************************************************************************
+ Check to see if we are a DO for this domain
+*****************************************************************************/
+
+#define IS_DC_FOR_DOMAIN(x) ( (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) \
+                               && strequal((x), lp_workgroup()) )
 
 #endif /* _SMB_MACROS_H */

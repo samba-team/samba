@@ -1512,7 +1512,7 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct smbpasswd_privates *privates;
@@ -1559,15 +1559,14 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->free_private_data = free_private_data;
 
 	if (lp_idmap_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
-		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
+		DEBUG(3, ("idmap uid range defined, non unix accounts enabled\n"));
 		privates->permit_non_unix_accounts = True;
 	}
 
 	return NT_STATUS_OK;
 }
 
-int pdb_smbpasswd_init(void) 
+NTSTATUS pdb_smbpasswd_init(void) 
 {
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
-	return True;
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
 }
