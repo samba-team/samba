@@ -109,9 +109,9 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     krb5_data data;
 
     if(encrypt_flag)
-	_hdb_seal_keys_int(context, entry, mkey5);
+	hdb_seal_keys_mkey(context, entry, mkey5);
     if(decrypt_flag)
-	_hdb_unseal_keys_int(context, entry, mkey5);
+	hdb_unseal_keys_mkey(context, entry, mkey5);
 
     ret = hdb_entry2value(context, entry, &data);
     if(ret) {
