@@ -123,8 +123,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
         
 	/* Create new domain entry */
 
-	if ((domain = (struct winbindd_domain *)
-	     malloc(sizeof(*domain))) == NULL)
+	if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
 		return NULL;
 
 	/* Fill in fields */
@@ -164,7 +163,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
         
 	DEBUG(1,("Added domain %s %s %s\n", 
 		 domain->name, domain->alt_name,
-		 sid?sid_string_static(&domain->sid):""));
+		 &domain->sid?sid_string_static(&domain->sid):""));
         
 	return domain;
 }
