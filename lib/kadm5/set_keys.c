@@ -36,46 +36,6 @@
 RCSID("$Id$");
 
 /*
- * free all the memory used by (len, keys)
- */
-
-static void
-free_keys (kadm5_server_context *context,
-	   int len, Key *keys)
-{
-    int i;
-
-    for (i = 0; i < len; ++i) {
-	free (keys[i].mkvno);
-	keys[i].mkvno = NULL;
-	if (keys[i].salt != NULL) {
-	    free_Salt(keys[i].salt);
-	    free(keys[i].salt);
-	    keys[i].salt = NULL;
-	}
-	krb5_free_keyblock_contents(context->context, &keys[i].key);
-    }
-    free (keys);
-}
-
-/*
- * null-ify `len', `keys'
- */
-
-static void
-init_keys (Key *keys, int len)
-{
-    int i;
-
-    for (i = 0; i < len; ++i) {
-	keys[i].mkvno               = NULL;
-	keys[i].salt                = NULL;
-	keys[i].key.keyvalue.length = 0;
-	keys[i].key.keyvalue.data   = NULL;
-    }
-}
-
-/*
  * the known and used DES enctypes
  */
 
@@ -304,7 +264,7 @@ _kadm5_set_keys(kadm5_server_context *context,
     if(ret)
 	return ret;
     
-    free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.val = keys;
     ent->keys.len = num_keys;
     ent->kvno++;
@@ -331,7 +291,7 @@ _kadm5_set_keys2(kadm5_server_context *context,
     if (keys == NULL)
 	return ENOMEM;
 
-    init_keys (keys, len);
+    _kadm5_init_keys (keys, len);
 
     for(i = 0; i < n_key_data; i++) {
 	keys[i].mkvno = NULL;
@@ -357,13 +317,13 @@ _kadm5_set_keys2(kadm5_server_context *context,
 	} else
 	    keys[i].salt = NULL;
     }
-    free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
     ent->kvno++;
     return 0;
  out:
-    free_keys (context, len, keys);
+    _kadm5_free_keys (context, len, keys);
     return ret;
 }
 
@@ -387,7 +347,7 @@ _kadm5_set_keys3(kadm5_server_context *context,
     if (keys == NULL)
 	return ENOMEM;
 
-    init_keys (keys, len);
+    _kadm5_init_keys (keys, len);
 
     for(i = 0; i < n_keys; i++) {
 	keys[i].mkvno = NULL;
@@ -398,13 +358,13 @@ _kadm5_set_keys3(kadm5_server_context *context,
 	    goto out;
 	keys[i].salt = NULL;
     }
-    free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
     ent->kvno++;
     return 0;
  out:
-    free_keys (context, len, keys);
+    _kadm5_free_keys (context, len, keys);
     return ret;
 }
 
@@ -441,7 +401,7 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 	return ENOMEM;
     }
 
-    init_keys (hkeys, len);
+    _kadm5_init_keys (hkeys, len);
 
     ret = krb5_generate_random_keyblock (context->context,
 					 des_types[0],
@@ -482,7 +442,7 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
     if (ret)
 	goto out;
 
-    free_keys (context, ent->keys.len, ent->keys.val);
+    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = hkeys;
     ent->kvno++;
@@ -493,6 +453,6 @@ out:
     for (i = 0; i < len; ++i)
 	krb5_free_keyblock_contents (context->context, &keys[i]);
     free (keys);
-    free_keys (context, len, hkeys);
+    _kadm5_free_keys (context, len, hkeys);
     return ret;
 }
