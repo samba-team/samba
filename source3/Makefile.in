@@ -59,7 +59,7 @@ LOCKDIR = @lockdir@
 CODEPAGEDIR = $(LIBDIR)/codepages
 
 # The current codepage definition list.
-CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI-R
+CODEPAGELIST= 437 737 775 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI-R
 
 # where you are going to have the smbrun binary. This defaults to the 
 # install directory. This binary is needed for correct printing
