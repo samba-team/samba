@@ -31,10 +31,33 @@
  * SUCH DAMAGE.
  */
 
-#include "roken.h"
-
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 RCSID("$Id$");
+#endif
+
+#include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IN6_H
+#include <netinet/in6.h>
+#endif
+#ifdef HAVE_NETINET6_IN6_H
+#include <netinet6/in6.h>
+#endif
+
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
+#include "roken.h"
 
 int     __check_rhosts_file = 1;
 char    *__rcmd_errstr = 0;
@@ -44,7 +67,7 @@ char    *__rcmd_errstr = 0;
  */
 static
 int
-__icheckhost(u_int32_t raddr, const char *lhost)
+__icheckhost(unsigned raddr, const char *lhost)
 {
 	struct hostent *hp;
 	u_long laddr;
@@ -81,7 +104,7 @@ innetgr(const char *netgroup, const char *machine,
  */
 static
 int
-__ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser,
+__ivaliduser(FILE *hostf, unsigned raddr, const char *luser,
 	     const char *ruser)
 {
 	char *user, *p;
@@ -210,7 +233,7 @@ __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser,
  * Returns 0 if ok, -1 if not ok.
  */
 int
-iruserok(u_int32_t raddr, int superuser, const char *ruser, const char *luser)
+iruserok(unsigned raddr, int superuser, const char *ruser, const char *luser)
 {
 	char *cp;
 	struct stat sbuf;
