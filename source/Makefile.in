@@ -689,24 +689,14 @@ LIBSMB_LTOBJS = $(LIBSMB_OBJ:.o=.lo)
 
 LIBMSRPC_LTOBJS = $(RPC_CLIENT_OBJ:.o=.lo) $(RPC_PARSE_OBJ:.o=.lo)
 
-WINBINDD_OBJ = nsswitch/winbindd.o nsswitch/winbindd_user.o \
-nsswitch/winbindd_group.o nsswitch/winbindd_surs.o \
-rpc_client/cli_lsarpc.o rpc_parse/parse_lsa.o \
-rpc_client/cli_connect.o rpc_client/cli_use.o rpc_client/cli_samr.o \
-rpc_parse/parse_samr.o rpc_client/cli_pipe.o rpc_parse/parse_rpc.o \
-lib/msrpc-client.o rpc_client/cli_pipe_noauth.o $(STUB_UID_OBJ) \
-rpc_client/cli_netlogon.o rpc_client/msrpc_samr.o \
-rpc_client/cli_pipe_ntlmssp.o lib/msrpc_use.o \
-rpc_parse/parse_sec.o lib/set_vuid.o \
-rpc_client/ncalrpc_l_use.o rpc_client/ncacn_np_use.o \
-$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) \
-$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ)
+WINBINDD_OBJ1 = nsswitch/winbindd.o nsswitch/winbindd_user.o \
+nsswitch/winbindd_group.o nsswitch/winbindd_surs.o nsswitch/winbindd_sock.o
 
-#msrpc/msrpcd.o browserd/browserd.o \
-#locking/locking.o msrpc/msrpcd_process.o rpc_server/srv_brs.o \
-#rpc_server/srv_pipe_srv.o rpc_parse/parse_brs.o rpc_server/srv_pipe_noauth.o \
+WINBINDD_OBJ = $(WINBINDD_OBJ1) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+$(STUB_UID_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ) $(LIBSMB_OBJ) 
 
-NSS_OBJ_O = nsswitch/ntdom.o
+NSS_OBJ_O = nsswitch/ntdom.o nsswitch/winbindd_sock.o
 
 NSS_OBJ = $(NSS_OBJ_O:.o=.po)
 
@@ -745,6 +735,12 @@ rpctorture : CHECK bin/rpctorture
 smbfilter : CHECK bin/smbfilter
 
 nsswitch: CHECK nsswitch/ntdom.so bin/winbindd
+
+RUNTEST = runtest
+RUNTESTDEFAULTFLAGS = --srcdir @srcdir@/testsuite
+
+check:
+	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
 
 .SUFFIXES:
 .SUFFIXES: .c .o .lo .po .po32
@@ -1076,9 +1072,9 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
 
-nsswitch/ntdom.so: $(NSS_OBJ)
+nsswitch/ntdom.so: $(NSS_OBJ) $(LIBSAMBA_OBJ)
 	@echo "Linking $@"
-	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
+	@$(LINK) -shared -o $@ $(NSS_OBJ) $(LIBSAMBA_OBJ)
 
 install: all \
 	installdirs \
@@ -1154,7 +1150,7 @@ all_other_proto_for_now:
 winbindd_proto:
 	@echo rebuilding include/winbindd_proto.h
 	@cd $(srcdir) && $(AWK) -v headername=_WINBINDD_PROTO_H_ \
-	  -f script/mkproto.awk `echo $(WINBINDD_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/winbindd_proto.h
+	  -f script/mkproto.awk `echo $(WINBINDD_OBJ1) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/winbindd_proto.h
 
 libsmb_proto:
 	@echo rebuilding include/libsmb_proto.h
