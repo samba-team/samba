@@ -21,42 +21,6 @@ sub get_typefamily($)
 	return $typefamily{$n};
 }
 
-my %scalar_alignments = 
-(
-     "char"           => 1,
-     "int8"           => 1,
-     "uint8"          => 1,
-     "short"          => 2,
-     "wchar_t"        => 2,
-     "int16"          => 2,
-     "uint16"         => 2,
-     "long"           => 4,
-     "int32"          => 4,
-     "uint32"         => 4,
-     "dlong"          => 4,
-     "udlong"         => 4,
-     "udlongr"        => 4,
-     "NTTIME"         => 4,
-     "NTTIME_1sec"    => 4,
-     "time_t"         => 4,
-     "DATA_BLOB"      => 4,
-     "error_status_t" => 4,
-     "WERROR"         => 4,
-	 "NTSTATUS" 	  => 4,
-     "boolean32"      => 4,
-     "unsigned32"     => 4,
-     "ipv4address"    => 4,
-     "hyper"          => 8,
-     "NTTIME_hyper"   => 8
-);
-
-$typefamily{SCALAR} = {
-	ALIGN => sub { 
-		my $t = shift;
-		return $scalar_alignments{$t->{NAME}}; 
-	}
-};
-
 # determine if an element needs a "buffers" section in NDR
 sub need_buffers_section($)
 {
@@ -254,46 +218,6 @@ sub end_flags($)
 	if (defined $flags) {
 		pidl "ndr->flags = _flags_save_$e->{TYPE};\n\t}";
 	}
-}
-
-#####################################################################
-# work out the correct alignment for a structure or union
-sub find_largest_alignment($)
-{
-	my $s = shift;
-
-	my $align = 1;
-	for my $e (@{$s->{ELEMENTS}}) {
-		my $a = 1;
-
-		if (Ndr::need_wire_pointer($e)) {
-			$a = 4; 
-		} else { 
-			$a = align_type($e->{TYPE}); 
-		}
-
-		$align = $a if ($align < $a);
-	}
-
-	return $align;
-}
-
-#####################################################################
-# align a type
-sub align_type
-{
-	my $e = shift;
-
-	unless (typelist::hasType($e)) {
-	    # it must be an external type - all we can do is guess 
-		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
-	    return 4;
-	}
-
-	my $dt = typelist::getType($e)->{DATA};
-
-	my $tmp = $typefamily{$dt->{TYPE}}->{ALIGN}->($dt);
-	return $tmp;
 }
 
 #####################################################################
@@ -1036,7 +960,7 @@ sub ParseStructPush($)
 
 	pidl "NDR_CHECK(ndr_push_struct_start(ndr));";
 
-	my $align = find_largest_alignment($struct);
+	my $align = Ndr::find_largest_alignment($struct);
 	pidl "NDR_CHECK(ndr_push_align(ndr, $align));";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -1142,7 +1066,6 @@ $typefamily{ENUM} = {
 	PULL_FN_ARGS => \&ArgsEnumPull,
 	PRINT_FN_BODY => \&ParseEnumPrint,
 	PRINT_FN_ARGS => \&ArgsEnumPrint,
-	ALIGN => sub { return align_type(typelist::enum_type_fn(shift)); }
 };
 
 #####################################################################
@@ -1244,7 +1167,6 @@ $typefamily{BITMAP} = {
 	PULL_FN_ARGS => \&ArgsBitmapPull,
 	PRINT_FN_BODY => \&ParseBitmapPrint,
 	PRINT_FN_ARGS => \&ArgsBitmapPrint,
-	ALIGN => sub { return align_type(typelist::bitmap_type_fn(shift)); }
 };
 
 #####################################################################
@@ -1310,7 +1232,7 @@ sub ParseStructPull($)
 		ParseArrayPullPreceding($conform_e, "r->", "NDR_SCALARS");
 	}
 
-	my $align = find_largest_alignment($struct);
+	my $align = Ndr::find_largest_alignment($struct);
 	pidl "NDR_CHECK(ndr_pull_align(ndr, $align));";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -1381,7 +1303,6 @@ $typefamily{STRUCT} = {
 	PRINT_FN_ARGS => \&ArgsStructPrint,
 	SIZE_FN_BODY => \&ParseStructNdrSize,
 	SIZE_FN_ARGS => \&ArgsStructNdrSize,
-	ALIGN => \&find_largest_alignment
 };
 
 #####################################################################
@@ -1638,7 +1559,6 @@ $typefamily{UNION} = {
 	PRINT_FN_ARGS => \&ArgsUnionPrint,
 	SIZE_FN_ARGS => \&ArgsUnionNdrSize,
 	SIZE_FN_BODY => \&ParseUnionNdrSize,
-	ALIGN => \&find_largest_alignment
 };
 	
 #####################################################################
@@ -2110,32 +2030,20 @@ sub ParseInterface($)
 
 	# Push functions
 	foreach my $d (@{$data}) {
-		($d->{TYPE} eq "TYPEDEF") &&
+		if ($d->{TYPE} eq "TYPEDEF") {
 		    ParseTypedefPush($d);
-		($d->{TYPE} eq "FUNCTION") && 
-		    ParseFunctionPush($d);
-	}
-
-	# Pull functions
-	foreach my $d (@{$data}) {
-		($d->{TYPE} eq "TYPEDEF") &&
 		    ParseTypedefPull($d);
-		($d->{TYPE} eq "FUNCTION") && 
-		    ParseFunctionPull($d);
-	}
-	
-	# Print functions
-	foreach my $d (@{$data}) {
-		($d->{TYPE} eq "TYPEDEF") &&
 			ParseTypedefPrint($d);
-		($d->{TYPE} eq "FUNCTION") &&
-			ParseFunctionPrint($d);
+			ParseTypedefNdrSize($d);
+		}
 	}
 
-	# Size functions
 	foreach my $d (@{$data}) {
-		($d->{TYPE} eq "TYPEDEF") && 
-			ParseTypedefNdrSize($d);
+		if ($d->{TYPE} eq "FUNCTION") {
+		    ParseFunctionPush($d);
+		    ParseFunctionPull($d);
+			ParseFunctionPrint($d);
+		}
 	}
 
 	FunctionTable($interface);
