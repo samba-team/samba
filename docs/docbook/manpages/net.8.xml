@@ -4,15 +4,6 @@
 
 <!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
 
-<!-- This one is only used for adding users using RAP -->
-<!ENTITY net.arg.flags '
-<varlistentry>
-<term>-F flags</term>
-<listitem><para>
-FIXME. Defaults to 0x21
-</para></listitem>
-</varlistentry>'>
-
 <!-- This one is only used by shutdown (RPC) -->
 <!ENTITY net.arg.shutdown '
 <varlistentry>
