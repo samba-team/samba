@@ -35,7 +35,7 @@
 {
 	char *p, *p2;
 	int ret, maxlen, clen;
-	const char *msgstr;
+	char *msgstr;
 	va_list ap2;
 
 	/* do any message translations */
