@@ -71,6 +71,6 @@
 
 #define OTPKEYS "/.otpkeys"
 
-#define OTP_DB "/tmp/otp"
-#define OTP_DB_LOCK "/tmp/otp-lock"
+#define OTP_DB "/etc/otp"
+#define OTP_DB_LOCK "/etc/otp-lock"
 
