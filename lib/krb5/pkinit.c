@@ -183,13 +183,6 @@ _krb5_pk_create_sign(krb5_context context,
 
     sd.version = 3;
 
-    /* for win2k we have to use a different object identifier */
-    if (context->pkinit_win2k_compatible) {
-	oid = &pkcs7_data_oid;
-    } else {
-	oid = &heim_pkauthdata_oid;
-    }
-
     sd.digestAlgorithms.len = 0;
     sd.digestAlgorithms.val = NULL;
     copy_oid(oid, &sd.encapContentInfo.eContentType);
@@ -975,14 +968,17 @@ get_reply_key(krb5_context context,
     krb5_error_code ret;
     size_t size;
 
-    if (oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0)
+    if (oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0) {
+	krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
 	return KRB5KRB_AP_ERR_MSG_TYPE;
+    }
 
     ret = decode_ReplyKeyPack(eContent->data,
 			      eContent->length,
 			      &key_pack,
 			      &size);
     if (ret) {
+	krb5_set_error_string(context, "PKINIT decoding reply key failed");
 	free_ReplyKeyPack(&key_pack);
 	return ret;
     }
@@ -994,6 +990,7 @@ get_reply_key(krb5_context context,
 
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
+	krb5_set_error_string(context, "PKINIT failed allocating reply key");
 	free_ReplyKeyPack(&key_pack);
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
@@ -1001,8 +998,10 @@ get_reply_key(krb5_context context,
 
     ret = copy_EncryptionKey(&key_pack.replyKey, *key);
     free_ReplyKeyPack(&key_pack);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context, "PKINIT failed allocating reply key");
 	free(*key);
+    }
 
     return ret;
 }
@@ -1195,10 +1194,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
     }
 
     ret = get_reply_key(context, &eContentType, &eContent, nonce, key);
-    if (ret) {
-	krb5_set_error_string(context, "failed getting reply key: %d", ret);
+    if (ret)
 	goto out;
-    }
 
     /* XXX compare given etype with key->etype */
 
