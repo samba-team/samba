@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern DOM_SID global_sid_Builtin;
+
 /**********************************************************************************
  Check if this ACE has a SID in common with the token.
 **********************************************************************************/
@@ -441,4 +443,43 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	sdb = make_sec_desc_buf(ctx, size, sd);
 
 	return sdb;
+}
+
+/*******************************************************************
+ samr_make_sam_obj_sd
+ ********************************************************************/
+
+NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
+{
+	extern DOM_SID global_sid_World;
+	DOM_SID adm_sid;
+	DOM_SID act_sid;
+
+	SEC_ACE ace[3];
+	SEC_ACCESS mask;
+
+	SEC_ACL *psa = NULL;
+
+	sid_copy(&adm_sid, &global_sid_Builtin);
+	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+
+	sid_copy(&act_sid, &global_sid_Builtin);
+	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
+
+	/*basic access for every one*/
+	init_sec_access(&mask, SAMR_EXECUTE | SAMR_READ);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	/*full access for builtin aliases Administrators and Account Operators*/
+	init_sec_access(&mask, SAMR_ALL_ACCESS);
+	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	return NT_STATUS_OK;
 }
