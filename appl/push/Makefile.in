@@ -1,0 +1,80 @@
+# $Id$
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+LIBS = @LIBS@
+LIB_DBM = @LIB_DBM@
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+libexecdir = @libexecdir@
+bindir = @bindir@
+transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
+
+libexec_PROGRAMS	= push$(EXECSUFFIX)
+
+PROGRAMS		= $(libexec_PROGRAMS)
+
+push_SOURCES		= push.c
+
+push_OBJECTS		= push.o
+
+SOURCES			= $(push_SOURCES)
+
+OBJECTS			= $(push_OBJECTS)
+
+all: $(PROGRAMS)
+
+.c.o:
+	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $<
+
+install: all
+	$(MKINSTALLDIRS) $(DESTDIR)$(libexecdir)
+	for x in $(libexec_PROGRAMS); do \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
+
+uninstall:
+	for x in $(libexec_PROGRAMS); do \
+	  rm -f $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	done
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f *.a *.o $(PROGS)
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *~
+
+realclean: distclean
+	rm -f TAGS
+
+KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
+LIBROKEN=-L../../lib/roken -lroken
+
+push$(EXECSUFFIX): $(push_OBJECTS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(push_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+
+$(OBJECTS): ../../include/config.h
+
+.PHONY: all install uninstall check clean mostlyclean distclean realclean
