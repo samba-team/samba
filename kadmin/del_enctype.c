@@ -60,6 +60,7 @@ del_enctype(void *opt, int argc, char **argv)
 	krb5_warnx (context, "out of memory");
 	return 0;
     }
+    argv++;
     for (i = 0; i < n_etypes; ++i) {
 	ret = krb5_string_to_enctype (context, argv[i], &etypes[i]);
 	if (ret) {
