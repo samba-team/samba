@@ -49,7 +49,7 @@ db_fetch(krb5_principal principal)
     hdb_entry *ent;
     krb5_error_code ret;
 
-    ret = hdb_open(context, &db, NULL, O_RDONLY, 0);
+    ret = hdb_open(context, &db, database, O_RDONLY, 0);
     if (ret) {
 	kdc_log(0, "Failed to open database: %s", 
 		krb5_get_err_text(context, ret));
