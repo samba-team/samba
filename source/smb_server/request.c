@@ -126,8 +126,10 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 		return;
 	}
 
-	flags2 = FLAGS2_LONG_PATH_COMPONENTS | FLAGS2_EXTENDED_SECURITY;
-	flags2 |= (req->flags2 & FLAGS2_UNICODE_STRINGS);
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS | 
+		FLAGS2_EXTENDED_ATTRIBUTES | 
+		FLAGS2_IS_LONG_NAME;
+	flags2 |= (req->flags2 & (FLAGS2_UNICODE_STRINGS|FLAGS2_EXTENDED_SECURITY));
 	if (req->smb_conn->negotiate.client_caps & CAP_STATUS32) {
 		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 	}
