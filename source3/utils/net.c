@@ -381,7 +381,6 @@ again:
 		DEBUG(1,("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(c)));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		if ((p=strchr(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -398,7 +397,6 @@ again:
 	if (!cli_negprot(c)) {
 		DEBUG(1,("protocol negotiation failed\n"));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 	
@@ -417,7 +415,6 @@ again:
 		if (!cli_session_setup(c, "", "", 0, "", 0, opt_workgroup)) { 
 			DEBUG(1,("session setup failed: %s\n", cli_errstr(c)));
 			cli_shutdown(c);
-			SAFE_FREE(c);
 			return NULL;
 		}
 		DEBUG(3,("Anonymous login successful\n"));
@@ -428,7 +425,6 @@ again:
 			    opt_password, strlen(opt_password)+1)) {
 		DEBUG(1,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 	

@@ -270,7 +270,7 @@ static int ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname)
 	asprintf(&new_dn, "cn=%s,cn=Computers,%s", hostname, ads->bind_path);
 	asprintf(&samAccountName, "%s$", hostname);
 	asprintf(&controlstr, "%u", 
-		UF_DONT_EXPIRE_PASSWD | UF_WORKSTATION_TRUST_ACCOUNT |
+		UF_DONT_EXPIRE_PASSWD | UF_WORKSTATION_TRUST_ACCOUNT | 
 		UF_TRUSTED_FOR_DELEGATION | UF_USE_DES_KEY_ONLY);
     
 	ret = ads_gen_add(ads, new_dn,
@@ -464,6 +464,19 @@ NTSTATUS ads_set_machine_password(ADS_STRUCT *ads,
 	ret = krb5_set_password(ads->kdc_server, host, ads->realm, password);
 	free(host);
 	return ret;
+}
+
+/* find the update serial number - this is the core of the ldap cache */
+BOOL ads_USN(ADS_STRUCT *ads, unsigned *usn)
+{
+	const char *attrs[] = {"highestCommittedUSN", NULL};
+	int rc;
+	void *res;
+
+	rc = ldap_search_s(ads->ld, ads->bind_path, 
+			   LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage *)&res);
+	if (rc || ads_count_replies(ads, res) != 1) return False;
+	return False;
 }
 
 #endif

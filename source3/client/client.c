@@ -2124,7 +2124,6 @@ struct cli_state *do_connect(const char *server, const char *share)
 		d_printf("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(c));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -2141,7 +2140,6 @@ struct cli_state *do_connect(const char *server, const char *share)
 	if (!cli_negprot(c)) {
 		d_printf("protocol negotiation failed\n");
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -2161,7 +2159,6 @@ struct cli_state *do_connect(const char *server, const char *share)
 		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
 			cli_shutdown(c);
-			SAFE_FREE(c);
 			return NULL;
 		}
 		d_printf("Anonymous login successful\n");
@@ -2186,7 +2183,6 @@ struct cli_state *do_connect(const char *server, const char *share)
 			    password, strlen(password)+1)) {
 		d_printf("tree connect failed: %s\n", cli_errstr(c));
 		cli_shutdown(c);
-		SAFE_FREE(c);
 		return NULL;
 	}
 
