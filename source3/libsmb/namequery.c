@@ -247,60 +247,81 @@ struct in_addr *name_query(int fd,char *name,int name_type, BOOL bcast,BOOL recu
   retries--;
 
   while (1)
+  {
+    struct timeval tval2;
+    GetTimeOfDay(&tval2);
+    if (TvalDiff(&tval,&tval2) > retry_time) 
     {
-      struct timeval tval2;
-      GetTimeOfDay(&tval2);
-      if (TvalDiff(&tval,&tval2) > retry_time) {
-	if (!retries) break;
-	if (!found && !send_packet(&p))
-	  return NULL;
-	GetTimeOfDay(&tval);
-	retries--;
+      if (!retries)
+        break;
+      if (!found && !send_packet(&p))
+        return NULL;
+      GetTimeOfDay(&tval);
+      retries--;
+    }
+
+    if ((p2=receive_packet(fd,NMB_PACKET,90)))
+    {     
+      struct nmb_packet *nmb2 = &p2->packet.nmb;
+      debug_nmb_packet(p2);
+
+      if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
+          !nmb2->header.response)
+      {
+        /* 
+         * Its not for us - maybe deal with it later 
+         * (put it on the queue?).
+         */
+        if (fn) 
+          fn(p2);
+        else
+          free_packet(p2);
+        continue;
+      }
+	  
+      if (nmb2->header.opcode != 0 ||
+          nmb2->header.nm_flags.bcast ||
+          nmb2->header.rcode ||
+          !nmb2->header.ancount)
+      {
+	    /* 
+         * XXXX what do we do with this? Could be a redirect, but
+         * we'll discard it for the moment.
+         */
+        free_packet(p2);
+        continue;
       }
 
-      if ((p2=receive_packet(fd,NMB_PACKET,90)))
-	{     
-	  struct nmb_packet *nmb2 = &p2->packet.nmb;
-	  debug_nmb_packet(p2);
+      ip_list = (struct in_addr *)Realloc(ip_list, sizeof(ip_list[0]) * 
+                                          ((*count)+nmb2->answers->rdlength/6));
+      if (ip_list)
+      {
+        DEBUG(fn?3:2,("Got a positive name query response from %s ( ",
+              inet_ntoa(p2->ip)));
+        for (i=0;i<nmb2->answers->rdlength/6;i++)
+        {
+          putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
+          DEBUG(fn?3:2,("%s ",inet_ntoa(ip_list[(*count)])));
+          (*count)++;
+        }
+        DEBUG(fn?3:2,(")\n"));
+      }
 
-	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
-	      !nmb2->header.response) {
-	    /* its not for us - maybe deal with it later 
-	       (put it on the queue?) */
-	    if (fn) 
-	      fn(p2);
-	    else
-	      free_packet(p2);
-	    continue;
-	  }
-	  
-	  if (nmb2->header.opcode != 0 ||
-	      nmb2->header.nm_flags.bcast ||
-	      nmb2->header.rcode ||
-	      !nmb2->header.ancount) {
-	    /* XXXX what do we do with this? could be a redirect, but
-	       we'll discard it for the moment */
-	    free_packet(p2);
-	    continue;
-	  }
+      found=True;
+      retries=0;
+      free_packet(p2);
+      if (fn)
+        break;
 
-	  ip_list = (struct in_addr *)Realloc(ip_list, sizeof(ip_list[0]) * 
-					      ((*count)+nmb2->answers->rdlength/6));
-	  if (ip_list) {
-		  DEBUG(fn?3:2,("Got a positive name query response from %s ( ",
-				inet_ntoa(p2->ip)));
-		  for (i=0;i<nmb2->answers->rdlength/6;i++) {
-			  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-			  DEBUG(fn?3:2,("%s ",inet_ntoa(ip_list[(*count)])));
-			  (*count)++;
-		  }
-		  DEBUG(fn?3:2,(")\n"));
-	  }
-	  found=True; retries=0;
-	  free_packet(p2);
-	  if (fn) break;
-	}
+      /*
+       * If we're doing a unicast lookup we only
+       * expect one reply. Don't wait the full 2
+       * seconds if we got one. JRA.
+       */
+      if(!bcast && found)
+        break;
     }
+  }
 
   return ip_list;
 }

@@ -188,13 +188,24 @@ static int fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 static SMB_BIG_UINT disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int dfree_retval;
+	SMB_BIG_UINT dfree_q = 0;
+	SMB_BIG_UINT bsize_q = 0;
+	SMB_BIG_UINT dsize_q = 0;
 
 	(*dfree) = (*dsize) = 0;
 	(*bsize) = 512;
 
 	fsusage(path, dfree, dsize);
 
+	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
+		(*bsize) = bsize_q;
+		(*dfree) = MIN(*dfree,dfree_q);
+		(*dsize) = MIN(*dsize,dsize_q);
+	}
+
+	/* FIXME : Any reason for this assumption ? */
 	if (*bsize < 256) {
+		DEBUG(5,("disk_free:Warning: bsize == %d < 256 . Changing to assumed correct bsize = 512\n",*bsize));
 		*bsize = 512;
 	}
 

@@ -45,7 +45,7 @@ _syscall4(int, quotactl, int, cmd, const char *, special, int, id, caddr_t, addr
 try to get the disk space from disk quotas (LINUX version)
 ****************************************************************************/
 
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t euser_id;
   int r;
@@ -130,7 +130,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 /****************************************************************************
 try to get the disk space from disk quotas (CRAY VERSION)
 ****************************************************************************/
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+
+BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   struct mntent *mnt;
   FILE *fd;
@@ -227,6 +228,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #elif defined(SUNOS5) || defined(SUNOS4)
 
 #include <fcntl.h>
+#include <sys/param.h>
 #if defined(SUNOS5)
 #include <sys/fs/ufs_quota.h>
 #include <sys/mnttab.h>
@@ -236,10 +238,11 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #endif
 
 /****************************************************************************
-try to get the disk space from disk quotas (solaris 2 version)
-****************************************************************************/
+try to get the disk space from disk quotas (SunOS & Solaris2 version)
 /* Quota code by Peter Urbanec (amiga@cse.unsw.edu.au) */
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+****************************************************************************/
+
+BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t user_id, euser_id;
   int ret;
@@ -249,7 +252,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   int file;
   struct mnttab mnt;
   static pstring name;
-#else
+#else /* SunOS4 */
   struct mntent *mnt;
   static pstring name;
 #endif
@@ -285,7 +288,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     pstrcpy(name,mnt.mnt_mountp) ;
     pstrcat(name,"/quotas") ;
     fclose(fd) ;
-#else
+#else /* SunOS4 */
     if ((fd = setmntent(MOUNTED, "r")) == NULL)
       return(False) ;
     
@@ -336,7 +339,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   seteuid(euser_id);
 
   if (ret < 0) {
-    DEBUG(2,("disk_quotas ioctl (Solaris) failed\n"));
+    DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
     return(False);
   }
 
@@ -349,17 +352,18 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 
   if (D.dqb_bsoftlimit==0)
     return(False);
-  *bsize = 512;
+  *bsize = DEV_BSIZE;
   *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
   *dsize = D.dqb_bsoftlimit;
+
   if(*dfree < 0)
     {
      *dfree = 0;
      *dsize = D.dqb_curblocks;
     }
       
-DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n",
-         path,*bsize,*dfree,*dsize));
+  DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",
+         path,(double)*bsize,(double)*dfree,(double)*dsize));
 
       return(True);
 }
@@ -371,7 +375,8 @@ DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n"
 /****************************************************************************
 try to get the disk space from disk quotas - OFS1 version
 ****************************************************************************/
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+
+BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t user_id, euser_id;
   int r, save_errno;
@@ -426,7 +431,7 @@ try to get the disk space from disk quotas (IRIX 6.2 version)
 #include <sys/quota.h>
 #include <mntent.h>
 
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t euser_id;
   int r;
@@ -518,11 +523,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
         (F.d_ino_hardlimit && F.d_icount>=F.d_ino_hardlimit)
        )
     {
-      /*
-       * Fixme!: these are __uint64_t, this may truncate values
-       */
       *dfree = 0;
-      *dsize = (int) F.d_bcount;
+      *dsize = F.d_bcount;
     }
     else if (F.d_blk_softlimit==0 && F.d_blk_hardlimit==0)
     {
@@ -530,8 +532,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     }
     else 
     {
-      *dfree = (int)(F.d_blk_softlimit - F.d_bcount);
-      *dsize = (int)F.d_blk_softlimit;
+      *dfree = (F.d_blk_softlimit - F.d_bcount);
+      *dsize = F.d_blk_softlimit;
     }
 
   }
@@ -565,7 +567,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 /****************************************************************************
 try to get the disk space from disk quotas - default version
 ****************************************************************************/
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+
+BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t euser_id;
   int r;

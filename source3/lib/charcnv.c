@@ -225,6 +225,6 @@ void interpret_character_set(char *str)
     } else if (strequal (str, "koi8-r")) {
         init_koi8_r();
     } else {
-        DEBUG(0,("unrecognized character set\n"));
+        DEBUG(0,("unrecognized character set %s\n", str));
     }
 }
