@@ -584,7 +584,7 @@ void process_blocking_lock_queue(time_t t)
       DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
           fsp->fnum, fsp->fsp_name ));
 
-      blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
+      blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
