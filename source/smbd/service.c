@@ -499,6 +499,20 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}
 
+	/*
+	 * If widelinks are disallowed we need to canonicalise the
+	 * connect path here to ensure we don't have any symlinks in
+	 * the connectpath. We will be checking all paths on this
+	 * connection are below this directory. We must do this after
+	 * the VFS init as we depend on the realpath() pointer in the vfs table. JRA.
+	 */
+	if (!lp_widelinks(snum)) {
+		pstring s;
+		pstrcpy(s,conn->connectpath);
+		canonicalize_path(conn, s);
+		string_set(&conn->connectpath,s);
+	}
+
 /* ROOT Activities: */	
 	/* check number of connections */
 	if (!claim_connection(conn,
