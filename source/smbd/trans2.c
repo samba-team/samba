@@ -3372,5 +3372,5 @@ int reply_trans2(connection_struct *conn,
 	SAFE_FREE(params);
 	SAFE_FREE(data);
 	END_PROFILE(SMBtrans2);
-	return ERROR_DOS(ERRDOS,ERRinvalidparam);
+	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 }
