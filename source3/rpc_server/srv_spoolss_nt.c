@@ -1590,6 +1590,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	int				version;
 	uint32				flags = q_u->delete_flags;
+	BOOL				delete_files;
 	
 	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
@@ -1614,11 +1615,30 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	if ( printer_driver_in_use(info.info_3) )
 		return WERR_PRINTER_DRIVER_IN_USE;
 	
-	if ( printer_driver_files_in_use(info.info_3) )
-		/* no idea of the correct error here */
-		return WERR_ACCESS_DENIED;
+	/* 
+	 * we have a couple of cases to consider. 
+	 * (1) Are any files in use?  If so and DPD_DELTE_ALL_FILE is set,
+	 *     then the delete should fail if **any** files overlap with 
+	 *     other drivers 
+	 * (2) If DPD_DELTE_UNUSED_FILES is sert, then delete all
+	 *     non-overlapping files 
+	 * (3) If neither DPD_DELTE_ALL_FILE nor DPD_DELTE_ALL_FILES
+	 *     is set, the do not delete any files
+	 * Refer to MSDN docs on DeletePrinterDriverEx() for details.
+	 */
+	
+	delete_files = flags & (DPD_DELETE_ALL_FILES|DPD_DELETE_UNUSED_FILES);
+	
+	if ( delete_files ) 
+	{
+		/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
+		
+		if ( printer_driver_files_in_use(info.info_3) & (flags&DPD_DELETE_ALL_FILES) )
+			/* no idea of the correct error here */
+			return WERR_ACCESS_DENIED;	
+	}
 
-	return delete_printer_driver(info.info_3, True);
+	return delete_printer_driver(info.info_3, delete_files);
 }
 
 

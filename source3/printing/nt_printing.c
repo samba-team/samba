@@ -3461,21 +3461,130 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
 	return False;
 }
 
+
+/**********************************************************************
+ Check to see if a ogiven file is in use by *info
+ *********************************************************************/
+ 
+static BOOL drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
+{
+	char *s;
+	
+	if ( !info )
+		return False;
+		
+	if ( strequal(file, info->driverpath) )
+		return True;
+
+	if ( strequal(file, info->datafile) )
+		return True;
+
+	if ( strequal(file, info->configfile) )
+		return True;
+
+	if ( strequal(file, info->helpfile) )
+		return True;
+		
+	s = (char*) info->dependentfiles;
+	
+	if ( s ) {
+		while ( *s )
+		{
+			if ( strequal(file, s) )
+				return True;
+			s += strlen(s) + 1;
+		}
+	}
+	
+	return False;
+
+}
+
+/**********************************************************************
+ Utility function to remove the dependent file pointed to by the 
+ input parameter from the list 
+ *********************************************************************/
+
+static void trim_dependent_file( char* s )
+{
+	char *p;
+	
+	/* set p to the next character string in the list */
+	
+	p = s + strlen( s ) + 1;
+	
+	/* check to see that we have another string to copy back */
+	
+	if ( *p == '\0' ) 
+	{
+		/* loop over s copying characters from p to s */
+		while ( *p!='\0' && *(p+1)!='\0' )
+			*s++ = *p++;
+	}
+	
+	/* add the two trailing NULL's */
+	
+	*s      = '\0';
+	*(s+1)  = '\0';
+}
+
 /**********************************************************************
  Check if any of the files used by src are also used by drv 
  *********************************************************************/
 
-static BOOL check_driver_file_overlap( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src, 
+static BOOL trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src, 
 				       NT_PRINTER_DRIVER_INFO_LEVEL_3 *drv )
 {
+	BOOL in_use = False;
+	char *s;
 	
-
-	return False;
+	if ( !src || !drv )
+		return False;
+		
+	/* check each file.  Remove it from the src structure if it overlaps */
+	
+	if ( drv_file_in_use(src->driverpath, drv) ) {
+		in_use = True;
+		fstrcpy( src->driverpath, "" );
+	}
+		
+	if ( drv_file_in_use(src->datafile, drv) ) {
+		in_use = True;
+		fstrcpy( src->datafile, "" );
+	}
+		
+	if ( drv_file_in_use(src->configfile, drv) ) {
+		in_use = True;
+		fstrcpy( src->configfile, "" );
+	}
+		
+	s = (char*)src->dependentfiles;
+	
+	if ( s ) {
+		while ( *s ) 
+		{
+			if ( drv_file_in_use(s, drv) ) {
+				in_use = True;
+				trim_dependent_file( s );
+			}
+			else
+				s += strlen(s) + 1;	
+		} 
+	}
+		
+		
+	return in_use;
 }
 
 /****************************************************************************
   Determine whether or not a particular driver files are currently being 
-  used by any other driver.  Requires using the full path from [print$]
+  used by any other driver.  
+  
+  Return value is True if any files were in use by other drivers
+  and False otherwise.
+  
+  Upon return, *info has been modified to only contain the driver files
+  which are not in use
 ****************************************************************************/
 
 BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
@@ -3500,7 +3609,7 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", 
 			ndrivers, info->environment, version));
 
-		if(ndrivers == -1)
+		if (ndrivers == -1)
 			continue;
 			
 		/* check each driver for overlap in files */
@@ -3512,18 +3621,23 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 			ZERO_STRUCT(driver);
 			
 			if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, list[i], 
-				info->environment, version)) ) 
+				info->environment, version)) )
 			{
 				SAFE_FREE(list);
 				return True;
 			}
 			
 			/* check if d2 uses any files from d1 */
+			/* only if this is a different driver than the one being deleted */
 			
-			if ( check_driver_file_overlap(info, driver.info_3) ) {
-				free_a_printer_driver(driver, 3);
-				SAFE_FREE( list );
-				return True;
+			if ( !strequal(info->name, driver.info_3->name) 
+				|| (info->cversion != driver.info_3->cversion) )
+			{
+				if ( trim_overlap_drv_files(info, driver.info_3) ) {
+					free_a_printer_driver(driver, 3);
+					SAFE_FREE( list );
+					return True;
+				}
 			}
 	
 			free_a_printer_driver(driver, 3);
@@ -3545,7 +3659,31 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 
 static NTSTATUS delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
 {
-
+	char *s;
+	
+	if ( !i )
+		return NT_STATUS_ACCESS_DENIED;
+		
+	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n", i->name, i->cversion));
+	
+	
+	if ( *i->driverpath )
+		DEBUG(10,("deleting [%s]\n", i->driverpath));
+	if ( *i->configfile )
+		DEBUG(10,("deleting [%s]\n", i->configfile));
+	if ( *i->datafile )
+		DEBUG(10,("deleting [%s]\n", i->datafile));
+	if ( *i->helpfile )
+		DEBUG(10,("deleting [%s]\n", i->helpfile));
+	
+	s = (char*)i->dependentfiles;
+	
+	if ( s ) {
+		while ( *s ) {
+			DEBUG(10,("deleting dependent file [%s]\n", s));
+			s += strlen( s ) + 1;
+		}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -3565,7 +3703,9 @@ WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, BOOL delete_fil
 	get_short_archi(arch, i->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
 		arch, i->cversion, i->name); 
-	DEBUG(5,("delete_printer_driver: key = [%s]\n", key));
+		
+	DEBUG(5,("delete_printer_driver: key = [%s] delete_files = %s\n", 
+		key, delete_files ? "TRUE" : "FALSE" ));
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
@@ -3575,9 +3715,6 @@ WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, BOOL delete_fil
 		return WERR_ACCESS_DENIED;
 	}
 	
-	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
-		i->name));
-	
 	/* 
 	 * now delete any associated files if delete_files == True
 	 * even if this part failes, we return succes because the 
@@ -3586,6 +3723,9 @@ WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, BOOL delete_fil
 	 
 	if ( delete_files )
 		delete_driver_files( i );
+		
+	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
+		i->name));
 		
 	return WERR_OK;
 }
