@@ -2372,8 +2372,18 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 
+#if 0	/* JERRY */
 	if (!*info.drivername)
 		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
+#else
+	/* by setting the driver name to an empty string, a local NT admin
+	   can now run the **local** APW to install a local printer driver
+ 	   for a Samba shared printer in 2.2.  Without this, drivers **must** be 
+	   installed on the Samba server for NT clients --jerry */
+	if (!*info.drivername)
+		fstrcpy(info.drivername, "");
+#endif
+
 
 	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info.drivername));
 
