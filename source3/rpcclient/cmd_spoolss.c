@@ -3,6 +3,7 @@
    Version 2.2
    RPC pipe client
 
+   Copyright (C) Gerald Carter                     2001
    Copyright (C) Tim Potter                        2000
    Copyright (C) Andrew Tridgell              1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
@@ -817,6 +818,65 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 		
 }
 
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
+{
+        fstring name;
+        if (i1 == NULL)
+                return;
+ 
+        unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+ 
+	printf ("\tDirectory Name:[%s]\n", name);
+}
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_getdriverdir(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 			result;
+	fstring			env;
+	DRIVER_DIRECTORY_CTR	ctr;
+
+	if (argc > 2) 
+	{
+		printf("Usage: %s [environment]\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* get the arguments need to open the printer handle */
+	if (argc == 2)
+		fstrcpy (env, argv[1]);
+	else
+		fstrcpy (env, "Windows NT x86");
+
+	/* Get the directory.  Only use Info level 1 */
+	if ((result = cli_spoolss_getprinterdriverdir (cli, 1, env, &ctr)) 
+	     != NT_STATUS_NO_PROBLEMO)
+	{
+		return result;
+	}
+
+	
+	display_printdriverdir_1 (ctr.info1);
+
+	/* cleanup */
+	cli_nt_session_close (cli);
+	
+	return result;
+		
+}
+
 
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
@@ -831,7 +891,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	"Enumerate installed printer drivers" },
 	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)" },
 	{ "getdriver",		cmd_spoolss_getdriver,		"Get print driver information" },
-	{ "getdriverdir",	cmd_spoolss_not_implemented,	"Get print driver upload directory (*)" },
+	{ "getdriverdir",	cmd_spoolss_getdriverdir,	"Get print driver upload directory" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
 	{ NULL, NULL, NULL }

@@ -2,6 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 2.2
    RPC pipe client
+
+   Copyright (C) Gerald Carter                2001,
    Copyright (C) Tim Potter                   2000,
    Copyright (C) Andrew Tridgell              1994-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
@@ -342,8 +344,11 @@ static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
-static void decode_printer_driver_3(NEW_BUFFER *buffer, uint32 returned, 
-				    DRIVER_INFO_3 **info)
+static void decode_printer_driver_3(
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	DRIVER_INFO_3 **info
+)
 {
         uint32 i;
         DRIVER_INFO_3 *inf;
@@ -359,6 +364,22 @@ static void decode_printer_driver_3(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
+static void decode_printerdriverdir_1 (
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	DRIVER_DIRECTORY_1 **info
+)
+{
+	DRIVER_DIRECTORY_1 *inf;
+ 
+        inf=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1));
+
+        prs_set_offset(&buffer->prs, 0);
+
+        new_smb_io_driverdir_1("", buffer, inf, 0);
+ 
+	*info=inf;
+}
 
 
 /* Enumerate printers */
@@ -723,6 +744,77 @@ uint32 cli_spoolss_enumprinterdrivers (
 				break;
 			case 3:
 				decode_printer_driver_3(r.buffer, r.returned, &ctr->info3);
+				break;
+			}			
+		}
+
+	done:
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
+
+	} while (result == ERROR_INSUFFICIENT_BUFFER);
+
+	return result;	
+}
+
+
+/**********************************************************************
+ * Get installed printer drivers for a given printer
+ */
+uint32 cli_spoolss_getprinterdriverdir (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	char* 			env,
+	DRIVER_DIRECTORY_CTR  	*ctr
+)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDRIVERDIR 	q;
+        SPOOL_R_GETPRINTERDRIVERDIR 	r;
+	NEW_BUFFER 			buffer;
+	uint32 				needed = 100;
+	uint32 				result;
+	fstring 			server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (server);
+
+	do 
+	{
+		/* Initialise input parameters */
+		init_buffer(&buffer, needed, cli->mem_ctx);
+
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+
+		/* write the request */
+		make_spoolss_q_getprinterdriverdir(&q, server, env, level, &buffer, needed);
+
+		/* Marshall data and send request */
+		if (!spoolss_io_q_getprinterdriverdir ("", &q, &qbuf, 0) ||
+		    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVERDIRECTORY, &qbuf, &rbuf)) 
+		{
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* Unmarshall response */
+		if (spoolss_io_r_getprinterdriverdir ("", &r, &rbuf, 0)) 
+		{
+			needed = r.needed;
+		}
+		
+		/* Return output parameters */
+		if ((result=r.status) == NT_STATUS_NOPROBLEMO)
+		{
+			switch (level) 
+			{
+			case 1:
+				decode_printerdriverdir_1(r.buffer, 1, &ctr->info1);
 				break;
 			}			
 		}
