@@ -64,6 +64,7 @@ SOURCES = \
 	parse_units.c \
 	putenv.c \
 	rcmd.c \
+	roken_gethostby.c \
 	readv.c \
 	setegid.c \
 	setenv.c \
