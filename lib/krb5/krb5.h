@@ -453,7 +453,7 @@ enum {
     KRB5_AUTH_CONTEXT_RET_TIME     = 2,
     KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
     KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8,
-    KRB5_AUTH_CONTEXT_PERMIT_ALL   = 16,
+    KRB5_AUTH_CONTEXT_PERMIT_ALL   = 16
 };
 
 /* flags for krb5_auth_con_genaddrs */
