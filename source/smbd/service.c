@@ -833,6 +833,13 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		return NULL;
 	}
 
+	/* Handle non-Dfs clients attempting connections to msdfs proxy */
+	if (lp_host_msdfs() && (*lp_msdfs_proxy(snum) != '\0'))  {
+		DEBUG(3, ("refusing connection to dfs proxy '%s'\n", service));
+		*status = NT_STATUS_BAD_NETWORK_NAME;
+		return NULL;
+	}
+
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
 	return make_connection_snum(snum, vuser,
