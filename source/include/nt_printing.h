@@ -290,4 +290,32 @@ typedef struct _form
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
 #endif 
 
+/* DOS header format */
+#define DOS_HEADER_SIZE                 64
+#define DOS_HEADER_MAGIC_OFFSET         0
+#define DOS_HEADER_MAGIC                0x5A4D
+#define DOS_HEADER_LFANEW_OFFSET        60
+
+/* New Executable format (Win or OS/2 1.x segmented) */
+#define NE_HEADER_SIZE                  64
+#define NE_HEADER_SIGNATURE_OFFSET      0
+#define NE_HEADER_SIGNATURE             0x454E
+#define NE_HEADER_TARGET_OS_OFFSET      54
+#define NE_HEADER_TARGOS_WIN            0x02
+#define NE_HEADER_MINOR_VER_OFFSET      62
+#define NE_HEADER_MAJOR_VER_OFFSET      63
+
+/* Portable Executable format */
+#define PE_HEADER_SIZE                  248
+#define PE_HEADER_SIGNATURE_OFFSET      0
+#define PE_HEADER_SIGNATURE             0x00004550
+#define PE_HEADER_MACHINE_OFFSET        4
+#define PE_HEADER_MACHINE_I386          0x14c
+#define PE_HEADER_MAJOR_OS_VER_OFFSET   64
+#define PE_HEADER_MINOR_OS_VER_OFFSET   66
+#define PE_HEADER_MAJOR_IMG_VER_OFFSET  68
+#define PE_HEADER_MINOR_IMG_VER_OFFSET  70
+#define PE_HEADER_MAJOR_SS_VER_OFFSET   72
+#define PE_HEADER_MINOR_SS_VER_OFFSET   74
+
 #endif /* NT_PRINTING_H_ */
