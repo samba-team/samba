@@ -112,13 +112,13 @@ _kadm5_set_keys(kadm5_server_context *context,
     salt.saltvalue.length = 0;
     salt.saltvalue.data   = NULL;
 
-    if (!krb5_config_get_bool (context->context,
-			       NULL, "kadmin", "use_v4_salt", NULL)) {
+    if (krb5_config_get_bool (context->context,
+			      NULL, "kadmin", "use_v4_salt", NULL)) {
+	v4_salt = TRUE;
+    } else {
 	ret = krb5_get_pw_salt (context->context, ent->principal, &salt);
 	if (ret)
 	    goto out;
-    } else {
-	v4_salt = TRUE;
     }
 
     for (i = 0; i < n_des_types; ++i) {
