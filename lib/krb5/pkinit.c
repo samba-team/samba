@@ -1170,7 +1170,7 @@ get_reply_key(krb5_context context,
     }
      
     if (key_pack.nonce != nonce) {
-	krb5_set_error_string(context, "PKINIT nonce is wrong");
+	krb5_set_error_string(context, "PKINIT enckey nonce is wrong");
 	free_ReplyKeyPack(&key_pack);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
@@ -1524,6 +1524,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
 
     if (kdc_dh_info.nonce != nonce) {
+	krb5_set_error_string(context, "PKINIT DH nonce is wrong");
 	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
