@@ -315,6 +315,12 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	if (!(gensec_security->want_features & GENSEC_WANT_SEAL)) {
+		if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+			return gensec_check_packet(gensec_security, mem_ctx, 
+						   data, length, 
+						   whole_pdu, pdu_length, 
+						   sig);
+		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -350,6 +356,12 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	if (!(gensec_security->want_features & GENSEC_WANT_SEAL)) {
+		if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+			return gensec_sign_packet(gensec_security, mem_ctx, 
+						  data, length, 
+						  whole_pdu, pdu_length, 
+						  sig);
+		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
