@@ -350,7 +350,8 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	s.in.level = 24;
 
 	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
-	u.info24.pw_len = strlen(newpass);
+	/* w2k3 ignores this length */
+	u.info24.pw_len = str_charnum(newpass)*2;
 
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {

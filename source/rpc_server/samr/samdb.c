@@ -372,6 +372,52 @@ NTTIME samdb_result_force_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 }
 
 /*
+  pull a samr_Hash structutre from a result set. 
+*/
+struct samr_Hash samdb_result_hash(struct ldb_message *msg, const char *attr)
+{
+	struct samr_Hash hash;
+	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
+	ZERO_STRUCT(hash);
+	if (val) {
+		memcpy(hash.hash, val->data, MIN(val->length, 16));
+	}
+	return hash;
+}
+
+/*
+  pull an array of samr_Hash structutres from a result set. 
+*/
+uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+			   const char *attr, struct samr_Hash **hashes)
+{
+	uint_t count = 0;
+	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
+	int i;
+
+	*hashes = NULL;
+	if (!val) {
+		return 0;
+	}
+	count = val->length / 16;
+	if (count == 0) {
+		return 0;
+	}
+
+	*hashes = talloc_array_p(mem_ctx, struct samr_Hash, count);
+	if (! *hashes) {
+		return 0;
+	}
+
+	for (i=0;i<count;i++) {
+		memcpy((*hashes)[i].hash, (i*16)+(char *)val->data, 16);
+	}
+
+	return count;
+}
+
+
+/*
   pull a samr_LogonHours structutre from a result set. 
 */
 struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char *attr)
@@ -591,6 +637,55 @@ int samdb_msg_add_uint(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 /*
+  add a double element to a message (actually a large integer)
+*/
+int samdb_msg_add_double(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name, double v)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%.0f", v);
+	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+}
+
+/*
+  add a samr_Hash element to a message
+*/
+int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+		       const char *attr_name, struct samr_Hash hash)
+{
+	struct samdb_context *sam_ctx = ctx;
+	struct ldb_val val;
+	val.data = talloc(mem_ctx, 16);
+	val.length = 16;
+	if (!val.data) {
+		return -1;
+	}
+	memcpy(val.data, hash.hash, 16);
+	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
+	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
+}
+
+/*
+  add a samr_Hash array to a message
+*/
+int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name, struct samr_Hash *hashes, uint_t count)
+{
+	struct samdb_context *sam_ctx = ctx;
+	struct ldb_val val;
+	int i;
+	val.data = talloc(mem_ctx, count*16);
+	val.length = count*16;
+	if (!val.data) {
+		return -1;
+	}
+	for (i=0;i<count;i++) {
+		memcpy(i*16 + (char *)val.data, hashes[i].hash, 16);
+	}
+	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
+	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
+}
+
+/*
   add a acct_flags element to a message
 */
 int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
@@ -681,4 +776,179 @@ int samdb_modify(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 
 	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
 	return ldb_modify(sam_ctx->ldb, msg);
+}
+
+/*
+  check that a password is sufficiently complex
+*/
+static BOOL samdb_password_complexity_ok(const char *pass)
+{
+	return check_password_quality(pass);
+}
+
+/*
+  set the user password using plaintext, obeying any user or domain
+  password restrictions
+*/
+NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
+			    const char *user_dn, const char *domain_dn,
+			    struct ldb_message *mod, const char *new_pass)
+{
+	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
+					    "ntPwdHistory", "unicodePwd", 
+					    "lmPwdHash", "ntPwdHash", "badPwdCount", 
+					    NULL };
+	const char * const domain_attrs[] = { "pwdProperties", "pwdHistoryLength", 
+					      "maxPwdAge", "minPwdAge", 
+					      "minPwdLength", "pwdLastSet", NULL };
+	const char *unicodePwd;
+	double minPwdAge, pwdLastSet;
+	uint_t minPwdLength, pwdProperties, pwdHistoryLength;
+	uint_t userAccountControl, badPwdCount;
+	struct samr_Hash *lmPwdHistory, *ntPwdHistory, lmPwdHash, ntPwdHash;
+	struct samr_Hash *new_lmPwdHistory, *new_ntPwdHistory;
+	struct samr_Hash lmNewHash, ntNewHash;
+	uint_t lmPwdHistory_len, ntPwdHistory_len;
+	struct ldb_message **res;
+	int count;
+	time_t now = time(NULL);
+	NTTIME now_nt;
+	double now_double;
+	int i;
+
+	/* we need to know the time to compute password age */
+	unix_to_nt_time(&now_nt, now);
+	now_double = nttime_to_double_nt(now_nt);
+
+	/* pull all the user parameters */
+	count = samdb_search(ctx, mem_ctx, NULL, &res, user_attrs, "dn=%s", user_dn);
+	if (count != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	unicodePwd =         samdb_result_string(res[0], "unicodePwd", NULL);
+	userAccountControl = samdb_result_uint(res[0],   "userAccountControl", 0);
+	badPwdCount =        samdb_result_uint(res[0],   "badPwdCount", 0);
+	lmPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
+						 "lmPwdHistory", &lmPwdHistory);
+	ntPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
+						 "ntPwdHistory", &ntPwdHistory);
+	lmPwdHash =          samdb_result_hash(res[0],   "lmPwdHash");
+	ntPwdHash =          samdb_result_hash(res[0],   "ntPwdHash");
+	pwdLastSet =         samdb_result_double(res[0], "pwdLastSet", 0);
+
+	/* pull the domain parameters */
+	count = samdb_search(ctx, mem_ctx, NULL, &res, domain_attrs, "dn=%s", domain_dn);
+	if (count != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	pwdProperties =    samdb_result_uint(res[0],   "pwdProperties", 0);
+	pwdHistoryLength = samdb_result_uint(res[0],   "pwdHistoryLength", 0);
+	minPwdLength =     samdb_result_uint(res[0],   "minPwdLength", 0);
+	minPwdAge =        samdb_result_double(res[0], "minPwdAge", 0);
+
+	/* are all password changes disallowed? */
+	if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	/* can this user change password? */
+	if (userAccountControl & UF_PASSWD_CANT_CHANGE) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	/* check the various password restrictions */
+	if (minPwdLength > str_charnum(new_pass)) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	/* yes, this is a minus. The ages are in negative 100nsec units! */
+	if (pwdLastSet - minPwdAge > now_double) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	/* possibly check password complexity */
+	if (pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
+	    !samdb_password_complexity_ok(new_pass)) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	/* compute the new nt and lm hashes */
+	E_deshash(new_pass, lmNewHash.hash);
+	E_md4hash(new_pass, ntNewHash.hash);
+
+	/* check the immediately past password */
+	if (pwdHistoryLength > 0 &&
+	    (memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0 ||
+	     memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0)) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	/* check the password history */
+	lmPwdHistory_len = MIN(lmPwdHistory_len, pwdHistoryLength);
+	ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
+
+	if (pwdHistoryLength > 0) {
+		if (strcmp(unicodePwd, new_pass) == 0 ||
+		    memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0 ||
+		    memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+	}
+
+	for (i=0;i<lmPwdHistory_len;i++) {
+		if (memcmp(lmNewHash.hash, lmPwdHistory[i].hash, 16) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+	}
+	for (i=0;i<ntPwdHistory_len;i++) {
+		if (memcmp(ntNewHash.hash, ntPwdHistory[i].hash, 16) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+	}
+
+#define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
+
+	/* the password is acceptable. Start forming the new fields */
+	CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
+	CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
+
+	if ((pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
+	    (userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+		CHECK_RET(samdb_msg_add_string(ctx, mem_ctx, mod, 
+					       "unicodePwd", new_pass));
+	}
+
+	if (pwdHistoryLength > 0) {
+		new_lmPwdHistory = talloc_array_p(mem_ctx, struct samr_Hash, 
+						  pwdHistoryLength);
+		if (!new_lmPwdHistory) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		new_ntPwdHistory = talloc_array_p(mem_ctx, struct samr_Hash, 
+						  pwdHistoryLength);
+		if (!new_ntPwdHistory) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		for (i=0;i<MIN(pwdHistoryLength-1, lmPwdHistory_len);i++) {
+			new_lmPwdHistory[i+1] = lmPwdHistory[i];
+		}
+		for (i=0;i<MIN(pwdHistoryLength-1, ntPwdHistory_len);i++) {
+			new_ntPwdHistory[i+1] = ntPwdHistory[i];
+		}
+		new_lmPwdHistory[0] = lmNewHash;
+		new_ntPwdHistory[0] = ntNewHash;
+
+		CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
+					       "lmPwdHistory", 
+					       new_lmPwdHistory, 
+					       MIN(pwdHistoryLength, lmPwdHistory_len+1)));
+		CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
+					       "ntPwdHistory", 
+					       new_ntPwdHistory, 
+					       MIN(pwdHistoryLength, ntPwdHistory_len+1)));
+	}
+
+	CHECK_RET(samdb_msg_add_double(ctx, mem_ctx, mod, "pwdLastSet", now_double));
+	
+	return NT_STATUS_OK;
 }
