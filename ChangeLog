@@ -1,3 +1,18 @@
+2003-05-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* appl/test/gssapi_server.c (proto): start to use
+	gss_krb5_copy_ccache
+
+	* appl/test/nt_gss_server.c (proto): comment out gss_ctx_id_t
+	groveling for now
+
+2003-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1:
+	- add parser/generate glue for UTF8String and NULL
+	  (DER primitive encode/decode functions missing)
+	- handle parsing of DEFAULT and, ...
+
 2003-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/heim_threads.h: add missing argument to mutex_init
