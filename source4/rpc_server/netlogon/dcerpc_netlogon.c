@@ -548,11 +548,12 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 						      mem_ctx,
 						      &server_info);
 
+	/* keep the auth_context for the life of this call */
+	talloc_steal(dce_call, auth_context);
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		free_auth_context(&auth_context);
 		return nt_status;
 	}
-	free_auth_context(&auth_context);
 
 	sam = talloc_p(mem_ctx, struct netr_SamBaseInfo);
 
