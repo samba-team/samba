@@ -87,6 +87,12 @@ des_rand_data(unsigned char *data, int size)
     sigaction(SIGALRM, &osa, 0);
 }
 
+void
+des_generate_random_block(des_cblock *block)
+{
+  des_rand_data((unsigned char *)block, sizeof(*block));
+}
+
 #if 0
 /*
  * Generate a "random" DES key.
