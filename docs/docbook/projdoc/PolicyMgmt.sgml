@@ -1,15 +1,7 @@
 <chapter id="PolicyMgmt">
 <chapterinfo>
-        <author>
-                <firstname>John H</firstname><surname>Terpstra</surname>
-                <affiliation>
-                        <orgname>Samba Team</orgname>
-                        <address>
-                        <email>jht@samba.org</email>
-                        </address>
-                </affiliation>
-        </author>
-        <pubdate>April 3 2003</pubdate>
+	&author.jht;
+    <pubdate>April 3 2003</pubdate>
 </chapterinfo>
 <title>System and Account Policies</title>
 
@@ -203,40 +195,33 @@ exists with NT4 style policy files.
 <sect3>
 <title>Administration of Win2K / XP Policies</title>
 
+<procedure>
+<title>Instructions</title>
 <para>
 Instead of using the tool called "The System Policy Editor", commonly called Poledit (from the
 executable name poledit.exe), GPOs are created and managed using a Microsoft Management Console
-(MMC) snap-in as follows:
-</para>
+(MMC) snap-in as follows:</para>
 
-<itemizedlist>
-	<listitem>
-	<para>
-	Go to the Windows 200x / XP menu <filename>Start->Programs->Administrative Tools</filename>
+<step>
+<para>
+Go to the Windows 200x / XP menu <filename>Start->Programs->Administrative Tools</filename>
 	and select the MMC snap-in called "Active Directory Users and Computers"
-	<para>
-	</listitem>
+<para></step>
 
-	<listitem>
-	<para>
-	Select the domain or organizational unit (OU) that you wish to manage, then right click
-	to open the context menu for that object, select the properties item.
-	</para>
-	</listitem>
+<step><para>
+Select the domain or organizational unit (OU) that you wish to manage, then right click
+to open the context menu for that object, select the properties item.
+</para></step>
 
-	<listitem>
-	<para>
-	Now left click on the Group Policy tab, then left click on the New tab. Type a name
-	for the new policy you will create.
-	</para>
-	</listitem>
+<step><para>
+Now left click on the Group Policy tab, then left click on the New tab. Type a name
+for the new policy you will create.
+</para></step>
 
-	<listitem>
-	<para>
-	Now left click on the Edit tab to commence the steps needed to create the GPO.
-	</para>
-	</listitem>
-</itemizedlist>
+<step><para>
+Now left click on the Edit tab to commence the steps needed to create the GPO.
+</para></step>
+</procedure>
 
 <para>
 All policy configuration options are controlled through the use of policy administrative

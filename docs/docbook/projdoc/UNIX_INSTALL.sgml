@@ -1,4 +1,11 @@
 <chapter id="install">
+<chapterinfo>
+	&author.tridge;
+	&author.jelmer;
+	<author><firstname>Karl</firstname><surname>Auer</surname></author>
+	<!-- Isn't some of this written by others as well? -->
+
+</chapterinfo>
 
 <title>How to Install and Test SAMBA</title>
 

@@ -1,16 +1,7 @@
 <chapter id="printing">
 
-
 <chapterinfo>
-	<author>
-		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>
-				<email>jerry@samba.org</email>
-			</address>
-		</affiliation>
-	</author>
+	&author.jerry;
 	<author>
 		<firstname>Patrick</firstname><surname>Powell</surname>
 		<affiliation>
@@ -183,14 +174,14 @@ Samba follows this model as well.</para>
 <para>Next create the directory tree below the [print$] share 
 for each architecture you wish to support.</para>
 
-<para><programlisting>
+<para><computeroutput>
 [print$]-----
         |-W32X86           ; "Windows NT x86"
         |-WIN40            ; "Windows 95/98"
         |-W32ALPHA         ; "Windows NT Alpha_AXP"
         |-W32MIPS          ; "Windows NT R4000"
         |-W32PPC           ; "Windows NT PowerPC"
-</programlisting></para>
+</computeroutput></para>
 
 <warning>
 <title>ATTENTION!  REQUIRED PERMISSIONS</title>
@@ -302,8 +293,9 @@ setdriver command</command></ulink> can be used to set the driver
 associated with an installed driver.  The following is example
 of how this could be accomplished:</para>
 		
-<para><programlisting> 
-<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumdrivers"
+<para>
+<prompt>$ </prompt><userinput>rpcclient pogo -U root%secret -c "enumdrivers"</userinput>
+<programlisting> 
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
  
 [Windows NT x86]
@@ -315,16 +307,18 @@ Printer Driver Info 1:
  
 Printer Driver Info 1:
      Driver Name: [HP LaserJet 4Si/4SiMX PS]
-				  
-<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumprinters"
+</programlisting>				  
+<prompt>$ </prompt><userinput>rpcclient pogo -U root%secret -c "enumprinters"</userinput>
+<programlisting>
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
      flags:[0x800000]
      name:[\\POGO\hp-print]
      description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
      comment:[]
 				  
-<prompt>$ </prompt>rpcclient pogo -U root%secret \
-<prompt>&gt; </prompt> -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
+</programlisting>
+<prompt>$ </prompt><userinput>rpcclient pogo -U root%secret -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""</userinput>
+<programlisting>
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
 Successfully set hp-print to driver HP LaserJet 4000 Series PS.
 </programlisting></para>

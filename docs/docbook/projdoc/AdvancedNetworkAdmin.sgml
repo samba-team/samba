@@ -1,15 +1,7 @@
 <chapter id="AdvancedNetworkManagement">
 <chapterinfo>
-        <author>
-                <firstname>John H</firstname><surname>Terpstra</surname>
-                <affiliation>
-                        <orgname>Samba Team</orgname>
-                        <address>
-                        <email>jht@samba.org</email>
-                        </address>
-                </affiliation>
-        </author>
-        <pubdate>April 3 2003</pubdate>
+	&author.jht;
+    <pubdate>April 3 2003</pubdate>
 </chapterinfo>
 
 <title>Advanced Network Manangement</title>
@@ -43,7 +35,7 @@ Samba stores the per share access control settings in a file called <filename>sh
 The location of this file on your system will depend on how samba was compiled. The default location
 for samba's tdb files is under <filename>/usr/local/samba/var</filename>. If the <filename>tdbdump</filename>
 utility has been compiled and installed on your system then you can examine the contents of this file
-by: <filename>tdbdump share_info.tdb</filename>.
+by: <userinput>tdbdump share_info.tdb</userinput>.
 </para>
 
 <sect2>
@@ -61,19 +53,18 @@ Server Manager is shipped with Windows NT4 Server products but not with Windows 
 You can obtain the NT Server Manager for MS Windows NT4 Workstation from Microsoft - see details below.
 </para>
 
-<para>
-Instructions:
-</para>
+<procedure>
+<title>Instructions</title>
+<step><para>
+Launch the NT4 Server Manager, click on the Samba server you want to administer, then from the menu
+select Computer, then click on the Shared Directories entry.
+</para></step>
 
-	<para>
-	Launch the NT4 Server Manager, click on the Samba server you want to administer, then from the menu
-	select Computer, then click on the Shared Directories entry.
-	</para>
-
-	<para>
+<step><para>
 	Now click on the share that you wish to manage, then click on the Properties tab, next click on
 	the Permissions tab. Now you can Add or change access control settings as you wish.
-	</para>
+</para></step>
+</procedure>
 
 </sect3>
 
@@ -93,37 +84,37 @@ Microsoft Management Console (MMC). This tool is located by clicking on <filenam
 Administrative Tools -> Computer Management</filename>.
 </para>
 
-<para>
-Instructions:
-</para>
-	<para>
+<procedure>
+<title>Instructions</title>
+<step><para>
 	After launching the MMC with the Computer Management snap-in, click on the menu item 'Action',
 	select 'Connect to another computer'. If you are not logged onto a domain you will be prompted
 	to enter a domain login user identifier and a password. This will authenticate you to the domain.
 	If you where already logged in with administrative privilidge this step is not offered.
-	</para>
+</para></step>
 
-	<para>
-	If the Samba server is not shown in the Select Computer box, then type in the name of the target
-	Samba server in the field 'Name:'. Now click on the [+] next to 'System Tools', then on the [+]
-	next to 'Shared Folders' in the left panel.
-	</para>
+<step><para>
+If the Samba server is not shown in the Select Computer box, then type in the name of the target
+Samba server in the field 'Name:'. Now click on the [+] next to 'System Tools', then on the [+]
+next to 'Shared Folders' in the left panel.
+</para></step>
 
-	<para>
-	Now in the right panel, double-click on the share you wish to set access control permissions on.
-	Then click on the tab 'Share Permissions'. It is now possible to add access control entities
-	to the shared folder. Do NOT forget to set what type of access (full control, change, read) you
-	wish to assign for each entry.
-	</para>
+<step><para>
+Now in the right panel, double-click on the share you wish to set access control permissions on.
+Then click on the tab 'Share Permissions'. It is now possible to add access control entities
+to the shared folder. Do NOT forget to set what type of access (full control, change, read) you
+wish to assign for each entry.
+</para></step>
+</procedure>
 
-	<note>
-	<para>
-	Be careful. If you take away all permissions from the Everyone user without removing this user
-	then effectively no user will be able to access the share. This is a result of what is known as
-	ACL precidence. ie: Everyone with NO ACCESS means that MaryK who is part of the group Everyone
-	will have no access even if this user is given explicit full control access.
-	</para>
-	</note>
+<warning>
+<para>
+Be careful. If you take away all permissions from the Everyone user without removing this user
+then effectively no user will be able to access the share. This is a result of what is known as
+ACL precidence. ie: Everyone with NO ACCESS means that MaryK who is part of the group Everyone
+will have no access even if this user is given explicit full control access.
+</para>
+</warning>
 
 </sect3>
 </sect2>
@@ -148,9 +139,7 @@ systems.  The tools set includes:
 
 <itemizedlist>
 	<listitem><para>Server Manager</para></listitem> 
-	
 	<listitem><para>User Manager for Domains</para></listitem> 
-
 	<listitem><para>Event Viewer</para></listitem> 
 </itemizedlist>
 
@@ -171,7 +160,7 @@ from <ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">ftp://ft
 
 <para>
 This section needs work. Volunteer contributions most welcome. Please send your patches or updates
-to jht@samba.org.
+to <ulink url="mailto:jht@samba.org">John Terpstra</ulink>.
 </para>
 
 </chapter>

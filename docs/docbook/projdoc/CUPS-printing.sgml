@@ -2,15 +2,7 @@
 
 
 <chapterinfo>
-	<author>
-		<firstname>John H</firstname><surname>Terpstra</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>
-				<email>jht@samba.org</email>
-			</address>
-		</affiliation>
-	</author>
+	&author.jht;
 	<author>
 		<firstname>Kurt</firstname><surname>Pfeifle</surname>
 		<affiliation>
@@ -1310,7 +1302,7 @@ It is *not* working for Win9x/ME clients. But it:
 </para>
 
 <simplelist>
-	<member>>it guarantees to not write an PJL-header</member>
+	<member>it guarantees to not write an PJL-header</member>
 	<member>it guarantees to still read and support all PJL-options named in the driver PPD with its own means</member>
 	<member>it guarantees the file going thru the "pstops" filter on the CUPS/Samba server</member>
 	<member>it guarantees to page-count correctly the printfile</member>
@@ -1326,29 +1318,30 @@ current with CUPS 1.1.16).
 These are the items CUPS logs in the "page_log" for every single *page* of a job:
 </para>
 
-<para><programlisting>
-	* Printer name
-	* User name
-	* Job ID
-	* Time of printing
-	* the page number
-	* the number of copies
-	* a billing info string (optional)
-</programlisting></para>
+<para><simplelist>
+<member>Printer name</member>
+<member>User name</member>
+<member>Job ID</member>
+<member>Time of printing</member>
+<member>the page number</member>
+<member>the number of copies</member>
+<member>a billing info string (optional)</member>
+</simplelist>
+</para>
 
 <para>
 Here is an extract of my CUPS server's page_log file to illustrate
 the format and included items:
 </para>
 
-<para><programlisting>
+<para><computeroutput>
 	infotec_IS2027 kurt 40 [22/Nov/2002:13:18:03 +0100] 1 2  #marketing
 	infotec_IS2027 kurt 40 [22/Nov/2002:13:18:03 +0100] 2 2  #marketing
 	infotec_IS2027 kurt 40 [22/Nov/2002:13:18:03 +0100] 3 2  #marketing
 	infotec_IS2027 kurt 40 [22/Nov/2002:13:18:03 +0100] 4 2  #marketing
 	infotec_IS2027 kurt 40 [22/Nov/2002:13:18:03 +0100] 5 2  #marketing
 	infotec_IS2027 kurt 40 [22/Nov/2002:13:18:03 +0100] 6 2  #marketing
-</programlisting></para>
+</computeroutput></para>
 
 <para>
 This was Job ID "40", printed on "infotec_IS2027" by user "kurt", a 6-page job
@@ -1397,7 +1390,7 @@ huge improvements under development:
 <simplelist>
 	<member>page counting will go into the "backends" (these talk
 	directly to the printer and will increase the count in sync with the
-	 actual printing process  -- a jam at the 5th sheet will lead to a stop in the counting)</member>
+	 actual printing process -- a jam at the 5th sheet will lead to a stop in the counting)</member>
 
 	<member>quotas will be handled more flexibly</member>
 
@@ -1421,13 +1414,13 @@ the files:
 </para>
 
 	<para>
-	<programlisting>
+	<computeroutput>
 	   cups-samba.install
 	   cups-samba.license
 	   cups-samba.readme
 	   cups-samba.remove
 	   cups-samba.ss
-	</programlisting>
+	</computeroutput>
 	</para>
 
 <para>
@@ -1438,26 +1431,24 @@ into <filename>/usr/share/cups/drivers/</filename>. Its contents are 3 files:
 </para>
 
 	<para>
-	<programlisting>
+	<computeroutput>
 	   cupsdrvr.dll
 	   cupsui.dll
 	   cups.hlp
-	</programlisting>
+	</computeroutput>
 	</para>
 
-<note><para>
-ATTENTION: due to a bug one CUPS release puts the <filename>cups.hlp</filename>
+<caution><para>
+Due to a bug one CUPS release puts the <filename>cups.hlp</filename>
 into <filename>/usr/share/drivers/</filename> instead of
 <filename>/usr/share/cups/drivers/</filename>. To work around this, copy/move
 the file after running the "./cups-samba.install" script manually to the right place:
 </para>
 
 	<para>
-	<programlisting>
-	      cp /usr/share/drivers/cups.hlp /usr/share/cups/drivers/
-	</programlisting>
-	</para>
-</note>
+	<userinput> cp /usr/share/drivers/cups.hlp /usr/share/cups/drivers/
+	</userinput>
+	</para></caution>
 
 <note>
 <para>
@@ -1485,19 +1476,19 @@ Win NT/2k/XP clients.
 
 
 	<note><para>
-	NOTE 1: Win 9x/ME clients won't work with this driver. For these you'd
+	Win 9x/ME clients won't work with this driver. For these you'd
 	still need to use the ADOBE*.* drivers as previously.
 	</para></note>
 
 	<note><para>
-	NOTE 2: It is not harming if you've still the ADOBE*.* driver files from
+	It is not harming if you've still the ADOBE*.* driver files from
 	previous installations in the "/usr/share/cups/drivers/" directory.
 	The new cupsaddsmb (from 1.1.16) will automatically use the
 	"newest" installed driver (which here then is the CUPS drivers).
 	</para></note>
 
 	<note><para>
-	NOTE 3: Should your Win clients have had the old ADOBE*.* files and the
+	Should your Win clients have had the old ADOBE*.* files and the
 	Adobe PostScript drivers installed, the download and installation
 	of the new CUPS PostScript driver for Windows NT/2k/XP will fail
 	at first.
@@ -1685,11 +1676,11 @@ it is most likely the Samba part.
 For the CUPS part, you may want to consult:
 </para>
 
-<programlisting>
-   http://localhost:631/sam.html#PreserveJobFiles and
-   http://localhost:631/sam.html#PreserveJobHistory and
-   http://localhost:631/sam.html#MaxJobs
-</programlisting>
+<simplelist>
+<member>http://localhost:631/sam.html#PreserveJobFiles</member>
+<member>http://localhost:631/sam.html#PreserveJobHistory</member>
+<member>http://localhost:631/sam.html#MaxJobs</member>
+</simplelist>
 
 <para>
 There are the settings described for your CUPS daemon, which could lead to completed
@@ -1773,10 +1764,10 @@ If you have more problems, post the output of these commands:
 </para>
 
 <para>
-<programlisting>
+<userinput>
    grep -v ^# /etc/cups/cupsd.conf | grep -v ^$
    grep -v ^# /etc/samba/smb.conf | grep -v ^$ | grep -v "^;"
-</programlisting>
+</userinput>
 </para>
 
 <para>

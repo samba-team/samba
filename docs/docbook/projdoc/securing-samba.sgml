@@ -1,10 +1,7 @@
 <chapter id="securing-samba">
 
 <chapterinfo>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-		<affiliation><orgname>Samba Team</orgname></affiliation>
-	</author>
+	&author.tridge;
 	<pubdate>17 March 2003</pubdate>
 </chapterinfo>
 

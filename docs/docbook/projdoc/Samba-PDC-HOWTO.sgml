@@ -2,23 +2,14 @@
 
 
 <chapterinfo>
+	&author.jerry;
+	&author.jht;
 	<author>
-		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
-		<affiliation>
-			<orgname>VA Linux Systems/Samba Team</orgname>
-			<address><email>jerry@samba.org</email></address>
-		</affiliation>
 		<firstname>David</firstname><surname>Bannon</surname>
 		<affiliation>
 			<orgname>Samba Team</orgname>
 			<address><email>dbannon@samba.org</email></address>
 		</affiliation>
-		<firstname>John H</firstname><surname>Terpstra</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>jht@samba.org</email></address>
-		</affiliation>
-		
 	</author>
 	<pubdate> (26 Apr 2001) </pubdate>
 </chapterinfo>
@@ -243,7 +234,7 @@ There are a couple of points to emphasize in the above configuration.
 <itemizedlist>
 	<listitem><para>
 	Encrypted passwords must be enabled.  For more details on how 
-	to do this, refer to <ulink url="ENCRYPTION.html">ENCRYPTION.html</ulink>.
+	to do this, refer to <link linkend="passdb">ENCRYPTION.html</link>.
 	</para></listitem>
 	
 	<listitem><para>
