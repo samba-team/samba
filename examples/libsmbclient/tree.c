@@ -51,7 +51,8 @@ void error_message(gchar *message) {
   /* Ensure that the dialog box is destroyed when the user clicks ok. */
      
   gtk_signal_connect_object (GTK_OBJECT (okay_button), "clicked",
-			     GTK_SIGNAL_FUNC (gtk_widget_destroy), dialog);
+			     GTK_SIGNAL_FUNC (gtk_widget_destroy), 
+			     GTK_OBJECT(dialog));
   gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->action_area),
 		     okay_button);
 
@@ -744,8 +745,6 @@ int main( int   argc,
 
   /* Now, get the items in smb:/// and add them to the tree */
 
-  dirp = (struct smbc_dirent *)dirbuf;
-
   while ((err = smbc_getdents(dh, (struct smbc_dirent *)dirbuf, 
 			      sizeof(dirbuf))) != 0) {
 
@@ -757,6 +756,8 @@ int main( int   argc,
       exit(1);
 
     }
+
+    dirp = (struct smbc_dirent *)dirbuf;
 
     fprintf(stdout, "Dir len: %u\n", err);
 
