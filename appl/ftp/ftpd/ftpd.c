@@ -501,6 +501,7 @@ user(char *name)
 		reply(530, "User %s access denied.", name);
 	    else if ((pw = sgetpwnam("ftp")) != NULL) {
 		guest = 1;
+		defumask = 0777; /* paranoia for incoming directories */
 		askpasswd = 1;
 		reply(331, "Guest login ok, type your name as password.");
 	    } else
@@ -1497,8 +1498,11 @@ makedir(char *name)
 	    return;
 	if (mkdir(name, 0777) < 0)
 		perror_reply(550, name);
-	else
-		reply(257, "MKD command successful.");
+	else{
+	    if(guest)
+		chmod(name, 0700); /* guest has umask 777 */
+	    reply(257, "MKD command successful.");
+	}
 }
 
 void
