@@ -13,7 +13,7 @@ fi
 
 if [ "$doclean" = "clean" ]; then
   cd ../../source
-  make clean
+  make distclean
   cd ../packaging/SGI
   rm -rf bins catman html codepages swat samba.idb samba.spec
 fi

@@ -45,7 +45,7 @@ if (@codepage) {
   chdir '../../source';
   # if we have codepages we need to create them for the package
   system("chmod +x ./script/installcp.sh");
-  system("./script/installcp.sh . ../packaging/SGI/codepages ./bin @codepage[0]");
+  system("./script/installcp.sh . . ../packaging/SGI/codepages ./bin @codepage[0]");
   chdir $curdir;
   @codepage = sort split(' ',@codepage[0]);
 }
