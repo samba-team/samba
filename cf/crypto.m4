@@ -13,6 +13,7 @@ m4_define([test_headers], [
 		#include <openssl/sha.h>
 		#include <openssl/des.h>
 		#include <openssl/rc4.h>
+		#include <openssl/rand.h>
 		#else
 		#include <md4.h>
 		#include <md5.h>
@@ -44,6 +45,9 @@ m4_define([test_body], [
 		MD4_Init(&md4);
 		MD5_Init(&md5);
 		SHA1_Init(&sha1);
+		#ifdef HAVE_OPENSSL
+		RAND_status();
+		#endif
 
 		des_cbc_encrypt(0, 0, 0, schedule, 0, 0);
 		RC4(0, 0, 0, 0);])
@@ -75,23 +79,31 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 	ires=
 	for i in $INCLUDE_krb4; do
 		CFLAGS="-DHAVE_OPENSSL $i $save_CFLAGS"
-		AC_TRY_COMPILE(test_headers, test_body,
-			openssl=yes ires="$i"; break)
+		for j in $cdirs; do
+			for k in $clibs; do
+				LIBS="$j $k $save_LIBS"
+				AC_TRY_LINK(test_headers, test_body,
+					openssl=yes ires="$i" lres="$j $k"; break 3)
+			done
+		done
 		CFLAGS="$i $save_CFLAGS"
-		AC_TRY_COMPILE(test_headers, test_body,
-			openssl=no ires="$i"; break)
-		CFLAGS="-DOLD_HASH_NAMES $i $save_CFLAGS"
-		AC_TRY_COMPILE(test_headers, test_body,
-			openssl=no ires="$i" old_hash=yes; break)
-	done
-	lres=
-	for i in $cdirs; do
-		for j in $clibs; do
-			LIBS="$i $j $save_LIBS"
-			AC_TRY_LINK(test_headers, test_body,
-				lres="$i $j"; break 2)
+		for j in $cdirs; do
+			for k in $clibs; do
+				LIBS="$j $k $save_LIBS"
+				AC_TRY_LINK(test_headers, test_body,
+					openssl=no ires="$i" lres="$j $k"; break 3)
+			done
+		done
+		CFLAGS="-DHAVE_OLD_HASH_NAMES $i $save_CFLAGS"
+		for j in $cdirs; do
+			for k in $clibs; do
+				LIBS="$j $k $save_LIBS"
+				AC_TRY_LINK(test_headers, test_body,
+					openssl=no ires="$i" lres="$j $k"; break 3)
+			done
 		done
 	done
+		
 	CFLAGS="$save_CFLAGS"
 	LIBS="$save_LIBS"
 	if test "$ires" -a "$lres"; then
