@@ -1012,6 +1012,7 @@ BOOL get_mydomname(fstring my_domname)
 {
 	pstring hostname;
 	char *p;
+	struct hostent *hp;
 
 	*hostname = 0;
 	/* get my host name */
@@ -1023,17 +1024,31 @@ BOOL get_mydomname(fstring my_domname)
 	/* Ensure null termination. */
 	hostname[sizeof(hostname)-1] = '\0';
 
+		
 	p = strchr_m(hostname, '.');
 
-	if (!p)
+	if (p) {
+		p++;
+		
+		if (my_domname)
+			fstrcpy(my_domname, p);
+	}
+
+	if (!(hp = sys_gethostbyname(hostname))) {
 		return False;
-
-	p++;
+	}
 	
-	if (my_domname)
-		fstrcpy(my_domname, p);
+	p = strchr_m(hp->h_name, '.');
 
-	return True;
+	if (p) {
+		p++;
+		
+		if (my_domname)
+			fstrcpy(my_domname, p);
+		return True;
+	}
+
+	return False;
 }
 
 /****************************************************************************
