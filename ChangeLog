@@ -1,3 +1,8 @@
+2001-06-19  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c (main): dereference result from krb5_princ_realm.
+	from Thomas Nystrom <thn@saeab.se>
+
 2001-06-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/mk_req.c (krb5_mk_req_exact): free creds when done
@@ -7,6 +12,13 @@
 
 2001-06-18  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/send_to_kdc.c (krb5_sendto): remove an extra
+	freeaddrinfo
+
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc_ccache):
+	remove some unused variables
+
+	* lib/krb5/krbhst.c (admin_get_next): spell kerberos correctly
 	* kdc/kerberos5.c: update to new krb5_auth_con* names
 	* kdc/hpropd.c: update to new krb5_auth_con* names
 	* lib/krb5/rd_req.c (krb5_rd_req): use krb5_auth_con* functions
