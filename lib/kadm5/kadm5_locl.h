@@ -70,6 +70,9 @@
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
 #include <fnmatch.h>
 #include "admin.h"
 #include "kadm5_err.h"
@@ -218,7 +221,7 @@ _kadm5_string_to_privs __P((
 	u_int32_t* privs));
 
 kadm5_ret_t
-kadm5_log_get_version (kadm5_server_context *context,
+kadm5_log_get_version (int fd,
 		       u_int32_t *ver);
 
 kadm5_ret_t
@@ -285,5 +288,11 @@ kadm5_log_replay (kadm5_server_context *context,
 		  krb5_storage *sp);
 
 #define KADM5_LOG_SIGNAL HDB_DB_DIR "/signal"
+
+#define IPROP_VERSION "iprop-0.0"
+
+#define KADM5_SLAVE_ACL HDB_DB_DIR "/slaves"
+
+#define IPROP_NAME "iprop"
 
 #endif /* __KADM5_LOCL_H__ */
