@@ -3183,6 +3183,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
+			str_list_free(parm_ptr);
 			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
 			break;
 
