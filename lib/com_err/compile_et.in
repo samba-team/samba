@@ -2,6 +2,11 @@
 
 file=@srcdir@/compile_et.awk
 
+if [ $# != 1 ]; then
+    echo "Usage: compile_et file.et"
+    exit 1
+fi
+
 if [ ! -f $file ]; then
 	echo "compile_et: File not found: $file"
 	exit 1
