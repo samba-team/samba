@@ -78,6 +78,7 @@ EXTRA_libroken_la_SOURCES =	\
 	hstrerror.c		\
 	inet_aton.c		\
 	inet_ntop.c		\
+	inet_pton.c		\
 	initgroups.c		\
 	innetgr.c		\
 	iruserok.c		\
