@@ -1860,10 +1860,18 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 	 * JFM (2/3/2001), to clear any possible bad understanding (-:
 	 */
 
-	pstrcpy(add_script, lp_adduser_script());
+	pstrcpy(add_script, lp_addmachine_script());
 
-	if(*add_script)
-		smb_create_user(mach_acct, NULL);
+	if (!*add_script) {
+		pstrcpy(add_script, lp_adduser_script());
+	}
+
+	if(*add_script) {
+		int add_ret;
+		all_string_sub(add_script, "%u", mach_acct, sizeof(mach_acct));
+		add_ret = smbrun(add_script,NULL);
+		DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n",add_script,add_ret));
+	}
 
 	/* add the user in the smbpasswd file or the Samba authority database */
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str,
