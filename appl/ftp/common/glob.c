@@ -133,33 +133,33 @@ typedef char Char;
 #define	ismeta(c)	(((c)&M_QUOTE) != 0)
 
 
-static int	 compare __P((const void *, const void *));
-static void	 g_Ctoc __P((const Char *, char *));
-static int	 g_lstat __P((Char *, struct stat *, glob_t *));
-static DIR	*g_opendir __P((Char *, glob_t *));
-static Char	*g_strchr __P((Char *, int));
+static int	 compare (const void *, const void *);
+static void	 g_Ctoc (const Char *, char *);
+static int	 g_lstat (Char *, struct stat *, glob_t *);
+static DIR	*g_opendir (Char *, glob_t *);
+static Char	*g_strchr (Char *, int);
 #ifdef notdef
-static Char	*g_strcat __P((Char *, const Char *));
+static Char	*g_strcat (Char *, const Char *);
 #endif
-static int	 g_stat __P((Char *, struct stat *, glob_t *));
-static int	 glob0 __P((const Char *, glob_t *));
-static int	 glob1 __P((Char *, glob_t *));
-static int	 glob2 __P((Char *, Char *, Char *, glob_t *));
-static int	 glob3 __P((Char *, Char *, Char *, Char *, glob_t *));
-static int	 globextend __P((const Char *, glob_t *));
-static const Char *	 globtilde __P((const Char *, Char *, glob_t *));
-static int	 globexp1 __P((const Char *, glob_t *));
-static int	 globexp2 __P((const Char *, const Char *, glob_t *, int *));
-static int	 match __P((Char *, Char *, Char *));
+static int	 g_stat (Char *, struct stat *, glob_t *);
+static int	 glob0 (const Char *, glob_t *);
+static int	 glob1 (Char *, glob_t *);
+static int	 glob2 (Char *, Char *, Char *, glob_t *);
+static int	 glob3 (Char *, Char *, Char *, Char *, glob_t *);
+static int	 globextend (const Char *, glob_t *);
+static const Char *	 globtilde (const Char *, Char *, glob_t *);
+static int	 globexp1 (const Char *, glob_t *);
+static int	 globexp2 (const Char *, const Char *, glob_t *, int *);
+static int	 match (Char *, Char *, Char *);
 #ifdef DEBUG
-static void	 qprintf __P((const char *, Char *));
+static void	 qprintf (const char *, Char *);
 #endif
 
 int
-glob(pattern, flags, errfunc, pglob)
-	const char *pattern;
-	int flags, (*errfunc) __P((const char *, int));
-	glob_t *pglob;
+glob(const char *pattern, 
+     int flags, 
+     int (*errfunc)(const char *, int), 
+     glob_t *pglob)
 {
 	const u_char *patnext;
 	int c;
@@ -207,9 +207,7 @@ glob(pattern, flags, errfunc, pglob)
  * invoke the standard globbing routine to glob the rest of the magic
  * characters
  */
-static int globexp1(pattern, pglob)
-	const Char *pattern;
-	glob_t *pglob;
+static int globexp1(const Char *pattern, glob_t *pglob)
 {
 	const Char* ptr = pattern;
 	int rv;
@@ -231,10 +229,8 @@ static int globexp1(pattern, pglob)
  * If it succeeds then it invokes globexp1 with the new pattern.
  * If it fails then it tries to glob the rest of the pattern and returns.
  */
-static int globexp2(ptr, pattern, pglob, rv)
-	const Char *ptr, *pattern;
-	glob_t *pglob;
-	int *rv;
+static int globexp2(const Char *ptr, const Char *pattern, 
+		    glob_t *pglob, int *rv)
 {
 	int     i;
 	Char   *lm, *ls;
@@ -337,10 +333,7 @@ static int globexp2(ptr, pattern, pglob, rv)
  * expand tilde from the passwd file.
  */
 static const Char *
-globtilde(pattern, patbuf, pglob)
-	const Char *pattern;
-	Char *patbuf;
-	glob_t *pglob;
+globtilde(const Char *pattern, Char *patbuf, glob_t *pglob)
 {
 	struct passwd *pwd;
 	char *h;
@@ -399,9 +392,7 @@ globtilde(pattern, patbuf, pglob)
  * to find no matches.
  */
 static int
-glob0(pattern, pglob)
-	const Char *pattern;
-	glob_t *pglob;
+glob0(const Char *pattern, glob_t *pglob)
 {
 	const Char *qpatnext;
 	int c, err, oldpathc;
@@ -484,16 +475,13 @@ glob0(pattern, pglob)
 }
 
 static int
-compare(p, q)
-	const void *p, *q;
+compare(const void *p, const void *q)
 {
 	return(strcmp(*(char **)p, *(char **)q));
 }
 
 static int
-glob1(pattern, pglob)
-	Char *pattern;
-	glob_t *pglob;
+glob1(Char *pattern, glob_t *pglob)
 {
 	Char pathbuf[MAXPATHLEN+1];
 
@@ -509,9 +497,7 @@ glob1(pattern, pglob)
  * meta characters.
  */
 static int
-glob2(pathbuf, pathend, pattern, pglob)
-	Char *pathbuf, *pathend, *pattern;
-	glob_t *pglob;
+glob2(Char *pathbuf, Char *pathend, Char *pattern, glob_t *pglob)
 {
 	struct stat sb;
 	Char *p, *q;
@@ -560,9 +546,8 @@ glob2(pathbuf, pathend, pattern, pglob)
 }
 
 static int
-glob3(pathbuf, pathend, pattern, restpattern, pglob)
-	Char *pathbuf, *pathend, *pattern, *restpattern;
-	glob_t *pglob;
+glob3(Char *pathbuf, Char *pathend, Char *pattern, Char *restpattern, 
+      glob_t *pglob)
 {
 	register struct dirent *dp;
 	DIR *dirp;
@@ -640,9 +625,7 @@ glob3(pathbuf, pathend, pattern, restpattern, pglob)
  *	gl_pathv points to (gl_offs + gl_pathc + 1) items.
  */
 static int
-globextend(path, pglob)
-	const Char *path;
-	glob_t *pglob;
+globextend(const Char *path, glob_t *pglob)
 {
 	register char **pathv;
 	register int i;
@@ -681,8 +664,7 @@ globextend(path, pglob)
  * pattern causes a recursion level.
  */
 static int
-match(name, pat, patend)
-	register Char *name, *pat, *patend;
+match(Char *name, Char *pat, Char *patend)
 {
 	int ok, negate_range;
 	Char c, k;
@@ -729,8 +711,7 @@ match(name, pat, patend)
 
 /* Free allocated data belonging to a glob_t structure. */
 void
-globfree(pglob)
-	glob_t *pglob;
+globfree(glob_t *pglob)
 {
 	register int i;
 	register char **pp;
@@ -745,9 +726,7 @@ globfree(pglob)
 }
 
 static DIR *
-g_opendir(str, pglob)
-	register Char *str;
-	glob_t *pglob;
+g_opendir(Char *str, glob_t *pglob)
 {
 	char buf[MAXPATHLEN];
 
@@ -763,10 +742,7 @@ g_opendir(str, pglob)
 }
 
 static int
-g_lstat(fn, sb, pglob)
-	register Char *fn;
-	struct stat *sb;
-	glob_t *pglob;
+g_lstat(Char *fn, struct stat *sb, glob_t *pglob)
 {
 	char buf[MAXPATHLEN];
 
@@ -777,10 +753,7 @@ g_lstat(fn, sb, pglob)
 }
 
 static int
-g_stat(fn, sb, pglob)
-	register Char *fn;
-	struct stat *sb;
-	glob_t *pglob;
+g_stat(Char *fn, struct stat *sb, glob_t *pglob)
 {
 	char buf[MAXPATHLEN];
 
@@ -791,9 +764,7 @@ g_stat(fn, sb, pglob)
 }
 
 static Char *
-g_strchr(str, ch)
-	Char *str;
-	int ch;
+g_strchr(Char *str, int ch)
 {
 	do {
 		if (*str == ch)
@@ -804,9 +775,7 @@ g_strchr(str, ch)
 
 #ifdef notdef
 static Char *
-g_strcat(dst, src)
-	Char *dst;
-	const Char* src;
+g_strcat(Char *dst, const Char *src)
 {
 	Char *sdst = dst;
 
@@ -821,9 +790,7 @@ g_strcat(dst, src)
 #endif
 
 static void
-g_Ctoc(str, buf)
-	register const Char *str;
-	char *buf;
+g_Ctoc(const Char *str, char *buf)
 {
 	register char *dc;
 
@@ -833,9 +800,7 @@ g_Ctoc(str, buf)
 
 #ifdef DEBUG
 static void 
-qprintf(str, s)
-	const char *str;
-	register Char *s;
+qprintf(const Char *str, Char *s)
 {
 	register Char *p;
 

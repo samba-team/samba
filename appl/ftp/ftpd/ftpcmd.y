@@ -98,13 +98,13 @@ struct tab {
 extern struct tab cmdtab[];
 extern struct tab sitetab[];
 
-static char	*copy __P((char *));
-static void	 help __P((struct tab *, char *));
+static char	*copy (char *);
+static void	 help (struct tab *, char *);
 static struct tab *
-		 lookup __P((struct tab *, char *));
-static void	 sizecmd __P((char *));
-static void	 toolong __P((int));
-static int	 yylex __P((void));
+		 lookup (struct tab *, char *);
+static void	 sizecmd (char *);
+static void	 toolong (int);
+static int	 yylex (void);
 
 %}
 
