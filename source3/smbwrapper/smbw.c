@@ -293,7 +293,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 	string_sub(path, "/", "\\");
 
  ok:
-	DEBUG(5,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
+	DEBUG(4,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
 		 fname, smbw_cwd,
 		 server, share, path));
 
@@ -391,7 +391,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, 0x20, "");
 
-	DEBUG(5,("server_n=[%s] server=[%s]\n", server_n, server));
+	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
 	if ((p=strchr(server_n,'#')) && strcmp(p+1,"1D")==0) {
 		struct in_addr ip;
@@ -406,7 +406,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		server_n = group;
 	}
 
-	DEBUG(5,(" -> server_n=[%s] server=[%s]\n", server_n, server));
+	DEBUG(4,(" -> server_n=[%s] server=[%s]\n", server_n, server));
 
  again:
 	/* have to open a new connection */
@@ -425,6 +425,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
+	DEBUG(4,(" session request ok\n"));
 
 	if (!cli_negprot(&c)) {
 		cli_shutdown(&c);
@@ -443,12 +444,16 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
+	DEBUG(4,(" session setup ok\n"));
+
 	if (!cli_send_tconX(&c, share, "?????",
 			    password, strlen(password)+1)) {
 		errno = smbw_errno(&c);
 		cli_shutdown(&c);
 		return NULL;
 	}
+
+	DEBUG(4,(" tconx ok\n"));
 
 	srv = (struct smbw_server *)malloc(sizeof(*srv));
 	if (!srv) {

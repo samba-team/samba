@@ -63,7 +63,7 @@ BOOL smbw_getatr(struct smbw_server *srv, char *path,
 		 uint32 *mode, size_t *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time)
 {
-	DEBUG(5,("sending qpathinfo\n"));
+	DEBUG(4,("sending qpathinfo\n"));
 
 	if (!srv->no_pathinfo2 &&
 	    cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
@@ -135,6 +135,8 @@ int smbw_fstat(int fd, struct stat *st)
 		return ret;
 	}
 
+	DEBUG(4,("sending qfileinfo\n"));
+
 	if (!cli_qfileinfo(&file->srv->cli, file->f->cli_fd, 
 			  &mode, &size, &c_time, &a_time, &m_time) &&
 	    !cli_getattrE(&file->srv->cli, file->f->cli_fd, 
@@ -173,6 +175,8 @@ int smbw_stat(const char *fname, struct stat *st)
 		return -1;
 	}
 
+	DEBUG(4,("stat(%s)\n", fname));
+
 	smbw_init();
 
 	smbw_busy++;
@@ -186,6 +190,8 @@ int smbw_stat(const char *fname, struct stat *st)
 		/* smbw_server sets errno */
 		goto failed;
 	}
+
+	DEBUG(4,("smbw_stat\n"));
 
 	if (strncmp(srv->cli.dev,"IPC",3) == 0) {
 		mode = aDIR | aRONLY;
@@ -219,5 +225,3 @@ int smbw_stat(const char *fname, struct stat *st)
 	smbw_busy--;
 	return -1;
 }
-
-
