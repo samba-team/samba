@@ -1258,8 +1258,6 @@ typedef struct sam_user_info_23
 typedef struct sam_user_info_24
 {
 	uint8 pass[516];
-	uint16 unk_0;
-
 } SAM_USER_INFO_24;
 
 /* SAM_USERINFO_CTR - sam user info */

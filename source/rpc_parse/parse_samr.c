@@ -4248,7 +4248,7 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 *usr, prs_struct *ps
 		return False;
 
 	/* ok, this is only guess-work (as usual) */
-	if (usr->unknown_3 != 0x0) {
+	if (usr->unknown_5 != 0x0) {
 		if(!prs_uint32("unknown_6", ps, depth, &usr->unknown_6))
 			return False;
 		if(!prs_uint32("padding4", ps, depth, &usr->padding4))
@@ -4281,8 +4281,6 @@ static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 *usr, prs_struct *ps
 		return False;
 
 	if(!prs_uint8s(False, "password", ps, depth, usr->pass, sizeof(usr->pass)))
-		return False;
-	if(!prs_uint16("unk_0", ps, depth, &usr->unk_0))	/* unknown */
 		return False;
 
 	return True;

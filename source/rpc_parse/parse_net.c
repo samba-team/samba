@@ -374,12 +374,6 @@ BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, i
 	if(!smb_io_unistr2 ("", &q_l->uni_server_name, q_l->ptr, ps, depth))
 		 return False;
 
-	if(!prs_align(ps))
-		 return False;
-
-	if(!prs_uint32("function_code", ps, depth, &q_l->function_code))
-		 return False;
-
 	return True;
 }
 
