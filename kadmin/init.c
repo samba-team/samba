@@ -42,7 +42,9 @@
 RCSID("$Id$");
 
 static kadm5_ret_t
-create_random_entry(krb5_principal princ, time_t max_life, time_t max_rlife,
+create_random_entry(krb5_principal princ,
+		    unsigned max_life,
+		    unsigned max_rlife,
 		    u_int32_t attributes)
 {
     kadm5_principal_ent_rec ent;
@@ -54,10 +56,14 @@ create_random_entry(krb5_principal princ, time_t max_life, time_t max_rlife,
     memset(&ent, 0, sizeof(ent));
     ent.principal = princ;
     mask |= KADM5_PRINCIPAL;
-    ent.max_life = max_life;
-    mask |= KADM5_MAX_LIFE;
-    ent.max_renewable_life = max_rlife;
-    mask |= KADM5_MAX_RLIFE;
+    if (max_life) {
+	ent.max_life = max_life;
+	mask |= KADM5_MAX_LIFE;
+    }
+    if (max_rlife) {
+	ent.max_renewable_life = max_rlife;
+	mask |= KADM5_MAX_RLIFE;
+    }
     ent.attributes |= attributes | KRB5_KDB_DISALLOW_ALL_TIX;
     mask |= KADM5_ATTRIBUTES;
 
