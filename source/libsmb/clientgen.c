@@ -1466,7 +1466,7 @@ ssize_t cli_write(struct cli_state *cli,
 do a SMBgetattrE call
 ****************************************************************************/
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  uint32 *attr, size_t *size, 
+		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time)
 {
 	bzero(cli->outbuf,smb_size);
@@ -1517,7 +1517,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 do a SMBgetatr call
 ****************************************************************************/
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
-		uint32 *attr, size_t *size, time_t *t)
+		uint16 *attr, size_t *size, time_t *t)
 {
 	char *p;
 
@@ -1563,7 +1563,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 /****************************************************************************
 do a SMBsetatr call
 ****************************************************************************/
-BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
+BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 {
 	char *p;
 
@@ -1602,7 +1602,7 @@ send a qpathinfo call
 ****************************************************************************/
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   size_t *size, uint32 *mode)
+		   size_t *size, uint16 *mode)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -1677,7 +1677,7 @@ send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint32 *mode,
+		    time_t *w_time, size_t *size, uint16 *mode,
 		    SMB_INO_T *ino)
 {
 	int data_len = 0;
@@ -1724,11 +1724,11 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	if (w_time) {
 		*w_time = interpret_long_date(rdata+24) - cli->serverzone;
 	}
+	if (mode) {
+		*mode = SVAL(rdata, 32);
+	}
 	if (size) {
 		*size = IVAL(rdata, 40);
-	}
-	if (mode) {
-		*mode = IVAL(rdata, 32);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -1744,7 +1744,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   uint32 *mode, size_t *size,
+		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino)
 {
@@ -1796,11 +1796,11 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	if (w_time) {
 		*w_time = interpret_long_date(rdata+24) - cli->serverzone;
 	}
+	if (mode) {
+		*mode = SVAL(rdata, 32);
+	}
 	if (size) {
 		*size = IVAL(rdata, 40);
-	}
-	if (mode) {
-		*mode = IVAL(rdata, 32);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -1922,7 +1922,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-int cli_list(struct cli_state *cli,const char *Mask,int attribute, 
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *))
 {
 	int max_matches = 512;

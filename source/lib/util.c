@@ -608,7 +608,7 @@ SMB_OFF_T file_size(char *file_name)
 /*******************************************************************
 return a string representing an attribute for a file
 ********************************************************************/
-char *attrib_string(int mode)
+char *attrib_string(uint16 mode)
 {
   static fstring attrstr;
 

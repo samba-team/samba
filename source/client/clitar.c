@@ -45,8 +45,8 @@ typedef struct file_info_struct file_info2;
 
 struct file_info_struct
 {
-  int size;
-  int mode;
+  size_t size;
+  uint16 mode;
   int uid;
   int gid;
   /* These times are normally kept in GMT */
@@ -77,7 +77,7 @@ extern struct cli_state *cli;
 #define ATTRSET 1
 #define ATTRRESET 0
 
-static int attribute = aDIR | aSYSTEM | aHIDDEN;
+static uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 
 #ifndef CLIENT_TIMEOUT
 #define CLIENT_TIMEOUT (30*1000)
@@ -596,9 +596,9 @@ static int padit(char *buf, int bufsize, int padsize)
 }
 
 
-static void do_setrattr(char *name, int attr, int set)
+static void do_setrattr(char *name, uint16 attr, int set)
 {
-	int oldattr;
+	uint16 oldattr;
 	time_t t;
 
 	if (!cli_getatr(cli, name, &oldattr, NULL, &t)) return;
@@ -622,7 +622,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 {
   int fnum;
   uint32 nread=0;
-  char *p, ftype;
+  char ftype;
   file_info2 finfo;
   BOOL close_done = False;
   BOOL shallitime=True;
@@ -718,7 +718,6 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       writetarheader(tarhandle, rname, finfo.size, finfo.mtime, "100644 \0", ftype);
 
       while (nread < finfo.size && !close_done)	{
-	      p=NULL;
 	      
 	      DEBUG(3,("nread=%d\n",nread));
 	      
@@ -1348,7 +1347,7 @@ void cmd_setmode(void)
   char *q;
   fstring buf;
   pstring fname;
-  int attra[2];
+  uint16 attra[2];
   int direct=1;
 
   attra[0] = attra[1] = 0;

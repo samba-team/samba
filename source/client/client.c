@@ -40,7 +40,6 @@ static pstring username;
 static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
-static BOOL no_pass;
 extern struct in_addr ipzero;
 extern pstring scope;
 
@@ -390,7 +389,7 @@ static void do_list_helper(file_info *f, const char *mask)
 /****************************************************************************
 a wrapper around cli_list that adds recursion
   ****************************************************************************/
-void do_list(const char *mask,int attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
+void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
 	do_list_recurse = rec;
 	do_list_dirs = dirs;
@@ -405,7 +404,7 @@ void do_list(const char *mask,int attribute,void (*fn)(file_info *),BOOL rec, BO
   ****************************************************************************/
 static void cmd_dir(void)
 {
-	int attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
 	fstring buf;
 	char *p=buf;
@@ -439,7 +438,7 @@ static void cmd_dir(void)
   ****************************************************************************/
 static void cmd_du(void)
 {
-	int attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
 	fstring buf;
 	char *p=buf;
@@ -477,7 +476,7 @@ static void do_get(char *rname,char *lname)
 	char *data;
 	struct timeval tp_start;
 	int read_size = 65520;
-	uint32 attr;
+	uint16 attr;
 	size_t size;
 	off_t nread = 0;
 
@@ -539,7 +538,7 @@ static void do_get(char *rname,char *lname)
 	}
 
 	if (archive_level >= 2 && (attr & aARCH)) {
-		cli_setatr(cli, rname, attr & ~aARCH, 0);
+		cli_setatr(cli, rname, attr & ~(uint16)aARCH, 0);
 	}
 
 	{
@@ -691,7 +690,7 @@ do a mget command
 ****************************************************************************/
 static void cmd_mget(void)
 {
-	int attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = aSYSTEM | aHIDDEN;
 	pstring mget_mask;
 	fstring buf;
 	char *p=buf;
@@ -893,8 +892,6 @@ static void cmd_put(void)
 	pstring rname;
 	fstring buf;
 	char *p=buf;
-	file_info finfo;
-	finfo = def_finfo;
 	
 	pstrcpy(rname,cur_dir);
 	pstrcat(rname,"\\");
@@ -921,7 +918,6 @@ static void cmd_put(void)
 			DEBUG(0,("%s does not exist\n",lname));
 			return;
 		}
-		finfo.mtime = st.st_mtime;
 	}
 
 	do_put(rname,lname);
@@ -965,12 +961,9 @@ static void cmd_mput(void)
 {
 	pstring lname;
 	pstring rname;
-	file_info finfo;
 	fstring buf;
 	char *p=buf;
 	
-	finfo = def_finfo;
-
 	while (next_token(NULL,p,NULL,sizeof(buf))) {
 		SMB_STRUCT_STAT st;
 		pstring cmd;
@@ -1030,12 +1023,6 @@ static void cmd_mput(void)
 
 			dos_format(rname);
 
-			/* null size so do_put knows to ignore it */
-			finfo.size = -1;
-
-			/* set the date on the file */
-			finfo.mtime = st.st_mtime;
-			
 			do_put(rname,lname);
 		}
 		fclose(f);
@@ -1145,7 +1132,7 @@ static void cmd_del(void)
 {
 	pstring mask;
 	fstring buf;
-	int attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = aSYSTEM | aHIDDEN;
 
 	if (recurse)
 		attribute |= aDIR;
@@ -2055,7 +2042,6 @@ static int do_message_op(void)
 			break;
 		case 'N':
 			got_pass = True;
-			no_pass = True;
 			break;
 		case 'n':
 			pstrcpy(global_myname,optarg);

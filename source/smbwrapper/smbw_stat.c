@@ -65,7 +65,7 @@ try to do a QPATHINFO and if that fails then do a getatr
 this is needed because win95 sometimes refuses the qpathinfo
 *******************************************************/
 BOOL smbw_getatr(struct smbw_server *srv, char *path, 
-		 uint32 *mode, size_t *size, 
+		 uint16 *mode, size_t *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino)
 {
@@ -130,7 +130,7 @@ int smbw_fstat(int fd, struct stat *st)
 	struct smbw_file *file;
 	time_t c_time, a_time, m_time;
 	size_t size;
-	uint32 mode;
+	uint16 mode;
 	SMB_INO_T ino = 0;
 
 	smbw_busy++;
@@ -178,7 +178,7 @@ int smbw_stat(const char *fname, struct stat *st)
 	pstring path;
 	time_t m_time=0, a_time=0, c_time=0;
 	size_t size=0;
-	uint32 mode=0;
+	uint16 mode=0;
 	SMB_INO_T ino = 0;
 
 	ZERO_STRUCTP(st);
