@@ -9,7 +9,7 @@
 	SMB clients can refresh whenever the data on the server changes.
 	</para>
 
-	<para>This parameter is only usd when your kernel supports 
+	<para>This parameter is only used when your kernel supports 
 	change notification to user programs, using the F_NOTIFY fcntl.
 	</para>
 </description>
