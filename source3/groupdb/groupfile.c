@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBPASS_DB
+#ifdef USE_SMBGROUP_DB
 
 static int gp_file_lock_depth = 0;
 extern int DEBUGLEVEL;
@@ -68,51 +68,6 @@ static BOOL setgrpfilepwpos(void *vp, SMB_BIG_UINT tok)
 	return setfilepwpos(vp, tok);
 }
 
-static BOOL make_group_line(char *p, int max_len,
-				DOMAIN_GRP *grp,
-				DOMAIN_GRP_MEMBER **mem, int *num_mem)
-{
-	int i;
-	int len;
-	len = slprintf(p, max_len-1, "%s:%s:%d:", grp->name, grp->comment, grp->rid);
-
-	if (len == -1)
-	{
-		DEBUG(0,("make_group_line: cannot create entry\n"));
-		return False;
-	}
-
-	p += len;
-	max_len -= len;
-
-	if (mem == NULL || num_mem == NULL)
-	{
-		return True;
-	}
-
-	for (i = 0; i < (*num_mem); i++)
-	{
-		len = strlen((*mem)[i].name);
-		p = safe_strcpy(p, (*mem)[i].name, max_len); 
-
-		if (p == NULL)
-		{
-			DEBUG(0, ("make_group_line: out of space for groups!\n"));
-			return False;
-		}
-
-		max_len -= len;
-
-		if (i != (*num_mem)-1)
-		{
-			*p = ',';
-			p++;
-			max_len--;
-		}
-	}
-
-	return True;
-}
 
 /*************************************************************************
  Routine to return the next entry in the smbdomaingroup list.
@@ -135,17 +90,17 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 		uint8 type;
 		BOOL found = False;
 
-		if (isdigit(name[0]))
+		if (isdigit(name))
 		{
 			uint32 rid = get_number(name);
 			sid_copy(&sid, &global_sam_sid);
 			sid_append_rid(&sid, rid);
 			
-			found = lookup_name(&sid, name, &type) == 0x0;
+			found = lookup_sid(&sid, name, &type) == 0x0;
 		}
 		else
 		{
-			found = lookup_sid(name, &sid, &type) == 0x0;
+			found = lookup_name(name, &sid, &type) == 0x0;
 		}
 
 		if (!found)
