@@ -1141,9 +1141,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 			return status;
 		}
 		b.flags &= ~DCERPC_AUTH_OPTIONS;
-		status = dcerpc_pipe_connect_ncacn_ip_tcp(p2, &b, pipe_uuid,
-							  pipe_version, NULL, 
-							  NULL, NULL);
+		status = dcerpc_pipe_open_tcp(p2, b.host, atoi(b.endpoint));
 		break;
 
 	case NCALRPC:
