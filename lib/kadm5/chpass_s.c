@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,6 +34,10 @@
 #include "kadm5_locl.h"
 
 RCSID("$Id$");
+
+/*
+ * change the password of `princ' to `password'
+ */
 
 kadm5_ret_t
 kadm5_s_chpass_principal(void *server_handle, 
@@ -74,6 +78,10 @@ out:
     return _kadm5_error_code(ret);
 }
 
+/*
+ * change keys for `princ' to `keys'
+ */
+
 kadm5_ret_t
 kadm5_s_chpass_principal_with_key(void *server_handle, 
 				  krb5_principal princ,
@@ -90,7 +98,7 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     ret = context->db->fetch(context->context, context->db, 0, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
-    ret = _kadm5_set_keys2(&ent, n_key_data, key_data);
+    ret = _kadm5_set_keys2(context, &ent, n_key_data, key_data);
     if(ret)
 	goto out2;
     ret = _kadm5_set_modifier(context, &ent);
