@@ -580,7 +580,7 @@ nsswitch : SHOWFLAGS bin/winbindd bin/wbinfo nsswitch/libnss_winbind.so nsswitch
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-modules: SHOWFLAGS $(VFS_MODULES) $(PDB_MODULES) $(MODULES)
+modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES) $(MODULES)
 
 everything: all libsmbclient debug2html smbfilter talloctort
 
@@ -911,7 +911,7 @@ install: installbin installman installscripts installdat installswat
 # is not used
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(PDBLIBDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
