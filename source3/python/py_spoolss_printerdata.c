@@ -227,4 +227,8 @@ PyObject *spoolss_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw
 
 PyObject *spoolss_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
 {
+	/* Not supported by Samba server */
+
+	PyErr_SetString(spoolss_error, "Not implemented");
+	return NULL;
 }
