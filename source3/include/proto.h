@@ -6,6 +6,16 @@
 BOOL check_access(int snum);
 BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
 
+/*The following definitions come from  asyncdns.c  */
+
+int asyncdns_fd(void);
+void start_async_dns(void);
+void run_dns_queue(void);
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
+		     struct name_record **n);
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
+		     struct name_record **n);
+
 /*The following definitions come from  charcnv.c  */
 
 char *unix2dos_format(char *str,BOOL overwrite);
@@ -420,8 +430,8 @@ void remove_name(struct subnet_record *d, struct name_record *n);
 struct name_record *find_name(struct name_record *n,
 			struct nmb_name *name, int search);
 struct name_record *find_name_search(struct subnet_record **d,
-			struct nmb_name *name,
-			int search, struct in_addr ip);
+				     struct nmb_name *name,
+				     int search, struct in_addr ip);
 void dump_names(void);
 void load_netbios_names(void);
 void remove_netbios_name(struct subnet_record *d,
@@ -432,7 +442,6 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 		int ttl, enum name_source source, struct in_addr ip,
 		BOOL new_only,BOOL wins);
 void expire_names(time_t t);
-struct name_record *dns_name_search(struct nmb_name *question, int Time);
 
 /*The following definitions come from  namedbresp.c  */
 
@@ -842,15 +851,13 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-BOOL smb_shm_create_hash_table( unsigned int size );
-BOOL smb_shm_open( char *file_name, int size);
+BOOL smb_shm_open(char *file_name, int size);
 BOOL smb_shm_close( void );
-smb_shm_offset_t smb_shm_alloc(int size);
-BOOL smb_shm_free(smb_shm_offset_t offset);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
-BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
-void *smb_shm_offset2addr(smb_shm_offset_t offset);
-smb_shm_offset_t smb_shm_addr2offset(void *addr);
+int smb_shm_alloc(int size);
+BOOL smb_shm_free(int offset);
+int smb_shm_get_userdef_off(void);
+void *smb_shm_offset2addr(int offset);
+int smb_shm_addr2offset(void *addr);
 BOOL smb_shm_lock_hash_entry( unsigned int entry);
 BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,

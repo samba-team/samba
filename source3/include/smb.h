@@ -63,8 +63,7 @@
 typedef int BOOL;
 
 /* offset in shared memory */
-typedef  int smb_shm_offset_t;
-#define NULL_OFFSET (smb_shm_offset_t)(0)
+#define NULL_OFFSET (int)(0)
 
 /* limiting size of ipc replies */
 #define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
@@ -1272,6 +1271,22 @@ struct share_ops {
 	int (*forall)(void (*)(share_mode_entry *, char *));
 	void (*status)(FILE *);
 };
+
+/* each implementation of the shared memory code needs
+   to support the following operations */
+struct shmem_ops {
+	BOOL (*open)(char *, int );
+	BOOL (*close)( void );
+	int (*alloc)(int );
+	BOOL (*free)(int );
+	int (*get_userdef_off)(void);
+	void *(*offset2addr)(int );
+	int (*addr2offset)(void *addr);
+	BOOL (*lock_hash_entry)(unsigned int);
+	BOOL (*unlock_hash_entry)( unsigned int );
+	BOOL (*get_usage)(int *,int *,int *);
+};
+
 
 /* this is used for smbstatus */
 struct connect_record
