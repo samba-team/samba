@@ -41,6 +41,22 @@
 /* old packing formats */
 #define LTDB_PACKING_FORMAT_NODN 0x26011966
 
+/* use a portable integer format */
+static void put_uint32(unsigned char *p, int ofs, unsigned int val)
+{
+	p += ofs;
+	p[0] = val&0xFF;
+	p[1] = (val>>8)  & 0xFF;
+	p[2] = (val>>16) & 0xFF;
+	p[3] = (val>>24) & 0xFF;
+}
+
+static unsigned int pull_uint32(unsigned char *p, int ofs)
+{
+	p += ofs;
+	return p[0] | (p[1]<<8) | (p[2]<<16) | (p[3]<<24);
+}
+
 /*
   pack a ldb message into a linear buffer in a TDB_DATA
 
@@ -82,8 +98,8 @@ int ltdb_pack_data(struct ldb_context *ldb,
 	data->dsize = size;
 
 	p = data->dptr;
-	SIVAL(p, 0, LTDB_PACKING_FORMAT); 
-	SIVAL(p, 4, message->num_elements); 
+	put_uint32(p, 0, LTDB_PACKING_FORMAT); 
+	put_uint32(p, 4, message->num_elements); 
 	p += 8;
 
 	/* the dn needs to be packed so we can be case preserving
@@ -99,10 +115,10 @@ int ltdb_pack_data(struct ldb_context *ldb,
 		len = strlen(message->elements[i].name);
 		memcpy(p, message->elements[i].name, len+1);
 		p += len + 1;
-		SIVAL(p, 0, message->elements[i].num_values);
+		put_uint32(p, 0, message->elements[i].num_values);
 		p += 4;
 		for (j=0;j<message->elements[i].num_values;j++) {
-			SIVAL(p, 0, message->elements[i].values[j].length);
+			put_uint32(p, 0, message->elements[i].values[j].length);
 			memcpy(p+4, message->elements[i].values[j].data, 
 			       message->elements[i].values[j].length);
 			p[4+message->elements[i].values[j].length] = 0;
@@ -156,8 +172,8 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	format = IVAL(p, 0);
-	message->num_elements = IVAL(p, 4);
+	format = pull_uint32(p, 0);
+	message->num_elements = pull_uint32(p, 4);
 	p += 8;
 
 	remaining = data->dsize - 8;
@@ -215,7 +231,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 		message->elements[i].name = p;
 		remaining -= len + 1;
 		p += len + 1;
-		message->elements[i].num_values = IVAL(p, 0);
+		message->elements[i].num_values = pull_uint32(p, 0);
 		message->elements[i].values = NULL;
 		if (message->elements[i].num_values != 0) {
 			message->elements[i].values = ldb_malloc_array_p(ldb,
@@ -228,7 +244,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 		}
 		p += 4;
 		for (j=0;j<message->elements[i].num_values;j++) {
-			len = IVAL(p, 0);
+			len = pull_uint32(p, 0);
 			if (len > remaining-5) {
 				errno = EIO;
 				goto failed;
