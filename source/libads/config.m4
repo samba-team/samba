@@ -519,7 +519,7 @@ if test x"$with_krb5_support" != x"no"; then
 	fi
 
 	AC_CACHE_CHECK([for krb5_princ_realm returns krb5_realm or krb5_data],
-               samba_cv_KRB5_PRINC_REALM_RETURNS_REALM,[
+    		samba_cv_KRB5_PRINC_REALM_RETURNS_REALM,[
 		AC_TRY_COMPILE([#include <krb5.h>],
 		[krb5_context context;krb5_principal principal;krb5_realm realm;
 			realm = *krb5_princ_realm(context, principal);],
@@ -529,6 +529,14 @@ if test x"$with_krb5_support" != x"no"; then
 		AC_DEFINE(KRB5_PRINC_REALM_RETURNS_REALM,1,
 		[Whether krb5_princ_realm returns krb5_realm or krb5_data])
 	fi
+
+	# TODO: check all gssapi headers for this
+	AC_CACHE_CHECK([for GSS_C_DCE_STYLE in gssapi.h],
+    		samba_cv_GSS_C_DCE_STYLE,[
+		AC_TRY_COMPILE([#include <gssapi.h>],
+		[int flags = GSS_C_DCE_STYLE;],
+		samba_cv_GSS_C_DCE_STYLE=yes,
+		samba_cv_GSS_C_DCE_STYLE=no)])
 
 	if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
 		AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
