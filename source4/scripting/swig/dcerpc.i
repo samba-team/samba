@@ -1,3 +1,5 @@
+/* Tastes like -*- C -*- */
+
 /* 
    Unix SMB/CIFS implementation.
 
@@ -227,11 +229,16 @@ PyObject *string_ptr_to_python(TALLOC_CTX *mem_ctx, char *obj)
 
 %include "samba.i"
 
+%pythoncode %{
+	NTSTATUS = _dcerpc.NTSTATUS
+%}
+
 %init  %{
 	setup_logging("python", DEBUG_STDOUT);	
 	lp_load(dyn_CONFIGFILE, True, False, False);
 	load_interfaces();
-	ntstatus_exception = PyErr_NewException("dcerpc.NTSTATUS", NULL, NULL);
+	ntstatus_exception = PyErr_NewException("_dcerpc.NTSTATUS", NULL, NULL);
+	PyDict_SetItemString(d, "NTSTATUS", ntstatus_exception);
 %}
 
 %typemap(in, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp_dcerpc_pipe) {
