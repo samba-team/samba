@@ -1,11 +1,12 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   SMB parameters and setup
+   SMB parameters and setup, plus a whole lot more.
+   
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
+   Copyright (C) Martin Pool		      2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -154,17 +155,63 @@ implemented */
 
 #include "doserr.h"
 
+
+
 #ifndef _PSTRING
 
 #define PSTRING_LEN 1024
 #define FSTRING_LEN 256
 
+#ifdef PSTRING_SANCTIFY
+
+/* If you define this, pstring and fstring become distinguished types,
+ * so that it's harder to accidentally overflow them by for example
+ * passing an fstring on the lhs of pstrcpy.
+ *
+ * The types are defined as one-element union arrays so that with
+ * "fstring f" the name "f" will be a pointer and with a big hammer
+ * you can cast it to (char *).  So code that tries to just use it
+ * directly will get a loud warning, but hopefully nothing worse.
+ *
+ * To pass them to non-pstring-aware functions, use PSTR and check
+ * that the function takes a const.  They should almost never be
+ * modified except by special calls.  In those unusual cases, use
+ * PSTR_MUTABLE.
+ *
+ * This is off by default so as not to produce too many warnings.  As
+ * the code is vetted it can become the default. */
+
+typedef union { char pstring_contents[PSTRING_LEN]; } pstring[1];
+typedef union { char fstring_contents[FSTRING_LEN]; } fstring[1];
+
+#  define PSTR(p) ((const char *) ((p)->pstring_contents))
+#  define FSTR(f) ((const char *) ((f)->fstring_contents))
+
+/* You should not normally use these.  Instead, use pstrcpy, etc. */
+#  define PSTR_MUTABLE(p) ((p)->pstring_contents)
+#  define FSTR_MUTABLE(f) ((f)->fstring_contents)
+
+/* See also safe_string.h */
+
+#else /* ndef PSTRING_SANCTIFY */
+
+/* Old interface. */
+
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 
+#define PSTR(p) (p)
+#define FSTR(f) (f)
+#define PSTR_MUTABLE(p) (p)
+#define FSTR_MUTABLE(f) (f)
+
+#endif /* ndef PSTRING_SANCTIFY */
+
 #define _PSTRING
 
-#endif
+#endif /* ndef _PSTRING */
+
+
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
