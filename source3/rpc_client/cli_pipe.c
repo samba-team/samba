@@ -1221,8 +1221,6 @@ static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
 
 static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFACE *transfer)
 {
-	int i = 0;
-
 # if 0	/* JERRY -- apparently ASU forgets to fill in the server pipe name sometimes */
 	if ( hdr_ba->addr.len <= 0)
 		return False;
