@@ -60,7 +60,8 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
     krb5_error_code ret;
     char buf[256];
 
-    while (strsep_copy(&name, ",", buf, sizeof(buf)) != -1) {
+    while (strsep_copy(&name, ",", buf, sizeof(buf)) != -1
+	   && buf[0] != '\0') {
 	a = malloc(sizeof(*a));
 	if (a == NULL) {
 	    ret = ENOMEM;
@@ -68,7 +69,7 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	}
 	if (a0 == NULL) {
 	    a0 = a;
-	    a->name = strdup(name);
+	    a->name = strdup(buf);
 	    if (a->name == NULL) {
 		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
@@ -139,11 +140,9 @@ any_start_seq_get(krb5_context context,
     ed->a = a;
     ret = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
     if (ret) {
-	free (ed);
 	free (c->data);
 	c->data = NULL;
-	krb5_set_error_string (context, "malloc: out of memory");
-	return ENOMEM;
+	return ret;
     }
     return 0;
 }
@@ -166,14 +165,15 @@ any_next_entry (krb5_context context,
 	    ret2 = krb5_kt_end_seq_get (context, ed->a->kt, &ed->cursor);
 	    if (ret2)
 		return ret2;
-	    ed->a = ed->a->next;
+	    while ((ed->a = ed->a->next) != NULL) {
+		ret2 = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
+		if (ret2 == 0)
+		    break;
+	    }
 	    if (ed->a == NULL) {
 		krb5_clear_error_string (context);
 		return KRB5_CC_END;
 	    }
-	    ret2 = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
-	    if (ret2)
-		return ret2;
 	} else
 	    return ret;
     } while (ret == KRB5_CC_END);
