@@ -616,7 +616,10 @@ struct locking_key {
 };
 
 struct locking_data {
-	int num_share_mode_entries;
+	union {
+		int num_share_mode_entries;
+		share_mode_entry dummy; /* Needed for alignment. */
+	} u;
 	/* the following two entries are implicit 
 	   share_mode_entry modes[num_share_mode_entries];
            char file_name[];
