@@ -296,7 +296,8 @@ change (krb5_auth_context auth_context,
     krb5_get_salt (principal, &salt);
     memset (&new_keyblock, 0, sizeof(new_keyblock));
     old_keyblock = &ent.keys.val[0].key;
-    krb5_string_to_key_data (pwd_data, &salt, old_keyblock->keytype, /* XXX */
+    krb5_string_to_key_data (pwd_data, &salt,
+			     old_keyblock->keytype, /* XXX */
 			     &new_keyblock);
 
     if (new_keyblock.keytype == old_keyblock->keytype

@@ -132,7 +132,8 @@ main (int argc, char **argv)
 	errx (1, "krb5_change_password: %s",
 	      krb5_get_err_text(context, ret));
 
-    printf ("%.*s\n", result_string.length, result_string.data);
+    printf ("%.*s\n", (int)result_string.length,
+	    (char *)result_string.data);
 
     krb5_data_free (&result_code_string);
     krb5_data_free (&result_string);

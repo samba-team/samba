@@ -179,7 +179,7 @@ kerberos4_send(char *name, Authenticator *ap)
 
     memset(instance, 0, sizeof(instance));
 
-    if (realm = krb_get_phost(RemoteHostName))
+    if ((realm = krb_get_phost(RemoteHostName)))
 	strncpy(instance, realm, sizeof(instance));
 
     instance[sizeof(instance)-1] = '\0';
@@ -190,11 +190,13 @@ kerberos4_send(char *name, Authenticator *ap)
 	printf("Kerberos V4: no realm for %s\r\n", RemoteHostName);
 	return(0);
     }
-    if (r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L)) {
+    r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L);
+    if (r) {
 	printf("mk_req failed: %s\r\n", krb_get_err_text(r));
 	return(0);
     }
-    if (r = krb_get_cred(KRB_SERVICE_NAME, instance, realm, &cred)) {
+    r = krb_get_cred(KRB_SERVICE_NAME, instance, realm, &cred);
+    if (r) {
 	printf("get_cred failed: %s\r\n", krb_get_err_text(r));
 	return(0);
     }
@@ -288,8 +290,9 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    printf("\r\n");
 	}
 	k_getsockinst(0, instance, sizeof(instance));
-	if (r = krb_rd_req(&auth, KRB_SERVICE_NAME,
-			   instance, 0, &adat, "")) {
+	r = krb_rd_req(&auth, KRB_SERVICE_NAME,
+		       instance, 0, &adat, "");
+	if (r) {
 	    if (auth_debug_mode)
 		printf("Kerberos failed him as %s\r\n", name);
 	    Data(ap, KRB_REJECT, (void *)krb_get_err_text(r), -1);

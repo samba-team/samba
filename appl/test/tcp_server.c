@@ -145,7 +145,8 @@ proto (int sock, const char *service)
 	errx (1, "krb5_rd_safe: %s",
 	      krb5_get_err_text(context, status));
 
-    printf ("safe packet: %.*s\n", data.length, data.data);
+    printf ("safe packet: %.*s\n", (int)data.length,
+	    (char *)data.data);
 
     if (krb5_net_read (context, sock, &net_len, 4) != 4)
 	err (1, "krb5_net_read");
@@ -166,7 +167,8 @@ proto (int sock, const char *service)
 	errx (1, "krb5_rd_priv: %s",
 	      krb5_get_err_text(context, status));
 
-    printf ("priv packet: %.*s\n", data.length, data.data);
+    printf ("priv packet: %.*s\n", (int)data.length,
+	    (char *)data.data);
 
     return 0;
 }

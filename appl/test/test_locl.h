@@ -76,6 +76,7 @@
 #include <errno.h>
 #include <roken.h>
 #include <getarg.h>
+#include <err.h>
 #include <krb5.h>
 
 #define SERVICE "test"

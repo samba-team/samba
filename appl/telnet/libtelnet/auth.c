@@ -500,7 +500,7 @@ auth_is(unsigned char *data, int cnt)
 	return;
     }
 
-    if (ap = findauthenticator(data[0], data[1])) {
+    if ((ap = findauthenticator(data[0], data[1]))) {
 	if (ap->is)
 	    (*ap->is)(ap, data+2, cnt-2);
     } else if (auth_debug_mode)
@@ -516,7 +516,7 @@ auth_reply(unsigned char *data, int cnt)
     if (cnt < 2)
 	return;
 
-    if (ap = findauthenticator(data[0], data[1])) {
+    if ((ap = findauthenticator(data[0], data[1]))) {
 	if (ap->reply)
 	    (*ap->reply)(ap, data+2, cnt-2);
     } else if (auth_debug_mode)
