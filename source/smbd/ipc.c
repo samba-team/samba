@@ -509,11 +509,10 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			memcpy(data+ddisp,smb_base(inbuf)+doff,dcnt);      
 		}
 	}
-	
-	
+
 	DEBUG(3,("trans <%s> data=%u params=%u setup=%u\n",
 		 name,tdscnt,tpscnt,suwcnt));
-	
+
 	/*
 	 * WinCE wierdness....
 	 */

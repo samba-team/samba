@@ -800,6 +800,9 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 			} else if (smb_read_error == READ_ERROR) {
 				DEBUG( 0, ("oplock_break: receive_smb error (%s)\n", strerror(errno)) );
 				shutdown_server = True;
+			} else if (smb_read_error == READ_BAD_SIG) {
+				DEBUG( 0, ("oplock_break: bad signature from client\n" ));
+				shutdown_server = True;
 			} else if (smb_read_error == READ_TIMEOUT) {
 				DEBUG( 0, ( "oplock_break: receive_smb timed out after %d seconds.\n", OPLOCK_BREAK_TIMEOUT ) );
 				oplock_timeout = True;

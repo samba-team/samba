@@ -186,9 +186,6 @@ static void free_signing_context(struct smb_sign_info *si)
 
 static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good) 
 {
-	DEBUG(10, ("signing_good: got SMB signature of\n"));
-	dump_data(10,&inbuf[smb_ss_field] , 8);
-
 	if (good && !si->doing_signing) {
 		si->doing_signing = True;
 	}
@@ -199,11 +196,11 @@ static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good)
 
 			/* W2K sends a bad first signature but the sign engine is on.... JRA. */
 			if (data->send_seq_num > 1)
-				DEBUG(1, ("SMB signature check failed!\n"));
+				DEBUG(1, ("signing_good: SMB signature check failed!\n"));
 
 			return False;
 		} else {
-			DEBUG(3, ("Server did not sign reply correctly\n"));
+			DEBUG(3, ("signing_good: Peer did not sign reply correctly\n"));
 			free_signing_context(si);
 			return False;
 		}
@@ -366,6 +363,9 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		}
 #endif /* JRATEST */
 
+	} else {
+		DEBUG(10, ("client_check_incoming_message:: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
+		dump_data(10, server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good);
 }
@@ -455,7 +455,7 @@ void cli_signing_trans_start(struct cli_state *cli)
 {
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
 
-	if (!cli->sign_info.doing_signing)
+	if (!cli->sign_info.doing_signing || !data)
 		return;
 
 	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
@@ -464,6 +464,13 @@ void cli_signing_trans_start(struct cli_state *cli)
 	data->trans_info->send_seq_num = data->send_seq_num;
 	data->trans_info->mid = SVAL(cli->outbuf,smb_mid);
 	data->trans_info->reply_seq_num = data->send_seq_num+1;
+
+	DEBUG(10,("cli_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
+data->send_seq_num = %u\n",
+			(unsigned int)data->trans_info->mid,
+			(unsigned int)data->trans_info->reply_seq_num,
+			(unsigned int)data->trans_info->send_seq_num,
+			(unsigned int)data->send_seq_num ));
 }
 
 /***********************************************************
@@ -474,7 +481,7 @@ void cli_signing_trans_stop(struct cli_state *cli)
 {
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
 
-	if (!cli->sign_info.doing_signing)
+	if (!cli->sign_info.doing_signing || !data)
 		return;
 
 	SAFE_FREE(data->trans_info);
@@ -638,12 +645,15 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	/* See if this is a reply for a deferred packet. */
 	was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, mid, &send_seq_number);
 
-	if (data->trans_info && (data->trans_info->mid == mid))
+	if (data->trans_info && (data->trans_info->mid == mid)) {
+		/* This is a reply in a trans stream. Use the sequence
+		 * number associated with the stream mid. */
 		send_seq_number = data->trans_info->send_seq_num;
+	}
 
 	simple_packet_signature(data, outbuf, send_seq_number, calc_md5_mac);
 
-	DEBUG(10, ("srv_sign_outgoing_message: sent SMB signature of\n"));
+	DEBUG(10, ("srv_sign_outgoing_message: seq %u: sent SMB signature of\n", (unsigned int)send_seq_number));
 	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
@@ -651,8 +661,16 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
-	if (!was_deferred_packet && !data->trans_info)
-		data->send_seq_num++;
+	if (!was_deferred_packet) {
+	       	if (!data->trans_info) {
+			/* Always increment if not in a trans stream. */
+			data->send_seq_num++;
+		} else if ((data->trans_info->send_seq_num == data->send_seq_num) || (data->trans_info->mid != mid)) {
+			/* Increment if this is the first reply in a trans stream or a
+			 * packet that doesn't belong to this stream (different mid). */
+			data->send_seq_num++;
+		}
+	}
 }
 
 /***********************************************************
@@ -717,6 +735,9 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		}
 #endif /* JRATEST */
 
+	} else {
+		DEBUG(10, ("srv_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
+		dump_data(10, server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good);
 }
@@ -830,6 +851,8 @@ void srv_signing_trans_start(uint16 mid)
 		return;
 
 	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
+	if (!data)
+		return;
 
 	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
 	ZERO_STRUCTP(data->trans_info);
@@ -838,9 +861,12 @@ void srv_signing_trans_start(uint16 mid)
 	data->trans_info->mid = mid;
 	data->trans_info->send_seq_num = data->send_seq_num;
 
-	/* Increment now in case we need to send a non-trans
-	 * reply in the middle of the trans stream. */
-	data->send_seq_num++;
+	DEBUG(10,("srv_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
+data->send_seq_num = %u\n",
+			(unsigned int)mid,
+			(unsigned int)data->trans_info->reply_seq_num,
+			(unsigned int)data->trans_info->send_seq_num,
+			(unsigned int)data->send_seq_num ));
 }
 
 /***********************************************************
@@ -855,11 +881,12 @@ void srv_signing_trans_stop(void)
 		return;
 
 	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
+	if (!data || !data->trans_info)
+		return;
 
 	SAFE_FREE(data->trans_info);
 	data->trans_info = NULL;
 }
-
 
 /***********************************************************
  Turn on signing from this packet onwards. 
