@@ -435,7 +435,7 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 
 	/* Set up pipe user group membership. */
 	initialise_groups(p->pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
-	get_current_groups( &p->pipe_user.ngroups, &p->pipe_user.groups);
+	get_current_groups(p->pipe_user.gid, &p->pipe_user.ngroups, &p->pipe_user.groups);
 
 	if (server_info->ptok)
 		add_supplementary_nt_login_groups(&p->pipe_user.ngroups, &p->pipe_user.groups, &server_info->ptok);

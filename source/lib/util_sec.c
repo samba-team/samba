@@ -227,6 +227,7 @@ void set_effective_gid(gid_t gid)
 }
 
 static uid_t saved_euid, saved_ruid;
+static gid_t saved_egid, saved_rgid;
 
 /****************************************************************************
  save the real and effective uid for later restoration. Used by the quotas
@@ -263,6 +264,41 @@ void restore_re_uid(void)
 
 	assert_uid(saved_ruid, saved_euid);
 }
+
+
+/****************************************************************************
+ save the real and effective gid for later restoration. Used by the 
+ getgroups code
+****************************************************************************/
+void save_re_gid(void)
+{
+	saved_rgid = getgid();
+	saved_egid = getegid();
+}
+
+/****************************************************************************
+ and restore them!
+****************************************************************************/
+void restore_re_gid(void)
+{
+#if USE_SETRESUID
+	setresgid(saved_rgid, saved_egid, -1);
+#elif USE_SETREUID
+	setregid(saved_rgid, -1);
+	setregid(-1,saved_egid);
+#elif USE_SETUIDX
+	setgidx(ID_REAL, saved_rgid);
+	setgidx(ID_EFFECTIVE, saved_egid);
+#else
+	set_effective_gid(saved_egid);
+	if (getgid() != saved_rgid)
+		setgid(saved_rgid);
+	set_effective_gid(saved_egid);
+#endif
+
+	assert_gid(saved_rgid, saved_egid);
+}
+
 
 /****************************************************************************
  set the real AND effective uid to the current effective uid in a way that

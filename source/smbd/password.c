@@ -289,7 +289,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	/* Find all the groups this uid is in and store them. 
 		Used by change_to_user() */
 	initialise_groups(vuser->user.unix_name, vuser->uid, vuser->gid);
-	get_current_groups( &vuser->n_groups, &vuser->groups);
+	get_current_groups(vuser->gid, &vuser->n_groups, &vuser->groups);
 
 	if (server_info->ptok)
 		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, &server_info->ptok);
