@@ -68,7 +68,7 @@ hdb_next_enctype2key(krb5_context context,
 {
     Key *k;
     
-    for (k = *key ? *key : e->keys.val; 
+    for (k = *key ? (*key) + 1 : e->keys.val;
 	 k < e->keys.val + e->keys.len; 
 	 k++)
 	if(k->key.keytype == enctype){
