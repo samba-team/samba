@@ -141,8 +141,10 @@ mode_t unix_mode(int cnum,int dosmode)
     result |= (S_IWUSR | S_IWGRP | S_IWOTH);
  
   if (IS_DOS_DIR(dosmode)) {
+    /* We never make directories read only for the owner as under DOS a user
+       can always create a file in a read-only directory. */
     result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
-    result &= (lp_dir_mode(SNUM(cnum)) | 0700);
+    result &= lp_dir_mode(SNUM(cnum));
   } else { 
     if (MAP_ARCHIVE(cnum) && IS_DOS_ARCHIVE(dosmode))
       result |= S_IXUSR;

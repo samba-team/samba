@@ -174,6 +174,7 @@ typedef struct
   BOOL bBrowseList;
   BOOL bUnixRealname;
   BOOL bNISHomeMap;
+  BOOL bTimeServer;
 } global;
 
 static global Globals;
@@ -450,6 +451,7 @@ struct parm_struct
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL},
   {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL},
   {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL},
+  {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL},
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL},
   {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,    handle_copy},
@@ -621,6 +623,7 @@ static void init_globals(void)
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
 #endif /* KANJI */
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
+  Globals.bTimeServer = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -813,6 +816,7 @@ FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
+FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

@@ -226,7 +226,7 @@ void charset_initialise(int client_codepage)
   }
 
  if(client_codepage != -1)
-   DEBUG(1,("charset_initialise: client code page = %d\n", client_codepage));
+   DEBUG(6,("charset_initialise: client code page = %d\n", client_codepage));
 
   /*
    * Known client codepages - these can be added to.
@@ -245,7 +245,7 @@ void charset_initialise(int client_codepage)
       break;
     default:
       /* Default charset - currently 850 */
-      DEBUG(1,("charset_initialise: Using default client codepage %d\n", 850));
+      DEBUG(6,("charset_initialise: Using default client codepage %d\n", 850));
       cp = cp_850;
       break;
     
