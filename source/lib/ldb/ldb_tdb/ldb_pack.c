@@ -36,7 +36,10 @@
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 /* change this if the data format ever changes */
-#define LTDB_PACKING_FORMAT 0x26011966
+#define LTDB_PACKING_FORMAT 0x26011967
+
+/* old packing formats */
+#define LTDB_PACKING_FORMAT_NODN 0x26011966
 
 /*
   pack a ldb message into a linear buffer in a TDB_DATA
@@ -53,9 +56,12 @@ int ltdb_pack_data(struct ldb_context *ctx,
 	int i, j;
 	size_t size;
 	char *p;
+	size_t len;
 
 	/* work out how big it needs to be */
 	size = 8;
+
+	size += 1 + strlen(message->dn);
 
 	for (i=0;i<message->num_elements;i++) {
 		if (message->elements[i].num_values == 0) {
@@ -79,9 +85,14 @@ int ltdb_pack_data(struct ldb_context *ctx,
 	SIVAL(p, 0, LTDB_PACKING_FORMAT); 
 	SIVAL(p, 4, message->num_elements); 
 	p += 8;
+
+	/* the dn needs to be packed so we can be case preserving
+	   while hashing on a case folded dn */
+	len = strlen(message->dn);
+	memcpy(p, message->dn, len+1);
+	p += len + 1;
 	
 	for (i=0;i<message->num_elements;i++) {
-		size_t len;
 		if (message->elements[i].num_values == 0) {
 			continue;
 		}
@@ -133,33 +144,49 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 	char *p;
 	unsigned int remaining;
 	int i, j;
+	unsigned format;
+	size_t len;
 
 	message->elements = NULL;
 
 	p = data->dptr;
-	if (data->dsize < 4) {
+	if (data->dsize < 8) {
 		errno = EIO;
 		goto failed;
 	}
 
-	if (IVAL(p, 0) != LTDB_PACKING_FORMAT) {
-		/* this is where we will cope with upgrading the
-		   format if/when the format is ever changed */
-		errno = EIO;
-		goto failed;
-	}
-
+	format = IVAL(p, 0);
 	message->num_elements = IVAL(p, 4);
 	p += 8;
+
+	remaining = data->dsize - 8;
+
+	switch (format) {
+	case LTDB_PACKING_FORMAT_NODN:
+		message->dn = NULL;
+		break;
+
+	case LTDB_PACKING_FORMAT:
+		len = strnlen(p, remaining);
+		if (len == remaining) {
+			errno = EIO;
+			goto failed;
+		}
+		message->dn = p;
+		remaining -= len + 1;
+		p += len + 1;
+		break;
+
+	default:
+		errno = EIO;
+		goto failed;
+	}
 
 	if (message->num_elements == 0) {
 		message->elements = NULL;
 		return 0;
 	}
 	
-	/* basic sanity check */
-	remaining = data->dsize - 8;
-
 	if (message->num_elements > remaining / 6) {
 		errno = EIO;
 		goto failed;
@@ -174,12 +201,15 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 	}
 
 	for (i=0;i<message->num_elements;i++) {
-		size_t len;
 		if (remaining < 10) {
 			errno = EIO;
 			goto failed;
 		}
 		len = strnlen(p, remaining-6);
+		if (len == remaining-6) {
+			errno = EIO;
+			goto failed;
+		}
 		message->elements[i].flags = 0;
 		message->elements[i].name = p;
 		remaining -= len + 1;

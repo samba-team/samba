@@ -63,12 +63,12 @@ static char *ldb_dn_key(const char *attr, const struct ldb_val *value)
 	if (ldb_should_b64_encode(value)) {
 		char *vstr = ldb_base64_encode(value->data, value->length);
 		if (!vstr) return NULL;
-		asprintf(&ret, "@INDEX:%s::%s", attr, vstr);
+		asprintf(&ret, "%s:%s::%s", LTDB_INDEX, attr, vstr);
 		free(vstr);
 		return ret;
 	}
 
-	asprintf(&ret, "@INDEX:%s:%s", attr, (char *)value->data);
+	asprintf(&ret, "%s:%s:%s", LTDB_INDEX, attr, (char *)value->data);
 	return ret;
 }
 
@@ -80,11 +80,11 @@ static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
 {
 	int i, j;
 	for (i=0;i<msg->num_elements;i++) {
-		if (strcmp(msg->elements[i].name, "@IDXATTR") == 0) {
+		if (ldb_attr_cmp(msg->elements[i].name, LTDB_IDXATTR) == 0) {
 			const struct ldb_message_element *el = 
 				&msg->elements[i];
 			for (j=0;j<el->num_values;j++) {
-				if (strcmp((char *)el->values[j].data, attr) == 0) {
+				if (ldb_attr_cmp((char *)el->values[j].data, attr) == 0) {
 					if (v_idx) {
 						*v_idx = j;
 					}
@@ -114,7 +114,7 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 	/*
 	  if the value is a wildcard then we can't do a match via indexing
 	*/
-	if (ltdb_has_wildcard(&tree->u.simple.value)) {
+	if (ltdb_has_wildcard(ldb, tree->u.simple.attr, &tree->u.simple.value)) {
 		return -1;
 	}
 
@@ -138,7 +138,7 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 	for (i=0;i<msg.num_elements;i++) {
 		struct ldb_message_element *el;
 
-		if (strcmp(msg.elements[i].name, "@IDX") != 0) {
+		if (strcmp(msg.elements[i].name, LTDB_IDX) != 0) {
 			continue;
 		}
 
@@ -420,7 +420,7 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 			    const char *base,
 			    enum ldb_scope scope,
 			    const struct dn_list *dn_list, 
-			    const char *attrs[], struct ldb_message ***res)
+			    char * const attrs[], struct ldb_message ***res)
 {
 	int i;
 	unsigned int count = 0;
@@ -460,21 +460,18 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 			const char *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
-			const char *attrs[], struct ldb_message ***res)
+			char * const attrs[], struct ldb_message ***res)
 {
-	struct ldb_message index_list;
+	struct ltdb_private *ltdb = ldb->private_data;
 	struct dn_list dn_list;
 	int ret;
 
-	/* find the list of indexed fields */	
-	ret = ltdb_search_dn1(ldb, "@INDEXLIST", &index_list);
-	if (ret != 1) {
+	if (ltdb->cache.indexlist.num_elements == 0) {
 		/* no index list? must do full search */
 		return -1;
 	}
 
-	ret = ltdb_index_dn(ldb, tree, &index_list, &dn_list);
-	ltdb_search_dn1_free(ldb, &index_list);
+	ret = ltdb_index_dn(ldb, tree, &ltdb->cache.indexlist, &dn_list);
 
 	if (ret == 1) {
 		/* we've got a candidate list - now filter by the full tree
@@ -493,7 +490,7 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 static int ltdb_index_add1_new(struct ldb_context *ldb, 
 			       struct ldb_message *msg,
 			       struct ldb_message_element *el,
-			       const char *dn)
+			       char *dn)
 {
 	struct ldb_message_element *el2;
 
@@ -504,7 +501,7 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 	}
 
 	msg->elements = el2;
-	msg->elements[msg->num_elements].name = "@IDX";
+	msg->elements[msg->num_elements].name = LTDB_IDX;
 	msg->elements[msg->num_elements].num_values = 0;
 	msg->elements[msg->num_elements].values = malloc_p(struct ldb_val);
 	if (!msg->elements[msg->num_elements].values) {
@@ -527,7 +524,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 			       struct ldb_message *msg,
 			       struct ldb_message_element *el,
 			       int idx,
-			       const char *dn)
+			       char *dn)
 {
 	struct ldb_val *v2;
 
@@ -549,7 +546,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 /*
   add an index entry for one message element
 */
-static int ltdb_index_add1(struct ldb_context *ldb, const char *dn, 
+static int ltdb_index_add1(struct ldb_context *ldb, char *dn, 
 			   struct ldb_message_element *el, int v_idx)
 {
 	struct ldb_message msg;
@@ -582,7 +579,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, const char *dn,
 	free(dn_key);
 
 	for (i=0;i<msg.num_elements;i++) {
-		if (strcmp("@IDX", msg.elements[i].name) == 0) {
+		if (strcmp(LTDB_IDX, msg.elements[i].name) == 0) {
 			break;
 		}
 	}
@@ -608,31 +605,26 @@ static int ltdb_index_add1(struct ldb_context *ldb, const char *dn,
 */
 int ltdb_index_add(struct ldb_context *ldb, const struct ldb_message *msg)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret, i, j;
-	struct ldb_message index_list;
 
-	/* find the list of indexed fields */	
-	ret = ltdb_search_dn1(ldb, "@INDEXLIST", &index_list);
-	if (ret != 1) {
-		/* no indexed fields or an error */
-		return ret;
+	if (ltdb->cache.indexlist.num_elements == 0) {
+		/* no indexed fields */
+		return 0;
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		ret = ldb_msg_find_idx(&index_list, msg->elements[i].name, NULL);
+		ret = ldb_msg_find_idx(&ltdb->cache.indexlist, msg->elements[i].name, NULL);
 		if (ret == -1) {
 			continue;
 		}
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			ret = ltdb_index_add1(ldb, msg->dn, &msg->elements[i], j);
 			if (ret == -1) {
-				ltdb_search_dn1_free(ldb, &index_list);
 				return -1;
 			}
 		}
 	}
-
-	ltdb_search_dn1_free(ldb, &index_list);
 
 	return 0;
 }
@@ -698,25 +690,23 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 */
 int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret, i, j;
-	struct ldb_message index_list;
 
 	/* find the list of indexed fields */	
-	ret = ltdb_search_dn1(ldb, "@INDEXLIST", &index_list);
-	if (ret != 1) {
-		/* no indexed fields or an error */
-		return ret;
+	if (ltdb->cache.indexlist.num_elements == 0) {
+		/* no indexed fields */
+		return 0;
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		ret = ldb_msg_find_idx(&index_list, msg->elements[i].name, NULL);
+		ret = ldb_msg_find_idx(&ltdb->cache.indexlist, msg->elements[i].name, NULL);
 		if (ret == -1) {
 			continue;
 		}
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			ret = ltdb_index_del1(ldb, msg->dn, &msg->elements[i], j);
 			if (ret == -1) {
-				ltdb_search_dn1_free(ldb, &index_list);
 				return -1;
 			}
 		}
@@ -731,7 +721,8 @@ int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 */
 static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	if (strncmp(key.dptr, "DN=@INDEX:", 10) == 0) {
+	const char *dn = "DN=" LTDB_INDEX ":";
+	if (strncmp(key.dptr, dn, strlen(dn)) == 0) {
 		return tdb_delete(tdb, key);
 	}
 	return 0;
@@ -756,7 +747,9 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return -1;
 	}
 
-	msg.dn = key.dptr+3;
+	if (!msg.dn) {
+		msg.dn = key.dptr+3;
+	}
 
 	ret = ltdb_index_add(ldb, &msg);
 
@@ -772,6 +765,12 @@ int ltdb_reindex(struct ldb_context *ldb)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
+
+	ltdb_cache_free(ldb);
+
+	if (ltdb_cache_load(ldb) != 0) {
+		return -1;
+	}
 
 	/* first traverse the database deleting any @INDEX records */
 	ret = tdb_traverse(ltdb->tdb, delete_index, NULL);

@@ -102,7 +102,7 @@ static struct ldb_message *msg_find(struct ldb_message **msgs, int count,
 {
 	int i;
 	for (i=0;i<count;i++) {
-		if (strcmp(dn, msgs[i]->dn) == 0) {
+		if (ldb_dn_cmp(dn, msgs[i]->dn) == 0) {
 			return msgs[i];
 		}
 	}

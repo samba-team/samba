@@ -148,7 +148,7 @@ static int msg_add_all_elements(struct ldb_message *ret,
  */
 static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb, 
 					   const struct ldb_message *msg, 
-					   const char **attrs)
+					   char * const *attrs)
 {
 	struct ldb_message *ret;
 	int i;
@@ -205,11 +205,20 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 /*
   see if a ldb_val is a wildcard
 */
-int ltdb_has_wildcard(const struct ldb_val *val)
+int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name, 
+		      const struct ldb_val *val)
 {
-	if (val->length == 1 && ((char *)val->data)[0] == '*') {
+	int flags;
+
+	if (strpbrk(val->data, "*?") == NULL) {
+		return 0;
+	}
+
+	flags = ltdb_attribute_flags(ldb, attr_name);
+	if (flags & LTDB_FLAG_WILDCARD) {
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -220,12 +229,12 @@ int ltdb_has_wildcard(const struct ldb_val *val)
 void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	int i;
-	if (msg->dn) free(msg->dn);
 	if (msg->private_data) free(msg->private_data);
 	for (i=0;i<msg->num_elements;i++) {
 		if (msg->elements[i].values) free(msg->elements[i].values);
 	}
 	if (msg->elements) free(msg->elements);
+	memset(msg, 0, sizeof(*msg));
 }
 
 
@@ -242,7 +251,7 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 	TDB_DATA tdb_key, tdb_data;
 
 	/* form the key */
-	tdb_key = ltdb_key(dn);
+	tdb_key = ltdb_key(ldb, dn);
 	if (!tdb_key.dptr) {
 		return -1;
 	}
@@ -253,11 +262,6 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 		return 0;
 	}
 
-	msg->dn = strdup(dn);
-	if (!msg->dn) {
-		free(tdb_data.dptr);
-		return -1;
-	}
 	msg->private_data = tdb_data.dptr;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -268,6 +272,14 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 		return -1;		
 	}
 
+	if (!msg->dn) {
+		msg->dn = strdup(dn);
+	}
+	if (!msg->dn) {
+		free(tdb_data.dptr);
+		return -1;
+	}
+
 	return 1;
 }
 
@@ -276,7 +288,7 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
   search the database for a single simple dn
 */
 int ltdb_search_dn(struct ldb_context *ldb, char *dn,
-		   const char *attrs[], struct ldb_message ***res)
+		   char * const attrs[], struct ldb_message ***res)
 {
 	int ret;
 	struct ldb_message msg, *msg2;
@@ -312,7 +324,7 @@ int ltdb_search_dn(struct ldb_context *ldb, char *dn,
   return 0 on success, -1 on failure
 */
 int ltdb_add_attr_results(struct ldb_context *ldb, struct ldb_message *msg,
-			  const char *attrs[], 
+			  char * const attrs[], 
 			  unsigned int *count, 
 			  struct ldb_message ***res)
 {
@@ -350,7 +362,7 @@ struct ltdb_search_info {
 	struct ldb_parse_tree *tree;
 	const char *base;
 	enum ldb_scope scope;
-	const char **attrs;
+	char * const *attrs;
 	struct ldb_message **msgs;
 	int failures;
 	int count;
@@ -371,13 +383,15 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return 0;
 	}
 
-	msg.dn = key.dptr + 3;
-
 	/* unpack the record */
 	ret = ltdb_unpack_data(sinfo->ldb, &data, &msg);
 	if (ret == -1) {
 		sinfo->failures++;
 		return 0;
+	}
+
+	if (!msg.dn) {
+		msg.dn = key.dptr + 3;
 	}
 
 	/* see if it matches the given expression */
@@ -425,7 +439,7 @@ static int ltdb_search_full(struct ldb_context *ldb,
 			    const char *base,
 			    enum ldb_scope scope,
 			    struct ldb_parse_tree *tree,
-			    const char *attrs[], struct ldb_message ***res)
+			    char * const attrs[], struct ldb_message ***res)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
@@ -458,10 +472,14 @@ static int ltdb_search_full(struct ldb_context *ldb,
 */
 int ltdb_search(struct ldb_context *ldb, const char *base,
 		enum ldb_scope scope, const char *expression,
-		const char *attrs[], struct ldb_message ***res)
+		char * const attrs[], struct ldb_message ***res)
 {
 	struct ldb_parse_tree *tree;
 	int ret;
+
+	if (ltdb_cache_load(ldb) != 0) {
+		return -1;
+	}
 
 	*res = NULL;
 
@@ -472,8 +490,8 @@ int ltdb_search(struct ldb_context *ldb, const char *base,
 	}
 
 	if (tree->operation == LDB_OP_SIMPLE && 
-	    strcmp(tree->u.simple.attr, "dn") == 0 &&
-	    !ltdb_has_wildcard(&tree->u.simple.value)) {
+	    ldb_attr_cmp(tree->u.simple.attr, "dn") == 0 &&
+	    !ltdb_has_wildcard(ldb, tree->u.simple.attr, &tree->u.simple.value)) {
 		/* yay! its a nice simple one */
 		ret = ltdb_search_dn(ldb, tree->u.simple.value.data, attrs, res);
 	} else {
