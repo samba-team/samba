@@ -1,0 +1,128 @@
+.\" $Id$
+.\"
+.Dd July 27, 1997
+.Dt KRB5.CONF 5
+.Os HEIMDAL
+.Sh NAME
+.Nm /etc/krb5.conf
+.Nd
+Configuration file for Kerberos 5
+.Sh DESCRIPTION
+The 
+.Nm
+file specifies several configuration parameters for the Kerberos 5
+library, as well as some programs.
+.Pp
+The file consists of one or more sections, containing a number of
+bindings. The value of each binding can be either a string or a list
+of other bindings. The grammar looks like:
+.Bd -literal -offset indent
+file:
+	/* empty */
+	sections
+
+sections:
+	section sections
+	section
+
+section:
+	'[' section_name ']' bindings
+
+section_name:
+	STRING
+
+bindings:
+	binding bindings
+	binding
+
+binding:
+	name '=' STRING
+	name '=' '{' bindings '}'
+
+name:
+	STRING
+
+.Ed
+.Li STRINGs
+consists of one or more non-white space characters.
+Currently recognised sections and bindings are:
+
+.Bl -tag -width "xxxxxx" -offset indent
+.It Li libdefaults
+.Bl -tag -width "xxxxxx" -offset indent
+.It Li default_realm = Va REALM
+Default realm to use, this is also known as your 
+.Dq local realm .
+The default is the result of
+.Fn krb5_get_host_realm "local host name" .
+.It Li clockskew = time
+Maximum time differential (in seconds) allowed when comparing
+times. Default is 300 seconds (five minutes).
+.It Li kdc_timeout = time
+Maximum time to wait for a reply from the kdc, default is 3 seconds.
+.El
+.It Li domain_realm
+This is a list of mappings from DNS domain to Kerberos realm. Each
+binding in this section looks like:
+.Pp
+.Dl domain = realm
+.Pp
+The domain can be either a full name of a host or a trailing
+component, in the latter case the domain-string should start with a
+perid.
+.It Li realms
+.Bl -tag -offset indent
+.It Va REALM Li = {
+.Bl -tag -offset indent
+.It Li kdc = Va host[:port]
+Specifies a kdc for this realm. If the optional port is absent, the
+default value for the
+.Dq kerberos/udp
+service will be used.
+.It Li v4_instance_convert = {
+This specifies a list of version 4 instance to version 5 component
+conversions that should be made when converting a version 4 principal
+to a version 5 ditto. Since version 4 host instances only contains the
+first part of the domain name, this section is sometimes
+necessary. See also
+.Li default_domain .
+.It }
+.It Li v4_name_convert = {
+Similar to
+.Li v4_instance_convert ,
+but converts the version 4 name, rather than the instance. This is not
+used by the MIT libkrb5, but before someone thinks up something better
+you will have to have a binding looking like:
+.Pp
+.Dl rcmd = host
+.Pp
+here.
+.It }
+.It Li default_domain = Va domain
+The default domain to use when converting version 4 instances to
+version 5 principals.
+.El
+.It Li }
+.El
+.El
+.Sh EXAMPLE
+.Bd -literal -offset indent
+[lib_defaults]
+	default_domain = FOO.SE
+[domain_realm]
+	.foo.se = FOO.SE
+	.bar.se = FOO.SE
+[realms]
+	FOO.SE = {
+		kdc = kerberos.foo.se
+		v4_name_convert = {
+			rcmd = host
+		}
+		v4_instance_convert = {
+			xyz = xyz.bar.se
+		}
+		default_domain = foo.se
+	}
+.Ed
+.Sh SEE ALSO
+.Xr Source tm
