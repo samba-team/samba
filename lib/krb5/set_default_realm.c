@@ -41,40 +41,6 @@
 RCSID("$Id$");
 
 /*
- * Convert the config binding in `b' (consisting of strings) to a
- * NULL-terminated list of strings in `list'.  All memory is
- * dynamically allocated.  Return an error code.
- */
-
-static krb5_error_code
-config_binding_to_list (const krb5_config_binding *b,
-			krb5_realm **list)
-{
-    int n, i, j;
-    const krb5_config_binding *p;
-
-    for (n = 1, p = b; p != NULL; p = p->next)
-	++n;
-    *list = malloc (n * sizeof(**list));
-    if (*list == NULL)
-	return ENOMEM;
-    for (i = 0; i < n; ++i)
-	(*list)[i] = NULL;
-    for (i = 0, p = b; p != NULL; ++i, p = p->next) {
-	if (p->type != krb5_config_string)
-	    continue;
-	(*list)[i] = strdup(p->u.string);
-	if ((*list)[i] == NULL) {
-	    for (j = 0; j < i; ++j)
-		free ((*list)[j]);
-	    free (*list);
-	    return ENOMEM;
-	}
-    }
-    return 0;
-}
-
-/*
  * Convert the simple string `s' into a NULL-terminated and freshly allocated 
  * list in `list'.  Return an error code.
  */
@@ -105,28 +71,16 @@ krb5_error_code
 krb5_set_default_realm(krb5_context context,
 		       char *realm)
 {
-    krb5_error_code ret;
-    const char *tmp;
+    krb5_error_code ret = 0;
     krb5_realm *realms = NULL;
-    const krb5_config_binding *b;
 
     if (realm == NULL) {
-	tmp = krb5_config_get_string (context, NULL,
-				      "libdefaults",
-				      "default_realm",
-				      NULL);
-	if (tmp == NULL) {
-	    b = krb5_config_get_list (context, NULL,
-				      "libdefaults",
-				      "default_realm",
-				      NULL);
-	    if (b == NULL)
-		ret = krb5_get_host_realm(context, NULL, &realms);
-	    else
-		ret = config_binding_to_list (b, &realms);
-	} else {
-	    ret = string_to_list (tmp, &realms);
-	}
+	realms = krb5_config_get_strings (context, NULL,
+					  "libdefaults",
+					  "default_realm",
+					  NULL);
+	if (realms == NULL)
+	    ret = krb5_get_host_realm(context, NULL, &realms);
     } else {
 	ret = string_to_list (realm, &realms);
     }
