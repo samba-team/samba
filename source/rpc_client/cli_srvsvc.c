@@ -2,9 +2,10 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1997,2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
+ *  Copyright (C) Paul Ashton                       1997,2000,
+ *  Copyright (C) Elrond                                 2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "rpc_client.h"
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
@@ -416,7 +418,70 @@ uint32 srv_net_srv_share_get_info(const char *srv_name,
 		{
 			status = r_o.status;
 		}
+	}
+	else
+	{
+		status = NT_STATUS_INVALID_PARAMETER;
+	}
 
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
+	cli_connection_unlink(con);
+
+	return status;
+}
+
+/****************************************************************************
+do a share get del
+****************************************************************************/
+uint32 srv_net_srv_share_del(const char *srv_name,
+			     const char *share_name)
+{
+	prs_struct data;
+	prs_struct rdata;
+	SRV_Q_NET_SHARE_DEL q_o;
+	struct cli_connection *con = NULL;
+	UNISTR2 uni_srv_name;
+	UNISTR2 uni_share_name;
+	uint32 status;
+
+	if (srv_name == NULL || share_name == NULL)
+		return False;
+
+	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
+
+	DEBUG(4, ("SRV Del Share, server:%s share:%s\n",
+		  srv_name, share_name));
+
+	make_unistr2(&uni_srv_name, srv_name, strlen(srv_name) + 1);
+	make_unistr2(&uni_share_name, share_name, strlen(share_name) + 1);
+
+	/* store the parameters */
+	make_srv_q_net_share_del(&q_o, &uni_srv_name, &uni_share_name);
+
+	/* turn parameters into data stream */
+	if (srv_io_q_net_share_del("", &q_o, &data, 0) &&
+	    rpc_con_pipe_req(con, SRV_NETSHAREDEL, &data, &rdata))
+	{
+		SRV_R_NET_SHARE_DEL r_o;
+
+		ZERO_STRUCT(r_o);
+
+		if (srv_io_r_net_share_del("", &r_o, &rdata, 0))
+		{
+		 	status = r_o.status;
+		}
+		else
+		{
+			status = NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 	else
 	{

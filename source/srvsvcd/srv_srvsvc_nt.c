@@ -510,7 +510,7 @@ uint32 _srv_net_share_get_info(const UNISTR2 *srv_name,
 	if (snum < 0)
 	{
 		/* no such service */
-		return NT_STATUS_ACCESS_DENIED;	/* check this */
+		return 0x906;
 	}
 
 	switch (info_level)

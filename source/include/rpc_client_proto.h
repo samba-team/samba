@@ -407,6 +407,8 @@ BOOL srv_net_srv_share_enum(char *srv_name,
 uint32 srv_net_srv_share_get_info(const char *srv_name,
 				  const char *share_name,
 				  uint32 info_level, SHARE_INFO_CTR * ctr);
+uint32 srv_net_srv_share_del(const char *srv_name,
+			     const char *share_name);
 BOOL srv_net_srv_file_enum(char *srv_name, char *qual_name, uint32 file_id,
 			   uint32 switch_value, SRV_FILE_INFO_CTR * ctr,
 			   uint32 preferred_len, ENUM_HND * hnd);

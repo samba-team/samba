@@ -1070,6 +1070,70 @@ BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD * r_n,
 
 
 /*******************************************************************
+ makes a structure
+********************************************************************/
+BOOL make_srv_q_net_share_del(SRV_Q_NET_SHARE_DEL * q_n,
+			      const UNISTR2 *srv_name,
+			      const UNISTR2 *share_name)
+{
+	if (q_n == NULL)
+		return False;
+
+	q_n->ptr_srv_name = (srv_name != NULL);
+	copy_unistr2(&(q_n->uni_srv_name), srv_name);
+	copy_unistr2(&(q_n->uni_share_name), share_name);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL srv_io_q_net_share_del(char *desc, SRV_Q_NET_SHARE_DEL * q_n,
+			    prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_share_del");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr_srv_name", ps, depth, &(q_n->ptr_srv_name));
+	smb_io_unistr2("uni_srv_name", &(q_n->uni_srv_name), True, ps, depth);
+	prs_align(ps);
+
+	smb_io_unistr2("share_name", &(q_n->uni_share_name), True,
+		       ps, depth);
+	prs_align(ps);
+
+	prs_uint32("unknown0", ps, depth, &q_n->unknown0);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL srv_io_r_net_share_del(char *desc, SRV_R_NET_SHARE_DEL * r_n,
+			    prs_struct *ps, int depth)
+{
+	if (r_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_share_del");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &r_n->status);
+
+	return True;
+}
+
+
+/*******************************************************************
  makes a SESS_INFO_0_STR structure
 ********************************************************************/
 BOOL make_srv_sess_info0_str(SESS_INFO_0_STR * ss0, char *name)

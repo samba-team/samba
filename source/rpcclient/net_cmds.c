@@ -75,6 +75,12 @@ static const struct command_set net_commands[] =
 		{NULL, NULL}
 	},
 	{
+		"srvsharedel",
+		cmd_srv_share_del,
+		"SHARE\tDel share on server",
+		{NULL, NULL}
+	},
+	{
 		"srvtransports",
 		cmd_srv_enum_tprt,
 		"List transports on a server",

@@ -235,6 +235,22 @@ static BOOL api_srv_net_share_add(prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
+static BOOL api_srv_net_share_del(prs_struct *data, prs_struct *rdata)
+{
+	SRV_Q_NET_SHARE_DEL q_n;
+
+	ZERO_STRUCT(q_n);
+
+	if (!srv_io_q_net_share_del("srv_q_net_share_del", &q_n, data, 0))
+	{
+		return False;
+	}
+
+	return False;
+}
+
+/*******************************************************************
+********************************************************************/
 static BOOL api_srv_net_share_get_info(prs_struct *data,
 				       prs_struct *rdata)
 {
@@ -309,6 +325,7 @@ static const struct api_struct api_srv_cmds[] = {
 	{"NETSHAREENUM2", SRV_NETSHAREENUM2, api_srv_net_share_enum},
 	{"NETSHAREGETINFO", SRV_NETSHAREGETINFO, api_srv_net_share_get_info},
 	{"NETSHAREADD", SRV_NETSHAREADD, api_srv_net_share_add},
+	{"NETSHAREDEL", SRV_NETSHAREDEL, api_srv_net_share_del},
 	{"NETFILEENUM", SRV_NETFILEENUM, api_srv_net_file_enum},
 	{"NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info},
 	{"NET_REMOTE_TOD", SRV_NET_REMOTE_TOD, api_srv_net_remote_tod},

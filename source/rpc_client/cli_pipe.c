@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "rpc_client.h"
 
 extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];
@@ -377,6 +378,8 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	if (first && last)
 	{
 		DEBUG(6, ("cli_pipe: fragment first and last both set\n"));
+		DEBUG(10, ("cli_pipe: dce/rpc `body' data:\n"));
+		dump_data(10, prs_data(rdata, 0), rdata->data_size);
 		return True;
 	}
 
@@ -433,6 +436,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			prs_free_data(&rpdu);
 		}
 	}
+
+	DEBUG(10, ("cli_pipe: dce/rpc `body' data:\n"));
+	dump_data(10, prs_data(rdata, 0), rdata->data_size);
 
 	return True;
 }

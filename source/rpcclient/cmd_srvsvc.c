@@ -2,8 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Andrew Tridgell              1994-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Elrond                            2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "rpc_client.h"
 #include "rpcclient.h"
 #include "nterr.h"
 
@@ -288,9 +290,8 @@ void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[])
 	       dest_srv, share_name, (int)info_level));
 
 	/* enumerate shares_files on server */
-	status =
-		srv_net_srv_share_get_info(dest_srv, share_name, info_level,
-					   &ctr);
+	status = srv_net_srv_share_get_info(dest_srv, share_name, info_level,
+					    &ctr);
 
 	if (status == 0x0)
 	{
@@ -306,6 +307,44 @@ void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[])
 	}
 
 	srv_free_share_info_ctr(&ctr);
+}
+
+/****************************************************************************
+share del
+****************************************************************************/
+void cmd_srv_share_del(struct client_info *info, int argc, char *argv[])
+{
+	fstring dest_srv;
+	const char *share_name;
+	uint32 status = NT_STATUS_NOPROBLEMO;
+
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (argc < 2)
+	{
+		report(out_hnd, "srvsharedel SHARE\n");
+		return;
+	}
+
+	share_name = argv[1];
+
+	DEBUG(4, ("cmd_srv_share_del: server:%s, share:%s\n",
+		  dest_srv, share_name));
+
+	status = srv_net_srv_share_del(dest_srv, share_name);
+
+	if (status == 0x0)
+	{
+		report(out_hnd, "cmd_srv_share_del: query succeeded\n");
+	}
+	else
+	{
+		report(out_hnd,
+		       "cmd_srv_share_del: query failed, status=%x\n",
+		       status);
+	}
 }
 
 /****************************************************************************

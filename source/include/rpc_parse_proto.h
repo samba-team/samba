@@ -1130,6 +1130,13 @@ BOOL srv_io_q_net_share_add(char *desc, SRV_Q_NET_SHARE_ADD * q_n,
 			    prs_struct *ps, int depth);
 BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD * r_n,
 			    prs_struct *ps, int depth);
+BOOL make_srv_q_net_share_del(SRV_Q_NET_SHARE_DEL * q_n,
+			      const UNISTR2 *srv_name,
+			      const UNISTR2 *share_name);
+BOOL srv_io_q_net_share_del(char *desc, SRV_Q_NET_SHARE_DEL * q_n,
+			    prs_struct *ps, int depth);
+BOOL srv_io_r_net_share_del(char *desc, SRV_R_NET_SHARE_DEL * r_n,
+			    prs_struct *ps, int depth);
 BOOL make_srv_sess_info0_str(SESS_INFO_0_STR * ss0, char *name);
 BOOL make_srv_sess_info0(SESS_INFO_0 * ss0, char *name);
 BOOL make_srv_sess_info1_str(SESS_INFO_1_STR * ss1, char *name, char *user);
