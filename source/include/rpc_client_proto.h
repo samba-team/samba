@@ -386,6 +386,11 @@ uint32 samr_query_dispinfo(POLICY_HND *pol_domain, uint32 *start_idx,
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
+uint32 spoolss_enum_printerdrivers(const char * srv_name,
+				const char *environment,
+				uint32 level,
+			     NEW_BUFFER *buffer, uint32 offered,
+			     uint32 *needed, uint32 *returned);
 uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
 			     NEW_BUFFER *buffer, uint32 offered,
 			     uint32 *needed, uint32 *returned);

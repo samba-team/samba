@@ -972,7 +972,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 	res4 = res3 ? reg_get_key_sec(&key_pol,
 	                        sec_info,
 				&sec_buf_size, &sec_buf) : False;
-	
+
 	if (res4)
 	{
 		free_sec_desc_buf(&sec_buf);

@@ -952,6 +952,11 @@ BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *
 BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth);
 BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, 
+				const char *name,
+				const char *environment,
+				uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth);
 BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);

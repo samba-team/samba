@@ -998,6 +998,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 /*The following definitions come from  libsmb/clidomain.c  */
 
+BOOL get_dc_name(const char *domain, char *server, int type);
 char *get_trusted_serverlist(const char *domain);
 BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *server,
@@ -2411,6 +2412,9 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 		const char *environment, const uint32 level, 
 		const char* station, const char* user_name, 
 		PRINTER_DRIVER_CTR ctr);
+BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
+		const char *environment, const uint32 level, 
+		PRINTER_DRIVER_CTR ctr);
 BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 level, DRIVER_DIRECTORY_CTR ctr);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
@@ -3022,7 +3026,7 @@ void cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_domain_test(struct client_info *info, int argc,
 			      char *argv[]);
-void cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
@@ -3090,6 +3094,7 @@ uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */

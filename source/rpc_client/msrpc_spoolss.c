@@ -110,15 +110,16 @@ static void decode_printer_info_3(NEW_BUFFER *buffer, uint32 returned, PRINTER_I
 	*info=inf;
 }
 
-static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_1 **info)
+static void decode_printer_driver_1(NEW_BUFFER *buffer,
+				uint32 returned, DRIVER_INFO_1 **info)
 {
 	uint32 i;
 	DRIVER_INFO_1 *inf;
 
-	inf=(DRIVER_INFO_1 *)malloc(returned*sizeof(DRIVER_INFO_1));
-
 	buffer->prs.offset=0;
 	
+	inf=(DRIVER_INFO_1 *)malloc(returned*sizeof(DRIVER_INFO_1));
+
 	for (i=0; i<returned; i++) {
 		new_smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
 	}
@@ -126,15 +127,16 @@ static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned, DRIVER_
 	*info=inf;
 }
 
-static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_2 **info)
+static void decode_printer_driver_2(NEW_BUFFER *buffer,
+			uint32 returned, DRIVER_INFO_2 **info)
 {
 	uint32 i;
 	DRIVER_INFO_2 *inf;
 
-	inf=(DRIVER_INFO_2 *)malloc(returned*sizeof(DRIVER_INFO_2));
-
 	buffer->prs.offset=0;
 	
+	inf=(DRIVER_INFO_2 *)malloc(returned*sizeof(DRIVER_INFO_2));
+
 	for (i=0; i<returned; i++) {
 		new_smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
 	}
@@ -142,15 +144,16 @@ static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned, DRIVER_
 	*info=inf;
 }
 
-static void decode_printer_driver_3(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_3 **info)
+static void decode_printer_driver_3(NEW_BUFFER *buffer,
+			uint32 returned, DRIVER_INFO_3 **info)
 {
 	uint32 i;
 	DRIVER_INFO_3 *inf;
 
-	inf=(DRIVER_INFO_3 *)malloc(returned*sizeof(DRIVER_INFO_3));
-
 	buffer->prs.offset=0;
 	
+	inf=(DRIVER_INFO_3 *)malloc(returned*sizeof(DRIVER_INFO_3));
+
 	for (i=0; i<returned; i++) {
 		new_smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
 	}
@@ -477,6 +480,63 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 			return False;
 		return False;
 	}
+
+	return True;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
+		const char *environment, const uint32 level, 
+		PRINTER_DRIVER_CTR ctr)
+{
+	uint32 status=0;
+	NEW_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
+
+	DEBUG(4,("spoolenum_enumprinterdrivers - server: %s\n", srv_name));
+
+	init_buffer(&buffer, 0);
+
+	status = spoolss_enum_printerdrivers(srv_name, environment,
+				level, &buffer, 0, &needed, &returned);
+
+	if (status == ERROR_INSUFFICIENT_BUFFER)
+	{
+		init_buffer(&buffer, needed);
+		status = spoolss_enum_printerdrivers( srv_name, environment,
+				level, &buffer, needed, &needed, &returned);
+	}
+
+	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+
+	if (status!=NT_STATUS_NO_PROBLEMO)
+		return False;
+		
+	switch (level)
+	{
+		case 1:
+		{
+			decode_printer_driver_1(&buffer, returned, &(ctr.info1));
+			break;
+		}
+		case 2:
+		{
+			decode_printer_driver_2(&buffer, returned, &(ctr.info2));
+			break;
+		}
+		case 3:
+		{
+			decode_printer_driver_3(&buffer, returned, &(ctr.info3));
+			break;
+		}
+	}		
+
+	display_printer_driver_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
+	display_printer_driver_ctr(out_hnd, ACTION_ENUMERATE, level, returned, ctr);
+	display_printer_driver_ctr(out_hnd, ACTION_FOOTER   , level, returned, ctr);
 
 	return True;
 }

@@ -116,6 +116,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 /*The following definitions come from  libsmb/clidomain.c  */
 
+BOOL get_dc_name(const char *domain, char *server, int type);
 char *get_trusted_serverlist(const char *domain);
 BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *server,
@@ -358,7 +359,7 @@ BOOL create_user_creds( prs_struct *ps,
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
 BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
-BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth);
+BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
 uint32 get_enum_hnd(ENUM_HND *enh);
 BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd);
@@ -396,6 +397,7 @@ BOOL init_buffer5(BUFFER5 **str);
 BOOL clear_buffer5(BUFFER5 **str);
 BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
+void free_buffer5(BUFFER5 *buf5);
 BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);

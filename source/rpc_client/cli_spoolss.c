@@ -30,6 +30,74 @@
 extern int DEBUGLEVEL;
 
 /****************************************************************************
+do a SPOOLSS Enum Printer Drivers
+****************************************************************************/
+uint32 spoolss_enum_printerdrivers(const char * srv_name,
+				const char *environment,
+				uint32 level,
+			     NEW_BUFFER *buffer, uint32 offered,
+			     uint32 *needed, uint32 *returned)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SPOOL_Q_ENUMPRINTERDRIVERS q_o;
+	SPOOL_R_ENUMPRINTERDRIVERS r_o;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
+		return False;
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
+
+	/* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
+
+	DEBUG(5,("SPOOLSS Enum Printer Drivers (Server: %s Environment: %s level: %d)\n",
+				srv_name, environment, level));
+
+	make_spoolss_q_enumprinterdrivers(&q_o, srv_name, environment,
+				level, buffer, offered);
+
+	/* turn parameters into data stream */
+	if (!spoolss_io_q_enumprinterdrivers("", &q_o, &buf, 0) ) {
+		prs_free_data(&rbuf);
+		prs_free_data(&buf );
+
+		cli_connection_unlink(con);
+	}
+	
+	if(!rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERDRIVERS, &buf, &rbuf)) {
+		prs_free_data(&rbuf);
+		prs_free_data(&buf );
+
+		cli_connection_unlink(con);
+	}
+
+	prs_free_data(&buf);
+	ZERO_STRUCT(r_o);
+	
+	buffer->prs.io=UNMARSHALL;
+	buffer->prs.offset=0;
+	r_o.buffer=buffer;
+	
+	if(!new_spoolss_io_r_enumprinterdrivers("", &r_o, &rbuf, 0)) {
+		prs_free_data(&rbuf);
+		cli_connection_unlink(con);
+	}
+	
+	*needed=r_o.needed;
+	*returned=r_o.returned;
+	
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	cli_connection_unlink(con);
+
+	return r_o.status;
+}
+
+/****************************************************************************
 do a SPOOLSS Enum Printers
 ****************************************************************************/
 uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,

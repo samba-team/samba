@@ -1460,7 +1460,7 @@ static void init_globals(void)
 /* NTLMv2 */
 
 	Globals.bClientNTLMv2 = False;
-	Globals.bServerNTLMv2 = Auto;
+	Globals.bServerNTLMv2 = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:

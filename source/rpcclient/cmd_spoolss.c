@@ -402,6 +402,31 @@ uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *ar
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
+uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *argv[])
+{
+	PRINTER_DRIVER_CTR ctr;
+	fstring srv_name;
+	fstring environment;
+	uint32 level;
+	
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	fstrcpy(environment, "Windows NT x86");
+	level=3;
+
+	if (msrpc_spoolss_enumprinterdrivers(srv_name, environment, level, ctr))
+		DEBUG(5,("cmd_spoolss_enumprinterdrivers: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
 uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[])
 {
 	DRIVER_DIRECTORY_CTR ctr;

@@ -470,7 +470,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc,
 /****************************************************************************
 experimental SAM synchronisation.
 ****************************************************************************/
-void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 {
 	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
@@ -486,37 +486,38 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+	fstrcpy(domain, info->dom.level5_dom);
+
 	fstrcpy(wks_name, "\\\\");
-	if (strequal(srv_name, "\\\\.") &&
-	    strequal(info->dest_host, info->myhostname))
+#if 0
+	if (strequal(srv_name, "\\\\."))
+#endif
 	{
 		fstrcat(wks_name, ".");
 	}
+#if 0
 	else
 	{
-		fstrcat(wks_name, info->dest_host);
+		fstrcat(wks_name, info->myhostname);
 	}
+#endif
 	strupper(wks_name);
+
+	if (!get_dc_name(domain, srv_name, 0x1b))
+	{
+		report(out_hnd, "could not locate server for domain %s\n",
+		       domain);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
 
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
-
-	domain[0] = 0;
-	if (usr_creds != NULL)
-	{
-		fstrcpy(domain, usr_creds->ntc.domain);
-	}
-
-	if (domain[0] == 0)
-	{
-		fstrcpy(domain, info->dom.level3_dom);
-	}
 
 	if (!msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
 					  trust_passwd, NULL))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
-		return;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (net_sam_sync(srv_name, domain, info->myhostname,
@@ -529,4 +530,6 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 		display_sam_sync(out_hnd, ACTION_FOOTER, hdr_deltas, deltas,
 				 num);
 	}
+
+	return NT_STATUS_NOPROBLEMO;
 }

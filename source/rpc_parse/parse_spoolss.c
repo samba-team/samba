@@ -3279,6 +3279,25 @@ BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS 
 	return True;		
 }
 
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, 
+				const char *name,
+				const char *environment,
+				uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered)
+{
+	make_buf_unistr2(&q_u->name, &q_u->name_ptr, name);
+	make_buf_unistr2(&q_u->environment, &q_u->environment_ptr, environment);
+
+	q_u->level=level;
+	q_u->buffer=buffer;
+	q_u->offered=offered;
+
+	return True;
+}
+
 
 /*******************************************************************
  Parse a SPOOL_Q_ENUMPRINTERDRIVERS structure.

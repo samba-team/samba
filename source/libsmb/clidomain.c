@@ -61,6 +61,16 @@ static BOOL cli_connect_auth(struct cli_state *cli,
 	return True;
 }
 
+BOOL get_dc_name(const char *domain, char *server, int type)
+{
+	struct in_addr ip;
+	extern pstring global_myname;
+
+	if (!resolve_name(domain, &ip, type)) return False;
+
+	return lookup_pdc_name(global_myname, domain, &ip, server);
+}
+
 /****************************************************************************
  obtains a list of PDCs / BDCs to contact, given the domain name.
  return result is char*, comma-separated: PDC, BDC1, BDC2 ...
@@ -76,14 +86,10 @@ char *get_trusted_serverlist(const char *domain)
 	{
 		pstrcpy(srv_list, lp_passwordserver());
 
-		if (lp_wildcard_dc()) {
-			struct in_addr ip;
-			extern pstring global_myname;
-
-			if (!resolve_name(lp_workgroup(), &ip, 0x1B)) return NULL;
-
-			if (!lookup_pdc_name(global_myname, lp_workgroup(), &ip, 
-					     srv_list)) return NULL;
+		if (lp_wildcard_dc())
+		{
+			if (!get_dc_name(lp_workgroup(), srv_list, 0x1c))
+				return NULL;
 		}
 
 		DEBUG(10, ("local domain server list: %s\n", srv_list));
@@ -103,6 +109,11 @@ char *get_trusted_serverlist(const char *domain)
 		if (strequal(domain, trust_dom))
 		{
 			DEBUG(10, ("trusted: %s\n", srv_list));
+			if (strequal(srv_list, "*") &&
+			    !get_dc_name(domain, srv_list, 0x1c))
+			{
+				return NULL;
+			}
 			return srv_list;
 		}
 
