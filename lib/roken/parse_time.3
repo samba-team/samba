@@ -107,7 +107,11 @@ and
 .Fn unparse_time_approx 
 return the number of characters written to 
 .Fa buf .
-.\".Sh EXAMPLES
+if the return value is greater than or equal to the
+.Fa len
+argument, the string was too short and some of the printed characters
+were discarded.
+.Sh EXAMPLES
 .Bd -literal
 #include <stdio.h>
 #include <parse_time.h>

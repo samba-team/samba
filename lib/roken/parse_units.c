@@ -212,9 +212,13 @@ unparse_something (int num, const struct units *units, char *s, size_t len,
 	    tmp = (*print) (s, len, div, u->name, num);
 	    if (tmp < 0)
 		return tmp;
-
-	    len -= tmp;
-	    s += tmp;
+	    if (tmp > len) {
+		len = 0;
+		s = NULL;
+	    } else {
+		len -= tmp;
+		s += tmp;
+	    }
 	    ret += tmp;
 	}
     }
