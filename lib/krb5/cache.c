@@ -5,8 +5,8 @@
 void krb5_free_ccache(krb5_context context,
 		      krb5_ccache val)
 {
-  free(((krb5_fcache*)(val->data))->filename);
-  free(val->data);
+  free(((krb5_fcache*)(val->data.data))->filename);
+  krb5_data_free (&val->data);
   free(val);
 }
 
