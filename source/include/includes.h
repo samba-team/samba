@@ -1164,5 +1164,13 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define slprintf snprintf
 #define vslprintf vsnprintf
 
+
+/* we need to use __va_copy() on some platforms */
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
+
 #endif /* _INCLUDES_H */
 
