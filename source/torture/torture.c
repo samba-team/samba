@@ -37,14 +37,11 @@ BOOL torture_showall = False;
 static struct smbcli_state *open_nbt_connection(void)
 {
 	struct nmb_name called, calling;
-	struct in_addr ip;
 	struct smbcli_state *cli;
 	const char *host = lp_parm_string(-1, "torture", "host");
 
 	make_nmb_name(&calling, lp_netbios_name(), 0x0);
-	make_nmb_name(&called , host, 0x20);
-
-	zero_ip(&ip);
+	choose_called_name(&called, host, 0x20);
 
 	cli = smbcli_state_init();
 	if (!cli) {
@@ -52,7 +49,7 @@ static struct smbcli_state *open_nbt_connection(void)
 		return NULL;
 	}
 
-	if (!smbcli_socket_connect(cli, host, &ip)) {
+	if (!smbcli_socket_connect(cli, host)) {
 		printf("Failed to connect with %s\n", host);
 		return cli;
 	}
@@ -64,7 +61,7 @@ static struct smbcli_state *open_nbt_connection(void)
 		 * Well, that failed, try *SMBSERVER ... 
 		 * However, we must reconnect as well ...
 		 */
-		if (!smbcli_socket_connect(cli, host, &ip)) {
+		if (!smbcli_socket_connect(cli, host)) {
 			printf("Failed to connect with %s\n", host);
 			return False;
 		}

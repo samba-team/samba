@@ -58,8 +58,6 @@ static int archive_level = 0;
 
 static BOOL translation = False;
 
-static BOOL have_ip;
-
 /* clitar bits insert */
 extern int blocksize;
 extern BOOL tar_inc;
@@ -74,7 +72,7 @@ static int printmode = 1;
 static BOOL recurse = False;
 BOOL lowercase = False;
 
-static struct in_addr dest_ip;
+static const char *dest_ip;
 
 #define SEPARATORS " \t\n\r"
 
@@ -2745,7 +2743,6 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 	struct smbcli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n;
-	struct in_addr ip;
 	fstring servicename;
 	char *sharename;
 	NTSTATUS status;
@@ -2763,19 +2760,14 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 
 	asprintf(&sharename, "\\\\%s\\%s", server, sharename);
 
-	server_n = server;
+	server_n = dest_ip?dest_ip:server;
 	
-	zero_ip(&ip);
-
 	make_nmb_name(&calling, lp_netbios_name(), 0x0);
-	make_nmb_name(&called , server, name_type);
+	choose_called_name(&called, server, name_type);
 
  again:
-	zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
-
 	/* have to open a new connection */
-	if (!(c=smbcli_state_init()) || !smbcli_socket_connect(c, server_n, &ip)) {
+	if (!(c=smbcli_state_init()) || !smbcli_socket_connect(c, server_n)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
 	}
@@ -2905,23 +2897,16 @@ handle a message operation
 ****************************************************************************/
 static int do_message_op(void)
 {
-	struct in_addr ip;
 	struct nmb_name called, calling;
-	fstring server_name;
-	char name_type_hex[10];
+	const char *server_name;
 
 	make_nmb_name(&calling, lp_netbios_name(), 0x0);
-	make_nmb_name(&called , desthost, name_type);
+	choose_called_name(&called, desthost, name_type);
 
-	fstrcpy(server_name, desthost);
-	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
-	fstrcat(server_name, name_type_hex);
+	server_name = dest_ip ? dest_ip : desthost;
 
-	zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
-
-	if (!(cli=smbcli_state_init()) || !smbcli_socket_connect(cli, server_name, &ip)) {
-		d_printf("Connection to %s failed\n", desthost);
+	if (!(cli=smbcli_state_init()) || !smbcli_socket_connect(cli, server_name)) {
+		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
 
@@ -3035,12 +3020,7 @@ static void remember_query_host(const char *arg,
  			message = True;
  			break;
 		case 'I':
-			{
-				dest_ip = *interpret_addr2(mem_ctx, poptGetOptArg(pc));
-				if (is_zero_ip(dest_ip))
-					exit(1);
-				have_ip = True;
-			}
+			dest_ip = poptGetOptArg(pc);
 			break;
 		case 'E':
 			setup_logging("client", DEBUG_STDERR);

@@ -23,7 +23,7 @@
 /*
   wrapper around smbcli_sock_connect()
 */
-BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server, struct in_addr *ip)
+BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 {
 	struct smbcli_socket *sock;
 
@@ -163,7 +163,7 @@ NTSTATUS smbcli_full_connection(struct smbcli_state **ret_cli,
 	}
 
 	status = smbcli_tree_full_connection(&tree, myname, host, 0, sharename, devtype,
-					  username, domain, password);
+					     username, domain, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
