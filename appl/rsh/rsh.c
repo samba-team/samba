@@ -910,7 +910,7 @@ main(int argc, char **argv)
 	use_broken = 0;
     }
 
-    if (do_encrypt == 1 && use_broken)
+    if (do_encrypt == 1 && use_only_broken)
 	errx (1, "encryption not supported with old style authentication");
 
 
