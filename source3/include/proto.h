@@ -1411,6 +1411,7 @@ char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
 char *lp_dfsmap(int );
 BOOL lp_dfsmap_loaded(int );
+BOOL lp_autoloaded(int );
 BOOL lp_preexec_close(int );
 BOOL lp_rootpreexec_close(int );
 BOOL lp_revalidate(int );
