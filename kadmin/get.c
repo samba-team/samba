@@ -150,8 +150,10 @@ print_entry_long(kadm5_principal_ent_t princ)
     printf("%24s: %d\n", "Failed login count", princ->fail_auth_count);
     time_t2str(princ->mod_date, buf, sizeof(buf), 1);
     printf("%24s: %s\n", "Last modified", buf);
-    krb5_unparse_name_fixed(context, princ->mod_name, buf, sizeof(buf));
-    printf("%24s: %s\n", "Modifier", buf);
+    if(princ->mod_name != NULL) {
+	krb5_unparse_name_fixed(context, princ->mod_name, buf, sizeof(buf));
+	printf("%24s: %s\n", "Modifier", buf);
+    }
     attributes2str (princ->attributes, buf, sizeof(buf));
     printf("%24s: %s\n", "Attributes", buf);
 
