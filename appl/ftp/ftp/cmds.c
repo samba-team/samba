@@ -1224,7 +1224,7 @@ void
 shell(int argc, char **argv)
 {
 	pid_t pid;
-	RETSIGTYPE (*old1)(), (*old2)();
+	RETSIGTYPE (*old1)(int), (*old2)(int);
 	char shellnam[40], *shell, *namep; 
 	int status;
 
@@ -1612,7 +1612,7 @@ void
 doproxy(int argc, char **argv)
 {
 	struct cmd *c;
-	RETSIGTYPE (*oldintr)();
+	RETSIGTYPE (*oldintr)(int);
 
 	if (argc < 2 && !another(&argc, &argv, "command")) {
 		printf("usage: %s command\n", argv[0]);

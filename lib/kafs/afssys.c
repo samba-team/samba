@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 200 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -283,7 +283,7 @@ int
 k_hasafs(void)
 {
 #if !defined(NO_AFS) && defined(SIGSYS)
-    RETSIGTYPE (*saved_func)();
+    RETSIGTYPE (*saved_func)(int);
 #endif
     int saved_errno;
     char *env = getenv ("AFS_SYSCALL");

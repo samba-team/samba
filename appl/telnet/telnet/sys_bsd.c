@@ -314,10 +314,10 @@ TerminalRestoreState()
 
 
 #ifdef	SIGTSTP
-static RETSIGTYPE susp();
+static RETSIGTYPE susp(int);
 #endif	/* SIGTSTP */
 #ifdef	SIGINFO
-static RETSIGTYPE ayt();
+static RETSIGTYPE ayt(int);
 #endif
 
 void
@@ -495,7 +495,7 @@ TerminalNewMode(int f)
     } else {
         sigset_t sm;
 #ifdef	SIGINFO
-	RETSIGTYPE ayt_status();
+	RETSIGTYPE ayt_status(int);
 
 	signal(SIGINFO, ayt_status);
 #endif

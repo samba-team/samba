@@ -622,7 +622,7 @@ sendrequest (char *cmd, char *local, char *remote, char *lmode, int printnames)
     int c, d;
     FILE *fin, *dout = 0;
     int (*closefunc) (FILE *);
-    RETSIGTYPE (*oldintr)(), (*oldintp)();
+    RETSIGTYPE (*oldintr)(int), (*oldintp)(int);
     long bytes = 0, hashbytes = HASHBYTES;
     char *rmode = "w";
 
