@@ -3361,7 +3361,10 @@ char *volume_label(int snum)
 		/* lp_volume returns a unix charset - lp_servicename returns a
 		   dos codepage - convert so volume_label() always returns UNIX.
 		*/
-		return (dos_to_unix(lp_servicename(snum), False));
+		char *p = dos_to_unix(lp_servicename(snum), False);
+		int len = strlen(p)+1;
+		ret = (char *)talloc(lp_talloc, len);
+		memcpy(ret, p, len);
 	}
 	return (ret);
 }
