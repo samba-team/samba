@@ -48,7 +48,8 @@
 .Nm krb5_enctype_is_disabled ,
 .Nm krb5_enctype_keysize ,
 .Nm krb5_enctype_to_string ,
-.Nm krb5_string_to_enctype ,
+.Nm krb5_get_wrapped_length ,
+.Nm krb5_string_to_enctype
 .Nd encrypt and decrypt data, set and get encryption type parameters
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -114,6 +115,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "krb5_enctype etype"
 .Fc
+.Ft size_t
+.Fo krb5_get_wrapped_length
+.Fa "krb5_context context"
+.Fa "krb5_crypto crypto"
+.Fa "size_t data_len"
+.Fc
 .Sh DESCRIPTION
 These functions are used to encrypt and decrypt data.
 .Pp
@@ -177,6 +184,12 @@ encryption/decryption).
 .Fn krb5_enctype_disable
 (globally, for all contextes) disables the
 .Fa enctype .
+.Pp
+.Fn krb5_get_wrapped_length
+returns the size of an encrypted packet by
+.Fa crypto
+of length
+.Fa data_len .
 .\" .Sh EXAMPLE
 .\" .Sh BUGS
 .Sh SEE ALSO
