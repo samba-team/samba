@@ -82,7 +82,12 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	uint32		len = 0;
 	uint32		lmpwlen, ntpwlen, hourslen;
 	BOOL ret = True;
-									
+
+	if(sampass == NULL || buf == NULL) {
+		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
+		return False;
+	}
+	
 	/* unpack the buffer into variables */
 	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
 		&logon_time,
@@ -179,7 +184,7 @@ done:
 /**********************************************************************
  Intialize a BYTE buffer from a SAM_ACCOUNT struct
  *********************************************************************/
-static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
+static uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
@@ -192,25 +197,25 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
-	char *username;
-	char *domain;
-	char *nt_username;
-	char *dir_drive;
-	char *unknown_str;
-	char *munged_dial;
-	char *fullname;
-	char *homedir;
-	char *logon_script;
-	char *profile_path;
-	char *acct_desc;
-	char *workstations;
+	const char *username;
+	const char *domain;
+	const char *nt_username;
+	const char *dir_drive;
+	const char *unknown_str;
+	const char *munged_dial;
+	const char *fullname;
+	const char *homedir;
+	const char *logon_script;
+	const char *profile_path;
+	const char *acct_desc;
+	const char *workstations;
 	uint32	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 
-	uint8		*lm_pw;
-	uint8		*nt_pw;
+	const uint8		*lm_pw;
+	const uint8		*nt_pw;
 	uint32	lm_pw_len = 16;
 	uint32	nt_pw_len = 16;
 
@@ -412,7 +417,7 @@ void pdb_endsampwent(void)
 		global_tdb_ent.passwd_tdb = NULL;
 	}
 	
-	DEBUG(7, ("endtdbpwent: closed password file.\n"));
+	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
 }
 
 /*****************************************************************
@@ -433,10 +438,10 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	/* skip all RID entries */
-	while ((global_tdb_ent.key.dsize != 0) && (strncmp (global_tdb_ent.key.dptr, prefix, prefixlen)))
+	/* skip all non-USER entries (eg. RIDS)  */
+	while ((global_tdb_ent.key.dsize != 0) && (strncmp(global_tdb_ent.key.dptr, prefix, prefixlen)))
 		/* increment to next in line */
-		global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
+		global_tdb_ent.key = tdb_nextkey(global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 
 	/* do we have an valid interation pointer? */
 	if(global_tdb_ent.passwd_tdb == NULL) {
@@ -444,14 +449,14 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	data = tdb_fetch (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
+	data = tdb_fetch(global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 	if (!data.dptr) {
 		DEBUG(5,("pdb_getsampwent: database entry not found.\n"));
 		return False;
 	}
   
   	/* unpack the buffer */
-	if (!init_sam_from_buffer (user, data.dptr, data.dsize)) {
+	if (!init_sam_from_buffer(user, data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
 		return False;
@@ -469,8 +474,8 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
-	pdb_set_uid (user, uid);
-	pdb_set_gid (user, gid);
+	pdb_set_uid(user, uid);
+	pdb_set_gid(user, gid);
 
 	/* 21 days from present */
 	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
@@ -480,7 +485,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
 
 	/* increment to next in line */
-	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
+	global_tdb_ent.key = tdb_nextkey(global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 
 	return True;
 }
@@ -489,7 +494,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
  Lookup a name in the SAM TDB
 ******************************************************************/
 
-BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
+BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 {
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
@@ -511,12 +516,12 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	strlower(name);
 
 	get_private_directory(tdbfile);
-	pstrcat (tdbfile, PASSDB_FILE_NAME);
+	pstrcat(tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
+	key.dsize = strlen(keystr) + 1;
 
 	/* open the accounts TDB */
 	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
@@ -525,45 +530,47 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	}
 
 	/* get the record */
-	data = tdb_fetch (pwd_tdb, key);
+	data = tdb_fetch(pwd_tdb, key);
 	if (!data.dptr) {
 		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		tdb_close (pwd_tdb);
+		tdb_close(pwd_tdb);
 		return False;
 	}
   
   	/* unpack the buffer */
-	if (!init_sam_from_buffer (user, data.dptr, data.dsize)) {
+	if (!init_sam_from_buffer(user, data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
+		tdb_close(pwd_tdb);
 		return False;
 	}
 	SAFE_FREE(data.dptr);
+
+	/* no further use for database, close it now */
+	tdb_close(pwd_tdb);
 	
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
-	   is used instaed of Get_Pwnam() as we do not need to try case
+	   is used instead of Get_Pwnam() as we do not need to try case
 	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(user))) == NULL) {
+	if ((pw=sys_getpwnam(pdb_get_username(user)))) {
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+		pdb_set_uid (user, uid);
+		pdb_set_gid (user, gid);
+
+		/* 21 days from present */
+		pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
+
+		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
+		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
+		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
+	}
+	else {
 		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
 		          pdb_get_username(user)));
 		return False;
 	}
-	
-	uid = pw->pw_uid;
-	gid = pw->pw_gid;
-	pdb_set_uid (user, uid);
-	pdb_set_gid (user, gid);
-	
-	/* 21 days from present */
-	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
-	
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
-
-	/* cleanup */
-	tdb_close (pwd_tdb);
 
 	return True;
 }
@@ -620,7 +627,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
 	SAM_ACCOUNT	*sam_pass = NULL;
 	TDB_CONTEXT 	*pwd_tdb;
@@ -706,7 +713,7 @@ BOOL pdb_delete_sam_account(char *sname)
  Update the TDB SAM
 ****************************************************************************/
 
-static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
+static BOOL tdb_update_sam(const SAM_ACCOUNT* newpwd, BOOL override, int flag)
 {
 	TDB_CONTEXT 	*pwd_tdb = NULL;
 	TDB_DATA 	key, data;
@@ -797,7 +804,7 @@ done:
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override)
+BOOL pdb_update_sam_account (const SAM_ACCOUNT *newpwd, BOOL override)
 {
 	return (tdb_update_sam(newpwd, override, TDB_MODIFY));
 }
@@ -806,7 +813,7 @@ BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override)
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd)
+BOOL pdb_add_sam_account (const SAM_ACCOUNT *newpwd)
 {
 	return (tdb_update_sam(newpwd, True, TDB_INSERT));
 }
