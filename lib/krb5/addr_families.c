@@ -532,12 +532,7 @@ krb5_parse_address(krb5_context context,
     ALLOC_SEQ(addresses, n);
 
     for (a = ai, i = 0; a != NULL; a = a->ai_next, ++i) {
-	struct addr_operations *aop = find_af (ai->ai_family);
-
-	addresses->val[i].addr_type = aop->atype;
-	krb5_data_copy (&addresses->val[i].address,
-			ai->ai_addr,
-			ai->ai_addrlen);
+	krb5_sockaddr2address (ai->ai_addr, &addresses->val[i]);
     }
     freeaddrinfo (ai);
     return 0;
