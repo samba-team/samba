@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "version.h"
 #include "dynconfig.h"
 #include "lib/cmdline/popt_common.h"

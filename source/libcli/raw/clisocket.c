@@ -65,16 +65,17 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock, 
-					const char *hostaddr, int port);
+					const char *hostaddr, int port, 
+					struct composite_context *c);
 
 /*
   handle socket write events during an async connect. These happen when the OS
   has either completed the connect() or has returned an error
 */
 static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_event *fde, 
-					struct timeval t, uint16_t flags)
+					struct timeval t, uint16_t flags, void *private)
 {
-	struct composite_context *c = talloc_get_type(fde->private, struct composite_context);
+	struct composite_context *c = talloc_get_type(private, struct composite_context);
 	struct clisocket_connect *conn = talloc_get_type(c->private, struct clisocket_connect);
 	int i;
 	
@@ -94,10 +95,9 @@ static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_even
 		conn->port_num = i;
 		c->status = smbcli_sock_connect_one(conn->sock, 
 						    conn->dest_host, 
-						    conn->iports[i]);
+						    conn->iports[i], c);
 		if (NT_STATUS_IS_OK(c->status) ||
 		    NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			conn->sock->event.fde->private = c;
 			return;
 		}
 	}
@@ -113,9 +113,9 @@ static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_even
   try to connect to the given address/port
 */
 static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock, 
-					const char *hostaddr, int port)
+					const char *hostaddr, int port,
+					struct composite_context *c)
 {
-	struct fd_event fde;
 	NTSTATUS status;
 
 	if (sock->sock) {
@@ -133,15 +133,11 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 
 	/* we initially look for write - see the man page on
 	   non-blocking connect */
-	fde.fd = socket_get_fd(sock->sock);
-	fde.flags = EVENT_FD_WRITE;
-	fde.handler = smbcli_sock_connect_handler;
-	fde.private = sock;
-
-	sock->event.fde = event_add_fd(sock->event.ctx, &fde, sock);
+	sock->event.fde = event_add_fd(sock->event.ctx, sock, socket_get_fd(sock->sock), 
+				       EVENT_FD_WRITE, smbcli_sock_connect_handler, c);
 
 	sock->port = port;
-	set_blocking(fde.fd, False);
+	set_blocking(socket_get_fd(sock->sock), False);
 
 	return socket_connect(sock->sock, NULL, 0, hostaddr, port, 0);
 }
@@ -200,10 +196,9 @@ struct composite_context *smbcli_sock_connect_send(struct smbcli_socket *sock,
 		conn->sock->port = conn->iports[i];
 		c->status = smbcli_sock_connect_one(sock, 
 						    conn->dest_host, 
-						    conn->iports[i]);
+						    conn->iports[i], c);
 		if (NT_STATUS_IS_OK(c->status) ||
 		    NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			sock->event.fde->private = c;
 			return c;
 		}
 	}

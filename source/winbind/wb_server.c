@@ -89,7 +89,7 @@ static void winbind_recv(struct stream_connection *conn, struct timeval t, uint1
 
 	DLIST_ADD_END(wbconn->queue, q, struct send_queue *);
 
-	conn->event.fde->flags |= EVENT_FD_WRITE;
+	EVENT_FD_WRITEABLE(conn->event.fde);
 }
 
 /*
@@ -123,7 +123,7 @@ static void winbind_send(struct stream_connection *conn, struct timeval t, uint1
 		}
 	}
 
-	conn->event.fde->flags &= ~EVENT_FD_WRITE;
+	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
 }
 
 static const struct stream_server_ops winbind_stream_ops = {

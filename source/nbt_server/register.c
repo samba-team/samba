@@ -72,9 +72,9 @@ static void refresh_completion_handler(struct nbt_name_request *req)
   handle name refresh timer events
 */
 static void name_refresh_handler(struct event_context *ev, struct timed_event *te, 
-				 struct timeval t)
+				 struct timeval t, void *private)
 {
-	struct nbt_iface_name *iname = talloc_get_type(te->private, struct nbt_iface_name);
+	struct nbt_iface_name *iname = talloc_get_type(private, struct nbt_iface_name);
 	struct nbt_interface *iface = iname->iface;
 	struct nbt_name_refresh io;
 	struct nbt_name_request *req;
@@ -101,17 +101,15 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 */
 static void nbt_start_refresh_timer(struct nbt_iface_name *iname)
 {
-	struct timed_event te;
 	uint32_t refresh_time;
 	uint32_t max_refresh_time = lp_parm_int(-1, "nbtd", "max_refresh_time", 7200);
 
 	refresh_time = MIN(max_refresh_time, iname->ttl/2);
 	
-	te.next_event = timeval_current_ofs(refresh_time, 0);
-	te.handler    = name_refresh_handler;
-	te.private    = iname;
-
-	event_add_timed(iname->iface->nbtsrv->task->event_ctx, &te, iname);
+	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
+			iname, 
+			timeval_current_ofs(refresh_time, 0),
+			name_refresh_handler, iname);
 }
 
 

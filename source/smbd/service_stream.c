@@ -61,9 +61,9 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
   the select loop has indicated that a stream is ready for IO
 */
 static void stream_io_handler(struct event_context *ev, struct fd_event *fde, 
-			      struct timeval t, uint16_t flags)
+			      struct timeval t, uint16_t flags, void *private)
 {
-	struct stream_connection *conn = talloc_get_type(fde->private, 
+	struct stream_connection *conn = talloc_get_type(private, 
 							 struct stream_connection);
 	if (flags & EVENT_FD_WRITE) {
 		conn->ops->send_handler(conn, t, flags);
@@ -85,7 +85,6 @@ static void stream_new_connection(struct event_context *ev,
 				  uint32_t server_id, void *private)
 {
 	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
-	struct fd_event fde;
 	struct stream_connection *srv_conn;
 
 	srv_conn = talloc_zero(ev, struct stream_connection);
@@ -96,19 +95,15 @@ static void stream_new_connection(struct event_context *ev,
 
 	talloc_steal(srv_conn, sock);
 
-	fde.private 	= srv_conn;
-	fde.fd		= socket_get_fd(sock);
-	fde.flags	= EVENT_FD_READ;
-	fde.handler	= stream_io_handler;
-
 	srv_conn->private       = stream_socket->private;
 	srv_conn->model_ops     = stream_socket->model_ops;
 	srv_conn->event.ctx	= ev;
-	srv_conn->event.fde	= &fde;
 	srv_conn->socket	= sock;
 	srv_conn->server_id	= server_id;
 	srv_conn->ops           = stream_socket->ops;
-	srv_conn->event.fde	= event_add_fd(ev, &fde, srv_conn);
+	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
+					       EVENT_FD_READ, 
+					       stream_io_handler, srv_conn);
 
 	if (!socket_check_access(sock, "smbd", lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
@@ -131,9 +126,9 @@ static void stream_new_connection(struct event_context *ev,
   called when someone opens a connection to one of our listening ports
 */
 static void stream_accept_handler(struct event_context *ev, struct fd_event *fde, 
-				  struct timeval t, uint16_t flags)
+				  struct timeval t, uint16_t flags, void *private)
 {
-	struct stream_socket *stream_socket = talloc_get_type(fde->private, struct stream_socket);
+	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
 
 	/* ask the process model to create us a process for this new
 	   connection.  When done, it calls stream_new_connection()
@@ -158,7 +153,6 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 {
 	NTSTATUS status;
 	struct stream_socket *stream_socket;
-	struct fd_event fde;
 	int i;
 
 	stream_socket = talloc_zero(event_context, struct stream_socket);
@@ -198,13 +192,9 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 		return status;
 	}
 
-	/* we are only interested in read events on the listen socket */
-	fde.fd          = socket_get_fd(stream_socket->sock);
-	fde.flags       = EVENT_FD_READ;
-	fde.private     = stream_socket;
-	fde.handler     = stream_accept_handler;
-
-	event_add_fd(event_context, &fde, stream_socket->sock);
+	event_add_fd(event_context, stream_socket->sock, 
+		     socket_get_fd(stream_socket->sock), 
+		     EVENT_FD_READ, stream_accept_handler, stream_socket);
 
 	stream_socket->private          = talloc_reference(stream_socket, private);
 	stream_socket->ops              = stream_ops;

@@ -65,14 +65,12 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
   a handler for read events on a connection to a backend server
 */
 static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, 
-				struct timeval t, uint16_t flags)
+				struct timeval t, uint16_t flags, void *private)
 {
-	struct cvfs_private *private = fde->private;
-	struct smbsrv_tcon *tcon = private->tcon;
+	struct cvfs_private *cvfs = talloc_get_type(private, struct cvfs_private);
+	struct smbsrv_tcon *tcon = cvfs->tcon;
 	
-	DEBUG(5,("cifs_socket_handler event on fd %d\n", fde->fd));
-	
-	if (!smbcli_transport_process(private->transport)) {
+	if (!smbcli_transport_process(cvfs->transport)) {
 		/* the connection to our server is dead */
 		talloc_free(tcon);
 	}
@@ -90,6 +88,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	const char *host, *user, *pass, *domain, *remote_share;
 	struct smb_composite_connect io;
 	struct composite_context *creq;
+	struct fd_event *fde;
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
@@ -144,8 +143,16 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
 
-	private->transport->socket->event.fde->handler = cifs_socket_handler;
-	private->transport->socket->event.fde->private = private;
+	/* take over event handling for this socket */
+	talloc_free(private->transport->socket->event.fde);
+	fde = event_add_fd(private->transport->socket->event.ctx,
+			   private,
+			   socket_get_fd(private->transport->socket->sock),
+			   EVENT_FD_READ | EVENT_FD_WRITE,
+			   cifs_socket_handler,
+			   private);
+	private->transport->socket->event.fde = fde;
+
 
 	private->map_generic = lp_parm_bool(req->tcon->service, 
 					    "cifs", "mapgeneric", False);
