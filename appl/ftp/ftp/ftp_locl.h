@@ -19,6 +19,9 @@
 #include <ctype.h>
 #include <glob.h>
 #include <netdb.h>
+
+extern int h_errno;
+
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
