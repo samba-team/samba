@@ -15,6 +15,9 @@ case "$host" in
 *-*-sunos4*)
 	AC_DEFINE(SunOS, 4)
 	;;
+*-*-solaris2*)
+	AC_DEFINE(SunOS, 5)
+	;;
 esac
 
 dnl Checks for programs.
