@@ -1214,7 +1214,7 @@ struct bitmap {
 #define GENERIC_ALL_ACCESS   (1<<28)
 #define GENERIC_EXECUTE_ACCESS  (1<<29)
 #define GENERIC_WRITE_ACCESS   (1<<30)
-#define GENERIC_READ_ACCESS   (1<<31)
+#define GENERIC_READ_ACCESS   (((unsigned)1)<<31)
 
 #define FILE_ALL_STANDARD_ACCESS 0x1F0000
 
