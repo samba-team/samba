@@ -40,7 +40,7 @@ SOURCES = $(SOURCES_OTP) $(SOURCES_OTPPRINT)
 all: $(PROGS)
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
@@ -84,4 +84,4 @@ otp$(EXECSUFFIX): $(OBJECTS_OTP)
 otpprint$(EXECSUFFIX): $(OBJECTS_OTPPRINT)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
-$(OBJECTS): ../../config.h
+$(OBJECTS): ../../include/config.h

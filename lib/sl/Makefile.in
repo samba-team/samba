@@ -45,7 +45,7 @@ Wall:
 	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../des $(CFLAGS) $(PICFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) -I$(srcdir)/../des $(CFLAGS) $(PICFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
@@ -79,6 +79,6 @@ $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIB_OBJECTS)
 
-$(OBJECTS): ../../config.h
+$(OBJECTS): ../../include/config.h
 
 .PHONY: all install uninstall check clean mostlyclean distclean realclean

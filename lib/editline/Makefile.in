@@ -40,7 +40,7 @@ Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
@@ -80,4 +80,4 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS)
 
-$(OBJECTS): ../../config.h
+$(OBJECTS): ../../include/config.h
