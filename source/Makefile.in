@@ -143,7 +143,8 @@ QUOTAOBJS=@QUOTAOBJS@
 VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ 
 PDB_MODULES = @PDB_MODULES@
 RPC_MODULES = @RPC_MODULES@
-MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES)
+AUTH_MODULES = @AUTH_MODULES@
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(AUTH_MODULES)
 
 ######################################################################
 # object file lists
@@ -243,10 +244,10 @@ RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
 
-RPC_ECHO_OBJ = rpc_server/srv_echo.o rpc_server/srv_echo_nt.o
-
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
+
+RPC_ECHO_OBJ = rpc_server/srv_echo.o rpc_server/srv_echo_nt.o
 
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
@@ -260,7 +261,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o rpc_parse/parse_ds.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
-		rpc_parse/parse_echo.o $(REGOBJS_OBJ)
+		rpc_parse/parse_echo.o \
+		$(REGOBJS_OBJ)
 
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o 
@@ -273,12 +275,14 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/util_sam_sid.o \
 		passdb/pdb_compat.o @PDB_STATIC@
 
-PDB_XML_OBJ = passdb/pdb_xml.o
-PDB_MYSQL_OBJ = passdb/pdb_mysql.o
+XML_OBJ = passdb/pdb_xml.o
+MYSQL_OBJ = passdb/pdb_mysql.o
+DEVEL_HELP_OBJ = modules/developer.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
+PROFILES_OBJ = utils/profiles.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
@@ -288,9 +292,16 @@ PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
 UNIGRP_OBJ = libsmb/netlogon_unigrp.o 
 
-AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
-	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
-	   auth/auth_builtin.o auth/auth_compat.o auth/auth_ntlmssp.o \
+AUTH_BUILTIN_OBJ = auth/auth_builtin.o
+AUTH_DOMAIN_OBJ = auth/auth_domain.o
+AUTH_SAM_OBJ = auth/auth_sam.o
+AUTH_RHOSTS_OBJ = auth/auth_rhosts.o
+AUTH_SERVER_OBJ = auth/auth_server.o
+AUTH_UNIX_OBJ = auth/auth_unix.o
+AUTH_WINBIND_OBJ = auth/auth_winbind.o
+
+AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
+		  auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
@@ -313,7 +324,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/change_trust_pw.o \
 	       $(MANGLE_OBJ)
 
-SMBD_OBJ_BASE = $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
 		$(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 		$(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
@@ -332,7 +343,7 @@ PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o 
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
-SMBD_OBJ = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE)
+SMBD_OBJ = $(SMBD_OBJ_BASE) $(SMBD_OBJ_MAIN)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -347,27 +358,27 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
-NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) \
+NMBD_OBJ = $(PARAM_OBJ) $(NMBD_OBJ1) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) \
            $(PROFILE_OBJ) $(LIB_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
 WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
              wrepld/partners.o
 
-WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) $(UBIQX_OBJ) \
+WREPL_OBJ = $(PARAM_OBJ) $(WREPL_OBJ1) $(UBIQX_OBJ) \
 	    $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o 
 
-SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
+SWAT_OBJ = $(PARAM_OBJ) $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
+           $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
 	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
 	   $(POPT_LIB_OBJ)
 
-SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
-            $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+SMBSH_OBJ = $(PARAM_OBJ) smbwrapper/smbsh.o smbwrapper/shared.o \
+            $(UBIQX_OBJ) $(LIB_OBJ)
 
-STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
+STATUS_OBJ = $(PARAM_OBJ) utils/status.o $(LOCKING_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
@@ -594,7 +605,7 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) $(RPC_MODULES) @EXTRA_ALL_TARGETS@
+all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) $(MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -665,6 +676,7 @@ MAKEDIR = || exec false; \
 # rebuild it's a bit hard.
 
 dynconfig.o: dynconfig.c Makefile
+	@$(MAKE) modules_clean
 	@echo Compiling $*.c
 	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
 
@@ -1023,10 +1035,11 @@ installbin: all installdirs
 
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
 
-installmodules: all installdirs
+installmodules: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(AUTHLIBDIR) $(AUTH_MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -1037,10 +1050,10 @@ installdat: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installclientlib:
+installclientlib: libsmbclient
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
 	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
-	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
 
 # Python extensions
@@ -1107,6 +1120,7 @@ uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(DESTDIR)$(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(AUTHLIBDIR) $(DESTDIR)$(AUTH_MODULES)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -1119,6 +1133,10 @@ clean: delheaders python_clean
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
 		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp
 
+# This is quite ugly actually.. But we need to make
+# sure the changes to include/config.h are used.
+modules_clean:
+	@-rm -f @MODULES_CLEAN@ auth/auth.o passdb/pdb_interface.o rpc_server/srv_pipe_hnd.o lib/iconv.o smbd/vfs.o
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're

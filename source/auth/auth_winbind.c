@@ -134,3 +134,8 @@ NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param,
 	(*auth_method)->auth = check_winbind_security;
 	return NT_STATUS_OK;
 }
+
+int auth_winbind_init(void)
+{
+	return smb_register_auth("winbind", auth_init_winbind, AUTH_INTERFACE_VERSION);
+}

@@ -400,3 +400,8 @@ NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* para
 	(*auth_method)->free_private_data = free_server_private_data;
 	return NT_STATUS_OK;
 }
+
+int auth_server_init(void)
+{
+	return smb_register_auth("smbserver", auth_init_smbserver, AUTH_INTERFACE_VERSION);
+}

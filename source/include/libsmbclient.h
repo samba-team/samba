@@ -257,9 +257,8 @@ typedef int (*smbc_remove_unused_server_fn)(SMBCCTX * c, SMBCSRV *srv);
  *
  */ 
 typedef int (*smbc_add_cached_srv_fn)   (SMBCCTX * c, SMBCSRV *srv, 
-				    char * server, char * share, 
-				    char * workgroup, char * username);
-
+				    const char * server, const char * share,
+				    const char * workgroup, const char * username);
 
 /**@ingroup callback
  * Look up a server in the cache system
@@ -277,9 +276,9 @@ typedef int (*smbc_add_cached_srv_fn)   (SMBCCTX * c, SMBCSRV *srv,
  * @return          pointer to SMBCSRV on success. NULL on failure.
  *
  */ 
-typedef SMBCSRV * (*smbc_get_cached_srv_fn)   (SMBCCTX * c, char * server, 
-					       char * share, char * workgroup, char * username);
-
+typedef SMBCSRV * (*smbc_get_cached_srv_fn)   (SMBCCTX * c, const char * server,
+					       const char * share, const char * workgroup,
+                                               const char * username);
 
 /**@ingroup callback
  * Check if a server is still good

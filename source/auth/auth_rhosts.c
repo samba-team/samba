@@ -242,3 +242,10 @@ NTSTATUS auth_init_rhosts(struct auth_context *auth_context, const char *param, 
 	(*auth_method)->name = "rhosts";
 	return NT_STATUS_OK;
 }
+
+int auth_rhosts_init(void)
+{
+	smb_register_auth("rhosts", auth_init_rhosts, AUTH_INTERFACE_VERSION);
+	smb_register_auth("hostsequiv", auth_init_hostsequiv, AUTH_INTERFACE_VERSION);
+	return True;
+}
