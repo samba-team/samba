@@ -1473,6 +1473,9 @@ void close_file(int fnum, BOOL normal_close)
   if (normal_close)
     check_magic(fnum,cnum);
 
+  if(fs_p->granted_oplock == True)
+    global_oplocks_open--;
+
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
 	   timestring(),Connections[cnum].user,fs_p->name,
 	   Connections[cnum].num_files_open));
@@ -1680,9 +1683,9 @@ int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
         (access_allowed == AREAD && *flags == O_WRONLY) ||
         (access_allowed == AWRITE && *flags == O_RDONLY))
     {
-      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s) = %d\n",
+      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
                 deny_mode,old_deny_mode,old_open_mode,
-                share->pid,fname, access_allowed));
+                share->pid,fname, fcbopen, *flags, access_allowed));
       return False;
     }
 
@@ -1928,7 +1931,8 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
          be extended to level II oplocks (multiple reader
          oplocks). */
 
-      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(cnum)))
+      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(cnum)) && 
+	      !IS_VETO_OPLOCK_PATH(cnum,fname))
       {
         fs_p->granted_oplock = True;
         global_oplocks_open++;
@@ -2918,9 +2922,8 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
        from the sharemode. */
     /* Paranoia.... */
     fsp->granted_oplock = False;
-  }
-
   global_oplocks_open--;
+  }
 
   /* Santity check - remove this later. JRA */
   if(global_oplocks_open < 0)
@@ -3391,6 +3394,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   pcon->dirptr = NULL;
   pcon->veto_list = NULL;
   pcon->hide_list = NULL;
+  pcon->veto_oplock_list = NULL;
   string_set(&pcon->dirpath,"");
   string_set(&pcon->user,user);
 
@@ -3541,6 +3545,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   {
     set_namearray( &pcon->veto_list, lp_veto_files(SNUM(cnum)));
     set_namearray( &pcon->hide_list, lp_hide_files(SNUM(cnum)));
+    set_namearray( &pcon->veto_oplock_list, lp_veto_oplocks(SNUM(cnum)));
   }
 
   {
@@ -4070,6 +4075,7 @@ void close_cnum(int cnum, uint16 vuid)
 
   free_namearray(Connections[cnum].veto_list);
   free_namearray(Connections[cnum].hide_list);
+  free_namearray(Connections[cnum].veto_oplock_list);
 
   string_set(&Connections[cnum].user,"");
   string_set(&Connections[cnum].dirpath,"");

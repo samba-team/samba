@@ -300,6 +300,7 @@ char *lp_volume(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );
+char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
 BOOL lp_alternate_permissions(int );
 BOOL lp_revalidate(int );

@@ -233,6 +233,7 @@ typedef struct
   char *szMangledMap;
   char *szVetoFiles;
   char *szHideFiles;
+  char *szVetoOplockFiles;
   char *comment;
   char *force_user;
   char *force_group;
@@ -317,6 +318,7 @@ static service sDefault =
   NULL,    /* szMangledMap */
   NULL,    /* szVetoFiles */
   NULL,    /* szHideFiles */
+  NULL,    /* szVetoOplockFiles */
   NULL,    /* comment */
   NULL,    /* force user */
   NULL,    /* force group */
@@ -556,6 +558,7 @@ struct parm_struct
   {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL},
   {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL},
   {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL},
+  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL},
   {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL},
   {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL},
@@ -966,6 +969,7 @@ FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files,szHideFiles)
+FN_LOCAL_STRING(lp_veto_oplocks,szVetoFiles)
 FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
 
 FN_LOCAL_BOOL(lp_alternate_permissions,bAlternatePerm)

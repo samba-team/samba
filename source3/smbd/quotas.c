@@ -473,6 +473,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   {
     r=quotactl (Q_GETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &D);
 
+    seteuid(euser_id); /* Restore the original uid status. */
+
     if (r==-1)
       return(False);
         
@@ -501,6 +503,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   else if ( 0 == strcmp ( mnt->mnt_type, "xfs" ))
   {
     r=quotactl (Q_XGETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &F);
+
+    seteuid(euser_id); /* Restore the original uid status. */
 
     if (r==-1)
       return(False);
@@ -531,7 +535,10 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 
   }
   else
+  {
+    seteuid(euser_id); /* Restore the original uid status. */
     return(False);
+  }
 
   return (True);
 
