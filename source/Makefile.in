@@ -1345,7 +1345,10 @@ Makefile: $(srcdir)/Makefile.in config.status
 check: check-programs
 	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
 	PATH="`pwd`/bin:$$PATH" \
-	python stf/standardcheck.py
+	python stf/standardcheck.py; \
+	if test -n "$(PYTHON)"; then \
+		python stf/pythoncheck.py; \
+	fi
 
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
