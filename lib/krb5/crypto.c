@@ -1404,19 +1404,20 @@ static krb5_error_code
 create_checksum(krb5_context context,
 		krb5_crypto crypto,
 		unsigned usage, /* not krb5_key_usage */
-		krb5_cksumtype type, /* if crypto == NULL */
+		krb5_cksumtype type, /* 0 -> pick from crypto */
 		void *data,
 		size_t len,
 		Checksum *result)
 {
-    struct checksum_type *ct;
+    struct checksum_type *ct = NULL;
 
-    if(crypto) {
+    if (type)
+	ct = _find_checksum(type);
+    else if(crypto) {
 	ct = crypto->et->keyed_checksum;
 	if(ct == NULL)
 	    ct = crypto->et->cksumtype;
-    } else
-	ct = _find_checksum(type);
+    }
     if(ct == NULL)
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     return do_checksum (context, ct, crypto, usage, data, len, result);
