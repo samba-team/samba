@@ -70,7 +70,7 @@ static void add_socket_rpc(struct server_service *service,
 			if (e->ep_description.options && e->ep_description.options[0]) 
 				port = atoi(e->ep_description.options[0]);
 
-			sock = service_setup_socket(service,model_ops, ip_str, &port);
+			sock = service_setup_socket(service,model_ops, "ipv4", ip_str, &port);
 			if (!sock) {
 				DEBUG(0,("service_setup_socket(port=%u) failed\n",port));
 				continue;

@@ -145,6 +145,7 @@ struct dcerpc_interface_table {
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
 	struct GUID object;
+	int object_version;
 	const char *host;
 	const char **options;
 	uint32_t flags;

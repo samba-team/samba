@@ -26,7 +26,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 {
 	struct dcerpc_binding b, b2;
 	const char *s, *s2;
-	struct epm_tower *tower;
+	struct epm_tower tower;
 	NTSTATUS status;
 
 	/* Parse */
@@ -56,7 +56,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 
 	/* Convert back to binding and then back to string and compare */
 
-	status = dcerpc_binding_from_tower(mem_ctx, tower, &b2);
+	status = dcerpc_binding_from_tower(mem_ctx, &tower, &b2);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Error generating binding from tower for original binding '%s': %s\n", binding, nt_errstr(status)));
 		return False;
