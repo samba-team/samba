@@ -609,7 +609,8 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 
 /* 
    move a lump of memory from one talloc context to another return the
-   ptr on success, or NULL if it could not be transferred
+   ptr on success, or NULL if it could not be transferred.
+   passing NULL as ptr will always return NULL with no side effects.
 */
 void *talloc_steal(const void *new_ctx, const void *ptr)
 {
