@@ -234,7 +234,7 @@ NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32_t v)
 /*
   push a uint64
 */
-NTSTATUS ndr_push_uint64(struct ndr_push *ndr, uint64 v)
+NTSTATUS ndr_push_uint64(struct ndr_push *ndr, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 8);
@@ -247,7 +247,7 @@ NTSTATUS ndr_push_uint64(struct ndr_push *ndr, uint64 v)
 /*
   push a int64
 */
-NTSTATUS ndr_push_int64(struct ndr_push *ndr, int64 v)
+NTSTATUS ndr_push_int64(struct ndr_push *ndr, int64_t v)
 {
 	return ndr_push_uint64(ndr, (uint64_t)v);
 }
@@ -693,12 +693,12 @@ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }
 
-void ndr_print_uint64(struct ndr_print *ndr, const char *name, uint64 v)
+void ndr_print_uint64(struct ndr_print *ndr, const char *name, uint64_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x%08x", name, (uint32_t)(v >> 32), (uint32_t)(v & 0xFFFFFFFF));
 }
 
-void ndr_print_int64(struct ndr_print *ndr, const char *name, int64 v)
+void ndr_print_int64(struct ndr_print *ndr, const char *name, int64_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x%08x (%lld)", name, 
 		   (uint32_t)(v >> 32), 
