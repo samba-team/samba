@@ -256,12 +256,15 @@ init_auth
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
+    if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
     kret = krb5_cc_default (gssapi_krb5_context, &ccache);
     if (kret) {
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
     }
+    } else
+	ccache = initiator_cred_handle->ccache;
 
     kret = krb5_cc_get_principal (gssapi_krb5_context,
 				  ccache,
