@@ -78,7 +78,9 @@ fd = sys_open(fname,O_RDONLY, 0);
         }
 	DEBUG(10,("cnum:%u.  pid: %d magic: %x\n",
 	           c->cnum, c->pid, c->magic));
-	if ( c->magic == 0x280267 && process_exists(c->pid) )
+
+	/* valid connection, smbd process still going, connection still going */
+	if ( c->magic == 0x280267 && process_exists(c->pid) && c->cnum != -1 )
 	  {
 		conn++;
 	  }
