@@ -8,7 +8,7 @@ def test_Connect(handle):
     print 'testing samr_Connect'
 
     r = {}
-    r['system_name'] = [0]
+    r['system_name'] = 0;
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect(pipe, r)
@@ -68,12 +68,43 @@ def test_QuerySecurity(pipe, handle):
 
     result = dcerpc.samr_QuerySecurity(pipe, r)
 
+    s = {}
+    s['handle'] = handle
+    s['sec_info'] = 7
+    s['sdbuf'] = result['sdbuf']
+
+    result = dcerpc.samr_SetSecurity(pipe, s)
+
+    result = dcerpc.samr_QuerySecurity(pipe, r)
+
+def test_LookupDomain(pipe, handle, domain):
+
+    print 'testing samr_LookupDomain'
+
     r = {}
     r['handle'] = handle
-    r['sec_info'] = 7
-    r['sdbuf'] = result['sdbuf']
+    r['domain'] = {}
+    r['domain']['name_len'] = 0
+    r['domain']['name_size'] = 0
+    r['domain']['name'] = domain
 
-    result = dcerpc.samr_SetSecurity(pipe, r)
+    result = dcerpc.samr_LookupDomain(pipe, r)
+
+    print result
+
+def test_EnumDomains(pipe, handle):
+
+    print 'testing samr_EnumDomains'
+
+    r = {}
+    r['handle'] = handle
+    r['resume_handle'] = 0
+    r['buf_size'] = -1
+
+    result = dcerpc.samr_EnumDomains(pipe, r)
+
+    for domain in result['sam']['entries']:
+        test_LookupDomain(pipe, handle, domain['name']['name'])
 
 # Parse command line
 
@@ -112,6 +143,9 @@ pipe = dcerpc.pipe_connect(binding,
 	domain, username, password)
 
 handle = test_Connect(pipe)
+
 test_QuerySecurity(pipe, handle)
+
+test_EnumDomains(pipe, handle)
 
 print 'Done'
