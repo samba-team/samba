@@ -69,12 +69,14 @@ krb5_mk_req_exact(krb5_context context,
     if (ret)
 	return ret;
 
-    return krb5_mk_req_extended (context,
-				 auth_context,
-				 ap_req_options,
-				 in_data,
-				 cred,
-				 outbuf);
+    ret = krb5_mk_req_extended (context,
+				auth_context,
+				ap_req_options,
+				in_data,
+				cred,
+				outbuf);
+    krb5_free_creds(context, cred);
+    return ret;
 }
 
 krb5_error_code
