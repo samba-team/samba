@@ -825,9 +825,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct ds_domain_trust	*domains = NULL;
 	int			count = 0;
 	int			i;
-	struct cli_state	*cli = NULL;
 				/* i think we only need our forest and downlevel trusted domains */
 	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
+	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
@@ -835,16 +835,27 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*alt_names   = NULL;
 	*names       = NULL;
 	*dom_sids    = NULL;
-		
-	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(domain, PI_NETLOGON, &cli)) ) {
-		DEBUG(5, ("trusted_domains: Could not open a connection to %s for PIPE_NETLOGON (%s)\n", 
+
+	{
+		unsigned char *session_key;
+		DOM_CRED *creds;
+
+		result = cm_connect_netlogon(domain, mem_ctx, &cli,
+					     &session_key, &creds);
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(5, ("trusted_domains: Could not open a connection to %s "
+			  "for PIPE_NETLOGON (%s)\n", 
 			  domain->name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	if ( NT_STATUS_IS_OK(result) )
-		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, 
-						    flags, &domains, (unsigned int *)&count );
+		result = rpccli_ds_enum_domain_trusts(cli, mem_ctx,
+						      cli->cli->desthost, 
+						      flags, &domains,
+						      (unsigned int *)&count);
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
 	
@@ -852,20 +863,17 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 		if ( !(*names = TALLOC_ARRAY(mem_ctx, char *, count)) ) {
 			DEBUG(0, ("trusted_domains: out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		if ( !(*alt_names = TALLOC_ARRAY(mem_ctx, char *, count)) ) {
 			DEBUG(0, ("trusted_domains: out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		if ( !(*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, count)) ) {
 			DEBUG(0, ("trusted_domains: out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* Copy across names and sids */
@@ -879,13 +887,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 		*num_domains = count;	
 	}
-
-done:
-
-	/* remove connection;  This is a special case to the \NETLOGON pipe */
-	
-	if ( cli )
-		cli_shutdown( cli );
 
 	return result;
 }

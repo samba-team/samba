@@ -70,9 +70,7 @@ struct winbindd_cm_conn {
 	struct winbindd_cm_conn *prev, *next;
 	fstring domain;
 	fstring controller;
-	fstring pipe_name;
 	struct cli_state *cli;
-	POLICY_HND pol;
 
 	struct rpc_pipe_client *samr_pipe;
 	POLICY_HND sam_connect_handle, sam_domain_handle;
@@ -92,7 +90,6 @@ struct winbindd_cm_conn {
 static struct winbindd_cm_conn *cm_conns = NULL;
 
 static NTSTATUS get_connection_from_cache(struct winbindd_domain *domain,
-					  const char *pipe_name,
 					  struct winbindd_cm_conn **conn_out);
 
 /* Choose between anonymous or authenticated connections.  We need to use
@@ -235,7 +232,6 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      const int sockfd,
-				      const int pipe_index,
 				      const char *controller,
 				      struct cli_state **cli,
 				      BOOL *retry)
@@ -416,17 +412,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		fstrcpy( (*cli)->domain, domain->name );
 
 	(*cli)->pipe_auth_flags = 0;
-	if ( !cli_nt_session_open (*cli, pipe_index) ) {
-
-		result = NT_STATUS_PIPE_NOT_AVAILABLE;
-
-		/* This might be a NT4 DC */
-		if ( is_win2k_pipe(pipe_index) )
-			add_failed_connection = False;
-
-		cli_shutdown(*cli);
-		goto done;
-	}
 
 	result = NT_STATUS_OK;
 	add_failed_connection = False;
@@ -824,7 +809,6 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
-				   const int pipe_index,
 				   struct winbindd_cm_conn *new_conn)
 {
 	TALLOC_CTX *mem_ctx;
@@ -859,15 +843,12 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		new_conn->cli = NULL;
 
-		result = cm_prepare_connection(domain, fd, pipe_index,
-					       domain->dcname,
+		result = cm_prepare_connection(domain, fd, domain->dcname,
 					       &new_conn->cli, &retry);
 
 		if (NT_STATUS_IS_OK(result)) {
 			fstrcpy(new_conn->domain, domain->name);
 			/* Initialise SMB connection */
-			fstrcpy(new_conn->pipe_name,
-				get_pipe_name_from_index(pipe_index));
 			break;
 		}
 
@@ -884,13 +865,13 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
  setup cli_state struct
 ************************************************************************/
 
-NTSTATUS cm_fresh_connection(struct winbindd_domain *domain, const int pipe_index,
-			       struct cli_state **cli)
+NTSTATUS cm_fresh_connection(struct winbindd_domain *domain,
+			     struct cli_state **cli)
 {
 	NTSTATUS result;
 	struct winbindd_cm_conn conn;
 	
-	result = cm_open_connection( domain, pipe_index, &conn );
+	result = cm_open_connection( domain, &conn );
 	
 	if ( NT_STATUS_IS_OK(result) ) 
 		*cli = conn.cli;
@@ -908,20 +889,21 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 	}
 
 	if (!conn->cli) {
-		DEBUG(3, ("Connection to %s for domain %s (pipe %s) has NULL conn->cli!\n", 
-			  conn->controller, conn->domain, conn->pipe_name));
+		DEBUG(3, ("Connection to %s for domain %s has NULL "
+			  "conn->cli!\n",  conn->controller, conn->domain));
 		return False;
 	}
 
 	if (!conn->cli->initialised) {
-		DEBUG(3, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
-			  conn->controller, conn->domain, conn->pipe_name));
+		DEBUG(3, ("Connection to %s for domain %s was never "
+			  "initialised!\n", conn->controller, conn->domain));
 		return False;
 	}
 
 	if (conn->cli->fd == -1) {
-		DEBUG(3, ("Connection to %s for domain %s (pipe %s) has died or was never started (fd == -1)\n", 
-			  conn->controller, conn->domain, conn->pipe_name));
+		DEBUG(3, ("Connection to %s for domain %s has died or was "
+			  "never started (fd == -1)\n", 
+			  conn->controller, conn->domain));
 		return False;
 	}
 	
@@ -959,14 +941,13 @@ static void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 /* Search the cache for a connection. If there is a broken one,
    shut it down properly and return NULL. */
 
-static void find_cm_connection(struct winbindd_domain *domain, const char *pipe_name,
+static void find_cm_connection(struct winbindd_domain *domain,
 			       struct winbindd_cm_conn **conn_out) 
 {
 	struct winbindd_cm_conn *conn;
 
 	for (conn = cm_conns; conn; ) {
-		if (strequal(conn->domain, domain->name) && 
-		    strequal(conn->pipe_name, pipe_name)) {
+		if (strequal(conn->domain, domain->name)) {
 			if (!connection_ok(conn)) {
 				/* Dead connection - remove it. */
 				struct winbindd_cm_conn *conn_temp = conn->next;
@@ -996,7 +977,7 @@ void invalidate_our_own_connection(void)
 	if (domain == NULL)
 		return;
 
-	find_cm_connection(domain, PIPE_SAMR, &conn);
+	find_cm_connection(domain, &conn);
 
 	if (conn != NULL)
 		invalidate_cm_connection(conn);
@@ -1004,7 +985,7 @@ void invalidate_our_own_connection(void)
 
 /* Initialize a new connection up to the RPC BIND. */
 
-static NTSTATUS new_cm_connection(struct winbindd_domain *domain, const char *pipe_name,
+static NTSTATUS new_cm_connection(struct winbindd_domain *domain,
 				  struct winbindd_cm_conn **conn_out)
 {
 	struct winbindd_cm_conn *conn;
@@ -1015,9 +996,9 @@ static NTSTATUS new_cm_connection(struct winbindd_domain *domain, const char *pi
 		
 	ZERO_STRUCTP(conn);
 		
-	if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn))) {
-		DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
-			  domain->name, pipe_name, nt_errstr(result)));
+	if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, conn))) {
+		DEBUG(3, ("Could not open a connection to %s (%s)\n", 
+			  domain->name, nt_errstr(result)));
 		SAFE_FREE(conn);
 		return result;
 	}
@@ -1029,15 +1010,15 @@ static NTSTATUS new_cm_connection(struct winbindd_domain *domain, const char *pi
 
 /* Get a connection to the remote DC and open the pipe.  If there is already a connection, use that */
 
-static NTSTATUS get_connection_from_cache(struct winbindd_domain *domain, const char *pipe_name,
+static NTSTATUS get_connection_from_cache(struct winbindd_domain *domain,
 					  struct winbindd_cm_conn **conn_out)
 {
-	find_cm_connection(domain, pipe_name, conn_out);
+	find_cm_connection(domain, conn_out);
 
 	if (*conn_out != NULL)
 		return NT_STATUS_OK;
 
-	return new_cm_connection(domain, pipe_name, conn_out);
+	return new_cm_connection(domain, conn_out);
 }
 
 /**********************************************************************************
@@ -1053,7 +1034,13 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	struct winbindd_cm_conn	conn;
 	DS_DOMINFO_CTR		ctr;
 	TALLOC_CTX              *mem_ctx = NULL;
+	struct rpc_pipe_client  *cli;
+	POLICY_HND pol;
 	
+	char *domain_name = NULL;
+	char *dns_name = NULL;
+	DOM_SID *dom_sid = NULL;
+
 	ZERO_STRUCT( conn );
 	ZERO_STRUCT( ctr );
 	
@@ -1064,92 +1051,106 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 		domain->initialized = True;
 		return;
 	}
-	
-	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) {
-		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
-			  domain->name, nt_errstr(result)));
+
+	result = cm_open_connection(domain, &conn);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection "
+			  "to %s: (%s)\n", domain->name, nt_errstr(result)));
 		domain->initialized = True;
 		return;
 	}
-	
-	if ( conn.cli ) {
-		if ( !NT_STATUS_IS_OK(cli_ds_getprimarydominfo( conn.cli, 
-				conn.cli->mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr)) ) {
-			goto done;
-		}
+
+	cli = cli_rpc_open_noauth(conn.cli, PI_LSARPC_DS);
+
+	if (cli == NULL) {
+		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
+			  "PI_LSARPC_DS on domain %s: (%s)\n",
+			  domain->name, nt_errstr(result)));
+		domain->initialized = True;
+		cli_shutdown(conn.cli);
+		return;
 	}
-				
-	if ( (ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) 
-			&& !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
+
+	result = rpccli_ds_getprimarydominfo(cli, cli->cli->mem_ctx,
+					     DsRolePrimaryDomainInfoBasic,
+					     &ctr);
+	cli_rpc_close(cli);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		domain->initialized = True;
+		cli_shutdown(conn.cli);
+		return;
+	}
+	
+	if ((ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) &&
+	    !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
 		domain->native_mode = True;
 
-	/* Cheat - shut down the DS pipe, and open LSA */
+	cli = cli_rpc_open_noauth(conn.cli, PI_LSARPC);
 
-	cli_nt_session_close(conn.cli);
+	if (cli == NULL) {
+		domain->initialized = True;
+		cli_shutdown(conn.cli);
+		return;
+	}
 
-	if ( cli_nt_session_open (conn.cli, PI_LSARPC) ) {
-		char *domain_name = NULL;
-		char *dns_name = NULL;
-		DOM_SID *dom_sid = NULL;
+	mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n",
+			      domain->name);
+	if (!mem_ctx) {
+		DEBUG(1, ("set_dc_type_and_flags: talloc_init() failed\n"));
+		return;
+	}
 
-		mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n", domain->name);
-		if (!mem_ctx) {
-			DEBUG(1, ("set_dc_type_and_flags: talloc_init() failed\n"));
-			return;
-		}
-
-		result = cli_lsa_open_policy2(conn.cli, mem_ctx, True, 
-					      SEC_RIGHTS_MAXIMUM_ALLOWED,
-					      &conn.pol);
+	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+					 SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
 		
-		if (NT_STATUS_IS_OK(result)) {
-			/* This particular query is exactly what Win2k clients use 
-			   to determine that the DC is active directory */
-			result = cli_lsa_query_info_policy2(conn.cli, mem_ctx, 
-							    &conn.pol,
-							    12, &domain_name,
-							    &dns_name, NULL,
-							    NULL, &dom_sid);
-		}
+	if (NT_STATUS_IS_OK(result)) {
+		/* This particular query is exactly what Win2k clients use 
+		   to determine that the DC is active directory */
+		result = rpccli_lsa_query_info_policy2(cli, mem_ctx, &pol,
+						       12, &domain_name,
+						       &dns_name, NULL,
+						       NULL, &dom_sid);
+	}
 
+	if (NT_STATUS_IS_OK(result)) {
+		if (domain_name)
+			fstrcpy(domain->name, domain_name);
+
+		if (dns_name)
+			fstrcpy(domain->alt_name, dns_name);
+
+		if (dom_sid) 
+			sid_copy(&domain->sid, dom_sid);
+
+		domain->active_directory = True;
+	} else {
+		
+		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+						SEC_RIGHTS_MAXIMUM_ALLOWED,
+						&pol);
+			
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+			
+		result = rpccli_lsa_query_info_policy(cli, mem_ctx, 
+						      &pol, 5, &domain_name, 
+						      &dom_sid);
+			
 		if (NT_STATUS_IS_OK(result)) {
 			if (domain_name)
 				fstrcpy(domain->name, domain_name);
-			
-			if (dns_name)
-				fstrcpy(domain->alt_name, dns_name);
 
 			if (dom_sid) 
 				sid_copy(&domain->sid, dom_sid);
-
-			domain->active_directory = True;
-		} else {
-			
-			result = cli_lsa_open_policy(conn.cli, mem_ctx, True, 
-						     SEC_RIGHTS_MAXIMUM_ALLOWED,
-						     &conn.pol);
-			
-			if (!NT_STATUS_IS_OK(result))
-				goto done;
-			
-			result = cli_lsa_query_info_policy(conn.cli, mem_ctx, 
-							   &conn.pol, 5, &domain_name, 
-							   &dom_sid);
-			
-			if (NT_STATUS_IS_OK(result)) {
-				if (domain_name)
-					fstrcpy(domain->name, domain_name);
-				
-				if (dom_sid) 
-					sid_copy(&domain->sid, dom_sid);
-			}
 		}
 	}
-	
 done:
+
+	cli_rpc_close(cli);
 	
-	/* close the connection;  no other calls use this pipe and it is called only
-	   on reestablishing the domain list   --jerry */
+	/* close the connection; no other calls use this pipe and it is called
+	   only on reestablishing the domain list --jerry */
 	
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
@@ -1167,7 +1168,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	result = get_connection_from_cache(domain, PIPE_SAMR, &conn);
+	result = get_connection_from_cache(domain, &conn);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -1208,7 +1209,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	result = get_connection_from_cache(domain, PIPE_SAMR, &conn);
+	result = get_connection_from_cache(domain, &conn);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -1253,7 +1254,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	const char *account_name;
 	UTIME zerotime;
 
-	result = get_connection_from_cache(domain, PIPE_SAMR, &conn);
+	result = get_connection_from_cache(domain, &conn);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -1353,81 +1354,6 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-/* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
-   netlogon pipe as no handle is returned. */
-
-NTSTATUS cm_get_netlogon_cli(struct winbindd_domain *domain, 
-			     const unsigned char *trust_passwd, 
-			     uint32 sec_channel_type,
-			     BOOL fresh,
-			     struct cli_state **cli)
-{
-	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	struct winbindd_cm_conn *conn;
-	fstring lock_name;
-	BOOL got_mutex;
-
-	if (!cli)
-		return NT_STATUS_INVALID_PARAMETER;
-
-	/* Open an initial conection - keep the mutex. */
-
-	find_cm_connection(domain, PIPE_NETLOGON, &conn);
-
-	if ( fresh && (conn != NULL) ) {
-		cli_shutdown(conn->cli);
-		conn->cli = NULL;
-
-		conn = NULL;
-
-		/* purge connection from cache */
-		find_cm_connection(domain, PIPE_NETLOGON, &conn);
-		if (conn != NULL) {
-			DEBUG(0,("Could not purge connection\n"));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-
-	if (conn != NULL) {
-		*cli = conn->cli;
-		return NT_STATUS_OK;
-	}
-
-	result = new_cm_connection(domain, PIPE_NETLOGON, &conn);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-	
-	fstr_sprintf(lock_name, "NETLOGON\\%s", conn->controller);
-
-	if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
-		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
-	}
-	
-	if ( sec_channel_type == SEC_CHAN_DOMAIN )
-		fstr_sprintf(conn->cli->mach_acct, "%s$", lp_workgroup());
-			
-	/* This must be the remote domain (not ours) for schannel */
-
-	fstrcpy( conn->cli->domain, domain->name);
-	
-	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
-	
-	if (got_mutex)
-		secrets_named_mutex_release(lock_name);
-				
-	if (!NT_STATUS_IS_OK(result)) {
-		cli_shutdown(conn->cli);
-		DLIST_REMOVE(cm_conns, conn);
-		SAFE_FREE(conn);
-		return result;
-	}
-
-	*cli = conn->cli;
-
-	return result;
-}
-
 /* Dump the current connection status */
 
 static void dump_conn_list(void)
@@ -1441,7 +1367,8 @@ static void dump_conn_list(void)
 
 		/* Display pipe info */
 		
-		if (asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, con->controller, con->pipe_name) < 0) {
+		if (asprintf(&msg, "\t%-15s %-15s",
+			     con->domain, con->controller) < 0) {
 			DEBUG(0, ("Error: not enough memory!\n"));
 		} else {
 			DEBUG(0, ("%s\n", msg));
@@ -1475,8 +1402,7 @@ void winbindd_cm_flush(void)
 		if (!connection_ok(conn))
 			continue;
 
-		DEBUG(10, ("Closing connection to %s on %s\n",
-			conn->pipe_name, conn->controller));
+		DEBUG(10, ("Closing connection to %s\n", conn->controller));
 
 		if (conn->cli)
 			cli_shutdown(conn->cli);
