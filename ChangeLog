@@ -1,3 +1,7 @@
+Wed Aug  6 20:38:23 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/log.c: New parameter `log-level'. Default to `SYSLOG'.
+
 Tue Aug  5 22:53:54 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/verify_init.c, init_creds_pw.c, init_creds.c,
