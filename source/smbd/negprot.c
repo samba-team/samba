@@ -167,7 +167,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 static int negprot_spnego(char *p)
 {
 	DATA_BLOB blob;
-	uint8 guid[16];
+	uint8 guid[17];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
@@ -178,8 +178,8 @@ static int negprot_spnego(char *p)
 
 	global_spnego_negotiated = True;
 
-	memset(guid, 0, 16);
-	safe_strcpy((char *)guid, global_myname(), 16);
+	ZERO_STRUCT(guid);
+	safe_strcpy((char *)guid, global_myname(), sizeof(guid)-1);
 	strlower((char *)guid);
 
 #if 0
