@@ -129,6 +129,26 @@ def test_GetForm(pipe, handle, formname):
     return result['info']['info1']
     
 
+def test_SetForm(pipe, handle, form):
+
+    print 'testing spoolss_SetForm'
+
+    r = {}
+    r['handle'] = handle
+    r['level'] = 1
+    r['formname'] = form['info1']['formname']
+    r['info'] = form
+
+    dcerpc.spoolss_SetForm(pipe, r)
+
+    newform = test_GetForm(pipe, handle, r['formname'])
+
+    if form['info1'] != newform:
+        print 'SetForm: mismatch: %s != %s' % \
+              (r['info']['info1'], f)
+        sys.exit(1)
+
+
 def test_AddForm(pipe, handle):
 
     print 'testing spoolss_AddForm'
@@ -141,13 +161,13 @@ def test_AddForm(pipe, handle):
     r['info'] = {}
     r['info']['info1'] = {}
     r['info']['info1']['formname'] = formname
-    r['info']['info1']['flags'] = 0
-    r['info']['info1']['width'] = 1
-    r['info']['info1']['length'] = 2
-    r['info']['info1']['left'] = 3
-    r['info']['info1']['top'] = 4
-    r['info']['info1']['right'] = 5
-    r['info']['info1']['bottom'] = 6
+    r['info']['info1']['flags'] = 0x0002
+    r['info']['info1']['width'] = 100
+    r['info']['info1']['length'] = 100
+    r['info']['info1']['left'] = 0
+    r['info']['info1']['top'] = 1000
+    r['info']['info1']['right'] = 2000
+    r['info']['info1']['bottom'] = 3000
 
     try:
         result = dcerpc.spoolss_AddForm(pipe, r)
@@ -159,14 +179,13 @@ def test_AddForm(pipe, handle):
     f = test_GetForm(pipe, handle, formname)
 
     if r['info']['info1'] != f:
-        print 'Form type mismatch: %s != %s' % \
+        print 'AddForm: mismatch: %s != %s' % \
               (r['info']['info1'], f)
         sys.exit(1)
 
     r['formname'] = formname
-    r['info']['info1']['unknown'] = 1
 
-    dcerpc.spoolss_SetForm(pipe, r)
+    test_SetForm(pipe, handle, r['info'])
 
     test_DeleteForm(pipe, handle, formname)
 
