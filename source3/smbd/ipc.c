@@ -1074,7 +1074,7 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
-  SSVAL(*rparam,0,NERR_Success);
+  SSVAL(*rparam,0,(missed == 0 ? NERR_Success : ERROR_MORE_DATA));
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,counted+missed);
