@@ -475,7 +475,12 @@ static void process_loop(int accept_sock)
         int maxfd = accept_sock, selret;
 	struct timeval timeout;
 
-	/* do any connection establishment that is needed */
+	/* Free up temporary memory */
+
+	lp_talloc_free();
+
+	/* Do any connection establishment that is needed */
+
 	establish_connections();	    
 
         /* Initialise fd lists for select() */
