@@ -718,8 +718,9 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		*s = as;
 		break;
 
+	case LIBNDR_FLAG_STR_FIXLEN15:
 	case LIBNDR_FLAG_STR_FIXLEN32:
-		len1 = 32;
+		len1 = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
 		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
 		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
@@ -732,7 +733,6 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_advance(ndr, len1*byte_mul));
 		*s = as;
 		break;
-
 
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
@@ -748,7 +748,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 */
 NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
-	ssize_t s_len, c_len;
+	ssize_t s_len, c_len, d_len;
 	int ret;
 	int chset = CH_UTF16;
 	unsigned flags = ndr->flags;
@@ -882,16 +882,18 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		ndr->offset += c_len*byte_mul;
 		break;
 
+	case LIBNDR_FLAG_STR_FIXLEN15:
 	case LIBNDR_FLAG_STR_FIXLEN32:
-		NDR_PUSH_NEED_BYTES(ndr, byte_mul*32);
+		d_len = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
+		NDR_PUSH_NEED_BYTES(ndr, byte_mul*d_len);
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
-				     ndr->data+ndr->offset, byte_mul*32);
+				     ndr->data+ndr->offset, byte_mul*d_len);
 		if (ret == -1) {
 			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		ndr->offset += byte_mul*32;
+		ndr->offset += byte_mul*d_len;
 		break;
 
 	default:
@@ -914,6 +916,9 @@ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 
 	if (flags & LIBNDR_FLAG_STR_FIXLEN32) {
 		return 32;
+	}
+	if (flags & LIBNDR_FLAG_STR_FIXLEN15) {
+		return 15;
 	}
 	
 	c_len = s?strlen_m(s):0;
@@ -1029,11 +1034,18 @@ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type,
 
 void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint_t flag, uint_t value)
 {
-	/* size can be later used to print something like:
-	 * ...1.... .........: FLAG1_NAME
-	 * .....0.. .........: FLAG2_NAME
-	 */
-	ndr->print(ndr, "%s: %-25s", (flag & value)?"1":"0", flag_name);
+	/* this is an attempt to support multi-bit bitmap masks */
+	value &= flag;
+
+	while (!(flag & 1)) {
+		flag >>= 1;
+		value >>= 1;
+	}	
+	if (flag == 1) {
+		ndr->print(ndr, "   %d: %-25s", value, flag_name);
+	} else {
+		ndr->print(ndr, "0x%02x: %-25s (%d)", value, flag_name, value);
+	}
 }
 
 void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)

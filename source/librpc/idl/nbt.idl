@@ -1,0 +1,166 @@
+#include "idl_types.h"
+
+/*
+   IDL structures for NBT operations
+
+   NBT is not traditionally encoded using IDL/NDR. This is a bit of an
+   experiment, and I may well switch us back to a more traditional
+   encoding if it doesn't work out
+*/
+
+interface nbt
+{
+	const int NBT_NAME_SERVICE_PORT  = 137;
+	const int NBT_DGRAM_SERVICE_PORT = 138;
+
+	typedef [bitmap16bit] bitmap {
+		NBT_RCODE                   = 0x000F,
+		NBT_FLAG_BROADCAST          = 0x0010,
+		NBT_FLAG_RECURSION_AVAIL    = 0x0080,
+		NBT_FLAG_RECURSION_DESIRED  = 0x0100,
+		NBT_FLAG_TRUNCATION         = 0x0200,
+		NBT_FLAG_AUTHORITIVE        = 0x0400,
+		NBT_OPCODE                  = 0x7800,
+		NBT_FLAG_REPLY              = 0x8000
+	} nbt_operation;
+
+	/* the opcodes are in the operation field, masked with
+	   NBT_OPCODE */
+        const int NBT_OPCODE_QUERY          =  (0<<11);
+	const int NBT_OPCODE_REGISTER       =  (5<<11);
+	const int NBT_OPCODE_RELEASE        =  (6<<11);
+	const int NBT_OPCODE_WACK           =  (7<<11);
+	const int NBT_OPCODE_REFRESH        =  (8<<11);
+
+	/* rcode values */
+	typedef enum {
+		NBT_RCODE_FMT = 0x1,
+		NBT_RCODE_SVR = 0x2,
+		NBT_RCODE_NAM = 0x3,
+		NBT_RCODE_IMP = 0x4,
+		NBT_RCODE_RFS = 0x5,
+		NBT_RCODE_ACT = 0x6,
+		NBT_RCODE_CFT = 0x7
+	} nbt_rcode;
+
+	/* we support any 8bit name type, but by defining the common
+	   ones here we get better debug displays */
+	typedef [enum8bit] enum {
+		NBT_NAME_CLIENT   = 0x00,
+		NBT_NAME_MS       = 0x01,
+		NBT_NAME_USER     = 0x03,
+		NBT_NAME_SERVER   = 0x20,
+		NBT_NAME_PDC      = 0x1B,
+		NBT_NAME_LOGON    = 0x1C,
+		NBT_NAME_MASTER   = 0x1D,
+		NBT_NAME_BROWSER  = 0x1E
+	} nbt_name_type;
+
+	/* the ndr parser for nbt_name is separately defined in
+	   nbtname.c */
+	typedef [nopull,nopush] struct {
+		string        name;
+		string        scope;
+		nbt_name_type type;
+	} nbt_name;
+
+	typedef [enum16bit] enum {
+		NBT_QCLASS_IP = 0x01
+	} nbt_qclass;
+
+	typedef [enum16bit] enum {
+		NBT_QTYPE_ADDRESS     = 0x0001,
+		NBT_QTYPE_NAMESERVICE = 0x0002,
+		NBT_QTYPE_NULL        = 0x000A,
+		NBT_QTYPE_NETBIOS     = 0x0020,
+		NBT_QTYPE_STATUS      = 0x0021
+	} nbt_qtype;
+
+	typedef struct {
+		nbt_name   name;
+		nbt_qtype  question_type;
+		nbt_qclass question_class;
+	} nbt_name_question;
+
+	typedef [bitmap16bit] bitmap {
+		NBT_NM_PERMANENT        = 0x0200,
+		NBT_NM_ACTIVE           = 0x0400,
+		NBT_NM_CONFLICT         = 0x0800,
+		NBT_NM_DEREGISTER       = 0x1000,
+		NBT_NM_OWNER_TYPE       = 0x6000,
+		NBT_NM_GROUP            = 0x8000
+	} nb_flags;
+
+	typedef struct {
+		nb_flags nb_flags;
+		uint32   ipaddr;
+	} nbt_rdata_netbios;
+
+
+	typedef struct {
+		uint8 unit_id[6];
+		uint8 jumpers;
+		uint8 test_result;
+		uint16 version_number;
+		uint16 period_of_statistics;
+		uint16 number_of_crcs;
+		uint16 number_alignment_errors;
+		uint16 number_of_collisions;
+		uint16 number_send_aborts;
+		uint32 number_good_sends;
+		uint32 number_good_receives;
+		uint16 number_retransmits;
+		uint16 number_no_resource_conditions;
+		uint16 number_free_command_blocks;
+		uint16 total_number_command_blocks;
+		uint16 max_total_number_command_blocks;
+		uint16 number_pending_sessions;
+		uint16 max_number_pending_sessions;
+		uint16 max_total_sessions_possible;
+		uint16 session_data_packet_size;
+	} nbt_statistics;
+
+	typedef struct {
+		astring15 name;
+		nbt_name_type type;
+		nb_flags  nb_flags;
+	} nbt_status_name;
+
+	typedef struct {
+		uint8 num_names;
+		nbt_status_name names[num_names];
+		nbt_statistics  statistics;
+	} nbt_rdata_status;
+
+	typedef struct {
+		nbt_operation operation;
+	} nbt_rdata_wack;
+
+	typedef [nodiscriminant] union {
+		[case(NBT_QTYPE_NETBIOS)] nbt_rdata_netbios netbios;
+		[case(NBT_QTYPE_STATUS)]  nbt_rdata_status status;
+		[case(NBT_QTYPE_NULL)]    nbt_rdata_wack wack;
+	} nbt_rdata;
+
+	typedef [flag(LIBNDR_PRINT_ARRAY_HEX)] struct {
+		nbt_name   name;
+		nbt_qtype  rr_type;
+		nbt_qclass rr_class;
+		uint32     ttl;
+		[subcontext(2),switch_is(rr_type)] nbt_rdata rdata;
+	} nbt_res_rec;
+
+	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+		uint16            name_trn_id;
+		nbt_operation     operation;
+		uint16            qdcount;
+		uint16            ancount;
+		uint16            nscount;
+		uint16            arcount;
+		nbt_name_question questions[qdcount];
+		nbt_res_rec       answers[ancount];
+		nbt_res_rec       nsrecs[nscount];
+		nbt_res_rec       additional[arcount];
+		[flag(NDR_REMAINING)] DATA_BLOB padding;
+	} nbt_name_packet;
+}
