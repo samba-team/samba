@@ -75,7 +75,7 @@ krb5_get_in_tkt_with_password (krb5_context context,
 			       const char *password,
 			       krb5_ccache ccache,
 			       krb5_creds *creds,
-			       krb5_kdc_rep **ret_as_reply)
+			       krb5_kdc_rep *ret_as_reply)
 {
      return krb5_get_in_tkt (context, options, addrs, etypes,
 			     pre_auth_types, key_proc, password,
