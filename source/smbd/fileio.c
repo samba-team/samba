@@ -114,7 +114,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 write to a file
 ****************************************************************************/
 
-ssize_t write_file(files_struct *fsp,char *data,size_t n)
+ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 {
 
   if (!fsp->can_write) {
@@ -132,6 +132,9 @@ ssize_t write_file(files_struct *fsp,char *data,size_t n)
       }
     }  
   }
+
+ if ((pos != -1) && (seek_file(fsp,pos) == -1))
+   return -1;
 
   return(write_data(fsp->fd_ptr->fd,data,n));
 }

@@ -2306,13 +2306,8 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   if (is_locked(fsp,conn,tcount,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if (seek_file(fsp,startpos) == -1) {
-    DEBUG(0,("couldn't seek to %.0f in writebraw\n",(double)startpos));
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
   if (numtowrite>0)
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
 	   fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
@@ -2397,16 +2392,13 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
   /* The special X/Open SMB protocol handling of
      zero length writes is *NOT* done for
      this call */
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
     sync_file(conn,fsp);
@@ -2450,16 +2442,13 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0)
     nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos);
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
     sync_file(conn,fsp);
@@ -2531,9 +2520,6 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
   /* X/Open SMB protocol says that, unlike SMBwrite
      if the length is zero then NO truncation is
      done, just a write of zero. To truncate a file,
@@ -2541,7 +2527,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2785,11 +2771,8 @@ int reply_writeclose(connection_struct *conn,
   
 	if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
 		return(ERROR(ERRDOS,ERRlock));
-      
-	if(seek_file(fsp,startpos) == -1)
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
-      
-	nwritten = write_file(fsp,data,numtowrite);
+          
+	nwritten = write_file(fsp,data,startpos,numtowrite);
 
 	set_filetime(conn, fsp->fsp_name,mtime);
   
@@ -3123,7 +3106,7 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   numtowrite = SVAL(smb_buf(inbuf),1);
   data = smb_buf(inbuf) + 3;
   
-  if (write_file(fsp,data,numtowrite) != numtowrite)
+  if (write_file(fsp,data,-1,numtowrite) != numtowrite)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
@@ -4349,10 +4332,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   if (is_locked(fsp,conn,tcount,startpos,F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
-  nwritten = write_file(fsp,data,numtowrite);
+  nwritten = write_file(fsp,data,startpos,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);
@@ -4453,19 +4433,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   if(wbms->wr_discard)
     return -1; /* Just discard the packet */
 
-  if(seek_file(fsp,startpos) == -1)
-  {
-    if(write_through)
-    {
-      /* We are returning an error - we can delete the aux struct */
-      if (wbms) free((char *)wbms);
-      fsp->wbmpx_ptr = NULL;
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-    return(CACHE_ERROR(wbms,ERRDOS,ERRnoaccess));
-  } 
-
-  nwritten = write_file(fsp,data,numtowrite);
+  nwritten = write_file(fsp,data,startpos,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);

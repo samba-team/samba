@@ -333,12 +333,13 @@ size_t sid_size(DOM_SID *sid);
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
 void close_sockets(void );
-ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_udp_socket(int fd,char *buf,size_t len);
 ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
 BOOL send_keepalive(int client);
 ssize_t read_data(int fd,char *buffer,size_t N);
 ssize_t write_data(int fd,char *buffer,size_t N);
+ssize_t write_socket_data(int fd,char *buffer,size_t N);
+ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
@@ -2380,7 +2381,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
-ssize_t write_file(files_struct *fsp,char *data,size_t n);
+ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
 void sync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */

@@ -568,7 +568,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
      */
     if (fsp->print_file && lp_postscript(SNUM(conn)) && fsp->can_write) {
 	    DEBUG(3,("Writing postscript line\n"));
-	    write_file(fsp,"%!\n",3);
+	    write_file(fsp,"%!\n",-1,3);
     }
       
     DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
