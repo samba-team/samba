@@ -257,7 +257,7 @@ int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st)
     unixmode &= ~(S_IWUSR|S_IWGRP|S_IWOTH);
     unixmode |= tmp;
   }
-    
+
   return(chmod(fname,unixmode));
 }
 
@@ -410,8 +410,12 @@ BOOL unix_convert(char *name,int cnum)
     {
       if ((! *name) || strchr(name,'/') || !is_8_3(name))
 	{
+	  char *s;
 	  fstring name2;
 	  sprintf(name2,"%.6s.XXXXXX",remote_machine);
+	  /* sanitise the name */
+	  for (s=name2 ; *s ; s++)
+	    if (!issafe(*s)) *s = '_';
 	  strcpy(name,(char *)mktemp(name2));	  
 	}      
       return(True);
@@ -1227,16 +1231,6 @@ void close_file(int fnum)
   if (lp_share_modes(SNUM(cnum)))
     del_share_mode(fnum);
 
-  if (Files[fnum].modified) {
-    struct stat st;
-    if (fstat(Files[fnum].fd,&st) == 0) {
-      int dosmode = dos_mode(cnum,Files[fnum].name,&st);
-      if (!IS_DOS_ARCHIVE(dosmode)) {	
-	dos_chmod(cnum,Files[fnum].name,dosmode | aARCH,&st);
-      }
-    }    
-  }
-
   close(Files[fnum].fd);
 
   /* NT uses smbclose to start a print - weird */
@@ -1609,7 +1603,16 @@ int write_file(int fnum,char *data,int n)
     return(0);
   }
 
-  Files[fnum].modified = True;
+  if (!Files[fnum].modified) {
+    struct stat st;
+    Files[fnum].modified = True;
+    if (fstat(Files[fnum].fd,&st) == 0) {
+      int dosmode = dos_mode(Files[fnum].cnum,Files[fnum].name,&st);
+      if (MAP_ARCHIVE(Files[fnum].cnum) && !IS_DOS_ARCHIVE(dosmode)) {	
+	dos_chmod(Files[fnum].cnum,Files[fnum].name,dosmode | aARCH,&st);
+      }
+    }  
+  }
 
   return(write_data(Files[fnum].fd,data,n));
 }
