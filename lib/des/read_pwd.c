@@ -7,7 +7,7 @@
 #include <setjmp.h>
 
 /* Ick! */
-#if defined(__svr4__) || defined(_IRIX)
+#if defined(__svr4__) || defined(__sgi)
 #define TERMIO
 #endif
 
