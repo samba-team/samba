@@ -271,8 +271,6 @@ ssize_t read_data_until(int fd,char *buffer,size_t N,
 	ssize_t ret;
 	size_t total=0;  
  
-	smb_read_error = 0;
-
 	while (total < N) {
 
 		if (endtime != NULL) {
@@ -295,13 +293,11 @@ ssize_t read_data_until(int fd,char *buffer,size_t N,
 
 		if (ret == 0) {
 			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_EOF;
 			return 0;
 		}
 
 		if (ret == -1) {
 			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_ERROR;
 			return -1;
 		}
 		total += ret;
