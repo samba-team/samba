@@ -58,6 +58,9 @@ standard File Transfer Protocol.
 The program allows a user to transfer files to and from a
 remote network site.
 .Pp
+Modifications has been made so that it almost follows the ftpsec
+Internet draft.
+.Pp
 Options may be specified at the command line, or to the
 command interpreter.
 .Bl -tag -width flag
@@ -906,6 +909,25 @@ verbose is on.
 A synonym for help.
 .El
 .Pp
+The following command can be used with ftpsec-aware servers.
+.Bl -tag -width Fl
+.It Xo
+.Ic prot 
+.Ar clear | 
+.Ar safe | 
+.Ar confidential | 
+.Ar private
+.Xc
+Set the data protection level to the requested level.
+.El
+.Pp
+The following command can be used with ftp servers that has
+implemented the KAUTH site command.
+.Bl -tag -width Fl
+.It Ic kauth Op Ar principal
+Obtain remote tickets.
+.El
+.Pp
 Command arguments which have embedded spaces may be quoted with
 quote `"' marks.
 .Sh ABORTING A FILE TRANSFER
@@ -1140,7 +1162,8 @@ file, if one exists.
 For default shell.
 .El
 .Sh SEE ALSO
-.Xr ftpd 8
+.Xr ftpd 8 ,
+.%T draft-ietf-cat-ftpsec-08
 .Sh HISTORY
 The
 .Nm ftp
