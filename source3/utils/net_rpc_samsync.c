@@ -195,12 +195,9 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 /* dump sam database via samsync rpc calls */
 int rpc_samdump(int argc, const char **argv)
 {
-        NTSTATUS result;
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
 	DOM_CRED ret_creds;
-	uint32 neg_flags = 0x000001ff;
-
 
 	ZERO_STRUCT(ret_creds);
 
