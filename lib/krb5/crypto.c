@@ -1621,8 +1621,10 @@ encrypt_internal_derived(krb5_context context,
     q = p;
     krb5_generate_random_block(q, et->confoundersize); /* XXX */
     q += et->confoundersize;
+#if 0
     _krb5_put_int(q, len, 4);
     q += 4;
+#endif
     memcpy(q, data, len);
     
     ret = create_checksum(context, 
@@ -1762,8 +1764,9 @@ decrypt_internal_derived(krb5_context context,
 #endif
     (*et->encrypt)(dkey, p, len, 0);
 
-    cksum.checksum.data = p + len;
+    cksum.checksum.data   = p + len;
     cksum.checksum.length = checksum_sz;
+    cksum.cksumtype       = CHECKSUMTYPE(et->keyed_checksum);
 
     ret = verify_checksum(context,
 			  crypto,
@@ -1775,8 +1778,11 @@ decrypt_internal_derived(krb5_context context,
 	free(p);
 	return ret;
     }
+#if 0
     _krb5_get_int(p + et->confoundersize, &l, 4);
-    memmove(p, p + et->confoundersize + 4, l);
+#endif
+    l = len - et->confoundersize - checksum_sz;
+    memmove(p, p + et->confoundersize + checksum_sz, l);
     result->data = realloc(p, l);
     if(p == NULL) {
 	free(p);
@@ -1927,6 +1933,42 @@ krb5_generate_random_block(void *buf, size_t len)
     }
 }
 
+static void
+DES3_postproc(krb5_context context,
+	      unsigned char *k, size_t len, struct key_data *key)
+{
+    unsigned char x[24];
+    int i, j;
+
+    memset(x, 0, sizeof(x));
+    for (i = 0; i < 3; ++i) {
+	unsigned char foo;
+
+	for (j = 0; j < 7; ++j) {
+	    unsigned char b = k[7 * i + j];
+
+	    x[8 * i + j] = b;
+	}
+	foo = 0;
+	for (j = 6; j >= 0; --j) {
+	    foo |= k[7 * i + j] & 1;
+	    foo <<= 1;
+	}
+	x[8 * i + 7] = foo;
+    }
+    k = key->key->keyvalue.data;
+    memcpy(k, x, 24);
+    memset(x, 0, sizeof(x));
+    if (key->schedule) {
+	krb5_free_data(context, key->schedule);
+	key->schedule = NULL;
+    }
+    des_set_odd_parity((des_cblock*)k);
+    des_set_odd_parity((des_cblock*)(k + 8));
+    des_set_odd_parity((des_cblock*)(k + 16));
+}
+
+#if 0
 /* XXX should be moved someplace else */
 static void
 DES3_postproc(krb5_context context,
@@ -1960,12 +2002,15 @@ DES3_postproc(krb5_context context,
     k = key->key->keyvalue.data;
     memcpy(k, x, 24);
     memset(x, 0, sizeof(x));
-    krb5_free_data(context, key->schedule);
-    key->schedule = NULL;
+    if (key->schedule) {
+	krb5_free_data(context, key->schedule);
+	key->schedule = NULL;
+    }
     des_set_odd_parity((des_cblock*)k);
     des_set_odd_parity((des_cblock*)(k + 8));
     des_set_odd_parity((des_cblock*)(k + 16));
 }
+#endif
 
 static krb5_error_code
 derive_key(krb5_context context,
@@ -1998,17 +2043,26 @@ derive_key(krb5_context context,
 	}
     } else {
 	void *c = malloc(len);
+	size_t res_len = (kt->bits + 7) / 8;
+
 	if(c == NULL)
 	    return ENOMEM;
 	memcpy(c, constant, len);
 	(*et->encrypt)(key, c, len, 1);
-	k = malloc((kt->bits + 7) / 8);
+	k = malloc(res_len);
 	if(k == NULL)
 	    return ENOMEM;
-	_krb5_n_fold(c, len, k, kt->bits);
+	_krb5_n_fold(c, len, k, res_len);
 	free(c);
     }
     
+#if 0
+    des_set_odd_parity((des_cblock*)k);
+    des_set_odd_parity((des_cblock*)(k + 8));
+    des_set_odd_parity((des_cblock*)(k + 16));
+    memcpy (key->key->keyvalue.data, k, 24);
+#endif
+#if 1
     /* XXX keytype dependent post-processing */
     switch(kt->type) {
     case KEYTYPE_DES3:
@@ -2020,6 +2074,7 @@ derive_key(krb5_context context,
 	ret = KRB5_CRYPTO_INTERNAL;
 	break;
     }
+#endif
     memset(k, 0, nblocks * et->blocksize);
     free(k);
     return ret;
@@ -2132,13 +2187,17 @@ krb5_string_to_key_derived(krb5_context context,
     struct encryption_type *et = _find_enctype(etype);
     krb5_error_code ret;
     struct key_data kd;
+    u_char *tmp;
 
     if(et == NULL)
 	return KRB5_PROG_ETYPE_NOSUPP;
     ALLOC(kd.key, 1);
     kd.key->keytype = etype;
+    tmp = malloc (et->keytype->bits / 8);
+    _krb5_n_fold(str, len, tmp, et->keytype->bits / 8);
     krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
-    _krb5_n_fold(str, len, kd.key->keyvalue.data, kd.key->keyvalue.length);
+    kd.schedule = NULL;
+    DES3_postproc (context, tmp, et->keytype->bits / 8, &kd); /* XXX */
     ret = derive_key(context,
 		     et,
 		     &kd,
