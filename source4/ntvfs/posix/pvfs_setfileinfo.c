@@ -471,6 +471,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* possibly change the attribute */
+	newstats.dos.attrib |= (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY);
 	if (newstats.dos.attrib != name->dos.attrib) {
 		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
 		if (chmod(name->full_name, mode) == -1) {
