@@ -79,7 +79,7 @@ static void mount_cifs_usage(void)
 	printf(" to a local directory.\n\nOptions:\n");
 	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
 	printf("\nLess commonly used options:");
-	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,\n\trw,ro,sep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec");
+	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,\n\trw,ro,sep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,directio");
 	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions (e.g. most Samba versions):");
 	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>");
 	printf("\n\nRarely used options:");
@@ -295,6 +295,8 @@ static int parse_options(char * options, int * filesys_flags)
 			if(!value || !*value) {
 				strncpy(data,",,,,,",5);
 			}
+		} else if (strncmp(data, "user_xattr",10) == 0) {
+		   /* do nothing - need to skip so not parsed as user name */
 		} else if (strncmp(data, "user", 4) == 0) {
 			if (!value || !*value) {
 				if(data[4] == '\0') {
