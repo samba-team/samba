@@ -319,31 +319,44 @@ return the matched name in *name
 **************************************************************************/
 BOOL name_status_find(const char *q_name, int q_type, struct in_addr to_ip, char *name)
 {
-	struct node_status *status;
+	struct node_status *status = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;
+	BOOL result = False;
+
+	DEBUG(10, ("name_status_find: looking up %s#%x\n", q_name, q_type));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
-	if (sock == -1) return False;
+	if (sock == -1) goto done;
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
 	status = name_status_query(sock, &nname, to_ip, &count);
 	close(sock);
-	if (!status) return False;
+	if (!status) goto done;
 
 	for (i=0;i<count;i++) {
 		if (status[i].type == q_type) break;
 	}
-	if (i == count) return False;
+	if (i == count) goto done;
 
+	result = True;
 	StrnCpy(name, status[i].name, 15);
-
 	dos_to_unix(name, True);
 
-	free(status);
-	return True;
+ done:
+	if (status)
+		free(status);
+
+	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
+
+	if (result)
+		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
+
+	DEBUG(10, ("\n"));
+
+	return result;
 }
 
 /****************************************************************************
