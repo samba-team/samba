@@ -2335,21 +2335,12 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
 
 BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 {
-	fstring p2, s2;
-
 	if (strcmp(string,"..") == 0)
 		string = ".";
 	if (strcmp(pattern,".") == 0)
 		return False;
 	
-	if (is_case_sensitive)
-		return ms_fnmatch(pattern, string, Protocol) == 0;
-
-	fstrcpy(p2, pattern);
-	fstrcpy(s2, string);
-	strlower_m(p2); 
-	strlower_m(s2);
-	return ms_fnmatch(p2, s2, Protocol) == 0;
+	return ms_fnmatch(pattern, string, Protocol, is_case_sensitive) == 0;
 }
 
 /*********************************************************
