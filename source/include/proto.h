@@ -705,7 +705,7 @@ int fd_attempt_open(char *fname, int flags, int mode);
 void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr);
 int fd_attempt_close(file_fd_struct *fd_ptr);
 void sync_file(int fnum);
-void close_file(int fnum);
+void close_file(int fnum, int normal_close);
 BOOL check_file_sharing(int cnum,char *fname);
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 		      int mode,int *Access,int *action);
@@ -847,6 +847,8 @@ BOOL become_guest(void);
 BOOL become_user(int cnum, uint16 vuid);
 BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
+void become_root(int save_dir) ;
+void unbecome_root(int restore_dir);
 
 /*The following definitions come from  username.c  */
 

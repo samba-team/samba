@@ -1348,8 +1348,13 @@ static void check_magic(int fnum,int cnum)
 
 /****************************************************************************
 close a file - possibly invalidating the read prediction
+
+If normal_close is 1 then this came from a normal SMBclose (or equivalent) 
+operation otherwise it came as the result of some other operation such as 
+the closing of the connection. In the latter case printing and
+magic scripts are not run
 ****************************************************************************/
-void close_file(int fnum)
+void close_file(int fnum, int normal_close)
 {
   files_struct *fs_p = &Files[fnum];
   int cnum = fs_p->cnum;
@@ -1386,11 +1391,12 @@ void close_file(int fnum)
     unlock_share_entry( cnum, dev, inode, token);
 
   /* NT uses smbclose to start a print - weird */
-  if (fs_p->print_file)
+  if (normal_close && fs_p->print_file)
     print_file(fnum);
 
   /* check for magic scripts */
-  check_magic(fnum,cnum);
+  if (normal_close)
+	  check_magic(fnum,cnum);
 
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
 	   timestring(),Connections[cnum].user,fs_p->name,
@@ -1510,7 +1516,7 @@ static void truncate_unless_locked(int fnum, int cnum, share_lock_token token,
       if (*share_locked && lp_share_modes(SNUM(cnum)))
         unlock_share_entry( cnum, Files[fnum].fd_ptr->dev, 
                             Files[fnum].fd_ptr->inode, token);
-      close_file(fnum);   
+      close_file(fnum, 0);   
       /* Share mode no longer locked. */
       *share_locked = False;
       errno = EACCES;
@@ -3203,7 +3209,7 @@ static void close_open_files(int cnum)
   int i;
   for (i=0;i<MAX_OPEN_FILES;i++)
     if( Files[i].cnum == cnum && Files[i].open) {
-      close_file(i);
+      close_file(i, 0);
     }
 }
 
@@ -3216,6 +3222,10 @@ void close_cnum(int cnum, uint16 vuid)
 {
   DirCacheFlush(SNUM(cnum));
 
+  close_open_files(cnum);
+  dptr_closecnum(cnum);
+
+  /* after this we are running as root, so be careful! */
   unbecome_user();
 
   if (!OPEN_CNUM(cnum))
@@ -3235,9 +3245,6 @@ void close_cnum(int cnum, uint16 vuid)
 
   if (lp_status(SNUM(cnum)))
     yield_connection(cnum,"STATUS.",MAXSTATUS);
-
-  close_open_files(cnum);
-  dptr_closecnum(cnum);
 
   /* execute any "postexec = " line */
   if (*lp_postexec(SNUM(cnum)) && become_user(cnum,vuid))

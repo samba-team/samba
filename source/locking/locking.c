@@ -611,10 +611,12 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
   if(!share_name(cnum, dev, inode, fname))
     return False;
 
+  /* we need to do this as root */
+  become_root(0);
+
   {
     int old_umask;
     BOOL gotlock = False;
-    unbecome_user();
     old_umask = umask(0);
 
     /*
@@ -675,31 +677,14 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
         gotlock = True;
     } while(!gotlock);
 
-    /*
-     * We have to come here if any of the above calls fail
-     * as we don't want to return and leave ourselves running
-     * as root !
-     */
-
     umask(old_umask);
-    if(!become_user(cnum,Connections[cnum].vuid))
-    {
-      DEBUG(0,("lock_share_entry: Can't become connected user!\n"));
-      close(fd);
-      ret = False;
-    }
-
-    /* We need to change directory back to the connection root. */
-    if (ChDir(Connections[cnum].connectpath) != 0)
-    {
-      DEBUG(0,("lock_share_entry: Can't change directory to %s (%s)\n",
-              Connections[cnum].connectpath, strerror(errno)));
-      close(fd);
-      ret = False;  
-    }
   }
 
   *ptok = (share_lock_token)fd;
+
+  /* return to our previous privilage level */
+  unbecome_root(0);
+
   return ret;
 }
 
@@ -727,31 +712,21 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
 /*******************************************************************
 Force a share file to be deleted.
 ********************************************************************/
-
 static int delete_share_file( int cnum, char *fname )
 {
-  unbecome_user();
-  if(unlink(fname) != 0)
-  {
-    DEBUG(0,("delete_share_file: Can't delete share file %s (%s)\n",
-            fname, strerror(errno)));
-  }
+	/* the share file could be owned by anyone, so do this as root */
+	become_root(0);
 
-  DEBUG(5,("delete_share_file: Deleted share file %s\n", fname));
+	if(unlink(fname) != 0) {
+		DEBUG(0,("delete_share_file: Can't delete share file %s (%s)\n",
+			 fname, strerror(errno)));
+	} else {
+		DEBUG(5,("delete_share_file: Deleted share file %s\n", fname));
+	}
 
-  if(!become_user(cnum,Connections[cnum].vuid))
-  {
-    DEBUG(0,("delete_share_file: Can't become connected user!\n"));
-    return -1;
-  }
-  /* We need to change directory back to the connection root. */
-  if (ChDir(Connections[cnum].connectpath) != 0)
-  {
-    DEBUG(0,("delete_share_file: Can't change directory to %s (%s)\n",
-            Connections[cnum].connectpath, strerror(errno)));
-    return -1;  
-  }
-  return 0;
+	unbecome_root(0);
+	
+	return 0;
 }
 
 /*******************************************************************

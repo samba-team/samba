@@ -1601,13 +1601,14 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	name[l] = 0;
 	
 	DEBUG(3,("Setting print name to %s\n",name));
+
+	become_root(1);
 	
 	for (i=0;i<MAX_OPEN_FILES;i++)
 	  if (Files[i].open && Files[i].print_file)
 	    {
 	      pstring wd;
 	      GetWd(wd);
-	      unbecome_user();
 	      
 	      if (!become_user(Files[i].cnum,vuid) || 
 		  !become_service(Files[i].cnum,True))
@@ -1617,6 +1618,8 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 		string_set(&Files[i].name,name);
 	      break;
 	    }
+
+	unbecome_root(1);
       }
     desc.errcode=NERR_Success;
   
