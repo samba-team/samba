@@ -405,6 +405,7 @@ int unistrcpy(char *dst, char *src);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
+int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
