@@ -750,6 +750,9 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		fetch_alias_mem(hdr_delta->target_rid,
 				&delta->als_mem_info, dom_sid);
 		break;
+	case SAM_DELTA_DOMAIN_INFO:
+		d_printf("SAMBA_DELTA_DOMAIN_INFO not handled\n");
+		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);
 		break;
@@ -772,7 +775,20 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 		return;
 	}
 
-	d_printf("Fetching database %u\n", db_type);
+	switch( db_type ) {
+	case SAM_DATABASE_DOMAIN:
+		d_printf("Fetching DOMAIN database\n");
+		break;
+	case SAM_DATABASE_BUILTIN:
+		d_printf("Fetching BUILTIN database\n");
+		break;
+	case SAM_DATABASE_PRIVS:
+		d_printf("Fetching PRIVS databases\n");
+		break;
+	default:
+		d_printf("Fetching unknown database type %u\n", db_type );
+		break;
+	}
 
 	do {
 		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
