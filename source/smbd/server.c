@@ -1158,6 +1158,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 					  share_pid,fname);
 
 	if ((access_allowed == AFAIL) ||
+	    (!fcbopen && (access_allowed == AREAD && flags == O_RDWR)) ||
 	    (access_allowed == AREAD && flags == O_WRONLY) ||
 	    (access_allowed == AWRITE && flags == O_RDONLY)) {
 	  DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s) = %d\n",
@@ -1586,7 +1587,7 @@ static int sig_cld()
   DEBUG(5,("got SIGCLD\n"));
 
 #ifdef USE_WAITPID
-  while (waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0);
+  while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0);
 #endif
 
   /* Stop zombies */

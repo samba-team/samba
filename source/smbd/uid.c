@@ -415,7 +415,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
   if ((pid=fork())) {
     int status=0;
     /* the parent just waits for the child to exit */
-    if (waitpid(pid,&status,0) != pid) {
+    if (sys_waitpid(pid,&status,0) != pid) {
       DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
       return -1;
     }

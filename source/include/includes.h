@@ -220,6 +220,7 @@ Here come some platform specific sections
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
 #define USE_SIGPROCMASK
+#define USE_WAITPID
 #if 0
 /* SETFS disabled until we can check on some bug reports */
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
@@ -258,6 +259,7 @@ typedef unsigned short mode_t;
 #define REPLACE_GETPASS
 #define BSD_TERMIO
 #define USE_SIGPROCMASK
+#define USE_WAITPID
 #endif
 
 
@@ -1079,6 +1081,10 @@ it works and getting lots of bug reports */
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD
 #endif 
+
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
 
 #ifndef HAVE_FCNTL_LOCK
 #define HAVE_FCNTL_LOCK 1

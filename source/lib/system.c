@@ -142,6 +142,18 @@ int sys_stat(char *fname,struct stat *sbuf)
 }
 
 /*******************************************************************
+The wait() calls vary between systems
+********************************************************************/
+int sys_waitpid(pid_t pid,int *status,int options)
+{
+#ifdef USE_WAITPID
+  return waitpid(pid,status,options);
+#else
+  return wait4(pid,status,options,NULL);
+#endif
+}
+
+/*******************************************************************
 don't forget lstat()
 ********************************************************************/
 int sys_lstat(char *fname,struct stat *sbuf)

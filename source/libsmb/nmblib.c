@@ -395,7 +395,7 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
   nmb->header.nm_flags.recursion_available = (nm_flags&8)?True:False;
   nmb->header.nm_flags.recursion_desired = (nm_flags&0x10)?True:False;
   nmb->header.nm_flags.trunc = (nm_flags&0x20)?True:False;
-  nmb->header.nm_flags.authoritative = (nm_flags&0x40)?True:False;
+  nmb->header.nm_flags.authoritative = (nm_flags&0x40)?True:False;  
   nmb->header.rcode = CVAL(inbuf,3) & 0xF;
   nmb->header.qdcount = RSVAL(inbuf,4);
   nmb->header.ancount = RSVAL(inbuf,6);
@@ -606,7 +606,8 @@ static int build_nmb(char *buf,struct packet_struct *p)
   RSSVAL(ubuf,offset,nmb->header.name_trn_id);
   ubuf[offset+2] = (nmb->header.opcode & 0xF) << 3;
   if (nmb->header.response) ubuf[offset+2] |= (1<<7);
-  if (nmb->header.nm_flags.authoritative) ubuf[offset+2] |= 0x4;
+  if (nmb->header.nm_flags.authoritative && 
+      nmb->header.response) ubuf[offset+2] |= 0x4;
   if (nmb->header.nm_flags.trunc) ubuf[offset+2] |= 0x2;
   if (nmb->header.nm_flags.recursion_desired) ubuf[offset+2] |= 0x1;
   if (nmb->header.nm_flags.recursion_available &&
