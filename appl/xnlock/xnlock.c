@@ -38,7 +38,9 @@ char realm[REALM_SZ + 1];
 char *SPACE_STRING = "                                                      ";
 char STRING[] = "****************";
 
-#define MAX_PASSWD_LENGTH (sizeof(STRING))
+#define STRING_LENGTH sizeof(STRING)
+#define MAX_PASSWD_LENGTH 256
+/* (sizeof(STRING)) */
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN BUFSIZ
@@ -55,6 +57,10 @@ char STRING[] = "****************";
 #define Y_INCR 2
 #define XNLOCK_CTRL 1
 #define XNLOCK_NOCTRL 0
+
+#ifndef min
+#define min(x,y) (((x)<(y))?(x):(y))
+#endif
 
 XtAppContext	app;
 Display        *dpy;
@@ -417,8 +423,8 @@ post_prompt_box(Window window)
     if (height < 100)
 	height = 100;
 
-    if(width < 105 + font->max_bounds.width*MAX_PASSWD_LENGTH)
-	width = 105 + font->max_bounds.width*MAX_PASSWD_LENGTH;
+    if(width < 105 + font->max_bounds.width*STRING_LENGTH)
+	width = 105 + font->max_bounds.width*STRING_LENGTH;
     box_x = (Width - width) / 2;
     time_x = prompt_x = box_x + 105;
 
@@ -526,6 +532,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     static int is_ctrl = XNLOCK_NOCTRL;
     char c;
     KeySym keysym;
+    int echolen;
 
     if (event->type == ButtonPress) {
 	x = event->x, y = event->y;
@@ -632,7 +639,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 		    prompt_x, prompt_y, STRING, cnt);
 	XDrawImageString(dpy, XtWindow(w), gc,
 			 prompt_x + XTextWidth(font, STRING, cnt),
-			 prompt_y, SPACE_STRING, MAX_PASSWD_LENGTH - cnt + 1);
+			 prompt_y, SPACE_STRING, STRING_LENGTH - cnt + 1);
       }
     } else if (isprint(c))
 	if ((cnt + 1) >= MAX_PASSWD_LENGTH)
@@ -641,11 +648,12 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	    passwd[cnt++] = c;
     else
 	return;
+    echolen = min(cnt, STRING_LENGTH);
     XDrawImageString(dpy, XtWindow(w), gc,
-	prompt_x, prompt_y, STRING, cnt);
+	prompt_x, prompt_y, STRING, echolen);
     XDrawImageString(dpy, XtWindow(w), gc,
 	prompt_x + XTextWidth(font, STRING, cnt),
-	prompt_y, SPACE_STRING, MAX_PASSWD_LENGTH - cnt + 1);
+	prompt_y, SPACE_STRING, STRING_LENGTH - echolen + 1);
 }
 
 #include "nose.0.left"
