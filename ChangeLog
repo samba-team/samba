@@ -1,5 +1,8 @@
 2000-07-08  Assar Westerlund  <assar@sics.se>
 
+	* configure.in (AM_INIT_AUTOMAKE): bump to 0.3a-pre
+	(AC_ROKEN): roken is now at 10
+
 	* lib/krb5/string-to-key-test.c: add a arcfour-hmac-md5 test case
 	* kdc/Makefile.am (INCLUDES): add ../lib/krb5
 	* configure.in: update for standalone roken

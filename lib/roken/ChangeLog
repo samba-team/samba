@@ -1,5 +1,6 @@
 2000-07-08  Assar Westerlund  <assar@sics.se>
 
+	* configure.in (AM_INIT_AUTOMAKE): bump version to 10
 	* configure.in (AC_BROKEN): add strsep_copy
 	* Makefile.am (ACLOCAL): fetch files from cf
 
