@@ -594,10 +594,8 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 
 BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
 {
-	BOOL ret;
-
 	ZERO_STRUCTP(pst);
-	while ((ret = SearchDir(dptr->dir_hnd, name, poffset)) == True) {
+	while (SearchDir(dptr->dir_hnd, name, poffset) == True) {
 		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
 			return True;
 		}
