@@ -2,6 +2,8 @@
 
 RCSID("$Id$");
 
+#include <syslog.h>
+
 static int
 fatal (int fd, char *s)
 {
@@ -9,6 +11,7 @@ fatal (int fd, char *s)
 
      write (fd, &err, sizeof(err));
      write (fd, s, strlen(s)+1);
+     syslog(LOG_ERR, s);
      return err;
 }
 
@@ -63,26 +66,30 @@ doit(int sock)
      }
 
      if (stat ("/dev/console", &sb) < 0)
-	  return fatal (fd, "Cannot stat /dev/console");
+	  return fatal (sock, "Cannot stat /dev/console");
      passwd = getpwuid (sb.st_uid);
      if (passwd == NULL)
-	  return fatal (fd, "Cannot find uid");
+	  return fatal (sock, "Cannot find uid");
      username = strdup (passwd->pw_name);
      if (kuserok(&auth, username) != 0)
-	  return fatal (fd, "Permission denied");
+	  return fatal (sock, "Permission denied");
      free (username);
      if (setgid (passwd->pw_gid) ||
 	 initgroups(passwd->pw_name, passwd->pw_gid) ||
 	 setuid(passwd->pw_uid)) {
-	  return fatal (fd, "Cannot set uid");
+	  return fatal (sock, "Cannot set uid");
      }
      fd = socket (AF_UNIX, SOCK_STREAM, 0);
      if (fd < 0)
-	  return fatal (fd, "Cannot create socket");
+	  return fatal (sock, "Cannot create socket");
      addr.sun_family = AF_UNIX;
      sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", dnr);
      if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	  return fatal (fd, "Cannot connect");
+       {
+	 char msg[200];
+	 sprintf (msg, "Cannot connect to %s", addr.sun_path);
+	 return fatal (sock, msg);
+       }
      memcpy (&iv1, &auth.session, sizeof(iv1));
      memcpy (&iv2, &auth.session, sizeof(iv2));
      {
@@ -141,5 +148,6 @@ doit(int sock)
 int
 main (int argc, char **argv)
 {
+     openlog(argv[0], LOG_PID|LOG_CONS, LOG_DAEMON);
      return doit(0);
 }
