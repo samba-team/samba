@@ -2143,6 +2143,7 @@ tn(int argc, char **argv)
 	    host = gethostbyname(hostp);
 #endif
 	    if (host) {
+		strncpy(_hostname, host->h_name, sizeof(_hostname));
 		family = host->h_addrtype;
 
 		switch(family) {
