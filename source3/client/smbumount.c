@@ -15,6 +15,14 @@
 #include <linux/smb_mount.h>
 #include <linux/smb_fs.h>
 
+/* This is a (hopefully) temporary hack due to the fact that
+	sizeof( uid_t ) != sizeof( __kernel_uid_t ) under glibc.
+	This may change in the future and smb.h may get fixed in the
+	future.  In the mean time, it's ugly hack time - get over it.
+*/
+#undef SMB_IOC_GETMOUNTUID
+#define	SMB_IOC_GETMOUNTUID		_IOR('u', 1, __kernel_uid_t)
+
 static char *progname;
 
 static void
