@@ -42,7 +42,7 @@ char *strerror(int eno);
 #endif
 
 #ifndef HAVE_HSTRERROR
-const char *hstrerror(int herr);
+char *hstrerror(int herr);
 #endif
 
 #ifndef HAVE_HERROR
