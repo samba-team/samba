@@ -1014,7 +1014,6 @@ static void init_globals(void)
 	string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szLockDir, LOCKDIR);
-	string_set(&Globals.szRootdir, "/");
 #ifdef WITH_UTMP
 	string_set(&Globals.szUtmpDir, "");
 #endif /* WITH_UTMP */

@@ -112,9 +112,7 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
   timeout = (tval != NULL) ? (tval->tv_sec * 1000) + (tval->tv_usec/1000) :
                 -1;
   errno = 0;
-  do {
-    pollrtn = poll( &pfd[0], maxpoll, timeout);
-  } while (pollrtn<0 && errno == EINTR);
+  pollrtn = poll( &pfd[0], maxpoll, timeout);
 
   FD_ZERO(fds);
 
@@ -128,16 +126,28 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
   struct timeval t2;
   int selrtn;
 
-  do {
-    if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
-    errno = 0;
-    selrtn = select(maxfd,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
-  } while (selrtn<0 && errno == EINTR);
+  if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
+  errno = 0;
+  selrtn = select(maxfd,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
 
   return(selrtn);
 }
 #endif /* USE_POLL */
 #endif /* NO_SELECT */
+
+/*******************************************************************
+similar to sys_select() but catch EINTR and continue
+this is what sys_select() used to do in Samba
+********************************************************************/
+int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval)
+{
+	int ret;
+	do {
+		ret = sys_select(maxfd, fds, tval);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
 
 /*******************************************************************
  A wrapper for usleep in case we don't have one.

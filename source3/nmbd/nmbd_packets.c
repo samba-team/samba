@@ -1793,7 +1793,7 @@ BOOL listen_for_packets(BOOL run_election)
   BlockSignals(False, SIGUSR2);
 #endif /* SIGUSR2 */
 
-  selrtn = sys_select(FD_SETSIZE,&fds,&timeout);
+  selrtn = sys_select_intr(FD_SETSIZE,&fds,&timeout);
 
   /* We can only take signals when we are in the select - block them again here. */
 

@@ -1,5 +1,4 @@
 #define OLD_NTDOMAIN 1
-#if HAVE_KERNEL_OPLOCKS_IRIX
 
 /* 
    Unix SMB/Netbios implementation.
@@ -24,6 +23,7 @@
 
 #include "includes.h"
 
+#if HAVE_KERNEL_OPLOCKS_IRIX
 extern int DEBUGLEVEL;
 
 
@@ -227,7 +227,7 @@ should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
         memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 
         DEBUG(5,("process_local_message: kernel oplock break request for \
-file dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode));
+file dev = %x, inode = %.0f\n", (unsigned int)*dev, (double)*inode));
 
 	return True;
 }
