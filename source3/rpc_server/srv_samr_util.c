@@ -262,8 +262,12 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		}
 
 		DEBUG(15,("INFO_21 LOGON_HRS.HOURS: %s -> %s\n",pdb_get_hours(to),from->logon_hrs.hours));
-		/* Fix me: only update if it changes --metze */
-		pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
+		pstring old, new;
+		pdb_sethexhours(old, pdb_get_hours(to));
+		pdb_sethexhours(new, (const char *)from->logon_hrs.hours);
+		if (!strequal(old, new)) {
+			pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
+		}
 
 		/* This is max logon hours */
 		DEBUG(10,("INFO_21 UNKNOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
