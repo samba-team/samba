@@ -2579,41 +2579,71 @@ AC_ARG_WITH(profiling-data,
 #################################################
 # check for experimental disk-quotas support
 
+samba_cv_WITH_QUOTAS=auto
 samba_cv_TRY_QUOTAS=no
+samba_cv_RUN_QUOTA_TESTS=auto
+samba_cv_WITH_SYS_QUOTAS=auto
+samba_cv_TRY_SYS_QUOTAS=no
+
 AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
 [  --with-quotas           Include disk-quota support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
+    samba_cv_WITH_QUOTAS=yes
     samba_cv_TRY_QUOTAS=yes
+    samba_cv_RUN_QUOTA_TESTS=yes
+    #set sys quotas to auto in this case
+    samba_cv_TRY_SYS_QUOTAS=auto
+    ;;
+  auto)
+    AC_MSG_RESULT(auto)
+    samba_cv_WITH_QUOTAS=auto
+    samba_cv_TRY_QUOTAS=auto
+    samba_cv_RUN_QUOTA_TESTS=auto
+    #set sys quotas to auto in this case
+    samba_cv_TRY_SYS_QUOTAS=auto
+    ;;
+  no)
+    AC_MSG_RESULT(no)
+    samba_cv_WITH_QUOTAS=no
+    samba_cv_TRY_QUOTAS=no
+    samba_cv_RUN_QUOTA_TESTS=no
     ;;
   *)
-    AC_MSG_RESULT(no)
+    AC_MSG_RESULT(${samba_cv_TRY_QUOTAS})
     ;;
   esac ],
-  AC_MSG_RESULT(no)
+  AC_MSG_RESULT(${samba_cv_TRY_QUOTAS})
 )
 
-samba_cv_TRY_SYS_QUOTAS=auto
 AC_MSG_CHECKING(whether to try the new lib/sysquotas.c interface)
 AC_ARG_WITH(sys-quotas,
 [  --with-sys-quotas       Include lib/sysquotas.c support (default=auto)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    samba_cv_TRY_QUOTAS=yes
+    samba_cv_WITH_SYS_QUOTAS=yes
     samba_cv_TRY_SYS_QUOTAS=yes
+    samba_cv_RUN_QUOTA_TESTS=yes
+    ;;
+  auto)
+    AC_MSG_RESULT(auto)
+    samba_cv_WITH_SYS_QUOTAS=auto
+    samba_cv_TRY_SYS_QUOTAS=auto
+    samba_cv_RUN_QUOTA_TESTS=auto
     ;;
   no)
     AC_MSG_RESULT(no)
+    samba_cv_WITH_SYS_QUOTAS=no
     samba_cv_TRY_SYS_QUOTAS=no
     ;;
   *)
-    AC_MSG_RESULT(auto)
+    AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
     ;;
   esac ],
-  AC_MSG_RESULT(auto)
+  AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
 )
 
 if test x"$samba_cv_TRY_SYS_QUOTAS" = x"auto"; then
@@ -2621,18 +2651,19 @@ AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
   case "$host_os" in
 	*linux*)
 	    AC_MSG_RESULT(yes)
-	    samba_cv_TRY_SYS_QUOTAS=yes
+            samba_cv_TRY_SYS_QUOTAS=yes
+            samba_cv_RUN_QUOTA_TESTS=yes
 	    ;;
 	*)
 	    AC_MSG_RESULT(no)
-	    samba_cv_TRY_SYS_QUOTAS=no
+            samba_cv_TRY_SYS_QUOTAS=no
 	    ;;
   esac
 fi
 
 #############################################
 # only check for quota stuff if --with-quotas
-if test x"$samba_cv_TRY_QUOTAS" = x"yes"; then
+if test x"$samba_cv_RUN_QUOTA_TESTS" != x"no"; then
 
 # For quotas on Veritas VxFS filesystems
 AC_CHECK_HEADERS(sys/fs/vx_quota.h)
@@ -2755,8 +2786,22 @@ AC_CHECK_HEADERS(devnm.h)
 # check for devnm
 AC_CHECK_FUNCS(devnm)
 
+if test x"$samba_cv_WITH_SYS_QUOTAS" = x"yes"; then
+    if test x"$samba_cv_SYSQUOTA_FOUND" != x"yes"; then
+	# if --with-sys-quotas=yes then build it 
+	# you have can use the get/set quota command smb.conf
+	# options then
+	samba_cv_SYSQUOTA_FOUND=auto
+    fi
+    if test x"$samba_cv_TRY_SYS_QUOTAS" != x"yes"; then
+	# if --with-sys-quotas=yes then build it 
+	# you have can use the get/set quota command smb.conf
+	# options then
+	samba_cv_TRY_SYS_QUOTAS=auto
+    fi
+fi
 
-if test x"$samba_cv_SYSQUOTA_FOUND" = x"yes"; then
+if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
 AC_CACHE_CHECK([whether the sys_quota interface works],samba_cv_SYSQUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper -I${srcdir-.}/nsswitch"
@@ -2771,7 +2816,7 @@ CPPFLAGS="$SAVE_CPPFLAGS"
 ])
 if test x"$samba_cv_SYSQUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
-    if test x"$samba_cv_TRY_SYS_QUOTAS" = x"yes"; then 
+    if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then 
 	AC_DEFINE(WITH_QUOTAS,1,[Whether to use disk quota support])
 	AC_DEFINE(HAVE_SYS_QUOTAS,1,[Whether the new lib/sysquotas.c interface can be used])
 	samba_cv_WE_USE_SYS_QUOTAS=yes
@@ -2794,13 +2839,21 @@ AC_TRY_COMPILE([
 CPPFLAGS="$SAVE_CPPFLAGS"
 ])
 if test x"$samba_cv_QUOTA_WORKS" = x"yes"; then
+AC_MSG_CHECKING(whether to use the old quota support)
     if test x"$samba_cv_WE_USE_SYS_QUOTAS" != x"yes"; then
-       AC_DEFINE(WITH_QUOTAS,1,[Whether to use disk quota support])
+      if test x"$samba_cv_TRY_QUOTAS" != x"no"; then
+        AC_DEFINE(WITH_QUOTAS,1,[Whether to use disk quota support])
+	AC_MSG_RESULT(yes)
+      else
+	AC_MSG_RESULT(no)
+      fi
+    else
+      AC_MSG_RESULT(no)
     fi
 fi
 
 ####################
-# End of quota check
+# End of quota check samba_cv_RUN_QUOTA_TESTS
 fi
 
 #################################################
