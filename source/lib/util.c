@@ -2986,6 +2986,8 @@ char *passdb_path(char *name)
 	pstrcat(fname,"/");
 	pstrcat(fname,name);
 
+	DEBUG(20,("passdb_path: %s\n", fname));
+
 	return fname;
 }
 

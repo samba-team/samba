@@ -73,12 +73,12 @@ static BOOL create_domain(TDB_CONTEXT *tdb, const char* domain,
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
-		return NT_STATUS_NO_MEMORY;
+		return False;
 	}
 
 	prs_free_data(&key);
 	prs_free_data(&data);
-	return NT_STATUS_NOPROBLEMO;
+	return True;
 }
 
 static uint32 init_dom_tdbs(const DOM_SID *sam_sid)

@@ -2,9 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,6 +36,7 @@
 
 #define SEC_RIGHTS_READ           0x00020019
 #define SEC_RIGHTS_FULL_CONTROL   0x000f003f
+#define SEC_RIGHTS_MAXIMUM_ALLOWED 0x02000000
 
 
 #define SEC_ACE_TYPE_ACCESS_ALLOWED	0x0

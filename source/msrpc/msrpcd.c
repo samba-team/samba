@@ -538,6 +538,9 @@ static void usage(char *pname)
 		pidfile_create(service_name);
 	}
 
+	fn->service_init(service_name);
+	dbgflush();
+
 	ClientMSRPC = open_sockets(is_daemon);
 	if (ClientMSRPC == -1)
 	{
@@ -554,9 +557,6 @@ static void usage(char *pname)
 		if (sys_chroot(lp_rootdir()) == 0)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
-
-	fn->service_init(service_name);
-	dbgflush();
 
 	ZERO_STRUCT(p);
 	fstrcpy(p.name, pipe_name);

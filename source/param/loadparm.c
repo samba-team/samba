@@ -876,7 +876,8 @@ static void init_globals(void)
 
   DEBUG(3,("Initialising global parameters\n"));
 
-  string_set(&Globals.szSMBPasswdFile, SAM_DIR);
+  string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
+  string_set(&Globals.szSAMDirectory, SAM_DIR);
 #if USE_SMBFILE_DB
   string_set(&Globals.szSMBPassGroupFile, SMB_PASSGRP_FILE);
 #endif
