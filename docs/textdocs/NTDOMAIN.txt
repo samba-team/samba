@@ -32,8 +32,10 @@ Domain Logons using 1.9.18alpha1
 
 	touch /tmp/netlogon
 	touch /tmp/srvsvc
+	touch /tmp/lsarpc
 	chmod 666 /tmp/netlogon
 	chmod 666 /tmp/srvsvc
+	chmod 666 /tmp/lsarpc
 
 3) set up samba with encrypted passwords: see ENCRYPTION.txt (probably out
    of date: you no longer need the DES libraries, but other than that,
