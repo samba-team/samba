@@ -226,7 +226,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	/* try via DNS */
 	if (ads_try_dns(ads)) {
 		goto got_connection;
-		}
+	}
 
 	/* try via netbios lookups */
 	if (!lp_disable_netbios() && ads_try_netbios(ads)) {
@@ -273,11 +273,6 @@ got_connection:
 		free(env);
 	}
 #endif
-
-	if (ads->auth.password) {
-		if ((code = ads_kinit_password(ads)))
-			return ADS_ERROR_KRB5(code);
-	}
 
 	if (ads->auth.no_bind) {
 		return ADS_SUCCESS;

@@ -410,18 +410,14 @@
 
 #if HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
-#else
-#undef HAVE_KRB5
 #endif
 
 #if HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
-#else
-#undef HAVE_KRB5
 #endif
 
 /* we support ADS if we have krb5 and ldap libs */
-#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_GSSAPI)
+#if defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
 #endif
 
