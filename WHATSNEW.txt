@@ -2,8 +2,8 @@
               =============================
 
 Changes in alpha20
- - Rework the 'guest account get's RID 501' code again...
- - Change ito use NT-based session key negotiated for Win2k SPNEGO
+ - Rework the 'guest account gets RID 501' code again...
+ - Change to use NT-based session key negotiated for Win2k SPNEGO
  - Support printer data registry keys other than the default
    PrinterDriverData
  - Moved internal printerdata to REGISTRY_VALUE object
@@ -25,7 +25,7 @@ Changes in alpha20
  - remove unused 'max packet' and 'packet size' options
  - add support for the "value,OID" format described in MSDN for Printer 
    Data values
- - moves NT_TOKEN generation into our authenticaion code
+ - moves NT_TOKEN generation into our authentication code
  - Update documentation build system
  - Several fixes for IRIX compiler
  - Correctly handle "max data count" value in smb transacts
@@ -39,7 +39,7 @@ Changes in alpha20
    Print domain SID on 'net rpc info'
  - don't use lp_passwd_file() to retrieve NIS domain name, but use location
    instead
- - Various POSIX compatbility fixes
+ - Various POSIX compatibility fixes
  - Show only non-default values in testparm
  - Fix longstanding bug in Win2k clients by clearing the shortname
    buffer before returning ascii short name.
@@ -86,7 +86,7 @@ Changes in alpha20
  - usrmgr expects unicode as ProductType
  - Change JOB_INFO_CTR to return a pointer to an array rather than array of
    pointers in client code
- - Varios NTLMSSP fixes
+ - Various NTLMSSP fixes
  - fixed crash bug in cli_connection code
  - DeletePrinterDriver[Ex]() fixes from APP_HEAD
  - remove some inet_aton() calls for portability
@@ -107,15 +107,15 @@ Changes in alpha20
  - added --enable-python configure option for building the samba-python 
    unit tests
  - correct trans2 bugs in client for enumerating files/directories
- - Readd OS/2 EA error codes
- - Added patch for required attributes in directory listsing to reply code
+ - Re-add OS/2 EA error codes
+ - Added patch for required attributes in directory listings to reply code
  - Fix browse synchronization bug by noticing that W2K DMB's return empty 
    NetServerEnum2 on port 445, but not on port 139
  - Fix semantics of AbortPrinter() spoolss call in server code
  - Ensure we've failed a lock with a lock denied message before automatically
    pushing it onto the blocking queue
  - Added experimental sendfile code
- - Initialise user_rid value in WINBIND_USERINFO structure returned by
+ - Initialize user_rid value in WINBIND_USERINFO structure returned by
    the rpc version of query_user()
  - added gencache implementation
  - Merge the cli_shutdown change from 2_2
@@ -136,7 +136,7 @@ Changes in alpha20
    into sam_context_check_default_backends
  - allow --with-krb5 to override the location of the kerberos libs on
    redhat
- - unlink spool file after submitting rint job when using CUPS api
+ - unlink spool file after submitting print job when using CUPS api
  - Add framework for samtest commands
  - Add the ability to view/set the current local domain SIDs to net command
  - When creating a group you have to take care of the fact that the
