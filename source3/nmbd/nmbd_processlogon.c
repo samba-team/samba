@@ -227,7 +227,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
     case SAMLOGON:
     {
       char *q = buf + 2;
-      char *q1;
       fstring asccomp;
 
       q += 2;
