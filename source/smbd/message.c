@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB messaging
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -25,13 +26,12 @@
 
 #include "includes.h"
 
-extern userdom_struct current_user_info;
-
 /* look in server.c for some explanation of these variables */
+
 static char msgbuf[1600];
-static int msgpos;
-static fstring msgfrom;
-static fstring msgto;
+static int msgpos=0;
+static fstring msgfrom="";
+static fstring msgto="";
 
 /****************************************************************************
 deliver the message
@@ -41,8 +41,6 @@ static void msg_deliver(void)
   pstring name;
   int i;
   int fd;
-  char *msg;
-  int len;
 
   if (! (*lp_msg_command()))
     {
@@ -63,23 +61,17 @@ static void msg_deliver(void)
   /*
    * Incoming message is in DOS codepage format. Convert to UNIX.
    */
-  
-  if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **) &msg, True)) < 0 || !msg) {
-    DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
-    for (i = 0; i < msgpos;) {
-      if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
-	i++; continue;
-      }
-      write(fd, &msgbuf[i++], 1);
+
+  if(msgpos > 0) {
+    msgbuf[msgpos] = '\0'; /* Ensure null terminated. */
+    pstrcpy(msgbuf,dos_to_unix_static(msgbuf));
+  }
+
+  for (i=0;i<msgpos;) {
+    if (msgbuf[i]=='\r' && i<(msgpos-1) && msgbuf[i+1]=='\n') {
+      i++; continue;      
     }
-  } else {
-    for (i = 0; i < len;) {
-      if (msg[i] == '\r' && i < (len-1) && msg[i+1] == '\n') {
-	i++; continue;
-      }
-      write(fd, &msg[i++],1);
-    }
-    SAFE_FREE(msg);
+    write(fd,&msgbuf[i++],1);
   }
   close(fd);
 
@@ -94,7 +86,7 @@ static void msg_deliver(void)
       pstrcpy(s,lp_msg_command());
       pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
       pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
-      standard_sub_basic(current_user_info.smb_name, s, sizeof(s));
+      standard_sub_basic(s,sizeof(s));
       pstring_sub(s,"%s",name);
       smbrun(s,NULL);
     }
@@ -111,10 +103,8 @@ int reply_sends(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int len;
-  char *msg;
+  char *orig,*dest,*msg;
   int outsize = 0;
-  char *p;
-
   START_PROFILE(SMBsends);
 
   msgpos = 0;
@@ -126,11 +116,12 @@ int reply_sends(connection_struct *conn,
 
   outsize = set_message(outbuf,0,0,True);
 
-  p = smb_buf(inbuf)+1;
-  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_TERMINATE) + 1;
-  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_TERMINATE) + 1;
+  orig = smb_buf(inbuf)+1;
+  dest = skip_string(orig,1)+1;
+  msg = skip_string(dest,1)+1;
 
-  msg = p;
+  fstrcpy(msgfrom,orig);
+  fstrcpy(msgto,dest);
 
   len = SVAL(msg,0);
   len = MIN(len,sizeof(msgbuf)-msgpos);
@@ -139,6 +130,8 @@ int reply_sends(connection_struct *conn,
 
   memcpy(&msgbuf[msgpos],msg+2,len);
   msgpos += len;
+
+  DEBUG( 3, ( "SMBsends (from %s to %s)\n", orig, dest ) );
 
   msg_deliver();
 
@@ -153,9 +146,8 @@ int reply_sends(connection_struct *conn,
 int reply_sendstrt(connection_struct *conn,
 		   char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
+  char *orig,*dest;
   int outsize = 0;
-  char *p;
-
   START_PROFILE(SMBsendstrt);
 
   if (! (*lp_msg_command())) {
@@ -168,9 +160,11 @@ int reply_sendstrt(connection_struct *conn,
   memset(msgbuf,'\0',sizeof(msgbuf));
   msgpos = 0;
 
-  p = smb_buf(inbuf)+1;
-  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_TERMINATE) + 1;
-  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_TERMINATE) + 1;
+  orig = smb_buf(inbuf)+1;
+  dest = skip_string(orig,1)+1;
+
+  fstrcpy(msgfrom,orig);
+  fstrcpy(msgto,dest);
 
   DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 

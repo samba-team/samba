@@ -10,7 +10,7 @@
 #export DH_VERBOSE=1
 
 # This is the debhelper compatability version to use.
-export DH_COMPAT=4
+export DH_COMPAT=2
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
@@ -23,37 +23,20 @@ DEB_BUILD_GNU_TYPE	:= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 export DEB_HOST_GNU_TYPE
 export DEB_BUILD_GNU_TYPE
 
-
-# Support the DEB_BUILD_OPTIONS variable
-CFLAGS = -gstabs -Wall
-INSTALL = install
-
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-  CFLAGS += -O0
-else
-  CFLAGS += -O2
-endif
-
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-  INSTALL += -s
-endif
-
-
-DESTDIR=`pwd`/debian/tmp
+DESTDIR=`pwd`/debian/samba
 SWATDIR=`pwd`/debian/swat
+SAMBABOOK=`pwd`/debian/swat
 
 IVARS = BASEDIR=$(DESTDIR)/usr \
-		prefix=$(DESTDIR)/usr \
 		BINDIR=$(DESTDIR)/usr/bin \
 		SBINDIR=$(DESTDIR)/usr/sbin \
 		MANDIR=$(DESTDIR)/usr/share/man \
-		LIBDIR=$(DESTDIR)/usr/lib/samba \
+		LIBDIR=$(DESTDIR)/etc/samba \
 		VARDIR=$(DESTDIR)/var \
 		INCLUDEDIR=$(DESTDIR)/usr/include \
 		SWATDIR=$(SWATDIR)/usr/share/samba/swat \
-		CODEPAGEDIR=$(DESTDIR)/usr/share/samba/ \
-		PRIVATEDIR=$(DESTDIR)/etc/samba \
-		CONFIGDIR=$(DESTDIR)/etc/samba
+		SAMBABOOK=$(SAMBABOOK)/usr/share/samba/swat/using_samba \
+		CODEPAGEDIR=$(DESTDIR)/usr/share/samba/codepages
 
 patch: patch-stamp
 patch-stamp:
@@ -74,33 +57,25 @@ configure-stamp:
 		cp -f debian/config.cache source/config.cache; \
 	fi
 
-	[ -f source/Makefile ] || (cd source && CFLAGS="$(CFLAGS)" ./configure \
+	[ -f source/Makefile ] || (cd source && ./configure \
 		--host=$(DEB_HOST_GNU_TYPE) \
 		--build=$(DEB_BUILD_GNU_TYPE) \
-		--cache-file=./config.cache \
 		--with-fhs \
-		--enable-shared \
-		--enable-static \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--libdir=/etc/samba \
 		--with-privatedir=/etc/samba \
 		--localstatedir=/var \
 		--with-netatalk \
 		--with-smbmount \
 		--with-pam \
 		--with-syslog \
+		--with-sambabook \
 		--with-utmp \
 		--with-readline \
 		--with-pam_smbpass \
 		--with-libsmbclient \
 		--with-winbind \
-		--with-msdfs \
-		--with-automount \
-		--with-acl-support \
-		--with-tdbsam \
-		--with-ldap \
-		--with-python=python2.3)
+		--with-msdfs)
 
 	touch configure-stamp
 
@@ -108,8 +83,7 @@ build: patch-stamp configure-stamp build-stamp
 build-stamp:
 	dh_testdir
 
-	$(MAKE) -C source headers
-	$(MAKE) -C source all nsswitch/libnss_wins.so python_ext
+	$(MAKE) -C source all nsswitch/libnss_wins.so
 
 	touch build-stamp
 
@@ -121,11 +95,11 @@ clean: unpatch
 	# Clean first the Samba package
 #	-$(MAKE) -C source realclean
 #	-$(MAKE) -C source clean
-	-$(MAKE) -C source python_clean distclean
+	-$(MAKE) -C source distclean
 
 	# Delete stuff left after a build that is not deleted by 'make clean'
 	rm -f source/bin/wbinfo source/bin/winbindd source/bin/debug2html \
-		source/bin/libsmbclient.a source/include/stamp-h
+		source/include/stamp-h
 
 	dh_clean
 
@@ -136,12 +110,6 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	mkdir -p $(DESTDIR)/usr/share/man $(DESTDIR)/usr/lib \
-	         $(DESTDIR)/lib/security $(DESTDIR)/sbin \
-	         $(DESTDIR)/usr/lib/cups/backend $(DESTDIR)/usr/share/samba \
-	         $(DESTDIR)/etc/pam.d $(DESTDIR)/etc/dhcp3/dhclient-enter-hooks.d \
-	         $(DESTDIR)/usr/lib/python2.3/site-packages
-
 	# Add here commands to install the package into debian/tmp.
 	$(MAKE) -C source install $(IVARS)
 
@@ -149,8 +117,6 @@ install: build
 	#	'make install' - do it manually.
 	$(MAKE) -C source installclientlib $(IVARS)
 	mv $(DESTDIR)/usr/lib/libsmbclient.so $(DESTDIR)/usr/lib/libsmbclient.so.0.1
-	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so.0
-	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so
 
 	# Install other stuff not installed by "make install"
 	install -m 0755 debian/mksmbpasswd.awk $(DESTDIR)/usr/sbin/mksmbpasswd
@@ -163,13 +129,13 @@ install: build
 
 	# Install libnss_wins.so, which is not installed by 'make install' either.
 	install -m 0644 source/nsswitch/libnss_wins.so \
-		$(DESTDIR)/lib/libnss_wins.so.2
+		$(DESTDIR)/lib/libnss_wins.so
 
-	# pam_smbpass.so isn't being installed by 'make install'.
+	# pam_smbpass.so is installed by 'make install' in $(DESTDIR)/usr/bin/.
 	#	We'll move it here to $(DESTDIR)/lib/security/ and then
 	#	libpam-smbpass.files will make dh_movefiles move it to the
 	#	right location in the libpam-smbpass package.
-	install -m 0644 source/bin/pam_smbpass.so $(DESTDIR)/lib/security/
+	mv $(DESTDIR)/usr/bin/pam_smbpass.so $(DESTDIR)/lib/security/
 
 	# Create the symlink that will allow us to do "mount -t smbfs ...".
 	#	Create also a symlink that will allow "mount -t smb ..." to
@@ -185,6 +151,14 @@ install: build
 	#	Erich Schubert <debian@vitavonni.de> in #109509):
 	ln -s ../../../bin/smbspool $(DESTDIR)/usr/lib/cups/backend/smb
 
+	# To avoid duplication of a large number of files, the swat package
+	#	does not contain the "Using Samba" book nor the HTML docs.
+	#	Instead, these are provided by the samba-doc package and
+	#	are accessed through symlinks provided in the swat package.
+	#	Here we create the symlink for the book, and the symlinks
+	#	for the HTML files are created by the script installswat.sh.
+	ln -s ../../doc/samba-doc/htmldocs/using_samba $(SAMBABOOK)/usr/share/samba/swat/using_samba
+
 	# Install man pages for files without man pages in the upstream sources
 	install -m 0644 debian/mksmbpasswd.8 $(DESTDIR)/usr/share/man/man8/mksmbpasswd.8
 
@@ -196,25 +170,21 @@ install: build
 
 	# We're not providing findsmb (should we?) so let's remove the man
 	#	pages.
-	find debian/ -name 'findsmb*' -exec rm -f {} \;
+	find debian/ -name 'findsmb*' -exec rm {} \;
 
 	# Install samba-common's conffiles - they'll get moved later to their
 	#	correct place by dh_movefiles.
 	cp debian/smb.conf $(DESTDIR)/usr/share/samba/
-	install -m755 debian/panic-action $(DESTDIR)/usr/share/samba/
-	cp debian/gdbcommands $(DESTDIR)/etc/samba/
 	cp debian/samba.pamd $(DESTDIR)/etc/pam.d/samba
-	install -m755 debian/samba-common.dhcp $(DESTDIR)/etc/dhcp3/dhclient-enter-hooks.d/samba
 
-	# Install the Python modules
-	#
-	# Hmmm... need to figure this out. We have lib.linux-i686-2.2
-	# and lib.linux-i686-2.3 directories. Using only the stuff from
-	# the 2.3 directory for now. peloy.-
-	#cp source/build/lib.*/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
-	cp source/build/lib.linux-*-2.3/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
+	# This is to comply with policy (the symlink that ldconfig would
+	#	produce must exist in the package).
+	/sbin/ldconfig -n $(DESTDIR)/usr/lib/
 
-	dh_movefiles
+	dh_movefiles --sourcedir=debian/samba/
+
+	# Remove empty directories that will never be used.
+	rmdir $(DESTDIR)/sbin
 
 # Build architecture-independent files here.
 # Pass -i to all debhelper commands in this target to reduce clutter.
@@ -223,9 +193,9 @@ binary-indep: build install
 	dh_testdir
 	dh_testroot
 	dh_installdebconf
-	dh_installdocs -A debian/README.build
+	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build docs/README* docs/Samba-HOWTO-Collection.pdf
 	# dh_installexamples is not available in Debian Potato...
-	[ -x /usr/bin/dh_installexamples ] && DH_OPTIONS= dh_installexamples -v -psamba-doc examples/*
+	[ -x /usr/bin/dh_installexamples ] && dh_installexamples
 #	dh_installmenu
 #	dh_installemacsen
 #	dh_installpam
@@ -234,14 +204,10 @@ binary-indep: build install
 #	dh_installmanpages
 #	dh_installinfo
 #	dh_undocumented
-	dh_installchangelogs
+	dh_installchangelogs 
 	dh_link
 	dh_compress
 	dh_fixperms
-
-	# Get rid of those pesky .cvsignore files to make lintian happy
-	find debian/ -name .cvsignore -exec rm -f {} \;
-
 	dh_installdeb
 #	dh_perl
 	dh_gencontrol
@@ -255,9 +221,9 @@ binary-arch: build install
 	dh_testdir
 	dh_testroot
 	dh_installdebconf
-	dh_installdocs -A debian/README.build
+	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build docs/README* docs/Samba-HOWTO-Collection.pdf
 	# dh_installexamples is not available in Debian Potato...
-	[ -x /usr/bin/dh_installexamples ] && DH_OPTIONS= dh_installexamples -v -ppython2.3-samba source/python/examples/*
+	[ -x /usr/bin/dh_installexamples ] && dh_installexamples
 #	dh_installmenu
 	# dh_installlogrotate is not available in Debian Potato...
 	if [ -x /usr/bin/dh_installlogrotate ]; then \
@@ -270,15 +236,12 @@ binary-arch: build install
 	fi
 #	dh_installemacsen
 #	dh_installpam
-	DH_OPTIONS= dh_installinit -psamba -- "defaults 20 19"
-	DH_OPTIONS= dh_installinit -pwinbind
-	dh_installcron 
+	dh_installinit -n
+	dh_installcron
 #	dh_installmanpages
 #	dh_installinfo
-	cp debian/winbind.lintian debian/winbind/usr/share/lintian/overrides/winbind
-#	dh_undocumented
-	dh_installchangelogs -Nlibpam-smbpass
-	DH_OPTIONS= dh_installchangelogs -plibpam-smbpass source/pam_smbpass/CHANGELOG
+	dh_undocumented
+	dh_installchangelogs 
 	dh_strip
 	dh_link
 	dh_compress
@@ -296,13 +259,8 @@ binary-arch: build install
 	chmod u+s debian/smbfs/usr/bin/smbumount
 
 	# Set some reasonable default perms for the samba logdir.
-	chmod 0750 debian/samba/var/log/samba/
-	chown root.adm debian/samba/var/log/samba/
-
-	# Get rid of those pesky .cvsignore files to make lintian happy
-	# (maybe we only need the "find ... -exec rm -f {} ;" we have
-	# in the binary-indep target?) peloy.-
-	find debian/ -name .cvsignore -exec rm -f {} \;
+	chmod 0750 $(DESTDIR)/var/log/samba/
+	chown root.adm $(DESTDIR)/var/log/samba/
 
 	dh_installdeb
 #	dh_makeshlibs

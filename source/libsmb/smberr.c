@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Copyright (C) Andrew Tridgell 1998
    
    This program is free software; you can redistribute it and/or modify
@@ -160,6 +161,7 @@ const struct
 /****************************************************************************
 return a SMB error name from a class and code
 ****************************************************************************/
+
 const char *smb_dos_err_name(uint8 class, uint16 num)
 {
 	static pstring ret;
@@ -196,6 +198,7 @@ const char *get_dos_error_msg(WERROR result)
 /****************************************************************************
 return a SMB error class name as a string.
 ****************************************************************************/
+
 const char *smb_dos_err_class(uint8 class)
 {
 	static pstring ret;
@@ -214,7 +217,8 @@ const char *smb_dos_err_class(uint8 class)
 /****************************************************************************
 return a SMB string from an SMB buffer
 ****************************************************************************/
-char *smb_dos_errstr(char *inbuf)
+
+const char *smb_dos_errstr(char *inbuf)
 {
 	static pstring ret;
 	int class = CVAL(inbuf,smb_rcls);
@@ -249,6 +253,7 @@ char *smb_dos_errstr(char *inbuf)
 /*****************************************************************************
 map a unix errno to a win32 error
  *****************************************************************************/
+
 WERROR map_werror_from_unix(int error)
 {
 	NTSTATUS status = map_nt_error_from_unix(error);

@@ -11,9 +11,9 @@ samba and sambades (merged together for longer than we can remember.)
 Contents of this README file:
 
 1. Notes
-2. Upgrading from Samba 2.2
-3. Packages Generated from the Samba Sources
-4. Support for NT Domains
+2. Packages Generated from the Samba Sources
+3. Support for NT Domains
+4. Samba and LDAP
 5. Reporting bugs
 
 
@@ -36,45 +36,7 @@ Contents of this README file:
   (/var/log/{nmb,smb} were moved to the new location.
 
 
-2. Upgrading from Samba 2.2
----------------------------
-
-Samba 3.0 provides greatly improved support for modern Windows systems,
-including support for Unicode and LDAP.  In the process, Samba 3.0
-necessarily also breaks backward compatiblity with past releases.  These
-issues are documented herein; if you are aware of other problems related
-to upgrading from Samba 2.2, please let us know at
-<samba@packages.debian.org>.
-
-Samba and LDAP
---------------
-Starting with Samba 2.999+3.0cvs20020723-1 we are building Samba with
-LDAP support.  However, the LDAP schema for Samba 3.0 differs
-substantially from the schema used by many sites with Samba 2.2 (not
-enabled in the Debian packages).  If upgrading from an LDAP-enabled 2.2,
-you will need to run the convertSambaAccount script found in
-/usr/share/doc/samba-doc/examples/LDAP.  A copy of the schema itself can
-also be found at /usr/share/doc/samba-doc/examples/LDAP/samba.schema.
-
-Character Sets
---------------
-Samba 3.0 introduces support for negotiating Unicode (UCS-2LE) with
-Windows clients.  Owing to the close similarity between Windows and Unix
-NLS charsets, in the past, many users were able to pass filenames
-containing non-ASCII characters between clients and servers without
-configuring Samba to know what character set was in use.  Now, Samba
-must be able to convert Unix filenames to Unicode before sending to the
-client, so Samba must know what character set the filenames are being
-converted from.  If you will be sharing files with non-ASCII names, and
-the filenames are not encoded with UTF-8, you will need to tell Samba
-which character set to use with the 'unix charset' option.
-
-If you had previously specified 'character set' and 'client code page'
-options under 2.2, these settings should be automatically converted for
-you.
-
-
-3. Packages Generated from the Samba Sources
+2. Packages Generated from the Samba Sources
 --------------------------------------------
 
 Currently, the Samba sources produce the following binary packages:
@@ -92,8 +54,6 @@ libsmbclient: Shared library that allows applications to talk to SMB servers.
 libsmbclient-dev: libsmbclient shared libraries.
 winbind: Service to resolve user and group information from a Windows NT 
 	server.
-python2.2-samba: Python bindings that allow access to various aspects of
-	Samba.
 
 Please note that the package smbwrapper (a shared library that provides
 SMB client services that existed between Samba 2.0.0-1 and Samba-2.0.5a-4
@@ -104,7 +64,7 @@ with glibc2.1 get cleared out (the problem is with glibc, not with Samba
 itself).
 
 
-4. Support for NT Domains
+3. Support for NT Domains
 -------------------------
 
 Samba 2.2 includes preliminary support for NT domains. A Samba server
@@ -122,6 +82,26 @@ section).
 
 Please note that NT domain PDC support is far from complete and is still 
 experimental.
+
+
+4. Samba and LDAP
+-----------------
+
+Samba 2.2 has experimental LDAP code. However, the official Debian
+packages have not been compiled with LDAP support for a good reason: if
+LDAP support is compiled in then the other authentication methods (PAM,
+smbpasswd, etc.) cannot be used, only LDAP will work. So, while LDAP
+cannot coexist peacefully with the other methods we will not provide
+LDAP-enabled packages. The workaround is, of course, to build your own
+packages. We can help with this if you don't know how to build packages.
+
+We follow Samba development, so please do not file bug reports asking
+for LDAP, we will add support for it when it doesn't break other
+things.
+
+update (2002/10/16): the Debian Samba packages in Debian unstable have
+been compiled with --ldapsam support. If you need LDAP support you can
+use those packages, or as we said, build your own 2.2.x packages.
 
 
 5. Reporting Bugs

@@ -1,20 +1,45 @@
-README for Samba Virtual File System (VFS) Example
+README for Samba Virtual File System (VFS) Examples
 ===================================================
 
-This directory contains skeleton VFS modules.  When used,
-this module simply passes all requests back to the disk functions
-(i.e it operates as a passthrough filter).  It should be
-useful as a starting point for developing new VFS
-modules. 
+This directory contains some sample code to demonstrate VFS
+construction.  The following VFS modules are given:
 
-Please look at skel_opaque.c when you want your module to provide
-final functions, like a database filesystem.
+	skel
+		A skeleton VFS module.  When used, this module simply
+		passes all requests back to the disk functions (i.e it
+		operates as a passthrough filter).  It should be
+		useful as a starting point for developing new VFS
+		modules. 
 
-Please look at skel_transport.c when you want your module to provide
-passthrough functions, like audit modules. 
+	audit
+		A simple module to audit file access to the syslog
+		facility.  The following operations are logged: share
+		connect/disconnect, directory opens/create/remove,
+		file open/close/rename/unlink/chmod.
 
-Please read the VFS chapter in the HOWTO collection for general help 
-on the usage of VFS modules.
+	recycle/
+		Add a recycle bin facility to a samba share.
+		see recycle/README for details
+
+	block/
+
+		A directory containing a sample module by Ronald Kuetemeier
+		<ronald@kuetemeier.com> to block named symbolic link following.
+		Note: Config file is in /etc/samba/samba-block.conf
+
+The libtool program, available from your favourite GNU software
+archive, is required to compile these programs.
+
+To use the VFS modules, create a share similar to the one below.  The
+important parameter is the 'vfs object' parameter which must point to
+the exact pathname of the shared library object.
+
+       [audit]
+                comment = Audited /data directory
+                path = /data
+                vfs object = /path/to/audit.so
+                writeable = yes
+                browseable = yes
 
 Further documentation on writing VFS modules for Samba can be found in
-Samba Developers Guide.
+docs directory of the Samba source distribution.

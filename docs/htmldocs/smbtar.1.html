@@ -1,0 +1,351 @@
+<HTML
+><HEAD
+><TITLE
+>smbtar</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBTAR"
+>smbtar</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbtar&nbsp;--&nbsp;shell script for backing up SMB/CIFS shares 
+	directly to UNIX tape drives</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>smbtar</B
+>  {-s server} [-p password] [-x services] [-X] [-d directory] [-u user] [-t tape] [-t tape] [-b blocksize] [-N filename] [-i] [-r] [-l loglevel] [-v] {filenames}</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN26"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>smbtar</B
+> is a very small shell script on top 
+	of <A
+HREF="smbclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbclient(1)</B
+></A
+> 
+	which dumps SMB shares directly to tape. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN34"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-s server</DT
+><DD
+><P
+>The SMB/CIFS server that the share resides 
+		upon.</P
+></DD
+><DT
+>-x service</DT
+><DD
+><P
+>The share name on the server to connect to. 
+		The default is "backup".</P
+></DD
+><DT
+>-X</DT
+><DD
+><P
+>Exclude mode. Exclude filenames... from tar 
+		create or restore. </P
+></DD
+><DT
+>-d directory</DT
+><DD
+><P
+>Change to initial <TT
+CLASS="PARAMETER"
+><I
+>directory
+		</I
+></TT
+> before restoring / backing up files. </P
+></DD
+><DT
+>-v</DT
+><DD
+><P
+>Verbose mode.</P
+></DD
+><DT
+>-p password</DT
+><DD
+><P
+>The password to use to access a share. 
+		Default: none </P
+></DD
+><DT
+>-u user</DT
+><DD
+><P
+>The user id to connect as. Default: 
+		UNIX login name. </P
+></DD
+><DT
+>-t tape</DT
+><DD
+><P
+>Tape device. May be regular file or tape 
+		device. Default: <TT
+CLASS="PARAMETER"
+><I
+>$TAPE</I
+></TT
+> environmental 
+		variable; if not set, a file called <TT
+CLASS="FILENAME"
+>tar.out
+		</TT
+>. </P
+></DD
+><DT
+>-b blocksize</DT
+><DD
+><P
+>Blocking factor. Defaults to 20. See
+		<B
+CLASS="COMMAND"
+>tar(1)</B
+> for a fuller explanation. </P
+></DD
+><DT
+>-N filename</DT
+><DD
+><P
+>Backup only files newer than filename. Could 
+		be used (for example) on a log file to implement incremental
+		backups. </P
+></DD
+><DT
+>-i</DT
+><DD
+><P
+>Incremental mode; tar files are only backed 
+		up if they have the archive bit set. The archive bit is reset 
+		after each file is read. </P
+></DD
+><DT
+>-r</DT
+><DD
+><P
+>Restore. Files are restored to the share 
+		from the tar file. </P
+></DD
+><DT
+>-l log level</DT
+><DD
+><P
+>Log (debug) level. Corresponds to the 
+		<TT
+CLASS="PARAMETER"
+><I
+>-d</I
+></TT
+> flag of <B
+CLASS="COMMAND"
+>smbclient(1)
+		</B
+>. </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN95"
+></A
+><H2
+>ENVIRONMENT VARIABLES</H2
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>$TAPE</I
+></TT
+> variable specifies the 
+	default tape device to write to. May be overridden
+	with the -t option. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN99"
+></A
+><H2
+>BUGS</H2
+><P
+>The <B
+CLASS="COMMAND"
+>smbtar</B
+> script has different 
+	options from ordinary tar and tar called from smbclient. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN103"
+></A
+><H2
+>CAVEATS</H2
+><P
+>Sites that are more careful about security may not like 
+	the way the script handles PC passwords. Backup and restore work 
+	on entire shares, should work on file lists. smbtar works best
+	with GNU tar and may not work well with other versions. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN106"
+></A
+><H2
+>DIAGNOSTICS</H2
+><P
+>See the <EM
+>DIAGNOSTICS</EM
+> section for the 
+	<A
+HREF="smbclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbclient(1)</B
+> 
+	</A
+> command.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN112"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN115"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>, 
+	<A
+HREF="smbclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbclient(1)</B
+></A
+>, 
+	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+>,
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN123"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+><A
+HREF="mailto:poultenr@logica.co.uk"
+TARGET="_top"
+>Ricky Poulten</A
+>  
+	wrote the tar extension and this man page. The <B
+CLASS="COMMAND"
+>smbtar</B
+> 
+	script was heavily rewritten and improved by <A
+HREF="mailto:Martin.Kraemer@mch.sni.de"
+TARGET="_top"
+>Martin Kraemer</A
+>. Many 
+	thanks to everyone who suggested extensions, improvements, bug 
+	fixes, etc. The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter.</P
+></DIV
+></BODY
+></HTML
+>

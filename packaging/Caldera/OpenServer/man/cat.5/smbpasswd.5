@@ -1,0 +1,198 @@
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((5555))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((5555))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbpasswd - The Samba encrypted password file
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          _s_m_b_p_a_s_s_w_d
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          smbpasswd is the Samba encrypted password file. It contains
+          the username, Unix user id and the SMB hashed passwords of
+          the user, as well as account flag information and the time
+          the password was last changed. This file format has been
+          evolving with Samba and has had several different formats in
+          the past.
+
+     FFFFIIIILLLLEEEE FFFFOOOORRRRMMMMAAAATTTT
+          The format of the smbpasswd file used by Samba 2.2 is very
+          similar to the familiar Unix _p_a_s_s_w_d(_5) file. It is an ASCII
+          file containing one line for each user. Each field within
+          each line is separated from the next by a colon. Any entry
+          beginning with '#' is ignored. The smbpasswd file contains
+          the following information for each user:
+
+          nnnnaaaammmmeeee This is the user name. It must be a name that already
+               exists in the standard UNIX passwd file.
+
+          uuuuiiiidddd  This is the UNIX uid. It must match the uid field for
+               the same user entry in the standard UNIX passwd file.
+               If this does not match then Samba will refuse to
+               recognize this smbpasswd file entry as being valid for
+               a user.
+
+          LLLLaaaannnnmmmmaaaannnn PPPPaaaasssssssswwwwoooorrrrdddd HHHHaaaasssshhhh
+               This is the LANMAN hash of the user's password, encoded
+               as 32 hex digits. The LANMAN hash is created by DES
+               encrypting a well known string with the user's password
+               as the DES key. This is the same password used by
+               Windows 95/98 machines. Note that this password hash is
+               regarded as weak as it is vulnerable to dictionary
+               attacks and if two users choose the same password this
+               entry will be identical (i.e. the password is not
+               "salted" as the UNIX password is). If the user has a
+               null password this field will contain the characters
+               "NO PASSWORD" as the start of the hex string. If the
+               hex string is equal to 32 'X' characters then the
+               user's account is marked as disabled and the user will
+               not be able to log onto the Samba server.
+
+               WWWWAAAARRRRNNNNIIIINNNNGGGG !!!!!!!! Note that, due to the challenge-response
+               nature of the SMB/CIFS authentication protocol, anyone
+               with a knowledge of this password hash will be able to
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((5555))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((5555))))
+
+
+
+               impersonate the user on the network. For this reason
+               these hashes are known as ppppllllaaaaiiiinnnn tttteeeexxxxtttt eeeeqqqquuuuiiiivvvvaaaalllleeeennnnttttssss and
+               must NNNNOOOOTTTT be made available to anyone but the root user.
+               To protect these passwords the smbpasswd file is placed
+               in a directory with read and traverse access only to
+               the root user and the smbpasswd file itself must be set
+               to be read/write only by root, with no other access.
+
+          NNNNTTTT PPPPaaaasssssssswwwwoooorrrrdddd HHHHaaaasssshhhh
+               This is the Windows NT hash of the user's password,
+               encoded as 32 hex digits. The Windows NT hash is
+               created by taking the user's password as represented in
+               16-bit, little-endian UNICODE and then applying the MD4
+               (internet rfc1321) hashing algorithm to it.
+
+               This password hash is considered more secure than the
+               LANMAN Password Hash as it preserves the case of the
+               password and uses a much higher quality hashing
+               algorithm. However, it is still the case that if two
+               users choose the same password this entry will be
+               identical (i.e. the password is not "salted" as the
+               UNIX password is).
+
+               WWWWAAAARRRRNNNNIIIINNNNGGGG !!!!!!!!. Note that, due to the challenge-response
+               nature of the SMB/CIFS authentication protocol, anyone
+               with a knowledge of this password hash will be able to
+               impersonate the user on the network. For this reason
+               these hashes are known as ppppllllaaaaiiiinnnn tttteeeexxxxtttt eeeeqqqquuuuiiiivvvvaaaalllleeeennnnttttssss and
+               must NNNNOOOOTTTT be made available to anyone but the root user.
+               To protect these passwords the smbpasswd file is placed
+               in a directory with read and traverse access only to
+               the root user and the smbpasswd file itself must be set
+               to be read/write only by root, with no other access.
+
+          AAAAccccccccoooouuuunnnntttt FFFFllllaaaaggggssss
+               This section contains flags that describe the
+               attributes of the users account. In the Samba 2.2
+               release this field is bracketed by '[' and ']'
+               characters and is always 13 characters in length
+               (including the '[' and ']' characters).  The contents
+               of this field may be any of the characters.
+
+               o+ UUUU - This means this is a "User" account, i.e. an
+                 ordinary user. Only User and Workstation Trust
+                 accounts are currently supported in the smbpasswd
+                 file.
+
+               o+ NNNN - This means the account has no password (the
+                 passwords in the fields LANMAN Password Hash and NT
+                 Password Hash are ignored). Note that this will only
+                 allow users to log on with no password if the  _n_u_l_l
+                 _p_a_s_s_w_o_r_d_s parameter is set in the _s_m_b._c_o_n_f(_5)
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((5555))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((5555))))
+
+
+
+                  config file.
+
+               o+ DDDD - This means the account is disabled and no
+                 SMB/CIFS logins will be allowed for this user.
+
+               o+ WWWW - This means this account is a "Workstation Trust"
+                 account. This kind of account is used in the Samba
+                 PDC code stream to allow Windows NT Workstations and
+                 Servers to join a Domain hosted by a Samba PDC.
+
+          Other flags may be added as the code is extended in future.
+          The rest of this field space is filled in with spaces.
+
+          LLLLaaaasssstttt CCCChhhhaaaannnnggggeeee TTTTiiiimmmmeeee
+               This field consists of the time the account was last
+               modified. It consists of the characters 'LCT-'
+               (standing for "Last Change Time") followed by a numeric
+               encoding of the UNIX time in seconds since the epoch
+               (1970) that the last change was made.
+
+          All other colon separated fields are ignored at this time.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          ssssmmmmbbbbppppaaaasssssssswwwwdddd((((8888)))) samba(7) and the Internet RFC1321 for details
+          on the MD4 algorithm.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+

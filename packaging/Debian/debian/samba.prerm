@@ -1,10 +1,26 @@
 #!/bin/sh -e
 
-if [ "$1" = upgrade -a -n "$2" ] && dpkg --compare-versions "$2" lt 2.99 \
-   && [ -e /var/lib/samba/passdb.tdb -a ! -e /etc/samba/smbpasswd ]
+# Clean up any such stale file.
+rm -f /tmp/samba-was-not-running
+
+# The smbd pid file is missing, or points to a dead process
+if [ ! -f /var/run/samba/smbd.pid ] || \
+	! ps h `cat /var/run/samba/smbd.pid` > /dev/null
 then
-	pdbedit -i tdbsam -e smbpasswd
-	rm -f /var/lib/samba/passdb.tdb
+	# The nmbd pid file is missing, or points to a dead process
+	if [ -f /var/run/samba/nmbd.pid ] || \
+		! ps h `cat /var/run/samba/nmbd.pid` > /dev/null
+	then
+		# let the postinst know not to start samba.
+		[ "$1" = "upgrade" ] && touch /tmp/samba-was-not-running
+	fi
 fi
+
+# We read /etc/default/samba to know if we're running from inetd or as
+# daemons so we don't call the init script if we are running from inetd.
+[ -r /etc/default/samba ] && . /etc/default/samba
+
+# We call the init script to stop Samba only if we are running as daemons.
+[ -x /etc/init.d/samba -a "$RUN_MODE" != "inetd" ] && /etc/init.d/samba stop
 
 #DEBHELPER#

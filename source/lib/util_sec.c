@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    Copyright (C) Jeremy Allison 1998.
    rewritten for version 2.0.6 by Tridge
 
@@ -177,22 +178,13 @@ void gain_root_group_privilege(void)
 
 
 /****************************************************************************
- Set effective uid, and possibly the real uid too.
- We want to end up with either:
-  
-   ruid==uid and euid==uid
-
- or
-
-   ruid==0 and euid==uid
-
- depending on what the local OS will allow us to regain root from.
+ Set *only* the effective uid.
+ we want to end up with ruid==0 and euid==uid
 ****************************************************************************/
 void set_effective_uid(uid_t uid)
 {
 #if USE_SETRESUID
-        /* Set the effective as well as the real uid. */
-	setresuid(uid,uid,-1);
+	setresuid(-1,uid,-1);
 #endif
 
 #if USE_SETREUID
@@ -274,11 +266,11 @@ void restore_re_uid(void)
 	assert_uid(saved_ruid, saved_euid);
 }
 
-
 /****************************************************************************
- save the real and effective gid for later restoration. Used by the 
+ Save the real and effective gid for later restoration. Used by the
  getgroups code
 ****************************************************************************/
+
 void save_re_gid(void)
 {
 	saved_rgid = getgid();
@@ -286,8 +278,9 @@ void save_re_gid(void)
 }
 
 /****************************************************************************
- and restore them!
+ And restore them!
 ****************************************************************************/
+
 void restore_re_gid(void)
 {
 #if USE_SETRESUID
@@ -307,7 +300,6 @@ void restore_re_gid(void)
 
 	assert_gid(saved_rgid, saved_egid);
 }
-
 
 /****************************************************************************
  set the real AND effective uid to the current effective uid in a way that

@@ -2,7 +2,8 @@
 #define PRINTING_H_
 
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    printing definitions
    Copyright (C) Andrew Tridgell 1992-2000
    
@@ -20,6 +21,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
+#include "includes.h"
 
 /*
    This file defines the low-level printing system interfaces used by the
@@ -41,7 +44,6 @@ struct printjob {
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
 	fstring queuename; /* service number of printer for this job */
-	NT_DEVICEMODE *nt_devmode;
 };
 
 /* Information for print interfaces */
@@ -70,22 +72,6 @@ extern struct printif	cups_printif;
 #define MAX_CACHE_VALID_TIME 3600
 
 #define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 5
-
-/* There can be this many printing tdb's open, plus any locked ones. */
-#define MAX_PRINT_DBS_OPEN 1
-
-struct tdb_print_db {
-	struct tdb_print_db *next, *prev;
-	TDB_CONTEXT *tdb;
-	int ref_count;
-	fstring printer_name;
-};
-
-/* 
- * Used for print notify
- */
-
-#define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
+#define PRINT_DATABASE_VERSION 4
 
 #endif /* PRINTING_H_ */

@@ -101,7 +101,7 @@ static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path
 			close((int)fd_pending_array[i]);
 			fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 			if (signals_received - i - 1) {
-				memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
+ 				memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
 						sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
 			}
 			data->directory_handle = -1;
@@ -129,7 +129,7 @@ static void kernel_remove_notify(void *datap)
 			if (fd == (int)fd_pending_array[i]) {
 				fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 				if (signals_received - i - 1) {
-					memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
+ 					memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
 							sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
 				}
 				data->directory_handle = -1;
@@ -154,7 +154,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	int fd;
 	unsigned long kernel_flags;
 	
-	fd = sys_open(path,O_RDONLY, 0);
+	fd = sys_open(dos_to_unix_static(path),O_RDONLY, 0);
 
 	if (fd == -1) {
 		DEBUG(3,("Failed to open directory %s for change notify\n", path));
@@ -215,16 +215,13 @@ struct cnotify_fns *kernel_notify_init(void)
 	static struct cnotify_fns cnotify;
         struct sigaction act;
 
-	ZERO_STRUCT(act);
-
-	act.sa_handler = NULL;
-	act.sa_sigaction = signal_handler;
-	act.sa_flags = SA_SIGINFO;
-	sigemptyset( &act.sa_mask );
-	if (sigaction(RT_SIGNAL_NOTIFY, &act, NULL) != 0) {
+        act.sa_handler = NULL;
+        act.sa_sigaction = signal_handler;
+        act.sa_flags = SA_SIGINFO;
+        if (sigaction(RT_SIGNAL_NOTIFY, &act, NULL) != 0) {
 		DEBUG(0,("Failed to setup RT_SIGNAL_NOTIFY handler\n"));
 		return NULL;
-	}
+        }
 
 	if (!kernel_notify_available())
 		return NULL;
@@ -233,9 +230,6 @@ struct cnotify_fns *kernel_notify_init(void)
 	cnotify.check_notify = kernel_check_notify;
 	cnotify.remove_notify = kernel_remove_notify;
 	cnotify.select_time = -1;
-
-	/* the signal can start off blocked due to a bug in bash */
-	BlockSignals(False, RT_SIGNAL_NOTIFY);
 
 	return &cnotify;
 }

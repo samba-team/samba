@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2.x
    oplock processing
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1998 - 2001
@@ -80,8 +81,8 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 	fd_set fds;
 	int selrtn = -1;
 
-	FD_ZERO(&fds);
 	smb_read_error = 0;
+	FD_ZERO(&fds);
 
 	/*
 	 * We need to check for kernel oplocks before going into the select
@@ -167,7 +168,7 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 	 * Read a loopback udp message.
 	 */
 	msg_len = sys_recvfrom(oplock_sock, &buffer[OPBRK_CMD_HEADER_LEN],
-						buffer_len - OPBRK_CMD_HEADER_LEN, 0, (struct sockaddr *)&from, &fromlen);
+				buffer_len - OPBRK_CMD_HEADER_LEN, 0, (struct sockaddr *)&from, &fromlen);
 
 	if(msg_len < 0) {
 		DEBUG(0,("receive_local_message. Error in recvfrom. (%s).\n",strerror(errno)));
@@ -606,7 +607,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 
 		prepare_break_message( outbuf, fsp, False);
 		if (!send_smb(smbd_server_fd(), outbuf))
-			exit_server("oplock_break_level2: send_smb failed.");
+			exit_server("oplock_break_level2: send_smb failed.\n");
 	}
 
 	/*
@@ -660,7 +661,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	time_t start_time;
 	BOOL shutdown_server = False;
 	BOOL oplock_timeout = False;
-	BOOL sign_state;
 	connection_struct *saved_user_conn;
 	connection_struct *saved_fsp_conn;
 	int saved_vuid;
@@ -743,16 +743,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Remember if we just sent a break to level II on this file. */
 	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
 
-	/* Save the server smb signing state. */
-	sign_state = srv_oplock_set_signing(False);
-
-	if (!send_smb(smbd_server_fd(), outbuf)) {
-		srv_oplock_set_signing(sign_state);
-		exit_server("oplock_break: send_smb failed.");
-	}
-
-	/* Restore the sign state to what it was. */
-	srv_oplock_set_signing(sign_state);
+	if (!send_smb(smbd_server_fd(), outbuf))
+		exit_server("oplock_break: send_smb failed.\n");
 
 	/* We need this in case a readraw crosses on the wire. */
 	global_oplock_break = True;
@@ -799,9 +791,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 				shutdown_server = True;
 			} else if (smb_read_error == READ_ERROR) {
 				DEBUG( 0, ("oplock_break: receive_smb error (%s)\n", strerror(errno)) );
-				shutdown_server = True;
-			} else if (smb_read_error == READ_BAD_SIG) {
-				DEBUG( 0, ("oplock_break: bad signature from client\n" ));
 				shutdown_server = True;
 			} else if (smb_read_error == READ_TIMEOUT) {
 				DEBUG( 0, ( "oplock_break: receive_smb timed out after %d seconds.\n", OPLOCK_BREAK_TIMEOUT ) );
@@ -878,9 +867,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 			OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
 		remove_oplock(fsp,True);
-#if FASCIST_OPLOCK_BACKOFF
 		global_client_failed_oplock_break = True; /* Never grant this client an oplock again. */
-#endif
 	}
 
 	/*

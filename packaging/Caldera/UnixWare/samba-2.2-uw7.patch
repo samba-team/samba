@@ -1,0 +1,200 @@
+--- smbwrapper/smbw.c.orig	Mon Jan  8 12:37:48 2001
++++ smbwrapper/smbw.c	Fri Apr 13 13:09:00 2001
+@@ -22,6 +22,11 @@
+ #include "includes.h"
+ #include "realcalls.h"
+ 
++#if defined(__USLC__) && defined(HAVE_SYS_ACL_H)
++#define GETACL ACL_GET
++#define GETACLCNT ACL_CNT
++#endif
++
+ pstring smbw_cwd;
+ 
+ static struct smbw_file *smbw_files;
+@@ -1462,7 +1467,11 @@
+ /***************************************************** 
+ say no to acls
+ *******************************************************/
++#if defined(__USLC__)
++ int smbw_acl(const char *pathp, int cmd, int nentries, void *aclbufp)
++#else
+  int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp)
++#endif
+ {
+ 	if (cmd == GETACL || cmd == GETACLCNT) return 0;
+ 	errno = ENOSYS;
+@@ -1474,7 +1483,11 @@
+ /***************************************************** 
+ say no to acls
+ *******************************************************/
++#if defined(__USLC__)
++ int smbw_facl(int fd, int cmd, int nentries, void *aclbufp)
++#else
+  int smbw_facl(int fd, int cmd, int nentries, aclent_t *aclbufp)
++#endif
+ {
+ 	if (cmd == GETACL || cmd == GETACLCNT) return 0;
+ 	errno = ENOSYS;
+--- tdb/tdb.c.orig	Fri Apr 13 05:58:34 2001
++++ tdb/tdb.c	Fri Apr 13 13:34:18 2001
+@@ -856,7 +856,11 @@
+ {
+ 	TDB_DATA key, dbuf;
+ 	struct list_struct rec;
++#if defined(__USLC__)
++    struct tdb_traverse_lock tl = { (struct tdb_traverse_lock *)0, 0, 0 };
++#else
+ 	struct tdb_traverse_lock tl = { NULL, 0, 0 };
++#endif
+ 	int ret, count = 0;
+ 
+         /* This was in the initializaton, above, but the IRIX compiler
+--- utils/torture.c.orig	Fri Mar 30 13:53:26 2001
++++ utils/torture.c	Fri Apr 13 13:09:01 2001
+@@ -2703,7 +2703,11 @@
+ 
+ 	dbf = stdout;
+ 
++#if defined(__USLC__)
++	setbuf(stdout, NULL);
++#else
+ 	setbuffer(stdout, NULL, 0);
++#endif
+ 
+ 	charset_initialise();
+ 
+--- utils/locktest.c.orig	Fri Sep 29 13:18:14 2000
++++ utils/locktest.c	Fri Apr 13 13:09:01 2001
+@@ -34,7 +34,7 @@
+ 
+ #define FILENAME "\\locktest.dat"
+ #define LOCKRANGE 1000
+-#define LOCKBASE 0;
++#define LOCKBASE 0
+ 
+ /*
+ #define LOCKBASE (0x40000000 - 50)
+@@ -59,6 +59,7 @@
+ 	char needed;
+ };
+ 
++#ifndef __USLC__
+ static struct record preset[] = {
+ #if 0
+ {36,  5, 0, 0, 0,  8, 1},
+@@ -67,6 +68,7 @@
+ {99, 11, 0, 0, 7,  1, 1},
+ #endif
+ };
++#endif /* __USLC__) */
+ 
+ static struct record *recorded;
+ 
+@@ -378,20 +380,23 @@
+ 	recorded = (struct record *)malloc(sizeof(*recorded) * numops);
+ 
+ 	for (n=0; n<numops; n++) {
++#ifndef __USLC__
+ 		if (n < sizeof(preset) / sizeof(preset[0])) {
+ 			recorded[n] = preset[n];
+ 		} else {
++#endif
+ 			recorded[n].conn = random() % NCONNECTIONS;
+ 			recorded[n].f = random() % NFILES;
+ 			recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
+-			recorded[n].len = 1 + 
+-				random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
++			recorded[n].len = 1 + random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
+ 			recorded[n].start *= RANGE_MULTIPLE;
+ 			recorded[n].len *= RANGE_MULTIPLE;
+ 			recorded[n].r1 = random() % 100;
+ 			recorded[n].r2 = random() % 100;
+ 			recorded[n].needed = True;
++#ifndef __USLC__
+ 		}
++#endif
+ 	}
+ 
+ 	reconnect(cli, fnum, share);
+@@ -484,7 +489,11 @@
+ 	int seed, server;
+ 	static pstring servicesf = CONFIGFILE;
+ 
++#if defined(__USLC__)
++        setvbuf(stdout,NULL,_IOLBF,0); /* line buffered */
++#else
+ 	setlinebuf(stdout);
++#endif
+ 
+ 	dbf = stderr;
+ 
+--- utils/locktest2.c.orig	Tue Jun 13 08:47:44 2000
++++ utils/locktest2.c	Fri Apr 13 13:09:01 2001
+@@ -540,7 +540,11 @@
+ 	int seed;
+ 	static pstring servicesf = CONFIGFILE;
+ 
++#if defined(__USLC__)
++        setvbuf(stdout,NULL,_IOLBF,0); /* line buffered */
++#else
+ 	setlinebuf(stdout);
++#endif
+ 
+ 	dbf = stderr;
+ 
+--- utils/masktest.c.orig	Fri May 26 17:28:02 2000
++++ utils/masktest.c	Fri Apr 13 13:09:01 2001
+@@ -310,7 +310,11 @@
+ 	int seed;
+ 	static pstring servicesf = CONFIGFILE;
+ 
++#if defined(__USLC__)
++        setvbuf(stdout,NULL,_IOLBF,0); /* line buffered */
++#else
+ 	setlinebuf(stdout);
++#endif
+ 
+ 	dbf = stderr;
+ 
+--- utils/smbcacls.c.orig	Thu Apr 12 21:09:39 2001
++++ utils/smbcacls.c	Fri Apr 13 13:09:01 2001
+@@ -824,7 +824,11 @@
+ 
+ 	ctx=talloc_init();
+ 
++#if defined(__USLC__)
++        setvbuf(stdout,NULL,_IOLBF,0); /* line buffered */
++#else
+ 	setlinebuf(stdout);
++#endif
+ 
+ 	dbf = stderr;
+ 
+--- ltconfig.orig	Mon Mar 13 15:20:00 2000
++++ ltconfig	Fri Apr 13 13:09:01 2001
+@@ -1482,9 +1482,9 @@
+     no_undefined_flag=' -z text'
+     # $CC -shared without GNU ld will not create a library from C++
+     # object files and a static libstdc++, better avoid it by now
+-    archive_cmds='$LD -G${allow_undefined_flag} -h $soname -o $lib $libobjs $deplibs $linkopts'
++    archive_cmds='$LD -G${allow_undefined_flag} -h $rpath/$soname -o $lib $libobjs $deplibs $linkopts'
+     archive_expsym_cmds='$echo "{ global:" > $lib.exp~cat $export_symbols | sed -e "s/\(.*\)/\1;/" >> $lib.exp~$echo "local: *; };" >> $lib.exp~
+-		$LD -G${allow_undefined_flag} -M $lib.exp -h $soname -o $lib $libobjs $deplibs $linkopts~$rm $lib.exp'
++		$LD -G${allow_undefined_flag} -M $lib.exp -h $rpath/$soname -o $lib $libobjs $deplibs $linkopts~$rm $lib.exp'
+     hardcode_libdir_flag_spec=
+     hardcode_shlibpath_var=no
+     runpath_var='LD_RUN_PATH'
+--- configure.in.orig	Fri Apr 13 11:33:18 2001
++++ configure.in	Fri Apr 13 13:09:01 2001
+@@ -727,6 +727,10 @@
+ 		*sysv5*)
+ 			if [ test "$GCC" != yes ]; then
+ 				AC_DEFINE(HAVE_MEMSET)
++				PICFLAG="-KPIC"
++                                ac_cv_prog_cc_fpic=no
++                                ac_cv_prog_cc_Kpic=no
++                                ac_cv_prog_cc_KPIC=yes
+ 			fi
+ 			LDSHFLAGS="-G"
+ 			;;

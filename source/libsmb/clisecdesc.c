@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    client security descriptor functions
    Copyright (C) Andrew Tridgell 2000
    
@@ -28,12 +29,12 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	int rparam_count=0, rdata_count=0;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
 	SIVAL(param, 0, fnum);
-	SIVAL(param, 4, 0x7);
+	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
 			       NT_TRANSACT_QUERY_SECURITY_DESC, 
@@ -54,8 +55,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	}
 
 	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
-	prs_copy_data_in(&pd, rdata, rdata_count);
-	prs_set_offset(&pd,0);
+	prs_append_data(&pd, rdata, rdata_count);
+	pd.data_offset = 0;
 
 	if (!sec_io_desc("sd data", &psd, &pd, 1)) {
 		DEBUG(1,("Failed to parse secdesc\n"));
@@ -78,13 +79,13 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	int rparam_count=0, rdata_count=0;
 	uint32 sec_info = 0;
 	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
 	BOOL ret = False;
 
-	if ((mem_ctx = talloc_init("cli_set_secdesc")) == NULL) {
+	if ((mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("talloc_init failed.\n"));
 		goto cleanup;
 	}
@@ -112,7 +113,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 			       0, 
 			       NULL, 0, 0,
 			       param, 8, 0,
-			       prs_data_p(&pd), prs_offset(&pd), 0)) {
+			       pd.data_p, pd.data_offset, 0)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_SET_SECURITY_DESC\n"));
 		goto cleanup;
 	}

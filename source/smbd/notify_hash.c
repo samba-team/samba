@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    change notify handling - hash based implementation
    Copyright (C) Jeremy Allison 1994-1998
    Copyright (C) Andrew Tridgell 2000
@@ -41,14 +42,14 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	SMB_STRUCT_STAT st;
 	pstring full_name;
 	char *p;
-	const char *fname;
+	char *fname;
 	size_t remaining_len;
 	size_t fullname_len;
 	void *dp;
 
 	ZERO_STRUCTP(data);
 
-	if(SMB_VFS_STAT(conn,path, &st) == -1)
+	if(vfs_stat(conn,path, &st) == -1)
 		return False;
 
 	data->modify_time = st.st_mtime;
@@ -100,7 +101,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		/*
 		 * Do the stat - but ignore errors.
 		 */		
-		SMB_VFS_STAT(conn,full_name, &st);
+		vfs_stat(conn,full_name, &st);
 
 		/*
 		 * Always sum the times.
@@ -115,7 +116,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
 			int i;
 			unsigned char tmp_hash[16];
-			mdfour(tmp_hash, (const unsigned char *)fname, strlen(fname));
+			mdfour(tmp_hash, (unsigned char *)fname, strlen(fname));
 			for (i=0;i<16;i++)
 				data->name_hash[i] ^= tmp_hash[i];
 		}
@@ -125,7 +126,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 */
 
 		if (flags & (FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_SECURITY))
-			data->mode_sum += st.st_mode;
+			data->mode_sum = st.st_mode;
 	}
 	
 	CloseDir(dp);
@@ -194,7 +195,7 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 
 static void hash_remove_notify(void *datap)
 {
-	free(datap);
+	SAFE_FREE(datap);
 }
 
 /****************************************************************************

@@ -1,0 +1,139 @@
+diff -ur samba-2.2.7a.orig/examples/LDAP/ldapchpasswd samba-2.2.7a/examples/LDAP/ldapchpasswd
+--- samba-2.2.7a.orig/examples/LDAP/ldapchpasswd	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/ldapchpasswd	2003-02-10 15:38:24.000000000 -0500
+@@ -103,7 +103,7 @@
+ $password = crypt($pass, $modsalt);
+ 
+ # LanManager and NT clear text passwords
+-$ntpwd = `/usr/local/sbin/mkntpwd '$pass'`;
++$ntpwd = `/usr/sbin/mkntpwd '$pass'`;
+ chomp($lmpassword = substr($ntpwd, 0, index($ntpwd, ':')));
+ chomp($ntpassword = substr($ntpwd, index($ntpwd, ':')+1));
+ 
+diff -ur samba-2.2.7a.orig/examples/LDAP/smbldap-tools/INSTALL samba-2.2.7a/examples/LDAP/smbldap-tools/INSTALL
+--- samba-2.2.7a.orig/examples/LDAP/smbldap-tools/INSTALL	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/smbldap-tools/INSTALL	2003-02-10 15:56:06.000000000 -0500
+@@ -4,12 +4,12 @@
+ 
+ Quick & Dirty:
+ =-=-=-=-=-=-=-
+- . Copy all those scripts in /usr/local/sbin/
++ . Copy all those scripts in /usr/share/samba/scripts
+  . Modify smbldap_conf.pm to match your configuration
+  . If not already done : "smbpasswd -w secret" to set up
+    the ldap admin password in secrets.tdb
+- . Either add /usr/local/sbin in $PERLLIB or run the scripts
+-   from this directory, or make a symlink from /usr/local/sbin/*.pm
++ . Either add /usr/share/samba/scripts in $PERLLIB or run the scripts
++   from this directory, or make a symlink from /etc/samba/*.pm
+    to /usr/lib/perl5/.
+  . to allow a domain admin to add user using "add user script" in smb.conf :
+    chmod 753 smbldap_conf.pm
+@@ -21,7 +21,7 @@
+ RedHat RPM:
+ =-=-=-=-=-=
+ Install smbldap-tools-0.7-1.i386.rpm
+-Modify /usr/local/sbin/smbldap_conf.pm to match you configuration
++Modify /etc/samba/smbldap_conf.pm to match you configuration
+ If not already done : "smbpasswd -w secret" to set up
+ the ldap admin password in secrets.tdb
+ 
+diff -ur samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap_conf.pm samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap_conf.pm
+--- samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap_conf.pm	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap_conf.pm	2003-02-10 15:39:42.000000000 -0500
+@@ -230,7 +230,7 @@
+ # prefer mkntpwd... most of the time, it's a wise choice :-) 
+ $with_smbpasswd = 0;
+ $smbpasswd = "/usr/bin/smbpasswd";
+-$mk_ntpasswd = "/usr/local/sbin/mkntpwd";
++$mk_ntpasswd = "/usr/sbin/mkntpwd";
+ 
+ $ldap_path = "/usr/bin";
+ $ldap_opts = "-x";
+diff -ur samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-migrate-accounts.pl samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-migrate-accounts.pl
+--- samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-migrate-accounts.pl	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-migrate-accounts.pl	2003-02-10 15:50:15.000000000 -0500
+@@ -134,7 +134,7 @@
+   if (!$user_exists) {
+     if (!defined($Options{'C'})) {
+       # uid doesn't exist and we want to create it
+-      my $addcmd = "/usr/local/sbin/smbldap-useradd.pl $usertype $login > /dev/null";
++      my $addcmd = "/usr/share/samba/scripts/smbldap-useradd.pl $usertype $login > /dev/null";
+       print STDERR "$addcmd\n";
+       my $r = system "$addcmd";
+       if ($r != 0) {
+diff -ur samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-migrate-groups.pl samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-migrate-groups.pl
+--- samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-migrate-groups.pl	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-migrate-groups.pl	2003-02-10 15:52:51.000000000 -0500
+@@ -135,7 +135,7 @@
+     if (!defined($dn_line = get_group_dn($group))) {
+ 	# group not found, create it ?
+ 	if (!$nocreate) {
+-	    system "/usr/local/sbin/smbldap-groupadd.pl \"$group\"; sleep 5";
++	    system "/usr/share/samba/scripts/smbldap-groupadd.pl \"$group\"; sleep 5";
+ 	    if (!defined($dn_line = get_group_dn($group))) {
+ 		return 1;
+ 	    }
+diff -ur samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-tools.spec samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-tools.spec
+--- samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-tools.spec	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-tools.spec	2003-02-10 15:47:58.000000000 -0500
+@@ -1,6 +1,6 @@
+ # $Source: /home/cvs/samba/packaging/Mandrake/Attic/samba-2.2.7a-smbldaptools-paths.patch,v $
+ %define version	0.7
+-%define release	1
++%define release	2
+ %define name 	smbldap-tools
+ %define realname  smbldap-tools
+ 
+@@ -37,7 +37,7 @@
+ Source20:	smbldap-migrate-groups.pl
+ Source21:	INFRA
+ BuildRoot: 	/%{_tmppath}/%{name}
+-Prefix: /usr/local
++Prefix: /usr
+ BuildRequires: perl >= 5.6
+ Requires: perl >= 5.6, openldap, openldap-clients, samba
+ 
+@@ -94,7 +94,7 @@
+ %post
+ ln -sf %{prefix}/sbin/smbldap_tools.pm /usr/lib/perl5/site_perl/smbldap_tools.pm
+ ln -sf %{prefix}/sbin/smbldap_conf.pm /usr/lib/perl5/site_perl/smbldap_conf.pm
+-chgrp 512 %{prefix}/sbin/smbldap-useradd.pl %{prefix}/sbin/smbldap_conf.pm || echo "An error occured while changing groups of smbldap-useradd.pl and smbldap_conf.pm in /usr/local/sbin. For proper operations, please ensure that they have the same posix group as the Samba domain administrator if there's a local Samba PDC."
++chgrp 512 %{prefix}/sbin/smbldap-useradd.pl %{prefix}/sbin/smbldap_conf.pm || echo "An error occured while changing groups of smbldap-useradd.pl and smbldap_conf.pm in /etc/samba. For proper operations, please ensure that they have the same posix group as the Samba domain administrator if there's a local Samba PDC."
+ perl -i -pe 's/_SLAVELDAP_/localhost/' %{prefix}/sbin/smbldap_conf.pm
+ perl -i -pe 's/_MASTERLDAP_/localhost/' %{prefix}/sbin/smbldap_conf.pm
+ perl -i -pe 's/_SUFFIX_/dc=IDEALX,dc=org/' %{prefix}/sbin/smbldap_conf.pm
+@@ -129,6 +129,10 @@
+ 
+ 
+ %changelog
++* Mon Feb 10 2003 Jim Collings <jcllings@tsunamicomm.net> 0.7-2
++- Changed prefix to /usr instead of 
++- /usr/local for Mandrake compatibility.
++
+ * Sat Jun  1 2002 Olivier Lemaire <olem@IDEALX.com> 0.7-1
+ - some bugfixes about smbldap-populate
+ - bugfixed the smbpasswd call in smbldap-useradd
+diff -ur samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-useradd.pl samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-useradd.pl
+--- samba-2.2.7a.orig/examples/LDAP/smbldap-tools/smbldap-useradd.pl	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/LDAP/smbldap-tools/smbldap-useradd.pl	2003-02-10 15:53:50.000000000 -0500
+@@ -346,7 +346,7 @@
+ }
+ 
+ if (defined($Options{'P'})) {
+-    exec "/usr/local/sbin/smbldap-passwd.pl $userName"
++    exec "/usr/share/samba/scripts/smbldap-passwd.pl $userName"
+ }
+ 
+ exit 0;
+diff -ur samba-2.2.7a.orig/examples/VFS/block/smb.conf samba-2.2.7a/examples/VFS/block/smb.conf
+--- samba-2.2.7a.orig/examples/VFS/block/smb.conf	2003-02-10 15:17:53.000000000 -0500
++++ samba-2.2.7a/examples/VFS/block/smb.conf	2003-02-11 13:53:53.000000000 -0500
+@@ -1,6 +1,6 @@
+ [homes]
+    comment = Home Directories
+-   vfs object = /usr/local/samba/lib/block.so 
++   vfs object = /usr/lib/samba/vfs/block.so 
+    browseable = yes
+    writable = yes
+ 

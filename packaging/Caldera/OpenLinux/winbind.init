@@ -1,0 +1,132 @@
+#!/bin/bash
+#
+#
+### BEGIN INIT INFO
+# Provides: $winbind
+# Required-Start: $network $samba
+# Required-Stop: $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: samba
+#		Starts and stops the Samba smbd and nmbd daemons
+#		used to provide SMB network services.
+### END INIT INFO
+#
+# Written by Miquel van Smoorenburg <miquels@drinkel.ow.org>.
+# Modified for Debian GNU/Linux by Ian Murdock <imurdock@gnu.ai.mit.edu>.
+# Modified for OpenLinux by Raymund Will <ray@caldera.de>
+# Adapted for samba by Klaus Singvogel <klaus@caldera.de>
+
+NAME_W=winbindd
+DAEMON_W=/usr/sbin/$NAME_W
+
+config_file=/etc/samba.d/smb.conf 
+
+# Source function library (and set vital variables).
+.  @SVIdir@/functions
+
+status() {
+  [ -e $1 ] || return 3; # lock / pid file doesn't exist, seems to be stopped
+  
+  i=`cat "$1"`
+  state=`egrep '^State' /proc/$i/status 2>/dev/null| sed 's#.*	\(.\).*#\1#'`
+  if [ x$state = x -o x$state = xZ ]; then
+    return 2             # no such process (or zombie) --> dead
+  fi
+  return 0               # seems to be up and running
+}
+
+# this function is dedicated to Jan Terpstra. -- Klaus Singvogel, Sep. 2001.
+WinbdConfig() {
+  # returns 0 if winbindd is not configured,
+  # and     1 if winbindd is configured.
+
+  local config_file=$1; shift   # file to check
+
+  # check if "winbind uid" is set in samba config file
+  egrep -q '[^#]*winbind uid' $config_file || return 0
+
+  found=0;
+  # We also need to check if least one PAM module control file does
+  # NOT have pam_winbind.so commented out
+  for i in /etc/pam.d/*; do
+    if [ ! -f $i ]; then next; fi
+    egrep -q '[^#]*pam_winbind.so' $i && found=1 && break;
+  done
+
+  if [ $found != 0 ]; then
+    # if so, ensure that in /etc/nsswitch.conf we have for
+    # "passwd", "shadow", "group" an entry for "winbind"
+    egrep -q '^passwd:.*winbind' /etc/nsswitch.conf && return 1
+    egrep -q '^shadow:.*winbind' /etc/nsswitch.conf && return 1
+    egrep -q '^group:.*winbind' /etc/nsswitch.conf && return 1 
+  fi
+
+  return 0
+}
+
+case "$1" in
+ start)
+  [ ! -e $SVIlock ] || exit 0
+  [ -x $DAEMON_W ] || exit 5
+  SVIemptyConfig $config_file && exit 6
+
+  echo -n "Starting $SVIsubsys services: "
+  WinbdConfig $config_file || ssd -S -n $NAME_W -x $DAEMON_W -- $OPTIONS_WINBD
+  ret=$?
+
+  echo  "."
+  touch $SVIlock
+  ;;
+
+ stop)
+  [ -e $SVIlock ] || exit 0
+
+  echo -n "Stopping $SVIsubsys services: "
+  ssd -K -p /var/lock/samba.d/$NAME_W.pid -n $NAME_W #-x $DAEMON_W
+
+  ret=$?
+
+  echo "."
+  rm -f $SVIlock
+  ;;
+
+ force-reload)
+  [ -e $SVIlock ] || exit 0
+  $0 restart
+  ret=$?
+  ;;
+
+ reload)
+  echo -n "Reloading $SVIsubsys service configuration: "
+  # nmbd has no config file to reload
+  ssd -K --signal 1 -p /var/lock/samba.d/$NAME_W.pid -n $NAME_W #-x $DAEMON_W
+  ret=$?
+  echo  "."
+  ;;
+
+ restart)
+  $0 stop
+  $0 start
+  ret=$?
+  ;;
+
+ status)
+  echo -n "Checking status of $SVIsubsys service: "
+  status /var/lock/samba.d/$NAME_W.pid
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    echo -n "$NAME_W "
+  fi
+  echo "."
+  ;;
+
+ *)
+  echo "Usage: $SVIscript {start|stop|restart|force-reload|reload|status}"
+  ret=2
+  ;;
+
+esac
+
+exit $ret
+

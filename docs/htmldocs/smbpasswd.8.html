@@ -1,0 +1,831 @@
+<HTML
+><HEAD
+><TITLE
+>smbpasswd</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBPASSWD"
+>smbpasswd</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbpasswd&nbsp;--&nbsp;change a user's SMB password</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+>When run by root:</P
+><P
+><B
+CLASS="COMMAND"
+>smbpasswd</B
+>  [options] [username] [password]</P
+><P
+>otherwise:</P
+><P
+><B
+CLASS="COMMAND"
+>smbpasswd</B
+>  [options] [password]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN20"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+>The smbpasswd program has several different 
+	functions, depending on whether it is run by the <EM
+>root</EM
+> 
+	user or not. When run as a normal user it allows the user to change 
+	the password used for their SMB sessions on any machines that store 
+	SMB passwords. </P
+><P
+>By default (when run with no arguments) it will attempt to 
+	change the current user's SMB password on the local machine. This is 
+	similar to the way the <B
+CLASS="COMMAND"
+>passwd(1)</B
+> program works. 
+	<B
+CLASS="COMMAND"
+>smbpasswd</B
+> differs from how the passwd program works 
+	however in that it is not <EM
+>setuid root</EM
+> but works in 
+	a client-server mode and communicates with a locally running
+	<B
+CLASS="COMMAND"
+>smbd(8)</B
+>. As a consequence in order for this to 
+	succeed the smbd daemon must be running on the local machine. On a 
+	UNIX machine the encrypted SMB passwords are usually stored in 
+	the <TT
+CLASS="FILENAME"
+>smbpasswd(5)</TT
+> file. </P
+><P
+>When run by an ordinary user with no options. smbpasswd 
+	will prompt them for their old SMB password and then ask them 
+	for their new password twice, to ensure that the new password
+	was typed correctly. No passwords will be echoed on the screen 
+	whilst being typed. If you have a blank SMB password (specified by 
+	the string "NO PASSWORD" in the smbpasswd file) then just press 
+	the &#60;Enter&#62; key when asked for your old password. </P
+><P
+>smbpasswd can also be used by a normal user to change their
+	SMB password on remote machines, such as Windows NT Primary Domain 
+	Controllers.   See the (-r) and -U options below. </P
+><P
+>When run by root, smbpasswd allows new users to be added 
+	and deleted in the smbpasswd file, as well as allows changes to 
+	the attributes of the user in this file to be made. When run by root, 
+	<B
+CLASS="COMMAND"
+>smbpasswd</B
+> accesses the local smbpasswd file 
+	directly, thus enabling changes to be made even if smbd is not 
+	running. </P
+><P
+><B
+CLASS="COMMAND"
+>smbpasswd</B
+> can also be used to retrieve 
+	the SIDs related to previous incarnations of this server on the
+	same machine, as well as set the SID of this domain. This is needed
+	in those cases when the admin changes the NetBIOS or DNS name of 
+	the server without realizing that doing so will change the SID of
+	the server as well. See the -W and -X options below. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN38"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-L</DT
+><DD
+><P
+>Run the smbpasswd command in local mode. This 
+		allows a non-root user to specify the root-only options. This 
+		is used mostly in test environments where a non-root user needs
+		to make changes to the local <TT
+CLASS="FILENAME"
+>smbpasswd</TT
+> file.
+		The <TT
+CLASS="FILENAME"
+>smbpasswd</TT
+> file must have read/write 
+		permissions for the user running the command.</P
+></DD
+><DT
+>-h</DT
+><DD
+><P
+>This option prints the help string for 
+		<B
+CLASS="COMMAND"
+>smbpasswd</B
+>. </P
+></DD
+><DT
+>-c smb.conf file</DT
+><DD
+><P
+>This option specifies that the configuration
+		file specified should be used instead of the default value
+		specified at compile time. </P
+></DD
+><DT
+>-D debuglevel</DT
+><DD
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>debuglevel</I
+></TT
+> is an integer 
+		from 0 to 10.  The default value if this parameter is not specified 
+		is zero. </P
+><P
+>The higher this value, the more detail will be logged to the 
+		log files about the activities of smbpasswd. At level 0, only 
+		critical errors and serious warnings will be logged. </P
+><P
+>Levels above 1 will generate considerable amounts of log 
+		data, and should only be used when investigating a problem. Levels 
+		above 3 are designed for use only by developers and generate
+		HUGE amounts of log data, most of which is extremely cryptic. 
+		</P
+></DD
+><DT
+>-r remote machine name</DT
+><DD
+><P
+>This option allows a user to specify what machine 
+		they wish to change their password on. Without this parameter 
+		smbpasswd defaults to the local host. The <TT
+CLASS="REPLACEABLE"
+><I
+>remote 
+		machine name</I
+></TT
+> is the NetBIOS name of the SMB/CIFS 
+		server to contact to attempt the password change. This name is 
+		resolved into an IP address using the standard name resolution 
+		mechanism in all programs of the Samba suite. See the <TT
+CLASS="PARAMETER"
+><I
+>-R 
+		name resolve order</I
+></TT
+> parameter for details on changing 
+		this resolving mechanism. </P
+><P
+>The username whose password is changed is that of the 
+		current UNIX logged on user. See the <TT
+CLASS="PARAMETER"
+><I
+>-U username</I
+></TT
+>
+		parameter for details on changing the password for a different 
+		username. </P
+><P
+>Note that if changing a Windows NT Domain password the 
+		remote machine specified must be the Primary Domain Controller for 
+		the domain (Backup Domain Controllers only have a read-only
+		copy of the user account database and will not allow the password 
+		change).</P
+><P
+><EM
+>Note</EM
+> that Windows 95/98 do not have 
+		a real password database so it is not possible to change passwords 
+		specifying a Win95/98  machine as remote machine target. </P
+></DD
+><DT
+>-s</DT
+><DD
+><P
+>This option causes smbpasswd to be silent (i.e. 
+		not issue prompts) and to read its old and new passwords from 
+		standard  input, rather than from <TT
+CLASS="FILENAME"
+>/dev/tty</TT
+> 
+		(like the <B
+CLASS="COMMAND"
+>passwd(1)</B
+> program does). This option 
+		is to aid people writing scripts to drive smbpasswd</P
+></DD
+><DT
+>-S</DT
+><DD
+><P
+>This option causes <B
+CLASS="COMMAND"
+>smbpasswd</B
+>
+		to query a domain controller of the domain specified 
+		by the <A
+HREF="smb.conf.5.html#WORKGROUP"
+TARGET="_top"
+>workgroup</A
+>
+		parameter in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> and store the
+		domain SID in the <TT
+CLASS="FILENAME"
+>secrets.tdb</TT
+> file
+		as its own machine SID.  This is only useful when configuring
+		a Samba PDC and Samba BDC, or when migrating from a Windows PDC
+		to a Samba PDC.  </P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-r</I
+></TT
+> options can be used
+		as well to indicate a specific domain controller which should
+		be contacted.  In this case, the domain SID obtained is the 
+		one for the domain to which the remote machine belongs.
+		</P
+></DD
+><DT
+>-t</DT
+><DD
+><P
+>This option is used to force smbpasswd to 
+		change the current password assigned to the machine trust account
+		when operating in domain security mode.  This is really meant to 
+		be used on systems that only run <A
+HREF="winbindd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>winbindd</B
+></A
+>.
+		Under server installations, <A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd</B
+></A
+>
+		handle the password updates automatically.</P
+></DD
+><DT
+>-T</DT
+><DD
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-T</I
+></TT
+> option may be used to
+		force samba to use a previously created trust account by allowing
+		the trust account hash to be set in the secrets database only. 
+		This way, an application can change the trust account password
+		and call "smbpasswd -T" so that Samba can continue to work.</P
+></DD
+><DT
+>-U username[%pass]</DT
+><DD
+><P
+>This option may only be used in conjunction 
+		with the <TT
+CLASS="PARAMETER"
+><I
+>-r</I
+></TT
+> option. When changing
+		a password on a remote machine it allows the user to specify 
+		the user name on that machine whose password will be changed. It 
+		is present to allow users who have different user names on 
+		different systems to change these passwords. The optional
+		%pass may be used to specify to old password.</P
+><P
+>In particular, this parameter specifies the username
+                used to create the machine account when invoked with -j</P
+></DD
+><DT
+>-W S-1-5-21-x-y-z</DT
+><DD
+><P
+>This option forces the SID S-1-5-21-x-y-z to
+		be the server and domain SID for the current Samba server. It
+		does this by updating the appropriate keys in the secrets
+		file. </P
+></DD
+><DT
+>-X server|domain</DT
+><DD
+><P
+>This option allows the admin to retrieve the 
+		SID associated with a former servername or domain name that
+		this Samba server might have used. It does this by retrieving
+		the appropriate entry from the secrets file.</P
+></DD
+><DT
+><B
+CLASS="COMMAND"
+>NOTE:</B
+></DT
+><DD
+><P
+><B
+CLASS="COMMAND"
+>The following options are available only when the smbpasswd command is
+run as root or in local mode.</B
+></P
+></DD
+><DT
+>-a</DT
+><DD
+><P
+>This option specifies that the username 
+		following should be added to the local smbpasswd file, with the 
+		new password typed. This 
+		option is ignored if the username specified already exists in 
+		the smbpasswd file and it is treated like a regular change 
+		password command. Note that the user to be added must already exist 
+		in the system password file (usually <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+>)
+		else the request to add the user will fail. </P
+></DD
+><DT
+>-d</DT
+><DD
+><P
+>This option specifies that the username following 
+		should be <TT
+CLASS="CONSTANT"
+>disabled</TT
+> in the local smbpasswd 
+		file. This is done by writing a <TT
+CLASS="CONSTANT"
+>'D'</TT
+> flag 
+		into the account control space in the smbpasswd file. Once this 
+		is done all attempts to authenticate via SMB using this username 
+		will fail. </P
+><P
+>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
+		format) there is no space in the user's password entry to write
+		this information and so the user is disabled by writing 'X' characters 
+		into the password space in the smbpasswd file. See <B
+CLASS="COMMAND"
+>smbpasswd(5)
+		</B
+> for details on the 'old' and new password file formats.
+		</P
+></DD
+><DT
+>-e</DT
+><DD
+><P
+>This option specifies that the username following 
+		should be <TT
+CLASS="CONSTANT"
+>enabled</TT
+> in the local smbpasswd file, 
+		if the account was previously disabled. If the account was not 
+		disabled this option has no effect. Once the account is enabled then 
+		the user will be able to authenticate via SMB once again. </P
+><P
+>If the smbpasswd file is in the 'old' format, then <B
+CLASS="COMMAND"
+>		smbpasswd</B
+> will prompt for a new password for this user, 
+		otherwise the account will be enabled by removing the <TT
+CLASS="CONSTANT"
+>'D'
+		</TT
+> flag from account control space in the <TT
+CLASS="FILENAME"
+>		smbpasswd</TT
+> file. See <B
+CLASS="COMMAND"
+>smbpasswd (5)</B
+> for 
+		details on the 'old' and new password file formats. </P
+></DD
+><DT
+>-m</DT
+><DD
+><P
+>This option tells smbpasswd that the account 
+		being changed is a MACHINE account. Currently this is used 
+		when Samba is being used as an NT Primary Domain Controller.</P
+></DD
+><DT
+>-n</DT
+><DD
+><P
+>This option specifies that the username following 
+		should have their password set to null (i.e. a blank password) in 
+		the local smbpasswd file. This is done by writing the string "NO 
+		PASSWORD" as the first part of the first password stored in the 
+		smbpasswd file. </P
+><P
+>Note that to allow users to logon to a Samba server once 
+		the password has been set to "NO PASSWORD" in the smbpasswd
+		file the administrator must set the following parameter in the [global]
+		section of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file : </P
+><P
+><B
+CLASS="COMMAND"
+>null passwords = yes</B
+></P
+></DD
+><DT
+>-w password</DT
+><DD
+><P
+>This parameter is only available is Samba
+		has been configured to use the experimental
+		<B
+CLASS="COMMAND"
+>--with-ldapsam</B
+> option. The <TT
+CLASS="PARAMETER"
+><I
+>-w</I
+></TT
+> 
+		switch is used to specify the password to be used with the 
+		<A
+HREF="smb.conf.5.html#LDAPADMINDN"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap admin 
+		dn</I
+></TT
+></A
+>.  Note that the password is stored in
+		the <TT
+CLASS="FILENAME"
+>private/secrets.tdb</TT
+> and is keyed off 
+		of the admin's DN.  This means that if the value of <TT
+CLASS="PARAMETER"
+><I
+>ldap
+		admin dn</I
+></TT
+> ever changes, the password will need to be 
+		manually updated as well.
+		</P
+></DD
+><DT
+>-x</DT
+><DD
+><P
+>This option specifies that the username 
+		following should be deleted from the local smbpasswd file.
+		</P
+></DD
+><DT
+>-j DOMAIN</DT
+><DD
+><P
+>This option is used to add a Samba server 
+		into a Windows NT Domain, as a Domain member capable of authenticating 
+		user accounts to any Domain Controller in the same way as a Windows 
+		NT Server. See the <B
+CLASS="COMMAND"
+>security = domain</B
+> option in 
+		the <TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+> man page. </P
+><P
+>This command can work both with and without the -U parameter. </P
+><P
+>When invoked with -U, that username (and optional password) are
+                used to contact the PDC (which must be specified with -r) to both
+                create a machine account, and to set a password on it.</P
+><P
+>Alternately, if -U is omitted, Samba will contact its PDC
+                and attempt to change the password on a pre-existing account. </P
+><P
+>In order to be used in this way, the Administrator for 
+		the Windows NT Domain must have used the program "Server Manager 
+		for Domains" to add the primary NetBIOS name of  the Samba server 
+		as a member of the Domain. </P
+><P
+>After this has been done, to join the Domain invoke <B
+CLASS="COMMAND"
+>		smbpasswd</B
+> with this parameter. smbpasswd will then 
+		look up the Primary Domain Controller for the Domain (found in 
+		the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file in the parameter 
+		<TT
+CLASS="PARAMETER"
+><I
+>password server</I
+></TT
+> and change the machine account 
+		password used to create the secure Domain communication.  </P
+><P
+>Either way, this password is then stored by smbpasswd in a TDB, 
+                writeable only by root, called <TT
+CLASS="FILENAME"
+>secrets.tdb</TT
+> </P
+><P
+>Once this operation has been performed the <TT
+CLASS="FILENAME"
+>		smb.conf</TT
+> file may be updated to set the <B
+CLASS="COMMAND"
+>		security = domain</B
+> option and all future logins
+		to the Samba server will be authenticated to the Windows NT 
+		PDC. </P
+><P
+>Note that even though the authentication is being 
+		done to the PDC all users accessing the Samba server must still 
+		have a valid UNIX account on that machine.  
+                The <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> daemon can be used
+                to create UNIX accounts for NT users.</P
+></DD
+><DT
+>-R name resolve order</DT
+><DD
+><P
+>This option allows the user of smbpasswd to determine 
+		what name resolution services to use when looking up the NetBIOS
+		name of the host being connected to. </P
+><P
+>The options are :"lmhosts", "host", "wins" and "bcast". They cause 
+		names to be resolved as follows : </P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>lmhosts</TT
+> : Lookup an IP 
+			address in the Samba lmhosts file. If the line in lmhosts has 
+			no name type attached to the NetBIOS name (see the <A
+HREF="lmhosts.5.html"
+TARGET="_top"
+>lmhosts(5)</A
+> for details) then
+			any name type matches for lookup.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>host</TT
+> : Do a standard host 
+			name to IP address resolution, using the system <TT
+CLASS="FILENAME"
+>/etc/hosts
+			</TT
+>, NIS, or DNS lookups. This method of name resolution 
+			is operating system dependent. For instance, on IRIX or Solaris this 
+			may be controlled by the <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> 
+			file).  Note that this method is only used if the NetBIOS name 
+			type being queried is the 0x20 (server) name type, otherwise 
+			it is ignored.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>wins</TT
+> : Query a name with 
+			the IP address listed in the <TT
+CLASS="PARAMETER"
+><I
+>wins server</I
+></TT
+> 
+			parameter.  If no WINS server has been specified this method 
+			will be ignored.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>bcast</TT
+> : Do a broadcast on 
+			each of the known local interfaces listed in the
+			<TT
+CLASS="PARAMETER"
+><I
+>interfaces</I
+></TT
+> parameter. This is the least 
+			reliable of the name resolution methods as it depends on the 
+			target host being on a locally connected subnet.</P
+></LI
+></UL
+><P
+>The default order is <B
+CLASS="COMMAND"
+>lmhosts, host, wins, bcast</B
+> 
+		and without this parameter or any entry in the 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file the name resolution methods will 
+		be attempted in this order. </P
+></DD
+><DT
+>username</DT
+><DD
+><P
+>This specifies the username for all of the 
+		<EM
+>root only</EM
+> options to operate on. Only root 
+		can specify this parameter as only root has the permission needed 
+		to modify attributes directly in the local smbpasswd file. 
+		</P
+></DD
+><DT
+>password</DT
+><DD
+><P
+>This specifies the new password. If this parameter
+		is specified you will not be prompted for the new password.
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN228"
+></A
+><H2
+>NOTES</H2
+><P
+>Since <B
+CLASS="COMMAND"
+>smbpasswd</B
+> works in client-server 
+	mode communicating  with a local smbd for a non-root user then 
+	the smbd daemon must be running for this to work. A common problem 
+	is to add a restriction to the hosts that may access the <B
+CLASS="COMMAND"
+>	smbd</B
+> running on the local machine by specifying a 
+	<TT
+CLASS="PARAMETER"
+><I
+>allow hosts</I
+></TT
+> or <TT
+CLASS="PARAMETER"
+><I
+>deny hosts</I
+></TT
+> 
+	entry in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file and neglecting to 
+	allow "localhost" access to the smbd. </P
+><P
+>In addition, the smbpasswd command is only useful if Samba
+	has been set up to use encrypted passwords. See the file 
+	<TT
+CLASS="FILENAME"
+>ENCRYPTION.txt</TT
+> in the docs directory for details 
+	on how to do this. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN238"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN241"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbpasswd.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smbpasswd(5)</TT
+></A
+>, 
+	<A
+HREF="samba.7.html"
+TARGET="_top"
+>samba(7)</A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN247"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

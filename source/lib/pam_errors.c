@@ -28,7 +28,7 @@
 #endif	
 
 /* PAM -> NT_STATUS map */
-static const struct {
+static struct {
 	int pam_code;
 	NTSTATUS ntstatus;
 } pam_to_nt_status_map[] = {
@@ -36,7 +36,7 @@ static const struct {
 	{PAM_SYMBOL_ERR, NT_STATUS_UNSUCCESSFUL},
 	{PAM_SERVICE_ERR, NT_STATUS_UNSUCCESSFUL},
 	{PAM_SYSTEM_ERR,  NT_STATUS_UNSUCCESSFUL},
-	{PAM_BUF_ERR, NT_STATUS_NO_MEMORY},
+	{PAM_BUF_ERR, NT_STATUS_UNSUCCESSFUL},
 	{PAM_PERM_DENIED, NT_STATUS_ACCESS_DENIED},
 	{PAM_AUTH_ERR, NT_STATUS_WRONG_PASSWORD},
 	{PAM_CRED_INSUFFICIENT, NT_STATUS_INSUFFICIENT_LOGON_INFO}, /* FIXME:  Is this correct? */
@@ -58,7 +58,7 @@ static const struct {
 };
 
 /* NT_STATUS -> PAM map */
-static const struct {
+static struct {
 	NTSTATUS ntstatus;
 	int pam_code;
 } nt_status_to_pam_map[] = {
@@ -67,10 +67,7 @@ static const struct {
 	{NT_STATUS_WRONG_PASSWORD, PAM_AUTH_ERR},
 	{NT_STATUS_LOGON_FAILURE, PAM_AUTH_ERR},
 	{NT_STATUS_ACCOUNT_EXPIRED, PAM_ACCT_EXPIRED},
-	{NT_STATUS_PASSWORD_EXPIRED, PAM_AUTHTOK_EXPIRED},
 	{NT_STATUS_PASSWORD_MUST_CHANGE, PAM_NEW_AUTHTOK_REQD},
-	{NT_STATUS_ACCOUNT_LOCKED_OUT, PAM_MAXTRIES},
-	{NT_STATUS_NO_MEMORY, PAM_BUF_ERR},
 	{NT_STATUS_OK, PAM_SUCCESS}
 };
 

@@ -1,0 +1,111 @@
+#!/ibin/sh
+#
+# The component query script for the Samba component
+#
+#       %Z% %M% %I% %E% %Q%
+#
+#       input:
+#               $1 - keyword list (e.g. "UPGRADE OLD_CUSTOM_UPGRADE")
+#               $2 - package list (e.g. "Samba:<component>:<package> )
+#
+
+# Save input arguments
+#
+keywords=$1
+pkgList=$2
+
+# Source in the standard functions library
+#
+. ccsSetup.sh
+
+# Local Variables
+#
+installType=FRESH
+
+# set custom install mode
+customMode=LAYERED
+[ "$IQM_FILE" ] && {
+                # Invoking custom from the IQM.  IQM output will be stored
+                # in $IQM_FILE.
+                customMode="IQM"
+}
+
+# Local Functions
+
+##############################################################################
+#
+# If called with an argument indicating failure, remove any possible saved 
+# configuration info.  Exit with arg passed to this function.
+#
+cleanup()
+{
+        trap '' 1 2 3 15
+        exit $1
+}
+
+################################################################################
+#
+# We are doing a SSO -> SSO upgrade.  
+#
+Save_SSO_Upgrade_Config()
+{
+    if [ -f /etc/samba.d/smbusers ]; then
+        ex_cmd cp -f /etc/samba.d/smbusers $CCS_PERSISTENT_STORAGE/smbusers
+    fi
+    if [ -f /etc/samba.d/smbpasswd ]; then
+        ex_cmd cp -f /etc/samba.d/smbpasswd ${CCS_PERSISTENT_STORAGE}/smbpasswd
+    fi
+    if [ -f /etc/samba.d/smb.conf ]; then
+        ex_cmd cp -f /etc/samba.d/smb.conf ${CCS_PERSISTENT_STORAGE}/smb.conf
+    fi
+    if [ -f /etc/samba.d/lmhosts ]; then
+        ex_cmd cp -f /etc/samba.d/lmhosts ${CCS_PERSISTENT_STORAGE}/lmhosts
+    fi
+    if [ -f /etc/samba.d/printers.def ]; then
+        ex_cmd cp -f /etc/samba.d/printers.def \
+		${CCS_PERSISTENT_STORAGE}/printers.def
+    fi
+
+    return 0
+}
+
+################################################################################
+# main Main MAIN
+#
+trap "cleanup $FAIL" 1 2 3 15
+
+# Parse keyword list to determine how custom was invoked, the installation type,
+# whether we running on the target CPU, and finally if we have access to 
+# the target's root filesystem.
+#
+for k in $keywords
+do
+	case $k in
+	"UPGRADE")
+		# SSO -> SSO upgrade
+		#
+		installType="SSO_UPGRADE"
+		;;
+
+	"OLD_CUSTOM_UPGRADE")
+		# OLD_CUSTOM -> SSO upgrade
+		#
+		installType="OLD_UPGRADE"
+		;;
+	esac
+done
+
+case "$installType" in 
+"FRESH")
+	# No previous version of component on the system.  Perform a 
+	# fresh install.
+	;;
+
+"SSO_UPGRADE")
+	# Existing SSO component upgraded to newer SSO version.
+	#
+	Save_SSO_Upgrade_Config
+	;;
+esac
+
+cleanup $OK

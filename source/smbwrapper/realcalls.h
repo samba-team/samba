@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    defintions of syscall entries
    Copyright (C) Andrew Tridgell 1998
    

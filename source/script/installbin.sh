@@ -1,17 +1,26 @@
 #!/bin/sh
 
 INSTALLPERMS=$1
-DESTDIR=$2
-BASEDIR=`echo $3 | sed 's/\/\//\//g'`
-BINDIR=`echo $4 | sed 's/\/\//\//g'`
-LIBDIR=`echo $5 | sed 's/\/\//\//g'`
-VARDIR=`echo $6 | sed 's/\/\//\//g'`
+BASEDIR=$2
+BINDIR=$3
+LIBDIR=$4
+VARDIR=$5
 shift
 shift
 shift
 shift
 shift
-shift
+
+for d in $BASEDIR $BINDIR $LIBDIR $VARDIR $BASEDIR/private; do
+if [ ! -d $d ]; then
+mkdir $d
+if [ ! -d $d ]; then
+  echo Failed to make directory $d
+  exit 1
+fi
+fi
+done
+
 
 for p in $*; do
  p2=`basename $p`
@@ -25,10 +34,7 @@ for p in $*; do
 
  # this is a special case, mount needs this in a specific location
  if [ $p2 = smbmount ]; then
-   if [ ! -d $DESTDIR/sbin ]; then
-      mkdir $DESTDIR/sbin
-   fi 
-   ln -sf $BINDIR/$p2 $DESTDIR/sbin/mount.smbfs
+   ln -sf $BINDIR/$p2 /sbin/mount.smbfs
  fi
 done
 

@@ -25,13 +25,20 @@
 
 #include "rpc_misc.h"
 
+enum SID_NAME_USE
+{
+	SID_NAME_USE_NONE = 0,/* NOTUSED */
+	SID_NAME_USER    = 1, /* user */
+	SID_NAME_DOM_GRP = 2, /* domain group */
+	SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
+	SID_NAME_ALIAS   = 4, /* local group */
+	SID_NAME_WKN_GRP = 5, /* well-known group */
+	SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
+	SID_NAME_INVALID = 7, /* invalid account */
+	SID_NAME_UNKNOWN = 8  /* oops. */
+};
+
 /* Opcodes available on PIPE_LSARPC */
-
-#if 0	/* UNIMPLEMENTED */
-
-#define LSA_LOOKUPSIDS2		0x39
-
-#endif
 
 #define LSA_CLOSE              0x00
 #define LSA_DELETE             0x01
@@ -79,7 +86,6 @@
 #define LSA_RETRPRIVDATA       0x2b
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_GET_CONNUSER   0x2d /* LsaGetConnectedCredentials ? */
-#define LSA_QUERYINFO2         0x2e
 
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
@@ -268,49 +274,12 @@ typedef struct lsa_r_query_info
 
 } LSA_R_QUERY_INFO;
 
-/* LSA_DNS_DOM_INFO - DNS domain info - info class 12*/
-typedef struct lsa_dns_dom_info
-{
-	UNIHDR  hdr_nb_dom_name; /* netbios domain name */
-	UNIHDR  hdr_dns_dom_name;
-	UNIHDR  hdr_forest_name;
-
-	struct uuid dom_guid; /* domain GUID */
-
-	UNISTR2 uni_nb_dom_name;
-	UNISTR2 uni_dns_dom_name;
-	UNISTR2 uni_forest_name;
-
-	uint32 ptr_dom_sid;
-	DOM_SID2   dom_sid; /* domain SID */
-} LSA_DNS_DOM_INFO;
-
-typedef union lsa_info2_union
-{
-	LSA_DNS_DOM_INFO dns_dom_info;
-} LSA_INFO2_UNION;
-
-/* LSA_Q_QUERY_INFO2 - LSA query info */
-typedef struct lsa_q_query_info2
-{
-	POLICY_HND pol;    /* policy handle */
-	uint16 info_class; /* info class */
-} LSA_Q_QUERY_INFO2;
-
-typedef struct lsa_r_query_info2
-{
-	uint32 ptr;    /* pointer to info struct */
-	uint16 info_class;
-	LSA_INFO2_UNION info; /* so far the only one */
-	NTSTATUS status;
-} LSA_R_QUERY_INFO2;
-
 /* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
 typedef struct lsa_enum_trust_dom_info
 {
 	POLICY_HND pol; /* policy handle */
-	uint32 enum_context; /* enumeration context handle */
-	uint32 preferred_len; /* preferred maximum length */
+    uint32 enum_context; /* enumeration context handle */
+    uint32 preferred_len; /* preferred maximum length */
 
 } LSA_Q_ENUM_TRUST_DOM;
 
@@ -521,55 +490,6 @@ typedef struct lsa_r_enum_privs
 	NTSTATUS status;
 } LSA_R_ENUM_PRIVS;
 
-/* LSA_Q_ENUM_ACCT_RIGHTS - LSA enum account rights */
-typedef struct
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-} LSA_Q_ENUM_ACCT_RIGHTS;
-
-/* LSA_R_ENUM_ACCT_RIGHTS - LSA enum account rights */
-typedef struct
-{
-	uint32 count;
-	UNISTR2_ARRAY rights;
-	NTSTATUS status;
-} LSA_R_ENUM_ACCT_RIGHTS;
-
-
-/* LSA_Q_ADD_ACCT_RIGHTS - LSA add account rights */
-typedef struct
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	UNISTR2_ARRAY rights;
-	uint32 count;
-} LSA_Q_ADD_ACCT_RIGHTS;
-
-/* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
-typedef struct
-{
-	NTSTATUS status;
-} LSA_R_ADD_ACCT_RIGHTS;
-
-
-/* LSA_Q_REMOVE_ACCT_RIGHTS - LSA remove account rights */
-typedef struct
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 removeall;
-	UNISTR2_ARRAY rights;
-	uint32 count;
-} LSA_Q_REMOVE_ACCT_RIGHTS;
-
-/* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */
-typedef struct
-{
-	NTSTATUS status;
-} LSA_R_REMOVE_ACCT_RIGHTS;
-
-
 /* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
 typedef struct lsa_q_priv_get_dispname
 {
@@ -635,20 +555,6 @@ typedef struct lsa_r_unk_get_connuser
 } LSA_R_UNK_GET_CONNUSER;
 
 
-typedef struct lsa_q_createaccount
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 access; /* access */
-} LSA_Q_CREATEACCOUNT;
-
-typedef struct lsa_r_createaccount
-{
-	POLICY_HND pol; /* policy handle */
-	NTSTATUS status;
-} LSA_R_CREATEACCOUNT;
-
-
 typedef struct lsa_q_openaccount
 {
 	POLICY_HND pol; /* policy handle */
@@ -667,11 +573,31 @@ typedef struct lsa_q_enumprivsaccount
 	POLICY_HND pol; /* policy handle */
 } LSA_Q_ENUMPRIVSACCOUNT;
 
+
+typedef struct LUID
+{
+	uint32 low;
+	uint32 high;
+} LUID;
+
+typedef struct LUID_ATTR
+{
+	LUID luid;
+	uint32 attr;
+} LUID_ATTR ;
+
+typedef struct privilege_set
+{
+	uint32 count;
+	uint32 control;
+	LUID_ATTR *set;
+} PRIVILEGE_SET;
+
 typedef struct lsa_r_enumprivsaccount
 {
 	uint32 ptr;
 	uint32 count;
-	PRIVILEGE_SET *set;
+	PRIVILEGE_SET set;
 	NTSTATUS status;
 } LSA_R_ENUMPRIVSACCOUNT;
 
@@ -717,7 +643,7 @@ typedef struct lsa_q_addprivs
 {
 	POLICY_HND pol; /* policy handle */
 	uint32 count;
-	PRIVILEGE_SET *set;
+	PRIVILEGE_SET set;
 } LSA_Q_ADDPRIVS;
 
 typedef struct lsa_r_addprivs
@@ -732,7 +658,7 @@ typedef struct lsa_q_removeprivs
 	uint32 allrights;
 	uint32 ptr;
 	uint32 count;
-	PRIVILEGE_SET *set;
+	PRIVILEGE_SET set;
 } LSA_Q_REMOVEPRIVS;
 
 typedef struct lsa_r_removeprivs
@@ -742,3 +668,5 @@ typedef struct lsa_r_removeprivs
 
 
 #endif /* _RPC_LSA_H */
+
+

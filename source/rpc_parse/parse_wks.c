@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -22,15 +23,12 @@
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_PARSE
-
 /*******************************************************************
  Init
  ********************************************************************/
 
 void init_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
-				char *server, uint16 switch_value)  
+				const char *server, uint16 switch_value)  
 {
 	DEBUG(5,("init_wks_q_query_info\n"));
 
@@ -74,7 +72,7 @@ BOOL wks_io_q_query_info(const char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps
 
 void init_wks_info_100(WKS_INFO_100 *inf,
 				uint32 platform_id, uint32 ver_major, uint32 ver_minor,
-				char *my_name, char *domain_name)
+				const char *my_name, const char *domain_name)
 {
 	DEBUG(5,("Init WKS_INFO_100: %d\n", __LINE__));
 

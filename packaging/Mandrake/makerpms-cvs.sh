@@ -22,16 +22,13 @@ done
 #Change up three directories, rename directory to samba-$VERSION, change back
 #then run makerpms.sh
 
-
+(
 CURRENT=$(pwd)
-pushd $(dirname $(dirname $(dirname $CURRENT)))
+cd $(dirname $(dirname $(dirname $CURRENT)))
 SAMBA_DIR=$(basename $(dirname $(dirname $CURRENT)))
 mv $SAMBA_DIR samba-$VERSION
-pushd samba-$VERSION/source
-./autogen.sh
-popd
-pushd samba-$VERSION/packaging/Mandrake
+cd samba-$VERSION/packaging/Mandrake
 sh makerpms.sh $@
-popd
+cd $(dirname $(dirname $(dirname $CURRENT)))
 mv samba-$VERSION $SAMBA_DIR
-popd
+)

@@ -1,0 +1,511 @@
+<HTML
+><HEAD
+><TITLE
+>swat</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SWAT"
+>swat</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>swat&nbsp;--&nbsp;Samba Web Administration Tool</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>swat</B
+>  [-s &#60;smb config file&#62;] [-a]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN13"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>swat</B
+> allows a Samba administrator to 
+	configure the complex <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>	smb.conf(5)</TT
+></A
+> file via a Web browser. In addition, 
+	a <B
+CLASS="COMMAND"
+>swat</B
+> configuration page has help links 
+	to all the configurable options in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file allowing an 
+	administrator to easily look up the effects of any change. </P
+><P
+><B
+CLASS="COMMAND"
+>swat</B
+> is run from <B
+CLASS="COMMAND"
+>inetd</B
+> </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN26"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-s smb configuration file</DT
+><DD
+><P
+>The default configuration file path is 
+		determined at compile time.  The file specified contains 
+		the configuration details required by the <B
+CLASS="COMMAND"
+>smbd
+		</B
+> server. This is the file that <B
+CLASS="COMMAND"
+>swat</B
+> will modify. 
+		The information in this file includes server-specific 
+		information such as what printcap file to use, as well as 
+		descriptions of all the services that the server is to provide.
+		See <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> for more information. 
+		</P
+></DD
+><DT
+>-a</DT
+><DD
+><P
+>This option disables authentication and puts 
+		<B
+CLASS="COMMAND"
+>swat</B
+> in demo mode. In that mode anyone will be able to modify 
+		the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. </P
+><P
+><EM
+>Do NOT enable this option on a production 
+		server. </EM
+></P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN44"
+></A
+><H2
+>INSTALLATION</H2
+><P
+>After you compile SWAT you need to run <B
+CLASS="COMMAND"
+>make install
+	</B
+> to install the <B
+CLASS="COMMAND"
+>swat</B
+> binary
+	and the various help files and images. A default install would put 
+	these in: </P
+><P
+></P
+><UL
+><LI
+><P
+>/usr/local/samba/bin/swat</P
+></LI
+><LI
+><P
+>/usr/local/samba/swat/images/*</P
+></LI
+><LI
+><P
+>/usr/local/samba/swat/help/*</P
+></LI
+></UL
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN56"
+></A
+><H3
+>Inetd Installation</H3
+><P
+>You need to edit your <TT
+CLASS="FILENAME"
+>/etc/inetd.conf
+		</TT
+> and <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>
+		to enable SWAT to be launched via <B
+CLASS="COMMAND"
+>inetd</B
+>.</P
+><P
+>In <TT
+CLASS="FILENAME"
+>/etc/services</TT
+> you need to 
+		add a line like this: </P
+><P
+><B
+CLASS="COMMAND"
+>swat            901/tcp</B
+></P
+><P
+>Note for NIS/YP users - you may need to rebuild the 
+		NIS service maps rather than alter your local <TT
+CLASS="FILENAME"
+>		/etc/services</TT
+> file. </P
+><P
+>the choice of port number isn't really important 
+		except that it should be less than 1024 and not currently 
+		used (using a number above 1024 presents an obscure security 
+		hole depending on the implementation details of your 
+		<B
+CLASS="COMMAND"
+>inetd</B
+> daemon). </P
+><P
+>In <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> you should 
+		add a line like this: </P
+><P
+><B
+CLASS="COMMAND"
+>swat    stream  tcp     nowait.400  root
+		/usr/local/samba/bin/swat swat</B
+></P
+><P
+>One you have edited <TT
+CLASS="FILENAME"
+>/etc/services</TT
+> 
+		and <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> you need to send a 
+		HUP signal to inetd. To do this use <B
+CLASS="COMMAND"
+>kill -1 PID
+		</B
+> where PID is the process ID of the inetd daemon. </P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN78"
+></A
+><H3
+>Xinetd Installation</H3
+><P
+>Newer Linux systems ship with a more secure implementation
+		of the inetd meta-daemon.  The <B
+CLASS="COMMAND"
+>xinetd</B
+> daemon
+		can read configuration inf9ormation from a single file (i.e.
+		<TT
+CLASS="FILENAME"
+>/etc/xinetd.conf</TT
+>) or from a collection
+		of service control files in the <TT
+CLASS="FILENAME"
+>xinetd.d/</TT
+> directory.
+		These directions assume the latter configuration.
+		</P
+><P
+>		The following file should be created as <TT
+CLASS="FILENAME"
+>/etc/xientd.d/swat</TT
+>.
+		It is then be neccessary cause the meta-daemon to reload its configuration files.
+		Refer to the xinetd man page for details on how to accomplish this.
+		</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>## /etc/xinetd.d/swat
+service swat
+{
+        port    = 901
+        socket_type     = stream
+        wait    = no
+        only_from = localhost
+        user    = root
+        server  = /usr/local/samba/bin/swat
+        log_on_failure  += USERID
+        disable =  No
+}</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN88"
+></A
+><H3
+>Launching</H3
+><P
+>To launch SWAT just run your favorite web browser and 
+		point it at "http://localhost:901/".</P
+><P
+>Note that you can attach to SWAT from any IP connected 
+		machine but connecting from a remote machine leaves your 
+		connection open to password sniffing as passwords will be sent 
+		in the clear over the wire. </P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN92"
+></A
+><H2
+>TROUBLESHOOTING</H2
+><P
+>	One of the common causes of difficulty when installing Samba and SWAT
+	is the existsnece of some type of firewall or port filtering software 
+	on the Samba server.  Make sure that the appropriate ports
+	outlined in this man page are available on the server and are not currently 
+	being blocked by some type of security software such as iptables or 
+	"port sentry".  For more troubleshooting information, refer to the additional 
+	documentation included in the Samba distribution.
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN95"
+></A
+><H2
+>FILES</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+></DT
+><DD
+><P
+>This file must contain suitable startup 
+		information for the meta-daemon.</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/xinetd.d/swat</TT
+></DT
+><DD
+><P
+>This file must contain suitable startup 
+		information for the <B
+CLASS="COMMAND"
+>xinetd</B
+> meta-daemon.</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/services</TT
+></DT
+><DD
+><P
+>This file must contain a mapping of service name 
+		(e.g., swat) to service port (e.g., 901) and protocol type 
+		(e.g., tcp).  </P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/usr/local/samba/lib/smb.conf</TT
+></DT
+><DD
+><P
+>This is the default location of the <TT
+CLASS="FILENAME"
+>smb.conf(5)
+		</TT
+> server configuration file that swat edits. Other 
+		common places that systems install this file are <TT
+CLASS="FILENAME"
+>		/usr/samba/lib/smb.conf</TT
+> and <TT
+CLASS="FILENAME"
+>/etc/smb.conf
+		</TT
+>.  This file describes all the services the server 
+		is to make available to clients. </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN122"
+></A
+><H2
+>WARNINGS</H2
+><P
+><B
+CLASS="COMMAND"
+>swat</B
+> will rewrite your <TT
+CLASS="FILENAME"
+>smb.conf
+	</TT
+> file. It will rearrange the entries and delete all 
+	comments, <TT
+CLASS="PARAMETER"
+><I
+>include=</I
+></TT
+> and <TT
+CLASS="PARAMETER"
+><I
+>copy="
+	</I
+></TT
+> options. If you have a carefully crafted <TT
+CLASS="FILENAME"
+>	smb.conf</TT
+> then back it up or don't use swat! </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN130"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN133"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><B
+CLASS="COMMAND"
+>inetd(5)</B
+>,
+	<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>, 
+	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+>, <B
+CLASS="COMMAND"
+>xinetd(8)</B
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN141"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

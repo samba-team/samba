@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2
    RPC pipe client
 
    Copyright (C) Tim Potter 2000
@@ -22,19 +23,11 @@
 #ifndef RPCCLIENT_H
 #define RPCCLIENT_H
 
-typedef enum {
-        RPC_RTYPE_NTSTATUS = 0,
-        RPC_RTYPE_WERROR,
-        MAX_RPC_RETURN_TYPE
-} RPC_RETURN_TYPE;
-
 struct cmd_set {
 	const char *name;
-        RPC_RETURN_TYPE returntype;
-	NTSTATUS (*ntfn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, 
-                       const char **argv);
-        WERROR (*wfn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, const char **argv);
-        int pipe_idx;
+	NTSTATUS (*fn)(struct cli_state*, TALLOC_CTX *mem_ctx, int argc, 
+                       char **argv);
+        const char *pipe;
 	const char *description;
 	const char *usage;
 };

@@ -1,0 +1,70 @@
+#!/bin/ksh
+#
+# invoke with -n as the first argument to get this script to tell
+# you what it would do without doing anything
+#
+
+V=
+[ "$1" = "-n" ] && V=echo
+
+#CC="cc -Kthread -Kalloca -I/usr/local/include -L/usr/local/lib"
+CC="cc -Kthread -Kalloca"
+CPP="$CC -E"
+CFLAGS="-Xa -Dasm=__asm -DANSICPP -O3"
+#LDFLAGS="-L/usr/local/lib"
+LDFLAGS=
+#CXX="CC -I/usr/local/include"
+CXX="CC"
+#CXXFLAGS="-O3 -I/usr/local/include/stl -L/usr/local/lib"
+CXXFLAGS="-O3"
+RANLIB=true
+
+if [ -x /usr/gnu/bin/make ]
+then
+    MAKE=/usr/gnu/bin/make
+elif [ -x /usr/local/bin/make ]
+then
+    MAKE=/usr/local/bin/make
+elif [ -x /usr/bin/make ]
+then
+    MAKE=/usr/bin/make
+else
+    echo "Can't find make - exiting"
+    exit 1
+fi
+
+if [ "$V" = "echo" ]
+then
+    echo "exporting the following shell variables:"
+    echo "CC=$CC"
+    echo "CPP=$CPP"
+    echo "CXX=$CXX"
+    echo "RANLIB=$RANLIB"
+    echo "MAKE=$MAKE"
+    echo "CFLAGS=$CFLAGS"
+    echo "CXXFLAGS=$CXXFLAGS"
+    echo "LDFLAGS=$LDFLAGS"
+else
+    export CC CPP CXX RANLIB MAKE CFLAGS CXXFLAGS LDFLAGS
+fi
+
+if [ "$V" = "echo" ]
+then
+    echo "cd ../../../source"
+    echo "rm -f mout-1 mout-2 mout-3 mout-4"
+    echo "$MAKE all 2>&1 | tee mout-1"
+    echo "$MAKE smbfilter smbtorture debug2html 2>&1 | tee mout-2"
+    echo "$MAKE bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3"
+    echo "$MAKE masktest locktest locktest2 2>&1 | tee mout-3"
+else
+    cd ../../../source
+    rm -f mout-1 mout-2 mout-3 mout-4
+    $MAKE all 2>&1 | tee mout-1
+    $MAKE smbfilter smbtorture debug2html 2>&1 | tee mout-2
+    $MAKE bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3
+    $MAKE masktest locktest locktest2 2>&1 | tee mout-3
+fi
+#
+# Not building :
+#     nsswitch - no <nss.h>
+#     rpctorture - improper use of client_info struct, dunno

@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    Samba utility functions
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jeremy Allison 2001
@@ -21,6 +22,27 @@
 
 #include "includes.h"
 
+#if 0
+static void print_grent_list(struct sys_grent *glist)
+{
+	DEBUG(100, ("print_grent_list: %x\n", glist ));
+	while (glist) {
+		DEBUG(100,("glist: %x ", glist));
+		if (glist->gr_name)
+			DEBUG(100,(": gr_name = (%x) %s ", glist->gr_name, glist->gr_name));
+		if (glist->gr_passwd)
+			DEBUG(100,(": gr_passwd = (%x) %s ", glist->gr_passwd, glist->gr_passwd));
+		if (glist->gr_mem) {
+			int i;
+			for (i = 0; glist->gr_mem[i]; i++)
+				DEBUG(100,(" : gr_mem[%d] = (%x) %s ", i, glist->gr_mem[i], glist->gr_mem[i]));
+		}
+		DEBUG(100,(": gr_next = %x\n", glist->next ));
+		glist = glist->next;
+	}
+	DEBUG(100,("FINISHED !\n\n"));
+}
+#endif
 
 /****************************************************************
  Returns a single linked list of group entries.
@@ -156,15 +178,15 @@ struct sys_pwent * getpwent_list(void)
 		pent->pw_uid = pwd->pw_uid;
 		pent->pw_gid = pwd->pw_gid;
 		if (pwd->pw_gecos) {
-			if ((pent->pw_gecos = strdup(pwd->pw_gecos)) == NULL)
+			if ((pent->pw_name = strdup(pwd->pw_gecos)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_dir) {
-			if ((pent->pw_dir = strdup(pwd->pw_dir)) == NULL)
+			if ((pent->pw_name = strdup(pwd->pw_dir)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_shell) {
-			if ((pent->pw_shell = strdup(pwd->pw_shell)) == NULL)
+			if ((pent->pw_name = strdup(pwd->pw_shell)) == NULL)
 				goto err;
 		}
 
@@ -228,7 +250,7 @@ static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_he
 			free_userlist(list_head);
 			return NULL;
 		}
-		entry->unix_name = (char *)strdup(grp->gr_mem[i]);
+		entry->unix_name = strdup(grp->gr_mem[i]);
 		if (entry->unix_name == NULL) {
 			SAFE_FREE(entry);
 			free_userlist(list_head);
@@ -249,35 +271,24 @@ struct sys_userlist *get_users_in_group(const char *gname)
 {
 	struct sys_userlist *list_head = NULL;
 	struct group *gptr;
-	fstring domain;
-	fstring groupname;
-	DOM_SID sid;
-	enum SID_NAME_USE name_type;
 
-	/* No point using winbind if we can't split it in the
-	   first place */
-	if (split_domain_and_name(gname, domain, groupname)) {
+	/*
+	 * If we're doing this via winbindd, don't do the
+	 * entire group list enumeration as we know this is
+	 * pointless (and slow).
+	 */
 
-		/*
-		 * If we're doing this via winbindd, don't do the
-		 * entire group list enumeration as we know this is
-		 * pointless (and slow).
-		 */
-		
-		if (winbind_lookup_name(domain, groupname, &sid, &name_type) 
-		    && name_type == SID_NAME_DOM_GRP) {
-			if ((gptr = (struct group *)getgrnam(gname)) == NULL)
-				return NULL;
-			return add_members_to_userlist(list_head, gptr);
-		}
+	if (strchr(gname,*lp_winbind_separator())) {
+		if ((gptr = (struct group *)getgrnam(gname)) == NULL)
+			return NULL;
+		return add_members_to_userlist(list_head, gptr);
 	}
-	
+
 #if !defined(BROKEN_GETGRNAM)
 	if ((gptr = (struct group *)getgrnam(gname)) == NULL)
 		return NULL;
 	return add_members_to_userlist(list_head, gptr);
 #else
-	/* BROKEN_GETGRNAM - True64 */
 	setgrent();
 	while((gptr = getgrent()) != NULL) {
 		if (strequal(gname, gptr->gr_name)) {
@@ -303,49 +314,4 @@ void free_userlist(struct sys_userlist *list_head)
 		SAFE_FREE(old_head->unix_name);
 		SAFE_FREE(old_head);
 	}
-}
-
-/****************************************************************
-****************************************************************/
-
-static int int_compare( int *a, int *b ) 
-{
-	if ( *a == *b )
-		return 0;
-	else if ( *a < *b )
-		return -1;
-	else 
-		return 1;
-}
-
-void remove_duplicate_gids( int *num_groups, gid_t *groups )
-{
-	int i;
-	int count = *num_groups;
-
-	if ( *num_groups <= 0 || !groups )
-		return;
-
-	
-	DEBUG(8,("remove_duplicate_gids: Enter %d gids\n", *num_groups));
-
-	qsort( groups, *num_groups, sizeof(gid_t), QSORT_CAST int_compare );
-
-	for ( i=1; i<count; ) {
-		if ( groups[i-1] == groups[i] ) {
-			memmove( &groups[i-1], &groups[i], (count - i + 1)*sizeof(gid_t) );
-
-			/* decrement the total number of groups and do not increment 
-			   the loop counter */
-			count--;
-			continue;
-		}
-		i++;
-	}
-
-	*num_groups = count;
-
-	DEBUG(8,("remove_duplicate_gids: Exit %d gids\n", *num_groups));
-
-	return;
 }

@@ -1,0 +1,761 @@
+<HTML
+><HEAD
+><TITLE
+>smbd</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBD"
+>smbd</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbd&nbsp;--&nbsp;server to provide SMB/CIFS services to clients</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>smbd</B
+>  [-D] [-a] [-i] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-l &#60;log directory&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN23"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This program is part of the Samba suite.</P
+><P
+><B
+CLASS="COMMAND"
+>smbd</B
+> is the server daemon that 
+	provides filesharing and printing services to Windows clients. 
+	The server provides filespace and printer services to
+	clients using the SMB (or CIFS) protocol. This is compatible 
+	with the LanManager protocol, and can service LanManager 
+	clients.  These include MSCLIENT 3.0 for DOS, Windows for 
+	Workgroups, Windows 95/98/ME, Windows NT, Windows 2000, 
+	OS/2, DAVE for Macintosh, and smbfs for Linux.</P
+><P
+>An extensive description of the services that the 
+	server can provide is given in the man page for the 
+	configuration file controlling the attributes of those 
+	services (see <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)
+	</TT
+></A
+>.  This man page will not describe the 
+	services, but will concentrate on the administrative aspects 
+	of running the server.</P
+><P
+>Please note that there are significant security 
+	implications to running this server, and the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> 
+	manpage should be regarded as mandatory reading before
+	proceeding with installation.</P
+><P
+>A session is created whenever a client requests one. 
+	Each client gets a copy of the server for each session. This 
+	copy then services all connections made by the client during 
+	that session. When all connections from its client are closed, 
+	the copy of the server for that client terminates.</P
+><P
+>The configuration file, and any files that it includes, 
+	are automatically reloaded every minute, if they change.  You 
+	can force a reload by sending a SIGHUP to the server.  Reloading 
+	the configuration file will not affect connections to any service 
+	that is already established.  Either the user will have to 
+	disconnect from the service, or <B
+CLASS="COMMAND"
+>smbd</B
+> killed and restarted.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN37"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-D</DT
+><DD
+><P
+>If specified, this parameter causes 
+		the server to operate as a daemon. That is, it detaches 
+		itself and runs in the background, fielding requests 
+		on the appropriate port. Operating the server as a
+		daemon is the recommended way of running <B
+CLASS="COMMAND"
+>smbd</B
+> for 
+		servers that provide more than casual use file and 
+		print services.  This switch is assumed if <B
+CLASS="COMMAND"
+>smbd
+		</B
+> is executed on the command line of a shell.
+		</P
+></DD
+><DT
+>-a</DT
+><DD
+><P
+>If this parameter is specified, each new 
+		connection will append log messages to the log file.  
+		This is the default.</P
+></DD
+><DT
+>-i</DT
+><DD
+><P
+>If this parameter is specified it causes the
+		server to run "interactively", not as a daemon, even if the
+		server is executed on the command line of a shell. Setting this
+		parameter negates the implicit deamon mode when run from the
+		command line.
+		</P
+></DD
+><DT
+>-o</DT
+><DD
+><P
+>If this parameter is specified, the 
+		log files will be overwritten when opened.  By default, 
+		<B
+CLASS="COMMAND"
+>smbd</B
+> will append entries to the log 
+		files.</P
+></DD
+><DT
+>-P</DT
+><DD
+><P
+>Passive option. Causes <B
+CLASS="COMMAND"
+>smbd</B
+> not to 
+		send any network traffic out. Used for debugging by 
+		the developers only.</P
+></DD
+><DT
+>-h</DT
+><DD
+><P
+>Prints the help information (usage) 
+		for <B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+></DD
+><DT
+>-v</DT
+><DD
+><P
+>Prints the version number for 
+		<B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+></DD
+><DT
+>-d &#60;debug level&#62;</DT
+><DD
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>debuglevel</I
+></TT
+> is an integer 
+		from 0 to 10.  The default value if this parameter is 
+		not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+		logged to the log files about the activities of the 
+		server. At level 0, only critical errors and serious 
+		warnings will be logged. Level 1 is a reasonable level for
+		day to day running - it generates a small amount of
+		information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+		amounts of log data, and should only be used when 
+		investigating a problem. Levels above 3 are designed for 
+		use only by developers and generate HUGE amounts of log
+		data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+		override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+		level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>		<TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> file.</P
+></DD
+><DT
+>-l &#60;log directory&#62;</DT
+><DD
+><P
+>If specified,
+		<TT
+CLASS="REPLACEABLE"
+><I
+>log directory</I
+></TT
+> 
+		specifies a log directory into which the "log.smbd" log
+		file will be created for informational and debug 
+		messages from the running server. The log 
+		file generated is never removed by the server although 
+		its size may be controlled by the <A
+HREF="smb.conf.5.html#maxlogsize"
+TARGET="_top"
+>max log size</A
+>
+		option in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>		smb.conf(5)</TT
+></A
+> file. <EM
+>Beware:</EM
+>
+		If the directory specified does not exist, <B
+CLASS="COMMAND"
+>smbd</B
+>
+		will log to the default debug log location defined at compile time.
+		</P
+><P
+>The default log directory is specified at
+		compile time.</P
+></DD
+><DT
+>-O &#60;socket options&#62;</DT
+><DD
+><P
+>See the <A
+HREF="smb.conf.5.html#socketoptions"
+TARGET="_top"
+>socket options</A
+> 
+		parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)
+		</TT
+></A
+> file for details.</P
+></DD
+><DT
+>-p &#60;port number&#62;</DT
+><DD
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>port number</I
+></TT
+> is a positive integer
+		value.  The default value if this parameter is not 
+		specified is 139.</P
+><P
+>This number is the port number that will be 
+		used when making connections to the server from client 
+		software. The standard (well-known) port number for the 
+		SMB over TCP is 139, hence the default. If you wish to
+		run the server as an ordinary user rather than
+		as root, most systems will require you to use a port 
+		number greater than 1024 - ask your system administrator 
+		for help if you are in this situation.</P
+><P
+>In order for the server to be useful by most 
+		clients, should you configure it on a port other 
+		than 139, you will require port redirection services 
+		on port 139, details of which are outlined in rfc1002.txt 
+		section 4.3.5.</P
+><P
+>This parameter is not normally specified except 
+		in the above situation.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+		configuration details required by the server.  The 
+		information in this file includes server-specific
+		information such as what printcap file to use, as well 
+		as descriptions of all the services that the server is 
+		to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>		smb.conf(5)</TT
+></A
+> for more information.
+		The default configuration file name is determined at
+		compile time.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN117"
+></A
+><H2
+>FILES</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+></DT
+><DD
+><P
+>If the server is to be run by the
+		<B
+CLASS="COMMAND"
+>inetd</B
+> meta-daemon, this file 
+		must contain suitable startup information for the 
+		meta-daemon. See the <A
+HREF="UNIX_INSTALL.html"
+TARGET="_top"
+>UNIX_INSTALL.html</A
+>
+		document for details.
+		</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/rc</TT
+></DT
+><DD
+><P
+>or whatever initialization script your
+		system uses).</P
+><P
+>If running the server as a daemon at startup,
+		this file will need to contain an appropriate startup
+		sequence for the server. See the <A
+HREF="UNIX_INSTALL.html"
+TARGET="_top"
+>UNIX_INSTALL.html</A
+>
+		document for details.</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/services</TT
+></DT
+><DD
+><P
+>If running the server via the
+		meta-daemon <B
+CLASS="COMMAND"
+>inetd</B
+>, this file
+		must contain a mapping of service name (e.g., netbios-ssn)
+		to service port (e.g., 139) and protocol type (e.g., tcp).
+		See the <A
+HREF="UNIX_INSTALL.html"
+TARGET="_top"
+>UNIX_INSTALL.html</A
+>
+		document for details.</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/usr/local/samba/lib/smb.conf</TT
+></DT
+><DD
+><P
+>This is the default location of the
+		<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf</TT
+></A
+>
+		server configuration file. Other common places that systems
+		install this file are <TT
+CLASS="FILENAME"
+>/usr/samba/lib/smb.conf</TT
+>
+		and <TT
+CLASS="FILENAME"
+>/etc/smb.conf</TT
+>.</P
+><P
+>This file describes all the services the server
+		is to make available to clients. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>		<TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+>  for more information.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN153"
+></A
+><H2
+>LIMITATIONS</H2
+><P
+>On some systems <B
+CLASS="COMMAND"
+>smbd</B
+> cannot change uid back
+	to root after a setuid() call.  Such systems are called
+	trapdoor uid systems. If you have such a system,
+	you will be unable to connect from a client (such as a PC) as
+	two different users at once. Attempts to connect the
+	second user will result in access denied or 
+	similar.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN157"
+></A
+><H2
+>ENVIRONMENT VARIABLES</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="ENVAR"
+>PRINTER</TT
+></DT
+><DD
+><P
+>If no printer name is specified to 
+		printable services, most systems will use the value of 
+		this variable (or <TT
+CLASS="CONSTANT"
+>lp</TT
+> if this variable is 
+		not defined) as the name of the printer to use. This 
+		is not specific to the server, however.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN166"
+></A
+><H2
+>PAM INTERACTION</H2
+><P
+>Samba uses PAM for authentication (when presented with a plaintext
+	password), for account checking (is this account disabled?) and for
+	session management.  The degree too which samba supports PAM is restricted
+	by the limitations of the SMB protocol and the
+	<A
+HREF="smb.conf.5.html#OBEYPAMRESRICTIONS"
+TARGET="_top"
+>obey pam restricions</A
+>
+	smb.conf paramater.  When this is set, the following restrictions apply:
+	</P
+><P
+></P
+><UL
+><LI
+><P
+><EM
+>Account Validation</EM
+>:  All acccesses to a 
+	samba server are checked 
+	against PAM to see if the account is vaild, not disabled and is permitted to 
+	login at this time.  This also applies to encrypted logins.
+	</P
+></LI
+><LI
+><P
+><EM
+>Session Management</EM
+>:  When not using share 
+	level secuirty, users must pass PAM's session checks before access
+	is granted.  Note however, that this is bypassed in share level secuirty.  
+	Note also that some older pam configuration files may need a line 
+	added for session support. 
+	</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN177"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN180"
+></A
+><H2
+>TROUBLESHOOTING</H2
+><P
+>        One of the common causes of difficulty when installing Samba and SWAT
+        is the existsnece of some type of firewall or port filtering software
+        on the Samba server.  Make sure that the appropriate ports
+        outlined in this man page are available on the server and are not currently
+        being blocked by some type of security software such as iptables or
+        "port sentry".  For more troubleshooting information, refer to the additional
+        documentation included in the Samba distribution.
+        </P
+><P
+>Most diagnostics issued by the server are logged
+	in a specified log file. The log file name is specified
+	at compile time, but may be overridden on the command line.</P
+><P
+>The number and nature of diagnostics available depends
+	on the debug level used by the server. If you have problems, set
+	the debug level to 3 and peruse the log files.</P
+><P
+>Most messages are reasonably self-explanatory. Unfortunately,
+	at the time this man page was created, there are too many diagnostics
+	available in the source code to warrant describing each and every
+	diagnostic. At this stage your best bet is still to grep the
+	source code and inspect the conditions that gave rise to the
+	diagnostics you are seeing.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN186"
+></A
+><H2
+>SIGNALS</H2
+><P
+>Sending the <B
+CLASS="COMMAND"
+>smbd</B
+> a SIGHUP will cause it to
+	reload its <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> configuration
+	file within a short period of time.</P
+><P
+>To shut down a user's <B
+CLASS="COMMAND"
+>smbd</B
+> process it is recommended
+	that <B
+CLASS="COMMAND"
+>SIGKILL (-9)</B
+> <EM
+>NOT</EM
+>
+	be used, except as a last resort, as this may leave the shared
+	memory area in an inconsistent state. The safe way to terminate
+	an <B
+CLASS="COMMAND"
+>smbd</B
+> is to send it a SIGTERM (-15) signal and wait for
+	it to die on its own.</P
+><P
+>The debug log level of <B
+CLASS="COMMAND"
+>smbd</B
+> may be raised
+	or lowered using <A
+HREF="smbcontrol.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbcontrol(1)
+	</B
+></A
+> program (SIGUSR[1|2] signals are no longer used in
+	Samba 2.2). This is to allow transient problems to be diagnosed,
+	whilst still running at a normally low log level.</P
+><P
+>Note that as the signal handlers send a debug write, 
+	they are not re-entrant in <B
+CLASS="COMMAND"
+>smbd</B
+>. This you should wait until 
+	<B
+CLASS="COMMAND"
+>smbd</B
+> is in a state of waiting for an incoming SMB before 
+	issuing them. It is possible to make the signal handlers safe 
+	by un-blocking the signals before the select call and re-blocking 
+	them after, however this would affect performance.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN203"
+></A
+><H2
+>SEE ALSO</H2
+><P
+>hosts_access(5), <B
+CLASS="COMMAND"
+>inetd(8)</B
+>, 
+	<A
+HREF="nmbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>nmbd(8)</B
+></A
+>, 
+	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+>
+	</A
+>, <A
+HREF="smbclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbclient(1)
+	</B
+></A
+>, <A
+HREF="testparm.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>	testparm(1)</B
+></A
+>, <A
+HREF="testprns.1.html"
+TARGET="_top"
+>	<B
+CLASS="COMMAND"
+>testprns(1)</B
+></A
+>, and the Internet RFC's
+	<TT
+CLASS="FILENAME"
+>rfc1001.txt</TT
+>, <TT
+CLASS="FILENAME"
+>rfc1002.txt</TT
+>. 
+	In addition the CIFS (formerly SMB) specification is available 
+	as a link from the Web page <A
+HREF="http://samba.org/cifs/"
+TARGET="_top"
+> 
+	http://samba.org/cifs/</A
+>.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN220"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

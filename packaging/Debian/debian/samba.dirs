@@ -1,7 +1,12 @@
+sbin
 usr/bin
 usr/sbin
 var/log/samba
-var/lib/samba/printers/W32X86
-var/lib/samba/printers/WIN40
+var/lib/samba
 var/run/samba
 var/cache/samba
+etc/pam.d
+usr/share
+usr/share/samba
+lib/security
+usr/lib/cups/backend

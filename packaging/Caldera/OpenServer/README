@@ -1,0 +1,29 @@
+Preparation Date: January 24, 2002
+Preparer:	  Evan Hunt <evanh@caldera.com>
+
+Instructions:	Preparing Samba Packages for SCO OpenServer
+===============================================================
+
+We provide support only for current versions of SCO OpenServer
+
+To produce the custom installable media images simply type (in this directory):
+	# ./Makevol
+
+The resultant samba media images should reside in the ./dist subdirectory.
+To install from the media images, issue the command (as root):
+
+        # cd dist
+        # ./Install
+
+Alternately, each of the steps in building the media images may be performed
+individually by invoking each of the following:
+
+        # ./Configure
+        # ./Compile
+        # ./Install
+        # ./Package
+
+If files are added or deleted from the SCO OpenServer Samba distribution then
+the prototype file in the pkg directory should be appropriately modified.
+The files in the pkg subdirectory were initially created using the mkpkg
+package from SCO Skunkware (see http://www.sco.com/skunkware).

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    Locking functions
    Copyright (C) Jeremy Allison 1992-2000
    
@@ -149,9 +150,8 @@ static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	if (!dbuf.dptr) {
+	if (!dbuf.dptr)
 		return 0;
-	}
 
 	*entries = (int *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(int));
@@ -176,9 +176,8 @@ static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entr
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	if (!dbuf.dptr) {
+	if (!dbuf.dptr)
 		return 0;
-	}
 
 	*entries = (struct posix_lock *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
@@ -205,7 +204,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		/*
 		 * No POSIX to worry about, just close.
 		 */
-		ret = SMB_VFS_CLOSE(fsp,fsp->fd);
+		ret = conn->vfs_ops.close(fsp,fsp->fd);
 		fsp->fd = -1;
 		return ret;
 	}
@@ -259,7 +258,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
 
 		for(i = 0; i < count; i++) {
-			if (SMB_VFS_CLOSE(fsp,fd_array[i]) == -1) {
+			if (conn->vfs_ops.close(fsp,fd_array[i]) == -1) {
 				saved_errno = errno;
 			}
 		}
@@ -278,12 +277,12 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	ret = SMB_VFS_CLOSE(fsp,fsp->fd);
+	ret = conn->vfs_ops.close(fsp,fsp->fd);
 
 	if (saved_errno != 0) {
-        errno = saved_errno;
+		errno = saved_errno;
 		ret = -1;
-    } 
+	} 
 
 	fsp->fd = -1;
 
@@ -527,12 +526,12 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 		return F_WRLCK;
 	}
 
-  /*
-   * This return should be the most normal, as we attempt
-   * to always open files read/write.
-   */
+	/*
+	 * This return should be the most normal, as we attempt
+	 * to always open files read/write.
+	 */
 
-  return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
+	return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
 }
 
 /****************************************************************************
@@ -563,9 +562,9 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * and the underlying system can handle 64 bit signed locks.
 	 */
 
-    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<1);
-    SMB_OFF_T max_positive_lock_offset = ~mask;
+	SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+	SMB_OFF_T mask = (mask2<<1);
+	SMB_OFF_T max_positive_lock_offset = ~mask;
 
 #else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
@@ -575,7 +574,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * All offsets & counts must be 2^31 or less.
 	 */
 
-    SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
+	SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
 
 #endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
@@ -646,10 +645,11 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	int ret;
+	struct connection_struct *conn = fsp->conn;
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fd,op,(double)offset,(double)count,type));
 
-	ret = SMB_VFS_LOCK(fsp,fsp->fd,op,offset,count,type);
+	ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
@@ -673,7 +673,7 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
 			count &= 0x7fffffff;
-			ret = SMB_VFS_LOCK(fsp,fsp->fd,op,offset,count,type);
+			ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 		}
 	}
 
@@ -719,10 +719,10 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
  */
 
 struct lock_list {
-    struct lock_list *next;
-    struct lock_list *prev;
-    SMB_OFF_T start;
-    SMB_OFF_T size;
+	struct lock_list *next;
+	struct lock_list *prev;
+	SMB_OFF_T start;
+	SMB_OFF_T size;
 };
 
 /****************************************************************************
@@ -997,7 +997,7 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	 * semantics that if a write lock is added, then it will be first in the array.
 	 */
 	
-	if ((l_ctx = talloc_init("set_posix_lock")) == NULL) {
+	if ((l_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("set_posix_lock: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}
@@ -1143,7 +1143,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 		}
 	}
 
-	if ((ul_ctx = talloc_init("release_posix_lock")) == NULL) {
+	if ((ul_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}

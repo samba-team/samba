@@ -1,8 +1,8 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Manage connections_struct structures
    Copyright (C) Andrew Tridgell 1998
-   Copyright (C) Alexander Bokovoy 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@
 
 #include "includes.h"
 
-/* The connections bitmap is expanded in increments of BITMAP_BLOCK_SZ. The
- * maximum size of the bitmap is the largest positive integer, but you will hit
- * the "max connections" limit, looong before that.
- */
-#define BITMAP_BLOCK_SZ 128
+/* set these to define the limits of the server. NOTE These are on a
+   per-client basis. Thus any one machine can't connect to more than
+   MAX_CONNECTIONS services, but any number of machines may connect at
+   one time. */
+#define MAX_CONNECTIONS 128
 
 static connection_struct *Connections;
 
@@ -38,7 +38,7 @@ init the conn structures
 ****************************************************************************/
 void conn_init(void)
 {
-	bmap = bitmap_allocate(BITMAP_BLOCK_SZ);
+	bmap = bitmap_allocate(MAX_CONNECTIONS);
 }
 
 /****************************************************************************
@@ -68,7 +68,7 @@ BOOL conn_snum_used(int snum)
 /****************************************************************************
 find a conn given a cnum
 ****************************************************************************/
-connection_struct *conn_find(unsigned cnum)
+connection_struct *conn_find(int cnum)
 {
 	int count=0;
 	connection_struct *conn;
@@ -93,50 +93,20 @@ thinking the server is still available.
 ****************************************************************************/
 connection_struct *conn_new(void)
 {
-	TALLOC_CTX *mem_ctx;
 	connection_struct *conn;
 	int i;
-        int find_offset = 1;
 
-find_again:
-	i = bitmap_find(bmap, find_offset);
+	i = bitmap_find(bmap, 1);
 	
 	if (i == -1) {
-                /* Expand the connections bitmap. */
-                int             oldsz = bmap->n;
-                int             newsz = bmap->n + BITMAP_BLOCK_SZ;
-                struct bitmap * nbmap;
-
-                if (newsz <= 0) {
-                        /* Integer wrap. */
-		        DEBUG(0,("ERROR! Out of connection structures\n"));
-                        return NULL;
-                }
-
-		DEBUG(4,("resizing connections bitmap from %d to %d\n",
-                        oldsz, newsz));
-
-                nbmap = bitmap_allocate(newsz);
-
-                bitmap_copy(nbmap, bmap);
-                bitmap_free(bmap);
-
-                bmap = nbmap;
-                find_offset = oldsz; /* Start next search in the new portion. */
-
-                goto find_again;
-	}
-
-	if ((mem_ctx=talloc_init("connection_struct"))==NULL) {
-		DEBUG(0,("talloc_init(connection_struct) failed!\n"));
+		DEBUG(1,("ERROR! Out of connection structures\n"));	       
 		return NULL;
 	}
 
-	if ((conn=(connection_struct *)talloc_zero(mem_ctx, sizeof(*conn)))==NULL) {
-		DEBUG(0,("talloc_zero() failed!\n"));
-		return NULL;
-	}
-	conn->mem_ctx = mem_ctx;
+	conn = (connection_struct *)malloc(sizeof(*conn));
+	if (!conn) return NULL;
+
+	ZERO_STRUCTP(conn);
 	conn->cnum = i;
 
 	bitmap_set(bmap, i);
@@ -161,7 +131,7 @@ void conn_close_all(void)
 	connection_struct *conn, *next;
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
-		close_cnum(conn, conn->vuid);
+		close_cnum(conn, (uint16)-1);
 	}
 }
 
@@ -191,36 +161,11 @@ BOOL conn_idle_all(time_t t, int deadtime)
 	 * idle with a handle open.
 	 */
 
-	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist))
+	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist))
 		if (plist->pipe_handles && plist->pipe_handles->count)
 			allidle = False;
 	
 	return allidle;
-}
-
-/****************************************************************************
- Clear a vuid out of the validity cache, and as the 'owner' of a connection.
-****************************************************************************/
-
-void conn_clear_vuid_cache(uint16 vuid)
-{
-	connection_struct *conn;
-	unsigned int i;
-
-	for (conn=Connections;conn;conn=conn->next) {
-		if (conn->vuid == vuid) {
-			conn->vuid = UID_FIELD_INVALID;
-		}
-
-		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
-			if (conn->vuid_cache.array[i].vuid == vuid) {
-				struct vuid_cache_entry *ent = &conn->vuid_cache.array[i];
-				ent->vuid = UID_FIELD_INVALID;
-				ent->read_only = False;
-				ent->admin_user = False;
-			}
-		}
-	}
 }
 
 /****************************************************************************
@@ -229,34 +174,22 @@ void conn_clear_vuid_cache(uint16 vuid)
 
 void conn_free(connection_struct *conn)
 {
- 	vfs_handle_struct *handle = NULL, *thandle = NULL;
- 	TALLOC_CTX *mem_ctx = NULL;
-
 	/* Free vfs_connection_struct */
-	handle = conn->vfs_handles;
-	while(handle) {
-		DLIST_REMOVE(conn->vfs_handles, handle);
-		thandle = handle->next;
-		if (handle->free_data)
-			handle->free_data(&handle->data);
-		handle = thandle;
+	    
+	if (conn->dl_handle != NULL) {
+		/* Close dlopen() handle */
+		sys_dlclose(conn->dl_handle);
 	}
 
 	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
 		SAFE_FREE(conn->groups);
+		conn->groups = NULL;
 		conn->ngroups = 0;
 	}
 
-	if (conn->nt_user_token) {
-		delete_nt_token(&(conn->nt_user_token));
-	}
-
-	if (conn->privs) {
-		destroy_privilege(&(conn->privs));
-	}
-
+	delete_nt_token(&conn->nt_user_token);
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
@@ -269,9 +202,8 @@ void conn_free(connection_struct *conn)
 	bitmap_clear(bmap, conn->cnum);
 	num_open--;
 
-	mem_ctx = conn->mem_ctx;
 	ZERO_STRUCTP(conn);
-	talloc_destroy(mem_ctx);
+	SAFE_FREE(conn);
 }
 
 

@@ -1,0 +1,15 @@
+This directory $HOME/Samba is exported to any windows computer, if
+the daemon "SMB server processes (samba)" is started and the distributed
+configuration is used. So be careful about the data you put into this
+directory.
+
+Note: Only the user of this account can connect to this share. The
+shares name is equal to the users Linux account, e.g.
+\\your_linuxmachine\\your_linuxaccount
+
+If you want to have the files public accessible use the public browseable
+share instead. It's currently /srv/samba/Public, but have a look at file
+/etc/samba.d/smb.conf to get the latest name.
+
+
+2000-03-13,  Klaus Singvogel,  Caldera (Deutschland) GmbH.

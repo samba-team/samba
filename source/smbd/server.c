@@ -1,9 +1,8 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Main SMB server routines
-   Copyright (C) Andrew Tridgell		1992-1998
-   Copyright (C) Martin Pool			2002
-   Copyright (C) Jelmer Vernooij		2002-2003
+   Copyright (C) Andrew Tridgell 1992-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +21,11 @@
 
 #include "includes.h"
 
-static int am_parent = 1;
+pstring servicesf = CONFIGFILE;
+extern fstring global_myworkgroup;
+extern pstring global_myname;
+
+int am_parent = 1;
 
 /* the last message the was processed */
 int last_message = -1;
@@ -31,12 +34,12 @@ int last_message = -1;
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
 extern pstring user_socket_options;
-extern SIG_ATOMIC_T got_sig_term;
-extern SIG_ATOMIC_T reload_after_sighup;
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
+
+extern fstring remote_machine;
 
 /* really we should have a top level context structure that has the
    client file descriptor as an element. That would require a major rewrite :(
@@ -51,7 +54,7 @@ int smbd_server_fd(void)
 	return server_fd;
 }
 
-static void smbd_set_server_fd(int fd)
+void smbd_set_server_fd(int fd)
 {
 	server_fd = fd;
 	client_setfd(fd);
@@ -60,6 +63,8 @@ static void smbd_set_server_fd(int fd)
 /****************************************************************************
  Terminate signal.
 ****************************************************************************/
+
+SIG_ATOMIC_T got_sig_term;
 
 static void sig_term(void)
 {
@@ -70,6 +75,8 @@ static void sig_term(void)
 /****************************************************************************
  Catch a sighup.
 ****************************************************************************/
+
+SIG_ATOMIC_T reload_after_sighup;
 
 static void sig_hup(int sig)
 {
@@ -83,36 +90,8 @@ static void sig_hup(int sig)
 
 static void  killkids(void)
 {
-	if(am_parent) kill(0,SIGTERM);
-}
-
-/****************************************************************************
- Process a sam sync message - not sure whether to do this here or
- somewhere else.
-****************************************************************************/
-
-static void msg_sam_sync(int UNUSED(msg_type), pid_t UNUSED(pid),
-			 void *UNUSED(buf), size_t UNUSED(len))
-{
-        DEBUG(10, ("** sam sync message received, ignoring\n"));
-}
-
-/****************************************************************************
- Process a sam sync replicate message - not sure whether to do this here or
- somewhere else.
-****************************************************************************/
-
-static void msg_sam_repl(int msg_type, pid_t pid, void *buf, size_t len)
-{
-        uint32 low_serial;
-
-        if (len != sizeof(uint32))
-                return;
-
-        low_serial = *((uint32 *)buf);
-
-        DEBUG(3, ("received sam replication message, serial = 0x%04x\n",
-                  low_serial));
+	if(am_parent)
+		kill(0,SIGTERM);
 }
 
 /****************************************************************************
@@ -127,25 +106,19 @@ static BOOL open_sockets_inetd(void)
 	smbd_set_server_fd(dup(0));
 	
 	/* close our standard file descriptors */
-	close_low_fds(False); /* Don't close stderr */
+	close_low_fds();
 	
 	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-	set_socket_options(smbd_server_fd(), user_socket_options);
+	set_socket_options(smbd_server_fd(),user_socket_options);
 
 	return True;
 }
-
-static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
-{
-	exit_server("Got a SHUTDOWN message");
-}
-
 
 /****************************************************************************
  Have we reached the process limit ?
 ****************************************************************************/
 
-static BOOL allowable_number_of_smbd_processes(void)
+BOOL allowable_number_of_smbd_processes(void)
 {
 	int max_processes = lp_max_smbd_processes();
 
@@ -179,15 +152,13 @@ static BOOL allowable_number_of_smbd_processes(void)
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_ports)
+static BOOL open_sockets(BOOL is_daemon,BOOL interactive, int port)
 {
 	int num_interfaces = iface_count();
-	int num_sockets = 0;
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
 	int s;
 	int i;
-	char *ports;
 
 	if (!is_daemon) {
 		return open_sockets_inetd();
@@ -206,118 +177,72 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 	/* Stop zombies */
 	CatchChild();
-				
+		
+		
 	FD_ZERO(&listen_set);
 
-	/* use a reasonable default set of ports - listing on 445 and 139 */
-	if (!smb_ports) {
-		ports = lp_smb_ports();
-		if (!ports || !*ports) {
-			ports = smb_xstrdup(SMB_PORTS);
-		} else {
-			ports = smb_xstrdup(ports);
-		}
-	} else {
-		ports = smb_xstrdup(smb_ports);
-	}
-
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
+	if(lp_interfaces() && lp_bind_interfaces_only()) {
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		
+		if(num_interfaces > FD_SETSIZE) {
+			DEBUG(0,("open_sockets: Too many interfaces specified to bind to. Number was %d \
+max can be %d\n", 
+				 num_interfaces, FD_SETSIZE));
+			return False;
+		}
+		
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
 			struct in_addr *ifip = iface_n_ip(i);
-			fstring tok;
-			const char *ptr;
-
+			
 			if(ifip == NULL) {
-				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
+				DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
 				continue;
 			}
+			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
+			if(s == -1)
+				return False;
 
-			for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
-				unsigned port = atoi(tok);
-				if (port == 0) continue;
-				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-				if(s == -1)
-					return False;
+			/* ready to listen */
+			set_socket_options(s,"SO_KEEPALIVE"); 
+			set_socket_options(s,user_socket_options);
 
-				/* ready to listen */
-				set_socket_options(s,"SO_KEEPALIVE"); 
-				set_socket_options(s,user_socket_options);
-     
-				/* Set server socket to non-blocking for the accept. */
-				set_blocking(s,False); 
- 
-				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-					DEBUG(0,("listen: %s\n",strerror(errno)));
-					close(s);
-					return False;
-				}
-				FD_SET(s,&listen_set);
-
-				num_sockets++;
-				if (num_sockets >= FD_SETSIZE) {
-					DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
-					return False;
-				}
+			if (listen(s, 5) == -1) {
+				DEBUG(0,("listen: %s\n",strerror(errno)));
+				close(s);
+				return False;
 			}
+			FD_SET(s,&listen_set);
 		}
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
-
-		fstring tok;
-		const char *ptr;
-
 		num_interfaces = 1;
 		
-		for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
-			unsigned port = atoi(tok);
-			if (port == 0) continue;
-			/* open an incoming socket */
-			s = open_socket_in(SOCK_STREAM, port, 0,
-					   interpret_addr(lp_socket_address()),True);
-			if (s == -1)
-				return(False);
+		/* open an incoming socket */
+		s = open_socket_in(SOCK_STREAM, port, 0,
+				   interpret_addr(lp_socket_address()),True);
+		if (s == -1)
+			return(False);
 		
-			/* ready to listen */
-			set_socket_options(s,"SO_KEEPALIVE"); 
-			set_socket_options(s,user_socket_options);
-			
-			/* Set server socket to non-blocking for the accept. */
-			set_blocking(s,False); 
- 
-			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-				DEBUG(0,("open_sockets_smbd: listen: %s\n",
-					 strerror(errno)));
-				close(s);
-				return False;
-			}
+		/* ready to listen */
+		set_socket_options(s,"SO_KEEPALIVE"); 
+		set_socket_options(s,user_socket_options);
 
-			fd_listenset[num_sockets] = s;
-			FD_SET(s,&listen_set);
-
-			num_sockets++;
-
-			if (num_sockets >= FD_SETSIZE) {
-				DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
-				return False;
-			}
+		if (listen(s, 5) == -1) {
+			DEBUG(0,("open_sockets: listen: %s\n",
+				 strerror(errno)));
+			close(s);
+			return False;
 		}
+		
+		fd_listenset[0] = s;
+		FD_SET(s,&listen_set);
 	} 
-
-	SAFE_FREE(ports);
-
-        /* Listen to messages */
-
-        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync);
-        message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
-        message_register(MSG_SHUTDOWN, msg_exit_server);
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
@@ -344,10 +269,11 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
+				DEBUG(0,("Got SIGHUP\n"));
 				change_to_root_user();
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
-				reload_after_sighup = 0;
+				reload_after_sighup = False;
 			}
 
 			continue;
@@ -363,7 +289,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			socklen_t in_addrlen = sizeof(addr);
 
 			s = -1;
-			for(i = 0; i < num_sockets; i++) {
+			for(i = 0; i < num_interfaces; i++) {
 				if(FD_ISSET(fd_listenset[i],&lfds)) {
 					s = fd_listenset[i];
 					/* Clear this so we don't look
@@ -379,46 +305,36 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				continue;
 			
 			if (smbd_server_fd() == -1) {
-				DEBUG(0,("open_sockets_smbd: accept: %s\n",
+				DEBUG(0,("open_sockets: accept: %s\n",
 					 strerror(errno)));
 				continue;
 			}
-
-			/* Ensure child is set to blocking mode */
-			set_blocking(smbd_server_fd(),True);
-
+		
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
-			
+	
 			if (allowable_number_of_smbd_processes() && smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
-				for(i = 0; i < num_sockets; i++)
+				for(i = 0; i < num_interfaces; i++)
 					close(fd_listenset[i]);
 				
 				/* close our standard file
 				   descriptors */
-				close_low_fds(False);
+				close_low_fds();
 				am_parent = 0;
 				
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 				set_socket_options(smbd_server_fd(),user_socket_options);
-				
-				/* this is needed so that we get decent entries
-				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_peer_addr(smbd_server_fd()), False);
 				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
 				   done correctly in the process.  */
 				reset_globals_after_fork();
 
-				/* tdb needs special fork handling - remove CLEAR_IF_FIRST flags */
-				if (tdb_reopen_all() == -1) {
-					DEBUG(0,("tdb_reopen_all failed.\n"));
-					smb_panic("tdb_reopen_all failed.");
-				}
+				/* tdb needs special fork handling */
+				tdb_reopen_all();
 
 				return True; 
 			}
@@ -459,7 +375,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 /****************************************************************************
  Reload the services file.
-**************************************************************************/
+ **************************************************************************/
 
 BOOL reload_services(BOOL test)
 {
@@ -468,9 +384,8 @@ BOOL reload_services(BOOL test)
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());
-		if (file_exist(fname, NULL) &&
-		    !strcsequal(fname, dyn_CONFIGFILE)) {
-			pstrcpy(dyn_CONFIGFILE, fname);
+		if (file_exist(fname,NULL) && !strcsequal(fname,servicesf)) {
+			pstrcpy(servicesf,fname);
 			test = False;
 		}
 	}
@@ -482,7 +397,7 @@ BOOL reload_services(BOOL test)
 
 	lp_killunused(conn_snum_used);
 	
-	ret = lp_load(dyn_CONFIGFILE, False, False, True);
+	ret = lp_load(servicesf,False,False,True);
 
 	load_printers();
 
@@ -497,7 +412,7 @@ BOOL reload_services(BOOL test)
 	{
 		if (smbd_server_fd() != -1) {      
 			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-			set_socket_options(smbd_server_fd(), user_socket_options);
+			set_socket_options(smbd_server_fd(),user_socket_options);
 		}
 	}
 
@@ -510,18 +425,17 @@ BOOL reload_services(BOOL test)
 	return(ret);
 }
 
-
 #if DUMP_CORE
 /*******************************************************************
-prepare to dump a core file - carefully!
+ Prepare to dump a core file - carefully !
 ********************************************************************/
+
 static BOOL dump_core(void)
 {
 	char *p;
 	pstring dname;
-	
 	pstrcpy(dname,lp_logfile());
-	if ((p=strrchr_m(dname,'/'))) *p=0;
+	if ((p=strrchr(dname,'/'))) *p=0;
 	pstrcat(dname,"/corefiles");
 	mkdir(dname,0700);
 	sys_chown(dname,getuid(),getgid());
@@ -544,11 +458,41 @@ static BOOL dump_core(void)
 #endif
 
 
-	DEBUG(0,("Dumping core in %s\n", dname));
+	DEBUG(0,("Dumping core in %s\n",dname));
 	abort();
 	return(True);
 }
 #endif
+
+/****************************************************************************
+update the current smbd process count
+****************************************************************************/
+
+static BOOL process_count_update_successful = False;
+
+int32 increment_smbd_process_count(void)
+{
+	int32 total_smbds;
+
+	if (lp_max_smbd_processes()) {
+		total_smbds = 0;
+		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
+			return 1;
+		process_count_update_successful = True;
+		return total_smbds + 1;
+	}
+	return 1;
+}
+
+static void decrement_smbd_process_count(void)
+{
+	int32 total_smbds;
+
+	if (lp_max_smbd_processes() && process_count_update_successful) {
+		total_smbds = 1;
+		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
+	}
+}
 
 /****************************************************************************
  Exit the server.
@@ -558,30 +502,21 @@ void exit_server(const char *reason)
 {
 	static int firsttime=1;
 	extern char *last_inbuf;
-	extern struct auth_context *negprot_global_auth_context;
 
-	if (!firsttime)
-		exit(0);
+
+	if (!firsttime) exit(0);
 	firsttime = 0;
 
 	change_to_root_user();
 	DEBUG(2,("Closing connections\n"));
 
-	if (negprot_global_auth_context) {
-		(negprot_global_auth_context->free)(&negprot_global_auth_context);
-	}
-
 	conn_close_all();
 
 	invalidate_all_vuids();
 
-	print_notify_send_messages(3); /* 3 second timeout. */
-
-	/* run all registered exit events */
-	smb_run_exit_events();
-
 	/* delete our entry in the connections database. */
-	yield_connection(NULL,"");
+	if (lp_status(-1))
+		yield_connection(NULL,"");
 
 	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
@@ -606,7 +541,6 @@ void exit_server(const char *reason)
 	}    
 
 	locking_end();
-	printing_end();
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
@@ -616,15 +550,22 @@ void exit_server(const char *reason)
  Initialise connect, service and file structs.
 ****************************************************************************/
 
-static BOOL init_structs(void )
+static void init_structs(void )
 {
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file.
 	 */
 
-	if (!init_names())
-		return False;
+	if (!*global_myname) {
+		char *p;
+		fstrcpy( global_myname, myhostname() );
+		p = strchr( global_myname, '.' );
+		if (p) 
+			*p = 0;
+	}
+
+	strupper( global_myname );
 
 	conn_init();
 
@@ -636,59 +577,148 @@ static BOOL init_structs(void )
 	init_dptrs();
 
 	secrets_init();
+}
 
-	return True;
+/****************************************************************************
+  Keep track of the number of running smbd's. This functionality is used to
+  'hard' limit Samba overhead on resource constrained systems. 
+  This function is only called once per smbd.
+****************************************************************************/
+
+static BOOL smbd_process_limit(void)
+{
+	int32  total_smbds;
+	
+	if (lp_max_smbd_processes()) {
+
+		/* Always add one to the smbd process count, as exit_server() always
+		 * subtracts one.
+		 */
+
+		if (!conn_tdb_ctx()) {
+			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
+set. Ignoring max smbd restriction.\n"));
+			return False;
+		}
+
+		total_smbds = increment_smbd_process_count();
+		return total_smbds > lp_max_smbd_processes();
+	}
+	else
+		return False;
+}
+
+
+/****************************************************************************
+ Usage on the program.
+****************************************************************************/
+
+static void usage(char *pname)
+{
+
+	printf("Usage: %s [-DaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	printf("       [-O socket options] [-s services file]\n");
+	printf("\t-D                    Become a daemon (default)\n");
+	printf("\t-a                    Append to log file (default)\n");
+	printf("\t-i                    Run interactive (not a daemon)\n");
+	printf("\t-o                    Overwrite log file, don't append\n");
+	printf("\t-h                    Print usage\n");
+	printf("\t-?                    Print usage\n");
+	printf("\t-V                    Print version\n");
+	printf("\t-d debuglevel         Set the debuglevel\n");
+	printf("\t-l log basename.      Basename for log/debug files\n");
+	printf("\t-p port               Listen on the specified port\n");
+	printf("\t-O socket options     Socket options\n");
+	printf("\t-s services file.     Filename of services file\n");
+	printf("\n");
 }
 
 /****************************************************************************
  main program.
 ****************************************************************************/
 
-/* Declare prototype for build_options() to avoid having to run it through
-   mkproto.h.  Mixing $(builddir) and $(srcdir) source files in the current
-   prototype generation system is too complicated. */
-
-void build_options(BOOL screen);
-
- int main(int argc,const char *argv[])
+ int main(int argc,char *argv[])
 {
+	extern BOOL append_log;
+	extern BOOL AllowDebugChange;
 	/* shall I run as a daemon */
-	static BOOL is_daemon = False;
-	static BOOL interactive = False;
-	static BOOL Fork = True;
-	static BOOL log_stdout = False;
-	static char *ports = NULL;
+	BOOL is_daemon = False;
+	BOOL interactive = False;
+	BOOL specified_logfile = False;
+	int port = SMB_PORT;
 	int opt;
-	poptContext pc;
-
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
-	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
-	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
-	POPT_COMMON_SAMBA
-	{ NULL }
-	};
-
+	extern char *optarg;
+	pstring logfile;
+	
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
 
-	pc = poptGetContext("smbd", argc, argv, long_options, 0);
-	
-	while((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt)  {
-		case 'b':
-			build_options(True); /* Display output to screen as well as debug */ 
-			exit(0);
-			break;
-		}
+	/* this is for people who can't start the program correctly */
+	while (argc > 1 && (*argv[1] != '-')) {
+		argv++;
+		argc--;
 	}
 
-	poptFreeContext(pc);
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dip:h?Vaof:")) )
+		switch (opt)  {
+		case 'O':
+			pstrcpy(user_socket_options,optarg);
+			break;
+
+		case 's':
+			pstrcpy(servicesf,optarg);
+			break;
+
+		case 'l':
+			specified_logfile = True;
+			slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", optarg);
+			lp_set_logfile(logfile);
+			break;
+
+		case 'a':
+			append_log = True;
+			break;
+
+		case 'o':
+			append_log = False;
+			break;
+
+		case 'D':
+			is_daemon = True;
+			break;
+
+		case 'i':
+			interactive = True;
+			break;
+
+		case 'd':
+			if (*optarg == 'A')
+				DEBUGLEVEL = 10000;
+			else
+				DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
+			break;
+
+		case 'p':
+			port = atoi(optarg);
+			break;
+
+		case 'h':
+		case '?':
+			usage(argv[0]);
+			exit(0);
+			break;
+
+		case 'V':
+			printf("Version %s\n",VERSION);
+			exit(0);
+			break;
+		default:
+			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
+			usage(argv[0]);
+			exit(1);
+		}
 
 #ifdef HAVE_SETLUID
 	/* needed for SecureWare on SCO */
@@ -697,21 +727,24 @@ void build_options(BOOL screen);
 
 	sec_init();
 
-	load_case_tables();
+	append_log = True;
 
-	set_remote_machine_name("smbd", False);
+	TimeInit();
 
-	if (interactive) {
-		Fork = False;
-		log_stdout = True;
+	if(!specified_logfile) {
+		slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", LOGFILEBASE);
+		lp_set_logfile(logfile);
 	}
 
-	if (log_stdout && Fork) {
-		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
-		exit(1);
-	}
+	pstrcpy(remote_machine, "smbd");
 
-	setup_logging(argv[0],log_stdout);
+	/*
+	 * Only want interactive behaviour if the user has not also
+	 * specified a logfile dir etc.
+	 */
+	setup_logging(argv[0],interactive & !specified_logfile);
+
+	charset_initialise();
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
@@ -726,7 +759,7 @@ void build_options(BOOL screen);
 	fault_setup((void (*)(void *))exit_server);
 	CatchSignal(SIGTERM , SIGNAL_CAST sig_term);
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
-	
+
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
 
@@ -751,17 +784,15 @@ void build_options(BOOL screen);
 	umask(0);
 
 	init_sec_ctx();
+	init_conn_ctx();
 
 	reopen_logs();
 
-	DEBUG(0,( "smbd version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
+	DEBUG(0,( "smbd version %s started.\n", VERSION));
+	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2003\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
-
-	/* Output the build options to the debug log */ 
-	build_options(False);
 
 	if (sizeof(uint16) < 2 || sizeof(uint32) < 4) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
@@ -776,13 +807,26 @@ void build_options(BOOL screen);
 		return(-1);	
 
 	init_structs();
-
+	
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
-		DEBUG(0,("ERROR: failed to setup profiling\n"));
+		DEBUG(0,("ERROR: failed to setup profiling shared memory\n"));
 		return -1;
 	}
-#endif
+#endif /* WITH_PROFILE */
+
+#ifdef WITH_SSL
+	{
+		extern BOOL sslEnabled;
+		sslEnabled = lp_ssl_enabled();
+		if(sslEnabled)
+			sslutil_init(True);
+	}
+#endif        /* WITH_SSL */
+
+	codepage_initialise(lp_client_code_page());
+
+	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	DEBUG(3,( "loaded services\n"));
 
@@ -800,7 +844,7 @@ void build_options(BOOL screen);
 
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork);
+		become_daemon();
 	}
 
 #if HAVE_SETPGID
@@ -818,69 +862,43 @@ void build_options(BOOL screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 	if (!message_init())
 		exit(1);
 
-	if (!session_init())
+	/* Setup the main smbd so that we can get messages. */
+	if (lp_status(-1))
+		claim_connection(NULL,"",0,True);
+
+	/* Attempt to migrate from an old 2.0.x machine account file. */
+	if (!migrate_from_old_password_file(global_myworkgroup))
+		DEBUG(0,("Failed to migrate from old MAC file.\n"));
+
+	if(!pdb_generate_sam_sid()) {
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
+	if (!open_sockets(is_daemon,interactive,port))
 		exit(1);
 
-	if (conn_tdb_ctx() == NULL)
-		exit(1);
+	/*
+	 * Everything after this point is run after the fork().
+	 */ 
 
 	if (!locking_init(0))
-		exit(1);
-
-	if (!share_info_db_init())
-		exit(1);
-
-	namecache_enable();
-
-	if (!init_registry())
 		exit(1);
 
 	if (!print_backend_init())
 		exit(1);
 
-	/* Setup the main smbd so that we can get messages. */
-	claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
-
-	/* 
-	   DO NOT ENABLE THIS TILL YOU COPE WITH KILLING THESE TASKS AND INETD
-	   THIS *killed* LOTS OF BUILD FARM MACHINES. IT CREATED HUNDREDS OF 
-	   smbd PROCESSES THAT NEVER DIE
-	   start_background_queue(); 
-	*/
-
-	if (!open_sockets_smbd(is_daemon, interactive, ports))
+	if (!share_info_db_init())
 		exit(1);
-
-	/*
-	 * everything after this point is run after the fork()
-	 */ 
-
-	/* Initialise the password backed before the global_sam_sid
-	   to ensure that we fetch from ldap before we make a domain sid up */
 
 	if(!initialize_password_db(False))
 		exit(1);
 
-	if(!get_global_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
-	}
-
-	static_init_rpc;
-
-	init_modules();
-
 	/* possibly reload the services file. */
 	reload_services(True);
-
-	if (!init_account_policy()) {
-		DEBUG(0,("Could not open account policy tdb.\n"));
-		exit(1);
-	}
 
 	if (*lp_rootdir()) {
 		if (sys_chroot(lp_rootdir()) == 0)
@@ -890,20 +908,19 @@ void build_options(BOOL screen);
 	/* Setup oplocks */
 	if (!init_oplocks())
 		exit(1);
-	
+
 	/* Setup change notify */
 	if (!init_change_notify())
 		exit(1);
 
-	/* re-initialise the timezone */
-	TimeInit();
-
-	/* register our message handlers */
-	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
-
+	if ( smbd_process_limit() ) {
+		  DEBUG( 1, ( "Connection denied from %s\n",
+			      client_addr() ) );
+		  exit_server("connection denied");
+	}
+		
 	smbd_process();
 	
-	namecache_shutdown();
 	exit_server("normal exit");
 	return(0);
 }

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB client generic functions
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -23,17 +24,6 @@
 #include "includes.h"
 
 /****************************************************************************
- Change the timeout (in milliseconds).
-****************************************************************************/
-
-unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
-{
-	unsigned int old_timeout = cli->timeout;
-	cli->timeout = timeout;
-	return old_timeout;
-}
-
-/****************************************************************************
  Change the port number used to call on.
 ****************************************************************************/
 
@@ -41,38 +31,6 @@ int cli_set_port(struct cli_state *cli, int port)
 {
 	cli->port = port;
 	return port;
-}
-
-/****************************************************************************
- Read an smb from a fd ignoring all keepalive packets. Note that the buffer 
- *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
- The timeout is in milliseconds
-
- This is exactly the same as receive_smb except that it never returns
- a session keepalive packet (just as receive_smb used to do).
- receive_smb was changed to return keepalives as the oplock processing means this call
- should never go into a blocking read.
-****************************************************************************/
-
-static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
-{
-	BOOL ret;
-
-	for(;;) {
-		ret = receive_smb_raw(fd, buffer, timeout);
-
-		if (!ret) {
-			DEBUG(10,("client_receive_smb failed\n"));
-			show_msg(buffer);
-			return ret;
-		}
-
-		/* Ignore session keepalive packets. */
-		if(CVAL(buffer,0) != SMBkeepalive)
-			break;
-	}
-	show_msg(buffer);
-	return ret;
 }
 
 /****************************************************************************
@@ -89,7 +47,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return False; 
 
  again:
-	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	ret = client_receive_smb(cli->fd,cli->inbuf,abs(cli->timeout));
 	
 	if (ret) {
 		/* it might be an oplock break request */
@@ -108,23 +66,14 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		}
 	}
 
-	/* If the server is not responding, note that now */
-
+        /* If the server is not responding, note that now */
 	if (!ret) {
 		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
-		return ret;
 	}
 
-	if (!cli_check_sign_mac(cli, True)) {
-		DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
-		cli->smb_rw_error = READ_BAD_SIG;
-		close(cli->fd);
-		cli->fd = -1;
-		return False;
-	};
-	return True;
+	return ret;
 }
 
 /****************************************************************************
@@ -141,26 +90,21 @@ BOOL cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return False;
 
-	cli_calculate_sign_mac(cli);
-
 	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
 		if (ret <= 0) {
-			close(cli->fd);
-			cli->fd = -1;
+                        close(cli->fd);
+                        cli->fd = -1;
 			cli->smb_rw_error = WRITE_ERROR;
 			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
-				(int)len,(int)ret, strerror(errno) ));
+				 (int)len,(int)ret, strerror(errno) ));
 			return False;
 		}
 		nwritten += ret;
 	}
-	/* Increment the mid so we can tell between responses. */
-	cli->mid++;
-	if (!cli->mid)
-		cli->mid++;
+	
 	return True;
 }
 
@@ -170,7 +114,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 
 void cli_setup_packet(struct cli_state *cli)
 {
-	cli->rap_error = 0;
+        cli->rap_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
@@ -178,12 +122,12 @@ void cli_setup_packet(struct cli_state *cli)
 		uint16 flags2;
 		SCVAL(cli->outbuf,smb_flg,0x8);
 		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-		if (cli->capabilities & CAP_UNICODE)
+		if (cli->capabilities & CAP_UNICODE) {
 			flags2 |= FLAGS2_UNICODE_STRINGS;
-		if (cli->capabilities & CAP_STATUS32)
+		}
+		if (cli->capabilities & CAP_STATUS32) {
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-		if (cli->use_spnego)
-			flags2 |= FLAGS2_EXTENDED_SECURITY;
+		}
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
@@ -198,39 +142,21 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 }
 
 /****************************************************************************
- Initialise credentials of a client structure.
+ Initialise a client structure.
 ****************************************************************************/
 
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
         /* copy_nt_creds(&cli->usr, usr); */
-	fstrcpy(cli->domain   , usr->domain);
-	fstrcpy(cli->user_name, usr->user_name);
+	safe_strcpy(cli->domain   , usr->domain   , sizeof(usr->domain   )-1);
+	safe_strcpy(cli->user_name, usr->user_name, sizeof(usr->user_name)-1);
 	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
+        cli->ntlmssp_flags = usr->ntlmssp_flags;
+        cli->ntlmssp_cli_flgs = usr != NULL ? usr->ntlmssp_flags : 0;
 
-        DEBUG(10,("cli_init_creds: user %s domain %s\n",
-               cli->user_name, cli->domain));
-}
-
-/****************************************************************************
- Set the signing state (used from the command line).
-****************************************************************************/
-
-void cli_setup_signing_state(struct cli_state *cli, int signing_state)
-{
-	if (signing_state == Undefined)
-		return;
-
-	if (signing_state == False) {
-		cli->sign_info.allow_smb_signing = False;
-		cli->sign_info.mandatory_signing = False;
-		return;
-	}
-
-	cli->sign_info.allow_smb_signing = True;
-
-	if (signing_state == Required) 
-		cli->sign_info.mandatory_signing = True;
+        DEBUG(10,("cli_init_creds: user %s domain %s flgs: %x\nntlmssp_cli_flgs:%x\n",
+               cli->user_name, cli->domain,
+               cli->ntlmssp_flags,cli->ntlmssp_cli_flgs));
 }
 
 /****************************************************************************
@@ -270,52 +196,28 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
-	cli->outbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
-	cli->inbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
+	cli->outbuf = (char *)malloc(cli->bufsize);
+	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
-
-	cli->use_spnego = lp_client_use_spnego();
-
-	cli->capabilities = CAP_UNICODE | CAP_STATUS32;
-
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
 
-	if (lp_client_signing()) 
-		cli->sign_info.allow_smb_signing = True;
-
-	if (lp_client_signing() == Required) 
-		cli->sign_info.mandatory_signing = True;
-                                   
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
-	if ((cli->mem_ctx = talloc_init("cli based talloc")) == NULL)
+	if ((cli->mem_ctx = talloc_init()) == NULL)
                 goto error;
 
 	memset(cli->outbuf, 0, cli->bufsize);
 	memset(cli->inbuf, 0, cli->bufsize);
 
-
-#if defined(DEVELOPER)
-	/* just because we over-allocate, doesn't mean it's right to use it */
-	clobber_region(FUNCTION_MACRO, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
-	clobber_region(FUNCTION_MACRO, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
-#endif
-
-	/* initialise signing */
-	cli_null_set_signing(cli);
-
 	cli->nt_pipe_fnum = 0;
-	cli->saved_netlogon_pipe_fnum = 0;
 
 	cli->initialised = 1;
 	cli->allocated = alloced_cli;
-
-	cli->pipe_idx = -1;
 
 	return cli;
 
@@ -333,78 +235,27 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
-close the session
-****************************************************************************/
-
-void cli_nt_session_close(struct cli_state *cli)
-{
-	if (cli->ntlmssp_pipe_state) {
-		ntlmssp_end(&cli->ntlmssp_pipe_state);
-	}
-
-	if (cli->nt_pipe_fnum != 0)
-		cli_close(cli, cli->nt_pipe_fnum);
-
-	cli->nt_pipe_fnum = 0;
-	cli->pipe_idx = -1;
-}
-
-/****************************************************************************
-close the NETLOGON session holding the session key for NETSEC
-****************************************************************************/
-
-void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
-{
-	if (cli->saved_netlogon_pipe_fnum != 0) {
-		cli_close(cli, cli->saved_netlogon_pipe_fnum);
-		cli->saved_netlogon_pipe_fnum = 0;
-	}
-}
-
-/****************************************************************************
  Close a client connection and free the memory without destroying cli itself.
 ****************************************************************************/
 
 void cli_close_connection(struct cli_state *cli)
 {
-	cli_nt_session_close(cli);
-	cli_nt_netlogon_netsec_session_close(cli);
-
-	/*
-	 * tell our peer to free his resources.  Wihtout this, when an
-	 * application attempts to do a graceful shutdown and calls
-	 * smbc_free_context() to clean up all connections, some connections
-	 * can remain active on the peer end, until some (long) timeout period
-	 * later.  This tree disconnect forces the peer to clean up, since the
-	 * connection will be going away.
-	 *
-	 * Also, do not do tree disconnect when cli->smb_rw_error is DO_NOT_DO_TDIS
-	 * the only user for this so far is smbmount which passes opened connection
-	 * down to kernel's smbfs module.
-	 */
-	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != DO_NOT_DO_TDIS ) )
-		cli_tdis(cli);
-        
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
-
-	cli_free_signing_context(cli);
-	data_blob_free(&cli->secblob);
-	data_blob_free(&cli->user_session_key);
-
-	if (cli->ntlmssp_pipe_state) 
-		ntlmssp_end(&cli->ntlmssp_pipe_state);
 
 	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
 		cli->mem_ctx = NULL;
 	}
 
+#ifdef WITH_SSL
+	if (cli->fd != -1)
+		sslutil_disconnect(cli->fd);
+#endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
 	cli->fd = -1;
 	cli->smb_rw_error = 0;
-
 }
 
 /****************************************************************************
@@ -417,14 +268,14 @@ void cli_shutdown(struct cli_state *cli)
 	cli_close_connection(cli);
 	ZERO_STRUCTP(cli);
 	if (allocated)
-		free(cli);
+		SAFE_FREE(cli);
 }
 
 /****************************************************************************
  Set socket options on a open connection.
 ****************************************************************************/
 
-void cli_sockopt(struct cli_state *cli, const char *options)
+void cli_sockopt(struct cli_state *cli, char *options)
 {
 	set_socket_options(cli->fd, options);
 }
@@ -441,8 +292,9 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 }
 
 /****************************************************************************
-Send a keepalive packet to the server
+ Send a keepalive packet to the server.
 ****************************************************************************/
+
 BOOL cli_send_keepalive(struct cli_state *cli)
 {
         if (cli->fd == -1) {
@@ -452,7 +304,8 @@ BOOL cli_send_keepalive(struct cli_state *cli)
         if (!send_keepalive(cli->fd)) {
                 close(cli->fd);
                 cli->fd = -1;
-                DEBUG(0,("Error sending keepalive packet to client.\n"));
+                DEBUG(0,("Error sending keepalive packet to client. (%s)\n",
+					strerror(errno) ));
                 return False;
         }
         return True;

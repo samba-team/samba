@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2
 
    Functions to create reasonable random numbers for crypto use.
 
@@ -24,8 +25,8 @@
 
 static unsigned char hash[258];
 static uint32 counter;
-static unsigned char *reseed_data;
-static size_t reseed_data_size;
+unsigned char *reseed_data;
+size_t reseed_data_size;
 
 /**************************************************************** 
  Copy any user given reseed data.
@@ -146,10 +147,18 @@ static int do_reseed(BOOL use_fd, int fd)
 			return fd;
 	}
 
+#ifdef __INSURE__
+	memset(seed_inbuf, '\0', sizeof(seed_inbuf));
+#endif
+
 	/* Add in some secret file contents */
 
 	do_filehash("/etc/shadow", &seed_inbuf[0]);
+#ifdef WITH_TDB_SAM
+	do_filehash(lp_tdb_passwd_file(), &seed_inbuf[16]);
+#else
 	do_filehash(lp_smb_passwd_file(), &seed_inbuf[16]);
+#endif
 
 	/*
 	 * Add in the root encrypted password.
@@ -157,14 +166,13 @@ static int do_reseed(BOOL use_fd, int fd)
 	 * seriously this will be secret.
 	 */
 
-	pw = getpwnam_alloc("root");
+	pw = sys_getpwnam("root");
 	if (pw && pw->pw_passwd) {
 		size_t i;
 		unsigned char md4_tmp[16];
 		mdfour(md4_tmp, (unsigned char *)pw->pw_passwd, strlen(pw->pw_passwd));
 		for (i=0;i<16;i++)
 			seed_inbuf[8+i] ^= md4_tmp[i];
-		passwd_free(&pw);
 	}
 
 	/*
@@ -259,7 +267,7 @@ char *generate_random_str(size_t len)
 		len = sizeof(retstr) -1;
 	generate_random_buffer( retstr, len, False);
 	for (i = 0; i < len; i++)
-		retstr[i] = c_list[ retstr[i] % (sizeof(c_list)-1) ];
+		retstr[i] = c_list[ retstr[i] % sizeof(c_list) ];
 
 	retstr[i] = '\0';
 

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    client file read/write routines
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -50,8 +51,40 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
+#ifdef LARGE_SMB_OFF_T
+        /*
+	 * We only want to do the following if we understand large offsets
+	 * otherwise the compiler is likely to get upset with us
+	 */
 	if (bigoffset)
 		SIVAL(cli->outbuf,smb_vwv10,(offset>>32) & 0xffffffff);
+
+#endif /* LARGE_SMB_OFF_T */
+
+	return cli_send_smb(cli);
+}
+
+/****************************************************************************
+Issue a single SMBreadraw and don't wait for a reply.
+****************************************************************************/
+
+static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
+			   size_t size, int i)
+{
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,10,0,True);
+		
+	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,fnum);
+	SIVAL(cli->outbuf,smb_vwv1,offset);
+	SSVAL(cli->outbuf,smb_vwv2,size);
+	SSVAL(cli->outbuf,smb_vwv3,size);
+	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
 	return cli_send_smb(cli);
 }
@@ -92,7 +125,6 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                    errors. */
 
                 if (cli_is_error(cli)) {
-			BOOL recoverable_error = False;
                         NTSTATUS status = NT_STATUS_OK;
                         uint8 eclass = 0;
 			uint32 ecode = 0;
@@ -102,17 +134,8 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                         else
                                 cli_dos_error(cli, &eclass, &ecode);
 
-			/*
-			 * ERRDOS ERRmoredata or STATUS_MORE_ENRTIES is a
-			 * recoverable error, plus we have valid data in the
-			 * packet so don't error out here.
-			 */
-
                         if ((eclass == ERRDOS && ecode == ERRmoredata) ||
                             NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
-				recoverable_error = True;
-
-			if (!recoverable_error)
                                 return -1;
 		}
 
@@ -143,43 +166,6 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	}
 
 	return total;
-}
-
-#if 0  /* relies on client_receive_smb(), now a static in libsmb/clientgen.c */
-
-/* This call is INCOMPATIBLE with SMB signing.  If you remove the #if 0
-   you must fix ensure you don't attempt to sign the packets - data
-   *will* be currupted */
-
-/****************************************************************************
-Issue a single SMBreadraw and don't wait for a reply.
-****************************************************************************/
-
-static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
-			   size_t size, int i)
-{
-
-	if (!cli->sign_info.use_smb_signing) {
-		DEBUG(0, ("Cannot use readraw and SMB Signing\n"));
-		return False;
-	}
-	
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	set_message(cli->outbuf,10,0,True);
-		
-	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,fnum);
-	SIVAL(cli->outbuf,smb_vwv1,offset);
-	SSVAL(cli->outbuf,smb_vwv2,size);
-	SSVAL(cli->outbuf,smb_vwv3,size);
-	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
-
-	return cli_send_smb(cli);
 }
 
 /****************************************************************************
@@ -243,13 +229,12 @@ ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, si
 
 	return total;
 }
-#endif
+
 /****************************************************************************
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
 
-static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, 
-			    uint16 mode, const char *buf,
+static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint16 mode, char *buf,
 			    size_t size, int i)
 {
 	char *p;
@@ -285,21 +270,24 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	SIVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
-	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
 	/*
-	 * According to CIFS-TR-1p00, this following field should only
-	 * be set if CAP_LARGE_WRITEX is set. We should check this
-	 * locally. However, this check might already have been
-	 * done by our callers.
+	 * THe following is still wrong ...
 	 */
+	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
 	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
 
+#ifdef LARGE_SMB_OFF_T
+        /*
+	 * We only want to do the following if we understand large offsets
+	 * otherwise the compiler is likely to get upset with us
+	 */
 	if (bigoffset)
 		SIVAL(cli->outbuf,smb_vwv12,(offset>>32) & 0xffffffff);
-	
+#endif /* LARGE_SMB_OFF_T */
+
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
 	memcpy(p, buf, size);
 	cli_setup_bcc(cli, p+size);
@@ -320,13 +308,13 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
-		  const char *buf, off_t offset, size_t size)
+		  char *buf, off_t offset, size_t size)
 {
 	int bwritten = 0;
 	int issued = 0;
 	int received = 0;
 	int mpx = MAX(cli->max_mux-1, 1);
-	int block = cli->max_xmit - (smb_size+32);
+	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
 	int blocks = (size + (block-1)) / block;
 
 	while (received < blocks) {

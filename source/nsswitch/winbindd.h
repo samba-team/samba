@@ -4,7 +4,6 @@
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
-   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -25,12 +24,10 @@
 #ifndef _WINBINDD_H
 #define _WINBINDD_H
 
+#include "includes.h"
 #include "nterr.h"
 
 #include "winbindd_nss.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
 
 /* Client state structure */
 
@@ -42,12 +39,8 @@ struct winbindd_cli_state {
 	BOOL finished;                            /* Can delete from list */
 	BOOL write_extra_data;                    /* Write extra_data field */
 	time_t last_access;                       /* Time of last access (read or write) */
-	BOOL privileged;                           /* Is the client 'privileged' */
-
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */
-	BOOL getpwent_initialized;                /* Has getpwent_state been initialized? */
-	BOOL getgrent_initialized;                /* Has getgrent_state been initialized? */
 	struct getent_state *getpwent_state;      /* State for getpwent() */
 	struct getent_state *getgrent_state;      /* State for getgrent() */
 };
@@ -67,8 +60,7 @@ struct getent_state {
 struct getpwent_user {
 	fstring name;                        /* Account name */
 	fstring gecos;                       /* User information */
-	DOM_SID user_sid;                    /* NT user and primary group SIDs */
-	DOM_SID group_sid;
+	uint32 user_rid, group_rid;          /* NT user and group rids */
 };
 
 /* Server state structure */
@@ -86,27 +78,20 @@ extern struct winbindd_state server_state;  /* Server information */
 typedef struct {
 	char *acct_name;
 	char *full_name;
-	DOM_SID *user_sid;                    /* NT user and primary group SIDs */
-	DOM_SID *group_sid;
+	uint32 user_rid;
+	uint32 group_rid; /* primary group */
 } WINBIND_USERINFO;
 
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
-	fstring alt_name;                      /* alt Domain name (if any) */
+	fstring full_name;                     /* full Domain name (realm) */	
 	DOM_SID sid;                           /* SID for this domain */
-	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
-	BOOL active_directory;                 /* is this a win2k active directory ? */
-	BOOL primary;                          /* is this our primary domain ? */
-	BOOL internal;		/* BUILTIN and member SAM */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
-	struct winbindd_methods *methods;
 
-	/* the backend methods are used by the cache layer to find the right
-	   backend */
-	struct winbindd_methods *backend;
+	struct winbindd_methods *methods;
 
         /* Private data for the backends (used for connection cache) */
 
@@ -136,21 +121,14 @@ struct winbindd_methods {
 				   uint32 *num_entries, 
 				   WINBIND_USERINFO **info);
 
-	/* get a list of domain groups */
+	/* get a list of groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *num_entries, 
 				    struct acct_info **info);
 
-	/* get a list of domain local groups */
-	NTSTATUS (*enum_local_groups)(struct winbindd_domain *domain,
-				    TALLOC_CTX *mem_ctx,
-				    uint32 *num_entries, 
-				    struct acct_info **info);
-				    
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
 				const char *name,
 				DOM_SID *sid,
 				enum SID_NAME_USE *type);
@@ -158,14 +136,14 @@ struct winbindd_methods {
 	/* convert a sid to a user or group name */
 	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *sid,
+				DOM_SID *sid,
 				char **name,
 				enum SID_NAME_USE *type);
 
-	/* lookup user info for a given SID */
+	/* lookup user info for a given rid */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx, 
-			       const DOM_SID *user_sid,
+			       uint32 user_rid, 
 			       WINBIND_USERINFO *user_info);
 
 	/* lookup all groups that a user is a member of. The backend
@@ -173,15 +151,14 @@ struct winbindd_methods {
 	   function */
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      const DOM_SID *user_sid,
-				      uint32 *num_groups, DOM_SID ***user_gids);
+				      uint32 user_rid, 
+				      uint32 *num_groups, uint32 **user_gids);
 
 	/* find all members of the group with the specified group_rid */
 	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    const DOM_SID *group_sid,
-				    uint32 *num_names, 
-				    DOM_SID ***sid_mem, char ***names, 
+				    uint32 group_rid, uint32 *num_names, 
+				    uint32 **rid_mem, char ***names, 
 				    uint32 **name_types);
 
 	/* return the current global sequence number */
@@ -192,15 +169,11 @@ struct winbindd_methods {
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *num_domains,
 				    char ***names,
-				    char ***alt_names,
 				    DOM_SID **dom_sids);
 
 	/* find the domain sid */
 	NTSTATUS (*domain_sid)(struct winbindd_domain *domain,
 			       DOM_SID *sid);
-
-	/* setup the list of alternate names for the domain, if any */
-	NTSTATUS (*alternate_name)(struct winbindd_domain *domain);
 };
 
 /* Used to glue a policy handle and cli_state together */
@@ -210,31 +183,26 @@ typedef struct {
 	POLICY_HND pol;
 } CLI_POLICY_HND;
 
-/* Filled out by IDMAP backends */
-struct winbindd_idmap_methods {
-  /* Called when backend is first loaded */
-  BOOL (*init)(void);
-
-  BOOL (*get_sid_from_uid)(uid_t uid, DOM_SID *sid);
-  BOOL (*get_sid_from_gid)(gid_t gid, DOM_SID *sid);
-
-  BOOL (*get_uid_from_sid)(DOM_SID *sid, uid_t *uid);
-  BOOL (*get_gid_from_sid)(DOM_SID *sid, gid_t *gid);
-
-  /* Called when backend is unloaded */
-  BOOL (*close)(void);
-  /* Called to dump backend status */
-  void (*status)(void);
-};
-
-#include "../nsswitch/winbindd_proto.h"
+#include "winbindd_proto.h"
 
 #include "rpc_parse.h"
 #include "rpc_client.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
-#define WINBINDD_RESCAN_FREQ 300
-
 #define DOM_SEQUENCE_NONE ((uint32)-1)
+
+/* SETENV */
+#if HAVE_SETENV
+#define SETENV(name, value, overwrite) setenv(name,value,overwrite)
+#elif HAVE_PUTENV
+#define SETENV(name, value, overwrite)					 \
+{									 \
+	fstring envvar;							 \
+	slprintf(envvar, sizeof(fstring), "%s=%s", name, value);	 \
+	putenv(envvar);							 \
+}
+#else
+#define SETENV(name, value, overwrite) ;
+#endif
 
 #endif /* _WINBINDD_H */

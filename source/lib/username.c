@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Username handling
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1997-2001.
@@ -22,61 +23,62 @@
 #include "includes.h"
 
 /* internal functions */
-static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (const char *), int N);
-static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (const char *), int N);
+static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);
+static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (char *), int N);
 
 /*****************************************************************
  Check if a user or group name is local (this is a *local* name for
  *local* people, there's nothing for you here...).
 *****************************************************************/
 
-static BOOL name_is_local(const char *name)
+BOOL name_is_local(const char *name)
 {
-	return !(strchr_m(name, *lp_winbind_separator()));
-}
-
-/*****************************************************************
- Splits passed user or group name to domain and user/group name parts
- Returns True if name was splitted and False otherwise.
-*****************************************************************/
-
-BOOL split_domain_and_name(const char *name, char *domain, char* username)
-{
-	char *p = strchr(name,*lp_winbind_separator());
-	
-	
-	/* Parse a string of the form DOMAIN/user into a domain and a user */
-	DEBUG(10,("split_domain_and_name: checking whether name |%s| local or not\n", name));
-	
-	if (p) {
-		fstrcpy(username, p+1);
-		fstrcpy(domain, name);
-		domain[PTR_DIFF(p, name)] = 0;
-	} else if (lp_winbind_use_default_domain()) {
-		fstrcpy(username, name);
-		fstrcpy(domain, lp_workgroup());
-	} else {
-		return False;
-	}
-
-	DEBUG(10,("split_domain_and_name: all is fine, domain is |%s| and name is |%s|\n", domain, username));
-	return True;
+	return !strchr(name, *lp_winbind_separator());
 }
 
 /****************************************************************************
  Get a users home directory.
 ****************************************************************************/
 
-char *get_user_home_dir(const char *user)
+char *get_user_home_dir(char *user)
 {
 	static struct passwd *pass;
 
-	/* Ensure the user exists. */
-
-	pass = Get_Pwnam(user);
-
+	pass = Get_Pwnam(user, False);
 	if (!pass)
 		return(NULL);
+	/* Return home directory from struct passwd. */
+	return(pass->pw_dir);      
+}
+
+/****************************************************************************
+ Get a users home service directory.
+****************************************************************************/
+
+char *get_user_service_home_dir(char *user)
+{
+	static struct passwd *pass;
+	int snum;
+
+	/* Ensure the user exists. */
+
+	pass = Get_Pwnam(user, False);
+	if (!pass)
+		return(NULL);
+
+	/* If a path is specified in [homes] then use it instead of the
+	   user's home directory from struct passwd. */
+
+	if ((snum = lp_servicenumber(HOMES_NAME)) != -1) {
+		static pstring home_dir;
+
+		pstrcpy(home_dir, lp_pathname(snum));
+		standard_sub_home(snum, user, home_dir, sizeof(home_dir));
+
+		if (home_dir[0])
+			return home_dir;
+	}
+
 	/* Return home directory from struct passwd. */
 
 	return(pass->pw_dir);      
@@ -97,7 +99,7 @@ BOOL map_username(char *user)
 {
 	static BOOL initialised=False;
 	static fstring last_from,last_to;
-	XFILE *f;
+	FILE *f;
 	char *mapfile = lp_username_map();
 	char *s;
 	pstring buf;
@@ -123,7 +125,7 @@ BOOL map_username(char *user)
 		return True;
 	}
   
-	f = x_fopen(mapfile,O_RDONLY, 0);
+	f = sys_fopen(mapfile,"r");
 	if (!f) {
 		DEBUG(0,("can't open username map %s. Error %s\n",mapfile, strerror(errno) ));
 		return False;
@@ -133,8 +135,7 @@ BOOL map_username(char *user)
 
 	while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
 		char *unixname = s;
-		char *dosname = strchr_m(unixname,'=');
-		char **dosuserlist;
+		char *dosname = strchr(unixname,'=');
 		BOOL return_if_mapped = False;
 
 		if (!dosname)
@@ -144,15 +145,15 @@ BOOL map_username(char *user)
 
 		while (isspace((int)*unixname))
 			unixname++;
-
 		if ('!' == *unixname) {
 			return_if_mapped = True;
 			unixname++;
+
 			while (*unixname && isspace((int)*unixname))
 				unixname++;
 		}
     
-		if (!*unixname || strchr_m("#;",*unixname))
+		if (!*unixname || strchr("#;",*unixname))
 			continue;
 
 		{
@@ -163,29 +164,20 @@ BOOL map_username(char *user)
 			}
 		}
 
-		dosuserlist = str_list_make(dosname, NULL);
-		if (!dosuserlist) {
-			DEBUG(0,("Unable to build user list\n"));
-			return False;
-		}
-
-		if (strchr_m(dosname,'*') || user_in_list(user, (const char **)dosuserlist, NULL, 0)) {
+		if (strchr(dosname,'*') || user_in_list(user,dosname)) {
 			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
 			mapped_user = True;
 			fstrcpy(last_from,user);
 			sscanf(unixname,"%s",user);
 			fstrcpy(last_to,user);
-			if(return_if_mapped) {
-				str_list_free (&dosuserlist);
-				x_fclose(f);
+			if(return_if_mapped) { 
+				fclose(f);
 				return True;
 			}
 		}
-    
-		str_list_free (&dosuserlist);
 	}
 
-	x_fclose(f);
+	fclose(f);
 
 	/*
 	 * Setup the last_from and last_to as an optimization so 
@@ -198,116 +190,107 @@ BOOL map_username(char *user)
 }
 
 /****************************************************************************
- * A wrapper for sys_getpwnam().  The following variations are tried:
- *   - as transmitted
- *   - in all lower case if this differs from transmitted
- *   - in all upper case if this differs from transmitted
- *   - using lp_usernamelevel() for permutations.
+ Get_Pwnam wrapper.
 ****************************************************************************/
 
-static struct passwd *Get_Pwnam_ret = NULL;
-
-static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
+static struct passwd *_Get_Pwnam(char *s)
 {
-	struct passwd *ret = NULL;
+	struct passwd *ret;
 
-	if (!user2 || !(*user2))
-		return(NULL);
+	ret = sys_getpwnam(s);
+	if (ret) {
+#ifdef HAVE_GETPWANAM
+		struct passwd_adjunct *pwret;
+		pwret = getpwanam(s);
+		if (pwret && pwret->pwa_passwd)
+			pstrcpy(ret->pw_passwd,pwret->pwa_passwd);
+#endif
+	}
+
+	return(ret);
+}
+
+/****************************************************************************
+ A wrapper for getpwnam().  The following variations are tried...
+    - in all lower case
+    - as transmitted IF a different case
+    - in all upper case IF that is different from the transmitted username
+    - using the lp_usernamelevel() for permutations
+ Note that this can change user! The user name is in Unix code page.
+****************************************************************************/
+
+struct passwd *Get_Pwnam(char *user,BOOL allow_change)
+{
+	fstring 	user2, orig_username;
+  	int 		usernamelevel = lp_usernamelevel();
+	struct 		passwd *ret;  
 
 	if (!user || !(*user))
 		return(NULL);
 
-	/* Try in all lower case first as this is the most 
+	/* make a few copies to work with */
+	fstrcpy(orig_username, user);
+	if (!allow_change) {
+		/* allow_change was False, so make a copy and temporarily
+		   assign the char* user to the temp copy */
+		fstrcpy(user2,user);
+		user = &user2[0];
+	}
+
+	/* try in all lower case first as this is the most
 	   common case on UNIX systems */
-	strlower_m(user2);
-	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
-	ret = getpwnam_alloc(user2);
-	if(ret)
-		goto done;
+	unix_to_dos(user);
+	strlower(user);
+	dos_to_unix(user);
 
-	/* Try as given, if username wasn't originally lowercase */
-	if(strcmp(user, user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n", user));
-		ret = getpwnam_alloc(user);
-		if(ret)
-			goto done;
-	}
-
-	/* Try as uppercase, if username wasn't originally uppercase */
-	strupper_m(user2);
-	if(strcmp(user, user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n", user2));
-		ret = getpwnam_alloc(user2);
-		if(ret)
-			goto done;
-	}
-
-	/* Try all combinations up to usernamelevel */
-	strlower_m(user2);
-	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n", lp_usernamelevel(), user2));
-	ret = uname_string_combinations(user2, getpwnam_alloc, lp_usernamelevel());
-
-done:
-	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ? "did":"didn't", user));
-
-	/* This call used to just return the 'passwd' static buffer.
-	   This could then have accidental reuse implications, so 
-	   we now malloc a copy, and free it in the next use.
-
-	   This should cause the (ab)user to segfault if it 
-	   uses an old struct. 
-	   
-	   This is better than useing the wrong data in security
-	   critical operations.
-
-	   The real fix is to make the callers free the returned 
-	   malloc'ed data.
-	*/
-
-	if (Get_Pwnam_ret) {
-		passwd_free(&Get_Pwnam_ret);
-	}
+	ret = _Get_Pwnam(user);
+	if (ret)
+		return(ret);
 	
-	Get_Pwnam_ret = ret;
+	/* try as transmitted, but only if the original username
+	   gives us a different case */
+	if (strcmp(user, orig_username) != 0) {
+		ret = _Get_Pwnam(orig_username);
+		if (ret) {
+			if (allow_change)
+				fstrcpy(user, orig_username);
 
-	return ret;
+			return(ret);
+		}
+	}
+
+	/* finally, try in all caps if that is a new case */
+	unix_to_dos(user);
+	strupper(user);
+	dos_to_unix(user);
+
+	if (strcmp(user, orig_username) != 0) {
+		ret = _Get_Pwnam(user);
+		if (ret)
+			return(ret);
+	}
+
+	/* Try all combinations up to usernamelevel. */
+	unix_to_dos(user);
+	strlower(user);
+	dos_to_unix(user);
+
+	ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
+
+	if (ret)
+		return(ret);
+
+	return(NULL);
 }
 
 /****************************************************************************
- Get_Pwnam wrapper without modification.
-  NOTE: This with NOT modify 'user'! 
+ Check if a user is in a netgroup user list.
 ****************************************************************************/
 
-struct passwd *Get_Pwnam(const char *user)
-{
-	fstring user2;
-	struct passwd *ret;
-
-	if ( *user == '\0' ) {
-		DEBUG(10,("Get_Pwnam: empty username!\n"));
-		return NULL;
-	}
-
-	fstrcpy(user2, user);
-
-	DEBUG(5,("Finding user %s\n", user));
-
-	ret = Get_Pwnam_internals(user, user2);
-	
-	return ret;  
-}
-
-/****************************************************************************
- Check if a user is in a netgroup user list. If at first we don't succeed,
- try lower case.
-****************************************************************************/
-
-static BOOL user_in_netgroup_list(const char *user, const char *ngname)
+static BOOL user_in_netgroup_list(char *user,char *ngname)
 {
 #ifdef HAVE_NETGROUP
 	static char *mydomain = NULL;
-	fstring lowercase_user, lowercase_ngname;
-
 	if (mydomain == NULL)
 		yp_get_default_domain(&mydomain);
 
@@ -319,24 +302,10 @@ static BOOL user_in_netgroup_list(const char *user, const char *ngname)
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
 		user, mydomain, ngname));
 	DEBUG(5,("innetgr is %s\n", innetgr(ngname, NULL, user, mydomain)
-		? "TRUE" : "FALSE"));
+		? "True" : "False"));
 
 	if (innetgr(ngname, NULL, user, mydomain))
 		return (True);
-
-	/*
-	 * Ok, innetgr is case sensitive. Try once more with lowercase
-	 * just in case. Attempt to fix #703. JRA.
-	 */
-
-	fstrcpy(lowercase_user, user);
-	strlower_m(lowercase_user);
-	fstrcpy(lowercase_ngname, ngname);
-	strlower_m(lowercase_ngname);
-	
-	if (innetgr(lowercase_ngname, NULL, lowercase_user, mydomain))
-		return (True);
-
 #endif /* HAVE_NETGROUP */
 	return False;
 }
@@ -345,81 +314,55 @@ static BOOL user_in_netgroup_list(const char *user, const char *ngname)
  Check if a user is in a winbind group.
 ****************************************************************************/
   
-static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL *winbind_answered)
+static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_answered)
 {
+	int num_groups;
 	int i;
- 	gid_t gid, gid_low, gid_high;
+ 	gid_t *groups = NULL;
+ 	gid_t gid;
  	BOOL ret = False;
-	static gid_t *groups = NULL;
-	static int num_groups = 0;
-	static fstring last_user = "";
  
  	*winbind_answered = False;
  
+ 	/*
+ 	 * Get the gid's that this user belongs to.
+ 	 */
+ 
+ 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
+ 		return False;
+ 
+ 	if (num_groups == 0) {
+ 		*winbind_answered = True;
+ 		return False;
+ 	}
+ 
+ 	if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
+ 		DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
+ 		goto err;
+ 	}
+ 
+ 	if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
+ 		DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call \
+failed with error %s\n", strerror(errno) ));
+ 		goto err;
+	}
+ 
+ 	/*
+ 	 * Now we have the gid list for this user - convert the gname
+ 	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
+ 	 */
+ 
 	if ((gid = nametogid(gname)) == (gid_t)-1) {
- 		DEBUG(0,("user_in_winbind_group_list: nametogid for group %s failed.\n",
+ 		DEBUG(0,("user_in_winbind_group_list: winbind_lookup_name for group %s failed.\n",
  			gname ));
  		goto err;
  	}
-
-	if (!lp_idmap_gid(&gid_low, &gid_high)) {
-		DEBUG(4, ("winbind gid range not configured, therefore %s cannot be a winbind group\n", gname));
- 		goto err;
-	}
-
-	if (gid < gid_low || gid > gid_high) {
-		DEBUG(4, ("group %s is not a winbind group\n", gname));
- 		goto err;
-	}
- 
-	/* try to user the last user we looked up */
-	/* otherwise fall back to lookups */
-	
-	if ( !strequal( last_user, user ) || !groups )
- 	{
-		/* clear any cached information */
-		
- 	 	SAFE_FREE(groups);
-		fstrcpy( last_user, "" );
-
-	 	/*
- 		 * Get the gid's that this user belongs to.
- 		 */
- 
-	 	if ((num_groups = winbind_getgroups(user, &groups)) == -1)
- 			return False;
-			
-		if ( num_groups == -1 )
-			return False;
- 
-	 	if ( num_groups == 0 ) {
- 			*winbind_answered = True;
- 			return False;
- 		}
- 		
-		/* save the last username */
-		
-		fstrcpy( last_user, user );
-		
-	}
-	else 
-		DEBUG(10,("user_in_winbind_group_list: using cached user groups for [%s]\n", user));
- 
- 	if ( DEBUGLEVEL >= 10 ) {
-		DEBUG(10,("user_in_winbind_group_list: using groups -- "));
-	 	for ( i=0; i<num_groups; i++ )
-			DEBUGADD(10,("%lu ", (unsigned long)groups[i]));
-		DEBUGADD(10,("\n"));	
-	}
- 
-	/*
-	 * Now we have the gid list for this user - convert the gname
-	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
-	 */
  
  	for (i = 0; i < num_groups; i++) {
  		if (gid == groups[i]) {
- 			ret = True;
+			ret = True;
+			DEBUG(10,("user_in_winbind_group_list: user |%s| is in group |%s|\n",
+				user, gname ));
  			break;
  		}
  	}
@@ -437,11 +380,12 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
  
 /****************************************************************************
  Check if a user is in a UNIX group.
+ Names are in UNIX character set format.
 ****************************************************************************/
 
-BOOL user_in_unix_group_list(const char *user,const char *gname)
+static BOOL user_in_unix_group_list(char *user,const char *gname)
 {
-	struct passwd *pass = Get_Pwnam(user);
+	struct passwd *pass = Get_Pwnam(user,False);
 	struct sys_userlist *user_list;
 	struct sys_userlist *member;
 
@@ -453,7 +397,7 @@ BOOL user_in_unix_group_list(const char *user,const char *gname)
  	 */
  
  	if (pass) {
- 		if (strequal(gname,gidtoname(pass->pw_gid))) {
+ 		if (strequal_unix(gname, gidtoname(pass->pw_gid))) {
  			DEBUG(10,("user_in_unix_group_list: group %s is primary group.\n", gname ));
  			return True;
  		}
@@ -468,8 +412,9 @@ BOOL user_in_unix_group_list(const char *user,const char *gname)
 	for (member = user_list; member; member = member->next) {
  		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n",
 			user, member->unix_name ));
-  		if (strequal(member->unix_name,user)) {
+  		if (strequal_unix(member->unix_name,user)) {
 			free_userlist(user_list);
+			DEBUG(10,("user_in_unix_group_list: user |%s| is in group |%s|\n", user, gname));
   			return(True);
   		}
 	}
@@ -480,29 +425,13 @@ BOOL user_in_unix_group_list(const char *user,const char *gname)
 
 /****************************************************************************
  Check if a user is in a group list. Ask winbind first, then use UNIX.
+ Names are in UNIX character set format.
 ****************************************************************************/
 
-BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size_t n_groups)
+BOOL user_in_group_list(char *user,char *gname)
 {
 	BOOL winbind_answered = False;
 	BOOL ret;
-	gid_t gid;
-	unsigned i;
-
-	gid = nametogid(gname);
-	if (gid == (gid_t)-1) 
-		return False;
-
-	if (groups && n_groups > 0) {
-		for (i=0; i < n_groups; i++) {
-			if (groups[i] == gid) {
-				return True;
-			}
-		}
-		return False;
-	}
-
-	/* fallback if we don't yet have the group list */
 
 	ret = user_in_winbind_group_list(user, gname, &winbind_answered);
 	if (!winbind_answered)
@@ -516,48 +445,51 @@ BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size
 /****************************************************************************
  Check if a user is in a user list - can check combinations of UNIX
  and netgroup lists.
+ Names are in UNIX character set format.
 ****************************************************************************/
 
-BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_groups)
+BOOL user_in_list(char *user,char *list)
 {
-	if (!list || !*list)
-		return False;
+	pstring tok;
+	const char *p=list;
 
-	DEBUG(10,("user_in_list: checking user %s in list\n", user));
+	DEBUG(10,("user_in_list: checking user %s in list %s\n", user, list));
 
-	while (*list) {
+	while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
 
-		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n", user, *list));
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n", user, tok));
 
 		/*
 		 * Check raw username.
 		 */
-		if (strequal(user, *list))
+		if (strequal_unix(user,tok)) {
+			DEBUG(10,("user_in_list: user |%s| matches |%s|\n", user, tok));
 			return(True);
+		}
 
 		/*
 		 * Now check to see if any combination
 		 * of UNIX and netgroups has been specified.
 		 */
 
-		if(**list == '@') {
+		if(*tok == '@') {
 			/*
 			 * Old behaviour. Check netgroup list
 			 * followed by UNIX list.
 			 */
-			if(user_in_netgroup_list(user, *list +1))
+			if(user_in_netgroup_list(user,&tok[1]))
 				return True;
-			if(user_in_group_list(user, *list +1, groups, n_groups))
+			if(user_in_group_list(user,&tok[1]))
 				return True;
-		} else if (**list == '+') {
+		} else if (*tok == '+') {
 
-			if((*(*list +1)) == '&') {
+			if(tok[1] == '&') {
 				/*
 				 * Search UNIX list followed by netgroup.
 				 */
-				if(user_in_group_list(user, *list +2, groups, n_groups))
+				if(user_in_group_list(user,&tok[2]))
 					return True;
-				if(user_in_netgroup_list(user, *list +2))
+				if(user_in_netgroup_list(user,&tok[2]))
 					return True;
 
 			} else {
@@ -566,28 +498,28 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				 * Just search UNIX list.
 				 */
 
-				if(user_in_group_list(user, *list +1, groups, n_groups))
+				if(user_in_group_list(user,&tok[1]))
 					return True;
 			}
 
-		} else if (**list == '&') {
+		} else if (*tok == '&') {
 
-			if(*(*list +1) == '+') {
+			if(tok[1] == '+') {
 				/*
 				 * Search netgroup list followed by UNIX list.
 				 */
-				if(user_in_netgroup_list(user, *list +2))
+				if(user_in_netgroup_list(user,&tok[2]))
 					return True;
-				if(user_in_group_list(user, *list +2, groups, n_groups))
+				if(user_in_group_list(user,&tok[2]))
 					return True;
 			} else {
 				/*
 				 * Just search netgroup list.
 				 */
-				if(user_in_netgroup_list(user, *list +1))
+				if(user_in_netgroup_list(user,&tok[1]))
 					return True;
 			}
-		} else if (!name_is_local(*list)) {
+		} else if (!name_is_local(tok)) {
 			/*
 			 * If user name did not match and token is not
 			 * a unix group and the token has a winbind separator in the
@@ -598,40 +530,19 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 			enum SID_NAME_USE name_type;
 			BOOL winbind_answered = False;
 			BOOL ret;
-			fstring groupname, domain;
-			
-			/* Parse a string of the form DOMAIN/user into a domain and a user */
-
-			char *p = strchr(*list,*lp_winbind_separator());
-			
-			DEBUG(10,("user_in_list: checking if user |%s| is in winbind group |%s|\n", user, *list));
-
-			if (p) {
-				fstrcpy(groupname, p+1);
-				fstrcpy(domain, *list);
-				domain[PTR_DIFF(p, *list)] = 0;
-
-				/* Check to see if name is a Windows group;  Win2k native mode DCs
-				   will return domain local groups; while NT4 or mixed mode 2k DCs
-				   will not */
-			
-				if ( winbind_lookup_name(domain, groupname, &g_sid, &name_type) 
-					&& ( name_type==SID_NAME_DOM_GRP || 
-					   (strequal(lp_workgroup(), domain) && name_type==SID_NAME_ALIAS) ) )
-				{
-					
-					/* Check if user name is in the Windows group */
-					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
-					
-					if (winbind_answered && ret == True) {
-						DEBUG(10,("user_in_list: user |%s| is in winbind group |%s|\n", user, *list));
-						return ret;
-					}
+ 
+			/* Check to see if name is a Windows group */
+			if (winbind_lookup_name(NULL, tok, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+ 
+				/* Check if user name is in the Windows group */
+				ret = user_in_winbind_group_list(user, tok, &winbind_answered);
+ 
+				if (winbind_answered && ret == True) {
+					DEBUG(10,("user_in_list: user |%s| is in group |%s|\n", user, tok));
+					return ret;
 				}
 			}
 		}
-    
-		list++;
 	}
 	return(False);
 }
@@ -645,7 +556,7 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
  it assumes the string starts lowercased
 ****************************************************************************/
 
-static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(const char *),int N)
+static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(char *),int N)
 {
 	ssize_t len = (ssize_t)strlen(s);
 	int i;
@@ -675,7 +586,7 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
  it assumes the string starts lowercased
 ****************************************************************************/
 
-static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(const char *),int N)
+static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(char *),int N)
 {
 	int n;
 	struct passwd *ret;
@@ -688,3 +599,32 @@ static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(c
 	return(NULL);
 }
 
+
+/****************************************************************************
+these wrappers allow appliance mode to work. In appliance mode the username
+takes the form DOMAIN/user
+****************************************************************************/
+struct passwd *smb_getpwnam(char *user, BOOL allow_change)
+{
+	struct passwd *pw;
+	char *p;
+	char *sep;
+	extern pstring global_myname;
+
+	pw = Get_Pwnam(user, allow_change);
+	if (pw)
+		return pw;
+
+	/*
+	 * If it is a domain qualified name and it isn't in our password
+	 * database but the domain portion matches our local machine name then
+	 * lookup just the username portion locally.
+	 */
+
+	sep = lp_winbind_separator();
+	p = strchr(user,*sep);
+	if (p && strncasecmp(global_myname, user, strlen(global_myname))==0)
+		return Get_Pwnam(p+1, allow_change);
+
+	return NULL;
+}

@@ -1,0 +1,130 @@
+#! /bin/sh
+# Copyright (c) 2001 SuSE Gmbh Nueremberg, Germany. All rights reserved.
+#
+# <fedback@suse.de>
+#
+### BEGIN INIT INFO
+# Provides:       smb
+# Required-Start: $network $remote_fs syslog 
+# Required-Stop:
+# Default-Start:  3 5
+# Default-Stop:
+# Description:    initscript for the SAMBA services
+### END INIT INFO
+#
+# init.d/smb
+
+. /etc/rc.config
+
+SMB_BIN=/usr/sbin/smbd
+NMB_BIN=/usr/sbin/nmbd
+SMB_CONF=/etc/samba/smb.conf
+SMB_PID=/var/run/samba/smbd.pid
+NMB_PID=/var/run/samba/nmbd.pid
+
+
+if [ ! -x $SMB_BIN ] ; then
+       echo -n "SMB demon not installed ! "
+       exit 5
+fi
+
+if [ ! -x $NMB_BIN ] ; then
+       echo -n "NMB demon not installed ! "
+       exit 5
+fi
+
+
+# The echo return value for success (defined in /etc/rc.config).
+#return=$rc_done
+
+. /etc/rc.status
+rc_reset
+
+case "$1" in
+    start)
+	if [ -f /usr/share/doc/packages/samba/WARN-cvs-version ]; then
+		echo -en "${warn}"
+		while read warn_message; do
+			echo WARNING ${warn_message}
+		done < /usr/share/doc/packages/samba/WARN-cvs-version
+		echo -en "${norm}"
+
+		read answer
+		if [ "$answer" != "yes" ]; then
+			exit 0
+		fi
+	fi
+        echo -n "Starting SAMBA nmbd"
+        checkproc $NMB_BIN
+        if [ $? -eq 0 ] ; then
+          echo -n "  Warning: nmbd already running! "
+        else
+          [ -e $NMB_PID ] && echo -n "  Warning: $NMB_PID exists! "
+        fi
+        startproc $NMB_BIN -D
+        rc_status -v
+        echo -n "Starting SAMBA smbd"
+	checkproc $SMB_BIN
+	if [ $? -eq 0 ] ; then
+          echo -n "  Warning: smbd already running! "
+        else
+          [ -e $SMB_PID ] && echo -n "  Warning: $SMB_PID exists! "
+        fi
+        startproc $SMB_BIN -D
+        rc_status -v
+        ;;
+    stop)
+        echo -n "Shutting down SAMBA nmbd"
+	checkproc $NMB_BIN || echo -n "  Warning: nmbd not running! "
+	killproc -TERM $NMB_BIN
+	rc_status -v
+	rm -f $NMB_PID
+        echo -n "Shutting down SAMBA smbd"
+	checkproc $SMB_BIN || echo -n "  Warning: smbd not running! "
+	killproc -TERM $SMB_BIN
+	rc_status -v
+	rm -f $SMB_PID
+	;;
+    try-restart)
+       $0 stop  &&  $0 start
+       rc_status
+       ;;
+    restart)
+       $0 stop
+       $0 start
+       rc_status
+       ;;
+    force-reload)
+       $0 reload
+       rc_status
+       ;;
+    reload)
+       echo -n "Reloading SAMBA nmbd"
+       checkproc $NMB_BIN || echo -n "  Warning: nmbd not running! "
+       killproc -HUP $NMB_BIN
+#      [ -e $NMB_PID ] && touch -c -m $NMB_PID
+       rc_status -v
+       echo -n "Reloading SAMBA smbd"
+       checkproc $SMB_BIN || echo -n "  Warning: smbd not running! "
+       killproc -HUP $SMB_BIN
+#      [ -e $SMB_PID ] && touch -c -m $SMB_PID
+       rc_status -v
+       ;;
+    status)
+       echo -n "Checking for SAMBA nmbd"
+       checkproc $NMB_BIN
+       rc_status -v
+       echo -n "Checking for SAMBA smbd"
+       checkproc $SMB_BIN
+       rc_status -v
+       ;;
+    probe)
+       test $SMB_CONF -nt $SMB_PID && echo reload
+       test $SMB_CONF -nt $NMB_PID && echo reload
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|try-restart|restart|force-reload|reload|probe}"
+       exit 1
+       ;;
+esac
+rc_exit

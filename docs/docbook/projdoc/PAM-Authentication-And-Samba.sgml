@@ -1,0 +1,215 @@
+<chapter id="pam">
+ 
+ 
+<chapterinfo>
+        <author>
+		<firstname>John</firstname><surname>Terpstra</surname>
+                <affiliation>
+                        <orgname>Samba Team</orgname>
+			<address>
+			<email>jht@samba.org</email>
+			</address>
+                </affiliation>
+        </author>
+ 
+ 
+        <pubdate> (Jun 21 2001) </pubdate>
+</chapterinfo>
+ 
+<title>Configuring PAM for distributed but centrally 
+managed authentication</title>
+
+<sect1>
+<title>Samba and PAM</title>
+
+<para>
+A number of Unix systems (eg: Sun Solaris), as well as the 
+xxxxBSD family and Linux, now utilize the Pluggable Authentication 
+Modules (PAM) facility to provide all authentication, 
+authorization and resource control services. Prior to the 
+introduction of PAM, a decision to use an alternative to 
+the system password database (<filename>/etc/passwd</filename>) 
+would require the provision of alternatives for all programs that provide 
+security services. Such a choice would involve provision of 
+alternatives to such programs as: <command>login</command>, 
+<command>passwd</command>, <command>chown</command>, etc.
+</para>
+
+<para>
+PAM provides a mechanism that disconnects these security programs 
+from the underlying authentication/authorization infrastructure.
+PAM is configured either through one file <filename>/etc/pam.conf</filename> (Solaris), 
+or by editing individual files that are located in <filename>/etc/pam.d</filename>.
+</para>
+
+<para>
+The following is an example <filename>/etc/pam.d/login</filename> configuration file. 
+This example had all options been uncommented is probably not usable 
+as it stacks many conditions before allowing successful completion 
+of the login process. Essentially all conditions can be disabled 
+by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
+</para>
+
+<para><programlisting>
+#%PAM-1.0
+# The PAM configuration file for the `login' service
+#
+auth 		required	pam_securetty.so
+auth 		required	pam_nologin.so
+# auth 		required	pam_dialup.so
+# auth 		optional	pam_mail.so
+auth		required	pam_pwdb.so shadow md5
+# account    	requisite  	pam_time.so
+account		required	pam_pwdb.so
+session		required	pam_pwdb.so
+# session 	optional	pam_lastlog.so
+# password   	required   	pam_cracklib.so retry=3
+password	required	pam_pwdb.so shadow md5
+</programlisting></para>
+
+<para>
+PAM allows use of replacable modules. Those available on a 
+sample system include:
+</para>
+
+<para><programlisting>
+$ /bin/ls /lib/security
+pam_access.so    pam_ftp.so          pam_limits.so     
+pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
+pam_cracklib.so  pam_group.so        pam_listfile.so   
+pam_nologin.so   pam_rootok.so       pam_tally.so      
+pam_deny.so      pam_issue.so        pam_mail.so       
+pam_permit.so    pam_securetty.so    pam_time.so       
+pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
+pam_pwdb.so      pam_shells.so       pam_unix.so       
+pam_env.so       pam_ldap.so         pam_motd.so       
+pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
+pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
+pam_userdb.so    pam_warn.so         pam_unix_session.so
+</programlisting></para>
+
+<para>
+The following example for the login program replaces the use of 
+the <filename>pam_pwdb.so</filename> module which uses the system 
+password database (<filename>/etc/passwd</filename>,
+<filename>/etc/shadow</filename>, <filename>/etc/group</filename>) with 
+the module <filename>pam_smbpass.so</filename> which uses the Samba 
+database which contains the Microsoft MD4 encrypted password 
+hashes. This database is stored in either 
+<filename>/usr/local/samba/private/smbpasswd</filename>, 
+<filename>/etc/samba/smbpasswd</filename>, or in 
+<filename>/etc/samba.d/smbpasswd</filename>, depending on the 
+Samba implementation for your Unix/Linux system. The 
+<filename>pam_smbpass.so</filename> module is provided by 
+Samba version 2.2.1 or later. It can be compiled by specifying the 
+<command>--with-pam_smbpass</command> options when running Samba's
+<filename>configure</filename> script.  For more information
+on the <filename>pam_smbpass</filename> module, see the documentation
+in the <filename>source/pam_smbpass</filename> directory of the Samba 
+source distribution.
+</para>
+
+<para><programlisting>
+#%PAM-1.0
+# The PAM configuration file for the `login' service
+#
+auth		required	pam_smbpass.so nodelay
+account		required	pam_smbpass.so nodelay
+session		required	pam_smbpass.so nodelay
+password	required	pam_smbpass.so nodelay
+</programlisting></para>
+
+<para>
+The following is the PAM configuration file for a particular 
+Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
+</para>
+
+<para><programlisting>
+#%PAM-1.0
+# The PAM configuration file for the `samba' service
+#
+auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
+account    required     /lib/security/pam_pwdb.so audit nodelay
+session    required     /lib/security/pam_pwdb.so nodelay
+password   required     /lib/security/pam_pwdb.so shadow md5
+</programlisting></para>
+
+<para>
+In the following example the decision has been made to use the 
+smbpasswd database even for basic samba authentication. Such a 
+decision could also be made for the passwd program and would 
+thus allow the smbpasswd passwords to be changed using the passwd 
+program.
+</para>
+
+<para><programlisting>
+#%PAM-1.0
+# The PAM configuration file for the `samba' service
+#
+auth       required     /lib/security/pam_smbpass.so nodelay
+account    required     /lib/security/pam_pwdb.so audit nodelay
+session    required     /lib/security/pam_pwdb.so nodelay
+password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
+</programlisting></para>
+
+<para>
+Note: PAM allows stacking of authentication mechanisms. It is 
+also possible to pass information obtained within on PAM module through 
+to the next module in the PAM stack. Please refer to the documentation for 
+your particular system implementation for details regarding the specific 
+capabilities of PAM in this environment. Some Linux implmentations also 
+provide the <filename>pam_stack.so</filename> module that allows all 
+authentication to be configured in a single central file. The 
+<filename>pam_stack.so</filename> method has some very devoted followers 
+on the basis that it allows for easier administration. As with all issues in 
+life though, every decision makes trade-offs, so you may want examine the 
+PAM documentation for further helpful information.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Distributed Authentication</title>
+
+<para>
+The astute administrator will realize from this that the 
+combination of <filename>pam_smbpass.so</filename>, 
+<command>winbindd</command>, and <command>rsync</command> (see
+<ulink url="http://rsync.samba.org/">http://rsync.samba.org/</ulink>)
+will allow the establishment of a centrally managed, distributed 
+user/password database that can also be used by all 
+PAM (eg: Linux) aware programs and applications. This arrangement 
+can have particularly potent advantages compared with the 
+use of Microsoft Active Directory Service (ADS) in so far as 
+reduction of wide area network authentication traffic.
+</para>
+
+</sect1>
+
+<sect1>
+<title>PAM Configuration in smb.conf</title>
+
+<para>
+There is an option in smb.conf called <ulink 
+url="smb.conf.5.html#OBEYPAMRESTRICTIONS">obey pam restrictions</ulink>. 
+The following is from the on-line help for this option in SWAT;
+</para>
+
+<para>
+When Samba 2.2 is configure to enable PAM support (i.e. 
+<constant>--with-pam</constant>), this parameter will 
+control whether or not Samba should obey PAM's account 
+and session management directives. The default behavior 
+is to use PAM for clear text authentication only and to 
+ignore any account or session management. Note that Samba always 
+ignores PAM for authentication in the case of 
+<ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">encrypt passwords = yes</ulink>. 
+The reason is that PAM modules cannot support the challenge/response 
+authentication mechanism needed in the presence of SMB 
+password encryption. 
+</para>
+
+<para>Default: <command>obey pam restrictions = no</command></para>
+
+</sect1>
+</chapter>

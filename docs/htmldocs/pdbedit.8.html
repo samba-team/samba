@@ -1,0 +1,426 @@
+<HTML
+><HEAD
+><TITLE
+>pdbedit</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="PDBEDIT"
+>pdbedit</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>pdbedit&nbsp;--&nbsp;manage the SAM database</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>pdbedit</B
+>  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-d drive] [-s script] [-p profile] [-a] [-m] [-x] [-i file]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN24"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+>The pdbedit program is used to manage the users accounts
+	stored in the sam database and can be run only by root.</P
+><P
+>The pdbedit tool use the passdb modular interface and is
+	independent from the kind of users database used (currently there
+	are smbpasswd, ldap, nis+ and tdb based and more can be addedd
+	without changing the tool).</P
+><P
+>There are five main ways to use pdbedit: adding a user account,
+	removing a user account, modifing a user account, listing user
+	accounts, importing users accounts.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN31"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-l</DT
+><DD
+><P
+>This option list all the user accounts
+		present in the users database.
+		This option prints a list of user/uid pairs separated by
+		the ':' character.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -l</B
+></P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		sorce:500:Simo Sorce
+		samba:45:Test User
+		</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
+><DT
+>-v</DT
+><DD
+><P
+>This option sets the verbose listing format.
+		It will make pdbedit list the users in the database printing
+		out the account fields in a descriptive format.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -l -v</B
+></P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		---------------
+		username:       sorce
+		user ID/Group:  500/500
+		user RID/GRID:  2000/2001
+		Full Name:      Simo Sorce
+		Home Directory: \\BERSERKER\sorce
+		HomeDir Drive:  H:
+		Logon Script:   \\BERSERKER\netlogon\sorce.bat
+		Profile Path:   \\BERSERKER\profile
+		---------------
+		username:       samba
+		user ID/Group:  45/45
+		user RID/GRID:  1090/1091
+		Full Name:      Test User
+		Home Directory: \\BERSERKER\samba
+		HomeDir Drive:  
+		Logon Script:   
+		Profile Path:   \\BERSERKER\profile
+		</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
+><DT
+>-w</DT
+><DD
+><P
+>This option sets the "smbpasswd" listing format.
+		It will make pdbedit list the users in the database printing
+		out the account fields in a format compatible with the
+		<TT
+CLASS="FILENAME"
+>smbpasswd</TT
+> file format. (see the <A
+HREF="smbpasswd.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smbpasswd(5)</TT
+></A
+> for details)</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -l -w</B
+></P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
+		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
+		</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
+><DT
+>-u username</DT
+><DD
+><P
+>This option specifies that the username to be
+		used for the operation requested (listing, adding, removing)
+		It is <EM
+>required</EM
+> in add, remove and modify
+		operations and <EM
+>optional</EM
+> in list
+		operations.</P
+></DD
+><DT
+>-f fullname</DT
+><DD
+><P
+>This option can be used while adding or
+		modifing a user account. It will specify the user's full
+		name. </P
+><P
+>Example: <B
+CLASS="COMMAND"
+>-f "Simo Sorce"</B
+></P
+></DD
+><DT
+>-h homedir</DT
+><DD
+><P
+>This option can be used while adding or
+		modifing a user account. It will specify the user's home
+		directory network path.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>-h "\\\\BERSERKER\\sorce"</B
+>
+		</P
+></DD
+><DT
+>-d drive</DT
+><DD
+><P
+>This option can be used while adding or
+		modifing a user account. It will specify the windows drive
+		letter to be used to map the home directory.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>-d "H:"</B
+>
+		</P
+></DD
+><DT
+>-s script</DT
+><DD
+><P
+>This option can be used while adding or
+		modifing a user account. It will specify the user's logon
+		script path.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>-s "\\\\BERSERKER\\netlogon\\sorce.bat"</B
+>
+		</P
+></DD
+><DT
+>-p profile</DT
+><DD
+><P
+>This option can be used while adding or
+		modifing a user account. It will specify the user's profile
+		directory.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>-p "\\\\BERSERKER\\netlogon"</B
+>
+		</P
+></DD
+><DT
+>-a</DT
+><DD
+><P
+>This option is used to add a user into the
+		database. This command need the user name be specified with
+		the -u switch. When adding a new user pdbedit will also
+		ask for the password to be used</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -a -u sorce</B
+>
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>new password:
+		retype new password</PRE
+></TD
+></TR
+></TABLE
+>
+                </P
+></DD
+><DT
+>-m</DT
+><DD
+><P
+>This option may only be used in conjunction 
+		with the <TT
+CLASS="PARAMETER"
+><I
+>-a</I
+></TT
+> option. It will make
+		pdbedit to add a machine trust account instead of a user
+		account (-u username will provide the machine name).</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -a -m -u w2k-wks</B
+>
+		</P
+></DD
+><DT
+>-x</DT
+><DD
+><P
+>This option causes pdbedit to delete an account
+		from the database. It need the username be specified with the
+		-u switch.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -x -u bob</B
+></P
+></DD
+><DT
+>-i file</DT
+><DD
+><P
+>This command is used to import a smbpasswd
+		file into the database.</P
+><P
+>This option will ease migration from the plain smbpasswd
+		file database to more powerful backend databases like tdb and
+		ldap.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -i /etc/smbpasswd.old</B
+>
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN124"
+></A
+><H2
+>NOTES</H2
+><P
+>This command may be used only by root.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN127"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN130"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbpasswd.8.html"
+TARGET="_top"
+>smbpasswd(8)</A
+>, 
+	<A
+HREF="samba.7.html"
+TARGET="_top"
+>samba(7)</A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN135"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

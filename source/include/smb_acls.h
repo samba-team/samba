@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2.x
    Portable SMB ACL interface
    Copyright (C) Jeremy Allison 2000
    
@@ -20,6 +21,9 @@
 
 #ifndef _SMB_ACLS_H
 #define _SMB_ACLS_H
+
+#include "includes.h"
+
 #if defined(HAVE_POSIX_ACLS)
 
 /* This is an identity mapping (just remove the SMB_). */
@@ -195,7 +199,7 @@ typedef struct SMB_ACL_T {
 
 /* Donated by Medha Date, mdate@austin.ibm.com, for IBM */
 
-#include <acl.h>
+#include "/usr/include/acl.h"
 
 typedef uint                        *SMB_ACL_PERMSET_T;
  

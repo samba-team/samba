@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0.
    SMBFS mount program
    Copyright (C) Andrew Tridgell 1999
    
@@ -28,6 +29,8 @@
 
 extern BOOL in_client;
 extern pstring user_socket_options;
+extern BOOL append_log;
+extern fstring remote_machine;
 
 static pstring credentials;
 static pstring my_netbios_name;
@@ -40,19 +43,13 @@ static pstring options;
 
 static struct in_addr dest_ip;
 static BOOL have_ip;
-static int smb_port = 0;
-static BOOL got_user;
+static int smb_port = 139;
 static BOOL got_pass;
 static uid_t mount_uid;
 static gid_t mount_gid;
 static int mount_ro;
 static unsigned mount_fmask;
 static unsigned mount_dmask;
-static BOOL use_kerberos;
-/* TODO: Add code to detect smbfs version in kernel */
-static BOOL status32_smbfs = False;
-static BOOL smbfs_has_unicode = False;
-static BOOL smbfs_has_lfs = False;
 
 static void usage(void);
 
@@ -84,12 +81,8 @@ static void daemonize(void)
 			}
 			break;
 		}
-
 		/* If we get here - the child exited with some error status */
-		if (WIFSIGNALED(status))
-			exit(128 + WTERMSIG(status));
-		else
-			exit(WEXITSTATUS(status));
+		exit(status);
 	}
 
 	signal( SIGTERM, SIG_DFL );
@@ -118,7 +111,8 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *do_connection(char *the_service)
+
+static struct cli_state *do_connection(char *svc_name)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
@@ -127,13 +121,13 @@ static struct cli_state *do_connection(char *the_service)
 	pstring server;
 	char *share;
 
-	if (the_service[0] != '\\' || the_service[1] != '\\') {
+	if (svc_name[0] != '\\' || svc_name[1] != '\\') {
 		usage();
 		exit(1);
 	}
 
-	pstrcpy(server, the_service+2);
-	share = strchr_m(server,'\\');
+	pstrcpy(server, svc_name+2);
+	share = strchr(server,'\\');
 	if (!share) {
 		usage();
 		exit(1);
@@ -147,35 +141,25 @@ static struct cli_state *do_connection(char *the_service)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_ip(&ip);
+	zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) != smb_port) ||
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) == 0) ||
 	    !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
+		DEBUG(0,("%d: Connection to %s failed\n", getpid(), server_n));
 		if (c) {
 			cli_shutdown(c);
 		}
 		return NULL;
 	}
 
-	/* SPNEGO doesn't work till we get NTSTATUS error support */
-	/* But it is REQUIRED for kerberos authentication */
-	if(!use_kerberos) c->use_spnego = False;
-
-	/* The kernel doesn't yet know how to sign it's packets */
-	c->sign_info.allow_smb_signing = False;
-
-	/* Use kerberos authentication if specified */
-	c->use_kerberos = use_kerberos;
-
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
 		DEBUG(0,("%d: session request to %s failed (%s)\n", 
-			 sys_getpid(), called.name, cli_errstr(c)));
+			 getpid(), called.name, cli_errstr(c)));
 		cli_shutdown(c);
-		if ((p=strchr_m(called.name, '.'))) {
+		if ((p=strchr(called.name, '.'))) {
 			*p = 0;
 			goto again;
 		}
@@ -186,10 +170,10 @@ static struct cli_state *do_connection(char *the_service)
 		return NULL;
 	}
 
-	DEBUG(4,("%d: session request ok\n", sys_getpid()));
+	DEBUG(4,("%d: session request ok\n", getpid()));
 
 	if (!cli_negprot(c)) {
-		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
+		DEBUG(0,("%d: protocol negotiation failed\n", getpid()));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -202,44 +186,37 @@ static struct cli_state *do_connection(char *the_service)
 	}
 
 	/* This should be right for current smbfs. Future versions will support
-	  large files as well as unicode and oplocks. */
-  	c->capabilities &= ~(CAP_NT_SMBS | CAP_NT_FIND | CAP_LEVEL_II_OPLOCKS);
-  	if (!smbfs_has_lfs)
-  		c->capabilities &= ~CAP_LARGE_FILES;
-  	if (!smbfs_has_unicode)
-  		c->capabilities &= ~CAP_UNICODE;
-	if (!status32_smbfs) {
-  		c->capabilities &= ~CAP_STATUS32;
-		c->force_dos_errors = True;
-	}
-
+	   large files as well as unicode and oplocks. */
+	c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+			     CAP_NT_FIND | CAP_STATUS32 | CAP_LEVEL_II_OPLOCKS);
+	c->force_dos_errors = True;
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
 		/* if a password was not supplied then try again with a
-			null username */
+		   null username */
 		if (password[0] || !username[0] ||
-				!cli_session_setup(c, "", "", 0, "", 0, workgroup)) {
+		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) {
 			DEBUG(0,("%d: session setup failed: %s\n",
-				sys_getpid(), cli_errstr(c)));
+				 getpid(), cli_errstr(c)));
 			cli_shutdown(c);
 			return NULL;
 		}
 		DEBUG(0,("Anonymous login successful\n"));
 	}
 
-	DEBUG(4,("%d: session setup ok\n", sys_getpid()));
+	DEBUG(4,("%d: session setup ok\n", getpid()));
 
 	if (!cli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
 		DEBUG(0,("%d: tree connect failed: %s\n",
-			 sys_getpid(), cli_errstr(c)));
+			 getpid(), cli_errstr(c)));
 		cli_shutdown(c);
 		return NULL;
 	}
 
-	DEBUG(4,("%d: tconx ok\n", sys_getpid()));
+	DEBUG(4,("%d: tconx ok\n", getpid()));
 
 	got_pass = True;
 
@@ -269,12 +246,12 @@ static void smb_umount(char *mount_point)
 	*/
         if (umount(mount_point) != 0) {
                 DEBUG(0,("%d: Could not umount %s: %s\n",
-			 sys_getpid(), mount_point, strerror(errno)));
+			 getpid(), mount_point, strerror(errno)));
                 return;
         }
 
         if ((fd = open(MOUNTED"~", O_RDWR|O_CREAT|O_EXCL, 0600)) == -1) {
-                DEBUG(0,("%d: Can't get "MOUNTED"~ lock file", sys_getpid()));
+                DEBUG(0,("%d: Can't get "MOUNTED"~ lock file", getpid()));
                 return;
         }
 
@@ -282,7 +259,7 @@ static void smb_umount(char *mount_point)
 	
         if ((mtab = setmntent(MOUNTED, "r")) == NULL) {
                 DEBUG(0,("%d: Can't open " MOUNTED ": %s\n",
-			 sys_getpid(), strerror(errno)));
+			 getpid(), strerror(errno)));
                 return;
         }
 
@@ -290,7 +267,7 @@ static void smb_umount(char *mount_point)
 
         if ((new_mtab = setmntent(MOUNTED_TMP, "w")) == NULL) {
                 DEBUG(0,("%d: Can't open " MOUNTED_TMP ": %s\n",
-			 sys_getpid(), strerror(errno)));
+			 getpid(), strerror(errno)));
                 endmntent(mtab);
                 return;
         }
@@ -305,7 +282,7 @@ static void smb_umount(char *mount_point)
 
         if (fchmod (fileno (new_mtab), S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) < 0) {
                 DEBUG(0,("%d: Error changing mode of %s: %s\n",
-			 sys_getpid(), MOUNTED_TMP, strerror(errno)));
+			 getpid(), MOUNTED_TMP, strerror(errno)));
                 return;
         }
 
@@ -313,12 +290,12 @@ static void smb_umount(char *mount_point)
 
         if (rename(MOUNTED_TMP, MOUNTED) < 0) {
                 DEBUG(0,("%d: Cannot rename %s to %s: %s\n",
-			 sys_getpid(), MOUNTED, MOUNTED_TMP, strerror(errno)));
+			 getpid(), MOUNTED, MOUNTED_TMP, strerror(errno)));
                 return;
         }
 
         if (unlink(MOUNTED"~") == -1) {
-                DEBUG(0,("%d: Can't remove "MOUNTED"~", sys_getpid()));
+                DEBUG(0,("%d: Can't remove "MOUNTED"~", getpid()));
                 return;
         }
 }
@@ -330,7 +307,7 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(char *the_service, char *mount_point, struct cli_state *c)
+static void send_fs_socket(char *svc_name, char *mount_point, struct cli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
@@ -341,7 +318,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 	while (1) {
 		if ((fd = open(mount_point, O_RDONLY)) < 0) {
 			DEBUG(0,("mount.smbfs[%d]: can't open %s\n",
-				 sys_getpid(), mount_point));
+				 getpid(), mount_point));
 			break;
 		}
 
@@ -361,7 +338,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 		res = ioctl(fd, SMB_IOC_NEWCONN, &conn_options);
 		if (res != 0) {
 			DEBUG(0,("mount.smbfs[%d]: ioctl failed, res=%d\n",
-				 sys_getpid(), res));
+				 getpid(), res));
 			close(fd);
 			break;
 		}
@@ -383,7 +360,6 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
-		c->smb_rw_error = DO_NOT_DO_TDIS;
 		cli_shutdown(c);
 		c = NULL;
 
@@ -400,10 +376,11 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 			}
 
 			/* here we are no longer interactive */
-			set_remote_machine_name("smbmount", False);	/* sneaky ... */
+			pstrcpy(remote_machine, "smbmount");	/* sneaky ... */
 			setup_logging("mount.smbfs", False);
+			append_log = True;
 			reopen_logs();
-			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, sys_getpid()));
+			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", svc_name, getpid()));
 
 			closed = 1;
 		}
@@ -413,23 +390,23 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 		while (!c) {
 			CatchSignal(SIGUSR1, &usr1_handler);
 			pause();
-			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
-			c = do_connection(the_service);
+			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", getpid()));
+			c = do_connection(svc_name);
 		}
 	}
 
 	smb_umount(mount_point);
-	DEBUG(2,("mount.smbfs[%d]: exit\n", sys_getpid()));
+	DEBUG(2,("mount.smbfs[%d]: exit\n", getpid()));
 	exit(1);
 }
 
 
-/**
- * Mount a smbfs
- **/
+/****************************************************************************
+mount smbfs
+****************************************************************************/
 static void init_mount(void)
 {
-	char mount_point[PATH_MAX+1];
+	char mount_point[MAXPATHLEN+1];
 	pstring tmp;
 	pstring svc2;
 	struct cli_state *c;
@@ -496,22 +473,13 @@ static void init_mount(void)
 	}
 
 	if (sys_fork() == 0) {
-		char *smbmnt_path;
-
-		asprintf(&smbmnt_path, "%s/smbmnt", dyn_BINDIR);
-		
-		if (file_exist(smbmnt_path, NULL)) {
-			execv(smbmnt_path, args);
-			fprintf(stderr,
-				"smbfs/init_mount: execv of %s failed. Error was %s.",
-				smbmnt_path, strerror(errno));
+		if (file_exist(BINDIR "/smbmnt", NULL)) {
+			execv(BINDIR "/smbmnt", args);
+			fprintf(stderr,"execv of %s failed. Error was %s.", BINDIR "/smbmnt", strerror(errno));
 		} else {
 			execvp("smbmnt", args);
-			fprintf(stderr,
-				"smbfs/init_mount: execv of %s failed. Error was %s.",
-				"smbmnt", strerror(errno));
+			fprintf(stderr,"execvp of smbmnt failed. Error was %s.", strerror(errno) );
 		}
-		free(smbmnt_path);
 		exit(1);
 	}
 
@@ -524,9 +492,6 @@ static void init_mount(void)
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
 		fprintf(stderr,"smbmnt failed: %d\n", WEXITSTATUS(status));
 		/* FIXME: do some proper error handling */
-		exit(1);
-	} else if (WIFSIGNALED(status)) {
-		fprintf(stderr, "smbmnt killed by signal %d\n", WTERMSIG(status));
 		exit(1);
 	}
 
@@ -647,9 +612,8 @@ static void read_credentials_file(char *filename)
 			pstrcpy(password, val);
 			got_pass = True;
 		}
-		else if (strwicmp("username", param) == 0) {
+		else if (strwicmp("username", param) == 0)
 			pstrcpy(username, val);
-		}
 
 		memset(buf, 0, sizeof(buf));
 	}
@@ -664,14 +628,13 @@ static void usage(void)
 {
 	printf("Usage: mount.smbfs service mountpoint [-o options,...]\n");
 
-	printf("Version %s\n\n",SAMBA_VERSION_STRING);
+	printf("Version %s\n\n",VERSION);
 
 	printf(
 "Options:\n\
       username=<arg>                  SMB username\n\
       password=<arg>                  SMB password\n\
       credentials=<filename>          file with username/password\n\
-      krb                             use kerberos (active directory)\n\
       netbiosname=<arg>               source NetBIOS name\n\
       uid=<arg>                       mount uid or username\n\
       gid=<arg>                       mount gid or groupname\n\
@@ -685,8 +648,6 @@ static void usage(void)
       scope=<arg>                     NetBIOS scope\n\
       iocharset=<arg>                 Linux charset (iso8859-1, utf8)\n\
       codepage=<arg>                  server codepage (cp850)\n\
-      unicode                         use unicode when communicating with server\n\
-      lfs                             large file system support\n\
       ttl=<arg>                       dircache time to live\n\
       guest                           don't prompt for a password\n\
       ro                              mount read-only\n\
@@ -713,18 +674,8 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opteq;
 	extern char *optarg;
 	int val;
+	extern pstring global_scope;
 	char *p;
-
-	/* FIXME: This function can silently fail if the arguments are
-	 * not in the expected order.
-
-	> The arguments syntax of smbmount 2.2.3a (smbfs of Debian stable)
-	> requires that one gives "-o" before further options like username=...
-	> . Without -o, the username=.. setting is *silently* ignored. I've
-	> spent about an hour trying to find out why I couldn't log in now..
-
-	*/
-
 
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
@@ -753,22 +704,21 @@ static void parse_mount_smb(int argc, char **argv)
 	 */
         for (opts = strtok(optarg, ","); opts; opts = strtok(NULL, ",")) {
 		DEBUG(3, ("opts: %s\n", opts));
-                if ((opteq = strchr_m(opts, '='))) {
+                if ((opteq = strchr(opts, '='))) {
                         val = atoi(opteq + 1);
                         *opteq = '\0';
 
                         if (!strcmp(opts, "username") || 
 			    !strcmp(opts, "logon")) {
 				char *lp;
-				got_user = True;
 				pstrcpy(username,opteq+1);
-				if ((lp=strchr_m(username,'%'))) {
+				if ((lp=strchr(username,'%'))) {
 					*lp = 0;
 					pstrcpy(password,lp+1);
 					got_pass = True;
-					memset(strchr_m(opteq+1,'%')+1,'X',strlen(password));
+					memset(strchr(opteq+1,'%')+1,'X',strlen(password));
 				}
-				if ((lp=strchr_m(username,'/'))) {
+				if ((lp=strchr(username,'/'))) {
 					*lp = 0;
 					pstrcpy(workgroup,lp+1);
 				}
@@ -805,7 +755,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "sockopt")) {
 				pstrcpy(user_socket_options,opteq+1);
 			} else if(!strcmp(opts, "scope")) {
-				set_global_scope(opteq+1);
+				pstrcpy(global_scope,opteq+1);
 			} else {
 				slprintf(p, sizeof(pstring) - (p - options) - 1, "%s=%s,", opts, opteq+1);
 				p += strlen(p);
@@ -818,24 +768,10 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "guest")) {
 				*password = '\0';
 				got_pass = True;
-			} else if(!strcmp(opts, "krb")) {
-#ifdef HAVE_KRB5
-
-				use_kerberos = True;
-				if(!status32_smbfs)
-					fprintf(stderr, "Warning: kerberos support will only work for samba servers\n");
-#else
-				fprintf(stderr,"No kerberos support compiled in\n");
-				exit(1);
-#endif
 			} else if(!strcmp(opts, "rw")) {
 				mount_ro = 0;
 			} else if(!strcmp(opts, "ro")) {
 				mount_ro = 1;
-			} else if(!strcmp(opts, "unicode")) {
-				smbfs_has_unicode = True;
-			} else if(!strcmp(opts, "lfs")) {
-				smbfs_has_lfs = True;
 			} else {
 				strncpy(p, opts, sizeof(pstring) - (p - options) - 1);
 				p += strlen(opts);
@@ -863,6 +799,7 @@ static void parse_mount_smb(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
+	static pstring servicesf = CONFIGFILE;
 	char *p;
 
 	DEBUGLEVEL = 1;
@@ -870,29 +807,21 @@ static void parse_mount_smb(int argc, char **argv)
 	/* here we are interactive, even if run from autofs */
 	setup_logging("mount.smbfs",True);
 
-#if 0 /* JRA - Urban says not needed ? */
-	/* CLI_FORCE_ASCII=false makes smbmount negotiate unicode. The default
-	   is to not announce any unicode capabilities as current smbfs does
-	   not support it. */
-	p = getenv("CLI_FORCE_ASCII");
-	if (p && !strcmp(p, "false"))
-		unsetenv("CLI_FORCE_ASCII");
-	else
-		setenv("CLI_FORCE_ASCII", "true", 1);
-#endif
-
+	TimeInit();
+	charset_initialise();
+	
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
 
-		if ((p=strchr_m(username,'%'))) {
+		if ((p=strchr(username,'%'))) {
 			*p = 0;
 			pstrcpy(password,p+1);
 			got_pass = True;
-			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
+			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper_m(username);
+		strupper(username);
 	}
 
 	if (getenv("PASSWD")) {
@@ -909,22 +838,20 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(username,getenv("LOGNAME"));
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			dyn_CONFIGFILE);
+			servicesf);
 	}
 
 	parse_mount_smb(argc, argv);
-
-	if (use_kerberos && !got_user) {
-		got_pass = True;
-	}
 
 	if (*credentials != 0) {
 		read_credentials_file(credentials);
 	}
 
-	DEBUG(3,("mount.smbfs started (version %s)\n", SAMBA_VERSION_STRING));
+	DEBUG(3,("mount.smbfs started (version %s)\n", VERSION));
+
+	codepage_initialise(lp_client_code_page());
 
 	if (*workgroup == 0) {
 		pstrcpy(workgroup,lp_workgroup());
@@ -934,7 +861,7 @@ static void parse_mount_smb(int argc, char **argv)
 	if (!*my_netbios_name) {
 		pstrcpy(my_netbios_name, myhostname());
 	}
-	strupper_m(my_netbios_name);
+	strupper(my_netbios_name);
 
 	init_mount();
 	return 0;

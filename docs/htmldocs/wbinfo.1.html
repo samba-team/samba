@@ -1,0 +1,382 @@
+<HTML
+><HEAD
+><TITLE
+>wbinfo</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="WBINFO"
+>wbinfo</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>wbinfo&nbsp;--&nbsp;Query information from winbind daemon</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>wbinfo</B
+>  [-u] [-g] [-h name] [-i ip] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m] [-r user] [-a user%password] [-A user%password]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN26"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+>The <B
+CLASS="COMMAND"
+>wbinfo</B
+> program queries and returns information 
+	created and used by the <A
+HREF="winbindd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>	winbindd(8)</B
+></A
+> daemon. </P
+><P
+>The <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> daemon must be configured 
+	and running for the <B
+CLASS="COMMAND"
+>wbinfo</B
+> program to be able 
+	to return information.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN37"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-u</DT
+><DD
+><P
+>This option will list all users available 
+		in the Windows NT domain for which the <B
+CLASS="COMMAND"
+>winbindd(8)
+		</B
+> daemon is operating in. Users in all trusted domains 
+		will also be listed.  Note that this operation does not assign 
+		user ids to any users that have not already been seen by 
+		<B
+CLASS="COMMAND"
+>winbindd(8)</B
+>.</P
+></DD
+><DT
+>-g</DT
+><DD
+><P
+>This option will list all groups available 
+		in the Windows NT domain for which the <B
+CLASS="COMMAND"
+>winbindd(8)
+		</B
+> daemon is operating in. Groups in all trusted domains
+		will also be listed.  Note that this operation does not assign 
+		group ids to any groups that have not already been seen by
+		<B
+CLASS="COMMAND"
+>winbindd(8)</B
+>. </P
+></DD
+><DT
+>-h name</DT
+><DD
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-h</I
+></TT
+> option 
+		queries <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> to query the WINS
+		server for the IP address associated with the NetBIOS name
+		specified by the <TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+> parameter.
+		</P
+></DD
+><DT
+>-i ip</DT
+><DD
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-i</I
+></TT
+> option 
+		queries <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> to send a node status
+		request to get the NetBIOS name associated with the IP address
+		specified by the <TT
+CLASS="PARAMETER"
+><I
+>ip</I
+></TT
+> parameter.
+		</P
+></DD
+><DT
+>-n name</DT
+><DD
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-n</I
+></TT
+> option 
+		queries <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> for the SID 		
+		associated with the name specified. Domain names can be specified 
+		before the user name by using the winbind separator character.  
+		For example CWDOM1/Administrator refers to the Administrator
+		user in the domain CWDOM1.  If no domain is specified then the 
+		domain used is the one specified in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>
+		<TT
+CLASS="PARAMETER"
+><I
+>workgroup</I
+></TT
+> parameter. </P
+></DD
+><DT
+>-s sid</DT
+><DD
+><P
+>Use <TT
+CLASS="PARAMETER"
+><I
+>-s</I
+></TT
+> to resolve
+		a SID to a name.  This is the inverse of the <TT
+CLASS="PARAMETER"
+><I
+>-n
+		</I
+></TT
+> option above.  SIDs must be specified as ASCII strings 
+		in the traditional Microsoft format. For example,
+		S-1-5-21-1455342024-3071081365-2475485837-500. </P
+></DD
+><DT
+>-U uid</DT
+><DD
+><P
+>Try to convert a UNIX user id to a Windows NT 
+		SID.  If the uid specified does not refer to one within
+		the winbind uid range then the operation will fail. </P
+></DD
+><DT
+>-G gid</DT
+><DD
+><P
+>Try to convert a UNIX group id to a Windows 
+		NT SID.  If the gid specified does not refer to one within 
+		the winbind gid range then the operation will fail. </P
+></DD
+><DT
+>-S sid</DT
+><DD
+><P
+>Convert a SID to a UNIX user id.  If the SID 
+		does not correspond to a UNIX user mapped by <B
+CLASS="COMMAND"
+>		winbindd(8)</B
+> then the operation will fail. </P
+></DD
+><DT
+>-Y sid</DT
+><DD
+><P
+>Convert a SID to a UNIX group id.  If the SID 
+		does not correspond to a UNIX group mapped by <B
+CLASS="COMMAND"
+>		winbindd(8)</B
+> then the operation will fail. </P
+></DD
+><DT
+>-t</DT
+><DD
+><P
+>Verify that the workstation trust account 
+		created when the Samba server is added to the Windows NT
+		domain is working. </P
+></DD
+><DT
+>-m</DT
+><DD
+><P
+>Produce a list of domains trusted by the 
+		Windows NT server <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> contacts 
+		when resolving names.  This list does not include the Windows 
+		NT domain the server is a Primary Domain Controller for.
+		</P
+></DD
+><DT
+>-r username</DT
+><DD
+><P
+>Try to obtain the list of UNIX group ids
+		to which the user belongs.  This only works for users
+		defined on a Domain Controller.
+		</P
+></DD
+><DT
+>-a username%password</DT
+><DD
+><P
+>Attempt to authenticate a user via winbindd. 
+                This checks both authenticaion methods and reports its results.
+		</P
+></DD
+><DT
+>-A username%password</DT
+><DD
+><P
+>Store username and password used by winbindd 
+		during session setup to a domain controller.  This enables
+		winbindd to operate in a Windows 2000 domain with Restrict
+		Anonymous turned on (a.k.a. Permissions compatiable with
+		Windows 2000 servers only).
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN119"
+></A
+><H2
+>EXIT STATUS</H2
+><P
+>The wbinfo program returns 0 if the operation 
+	succeeded, or 1 if the operation failed.  If the <B
+CLASS="COMMAND"
+>winbindd(8)
+	</B
+> daemon is not working <B
+CLASS="COMMAND"
+>wbinfo</B
+> will always return 
+	failure. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN124"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN127"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="winbindd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>winbindd(8)</B
+>
+	</A
+></P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN132"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+><B
+CLASS="COMMAND"
+>wbinfo</B
+> and <B
+CLASS="COMMAND"
+>winbindd</B
+>
+	were written by Tim Potter.</P
+><P
+>The conversion to DocBook for Samba 2.2 was done 
+	by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    SMB wrapper directory functions
    Copyright (C) Andrew Tridgell 1998
    
@@ -62,35 +63,30 @@ free a smbw_dir structure and all entries
 *******************************************************/
 static void free_dir(struct smbw_dir *dir)
 {
-	if(!dir) return;
-
 	SAFE_FREE(dir->list);
 	SAFE_FREE(dir->path);
 	ZERO_STRUCTP(dir);
 	SAFE_FREE(dir);
 }
 
+
 static struct smbw_dir *cur_dir;
 
 /***************************************************** 
 add a entry to a directory listing
 *******************************************************/
-static void smbw_dir_add(struct file_info *finfo, const char *mask, 
-			 void *state)
+static void smbw_dir_add(struct file_info *finfo, const char *mask, void *state)
 {
-	struct file_info *cdl;
-
 	DEBUG(5,("%s\n", finfo->name));
 
 	if (cur_dir->malloced == cur_dir->count) {
-		cdl = (struct file_info *)Realloc(cur_dir->list, 
+		cur_dir->list = (struct file_info *)Realloc(cur_dir->list, 
 							    sizeof(cur_dir->list[0])*
 							    (cur_dir->count+100));
-		if (!cdl) {
+		if (!cur_dir->list) {
 			/* oops */
 			return;
 		}
-		cur_dir->list = cdl;
 		cur_dir->malloced += 100;
 	}
 
@@ -102,7 +98,7 @@ static void smbw_dir_add(struct file_info *finfo, const char *mask,
 add a entry to a directory listing
 *******************************************************/
 static void smbw_share_add(const char *share, uint32 type, 
-			   const char *comment, void *state)
+                           const char *comment, void *state)
 {
 	struct file_info finfo;
 
@@ -203,30 +199,30 @@ int smbw_dir_open(const char *fname)
 
 	if ((p=strstr(srv->server_name,"#01"))) {
 		*p = 0;
-		smbw_server_add(".",0,"", NULL);
-		smbw_server_add("..",0,"", NULL);
-		smbw_NetServerEnum(&srv->cli, srv->server_name, 
-				   SV_TYPE_DOMAIN_ENUM, smbw_server_add, NULL);
+		smbw_server_add(".",0,"",NULL);
+		smbw_server_add("..",0,"",NULL);
+		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_DOMAIN_ENUM,
+				  smbw_server_add,NULL);
 		*p = '#';
 	} else if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));
 		*p = 0;
-		smbw_server_add(".",0,"", NULL);
-		smbw_server_add("..",0,"", NULL);
-		smbw_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
-				   smbw_server_add, NULL);
+		smbw_server_add(".",0,"",NULL);
+		smbw_server_add("..",0,"",NULL);
+		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
+				  smbw_server_add,NULL);
 		*p = '#';
-	} else if ((strcmp(srv->cli.dev,"IPC") == 0) || (strequal(share,"IPC$"))) {
+	} else if (strcmp(srv->cli.dev,"IPC") == 0) {
 		DEBUG(4,("doing NetShareEnum\n"));
-		smbw_share_add(".",0,"", NULL);
-		smbw_share_add("..",0,"", NULL);
-		if (smbw_RNetShareEnum(&srv->cli, smbw_share_add, NULL) < 0) {
+		smbw_share_add(".",0,"",NULL);
+		smbw_share_add("..",0,"",NULL);
+		if (cli_RNetShareEnum(&srv->cli, smbw_share_add,NULL) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
 	} else if (strncmp(srv->cli.dev,"LPT",3) == 0) {
-		smbw_share_add(".",0,"", NULL);
-		smbw_share_add("..",0,"", NULL);
+		smbw_share_add(".",0,"",NULL);
+		smbw_share_add("..",0,"",NULL);
 		if (cli_print_queue(&srv->cli, smbw_printjob_add) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
@@ -234,12 +230,11 @@ int smbw_dir_open(const char *fname)
 	} else {
 #if 0
 		if (strcmp(path,"\\") == 0) {
-			smbw_share_add(".",0,"");
-			smbw_share_add("..",0,"");
+			smbw_share_add(".",0,"",NULL);
+			smbw_share_add("..",0,"",NULL);
 		}
 #endif
-		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
-			     smbw_dir_add, NULL) < 0) {
+		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, smbw_dir_add,NULL) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
@@ -272,8 +267,10 @@ int smbw_dir_open(const char *fname)
 	return dir->fd;
 
  failed:
-	free_dir(dir);
-	
+	if (dir) {
+		free_dir(dir);
+	}
+
 	return -1;
 }
 
@@ -412,8 +409,7 @@ int smbw_chdir(const char *name)
 		goto failed;
 	}
 
-	if (strncmp(srv->cli.dev,"IPC",3) && 
-	    !strequal(share, "IPC$") &&
+	if (strncmp(srv->cli.dev,"IPC",3) &&
 	    strncmp(srv->cli.dev,"LPT",3) &&
 	    !smbw_getatr(srv, path, 
 			 &mode, NULL, NULL, NULL, NULL, NULL)) {
@@ -687,3 +683,4 @@ off_t smbw_telldir(DIR *dirp)
 	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	return smbw_dir_lseek(d->fd,0,SEEK_CUR);
 }
+

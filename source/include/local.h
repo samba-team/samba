@@ -10,15 +10,6 @@
 #define WORKGROUP "WORKGROUP"
 #endif
 
-/* the maximum debug level to compile into the code. This assumes a good 
-   optimising compiler that can remove unused code 
-   for embedded or low-memory systems set this to a value like 2 to get
-   only important messages. This gives *much* smaller binaries
-*/
-#ifndef MAX_DEBUG_LEVEL
-#define MAX_DEBUG_LEVEL 1000
-#endif
-
 /* This defines the section name in the configuration file that will contain */
 /* global parameters - that is, parameters relating to the whole server, not */
 /* just services. This name is then reserved, and may not be used as a       */
@@ -73,10 +64,15 @@
 #define MAX_PASS_LEN 200
 
 /* separators for lists */
-#define LIST_SEP " \t,;\n\r"
+#define LIST_SEP " \t,;:\n\r"
 
 /* wchar separators for lists */
 #define LIST_SEP_W wchar_list_sep
+
+#ifndef LOCKDIR
+/* this should have been set in the Makefile */
+#define LOCKDIR "/tmp/samba"
+#endif
 
 /* this is where browse lists are kept in the lock dir */
 #define SERVER_LIST "browse.dat"
@@ -113,7 +109,7 @@
 #endif
 
 /* the size of the uid cache used to reduce valid user checks */
-#define VUID_CACHE_SIZE 32
+#define UID_CACHE_SIZE 4
 
 /* the following control timings of various actions. Don't change 
    them unless you know what you are doing. These are all in seconds */
@@ -166,6 +162,9 @@
    it are worked out */
 #define USE_READ_PREDICTION 0
 
+/* name of directory that netatalk uses to store macintosh resource forks */
+#define APPLEDOUBLE ".AppleDouble/"
+
 /*
  * Default passwd chat script.
  */
@@ -179,20 +178,8 @@
    than 62*62 for the current code */
 #define MAX_SESSION_ID 3000
 
-/* For the benifit of PAM and the 'session exec' scripts, we fake up a terminal
-   name. This can be in one of two forms:  The first for systems not using
-   utmp (and therefore not constrained as to length or the need for a number
-   < 3000 or so) and the second for systems with this 'well behaved terminal
-   like name' constraint.
-*/
-
 #ifndef SESSION_TEMPLATE
-/* Paramaters are 'pid' and 'vuid' */
-#define SESSION_TEMPLATE "smb/%lu/%d"
-#endif
-
-#ifndef SESSION_UTMP_TEMPLATE
-#define SESSION_UTMP_TEMPLATE "smb/%d"
+#define SESSION_TEMPLATE "smb/%d"
 #endif
 
 /* the maximum age in seconds of a password. Should be a lp_ parameter */
@@ -201,33 +188,12 @@
 /* Allocation roundup. */
 #define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
 
-/* shall we deny oplocks to clients that get timeouts? */
-#define FASCIST_OPLOCK_BACKOFF 1
-
-/* this enables the "rabbit pellet" fix for SMBwritebraw */
-#define RABBIT_PELLET_FIX 1
-
 /* Max number of jobs per print queue. */
 #define PRINT_MAX_JOBID 10000
 
 /* Max number of open RPC pipes. */
 #define MAX_OPEN_PIPES 2048
 
-/* Tuning for server auth mutex. */
-#define CLI_AUTH_TIMEOUT 5000 /* In milli-seconds. */
-#define NUM_CLI_AUTH_CONNECT_RETRIES 3
-/* Number in seconds to wait for the mutex. This must be less than 30 seconds. */
-#define SERVER_MUTEX_WAIT_TIME ( ((NUM_CLI_AUTH_CONNECT_RETRIES) * ((CLI_AUTH_TIMEOUT)/1000)) + 5)
-/* Number in seconds for winbindd to wait for the mutex. Make this 2 * smbd wait time. */
-#define WINBIND_SERVER_MUTEX_WAIT_TIME (( ((NUM_CLI_AUTH_CONNECT_RETRIES) * ((CLI_AUTH_TIMEOUT)/1000)) + 5)*2)
-
 /* Max number of simultaneous winbindd socket connections. */
 #define WINBINDD_MAX_SIMULTANEOUS_CLIENTS 200
-
-/* Buffer size to use when printing backtraces */
-#define BACKTRACE_STACK_SIZE 64
-
-/* size of listen() backlog in smbd */
-#define SMBD_LISTEN_BACKLOG 50
-
 #endif

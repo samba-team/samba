@@ -1,9 +1,8 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB client
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Simo Sorce 2001-2002
-   Copyright (C) Jelmer Vernooij 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,44 +22,47 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-#include "../client/client_proto.h"
+
 #ifndef REGISTER
 #define REGISTER 0
 #endif
 
 struct cli_state *cli;
 extern BOOL in_client;
-static int port = 0;
+extern BOOL AllowDebugChange;
+static int port = SMB_PORT;
 pstring cur_dir = "\\";
-static pstring cd_path = "";
+pstring cd_path = "";
 static pstring service;
 static pstring desthost;
-static pstring username;
+extern pstring global_myname;
 static pstring password;
-static BOOL use_kerberos;
+static pstring username;
+static pstring workgroup;
+static char *cmdstr;
 static BOOL got_pass;
-static BOOL grepable=False;
-static char *cmdstr = NULL;
-
 static int io_bufsize = 64512;
 
 static int name_type = 0x20;
 static int max_protocol = PROTOCOL_NT1;
+extern pstring user_socket_options;
 
-static int process_tok(pstring tok);
-static int cmd_help(void);
+static int process_tok(fstring tok);
+static void cmd_help(void);
 
 /* 30 second timeout on most commands */
 #define CLIENT_TIMEOUT (30*1000)
 #define SHORT_TIMEOUT (5*1000)
 
+int timeout_msec = 0;
+
 /* value for unused fid field in trans2 secondary request */
 #define FID_UNUSED (0xFFFF)
 
 time_t newer_than = 0;
-static int archive_level = 0;
+int archive_level = 0;
 
-static BOOL translation = False;
+BOOL translation = False;
 
 static BOOL have_ip;
 
@@ -71,42 +73,38 @@ extern BOOL tar_reset;
 /* clitar bits end */
  
 
-static BOOL prompt = True;
+BOOL prompt = True;
 
-static int printmode = 1;
+int printmode = 1;
 
 static BOOL recurse = False;
 BOOL lowercase = False;
 
-static struct in_addr dest_ip;
+struct in_addr dest_ip;
 
 #define SEPARATORS " \t\n\r"
 
-static BOOL abort_mget = True;
+BOOL abort_mget = True;
 
-static pstring fileselection = "";
+pstring fileselection = "";
 
 extern file_info def_finfo;
 
 /* timing globals */
-SMB_BIG_UINT get_total_size = 0;
+off_t get_total_size = 0;
 unsigned int get_total_time_ms = 0;
-static SMB_BIG_UINT put_total_size = 0;
-static unsigned int put_total_time_ms = 0;
+off_t put_total_size = 0;
+unsigned int put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
 
 #define USENMB
 
-/* some forward declarations */
-static struct cli_state *do_connect(const char *server, const char *share);
-
 /****************************************************************************
- Write to a local file with CR/LF->LF translation if appropriate. Return the 
- number taken from the buffer. This may not equal the number written.
+write to a local file with CR/LF->LF translation if appropriate. return the 
+number taken from the buffer. This may not equal the number written.
 ****************************************************************************/
-
 static int writefile(int f, char *b, int n)
 {
 	int i;
@@ -131,21 +129,20 @@ static int writefile(int f, char *b, int n)
 }
 
 /****************************************************************************
- Read from a file with LF->CR/LF translation if appropriate. Return the 
- number read. read approx n bytes.
+  read from a file with LF->CR/LF translation if appropriate. return the 
+  number read. read approx n bytes.
 ****************************************************************************/
-
-static int readfile(char *b, int n, XFILE *f)
+static int readfile(char *b, int size, int n, FILE *f)
 {
 	int i;
 	int c;
 
-	if (!translation)
-		return x_fread(b,1,n,f);
+	if (!translation || (size != 1))
+		return(fread(b,size,n,f));
   
 	i = 0;
 	while (i < (n - 1) && (i < BUFFER_SIZE)) {
-		if ((c = x_getc(f)) == EOF) {
+		if ((c = getc(f)) == EOF) {
 			break;
 		}
       
@@ -159,22 +156,22 @@ static int readfile(char *b, int n, XFILE *f)
 	return(i);
 }
  
-/****************************************************************************
- Send a message.
-****************************************************************************/
 
+/****************************************************************************
+send a message
+****************************************************************************/
 static void send_message(void)
 {
 	int total_len = 0;
 	int grp_id;
 
 	if (!cli_message_start(cli, desthost, username, &grp_id)) {
-		d_printf("message start: %s\n", cli_errstr(cli));
+		DEBUG(0,("message start: %s\n", cli_errstr(cli)));
 		return;
 	}
 
 
-	d_printf("Connected. Type your message, ending it with a Control-D\n");
+	printf("Connected. Type your message, ending it with a Control-D\n");
 
 	while (!feof(stdin) && total_len < 1600) {
 		int maxlen = MIN(1600 - total_len,127);
@@ -190,8 +187,15 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
+		/*
+		 * The message is in UNIX codepage format. Convert to
+		 * DOS before sending.
+		 */
+
+		unix_to_dos(msg);
+
 		if (!cli_message_text(cli, msg, l, grp_id)) {
-			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
+			printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;
 		}      
 		
@@ -199,51 +203,48 @@ static void send_message(void)
 	}
 
 	if (total_len >= 1600)
-		d_printf("the message was truncated to 1600 bytes\n");
+		printf("the message was truncated to 1600 bytes\n");
 	else
-		d_printf("sent %d bytes\n",total_len);
+		printf("sent %d bytes\n",total_len);
 
 	if (!cli_message_end(cli, grp_id)) {
-		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli));
+		printf("SMBsendend failed (%s)\n",cli_errstr(cli));
 		return;
 	}      
 }
 
-/****************************************************************************
- Check the space on a device.
-****************************************************************************/
 
-static int do_dskattr(void)
+
+/****************************************************************************
+check the space on a device
+****************************************************************************/
+static void do_dskattr(void)
 {
 	int total, bsize, avail;
 
 	if (!cli_dskattr(cli, &bsize, &total, &avail)) {
-		d_printf("Error in dskattr: %s\n",cli_errstr(cli)); 
-		return 1;
+		DEBUG(0,("Error in dskattr: %s\n",cli_errstr(cli))); 
+		return;
 	}
 
-	d_printf("\n\t\t%d blocks of size %d. %d blocks available\n",
-		 total, bsize, avail);
-
-	return 0;
+	DEBUG(0,("\n\t\t%d blocks of size %d. %d blocks available\n",
+		 total, bsize, avail));
 }
 
 /****************************************************************************
- Show cd/pwd.
+show cd/pwd
 ****************************************************************************/
-
-static int cmd_pwd(void)
+static void cmd_pwd(void)
 {
-	d_printf("Current directory is %s",service);
-	d_printf("%s\n",cur_dir);
-	return 0;
+	DEBUG(0,("Current directory is %s",service));
+	DEBUG(0,("%s\n",cur_dir));
 }
 
-/****************************************************************************
- Change directory - inner section.
-****************************************************************************/
 
-static int do_cd(char *newdir)
+/****************************************************************************
+change directory - inner section
+****************************************************************************/
+static void do_cd(char *newdir)
 {
 	char *p = newdir;
 	pstring saved_dir;
@@ -268,41 +269,34 @@ static int do_cd(char *newdir)
 	
 	if (!strequal(cur_dir,"\\")) {
 		if (!cli_chkpath(cli, dname)) {
-			d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+			DEBUG(0,("cd %s: %s\n", dname, cli_errstr(cli)));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
 	
 	pstrcpy(cd_path,cur_dir);
-
-	return 0;
 }
 
 /****************************************************************************
- Change directory.
+change directory
 ****************************************************************************/
-
-static int cmd_cd(void)
+static void cmd_cd(void)
 {
-	pstring buf;
-	int rc = 0;
+	fstring buf;
 
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
-		rc = do_cd(buf);
+	if (next_token(NULL,buf,NULL,sizeof(buf)))
+		do_cd(buf);
 	else
-		d_printf("Current directory is %s\n",cur_dir);
-
-	return rc;
+		DEBUG(0,("Current directory is %s\n",cur_dir));
 }
 
-/*******************************************************************
- Decide if a file should be operated on.
-********************************************************************/
 
+/*******************************************************************
+  decide if a file should be operated on
+  ********************************************************************/
 static BOOL do_this_one(file_info *finfo)
 {
-	if (finfo->mode & aDIR)
-		return(True);
+	if (finfo->mode & aDIR) return(True);
 
 	if (*fileselection && 
 	    !mask_match(finfo->name,fileselection,False)) {
@@ -324,26 +318,25 @@ static BOOL do_this_one(file_info *finfo)
 }
 
 /****************************************************************************
- Display info about a file.
-****************************************************************************/
-
+  display info about a file
+  ****************************************************************************/
 static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-		d_printf("  %-30s%7.7s %8.0f  %s",
+		DEBUG(0,("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
-			 asctime(LocalTime(&t)));
+			 asctime(LocalTime(&t))));
 		dir_total += finfo->size;
 	}
 }
 
-/****************************************************************************
- Accumulate size of a file.
-****************************************************************************/
 
+/****************************************************************************
+   accumulate size of a file
+  ****************************************************************************/
 static void do_du(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
@@ -360,8 +353,8 @@ static long do_list_queue_end = 0;
 static void (*do_list_fn)(file_info *);
 
 /****************************************************************************
- Functions for do_list_queue.
-****************************************************************************/
+functions for do_list_queue
+  ****************************************************************************/
 
 /*
  * The do_list_queue is a NUL-separated list of strings stored in a
@@ -374,10 +367,10 @@ static void (*do_list_fn)(file_info *);
  * Functions check to ensure that do_list_queue is non-NULL before
  * accessing it.
  */
-
 static void reset_do_list_queue(void)
 {
 	SAFE_FREE(do_list_queue);
+	do_list_queue = 0;
 	do_list_queue_size = 0;
 	do_list_queue_start = 0;
 	do_list_queue_end = 0;
@@ -389,8 +382,8 @@ static void init_do_list_queue(void)
 	do_list_queue_size = 1024;
 	do_list_queue = malloc(do_list_queue_size);
 	if (do_list_queue == 0) { 
-		d_printf("malloc fail for size %d\n",
-			 (int)do_list_queue_size);
+		DEBUG(0,("malloc fail for size %d\n",
+			 (int)do_list_queue_size));
 		reset_do_list_queue();
 	} else {
 		memset(do_list_queue, 0, do_list_queue_size);
@@ -403,11 +396,14 @@ static void adjust_do_list_queue(void)
 	 * If the starting point of the queue is more than half way through,
 	 * move everything toward the beginning.
 	 */
-	if (do_list_queue && (do_list_queue_start == do_list_queue_end)) {
+	if (do_list_queue && (do_list_queue_start == do_list_queue_end))
+	{
 		DEBUG(4,("do_list_queue is empty\n"));
 		do_list_queue_start = do_list_queue_end = 0;
 		*do_list_queue = '\0';
-	} else if (do_list_queue_start > (do_list_queue_size / 2)) {
+	}
+	else if (do_list_queue_start > (do_list_queue_size / 2))
+	{
 		DEBUG(4,("sliding do_list_queue backward\n"));
 		memmove(do_list_queue,
 			do_list_queue + do_list_queue_start,
@@ -415,20 +411,23 @@ static void adjust_do_list_queue(void)
 		do_list_queue_end -= do_list_queue_start;
 		do_list_queue_start = 0;
 	}
+	   
 }
 
 static void add_to_do_list_queue(const char* entry)
 {
 	char *dlq;
+
 	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
-	while (new_end > do_list_queue_size) {
+	while (new_end > do_list_queue_size)
+	{
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
 		dlq = Realloc(do_list_queue, do_list_queue_size);
-		if (! dlq) {
-			d_printf("failure enlarging do_list_queue to %d bytes\n",
-				 (int)do_list_queue_size);
+		if (!dlq) {
+			DEBUG(0,("failure enlarging do_list_queue to %d bytes\n",
+				(int)do_list_queue_size));
 			reset_do_list_queue();
 		} else {
 			do_list_queue = dlq;
@@ -436,9 +435,9 @@ static void add_to_do_list_queue(const char* entry)
 			       0, do_list_queue_size / 2);
 		}
 	}
-	if (do_list_queue) {
-		safe_strcpy_base(do_list_queue + do_list_queue_end, 
-				 entry, do_list_queue, do_list_queue_size);
+	if (do_list_queue)
+	{
+		pstrcpy(do_list_queue + do_list_queue_end, entry);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
 			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
@@ -452,7 +451,8 @@ static char *do_list_queue_head(void)
 
 static void remove_do_list_queue_head(void)
 {
-	if (do_list_queue_end > do_list_queue_start) {
+	if (do_list_queue_end > do_list_queue_start)
+	{
 		do_list_queue_start += strlen(do_list_queue_head()) + 1;
 		adjust_do_list_queue();
 		DEBUG(4,("removed head of do_list_queue (start=%d, end=%d)\n",
@@ -466,9 +466,8 @@ static int do_list_queue_empty(void)
 }
 
 /****************************************************************************
- A helper for do_list.
-****************************************************************************/
-
+a helper for do_list
+  ****************************************************************************/
 static void do_list_helper(file_info *f, const char *mask, void *state)
 {
 	if (f->mode & aDIR) {
@@ -481,15 +480,9 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 			pstring mask2;
 			char *p;
 
-			if (!f->name[0]) {
-				d_printf("Empty dir name returned. Possible server misconfiguration.\n");
-				return;
-			}
-
 			pstrcpy(mask2, mask);
-			p = strrchr_m(mask2,'\\');
-			if (!p)
-				return;
+			p = strrchr(mask2,'\\');
+			if (!p) return;
 			p[1] = 0;
 			pstrcat(mask2, f->name);
 			pstrcat(mask2,"\\*");
@@ -503,15 +496,16 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 	}
 }
 
-/****************************************************************************
- A wrapper around cli_list that adds recursion.
-****************************************************************************/
 
+/****************************************************************************
+a wrapper around cli_list that adds recursion
+  ****************************************************************************/
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
 
-	if (in_do_list && rec) {
+	if (in_do_list && rec)
+	{
 		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
 		exit(1);
 	}
@@ -522,11 +516,13 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	do_list_dirs = dirs;
 	do_list_fn = fn;
 
-	if (rec) {
+	if (rec)
+	{
 		init_do_list_queue();
 		add_to_do_list_queue(mask);
 		
-		while (! do_list_queue_empty()) {
+		while (! do_list_queue_empty())
+		{
 			/*
 			 * Need to copy head so that it doesn't become
 			 * invalid inside the call to cli_list.  This
@@ -538,25 +534,31 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			pstrcpy(head, do_list_queue_head());
 			cli_list(cli, head, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
-			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
+			if ((! do_list_queue_empty()) && (fn == display_finfo))
+			{
 				char* next_file = do_list_queue_head();
 				char* save_ch = 0;
 				if ((strlen(next_file) >= 2) &&
 				    (next_file[strlen(next_file) - 1] == '*') &&
-				    (next_file[strlen(next_file) - 2] == '\\')) {
+				    (next_file[strlen(next_file) - 2] == '\\'))
+				{
 					save_ch = next_file +
 						strlen(next_file) - 2;
 					*save_ch = '\0';
 				}
-				d_printf("\n%s\n",next_file);
-				if (save_ch) {
+				DEBUG(0,("\n%s\n",next_file));
+				if (save_ch)
+				{
 					*save_ch = '\\';
 				}
 			}
 		}
-	} else {
-		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1) {
-			d_printf("%s listing %s\n", cli_errstr(cli), mask);
+	}
+	else
+	{
+		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1)
+		{
+			DEBUG(0, ("%s listing %s\n", cli_errstr(cli), mask));
 		}
 	}
 
@@ -565,63 +567,55 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 }
 
 /****************************************************************************
- Get a directory listing.
-****************************************************************************/
-
-static int cmd_dir(void)
+  get a directory listing
+  ****************************************************************************/
+static void cmd_dir(void)
 {
 	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
-	int rc;
-	
-	dir_total = 0;
-	if (strcmp(cur_dir, "\\") != 0) {
-		pstrcpy(mask,cur_dir);
-		if(mask[strlen(mask)-1]!='\\')
-			pstrcat(mask,"\\");
-	} else {
-		*mask = '\0';
-	}
-	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		dos_format(p);
-		if (*p == '\\')
-			pstrcpy(mask,p);
-		else
-			pstrcat(mask,p);
-	} else {
-		pstrcat(mask,"*");
-	}
-
-	do_list(mask, attribute, display_finfo, recurse, True);
-
-	rc = do_dskattr();
-
-	DEBUG(3, ("Total bytes listed: %.0f\n", dir_total));
-
-	return rc;
-}
-
-/****************************************************************************
- Get a directory listing.
-****************************************************************************/
-
-static int cmd_du(void)
-{
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
-	pstring mask;
-	pstring buf;
-	char *p=buf;
-	int rc;
 	
 	dir_total = 0;
 	pstrcpy(mask,cur_dir);
 	if(mask[strlen(mask)-1]!='\\')
 		pstrcat(mask,"\\");
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(NULL,buf,NULL,sizeof(buf))) {
+		dos_format(p);
+		if (*p == '\\')
+			pstrcpy(mask,p);
+		else
+			pstrcat(mask,p);
+	}
+	else {
+		pstrcat(mask,"*");
+	}
+
+	do_list(mask, attribute, display_finfo, recurse, True);
+
+	do_dskattr();
+
+	DEBUG(3, ("Total bytes listed: %.0f\n", dir_total));
+}
+
+
+/****************************************************************************
+  get a directory listing
+  ****************************************************************************/
+static void cmd_du(void)
+{
+	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	pstring mask;
+	fstring buf;
+	char *p=buf;
+	
+	dir_total = 0;
+	pstrcpy(mask,cur_dir);
+	if(mask[strlen(mask)-1]!='\\')
+		pstrcat(mask,"\\");
+	
+	if (next_token(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == '\\')
 			pstrcpy(mask,p);
@@ -633,110 +627,90 @@ static int cmd_du(void)
 
 	do_list(mask, attribute, do_du, recurse, True);
 
-	rc = do_dskattr();
+	do_dskattr();
 
-	d_printf("Total number of bytes: %.0f\n", dir_total);
-
-	return rc;
+	DEBUG(0, ("Total number of bytes: %.0f\n", dir_total));
 }
 
-/****************************************************************************
- Get a file from rname to lname
-****************************************************************************/
 
-static int do_get(char *rname, char *lname, BOOL reget)
+/****************************************************************************
+  get a file from rname to lname
+  ****************************************************************************/
+static void do_get(char *rname,char *lname)
 {  
-	int handle = 0, fnum;
+	int handle=0,fnum;
 	BOOL newhandle = False;
 	char *data;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16 attr;
-	size_t size;
-	off_t start = 0;
-	off_t nread = 0;
-	int rc = 0;
+	size_t old_size = 0;
+	SMB_BIG_UINT size = 0;
+	SMB_BIG_UINT nread = 0;
 
 	GetTimeOfDay(&tp_start);
 
 	if (lowercase) {
-		strlower_m(lname);
+		strlower(lname);
 	}
 
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
-		return 1;
+		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
+		return;
 	}
 
 	if(!strcmp(lname,"-")) {
 		handle = fileno(stdout);
 	} else {
-		if (reget) {
-			handle = sys_open(lname, O_WRONLY|O_CREAT, 0644);
-			if (handle >= 0) {
-				start = sys_lseek(handle, 0, SEEK_END);
-				if (start == -1) {
-					d_printf("Error seeking local file\n");
-					return 1;
-				}
-			}
-		} else {
-			handle = sys_open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-		}
+		handle = sys_open(lname,O_WRONLY|O_CREAT|O_TRUNC,0644);
 		newhandle = True;
 	}
 	if (handle < 0) {
-		d_printf("Error opening local file %s\n",lname);
-		return 1;
+		DEBUG(0,("Error opening local file %s\n",lname));
+		return;
 	}
 
-
 	if (!cli_qfileinfo(cli, fnum, 
-			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
+			   &attr, &old_size, NULL, NULL, NULL, NULL, NULL) &&
 	    !cli_getattrE(cli, fnum, 
 			  &attr, &size, NULL, NULL, NULL)) {
-		d_printf("getattrib: %s\n",cli_errstr(cli));
-		return 1;
+		DEBUG(0,("getattrib: %s\n",cli_errstr(cli)));
+		return;
 	}
 
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
 		 rname, (double)size, lname));
 
 	if(!(data = (char *)malloc(read_size))) { 
-		d_printf("malloc fail for size %d\n", read_size);
+		DEBUG(0,("malloc fail for size %d\n", read_size));
 		cli_close(cli, fnum);
-		return 1;
+		return;
 	}
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
+		int n = cli_read(cli, fnum, data, nread, read_size);
 
-		if (n <= 0)
-			break;
+		if (n <= 0) break;
  
 		if (writefile(handle,data, n) != n) {
-			d_printf("Error writing local file\n");
-			rc = 1;
+			DEBUG(0,("Error writing local file\n"));
 			break;
 		}
       
 		nread += n;
 	}
 
-	if (nread + start < size) {
+	if (nread < size) {
 		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
-			    rname, (long)nread));
-
-		rc = 1;
+               rname, (long)nread));
 	}
 
 	SAFE_FREE(data);
 	
 	if (!cli_close(cli, fnum)) {
-		d_printf("Error %s closing remote file\n",cli_errstr(cli));
-		rc = 1;
+		DEBUG(0,("Error %s closing remote file\n",cli_errstr(cli)));
 	}
 
 	if (newhandle) {
@@ -762,15 +736,13 @@ static int do_get(char *rname, char *lname, BOOL reget)
 			 nread / (1.024*this_time + 1.0e-4),
 			 get_total_size / (1.024*get_total_time_ms)));
 	}
-	
-	return rc;
 }
 
-/****************************************************************************
- Get a file.
-****************************************************************************/
 
-static int cmd_get(void)
+/****************************************************************************
+  get a file
+  ****************************************************************************/
+static void cmd_get(void)
 {
 	pstring lname;
 	pstring rname;
@@ -781,22 +753,22 @@ static int cmd_get(void)
 	
 	p = rname + strlen(rname);
 	
-	if (!next_token_nr(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
-		d_printf("get <filename>\n");
-		return 1;
+	if (!next_token(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
+		DEBUG(0,("get <filename>\n"));
+		return;
 	}
 	pstrcpy(lname,p);
 	dos_clean_name(rname);
 	
-	next_token_nr(NULL,lname,NULL,sizeof(lname));
+	next_token(NULL,lname,NULL,sizeof(lname));
 	
-	return do_get(rname, lname, False);
+	do_get(rname, lname);
 }
 
-/****************************************************************************
- Do an mget operation on one file.
-****************************************************************************/
 
+/****************************************************************************
+  do a mget operation on one file
+  ****************************************************************************/
 static void do_mget(file_info *finfo)
 {
 	pstring rname;
@@ -808,7 +780,7 @@ static void do_mget(file_info *finfo)
 		return;
 
 	if (abort_mget)	{
-		d_printf("mget aborted\n");
+		DEBUG(0,("mget aborted\n"));
 		return;
 	}
 
@@ -819,13 +791,12 @@ static void do_mget(file_info *finfo)
 		slprintf(quest,sizeof(pstring)-1,
 			 "Get file %s? ",finfo->name);
 
-	if (prompt && !yesno(quest))
-		return;
+	if (prompt && !yesno(quest)) return;
 
 	if (!(finfo->mode & aDIR)) {
 		pstrcpy(rname,cur_dir);
 		pstrcat(rname,finfo->name);
-		do_get(rname, finfo->name, False);
+		do_get(rname,finfo->name);
 		return;
 	}
 
@@ -837,17 +808,17 @@ static void do_mget(file_info *finfo)
 
 	unix_format(finfo->name);
 	if (lowercase)
-		strlower_m(finfo->name);
+		strlower(finfo->name);
 	
 	if (!directory_exist(finfo->name,NULL) && 
 	    mkdir(finfo->name,0777) != 0) {
-		d_printf("failed to create directory %s\n",finfo->name);
+		DEBUG(0,("failed to create directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
 	
 	if (chdir(finfo->name) != 0) {
-		d_printf("failed to chdir to directory %s\n",finfo->name);
+		DEBUG(0,("failed to chdir to directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
@@ -860,36 +831,35 @@ static void do_mget(file_info *finfo)
 	pstrcpy(cur_dir,saved_curdir);
 }
 
-/****************************************************************************
- View the file using the pager.
-****************************************************************************/
 
-static int cmd_more(void)
+/****************************************************************************
+view the file using the pager
+****************************************************************************/
+static void cmd_more(void)
 {
-	pstring rname,lname,pager_cmd;
+	fstring rname,lname,pager_cmd;
 	char *pager;
 	int fd;
-	int rc = 0;
 
-	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	fstrcpy(rname,cur_dir);
+	fstrcat(rname,"\\");
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
 	if (fd == -1) {
-		d_printf("failed to create temporary file for more\n");
-		return 1;
+		DEBUG(0,("failed to create temporary file for more\n"));
+		return;
 	}
 	close(fd);
 
-	if (!next_token_nr(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
-		d_printf("more <filename>\n");
+	if (!next_token(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
+		DEBUG(0,("more <filename>\n"));
 		unlink(lname);
-		return 1;
+		return;
 	}
 	dos_clean_name(rname);
 
-	rc = do_get(rname, lname, False);
+	do_get(rname,lname);
 
 	pager=getenv("PAGER");
 
@@ -897,19 +867,18 @@ static int cmd_more(void)
 		 "%s %s",(pager? pager:PAGER), lname);
 	system(pager_cmd);
 	unlink(lname);
-	
-	return rc;
 }
 
-/****************************************************************************
- Do a mget command.
-****************************************************************************/
 
-static int cmd_mget(void)
+
+/****************************************************************************
+do a mget command
+****************************************************************************/
+static void cmd_mget(void)
 {
 	uint16 attribute = aSYSTEM | aHIDDEN;
 	pstring mget_mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 
 	*mget_mask = 0;
@@ -919,7 +888,7 @@ static int cmd_mget(void)
 	
 	abort_mget = False;
 
-	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	while (next_token(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
 		if(mget_mask[strlen(mget_mask)-1]!='\\')
 			pstrcat(mget_mask,"\\");
@@ -938,19 +907,17 @@ static int cmd_mget(void)
 		pstrcat(mget_mask,"*");
 		do_list(mget_mask, attribute,do_mget,False,True);
 	}
-	
-	return 0;
 }
 
-/****************************************************************************
- Make a directory of name "name".
-****************************************************************************/
 
+/****************************************************************************
+make a directory of name "name"
+****************************************************************************/
 static BOOL do_mkdir(char *name)
 {
 	if (!cli_mkdir(cli, name)) {
-		d_printf("%s making remote directory %s\n",
-			 cli_errstr(cli),name);
+		DEBUG(0,("%s making remote directory %s\n",
+			 cli_errstr(cli),name));
 		return(False);
 	}
 
@@ -963,13 +930,12 @@ static BOOL do_mkdir(char *name)
 
 static BOOL do_altname(char *name)
 {
-	pstring altname;
+	fstring altname;
 	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
-		d_printf("%s getting alt name for %s\n",
-			 cli_errstr(cli),name);
+		DEBUG(0,("%s getting alt name for %s\n", cli_errstr(cli),name));
 		return(False);
 	}
-	d_printf("%s\n", altname);
+	DEBUG(0,("%s\n", altname));
 
 	return(True);
 }
@@ -977,31 +943,28 @@ static BOOL do_altname(char *name)
 /****************************************************************************
  Exit client.
 ****************************************************************************/
-
-static int cmd_quit(void)
+static void cmd_quit(void)
 {
 	cli_shutdown(cli);
 	exit(0);
-	/* NOTREACHED */
-	return 0;
 }
 
-/****************************************************************************
- Make a directory.
-****************************************************************************/
 
-static int cmd_mkdir(void)
+/****************************************************************************
+  make a directory
+  ****************************************************************************/
+static void cmd_mkdir(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
   
 	pstrcpy(mask,cur_dir);
 
-	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	if (!next_token(NULL,p,NULL,sizeof(buf))) {
 		if (!recurse)
-			d_printf("mkdir <dirname>\n");
-		return 1;
+			DEBUG(0,("mkdir <dirname>\n"));
+		return;
 	}
 	pstrcat(mask,p);
 
@@ -1011,7 +974,7 @@ static int cmd_mkdir(void)
 		*ddir2 = 0;
 		
 		pstrcpy(ddir,mask);
-		trim_char(ddir,'.','\0');
+		trim_string(ddir,".",NULL);
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);
@@ -1024,117 +987,89 @@ static int cmd_mkdir(void)
 	} else {
 		do_mkdir(mask);
 	}
-	
-	return 0;
 }
 
 /****************************************************************************
- Show alt name.
-****************************************************************************/
+  show alt name
+  ****************************************************************************/
 
-static int cmd_altname(void)
+static void cmd_altname(void)
 {
 	pstring name;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
-  
+
 	pstrcpy(name,cur_dir);
 
-	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
-		d_printf("altname <file>\n");
-		return 1;
+	if (!next_token(NULL,p,NULL,sizeof(buf))) {
+		DEBUG(0,("altname <file>\n"));
+		return;
 	}
 	pstrcat(name,p);
 
 	do_altname(name);
-
-	return 0;
 }
 
 /****************************************************************************
- Put a single file.
-****************************************************************************/
-
-static int do_put(char *rname, char *lname, BOOL reput)
+  put a single file
+  ****************************************************************************/
+static void do_put(char *rname,char *lname)
 {
 	int fnum;
-	XFILE *f;
-	size_t start = 0;
-	off_t nread = 0;
-	char *buf = NULL;
-	int maxwrite = io_bufsize;
-	int rc = 0;
+	FILE *f;
+	off_t nread=0;
+	char *buf=NULL;
+	int maxwrite=io_bufsize;
 	
 	struct timeval tp_start;
 	GetTimeOfDay(&tp_start);
 
-	if (reput) {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT, DENY_NONE);
-		if (fnum >= 0) {
-			if (!cli_qfileinfo(cli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(cli, fnum, NULL, &start, NULL, NULL, NULL)) {
-				d_printf("getattrib: %s\n",cli_errstr(cli));
-				return 1;
-			}
-		}
-	} else {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
-	}
+	fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
   
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
-		return 1;
+		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
+		return;
 	}
 
 	/* allow files to be piped into smbclient
-	   jdblair 24.jun.98
-
-	   Note that in this case this function will exit(0) rather
-	   than returning. */
+	   jdblair 24.jun.98 */
 	if (!strcmp(lname, "-")) {
-		f = x_stdin;
+		f = stdin;
 		/* size of file is not known */
 	} else {
-		f = x_fopen(lname,O_RDONLY, 0);
-		if (f && reput) {
-			if (x_tseek(f, start, SEEK_SET) == -1) {
-				d_printf("Error seeking local file\n");
-				return 1;
-			}
-		}
+		f = sys_fopen(lname,"r");
 	}
 
 	if (!f) {
-		d_printf("Error opening local file %s\n",lname);
-		return 1;
+		DEBUG(0,("Error opening local file %s\n",lname));
+		return;
 	}
+
   
 	DEBUG(1,("putting file %s as %s ",lname,
 		 rname));
   
 	buf = (char *)malloc(maxwrite);
 	if (!buf) {
-		d_printf("ERROR: Not enough memory!\n");
-		return 1;
+		DEBUG(0, ("ERROR: Not enough memory!\n"));
+		return;
 	}
-	while (!x_feof(f)) {
+	while (!feof(f)) {
 		int n = maxwrite;
 		int ret;
 
-		if ((n = readfile(buf,n,f)) < 1) {
-			if((n == 0) && x_feof(f))
+		if ((n = readfile(buf,1,n,f)) < 1) {
+			if((n == 0) && feof(f))
 				break; /* Empty local file. */
 
-			d_printf("Error reading local file: %s\n", strerror(errno));
-			rc = 1;
+			DEBUG(0,("Error reading local file: %s\n", strerror(errno) ));
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread + start, n);
+		ret = cli_write(cli, fnum, 0, buf, nread, n);
 
 		if (n != ret) {
-			d_printf("Error writing file: %s\n", cli_errstr(cli));
-			rc = 1;
+			DEBUG(0,("Error writing file: %s\n", cli_errstr(cli)));
 			break;
 		} 
 
@@ -1142,17 +1077,14 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	}
 
 	if (!cli_close(cli, fnum)) {
-		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
-		x_fclose(f);
+		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),rname));
+		fclose(f);
 		SAFE_FREE(buf);
-		return 1;
+		return;
 	}
 
 	
-	if (f != x_stdin) {
-		x_fclose(f);
-	}
-
+	fclose(f);
 	SAFE_FREE(buf);
 
 	{
@@ -1171,35 +1103,34 @@ static int do_put(char *rname, char *lname, BOOL reput)
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
 
-	if (f == x_stdin) {
+	if (f == stdin) {
 		cli_shutdown(cli);
 		exit(0);
 	}
-	
-	return rc;
 }
 
-/****************************************************************************
- Put a file.
-****************************************************************************/
+ 
 
-static int cmd_put(void)
+/****************************************************************************
+  put a file
+  ****************************************************************************/
+static void cmd_put(void)
 {
 	pstring lname;
 	pstring rname;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
 	pstrcat(rname,"\\");
   
-	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
-		d_printf("put <filename>\n");
-		return 1;
+	if (!next_token(NULL,p,NULL,sizeof(buf))) {
+		DEBUG(0,("put <filename>\n"));
+		return;
 	}
 	pstrcpy(lname,p);
   
-	if (next_token_nr(NULL,p,NULL,sizeof(buf)))
+	if (next_token(NULL,p,NULL,sizeof(buf)))
 		pstrcat(rname,p);      
 	else
 		pstrcat(rname,lname);
@@ -1212,16 +1143,16 @@ static int cmd_put(void)
 		   jdblair, 24.jun.98 */
 		if (!file_exist(lname,&st) &&
 		    (strcmp(lname,"-"))) {
-			d_printf("%s does not exist\n",lname);
-			return 1;
+			DEBUG(0,("%s does not exist\n",lname));
+			return;
 		}
 	}
 
-	return do_put(rname, lname, False);
+	do_put(rname,lname);
 }
 
 /*************************************
- File list structure.
+  File list structure
 *************************************/
 
 static struct file_list {
@@ -1231,14 +1162,15 @@ static struct file_list {
 } *file_list;
 
 /****************************************************************************
- Free a file_list structure.
+  Free a file_list structure
 ****************************************************************************/
 
 static void free_file_list (struct file_list * list)
 {
 	struct file_list *tmp;
 	
-	while (list) {
+	while (list)
+	{
 		tmp = list;
 		DLIST_REMOVE(list, list);
 		SAFE_FREE(tmp->file_path);
@@ -1247,10 +1179,9 @@ static void free_file_list (struct file_list * list)
 }
 
 /****************************************************************************
- Seek in a directory/file list until you get something that doesn't start with
- the specified name.
-****************************************************************************/
-
+  seek in a directory/file list until you get something that doesn't start with
+  the specified name
+  ****************************************************************************/
 static BOOL seek_list(struct file_list *list, char *name)
 {
 	while (list) {
@@ -1265,22 +1196,18 @@ static BOOL seek_list(struct file_list *list, char *name)
 }
 
 /****************************************************************************
- Set the file selection mask.
-****************************************************************************/
-
-static int cmd_select(void)
+  set the file selection mask
+  ****************************************************************************/
+static void cmd_select(void)
 {
 	pstrcpy(fileselection,"");
-	next_token_nr(NULL,fileselection,NULL,sizeof(fileselection));
-
-	return 0;
+	next_token(NULL,fileselection,NULL,sizeof(fileselection));
 }
 
 /****************************************************************************
   Recursive file matching function act as find
   match must be always set to True when calling this function
 ****************************************************************************/
-
 static int file_find(struct file_list **list, const char *directory, 
 		      const char *expression, BOOL match)
 {
@@ -1290,24 +1217,21 @@ static int file_find(struct file_list **list, const char *directory,
         int ret;
         char *path;
 	BOOL isdir;
-	const char *dname;
+	char *dname;
 
         dir = opendir(directory);
-	if (!dir)
-		return -1;
+	if (!dir) return -1;
 	
         while ((dname = readdirname(dir))) {
-		if (!strcmp("..", dname))
-			continue;
-		if (!strcmp(".", dname))
-			continue;
+		if (!strcmp("..", dname)) continue;
+		if (!strcmp(".", dname)) continue;
 		
 		if (asprintf(&path, "%s/%s", directory, dname) <= 0) {
 			continue;
 		}
 
 		isdir = False;
-		if (!match || !gen_fnmatch(expression, dname)) {
+		if (!match || !ms_fnmatch(expression, dname)) {
 			if (recurse) {
 				ret = stat(path, &statbuf);
 				if (ret == 0) {
@@ -1316,7 +1240,7 @@ static int file_find(struct file_list **list, const char *directory,
 						ret = file_find(list, path, expression, False);
 					}
 				} else {
-					d_printf("file_find: cannot stat file %s\n", path);
+					DEBUG(0,("file_find: cannot stat file %s\n", path));
 				}
 				
 				if (ret == -1) {
@@ -1327,7 +1251,7 @@ static int file_find(struct file_list **list, const char *directory,
 			}
 			entry = (struct file_list *) malloc(sizeof (struct file_list));
 			if (!entry) {
-				d_printf("Out of memory in file_find\n");
+				DEBUG(0,("Out of memory in file_find\n"));
 				closedir(dir);
 				return -1;
 			}
@@ -1344,15 +1268,14 @@ static int file_find(struct file_list **list, const char *directory,
 }
 
 /****************************************************************************
- mput some files.
-****************************************************************************/
-
-static int cmd_mput(void)
+  mput some files
+  ****************************************************************************/
+static void cmd_mput(void)
 {
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 	
-	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	while (next_token(NULL,p,NULL,sizeof(buf))) {
 		int ret;
 		struct file_list *temp_list;
 		char *quest, *lname, *rname;
@@ -1390,7 +1313,7 @@ static int cmd_mput(void)
 						break;		    
 				} else { /* Yes */
 	      				SAFE_FREE(rname);
-					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
+					if (asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
 					if (!cli_chkpath(cli, rname) && 
 					    !do_mkdir(rname)) {
@@ -1415,70 +1338,64 @@ static int cmd_mput(void)
 
 			dos_format(rname);
 
-			do_put(rname, lname, False);
+			do_put(rname, lname);
 		}
 		free_file_list(file_list);
 		SAFE_FREE(quest);
 		SAFE_FREE(lname);
 		SAFE_FREE(rname);
 	}
-
-	return 0;
 }
 
-/****************************************************************************
- Cancel a print job.
-****************************************************************************/
 
-static int do_cancel(int job)
+/****************************************************************************
+  cancel a print job
+  ****************************************************************************/
+static void do_cancel(int job)
 {
 	if (cli_printjob_del(cli, job)) {
-		d_printf("Job %d cancelled\n",job);
-		return 0;
+		printf("Job %d cancelled\n",job);
 	} else {
-		d_printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
-		return 1;
+		printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
 	}
 }
 
-/****************************************************************************
- Cancel a print job.
-****************************************************************************/
 
-static int cmd_cancel(void)
+/****************************************************************************
+  cancel a print job
+  ****************************************************************************/
+static void cmd_cancel(void)
 {
-	pstring buf;
+	fstring buf;
 	int job; 
 
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("cancel <jobid> ...\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+		printf("cancel <jobid> ...\n");
+		return;
 	}
 	do {
 		job = atoi(buf);
 		do_cancel(job);
-	} while (next_token_nr(NULL,buf,NULL,sizeof(buf)));
-	
-	return 0;
+	} while (next_token(NULL,buf,NULL,sizeof(buf)));
 }
 
-/****************************************************************************
- Print a file.
-****************************************************************************/
 
-static int cmd_print(void)
+/****************************************************************************
+  print a file
+  ****************************************************************************/
+static void cmd_print(void)
 {
 	pstring lname;
 	pstring rname;
 	char *p;
 
-	if (!next_token_nr(NULL,lname,NULL, sizeof(lname))) {
-		d_printf("print <filename>\n");
-		return 1;
+	if (!next_token(NULL,lname,NULL, sizeof(lname))) {
+		DEBUG(0,("print <filename>\n"));
+		return;
 	}
 
 	pstrcpy(rname,lname);
-	p = strrchr_m(rname,'/');
+	p = strrchr(rname,'/');
 	if (p) {
 		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)sys_getpid());
 	}
@@ -1487,33 +1404,29 @@ static int cmd_print(void)
 		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)sys_getpid());
 	}
 
-	return do_put(rname, lname, False);
+	do_put(rname, lname);
 }
 
-/****************************************************************************
- Show a print queue entry.
-****************************************************************************/
 
+/****************************************************************************
+ show a print queue entry
+****************************************************************************/
 static void queue_fn(struct print_job_info *p)
 {
-	d_printf("%-6d   %-9d    %s\n", (int)p->id, (int)p->size, p->name);
+	DEBUG(0,("%-6d   %-9d    %s\n", (int)p->id, (int)p->size, p->name));
 }
 
 /****************************************************************************
- Show a print queue.
+ show a print queue
 ****************************************************************************/
-
-static int cmd_queue(void)
+static void cmd_queue(void)
 {
-	cli_print_queue(cli, queue_fn);
-	
-	return 0;
+	cli_print_queue(cli, queue_fn);  
 }
 
 /****************************************************************************
- Delete some files.
+delete some files
 ****************************************************************************/
-
 static void do_del(file_info *finfo)
 {
 	pstring mask;
@@ -1525,18 +1438,17 @@ static void do_del(file_info *finfo)
 		return;
 
 	if (!cli_unlink(cli, mask)) {
-		d_printf("%s deleting remote file %s\n",cli_errstr(cli),mask);
+		DEBUG(0,("%s deleting remote file %s\n",cli_errstr(cli),mask));
 	}
 }
 
 /****************************************************************************
- Delete some files.
+delete some files
 ****************************************************************************/
-
-static int cmd_del(void)
+static void cmd_del(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	uint16 attribute = aSYSTEM | aHIDDEN;
 
 	if (recurse)
@@ -1544,191 +1456,178 @@ static int cmd_del(void)
 	
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("del <filename>\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0,("del <filename>\n"));
+		return;
 	}
 	pstrcat(mask,buf);
 
 	do_list(mask, attribute,do_del,False,False);
-	
-	return 0;
 }
 
 /****************************************************************************
 ****************************************************************************/
-
-static int cmd_open(void)
+static void cmd_open(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("open <filename>\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0,("open <filename>\n"));
+		return;
 	}
 	pstrcat(mask,buf);
 
 	cli_open(cli, mask, O_RDWR, DENY_ALL);
-
-	return 0;
 }
 
 
 /****************************************************************************
- Remove a directory.
+remove a directory
 ****************************************************************************/
-
-static int cmd_rmdir(void)
+static void cmd_rmdir(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
   
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("rmdir <dirname>\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0,("rmdir <dirname>\n"));
+		return;
 	}
 	pstrcat(mask,buf);
 
 	if (!cli_rmdir(cli, mask)) {
-		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(cli),mask);
-	}
-	
-	return 0;
+		DEBUG(0,("%s removing remote directory file %s\n",
+			 cli_errstr(cli),mask));
+	}  
 }
 
 /****************************************************************************
  UNIX hardlink.
 ****************************************************************************/
 
-static int cmd_link(void)
+static void cmd_link(void)
 {
-	pstring oldname,newname;
-	pstring buf,buf2;
+	pstring src,dest;
+	fstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
 	}
 
-	pstrcpy(oldname,cur_dir);
-	pstrcpy(newname,cur_dir);
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
   
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("link <oldname> <newname>\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("link <src> <dest>\n"));
+		return;
 	}
 
-	pstrcat(oldname,buf);
-	pstrcat(newname,buf2);
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
 
-	if (!cli_unix_hardlink(cli, oldname, newname)) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), newname, oldname);
-		return 1;
+	if (!cli_unix_hardlink(cli, src, dest)) {
+		DEBUG(0,("%s linking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest));
+		return;
 	}  
-
-	return 0;
 }
 
 /****************************************************************************
  UNIX symlink.
 ****************************************************************************/
 
-static int cmd_symlink(void)
+static void cmd_symlink(void)
 {
-	pstring oldname,newname;
-	pstring buf,buf2;
+	pstring src,dest;
+	fstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
 	}
 
-	pstrcpy(oldname,cur_dir);
-	pstrcpy(newname,cur_dir);
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("symlink <oldname> <newname>\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("symlink <src> <dest>\n"));
+		return;
 	}
 
-	pstrcat(oldname,buf);
-	pstrcat(newname,buf2);
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
 
-	if (!cli_unix_symlink(cli, oldname, newname)) {
-		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(cli), newname, oldname);
-		return 1;
-	} 
-
-	return 0;
+	if (!cli_unix_symlink(cli, src, dest)) {
+		DEBUG(0,("%s symlinking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest));
+		return;
+	}  
 }
 
 /****************************************************************************
  UNIX chmod.
 ****************************************************************************/
 
-static int cmd_chmod(void)
+static void cmd_chmod(void)
 {
 	pstring src;
 	mode_t mode;
-	pstring buf, buf2;
+	fstring buf, buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
 	}
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("chmod mode file\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("chmod mode file\n"));
+		return;
 	}
 
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
 	if (!cli_unix_chmod(cli, src, mode)) {
-		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli), src, (unsigned int)mode);
-		return 1;
-	} 
-
-	return 0;
+		DEBUG(0,("%s chmod file %s 0%o\n",
+			cli_errstr(cli), src, (unsigned int)mode));
+		return;
+	}  
 }
 
 /****************************************************************************
  UNIX chown.
 ****************************************************************************/
 
-static int cmd_chown(void)
+static void cmd_chown(void)
 {
 	pstring src;
 	uid_t uid;
 	gid_t gid;
-	pstring buf, buf2, buf3;
+	fstring buf, buf2, buf3;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
 	}
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2)) ||
-	    !next_token_nr(NULL,buf3,NULL, sizeof(buf3))) {
-		d_printf("chown uid gid file\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+		DEBUG(0,("chown uid gid file\n"));
+		return;
 	}
 
 	uid = (uid_t)atoi(buf);
@@ -1736,95 +1635,59 @@ static int cmd_chown(void)
 	pstrcat(src,buf3);
 
 	if (!cli_unix_chown(cli, src, uid, gid)) {
-		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(cli), src, (int)uid, (int)gid);
-		return 1;
+		DEBUG(0,("%s chown file %s uid=%d, gid=%d\n",
+			cli_errstr(cli), src, (int)uid, (int)gid));
+		return;
 	} 
-
-	return 0;
 }
 
 /****************************************************************************
- Rename some file.
+rename some files
 ****************************************************************************/
-
-static int cmd_rename(void)
+static void cmd_rename(void)
 {
 	pstring src,dest;
-	pstring buf,buf2;
+	fstring buf,buf2;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("rename <src> <dest>\n");
-		return 1;
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("rename <src> <dest>\n"));
+		return;
 	}
 
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
 	if (!cli_rename(cli, src, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(cli));
-		return 1;
-	}
-	
-	return 0;
+		DEBUG(0,("%s renaming files\n",cli_errstr(cli)));
+		return;
+	}  
 }
 
-/****************************************************************************
- Hard link files using the NT call.
-****************************************************************************/
-
-static int cmd_hardlink(void)
-{
-	pstring src,dest;
-	pstring buf,buf2;
-  
-	pstrcpy(src,cur_dir);
-	pstrcpy(dest,cur_dir);
-	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("hardlink <src> <dest>\n");
-		return 1;
-	}
-
-	pstrcat(src,buf);
-	pstrcat(dest,buf2);
-
-	if (!cli_nt_hardlink(cli, src, dest)) {
-		d_printf("%s doing an NT hard link of files\n",cli_errstr(cli));
-		return 1;
-	}
-	
-	return 0;
-}
 
 /****************************************************************************
- Toggle the prompt flag.
+toggle the prompt flag
 ****************************************************************************/
-
-static int cmd_prompt(void)
+static void cmd_prompt(void)
 {
 	prompt = !prompt;
 	DEBUG(2,("prompting is now %s\n",prompt?"on":"off"));
-	
-	return 1;
 }
 
-/****************************************************************************
- Set the newer than time.
-****************************************************************************/
 
-static int cmd_newer(void)
+/****************************************************************************
+set the newer than time
+****************************************************************************/
+static void cmd_newer(void)
 {
-	pstring buf;
+	fstring buf;
 	BOOL ok;
 	SMB_STRUCT_STAT sbuf;
 
-	ok = next_token_nr(NULL,buf,NULL,sizeof(buf));
+	ok = next_token(NULL,buf,NULL,sizeof(buf));
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
@@ -1833,77 +1696,64 @@ static int cmd_newer(void)
 		newer_than = 0;
 	}
 
-	if (ok && newer_than == 0) {
-		d_printf("Error setting newer-than time\n");
-		return 1;
-	}
-
-	return 0;
+	if (ok && newer_than == 0)
+		DEBUG(0,("Error setting newer-than time\n"));
 }
 
 /****************************************************************************
- Set the archive level.
+set the archive level
 ****************************************************************************/
-
-static int cmd_archive(void)
+static void cmd_archive(void)
 {
-	pstring buf;
+	fstring buf;
 
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(NULL,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
 	} else
-		d_printf("Archive level is %d\n",archive_level);
-
-	return 0;
+		DEBUG(0,("Archive level is %d\n",archive_level));
 }
 
 /****************************************************************************
- Toggle the lowercaseflag.
+toggle the lowercaseflag
 ****************************************************************************/
-
-static int cmd_lowercase(void)
+static void cmd_lowercase(void)
 {
 	lowercase = !lowercase;
 	DEBUG(2,("filename lowercasing is now %s\n",lowercase?"on":"off"));
-
-	return 0;
 }
 
-/****************************************************************************
- Toggle the recurse flag.
-****************************************************************************/
 
-static int cmd_recurse(void)
+
+
+/****************************************************************************
+toggle the recurse flag
+****************************************************************************/
+static void cmd_recurse(void)
 {
 	recurse = !recurse;
 	DEBUG(2,("directory recursion is now %s\n",recurse?"on":"off"));
-
-	return 0;
 }
 
 /****************************************************************************
- Toggle the translate flag.
+toggle the translate flag
 ****************************************************************************/
-
-static int cmd_translate(void)
+static void cmd_translate(void)
 {
 	translation = !translation;
 	DEBUG(2,("CR/LF<->LF and print text translation now %s\n",
 		 translation?"on":"off"));
-
-	return 0;
 }
 
-/****************************************************************************
- Do a printmode command.
-****************************************************************************/
 
-static int cmd_printmode(void)
+/****************************************************************************
+do a printmode command
+****************************************************************************/
+static void cmd_printmode(void)
 {
 	fstring buf;
 	fstring mode;
 
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(NULL,buf,NULL,sizeof(buf))) {
 		if (strequal(buf,"text")) {
 			printmode = 0;      
 		} else {
@@ -1914,7 +1764,8 @@ static int cmd_printmode(void)
 		}
 	}
 
-	switch(printmode) {
+	switch(printmode)
+		{
 		case 0: 
 			fstrcpy(mode,"text");
 			break;
@@ -1924,96 +1775,27 @@ static int cmd_printmode(void)
 		default: 
 			slprintf(mode,sizeof(mode)-1,"%d",printmode);
 			break;
-	}
+		}
 	
 	DEBUG(2,("the printmode is now %s\n",mode));
-
-	return 0;
 }
 
 /****************************************************************************
- Do the lcd command.
- ****************************************************************************/
-
-static int cmd_lcd(void)
+do the lcd command
+****************************************************************************/
+static void cmd_lcd(void)
 {
-	pstring buf;
+	fstring buf;
 	pstring d;
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
+	if (next_token(NULL,buf,NULL,sizeof(buf)))
 		chdir(buf);
 	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
-
-	return 0;
 }
 
 /****************************************************************************
- Get a file restarting at end of local file.
- ****************************************************************************/
-
-static int cmd_reget(void)
-{
-	pstring local_name;
-	pstring remote_name;
-	char *p;
-
-	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, "\\");
-	
-	p = remote_name + strlen(remote_name);
-	
-	if (!next_token_nr(NULL, p, NULL, sizeof(remote_name) - strlen(remote_name))) {
-		d_printf("reget <filename>\n");
-		return 1;
-	}
-	pstrcpy(local_name, p);
-	dos_clean_name(remote_name);
-	
-	next_token_nr(NULL, local_name, NULL, sizeof(local_name));
-	
-	return do_get(remote_name, local_name, True);
-}
-
-/****************************************************************************
- Put a file restarting at end of local file.
- ****************************************************************************/
-
-static int cmd_reput(void)
-{
-	pstring local_name;
-	pstring remote_name;
-	pstring buf;
-	char *p = buf;
-	SMB_STRUCT_STAT st;
-	
-	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, "\\");
-  
-	if (!next_token_nr(NULL, p, NULL, sizeof(buf))) {
-		d_printf("reput <filename>\n");
-		return 1;
-	}
-	pstrcpy(local_name, p);
-  
-	if (!file_exist(local_name, &st)) {
-		d_printf("%s does not exist\n", local_name);
-		return 1;
-	}
-
-	if (next_token_nr(NULL, p, NULL, sizeof(buf)))
-		pstrcat(remote_name, p);
-	else
-		pstrcat(remote_name, local_name);
-	
-	dos_clean_name(remote_name);
-
-	return do_put(remote_name, local_name, True);
-}
-
-/****************************************************************************
- List a share name.
- ****************************************************************************/
-
+list a share name
+****************************************************************************/
 static void browse_fn(const char *name, uint32 m, 
                       const char *comment, void *state)
 {
@@ -2032,129 +1814,54 @@ static void browse_fn(const char *name, uint32 m,
           case STYPE_IPC:
             fstrcpy(typestr,"IPC"); break;
         }
-	/* FIXME: If the remote machine returns non-ascii characters
-	   in any of these fields, they can corrupt the output.  We
-	   should remove them. */
-	if (!grepable) {
-		d_printf("\t%-15s %-10.10s%s\n",
-               		name,typestr,comment);
-	} else {
-		d_printf ("%s|%s|%s\n",typestr,name,comment);
-	}
+
+        printf("\t%-15.15s%-10.10s%s\n",
+               name, typestr,comment);
 }
 
-/****************************************************************************
- Try and browse available connections on a host.
-****************************************************************************/
 
+/****************************************************************************
+try and browse available connections on a host
+****************************************************************************/
 static BOOL browse_host(BOOL sort)
 {
 	int ret;
-	if (!grepable) {
-	        d_printf("\n\tSharename       Type      Comment\n");
-	        d_printf("\t---------       ----      -------\n");
-	}
+
+        printf("\n\tSharename      Type      Comment\n");
+        printf("\t---------      ----      -------\n");
 
 	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
-		d_printf("Error returning browse list: %s\n", cli_errstr(cli));
+		printf("Error returning browse list: %s\n", cli_errstr(cli));
 
 	return (ret != -1);
 }
 
 /****************************************************************************
- List a server name.
+list a server name
 ****************************************************************************/
-
 static void server_fn(const char *name, uint32 m, 
                       const char *comment, void *state)
 {
-	
-	if (!grepable){
-		d_printf("\t%-16s     %s\n", name, comment);
-	} else {
-		d_printf("%s|%s|%s\n",(char *)state, name, comment);
-	}
+        printf("\t%-16.16s     %s\n", name, comment);
 }
 
 /****************************************************************************
- Try and browse available connections on a host.
+try and browse available connections on a host
 ****************************************************************************/
-
-static BOOL list_servers(const char *wk_grp)
+static BOOL list_servers(char *wk_grp)
 {
-	if (!cli->server_domain)
-		return False;
+	if (!cli->server_domain) return False;
 
-	if (!grepable) {
-        	d_printf("\n\tServer               Comment\n");
-        	d_printf("\t---------            -------\n");
-	};
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn,
-			  "Server");
+        printf("\n\tServer               Comment\n");
+        printf("\t---------            -------\n");
 
-	if (!grepable) {
-	        d_printf("\n\tWorkgroup            Master\n");
-	        d_printf("\t---------            -------\n");
-	}; 
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn, NULL);
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
-			  server_fn, "Workgroup");
+        printf("\n\tWorkgroup            Master\n");
+        printf("\t---------            -------\n");
+
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn, NULL);
 	return True;
-}
-
-/****************************************************************************
- Print or set current VUID
-****************************************************************************/
-
-static int cmd_vuid(void)
-{
-	fstring buf;
-	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("Current VUID is %d\n", cli->vuid);
-		return 0;
-	}
-
-	cli->vuid = atoi(buf);
-	return 0;
-}
-
-/****************************************************************************
- Setup a new VUID, by issuing a session setup
-****************************************************************************/
-
-static int cmd_logon(void)
-{
-	pstring l_username, l_password;
-	pstring buf,buf2;
-  
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("logon <username> [<password>]\n");
-		return 0;
-	}
-
-	pstrcpy(l_username, buf);
-
-	if (!next_token_nr(NULL,buf2,NULL,sizeof(buf))) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			pstrcpy(l_password, pass);
-			got_pass = 1;
-		}
-	} else {
-		pstrcpy(l_password, buf2);
-	}
-
-	if (!cli_session_setup(cli, l_username, 
-			       l_password, strlen(l_password),
-			       l_password, strlen(l_password),
-			       lp_workgroup())) {
-		d_printf("session setup failed: %s\n", cli_errstr(cli));
-		return -1;
-	}
-
-	d_printf("Current VUID is %d\n", cli->vuid);
-	return 0;
 }
 
 /* Some constants for completing filename arguments */
@@ -2168,13 +1875,14 @@ static int cmd_logon(void)
  *       field is NULL, and NULL in that field is used in process_tok()
  *       (below) to indicate the end of the list.  crh
  */
-static struct
+struct
 {
   const char *name;
-  int (*fn)(void);
+  void (*fn)(void);
   const char *description;
-  char compl_args[2];      /* Completion argument info */
-} commands[] = {
+  const char compl_args[2];      /* Completion argument info */
+} commands[] = 
+{
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
@@ -2188,11 +1896,10 @@ static struct
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
-  {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
-  {"link",cmd_link,"<oldname> <newname> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
@@ -2213,30 +1920,26 @@ static struct
   {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
-  {"reget",cmd_reget,"<remote name> [local name] get a file restarting at end of local file",{COMPL_REMOTE,COMPL_LOCAL}},
   {"rename",cmd_rename,"<src> <dest> rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"reput",cmd_reput,"<local name> [remote name] put a file restarting at end of remote file",{COMPL_LOCAL,COMPL_REMOTE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
-  {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
-  {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
-  {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
-  {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
-  
+  {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
+
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
-  {NULL,NULL,NULL,{COMPL_NONE,COMPL_NONE}}
+  {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
 
-/*******************************************************************
- Lookup a command string in the list of commands, including 
- abbreviations.
-******************************************************************/
 
-static int process_tok(pstring tok)
+/*******************************************************************
+  lookup a command string in the list of commands, including 
+  abbreviations
+  ******************************************************************/
+static int process_tok(fstring tok)
 {
 	int i = 0, matches = 0;
 	int cmd=0;
@@ -2263,59 +1966,54 @@ static int process_tok(pstring tok)
 }
 
 /****************************************************************************
- Help.
+help
 ****************************************************************************/
-
-static int cmd_help(void)
+static void cmd_help(void)
 {
 	int i=0,j;
-	pstring buf;
+	fstring buf;
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(NULL,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
-			d_printf("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description);
+			DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
 	} else {
 		while (commands[i].description) {
 			for (j=0; commands[i].description && (j<5); j++) {
-				d_printf("%-15s",commands[i].name);
+				DEBUG(0,("%-15s",commands[i].name));
 				i++;
 			}
-			d_printf("\n");
+			DEBUG(0,("\n"));
 		}
 	}
-	return 0;
 }
 
 /****************************************************************************
- Process a -c command string.
+process a -c command string
 ****************************************************************************/
-
-static int process_command_string(char *cmd)
+static void process_command_string(char *cmd)
 {
 	pstring line;
 	const char *ptr;
-	int rc = 0;
 
 	/* establish the connection if not already */
 	
 	if (!cli) {
 		cli = do_connect(desthost, service);
 		if (!cli)
-			return 0;
+			return;
 	}
 	
 	while (cmd[0] != '\0')    {
 		char *p;
-		pstring tok;
+		fstring tok;
 		int i;
 		
-		if ((p = strchr_m(cmd, ';')) == 0) {
+		if ((p = strchr(cmd, ';')) == 0) {
 			strncpy(line, cmd, 999);
 			line[1000] = '\0';
 			cmd += strlen(cmd);
 		} else {
-			if (p - cmd > 999)
-				p = cmd + 999;
+			if (p - cmd > 999) p = cmd + 999;
 			strncpy(line, cmd, p - cmd);
 			line[p - cmd] = '\0';
 			cmd = p + 1;
@@ -2323,205 +2021,56 @@ static int process_command_string(char *cmd)
 		
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
 		
 		if ((i = process_tok(tok)) >= 0) {
-			rc = commands[i].fn();
+			commands[i].fn();
 		} else if (i == -2) {
-			d_printf("%s: command abbreviation ambiguous\n",tok);
+			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
 		} else {
-			d_printf("%s: command not found\n",tok);
+			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
-	
-	return rc;
 }	
 
-#define MAX_COMPLETIONS 100
-
-typedef struct {
-	pstring dirmask;
-	char **matches;
-	int count, samelen;
-	const char *text;
-	int len;
-} completion_remote_t;
-
-static void completion_remote_filter(file_info *f, const char *mask, void *state)
-{
-	completion_remote_t *info = (completion_remote_t *)state;
-
-	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (strcmp(f->name, ".") != 0) && (strcmp(f->name, "..") != 0)) {
-		if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
-			info->matches[info->count] = strdup(f->name);
-		else {
-			pstring tmp;
-
-			if (info->dirmask[0] != 0)
-				pstrcpy(tmp, info->dirmask);
-			else
-				tmp[0] = 0;
-			pstrcat(tmp, f->name);
-			if (f->mode & aDIR)
-				pstrcat(tmp, "/");
-			info->matches[info->count] = strdup(tmp);
-		}
-		if (info->matches[info->count] == NULL)
-			return;
-		if (f->mode & aDIR)
-			smb_readline_ca_char(0);
-
-		if (info->count == 1)
-			info->samelen = strlen(info->matches[info->count]);
-		else
-			while (strncmp(info->matches[info->count], info->matches[info->count-1], info->samelen) != 0)
-				info->samelen--;
-		info->count++;
-	}
-}
-
-static char **remote_completion(const char *text, int len)
-{
-	pstring dirmask;
-	int i;
-	completion_remote_t info = { "", NULL, 1, 0, NULL, 0 };
-
-	/* can't have non-static intialisation on Sun CC, so do it
-	   at run time here */
-	info.samelen = len;
-	info.text = text;
-	info.len = len;
-		
-	if (len >= PATH_MAX)
-		return(NULL);
-
-	info.matches = (char **)malloc(sizeof(info.matches[0])*MAX_COMPLETIONS);
-	if (!info.matches) return NULL;
-	info.matches[0] = NULL;
-
-	for (i = len-1; i >= 0; i--)
-		if ((text[i] == '/') || (text[i] == '\\'))
-			break;
-	info.text = text+i+1;
-	info.samelen = info.len = len-i-1;
-
-	if (i > 0) {
-		strncpy(info.dirmask, text, i+1);
-		info.dirmask[i+1] = 0;
-		pstr_sprintf(dirmask, "%s%*s*", cur_dir, i-1, text);
-	} else
-		pstr_sprintf(dirmask, "%s*", cur_dir);
-
-	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
-		goto cleanup;
-
-	if (info.count == 2)
-		info.matches[0] = strdup(info.matches[1]);
-	else {
-		info.matches[0] = malloc(info.samelen+1);
-		if (!info.matches[0])
-			goto cleanup;
-		strncpy(info.matches[0], info.matches[1], info.samelen);
-		info.matches[0][info.samelen] = 0;
-	}
-	info.matches[info.count] = NULL;
-	return info.matches;
-
-cleanup:
-	for (i = 0; i < info.count; i++)
-		free(info.matches[i]);
-	free(info.matches);
-	return NULL;
-}
-
+/****************************************************************************
+handle completion of commands for readline
+****************************************************************************/
 static char **completion_fn(const char *text, int start, int end)
 {
-	smb_readline_ca_char(' ');
+#define MAX_COMPLETIONS 100
+	char **matches;
+	int i, count=0;
 
-	if (start) {
-		const char *buf, *sp;
-		int i;
-		char compl_type;
+	/* for words not at the start of the line fallback to filename completion */
+	if (start) return NULL;
 
-		buf = smb_readline_get_line_buffer();
-		if (buf == NULL)
-			return NULL;
-		
-		sp = strchr(buf, ' ');
-		if (sp == NULL)
-			return NULL;
-		
-		for (i = 0; commands[i].name; i++)
-			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
-				break;
-		if (commands[i].name == NULL)
-			return NULL;
+	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	if (!matches) return NULL;
 
-		while (*sp == ' ')
-			sp++;
+	matches[count++] = strdup(text);
+	if (!matches[0]) return NULL;
 
-		if (sp == (buf + start))
-			compl_type = commands[i].compl_args[0];
-		else
-			compl_type = commands[i].compl_args[1];
-
-		if (compl_type == COMPL_REMOTE)
-			return remote_completion(text, end - start);
-		else /* fall back to local filename completion */
-			return NULL;
-	} else {
-		char **matches;
-		int i, len, samelen, count=1;
-
-		matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
-		if (!matches) return NULL;
-		matches[0] = NULL;
-
-		len = strlen(text);
-		for (i=0;commands[i].fn && count < MAX_COMPLETIONS-1;i++) {
-			if (strncmp(text, commands[i].name, len) == 0) {
-				matches[count] = strdup(commands[i].name);
-				if (!matches[count])
-					goto cleanup;
-				if (count == 1)
-					samelen = strlen(matches[count]);
-				else
-					while (strncmp(matches[count], matches[count-1], samelen) != 0)
-						samelen--;
-				count++;
-			}
+	for (i=0;commands[i].fn && count < MAX_COMPLETIONS-1;i++) {
+		if (strncmp(text, commands[i].name, strlen(text)) == 0) {
+			matches[count] = strdup(commands[i].name);
+			if (!matches[count]) return NULL;
+			count++;
 		}
-
-		switch (count) {
-		case 0:	/* should never happen */
-		case 1:
-			goto cleanup;
-		case 2:
-			matches[0] = strdup(matches[1]);
-			break;
-		default:
-			matches[0] = malloc(samelen+1);
-			if (!matches[0])
-				goto cleanup;
-			strncpy(matches[0], matches[1], samelen);
-			matches[0][samelen] = 0;
-		}
-		matches[count] = NULL;
-		return matches;
-
-cleanup:
-		for (i = 0; i < count; i++)
-			free(matches[i]);
-
-		free(matches);
-		return NULL;
 	}
+
+	if (count == 2) {
+		SAFE_FREE(matches[0]);
+		matches[0] = strdup(matches[1]);
+	}
+	matches[count] = NULL;
+	return matches;
 }
 
-/****************************************************************************
- Make sure we swallow keepalives during idle time.
-****************************************************************************/
 
+/****************************************************************************
+make sure we swallow keepalives during idle time
+****************************************************************************/
 static void readline_callback(void)
 {
 	fd_set fds;
@@ -2531,13 +2080,11 @@ static void readline_callback(void)
 
 	t = time(NULL);
 
-	if (t - last_t < 5)
-		return;
+	if (t - last_t < 5) return;
 
 	last_t = t;
 
  again:
-
 	if (cli->fd == -1)
 		return;
 
@@ -2560,28 +2107,25 @@ static void readline_callback(void)
 	cli_chkpath(cli, "\\");
 }
 
-/****************************************************************************
- Process commands on stdin.
-****************************************************************************/
 
+/****************************************************************************
+process commands on stdin
+****************************************************************************/
 static void process_stdin(void)
 {
 	const char *ptr;
 
 	while (1) {
-		pstring tok;
-		pstring the_prompt;
-		char *cline;
-		pstring line;
+		fstring tok;
+		fstring the_prompt;
+		char *line;
 		int i;
 		
 		/* display a prompt */
 		slprintf(the_prompt, sizeof(the_prompt)-1, "smb: %s> ", cur_dir);
-		cline = smb_readline(the_prompt, readline_callback, completion_fn);
-			
-		if (!cline) break;
-		
-		pstrcpy(line, cline);
+		line = smb_readline(the_prompt, readline_callback, completion_fn);
+
+		if (!line) break;
 
 		/* special case - first char is ! */
 		if (*line == '!') {
@@ -2591,37 +2135,37 @@ static void process_stdin(void)
       
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
 
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			d_printf("%s: command abbreviation ambiguous\n",tok);
+			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
 		} else {
-			d_printf("%s: command not found\n",tok);
+			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
 }
 
-/***************************************************** 
- Return a connection to a server.
-*******************************************************/
 
-static struct cli_state *do_connect(const char *server, const char *share)
+/***************************************************** 
+return a connection to a server
+*******************************************************/
+struct cli_state *do_connect(const char *server, const char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
-	pstring servicename;
+	fstring servicename;
 	char *sharename;
 	
 	/* make a copy so we don't modify the global string 'service' */
-	pstrcpy(servicename, share);
+	safe_strcpy(servicename, share, sizeof(servicename)-1);
 	sharename = servicename;
 	if (*sharename == '\\') {
 		server = sharename+2;
-		sharename = strchr_m(server,'\\');
+		sharename = strchr(server,'\\');
 		if (!sharename) return NULL;
 		*sharename = 0;
 		sharename++;
@@ -2631,7 +2175,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
@@ -2639,23 +2183,22 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) == 0) ||
 	    !cli_connect(c, server_n, &ip)) {
-		d_printf("Connection to %s failed\n", server_n);
+		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
 
 	c->protocol = max_protocol;
-	c->use_kerberos = use_kerberos;
-	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
-		
+	if (timeout_msec)
+		c->timeout = timeout_msec;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
-		d_printf("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c));
+		DEBUG(0,("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(c)));
 		cli_shutdown(c);
-		if ((p=strchr_m(called.name, '.'))) {
+		if ((p=strchr(called.name, '.'))) {
 			*p = 0;
 			goto again;
 		}
@@ -2669,7 +2212,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	DEBUG(4,(" session request ok\n"));
 
 	if (!cli_negprot(c)) {
-		d_printf("protocol negotiation failed\n");
+		DEBUG(0,("protocol negotiation failed\n"));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -2678,39 +2221,40 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		char *pass = getpass("Password: ");
 		if (pass) {
 			pstrcpy(password, pass);
-			got_pass = 1;
 		}
 	}
 
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       lp_workgroup())) {
+			       workgroup)) {
 		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
-			d_printf("session setup failed: %s\n", cli_errstr(c));
-			if (NT_STATUS_V(cli_nt_error(c)) == 
-			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
-				d_printf("did you forget to run kinit?\n");
+		if (password[0] || !username[0] || 
+		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
+			DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 			cli_shutdown(c);
 			return NULL;
 		}
-		d_printf("Anonymous login successful\n");
+		DEBUG(0,("Anonymous login successful\n"));
 	}
 
-	if (*c->server_domain) {
+	/*
+	 * These next two lines are needed to emulate
+	 * old client behaviour for people who have
+	 * scripts based on client output.
+	 * QUESTION ? Do we want to have a 'client compatibility
+	 * mode to turn these on/off ? JRA.
+	 */
+
+	if (*c->server_domain || *c->server_os || *c->server_type)
 		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 			c->server_domain,c->server_os,c->server_type));
-	} else if (*c->server_os || *c->server_type){
-		DEBUG(1,("OS=[%s] Server=[%s]\n",
-			 c->server_os,c->server_type));
-	}		
+	
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, sharename, "?????",
 			    password, strlen(password)+1)) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -2720,35 +2264,128 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	return c;
 }
 
+
 /****************************************************************************
- Process commands from the client.
+  process commands from the client
 ****************************************************************************/
-
-static int process(char *base_directory)
+static BOOL process(char *base_directory)
 {
-	int rc = 0;
-
 	cli = do_connect(desthost, service);
 	if (!cli) {
-		return 1;
+		return(False);
 	}
 
 	if (*base_directory) do_cd(base_directory);
 	
 	if (cmdstr) {
-		rc = process_command_string(cmdstr);
+		process_command_string(cmdstr);
 	} else {
 		process_stdin();
 	}
   
 	cli_shutdown(cli);
-	return rc;
+	return(True);
 }
 
 /****************************************************************************
- Handle a -L query.
+usage on the program
 ****************************************************************************/
+static void usage(char *pname)
+{
+  DEBUG(0,("Usage: %s service <password> [options]", pname));
 
+  DEBUG(0,("\nVersion %s\n",VERSION));
+  DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
+  DEBUG(0,("\t-O socket_options     socket options to use\n"));
+  DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
+  DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
+  DEBUG(0,("\t-i scope              use this NetBIOS scope\n"));
+  DEBUG(0,("\t-N                    don't ask for a password\n"));
+  DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
+  DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
+  DEBUG(0,("\t-P                    connect to service as a printer\n"));
+  DEBUG(0,("\t-p port               connect to the specified port\n"));
+  DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
+  DEBUG(0,("\t-h                    Print this help message.\n"));
+  DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
+  DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
+  DEBUG(0,("\t-U username           set the network username\n"));
+  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
+  DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
+  DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
+  DEBUG(0,("\t-A filename           get the credentials from a file\n"));
+  DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
+  DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
+  DEBUG(0,("\t-D directory          start from directory\n"));
+  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
+  DEBUG(0,("\t-b xmit/send buffer   changes the transmit/send buffer (default: 65520)\n"));
+  DEBUG(0,("\n"));
+}
+
+
+/****************************************************************************
+get a password from a a file or file descriptor
+exit on failure
+****************************************************************************/
+static void get_password_file(void)
+{
+	int fd = -1;
+	char *p;
+	BOOL close_it = False;
+	pstring spec;
+	char pass[128];
+		
+	if ((p = getenv("PASSWD_FD")) != NULL) {
+		pstrcpy(spec, "descriptor ");
+		pstrcat(spec, p);
+		sscanf(p, "%d", &fd);
+		close_it = False;
+	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
+		fd = sys_open(p, O_RDONLY, 0);
+		pstrcpy(spec, p);
+		if (fd < 0) {
+			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
+				spec, strerror(errno));
+			exit(1);
+		}
+		close_it = True;
+	}
+
+	for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
+	    p && p - pass < sizeof(pass);) {
+		switch (read(fd, p, 1)) {
+		case 1:
+			if (*p != '\n' && *p != '\0') {
+				*++p = '\0'; /* advance p, and null-terminate pass */
+				break;
+			}
+		case 0:
+			if (p - pass) {
+				*p = '\0'; /* null-terminate it, just in case... */
+				p = NULL; /* then force the loop condition to become false */
+				break;
+			} else {
+				fprintf(stderr, "Error reading password from file %s: %s\n",
+					spec, "empty password\n");
+				exit(1);
+			}
+			
+		default:
+			fprintf(stderr, "Error reading password from file %s: %s\n",
+				spec, strerror(errno));
+			exit(1);
+		}
+	}
+	pstrcpy(password, pass);
+	if (close_it)
+		close(fd);
+}	
+
+
+
+/****************************************************************************
+handle a -L query
+****************************************************************************/
 static int do_host_query(char *query_host)
 {
 	cli = do_connect(query_host, "IPC$");
@@ -2756,23 +2393,7 @@ static int do_host_query(char *query_host)
 		return 1;
 
 	browse_host(True);
-
-	if (port != 139) {
-
-		/* Workgroups simply don't make sense over anything
-		   else but port 139... */
-
-		cli_shutdown(cli);
-		port = 139;
-		cli = do_connect(query_host, "IPC$");
-	}
-
-	if (cli == NULL) {
-		d_printf("NetBIOS over TCP disabled -- no workgroup available\n");
-		return 1;
-	}
-
-	list_servers(lp_workgroup());
+	list_servers(workgroup);
 
 	cli_shutdown(cli);
 	
@@ -2781,9 +2402,8 @@ static int do_host_query(char *query_host)
 
 
 /****************************************************************************
- Handle a tar operation.
+handle a tar operation
 ****************************************************************************/
-
 static int do_tar_op(char *base_directory)
 {
 	int ret;
@@ -2814,27 +2434,30 @@ static int do_message_op(void)
 {
 	struct in_addr ip;
 	struct nmb_name called, calling;
-	fstring server_name;
-	char name_type_hex[10];
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	zero_ip(&ip);
+
+	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
-	fstrcpy(server_name, desthost);
-	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
-	fstrcat(server_name, name_type_hex);
+	zero_ip(&ip);
+	if (have_ip)
+		ip = dest_ip;
+	else if (name_type != 0x20) {
+		/* We must do our own resolve name here as the nametype is #0x3, not #0x20. */
+		if (!resolve_name(desthost, &ip, name_type)) {
+			DEBUG(0,("Cannot resolve name %s#0x%x\n", desthost, name_type));
+			return 1;
+		}
+	}
 
-        zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
-
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
-	    !cli_connect(cli, server_name, &ip)) {
-		d_printf("Connection to %s failed\n", desthost);
+	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) == 0) || !cli_connect(cli, desthost, &ip)) {
+		DEBUG(0,("Connection to %s failed\n", desthost));
 		return 1;
 	}
 
 	if (!cli_session_request(cli, &calling, &called)) {
-		d_printf("session request failed\n");
+		DEBUG(0,("session request failed\n"));
 		cli_shutdown(cli);
 		return 1;
 	}
@@ -2849,44 +2472,22 @@ static int do_message_op(void)
 /****************************************************************************
   main program
 ****************************************************************************/
-
  int main(int argc,char *argv[])
 {
-	extern BOOL AllowDebugChange;
-	extern BOOL override_logfile;
-	pstring base_directory;
+	fstring base_directory;
+	char *pname = argv[0];
 	int opt;
+	extern FILE *dbf;
+	extern char *optarg;
+	extern int optind;
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
+	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
-	static const char *new_name_resolve_order = NULL;
-	poptContext pc;
+	pstring new_name_resolve_order;
+	pstring logfile;
 	char *p;
-	int rc = 0;
-	fstring new_workgroup;
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-
-		{ "name-resolve", 'R', POPT_ARG_STRING, &new_name_resolve_order, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
-		{ "message", 'M', POPT_ARG_STRING, NULL, 'M', "Send message", "HOST" },
-		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
-		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
-		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
-		{ "terminal", 't', POPT_ARG_STRING, NULL, 't', "Terminal I/O code {sjis|euc|jis7|jis8|junet|hex}", "CODE" },
-		{ "max-protocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set the max protocol level", "LEVEL" },
-		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
-		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
-		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
-		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
-		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
-		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
-		POPT_COMMON_SAMBA
-		POPT_COMMON_CONNECTION
-		POPT_COMMON_CREDENTIALS
-		POPT_TABLEEND
-	};
-	
 
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
@@ -2896,155 +2497,322 @@ static int do_message_op(void)
 
 	*query_host = 0;
 	*base_directory = 0;
-	
-	/* initialize the workgroup name so we can determine whether or 
-	   not it was set by a command line option */
-	   
-	set_global_myworkgroup( "" );
 
-        /* set default debug level to 0 regardless of what smb.conf sets */
-	setup_logging( "smbclient", True );
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
+	*new_name_resolve_order = 0;
 
-	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
-				POPT_CONTEXT_KEEP_FIRST);
-	poptSetOtherOptionHelp(pc, "service <password>");
+	DEBUGLEVEL = 2;
+	AllowDebugChange = False;
+ 
+	setup_logging(pname,True);
+
+	/*
+	 * If the -E option is given, be careful not to clobber stdout
+	 * before processing the options.  28.Feb.99, richard@hacom.nl.
+	 * Also pre-parse the -s option to get the service file name.
+	 */
+
+	for (opt = 1; opt < argc; opt++) {
+		if (strcmp(argv[opt], "-E") == 0)
+			dbf = stderr;
+		else if(strncmp(argv[opt], "-s", 2) == 0) {
+			if(argv[opt][2] != '\0')
+				pstrcpy(servicesf, &argv[opt][2]);
+			else if(argv[opt+1] != NULL) {
+				/*
+				 * At least one more arg left.
+				 */
+				pstrcpy(servicesf, argv[opt+1]);
+			} else {
+				usage(pname);
+				exit(1);
+			}
+		}
+		else if(strncmp(argv[opt], "-d", 2) == 0) {
+			if(argv[opt][2] != '\0') {
+				if (argv[opt][2] == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(&argv[opt][2]);
+			} else if(argv[opt+1] != NULL) {
+				/*
+				 * At least one more arg left.
+				 */
+				if (argv[opt+1][0] == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(argv[opt+1]);
+			} else {
+				usage(pname);
+				exit(1);
+			}
+		}
+	}
+
+	TimeInit();
+	charset_initialise();
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
-	while ((opt = poptGetNextOpt(pc)) != -1) {
+	if (!lp_load(servicesf,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+	}
+	
+	codepage_initialise(lp_client_code_page());
+
+#ifdef WITH_SSL
+	sslutil_init(0);
+#endif
+
+	pstrcpy(workgroup,lp_workgroup());
+
+	load_interfaces();
+
+	if (getenv("USER")) {
+		pstrcpy(username,getenv("USER"));
+
+		/* modification to support userid%passwd syntax in the USER var
+		   25.Aug.97, jdblair@uab.edu */
+
+		if ((p=strchr(username,'%'))) {
+			*p = 0;
+			pstrcpy(password,p+1);
+			got_pass = True;
+			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
+		}
+		strupper(username);
+	}
+
+	/* modification to support PASSWD environmental var
+	   25.Aug.97, jdblair@uab.edu */
+	if (getenv("PASSWD")) {
+		pstrcpy(password,getenv("PASSWD"));
+		got_pass = True;
+	}
+
+	if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
+		get_password_file();
+		got_pass = True;
+	}
+
+	if (*username == 0 && getenv("LOGNAME")) {
+		pstrcpy(username,getenv("LOGNAME"));
+		strupper(username);
+	}
+
+	if (*username == 0) {
+		pstrcpy(username,"GUEST");
+	}
+
+	if (argc < 2) {
+		usage(pname);
+		exit(1);
+	}
+  
+	if (*argv[1] != '-') {
+		pstrcpy(service,argv[1]);  
+		/* Convert any '/' characters in the service name to '\' characters */
+		string_replace( service, '/','\\');
+		argc--;
+		argv++;
+		
+		if (count_chars(service,'\\') < 3) {
+			usage(pname);
+			printf("\n%s: Not enough '\\' characters in service\n",service);
+			exit(1);
+		}
+
+		if (argc > 1 && (*argv[1] != '-')) {
+			got_pass = True;
+			pstrcpy(password,argv[1]);  
+			memset(argv[1],'X',strlen(argv[1]));
+			argc--;
+			argv++;
+		}
+	}
+
+	while ((opt = 
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:z:")) != EOF) {
 		switch (opt) {
+		case 'z':
+			timeout_msec = atoi(optarg);
+			break;
+		case 's':
+			pstrcpy(servicesf, optarg);
+			break;
+		case 'O':
+			pstrcpy(user_socket_options,optarg);
+			break;	
+		case 'R':
+			pstrcpy(new_name_resolve_order, optarg);
+			break;
 		case 'M':
-			/* Messages are sent to NetBIOS name type 0x3
-			 * (Messenger Service).  Make sure we default
-			 * to port 139 instead of port 445. srl,crh
-			 */
-			name_type = 0x03; 
-			pstrcpy(desthost,poptGetOptArg(pc));
-			if( 0 == port )
-				port = 139;
- 			message = True;
- 			break;
+			name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
+			pstrcpy(desthost,optarg);
+			message = True;
+			break;
+		case 'i':
+			{
+				extern pstring global_scope;
+				pstrcpy(global_scope,optarg);
+				strupper(global_scope);
+			}
+			break;
+		case 'N':
+			got_pass = True;
+			break;
+		case 'n':
+			pstrcpy(global_myname,optarg);
+			break;
+		case 'd':
+			if (*optarg == 'A')
+				DEBUGLEVEL = 10000;
+			else
+				DEBUGLEVEL = atoi(optarg);
+			break;
+		case 'P':
+			/* not needed anymore */
+			break;
+		case 'p':
+			port = atoi(optarg);
+			break;
+		case 'l':
+			slprintf(logfile,sizeof(logfile)-1, "%s.client",optarg);
+			lp_set_logfile(logfile);
+			break;
+		case 'h':
+			usage(pname);
+			exit(0);
+			break;
 		case 'I':
 			{
-				dest_ip = *interpret_addr2(poptGetOptArg(pc));
+				dest_ip = *interpret_addr2(optarg);
 				if (is_zero_ip(dest_ip))
 					exit(1);
 				have_ip = True;
 			}
 			break;
 		case 'E':
-			dbf = x_stderr;
-			display_set_stderr();
+			dbf = stderr;
+			break;
+		case 'U':
+			{
+				char *lp;
+				pstrcpy(username,optarg);
+				if ((lp=strchr(username,'%'))) {
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					got_pass = True;
+					memset(strchr(optarg,'%')+1,'X',strlen(password));
+				}
+			}
+			break;
+
+		case 'A':
+			{
+ 	 			FILE *auth;
+        	                fstring buf;
+                        	uint16 len = 0;
+				char *ptr, *val, *param;
+                               
+	                        if ((auth=sys_fopen(optarg, "r")) == NULL)
+				{
+					/* fail if we can't open the credentials file */
+					DEBUG(0,("ERROR: Unable to open credentials file!\n"));
+					exit (-1);
+				}
+                                
+				while (!feof(auth))
+				{  
+					/* get a line from the file */
+					if (!fgets (buf, sizeof(buf), auth))
+						continue;
+					len = strlen(buf);
+					
+					if ((len) && (buf[len-1]=='\n'))
+					{
+						buf[len-1] = '\0';
+						len--;
+					}	
+					if (len == 0)
+						continue;
+					
+					/* break up the line into parameter & value.
+					   will need to eat a little whitespace possibly */
+					param = buf;
+					if (!(ptr = strchr (buf, '=')))
+						continue;
+					val = ptr+1;
+					*ptr = '\0';
+					
+					/* eat leading white space */
+					while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
+						val++;
+					
+					if (strwicmp("password", param) == 0)
+					{
+						pstrcpy(password, val);
+						got_pass = True;
+					}
+					else if (strwicmp("username", param) == 0)
+						pstrcpy(username, val);
+					else if (strwicmp("domain", param) == 0)
+						pstrcpy(workgroup,val);
+					memset(buf, 0, sizeof(buf));
+				}
+				fclose(auth);
+			}
 			break;
 
 		case 'L':
-			pstrcpy(query_host, poptGetOptArg(pc));
+			p = optarg;
+			while(*p == '\\' || *p == '/')
+				p++;
+			pstrcpy(query_host,p);
 			break;
 		case 't':
-			pstrcpy(term_code, poptGetOptArg(pc));
+			pstrcpy(term_code, optarg);
 			break;
 		case 'm':
-			max_protocol = interpret_protocol(poptGetOptArg(pc), max_protocol);
+			max_protocol = interpret_protocol(optarg, max_protocol);
+			break;
+		case 'W':
+			pstrcpy(workgroup,optarg);
 			break;
 		case 'T':
-			/* We must use old option processing for this. Find the
-			 * position of the -T option in the raw argv[]. */
-			{
-				int i, optnum;
-				for (i = 1; i < argc; i++) {
-					if (strncmp("-T", argv[i],2)==0)
-						break;
-				}
-				i++;
-				if (!(optnum = tar_parseargs(argc, argv, poptGetOptArg(pc), i))) {
-					poptPrintUsage(pc, stderr, 0);
-					exit(1);
-				}
-				/* Now we must eat (optnum - i) options - they have
-				 * been processed by tar_parseargs().
-				 */
-				optnum -= i;
-				for (i = 0; i < optnum; i++)
-					poptGetOptArg(pc);
+			if (!tar_parseargs(argc, argv, optarg, optind)) {
+				usage(pname);
+				exit(1);
 			}
 			break;
 		case 'D':
-			pstrcpy(base_directory,poptGetOptArg(pc));
+			pstrcpy(base_directory,optarg);
 			break;
-		case 'g':
-			grepable=True;
+		case 'c':
+			cmdstr = optarg;
 			break;
-		}
-	}
-
-	poptGetArg(pc);
-	
-	/*
-	 * Don't load debug level from smb.conf. It should be
-	 * set by cmdline arg or remain default (0)
-	 */
-	AllowDebugChange = False;
-	
-	/* save the workgroup...
-	
-	   FIXME!! do we need to do this for other options as well 
-	   (or maybe a generic way to keep lp_load() from overwriting 
-	   everything)?  */
-	
-	fstrcpy( new_workgroup, lp_workgroup() );
-	
-	if ( override_logfile )
-		setup_logging( lp_logfile(), False );
-	
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
-	}
-	
-	load_interfaces();
-	
-	if ( strlen(new_workgroup) != 0 )
-		set_global_myworkgroup( new_workgroup );
-
-	if(poptPeekArg(pc)) {
-		pstrcpy(service,poptGetArg(pc));  
-		/* Convert any '/' characters in the service name to '\' characters */
-		string_replace(service, '/','\\');
-
-		if (count_chars(service,'\\') < 3) {
-			d_printf("\n%s: Not enough '\\' characters in service\n",service);
-			poptPrintUsage(pc, stderr, 0);
+		case 'b':
+			io_bufsize = MAX(1, atoi(optarg));
+			break;
+		default:
+			usage(pname);
 			exit(1);
 		}
 	}
 
-	if (poptPeekArg(pc) && !cmdline_auth_info.got_pass) { 
-		cmdline_auth_info.got_pass = True;
-		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
-	}
+	get_myname((*global_myname)?NULL:global_myname);  
 
-	init_names();
-
-	if(new_name_resolve_order)
+	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
 
+	if (*term_code)
+		interpret_coding_system(term_code);
+
 	if (!tar_type && !*query_host && !*service && !message) {
-		poptPrintUsage(pc, stderr, 0);
+		usage(pname);
 		exit(1);
 	}
 
-	poptFreeContext(pc);
-
-	pstrcpy(username, cmdline_auth_info.username);
-	pstrcpy(password, cmdline_auth_info.password);
-
-	use_kerberos = cmdline_auth_info.use_kerberos;
-	got_pass = cmdline_auth_info.got_pass;
-
-	DEBUG(3,("Client started (version %s).\n", SAMBA_VERSION_STRING));
+	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 
 	if (tar_type) {
 		if (cmdstr)
@@ -3052,34 +2820,23 @@ static int do_message_op(void)
 		return do_tar_op(base_directory);
 	}
 
-	if (*query_host) {
-		char *qhost = query_host;
-		char *slash;
-
-		while (*qhost == '\\' || *qhost == '/')
-			qhost++;
-
-		if ((slash = strchr_m(qhost, '/'))
-		    || (slash = strchr_m(qhost, '\\'))) {
-			*slash = 0;
-		}
-
-		if ((p=strchr_m(qhost, '#'))) {
-			*p = 0;
-			p++;
-			sscanf(p, "%x", &name_type);
-		}
+	if ((p=strchr(query_host,'#'))) {
+		*p = 0;
+		p++;
+		sscanf(p, "%x", &name_type);
+	}
   
-		return do_host_query(qhost);
+	if (*query_host) {
+		return do_host_query(query_host);
 	}
 
 	if (message) {
 		return do_message_op();
 	}
 	
-	if (process(base_directory)) {
-		return 1;
+	if (!process(base_directory)) {
+		return(1);
 	}
 
-	return rc;
+	return(0);
 }

@@ -1,0 +1,9 @@
+PKG="samba"
+NAME="Samba - A Windows SMB/CIFS fileserver for UNIX"
+VERSION="2.2.4"
+VENDOR="Caldera"
+EMAIL="rr@caldera.com"
+CATEGORY="skunkware"
+CLASSES="samba"
+ARCH="i386"
+BASEDIR=/

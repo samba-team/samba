@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+
 /****************************************************************************
 convert a security permissions into a string
 ****************************************************************************/
@@ -54,7 +55,7 @@ char *get_sec_mask_str(uint32 type)
 	if (type & DELETE_ACCESS)
 		fstrcat(typestr, "DELETE_ACCESS ");
 
-	printf("\t\tSpecific bits: 0x%lx\n", (unsigned long)type&SPECIFIC_RIGHTS_MASK);
+	printf("\t\tSpecific bits: 0x%lx\n", type&SPECIFIC_RIGHTS_MASK);
 
 	return typestr;
 }
@@ -106,7 +107,7 @@ void display_sec_acl(SEC_ACL *sec_acl)
 	int i;
 
 	printf("\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
-			 sec_acl->num_aces, sec_acl->revision); 
+			                 sec_acl->num_aces, sec_acl->revision); 
 	printf("\t---\n");
 
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0)

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Pipe SMB reply routines
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
@@ -42,42 +43,40 @@ int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pstring fname;
-	pstring pipe_name;
 	uint16 vuid = SVAL(inbuf, smb_uid);
-	smb_np_struct *p;
+	pipes_struct *p;
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
 	int size=0,fmode=0,mtime=0,rmode=0;
 	int i;
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull_buf(inbuf, pipe_name, smb_buf(inbuf), sizeof(pipe_name), STR_TERMINATE);
+	pstrcpy(fname,smb_buf(inbuf));
 
 	/* If the name doesn't start \PIPE\ then this is directed */
 	/* at a mailslot or something we really, really don't understand, */
 	/* not just something we really don't understand. */
-	if ( strncmp(pipe_name,PIPE,PIPELEN) != 0 )
+	if ( strncmp(fname,PIPE,PIPELEN) != 0 )
 		return(ERROR_DOS(ERRSRV,ERRaccess));
 
-	DEBUG(4,("Opening pipe %s.\n", pipe_name));
+	DEBUG(4,("Opening pipe %s.\n", fname));
 
 	/* See if it is one we want to handle. */
 	for( i = 0; pipe_names[i].client_pipe ; i++ )
-		if( strequal(pipe_name,pipe_names[i].client_pipe) )
+		if( strequal(fname,pipe_names[i].client_pipe) )
 			break;
 
 	if (pipe_names[i].client_pipe == NULL)
 		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
 
 	/* Strip \PIPE\ off the name. */
-	pstrcpy(fname, pipe_name + PIPELEN);
-
+	pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
 
 #if 0
 	/*
 	 * Hack for NT printers... JRA.
 	 */
     if(should_fail_next_srvsvc_open(fname))
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
 #endif
 
 	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
@@ -115,7 +114,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 ****************************************************************************/
 int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	size_t numtowrite = SVAL(inbuf,smb_vwv1);
 	int nwritten;
 	int outsize;
@@ -153,7 +152,7 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
@@ -209,13 +208,11 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
 	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
-	BOOL unused;
-
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of
            data on the pipe */
@@ -229,7 +226,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
-	nread = read_from_pipe(p, data, smb_maxcnt, &unused);
+	nread = read_from_pipe(p, data, smb_maxcnt);
 
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -249,7 +246,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
 	int outsize = set_message(outbuf,0,0,True);
 
 	if (!p)
@@ -257,8 +254,8 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
-	if (!close_rpc_pipe_hnd(p))
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+	if (!close_rpc_pipe_hnd(p, conn))
+		return(ERROR_DOS(ERRDOS,ERRbadfid));
 
 	return(outsize);
 }

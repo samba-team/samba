@@ -1,8 +1,11 @@
+#ifndef _CHARSET_H
+#define _CHARSET_H
+
 /* 
-   Unix SMB/CIFS implementation.
-   charset defines
-   Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Jelmer Vernooij 2002
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   Character set handling
+   Copyright (C) Andrew Tridgell 1992-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,109 +22,70 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this defines the charset types used in samba */
-typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t;
+#ifndef CHARSET_C
 
-#define NUM_CHARSETS 5
+extern char *dos_char_map;
+extern char *upper_char_map;
+extern char *lower_char_map;
+extern void add_char_string(const char *s);
+extern void charset_initialise(void);
 
-/* 
- *   for each charset we have a function that pushes from that charset to a ucs2
- *   buffer, and a function that pulls from ucs2 buffer to that  charset.
- *     */
+#ifdef toupper
+#undef toupper
+#endif
 
-struct charset_functions {
-	const char *name;
-	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
-				   char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
-				   char **outbuf, size_t *outbytesleft);
-	struct charset_functions *prev, *next;
-};
+#ifdef tolower
+#undef tolower
+#endif
 
-/*
- * This is auxiliary struct used by source/script/gen-8-bit-gap.sh script
- * during generation of an encoding table for charset module
- *     */
+#ifdef isupper
+#undef isupper
+#endif
 
-struct charset_gap_table {
-  uint16 start;
-  uint16 end;
-  int32 idx;
-};
+#ifdef islower
+#undef islower
+#endif
 
-/*
- *   Define stub for charset module which implements 8-bit encoding with gaps.
- *   Encoding tables for such module should be produced from glibc's CHARMAPs
- *   using script source/script/gen-8bit-gap.sh
- *   CHARSETNAME is CAPITALIZED charset name
- *
- *     */
-#define SMB_GENERATE_CHARSET_MODULE_8_BIT_GAP(CHARSETNAME) 					\
-static size_t CHARSETNAME ## _push(void *cd, char **inbuf, size_t *inbytesleft,			\
-			 char **outbuf, size_t *outbytesleft) 					\
-{ 												\
-	while (*inbytesleft >= 2 && *outbytesleft >= 1) { 					\
-		int i; 										\
-		int done = 0; 									\
-												\
-		uint16 ch = SVAL(*inbuf,0); 							\
-												\
-		for (i=0; from_idx[i].start != 0xffff; i++) {					\
-			if ((from_idx[i].start <= ch) && (from_idx[i].end >= ch)) {		\
-				((unsigned char*)(*outbuf))[0] = from_ucs2[from_idx[i].idx+ch];	\
-				(*inbytesleft) -= 2;						\
-				(*outbytesleft) -= 1;						\
-				(*inbuf)  += 2;							\
-				(*outbuf) += 1;							\
-				done = 1;							\
-				break;								\
-			}									\
-		}										\
-		if (!done) {									\
-			errno = EINVAL;								\
-			return -1;								\
-		}										\
-												\
-	}											\
-												\
-	if (*inbytesleft == 1) {								\
-		errno = EINVAL;									\
-		return -1;									\
-	}											\
-												\
-	if (*inbytesleft > 1) {									\
-		errno = E2BIG;									\
-		return -1;									\
-	}											\
-												\
-	return 0;										\
-}												\
-												\
-static size_t CHARSETNAME ## _pull(void *cd, char **inbuf, size_t *inbytesleft,				\
-			 char **outbuf, size_t *outbytesleft)					\
-{												\
-	while (*inbytesleft >= 1 && *outbytesleft >= 2) {					\
-		*(uint16*)(*outbuf) = to_ucs2[((unsigned char*)(*inbuf))[0]];			\
-		(*inbytesleft)  -= 1;								\
-		(*outbytesleft) -= 2;								\
-		(*inbuf)  += 1;									\
-		(*outbuf) += 2;									\
-	}											\
-												\
-	if (*inbytesleft > 0) {									\
-		errno = E2BIG;									\
-		return -1;									\
-	}											\
-												\
-	return 0;										\
-}												\
-												\
-struct charset_functions CHARSETNAME ## _functions = 						\
-		{#CHARSETNAME, CHARSETNAME ## _pull, CHARSETNAME ## _push};			\
-												\
-NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
-{												\
-	return smb_register_charset(& CHARSETNAME ## _functions);				\
-}												\
+#ifdef isdoschar
+#undef isdoschar
+#endif
 
+#ifdef isspace
+#undef isspace
+#endif
 
+#define toupper(c) (upper_char_map[((c)&0xff)] & 0xff)
+#define tolower(c) (lower_char_map[((c)&0xff)] & 0xff)
+#define isupper(c) (((c)&0xff) != tolower((c)&0xff))
+#define islower(c) (((c)&0xff) != toupper((c)&0xff))
+#define isdoschar(c) (dos_char_map[((c)&0xff)] != 0)
+#define isspace(c) ((c)==' ' || (c) == '\t')
+
+/* this is used to determine if a character is safe to use in
+   something that may be put on a command line */
+#define issafe(c) (isalnum((c&0xff)) || strchr("-._",c))
+#endif
+
+/* Dynamic codepage files defines. */
+
+/* Version id for dynamically loadable codepage files. */
+#define CODEPAGE_FILE_VERSION_ID 0x1
+/* Version 1 codepage file header size. */
+#define CODEPAGE_HEADER_SIZE 8
+/* Offsets for codepage file header entries. */
+#define CODEPAGE_VERSION_OFFSET 0
+#define CODEPAGE_CLIENT_CODEPAGE_OFFSET 2
+#define CODEPAGE_LENGTH_OFFSET 4
+
+/* Version id for dynamically loadable unicode map files. */
+#define UNICODE_MAP_FILE_VERSION_ID 0x8001
+/* Version 0x80000001 unicode map file header size. */
+#define UNICODE_MAP_HEADER_SIZE 30
+#define UNICODE_MAP_CODEPAGE_ID_SIZE 20
+/* Offsets for unicode map file header entries. */
+#define UNICODE_MAP_VERSION_OFFSET 0
+#define UNICODE_MAP_CLIENT_CODEPAGE_OFFSET 2
+#define UNICODE_MAP_CP_TO_UNICODE_LENGTH_OFFSET 22
+#define UNICODE_MAP_UNICODE_TO_CP_LENGTH_OFFSET 26
+
+#endif /* _CHARSET_H */

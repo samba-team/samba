@@ -1,0 +1,11 @@
+--- packaging/Caldera/UnixWare/pkg/prototype.00	Tue Jan  9 05:40:47 2001
++++ packaging/Caldera/UnixWare/pkg/prototype	Fri Apr 13 14:44:33 2001
+@@ -220,7 +220,7 @@
+ f samba usr/local/samba/swat/help/make_smbcodepage.1.html 0644 root sys
+ f samba usr/local/samba/swat/help/nmbd.8.html 0644 root sys
+ f samba usr/local/samba/swat/help/nmblookup.1.html 0644 root sys
+-f samba usr/local/samba/swat/help/rpcclient.8.html 0644 root sys
++f samba usr/local/samba/swat/help/rpcclient.1.html 0644 root sys
+ f samba usr/local/samba/swat/help/samba-pdc-faq.html 0644 root sys
+ f samba usr/local/samba/swat/help/samba-pdc-howto.html 0644 root sys
+ f samba usr/local/samba/swat/help/samba.7.html 0644 root sys

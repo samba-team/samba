@@ -30,13 +30,13 @@
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
-#define WINBINDD_PRIV_SOCKET_SUBDIR "winbindd_privileged" /* name of subdirectory of lp_lockdir() to hold the 'privileged' pipe */
+
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 10
+#define WINBIND_INTERFACE_VERSION 4
 
 /* Socket commands */
 
@@ -84,7 +84,6 @@ enum winbindd_cmd {
 	WINBINDD_SID_TO_GID,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
-	WINBINDD_ALLOCATE_RID,
 
 	/* Miscellaneous other stuff */
 
@@ -93,9 +92,6 @@ enum winbindd_cmd {
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
 	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
 
-	WINBINDD_DOMAIN_INFO,	/* Most of what we know from
-				   struct winbindd_domain */
-
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
 	/* WINS commands */
@@ -103,62 +99,10 @@ enum winbindd_cmd {
 	WINBINDD_WINS_BYIP,
 	WINBINDD_WINS_BYNAME,
 
-	/* account management commands */
-
-	WINBINDD_CREATE_USER,
-	WINBINDD_CREATE_GROUP,
-	WINBINDD_ADD_USER_TO_GROUP,
-	WINBINDD_REMOVE_USER_FROM_GROUP,
-	WINBINDD_SET_USER_PRIMARY_GROUP,
-	WINBINDD_DELETE_USER,
-	WINBINDD_DELETE_GROUP,
-	
-	/* this is like GETGRENT but gives an empty group list */
-	WINBINDD_GETGRLST,
-
-	WINBINDD_NETBIOS_NAME,       /* The netbios name of the server */
-
-	/* find the location of our privileged pipe */
-	WINBINDD_PRIV_PIPE_DIR,
-
-	/* return a list of group sids for a user sid */
-	WINBINDD_GETUSERSIDS,	
-
 	/* Placeholder for end of cmd list */
+
 	WINBINDD_NUM_CMDS
 };
-
-typedef struct winbindd_pw {
-	fstring pw_name;
-	fstring pw_passwd;
-	uid_t pw_uid;
-	gid_t pw_gid;
-	fstring pw_gecos;
-	fstring pw_dir;
-	fstring pw_shell;
-} WINBINDD_PW;
-
-
-typedef struct winbindd_gr {
-	fstring gr_name;
-	fstring gr_passwd;
-	gid_t gr_gid;
-	int num_gr_mem;
-	int gr_mem_ofs;   /* offset to group membership */
-	char **gr_mem;
-} WINBINDD_GR;
-
-
-#define WBFLAG_PAM_INFO3_NDR  		0x0001
-#define WBFLAG_PAM_INFO3_TEXT 		0x0002
-#define WBFLAG_PAM_USER_SESSION_KEY     0x0004
-#define WBFLAG_PAM_LMKEY      		0x0008
-#define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
-#define WBFLAG_QUERY_ONLY		0x0020
-#define WBFLAG_ALLOCATE_RID		0x0040
-#define WBFLAG_PAM_UNIX_NAME            0x0080
-#define WBFLAG_PAM_AFS_TOKEN            0x0100
-#define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
 
 /* Winbind request structure */
 
@@ -166,8 +110,6 @@ struct winbindd_request {
 	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
-	uint32 flags;            /* flags relavant to a given request */
-	fstring domain_name;	/* name of domain for which the request applies */
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -181,7 +123,6 @@ struct winbindd_request {
                            character is. */	
 			fstring user;
 			fstring pass;
-		        fstring required_membership_sid;
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
@@ -191,8 +132,6 @@ struct winbindd_request {
                         uint16 lm_resp_len;
                         fstring nt_resp;
                         uint16 nt_resp_len;
-			fstring workstation;
-		        fstring required_membership_sid;
                 } auth_crap;
                 struct {
                     fstring user;
@@ -205,12 +144,8 @@ struct winbindd_request {
 			fstring name;       
 		} name;
 		uint32 num_entries;  /* getpwent, getgrent */
-		struct {
-			fstring username;
-			fstring groupname;
-		} acct_mgt;
 	} data;
-	char null_term;
+	fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
 
 /* Response values */
@@ -238,11 +173,25 @@ struct winbindd_response {
 
 		/* getpwnam, getpwuid */
 		
-		struct winbindd_pw pw;
+		struct winbindd_pw {
+			fstring pw_name;
+			fstring pw_passwd;
+			uid_t pw_uid;
+			gid_t pw_gid;
+			fstring pw_gecos;
+			fstring pw_dir;
+			fstring pw_shell;
+		} pw;
 
 		/* getgrnam, getgrgid */
 
-		struct winbindd_gr gr;
+		struct winbindd_gr {
+			fstring gr_name;
+			fstring gr_passwd;
+			gid_t gr_gid;
+			int num_gr_mem;
+			int gr_mem_ofs;   /* offset to group membership */
+		} gr;
 
 		uint32 num_entries; /* getpwent, getgrent */
 		struct winbindd_sid {
@@ -261,27 +210,16 @@ struct winbindd_response {
 			fstring samba_version;
 		} info;
 		fstring domain_name;
-		fstring netbios_name;
 
 		struct auth_reply {
 			uint32 nt_status;
 			fstring nt_status_string;
 			fstring error_string;
 			int pam_error;
-			char user_session_key[16];
-			char first_8_lm_hash[8];
 		} auth;
-		uint32 rid;	/* create user or group or allocate rid */
-		struct {
-			fstring name;
-			fstring alt_name;
-			fstring sid;
-			BOOL native_mode;
-			BOOL active_directory;
-			BOOL primary;
-			uint32 sequence_number;
-		} domain_info;
 	} data;
+
+	uint32 nt_status;	/* Extended error information */
 
 	/* Variable length return data */
 

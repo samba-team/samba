@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# chkconfig: 345 91 45
+# chkconfig: 345 81 45
 # description: Starts and stops the Samba winbind daemon to provide \
 # user and group information from a domain controller to linux.
 
@@ -19,16 +19,17 @@ fi
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
-CONFIG=/etc/samba/smb.conf
-
 # Check that smb.conf exists.
-[ -f $CONFIG ] || exit 0
+[ -f /etc/samba/smb.conf ] || exit 0
+
+RETVAL=0
+
 
 start() {
 	echo -n "Starting Winbind services: "
 	RETVAL=1
-	if [ "`egrep -i '(idmap.*uid|winbind.*uid)' $CONFIG | egrep -v [\#\;]`" ]; then
-		daemon winbindd 
+	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
+		daemon winbindd
 		RETVAL=$?
 	fi
 	echo
@@ -39,7 +40,7 @@ start() {
 stop() {
 	echo -n "Shutting down Winbind services: "
 	RETVAL=1
-	if [ "`egrep -i '(idmap.*uid|winbind.*uid)' $CONFIG | egrep -v [\#\;]`" ]; then
+	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
 		killproc winbindd
 		RETVAL=$?
 	fi

@@ -1,51 +1,25 @@
  /* 
    Unix SMB/CIFS implementation.
-
-   trivial database library
-
-   Copyright (C) Andrew Tridgell              1999-2004
+   Samba database functions
+   Copyright (C) Andrew Tridgell              1999-2000
+   Copyright (C) Luke Kenneth Casson Leighton      2000
    Copyright (C) Paul `Rusty' Russell		   2000
    Copyright (C) Jeremy Allison			   2000-2003
    
-     ** NOTE! The following LGPL license applies to the tdb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
    
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-
-
-/* NOTE: If you use tdbs under valgrind, and in particular if you run
- * tdbtorture, you may get spurious "uninitialized value" warnings.  I
- * think this is because valgrind doesn't understand that the mmap'd
- * area may be written to by other processes.  Memory can, from the
- * point of view of the grinded process, spontaneously become
- * initialized.
- *
- * I can think of a few solutions.  [mbp 20030311]
- *
- * 1 - Write suppressions for Valgrind so that it doesn't complain
- * about this.  Probably the most reasonable but people need to
- * remember to use them.
- *
- * 2 - Use IO not mmap when running under valgrind.  Not so nice.
- *
- * 3 - Use the special valgrind macros to mark memory as valid at the
- * right time.  Probably too hard -- the process just doesn't know.
- */ 
-
 #ifdef STANDALONE
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -82,8 +56,6 @@
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off))
-#define TDB_DATA_START(hash_size) (TDB_HASH_TOP(hash_size-1) + TDB_SPINLOCK_SIZE(hash_size))
-
 
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
@@ -233,28 +205,14 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	if (ret == -1) {
 		if (!probe && lck_type != F_SETLK) {
-			/* Ensure error code is set for log fun to examine. */
-			if (errno == EINTR && palarm_fired && *palarm_fired)
-				tdb->ecode = TDB_ERR_LOCK_TIMEOUT;
-			else
-				tdb->ecode = TDB_ERR_LOCK;
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
 		}
 		/* Was it an alarm timeout ? */
-		if (errno == EINTR && palarm_fired && *palarm_fired) {
-			TDB_LOG((tdb, 5, "tdb_brlock timed out (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
-				 tdb->fd, offset, rw_type, lck_type));
+		if (errno == EINTR && palarm_fired && *palarm_fired)
 			return TDB_ERRCODE(TDB_ERR_LOCK_TIMEOUT, -1);
-		}
-		/* Otherwise - generic lock error. errno set by fcntl.
-		 * EAGAIN is an expected return from non-blocking
-		 * locks. */
-		if (errno != EAGAIN) {
-			TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d: %s\n", 
-				 tdb->fd, offset, rw_type, lck_type, 
-				 strerror(errno)));
-		}
+		/* Otherwise - generic lock error. */
+		/* errno set by fcntl */
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 	return 0;
@@ -354,8 +312,6 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 		return 0;
 	if (tdb->flags & TDB_INTERNAL) {
 		if (!probe) {
-			/* Ensure ecode is set for log fn. */
-			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, 0,"tdb_oob len %d beyond internal malloc size %d\n",
 				 (int)len, (int)tdb->map_size));
 		}
@@ -367,8 +323,6 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 
 	if (st.st_size < (size_t)len) {
 		if (!probe) {
-			/* Ensure ecode is set for log fn. */
-			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, 0,"tdb_oob len %d beyond eof at %d\n",
 				 (int)len, (int)st.st_size));
 		}
@@ -397,8 +351,6 @@ static int tdb_write(TDB_CONTEXT *tdb, tdb_off off, void *buf, tdb_len len)
 	else if (lseek(tdb->fd, off, SEEK_SET) != off
 		 || write(tdb->fd, buf, len) != (ssize_t)len) {
 #endif
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, 0,"tdb_write failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -420,8 +372,6 @@ static int tdb_read(TDB_CONTEXT *tdb,tdb_off off,void *buf,tdb_len len,int cv)
 	else if (lseek(tdb->fd, off, SEEK_SET) != off
 		 || read(tdb->fd, buf, len) != (ssize_t)len) {
 #endif
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, 0,"tdb_read failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -437,8 +387,6 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 	char *buf;
 
 	if (!(buf = malloc(len))) {
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_OOM;
 		TDB_LOG((tdb, 0,"tdb_alloc_read malloc failed len=%d (%s)\n",
 			   len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_OOM, buf);
@@ -467,8 +415,6 @@ static int rec_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 	if (tdb_read(tdb, offset, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
 	if (TDB_BAD_MAGIC(rec)) {
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_CORRUPT;
 		TDB_LOG((tdb, 0,"rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
@@ -497,8 +443,6 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 	}
 
 	if (rec->magic != TDB_FREE_MAGIC) {
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_CORRUPT;
 		TDB_LOG((tdb, 0,"rec_free_read bad magic 0x%x at offset=%d\n", 
 			   rec->magic, off));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
@@ -679,10 +623,10 @@ static int tdb_free(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 left:
 	/* Look left */
 	left = offset - sizeof(tdb_off);
-	if (left > TDB_DATA_START(tdb->header.hash_size)) {
+	if (left > TDB_HASH_TOP(tdb->header.hash_size-1)) {
 		struct list_struct l;
 		tdb_off leftsize;
-		
+
 		/* Read in tailer and jump back to header */
 		if (ofs_read(tdb, left, &leftsize) == -1) {
 			TDB_LOG((tdb, 0, "tdb_free: left offset read failed at %u\n", left));
@@ -862,8 +806,6 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length,
 	tdb_off rec_ptr, last_ptr, newrec_ptr;
 	struct list_struct newrec;
 
-	memset(&newrec, '\0', sizeof(newrec));
-
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1)
 		return 0;
 
@@ -1033,11 +975,12 @@ static int tdb_keylocked(TDB_CONTEXT *tdb, u32 hash)
 }
 
 /* As tdb_find, but if you succeed, keep the lock */
-static tdb_off tdb_find_lock_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, int locktype,
+static tdb_off tdb_find_lock(TDB_CONTEXT *tdb, TDB_DATA key, int locktype,
 			     struct list_struct *rec)
 {
-	u32 rec_ptr;
+	u32 hash, rec_ptr;
 
+	hash = tdb_hash(&key);
 	if (!tdb_keylocked(tdb, hash))
 		return 0;
 	if (tdb_lock(tdb, BUCKET(hash), locktype) == -1)
@@ -1078,13 +1021,13 @@ const char *tdb_errorstr(TDB_CONTEXT *tdb)
    on failure return -1.
 */
 
-static int tdb_update_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, TDB_DATA dbuf)
+static int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 {
 	struct list_struct rec;
 	tdb_off rec_ptr;
 
 	/* find entry */
-	if (!(rec_ptr = tdb_find(tdb, key, hash, &rec)))
+	if (!(rec_ptr = tdb_find(tdb, key, tdb_hash(&key), &rec)))
 		return -1;
 
 	/* must be long enough key, data and tailer */
@@ -1118,11 +1061,9 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_off rec_ptr;
 	struct list_struct rec;
 	TDB_DATA ret;
-	u32 hash;
 
 	/* find which hash bucket it is in */
-	hash = tdb_hash(&key);
-	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec)))
+	if (!(rec_ptr = tdb_find_lock(tdb,key,F_RDLCK,&rec)))
 		return tdb_null;
 
 	if (rec.data_len)
@@ -1141,20 +1082,14 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
    this doesn't match the conventions in the rest of this module, but is
    compatible with gdbm
 */
-static int tdb_exists_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash)
+int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	struct list_struct rec;
 	
-	if (tdb_find_lock_hash(tdb, key, hash, F_RDLCK, &rec) == 0)
+	if (tdb_find_lock(tdb, key, F_RDLCK, &rec) == 0)
 		return 0;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
 	return 1;
-}
-
-int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
-{
-	u32 hash = tdb_hash(&key);
-	return tdb_exists_hash(tdb, key, hash);
 }
 
 /* record lock stops delete underneath */
@@ -1304,7 +1239,7 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
    if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private)
+int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 {
 	TDB_DATA key, dbuf;
 	struct list_struct rec;
@@ -1342,7 +1277,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private)
 			ret = -1;
 			goto out;
 		}
-		if (fn && fn(tdb, key, dbuf, private)) {
+		if (fn && fn(tdb, key, dbuf, state)) {
 			/* They want us to terminate traversal */
 			ret = count;
 			if (unlock_record(tdb, tl.off) != 0) {
@@ -1413,7 +1348,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 
 	if (!tdb->travlocks.off) {
 		/* No previous element: do normal find, and lock record */
-		tdb->travlocks.off = tdb_find_lock_hash(tdb, oldkey, tdb_hash(&oldkey), F_WRLCK, &rec);
+		tdb->travlocks.off = tdb_find_lock(tdb, oldkey, F_WRLCK, &rec);
 		if (!tdb->travlocks.off)
 			return tdb_null;
 		tdb->travlocks.hash = BUCKET(rec.full_hash);
@@ -1441,24 +1376,18 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 }
 
 /* delete an entry in the database given a key */
-static int tdb_delete_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash)
+int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	tdb_off rec_ptr;
 	struct list_struct rec;
 	int ret;
 
-	if (!(rec_ptr = tdb_find_lock_hash(tdb, key, hash, F_WRLCK, &rec)))
+	if (!(rec_ptr = tdb_find_lock(tdb, key, F_WRLCK, &rec)))
 		return -1;
 	ret = do_delete(tdb, rec_ptr, &rec);
 	if (tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK) != 0)
 		TDB_LOG((tdb, 0, "tdb_delete: WARNING tdb_unlock failed!\n"));
 	return ret;
-}
-
-int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
-{
-	u32 hash = tdb_hash(&key);
-	return tdb_delete_hash(tdb, key, hash);
 }
 
 /* store an element in the database, replacing any existing element
@@ -1483,20 +1412,16 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT) {
-		if (tdb_exists_hash(tdb, key, hash)) {
+		if (tdb_exists(tdb, key)) {
 			tdb->ecode = TDB_ERR_EXISTS;
 			goto fail;
 		}
 	} else {
 		/* first try in-place update, on modify or replace. */
-		if (tdb_update_hash(tdb, key, hash, dbuf) == 0)
+		if (tdb_update(tdb, key, dbuf) == 0)
 			goto out;
-		if (tdb->ecode == TDB_ERR_NOEXIST &&
-		    flag == TDB_MODIFY) {
-			/* if the record doesn't exist and we are in TDB_MODIFY mode then
-			 we should fail the store */
+		if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST)
 			goto fail;
-	}
 	}
 	/* reset the error code potentially set by the tdb_update() */
 	tdb->ecode = TDB_SUCCESS;
@@ -1505,7 +1430,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
            care.  Doing this first reduces fragmentation, and avoids
            coalescing with `allocated' block before it's updated. */
 	if (flag != TDB_INSERT)
-		tdb_delete_hash(tdb, key, hash);
+		tdb_delete(tdb, key);
 
 	/* Copy key+value *before* allocating free space in case malloc
 	   fails and we are left with a dead spot in the tdb. */
@@ -1519,7 +1444,9 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	if (dbuf.dsize)
 		memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
 
-	/* we have to allocate some space */
+	/* now we're into insert / modify / replace of a record which
+	 * we know could not be optimised by an in-place store (for
+	 * various reasons).  */
 	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize, &rec)))
 		goto fail;
 
@@ -1552,13 +1479,13 @@ fail:
    is <= the old data size and the key exists.
    on failure return -1. Record must be locked before calling.
 */
-static int tdb_append_inplace(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, TDB_DATA new_dbuf)
+static int tdb_append_inplace(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 {
 	struct list_struct rec;
 	tdb_off rec_ptr;
 
 	/* find entry */
-	if (!(rec_ptr = tdb_find(tdb, key, hash, &rec)))
+	if (!(rec_ptr = tdb_find(tdb, key, tdb_hash(&key), &rec)))
 		return -1;
 
 	/* Append of 0 is always ok. */
@@ -1600,7 +1527,7 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 		return -1;
 
 	/* first try in-place. */
-	if (tdb_append_inplace(tdb, key, hash, new_dbuf) == 0)
+	if (tdb_append_inplace(tdb, key, new_dbuf) == 0)
 		goto out;
 
 	/* reset the error code potentially set by the tdb_append_inplace() */
@@ -1643,7 +1570,7 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
            care.  Doing this first reduces fragmentation, and avoids
            coalescing with `allocated' block before it's updated. */
 
-	tdb_delete_hash(tdb, key, hash);
+	tdb_delete(tdb, key);
 
 	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + new_data_size, &rec)))
 		goto fail;
@@ -1712,7 +1639,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 {
 	TDB_CONTEXT *tdb;
 	struct stat st;
-	int rev = 0, locked = 0;
+	int rev = 0, locked;
 	unsigned char *vp;
 	u32 vertest;
 
@@ -1770,8 +1697,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	/* we need to zero database if we are the only one with it open */
-	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
-		(locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
+	if ((locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
+	    && (tdb_flags & TDB_CLEAR_IF_FIRST)) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
 			TDB_LOG((tdb, 0, "tdb_open_ex: "
@@ -1783,7 +1710,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
 	    || strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0
-	    || (tdb->header.version != TDB_VERSION
+	    || tdb->header.version != TDB_VERSION
+	    || (tdb->header.hash_size != hash_size
 		&& !(rev = (tdb->header.version==TDB_BYTEREV(TDB_VERSION))))) {
 		/* its not a valid database - possibly initialise it */
 		if (!(open_flags & O_CREAT) || tdb_new_database(tdb, hash_size) == -1) {
@@ -1844,19 +1772,10 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 				 name, strerror(errno)));
 			goto fail;
 		}
-
 	}
-
-	/* We always need to do this if the CLEAR_IF_FIRST flag is set, even if
-	   we didn't get the initial exclusive lock as we need to let all other
-	   users know we're using it. */
-
-	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
-		/* leave this lock in place to indicate it's in use */
-		if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
-			goto fail;
-	}
-
+	/* leave this lock in place to indicate it's in use */
+	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+		goto fail;
 
  internal:
 	/* Internal (memory-only) databases skip all the code above to
@@ -1891,11 +1810,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 }
 
-/**
- * Close a database.
- *
- * @returns -1 for error; 0 for success.
- **/
+/* close a database */
 int tdb_close(TDB_CONTEXT *tdb)
 {
 	TDB_CONTEXT **i;
@@ -2034,14 +1949,12 @@ void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , cons
 }
 
 
-/* reopen a tdb - this can be used after a fork to ensure that we have an independent
+/* reopen a tdb - this is used after a fork to ensure that we have an independent
    seek pointer from our parent and to re-establish locks */
 int tdb_reopen(TDB_CONTEXT *tdb)
 {
 	struct stat st;
 
-	if (tdb->flags & TDB_INTERNAL)
-		return 0; /* Nothing to do. */
 	if (tdb_munmap(tdb) != 0) {
 		TDB_LOG((tdb, 0, "tdb_reopen: munmap failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -2062,7 +1975,7 @@ int tdb_reopen(TDB_CONTEXT *tdb)
 		goto fail;
 	}
 	tdb_mmap(tdb);
-	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
+	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1) {
 		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
 		goto fail;
 	}
@@ -2080,10 +1993,7 @@ int tdb_reopen_all(void)
 	TDB_CONTEXT *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
-		/* Ensure no clear-if-first. */
-		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
-		if (tdb_reopen(tdb) != 0)
-			return -1;
+		if (tdb_reopen(tdb) != 0) return -1;
 	}
 
 	return 0;

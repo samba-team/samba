@@ -2,10 +2,10 @@
 #4 July 96 Dan.Shearer@UniSA.edu.au   
 
 INSTALLPERMS=$1
-BASEDIR=`echo $2 | sed 's/\/\//\//g'`
-BINDIR=`echo $3 | sed 's/\/\//\//g'`
-LIBDIR=`echo $4 | sed 's/\/\//\//g'`
-VARDIR=`echo $5 | sed 's/\/\//\//g'`
+BASEDIR=$2
+BINDIR=$3
+LIBDIR=$4
+VARDIR=$5
 shift
 shift
 shift
@@ -34,8 +34,8 @@ cat << EOF
 ======================================================================
 The binaries have been uninstalled. You may restore the binaries using
 the command "make installbin" or "make install" to install binaries, 
-man pages, modules and shell scripts. You can restore a previous
-version of the binaries (if there were any) using "make revert".
+man pages and shell scripts. You can restore a previous version of the
+binaries (if there were any) using "make revert".
 ======================================================================
 EOF
 

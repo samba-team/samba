@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    diagnosis tools for web admin
    Copyright (C) Andrew Tridgell 1998
    
@@ -19,21 +20,8 @@
 */
 
 #include "includes.h"
-#include "../web/swat_proto.h"
+#include "smb.h"
 
-#ifdef WITH_WINBIND
-
-NSS_STATUS winbindd_request(int req_type,
-			struct winbindd_request *request,
-			struct winbindd_response *response);
-
-/* check to see if winbind is running by pinging it */
-
-BOOL winbindd_running(void)
-{
-	return winbind_ping();
-}	
-#endif
 
 /* check to see if nmbd is running on localhost by looking for a __SAMBA__
    response */
@@ -47,7 +35,7 @@ BOOL nmbd_running(void)
 				 interpret_addr("127.0.0.1"), True)) != -1) {
 		if ((ip_list = name_query(fd, "__SAMBA__", 0, 
 					  True, True, loopback_ip,
-					  &count, &flags, NULL)) != NULL) {
+					  &count, &flags)) != NULL) {
 			SAFE_FREE(ip_list);
 			close(fd);
 			return True;
@@ -69,7 +57,7 @@ BOOL smbd_running(void)
 	if (!cli_initialise(&cli))
 		return False;
 
-	if (!cli_connect(&cli, global_myname(), &loopback_ip)) {
+	if (!cli_connect(&cli, "localhost", &loopback_ip)) {
 		cli_shutdown(&cli);
 		return False;
 	}

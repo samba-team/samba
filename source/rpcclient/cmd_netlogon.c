@@ -24,7 +24,7 @@
 
 static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx, int argc, 
-                                         const char **argv)
+                                         char **argv)
 {
 	uint32 query_level = 1;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -45,34 +45,9 @@ static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli,
 	return result;
 }
 
-static NTSTATUS cmd_netlogon_getdcname(struct cli_state *cli, 
-				       TALLOC_CTX *mem_ctx, int argc, 
-				       const char **argv)
-{
-	fstring dcname;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	result = cli_netlogon_getdcname(cli, mem_ctx, argv[1], dcname);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	/* Display results */
-
-	printf("%s\n", dcname);
-
- done:
-	return result;
-}
-
 static NTSTATUS cmd_netlogon_logon_ctrl(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx, int argc, 
-                                        const char **argv)
+                                        char **argv)
 {
 #if 0
 	uint32 query_level = 1;
@@ -107,25 +82,25 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
         for (i = 0; i < num_deltas; i++) {
                 switch (hdr_deltas[i].type) {
                 case SAM_DELTA_DOMAIN_INFO:
-                        unistr2_to_ascii(name,
+                        unistr2_to_unix(name,
                                          &deltas[i].domain_info.uni_dom_name,
                                          sizeof(name) - 1);
                         printf("Domain: %s\n", name);
                         break;
                 case SAM_DELTA_GROUP_INFO:
-                        unistr2_to_ascii(name,
+                        unistr2_to_unix(name,
                                          &deltas[i].group_info.uni_grp_name,
                                          sizeof(name) - 1);
                         printf("Group: %s\n", name);
                         break;
                 case SAM_DELTA_ACCOUNT_INFO:
-                        unistr2_to_ascii(name, 
+                        unistr2_to_unix(name, 
                                          &deltas[i].account_info.uni_acct_name,
                                          sizeof(name) - 1);
                         printf("Account: %s\n", name);
                         break;
                 case SAM_DELTA_ALIAS_INFO:
-                        unistr2_to_ascii(name, 
+                        unistr2_to_unix(name, 
                                          &deltas[i].alias_info.uni_als_name,
                                          sizeof(name) - 1);
                         printf("Alias: %s\n", name);
@@ -150,10 +125,11 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
                                           group->rids[j], group->attribs[j]);
                         break;
                 }
-                case SAM_DELTA_MODIFIED_COUNT: {
-                        SAM_DELTA_MOD_COUNT *mc = &deltas[i].mod_count;
+                case SAM_DELTA_SAM_STAMP: {
+                        SAM_DELTA_STAMP *stamp = &deltas[i].stamp;
 
-                        printf("sam sequence update: 0x%04x\n", mc->seqnum);
+                        printf("sam sequence update: 0x%04x\n",
+                                  stamp->seqnum);
                         break;
                 }                                  
                 default:
@@ -168,9 +144,10 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
 
 static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx, int argc,
-                                      const char **argv)
+                                      char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        unsigned char trust_passwd[16];
         uint32 database_id = 0, num_deltas;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
@@ -184,13 +161,33 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         if (argc == 2)
                 database_id = atoi(argv[1]);
 
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                return result;
+        }
+
+        /* Initialise session credentials */
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
+		goto done;
+	}        
+
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
+        }
+
 	/* on first call the returnAuthenticator is empty */
 	memset(&ret_creds, 0, sizeof(ret_creds));
  
         /* Synchronise sam database */
 
 	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, database_id,
-				       0, &num_deltas, &hdr_deltas, &deltas);
+				       &num_deltas, &hdr_deltas, &deltas);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -207,9 +204,10 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
 
 static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx, int argc,
-                                        const char **argv)
+                                        char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        unsigned char trust_passwd[16];
         uint32 database_id, num_deltas, tmp;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
@@ -225,6 +223,28 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
 
         seqnum.low = tmp & 0xffff;
         seqnum.high = 0;
+
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                goto done;
+        }
+
+        /* Initialise session credentials */
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
+		goto done;
+	}        
+
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
+        }
+
+        /* Synchronise sam database */
 
 	result = cli_netlogon_sam_deltas(cli, mem_ctx, database_id,
 					 seqnum, &num_deltas, 
@@ -245,21 +265,18 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
 
 static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx, int argc,
-                                       const char **argv)
+                                       char **argv)
 {
+        unsigned char trust_passwd[16];
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         int logon_type = NET_LOGON_TYPE;
-        const char *username, *password;
-	uint32 neg_flags = 0x000001ff;
-	int auth_level = 2;
-	DOM_CRED ret_creds;
+        char *username, *password;
 
         /* Check arguments */
 
-        if (argc < 3 || argc > 6) {
+        if (argc < 3 || argc > 4) {
                 fprintf(stderr, "Usage: samlogon <username> <password> "
-                        "[logon_type] [neg flags] [auth level (2 or 3)]\n"
-			"neg flags being 0x000001ff or 0x6007ffff\n");
+                        "[logon_type]\n");
                 return NT_STATUS_OK;
         }
 
@@ -269,55 +286,30 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         if (argc == 4)
                 sscanf(argv[3], "%i", &logon_type);
 
-	if (argc == 5)
-                sscanf(argv[4], "%i", &neg_flags);
+        /* Authenticate ourselves with the domain controller */
 
-	if (argc == 6)
-                sscanf(argv[5], "%i", &auth_level);
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                return result;
+        }
 
-        /* Perform the sam logon */
-
-	ZERO_STRUCT(ret_creds);
-
-        result = cli_netlogon_sam_logon(cli, mem_ctx, &ret_creds, username, password, logon_type);
-
-	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
-	
-        result = cli_netlogon_sam_logon(cli, mem_ctx, &ret_creds, username, password, logon_type);
-
-	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
+	}        
 
- done:
-        return result;
-}
+        result = cli_nt_setup_creds(cli, trust_passwd);
 
-/* Change the trust account password */
-
-static NTSTATUS cmd_netlogon_change_trust_pw(struct cli_state *cli, 
-					     TALLOC_CTX *mem_ctx, int argc,
-					     const char **argv)
-{
-        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_CRED ret_creds;
-
-        /* Check arguments */
-
-        if (argc > 1) {
-                fprintf(stderr, "Usage: change_trust_pw");
-                return NT_STATUS_OK;
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
         }
 
         /* Perform the sam logon */
 
-	ZERO_STRUCT(ret_creds);
-
-	result = trust_pw_find_change_and_store_it(cli, mem_ctx,
-						   lp_workgroup());
-
-	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+        result = cli_netlogon_sam_logon(cli, mem_ctx, username, password,
+                                        logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -325,7 +317,6 @@ static NTSTATUS cmd_netlogon_change_trust_pw(struct cli_state *cli,
  done:
         return result;
 }
-
 
 /* List of commands exported by this module */
 
@@ -333,13 +324,11 @@ struct cmd_set netlogon_commands[] = {
 
 	{ "NETLOGON" },
 
-	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, "Logon Control 2",     "" },
-	{ "getdcname", RPC_RTYPE_NTSTATUS, cmd_netlogon_getdcname, NULL, PI_NETLOGON, "Get trusted DC name",     "" },
-	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, "Logon Control",       "" },
-	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, "Sam Synchronisation", "" },
-	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, "Query Sam Deltas",    "" },
-	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, PI_NETLOGON, "Sam Logon",           "" },
-	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, "Change Trust Account Password",           "" },
+	{ "logonctrl2", cmd_netlogon_logon_ctrl2, PIPE_NETLOGON, "Logon Control 2",     "" },
+	{ "logonctrl",  cmd_netlogon_logon_ctrl,  PIPE_NETLOGON, "Logon Control",       "" },
+	{ "samsync",    cmd_netlogon_sam_sync,    PIPE_NETLOGON, "Sam Synchronisation", "" },
+	{ "samdeltas",  cmd_netlogon_sam_deltas,  PIPE_NETLOGON, "Query Sam Deltas",    "" },
+        { "samlogon",   cmd_netlogon_sam_logon,   PIPE_NETLOGON, "Sam Logon",           "" },
 
 	{ NULL }
 };

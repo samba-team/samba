@@ -3,7 +3,7 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000-2003
+   Copyright (C) Tim Potter      2000-2002
    Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -25,10 +25,11 @@
 #include "winbindd.h"
 #include "debug.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
+/* Prototypes from common.h */
 
-extern int winbindd_fd;
+NSS_STATUS winbindd_request(int req_type, 
+			    struct winbindd_request *request,
+			    struct winbindd_response *response);
 
 static char winbind_separator(void)
 {
@@ -45,7 +46,7 @@ static char winbind_separator(void)
 
 	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind separator!\n");
+		printf("could not obtain winbind separator!\n");
 		/* HACK: (this module should not call lp_ funtions) */
 		return *lp_winbind_separator();
 	}
@@ -54,7 +55,7 @@ static char winbind_separator(void)
 	got_sep = True;
 
 	if (!sep) {
-		d_printf("winbind separator was NULL!\n");
+		printf("winbind separator was NULL!\n");
 		/* HACK: (this module should not call lp_ funtions) */
 		sep = *lp_winbind_separator();
 	}
@@ -62,7 +63,7 @@ static char winbind_separator(void)
 	return sep;
 }
 
-static const char *get_winbind_domain(void)
+static char *get_winbind_domain(void)
 {
 	struct winbindd_response response;
 	static fstring winbind_domain;
@@ -73,7 +74,7 @@ static const char *get_winbind_domain(void)
 
 	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind domain name!\n");
+		printf("could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
 		return lp_workgroup();
@@ -103,7 +104,7 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain,
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
-	strupper_m(domain);
+	strupper(domain);
 
 	return True;
 }
@@ -129,38 +130,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 		return False;
 
 	for (i = 0; i < response.data.num_entries; i++)
-		d_printf("%d\n", (int)((gid_t *)response.extra_data)[i]);
-
-	SAFE_FREE(response.extra_data);
-
-	return True;
-}
-
-
-/* List group SIDs a user SID is a member of */
-static BOOL wbinfo_get_usersids(char *user_sid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	int i;
-	const char *s;
-
-	ZERO_STRUCT(response);
-
-	/* Send request */
-	fstrcpy(request.data.sid, user_sid);
-
-	result = winbindd_request(WINBINDD_GETUSERSIDS, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	s = response.extra_data;
-	for (i = 0; i < response.data.num_entries; i++) {
-		d_printf("%s\n", s);
-		s += strlen(s) + 1;
-	}
+		printf("%d\n", (int)((gid_t *)response.extra_data)[i]);
 
 	SAFE_FREE(response.extra_data);
 
@@ -237,10 +207,10 @@ static BOOL wbinfo_list_domains(void)
 	/* Display response */
 
 	if (response.extra_data) {
-		const char *extra_data = (char *)response.extra_data;
+		const char *extra_data = (const char *)response.extra_data;
 
 		while(next_token(&extra_data, name, ",", sizeof(fstring)))
-			d_printf("%s\n", name);
+			printf("%s\n", name);
 
 		SAFE_FREE(response.extra_data);
 	}
@@ -250,20 +220,15 @@ static BOOL wbinfo_list_domains(void)
 
 
 /* show sequence numbers */
-static BOOL wbinfo_show_sequence(const char *domain)
+static BOOL wbinfo_show_sequence(void)
 {
-	struct winbindd_request  request;
 	struct winbindd_response response;
 
 	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
-
-	if ( domain )
-		fstrcpy( request.domain_name, domain );
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, &request, &response) !=
+	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, NULL, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -271,47 +236,9 @@ static BOOL wbinfo_show_sequence(const char *domain)
 
 	if (response.extra_data) {
 		char *extra_data = (char *)response.extra_data;
-		d_printf("%s", extra_data);
+		printf("%s", extra_data);
 		SAFE_FREE(response.extra_data);
 	}
-
-	return True;
-}
-
-/* Show domain info */
-
-static BOOL wbinfo_domain_info(const char *domain_name)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	fstrcpy(request.domain_name, domain_name);
-
-	/* Send request */
-
-	if (winbindd_request(WINBINDD_DOMAIN_INFO, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
-		return False;
-
-	/* Display response */
-
-	d_printf("Name              : %s\n", response.data.domain_info.name);
-	d_printf("Alt_Name          : %s\n", response.data.domain_info.alt_name);
-
-	d_printf("SID               : %s\n", response.data.domain_info.sid);
-
-	d_printf("Active Directory  : %s\n",
-		 response.data.domain_info.active_directory ? "Yes" : "No");
-	d_printf("Native            : %s\n",
-		 response.data.domain_info.native_mode ? "Yes" : "No");
-
-	d_printf("Primary           : %s\n",
-		 response.data.domain_info.primary ? "Yes" : "No");
-
-	d_printf("Sequence          : %d\n", response.data.domain_info.sequence_number);
 
 	return True;
 }
@@ -321,21 +248,25 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 static BOOL wbinfo_check_secret(void)
 {
         struct winbindd_response response;
-        NSS_STATUS result;
+        BOOL result;
 
         ZERO_STRUCT(response);
 
-        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response);
-		
-	d_printf("checking the trust secret via RPC calls %s\n", 
-		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
+                NSS_STATUS_SUCCESS;
 
-	if (result != NSS_STATUS_SUCCESS)	
-		d_printf("error code was %s (0x%x)\n", 
-		 	 response.data.auth.nt_status_string, 
-		 	 response.data.auth.nt_status);
-	
-	return result == NSS_STATUS_SUCCESS;	
+        if (result) {
+
+                if (response.data.auth.nt_status == 0)
+                        printf("Secret is good\n");
+                else
+                        printf("Secret is bad\n0x%08x\n", 
+			       response.data.auth.nt_status);
+
+                return True;
+        }
+
+        return False;
 }
 
 /* Convert uid to sid */
@@ -358,7 +289,7 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 
 	/* Display response */
 
-	d_printf("%s\n", response.data.sid.sid);
+	printf("%s\n", response.data.sid.sid);
 
 	return True;
 }
@@ -383,7 +314,7 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 
 	/* Display response */
 
-	d_printf("%s\n", response.data.sid.sid);
+	printf("%s\n", response.data.sid.sid);
 
 	return True;
 }
@@ -408,7 +339,7 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 
 	/* Display response */
 
-	d_printf("%d\n", (int)response.data.uid);
+	printf("%d\n", (int)response.data.uid);
 
 	return True;
 }
@@ -431,19 +362,7 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 
 	/* Display response */
 
-	d_printf("%d\n", (int)response.data.gid);
-
-	return True;
-}
-
-static BOOL wbinfo_allocate_rid(void)
-{
-	uint32 rid;
-
-	if (!winbind_allocate_rid(&rid))
-		return False;
-
-	d_printf("New rid: %d\n", rid);
+	printf("%d\n", (int)response.data.gid);
 
 	return True;
 }
@@ -468,7 +387,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 
 	/* Display response */
 
-	d_printf("%s%c%s %d\n", response.data.name.dom_name, 
+	printf("%s%c%s %d\n", response.data.name.dom_name, 
 		 winbind_separator(), response.data.name.name, 
 		 response.data.name.type);
 
@@ -496,7 +415,7 @@ static BOOL wbinfo_lookupname(char *name)
 
 	/* Display response */
 
-	d_printf("%s %s (%d)\n", response.data.sid.sid, sid_type_lookup(response.data.sid.type), response.data.sid.type);
+	printf("%s %d\n", response.data.sid.sid, response.data.sid.type);
 
 	return True;
 }
@@ -529,17 +448,18 @@ static BOOL wbinfo_auth(char *username)
 
 	/* Display response */
 
-        d_printf("plaintext password authentication %s\n", 
+        printf("plaintext password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
+
+#ifdef WITH_WINBIND_AUTH_CRAP
 
 /* Authenticate a user with a challenge/response */
 
@@ -567,24 +487,15 @@ static BOOL wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
-	if (push_utf8_fstring(request.data.auth_crap.user, name_user) == -1) {
-		d_printf("unable to create utf8 string for '%s'\n",
-			 name_user);
-		return False;
-	}
+	fstrcpy(request.data.auth_crap.user, name_user);
 
-	if (push_utf8_fstring(request.data.auth_crap.domain, 
-			      name_domain) == -1) {
-		d_printf("unable to create utf8 string for '%s'\n",
-			 name_domain);
-		return False;
-	}
+	fstrcpy(request.data.auth_crap.domain, name_domain);
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
-        SMBencrypt(pass, request.data.auth_crap.chal, 
+        SMBencrypt((uchar *)pass, request.data.auth_crap.chal, 
                    (uchar *)request.data.auth_crap.lm_resp);
-        SMBNTencrypt(pass, request.data.auth_crap.chal,
+        SMBNTencrypt((uchar *)pass, request.data.auth_crap.chal,
                      (uchar *)request.data.auth_crap.nt_resp);
 
         request.data.auth_crap.lm_resp_len = 24;
@@ -594,320 +505,83 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	/* Display response */
 
-        d_printf("challenge/response password authentication %s\n", 
+        printf("challenge/response password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
 
-/* Authenticate a user with a plaintext password and set a token */
-
-static BOOL wbinfo_klog(char *username)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-        char *p;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-        p = strchr(username, '%');
-
-        if (p) {
-                *p = 0;
-                fstrcpy(request.data.auth.user, username);
-                fstrcpy(request.data.auth.pass, p + 1);
-                *p = '%';
-        } else {
-                fstrcpy(request.data.auth.user, username);
-		fstrcpy(request.data.auth.pass, getpass("Password: "));
-	}
-
-	request.flags |= WBFLAG_PAM_AFS_TOKEN;
-
-	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
-
-	/* Display response */
-
-        d_printf("plaintext password authentication %s\n", 
-               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
-
-	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	if (response.extra_data == NULL) {
-		d_printf("Did not get token data\n");
-		return False;
-	}
-
-	if (!afs_settoken_str((char *)response.extra_data)) {
-		d_printf("Could not set token\n");
-		return False;
-	}
-
-	d_printf("Successfully created AFS token\n");
-	return True;
-}
-
-/******************************************************************
- create a winbindd user
-******************************************************************/
-
-static BOOL wbinfo_create_user(char *username)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	request.flags = WBFLAG_ALLOCATE_RID;
-	fstrcpy(request.data.acct_mgt.username, username);
-
-	result = winbindd_request(WINBINDD_CREATE_USER, &request, &response);
-	
-	if ( result == NSS_STATUS_SUCCESS )
-		d_printf("New RID is %d\n", response.data.rid);
-	
-        return result == NSS_STATUS_SUCCESS;
-}
-
-/******************************************************************
- remove a winbindd user
-******************************************************************/
-
-static BOOL wbinfo_delete_user(char *username)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	fstrcpy(request.data.acct_mgt.username, username);
-
-	result = winbindd_request(WINBINDD_DELETE_USER, &request, &response);
-	
-        return result == NSS_STATUS_SUCCESS;
-}
-
-/******************************************************************
- create a winbindd group
-******************************************************************/
-
-static BOOL wbinfo_create_group(char *groupname)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	fstrcpy(request.data.acct_mgt.groupname, groupname);
-
-	result = winbindd_request(WINBINDD_CREATE_GROUP, &request, &response);
-	
-        return result == NSS_STATUS_SUCCESS;
-}
-
-/******************************************************************
- remove a winbindd group
-******************************************************************/
-
-static BOOL wbinfo_delete_group(char *groupname)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	fstrcpy(request.data.acct_mgt.groupname, groupname);
-
-	result = winbindd_request(WINBINDD_DELETE_GROUP, &request, &response);
-	
-        return result == NSS_STATUS_SUCCESS;
-}
-
-/******************************************************************
- parse a string in the form user:group
-******************************************************************/
-
-static BOOL parse_user_group( const char *string, fstring user, fstring group )
-{
-	char *p;
-	
-	if ( !string )
-		return False;
-	
-	if ( !(p = strchr( string, ':' )) )
-		return False;
-		
-	*p = '\0';
-	p++;
-	
-	fstrcpy( user, string );
-	fstrcpy( group, p );
-	
-	return True;
-}
-
-/******************************************************************
- add a user to a winbindd group
-******************************************************************/
-
-static BOOL wbinfo_add_user_to_group(char *string)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if ( !parse_user_group( string, request.data.acct_mgt.username,
-		request.data.acct_mgt.groupname))
-	{
-		d_printf("Can't parse user:group from %s\n", string);
-		return False;
-	}
-
-	result = winbindd_request(WINBINDD_ADD_USER_TO_GROUP, &request, &response);
-	
-        return result == NSS_STATUS_SUCCESS;
-}
-
-/******************************************************************
- remove a user from a winbindd group
-******************************************************************/
-
-static BOOL wbinfo_remove_user_from_group(char *string)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if ( !parse_user_group( string, request.data.acct_mgt.username,
-		request.data.acct_mgt.groupname))
-	{
-		d_printf("Can't parse user:group from %s\n", string);
-		return False;
-	}
-
-	result = winbindd_request(WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
-	
-        return result == NSS_STATUS_SUCCESS;
-}
+#endif	/* WITH_WINBIND_AUTH_CRAP */
 
 /* Print domain users */
 
-static BOOL print_domain_users(const char *domain)
+static BOOL print_domain_users(void)
 {
-	struct winbindd_request request;
 	struct winbindd_response response;
 	const char *extra_data;
 	fstring name;
 
 	/* Send request to winbind daemon */
 
-	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-	
-	if (domain) {
-		/* '.' is the special sign for our own domwin */
-		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, lp_workgroup() );
-		else
-			fstrcpy( request.domain_name, domain );
-	}
 
-	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
+	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
 	/* Look through extra data */
 
 	if (!response.extra_data)
-		return False;
+		goto done;
 
 	extra_data = (const char *)response.extra_data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
-		d_printf("%s\n", name);
+		printf("%s\n", name);
 	
 	SAFE_FREE(response.extra_data);
+
+done:
+	if (response.nt_status)
+		printf("0x%08x\n", response.nt_status);
 
 	return True;
 }
 
 /* Print domain groups */
 
-static BOOL print_domain_groups(const char *domain)
+static BOOL print_domain_groups(void)
 {
-	struct winbindd_request  request;
 	struct winbindd_response response;
 	const char *extra_data;
 	fstring name;
 
-	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	if (domain) {
-		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, lp_workgroup() );
-		else
-			fstrcpy( request.domain_name, domain );
-	}
-
-	if (winbindd_request(WINBINDD_LIST_GROUPS, &request, &response) !=
+	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
 	/* Look through extra data */
 
 	if (!response.extra_data)
-		return False;
+		goto done;
 
 	extra_data = (const char *)response.extra_data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
-		d_printf("%s\n", name);
+		printf("%s\n", name);
 
 	SAFE_FREE(response.extra_data);
+
+done:
+	if (response.nt_status)
+		printf("0x%08x\n", response.nt_status);
 	
 	return True;
 }
@@ -916,195 +590,164 @@ static BOOL print_domain_groups(const char *domain)
 
 static BOOL wbinfo_set_auth_user(char *username)
 {
-	const char *password;
-	char *p;
+	char *password;
 	fstring user, domain;
 
 	/* Separate into user and password */
 
 	parse_wbinfo_domain_user(username, domain, user);
 
-	p = strchr(user, '%');
+	password = strchr(user, '%');
 
-	if (p != NULL) {
-		*p = 0;
-		password = p+1;
-	} else {
-		char *thepass = getpass("Password: ");
-		if (thepass) {
-			password = thepass;	
-		} else
-			password = "";
-	}
+	if (password) {
+		*password = 0;
+		password++;
+	} else
+		password = "";
 
-	/* Store or remove DOMAIN\username%password in secrets.tdb */
+	/* Store in secrets.tdb */
 
 	secrets_init();
 
-	if (user[0]) {
-
-		if (!secrets_store(SECRETS_AUTH_USER, user,
-				   strlen(user) + 1)) {
-			d_fprintf(stderr, "error storing username\n");
-			return False;
-		}
-
-		/* We always have a domain name added by the
-		   parse_wbinfo_domain_user() function. */
-
-		if (!secrets_store(SECRETS_AUTH_DOMAIN, domain,
-				   strlen(domain) + 1)) {
-			d_fprintf(stderr, "error storing domain name\n");
-			return False;
-		}
-
-	} else {
-		secrets_delete(SECRETS_AUTH_USER);
-		secrets_delete(SECRETS_AUTH_DOMAIN);
+	if (!secrets_store(SECRETS_AUTH_USER, user, 
+			   strlen(user) + 1) ||
+	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
+			   strlen(domain) + 1) ||
+	    !secrets_store(SECRETS_AUTH_PASSWORD, password,
+			   strlen(password) + 1)) {
+		fprintf(stderr, "error storing authenticated user info\n");
+		return False;
 	}
-
-	if (password[0]) {
-
-		if (!secrets_store(SECRETS_AUTH_PASSWORD, password,
-				   strlen(password) + 1)) {
-			d_fprintf(stderr, "error storing password\n");
-			return False;
-		}
-
-	} else
-		secrets_delete(SECRETS_AUTH_PASSWORD);
 
 	return True;
-}
-
-static void wbinfo_get_auth_user(void)
-{
-	char *user, *domain, *password;
-
-	/* Lift data from secrets file */
-	
-	secrets_fetch_ipc_userpass(&user, &domain, &password);
-
-	if ((!user || !*user) && (!domain || !*domain ) && (!password || !*password)){
-
-		SAFE_FREE(user);
-		SAFE_FREE(domain);
-		SAFE_FREE(password);
-		d_printf("No authorised user configured\n");
-		return;
-	}
-
-	/* Pretty print authorised user info */
-
-	d_printf("%s%s%s%s%s\n", domain ? domain : "", domain ? lp_winbind_separator(): "",
-		 user, password ? "%" : "", password ? password : "");
-
-	SAFE_FREE(user);
-	SAFE_FREE(domain);
-	SAFE_FREE(password);
 }
 
 static BOOL wbinfo_ping(void)
 {
         NSS_STATUS result;
-
+	
 	result = winbindd_request(WINBINDD_PING, NULL, NULL);
 
 	/* Display response */
 
-        d_printf("Ping to winbindd %s on fd %d\n", 
-               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", winbindd_fd);
+        printf("'ping' to winbindd %s\n", 
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
         return result == NSS_STATUS_SUCCESS;
+}
+
+/* Print program usage */
+
+static void usage(void)
+{
+	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
+               "| -[aA] user%%password\n");
+	printf("Version: %s\n", VERSION);
+	printf("\t-u\t\t\tlists all domain users\n");
+	printf("\t-g\t\t\tlists all domain groups\n");
+	printf("\t-n name\t\t\tconverts name to sid\n");
+	printf("\t-s sid\t\t\tconverts sid to name\n");
+	printf("\t-N name\t\t\tconverts NetBIOS name to IP (WINS)\n");
+	printf("\t-I IP\t\t\tconverts IP address to NetBIOS name (WINS)\n");
+	printf("\t-U uid\t\t\tconverts uid to sid\n");
+	printf("\t-G gid\t\t\tconverts gid to sid\n");
+	printf("\t-S sid\t\t\tconverts sid to uid\n");
+	printf("\t-Y sid\t\t\tconverts sid to gid\n");
+	printf("\t-t\t\t\tcheck shared secret\n");
+	printf("\t-m\t\t\tlist trusted domains\n");
+	printf("\t-r user\t\t\tget user groups\n");
+	printf("\t-a user%%password\tauthenticate user\n");
+	printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
+	printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
+	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
+	printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
 }
 
 /* Main program */
 
 enum {
 	OPT_SET_AUTH_USER = 1000,
-	OPT_GET_AUTH_USER,
-	OPT_DOMAIN_NAME,
-	OPT_SEQUENCE,
-	OPT_USERSIDS
+	OPT_SEQUENCE
 };
 
 int main(int argc, char **argv)
 {
+	extern pstring global_myname;
 	int opt;
 
 	poptContext pc;
 	static char *string_arg;
-	static char *opt_domain_name;
 	static int int_arg;
+	BOOL got_command = False;
 	int result = 1;
 
 	struct poptOption long_options[] = {
-		POPT_AUTOHELP
 
 		/* longName, shortName, argInfo, argPtr, value, descrip, 
 		   argDesc */
 
-		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u', "Lists all domain users", "domain"},
-		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g', "Lists all domain groups", "domain" },
-		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N', "Converts NetBIOS name to IP", "NETBIOS-NAME" },
-		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name", "IP" },
-		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
-		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name", "SID" },
-		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
-		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
-		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
-		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
-		{ "allocate-rid", 'A', POPT_ARG_NONE, 0, 'A', "Get a new RID out of idmap" },
-		{ "create-user", 'c', POPT_ARG_STRING, &string_arg, 'c', "Create a local user account", "name" },
-		{ "delete-user", 'x', POPT_ARG_STRING, &string_arg, 'x', "Delete a local user account", "name" },
-		{ "create-group", 'C', POPT_ARG_STRING, &string_arg, 'C', "Create a local group", "name" },
-		{ "delete-group", 'X', POPT_ARG_STRING, &string_arg, 'X', "Delete a local group", "name" },
-		{ "add-to-group", 'o', POPT_ARG_STRING, &string_arg, 'o', "Add user to group", "user:group" },
-		{ "del-from-group", 'O', POPT_ARG_STRING, &string_arg, 'O', "Remove user from group", "user:group" },
-		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
-		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
-		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
-		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
-		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
-		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
- 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
-		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
-		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
-		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
-		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
-#ifdef WITH_FAKE_KASERVER
- 		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
-#endif
-		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ "help", 'h', POPT_ARG_NONE, 0, 'h' },
+		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u' },
+		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g' },
+		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N' },
+		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I' },
+		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n' },
+		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's' },
+		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U' },
+		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G' },
+		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S' },
+		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y' },
+		{ "check-secret", 't', POPT_ARG_NONE, 0, 't' },
+		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm' },
+		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
+		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
+ 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
+		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
+		{ 0, 0, 0, 0 }
 	};
 
 	/* Samba client initialisation */
 
-	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
-		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
-			dyn_CONFIGFILE, strerror(errno));
+	if (!*global_myname) {
+		char *p;
+
+		fstrcpy(global_myname, myhostname());
+		p = strchr(global_myname, '.');
+		if (p)
+			*p = 0;
+	}
+
+	TimeInit();
+
+	codepage_initialise(lp_client_code_page());
+	charset_initialise();
+
+	if (!lp_load(CONFIGFILE, True, False, False)) {
+		fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
+			CONFIGFILE, strerror(errno));
 		exit(1);
 	}
 
-	if (!init_names())
-		return 1;
-
 	load_interfaces();
+
+	/* Parse command line options */
+
+	if (argc == 1) {
+		usage();
+		return 1;
+	}
 
 	/* Parse options */
 
 	pc = poptGetContext("wbinfo", argc, (const char **)argv, long_options, 0);
 
-	/* Parse command line options */
-
-	if (argc == 1) {
-		poptPrintHelp(pc, stderr, 0);
-		return 1;
-	}
-
 	while((opt = poptGetNextOpt(pc)) != -1) {
-		/* get the generic configuration parameters like --domain */
+		if (got_command) {
+			fprintf(stderr, "No more than one command may be specified at once.\n");
+			exit(1);
+		}
+		got_command = True;
 	}
 
 	poptFreeContext(pc);
@@ -1114,192 +757,132 @@ int main(int argc, char **argv)
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case 'h':
+			usage();
+			result = 0;
+			goto done;
 		case 'u':
-			if (!print_domain_users(opt_domain_name)) {
-				d_printf("Error looking up domain users\n");
+			if (!print_domain_users()) {
+				printf("Error looking up domain users\n");
 				goto done;
 			}
 			break;
 		case 'g':
-			if (!print_domain_groups(opt_domain_name)) {
-				d_printf("Error looking up domain groups\n");
+			if (!print_domain_groups()) {
+				printf("Error looking up domain groups\n");
 				goto done;
 			}
 			break;
 		case 's':
 			if (!wbinfo_lookupsid(string_arg)) {
-				d_printf("Could not lookup sid %s\n", string_arg);
+				printf("Could not lookup sid %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'n':
 			if (!wbinfo_lookupname(string_arg)) {
-				d_printf("Could not lookup name %s\n", string_arg);
+				printf("Could not lookup name %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'N':
 			if (!wbinfo_wins_byname(string_arg)) {
-				d_printf("Could not lookup WINS by name %s\n", string_arg);
+				printf("Could not lookup WINS by name %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'I':
 			if (!wbinfo_wins_byip(string_arg)) {
-				d_printf("Could not lookup WINS by IP %s\n", string_arg);
+				printf("Could not lookup WINS by IP %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'U':
 			if (!wbinfo_uid_to_sid(int_arg)) {
-				d_printf("Could not convert uid %d to sid\n", int_arg);
+				printf("Could not convert uid %d to sid\n", int_arg);
 				goto done;
 			}
 			break;
 		case 'G':
 			if (!wbinfo_gid_to_sid(int_arg)) {
-				d_printf("Could not convert gid %d to sid\n",
+				printf("Could not convert gid %d to sid\n",
 				       int_arg);
 				goto done;
 			}
 			break;
 		case 'S':
 			if (!wbinfo_sid_to_uid(string_arg)) {
-				d_printf("Could not convert sid %s to uid\n",
+				printf("Could not convert sid %s to uid\n",
 				       string_arg);
 				goto done;
 			}
 			break;
 		case 'Y':
 			if (!wbinfo_sid_to_gid(string_arg)) {
-				d_printf("Could not convert sid %s to gid\n",
+				printf("Could not convert sid %s to gid\n",
 				       string_arg);
-				goto done;
-			}
-			break;
-		case 'A':
-			if (!wbinfo_allocate_rid()) {
-				d_printf("Could not allocate a RID\n");
 				goto done;
 			}
 			break;
 		case 't':
 			if (!wbinfo_check_secret()) {
-				d_printf("Could not check secret\n");
+				printf("Could not check secret\n");
 				goto done;
 			}
 			break;
 		case 'm':
 			if (!wbinfo_list_domains()) {
-				d_printf("Could not list trusted domains\n");
+				printf("Could not list trusted domains\n");
 				goto done;
 			}
 			break;
 		case OPT_SEQUENCE:
-			if (!wbinfo_show_sequence(opt_domain_name)) {
-				d_printf("Could not show sequence numbers\n");
-				goto done;
-			}
-			break;
-		case 'D':
-			if (!wbinfo_domain_info(string_arg)) {
-				d_printf("Could not get domain info\n");
+			if (!wbinfo_show_sequence()) {
+				printf("Could not show sequence numbers\n");
 				goto done;
 			}
 			break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
-				d_printf("Could not get groups for user %s\n", 
+				printf("Could not get groups for user %s\n", 
 				       string_arg);
 				goto done;
 			}
 			break;
-		case OPT_USERSIDS:
-			if (!wbinfo_get_usersids(string_arg)) {
-				d_printf("Could not get group SIDs for user SID %s\n", 
-				       string_arg);
-				goto done;
-			}
-			break;
-		case 'a': {
-				BOOL got_error = False;
+                case 'a': {
+                        BOOL got_error = False;
 
-				if (!wbinfo_auth(string_arg)) {
-					d_printf("Could not authenticate user %s with "
-						"plaintext password\n", string_arg);
-					got_error = True;
-				}
+                        if (!wbinfo_auth(string_arg)) {
+                                printf("Could not authenticate user %s with "
+                                       "plaintext password\n", string_arg);
+                                got_error = True;
+                        }
+#ifdef WITH_WINBIND_AUTH_CRAP
+                        if (!wbinfo_auth_crap(string_arg)) {
+                                printf("Could not authenticate user %s with "
+                                       "challenge/response\n", string_arg);
+                                got_error = True;
+                        }
+#endif
+                        if (got_error)
+                                goto done;
+                        break;
+		}
+                case 'p': {
 
-				if (!wbinfo_auth_crap(string_arg)) {
-					d_printf("Could not authenticate user %s with "
-						"challenge/response\n", string_arg);
-					got_error = True;
-				}
-
-				if (got_error)
-					goto done;
-				break;
+                        if (!wbinfo_ping()) {
+                                printf("could not ping winbindd!\n");
+                                goto done;
 			}
-		case 'k':
-			if (!wbinfo_klog(string_arg)) {
-				d_printf("Could not klog user\n");
-				goto done;
-			}
-			break;
-		case 'c':
-			if ( !wbinfo_create_user(string_arg) ) {
-				d_printf("Could not create user account\n");
-				goto done;
-			}
-			break;
-		case 'C':
-			if ( !wbinfo_create_group(string_arg) ) {
-				d_printf("Could not create group\n");
-				goto done;
-			}
-			break;
-		case 'o':
-			if ( !wbinfo_add_user_to_group(string_arg) ) {
-				d_printf("Could not add user to group\n");
-				goto done;
-			}
-			break;
-		case 'O':
-			if ( !wbinfo_remove_user_from_group(string_arg) ) {
-				d_printf("Could not remove user from group\n");
-				goto done;
-			}
-			break;
-		case 'x':
-			if ( !wbinfo_delete_user(string_arg) ) {
-				d_printf("Could not delete user account\n");
-				goto done;
-			}
-			break;
-		case 'X':
-			if ( !wbinfo_delete_group(string_arg) ) {
-				d_printf("Could not delete group\n");
-				goto done;
-			}
-			break;
-		case 'p':
-			if (!wbinfo_ping()) {
-				d_printf("could not ping winbindd!\n");
-				goto done;
-			}
-			break;
+                        break;
+		}
 		case OPT_SET_AUTH_USER:
-			wbinfo_set_auth_user(string_arg);
-			break;
-		case OPT_GET_AUTH_USER:
-			wbinfo_get_auth_user();
-			break;
-		/* generic configuration options */
-		case OPT_DOMAIN_NAME:
+			if (!(wbinfo_set_auth_user(string_arg)))
+				goto done;
 			break;
 		default:
-			d_fprintf(stderr, "Invalid option\n");
-			poptPrintHelp(pc, stderr, 0);
+			fprintf(stderr, "Invalid option\n");
+			usage();
 			goto done;
 		}
 	}

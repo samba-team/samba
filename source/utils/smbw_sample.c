@@ -4,22 +4,25 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+extern DIR *smbw_opendir(const char *fname);
+extern struct dirent *smbw_readdir(DIR *dirp);
+
 static void usage(void)
 {
-	printf("
-smbw_sample - a sample program that uses smbw
-
-smbw_sample <options> path
-
-  options:
-     -W workgroup
-     -l logfile
-     -P prefix
-     -d debuglevel
-     -U username%%password
-     -R resolve order
-
-note that path must start with /smb/
+	printf("\n \
+smbw_sample - a sample program that uses smbw\n \
+\n \
+smbw_sample <options> path\n \
+\n \
+  options:\n \
+     -W workgroup\n \
+     -l logfile\n \
+     -P prefix\n \
+     -d debuglevel\n \
+     -U username%%password\n \
+     -R resolve order\n \
+\n \
+note that path must start with /smb/\n \
 ");
 }
 
@@ -33,7 +36,9 @@ int main(int argc, char *argv[])
 	extern int optind;
 	char *path;
 
-	lp_load(dyn_CONFIGFILE,1,0,0);
+	charset_initialise();
+	lp_load(CONFIGFILE,1,0,0);
+	codepage_initialise(lp_client_code_page());
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {
@@ -51,7 +56,7 @@ int main(int argc, char *argv[])
 			smbw_setshared("DEBUG", optarg);
 			break;
 		case 'U':
-			p = strchr_m(optarg,'%');
+			p = strchr(optarg,'%');
 			if (p) {
 				*p=0;
 				smbw_setshared("PASSWORD",p+1);

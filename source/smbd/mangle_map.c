@@ -127,7 +127,7 @@ static char *map_filename( char *s,         /* This is null terminated */
  */
 static void mangled_map(char *s, const char *MangledMap)
 {
-	const char *start=MangledMap;       /* Use this to search for mappings. */
+	const char *start=MangledMap; /* Use this to search for mappings. */
 	const char *end;                    /* Used to find the end of strings. */
 	char *match_string;
 	pstring new_string;           /* Make up the result here. */
@@ -201,7 +201,7 @@ static void mangled_map(char *s, const char *MangledMap)
   front end routine to the mangled map code 
   personally I think that the whole idea of "mangled map" is completely bogus
 */
-void mangle_map_filename(fstring fname, int snum)
+void mangle_map_filename(char *fname, int snum)
 {
 	char *map;
 

@@ -1,11 +1,11 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997,
- *  Copyright (C) Jeremy Allison               1998-2001,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
+ *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Jeremy Allison               1998-2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,9 +25,6 @@
 /* This is the interface to the netlogon pipe. */
 
 #include "includes.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
 
 /*************************************************************************
  api_net_req_chal:
@@ -317,69 +314,28 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 	return True;
 }
 
-/*************************************************************************
- api_ds_enum_dom_trusts:
- *************************************************************************/
-
-#if 0 	/* JERRY */
-static BOOL api_ds_enum_dom_trusts(pipes_struct *p)
-{
-	DS_Q_ENUM_DOM_TRUSTS q_u;
-	DS_R_ENUM_DOM_TRUSTS r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	DEBUG(6,("api_ds_enum_dom_trusts\n"));
-
-	if ( !ds_io_q_enum_domain_trusts("", data, 0, &q_u) ) {
-		DEBUG(0,("api_ds_enum_domain_trusts: Failed to unmarshall DS_Q_ENUM_DOM_TRUSTS.\n"));
-		return False;
-	}
-
-	r_u.status = _ds_enum_dom_trusts(p, &q_u, &r_u);
-
-	if ( !ds_io_r_enum_domain_trusts("", rdata, 0, &r_u) ) {
-		DEBUG(0,("api_ds_enum_domain_trusts: Failed to marshall DS_R_ENUM_DOM_TRUSTS.\n"));
-		return False;
-	}
-
-	DEBUG(6,("api_ds_enum_dom_trusts\n"));
-
-	return True;
-}
-#endif	/* JERRY */
-
 /*******************************************************************
  array of \PIPE\NETLOGON operations
  ********************************************************************/
 static struct api_struct api_net_cmds [] =
-    {
-      { "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
-      { "NET_AUTH"          , NET_AUTH          , api_net_auth           }, 
-      { "NET_AUTH2"         , NET_AUTH2         , api_net_auth_2         }, 
-      { "NET_SRVPWSET"      , NET_SRVPWSET      , api_net_srv_pwset      }, 
-      { "NET_SAMLOGON"      , NET_SAMLOGON      , api_net_sam_logon      }, 
-      { "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
-      { "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
-      { "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
-      { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
-#if 0	/* JERRY */
-      { "DS_ENUM_DOM_TRUSTS", DS_ENUM_DOM_TRUSTS, api_ds_enum_dom_trusts }
-#endif	/* JERRY */
-    };
-
-void netlog_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
-	*fns = api_net_cmds;
-	*n_fns = sizeof(api_net_cmds) / sizeof(struct api_struct);
-}
+	{ "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
+	{ "NET_AUTH"          , NET_AUTH          , api_net_auth           }, 
+	{ "NET_AUTH2"         , NET_AUTH2         , api_net_auth_2         }, 
+	{ "NET_SRVPWSET"      , NET_SRVPWSET      , api_net_srv_pwset      }, 
+	{ "NET_SAMLOGON"      , NET_SAMLOGON      , api_net_sam_logon      }, 
+	{ "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
+	{ "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
+	{ "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
+	{ "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
+	{  NULL               , 0                 , NULL                   }
+};
 
-NTSTATUS rpc_net_init(void)
+/*******************************************************************
+ receives a netlogon pipe and responds.
+ ********************************************************************/
+
+BOOL api_netlog_rpc(pipes_struct *p)
 {
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "NETLOGON", "lsass", api_net_cmds,
-				    sizeof(api_net_cmds) / sizeof(struct api_struct));
+	return api_rpcTNP(p, "api_netlog_rpc", api_net_cmds);
 }

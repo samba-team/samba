@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  MSDfs RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
@@ -24,9 +25,6 @@
 #include "includes.h"
 #include "nterr.h"
 #include "rpc_parse.h"   
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_PARSE
 
 /******************************************************************* 
 Make a DFS_Q_DFS_QUERY structure
@@ -80,9 +78,9 @@ BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, const char *entrypath,
 			   const char *servername, const char *sharename)
 {
 	DEBUG(5,("init_dfs_q_dfs_remove\n"));
-	init_unistr2(&q_d->DfsEntryPath, entrypath, UNI_STR_TERMINATE);
-	init_unistr2(&q_d->ServerName, servername, UNI_STR_TERMINATE);
-	init_unistr2(&q_d->ShareName, sharename, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
+	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
+	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
 	q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
 	return True;
 }
@@ -149,17 +147,16 @@ BOOL dfs_io_r_dfs_remove(const char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps
 Make a DFS_Q_DFS_ADD structure
 *******************************************************************/
 
-BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, const char *entrypath, 
-			const char *servername, const char *sharename, 
-			const char *comment, uint32 flags)
+BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, const char *entrypath, const char *servername,
+			const char *sharename, const char *comment, uint32 flags)
 {
 	DEBUG(5,("init_dfs_q_dfs_add\n"));
 	q_d->ptr_DfsEntryPath = q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
-	init_unistr2(&q_d->DfsEntryPath, entrypath, UNI_STR_TERMINATE);
-	init_unistr2(&q_d->ServerName, servername, UNI_STR_TERMINATE);
-	init_unistr2(&q_d->ShareName, sharename, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
+	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
+	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
 	if(comment != NULL) {
-		init_unistr2(&q_d->Comment, comment,UNI_STR_TERMINATE);
+		init_unistr2(&q_d->Comment,      comment,    strlen(comment)+1);
 		q_d->ptr_Comment = 1;
 	} else {
 		q_d->ptr_Comment = 0;
@@ -237,9 +234,9 @@ BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, const char *entrypath,
 			     uint32 info_level)
 {
 	DEBUG(5,("init_dfs_q2_get_info\n"));
-	init_unistr2(&q_d->uni_path, entrypath, UNI_STR_TERMINATE);
-	init_unistr2(&q_d->uni_server, servername, UNI_STR_TERMINATE);
-	init_unistr2(&q_d->uni_share, sharename, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->uni_path, entrypath,  strlen(entrypath)+1);
+	init_unistr2(&q_d->uni_server,   servername, strlen(servername)+1);
+	init_unistr2(&q_d->uni_share,    sharename,  strlen(sharename)+1);
 	q_d->level = info_level;
 	q_d->ptr_server = q_d->ptr_share = 1;
 	return True;
@@ -249,7 +246,7 @@ BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, const char *entrypath,
  Read/write a DFS_Q_GET_INFO structure
  ************************************************************/
 
-BOOL dfs_io_q_dfs_get_info(const char *desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct* ps, int depth)
+BOOL dfs_io_q_dfs_get_info(const char* desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct* ps, int depth)
 {
 	if(q_i == NULL)
 		return False;
@@ -289,7 +286,7 @@ BOOL dfs_io_q_dfs_get_info(const char *desc, DFS_Q_DFS_GET_INFO* q_i, prs_struct
  Read/write a DFS_R_GET_INFO structure
  ************************************************************/
 
-BOOL dfs_io_r_dfs_get_info(const char *desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, int depth)
+BOOL dfs_io_r_dfs_get_info(const char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, int depth)
 {
 	if(r_i == NULL)
 		return False;

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    code to manipulate domain credentials
    Copyright (C) Andrew Tridgell 1997-1998
    
@@ -41,8 +42,8 @@ Input: 8 byte challenge block
 Output:
       8 byte session key
 ****************************************************************************/
-void cred_session_key(const DOM_CHAL *clnt_chal, const DOM_CHAL *srv_chal, const uchar *pass, 
-		      uchar session_key[8])
+void cred_session_key(const DOM_CHAL *clnt_chal, const DOM_CHAL *srv_chal, const uchar *pass,
+			uchar session_key[8])
 {
 	uint32 sum[2];
 	unsigned char sum2[8];
@@ -53,7 +54,7 @@ void cred_session_key(const DOM_CHAL *clnt_chal, const DOM_CHAL *srv_chal, const
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	cred_hash1(session_key, sum2, pass);
+	cred_hash1(session_key, sum2,pass);
 
 	/* debug output */
 	DEBUG(4,("cred_session_key\n"));

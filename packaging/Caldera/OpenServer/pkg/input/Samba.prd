@@ -1,0 +1,5 @@
+PROD:SCO:Samba:
+description = $Samba_NAME
+version     = $Samba_VER
+packages    = SCO:Samba::$Samba_VER
+cmpntFiles  = Samba.cmpnt

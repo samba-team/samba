@@ -5,8 +5,6 @@
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Andrew Tridgell 2000
-   Copyright (C) Andrew Bartlett 2002
-   
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -24,11 +22,13 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#include "winbind_client.h"
+#include "winbind_nss_config.h"
+#include "winbindd_nss.h"
 
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
+static char *excluded_domain;
 
 /* Free a response structure */
 
@@ -40,15 +40,39 @@ void free_response(struct winbindd_response *response)
 		SAFE_FREE(response->extra_data);
 }
 
+/*
+  smbd needs to be able to exclude lookups for its own domain
+*/
+void winbind_exclude_domain(const char *domain)
+{
+	SAFE_FREE(excluded_domain);
+	excluded_domain = strdup(domain);
+}
+
+
 /* Initialise a request structure */
 
 void init_request(struct winbindd_request *request, int request_type)
 {
+        static char *domain_env;
+        static BOOL initialised;
+
 	request->length = sizeof(struct winbindd_request);
 
 	request->cmd = (enum winbindd_cmd)request_type;
 	request->pid = getpid();
+	request->domain[0] = '\0';
 
+	if (!initialised) {
+		initialised = True;
+		domain_env = getenv(WINBINDD_DOMAIN_ENV);
+	}
+
+	if (domain_env) {
+		strncpy(request->domain, domain_env,
+			sizeof(request->domain) - 1);
+		request->domain[sizeof(request->domain) - 1] = '\0';
+	}
 }
 
 /* Initialise a response structure */
@@ -70,77 +94,27 @@ void close_sock(void)
 	}
 }
 
-/* Make sure socket handle isn't stdin, stdout or stderr */
-#define RECURSION_LIMIT 3
-
-static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */) 
-{
-	int new_fd;
-	if (fd >= 0 && fd <= 2) {
-#ifdef F_DUPFD 
-		if ((new_fd = fcntl(fd, F_DUPFD, 3)) == -1) {
-			return -1;
-		}
-		/* Paranoia */
-		if (new_fd < 3) {
-			close(new_fd);
-			return -1;
-		}
-		close(fd);
-		return new_fd;
-#else
-		if (limit <= 0)
-			return -1;
-		
-		new_fd = dup(fd);
-		if (new_fd == -1) 
-			return -1;
-
-		/* use the program stack to hold our list of FDs to close */
-		new_fd = make_nonstd_fd_internals(new_fd, limit - 1);
-		close(fd);
-		return new_fd;
-#endif
-	}
-	return fd;
-}
-
-static int make_safe_fd(int fd) 
-{
-	int result, flags;
-	int new_fd = make_nonstd_fd_internals(fd, RECURSION_LIMIT);
-	if (new_fd == -1) {
-		close(fd);
-		return -1;
-	}
-	/* Socket should be closed on exec() */
-	
-#ifdef FD_CLOEXEC
-	result = flags = fcntl(new_fd, F_GETFD, 0);
-	if (flags >= 0) {
-		flags |= FD_CLOEXEC;
-		result = fcntl( new_fd, F_SETFD, flags );
-	}
-	if (result < 0) {
-		close(new_fd);
-		return -1;
-	}
-#endif
-	return new_fd;
-}
-
 /* Connect to winbindd socket */
 
-static int winbind_named_pipe_sock(const char *dir)
+int winbind_open_pipe_sock(void)
 {
 	struct sockaddr_un sunaddr;
+	static pid_t our_pid;
 	struct stat st;
 	pstring path;
-	int fd;
+	
+	if (our_pid != getpid()) {
+		close_sock();
+		our_pid = getpid();
+	}
+	
+	if (winbindd_fd != -1) {
+		return winbindd_fd;
+	}
 	
 	/* Check permissions on unix socket directory */
 	
-	if (lstat(dir, &st) == -1) {
+	if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
 		return -1;
 	}
 	
@@ -151,13 +125,13 @@ static int winbind_named_pipe_sock(const char *dir)
 	
 	/* Connect to socket */
 	
-	strncpy(path, dir, sizeof(path) - 1);
+	strncpy(path, WINBINDD_SOCKET_DIR, sizeof(path) - 1);
 	path[sizeof(path) - 1] = '\0';
 	
-	strncat(path, "/", sizeof(path) - 1 - strlen(path));
+	strncat(path, "/", sizeof(path) - 1);
 	path[sizeof(path) - 1] = '\0';
 	
-	strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1 - strlen(path));
+	strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1);
 	path[sizeof(path) - 1] = '\0';
 	
 	ZERO_STRUCT(sunaddr);
@@ -181,70 +155,17 @@ static int winbind_named_pipe_sock(const char *dir)
 	
 	/* Connect to socket */
 	
-	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	if ((winbindd_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		return -1;
 	}
-
-	if ((fd = make_safe_fd( fd)) == -1) {
-		return fd;
-	}
 	
-	if (connect(fd, (struct sockaddr *)&sunaddr, 
+	if (connect(winbindd_fd, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
-		close(fd);
+		close_sock();
 		return -1;
 	}
         
-	return fd;
-}
-
-/* Connect to winbindd socket */
-
-int winbind_open_pipe_sock(void)
-{
-#ifdef HAVE_UNIXSOCKET
-	static pid_t our_pid;
-	struct winbindd_request request;
-	struct winbindd_response response;
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if (our_pid != getpid()) {
-		close_sock();
-		our_pid = getpid();
-	}
-	
-	if (winbindd_fd != -1) {
-		return winbindd_fd;
-	}
-
-	if ((winbindd_fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR)) == -1) {
-		return -1;
-	}
-
-	/* version-check the socket */
-
-	if ((winbindd_request(WINBINDD_INTERFACE_VERSION, &request, &response) != NSS_STATUS_SUCCESS) || (response.data.interface_version != WINBIND_INTERFACE_VERSION)) {
-		close_sock();
-		return -1;
-	}
-
-	/* try and get priv pipe */
-
-	if (winbindd_request(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
-		int fd;
-		if ((fd = winbind_named_pipe_sock(response.extra_data)) != -1) {
-			close(winbindd_fd);
-			winbindd_fd = fd;
-		}
-	}
-
-	SAFE_FREE(response.extra_data);
-
 	return winbindd_fd;
-#else
-	return -1;
-#endif /* HAVE_UNIXSOCKET */
 }
 
 /* Write data to winbindd socket */
@@ -397,15 +318,17 @@ int read_reply(struct winbindd_response *response)
 NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 {
 	struct winbindd_request lrequest;
-	char *env;
-	int  value;
-	
+
 	/* Check for our tricky environment variable */
 
-	if ( (env = getenv(WINBINDD_DONT_ENV)) != NULL ) {
-		value = atoi(env);
-		if ( value == 1 )
-			return NSS_STATUS_NOTFOUND;
+	if (getenv(WINBINDD_DONT_ENV)) {
+		return NSS_STATUS_NOTFOUND;
+	}
+
+	/* smbd may have excluded this domain */
+	if (excluded_domain && 
+	    strcasecmp(excluded_domain, request->domain) == 0) {
+		return NSS_STATUS_NOTFOUND;
 	}
 
 	if (!request) {
@@ -460,8 +383,8 @@ NSS_STATUS winbindd_get_response(struct winbindd_response *response)
 /* Handle simple types of requests */
 
 NSS_STATUS winbindd_request(int req_type, 
-			    struct winbindd_request *request,
-			    struct winbindd_response *response)
+				 struct winbindd_request *request,
+				 struct winbindd_response *response)
 {
 	NSS_STATUS status;
 
@@ -469,26 +392,4 @@ NSS_STATUS winbindd_request(int req_type,
 	if (status != NSS_STATUS_SUCCESS) 
 		return(status);
 	return winbindd_get_response(response);
-}
-
-/*************************************************************************
- A couple of simple functions to disable winbindd lookups and re-
- enable them
- ************************************************************************/
- 
-/* Use putenv() instead of setenv() in these functions as not all
-   environments have the latter. */
-
-BOOL winbind_off( void )
-{
-	static char *s = WINBINDD_DONT_ENV "=1";
-
-	return putenv(s) != -1;
-}
-
-BOOL winbind_on( void )
-{
-	static char *s = WINBINDD_DONT_ENV "=0";
-
-	return putenv(s) != -1;
 }

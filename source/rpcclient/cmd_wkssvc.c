@@ -44,7 +44,7 @@ void cmd_wks_query_info(struct client_info *info)
 
 	fstrcpy(dest_wks, "\\\\");
 	fstrcat(dest_wks, info->dest_host);
-	strupper_m(dest_wks);
+	strupper(dest_wks);
 
 	if (next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
@@ -57,7 +57,7 @@ void cmd_wks_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_wks_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WKSSVC) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WKSSVC) : False;
 
 	/* send info level: receive requested info.  hopefully. */
 	res = res ? do_wks_query_info(smb_cli, 

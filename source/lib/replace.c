@@ -47,7 +47,7 @@ ftruncate for operating systems that don't have it
 {
 	size_t len = strlen(s);
 	size_t ret = len;
-	if (bufsize <= 0) return 0;
+	if (bufsize == 0) return 0;
 	if (len >= bufsize) len = bufsize-1;
 	memcpy(d, s, len);
 	d[len] = 0;
@@ -65,9 +65,6 @@ ftruncate for operating systems that don't have it
 	size_t len2 = strlen(s);
 	size_t ret = len1 + len2;
 
-	if (len1 >= bufsize) {
-		return 0;
-	}
 	if (len1+len2 >= bufsize) {
 		len2 = bufsize - (len1+1);
 	}
@@ -331,8 +328,13 @@ char *rep_inet_ntoa(struct in_addr ip)
 {
 	unsigned char *p = (unsigned char *)&ip.s_addr;
 	static char buf[18];
+#if WORDS_BIGENDIAN
 	slprintf(buf, 17, "%d.%d.%d.%d", 
 		 (int)p[0], (int)p[1], (int)p[2], (int)p[3]);
+#else /* WORDS_BIGENDIAN */
+	slprintf(buf, 17, "%d.%d.%d.%d", 
+		 (int)p[3], (int)p[2], (int)p[1], (int)p[0]);
+#endif /* WORDS_BIGENDIAN */
 	return buf;
 }
 #endif /* REPLACE_INET_NTOA */
@@ -412,41 +414,3 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return setvbuf(stream, (char *)NULL, _IOLBF, 0);
 }
 #endif /* HAVE_SETLINEBUF */
-
-#ifndef HAVE_VSYSLOG
-#ifdef HAVE_SYSLOG
- void vsyslog (int facility_priority, char *format, va_list arglist)
-{
-	char *msg = NULL;
-	vasprintf(&msg, format, arglist);
-	if (!msg)
-		return;
-	syslog(facility_priority, "%s", msg);
-	SAFE_FREE(msg);
-}
-#endif /* HAVE_SYSLOG */
-#endif /* HAVE_VSYSLOG */
-
-
-#ifndef HAVE_TIMEGM
-/*
-  yes, I know this looks insane, but its really needed. The function in the 
-  Linux timegm() manpage does not work on solaris.
-*/
- time_t timegm(struct tm *tm) 
-{
-	struct tm tm2, tm3;
-	time_t t;
-
-	tm2 = *tm;
-
-	t = mktime(&tm2);
-	tm3 = *localtime(&t);
-	tm2 = *tm;
-	tm2.tm_isdst = tm3.tm_isdst;
-	t = mktime(&tm2);
-	t -= TimeDiff(t);
-
-	return t;
-}
-#endif

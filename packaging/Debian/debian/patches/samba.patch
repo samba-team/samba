@@ -1,16 +1,15 @@
-diff -uNr samba-3.0.0beta1.orig/source/client/smbmount.c samba-3.0.0beta1/source/client/smbmount.c
---- samba-3.0.0beta1.orig/source/client/smbmount.c	2003-06-07 12:57:32.000000000 -0500
-+++ samba-3.0.0beta1/source/client/smbmount.c	2003-06-30 20:12:22.000000000 -0500
-@@ -765,7 +765,7 @@
+--- samba-2.2.4/source/client/smbmount.c.orig	Wed May  1 23:13:57 2002
++++ samba-2.2.4/source/client/smbmount.c	Thu May  2 00:20:44 2002
+@@ -716,7 +716,7 @@
  					*lp = 0;
  					pstrcpy(password,lp+1);
  					got_pass = True;
--					memset(strchr_m(opteq+1,'%')+1,'X',strlen(password));
-+					memset(strchr_m(opteq+1,'%')+1,'\0',strlen(password));
+-					memset(strchr(opteq+1,'%')+1,'X',strlen(password));
++					memset(strchr(opteq+1,'%')+1,'\0',strlen(password));
  				}
- 				if ((lp=strchr_m(username,'/'))) {
+ 				if ((lp=strchr(username,'/'))) {
  					*lp = 0;
-@@ -775,7 +775,7 @@
+@@ -726,7 +726,7 @@
  				  !strcmp(opts, "password")) {
  				pstrcpy(password,opteq+1);
  				got_pass = True;
@@ -19,19 +18,41 @@ diff -uNr samba-3.0.0beta1.orig/source/client/smbmount.c samba-3.0.0beta1/source
  			} else if(!strcmp(opts, "credentials")) {
  				pstrcpy(credentials,opteq+1);
  			} else if(!strcmp(opts, "netbiosname")) {
-@@ -889,7 +901,7 @@
+@@ -819,7 +819,7 @@
  			*p = 0;
  			pstrcpy(password,p+1);
  			got_pass = True;
--			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
-+			memset(strchr_m(getenv("USER"),'%')+1,'\0',strlen(password));
+-			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
++			memset(strchr(getenv("USER"),'%')+1,'\0',strlen(password));
  		}
- 		strupper_m(username);
+ 		strupper(username);
  	}
-diff -uNr samba-3.0.0beta1.orig/source/script/installbin.sh samba-3.0.0beta1/source/script/installbin.sh
---- samba-3.0.0beta1.orig/source/script/installbin.sh	2002-04-22 13:16:20.000000000 -0500
-+++ samba-3.0.0beta1/source/script/installbin.sh	2003-06-30 20:12:22.000000000 -0500
-@@ -22,9 +22,11 @@
+--- samba-2.2.4/source/pam_smbpass/pam_smb_passwd.c.orig	Wed May  1 23:14:47 2002
++++ samba-2.2.4/source/pam_smbpass/pam_smb_passwd.c	Thu May  2 00:20:44 2002
+@@ -190,6 +190,11 @@
+ 
+     } else if (flags & PAM_UPDATE_AUTHTOK) {
+ 
++/*
++	The following has been commented out per Steve Langasek
++	<vorlon@debian.org> instructions. It's about Debian bug
++	#113763.
++*/
+ #if 0
+         /* We used to return when this flag was set, but that breaks
+            password synchronization when /other/ tokens are expired.  For
+--- samba-2.2.2.cvs20020120.orig/source/script/installbin.sh
++++ samba-2.2.2.cvs20020120/source/script/installbin.sh
+@@ -11,7 +11,7 @@
+ shift
+ shift
+ 
+-for d in $BASEDIR $BINDIR $LIBDIR $VARDIR $BASEDIR/private; do
++for d in $BASEDIR $BINDIR $LIBDIR $VARDIR; do
+ if [ ! -d $d ]; then
+ mkdir $d
+ if [ ! -d $d ]; then
+@@ -33,9 +33,11 @@
   chmod $INSTALLPERMS $BINDIR/$p2
  
   # this is a special case, mount needs this in a specific location
@@ -46,44 +67,45 @@ diff -uNr samba-3.0.0beta1.orig/source/script/installbin.sh samba-3.0.0beta1/sou
  done
  
  
-diff -uNr samba-3.0.0beta1.orig/source/smbd/service.c samba-3.0.0beta1/source/smbd/service.c
---- samba-3.0.0beta1.orig/source/smbd/service.c	2003-06-07 12:57:39.000000000 -0500
-+++ samba-3.0.0beta1/source/smbd/service.c	2003-06-30 20:12:57.000000000 -0500
-@@ -887,6 +887,9 @@
- 	file_close_conn(conn);
- 	dptr_closecnum(conn);
+--- samba-2.2.2.cvs20020120.orig/source/script/installswat.sh
++++ samba-2.2.2.cvs20020120/source/script/installswat.sh
+@@ -48,8 +48,8 @@
+ for f in $SRCDIR../docs/htmldocs/*.html; do
+       FNAME=$SWATDIR/help/`basename $f`
+       echo $FNAME
+-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+-      chmod 0644 $FNAME
++      ln -s ../../../doc/samba-doc/htmldocs/`basename $f` $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
++#      chmod 0644 $FNAME
+ done
  
-+	/* make sure we leave the directory available for unmount */
-+	vfs_ChDir(conn, "/");
-+
- 	/* execute any "postexec = " line */
- 	if (*lp_postexec(SNUM(conn)) && 
- 	    change_to_user(conn, vuid))  {
-@@ -906,8 +909,5 @@
- 		smbrun(cmd,NULL);
- 	}
+ # Install "server-side" includes
+@@ -63,7 +63,10 @@
  
--	/* make sure we leave the directory available for unmount */
--	vfs_ChDir(conn, "/");
--
- 	conn_free(conn);
- }
-diff -uNr samba-3.0.0beta1.orig/source/smbwrapper/smbsh.c samba-3.0.0beta1/source/smbwrapper/smbsh.c
---- samba-3.0.0beta1.orig/source/smbwrapper/smbsh.c	2003-06-07 12:57:40.000000000 -0500
-+++ samba-3.0.0beta1/source/smbwrapper/smbsh.c	2003-06-30 20:12:22.000000000 -0500
-@@ -36,7 +36,7 @@
+ # Install Using Samba book
+ 
+-if [ "x$BOOKDIR" != "x" ]; then
++# For Debian we do not install anything here, we just create a symlink
++#	pointing to /usr/share/doc/samba-doc/htmldocs/using_samba/ in
++#	debian/rules (peloy@debian.org)
++if /bin/false; then
+ 
+     # Create directories
+ 
+--- samba-2.2.2.cvs20020120.orig/source/smbwrapper/smbsh.c
++++ samba-2.2.2.cvs20020120/source/smbwrapper/smbsh.c
+@@ -39,7 +39,7 @@
  int main(int argc, char *argv[])
  {
  	char *p, *u;
--	const char *libd = dyn_BINDIR;
-+	const char *libd = dyn_LIBDIR;
+-	char *libd = BINDIR;	
++	char *libd = "/usr/share/samba";	
  	pstring line, wd;
  	int opt;
  	extern char *optarg;
-diff -uNr samba-3.0.0beta1.orig/source/web/diagnose.c samba-3.0.0beta1/source/web/diagnose.c
---- samba-3.0.0beta1.orig/source/web/diagnose.c	2003-06-07 12:57:41.000000000 -0500
-+++ samba-3.0.0beta1/source/web/diagnose.c	2003-06-30 20:12:22.000000000 -0500
-@@ -70,6 +70,7 @@
+--- samba-2.2.2.cvs20020120.orig/source/web/diagnose.c
++++ samba-2.2.2.cvs20020120/source/web/diagnose.c
+@@ -54,6 +54,7 @@
  	static struct cli_state cli;
  	extern struct in_addr loopback_ip;
  
@@ -91,3 +113,40 @@ diff -uNr samba-3.0.0beta1.orig/source/web/diagnose.c samba-3.0.0beta1/source/we
  	if (!cli_initialise(&cli))
  		return False;
  
+--- samba-2.2.2.cvs20020120.orig/source/web/startstop.c
++++ samba-2.2.2.cvs20020120/source/web/startstop.c
+@@ -37,7 +37,7 @@
+ 		return;
+ 	}
+ 
+-	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", SBINDIR);
++	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", "/usr/sbin");
+ 
+ 	become_daemon();
+ 
+@@ -58,7 +58,7 @@
+ 		return;
+ 	}
+ 
+-	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", SBINDIR);
++	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", "/usr/sbin");
+ 	
+ 	become_daemon();
+ 
+--- samba/source/smbd/service.c.orig	2002-10-12 11:54:24.000000000 -0400
++++ samba/source/smbd/service.c	2002-10-13 01:43:10.000000000 -0400
+@@ -698,6 +698,14 @@
+ 		smbrun(cmd,NULL);
+ 	}
+ 
++	/* If our root postexec command includes a call to 'unmount', we want
++	   to make sure we aren't blocking the mount point. */
++	/* I think this patch should go here, but I am not sure since
++	   the code looks very different than in Samba 2.2.2. Will come
++	   back later; should check what change_to_root_user() does. Eloy.-
++	vfs_ChDir(conn,"/");
++	/*
++
+ 	change_to_root_user();
+ 	/* execute any "root postexec = " line */
+ 	if (*lp_rootpostexec(SNUM(conn)))  {

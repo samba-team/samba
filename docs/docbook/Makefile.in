@@ -1,0 +1,383 @@
+#################################################################
+# Makefile.in for Samba Documentation
+# Authors:	James Moore <jmoore@php.net>
+#               Gerald Carter <jerry@samba.org>
+#
+# Please see http://www.samba.org/samba/cvs.html
+# for information on getting the latest  
+# source and documentation source files.  
+#
+
+# Autoconf Variables
+SRCDIR = @srcdir@
+JADE = @JADE@
+NSGMLS = @NSGMLS@
+SGMLSPL=@SGMLSPL@
+HTMLDOC=@HTMLDOC@
+PERL=@PERL@
+#CATALOG = @CATALOG@
+MANDIR=../manpages
+HTMLDIR=../htmldocs
+
+#Stylesheets and Dependicies
+SGML_SHARE=@SGML_SHARE@
+#SGML_CATALOG_FILES=$(SGML_CATALOG_FILES):./dbsgml/catalog
+HTML_STYLESHEET = $(srcdir)/stylesheets/html.dsl
+HTML_DEPS = $(srcdir)/stylesheets/html-common.dsl $(srcdir)/stylesheets/common.dsl
+
+MANPAGES=$(MANDIR)/findsmb.1 $(MANDIR)/smbclient.1 \
+	$(MANDIR)/smbspool.8 $(MANDIR)/lmhosts.5 \
+	$(MANDIR)/smbcontrol.1  $(MANDIR)/smbstatus.1 \
+	$(MANDIR)/make_smbcodepage.1  $(MANDIR)/smbd.8 \
+	$(MANDIR)/smbtar.1 $(MANDIR)/nmbd.8 $(MANDIR)/smbmnt.8 \
+	$(MANDIR)/smbumount.8 $(MANDIR)/nmblookup.1 \
+	$(MANDIR)/smbmount.8 $(MANDIR)/swat.8 $(MANDIR)/rpcclient.1	 \
+	$(MANDIR)/smbpasswd.5 $(MANDIR)/testparm.1 $(MANDIR)/samba.7 \
+	$(MANDIR)/smbpasswd.8 $(MANDIR)/testprns.1 \
+	$(MANDIR)/smb.conf.5 $(MANDIR)/wbinfo.1 $(MANDIR)/pdbedit.8 \
+	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 \
+	$(MANDIR)/make_unicodemap.1
+
+SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
+	manpages/smbspool.8.sgml manpages/lmhosts.5.sgml \
+	manpages/smbcontrol.1.sgml manpages/smbstatus.1.sgml \
+	manpages/make_smbcodepage.1.sgml  manpages/smbd.8.sgml \
+	manpages/smbtar.1.sgml manpages/nmbd.8.sgml manpages/smbmnt.8.sgml \
+	manpages/smbumount.8.sgml manpages/nmblookup.1.sgml \
+	manpages/smbmount.8.sgml manpages/swat.8.sgml \
+	manpages/rpcclient.1.sgml manpages/smbpasswd.5.sgml \
+	manpages/testparm.1.sgml manpages/samba.7.sgml \
+	manpages/smbpasswd.8.sgml manpages/testprns.1.sgml \
+	manpages/smb.conf.5.sgml manpages/pdbedit.8.sgml \
+	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
+	manpages/smbsh.1.sgml manpages/winbindd.8.sgml \
+	manpages/make_unicodemap.1.sgml
+
+HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
+	projdoc/msdfs_setup.sgml projdoc/printer_driver2.sgml \
+	projdoc/UNIX_INSTALL.sgml projdoc/winbind.sgml projdoc/OS2-Client-HOWTO.sgml \
+	projdoc/Samba-PDC-HOWTO.sgml projdoc/ENCRYPTION.sgml \
+	projdoc/CVS-Access.sgml projdoc/Integrating-with-Windows.sgml \
+	projdoc/PAM-Authentication-And-Samba.sgml projdoc/Samba-LDAP-HOWTO.sgml \
+	projdoc/Samba-BDC-HOWTO.sgml projdoc/cups.sgml
+
+
+
+######################################################################
+# Make instructions
+######################################################################
+all: 
+	@echo "Possible options to the Makefile include:"
+	@echo "   all-docs  - Force a rebuild of all documentation"
+	@echo "   HOWTO     - Build all individual HOWTOs in html format"
+	@echo "   proj-doc  - Build the Samba-HOWTO-Collection.[pdf|html] file"
+	@echo "   man       - Rebuild html and nroff versions of man pages as necessary"
+	@echo "   syntax    - Check the SGML/DocBook syntax of all source files"
+
+all-docs: HOWTO proj-doc man-all man-html-all
+
+syntax: $(SGMLMANSRC) projdoc/samba-doc.sgml
+	@echo Checking syntax of all SGML/DocBook source files...
+	@(for i in $?; do \
+	   echo "$$i..."; \
+	   $(NSGMLS) -sv $$i 2>&1 | grep -v "DTDDECL catalog entries are not supported" ; \
+	done)
+	
+
+
+man: $(MANPAGES)
+
+HOWTO: $(HOWTOSRC)
+	@echo Building HOWTO pages...
+	@(for i in $?; do \
+	   htmlfile=`echo $$i | sed 's,.*/,,' | sed "s/\.sgml/\.html/g"`; \
+	   echo "Making $$htmlfile"; \
+	   cat $$i | $(PERL) scripts/make-article.pl > /tmp/`echo $$i | sed 's,.*/,,'`; \
+	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
+	      -f /tmp/jade.log /tmp/`echo $$i | sed 's,.*/,,'` > ../htmldocs/$$htmlfile; \
+	   cat /tmp/jade.log | grep -v DTDDECL; \
+	   /bin/rm -f /tmp/jade.log /tmp/`echo $$i | sed 's,.*/,,'`; \
+	done)
+
+
+## I'm using htmldoc here to produc the PDF output.  If you want
+## Postscript output, you can run 
+##
+##           sgmltools -b ps projdoc/samba-doc.sgml
+##
+proj-doc: 
+	echo Building Samba-HOWTO-Collections...
+	@$(PERL) scripts/collateindex.pl -N -o projdoc/index.sgml
+	@$(JADE) -t sgml -V html-index -d $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl projdoc/samba-doc.sgml
+	@$(PERL) scripts/collateindex.pl -o projdoc/index.sgml HTML.index
+	@/bin/rm HTML.index *.htm
+	@$(JADE) -t sgml -i html -V nochunks -d stylesheets/ldp.dsl\#html projdoc/samba-doc.sgml > samba-doc.html
+	@(cd scripts; ./ldp_print ../samba-doc.html)
+	@mv -f samba-doc.pdf ../Samba-HOWTO-Collection.pdf
+	@/bin/mv -f samba-doc.html ../htmldocs/Samba-HOWTO-Collection.html
+
+proj-doc-ps:
+	sgmltools -b ps projdoc/samba-doc.sgml
+	mv projdoc/samba-doc.ps .
+
+
+## generate all HTML man pages
+man-html-all: $(SGMLMANSRC)
+	@echo Building HTML formatted man pages...
+	@(for i in $?; do \
+	   htmlfile=`echo $$i | sed 's,.*/,,' | sed "s/\.sgml/\.html/g"`; \
+	   echo "Making $$htmlfile"; \
+	   $(JADE) -t sgml -i html -V nochunks -d  ./stylesheets/ldp.dsl\#html -f /tmp/jade.log $$i > ../htmldocs/$$htmlfile; \
+	   cat /tmp/jade.log | grep -v DTDDECL; \
+	   /bin/rm -f /tmp/jade.log; \
+	done)
+
+## generate all man pages
+man-all: $(SGMLMANSRC)
+	@echo Building man pages...
+	@(for i in $?; do \
+		manfile=`echo $$i | sed 's,.*/,,' | sed "s/\.sgml//g"`; \
+		echo "Making $$manfile"; \
+		$(NSGMLS) -f /tmp/docbook2x.log $$i | $(SGMLSPL) \
+	           $(SGML_SHARE)/docbook2X/docbook2man-spec.pl; \
+		cat /tmp/docbook2x.log | grep -v DTDDECL; \
+		/bin/rm -f /tmp/docbook2x.log; \
+		cat $$manfile | $(PERL) scripts/strip-links.pl > $(MANDIR)/$$manfile; \
+		/bin/rm -f $$manfile; \
+	  done)
+
+
+
+
+##
+## these rules are for building individual files
+##
+$(MANDIR)/findsmb.1:  manpages/findsmb.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbclient.1: manpages/smbclient.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbspool.8: manpages/smbspool.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/lmhosts.5: manpages/lmhosts.5.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbcontrol.1: manpages/smbcontrol.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbstatus.1: manpages/smbstatus.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/make_smbcodepage.1: manpages/make_smbcodepage.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/make_unicodemap.1: manpages/make_unicodemap.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbd.8: manpages/smbd.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbtar.1: manpages/smbtar.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/nmbd.8: manpages/nmbd.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbmnt.8: manpages/smbmnt.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbumount.8: manpages/smbumount.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/nmblookup.1: manpages/nmblookup.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbmount.8: manpages/smbmount.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/swat.8: manpages/swat.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/rpcclient.1: manpages/rpcclient.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbpasswd.5: manpages/smbpasswd.5.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/testparm.1: manpages/testparm.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/samba.7: manpages/samba.7.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbpasswd.8: manpages/smbpasswd.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/testprns.1: manpages/testprns.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smb.conf.5: manpages/smb.conf.5.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/wbinfo.1: manpages/wbinfo.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbcacls.1: manpages/smbcacls.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbsh.1 : manpages/smbsh.1.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/winbindd.8: manpages/winbindd.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+
+$(MANDIR)/pdbedit.8: manpages/pdbedit.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+
+## Clean Rule
+clean: 
+	/bin/rm -f manpage.*

@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
 
    Copyright (C) Ying Chen 2000.
    Copyright (C) Jeremy Allison 2000.
@@ -28,7 +29,7 @@
 #include "includes.h"
 
 static BOOL enlarge_hash_table(hash_table *table);
-static unsigned primes[] = 
+static int primes[] = 
         {17, 37, 67, 131, 257, 521, 1031, 2053, 4099, 8209, 16411};
 
 /****************************************************************************
@@ -47,9 +48,9 @@ static unsigned primes[] =
  ****************************************************************************
  */
 
-BOOL hash_table_init(hash_table *table, unsigned num_buckets, compare_function compare_func)
+BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compare_func)
 {
-	unsigned 	i;
+	int 	i;
 	ubi_dlList 	*bucket;
 
 	table->num_elements = 0;
@@ -84,19 +85,20 @@ BOOL hash_table_init(hash_table *table, unsigned num_buckets, compare_function c
  *	For the last few chars that cannot be int'ed, use char instead.
  *	The function returns the bucket index number for the hashed 
  *	key.
- *	JRA. Use a djb-algorithm hash for speed.
  **************************************************************
  */
 
 static int string_hash(int hash_size, const char *key)
 {
-	u32 n = 0;
-	const char *p;
-	for (p = key; *p != '\0'; p++) {
-		n = ((n << 5) + n) ^ (u32)(*p);
-	}
-	return (n % hash_size);
+	u32 value;	/* Used to compute the hash value.  */
+	u32   i;	/* Used to cycle through random values. */
+
+	for (value = 0x238F13AF, i=0; key[i]; i++)
+		value = (value + (key[i] << (i*5 % 24)));
+
+	return (1103515243 * value + 12345) % hash_size;  
 }
+
 
 /* *************************************************************************
  * 	Search the hash table for the entry in the hash chain.
@@ -117,7 +119,7 @@ static hash_element *hash_chain_find(hash_table *table, ubi_dlList *hash_chain, 
 {
 	hash_element *hash_elem;
 	ubi_dlNodePtr lru_item;
-	unsigned int	i = 0;
+	int	i = 0;
 
 	for (hash_elem = (hash_element *)(ubi_dlFirst(hash_chain)); i < hash_chain->count; 
 		i++, hash_elem = (hash_element *)(ubi_dlNext(hash_elem))) {
@@ -300,7 +302,7 @@ static BOOL enlarge_hash_table(hash_table *table)
 
 void hash_clear(hash_table *table)
 {
-	unsigned int i;
+	int i;
 	ubi_dlList	*bucket = table->buckets;
 	hash_element    *hash_elem;
 	for (i = 0; i < table->size; bucket++, i++) {

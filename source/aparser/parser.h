@@ -40,7 +40,7 @@ typedef uint16 ZUSTRING;
 #ifndef _PSTRING
 
 #define PSTRING_LEN 1024
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
@@ -52,7 +52,7 @@ typedef char fstring[FSTRING_LEN];
 #define True 1
 
 /* zero a structure given a pointer to the structure */
-#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
+#define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
 
 #define MAX_UNISTRLEN 256
 #define MAX_STRINGLEN 256

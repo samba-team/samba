@@ -1,27 +1,21 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   trivial database library 
-
+   Samba database functions
    Copyright (C) Anton Blanchard                   2001
    
-     ** NOTE! The following LGPL license applies to the tdb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
    
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -149,47 +143,6 @@ static inline int __spin_is_locked(spinlock_t *lock)
 	return (*lock != 1);
 }
 
-#elif defined(MIPS_SPINLOCKS) && defined(sgi) && (_COMPILER_VERSION >= 730)
-
-/* Implement spinlocks on IRIX using the MIPSPro atomic fetch operations. See
- * sync(3) for the details of the intrinsic operations.
- *
- * "sgi" and "_COMPILER_VERSION" are always defined by MIPSPro.
- */
-
-#if defined(STANDALONE)
-
-/* MIPSPro 7.3 has "__inline" as an extension, but not "inline. */
-#define inline __inline
-
-#endif /* STANDALONE */
-
-/* Returns 0 if the lock is acquired, EBUSY otherwise. */
-static inline int __spin_trylock(spinlock_t *lock)
-{
-        unsigned int val;
-        val = __lock_test_and_set(lock, 1);
-        return val == 0 ? 0 : EBUSY;
-}
-
-static inline void __spin_unlock(spinlock_t *lock)
-{
-        __lock_release(lock);
-}
-
-static inline void __spin_lock_init(spinlock_t *lock)
-{
-        __lock_release(lock);
-}
-
-/* Returns 1 if the lock is held, 0 otherwise. */
-static inline int __spin_is_locked(spinlock_t *lock)
-{
-        unsigned int val;
-        val = __add_and_fetch(lock, 0);
-	return val;
-}
-
 #elif defined(MIPS_SPINLOCKS) 
 
 static inline unsigned int load_linked(unsigned long addr)
@@ -268,11 +221,7 @@ static void yield_cpu(void)
 
 static int this_is_smp(void)
 {
-#if defined(HAVE_SYSCONF) && defined(SYSCONF_SC_NPROC_ONLN)
-        return (sysconf(_SC_NPROC_ONLN) > 1) ? 1 : 0;
-#else
 	return 0;
-#endif
 }
 
 /*
@@ -423,7 +372,7 @@ int tdb_create_rwlocks(int fd, unsigned int hash_size)
 	unsigned size, i;
 	tdb_rwlock_t *rwlocks;
 
-	size = TDB_SPINLOCK_SIZE(hash_size);
+	size = (hash_size + 1) * sizeof(tdb_rwlock_t);
 	rwlocks = malloc(size);
 	if (!rwlocks)
 		return -1;

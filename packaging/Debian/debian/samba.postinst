@@ -28,7 +28,6 @@ INITCONFFILE=/etc/default/samba
 #	them to be readable only by root.
 umask 022
 
-
 # Generate configuration file if it does not exist, using default values.
 [ -r "${INITCONFFILE}" ] || {
 	echo Generating ${INITCONFFILE}... >&2
@@ -42,7 +41,7 @@ umask 022
 # This is a POSIX shell fragment
 #
 
-# How should Samba (smbd) run? Possible values are "daemons"
+# How should Samba (nmbd and smbd) run? Possible values are "daemons"
 #	or "inetd".
 RUN_MODE=""
 EOFMAGICNUMBER1234
@@ -97,24 +96,7 @@ then
 	mv /etc/samba/secrets.tdb /var/lib/samba/
 fi
 
-# If upgrading from a previous 2.999 snapshot, move the passdb.tdb
-# database into /var/lib.
-
-if [ -n "$2" ] && dpkg --compare-versions "$2" lt 2.999+3.0.alpha23-5 \
-   && [ -e /etc/samba/passdb.tdb -a ! -e /var/lib/samba/passdb.tdb ]
-then
-	mv /etc/samba/passdb.tdb /var/lib/samba/
-fi
-
 # --- End of FHS migration code ---
-
-# If upgrading from a previous 2.999 snapshot, clear the broken
-# registry.tdb file.
-if [ -n "$2" ] && dpkg --compare-versions "$2" gt 2.99.cvs.20020713-1 \
-   && dpkg --compare-versions "$2" lt 2.999+3.0cvs20020805-1
-then
-	rm -f /var/lib/samba/registry.tdb
-fi
 
 # ------------------------- Debconf questions start ---------------------
 
@@ -122,86 +104,55 @@ fi
 db_get samba/run_mode || true
 RUN_MODE="${RET}"
 
-TMPFILE=/etc/default/samba.dpkg-tmp
+TMPFILE=`mktemp -q /tmp/samba.config.XXXXXX`
 sed -e "s/^[[:space:]]*RUN_MODE[[:space:]]*=.*/RUN_MODE=\"${RUN_MODE}\"/" \
         < ${INITCONFFILE} >${TMPFILE}
-chmod a+r ${TMPFILE}
 mv -f ${TMPFILE} ${INITCONFFILE}
 
 # Generate a smbpasswd file?
 db_get samba/generate_smbpasswd || true
 GENERATE_SMBPASSWD="${RET}"
 
-db_get samba/tdbsam || true
-PDB_MIGRATE="${RET}"
-
 # Done with debconf now.
 db_stop
 
-umask 066
-
-# FIXME: disable if ldapsam support is enabled?
-# FIXME: we don't want to pass these through the smbpasswd backend,
-# some of the faking can cause us problems!
-if [ "${GENERATE_SMBPASSWD}" = "true" -a ! -e /var/lib/samba/passdb.tdb -a ! -e /etc/samba/smbpasswd ]; then
+if [ "${GENERATE_SMBPASSWD}" = "true" -a ! -e /etc/samba/smbpasswd ]; then
 	getent passwd | /usr/sbin/mksmbpasswd > /etc/samba/smbpasswd
-	pdbedit -i smbpasswd -e tdbsam
-	rm /etc/samba/smbpasswd
-fi
-
-umask 022
-
-if [ -n "$2" -a -e /etc/samba/smbpasswd \
-     -a ! -e /var/lib/samba/passdb.tdb -a "$PDB_MIGRATE" = "true" ] \
-   && dpkg --compare-versions "$2" lt 2.99.cvs.20020713-2
-then
-	umask 066
-	pdbedit -i smbpasswd -e tdbsam
-	rm /etc/samba/smbpasswd
-	umask 022
-
-	# The database has been moved, now make sure we can still find it.
-	PASSDB=`sed -n -e"s/^[[:space:]]*\[global\]/\[global\]/i
-			/^\[global\]/,/^[[:space:]]*\[/ \
-				s/^[[:space:]]*passdb backend[[:space:]]*=[[:space:]]*//pi" \
-			< /etc/samba/smb.conf \
-	 | tail -1`
-	if echo "$PASSDB" | egrep -q "(^|[[:space:]])smbpasswd"; then
-		if ! echo "$PASSDB" | egrep -q "(^|[[:space:]])tdbsam"; then
-			PASSDB=`echo $PASSDB | sed -e's/\(^\|[[:space:]]\)smbpasswd/\1tdbsam/'`
-		fi
-	fi
-	if ! echo "$PASSDB" | egrep -q "(^|[[:space:]])tdbsam"; then
-		PASSDB="tdbsam $PASSDB"
-	fi
-	TMPFILE=/etc/samba/smb.conf.dpkg-tmp
-	sed -e "s/^\([[:space:]]*\)\[global\]/\1\[global\]/i
-		/^[[:space:]]*\[global\]/,/^[[:space:]]*\[/ \
-			s/^\([[:space:]]*\)passdb backend[[:space:]]*=.*/\1passdb backend = ${PASSDB}/i" \
-		< /etc/samba/smb.conf >${TMPFILE}
-	chmod a+r ${TMPFILE}
-	mv -f ${TMPFILE} /etc/samba/smb.conf
+	chmod 600 /etc/samba/smbpasswd 
 fi
 
 # ------------------------- Debconf questions end ---------------------
 
-# Handle removal of nmbd from inetd.conf, which is no longer a supported
-#	configuration.
-if dpkg --compare-versions "$2" lt 2.999+3.0.alpha20-4; then
-	update-inetd --remove netbios-ns
-fi
+# We always run /etc/init.d/samba, even if we run Samba from inetd.
+#	The init.d script takes care of handling the conflict of running
+#	from inetd or as daemons.
+update-rc.d samba defaults 20 19 > /dev/null
 
 # We want to add these entries to inetd.conf commented out. Otherwise
 #	UDP traffic could make inetd to start nmbd or smbd right during
 #	the configuration stage.
-if [ -z "$2" ]; then
+if [ "$1" = "configure" -a -z "$2" ]; then
+	update-inetd --add "#<off># netbios-ns	dgram	udp	wait	root 	/usr/sbin/tcpd	/usr/sbin/nmbd -a"
 	update-inetd --add "#<off># netbios-ssn	stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/smbd"
 fi
 
 if [ "$RUN_MODE" = "daemons" ]; then
+	update-inetd --disable netbios-ns
 	update-inetd --disable netbios-ssn
 else
+	update-inetd --enable netbios-ns
 	update-inetd --enable netbios-ssn
+fi
+
+# Start Samba: we don't want to call /etc/init.d/samba if we are
+# running from inetd because a nasty help message would be printed out.
+
+# Run the init script if this is a first-time install, or if it's an
+# upgrade and Samba was running before, _and_ we're not running from inetd.
+if [ \( -z "$2" -o ! -f /tmp/samba-was-not-running \) -a \
+		"$RUN_MODE" = "daemons" ]; then
+	# Check the script is executable before running it.
+	[ -x /etc/init.d/samba ] && /etc/init.d/samba start
 fi
 
 # This check is a safety net: the /etc/samba/smbpasswd file must have
@@ -222,6 +173,10 @@ rm -f /etc/samba/debian_config
 # Move old log files to the new location of Samba's log files
 mv -f /var/log/nmb* /var/log/samba/ 2> /dev/null || true
 mv -f /var/log/smb* /var/log/samba/ 2> /dev/null || true
+
+# Do this last, so we don't accidentally start the daemons if something 
+# else in the script fails above.
+rm -f /tmp/samba-was-not-running
 
 #DEBHELPER#
 

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -28,11 +29,12 @@
    also allows us to have more than 1 sync going at once (tridge) */
 
 #include "includes.h"
+#include "smb.h"
 
 struct sync_record {
 	struct sync_record *next, *prev;
-	unstring workgroup;
-	unstring server;
+	fstring workgroup;
+	fstring server;
 	pstring fname;
 	struct in_addr ip;
 	pid_t pid;
@@ -41,17 +43,16 @@ struct sync_record {
 /* a linked list of current sync connections */
 static struct sync_record *syncs;
 
-static XFILE *fp;
+static FILE *fp;
 
 /*******************************************************************
   This is the NetServerEnum callback.
   Note sname and comment are in UNIX codepage format.
   ******************************************************************/
-
 static void callback(const char *sname, uint32 stype, 
                      const char *comment, void *state)
 {
-	x_fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
+	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
 
 /*******************************************************************
@@ -59,7 +60,6 @@ static void callback(const char *sname, uint32 stype,
   Log in on the remote server's SMB port to their IPC$ service,
   do a NetServerEnum and record the results in fname
 ******************************************************************/
-
 static void sync_child(char *name, int nm_type, 
 		       char *workgroup,
 		       struct in_addr ip, BOOL local, BOOL servers,
@@ -80,9 +80,10 @@ static void sync_child(char *name, int nm_type,
 	}
 
 	make_nmb_name(&calling, local_machine, 0x0);
-	make_nmb_name(&called , name, nm_type);
+	make_nmb_name(&called , name         , nm_type);
 
-	if (!cli_session_request(&cli, &calling, &called)) {
+	if (!cli_session_request(&cli, &calling, &called))
+	{
 		cli_shutdown(&cli);
 		return;
 	}
@@ -104,6 +105,7 @@ static void sync_child(char *name, int nm_type,
 
 	/* All the cli_XX functions take UNIX character set. */
 	fstrcpy(unix_workgroup, cli.server_domain?cli.server_domain:workgroup);
+	dos_to_unix(unix_workgroup);
 
 	/* Fetch a workgroup list. */
 	cli_NetServerEnum(&cli, unix_workgroup,
@@ -113,6 +115,7 @@ static void sync_child(char *name, int nm_type,
 	/* Now fetch a server list. */
 	if (servers) {
 		fstrcpy(unix_workgroup, workgroup);
+		dos_to_unix(unix_workgroup);
 		cli_NetServerEnum(&cli, unix_workgroup, 
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 				  callback, NULL);
@@ -121,12 +124,12 @@ static void sync_child(char *name, int nm_type,
 	cli_shutdown(&cli);
 }
 
+
 /*******************************************************************
   initialise a browse sync with another browse server.  Log in on the
   remote server's SMB port to their IPC$ service, do a NetServerEnum
   and record the results
 ******************************************************************/
-
 void sync_browse_lists(struct work_record *work,
 		       char *name, int nm_type, 
 		       struct in_addr ip, BOOL local, BOOL servers)
@@ -148,8 +151,8 @@ done:
 
 	ZERO_STRUCTP(s);
 	
-	unstrcpy(s->workgroup, work->work_group);
-	unstrcpy(s->server, name);
+	fstrcpy(s->workgroup, work->work_group);
+	fstrcpy(s->server, name);
 	s->ip = ip;
 
 	slprintf(s->fname, sizeof(pstring)-1,
@@ -168,7 +171,7 @@ done:
 	DEBUG(2,("Initiating browse sync for %s to %s(%s)\n",
 		 work->work_group, name, inet_ntoa(ip)));
 
-	fp = x_fopen(s->fname,O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	fp = sys_fopen(s->fname,"w");
 	if (!fp) {
 		END_PROFILE(sync_browse_lists);
 		_exit(1);	
@@ -177,15 +180,14 @@ done:
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
 		   s->fname);
 
-	x_fclose(fp);
+	fclose(fp);
 	END_PROFILE(sync_browse_lists);
 	_exit(0);
 }
 
 /**********************************************************************
- Handle one line from a completed sync file.
+handle one line from a completed sync file
  **********************************************************************/
-
 static void complete_one(struct sync_record *s, 
 			 char *sname, uint32 stype, char *comment)
 {
@@ -206,7 +208,8 @@ static void complete_one(struct sync_record *s,
 							  sname, lp_max_ttl());
 			if (work) {
 				/* remember who the master is */
-				unstrcpy(work->local_master_browser_name, comment);
+				fstrcpy(work->local_master_browser_name, 
+					comment);
 			}
 		}
 		return;
@@ -236,31 +239,32 @@ static void complete_one(struct sync_record *s,
 	create_server_on_workgroup(work, sname,stype, lp_max_ttl(), comment);
 }
 		
-/**********************************************************************
- Read the completed sync info.
-**********************************************************************/
 
+/**********************************************************************
+read the completed sync info
+ **********************************************************************/
 static void complete_sync(struct sync_record *s)
 {
-	XFILE *f;
-	unstring server, type_str;
+	FILE *f;
+	fstring server, type_str;
 	unsigned type;
 	pstring comment;
 	pstring line;
 	const char *ptr;
 	int count=0;
 
-	f = x_fopen(s->fname,O_RDONLY, 0);
+	f = sys_fopen(s->fname,"r");
 
-	if (!f)
-		return;
+	if (!f) return;
 	
-	while (!x_feof(f)) {
+	while (!feof(f)) {
 		
-		if (!fgets_slash(line,sizeof(pstring),f))
-			continue;
+		if (!fgets_slash(line,sizeof(pstring),f)) continue;
 		
 		ptr = line;
+
+		/* The line is written in UNIX character set. Convert to DOS codepage. */
+		unix_to_dos(line);
 
 		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
 		    !next_token(&ptr,type_str,NULL, sizeof(type_str)) ||
@@ -275,7 +279,7 @@ static void complete_sync(struct sync_record *s)
 		count++;
 	}
 
-	x_fclose(f);
+	fclose(f);
 
 	unlink(s->fname);
 
@@ -284,9 +288,8 @@ static void complete_sync(struct sync_record *s)
 }
 
 /**********************************************************************
- Check for completion of any of the child processes.
-**********************************************************************/
-
+check for completion of any of the child processes
+ **********************************************************************/
 void sync_check_completion(void)
 {
 	struct sync_record *s, *next;

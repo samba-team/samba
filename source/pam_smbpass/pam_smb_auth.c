@@ -36,8 +36,6 @@
 
 #define AUTH_RETURN						\
 do {								\
-	/* Restore application signal handler */		\
-	CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);	\
 	if(ret_data) {						\
 		*ret_data = retval;				\
 		pam_set_data( pamh, "smb_setcred_return"	\
@@ -48,6 +46,8 @@ do {								\
 
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
                          const char *name, SAM_ACCOUNT *sampass, BOOL exist);
+
+int make_remark(pam_handle_t *, unsigned int, int, const char *);
 
 
 /*
@@ -67,7 +67,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     SAM_ACCOUNT *sampass = NULL;
     extern BOOL in_client;
     const char *name;
-    void (*oldsig_handler)(int);
     BOOL found;
 
     /* Points to memory managed by the PAM library. Do not free. */
@@ -76,6 +75,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     /* Samba initialization. */
     setup_logging("pam_smbpass",False);
+    charset_initialise();
+    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);
@@ -96,10 +97,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "username [%s] obtained", name );
     }
 
-    /* Getting into places that might use LDAP -- protect the app
-       from a SIGPIPE it's not expecting */
-    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
-
     if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         retval = PAM_AUTHINFO_UNAVAIL;
@@ -112,14 +109,14 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     if (on( SMB_MIGRATE, ctrl )) {
 	retval = _smb_add_user(pamh, ctrl, name, sampass, found);
-	pdb_free_sam(&sampass);
+	pdb_free_sam(sampass);
 	AUTH_RETURN;
     }
 
     if (!found) {
         _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
         retval = PAM_USER_UNKNOWN;
-	pdb_free_sam(&sampass);
+	pdb_free_sam(sampass);
 	sampass = NULL;
         AUTH_RETURN;
     }
@@ -127,7 +124,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     /* if this user does not have a password... */
 
     if (_smb_blankpasswd( ctrl, sampass )) {
-        pdb_free_sam(&sampass);
+        pdb_free_sam(sampass);
         retval = PAM_SUCCESS;
         AUTH_RETURN;
     }
@@ -138,14 +135,14 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     if (retval != PAM_SUCCESS ) {
 	_log_err(LOG_CRIT, "auth: no password provided for [%s]"
 		 , name);
-        pdb_free_sam(&sampass);
+        pdb_free_sam(sampass);
         AUTH_RETURN;
     }
 
     /* verify the password of this user */
 
     retval = _smb_verify_password( pamh, sampass, p, ctrl );
-    pdb_free_sam(&sampass);
+    pdb_free_sam(sampass);
     p = NULL;
     AUTH_RETURN;
 }
@@ -179,7 +176,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 {
     pstring err_str;
     pstring msg_str;
-    const char *pass = NULL;
+    char *pass = NULL;
     int retval;
 
     err_str[0] = '\0';
@@ -198,7 +195,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 
     /* Add the user to the db if they aren't already there. */
    if (!exist) {
-	retval = local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
+	retval = local_password_change( name, LOCAL_ADD_USER,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
 	                                 msg_str, sizeof(msg_str) );
@@ -217,10 +214,10 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	return PAM_IGNORE;
    }
    else {
-    /* mimick 'update encrypted' as long as the 'no pw req' flag is not set */
-    if ( pdb_get_acct_ctrl(sampass) & ~ACB_PWNOTREQ )
+    /* Change the user's password IFF it's null. */
+    if ((pdb_get_lanman_passwd(sampass) == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
     {
-	retval = local_password_change( name, LOCAL_SET_PASSWORD, pass, err_str, sizeof(err_str),
+	retval = local_password_change( name, 0, pass, err_str, sizeof(err_str),
 	                                 msg_str, sizeof(msg_str) );
 	if (!retval && *err_str)
 	{

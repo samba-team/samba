@@ -25,11 +25,9 @@ header="$1"
 shift
 headertmp="$header.$$.tmp~"
 
-proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -v 'ubiqx/|wrapped|modules/getdate'`"
+proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -v 'ubiqx/|wrapped'`"
 
 echo creating $header
-
-mkdir -p `dirname $header`
 
 ${awk} $headeropt \
   -f script/mkproto.awk $proto_src > $headertmp

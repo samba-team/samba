@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    SMB wrapper stat functions
    Copyright (C) Andrew Tridgell 1998
    
@@ -22,6 +23,7 @@
 
 extern int smbw_busy;
 
+
 /***************************************************** 
 setup basic info in a stat structure
 *******************************************************/
@@ -41,12 +43,8 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 	if (!IS_DOS_READONLY(mode)) st->st_mode |= S_IWUSR;
 
 	st->st_size = size;
-#ifdef HAVE_STAT_ST_BLKSIZE
 	st->st_blksize = 512;
-#endif
-#ifdef HAVE_STAT_ST_BLOCKS
 	st->st_blocks = (size+511)/512;
-#endif
 	st->st_uid = getuid();
 	st->st_gid = getgid();
 	if (IS_DOS_DIR(mode)) {
@@ -202,11 +200,10 @@ int smbw_stat(const char *fname, struct stat *st)
 	srv = smbw_server(server, share);
 	if (!srv) {
 
-		/* For shares we aren't allowed to connect to, or no master
-		   browser found, return an empty directory */
+		/* For shares we aren't allowed to connect to, return
+		   an empty directory */
 
-		if ((server[0] && share[0] && !path[0] && errno == EACCES) ||
-		    (!path[0] && errno == ENOENT)) {
+		if (server[0] && share[0] && !path[0] && errno == EACCES) {
 			mode = aDIR | aRONLY;
 			smbw_setup_stat(st, path, size, mode);
 			goto done;

@@ -1,0 +1,210 @@
+<HTML
+><HEAD
+><TITLE
+>OS2 Client HOWTO</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="OS2"
+>OS2 Client HOWTO</A
+></H1
+><HR></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3"
+>FAQs</A
+></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN5"
+>How can I configure OS/2 Warp Connect or 
+		OS/2 Warp 4 as a client for Samba?</A
+></H2
+><P
+>A more complete answer to this question can be 
+		found on <A
+HREF="http://carol.wins.uva.nl/~leeuw/samba/warp.html"
+TARGET="_top"
+>		http://carol.wins.uva.nl/~leeuw/samba/warp.html</A
+>.</P
+><P
+>Basically, you need three components:</P
+><P
+></P
+><UL
+><LI
+><P
+>The File and Print Client ('IBM Peer')
+			</P
+></LI
+><LI
+><P
+>TCP/IP ('Internet support') 
+			</P
+></LI
+><LI
+><P
+>The "NetBIOS over TCP/IP" driver ('TCPBEUI')
+			</P
+></LI
+></UL
+><P
+>Installing the first two together with the base operating 
+		system on a blank system is explained in the Warp manual. If Warp 
+		has already been installed, but you now want to install the 
+		networking support, use the "Selective Install for Networking" 
+		object in the "System Setup" folder.</P
+><P
+>Adding the "NetBIOS over TCP/IP" driver is not described 
+		in the manual and just barely in the online documentation. Start 
+		MPTS.EXE, click on OK, click on "Configure LAPS" and click 
+		on "IBM OS/2 NETBIOS OVER TCP/IP" in  'Protocols'.  This line 
+		is then moved to 'Current Configuration'. Select that line, 
+		click on "Change number" and increase it from 0 to 1. Save this
+		configuration.</P
+><P
+>If the Samba server(s) is not on your local subnet, you 
+		can optionally add IP names and addresses of these servers 
+		to the "Names List", or specify a  WINS server ('NetBIOS 
+		Nameserver' in IBM and RFC terminology). For Warp Connect you 
+		may need to download an update for 'IBM Peer' to bring it on 
+		the same level as Warp 4. See the webpage mentioned above.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN20"
+>How can I configure OS/2 Warp 3 (not Connect), 
+		OS/2 1.2, 1.3 or 2.x for Samba?</A
+></H2
+><P
+>You can use the free Microsoft LAN Manager 2.2c Client 
+		for OS/2 from 
+		<A
+HREF="ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/"
+TARGET="_top"
+>		ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/</A
+>.
+   	See <A
+HREF="http://carol.wins.uva.nl/~leeuw/lanman.html"
+TARGET="_top"
+>		http://carol.wins.uva.nl/~leeuw/lanman.html</A
+> for 
+		more information on how to install and use this client. In 
+		a nutshell, edit the file \OS2VER in the root directory of 
+		the OS/2 boot partition and add the lines:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		20=setup.exe
+		20=netwksta.sys
+		20=netvdd.sys
+		</PRE
+></P
+><P
+>before you install the client. Also, don't use the 
+		included NE2000 driver because it is buggy. Try the NE2000 
+		or NS2000 driver from 
+		<A
+HREF="ftp://ftp.cdrom.com/pub/os2/network/ndis/"
+TARGET="_top"
+> 		ftp://ftp.cdrom.com/pub/os2/network/ndis/</A
+> instead.
+		</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN29"
+>Are there any other issues when OS/2 (any version) 
+		is used as a client?</A
+></H2
+><P
+>When you do a NET VIEW or use the "File and Print 
+		Client Resource Browser", no Samba servers show up. This can 
+		be fixed by a patch from <A
+HREF="http://carol.wins.uva.nl/~leeuw/samba/fix.html"
+TARGET="_top"
+>		http://carol.wins.uva.nl/~leeuw/samba/fix.html</A
+>.
+		The patch will be included in a later version of Samba. It also 
+		fixes a couple of other problems, such as preserving long 
+		filenames when objects are dragged from the Workplace Shell 
+		to the Samba server. </P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN33"
+>How do I get printer driver download working 
+		for OS/2 clients?</A
+></H2
+><P
+>First, create a share called [PRINTDRV] that is 
+		world-readable.  Copy your OS/2 driver files there.  Note 
+		that the .EA_ files must still be separate, so you will need 
+		to use the original install files, and not copy an installed 
+		driver from an OS/2 system.</P
+><P
+>Install the NT driver first for that printer.  Then, 
+		add to your smb.conf a parameter, "os2 driver map = 
+		<TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+>".  Then, in the file 
+		specified by <TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+>, map the 
+		name of the NT driver name to the OS/2 driver name as 
+		follows:</P
+><P
+>&lt;nt driver name&gt; = &lt;os2 driver 
+		name&gt;.&lt;device name&gt;, e.g.:
+		HP LaserJet 5L = LASERJET.HP LaserJet 5L</P
+><P
+>You can have multiple drivers mapped in this file.</P
+><P
+>If you only specify the OS/2 driver name, and not the 
+		device name, the first attempt to download the driver will 
+		actually download the files, but the OS/2 client will tell 
+		you the driver is not available.  On the second attempt, it 
+		will work.  This is fixed simply by adding the device name
+  		 to the mapping, after which it will work on the first attempt.
+		</P
+></DIV
+></DIV
+></DIV
+></BODY
+></HTML
+>

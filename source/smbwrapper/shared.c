@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    SMB wrapper functions - shared variables
    Copyright (C) Andrew Tridgell 1998
    
@@ -52,7 +53,7 @@ void smbw_setup_shared(void)
 
 	slprintf(s,sizeof(s)-1,"%d", shared_fd);
 
-	setenv("SMBW_HANDLE", s, 1);
+	smbw_setenv("SMBW_HANDLE", s);
 
 	return;
 
@@ -103,7 +104,6 @@ char *smbw_getshared(const char *name)
 {
 	int i;
 	struct stat st;
-	char *var;
 
 	lockit();
 
@@ -111,9 +111,8 @@ char *smbw_getshared(const char *name)
 	if (fstat(shared_fd, &st)) goto failed;
 
 	if (st.st_size != shared_size) {
-		var = (char *)Realloc(variables, st.st_size);
-		if (!var) goto failed;
-		else variables = var;
+		variables = (char *)Realloc(variables, st.st_size);
+		if (!variables) goto failed;
 		shared_size = st.st_size;
 		lseek(shared_fd, 0, SEEK_SET);
 		if (read(shared_fd, variables, shared_size) != shared_size) {
@@ -157,7 +156,6 @@ set a variable in the shared area
 void smbw_setshared(const char *name, const char *val)
 {
 	int l1, l2;
-	char *var;
 
 	/* we don't allow variable overwrite */
 	if (smbw_getshared(name)) return;
@@ -167,20 +165,18 @@ void smbw_setshared(const char *name, const char *val)
 	l1 = strlen(name)+1;
 	l2 = strlen(val)+1;
 
-	var = (char *)Realloc(variables, shared_size + l1+l2+4);
+	variables = (char *)Realloc(variables, shared_size + l1+l2+4);
 
-	if (!var) {
+	if (!variables) {
 		DEBUG(0,("out of memory in smbw_setshared\n"));
 		exit(1);
 	}
-	
-	variables = var;
 
 	SSVAL(&variables[shared_size], 0, l1);
 	SSVAL(&variables[shared_size], 2, l2);
 
-	safe_strcpy(&variables[shared_size] + 4, name, l1-1);
-	safe_strcpy(&variables[shared_size] + 4 + l1, val, l2-1);
+	pstrcpy(&variables[shared_size] + 4, name);
+	pstrcpy(&variables[shared_size] + 4 + l1, val);
 
 	shared_size += l1+l2+4;
 
@@ -193,6 +189,24 @@ void smbw_setshared(const char *name, const char *val)
 	unlockit();
 }
 
+
+/*****************************************************************
+set an env variable - some systems don't have this
+*****************************************************************/  
+int smbw_setenv(const char *name, const char *value)
+{
+	pstring s;
+	char *p;
+	int ret = -1;
+
+	slprintf(s,sizeof(s)-1,"%s=%s", name, value);
+
+	p = strdup(s);
+
+	if (p) ret = putenv(p);
+
+	return ret;
+}
 
 /*****************************************************************
 return true if the passed fd is the SMBW_HANDLE

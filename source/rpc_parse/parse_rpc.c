@@ -1,5 +1,7 @@
+
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -21,10 +23,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_PARSE
+#include "includes.h"
 
 /*******************************************************************
 interface/version dce/rpc pipe identification
@@ -34,9 +34,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x8a885d04, 0x1ceb, 0x11c9, \
-		{ 0x9f, 0xe8 },             \
-		{ 0x08, 0x00,               \
-       		  0x2b, 0x10, 0x48, 0x60 }  \
+		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		0x2b, 0x10, 0x48, 0x60 }    \
 	}, 0x02                             \
 }
 
@@ -44,9 +43,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x8a885d04, 0x1ceb, 0x11c9, \
-		{ 0x9f, 0xe8 },             \
-		{ 0x08, 0x00,               \
-		  0x2b, 0x10, 0x48, 0x60 }  \
+		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		0x2b, 0x10, 0x48, 0x60 }    \
 	}, 0x02                             \
 }
 
@@ -54,9 +52,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x6bffd098, 0xa112, 0x3610, \
-		{ 0x98, 0x33 },             \
-		{ 0x46, 0xc3,               \
-		  0xf8, 0x7e, 0x34, 0x5a }  \
+		{ 0x98, 0x33, 0x46, 0xc3,   \
+		0xf8, 0x7e, 0x34, 0x5a }    \
 	}, 0x01                             \
 }
 
@@ -64,9 +61,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x4b324fc8, 0x1670, 0x01d3, \
-		{ 0x12, 0x78 },             \
-		{ 0x5a, 0x47,               \
-		  0xbf, 0x6e, 0xe1, 0x88 }  \
+		{ 0x12, 0x78, 0x5a, 0x47,   \
+		0xbf, 0x6e, 0xe1, 0x88 }    \
 	}, 0x03                             \
 }
 
@@ -74,19 +70,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345778, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0x89, 0xab }  \
-	}, 0x00                             \
-}
-
-#define SYNT_LSARPC_V0_DS                \
-{                                           \
-	{                                   \
-		0x3919286a, 0xb10c, 0x11d0, \
-		{ 0x9b, 0xa8 },             \
-		{ 0x00, 0xc0,               \
-		  0x4f, 0xd9, 0x2e, 0xf5 }  \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xab }    \
 	}, 0x00                             \
 }
 
@@ -94,9 +79,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345778, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0x89, 0xac }  \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xac }    \
 	}, 0x01                             \
 }
 
@@ -104,9 +88,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0xcf, 0xfb }  \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0xcf, 0xfb }    \
 	}, 0x01                             \
 }
 
@@ -114,9 +97,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x338cd001, 0x2244, 0x31f1, \
-		{ 0xaa, 0xaa },             \
-		{ 0x90, 0x00,               \
-		  0x38, 0x00, 0x10, 0x03 }  \
+		{ 0xaa, 0xaa, 0x90, 0x00,   \
+		0x38, 0x00, 0x10, 0x03 }    \
 	}, 0x01                             \
 }
 
@@ -124,9 +106,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0x89, 0xab }  \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xab }    \
 	}, 0x01                             \
 }
 
@@ -134,9 +115,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x0, 0x0, 0x0,              \
-		{ 0x00, 0x00 },             \
-		{ 0x00, 0x00,               \
-		  0x00, 0x00, 0x00, 0x00 }  \
+		{ 0x00, 0x00, 0x00, 0x00,   \
+		0x00, 0x00, 0x00, 0x00 }    \
 	}, 0x00                             \
 }
 
@@ -144,63 +124,23 @@ interface/version dce/rpc pipe identification
 {                                           \
         {                                   \
                 0x4fc742e0, 0x4a10, 0x11cf, \
-                { 0x82, 0x73 },             \
-		{ 0x00, 0xaa,               \
+                { 0x82, 0x73, 0x00, 0xaa,   \
                   0x00, 0x4a, 0xe6, 0x73 }  \
         }, 0x03                             \
 }
 
-#define SYNT_ECHO_V1                        \
-{                                           \
-        {                                   \
-                0x60a15ec5, 0x4de8, 0x11d7, \
-                { 0xa6, 0x37 },             \
-		{ 0x00, 0x50,               \
-                  0x56, 0xa2, 0x01, 0x82 }  \
-        }, 0x01                             \
-}
-
-#define SYNT_SHUTDOWN_V1                    \
-{                                           \
-        {                                   \
-                0x894de0c0, 0x0d55, 0x11d3, \
-                { 0xa3, 0x22 },             \
-		{ 0x00, 0xc0,               \
-                  0x4f, 0xa3, 0x21, 0xa1 }  \
-        }, 0x01                             \
-}
-
-#define SYNT_EPM_V3                         \
-{                                           \
-	{                                   \
-                0xe1af8308, 0x5d1f, 0x11c9, \
-                { 0x91, 0xa4 },             \
-		{ 0x08, 0x00,               \
-                  0x2b, 0x14, 0xa0, 0xfa }  \
-	}, 0x03                             \
-}
-
-/*
- * IMPORTANT!!  If you update this structure, make sure to
- * update the index #defines in smb.h.
- */
-
-const struct pipe_id_info pipe_names [] =
+struct pipe_id_info pipe_names [] =
 {
-	/* client pipe , abstract syntax       , server pipe   , transfer syntax */
-	{ PIPE_LSARPC  , SYNT_LSARPC_V0        , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_LSARPC  , SYNT_LSARPC_V0_DS     , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_SAMR    , SYNT_SAMR_V1          , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_NETLOGON, SYNT_NETLOGON_V1      , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_WINREG  , SYNT_WINREG_V1        , PIPE_WINREG   , TRANS_SYNT_V2 },
-	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1       , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
-	{ PIPE_NETDFS  , SYNT_NETDFS_V3        , PIPE_NETDFS   , TRANS_SYNT_V2 },
-	{ PIPE_ECHO    , SYNT_ECHO_V1          , PIPE_ECHO     , TRANS_SYNT_V2 },
-	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
-	{ PIPE_EPM     , SYNT_EPM_V3           , PIPE_EPM      , TRANS_SYNT_V2 },
-	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
+	/* client pipe , abstract syntax , server pipe   , transfer syntax */
+	{ PIPE_LSARPC  , SYNT_LSARPC_V0  , PIPE_LSASS    , TRANS_SYNT_V2 },
+	{ PIPE_SAMR    , SYNT_SAMR_V1    , PIPE_LSASS    , TRANS_SYNT_V2 },
+	{ PIPE_NETLOGON, SYNT_NETLOGON_V1, PIPE_LSASS    , TRANS_SYNT_V2 },
+	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
+	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
+	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
+	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1 , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
+	{ PIPE_NETDFS  , SYNT_NETDFS_V3  , PIPE_NETDFS   , TRANS_SYNT_V2 },
+	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 
 /*******************************************************************
@@ -289,13 +229,19 @@ static BOOL smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
 	depth++;
 
-	if (!prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
-	if (!smb_io_uuid(  "uuid", &ifc->uuid, ps, depth))
+	if(!prs_uint32 ("data   ", ps, depth, &ifc->uuid.time_low))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_mid))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_hi_and_version))
 		return False;
 
-	if(!prs_uint32 ("version", ps, depth, &ifc->version))
+	if(!prs_uint8s (False, "data   ", ps, depth, ifc->uuid.remaining, sizeof(ifc->uuid.remaining)))
+		return False;
+	if(!prs_uint32 (       "version", ps, depth, &ifc->version))
 		return False;
 
 	return True;
@@ -632,20 +578,29 @@ BOOL smb_io_rpc_hdr_autha(const char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, 
 }
 
 /*******************************************************************
+ Checks an RPC_HDR_AUTH structure.
+********************************************************************/
+
+BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
+{
+	return (rai->auth_type == NTLMSSP_AUTH_TYPE && rai->auth_level == NTLMSSP_AUTH_LEVEL);
+}
+
+/*******************************************************************
  Inits an RPC_HDR_AUTH structure.
 ********************************************************************/
 
 void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
-				uint8 padding,
+				uint8 stub_type_len,
 				uint32 ptr)
 {
 	rai->auth_type     = auth_type; /* nt lm ssp 0x0a */
 	rai->auth_level    = auth_level; /* 0x06 */
-	rai->padding       = padding;
-	rai->reserved      = 0;
+	rai->stub_type_len = stub_type_len; /* 0x00 */
+	rai->padding       = 0; /* padding 0x00 */
 
-	rai->auth_context  = ptr; /* non-zero pointer to something */
+	rai->unknown       = ptr; /* non-zero pointer to something */
 }
 
 /*******************************************************************
@@ -667,11 +622,12 @@ BOOL smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 		return False;
 	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
 		return False;
+	if(!prs_uint8 ("stub_type_len", ps, depth, &rai->stub_type_len))
+		return False;
 	if(!prs_uint8 ("padding      ", ps, depth, &rai->padding))
 		return False;
-	if(!prs_uint8 ("reserved     ", ps, depth, &rai->reserved))
-		return False;
-	if(!prs_uint32("auth_context ", ps, depth, &rai->auth_context))
+
+	if(!prs_uint32("unknown      ", ps, depth, &rai->unknown)) /* 0x0014a0c0 */
 		return False;
 
 	return True;
@@ -711,32 +667,10 @@ BOOL smb_io_rpc_auth_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_stru
 	depth++;
 
 	/* "NTLMSSP" */
-	if(!prs_string("signature", ps, depth, rav->signature,
+	if(!prs_string("signature", ps, depth, rav->signature, strlen("NTLMSSP"),
 			sizeof(rav->signature)))
 		return False;
 	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- This parses an RPC_AUTH_VERIFIER for NETLOGON schannel. I think
- assuming "NTLMSSP" in sm_io_rpc_auth_verifier is somewhat wrong.
- I have to look at that later...
-********************************************************************/
-
-BOOL smb_io_rpc_netsec_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
-{
-	if (rav == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
-	depth++;
-
-	if(!prs_string("signature", ps, depth, rav->signature, sizeof(rav->signature)))
-		return False;
-	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type))
 		return False;
 
 	return True;
@@ -748,7 +682,7 @@ BOOL smb_io_rpc_netsec_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_st
 
 void init_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
-				const char *myname, const char *domain)
+				fstring myname, fstring domain)
 {
 	int len_myname = strlen(myname);
 	int len_domain = strlen(domain);
@@ -940,9 +874,9 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	memcpy(rsp->nt_resp, nt_resp, 24);
 
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
-		rpcstr_push(rsp->domain, domain, sizeof(rsp->domain), 0);
-		rpcstr_push(rsp->user, user, sizeof(rsp->user), 0);
-		rpcstr_push(rsp->wks, wks, sizeof(rsp->wks), 0);
+		dos_struni2(rsp->domain, domain, sizeof(rsp->domain));
+		dos_struni2(rsp->user, user, sizeof(rsp->user));
+		dos_struni2(rsp->wks, wks, sizeof(rsp->wks));
 	} else {
 		fstrcpy(rsp->domain, domain);
 		fstrcpy(rsp->user, user);
@@ -1108,10 +1042,9 @@ BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_nu
 	    chk->seq_num != seq_num)
 	{
 		DEBUG(5,("verify failed - crc %x ver %x seq %d\n",
-			 chk->crc32, chk->ver, chk->seq_num));
-			
-		DEBUG(5,("verify expect - crc %x ver %x seq %d\n",
 			crc32, NTLMSSP_SIGN_VERSION, seq_num));
+		DEBUG(5,("verify expect - crc %x ver %x seq %d\n",
+			chk->crc32, chk->ver, chk->seq_num));
 		return False;
 	}
 	return True;
@@ -1156,64 +1089,3 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(const char *desc, RPC_AUTH_NTLMSSP_CHK *chk, pr
 
 	return True;
 }
-
-/*******************************************************************
-creates an RPC_AUTH_NETSEC_NEG structure.
-********************************************************************/
-void init_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG *neg,
-			      const char *domain, const char *myname)
-{
-	neg->type1 = 0;
-	neg->type2 = 0x3;
-	fstrcpy(neg->domain, domain);
-	fstrcpy(neg->myname, myname);
-}
-
-/*******************************************************************
- Reads or writes an RPC_AUTH_NETSEC_NEG structure.
-********************************************************************/
-
-BOOL smb_io_rpc_auth_netsec_neg(const char *desc, RPC_AUTH_NETSEC_NEG *neg,
-				prs_struct *ps, int depth)
-{
-	if (neg == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_neg");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("type1", ps, depth, &neg->type1))
-		return False;
-	if(!prs_uint32("type2", ps, depth, &neg->type2))
-		return False;
-	if(!prs_string("domain  ", ps, depth, neg->domain, sizeof(neg->domain)))
-		return False;
-	if(!prs_string("myname  ", ps, depth, neg->myname, sizeof(neg->myname)))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes an RPC_AUTH_NETSEC_CHK structure.
-********************************************************************/
-BOOL smb_io_rpc_auth_netsec_chk(const char *desc, RPC_AUTH_NETSEC_CHK * chk,
-				prs_struct *ps, int depth)
-{
-	if (chk == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_chk");
-	depth++;
-
-	prs_uint8s(False, "sig  ", ps, depth, chk->sig, sizeof(chk->sig));
-	prs_uint8s(False, "seq_num", ps, depth, chk->seq_num, sizeof(chk->seq_num));
-	prs_uint8s(False, "packet_digest", ps, depth, chk->packet_digest, sizeof(chk->packet_digest));
-	prs_uint8s(False, "confounder", ps, depth, chk->confounder, sizeof(chk->confounder));
-
-	return True;
-}
-

@@ -1,10 +1,10 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
-   Copyright (C) Jean François Micouleau 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,19 +26,17 @@
 
 
 /* NETLOGON pipe */
-#define NET_SAMLOGON		0x02
-#define NET_SAMLOGOFF		0x03
-#define NET_REQCHAL		0x04
-#define NET_AUTH		0x05
-#define NET_SRVPWSET		0x06
-#define NET_SAM_DELTAS		0x07
-#define NET_LOGON_CTRL		0x0c
-#define NET_GETDCNAME		0x0d
-#define NET_AUTH2		0x0f
-#define NET_LOGON_CTRL2		0x0e
-#define NET_SAM_SYNC		0x10
-#define NET_TRUST_DOM_LIST	0x13
-#define NET_AUTH3		0x1a
+#define NET_SAMLOGON           0x02
+#define NET_SAMLOGOFF          0x03
+#define NET_REQCHAL            0x04
+#define NET_AUTH               0x05
+#define NET_SRVPWSET           0x06
+#define NET_SAM_DELTAS         0x07
+#define NET_LOGON_CTRL         0x0c
+#define NET_AUTH2              0x0f
+#define NET_LOGON_CTRL2        0x0e
+#define NET_SAM_SYNC           0x10
+#define NET_TRUST_DOM_LIST     0x13
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2
@@ -46,27 +44,20 @@
 #define SEC_CHAN_BDC     6
 
 /* Returned delta types */
-#define SAM_DELTA_DOMAIN_INFO    0x01
-#define SAM_DELTA_GROUP_INFO     0x02
-#define SAM_DELTA_RENAME_GROUP   0x04
-#define SAM_DELTA_ACCOUNT_INFO   0x05
-#define SAM_DELTA_RENAME_USER    0x07
-#define SAM_DELTA_GROUP_MEM      0x08
-#define SAM_DELTA_ALIAS_INFO     0x09
-#define SAM_DELTA_RENAME_ALIAS   0x0b
-#define SAM_DELTA_ALIAS_MEM      0x0c
-#define SAM_DELTA_POLICY_INFO    0x0d
-#define SAM_DELTA_TRUST_DOMS     0x0e
-#define SAM_DELTA_PRIVS_INFO     0x10 /* DT_DELTA_ACCOUNTS */
-#define SAM_DELTA_SECRET_INFO    0x12
-#define SAM_DELTA_DELETE_GROUP   0x14
-#define SAM_DELTA_DELETE_USER    0x15
-#define SAM_DELTA_MODIFIED_COUNT 0x16
+#define SAM_DELTA_DOMAIN_INFO  0x01 /* Domain */
+#define SAM_DELTA_GROUP_INFO   0x02 /* Domain groups */
+#define SAM_DELTA_ACCOUNT_INFO 0x05 /* Users */
+#define SAM_DELTA_GROUP_MEM    0x08 /* Group membership */
+#define SAM_DELTA_ALIAS_INFO   0x09 /* Local groups */
+#define SAM_DELTA_ALIAS_MEM    0x0C /* Local group membership */
+#define SAM_DELTA_UNKNOWN      0x0D /* Privilige stuff */
+#define SAM_DELTA_UNKNOWN2     0x10 /* Privilige stuff */
+#define SAM_DELTA_SAM_STAMP    0x16 /* Some kind of journal record? */
 
 /* SAM database types */
 #define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
 #define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
-#define SAM_DATABASE_PRIVS     0x02 /* Privileges */
+#define SAM_DATABASE_PRIVS     0x02 /* Priviliges? */
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
@@ -157,7 +148,7 @@ typedef struct net_user_info_3
 	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
 	uint32 user_flgs;     /* user flags */
 
-	uint8 user_sess_key[16]; /* user session key */
+	uint8 user_sess_key[16]; /* unused user session key */
 
 	UNIHDR hdr_logon_srv; /* logon server unicode string header */
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
@@ -299,25 +290,6 @@ typedef struct net_r_logon_ctrl2_info
 
 } NET_R_LOGON_CTRL2;
 
-/* NET_Q_GETDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_q_getdcname
-{
-	uint32  ptr_logon_server;
-	UNISTR2 uni_logon_server;
-	uint32  ptr_domainname;
-	UNISTR2 uni_domainname;
-} NET_Q_GETDCNAME;
-
-/* NET_R_GETDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_r_getdcname
-{
-	uint32  ptr_dcname;
-	UNISTR2 uni_dcname;
-	NTSTATUS status;
-} NET_R_GETDCNAME;
-
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
 typedef struct net_q_trust_dom_info
 {
@@ -396,23 +368,6 @@ typedef struct net_r_auth2_info
 	NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
 	NTSTATUS status; /* return code */
 } NET_R_AUTH_2;
-
-/* NET_Q_AUTH_3 */
-typedef struct net_q_auth3_info
-{
-    DOM_LOG_INFO clnt_id;	/* client identification info */
-    DOM_CHAL clnt_chal;		/* client-calculated credentials */
-    NEG_FLAGS clnt_flgs;	/* usually 0x6007 ffff */
-} NET_Q_AUTH_3;
-
-/* NET_R_AUTH_3 */
-typedef struct net_r_auth3_info
-{
-	DOM_CHAL srv_chal;	/* server-calculated credentials */
-	NEG_FLAGS srv_flgs;	/* usually 0x6007 ffff */
-	uint32 unknown;		/* 0x0000045b */
-	NTSTATUS status;	/* return code */
-} NET_R_AUTH_3;
 
 
 /* NET_Q_SRV_PWSET */
@@ -735,132 +690,13 @@ typedef struct sam_alias_mem_info_info
 
 } SAM_ALIAS_MEM_INFO;
 
-
-/* SAM_DELTA_POLICY (0x0D) */
-typedef struct
-{
-	uint32   max_log_size; /* 0x5000 */
-	UINT64_S audit_retention_period; /* 0 */
-	uint32   auditing_mode; /* 0 */
-	uint32   num_events;
-	uint32   ptr_events;
-	UNIHDR   hdr_dom_name;
-	uint32   sid_ptr;
-
-	uint32   paged_pool_limit; /* 0x02000000 */
-	uint32   non_paged_pool_limit; /* 0x00100000 */
-	uint32   min_workset_size; /* 0x00010000 */
-	uint32   max_workset_size; /* 0x0f000000 */
-	uint32   page_file_limit; /* 0 */
-	UINT64_S time_limit; /* 0 */
-	NTTIME   modify_time; /* 0x3c*/
-	NTTIME   create_time; /* a7080110 */
-	BUFHDR2  hdr_sec_desc;
-
-	uint32   num_event_audit_options;
-	uint32   event_audit_option;
-
-	UNISTR2  domain_name;
-	DOM_SID2 domain_sid;
-
-	BUFFER4  buf_sec_desc;
-} SAM_DELTA_POLICY;
-
-/* SAM_DELTA_TRUST_DOMS */
-typedef struct
-{
-	uint32 buf_size;
-	SEC_DESC *sec_desc;
-	DOM_SID2 sid;
-	UNIHDR hdr_domain;
-	
-	uint32 unknown0;
-	uint32 unknown1;
-	uint32 unknown2;
-	
-	uint32 buf_size2;
-	uint32 ptr;
-
-	uint32 unknown3;
-	UNISTR2 domain;
-
-} SAM_DELTA_TRUSTDOMS;
-
-/* SAM_DELTA_PRIVS (0x10) */
-typedef struct
-{
-	DOM_SID2 sid;
-
-	uint32 priv_count;
-	uint32 priv_control;
-
-	uint32 priv_attr_ptr;
-	uint32 priv_name_ptr;
-
-	uint32   paged_pool_limit; /* 0x02000000 */
-	uint32   non_paged_pool_limit; /* 0x00100000 */
-	uint32   min_workset_size; /* 0x00010000 */
-	uint32   max_workset_size; /* 0x0f000000 */
-	uint32   page_file_limit; /* 0 */
-	UINT64_S time_limit; /* 0 */
-	uint32   system_flags; /* 1 */
-	BUFHDR2  hdr_sec_desc;
-	
-	uint32 buf_size2;
-	
-	uint32 attribute_count;
-	uint32 *attributes;
-	
-	uint32 privlist_count;
-	UNIHDR *hdr_privslist;
-	UNISTR2 *uni_privslist;
-
-	BUFFER4 buf_sec_desc;
-} SAM_DELTA_PRIVS;
-
-/* SAM_DELTA_SECRET */
-typedef struct
-{
-	uint32 buf_size;
-	SEC_DESC *sec_desc;
-	UNISTR2 secret;
-
-	uint32 count1;
-	uint32 count2;
-	uint32 ptr;
-	NTTIME time1;
-	uint32 count3;
-	uint32 count4;
-	uint32 ptr2;
-	NTTIME time2;
-	uint32 unknow1;
-
-	uint32 buf_size2;
-	uint32 ptr3;
-	uint32 unknow2; /* 0x0 12 times */
-
-	uint32 chal_len;
-	uint32 reserved1; /* 0 */
-	uint32 chal_len2;
-	uint8 chal[16];
-
-	uint32 key_len;
-	uint32 reserved2; /* 0 */
-	uint32 key_len2;
-	uint8 key[8];
-
-	uint32 buf_size3;
-	SEC_DESC *sec_desc2;
-
-} SAM_DELTA_SECRET;
-
-/* SAM_DELTA_MOD_COUNT (0x16) */
+/* SAM_DELTA_STAMP (0x16) */
 typedef struct
 {
         uint32 seqnum;
         uint32 dom_mod_count_ptr;
 	UINT64_S dom_mod_count;  /* domain mod count at last sync */
-} SAM_DELTA_MOD_COUNT;
+} SAM_DELTA_STAMP;
 
 typedef union sam_delta_ctr_info
 {
@@ -870,11 +706,7 @@ typedef union sam_delta_ctr_info
 	SAM_GROUP_MEM_INFO grp_mem_info;
 	SAM_ALIAS_INFO     alias_info  ;
 	SAM_ALIAS_MEM_INFO als_mem_info;
-	SAM_DELTA_POLICY   policy_info;
-	SAM_DELTA_PRIVS    privs_info;
-	SAM_DELTA_MOD_COUNT mod_count;
-	SAM_DELTA_TRUSTDOMS trustdoms_info;
-	SAM_DELTA_SECRET   secret_info;
+        SAM_DELTA_STAMP    stamp;
 } SAM_DELTA_CTR;
 
 /* NET_R_SAM_SYNC */

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    DOS error code constants
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2000
@@ -82,28 +83,13 @@
 #define ERRnoipc 66 /* don't support ipc */
 
 /* These errors seem to be only returned by the NT printer driver system */
-#define ERRdriveralreadyinstalled 1795 /* ERROR_PRINTER_DRIVER_ALREADY_INSTALLED */
-#define ERRunknownprinterport 1796 /* ERROR_UNKNOWN_PORT */
+
 #define ERRunknownprinterdriver 1797 /* ERROR_UNKNOWN_PRINTER_DRIVER */
-#define ERRunknownprintprocessor 1798 /* ERROR_UNKNOWN_PRINTPROCESSOR */
-#define ERRinvalidseparatorfile 1799 /* ERROR_INVALID_SEPARATOR_FILE */
-#define ERRinvalidjobpriority 1800 /* ERROR_INVALID_PRIORITY */
 #define ERRinvalidprintername 1801 /* ERROR_INVALID_PRINTER_NAME */
 #define ERRprinteralreadyexists 1802 /* ERROR_PRINTER_ALREADY_EXISTS */
-#define ERRinvalidprintercommand 1803 /* ERROR_INVALID_PRINTER_COMMAND */
 #define ERRinvaliddatatype 1804 /* ERROR_INVALID_DATATYPE */
 #define ERRinvalidenvironment 1805 /* ERROR_INVALID_ENVIRONMENT */
-
-#define ERRunknownprintmonitor 3000 /* ERROR_UNKNOWN_PRINT_MONITOR */
 #define ERRprinterdriverinuse 3001 /* ERROR_PRINTER_DRIVER_IN_USE */
-#define ERRspoolfilenotfound 3002 /* ERROR_SPOOL_FILE_NOT_FOUND */
-#define ERRnostartdoc 3003 /* ERROR_SPL_NO_STARTDOC */
-#define ERRnoaddjob 3004 /* ERROR_SPL_NO_ADDJOB */
-#define ERRprintprocessoralreadyinstalled 3005 /* ERROR_PRINT_PROCESSOR_ALREADY_INSTALLED */
-#define ERRprintmonitoralreadyinstalled 3006 /* ERROR_PRINT_MONITOR_ALREADY_INSTALLED */
-#define ERRinvalidprintmonitor 3007 /* ERROR_INVALID_PRINT_MONITOR */
-#define ERRprintmonitorinuse 3008 /* ERROR_PRINT_MONITOR_IN_USE */
-#define ERRprinterhasjobsqueued 3009 /* ERROR_PRINTER_HAS_JOBS_QUEUED */
 
 /* Error codes for the ERRSRV class */
 
@@ -163,60 +149,37 @@
 /* these are win32 error codes. There are only a few places where
    these matter for Samba, primarily in the NT printing code */
 #define WERR_OK W_ERROR(0)
-#define WERR_BADFUNC W_ERROR(1)
 #define WERR_BADFILE W_ERROR(2)
 #define WERR_ACCESS_DENIED W_ERROR(5)
 #define WERR_BADFID W_ERROR(6)
-#define WERR_NOMEM W_ERROR(8)
-#define WERR_GENERAL_FAILURE W_ERROR(31)
-#define WERR_NOT_SUPPORTED W_ERROR(50)
-#define WERR_PRINTQ_FULL W_ERROR(61)
-#define WERR_NO_SPOOL_SPACE W_ERROR(62)
+#define WERR_BADFUNC W_ERROR(1)
+#define WERR_INSUFFICIENT_BUFFER W_ERROR(122)
 #define WERR_NO_SUCH_SHARE W_ERROR(67)
 #define WERR_ALREADY_EXISTS W_ERROR(80)
-#define WERR_BAD_PASSWORD W_ERROR(86)
 #define WERR_INVALID_PARAM W_ERROR(87)
-#define WERR_INSUFFICIENT_BUFFER W_ERROR(122)
+#define WERR_NOT_SUPPORTED W_ERROR(50)
+#define WERR_BAD_PASSWORD W_ERROR(86)
+#define WERR_NOMEM W_ERROR(8)
 #define WERR_INVALID_NAME W_ERROR(123)
 #define WERR_UNKNOWN_LEVEL W_ERROR(124)
 #define WERR_OBJECT_PATH_INVALID W_ERROR(161)
 #define WERR_NO_MORE_ITEMS W_ERROR(259)
 #define WERR_MORE_DATA W_ERROR(234)
-#define WERR_INVALID_OWNER W_ERROR(1307)
 #define WERR_CAN_NOT_COMPLETE W_ERROR(1003)
 #define WERR_INVALID_SECURITY_DESCRIPTOR W_ERROR(1338)
-#define WERR_SERVER_UNAVAILABLE W_ERROR(1722)
+#define WERR_UNKNOWN_PRINTER_DRIVER W_ERROR(1797)
+#define WERR_INVALID_PRINTER_NAME W_ERROR(1801)
+#define WERR_PRINTER_ALREADY_EXISTS W_ERROR(1802)
+#define WERR_INVALID_DATATYPE W_ERROR(1804)
+#define WERR_INVALID_ENVIRONMENT W_ERROR(1805)
 #define WERR_INVALID_FORM_NAME W_ERROR(1902)
 #define WERR_INVALID_FORM_SIZE W_ERROR(1903)
 #define WERR_BUF_TOO_SMALL W_ERROR(2123)
 #define WERR_JOB_NOT_FOUND W_ERROR(2151)
 #define WERR_DEST_NOT_FOUND W_ERROR(2152)
 #define WERR_NOT_LOCAL_DOMAIN W_ERROR(2320)
+#define WERR_PRINTER_DRIVER_IN_USE W_ERROR(3001)
 #define WERR_STATUS_MORE_ENTRIES   W_ERROR(0x0105)
-
-#define WERR_PRINTER_DRIVER_ALREADY_INSTALLED W_ERROR(ERRdriveralreadyinstalled)
-#define WERR_UNKNOWN_PORT W_ERROR(ERRunknownprinterport)
-#define WERR_UNKNOWN_PRINTER_DRIVER W_ERROR(ERRunknownprinterdriver)
-#define WERR_UNKNOWN_PRINTPROCESSOR W_ERROR(ERRunknownprintprocessor)
-#define WERR_INVALID_SEPARATOR_FILE W_ERROR(ERRinvalidseparatorfile)
-#define WERR_INVALID_PRIORITY W_ERROR(ERRinvalidjobpriority)
-#define WERR_INVALID_PRINTER_NAME W_ERROR(ERRinvalidprintername)
-#define WERR_PRINTER_ALREADY_EXISTS W_ERROR(ERRprinteralreadyexists)
-#define WERR_INVALID_PRINTER_COMMAND W_ERROR(ERRinvalidprintercommand)
-#define WERR_INVALID_DATATYPE W_ERROR(ERRinvaliddatatype)
-#define WERR_INVALID_ENVIRONMENT W_ERROR(ERRinvalidenvironment)
-
-#define WERR_UNKNOWN_PRINT_MONITOR W_ERROR(ERRunknownprintmonitor)
-#define WERR_PRINTER_DRIVER_IN_USE W_ERROR(ERRprinterdriverinuse)
-#define WERR_SPOOL_FILE_NOT_FOUND W_ERROR(ERRspoolfilenotfound)
-#define WERR_SPL_NO_STARTDOC W_ERROR(ERRnostartdoc)
-#define WERR_SPL_NO_ADDJOB W_ERROR(ERRnoaddjob)
-#define WERR_PRINT_PROCESSOR_ALREADY_INSTALLED W_ERROR(ERRprintprocessoralreadyinstalled)
-#define WERR_PRINT_MONITOR_ALREADY_INSTALLED W_ERROR(ERRprintmonitoralreadyinstalled)
-#define WERR_INVALID_PRINT_MONITOR W_ERROR(ERRinvalidprintmonitor)
-#define WERR_PRINT_MONITOR_IN_USE W_ERROR(ERRprintmonitorinuse)
-#define WERR_PRINTER_HAS_JOBS_QUEUED W_ERROR(ERRprinterhasjobsqueued)
-
 
 /* DFS errors */
 

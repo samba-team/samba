@@ -1,0 +1,12 @@
+--- samba/source/printing/lpq_parse.c.orig	2002-07-24 09:22:49.000000000 -0400
++++ samba/source/printing/lpq_parse.c	2002-10-13 01:43:10.000000000 -0400
+@@ -265,6 +265,9 @@
+     buf->status = LPQ_PAUSED;
+   }
+ 
++  if(strequal(tokarr[LPRNG_RANKTOK],"done"))
++    buf->status = LPQ_PRINTED;
++
+   buf->priority = *tokarr[LPRNG_PRIOTOK] -'A';
+ 
+   buf->time = LPRng_time(tokarr[LPRNG_TIMETOK]);

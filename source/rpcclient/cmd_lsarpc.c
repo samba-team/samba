@@ -1,9 +1,8 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
    RPC pipe client
 
-   Copyright (C) Tim Potter              2000
-   Copyright (C) Rafal Szczesniak        2002
+   Copyright (C) Tim Potter 2000
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,58 +22,16 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-
-/* useful function to allow entering a name instead of a SID and
- * looking it up automatically */
-static NTSTATUS name_to_sid(struct cli_state *cli, 
-			    TALLOC_CTX *mem_ctx,
-			    DOM_SID *sid, const char *name)
-{
-	POLICY_HND pol;
-	uint32 *sid_types;
-	NTSTATUS result;
-	DOM_SID *sids;
-
-	/* maybe its a raw SID */
-	if (strncmp(name, "S-", 2) == 0 &&
-	    string_to_sid(sid, name)) {
-		return NT_STATUS_OK;
-	}
-
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &pol);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	cli_lsa_close(cli, mem_ctx, &pol);
-
-	*sid = sids[0];
-
-done:
-	return result;
-}
-
-
 /* Look up domain related information on a remote host */
 
 static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx, int argc, 
-                                          const char **argv) 
+                                          char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *dom_sid;
-	struct uuid *dom_guid;
-	fstring sid_str;
-	char *domain_name = NULL;
-	char *dns_name = NULL;
-	char *forest_name = NULL;
-
+	DOM_SID dom_sid;
+	fstring sid_str, domain_name;
 	uint32 info_class = 3;
 
 	if (argc > 2) {
@@ -85,51 +42,28 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 	if (argc == 2)
 		info_class = atoi(argv[1]);
 	
-	/* Lookup info policy */
-	switch (info_class) {
-	case 12:
-		result = cli_lsa_open_policy2(cli, mem_ctx, True, 
-					     SEC_RIGHTS_MAXIMUM_ALLOWED,
-					     &pol);
-
-		if (!NT_STATUS_IS_OK(result))
-			goto done;
-		result = cli_lsa_query_info_policy2(cli, mem_ctx, &pol,
-						    info_class, &domain_name,
-						    &dns_name, &forest_name,
-						    &dom_guid, &dom_sid);
-		break;
-	default:
-		result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 
-		if (!NT_STATUS_IS_OK(result))
-			goto done;
-		result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, 
-						   info_class, &domain_name, 
-						   &dom_sid);
-	}
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Lookup info policy */
+
+	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
+					   domain_name, &dom_sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	
-	sid_to_string(sid_str, dom_sid);
 
-	if (domain_name)
+	sid_to_string(sid_str, &dom_sid);
+
+	if (domain_name[0])
 		printf("domain %s has sid %s\n", domain_name, sid_str);
 	else
 		printf("could not query info for level %d\n", info_class);
 
-	if (dns_name)
-		printf("domain dns name is %s\n", dns_name);
-	if (forest_name)
-		printf("forest name is %s\n", forest_name);
-
-	if (info_class == 12) {
-		printf("domain GUID is ");
-		smb_uuid_string_static(*dom_guid);
-	}
  done:
 	return result;
 }
@@ -138,7 +72,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx, int argc, 
-                                     const char **argv)
+                                     char **argv)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -158,11 +92,11 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      (const char**)(argv + 1), &sids, &types);
+	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1,
+					(const char**)(argv + 1), &sids, &types);
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
-	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
+			NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
 
 	result = NT_STATUS_OK;
@@ -171,9 +105,10 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 
 	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
+
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s %s (%s: %d)\n", argv[i + 1], sid_str,
-		       sid_type_lookup(types[i]), types[i]);
+		printf("%s %s (%d)\n", argv[i + 1], sid_str,
+		       types[i]);
 	}
 
  done:
@@ -183,7 +118,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 /* Resolve a list of SIDs to a list of names */
 
 static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                    int argc, const char **argv)
+                                    int argc, char **argv)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -214,19 +149,16 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	for (i = 0; i < argc - 1; i++) 
-		if (!string_to_sid(&sids[i], argv[i + 1])) {
-			result = NT_STATUS_INVALID_SID;
-			goto done;
-		}
+	for (i = 0; i < argc - 1; i++)
+		string_to_sid(&sids[i], argv[i + 1]);
 
 	/* Lookup the SIDs */
 
-	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
-				     &domains, &names, &types);
+	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids,
+					&domains, &names, &types);
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
-	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
+				NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
 
 	result = NT_STATUS_OK;
@@ -237,9 +169,9 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s %s\\%s (%d)\n", sid_str, 
-		       domains[i] ? domains[i] : "*unknown*", 
-		       names[i] ? names[i] : "*unknown*", types[i]);
+		printf("%s %s\\%s (%d)\n", sid_str,
+			domains[i] ? domains[i] : "*unknown*",
+			names[i] ? names[i] : "*unknown*", types[i]);
 	}
 
  done:
@@ -250,29 +182,23 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx, int argc, 
-                                       const char **argv)
+                                       char **argv)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *domain_sids;
 	char **domain_names;
-
-	/* defaults, but may be changed using params */
 	uint32 enum_ctx = 0;
-	uint32 num_domains = 0;
+	uint32 num_domains;
 	int i;
 
-	if (argc > 2) {
-		printf("Usage: %s [enum context (0)]\n", argv[0]);
+	if (argc != 1) {
+		printf("Usage: %s\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2 && argv[1]) {
-		enum_ctx = atoi(argv[2]);
-	}	
-
 	result = cli_lsa_open_policy(cli, mem_ctx, True, 
-				     POLICY_VIEW_LOCAL_INFORMATION,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -281,14 +207,14 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	/* Lookup list of trusted domains */
 
 	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-					&num_domains,
-					&domain_names, &domain_sids);
-	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
-	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
-	    goto done;
+					&num_domains, &domain_names,
+					&domain_sids);
 
-	/* Print results: list of names and sids returned in this response. */	 
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Print results */
+
 	for (i = 0; i < num_domains; i++) {
 		fstring sid_str;
 
@@ -304,8 +230,8 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 /* Enumerates privileges */
 
 static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli, 
-				       TALLOC_CTX *mem_ctx, int argc, 
-				       const char **argv) 
+                                          TALLOC_CTX *mem_ctx, int argc, 
+                                          char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -358,7 +284,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx, int argc, 
-                                     const char **argv) 
+                                     char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -395,8 +321,8 @@ static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli,
 /* Enumerate the LSA SIDS */
 
 static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli, 
-				  TALLOC_CTX *mem_ctx, int argc, 
-				  const char **argv) 
+                                     TALLOC_CTX *mem_ctx, int argc, 
+                                     char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -445,53 +371,11 @@ static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli,
 	return result;
 }
 
-/* Create a new account */
-
-static NTSTATUS cmd_lsa_create_account(struct cli_state *cli, 
-                                           TALLOC_CTX *mem_ctx, int argc, 
-                                           const char **argv) 
-{
-	POLICY_HND dom_pol;
-	POLICY_HND user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 des_access = 0x000f000f;
-	
-	DOM_SID sid;
-
-	if (argc != 2 ) {
-		printf("Usage: %s SID\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;	
-
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	result = cli_lsa_create_account(cli, mem_ctx, &dom_pol, &sid, des_access, &user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	printf("Account for SID %s successfully created\n\n", argv[1]);
-	result = NT_STATUS_OK;
-
- done:
-	return result;
-}
-
-
 /* Enumerate the privileges of an SID */
 
 static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli, 
                                            TALLOC_CTX *mem_ctx, int argc, 
-                                           const char **argv) 
+                                           char **argv) 
 {
 	POLICY_HND dom_pol;
 	POLICY_HND user_pol;
@@ -508,9 +392,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;	
+	string_to_sid(&sid, argv[1]);
 
 	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -541,135 +423,11 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 	return result;
 }
 
-
-/* Enumerate the privileges of an SID via LsaEnumerateAccountRights */
-
-static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli, 
-					 TALLOC_CTX *mem_ctx, int argc, 
-					 const char **argv) 
-{
-	POLICY_HND dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DOM_SID sid;
-	uint32 count;
-	char **rights;
-
-	int i;
-
-	if (argc != 2 ) {
-		printf("Usage: %s SID\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;	
-
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	result = cli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, sid, &count, &rights);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	printf("found %d privileges for SID %s\n", count, sid_string_static(&sid));
-
-	for (i = 0; i < count; i++) {
-		printf("\t%s\n", rights[i]);
-	}
-
- done:
-	return result;
-}
-
-
-/* add some privileges to a SID via LsaAddAccountRights */
-
-static NTSTATUS cmd_lsa_add_acct_rights(struct cli_state *cli, 
-					TALLOC_CTX *mem_ctx, int argc, 
-					const char **argv) 
-{
-	POLICY_HND dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DOM_SID sid;
-
-	if (argc < 3 ) {
-		printf("Usage: %s SID [rights...]\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;	
-
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	result = cli_lsa_add_account_rights(cli, mem_ctx, &dom_pol, sid, 
-					    argc-2, argv+2);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
- done:
-	return result;
-}
-
-
-/* remove some privileges to a SID via LsaRemoveAccountRights */
-
-static NTSTATUS cmd_lsa_remove_acct_rights(struct cli_state *cli, 
-					TALLOC_CTX *mem_ctx, int argc, 
-					const char **argv) 
-{
-	POLICY_HND dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DOM_SID sid;
-
-	if (argc < 3 ) {
-		printf("Usage: %s SID [rights...]\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
-		goto done;	
-
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	result = cli_lsa_remove_account_rights(cli, mem_ctx, &dom_pol, sid, 
-					       False, argc-2, argv+2);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
- done:
-	return result;
-}
-
-
 /* Get a privilege value given its name */
 
 static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli, 
-					TALLOC_CTX *mem_ctx, int argc, 
-					const char **argv) 
+                                           TALLOC_CTX *mem_ctx, int argc, 
+                                           char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -704,7 +462,7 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
-				     const char **argv) 
+				     char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -736,27 +494,22 @@ static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli,
 	return result;
 }
 
-
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
 
 	{ "LSARPC" },
 
-	{ "lsaquery", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_query_info_policy,  NULL, PI_LSARPC, "Query info policy",                    "" },
-	{ "lookupsids",          RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids,        NULL, PI_LSARPC, "Convert SIDs to names",                "" },
-	{ "lookupnames",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names,       NULL, PI_LSARPC, "Convert names to SIDs",                "" },
-	{ "enumtrust", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_trust_dom,     NULL, PI_LSARPC, "Enumerate trusted domains",            "Usage: [preferred max number] [enum context (0)]" },
-	{ "enumprivs", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privilege,     NULL, PI_LSARPC, "Enumerate privileges",                 "" },
-	{ "getdispname",         RPC_RTYPE_NTSTATUS, cmd_lsa_get_dispname,       NULL, PI_LSARPC, "Get the privilege name",               "" },
-	{ "lsaenumsid",          RPC_RTYPE_NTSTATUS, cmd_lsa_enum_sids,          NULL, PI_LSARPC, "Enumerate the LSA SIDS",               "" },
-	{ "lsacreateaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_create_account, NULL, PI_LSARPC, "Create a new lsa account",   "" },
-	{ "lsaenumprivsaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privsaccounts, NULL, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
-	{ "lsaenumacctrights",   RPC_RTYPE_NTSTATUS, cmd_lsa_enum_acct_rights,   NULL, PI_LSARPC, "Enumerate the rights of an SID",   "" },
-	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, "Add rights to an account",   "" },
-	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, "Remove rights from an account",   "" },
-	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookupprivvalue,    NULL, PI_LSARPC, "Get a privilege value given its name", "" },
-	{ "lsaquerysecobj",      RPC_RTYPE_NTSTATUS, cmd_lsa_query_secobj,       NULL, PI_LSARPC, "Query LSA security object", "" },
+	{ "lsaquery", 	 cmd_lsa_query_info_policy, 	PIPE_LSARPC, "Query info policy",         "" },
+	{ "lookupsids",  cmd_lsa_lookup_sids, 		PIPE_LSARPC, "Convert SIDs to names",     "" },
+	{ "lookupnames", cmd_lsa_lookup_names, 		PIPE_LSARPC, "Convert names to SIDs",     "" },
+	{ "enumtrust", 	 cmd_lsa_enum_trust_dom, 	PIPE_LSARPC, "Enumerate trusted domains", "" },
+	{ "enumprivs", 	         cmd_lsa_enum_privilege,     PIPE_LSARPC, "Enumerate privileges",                 "" },
+	{ "getdispname",         cmd_lsa_get_dispname,       PIPE_LSARPC, "Get the privilege name",               "" },
+	{ "lsaenumsid",          cmd_lsa_enum_sids,          PIPE_LSARPC, "Enumerate the LSA SIDS",               "" },
+	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PIPE_LSARPC, "Enumerate the privileges of an SID",   "" },
+	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PIPE_LSARPC, "Get a privilege value given its name", "" },
+	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PIPE_LSARPC, "Query LSA security object", "" },
 
 	{ NULL }
 };

@@ -1,0 +1,172 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<refentry id="make-unicodemap">
+
+<refmeta>
+	<refentrytitle>make_unicodemap</refentrytitle>
+	<manvolnum>1</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>make_unicodemap</refname>
+	<refpurpose>construct a unicode map file for Samba</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>make_unicodemap</command>
+		<arg choice="req">codepage</arg>
+		<arg choice="req">inputfile</arg>
+		<arg choice="req">outputfile</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>
+	This tool is part of the <ulink url="samba.7.html">Samba</ulink> 
+	suite.
+	</para>
+
+	<para>
+	<command>make_unicodemap</command> compiles text unicode map 
+	files into binary unicode map files for use with the 
+	internationalization features of Samba 2.2.
+	</para>
+</refsect1>
+
+
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>codepage</term>
+		<listitem><para>This is the codepage or UNIX character 
+		set we are processing (a number, e.g. 850).
+		</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>inputfile</term>
+		<listitem><para>This is the input file to process. This is a 
+		text unicode map file such as the ones found in the Samba
+		<filename>source/codepages</filename> directory. 
+		</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>outputfile</term>
+		<listitem><para>This is the binary output file to produce. 
+		</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>Samba Unicode Map Files</title>
+
+	<para>
+	A text Samba unicode map file is a description that tells Samba 
+	how to map characters from a specified DOS code page or UNIX character 
+	set to 16 bit unicode.
+	</para>
+
+	<para>A binary Samba unicode map file is a binary representation 
+	of the same information, including a value that specifies what 
+	codepage or UNIX character set this file is describing. 
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>Files</title>
+
+	<para><filename>CP&lt;codepage&gt;.TXT</filename></para> 
+
+	<para>
+	These are the input (text) unicode map files provided 
+	in the Samba <filename>source/codepages</filename> 
+	directory. 
+	</para>
+	
+	<para>
+	A text unicode map file consists of multiple lines 
+	containing two fields. These fields are :  
+	</para>
+	
+	<itemizedlist>
+		<listitem><para><parameter>character</parameter> - which is 
+		the (hex) character mapped on this line.
+		</para></listitem>
+		
+		<listitem><para><parameter>unicode</parameter> - which 
+		is the (hex) 16 bit unicode character that the character
+		will map to. 
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	<filename>unicode_map.&lt;codepage&gt;</filename>  - These are 
+	the output (binary) unicode map files produced and placed in 
+	the Samba destination <filename>lib/codepage</filename> 
+	directory.
+	</para>
+</refsect1>
+
+
+<refsect1>
+	<title>Installation</title>
+
+	<para>
+	The location of the server and its support files is a matter
+	for individual system administrators. The following are thus 
+	suggestions only. 
+	</para>
+	
+	<para>
+	It is recommended that the <command>make_unicodemap</command> 
+	program be installed under the 
+	<filename>$prefix/samba</filename> hierarchy, 
+	in a directory readable by all, writeable only by root. The 
+	program itself should be executable by all.  The program
+	should NOT be setuid or setgid! 
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 2.2 of 
+	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
+	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</para>
+</refsect1>
+
+</refentry>

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB debug stuff
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) John H Terpstra 1996-1998
@@ -35,18 +36,16 @@
 /* I know the __attribute__ stuff is ugly, but it does ensure we get the 
    arguemnts to DEBUG() right. We have got them wrong too often in the 
    past.
-   The PRINTFLIKE comment does the equivalent for SGI MIPSPro.
  */
-/* PRINTFLIKE1 */
 int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
-/* PRINTFLIKE1 */
 BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
-BOOL dbghdr( int level, const char *file, const char *func, int line );
-
-extern XFILE *dbf;
-extern pstring debugf;
 
 /* If we have these macros, we can add additional info to the header. */
+#ifdef HAVE_FILE_MACRO
+#define FILE_MACRO (__FILE__)
+#else
+#define FILE_MACRO ("")
+#endif
 
 #ifdef HAVE_FUNCTION_MACRO
 #define FUNCTION_MACRO  (__FUNCTION__)
@@ -64,7 +63,7 @@ extern pstring debugf;
  * because some references would expand incorrectly.
  */
 #define DEBUGLEVEL *debug_level
-extern int DEBUGLEVEL;
+
 
 /*
  * Define all new debug classes here. A class is represented by an entry in
@@ -77,31 +76,18 @@ extern int DEBUGLEVEL;
  * at the start of the file (after #include "includes.h") will default to
  * using index zero, so it will behaive just like it always has. 
  */
-#define DBGC_ALL		0 /* index equivalent to DEBUGLEVEL */
-
-#define DBGC_TDB		1
-#define DBGC_PRINTDRIVERS	2
-#define DBGC_LANMAN		3
-#define DBGC_SMB		4
-#define DBGC_RPC_PARSE		5
-#define DBGC_RPC_SRV		6
-#define DBGC_RPC_CLI		7
-#define DBGC_PASSDB		8
-#define DBGC_SAM		9
-#define DBGC_AUTH		10
-#define DBGC_WINBIND		11
-#define DBGC_VFS		12
-#define DBGC_IDMAP		13
-#define DBGC_QUOTA		14
-#define DBGC_ACLS		15
-
-/* So you can define DBGC_CLASS before including debug.h */
-#ifndef DBGC_CLASS
 #define DBGC_CLASS            0     /* override as shown above */
-#endif
+#define DBGC_ALL              0     /* index equivalent to DEBUGLEVEL */
 
-extern int  *DEBUGLEVEL_CLASS;
-extern BOOL *DEBUGLEVEL_CLASS_ISSET;
+#define DBGC_TDB              1
+#define DBGC_PRINTDRIVERS     2
+#define DBGC_LANMAN           3
+
+#define DBGC_LAST             4     /* MUST be last class value + 1 */
+
+
+extern int DEBUGLEVEL_CLASS[DBGC_LAST];
+
 
 /* Debugging macros
  *
@@ -119,7 +105,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
  *   generate a header using the default macros for file, line, and 
  *   function name. Returns True if the debug level was <= DEBUGLEVEL.
  * 
- *   Example: if( DEBUGLVLC( DBGC_TDB, 2 ) ) dbgtext( "Some text.\n" );
+ *   Example: if( DEBUGLVL( DBGC_TDB, 2 ) ) dbgtext( "Some text.\n" );
  *
  * DEBUG()
  *   If the 'file specific' debug class level >= level OR the system-wide 
@@ -129,7 +115,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
  *   previous debug output was unterminated (i.e. no '\n').
  *   See debug.c:dbghdr() for more info.
  *
- *   Example: DEBUG( 2, ("Some text and a value %d.\n", value) );
+ *   Example: DEBUG( 2, ("Some text and a valu %d.\n", value) );
  *
  * DEBUGC()
  *   If the 'macro specified' debug class level >= level OR the system-wide 
@@ -139,64 +125,52 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
  *   previous debug output was unterminated (i.e. no '\n').
  *   See debug.c:dbghdr() for more info.
  *
- *   Example: DEBUGC( DBGC_TDB, 2, ("Some text and a value %d.\n", value) );
+ *   Example: DEBUG( DBGC_TDB, 2, ("Some text and a valu %d.\n", value) );
  *
  *  DEBUGADD(), DEBUGADDC()
  *    Same as DEBUG() and DEBUGC() except the text is appended to the previous
  *    DEBUG(), DEBUGC(), DEBUGADD(), DEBUGADDC() with out another interviening 
  *    header.
  *
- *    Example: DEBUGADD( 2, ("Some text and a value %d.\n", value) );
- *             DEBUGADDC( DBGC_TDB, 2, ("Some text and a value %d.\n", value) );
+ *    Example: DEBUGADD( 2, ("Some text and a valu %d.\n", value) );
+ *             DEBUGADDC( DBGC_TDB, 2, ("Some text and a valu %d.\n", value) );
  *
  * Note: If the debug class has not be redeined (see above) then the optimizer 
  * will remove the extra conditional test.
  */
 
 #define DEBUGLVL( level ) \
-  ( ((level) <= MAX_DEBUG_LEVEL) && \
-     ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-     (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
+  ( ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+     (DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUGLVLC( dbgc_class, level ) \
-  ( ((level) <= MAX_DEBUG_LEVEL) && \
-     ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
-     (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
-      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
+  ( ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+     (DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUG( level, body ) \
-  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-            DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
+  (void)( ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+           (DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+       && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGC( dbgc_class, level, body ) \
-  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
-	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
+  (void)( ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+           (DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+       && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
-  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-            DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+  (void)( ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+           (DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
 
 #define DEBUGADDC( dbgc_class, level, body ) \
-  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-          ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
-            DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+  (void)( ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+           (DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
 
 #endif

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    test printer setup
    Copyright (C) Karl Auer 1993, 1994-1998
    
@@ -31,18 +32,26 @@
  */
 
 #include "includes.h"
+#include "smb.h"
+
+/* these live in util.c */
+extern FILE *dbf;
 
 int main(int argc, char *argv[])
 {
    const char *pszTemp;
 
+   TimeInit();
+
    setup_logging(argv[0],True);
+
+   charset_initialise();
 
    if (argc < 2 || argc > 3)
       printf("Usage: testprns printername [printcapfile]\n");
    else
    {
-      dbf = x_fopen("test.log", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+      dbf = sys_fopen("test.log", "w");
       if (dbf == NULL) {
          printf("Unable to open logfile.\n");
       } else {
@@ -54,8 +63,9 @@ int main(int argc, char *argv[])
             printf("Printer name %s is not valid.\n", argv[1]);
          else
             printf("Printer name %s is valid.\n", argv[1]);
-         x_fclose(dbf);
+         fclose(dbf);
       }
    }
    return (0);
 }
+

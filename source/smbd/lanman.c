@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Inter-process communication and named pipe handling
    Copyright (C) Andrew Tridgell 1992-1998
 
@@ -33,6 +34,8 @@
 #define CHECK_TYPES 0
 
 extern fstring local_machine;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 
 #define NERR_Success 0
 #define NERR_badpass 86
@@ -70,7 +73,8 @@ static int CopyExpanded(connection_struct *conn,
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub_conn(conn,buf,sizeof(buf));
-	l = push_ascii(*dst,buf,*n, STR_TERMINATE);
+	StrnCpy(*dst,buf,*n-1);
+	l = strlen(*dst) + 1;
 	(*dst) += l;
 	(*n) -= l;
 	return l;
@@ -80,7 +84,8 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
 {
   int l;
   if (!src || !dst || !n || !(*dst)) return(0);
-  l = push_ascii(*dst,src,*n, STR_TERMINATE);
+  StrnCpy(*dst,src,*n-1);
+  l = strlen(*dst) + 1;
   (*dst) += l;
   (*n) -= l;
   return l;
@@ -109,7 +114,7 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 /*******************************************************************
   check a API string for validity when we only need to check the prefix
   ******************************************************************/
-static BOOL prefix_ok(const char *str, const char *prefix)
+static BOOL prefix_ok(const char *str,const char *prefix)
 {
   return(strncmp(str,prefix,strlen(prefix)) == 0);
 }
@@ -214,15 +219,27 @@ static BOOL init_package(struct pack_desc* p, int count, int subcount)
   return(p->errcode == NERR_Success);
 }
 
+#ifdef HAVE_STDARG_H
 static int package(struct pack_desc* p, ...)
 {
+#else
+static int package(va_alist)
+va_dcl
+{
+  struct pack_desc* p;
+#endif
   va_list args;
   int needed=0, stringneeded;
-  const char* str=NULL;
+  char* str=NULL;
   int is_string=0, stringused;
   int32 temp;
 
+#ifdef HAVE_STDARG_H
   va_start(args,p);
+#else
+  va_start(args);
+  p = va_arg(args,struct pack_desc *);
+#endif
 
   if (!*p->curpos) {
     if (!p->subcount)
@@ -329,7 +346,7 @@ static int package(struct pack_desc* p, ...)
 #define PACKl(desc,t,v,l) package(desc,v,l)
 #endif
 
-static void PACKI(struct pack_desc* desc, const char *t,int v)
+static void PACKI(struct pack_desc* desc,const char *t,int v)
 {
   PACK(desc,t,v);
 }
@@ -349,7 +366,7 @@ static void PackDriverData(struct pack_desc* desc)
   SIVAL(drivdata,0,sizeof drivdata); /* cb */
   SIVAL(drivdata,4,1000);	/* lVersion */
   memset(drivdata+8,0,32);	/* szDeviceName */
-  push_ascii(drivdata+8,"NULL",-1, STR_TERMINATE);
+  pstrcpy(drivdata+8,"NULL");
   PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
@@ -441,9 +458,9 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",pjobid_to_rap(snum,queue->job)); /* uJobId */
+  PACKI(desc,"W",queue->job); /* uJobId */
   if (uLevel == 1) {
-    PACKS(desc,"B21",queue->fs_user); /* szUserName */
+    PACKS(desc,"B21",dos_to_unix_static(queue->fs_user)); /* szUserName */
     PACKS(desc,"B","");		/* pad */
     PACKS(desc,"B16","");	/* szNotifyName */
     PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
@@ -453,17 +470,17 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKS(desc,"z","");		/* pszStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
-    PACKS(desc,"z",queue->fs_file); /* pszComment */
+    PACKS(desc,"z",dos_to_unix_static(queue->fs_file)); /* pszComment */
   }
   if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
     PACKI(desc,"W",queue->priority);		/* uPriority */
-    PACKS(desc,"z",queue->fs_user); /* pszUserName */
+    PACKS(desc,"z",dos_to_unix_static(queue->fs_user)); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
     PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z","Samba");	/* pszComment */
-    PACKS(desc,"z",queue->fs_file); /* pszDocument */
+    PACKS(desc,"z",dos_to_unix_static(queue->fs_file)); /* pszDocument */
     if (uLevel == 3) {
       PACKS(desc,"z","");	/* pszNotifyName */
       PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
@@ -492,7 +509,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 
 /********************************************************************
  Return a driver name given an snum.
- Returns True if from tdb, False otherwise.
+ Looks in a tdb first. Returns True if from tdb, False otherwise.
  ********************************************************************/
 
 static BOOL get_driver_name(int snum, pstring drivername)
@@ -500,11 +517,13 @@ static BOOL get_driver_name(int snum, pstring drivername)
 	NT_PRINTER_INFO_LEVEL *info = NULL;
 	BOOL in_tdb = False;
 
-	get_a_printer (NULL, &info, 2, lp_servicename(snum));
+	get_a_printer (&info, 2, lp_servicename(snum));
 	if (info != NULL) {
 		pstrcpy( drivername, info->info_2->drivername);
 		in_tdb = True;
 		free_a_printer(&info, 2);
+	} else {
+		pstrcpy( drivername, lp_printerdriver(snum));
 	}
 
 	return in_tdb;
@@ -514,85 +533,162 @@ static BOOL get_driver_name(int snum, pstring drivername)
  Respond to the DosPrintQInfo command with a level of 52
  This is used to get printer driver information for Win9x clients
  ********************************************************************/
-static void fill_printq_info_52(connection_struct *conn, int snum, 
-				struct pack_desc* desc,	int count )
+static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
+				struct pack_desc* desc,
+				int count, print_queue_struct* queue,
+				print_status_struct* status)
 {
-	int 				i;
-	fstring 			location;
-	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
+	int i;
+	BOOL ok = False;
+	pstring tok,driver,datafile,langmon,helpfile,datatype;
+	const char *p;
+	char **lines = NULL;
+	pstring gen_line;
+	BOOL in_tdb = False;
+	fstring location;
+	pstring drivername;
 
-	ZERO_STRUCT(driver);
+	/*
+	 * Check in the tdb *first* before checking the legacy
+	 * files. This allows an NT upload to take precedence over
+	 * the existing fileset. JRA.
+	 * 
+	 * we need to lookup the driver name prior to making the call
+	 * to get_a_printer_driver_9x_compatible() and not rely on the
+	 * 'print driver' parameter --jerry
+	 */
 
-	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
-		DEBUG(3,("fill_printq_info_52: Failed to lookup printer [%s]\n", 
-			lp_servicename(snum)));
-		goto err;
-	}
-		
-	if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, 
-		"Windows 4.0", 0)) )
+
+	if ((get_driver_name(snum,drivername)) && 
+	    ((ok = get_a_printer_driver_9x_compatible(gen_line, drivername)) == True))
 	{
-		DEBUG(3,("fill_printq_info_52: Failed to lookup driver [%s]\n", 
-			printer->info_2->drivername));
-		goto err;
-	}
-
-	trim_string(driver.info_3->driverpath, "\\print$\\WIN40\\0\\", 0);
-	trim_string(driver.info_3->datafile, "\\print$\\WIN40\\0\\", 0);
-	trim_string(driver.info_3->helpfile, "\\print$\\WIN40\\0\\", 0);
-	
-	PACKI(desc, "W", 0x0400);                     /* don't know */
-	PACKS(desc, "z", driver.info_3->name);        /* long printer name */
-	PACKS(desc, "z", driver.info_3->driverpath);  /* Driverfile Name */
-	PACKS(desc, "z", driver.info_3->datafile);    /* Datafile name */
-	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
-	
-	fstrcpy(location, "\\\\");
-	fstrcat(location, get_called_name());
-	fstrcat(location, "\\print$\\WIN40\\0");
-	PACKS(desc,"z", location);                          /* share to retrieve files */
-	
-	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */
-	PACKS(desc,"z", driver.info_3->helpfile);           /* helpfile name */
-	PACKS(desc,"z", driver.info_3->driverpath);               /* driver name */
-
-	DEBUG(3,("Printer Driver Name: %s:\n",driver.info_3->name));
-	DEBUG(3,("Driver: %s:\n",driver.info_3->driverpath));
-	DEBUG(3,("Data File: %s:\n",driver.info_3->datafile));
-	DEBUG(3,("Language Monitor: %s:\n",driver.info_3->monitorname));
-	DEBUG(3,("Driver Location: %s:\n",location));
-	DEBUG(3,("Data Type: %s:\n",driver.info_3->defaultdatatype));
-	DEBUG(3,("Help File: %s:\n",driver.info_3->helpfile));
-	PACKI(desc,"N",count);                     /* number of files to copy */
-
-	for ( i=0; i<count && driver.info_3->dependentfiles && *driver.info_3->dependentfiles[i]; i++) 
+		in_tdb = True;
+		p = gen_line;
+		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", drivername, gen_line));
+	} 
+	else 
 	{
-		trim_string(driver.info_3->dependentfiles[i], "\\print$\\WIN40\\0\\", 0);
-		PACKS(desc,"z",driver.info_3->dependentfiles[i]);         /* driver files to copy */
-		DEBUG(3,("Dependent File: %s:\n",driver.info_3->dependentfiles[i]));
+		/* didn't find driver in tdb */
+
+		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
+			   snum, drivername, lp_driverfile(snum)));
+
+		lines = file_lines_load(lp_driverfile(snum),NULL, False);
+		if (!lines) 
+		{
+			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),
+				  strerror(errno)));
+			desc->errcode=NERR_notsupported;
+			goto done;
+		} 
+
+		/* lookup the long printer driver name in the file description */
+		for (i=0;lines[i] && !ok;i++) 
+		{
+			p = lines[i];
+			if (next_token(&p,tok,":",sizeof(tok)) &&
+		    	   (strlen(drivername) == strlen(tok)) &&
+		    	   (!strncmp(tok,drivername,strlen(drivername))))
+			{
+				ok = True;
+			}
+		}
 	}
+
+	if (ok)
+	{
+		/* driver file name */
+		if (!next_token(&p,driver,":",sizeof(driver)))
+			goto err;
+
+		/* data file name */
+		if (!next_token(&p,datafile,":",sizeof(datafile)))
+			goto err;
+
+		/*
+		 * for the next tokens - which may be empty - I have
+		 * to check for empty tokens first because the
+		 * next_token function will skip all empty token
+		 * fields */
+
+		/* help file */
+		if (*p == ':') 
+		{
+			*helpfile = '\0';
+			p++;
+		} 
+		else if (!next_token(&p,helpfile,":",sizeof(helpfile)))
+			goto err;
 	
-	/* sanity check */
-	if ( i != count )
-		DEBUG(3,("fill_printq_info_52: file count specified by client [%d] != number of dependent files [%i]\n",
-			count, i));
+		/* language monitor */
+		if (*p == ':') 
+		{
+			*langmon = '\0';
+			p++;
+		} 
+		else if (!next_token(&p,langmon,":",sizeof(langmon)))
+			goto err;
+	
+		/* default data type */
+		if (!next_token(&p,datatype,":",sizeof(datatype))) 
+			goto err;
+	
+		PACKI(desc,"W",0x0400);               /* don't know */
+		PACKS(desc,"z",drivername);    /* long printer name */
+		PACKS(desc,"z",driver);                    /* Driverfile Name */
+		PACKS(desc,"z",datafile);                  /* Datafile name */
+		PACKS(desc,"z",langmon);			 /* language monitor */
+		if (in_tdb)
+		{
+			fstrcpy(location, "\\\\");
+			fstrcat(location, global_myname);
+			fstrcat(location, "\\print$\\WIN40\\0");
+			PACKS(desc,"z",location);   /* share to retrieve files */
+		}
+		else
+		{
+			PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
+		}
+		PACKS(desc,"z",datatype);			 /* default data type */
+		PACKS(desc,"z",helpfile);                  /* helpfile name */
+		PACKS(desc,"z",driver);                    /* driver name */
+
+		DEBUG(3,("printerdriver:%s:\n",drivername));
+		DEBUG(3,("Driver:%s:\n",driver));
+		DEBUG(3,("Data File:%s:\n",datafile));
+		DEBUG(3,("Language Monitor:%s:\n",langmon));
+		if (in_tdb)
+			DEBUG(3,("lp_driverlocation:%s:\n",location));
+		else
+			DEBUG(3,("lp_driverlocation:%s:\n",lp_driverlocation(snum)));
+		DEBUG(3,("Data Type:%s:\n",datatype));
+		DEBUG(3,("Help File:%s:\n",helpfile));
+		PACKI(desc,"N",count);                     /* number of files to copy */
+
+		for (i=0;i<count;i++) 
+		{
+			/* no need to check return value here
+			 * - it was already tested in
+			 * get_printerdrivernumber */
+			next_token(&p,tok,",",sizeof(tok));
+			PACKS(desc,"z",tok);         /* driver files to copy */
+			DEBUG(3,("file:%s:\n",tok));
+		}
 		
-	DEBUG(3,("fill_printq_info on <%s> gave %d entries\n", SERVICE(snum),i));
+		DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
+		  	  SERVICE(snum),count));
 
-        desc->errcode=NERR_Success;
-	goto done;
+	        desc->errcode=NERR_Success;
+		goto done;
+	}
 
-err:
+  err:
+
 	DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
 	desc->errcode=NERR_notsupported;
 
-done:
-	if ( printer )
-		free_a_printer( &printer, 2 );
-		
-	if ( driver.info_3 )
-		free_a_printer_driver( driver, 3 );
+ done:
+	file_lines_free(lines);	
 }
 
 
@@ -670,44 +766,88 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 			fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
 	}
 
-	if (uLevel==52)
-		fill_printq_info_52( conn, snum, desc, count );
+	if (uLevel==52) {
+		fill_printq_info_52(conn, snum, uLevel, desc, count, queue, status);
+	}
 }
 
 /* This function returns the number of files for a given driver */
 static int get_printerdrivernumber(int snum)
 {
-	int 				result = 0;
-	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
+	int i, result = 0;
+	BOOL ok = False;
+	pstring tok;
+	const char *p;
+	char **lines = NULL;
+	pstring gen_line;
+	pstring drivername;
 
-	ZERO_STRUCT(driver);
-
-	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
-		DEBUG(3,("get_printerdrivernumber: Failed to lookup printer [%s]\n", 
-			lp_servicename(snum)));
-		goto done;
-	}
-		
-	if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, 
-		"Windows 4.0", 0)) )
+	/*
+	 * Check in the tdb *first* before checking the legacy
+	 * files. This allows an NT upload to take precedence over
+	 * the existing fileset. JRA.
+	 *
+	 * we need to lookup the driver name prior to making the call
+	 * to get_a_printer_driver_9x_compatible() and not rely on the
+	 * 'print driver' parameter --jerry
+	 */
+	
+	if ((get_driver_name(snum,drivername)) && 
+	    (ok = get_a_printer_driver_9x_compatible(gen_line, drivername) == True)) 
 	{
-		DEBUG(3,("get_printerdrivernumber: Failed to lookup driver [%s]\n", 
-			printer->info_2->drivername));
-		goto done;
+		p = gen_line;
+		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", drivername, gen_line));
+	} 
+	else 
+	{
+		/* didn't find driver in tdb */
+	
+		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
+			  snum, drivername, lp_driverfile(snum)));
+		
+		lines = file_lines_load(lp_driverfile(snum), NULL, False);
+		if (!lines) 
+		{
+			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
+			goto done;
+		} 
+
+		/* lookup the long printer driver name in the file description */
+		for (i=0;lines[i] && !ok;i++) 
+		{
+			p = lines[i];
+			if (next_token(&p,tok,":",sizeof(tok)) &&
+			   (strlen(drivername) == strlen(tok)) &&
+			   (!strncmp(tok,drivername,strlen(drivername)))) 
+			{
+				ok = True;
+			}
+		}
 	}
 	
-	/* count the number of files */
-	while ( driver.info_3->dependentfiles && *driver.info_3->dependentfiles[result] )
-			result++;
-			\
+	if( ok ) 
+	{
+		/* skip 5 fields */
+		i = 5;
+		while (*p && i) {
+			if (*p++ == ':') i--;
+		}
+		if (!*p || i) {
+			DEBUG(3,("Can't determine number of printer driver files\n"));
+			goto done;
+		}
+		
+		/* count the number of files */
+		while (next_token(&p,tok,",",sizeof(tok)))
+			i++;
+	
+		result = i;
+	}
+
  done:
-	if ( printer )
-		free_a_printer( &printer, 2 );
-		
-	if ( driver.info_3 )
-		free_a_printer_driver( driver, 3 );
-		
+
+	file_lines_free(lines);
+
 	return result;
 }
 
@@ -738,10 +878,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	str3 = p + 4;
  
 	/* remove any trailing username */
-	if ((p = strchr_m(QueueName,'%')))
+	if ((p = strchr(QueueName,'%')))
 		*p = 0;
  
-	DEBUG(3,("api_DosPrintQGetInfo uLevel=%d name=%s\n",uLevel,QueueName));
+	DEBUG(3,("api_DosPrintQGetInfo: uLevel=%d name=%s\n",uLevel,QueueName));
  
 	/* check it's a supported varient */
 	if (!prefix_ok(str1,"zWrLh"))
@@ -796,9 +936,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	if (init_package(&desc,1,count)) {
 		desc.subcount = count;
 		fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
-	}
-
-	*rdata_len = desc.usedlen;
+	} 
   
 	/*
 	 * We must set the return code to ERRbuftoosmall
@@ -807,14 +945,15 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	 */
 	if (!mdrcnt && lp_disable_spoolss())
 		desc.errcode = ERRbuftoosmall;
- 
+	
 	*rdata_len = desc.usedlen;
+  
 	*rparam_len = 6;
 	*rparam = REALLOC(*rparam,*rparam_len);
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
-  
+
 	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
 	SAFE_FREE(queue);
@@ -962,7 +1101,7 @@ struct srv_info_struct
   ******************************************************************/
 static int get_server_info(uint32 servertype, 
 			   struct srv_info_struct **servers,
-			   const char *domain)
+			   char *domain)
 {
   int count=0;
   int alloced=0;
@@ -970,7 +1109,7 @@ static int get_server_info(uint32 servertype,
   BOOL local_list_only;
   int i;
 
-  lines = file_lines_load(lock_path(SERVER_LIST), NULL);
+  lines = file_lines_load(lock_path(SERVER_LIST), NULL, False);
   if (!lines) {
     DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
     return(0);
@@ -994,13 +1133,13 @@ static int get_server_info(uint32 servertype,
     
     if (count == alloced) {
       struct srv_info_struct *ts;
-      
+
       alloced += 10;
       ts = (struct srv_info_struct *)
 	Realloc(*servers,sizeof(**servers)*alloced);
       if (!ts) {
-      	DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
-	return(0);
+        DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
+        return(0);
       }
       else *servers = ts;
       memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
@@ -1012,7 +1151,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
     if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
       /* this allows us to cope with an old nmbd */
-      fstrcpy(s->domain,lp_workgroup()); 
+      fstrcpy(s->domain,global_myworkgroup); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -1121,15 +1260,15 @@ static int fill_srv_info(struct srv_info_struct *service,
   switch (uLevel)
     {
     case 0:
-	    push_ascii(p,service->name, 15, STR_TERMINATE);
-	    break;
+      StrnCpy(p,service->name,15);
+      break;
 
     case 1:
-	    push_ascii(p,service->name,15, STR_TERMINATE);
-	    SIVAL(p,18,service->type);
-	    SIVAL(p,22,PTR_DIFF(p2,baseaddr));
-	    len += CopyAndAdvance(&p2,service->comment,&l2);
-	    break;
+      StrnCpy(p,service->name,15);
+      SIVAL(p,18,service->type);
+      SIVAL(p,22,PTR_DIFF(p2,baseaddr));
+      len += CopyAndAdvance(&p2,service->comment,&l2);
+      break;
     }
 
   if (stringbuf)
@@ -1206,9 +1345,9 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
 
   if (strcmp(str1, "WrLehDz") == 0) {
-	  pull_ascii_fstring(domain, p);
+    StrnCpy(domain, p, sizeof(fstring)-1);
   } else {
-	  fstrcpy(domain, lp_workgroup());
+    StrnCpy(domain, global_myworkgroup, sizeof(fstring)-1);    
   }
 
   if (lp_browse_list())
@@ -1381,7 +1520,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
     }
   if (!baseaddr) baseaddr = p;
   
-  push_ascii(p,lp_servicename(snum),13, STR_TERMINATE);
+  StrnCpy(p,lp_servicename(snum),13);
   
   if (uLevel > 0)
     {
@@ -1389,7 +1528,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
       SCVAL(p,13,0);
       type = STYPE_DISKTREE;
       if (lp_print_ok(snum)) type = STYPE_PRINTQ;
-      if (strequal("IPC",lp_fstype(snum))) type = STYPE_IPC;
+      if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
       SSVAL(p,14,type);		/* device type */
       SIVAL(p,16,PTR_DIFF(p2,baseaddr));
       len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
@@ -1465,24 +1604,12 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
 }
 
 /****************************************************************************
-  View the list of available shares.
-
-  This function is the server side of the NetShareEnum() RAP call.
-  It fills the return buffer with share names and share comments.
-  Note that the return buffer normally (in all known cases) allows only
-  twelve byte strings for share names (plus one for a nul terminator).
-  Share names longer than 12 bytes must be skipped.
- ****************************************************************************/
-static BOOL api_RNetShareEnum( connection_struct *conn,
-                               uint16             vuid,
-                               char              *param,
-                               char              *data,
-                               int                mdrcnt,
-                               int                mprcnt,
-                               char             **rdata,
-                               char             **rparam,
-                               int               *rdata_len,
-                               int               *rparam_len )
+  view list of shares available
+  ****************************************************************************/
+static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+  			      int mdrcnt,int mprcnt,
+  			      char **rdata,char **rparam,
+  			      int *rdata_len,int *rparam_len)
 {
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
@@ -1502,9 +1629,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   
   data_len = fixed_len = string_len = 0;
   for (i=0;i<count;i++)
-    if( lp_browseable( i )
-        && lp_snum_ok( i )
-        && (strlen( lp_servicename( i ) ) < 13) )   /* Maximum name length. */
+    if (lp_browseable(i) && lp_snum_ok(i))
     {
       total++;
       data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
@@ -1521,20 +1646,14 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   *rdata = REALLOC(*rdata,*rdata_len);
   memset(*rdata,0,*rdata_len);
   
-  p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
+  p2 = (*rdata) + fixed_len;	/* auxillery data (strings) will go here */
   p = *rdata;
   f_len = fixed_len;
   s_len = string_len;
-  for( i = 0; i < count; i++ )
-    {
-    if( lp_browseable( i )
-        && lp_snum_ok( i )
-        && (strlen( lp_servicename( i ) ) < 13) )
-      {
-      if( fill_share_info( conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata ) < 0 )
+  for (i = 0; i < count;i++)
+    if (lp_browseable(i) && lp_snum_ok(i))
+      if (fill_share_info(conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
  	break;
-      }
-    }
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1547,375 +1666,6 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
  	   counted,total,uLevel,
   	   buf_len,*rdata_len,mdrcnt));
   return(True);
-} /* api_RNetShareEnum */
-
-/****************************************************************************
-  Add a share
-  ****************************************************************************/
-static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,char *data,
-				 int mdrcnt,int mprcnt,
-				 char **rdata,char **rparam,
-				 int *rdata_len,int *rparam_len)
-{
-	char *str1 = param+2;
-	char *str2 = skip_string(str1,1);
-	char *p = skip_string(str2,1);
-	int uLevel = SVAL(p,0);
-	fstring sharename;
-	fstring comment;
-	pstring pathname;
-	char *command, *cmdname;
-	unsigned int offset;
-	int snum;
-	int res = ERRunsup;
-  
-	/* check it's a supported varient */
-	if (!prefix_ok(str1, RAP_WShareAdd_REQ)) return False;
-	if (!check_share_info(uLevel, str2)) return False;
-	if (uLevel != 2) return False;
-
-	pull_ascii_fstring(sharename, data);
-	snum = find_service(sharename);
-	if (snum >= 0) { /* already exists */
-		res = ERRfilexists;
-		goto error_exit;
-	}
-
-	/* only support disk share adds */
-	if (SVAL(data,14) != STYPE_DISKTREE) return False;
-
-	offset = IVAL(data, 16);
-	if (offset >= mdrcnt) {
-		res = ERRinvalidparam;
-		goto error_exit;
-	}
-	pull_ascii_fstring(comment, offset? (data+offset) : "");
-
-	offset = IVAL(data, 26);
-	if (offset >= mdrcnt) {
-		res = ERRinvalidparam;
-		goto error_exit;
-	}
-	pull_ascii_pstring(pathname, offset? (data+offset) : "");
-
-	string_replace(sharename, '"', ' ');
-	string_replace(pathname, '"', ' ');
-	string_replace(comment, '"', ' ');
-
-	cmdname = lp_add_share_cmd();
-
-	if (!cmdname || *cmdname == '\0') return False;
-
-	asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-		lp_add_share_cmd(), dyn_CONFIGFILE, sharename, pathname, comment);
-
-	if (command) {
-		DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
-		if ((res = smbrun(command, NULL)) != 0) {
-			DEBUG(1,("api_RNetShareAdd: Running [%s] returned (%d)\n", command, res ));
-			SAFE_FREE(command);
-			res = ERRnoaccess;
-			goto error_exit;
-		} else {
-			SAFE_FREE(command);
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
-		}
-	} else return False;
-
-	*rparam_len = 6;
-	*rparam = REALLOC(*rparam, *rparam_len);
-	SSVAL(*rparam, 0, NERR_Success);
-	SSVAL(*rparam, 2, 0);		/* converter word */
-	SSVAL(*rparam, 4, *rdata_len);
-	*rdata_len = 0;
-  
-	return True;
-
-error_exit:
-	*rparam_len = 4;
-	*rparam = REALLOC(*rparam, *rparam_len);
-	*rdata_len = 0;
-	SSVAL(*rparam, 0, res);
-	SSVAL(*rparam, 2, 0);
-	return True;
-
-}
-
-/****************************************************************************
-  view list of groups available
-  ****************************************************************************/
-static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
-  			      int mdrcnt,int mprcnt,
-  			      char **rdata,char **rparam,
-  			      int *rdata_len,int *rparam_len)
-{
-	int i;
-	int errflags=0;
-	int resume_context, cli_buf_size;
-	char *str1 = param+2;
-	char *str2 = skip_string(str1,1);
-	char *p = skip_string(str2,1);
-	BOOL ret;
-
-	GROUP_MAP *group_list;
-	int num_entries;
- 
-	if (strcmp(str1,"WrLeh") != 0)
-		return False;
-
-	  /* parameters  
-	   * W-> resume context (number of users to skip)
-	   * r -> return parameter pointer to receive buffer 
-	   * L -> length of receive buffer
-	   * e -> return parameter number of entries
-	   * h -> return parameter total number of users
-	   */
-	if (strcmp("B21",str2) != 0)
-		return False;
-
-	/* get list of domain groups SID_DOMAIN_GRP=2 */
-	become_root();
-	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False);
-	unbecome_root();
-	
-	if( !ret ) {
-		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));	
-		return False;
-	}
-
-	resume_context = SVAL(p,0); 
-	cli_buf_size=SVAL(p+2,0);
-	DEBUG(10,("api_RNetGroupEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
-
-	*rdata_len = cli_buf_size;
-	*rdata = REALLOC(*rdata,*rdata_len);
-
-	p = *rdata;
-
-	for(i=resume_context; i<num_entries; i++) {	
-		char* name=group_list[i].nt_name;
-		if( ((PTR_DIFF(p,*rdata)+21) <= *rdata_len) ) {
-			/* truncate the name at 21 chars. */
-			memcpy(p, name, 21); 
-			DEBUG(10,("adding entry %d group %s\n", i, p));
-			p += 21; 
-		} else {
-			/* set overflow error */
-			DEBUG(3,("overflow on entry %d group %s\n", i, name));
-			errflags=234;
-			break;
-		}
-	}
-
-	*rdata_len = PTR_DIFF(p,*rdata);
-
-	*rparam_len = 8;
-	*rparam = REALLOC(*rparam,*rparam_len);
-
-  	SSVAL(*rparam, 0, errflags);
-  	SSVAL(*rparam, 2, 0);		/* converter word */
-  	SSVAL(*rparam, 4, i-resume_context);	/* is this right?? */
- 	SSVAL(*rparam, 6, num_entries);	/* is this right?? */
-
-	return(True);
-}
-
-/*******************************************************************
-  get groups that a user is a member of
-  ******************************************************************/
-static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
-  			      int mdrcnt,int mprcnt,
-  			      char **rdata,char **rparam,
-  			      int *rdata_len,int *rparam_len)
-{
-	char *str1 = param+2;
-	char *str2 = skip_string(str1,1);
-	char *UserName = skip_string(str2,1);
-	char *p = skip_string(UserName,1);
-	int uLevel = SVAL(p,0);
-	const char *level_string;
-	int count=0;
-	SAM_ACCOUNT *sampw = NULL;
-	BOOL ret = False;
-        DOM_GID *gids = NULL;
-        int num_groups = 0;
-	int i;
-	fstring grp_domain;
-	fstring grp_name;
-	enum SID_NAME_USE grp_type;
-	DOM_SID sid, dom_sid;
-
-	*rparam_len = 8;
-	*rparam = REALLOC(*rparam,*rparam_len);
-  
-	/* check it's a supported varient */
-	
-	if ( strcmp(str1,"zWrLeh") != 0 )
-		return False;
-		
-	switch( uLevel ) {
-		case 0:
-			level_string = "B21";
-			break;
-		default:
-			return False;
-	}
-
-	if (strcmp(level_string,str2) != 0)
-		return False;
-
-	*rdata_len = mdrcnt + 1024;
-	*rdata = REALLOC(*rdata,*rdata_len);
-
-	SSVAL(*rparam,0,NERR_Success);
-	SSVAL(*rparam,2,0);		/* converter word */
-
-	p = *rdata;
-
-	/* Lookup the user information; This should only be one of 
-	   our accounts (not remote domains) */
-	   
-	pdb_init_sam( &sampw );
-	
-	become_root();					/* ROOT BLOCK */
-
-	if ( !pdb_getsampwnam(sampw, UserName) )
-		goto out;
-
-	/* this next set of code is horribly inefficient, but since 
-	   it is rarely called, I'm going to leave it like this since 
-	   it easier to follow      --jerry                          */
-	   
-	/* get the list of group SIDs */
-	
-	if ( !get_domain_user_groups(conn->mem_ctx, &num_groups, &gids, sampw) ) {
-		DEBUG(1,("api_NetUserGetGroups: get_domain_user_groups() failed!\n"));
-		goto out;
-        }
-
-	/* convert to names (we don't support universal groups so the domain
-	   can only be ours) */
-	
-	sid_copy( &dom_sid, get_global_sam_sid() );
-	for (i=0; i<num_groups; i++) {
-	
-		/* make the DOM_GID into a DOM_SID and then lookup 
-		   the name */
-		
-		sid_copy( &sid, &dom_sid );
-		sid_append_rid( &sid, gids[i].g_rid );
-		
-		if ( lookup_sid(&sid, grp_domain, grp_name, &grp_type) ) {
-			pstrcpy(p, grp_name); 
-			p += 21; 
-			count++;
-		}
-	}
-	
-	*rdata_len = PTR_DIFF(p,*rdata);
-
-	SSVAL(*rparam,4,count);	/* is this right?? */
-	SSVAL(*rparam,6,count);	/* is this right?? */
-
-	ret = True;
-
-out:
-	unbecome_root();				/* END ROOT BLOCK */
-
-	pdb_free_sam( &sampw );
-
-	return ret;
-}
-
-/*******************************************************************
-  get all users 
-  ******************************************************************/
-static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
-				 int mdrcnt,int mprcnt,
-				 char **rdata,char **rparam,
-				 int *rdata_len,int *rparam_len)
-{
-	SAM_ACCOUNT  *pwd=NULL;
-	int count_sent=0;
-	int count_total=0;
-	int errflags=0;
-	int resume_context, cli_buf_size;
-
-	char *str1 = param+2;
-	char *str2 = skip_string(str1,1);
-	char *p = skip_string(str2,1);
-
-	if (strcmp(str1,"WrLeh") != 0)
-		return False;
-	/* parameters
-	  * W-> resume context (number of users to skip)
-	  * r -> return parameter pointer to receive buffer
-	  * L -> length of receive buffer
-	  * e -> return parameter number of entries
-	  * h -> return parameter total number of users
-	  */
-  
-	resume_context = SVAL(p,0);
-	cli_buf_size=SVAL(p+2,0);
-	DEBUG(10,("api_RNetUserEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
-
-	*rparam_len = 8;
-	*rparam = REALLOC(*rparam,*rparam_len);
-
-	/* check it's a supported varient */
-	if (strcmp("B21",str2) != 0)
-		return False;
-
-	*rdata_len = cli_buf_size;
-	*rdata = REALLOC(*rdata,*rdata_len);
-
-	p = *rdata;
-
-	/* to get user list enumerations for NetUserEnum in B21 format */
-	pdb_init_sam(&pwd);
-	
-	/* Open the passgrp file - not for update. */
-	become_root();
-	if(!pdb_setsampwent(False)) {
-		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
-		unbecome_root();
-		return False;
-	}
-	errflags=NERR_Success;
-
-	while ( pdb_getsampwent(pwd) ) {
-		const char *name=pdb_get_username(pwd);	
-		if ((name) && (*(name+strlen(name)-1)!='$')) { 
-			count_total++;
-			if(count_total>=resume_context) {
-				if( ((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)  ) {
-					pstrcpy(p,name); 
-					DEBUG(10,("api_RNetUserEnum:adding entry %d username %s\n",count_sent,p));
-					p += 21; 
-					count_sent++; 
-				} else {
-					/* set overflow error */
-					DEBUG(10,("api_RNetUserEnum:overflow on entry %d username %s\n",count_sent,name));
-					errflags=234;
-					break;
-				}
-			}
-		}	
-	} ;
-
-	pdb_endsampwent();
-	unbecome_root();
-
-	pdb_free_sam(&pwd);
-
-	*rdata_len = PTR_DIFF(p,*rdata);
-
-	SSVAL(*rparam,0,errflags);
-	SSVAL(*rparam,2,0);	      /* converter word */
-	SSVAL(*rparam,4,count_sent);  /* is this right?? */
-	SSVAL(*rparam,6,count_total); /* is this right?? */
-
-	return True;
 }
 
 
@@ -1978,78 +1728,116 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-	char *p = skip_string(param+2,2);
-	fstring user;
-	fstring pass1,pass2;
+  char *p = skip_string(param+2,2);
+  fstring user;
+  fstring pass1,pass2;
 
-	pull_ascii_fstring(user,p);
+  fstrcpy(user,p);
 
-	p = skip_string(p,1);
+  p = skip_string(p,1);
 
-	memset(pass1,'\0',sizeof(pass1));
-	memset(pass2,'\0',sizeof(pass2));
-	memcpy(pass1,p,16);
-	memcpy(pass2,p+16,16);
+  memset(pass1,'\0',sizeof(pass1));
+  memset(pass2,'\0',sizeof(pass2));
+  memcpy(pass1,p,16);
+  memcpy(pass2,p+16,16);
 
-	*rparam_len = 4;
-	*rparam = REALLOC(*rparam,*rparam_len);
+  *rparam_len = 4;
+  *rparam = REALLOC(*rparam,*rparam_len);
 
-	*rdata_len = 0;
+  *rdata_len = 0;
 
-	SSVAL(*rparam,0,NERR_badpass);
-	SSVAL(*rparam,2,0);		/* converter word */
+  SSVAL(*rparam,0,NERR_badpass);
+  SSVAL(*rparam,2,0);		/* converter word */
 
-	DEBUG(3,("Set password for <%s>\n",user));
+  DEBUG(3,("Set password for <%s>\n",user));
 
-	/*
-	 * Attempt to verify the old password against smbpasswd entries
-	 * Win98 clients send old and new password in plaintext for this call.
-	 */
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
 
-	{
-		auth_serversupplied_info *server_info = NULL;
-		DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
+  (void)map_username(user);
 
-		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
 
-			become_root();
-			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2, False))) {
-				SSVAL(*rparam,0,NERR_Success);
-			}
-			unbecome_root();
+  /*
+   * Attempt to verify the old password against smbpasswd entries
+   * Win98 clients send old and new password in plaintext for this call.
+   */
 
-			free_server_info(&server_info);
-		}
-		data_blob_clear_free(&password);
-	}
+  {
+    fstring saved_pass2;
+    SAM_ACCOUNT *sampass = NULL;
 
-	/*
-	 * If the plaintext change failed, attempt
-	 * the old encrypted method. NT will generate this
-	 * after trying the samr method. Note that this
-	 * method is done as a last resort as this
-	 * password change method loses the NT password hash
-	 * and cannot change the UNIX password as no plaintext
-	 * is received.
-	 */
+    /*
+     * Save the new password as change_oem_password overwrites it
+     * with zeros.
+     */
 
-	if(SVAL(*rparam,0) != NERR_Success) {
-		SAM_ACCOUNT *hnd = NULL;
+    fstrcpy(saved_pass2, pass2);
 
-		if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd)) {
-			become_root();
-			if (change_lanman_password(hnd,(uchar *)pass2)) {
-				SSVAL(*rparam,0,NERR_Success);
-			}
-			unbecome_root();
-			pdb_free_sam(&hnd);
-		}
-	}
+    if (check_plaintext_password(user,pass1,strlen(pass1),&sampass) &&
+        change_oem_password(sampass,pass2,False))
+    {
+      SSVAL(*rparam,0,NERR_Success);
 
-	memset((char *)pass1,'\0',sizeof(fstring));
-	memset((char *)pass2,'\0',sizeof(fstring));	 
+      /*
+       * If unix password sync was requested, attempt to change
+       * the /etc/passwd database also. Return failure if this cannot
+       * be done.
+       */
+
+      if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
+        SSVAL(*rparam,0,NERR_badpass);
+    }
+
+    if (sampass)
+      pdb_free_sam(sampass);
+  }
+
+  /*
+   * If the above failed, attempt the plaintext password change.
+   * This tests against the /etc/passwd database only.
+   */
+
+  if(SVAL(*rparam,0) != NERR_Success)
+  {
+    if (password_ok(user, pass1,strlen(pass1),NULL) &&
+        chgpasswd(user,pass1,pass2,False))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+    }
+  }
+
+  /*
+   * If the plaintext change failed, attempt
+   * the old encrypted method. NT will generate this
+   * after trying the samr method. Note that this
+   * method is done as a last resort as this
+   * password change method loses the NT password hash
+   * and cannot change the UNIX password as no plaintext
+   * is received.
+   */
+
+  if(SVAL(*rparam,0) != NERR_Success)
+  {
+    SAM_ACCOUNT *sampass = NULL;
+
+    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampass) && 
+       change_lanman_password(sampass,(unsigned char *)pass1,(unsigned char *)pass2))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+    }
+    pdb_free_sam(sampass);
+  }
+
+  memset((char *)pass1,'\0',sizeof(fstring));
+  memset((char *)pass2,'\0',sizeof(fstring));	 
 	 
-	return(True);
+  return(True);
 }
 
 /****************************************************************************
@@ -2061,46 +1849,53 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-	fstring user;
-	char *p = param + 2;
-	*rparam_len = 2;
-	*rparam = REALLOC(*rparam,*rparam_len);
+  fstring user;
+  char *p = param + 2;
+  *rparam_len = 2;
+  *rparam = REALLOC(*rparam,*rparam_len);
 
-	*rdata_len = 0;
+  *rdata_len = 0;
 
-	SSVAL(*rparam,0,NERR_badpass);
+  SSVAL(*rparam,0,NERR_badpass);
 
-	/*
-	 * Check the parameter definition is correct.
-	 */
+  /*
+   * Check the parameter definition is correct.
+   */
+  if(!strequal(param + 2, "zsT")) {
+    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
+    return False;
+  }
+  p = skip_string(p, 1);
 
-	if(!strequal(param + 2, "zsT")) {
-		DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
-		return False;
-	}
-	p = skip_string(p, 1);
+  if(!strequal(p, "B516B16")) {
+    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
+    return False;
+  }
+  p = skip_string(p,1);
 
-	if(!strequal(p, "B516B16")) {
-		DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
-		return False;
-	}
-	p = skip_string(p,1);
-	p += pull_ascii_fstring(user,p);
+  fstrcpy(user,p);
+  p = skip_string(p,1);
 
-	DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
+  DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
 
-	(void)map_username(user);
+  (void)map_username(user);
 
-	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))) {
-		SSVAL(*rparam,0,NERR_Success);
-	}
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
 
-	return(True);
+  if (pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))
+  {
+    SSVAL(*rparam,0,NERR_Success);
+  }
+
+  return(True);
 }
 
 /****************************************************************************
@@ -2116,14 +1911,11 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	uint32 jobid;
-	int snum;
-	int errcode;
+	int jobid, errcode;
 	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
-		return False;
+	jobid = SVAL(p,0);
 
 	/* check it's a supported varient */
 	if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
@@ -2133,7 +1925,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	*rparam = REALLOC(*rparam,*rparam_len);	
 	*rdata_len = 0;
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(jobid)) {
 		errcode = NERR_JobNotFound;
 		goto out;
 	}
@@ -2142,19 +1934,19 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, snum, jobid, &werr)) 
+		if (print_job_delete(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, snum, jobid, &werr)) 
+		if (print_job_pause(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, snum, jobid, &werr)) 
+		if (print_job_resume(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	}
-
+	
 	if (!W_ERROR_IS_OK(werr))
 		errcode = W_ERROR_V(werr);
 	
@@ -2210,7 +2002,6 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	}
 
 	if (!W_ERROR_IS_OK(werr)) errcode = W_ERROR_V(werr);
-
  out:
 	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -2251,14 +2042,12 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	uint32 jobid;
-	int snum;
+	int jobid;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
 	int place, errcode;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
-		return False;
+	jobid = SVAL(p,0);
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
   
@@ -2269,7 +2058,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(jobid)) {
 		errcode=NERR_JobNotFound;
 		goto out;
 	}
@@ -2281,14 +2070,14 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		/* change job place in the queue, 
 		   data gives the new place */
 		place = SVAL(data,0);
-		if (print_job_set_place(snum, jobid, place)) {
+		if (print_job_set_place(jobid, place)) {
 			errcode=NERR_Success;
 		}
 		break;
 
 	case 0xb:   
 		/* change print job name, data gives the name */
-		if (print_job_set_name(snum, jobid, data)) {
+		if (print_job_set_name(jobid, data)) {
 			errcode=NERR_Success;
 		}
 		break;
@@ -2360,8 +2149,8 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   p = *rdata;
   p2 = p + struct_len;
   if (uLevel != 20) {
-    srvstr_push(NULL, p,local_machine,16, 
-		STR_ASCII|STR_UPPER|STR_TERMINATE);
+    StrnCpy(p,local_machine,16);
+    strupper(p);
   }
   p += 16;
   if (uLevel > 0)
@@ -2371,15 +2160,15 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      push_ascii(comment,lp_serverstring(), MAX_SERVER_STRING_LENGTH,STR_TERMINATE);
+      pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 
-      if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
-	for (i=0;i<count;i++) {
-	  if (strequal(servers[i].name,local_machine)) {
+      if ((count=get_server_info(SV_TYPE_ALL,&servers,global_myworkgroup))>0) {
+	for (i=0;i<count;i++)
+	  if (strequal(servers[i].name,local_machine))
+      {
 	    servertype = servers[i].type;
-	    push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);	    
+	    pstrcpy(comment,servers[i].comment);	    
 	  }
-	}
       }
       SAFE_FREE(servers);
 
@@ -2449,7 +2238,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
   pstrcpy(p2,local_machine);
-  strupper_m(p2);
+  strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2459,8 +2248,8 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
-  pstrcpy(p2,lp_workgroup());
-  strupper_m(p2);
+  pstrcpy(p2,global_myworkgroup);
+  strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2469,7 +2258,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  pstrcpy(p2,lp_workgroup());	/* don't know.  login domain?? */
+  pstrcpy(p2,global_myworkgroup);	/* don't know.  login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2734,7 +2523,8 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
+		pstrcpy(p2, lp_logon_home());
+		standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2770,13 +2560,15 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
+		pstrcpy(p2,lp_logon_home());
+		standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		pstrcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "");
+		pstrcpy(p2,lp_logon_script());
+		standard_sub_conn( conn, p2,*rdata_len-(p2 - *rdata));             
 		p2 = skip_string(p2,1);
 		if (uLevel == 2)
 		{
@@ -2801,7 +2593,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
 			pstrcpy(p2,"\\\\%L");
-			standard_sub_conn(conn, p2,0);
+			standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
 			SSVAL(p,112,860);	/* code page */
@@ -2815,6 +2607,56 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	return(True);
 }
 
+/*******************************************************************
+  get groups that a user is a member of
+  ******************************************************************/
+static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
+				 int *rdata_len,int *rparam_len)
+{
+  char *str1 = param+2;
+  char *str2 = skip_string(str1,1);
+  char *UserName = skip_string(str2,1);
+  char *p = skip_string(UserName,1);
+  int uLevel = SVAL(p,0);
+  const char *level_string;
+  int count=0;
+
+  *rparam_len = 8;
+  *rparam = REALLOC(*rparam,*rparam_len);
+
+  /* check it's a supported varient */
+  if (strcmp(str1,"zWrLeh") != 0) return False;
+  switch( uLevel ) {
+  case 0: level_string = "B21"; break;
+  default: return False;
+  }
+  if (strcmp(level_string,str2) != 0) return False;
+
+  *rdata_len = mdrcnt + 1024;
+  *rdata = REALLOC(*rdata,*rdata_len);
+
+  SSVAL(*rparam,0,NERR_Success);
+  SSVAL(*rparam,2,0);		/* converter word */
+
+  p = *rdata;
+
+  /* XXXX we need a real SAM database some day */
+  pstrcpy(p,"Users"); p += 21; count++;
+  pstrcpy(p,"Domain Users"); p += 21; count++;
+  pstrcpy(p,"Guests"); p += 21; count++;
+  pstrcpy(p,"Domain Guests"); p += 21; count++;
+
+  *rdata_len = PTR_DIFF(p,*rdata);
+
+  SSVAL(*rparam,4,count);	/* is this right?? */
+  SSVAL(*rparam,6,count);	/* is this right?? */
+
+  return(True);
+}
+
+
 static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -2826,12 +2668,6 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
-    /* With share level security vuid will always be zero.
-       Don't depend on vuser being non-null !!. JRA */
-    user_struct *vuser = get_valid_user_struct(vuid);
-    if(vuser != NULL)
-      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
-	       vuser->user.unix_name));
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2870,12 +2706,20 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
       fstring mypath;
       fstrcpy(mypath,"\\\\");
       fstrcat(mypath,local_machine);
-      strupper_m(mypath);
+      strupper(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
-    PACKS(&desc,"z",lp_workgroup());/* domain */
+    PACKS(&desc,"z",global_myworkgroup);/* domain */
 
-    PACKS(&desc,"z", vuser && vuser->logon_script ? vuser->logon_script :"");		/* script path */
+/* JHT - By calling lp_logon_script() and standard_sub() we have */
+/* made sure all macros are fully substituted and available */
+    {
+      pstring logon_script;
+      pstrcpy(logon_script,lp_logon_script());
+      standard_sub_conn( conn, logon_script,sizeof(logon_script) );
+      PACKS(&desc,"z", logon_script);		/* script path */
+    }
+/* End of JHT mods */
 
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
@@ -2935,7 +2779,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   int count;
   int i;
   int snum;
-  uint32 jobid;
+  int job;
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
@@ -2952,14 +2796,14 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
-    return False;
+  job = SVAL(p,0);
+  snum = print_job_snum(job);
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
   count = print_queue_status(snum,&queue,&status);
   for (i = 0; i < count; i++) {
-    if (queue[i].job == jobid) break;
+    if (queue[i].job == job) break;
   }
 
   if (mdrcnt > 0) {
@@ -3024,7 +2868,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
-  /* check it's a supported variant */
+  /* check it's a supported varient */
   if (strcmp(str1,"zWrLeh") != 0) return False;
   if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
@@ -3089,7 +2933,7 @@ static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,
   char buf[100];
   strncpy(buf,SERVICE(snum),sizeof(buf)-1);
   buf[sizeof(buf)-1] = 0;
-  strupper_m(buf);
+  strupper(buf);
   if (uLevel <= 1) {
     PACKS(desc,"B9",buf);	/* szName */
     if (uLevel == 1) {
@@ -3377,72 +3221,6 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
-
-/****************************************************************************
- List open sessions
- ****************************************************************************/
-static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param, char *data,
-			       int mdrcnt,int mprcnt,
-			       char **rdata,char **rparam,
-			       int *rdata_len,int *rparam_len)
-
-{
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *p = skip_string(str2,1);
-  int uLevel;
-  struct pack_desc desc;
-  struct sessionid *session_list;
-  int i, num_sessions;
-
-  memset((char *)&desc,'\0',sizeof(desc));
-
-  uLevel = SVAL(p,0);
-
-  DEBUG(3,("RNetSessionEnum uLevel=%d\n",uLevel));
-  DEBUG(7,("RNetSessionEnum req string=%s\n",str1));
-  DEBUG(7,("RNetSessionEnum ret string=%s\n",str2));
-
-  /* check it's a supported varient */
-  if (strcmp(str1,RAP_NetSessionEnum_REQ) != 0) return False;
-  if (uLevel != 2 || strcmp(str2,RAP_SESSION_INFO_L2) != 0) return False;
-
-  num_sessions = list_sessions(&session_list);
-
-  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  memset((char *)&desc,'\0',sizeof(desc));
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
-  desc.format = str2;
-  if (!init_package(&desc,num_sessions,0)) {
-    return False;
-  }
-
-  for(i=0; i<num_sessions; i++) {
-    PACKS(&desc, "z", session_list[i].remote_machine);
-    PACKS(&desc, "z", session_list[i].username);
-    PACKI(&desc, "W", 1); /* num conns */
-    PACKI(&desc, "W", 0); /* num opens */
-    PACKI(&desc, "W", 1); /* num users */
-    PACKI(&desc, "D", 0); /* session time */
-    PACKI(&desc, "D", 0); /* idle time */
-    PACKI(&desc, "D", 0); /* flags */
-    PACKS(&desc, "z", "Unknown Client"); /* client type string */
-  }
-
-  *rdata_len = desc.usedlen;
-
-  *rparam_len = 8;
-  *rparam = REALLOC(*rparam,*rparam_len);
-  SSVALS(*rparam,0,desc.errcode);
-  SSVAL(*rparam,2,0); /* converter */
-  SSVAL(*rparam,4,num_sessions); /* count */
-
-  DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
-  return True;
-}
-
-
 /****************************************************************************
  The buffer was too small
  ****************************************************************************/
@@ -3490,53 +3268,54 @@ static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,cha
 
 
 
-static const struct
+struct
 {
   const char *name;
   int id;
   BOOL (*fn)(connection_struct *,uint16,char *,char *,
 	     int,int,char **,char **,int *,int *);
-  BOOL auth_user;		/* Deny anonymous access? */
+  int flags;
 } api_commands[] = {
-  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum, True},
-  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo},
-  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd},
-  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum, True},
-  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo},
-  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum, True},
-  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers, True},
-  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum, True},
-  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo},
-  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups},
-  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo},
-  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum, True},
-  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo},
-  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl},
-  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl},
-  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate},
-  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo},
-  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel},
-  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel},
-  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel},
-  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum},
-  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
-  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
-  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
-  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum}, /* anon OK */
-  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
-  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
-  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
-  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo},
-  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum},
-  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum},
-  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum},
-  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword}, /* anon OK */
-  {NULL,		-1,	api_Unsupported}};
+  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
+#if 0 /* Not yet implemented. */
+  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
+#endif
+  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
+#if 0 /* Not yet implemented. */
+  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
+#endif
+  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},
+#if 0 /* Not yet implemented. */
+  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum,0},
+#endif
+  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo,0},
+  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl,0},
+  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl,0},
+  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl,0},
+  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword,0},
+  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum,0},
+  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword,0},
+  {NULL,		-1,	api_Unsupported,0}};
 
-/*  The following RAP calls are not implemented by Samba:
-
-        RAP_WFileEnum2 - anon not OK 
-*/
 
 /****************************************************************************
  Handle remote api calls
@@ -3571,15 +3350,6 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
         DEBUG(3,("Doing %s\n",api_commands[i].name));
         break;
     }
-  }
-
-  /* Check whether this api call can be done anonymously */
-
-  if (api_commands[i].auth_user && lp_restrict_anonymous()) {
-	  user_struct *user = get_valid_user_struct(vuid);
-
-	  if (!user || user->guest)
-		  return ERROR_NT(NT_STATUS_ACCESS_DENIED);
   }
 
   rdata = (char *)malloc(1024);

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    some simple double linked list macros
    Copyright (C) Andrew Tridgell 1998
    

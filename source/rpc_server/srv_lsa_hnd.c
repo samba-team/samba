@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -21,9 +22,6 @@
  */
 
 #include "includes.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
 
 /* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
@@ -47,12 +45,12 @@ static BOOL is_samr_lsa_pipe(const char *pipe_name)
 
 BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 {
-	pipes_struct *plist = get_first_internal_pipe();
+	pipes_struct *plist = get_first_pipe();
 	struct handle_list *hl = NULL;
 
-	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist)) {
+	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist)) {
 		if (strequal( plist->name, pipe_name) ||
-				(is_samr_lsa_pipe(plist->name) && is_samr_lsa_pipe(pipe_name))) {
+			(is_samr_lsa_pipe(plist->name) && is_samr_lsa_pipe(pipe_name))) {
 			if (!plist->pipe_handles) {
 				pstring msg;
 				slprintf(msg, sizeof(msg)-1, "init_pipe_handles: NULL pipe_handle pointer in pipe %s",
@@ -89,8 +87,8 @@ BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 
 	p->pipe_handles = hl;
 
-	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %lu for pipe %s\n",
-		  (unsigned long)p->pipe_handles->pipe_ref_count, pipe_name ));
+	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %u for pipe %s\n",
+			p->pipe_handles->pipe_ref_count, pipe_name ));
 
 	return True;
 }
@@ -171,7 +169,6 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
 	dump_data(4, (char *)hnd, sizeof(*hnd));
 
 	p->bad_handle_fault_state = True;
-
 	return NULL;
 }
 
@@ -232,34 +229,7 @@ void close_policy_by_pipe(pipes_struct *p)
 		p->pipe_handles->count = 0;
 
 		SAFE_FREE(p->pipe_handles);
+		p->pipe_handles = NULL;
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
 	}
-}
-
-/*******************************************************************
-Shall we allow access to this rpc?  Currently this function
-implements the 'restrict anonymous' setting by denying access to
-anonymous users if the restrict anonymous level is > 0.  Further work
-will be checking a security descriptor to determine whether a user
-token has enough access to access the pipe.
-********************************************************************/
-
-BOOL pipe_access_check(pipes_struct *p)
-{
-	/* Don't let anonymous users access this RPC if restrict
-	   anonymous > 0 */
-
-	if (lp_restrict_anonymous() > 0) {
-		user_struct *user = get_valid_user_struct(p->vuid);
-
-		if (!user) {
-			DEBUG(3, ("invalid vuid %d\n", p->vuid));
-			return False;
-		}
-
-		if (user->guest)
-			return False;
-	}
-
-	return True;
 }

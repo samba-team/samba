@@ -38,7 +38,7 @@ help(void)
 {
         printf("\n");
         printf("Usage: smbmnt mount-point [options]\n");
-	printf("Version %s\n\n",SAMBA_VERSION_STRING);
+	printf("Version %s\n\n",VERSION);
         printf("-s share       share name on server\n"
                "-r             mount read-only\n"
                "-u uid         mount as uid\n"
@@ -94,9 +94,9 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 static char *
 fullpath(const char *p)
 {
-        char path[PATH_MAX+1];
+        char path[MAXPATHLEN];
 
-	if (strlen(p) > PATH_MAX) {
+	if (strlen(p) > MAXPATHLEN-1) {
 		return NULL;
 	}
 
@@ -111,13 +111,13 @@ fullpath(const char *p)
    OK then we change into that directory - this prevents race conditions */
 static int mount_ok(char *mount_point)
 {
-	struct stat st;
+	SMB_STRUCT_STAT st;
 
 	if (chdir(mount_point) != 0) {
 		return -1;
 	}
 
-        if (stat(".", &st) != 0) {
+        if (sys_stat(".", &st) != 0) {
 		return -1;
         }
 
@@ -148,8 +148,8 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 
 	uname(&uts);
 	release = uts.release;
-	major = strtok(release, ".");
-	minor = strtok(NULL, ".");
+	major = strsep(&release, ".");
+	minor = strsep(&release, ".");
 	if (major && minor && atoi(major) == 2 && atoi(minor) < 4) {
 		/* < 2.4, assume struct */
 		data1 = (char *) data;
@@ -240,7 +240,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
                         data.dir_mode |= S_IXOTH;
         }
 
-	flags = MS_MGC_VAL | MS_NOSUID | MS_NODEV;
+	flags = MS_MGC_VAL;
 
 	if (mount_ro) flags |= MS_RDONLY;
 

@@ -11,11 +11,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <syslog.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -121,10 +124,3 @@ struct _pam_failed_auth {
     char *agent;                /* attempt from user with name */
     int count;                  /* number of failures so far */
 };
-
-/*
- * General use functions go here 
- */
-
-/* from support.c */
-int make_remark(pam_handle_t *, unsigned int, int, const char *);

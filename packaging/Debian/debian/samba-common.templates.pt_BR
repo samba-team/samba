@@ -1,0 +1,47 @@
+Template: samba-common/do_debconf
+Type: boolean
+Default: true
+Description: Configure smb.conf through debconf?
+ The rest of the configuration of Samba deals with questions that affect
+ parameters in /etc/samba/smb.conf, which is the file used to configure the
+ Samba programs (nmbd and smbd.) If you want to be asked just a few
+ questions then select "Yes" and continue with the configuration. If you
+ want to have full control, select "No" and configure your smb.conf
+ manually or through SWAT.
+Description-pt_BR: Configurar smb.conf através do debconf ?
+ O restante da configuração do Samba lida com questões que afetam
+ parâmetros no arquivo /etc/samba/smb.conf, que é o arquivo usado para
+ configurar os programas Samba (nmbd e smbd). Caso você prefira somente
+ algumas perguntas selecione "Sim" e continue com a configuração. Se você
+ quer ter controle total, selecione "Não" e configure seu arquivo smb.conf
+ manualmente ou através da ferramenta SWAT.
+
+Template: samba-common/workgroup
+Type: string
+Description: Workgroup/Domain Name?
+ This controls what workgroup your server will appear to be in when queried
+ by clients. Note that this parameter also controls the Domain name used
+ with the security=domain setting.
+Description-pt_BR: Nome de Domínio/Grupo de Trabalho ? 
+ Este parâmetro controla qual grupo de trabalho (workgroup) seu servidor
+ parecerá estar quando o mesmo for pesquisado por clientes. Note que este
+ parâmetro também controla o nome de Domínio usado com a configuração
+ security=domain.
+
+Template: samba-common/encrypt_passwords
+Type: boolean
+Default: true
+Description: Use password encryption?
+ Recent Windows clients communicate with SMB servers using encrypted
+ passwords. If you want to use clear text passwords you will need to change
+ a parameter in your Windows registry. It is recommended that you use
+ encrypted passwords. If you do, make sure you have a valid
+ /etc/samba/smbpasswd file and that you set passwords in there for each
+ user using the smbpasswd command.
+Description-pt_BR: Usar encriptação de senhas ?
+ Clientes Windows atuais comunicam-se com servidores SMB usando senhas
+ encriptadas. Caso você queira usar senhas em texto puro você precisará
+ modificar um parâmetro no registro de seu Windows. É recomendado que você
+ use senhas encriptadas. Se você usar, certifique-se de possuir um arquivo
+ /etc/samba/smbpasswd válido e que você definiu senhas no mesmo para cada
+ usuário utilizando o comando smbpasswd.

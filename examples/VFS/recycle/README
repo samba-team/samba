@@ -1,0 +1,83 @@
+The recycle VFS module implements a recycle bin for Samba.
+Deleted files will be moved to a special directory and
+not be deleted unless specified in the configuration file.
+It is up to the administrator/user to clean up the files
+in the recycle bin.
+
+Installation:
+
+1. Build VFS module using the GNU autoconf script and Makefile 
+   in the parent directory (cd .. && ./configure && make)
+2. Install module by copying to /usr/lib/samba/vfs (or any other place you like)
+3. Install/modify recycle.conf. See below for the description
+4. Modify smb.conf to use the recycle module
+   Add the lines "vfs object = /usr/lib/samba/recycle.so"
+   and "vfs options = /etc/samba/recycle.conf".
+5. Start Samba
+
+
+Options for recycle.conf:
+name
+	name of the recycle bin at root level of the share
+	allows smb.conf substutitions like %U.
+	Example:
+	  name = .recycle/%U
+
+mode	
+	KEEP_DIRECTORIES : retain directory hierarchy of deleted file,
+	VERSIONS : create several versions of a file in recycle bin if
+	           the file already exists in the recycle bin
+		    e.g.	mytext.doc
+				Copy #1 of mytext.doc
+				Copy #2 of mytext.doc
+
+        TOUCH : touch access date when moving files to the recycle bin.
+	        This is useful for automatic cleanup scripts.
+		Attn: This doesn't work if you have no write permissions
+		      to the file being deleted. Deletion works if you
+		      have write permissions to the parent directory.
+	Example:
+	  mode = KEEP_DIRECTORIES|VERSIONS|TOUCH
+
+maxsize
+	maximum size of files to be moved to recycle bin. Setting this zo
+	zero (default) moves files of any size to the recycle bin.
+	Example:
+	  maxsize = 0
+
+exclude
+	exclude files from moving to recycle bin. Delete them immediately
+	Useful for temporary files. You can use the wildcards * and ? 
+	Example:
+	  exclude = *.tmp|*.temp|*.obj|~$*|*.$$$
+
+excludedir
+	exclude directories from the recycle bin, useful for temporary
+	directories.
+	Example
+	  excludedir = /tmp|/temp|/trash
+
+noversions
+	don't create versions of files in the recycle bin. Only usefull if
+	mode = VERSIONS is set.
+	Examples:
+	  noversions = *.doc|*.xls|*.ppt
+
+Example smb.conf:
+
+[homes]
+        comment = Home-directory
+        path = /home/%u
+        read only = No
+        create mask = 0750
+        vfs object = /usr/lib/samba/recycle.so
+        vfs options = /etc/samba/recycle.conf
+
+Example recycle.conf:
+
+name = .recycle/%U
+mode = KEEP_DIRECTORIES|NOVERSIONS|TOUCH
+maxsize = 0
+exclude = *.tmp|*.temp|*.o|*.obj|~$*
+excludedir = /tmp|/temp|/cache
+noversions = *.doc|*.xls|*.ppt

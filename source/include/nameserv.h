@@ -1,7 +1,8 @@
 #ifndef _NAMESERV_H_
 #define _NAMESERV_H_
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    NBT netbios header - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -20,12 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
 */
-
-#define INFO_VERSION	"INFO/version"
-#define INFO_COUNT	"INFO/num_entries"
-#define INFO_ID_HIGH	"INFO/id_high"
-#define INFO_ID_LOW	"INFO/id_low"
-#define ENTRY_PREFIX 	"ENTRY/"
 
 #define PERMANENT_TTL 0
 
@@ -89,33 +84,6 @@ enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
 /* Mask applied to outgoing NetBIOS flags. */
 #define NB_FLGMSK 0xE0
 
-/* The wins flags. Looks like the nbflags ! */
-#define WINS_UNIQUE	0x00 /* Unique record */
-#define WINS_NGROUP	0x01 /* Normal Group eg: 1B */
-#define WINS_SGROUP	0x02 /* Special Group eg: 1C */
-#define WINS_MHOMED	0x03 /* MultiHomed */
-
-#define WINS_ACTIVE	0x00 /* active record */
-#define WINS_RELEASED	0x04 /* released record */
-#define WINS_TOMBSTONED 0x08 /* tombstoned record */
-#define WINS_DELETED	0x0C /* deleted record */
-
-#define WINS_STATE_MASK	0x0C
-
-#define WINS_LOCAL	0x00 /* local record */
-#define WINS_REMOTE	0x10 /* remote record */
-
-#define WINS_BNODE	0x00 /* Broadcast node */
-#define WINS_PNODE	0x20 /* PtP node */
-#define WINS_MNODE	0x40 /* Mixed node */
-#define WINS_HNODE	0x60 /* Hybrid node */
-
-#define WINS_NONSTATIC	0x00 /* dynamic record */
-#define WINS_STATIC	0x80 /* static record */
-
-#define WINS_STATE_ACTIVE(p) (((p)->data.wins_flags & WINS_STATE_MASK) == WINS_ACTIVE)
-
-
 /* NetBIOS flag identifier. */
 #define NAME_GROUP(p)  ((p)->data.nb_flags & NB_GROUP)
 #define NAME_BFLAG(p) (((p)->data.nb_flags & NB_NODETYPEMASK) == NB_BFLAG)
@@ -176,116 +144,119 @@ enum name_source {LMHOSTS_NAME, REGISTER_NAME, SELF_NAME, DNS_NAME,
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
 
-enum master_state {
-	MST_NONE,
-	MST_POTENTIAL,
-	MST_BACKUP,
-	MST_MSB,
-	MST_BROWSER,
-	MST_UNBECOMING_MASTER
+enum master_state
+{
+  MST_NONE,
+  MST_POTENTIAL,
+  MST_BACKUP,
+  MST_MSB,
+  MST_BROWSER,
+  MST_UNBECOMING_MASTER
 };
 
-enum domain_state {
-	DOMAIN_NONE,
-	DOMAIN_WAIT,
-	DOMAIN_MST
+enum domain_state
+{
+  DOMAIN_NONE,
+  DOMAIN_WAIT,
+  DOMAIN_MST
 };
 
-enum logon_state {
-	LOGON_NONE,
-	LOGON_WAIT,
-	LOGON_SRV
+enum logon_state
+{
+  LOGON_NONE,
+  LOGON_WAIT,
+  LOGON_SRV
 };
 
 struct subnet_record;
 
-struct nmb_data {
-	uint16 nb_flags;         /* Netbios flags. */
-	int num_ips;             /* Number of ip entries. */
-	struct in_addr *ip;      /* The ip list for this name. */
+struct nmb_data
+{
+  uint16 nb_flags;         /* Netbios flags. */
+  int num_ips;             /* Number of ip entries. */
+  struct in_addr *ip;      /* The ip list for this name. */
 
-	enum name_source source; /* Where the name came from. */
+  enum name_source source; /* Where the name came from. */
 
-	time_t death_time; /* The time the record must be removed (do not remove if 0). */
-	time_t refresh_time; /* The time the record should be refreshed. */
-  
-	SMB_BIG_UINT id;		/* unique id */
-	struct in_addr wins_ip;	/* the adress of the wins server this record comes from */
-
-	int wins_flags;		/* similar to the netbios flags but different ! */
+  time_t death_time; /* The time the record must be removed (do not remove if 0). */
+  time_t refresh_time; /* The time the record should be refreshed. */
 };
 
 /* This structure represents an entry in a local netbios name list. */
-struct name_record {
-	ubi_trNode            node[1];
-	struct subnet_record *subnet;
-	struct nmb_name       name;    /* The netbios name. */
-	struct nmb_data       data;    /* The netbios data. */
-};
+struct name_record
+  {
+  ubi_trNode            node[1];
+  struct subnet_record *subnet;
+  struct nmb_name       name;    /* The netbios name. */
+  struct nmb_data       data;    /* The netbios data. */
+  };
 
 /* Browser cache for synchronising browse lists. */
-struct browse_cache_record {
-	ubi_dlNode     node[1];
-	unstring        lmb_name;
-	unstring        work_group;
-	struct in_addr ip;
-	time_t         sync_time;
-	time_t         death_time; /* The time the record must be removed. */
-};
+struct browse_cache_record
+  {
+  ubi_dlNode     node[1];
+  pstring        lmb_name;
+  pstring        work_group;
+  struct in_addr ip;
+  time_t         sync_time;
+  time_t         death_time; /* The time the record must be removed. */
+  };
 
 /* This is used to hold the list of servers in my domain, and is
    contained within lists of domains. */
 
-struct server_record {
-	struct server_record *next;
-	struct server_record *prev;
+struct server_record
+{
+  struct server_record *next;
+  struct server_record *prev;
 
-	struct subnet_record *subnet;
+  struct subnet_record *subnet;
 
-	struct server_info_struct serv;
-	time_t death_time;  
+  struct server_info_struct serv;
+  time_t death_time;  
 };
 
 /* A workgroup structure. It contains a list of servers. */
-struct work_record {
-	struct work_record *next;
-	struct work_record *prev;
+struct work_record
+{
+  struct work_record *next;
+  struct work_record *prev;
 
-	struct subnet_record *subnet;
+  struct subnet_record *subnet;
 
-	struct server_record *serverlist;
+  struct server_record *serverlist;
 
-	/* Stage of development from non-local-master up to local-master browser. */
-	enum master_state mst_state;
+  /* Stage of development from non-local-master up to local-master browser. */
+  enum master_state mst_state;
 
-	/* Stage of development from non-domain-master to domain-master browser. */
-	enum domain_state dom_state;
+  /* Stage of development from non-domain-master to domain-master browser. */
+  enum domain_state dom_state;
 
-  	/* Stage of development from non-logon-server to logon server. */
-	enum logon_state log_state;
+  /* Stage of development from non-logon-server to logon server. */
+  enum logon_state log_state;
 
-	/* Work group info. */
-	unstring work_group;
-	int     token;        /* Used when communicating with backup browsers. */
-	unstring local_master_browser_name;      /* Current local master browser. */
+  /* Work group info. */
+  fstring work_group;
+  int     token;        /* Used when communicating with backup browsers. */
+  fstring local_master_browser_name;      /* Current local master browser. */
 
-	/* Announce info. */
-	time_t lastannounce_time;
-	int announce_interval;
-	BOOL    needannounce;
+  /* Announce info. */
+  time_t lastannounce_time;
+  int announce_interval;
+  BOOL    needannounce;
 
-	/* Timeout time for this workgroup. 0 means permanent. */
-	time_t death_time;  
+  /* Timeout time for this workgroup. 0 means permanent. */
+  time_t death_time;  
 
-	/* Election info */
-	BOOL    RunningElection;
-	BOOL    needelection;
-	int     ElectionCount;
-	uint32  ElectionCriterion;
+  /* Election info */
+  BOOL    RunningElection;
+  BOOL    needelection;
+  int     ElectionCount;
+  uint32  ElectionCriterion;
 
-	/* Domain master browser info. Used for efficient syncs. */
-	struct nmb_name dmb_name;
-	struct in_addr dmb_addr;
+  /* Domain master browser info. Used for efficient syncs. */
+  struct nmb_name dmb_name;
+  struct in_addr dmb_addr;
 };
 
 /* typedefs needed to define copy & free functions for userdata. */
@@ -297,10 +268,10 @@ typedef void (*userdata_free_fn)(struct userdata_struct *);
 /* Structure to define any userdata passed around. */
 
 struct userdata_struct {
-	userdata_copy_fn copy_fn;
-	userdata_free_fn free_fn;
-	unsigned int userdata_len;
-	char data[16]; /* 16 is to ensure alignment/padding on all systems */
+  userdata_copy_fn copy_fn;
+  userdata_free_fn free_fn;
+  unsigned int userdata_len;
+  char data[16]; /* 16 is to ensure alignment/padding on all systems */
 };
 
 struct response_record;
@@ -374,32 +345,33 @@ typedef void (*node_status_fail_function)( struct subnet_record *,
 
 /* Initiated name queries are recorded in this list to track any responses. */
 
-struct response_record {
-	struct response_record *next;
-	struct response_record *prev;
+struct response_record
+{
+  struct response_record *next;
+  struct response_record *prev;
 
-	uint16 response_id;
+  uint16 response_id;
 
-	/* Callbacks for packets received or not. */ 
-	response_function resp_fn;
-	timeout_response_function timeout_fn;
+  /* Callbacks for packets received or not. */ 
+  response_function resp_fn;
+  timeout_response_function timeout_fn;
 
-	/* Callbacks for the request succeeding or not. */
-	success_function success_fn;
-	fail_function fail_fn;
+  /* Callbacks for the request succeeding or not. */
+  success_function success_fn;
+  fail_function fail_fn;
  
-	struct packet_struct *packet;
+  struct packet_struct *packet;
 
-	struct userdata_struct *userdata;
+  struct userdata_struct *userdata;
 
-	int num_msgs;
+  int num_msgs;
 
-	time_t repeat_time;
-	time_t repeat_interval;
-	int    repeat_count;
+  time_t repeat_time;
+  time_t repeat_interval;
+  int    repeat_count;
 
-	/* Recursion protection. */
-	BOOL in_expiration_processing;
+  /* Recursion protection. */
+  BOOL in_expiration_processing;
 };
 
 /* A subnet structure. It contains a list of workgroups and netbios names. */
@@ -411,44 +383,44 @@ struct response_record {
 */
 
 enum subnet_type {
-	NORMAL_SUBNET              = 0,  /* Subnet listed in interfaces list. */
-	UNICAST_SUBNET             = 1,  /* Subnet for unicast packets. */
-	REMOTE_BROADCAST_SUBNET    = 2,  /* Subnet for remote broadcasts. */
-	WINS_SERVER_SUBNET         = 3   /* Only created if we are a WINS server. */
+  NORMAL_SUBNET              = 0,  /* Subnet listed in interfaces list. */
+  UNICAST_SUBNET             = 1,  /* Subnet for unicast packets. */
+  REMOTE_BROADCAST_SUBNET    = 2,  /* Subnet for remote broadcasts. */
+  WINS_SERVER_SUBNET         = 3   /* Only created if we are a WINS server. */
 };
 
-struct subnet_record {
-	struct subnet_record *next;
-	struct subnet_record *prev;
+struct subnet_record
+{
+  struct subnet_record *next;
+  struct subnet_record *prev;
 
-	char  *subnet_name;      /* For Debug identification. */
-	enum subnet_type type;   /* To catagorize the subnet. */
+  char  *subnet_name;      /* For Debug identification. */
+  enum subnet_type type;   /* To catagorize the subnet. */
 
-	struct work_record     *workgrouplist; /* List of workgroups. */
-	ubi_trRoot              namelist[1];   /* List of netbios names. */
-	struct response_record *responselist;  /* List of responses expected. */
+  struct work_record     *workgrouplist; /* List of workgroups. */
+  ubi_trRoot              namelist[1];   /* List of netbios names. */
+  struct response_record *responselist;  /* List of responses expected. */
 
-	BOOL namelist_changed;
-	BOOL work_changed;
+  BOOL namelist_changed;
+  BOOL work_changed;
 
-	struct in_addr bcast_ip;
-	struct in_addr mask_ip;
-	struct in_addr myip;
-	int nmb_sock;               /* socket to listen for unicast 137. */
-	int dgram_sock;             /* socket to listen for unicast 138. */
+  struct in_addr bcast_ip;
+  struct in_addr mask_ip;
+  struct in_addr myip;
+  int nmb_sock;               /* socket to listen for unicast 137. */
+  int dgram_sock;             /* socket to listen for unicast 138. */
 };
 
 /* A resource record. */
 struct res_rec {
-	struct nmb_name rr_name;
-	int rr_type;
-	int rr_class;
-	int ttl;
-	int rdlength;
-	char rdata[MAX_DGRAM_SIZE];
+  struct nmb_name rr_name;
+  int rr_type;
+  int rr_class;
+  int ttl;
+  int rdlength;
+  char rdata[MAX_DGRAM_SIZE];
 };
 
-/* Define these so we can pass info back to caller of name_query */
 #define NM_FLAGS_RS 0x80 /* Response. Cheat     */
 #define NM_FLAGS_AA 0x40 /* Authoritative       */
 #define NM_FLAGS_TC 0x20 /* Truncated           */
@@ -457,34 +429,35 @@ struct res_rec {
 #define NM_FLAGS_B  0x01 /* Broadcast           */
 
 /* An nmb packet. */
-struct nmb_packet {
-	struct {
-		int name_trn_id;
-		int opcode;
-		BOOL response;
-		struct {
-			BOOL bcast;
-			BOOL recursion_available;
-			BOOL recursion_desired;
-			BOOL trunc;
-			BOOL authoritative;
-		} nm_flags;
-		int rcode;
-		int qdcount;
-		int ancount;
-		int nscount;
-		int arcount;
-	} header;
+struct nmb_packet
+{
+  struct {
+    int name_trn_id;
+    int opcode;
+    BOOL response;
+    struct {
+      BOOL bcast;
+      BOOL recursion_available;
+      BOOL recursion_desired;
+      BOOL trunc;
+      BOOL authoritative;
+    } nm_flags;
+    int rcode;
+    int qdcount;
+    int ancount;
+    int nscount;
+    int arcount;
+  } header;
 
-	struct {
-		struct nmb_name question_name;
-		int question_type;
-		int question_class;
-	} question;
+  struct {
+    struct nmb_name question_name;
+    int question_type;
+    int question_class;
+  } question;
 
-	struct res_rec *answers;
-	struct res_rec *nsrecs;
-	struct res_rec *additional;
+  struct res_rec *answers;
+  struct res_rec *nsrecs;
+  struct res_rec *additional;
 };
 
 /* msg_type field options - from rfc1002. */
@@ -500,23 +473,23 @@ struct nmb_packet {
 /* A datagram - this normally contains SMB data in the data[] array. */
 
 struct dgram_packet {
-	struct {
-		int msg_type;
-		struct {
-			enum node_type node_type;
-			BOOL first;
-			BOOL more;
-		} flags;
-		int dgm_id;
-		struct in_addr source_ip;
-		int source_port;
-		int dgm_length;
-		int packet_offset;
-	} header;
-	struct nmb_name source_name;
-	struct nmb_name dest_name;
-	int datasize;
-	char data[MAX_DGRAM_SIZE];
+  struct {
+    int msg_type;
+    struct {
+      enum node_type node_type;
+      BOOL first;
+      BOOL more;
+    } flags;
+    int dgm_id;
+    struct in_addr source_ip;
+    int source_port;
+    int dgm_length;
+    int packet_offset;
+  } header;
+  struct nmb_name source_name;
+  struct nmb_name dest_name;
+  int datasize;
+  char data[MAX_DGRAM_SIZE];
 };
 
 /* Define a structure used to queue packets. This will be a linked
@@ -524,18 +497,18 @@ struct dgram_packet {
 
 struct packet_struct
 {
-	struct packet_struct *next;
-	struct packet_struct *prev;
-	BOOL locked;
-	struct in_addr ip;
-	int port;
-	int fd;
-	time_t timestamp;
-	enum packet_type packet_type;
-	union {
-		struct nmb_packet nmb;
-		struct dgram_packet dgram;
-	} packet;
+  struct packet_struct *next;
+  struct packet_struct *prev;
+  BOOL locked;
+  struct in_addr ip;
+  int port;
+  int fd;
+  time_t timestamp;
+  enum packet_type packet_type;
+  union {
+    struct nmb_packet nmb;
+    struct dgram_packet dgram;
+  } packet;
 };
 
 /* NETLOGON opcodes */
@@ -546,8 +519,7 @@ struct packet_struct
 #define SAMLOGON	18
 #define SAMLOGON_R	19
 #define SAMLOGON_UNK_R	21
-#define SAMLOGON_AD_UNK_R 23
-#define SAMLOGON_AD_R   25
+
 
 /* Ids for netbios packet types. */
 
@@ -592,12 +564,6 @@ struct packet_struct
    affects non-permanent self names (in seconds) */
 #define MAX_REFRESH_TIME (60*20)
 
-/* The Extinction interval: 4 days, time a node will stay in released state  */
-#define EXTINCTION_INTERVAL (4*24*60*60)
-
-/* The Extinction time-out: 1 day, time a node will stay in deleted state */
-#define EXTINCTION_TIMEOUT (24*60*60)
-
 /* Macro's to enumerate subnets either with or without
    the UNICAST subnet. */
 
@@ -609,18 +575,6 @@ extern struct subnet_record *remote_broadcast_subnet;
 #define FIRST_SUBNET subnetlist
 #define NEXT_SUBNET_EXCLUDING_UNICAST(x) ((x)->next)
 #define NEXT_SUBNET_INCLUDING_UNICAST(x) (get_next_subnet_maybe_unicast((x)))
-
-/* wins replication record used between nmbd and wrepld */
-typedef struct _WINS_RECORD {
-	char name[17];
-	char type;
-	int nb_flags;
-	int wins_flags;
-	SMB_BIG_UINT id;
-	int num_ips;
-	struct in_addr ip[25];
-	struct in_addr wins_ip;
-} WINS_RECORD;
 
 /* To be removed. */
 enum state_type { TEST };

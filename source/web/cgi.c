@@ -19,7 +19,7 @@
 
 
 #include "includes.h"
-#include "../web/swat_proto.h"
+#include "smb.h"
 
 #define MAX_VARIABLES 10000
 
@@ -45,6 +45,43 @@ static char *pathinfo;
 static char *C_user;
 static BOOL inetd_server;
 static BOOL got_request;
+
+static void unescape(char *buf)
+{
+	char *p=buf;
+
+	while ((p=strchr(p,'+')))
+		*p = ' ';
+
+	p = buf;
+
+	while (p && *p && (p=strchr(p,'%'))) {
+		int c1 = p[1];
+		int c2 = p[2];
+
+		if (c1 >= '0' && c1 <= '9')
+			c1 = c1 - '0';
+		else if (c1 >= 'A' && c1 <= 'F')
+			c1 = 10 + c1 - 'A';
+		else if (c1 >= 'a' && c1 <= 'f')
+			c1 = 10 + c1 - 'a';
+		else {p++; continue;}
+
+		if (c2 >= '0' && c2 <= '9')
+			c2 = c2 - '0';
+		else if (c2 >= 'A' && c2 <= 'F')
+			c2 = 10 + c2 - 'A';
+		else if (c2 >= 'a' && c2 <= 'f')
+			c2 = 10 + c2 - 'a';
+		else {p++; continue;}
+			
+		*p = (c1<<4) | c2;
+
+		memmove(p+1, p+3, strlen(p+3)+1);
+		p++;
+	}
+}
+
 
 static char *grab_line(FILE *f, int *cl)
 {
@@ -74,7 +111,7 @@ static char *grab_line(FILE *f, int *cl)
 		
 		if (c == '\r') continue;
 
-		if (strchr_m("\n&", c)) break;
+		if (strchr("\n&", c)) break;
 
 		ret[i++] = c;
 
@@ -85,52 +122,45 @@ static char *grab_line(FILE *f, int *cl)
 	return ret;
 }
 
-/**
- URL encoded strings can have a '+', which should be replaced with a space
-
- (This was in rfc1738_unescape(), but that broke the squid helper)
-**/
-
-static void plus_to_space_unescape(char *buf)
-{
-	char *p=buf;
-
-	while ((p=strchr_m(p,'+')))
-		*p = ' ';
-}
-
 /***************************************************************************
   load all the variables passed to the CGI program. May have multiple variables
   with the same name and the same or different values. Takes a file parameter
   for simulating CGI invocation eg loading saved preferences.
   ***************************************************************************/
-void cgi_load_variables(void)
+void cgi_load_variables(FILE *f1)
 {
+	FILE *f = f1;
 	static char *line;
 	char *p, *s, *tok;
-	int len, i;
-	FILE *f = stdin;
+	int len;
 
 #ifdef DEBUG_COMMENTS
 	char dummy[100]="";
 	print_title(dummy);
-	d_printf("<!== Start dump in cgi_load_variables() %s ==>\n",__FILE__);
+	printf("<!== Start dump in cgi_load_variables() %s ==>\n",__FILE__);
 #endif
 
-	if (!content_length) {
-		p = getenv("CONTENT_LENGTH");
-		len = p?atoi(p):0;
+	if (!f1) {
+		f = stdin;
+		if (!content_length) {
+			p = getenv("CONTENT_LENGTH");
+			len = p?atoi(p):0;
+		} else {
+			len = content_length;
+		}
 	} else {
-		len = content_length;
+		fseek(f, 0, SEEK_END);
+		len = ftell(f);
+		fseek(f, 0, SEEK_SET);
 	}
 
 
 	if (len > 0 && 
-	    (request_post ||
+	    (f1 || request_post ||
 	     ((s=getenv("REQUEST_METHOD")) && 
-	      strequal(s,"POST")))) {
+	      strcasecmp(s,"POST")==0))) {
 		while (len && (line=grab_line(f, &len))) {
-			p = strchr_m(line,'=');
+			p = strchr(line,'=');
 			if (!p) continue;
 			
 			*p = 0;
@@ -144,10 +174,8 @@ void cgi_load_variables(void)
 			    !variables[num_variables].value)
 				continue;
 
-			plus_to_space_unescape(variables[num_variables].value);
-			rfc1738_unescape(variables[num_variables].value);
-			plus_to_space_unescape(variables[num_variables].name);
-			rfc1738_unescape(variables[num_variables].name);
+			unescape(variables[num_variables].value);
+			unescape(variables[num_variables].name);
 
 #ifdef DEBUG_COMMENTS
 			printf("<!== POST var %s has value \"%s\"  ==>\n",
@@ -160,12 +188,19 @@ void cgi_load_variables(void)
 		}
 	}
 
+	if (f1) {
+#ifdef DEBUG_COMMENTS
+	        printf("<!== End dump in cgi_load_variables() ==>\n"); 
+#endif
+		return;
+	}
+
 	fclose(stdin);
 	open("/dev/null", O_RDWR);
 
 	if ((s=query_string) || (s=getenv("QUERY_STRING"))) {
 		for (tok=strtok(s,"&;");tok;tok=strtok(NULL,"&;")) {
-			p = strchr_m(tok,'=');
+			p = strchr(tok,'=');
 			if (!p) continue;
 			
 			*p = 0;
@@ -177,10 +212,8 @@ void cgi_load_variables(void)
 			    !variables[num_variables].value)
 				continue;
 
-			plus_to_space_unescape(variables[num_variables].value);
-			rfc1738_unescape(variables[num_variables].value);
-			plus_to_space_unescape(variables[num_variables].name);
-			rfc1738_unescape(variables[num_variables].name);
+			unescape(variables[num_variables].value);
+			unescape(variables[num_variables].name);
 
 #ifdef DEBUG_COMMENTS
                         printf("<!== Commandline var %s has value \"%s\"  ==>\n",
@@ -195,24 +228,6 @@ void cgi_load_variables(void)
 #ifdef DEBUG_COMMENTS
         printf("<!== End dump in cgi_load_variables() ==>\n");   
 #endif
-
-	/* variables from the client are in display charset - convert them
-	   to our internal charset before use */
-	for (i=0;i<num_variables;i++) {
-		pstring dest;
-
-		convert_string(CH_DISPLAY, CH_UNIX, 
-			       variables[i].name, -1, 
-			       dest, sizeof(dest), True);
-		free(variables[i].name);
-		variables[i].name = strdup(dest);
-
-		convert_string(CH_DISPLAY, CH_UNIX, 
-			       variables[i].value, -1,
-			       dest, sizeof(dest), True);
-		free(variables[i].value);
-		variables[i].value = strdup(dest);
-	}
 }
 
 
@@ -242,15 +257,15 @@ static void cgi_setup_error(const char *err, const char *header, const char *inf
 		/* damn browsers don't like getting cut off before they give a request */
 		char line[1024];
 		while (fgets(line, sizeof(line)-1, stdin)) {
-			if (strnequal(line,"GET ", 4) || 
-			    strnequal(line,"POST ", 5) ||
-			    strnequal(line,"PUT ", 4)) {
+			if (strncasecmp(line,"GET ", 4)==0 || 
+			    strncasecmp(line,"POST ", 5)==0 ||
+			    strncasecmp(line,"PUT ", 4)==0) {
 				break;
 			}
 		}
 	}
 
-	d_printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n\r\n", err, header, err, err, info);
+	printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n\r\n", err, header, err, err, info);
 	fclose(stdin);
 	fclose(stdout);
 	exit(0);
@@ -277,55 +292,62 @@ static void cgi_auth_error(void)
 	exit(0);
 }
 
+
 /***************************************************************************
-authenticate when we are running as a CGI
+decode a base64 string in-place - simple and slow algorithm
   ***************************************************************************/
-static void cgi_web_auth(void)
+static void base64_decode(char *s)
 {
-	const char *user = getenv("REMOTE_USER");
-	struct passwd *pwd;
-	const char *head = "Content-Type: text/html\r\n\r\n<HTML><BODY><H1>SWAT installation Error</H1>\n";
-	const char *tail = "</BODY></HTML>\r\n";
+	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	int bit_offset, byte_offset, idx, i, n;
+	unsigned char *d = (unsigned char *)s;
+	char *p;
 
-	if (!user) {
-		printf("%sREMOTE_USER not set. Not authenticated by web server.<br>%s\n",
-		       head, tail);
-		exit(0);
-	}
+	n=i=0;
 
-	pwd = getpwnam_alloc(user);
-	if (!pwd) {
-		printf("%sCannot find user %s<br>%s\n", head, user, tail);
-		exit(0);
+	while (*s && (p=strchr(b64,*s))) {
+		idx = (int)(p - b64);
+		byte_offset = (i*6)/8;
+		bit_offset = (i*6)%8;
+		d[byte_offset] &= ~((1<<(8-bit_offset))-1);
+		if (bit_offset < 3) {
+			d[byte_offset] |= (idx << (2-bit_offset));
+			n = byte_offset+1;
+		} else {
+			d[byte_offset] |= (idx >> (bit_offset-2));
+			d[byte_offset+1] = 0;
+			d[byte_offset+1] |= (idx << (8-(bit_offset-2))) & 0xFF;
+			n = byte_offset+2;
+		}
+		s++; i++;
 	}
-
-	setuid(0);
-	setuid(pwd->pw_uid);
-	if (geteuid() != pwd->pw_uid || getuid() != pwd->pw_uid) {
-		printf("%sFailed to become user %s - uid=%d/%d<br>%s\n", 
-		       head, user, (int)geteuid(), (int)getuid(), tail);
-		exit(0);
-	}
-	passwd_free(&pwd);
+	/* null terminate */
+	d[n] = 0;
 }
-
 
 /***************************************************************************
 handle a http authentication line
   ***************************************************************************/
 static BOOL cgi_handle_authorization(char *line)
 {
-	char *p;
-	fstring user, user_pass;
+	char *p, *user, *user_pass;
 	struct passwd *pass = NULL;
+	BOOL got_name = False;
+	BOOL tested_pass = False;
+	fstring default_user_lookup;
+	fstring default_user_pass;
 
-	if (!strnequal(line,"Basic ", 6)) {
+	/* Dummy user lookup to take the same time as a valid user. */
+	fstrcpy(default_user_lookup, "zzzz bibble");
+	fstrcpy(default_user_pass, "123456789");
+
+	if (strncasecmp(line,"Basic ", 6)) {
 		goto err;
 	}
 	line += 6;
 	while (line[0] == ' ') line++;
-	base64_decode_inplace(line);
-	if (!(p=strchr_m(line,':'))) {
+	base64_decode(line);
+	if (!(p=strchr(line,':'))) {
 		/*
 		 * Always give the same error so a cracker
 		 * cannot tell why we fail.
@@ -333,51 +355,60 @@ static BOOL cgi_handle_authorization(char *line)
 		goto err;
 	}
 	*p = 0;
-
-	convert_string(CH_DISPLAY, CH_UNIX, 
-		       line, -1, 
-		       user, sizeof(user), True);
-
-	convert_string(CH_DISPLAY, CH_UNIX, 
-		       p+1, -1, 
-		       user_pass, sizeof(user_pass), True);
+	user = line;
+	user_pass = p+1;
 
 	/*
 	 * Try and get the user from the UNIX password file.
 	 */
-	
-	pass = getpwnam_alloc(user);
-	
+
+	if(!(pass = Get_Pwnam(user,False))) {
+		/*
+		 * Always give the same error so a cracker
+		 * cannot tell why we fail.
+		 */
+		got_name = True;
+		goto err;
+	}
+
 	/*
 	 * Validate the password they have given.
 	 */
-	
-	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, 
-		      strlen(user_pass), NULL, False)) {
-		
-		if (pass) {
-			/*
-			 * Password was ok.
-			 */
-			
-			if ( initgroups(pass->pw_name, pass->pw_gid) != 0 )
-				goto err;
 
+	tested_pass = True;
+
+	if(pass_check(user, user_pass, strlen(user_pass), NULL, NULL) == True) {
+
+		/*
+		 * Password was ok.
+		 */
+
+		if(pass->pw_uid != 0) {
+			/*
+			 * We have not authenticated as root,
+			 * become the user *permanently*.
+			 */
 			become_user_permanently(pass->pw_uid, pass->pw_gid);
-			
-			/* Save the users name */
-			C_user = strdup(user);
-			passwd_free(&pass);
-			return True;
 		}
+
+		/* Save the users name */
+		C_user = strdup(user);
+		return True;
 	}
-	
-err:
-	cgi_setup_error("401 Bad Authorization", 
-			"WWW-Authenticate: Basic realm=\"SWAT\"\r\n",
+
+  err:
+
+	/* Always take the same time. */
+	if (!got_name)
+		Get_Pwnam(default_user_lookup,False);
+
+	if (!tested_pass)
+		pass_check(default_user_lookup, default_user_pass,
+					strlen(default_user_pass), NULL, NULL);
+
+	cgi_setup_error("401 Bad Authorization", "", 
 			"username or password incorrect");
 
-	passwd_free(&pass);
 	return False;
 }
 
@@ -411,11 +442,10 @@ static void cgi_download(char *file)
 	char buf[1024];
 	int fd, l, i;
 	char *p;
-	char *lang;
 
 	/* sanitise the filename */
 	for (i=0;file[i];i++) {
-		if (!isalnum((int)file[i]) && !strchr_m("/.-_", file[i])) {
+		if (!isalnum((int)file[i]) && !strchr("/.-_", file[i])) {
 			cgi_setup_error("404 File Not Found","",
 					"Illegal character in filename");
 		}
@@ -425,14 +455,13 @@ static void cgi_download(char *file)
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
-
-	fd = web_open(file,O_RDONLY,0);
+	fd = sys_open(file,O_RDONLY,0);
 	if (fd == -1) {
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
 	printf("HTTP/1.0 200 OK\r\n");
-	if ((p=strrchr_m(file,'.'))) {
+	if ((p=strrchr(file,'.'))) {
 		if (strcmp(p,".gif")==0) {
 			printf("Content-Type: image/gif\r\n");
 		} else if (strcmp(p,".jpg")==0) {
@@ -445,11 +474,6 @@ static void cgi_download(char *file)
 	}
 	printf("Expires: %s\r\n", http_timestring(time(NULL)+EXPIRY_TIME));
 
-	lang = lang_tdb_current();
-	if (lang) {
-		printf("Content-Language: %s\r\n", lang);
-	}
-
 	printf("Content-Length: %d\r\n\r\n", (int)st.st_size);
 	while ((l=read(fd,buf,sizeof(buf)))>0) {
 		fwrite(buf, 1, l, stdout);
@@ -459,40 +483,26 @@ static void cgi_download(char *file)
 }
 
 
-
-
-/**
- * @brief Setup the CGI framework.
- *
- * Setup the cgi framework, handling the possibility that this program
- * is either run as a true CGI program with a gateway to a web server, or
- * is itself a mini web server.
- **/
+/***************************************************************************
+setup the cgi framework, handling the possability that this program is either
+run as a true cgi program by a web browser or is itself a mini web server
+  ***************************************************************************/
 void cgi_setup(const char *rootdir, int auth_required)
 {
 	BOOL authenticated = False;
 	char line[1024];
 	char *url=NULL;
 	char *p;
-	char *lang;
 
 	if (chdir(rootdir)) {
-		cgi_setup_error("500 Server Error", "",
+		cgi_setup_error("400 Server Error", "",
 				"chdir failed - the server is not configured correctly");
-	}
-
-	/* Handle the possibility we might be running as non-root */
-	sec_init();
-
-	if ((lang=getenv("HTTP_ACCEPT_LANGUAGE"))) {
-		/* if running as a cgi program */
-		web_set_lang(lang);
 	}
 
 	/* maybe we are running under a web server */
 	if (getenv("CONTENT_LENGTH") || getenv("REQUEST_METHOD")) {
 		if (auth_required) {
-			cgi_web_auth();
+			cgi_auth_error();
 		}
 		return;
 	}
@@ -500,7 +510,7 @@ void cgi_setup(const char *rootdir, int auth_required)
 	inetd_server = True;
 
 	if (!check_access(1, lp_hostsallow(-1), lp_hostsdeny(-1))) {
-		cgi_setup_error("403 Forbidden", "",
+		cgi_setup_error("400 Server Error", "",
 				"Samba is configured to deny access from this client\n<br>Check your \"hosts allow\" and \"hosts deny\" options in smb.conf ");
 	}
 
@@ -508,23 +518,21 @@ void cgi_setup(const char *rootdir, int auth_required)
 	   and handle authentication etc */
 	while (fgets(line, sizeof(line)-1, stdin)) {
 		if (line[0] == '\r' || line[0] == '\n') break;
-		if (strnequal(line,"GET ", 4)) {
+		if (strncasecmp(line,"GET ", 4)==0) {
 			got_request = True;
 			url = strdup(&line[4]);
-		} else if (strnequal(line,"POST ", 5)) {
+		} else if (strncasecmp(line,"POST ", 5)==0) {
 			got_request = True;
 			request_post = 1;
 			url = strdup(&line[5]);
-		} else if (strnequal(line,"PUT ", 4)) {
+		} else if (strncasecmp(line,"PUT ", 4)==0) {
 			got_request = True;
 			cgi_setup_error("400 Bad Request", "",
 					"This server does not accept PUT requests");
-		} else if (strnequal(line,"Authorization: ", 15)) {
+		} else if (strncasecmp(line,"Authorization: ", 15)==0) {
 			authenticated = cgi_handle_authorization(&line[15]);
-		} else if (strnequal(line,"Content-Length: ", 16)) {
+		} else if (strncasecmp(line,"Content-Length: ", 16)==0) {
 			content_length = atoi(&line[16]);
-		} else if (strnequal(line,"Accept-Language: ", 17)) {
-			web_set_lang(&line[17]);
 		}
 		/* ignore all other requests! */
 	}
@@ -539,15 +547,15 @@ void cgi_setup(const char *rootdir, int auth_required)
 	}
 
 	/* trim the URL */
-	if ((p = strchr_m(url,' ')) || (p=strchr_m(url,'\t'))) {
+	if ((p = strchr(url,' ')) || (p=strchr(url,'\t'))) {
 		*p = 0;
 	}
-	while (*url && strchr_m("\r\n",url[strlen(url)-1])) {
+	while (*url && strchr("\r\n",url[strlen(url)-1])) {
 		url[strlen(url)-1] = 0;
 	}
 
 	/* anything following a ? in the URL is part of the query string */
-	if ((p=strchr_m(url,'?'))) {
+	if ((p=strchr(url,'?'))) {
 		query_string = p+1;
 		*p = 0;
 	}
@@ -597,7 +605,7 @@ return the hostname of the client
 char *cgi_remote_host(void)
 {
 	if (inetd_server) {
-		return get_peer_name(1,False);
+		return get_socket_name(1);
 	}
 	return getenv("REMOTE_HOST");
 }
@@ -608,7 +616,7 @@ return the hostname of the client
 char *cgi_remote_addr(void)
 {
 	if (inetd_server) {
-		return get_peer_addr(1);
+		return get_socket_addr(1);
 	}
 	return getenv("REMOTE_ADDR");
 }

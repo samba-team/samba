@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    kernel oplock processing for Linux
    Copyright (C) Andrew Tridgell 2000
    
@@ -133,7 +134,7 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	fsp = file_find_fd(fd);
 	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
 	if (signals_received > 1)
-		memmove((void *)&fd_pending_array[0], (void *)&fd_pending_array[1],
+	memmove((void *)&fd_pending_array[0], (void *)&fd_pending_array[1],
 			sizeof(SIG_ATOMIC_T)*(signals_received-1));
 	signals_received--;
 	/* now we can receive more signals */
@@ -226,8 +227,8 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 {
 	/* Ensure that the msg length is correct. */
 	if (msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN) {
-		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %lu).\n", 
-			 msg_len, (unsigned long)KERNEL_OPLOCK_BREAK_MSG_LEN));
+		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %d).\n", 
+			 msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
 		return False;
 	}
 
@@ -279,12 +280,9 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 		return NULL;
 	}
 
-	ZERO_STRUCT(act);
-
 	act.sa_handler = NULL;
 	act.sa_sigaction = signal_handler;
 	act.sa_flags = SA_SIGINFO;
-	sigemptyset( &act.sa_mask );
 	if (sigaction(RT_SIGNAL_LEASE, &act, NULL) != 0) {
 		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler\n"));
 		return NULL;
@@ -296,9 +294,6 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	koplocks.parse_message = linux_kernel_oplock_parse;
 	koplocks.msg_waiting = linux_oplock_msg_waiting;
 	koplocks.notification_fd = -1;
-
-	/* the signal can start off blocked due to a bug in bash */
-	BlockSignals(False, RT_SIGNAL_LEASE);
 
 	DEBUG(3,("Linux kernel oplocks enabled\n"));
 

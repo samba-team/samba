@@ -3,7 +3,7 @@ samba PMDA
 
 This PMDA is a sample that illustrates how a simple samba monitor
 PMDA might be constructed, using a shared memory segment to transfer
-information about transaction activity from the smb daemon.
+information about transaction activity from the smb and nmbd daemons.
 
 Note:
 	This PMDA may be remade from source and hence requires 
@@ -77,11 +77,14 @@ De-installation
 Making something happen
 =======================
 
-The application "smbd" updates the shared memory segment to add
-profile information about smbd. By default updating is disabled.
+Samba must have been compiled with profiling data collection enabled.
+Use the --with-profiling-data option for configure to enable this feature.
+
+The applications "nmbd" and "smbd" update the shared memory segment to add
+profile information about nmbd and smbd. By default updating is disabled.
 To start updating of the shared memory segment you need to run the
-smbcontrol command to turn on profiling for one or more smbd processes
-(see the man page for smbcontrol).
+smbcontrol command to turn on profiling for nmbd or one or more smbd 
+processes (see the man page for smbcontrol).
 
 
 

@@ -18,7 +18,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "includes.h"
 #include "printing.h"
 
 #ifdef HAVE_CUPS
@@ -333,7 +332,7 @@ int cups_printername_ok(const char *name)
 
 	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
 	{
-		DEBUG(3,("Unable to connect to CUPS server %s - %s\n", 
+		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cupsServer(), strerror(errno)));
 		return (0);
 	}
@@ -375,7 +374,7 @@ int cups_printername_ok(const char *name)
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL)
 	{
-		DEBUG(3,("Unable to get printer status for %s - %s\n", name,
+		DEBUG(0,("Unable to get printer status for %s - %s\n", name,
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
 		return (0);
@@ -385,7 +384,7 @@ int cups_printername_ok(const char *name)
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT)
 	{
-		DEBUG(3,("Unable to get printer status for %s - %s\n", name,
+		DEBUG(0,("Unable to get printer status for %s - %s\n", name,
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		return (0);
@@ -681,10 +680,7 @@ cups_job_submit(int snum, struct printjob *pjob)
 			*response;	/* IPP Response */
 	cups_lang_t	*language;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	char 		*clientname; 	/* hostname of client for job-originating-host attribute */
-	pstring		new_jobname;
-	int		num_options = 0; 
-	cups_option_t 	*options;
+
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -738,31 +734,12 @@ cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, pjob->user);
 
-	clientname = client_name();
-	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr();
-	}
-
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
 	             "job-originating-host-name", NULL,
-		      clientname);
-
-        pstr_sprintf(new_jobname,"%s%.8u %s", PRINT_SPOOL_PREFIX, 
-		(unsigned int)pjob->smbjob, pjob->jobname);
+		     get_remote_machine_name());
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
-        	     new_jobname);
-
-	/* 
-	 * add any options defined in smb.conf 
-	 */
-
-	num_options = 0;
-	options     = NULL;
-	num_options = cupsParseOptions(lp_cups_options(snum), num_options, &options);
-
-	if ( num_options )
-		cupsEncodeOptions(request, num_options, options); 
+        	     pjob->jobname);
 
        /*
 	* Do the request and get back a response...
@@ -794,6 +771,7 @@ cups_job_submit(int snum, struct printjob *pjob)
 
 	return (ret);
 }
+
 
 /*
  * 'cups_queue_get()' - Get all the jobs in the print queue.

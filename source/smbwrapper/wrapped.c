@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    SMB wrapper functions
    Copyright (C) Andrew Tridgell 1998
    
@@ -461,6 +462,13 @@
 #endif
 
 #ifdef HAVE_UTIMES
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
  int utimes(const char *name, const struct timeval *tvp)
 {
 	if (smbw_path(name)) {

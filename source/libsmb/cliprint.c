@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    client print routines
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -55,7 +56,7 @@ int cli_print_queue(struct cli_state *cli,
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	unsigned int rdrcnt, rprcnt;
+	int rdrcnt, rprcnt;
 	pstring param;
 	int result_code=0;
 	int i = -1;
@@ -65,16 +66,16 @@ int cli_print_queue(struct cli_state *cli,
 	p = param;
 	SSVAL(p,0,76);         /* API function number 76 (DosPrintJobEnum) */
 	p += 2;
-	pstrcpy_base(p,"zWrLeh", param);   /* parameter description? */
+	pstrcpy(p,"zWrLeh");   /* parameter description? */
 	p = skip_string(p,1);
-	pstrcpy_base(p,"WWzWWDDzz", param);  /* returned data format */
+	pstrcpy(p,"WWzWWDDzz");  /* returned data format */
 	p = skip_string(p,1);
-	pstrcpy_base(p,cli->share, param);    /* name of queue */
+	pstrcpy(p,cli->share);    /* name of queue */
 	p = skip_string(p,1);
 	SSVAL(p,0,2);   /* API function level 2, PRJINFO_2 data structure */
 	SSVAL(p,2,1000); /* size of bytes of returned data buffer */
 	p += 4;
-	pstrcpy_base(p,"", param);   /* subformat */
+	pstrcpy(p,"");   /* subformat */
 	p = skip_string(p,1);
 
 	DEBUG(4,("doing cli_print_queue for %s\n", cli->share));
@@ -125,8 +126,7 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	unsigned int rdrcnt,rprcnt;
-	int ret = -1;
+	int rdrcnt,rprcnt, ret = -1;
 	pstring param;
 
 	memset(param,'\0',sizeof(param));
@@ -134,9 +134,9 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	p = param;
 	SSVAL(p,0,81);		/* DosPrintJobDel() */
 	p += 2;
-	pstrcpy_base(p,"W", param);
+	pstrcpy(p,"W");
 	p = skip_string(p,1);
-	pstrcpy_base(p,"", param);
+	pstrcpy(p,"");
 	p = skip_string(p,1);
 	SSVAL(p,0,job);     
 	p += 2;

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    a implementation of MD4 designed for use in the SMB authentication protocol
    Copyright (C) Andrew Tridgell 1997-1998.
    
@@ -100,7 +101,7 @@ static void mdfour64(uint32 *M)
 		X[j] = 0;
 }
 
-static void copy64(uint32 *M, const unsigned char *in)
+static void copy64(uint32 *M, unsigned char *in)
 {
 	int i;
 
@@ -109,7 +110,7 @@ static void copy64(uint32 *M, const unsigned char *in)
 			(in[i*4+1]<<8) | (in[i*4+0]<<0);
 }
 
-static void copy4(unsigned char *out, uint32 x)
+static void copy4(unsigned char *out,uint32 x)
 {
 	out[0] = x&0xFF;
 	out[1] = (x>>8)&0xFF;
@@ -118,7 +119,7 @@ static void copy4(unsigned char *out, uint32 x)
 }
 
 /* produce a md4 message digest from data of length n bytes */
-void mdfour(unsigned char *out, const unsigned char *in, int n)
+void mdfour(unsigned char *out, unsigned char *in, int n)
 {
 	unsigned char buf[128];
 	uint32 M[16];

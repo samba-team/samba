@@ -3,10 +3,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Gerald Carter                2001-2002,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
+ *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  Copyright (C) Jeremy Allison					2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,9 +22,6 @@
  */
 
 #include "includes.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
 
 /********************************************************************
  * api_spoolss_open_printer_ex (rarely seen - older call)
@@ -141,7 +136,7 @@ static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u );
+	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u);
 
 	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
@@ -1026,7 +1021,7 @@ static BOOL api_spoolss_reset_printer(pipes_struct *p)
 	}
 	
 	r_u.status = _spoolss_resetprinter(p, &q_u, &r_u);
-
+				
 	if(!spoolss_io_r_resetprinter("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setprinterdata: unable to marshall SPOOL_R_RESETPRINTER.\n"));
 		return False;
@@ -1404,184 +1399,12 @@ static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 	return True;
 }
 
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_deleteprinterdataex(pipes_struct *p)
-{
-	SPOOL_Q_DELETEPRINTERDATAEX q_u;
-	SPOOL_R_DELETEPRINTERDATAEX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteprinterdataex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterdataex: unable to unmarshall SPOOL_Q_DELETEPRINTERDATAEX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterdataex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_deleteprinterdataex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterdataex: unable to marshall SPOOL_R_DELETEPRINTERDATAEX.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_deleteprinterkey(pipes_struct *p)
-{
-	SPOOL_Q_DELETEPRINTERKEY q_u;
-	SPOOL_R_DELETEPRINTERKEY r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteprinterkey("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterkey: unable to unmarshall SPOOL_Q_DELETEPRINTERKEY.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterkey(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_deleteprinterkey("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterkey: unable to marshall SPOOL_R_DELETEPRINTERKEY.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_addprinterdriverex(pipes_struct *p)
-{
-	SPOOL_Q_ADDPRINTERDRIVEREX q_u;
-	SPOOL_R_ADDPRINTERDRIVEREX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_addprinterdriverex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_addprinterdriverex: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_addprinterdriverex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_addprinterdriverex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_addprinterdriverex: unable to marshall SPOOL_R_ADDPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_deleteprinterdriverex(pipes_struct *p)
-{
-	SPOOL_Q_DELETEPRINTERDRIVEREX q_u;
-	SPOOL_R_DELETEPRINTERDRIVEREX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteprinterdriverex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterdriverex: unable to unmarshall SPOOL_Q_DELETEPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterdriverex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_deleteprinterdriverex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterdriverex: unable to marshall SPOOL_R_DELETEPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-#if 0
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_replyopenprinter(pipes_struct *p)
-{
-	SPOOL_Q_REPLYOPENPRINTER q_u;
-	SPOOL_R_REPLYOPENPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_replyopenprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_replyopenprinter: unable to unmarshall SPOOL_Q_REPLYOPENPRINTER.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_replyopenprinter(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_replyopenprinter("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_replyopenprinter: unable to marshall SPOOL_R_REPLYOPENPRINTER.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
-{
-	SPOOL_Q_REPLYCLOSEPRINTER q_u;
-	SPOOL_R_REPLYCLOSEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_replycloseprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_replycloseprinter: unable to unmarshall SPOOL_Q_REPLYCLOSEPRINTER.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_replycloseprinter(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_replycloseprinter("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_replycloseprinter: unable to marshall SPOOL_R_REPLYCLOSEPRINTER.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-#endif
-
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
 
-  struct api_struct api_spoolss_cmds[] = 
-    {
+struct api_struct api_spoolss_cmds[] = 
+{
  {"SPOOLSS_OPENPRINTER",               SPOOLSS_OPENPRINTER,               api_spoolss_open_printer              },
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },
@@ -1626,27 +1449,16 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
  {"SPOOLSS_ENUMPRINTPROCDATATYPES",    SPOOLSS_ENUMPRINTPROCDATATYPES,    api_spoolss_enumprintprocdatatypes    },
  {"SPOOLSS_GETPRINTERDATAEX",          SPOOLSS_GETPRINTERDATAEX,          api_spoolss_getprinterdataex          },
  {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
- {"SPOOLSS_DELETEPRINTERDATAEX",       SPOOLSS_DELETEPRINTERDATAEX,       api_spoolss_deleteprinterdataex       },
- {"SPOOLSS_ENUMPRINTERDATAEX",         SPOOLSS_ENUMPRINTERDATAEX,         api_spoolss_enumprinterdataex         },
  {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
- {"SPOOLSS_DELETEPRINTERKEY",          SPOOLSS_DELETEPRINTERKEY,          api_spoolss_deleteprinterkey          },
+ {"SPOOLSS_ENUMPRINTERDATAEX",         SPOOLSS_ENUMPRINTERDATAEX,         api_spoolss_enumprinterdataex         },
  {"SPOOLSS_GETPRINTPROCESSORDIRECTORY",SPOOLSS_GETPRINTPROCESSORDIRECTORY,api_spoolss_getprintprocessordirectory},
- {"SPOOLSS_ADDPRINTERDRIVEREX",        SPOOLSS_ADDPRINTERDRIVEREX,        api_spoolss_addprinterdriverex        },
- {"SPOOLSS_DELETEPRINTERDRIVEREX",     SPOOLSS_DELETEPRINTERDRIVEREX,     api_spoolss_deleteprinterdriverex     },
-#if 0
- {"SPOOLSS_REPLYOPENPRINTER",          SPOOLSS_REPLYOPENPRINTER,          api_spoolss_replyopenprinter          },
- {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         }
-#endif
-    };
+ { NULL,                               0,                                 NULL                                  }
+};
 
-void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
+/*******************************************************************
+receives a spoolss pipe and responds.
+********************************************************************/
+BOOL api_spoolss_rpc(pipes_struct *p)
 {
-	*fns = api_spoolss_cmds;
-	*n_fns = sizeof(api_spoolss_cmds) / sizeof(struct api_struct);
-}
-
-NTSTATUS rpc_spoolss_init(void)
-{
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss", api_spoolss_cmds,
-				    sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
+	return api_rpcTNP(p, "api_spoolss_rpc", api_spoolss_cmds);
 }

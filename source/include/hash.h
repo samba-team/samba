@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
 
    Copyright (C) Ying Chen 2000.
    
@@ -66,8 +67,8 @@ typedef struct hash_element {
 typedef struct hash_table {
         ubi_dlList      *buckets;
         ubi_dlList      lru_chain;     
-        unsigned     num_elements;	
-        unsigned     size;
+        int     num_elements;	
+        int     size;
         compare_function        comp_func; 
 } hash_table;
 

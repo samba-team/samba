@@ -1,8 +1,8 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    NBT client - used to lookup netbios names
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Jelmer Vernooij 2003 (Conversion to popt)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,6 +55,31 @@ static BOOL open_sockets(void)
   return True;
 }
 
+
+/****************************************************************************
+usage on the program
+****************************************************************************/
+static void usage(void)
+{
+  printf("Usage: nmblookup [-M] [-B bcast address] [-d debuglevel] name\n");
+  printf("Version %s\n",VERSION);
+  printf("\t-d debuglevel         set the debuglevel\n");
+  printf("\t-B broadcast address  the address to use for broadcasts\n");
+  printf("\t-f                    lists flags returned from a name query\n");
+  printf("\t-U unicast   address  the address to use for unicast\n");
+  printf("\t-M                    searches for a master browser\n");
+  printf("\t-R                    set recursion desired in packet\n");
+  printf("\t-S                    lookup node status as well\n");
+  printf("\t-T                    translate IP addresses into names\n");
+  printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
+  printf("\t-A                    Do a node status on <name> as an IP Address\n");
+  printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
+  printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
+  printf("\t-h                    Print this help message.\n");
+  printf("\n  If you specify -M and name is \"-\", nmblookup looks up __MSBROWSE__<01>\n");
+  printf("\n");
+}
+
 /****************************************************************************
 turn a node status flags field into a string
 ****************************************************************************/
@@ -97,73 +122,73 @@ static char *query_flags(int flags)
 /****************************************************************************
 do a node status query
 ****************************************************************************/
-static void do_node_status(int fd, const char *name, int type, struct in_addr ip)
+static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 {
 	struct nmb_name nname;
 	int count, i, j;
 	struct node_status *status;
 	fstring cleanname;
 
-	d_printf("Looking up status of %s\n",inet_ntoa(ip));
+	printf("Looking up status of %s\n",inet_ntoa(ip));
 	make_nmb_name(&nname, name, type);
 	status = node_status_query(fd,&nname,ip, &count);
 	if (status) {
 		for (i=0;i<count;i++) {
-			pull_ascii_fstring(cleanname, status[i].name);
+			fstrcpy(cleanname, status[i].name);
 			for (j=0;cleanname[j];j++) {
 				if (!isprint((int)cleanname[j])) cleanname[j] = '.';
 			}
-			d_printf("\t%-15s <%02x> - %s\n",
+			printf("\t%-15s <%02x> - %s\n",
 			       cleanname,status[i].type,
 			       node_status_flags(status[i].flags));
 		}
 		SAFE_FREE(status);
 	}
-	d_printf("\n");
+	printf("\n");
 }
 
 
 /****************************************************************************
 send out one query
 ****************************************************************************/
-static BOOL query_one(const char *lookup, unsigned int lookup_type)
+static BOOL query_one(char *lookup, unsigned int lookup_type)
 {
-	int j, count, flags = 0;
+	int j, count, flags;
 	struct in_addr *ip_list=NULL;
 
 	if (got_bcast) {
-		d_printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
+		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
 		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
-				     bcast_addr,&count, &flags, NULL);
+				     bcast_addr,&count, &flags);
 	} else {
 		struct in_addr *bcast;
 		for (j=iface_count() - 1;
 		     !ip_list && j >= 0;
 		     j--) {
 			bcast = iface_n_bcast(j);
-			d_printf("querying %s on %s\n", 
+			printf("querying %s on %s\n", 
 			       lookup, inet_ntoa(*bcast));
 			ip_list = name_query(ServerFD,lookup,lookup_type,
 					     use_bcast,
 					     use_bcast?True:recursion_desired,
-					     *bcast,&count, &flags, NULL);
+					     *bcast,&count, &flags);
 		}
 	}
 
-	if (!ip_list) return False;
-
 	if (give_flags)
-	  d_printf("Flags: %s\n", query_flags(flags));
+		printf("Flags: %s\n", query_flags(flags));
+
+	if (!ip_list) return False;
 
 	for (j=0;j<count;j++) {
 		if (translate_addresses) {
 			struct hostent *host = gethostbyaddr((char *)&ip_list[j], sizeof(ip_list[j]), AF_INET);
 			if (host) {
-				d_printf("%s, ", host -> h_name);
+				printf("%s, ", host -> h_name);
 			}
 		}
-		d_printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
+		printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
 	}
 
 	/* We can only do find_status if the ip address returned
@@ -186,107 +211,131 @@ int main(int argc,char *argv[])
 {
   int opt;
   unsigned int lookup_type = 0x0;
-  fstring lookup;
-  static BOOL find_master=False;
-  static BOOL lookup_by_ip = False;
-  poptContext pc;
+  pstring lookup;
+  extern int optind;
+  extern char *optarg;
+  BOOL find_master=False;
+  int i;
+  static pstring servicesf = CONFIGFILE;
+  BOOL lookup_by_ip = False;
 
-  struct poptOption long_options[] = {
-	  POPT_AUTOHELP
-	  { "broadcast", 'B', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
-	  { "flags", 'f', POPT_ARG_VAL, &give_flags, True, "List the NMB flags returned" },
-	  { "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
-	  { "master-browser", 'M', POPT_ARG_VAL, &find_master, True, "Search for a master browser" },
-	  { "recursion", 'R', POPT_ARG_VAL, &recursion_desired, True, "Set recursion desired in package" },
-	  { "status", 'S', POPT_ARG_VAL, &find_status, True, "Lookup node status as well" },
-	  { "translate", 'T', POPT_ARG_NONE, NULL, 'T', "Translate IP addresses into names" },
-	  { "root-port", 'r', POPT_ARG_VAL, &RootPort, True, "Use root port 137 (Win95 only replies to this)" },
-	  { "lookup-by-ip", 'A', POPT_ARG_VAL, &lookup_by_ip, True, "Do a node status on <name> as an IP Address" },
-	  POPT_COMMON_SAMBA
-	  POPT_COMMON_CONNECTION
-	  { 0, 0, 0, 0 }
-  };
-	
+  DEBUGLEVEL = 1;
+  /* Prevent smb.conf setting from overridding */
+  AllowDebugChange = False;
+
   *lookup = 0;
+
+  TimeInit();
 
   setup_logging(argv[0],True);
 
-  pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
-					  POPT_CONTEXT_KEEP_FIRST);
+  charset_initialise();
 
-  poptSetOtherOptionHelp(pc, "<NODE> ...");
+  while ((opt = getopt(argc, argv, "d:fB:U:i:s:SMrhART")) != EOF)
+    switch (opt)
+      {
+      case 'B':
+	bcast_addr = *interpret_addr2(optarg);
+	got_bcast = True;
+	use_bcast = True;
+	break;
+      case 'f':
+	give_flags = True;
+	break;
+      case 'U':
+	bcast_addr = *interpret_addr2(optarg);
+	got_bcast = True;
+	use_bcast = False;
+	break;
+      case 'T':
+        translate_addresses = !translate_addresses;
+	break;
+      case 'i':
+	      {
+		      extern pstring global_scope;
+		      pstrcpy(global_scope,optarg);
+		      strupper(global_scope);
+	      }
+	      break;
+      case 'M':
+	find_master = True;
+	break;
+      case 'S':
+	find_status = True;
+	break;
+      case 'R':
+	recursion_desired = True;
+	break;
+      case 'd':
+	DEBUGLEVEL = atoi(optarg);
+	break;
+      case 's':
+	pstrcpy(servicesf, optarg);
+	break;
+      case 'r':
+        RootPort = True;
+        break;
+      case 'h':
+	usage();
+	exit(0);
+	break;
+      case 'A':
+        lookup_by_ip = True;
+        break;
+      default:
+	usage();
+	exit(1);
+      }
 
-  while ((opt = poptGetNextOpt(pc)) != -1) {
-	  switch (opt) {
-	  case 'B':
-		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
-		  got_bcast = True;
-		  use_bcast = True;
-		  break;
-	  case 'U':
-		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
-		  got_bcast = True;
-		  use_bcast = False;
-		  break;
-	  case 'T':
-		  translate_addresses = !translate_addresses;
-		  break;
-	  }
+  if (argc < 2) {
+    usage();
+    exit(1);
   }
 
-  poptGetArg(pc); /* Remove argv[0] */
-
-  if(!poptPeekArg(pc)) { 
-	  poptPrintUsage(pc, stderr, 0);
-	  exit(1);
-  }
-
-  if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-	  fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+  if (!lp_load(servicesf,True,False,False)) {
+    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
 
   load_interfaces();
   if (!open_sockets()) return(1);
 
-  while(poptPeekArg(pc))
+  for (i=optind;i<argc;i++)
   {
-	  char *p;
-	  struct in_addr ip;
+      char *p;
+      struct in_addr ip;
 
-	  fstrcpy(lookup,poptGetArg(pc));
+      fstrcpy(lookup,argv[i]);
 
-	  if(lookup_by_ip)
-	  {
-		  ip = *interpret_addr2(lookup);
-		  fstrcpy(lookup,"*");
-		  do_node_status(ServerFD, lookup, lookup_type, ip);
-		  continue;
-	  }
+      if(lookup_by_ip)
+      {
+        fstrcpy(lookup,"*");
+        ip = *interpret_addr2(argv[i]);
+	do_node_status(ServerFD, lookup, lookup_type, ip);
+        continue;
+      }
 
-	  if (find_master) {
-		  if (*lookup == '-') {
-			  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
-			  lookup_type = 1;
-		  } else {
-			  lookup_type = 0x1d;
-		  }
-	  }
+      if (find_master) {
+	if (*lookup == '-') {
+	  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
+	  lookup_type = 1;
+	} else {
+	  lookup_type = 0x1d;
+	}
+      }
 
-	  p = strchr_m(lookup,'#');
-	  if (p) {
-		  *p = '\0';
-		  sscanf(++p,"%x",&lookup_type);
-	  }
+      p = strchr(lookup,'#');
+      if (p) {
+        *p = '\0';
+        sscanf(++p,"%x",&lookup_type);
+      }
 
-	  if (!query_one(lookup, lookup_type)) {
-		  d_printf( "name_query failed to find name %s", lookup );
-		  if( 0 != lookup_type )
-			  d_printf( "#%02x", lookup_type );
-		  d_printf( "\n" );
-	  }
+      if (!query_one(lookup, lookup_type)) {
+	printf( "name_query failed to find name %s", lookup );
+        if( 0 != lookup_type )
+          printf( "#%02x", lookup_type );
+        printf( "\n" );
+      }
   }
-
-  poptFreeContext(pc);
-
+  
   return(0);
 }

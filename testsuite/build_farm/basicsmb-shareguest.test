@@ -14,7 +14,8 @@ test_listfilesguestshare() {
 	return 0
 }
 
+password=samba
 security=SHARE
-( test_smb_conf_setup ) || exit 1
+( test_smb_conf_setup && ( test_smbpasswd $password ) ) || exit 1
 
 ( test_listfilesguestshare $security ) || exit 1

@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    simple bitmap functions
    Copyright (C) Andrew Tridgell 1992-1998
 
@@ -21,7 +22,8 @@
 #include "includes.h"
 
 /* these functions provide a simple way to allocate integers from a
-   pool without repetition */
+   pool without repitition */
+
 
 /****************************************************************************
 allocate a bitmap of the specified size
@@ -57,44 +59,6 @@ void bitmap_free(struct bitmap *bm)
 
 	SAFE_FREE(bm->b);
 	SAFE_FREE(bm);
-}
-
-/****************************************************************************
-talloc a bitmap
-****************************************************************************/
-struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
-{
-	struct bitmap *bm;
-
-	if (!mem_ctx) return NULL;
-
-	bm = (struct bitmap *)talloc(mem_ctx, sizeof(*bm));
-
-	if (!bm) return NULL;
-	
-	bm->n = n;
-	bm->b = (uint32 *)talloc(mem_ctx, sizeof(bm->b[0])*(n+31)/32);
-	if (!bm->b) {
-		return NULL;
-	}
-
-	memset(bm->b, 0, sizeof(bm->b[0])*(n+31)/32);
-
-	return bm;
-}
-
-/****************************************************************************
-copy as much of the source bitmap as will fit in the destination bitmap.
-****************************************************************************/
-
-int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src)
-{
-        int count = MIN(dst->n, src->n);
-
-        SMB_ASSERT(dst->b != src->b);
-	memcpy(dst->b, src->b, sizeof(dst->b[0])*(count+31)/32);
-
-        return count;
 }
 
 /****************************************************************************
@@ -143,7 +107,7 @@ wraparound
 ****************************************************************************/
 int bitmap_find(struct bitmap *bm, unsigned ofs)
 {
-	unsigned int i, j;
+	int i, j;
 
 	if (ofs > bm->n) ofs = 0;
 

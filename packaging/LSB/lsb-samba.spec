@@ -1,13 +1,11 @@
 #
-# "$Id: lsb-samba.spec,v 1.2 2001/07/03 01:01:12 jra Exp $"
-#
 #   Linux Standards Based RPM "spec" file for SAMBA.
 #
 
 Summary: SAMBA
 Name: lsb-samba
-Version: 2.2.1
-Release: 0
+Version: PVERSION
+Release: PRELEASE
 Copyright: GPL
 Group: System Environment/Daemons
 Source: ftp://ftp.samba.org/pub/samba/samba-%{version}.tar.gz
@@ -96,5 +94,4 @@ rm -rf $RPM_BUILD_ROOT
 %dir /var/log/samba
 
 #
-# End of "$Id: lsb-samba.spec,v 1.2 2001/07/03 01:01:12 jra Exp $".
 #

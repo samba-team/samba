@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Files[] structure handling
    Copyright (C) Andrew Tridgell 1998
    
@@ -143,22 +144,6 @@ void file_close_conn(connection_struct *conn)
 }
 
 /****************************************************************************
- Close all open files for a pid.
-****************************************************************************/
-
-void file_close_pid(uint16 smbpid)
-{
-	files_struct *fsp, *next;
-	
-	for (fsp=Files;fsp;fsp=next) {
-		next = fsp->next;
-		if (fsp->file_pid == smbpid) {
-			close_file(fsp,False); 
-		}
-	}
-}
-
-/****************************************************************************
  Initialise file structures.
 ****************************************************************************/
 
@@ -213,18 +198,6 @@ void file_close_user(int vuid)
 		if (fsp->vuid == vuid) {
 			close_file(fsp,False);
 		}
-	}
-}
-
-void file_dump_open_table(void)
-{
-	int count=0;
-	files_struct *fsp;
-
-	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, fileid = %lu, dev = %x, inode = %.0f\n",
-			count, fsp->fnum, fsp->fsp_name, fsp->fd, (unsigned long)fsp->file_id,
-			(unsigned int)fsp->dev, (double)fsp->inode ));
 	}
 }
 
@@ -374,10 +347,6 @@ void file_free(files_struct *fsp)
 
 	string_free(&fsp->fsp_name);
 
-	if (fsp->fake_file_handle) {
-		destroy_fake_file_handle(&fsp->fake_file_handle);
-	}
-
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
 
@@ -405,8 +374,6 @@ files_struct *file_fsp(char *buf, int where)
 	if (chain_fsp)
 		return chain_fsp;
 
-	if (!buf)
-		return NULL;
 	fnum = SVAL(buf, where);
 
 	for (fsp=Files;fsp;fsp=fsp->next, count++) {

@@ -1,13 +1,11 @@
 /* 
-   Unix SMB/CIFS implementation.
-   SMB parameters and setup, plus a whole lot more.
-   
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000
-   Copyright (C) John H Terpstra              1996-2002
+   Copyright (C) John H Terpstra              1996-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
-   Copyright (C) Simo Sorce                   2001-2002
-   Copyright (C) Martin Pool		      2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,15 +36,11 @@
 
 #define NMB_PORT 137
 #define DGRAM_PORT 138
-#define SMB_PORT1 445
-#define SMB_PORT2 139
-#define SMB_PORTS "445 139"
+#define SMB_PORT 139
 
-#define Undefined (-1)
 #define False (0)
 #define True (1)
 #define Auto (2)
-#define Required (3)
 
 #ifndef _BOOL
 typedef int BOOL;
@@ -64,11 +58,11 @@ typedef int BOOL;
 
 /* string manipulation flags - see clistr.c and srvstr.c */
 #define STR_TERMINATE 1
-#define STR_UPPER 2
-#define STR_ASCII 4
-#define STR_UNICODE 8
-#define STR_NOALIGN 16
-#define STR_TERMINATE_ASCII 128
+#define STR_CONVERT 2
+#define STR_UPPER 4
+#define STR_ASCII 8
+#define STR_UNICODE 16
+#define STR_NOALIGN 32
 
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
@@ -80,19 +74,25 @@ typedef int BOOL;
 #define READ_TIMEOUT 1
 #define READ_EOF 2
 #define READ_ERROR 3
-#define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
-#define READ_BAD_SIG 5
-#define DO_NOT_DO_TDIS 6 /* cli_close_connection() check for this when smbfs wants to keep tree connected */
+
+/* This error code can go into the client smb_rw_error. */
+#define WRITE_ERROR 4
 
 #define DIR_STRUCT_SIZE 43
 
+/* these define all the command types recognised by the server - there
+are lots of gaps so probably there are some rare commands that are not
+implemented */
+
+#define pSETDIR '\377'
+
 /* these define the attribute byte as seen by DOS */
-#define aRONLY (1L<<0)		/* 0x01 */
-#define aHIDDEN (1L<<1)		/* 0x02 */
-#define aSYSTEM (1L<<2)		/* 0x04 */
-#define aVOLID (1L<<3)		/* 0x08 */
-#define aDIR (1L<<4)		/* 0x10 */
-#define aARCH (1L<<5)		/* 0x20 */
+#define aRONLY (1L<<0)          /* 0x01 */
+#define aHIDDEN (1L<<1)         /* 0x02 */
+#define aSYSTEM (1L<<2)         /* 0x04 */
+#define aVOLID (1L<<3)          /* 0x08 */
+#define aDIR (1L<<4)            /* 0x10 */
+#define aARCH (1L<<5)           /* 0x20 */
 
 /* deny modes */
 #define DENY_DOS 0
@@ -157,10 +157,17 @@ typedef int BOOL;
 
 #include "doserr.h"
 
-typedef union unid_t {
-	uid_t uid;
-	gid_t gid;
-} unid_t;
+#ifndef _PSTRING
+
+#define PSTRING_LEN 1024
+#define FSTRING_LEN 256
+
+typedef char pstring[PSTRING_LEN];
+typedef char fstring[FSTRING_LEN];
+
+#define _PSTRING
+
+#endif
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
@@ -171,15 +178,6 @@ typedef uint16 smb_ucs2_t;
 /* ucs2 string types. */
 typedef smb_ucs2_t wpstring[PSTRING_LEN];
 typedef smb_ucs2_t wfstring[FSTRING_LEN];
-
-#ifdef WORDS_BIGENDIAN
-#define UCS2_SHIFT 8
-#else
-#define UCS2_SHIFT 0
-#endif
-
-/* turn a 7 bit character into a ucs2 character */
-#define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -194,33 +192,54 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 #define PIPE_SPOOLSS  "\\PIPE\\spoolss"
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
-#define PIPE_ECHO     "\\PIPE\\rpcecho"
-#define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPM      "\\PIPE\\epmapper"
-
-#define PIPE_NETLOGON_PLAIN "\\NETLOGON"
-
-#define PI_LSARPC		0
-#define PI_LSARPC_DS		1
-#define PI_SAMR			2
-#define PI_NETLOGON		3
-#define PI_SRVSVC		4
-#define PI_WKSSVC		5
-#define PI_WINREG		6
-#define PI_SPOOLSS		7
-#define PI_NETDFS		8
-#define PI_ECHO 		9
-#define PI_SHUTDOWN		10
-#define PI_EPM			11
-#define PI_MAX_PIPES		12
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
 {
   uint32 low;
   uint32 high;
+
 } NTTIME;
 
+#ifndef TIME_T_MIN
+#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
+                    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
+#endif
+#ifndef TIME_T_MAX
+#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
+#endif
+
+
+/* the following rather strange looking definitions of NTSTATUS and WERROR
+   and there in order to catch common coding errors where different error types
+   are mixed up. This is especially important as we slowly convert Samba
+   from using BOOL for internal functions
+*/
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} NTSTATUS;
+#define NT_STATUS(x) ((NTSTATUS) { x })
+#define NT_STATUS_V(x) ((x).v)
+#else
+typedef uint32 NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
+ 
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} WERROR;
+#define W_ERROR(x) ((WERROR) { x })
+#define W_ERROR_V(x) ((x).v)
+#else
+typedef uint32 WERROR;
+#define W_ERROR(x) (x)
+#define W_ERROR_V(x) (x)
+#endif
+ 
+#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
+#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
+#define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
+#define W_ERROR_EQUAL(x,y) (W_ERROR_V(x) == W_ERROR_V(y))
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
@@ -237,54 +256,52 @@ typedef struct nttime_info
  
 #define MAX_HOURS_LEN 32
 
-/* 
- * window during which we must talk to the PDC to avoid
- * sam sync delays; expressed in seconds (15 minutes is the 
- * default period for SAM replication under Windows NT 4.0
- */
-#define SAM_SYNC_WINDOW		900
 
+struct sam_disp_info
+{
+	uint32 user_rid;      /* Primary User ID */
+	char *smb_name;     /* username string */
+	char *full_name;    /* user's full name string */
+};
+
+typedef struct
+{
+        uint32 pid;
+        uint16 vuid;
+
+}
+vuser_key;
+
+
+struct use_info
+{
+	BOOL connected;
+	char *srv_name;
+	vuser_key key;
+	char *user_name;
+	char *domain;
+};
 
 #ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif
 
-#define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
-
-/* SID Types */
-enum SID_NAME_USE
-{
-	SID_NAME_USE_NONE = 0,
-	SID_NAME_USER    = 1, /* user */
-	SID_NAME_DOM_GRP,     /* domain group */
-	SID_NAME_DOMAIN,      /* domain sid */
-	SID_NAME_ALIAS,       /* local group */
-	SID_NAME_WKN_GRP,     /* well-known group */
-	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
-	SID_NAME_INVALID,     /* invalid account */
-	SID_NAME_UNKNOWN,     /* unknown sid type */
-	SID_NAME_COMPUTER     /* sid for a computer */
-};
-
-/**
- * @brief Security Identifier
- *
- * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
- **/
+#ifndef _DOM_SID
+/* DOM_SID - security id */
 typedef struct sid_info
 {
-  uint8  sid_rev_num;             /**< SID revision number */
-  uint8  num_auths;               /**< Number of sub-authorities */
-  uint8  id_auth[6];              /**< Identifier Authority */
+  uint8  sid_rev_num;             /* SID revision number */
+  uint8  num_auths;               /* number of sub-authorities */
+  uint8  id_auth[6];              /* Identifier Authority */
   /*
-   *  Pointer to sub-authorities.
-   *
-   * @note The values in these uint32's are in *native* byteorder, not
-   * neccessarily little-endian...... JRA.
+   * Note that the values in these uint32's are in *native* byteorder,
+   * not neccessarily little-endian...... JRA.
    */
-  uint32 sub_auths[MAXSUBAUTHS];  
+  uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
 
 } DOM_SID;
+#define _DOM_SID
+#endif
 
 /*
  * The complete list of SIDS belonging to this user.
@@ -293,16 +310,19 @@ typedef struct sid_info
  *
  * token->user_sids[0] = primary user SID.
  * token->user_sids[1] = primary group SID.
- * token->user_sids[2..num_sids] = supplementary group SIDS.
+ * token->user_sids[2-num_sids] = supplementary group SIDS.
  */
 
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
+#ifndef _NT_USER_TOKEN
 typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 } NT_USER_TOKEN;
+#define _NT_USER_TOKEN
+#endif
 
 /*** query a local group, get a list of these: shows who is in that group ***/
 
@@ -373,31 +393,20 @@ typedef struct write_cache
     char *data;
 } write_cache;
 
-typedef struct
-{
-	smb_ucs2_t *origname;
-	smb_ucs2_t *filename;
-	SMB_STRUCT_STAT *statinfo;
-} smb_filename;
-
-#include "fake_file.h"
-
 typedef struct files_struct
 {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
-	uint16 rap_print_jobid;
+	int print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	BOOL delete_on_close;
 	SMB_OFF_T pos;
 	SMB_BIG_UINT size;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
-	SMB_BIG_UINT position_information;
 	mode_t mode;
-	uint16 file_pid;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
@@ -417,15 +426,10 @@ typedef struct files_struct
 	BOOL is_stat;
 	BOOL directory_delete_on_close;
 	char *fsp_name;
- 	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
 
-#include "ntquotas.h"
-#include "sysquotas.h"
-
 /* used to hold an arbitrary blob of data */
-typedef struct data_blob
-{
+typedef struct data_blob {
 	uint8 *data;
 	size_t length;
 	void (*free)(struct data_blob *data_blob);
@@ -438,27 +442,19 @@ typedef struct data_blob
 
 typedef struct
 {
-	time_t modify_time;
-	time_t status_time;
+  time_t modify_time;
+  time_t status_time;
 } dir_status_struct;
 
-struct vuid_cache_entry
-{
-	uint16 vuid;
-	BOOL read_only;
-	BOOL admin_user;
-};
-
-struct vuid_cache
-{
-	unsigned int entries;
-	struct vuid_cache_entry array[VUID_CACHE_SIZE];
+struct uid_cache {
+  int entries;
+  uid_t list[UID_CACHE_SIZE];
 };
 
 typedef struct
 {
-	char *name;
-	BOOL is_wild;
+  char *name;
+  BOOL is_wild;
 } name_compare_entry;
 
 /* Include VFS stuff */
@@ -469,24 +465,23 @@ typedef struct
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
-	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
 	int service;
 	BOOL force_user;
-	BOOL force_group;
-	struct vuid_cache vuid_cache;
+	struct uid_cache uid_cache;
 	void *dirptr;
 	BOOL printer;
 	BOOL ipc;
-	BOOL read_only; /* Attributes for the current user of the share. */
-	BOOL admin_user; /* Attributes for the current user of the share. */
+	BOOL read_only;
+	BOOL admin_user;
 	char *dirpath;
 	char *connectpath;
 	char *origpath;
 
-	struct vfs_ops vfs;                   /* Filesystem operations */
-	struct vfs_ops vfs_opaque;			/* OPAQUE Filesystem operations */
-	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
+	struct vfs_ops vfs_ops;                   /* Filesystem operations */
+	/* Handle on dlopen() call */
+	void *dl_handle;
+	void *vfs_private;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -501,16 +496,10 @@ typedef struct connection_struct
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
-	PRIVILEGE_SET *privs;
 	
 	time_t lastused;
 	BOOL used;
 	int num_files_open;
-
-	BOOL case_sensitive;
-	BOOL case_preserve;
-	BOOL short_case_preserve;
-
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
@@ -526,7 +515,6 @@ struct current_user
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
-	PRIVILEGE_SET *privs;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -548,8 +536,7 @@ enum {LPQ_QUEUED=0,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING,LPQ_ERROR,LPQ_DELETING,
 
 typedef struct _print_queue_struct
 {
-  int job;		/* normally the UNIX jobid -- see note in 
-			   printing.c:traverse_fn_delete() */
+  int job;
   int size;
   int page_count;
   int status;
@@ -608,37 +595,82 @@ typedef struct {
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
-#define NT_HASH_LEN 16
-#define LM_HASH_LEN 16
-
 /*
- * Flags for account policy.
+ * bit flags representing initialized fields in SAM_ACCOUNT
  */
-#define AP_MIN_PASSWORD_LEN 		1
-#define AP_PASSWORD_HISTORY		2
-#define AP_USER_MUST_LOGON_TO_CHG_PASS	3
-#define AP_MAX_PASSWORD_AGE		4
-#define AP_MIN_PASSWORD_AGE		5
-#define AP_LOCK_ACCOUNT_DURATION	6
-#define AP_RESET_COUNT_TIME		7
-#define AP_BAD_ATTEMPT_LOCKOUT		8
-#define AP_TIME_TO_LOGOUT		9
+#define FLAG_SAM_UNINIT		0x00000000
+#define FLAG_SAM_UID		0x00000001
+#define FLAG_SAM_GID		0x00000002
+#define FLAG_SAM_SMBHOME	0x00000004
+#define FLAG_SAM_PROFILE	0x00000008
+#define FLAG_SAM_LOGONSCRIPT	0x00000010
+#define FLAG_SAM_DRIVE		0x00000020
+
+#define IS_SAM_UNIX_USER(x) \
+	(((x)->init_flag & SAM_ACCT_UNIX_UID) \
+	 && ((x)->init_flag & SAM_ACCT_UNIX_GID))
+
+#define IS_SAM_SET(x, flag) 	((x)->init_flag & (flag))
+
+		
+typedef struct sam_passwd
+{
+	/* initiailization flags */
+	uint32 init_flag;
+
+	time_t logon_time;            /* logon time */
+	time_t logoff_time;           /* logoff time */
+	time_t kickoff_time;          /* kickoff time */
+	time_t pass_last_set_time;    /* password last set time */
+	time_t pass_can_change_time;  /* password can change time */
+	time_t pass_must_change_time; /* password must change time */
+
+	pstring username;     /* UNIX username string */
+	pstring domain;       /* Windows Domain name */
+	pstring nt_username;  /* Windows username string */
+	pstring full_name;    /* user's full name string */
+	pstring home_dir;     /* home directory string */
+	pstring dir_drive;    /* home directory drive string */
+	pstring logon_script; /* logon script string */
+	pstring profile_path; /* profile path string */
+	pstring acct_desc  ;  /* user description string */
+	pstring workstations; /* login from workstations string */
+	pstring unknown_str ; /* don't know what this is, yet. */
+	pstring munged_dial ; /* munged path name and dial-back tel number */
+
+	uid_t uid;          /* this is actually the unix uid_t */
+	gid_t gid;          /* this is actually the unix gid_t */
+	uint32 user_rid;    /* Primary User ID */
+	uint32 group_rid;   /* Primary Group ID */
+
+	unsigned char *lm_pw; /* Null if no password */
+	unsigned char *nt_pw; /* Null if no password */
+
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 unknown_3; /* 0x00ff ffff */
+
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
+
+	uint32 unknown_5; /* 0x0002 0000 */
+	uint32 unknown_6; /* 0x0000 04ec */
+	
+} SAM_ACCOUNT;
 
 
 /*
  * Flags for local user manipulation.
  */
 
-#define LOCAL_ADD_USER 0x1
-#define LOCAL_DELETE_USER 0x2
-#define LOCAL_DISABLE_USER 0x4
-#define LOCAL_ENABLE_USER 0x8
-#define LOCAL_TRUST_ACCOUNT 0x10
-#define LOCAL_SET_NO_PASSWORD 0x20
-#define LOCAL_SET_PASSWORD 0x40
-#define LOCAL_SET_LDAP_ADMIN_PW 0x80
-#define LOCAL_INTERDOM_ACCOUNT 0x100
-#define LOCAL_AM_ROOT 0x200  /* Act as root */
+#define LOCAL_ADD_USER 		0x01
+#define LOCAL_DELETE_USER 	0x02
+#define LOCAL_DISABLE_USER 	0x04
+#define LOCAL_ENABLE_USER 	0x08
+#define LOCAL_TRUST_ACCOUNT 	0x10
+#define LOCAL_SET_NO_PASSWORD 	0x20
+#define LOCAL_SET_LDAP_ADMIN_PW 0x40
+#define LOCAL_GET_DOM_SID	0x80
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
@@ -657,7 +689,6 @@ struct connections_data {
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;
-	uint32 bcast_msg_flags;
 };
 
 
@@ -682,7 +713,7 @@ struct locking_data {
 /* the following are used by loadparm for option lists */
 typedef enum
 {
-  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
+  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,
   P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM,P_SEP
 } parm_type;
 
@@ -713,31 +744,28 @@ struct parm_struct
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(int snum, const char *, char **);
-	const struct enum_list *enum_list;
+	BOOL (*special)(const char *, char **);
+	struct enum_list *enum_list;
 	unsigned flags;
 	union {
 		BOOL bvalue;
 		int ivalue;
 		char *svalue;
 		char cvalue;
-		char **lvalue;
 	} def;
 };
 
 struct bitmap {
 	uint32 *b;
-	unsigned int n;
+	int n;
 };
 
-/* The following flags are used in SWAT */
-#define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
+#define FLAG_BASIC 	0x0001 /* fundamental options */
 #define FLAG_SHARE 	0x0002 /* file sharing options */
 #define FLAG_PRINT 	0x0004 /* printing options */
 #define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
 #define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
-#define FLAG_ADVANCED 	0x0020 /* Parameters that will be visible in advanced view */
-#define FLAG_DEVELOPER 	0x0040 /* No longer used */
+#define FLAG_ADVANCED 	0x0020 /* Parameters that the wizard will operate on */
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
@@ -757,8 +785,7 @@ struct bitmap {
 #define smb_err 11
 #define smb_flg 13
 #define smb_flg2 14
-#define smb_pidhigh 16
-#define smb_ss_field 18
+#define smb_reb 13
 #define smb_tid 28
 #define smb_pid 30
 #define smb_uid 32
@@ -866,7 +893,6 @@ struct bitmap {
 #define SMBffirst        0x82   /* find first */
 #define SMBfunique       0x83   /* find unique */
 #define SMBfclose        0x84   /* find close */
-#define SMBkeepalive     0x85   /* keepalive */
 #define SMBinvalid       0xFE   /* invalid command */
 
 /* Extended 2.0 protocol */
@@ -881,31 +907,25 @@ struct bitmap {
 #define SMBnttranss      0xA1   /* NT transact secondary */
 #define SMBntcreateX     0xA2   /* NT create and X */
 #define SMBntcancel      0xA4   /* NT cancel */
-#define SMBntrename      0xA5   /* NT rename */
-
-/* These are the trans subcommands */
-#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
-#define TRANSACT_DCERPCCMD                0x26
-#define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
 
 /* These are the TRANS2 sub commands */
-#define TRANSACT2_OPEN				0x00
-#define TRANSACT2_FINDFIRST			0x01
-#define TRANSACT2_FINDNEXT			0x02
-#define TRANSACT2_QFSINFO			0x03
-#define TRANSACT2_SETFSINFO			0x04
-#define TRANSACT2_QPATHINFO			0x05
-#define TRANSACT2_SETPATHINFO			0x06
-#define TRANSACT2_QFILEINFO			0x07
-#define TRANSACT2_SETFILEINFO			0x08
-#define TRANSACT2_FSCTL				0x09
-#define TRANSACT2_IOCTL				0x0A
-#define TRANSACT2_FINDNOTIFYFIRST		0x0B
-#define TRANSACT2_FINDNOTIFYNEXT		0x0C
-#define TRANSACT2_MKDIR				0x0D
-#define TRANSACT2_SESSION_SETUP			0x0E
-#define TRANSACT2_GET_DFS_REFERRAL		0x10
-#define TRANSACT2_REPORT_DFS_INCONSISTANCY	0x11
+#define TRANSACT2_OPEN                        0
+#define TRANSACT2_FINDFIRST                   1
+#define TRANSACT2_FINDNEXT                    2
+#define TRANSACT2_QFSINFO                     3
+#define TRANSACT2_SETFSINFO                   4
+#define TRANSACT2_QPATHINFO                   5
+#define TRANSACT2_SETPATHINFO                 6
+#define TRANSACT2_QFILEINFO                   7
+#define TRANSACT2_SETFILEINFO                 8
+#define TRANSACT2_FSCTL                       9
+#define TRANSACT2_IOCTL                     0xA
+#define TRANSACT2_FINDNOTIFYFIRST           0xB
+#define TRANSACT2_FINDNOTIFYNEXT            0xC
+#define TRANSACT2_MKDIR                     0xD
+#define TRANSACT2_SESSION_SETUP             0xE
+#define TRANSACT2_GET_DFS_REFERRAL         0x10
+#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
 
 /* These are the NT transact sub commands. */
 #define NT_TRANSACT_CREATE                1
@@ -914,13 +934,6 @@ struct bitmap {
 #define NT_TRANSACT_NOTIFY_CHANGE         4
 #define NT_TRANSACT_RENAME                5
 #define NT_TRANSACT_QUERY_SECURITY_DESC   6
-#define NT_TRANSACT_GET_USER_QUOTA	  7
-#define NT_TRANSACT_SET_USER_QUOTA	  8
-
-/* These are the NT transact_get_user_quota sub commands */
-#define TRANSACT_GET_USER_QUOTA_LIST_CONTINUE	0x0000
-#define TRANSACT_GET_USER_QUOTA_LIST_START	0x0100
-#define TRANSACT_GET_USER_QUOTA_FOR_SID		0x0101
 
 /* Relevant IOCTL codes */
 #define IOCTL_QUERY_JOB_INFO      0x530060
@@ -1018,38 +1031,42 @@ struct bitmap {
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
 
-/* File Specific access rights */
-#define FILE_READ_DATA        0x00000001
-#define FILE_WRITE_DATA       0x00000002
-#define FILE_APPEND_DATA      0x00000004
-#define FILE_READ_EA          0x00000008 /* File and directory */
-#define FILE_WRITE_EA         0x00000010 /* File and directory */
-#define FILE_EXECUTE          0x00000020
-#define FILE_DELETE_CHILD     0x00000040
-#define FILE_READ_ATTRIBUTES  0x00000080
-#define FILE_WRITE_ATTRIBUTES 0x00000100
+/* these are the constants used in the above call. */
+/* DesiredAccess */
+/* File Specific access rights. */
+#define FILE_READ_DATA        0x001
+#define FILE_WRITE_DATA       0x002
+#define FILE_APPEND_DATA      0x004
+#define FILE_READ_EA          0x008
+#define FILE_WRITE_EA         0x010
+#define FILE_EXECUTE          0x020
+#define FILE_DELETE_CHILD     0x040
+#define FILE_READ_ATTRIBUTES  0x080
+#define FILE_WRITE_ATTRIBUTES 0x100
 
-#define FILE_ALL_ACCESS       0x000001FF
-
-/* Directory specific access rights */
-#define FILE_LIST_DIRECTORY   0x00000001
-#define FILE_ADD_FILE         0x00000002
-#define FILE_ADD_SUBDIRECTORY 0x00000004
-#define FILE_TRAVERSE         0x00000020
-#define FILE_DELETE_CHILD     0x00000040
+#define FILE_ALL_ACCESS       0x1FF
 
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
  
 /* Generic access masks & rights. */
+#define SPECIFIC_RIGHTS_MASK 0x00FFFFL
+#define STANDARD_RIGHTS_MASK 0xFF0000L
 #define DELETE_ACCESS        (1L<<16) /* 0x00010000 */
 #define READ_CONTROL_ACCESS  (1L<<17) /* 0x00020000 */
 #define WRITE_DAC_ACCESS     (1L<<18) /* 0x00040000 */
 #define WRITE_OWNER_ACCESS   (1L<<19) /* 0x00080000 */
 #define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
 
-#define SYSTEM_SECURITY_ACCESS (1L<<24)           /* 0x01000000 */
-#define MAXIMUM_ALLOWED_ACCESS (1L<<25)           /* 0x02000000 */
+/* Combinations of standard masks. */
+#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS) /* 0x001f0000 */
+#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
+#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS) /* 0x00200000 */
+#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS) /* 0x000f0000 */
+#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
+
+#define SYSTEM_SECURITY_ACCESS (1L<<24)	          /* 0x01000000 */
+#define MAXIMUM_ALLOWED_ACCESS (1L<<25)	          /* 0x02000000 */
 #define GENERIC_ALL_ACCESS     (1<<28)            /* 0x10000000 */
 #define GENERIC_EXECUTE_ACCESS (1<<29)            /* 0x20000000 */
 #define GENERIC_WRITE_ACCESS   (1<<30)            /* 0x40000000 */
@@ -1095,7 +1112,6 @@ struct bitmap {
 #define REQUEST_OPLOCK 2
 #define REQUEST_BATCH_OPLOCK 4
 #define OPEN_DIRECTORY 8
-#define EXTENDED_RESPONSE_REQUIRED 0x10
 
 /* ShareAccess field. */
 #define FILE_SHARE_NONE 0 /* Cannot be used in bitmask. */
@@ -1161,30 +1177,19 @@ struct bitmap {
 /* Flag for NT transact rename call. */
 #define RENAME_REPLACE_IF_EXISTS 1
 
-/* flags for SMBntrename call (from Samba4) */
-#define RENAME_FLAG_MOVE_CLUSTER_INFORMATION 0x102 /* ???? */
-#define RENAME_FLAG_HARD_LINK                0x103
-#define RENAME_FLAG_RENAME                   0x104
-#define RENAME_FLAG_COPY                     0x105
-
 /* Filesystem Attributes. */
-#define FILE_CASE_SENSITIVE_SEARCH      0x00000001
-#define FILE_CASE_PRESERVED_NAMES       0x00000002
-#define FILE_UNICODE_ON_DISK            0x00000004
+#define FILE_CASE_SENSITIVE_SEARCH 0x01
+#define FILE_CASE_PRESERVED_NAMES 0x02
+#define FILE_UNICODE_ON_DISK 0x04
 /* According to cifs9f, this is 4, not 8 */
 /* Acconding to testing, this actually sets the security attribute! */
-#define FILE_PERSISTENT_ACLS            0x00000008
-#define FILE_FILE_COMPRESSION           0x00000010
-#define FILE_VOLUME_QUOTAS              0x00000020
-#define FILE_SUPPORTS_SPARSE_FILES      0x00000040
-#define FILE_SUPPORTS_REPARSE_POINTS    0x00000080
-#define FILE_SUPPORTS_REMOTE_STORAGE    0x00000100
-#define FS_LFN_APIS                     0x00004000
-#define FILE_VOLUME_IS_COMPRESSED       0x00008000
-#define FILE_SUPPORTS_OBJECT_IDS        0x00010000
-#define FILE_SUPPORTS_ENCRYPTION        0x00020000
-#define FILE_NAMED_STREAMS              0x00040000
-#define FILE_READ_ONLY_VOLUME           0x00080000
+#define FILE_PERSISTENT_ACLS 0x08
+/* These entries added from cifs9f --tsb */
+#define FILE_FILE_COMPRESSION 0x10
+#define FILE_VOLUME_QUOTAS 0x20
+/* I think this is wrong. JRA #define FILE_DEVICE_IS_MOUNTED 0x20 */
+#define FILE_VOLUME_SPARSE_FILE 0x40
+#define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
 #define FILE_NOTIFY_CHANGE_FILE        0x001
@@ -1207,6 +1212,26 @@ struct bitmap {
 
 
 #define SMB_SUCCESS 0  /* The request was successful. */
+
+#ifdef HAVE_STDARG_H
+int slprintf(char *str, int n, char *format, ...)
+#ifdef __GNUC__
+     __attribute__ ((format (__printf__, 3, 4)))
+#endif
+;
+#else
+int slprintf();
+#endif
+
+#ifdef HAVE_STDARG_H
+int fdprintf(int fd, char *format, ...)
+#ifdef __GNUC__
+     __attribute__ ((format (__printf__, 2, 3)))
+#endif
+;
+#else
+int fdprintf();
+#endif
 
 #ifdef WITH_DFS
 void dfs_unlogin(void);
@@ -1259,7 +1284,7 @@ char *strdup(char *s);
  * History:
  * Version 4.0 - never made public
  * Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9
- *              - Reappeared in 1.9.16p11 with fixed smbd services
+ *		- Reappeared in 1.9.16p11 with fixed smbd services
  * Version 4.20 - To indicate that nmbd and browsing now works better
  * Version 4.50 - Set at release of samba-2.2.0 by JHT
  *
@@ -1267,7 +1292,7 @@ char *strdup(char *s);
  *        Setting this above 4.9 can have undesired side-effects.
  *        This may change again in Samba-3.0 after further testing. JHT
  */
- 
+
 #define DEFAULT_MAJOR_VERSION 0x04
 #define DEFAULT_MINOR_VERSION 0x09
 
@@ -1276,24 +1301,22 @@ char *strdup(char *s);
 #define BROWSER_CONSTANT	0xaa55
 
 /* Sercurity mode bits. */
-#define NEGOTIATE_SECURITY_USER_LEVEL		0x01
-#define NEGOTIATE_SECURITY_CHALLENGE_RESPONSE	0x02
-#define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
-#define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
+#define NEGOTIATE_SECURITY_USER_LEVEL           0x01
+#define NEGOTIATE_SECURITY_CHALLENGE_RESPONSE   0x02
+#define NEGOTIATE_SECURITY_SIGNATURES_ENABLED   0x04
+#define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED  0x08
 
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
    
-#define FLAGS2_LONG_PATH_COMPONENTS    0x0001
-#define FLAGS2_EXTENDED_ATTRIBUTES     0x0002
-#define FLAGS2_SMB_SECURITY_SIGNATURES 0x0004
-#define FLAGS2_IS_LONG_NAME            0x0040
-#define FLAGS2_EXTENDED_SECURITY       0x0800 
-#define FLAGS2_DFS_PATHNAMES           0x1000
-#define FLAGS2_READ_PERMIT_NO_EXECUTE  0x2000
-#define FLAGS2_32_BIT_ERROR_CODES      0x4000 
-#define FLAGS2_UNICODE_STRINGS         0x8000
+#define FLAGS2_LONG_PATH_COMPONENTS   0x0001
+#define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
+#define FLAGS2_IS_LONG_NAME           0x0040
+#define FLAGS2_DFS_PATHNAMES          0x1000
+#define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
+#define FLAGS2_32_BIT_ERROR_CODES     0x4000 
+#define FLAGS2_UNICODE_STRINGS        0x8000
 
-#define FLAGS2_WIN2K_SIGNATURE         0xC852 /* Hack alert ! For now... JRA. */
+#define FLAGS2_WIN2K_SIGNATURE        0xC852 /* Hack alert ! For now... JRA. */
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
@@ -1319,7 +1342,7 @@ char *strdup(char *s);
 enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
 
 /* security levels */
-enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};
+enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN};
 
 /* server roles */
 enum server_types
@@ -1345,14 +1368,16 @@ enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
 /* LDAP SSL options */
 enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
-/* LDAP PASSWD SYNC methods */
-enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PASSWD_SYNC_ONLY};
-
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_SAMBA};
 
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
+
+#ifdef WITH_SSL
+/* SSL version options */
+enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
+#endif /* WITH_SSL */
 
 /*
  * Global value meaing that the smb_uid field should be
@@ -1361,6 +1386,30 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #define UID_FIELD_INVALID 0
 #define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
+
+/* Defines needed for multi-codepage support. */
+#define MSDOS_LATIN_1_CODEPAGE 850
+#define KANJI_CODEPAGE 932
+#define HANGUL_CODEPAGE 949
+#define BIG5_CODEPAGE 950
+#define SIMPLIFIED_CHINESE_CODEPAGE 936
+
+#ifdef KANJI
+/* 
+ * Default client code page - Japanese 
+ */
+#define DEFAULT_CLIENT_CODE_PAGE KANJI_CODEPAGE
+#else /* KANJI */
+/* 
+ * Default client code page - 850 - Western European 
+ */
+#define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
+#endif /* KANJI */
+
+/* Global val set if multibyte codepage. */
+extern int global_is_multibyte_codepage;
+
+#define get_character_len(x) (global_is_multibyte_codepage ? skip_multibyte_char((x)) : 0)
 
 /* 
  * Size of buffer to use when moving files across filesystems. 
@@ -1514,35 +1563,65 @@ struct cnotify_fns {
 
 #include "smb_macros.h"
 
-#define MAX_NETBIOSNAME_LEN 16
-/* DOS character, NetBIOS namestring. Type used on the wire. */
-typedef char nstring[MAX_NETBIOSNAME_LEN];
-/* Unix character, NetBIOS namestring. Type used to manipulate name in nmbd. */
-typedef char unstring[MAX_NETBIOSNAME_LEN*4];
-
 /* A netbios name structure. */
 struct nmb_name {
-	nstring      name;
-	char         scope[64];
-	unsigned int name_type;
+  char         name[17];
+  char         scope[64];
+  unsigned int name_type;
 };
 
 
 /* A netbios node status array element. */
 struct node_status {
-	nstring name;
+	char name[16];
 	unsigned char type;
 	unsigned char flags;
 };
+
+
+
+#define AGENT_CMD_CON       0
+#define AGENT_CMD_CON_ANON  2
+#define AGENT_CMD_CON_REUSE 1
 
 struct pwd_info
 {
 	BOOL null_pwd;
 	BOOL cleartext;
+	BOOL crypted;
 
 	fstring password;
 
+	uchar smb_lm_pwd[16];
+	uchar smb_nt_pwd[16];
+
+	uchar smb_lm_owf[24];
+	uchar smb_nt_owf[128];
+	uint32 nt_owf_len;
+
+	uchar lm_cli_chal[8];
+	uchar nt_cli_chal[128];
+	uint32 nt_cli_chal_len;
+
+	uchar sess_key[16];
 };
+
+/*
+ * Network Computing Architechture Context Name Named Pipe
+ * See MSDN docs for more information
+ */
+struct ncacn_np
+{
+        fstring pipe_name;
+        struct cli_state *smb;
+        uint16 fnum;
+        BOOL initialised;
+};
+
+#include "rpc_creds.h"
+#include "rpc_misc.h"
+#include "rpc_secdes.h"
+#include "nt_printing.h"
 
 typedef struct user_struct
 {
@@ -1552,10 +1631,6 @@ typedef struct user_struct
 	gid_t gid; /* gid of a validated user */
 
 	userdom_struct user;
-	char *homedir;
-	char *unix_homedir;
-	char *logon_script;
-	
 	BOOL guest;
 
 	/* following groups stuff added by ih */
@@ -1564,18 +1639,9 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
-	PRIVILEGE_SET *privs;
 
-	DATA_BLOB session_key;
-
-	char *session_keystr; /* used by utmp and pam session code.  
-				 TDB key string */
-	int homes_snum;
-
-	struct auth_serversupplied_info *server_info;
-
+	int session_id; /* used by utmp and pam session code */
 } user_struct;
-
 
 struct unix_error_map {
 	int unix_error;
@@ -1584,16 +1650,12 @@ struct unix_error_map {
 	NTSTATUS nt_error;
 };
 
-/*
 #include "ntdomain.h"
 
 #include "client.h"
-*/
 
 /*
- * Size of new password account encoding string.  This is enough space to
- * hold 11 ACB characters, plus the surrounding [] and a terminating null.
- * Do not change unless you are adding new ACB bits!
+ * Size of new password account encoding string. DO NOT CHANGE.
  */
 
 #define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
@@ -1625,61 +1687,6 @@ struct unix_error_map {
 
 #define SAFE_NETBIOS_CHARS ". -_"
 
-/* generic iconv conversion structure */
-typedef struct {
-	size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft);
-	size_t (*pull)(void *cd, char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *cd, char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	void *cd_direct, *cd_pull, *cd_push;
-	char *from_name, *to_name;
-} *smb_iconv_t;
-
-/* The maximum length of a trust account password.
-   Used when we randomly create it, 15 char passwords
-   exceed NT4's max password length */
-
-#define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
-
-#include "popt_common.h"
-
-#define PORT_NONE	0
-#ifndef LDAP_PORT
-#define LDAP_PORT	389
-#endif
-
-/* used by the IP comparison function */
-struct ip_service {
-	struct in_addr ip;
-	unsigned port;
-};
-
-/* Used by the SMB signing functions. */
-
-typedef struct smb_sign_info {
-	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
-	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si, BOOL expected_ok);
-	void (*free_signing_context)(struct smb_sign_info *si);
-	void *signing_context;
-
-	BOOL negotiated_smb_signing;
-	BOOL allow_smb_signing;
-	BOOL doing_signing;
-	BOOL mandatory_signing;
-	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
-} smb_sign_info;
-
-struct ea_struct {
-	uint8 flags;
-	char *name;
-	DATA_BLOB value;
-};
-
-/* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */
-#define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
-/* EA to use for DOS attributes */
-#define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
+#include "nsswitch/winbindd_nss.h"
 
 #endif /* _SMB_H */

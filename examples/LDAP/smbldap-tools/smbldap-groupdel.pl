@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl 
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
@@ -23,39 +23,39 @@
 # Purpose of smbldap-groupdel : group (posix) deletion
 
 use strict;
-use FindBin;
-use FindBin qw($RealBin);
-use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
 #####################
+
 use Getopt::Std;
 my %Options;
 
 my $ok = getopts('?', \%Options);
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-  print "Usage: $0 groupname\n";
-  print "  -?	show this help message\n";
-  exit (1);
+	print "Usage: $0 groupname\n";
+	print "  -?	show this help message\n";
+	exit (1);
 }
 
 my $_groupName = $ARGV[0];
 
 my $dn_line;
 if (!defined($dn_line = get_group_dn($_groupName))) {
-  print "$0: group $_groupName doesn't exist\n";
-  exit (6);
+    print "$0: group $_groupName doesn't exist\n";
+    exit (6);
 }
 
 my $dn = get_dn_from_line($dn_line);
 
-group_del($dn);
+my $rc = system "$ldapdelete $dn >/dev/null";
+die "$0: error while deleting group $_groupName\n"
+    unless ($rc == 0);
 
 my $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
 if ($nscd_status == 0) {
-  system "/etc/init.d/nscd restart > /dev/null 2>&1";
+   system "/etc/init.d/nscd restart > /dev/null 2>&1";
 }
 
 #if (defined($dn_line = get_group_dn($_groupName))) {

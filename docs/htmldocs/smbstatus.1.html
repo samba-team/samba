@@ -1,0 +1,209 @@
+<HTML
+><HEAD
+><TITLE
+>smbstatus</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBSTATUS"
+>smbstatus</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbstatus&nbsp;--&nbsp;report on current Samba connections</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>smbstatus</B
+>  [-P] [-b] [-d] [-L] [-p] [-S] [-s &#60;configuration file&#62;] [-u &#60;username&#62;]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN19"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>smbstatus</B
+> is a very simple program to 
+	list the current Samba connections.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN25"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-P</DT
+><DD
+><P
+>If samba has been compiled with the 
+		profiling option, print only the contents of the profiling 
+		shared memory area.</P
+></DD
+><DT
+>-b</DT
+><DD
+><P
+>gives brief output.</P
+></DD
+><DT
+>-d</DT
+><DD
+><P
+>gives verbose output.</P
+></DD
+><DT
+>-L</DT
+><DD
+><P
+>causes smbstatus to only list locks.</P
+></DD
+><DT
+>-p</DT
+><DD
+><P
+>print a list of <A
+HREF="smbd.8.html"
+TARGET="_top"
+>		<B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+> processes and exit. 
+		Useful for scripting.</P
+></DD
+><DT
+>-S</DT
+><DD
+><P
+>causes smbstatus to only list shares.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The default configuration file name is
+		determined at compile time. The file specified contains the
+		configuration details required by the server. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+>
+		</A
+> for more information.</P
+></DD
+><DT
+>-u &#60;username&#62;</DT
+><DD
+><P
+>selects information relevant to 
+		<TT
+CLASS="PARAMETER"
+><I
+>username</I
+></TT
+> only.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN65"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN68"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+> and
+	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+>.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN74"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

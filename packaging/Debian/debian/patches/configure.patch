@@ -1,0 +1,32 @@
+diff -uNr samba-2.2.5pre1.orig/source/configure.in samba-2.2.5pre1/source/configure.in
+--- samba-2.2.5pre1.orig/source/configure.in	Sat Jun  8 07:55:55 2002
++++ samba-2.2.5pre1/source/configure.in	Wed Jun 12 15:27:28 2002
+@@ -384,6 +384,28 @@
+ #endif
+ }
+ ], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
++	if test x$LINUX_LFS_SUPPORT = xyes ; then
++          AC_TRY_RUN([
++#include <unistd.h>
++#include <sys/types.h>
++#include <fcntl.h>
++main() {
++   unsigned int *padding;
++   struct flock foo_lock = {F_WRLCK, SEEK_SET, 0, 1, 0};
++   int fd = open("/dev/null", O_RDWR);
++
++   /* Yes, we're depending on the internals of the Linux flock structure
++      here -- but this test is explicitly Linux-specific to begin with. */
++   padding = (unsigned int *)&foo_lock;
++   padding[1] = 0xffffffff;
++   foo_lock.l_start = 0;
++   if (fcntl(fd, F_SETLK, &foo_lock) < 0)
++      exit(1);
++
++   exit(0);
++}
++], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
++	fi
+         CPPFLAGS="$old_CPPFLAGS"
+         if test x$LINUX_LFS_SUPPORT = xyes ; then
+           CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"

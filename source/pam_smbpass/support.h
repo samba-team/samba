@@ -43,8 +43,10 @@ extern int _smb_blankpasswd(unsigned int, SAM_ACCOUNT *);
 
 
 /* obtain a password from the user */
-extern int _smb_read_password( pam_handle_t *, unsigned int, const char*,
-				const char *, const char *, const char *, char **);
+extern int _smb_read_password( pam_handle_t *, unsigned int, char*,
+				char *, char *, char *, char **);
 
 extern int _pam_smb_approve_pass(pam_handle_t *, unsigned int, const char *,
 				 const char *);
+
+extern pstring servicesf;

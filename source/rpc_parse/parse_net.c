@@ -1,11 +1,11 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jean François Micouleau           2002.
- *
+ *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -22,9 +22,6 @@
  */
 
 #include "includes.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
  Reads or writes a structure.
@@ -136,15 +133,16 @@ static BOOL net_io_netinfo_1(const char *desc, NETLOGON_INFO_1 *info, prs_struct
 static void init_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
 				uint32 tc_status, const char *trusted_dc_name)
 {
+	int len_dc_name = strlen(trusted_dc_name);
 	info->flags      = flags;
 	info->pdc_status = pdc_status;
 	info->ptr_trusted_dc_name = 1;
 	info->tc_status  = tc_status;
 
 	if (trusted_dc_name != NULL)
-		init_unistr2(&info->uni_trusted_dc_name, trusted_dc_name, UNI_STR_TERMINATE);
+		init_unistr2(&info->uni_trusted_dc_name, trusted_dc_name, len_dc_name+1);
 	else
-		init_unistr2(&info->uni_trusted_dc_name, "", UNI_STR_TERMINATE);
+		init_unistr2(&info->uni_trusted_dc_name, "", 1);
 }
 
 /*******************************************************************
@@ -229,7 +227,7 @@ void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, const char *srv_name,
 	q_l->query_level = query_level;
 	q_l->switch_value  = 0x01;
 
-	init_unistr2(&q_l->uni_server_name, srv_name, UNI_STR_TERMINATE);
+	init_unistr2(&q_l->uni_server_name, srv_name, strlen(srv_name) + 1);
 }
 
 /*******************************************************************
@@ -359,7 +357,7 @@ void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, const char *srv_name,
 	q_l->function_code = 0x01; /* ??? */
 	q_l->query_level = query_level;
 
-	init_unistr2(&q_l->uni_server_name, srv_name, UNI_STR_TERMINATE);
+	init_unistr2(&q_l->uni_server_name, srv_name, strlen(srv_name) + 1);
 }
 
 /*******************************************************************
@@ -425,97 +423,13 @@ BOOL net_io_r_logon_ctrl(const char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps
 }
 
 /*******************************************************************
- Inits an NET_R_GETDCNAME structure.
-********************************************************************/
-void init_net_q_getdcname(NET_Q_GETDCNAME *r_t, const char *logon_server,
-			  const char *domainname)
-{
-	DEBUG(5,("init_r_getdcname\n"));
-
-	r_t->ptr_logon_server = (logon_server != NULL);
-	init_unistr2(&r_t->uni_logon_server, logon_server, UNI_STR_TERMINATE);
-	r_t->ptr_domainname = (domainname != NULL);
-	init_unistr2(&r_t->uni_domainname, domainname, UNI_STR_TERMINATE);
-}
-
-/*******************************************************************
- Reads or writes an NET_Q_GETDCNAME structure.
-********************************************************************/
-
-BOOL net_io_q_getdcname(const char *desc, NET_Q_GETDCNAME *r_t, prs_struct *ps,
-			int depth)
-{
-	if (r_t == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "net_io_q_getdcname");
-	depth++;
-
-	if (!prs_uint32("ptr_logon_server", ps, depth, &r_t->ptr_logon_server))
-		return False;
-
-	if (!smb_io_unistr2("logon_server", &r_t->uni_logon_server,
-			    r_t->ptr_logon_server, ps, depth))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("ptr_domainname", ps, depth, &r_t->ptr_domainname))
-		return False;
-
-	if (!smb_io_unistr2("domainname", &r_t->uni_domainname,
-			    r_t->ptr_domainname, ps, depth))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
- Inits an NET_R_GETDCNAME structure.
-********************************************************************/
-void init_net_r_getdcname(NET_R_GETDCNAME *r_t, const char *dcname)
-{
-	DEBUG(5,("init_r_getdcname\n"));
-
-	init_unistr2(&r_t->uni_dcname, dcname, UNI_STR_TERMINATE);
-}
-
-/*******************************************************************
- Reads or writes an NET_R_GETDCNAME structure.
-********************************************************************/
-
-BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
-			int depth)
-{
-	if (r_t == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "net_io_r_getdcname");
-	depth++;
-
-	if (!prs_uint32("ptr_dcname", ps, depth, &r_t->ptr_dcname))
-		return False;
-
-	if (!smb_io_unistr2("dcname", &r_t->uni_dcname,
-			    r_t->ptr_dcname, ps, depth))
-		return False;
-
-	if (!prs_ntstatus("status", ps, depth, &r_t->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Inits an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 
 void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 			uint32 num_doms, const char *dom_name)
 {
-	unsigned int i = 0;
+	int i = 0;
 
 	DEBUG(5,("init_r_trust_dom\n"));
 
@@ -529,10 +443,10 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 	for (i = 0; i < num_doms; i++) {
 		fstring domain_name;
 		fstrcpy(domain_name, dom_name);
-		strupper_m(domain_name);
-		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name, UNI_STR_TERMINATE);
+		strupper(domain_name);
+		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name, strlen(domain_name)+1);
 		/* the use of UNISTR2 here is non-standard. */
-		r_t->uni_trust_dom_name[i].offset = 0x1;
+		r_t->uni_trust_dom_name[i].undoc = 0x1;
 	}
 	
 	r_t->status = NT_STATUS_OK;
@@ -615,15 +529,15 @@ BOOL net_io_q_trust_dom(const char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct 
 ********************************************************************/
 
 void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
-		     const char *logon_srv, const char *logon_clnt,
-		     DOM_CHAL *clnt_chal)
+				const char *logon_srv, const char *logon_clnt,
+				DOM_CHAL *clnt_chal)
 {
 	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
 
 	q_c->undoc_buffer = 1; /* don't know what this buffer is */
 
-	init_unistr2(&q_c->uni_logon_srv, logon_srv , UNI_STR_TERMINATE);
-	init_unistr2(&q_c->uni_logon_clnt, logon_clnt, UNI_STR_TERMINATE);
+	init_unistr2(&q_c->uni_logon_srv, logon_srv , strlen(logon_srv )+1);
+	init_unistr2(&q_c->uni_logon_clnt, logon_clnt, strlen(logon_clnt)+1);
 
 	memcpy(q_c->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
 
@@ -636,6 +550,8 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 
 BOOL net_io_q_req_chal(const char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth)
 {
+	int old_align;
+
 	if (q_c == NULL)
 		return False;
 
@@ -653,8 +569,15 @@ BOOL net_io_q_req_chal(const char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, i
 	if(!smb_io_unistr2("", &q_c->uni_logon_clnt, True, ps, depth)) /* logon client unicode string */
 		return False;
 
-	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth))
+	old_align = ps->align;
+	ps->align = 0;
+	/* client challenge is _not_ aligned after the unicode strings */
+	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth)) {
+		/* client challenge */
+		ps->align = old_align;
 		return False;
+	}
+	ps->align = old_align;
 
 	return True;
 }
@@ -690,6 +613,7 @@ BOOL net_io_r_req_chal(const char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, in
 
 BOOL net_io_q_auth(const char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
 {
+	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -701,8 +625,15 @@ BOOL net_io_q_auth(const char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
+	/* client challenge is _not_ aligned */
+	old_align = ps->align;
+	ps->align = 0;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
+		/* client-calculated credentials */
+		ps->align = old_align;
 		return False;
+	}
+	ps->align = old_align;
 
 	return True;
 }
@@ -754,6 +685,7 @@ void init_q_auth_2(NET_Q_AUTH_2 *q_a,
 
 BOOL net_io_q_auth_2(const char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
 {
+	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -765,8 +697,15 @@ BOOL net_io_q_auth_2(const char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int de
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
+	/* client challenge is _not_ aligned */
+	old_align = ps->align;
+	ps->align = 0;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
+		/* client-calculated credentials */
+		ps->align = old_align;
 		return False;
+	}
+	ps->align = old_align;
 	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
 		return False;
 
@@ -799,92 +738,15 @@ BOOL net_io_r_auth_2(const char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int de
 	return True;
 }
 
-/*******************************************************************
- Inits a NET_Q_AUTH_3 struct.
-********************************************************************/
-
-void init_q_auth_3(NET_Q_AUTH_3 *q_a,
-		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
-{
-	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
-
-	init_log_info(&q_a->clnt_id, logon_srv, acct_name, sec_chan, comp_name);
-	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
-	q_a->clnt_flgs.neg_flags = clnt_flgs;
-
-	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-BOOL net_io_q_auth_3(const char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
-{
-	if (q_a == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "net_io_q_auth_3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-    
-	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
-		return False;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
-		return False;
-	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-BOOL net_io_r_auth_3(const char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int depth)
-{
-	if (r_a == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "net_io_r_auth_3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-    
-	if(!smb_io_chal("srv_chal", &r_a->srv_chal, ps, depth)) /* server challenge */
-		return False;
-	if(!net_io_neg_flags("srv_flgs", &r_a->srv_flgs, ps, depth))
-		return False;
-	if (!prs_uint32("unknown", ps, depth, &r_a->unknown))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_a->status))
-		return False;
-
-	return True;
-}
-
 
 /*******************************************************************
  Inits a NET_Q_SRV_PWSET.
 ********************************************************************/
 
-void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
-		const char *logon_srv, const char *sess_key, const char *acct_name, 
-                uint16 sec_chan, const char *comp_name,
-		DOM_CRED *cred, uchar hashed_mach_pwd[16])
+void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, const char *logon_srv, const char *acct_name, 
+                uint16 sec_chan, const char *comp_name, DOM_CRED *cred, char nt_cypher[16])
 {
-	unsigned char nt_cypher[16];
-	
 	DEBUG(5,("init_q_srv_pwset\n"));
-	
-	/* Process the new password. */
-	cred_hash3( nt_cypher, hashed_mach_pwd, (const unsigned char *)sess_key, 1);
 
 	init_clnt_info(&q_s->clnt_id, logon_srv, acct_name, sec_chan, comp_name, cred);
 
@@ -956,12 +818,10 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 		int number;
 		DOM_SID2 *sids;
 
-		/* Count the number of valid SIDs. */
-		for (count = 0, ptr = sids_str; next_token(&ptr, s2, NULL, sizeof(s2)); ) {
-			DOM_SID tmpsid;
-			if (string_to_sid(&tmpsid, s2))
-				count++;
-		}
+		/* Count the number of SIDs. */
+		for (count = 0, ptr = sids_str; 
+	   	  next_token(&ptr, s2, NULL, sizeof(s2)); count++)
+			;
 
 		/* Now allocate space for them. */
 		*ppsids = (DOM_SID2 *)talloc_zero(ctx, count * sizeof(DOM_SID2));
@@ -970,13 +830,11 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 
 		sids = *ppsids;
 
-		for (number = 0, ptr = sids_str; next_token(&ptr, s2, NULL, sizeof(s2)); ) {
+		for (number = 0, ptr = sids_str; 
+	   	  next_token(&ptr, s2, NULL, sizeof(s2)); number++) {
 			DOM_SID tmpsid;
-			if (string_to_sid(&tmpsid, s2)) {
-				/* count only valid sids */
-				init_dom_sid2(&sids[number], &tmpsid);
-				number++;
-			}
+			string_to_sid(&tmpsid, s2);
+			init_dom_sid2(&sids[number], &tmpsid);
 		}
 	}
 
@@ -993,6 +851,10 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				const char *sess_key,
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
 {
+	int len_domain_name = strlen(domain_name);
+	int len_user_name   = strlen(user_name  );
+	int len_wksta_name  = strlen(wksta_name );
+
 	unsigned char lm_owf[16];
 	unsigned char nt_owf[16];
 
@@ -1000,9 +862,13 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 
 	id->ptr_id_info1 = 1;
 
+	init_uni_hdr(&id->hdr_domain_name, len_domain_name);
+
 	id->param_ctrl = param_ctrl;
 	init_logon_id(&id->logon_id, log_id_low, log_id_high);
 
+	init_uni_hdr(&id->hdr_user_name, len_user_name);
+	init_uni_hdr(&id->hdr_wksta_name, len_wksta_name);
 
 	if (lm_cypher && nt_cypher) {
 		unsigned char key[16];
@@ -1037,12 +903,9 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 	init_owf_info(&id->lm_owf, lm_cypher);
 	init_owf_info(&id->nt_owf, nt_cypher);
 
-	init_unistr2(&id->uni_domain_name, domain_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&id->hdr_domain_name, &id->uni_domain_name);
-	init_unistr2(&id->uni_user_name, user_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&id->hdr_user_name, &id->uni_user_name);
-	init_unistr2(&id->uni_wksta_name, wksta_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&id->hdr_wksta_name, &id->uni_wksta_name);
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 }
 
 /*******************************************************************
@@ -1116,9 +979,12 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 		   uint32 log_id_low, uint32 log_id_high,
 		   const char *user_name, const char *wksta_name,
 		   const uchar lm_challenge[8],
-		   const uchar * lm_chal_resp, size_t lm_chal_resp_len,
-		   const uchar * nt_chal_resp, size_t nt_chal_resp_len)
+		   const uchar * lm_chal_resp, int lm_chal_resp_len,
+		   const uchar * nt_chal_resp, int nt_chal_resp_len)
 {
+	int len_domain_name = strlen(domain_name);
+	int len_user_name   = strlen(user_name  );
+	int len_wksta_name  = strlen(wksta_name );
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[128];
 
@@ -1126,9 +992,13 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 
 	id->ptr_id_info2 = 1;
 
+	init_uni_hdr(&id->hdr_domain_name, len_domain_name);
 
 	id->param_ctrl = param_ctrl;
 	init_logon_id(&id->logon_id, log_id_low, log_id_high);
+
+	init_uni_hdr(&id->hdr_user_name, len_user_name);
+	init_uni_hdr(&id->hdr_wksta_name, len_wksta_name);
 
 	if (nt_chal_resp) {
 		/* oops.  can only send what-ever-it-is direct */
@@ -1145,12 +1015,9 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 	init_str_hdr(&id->hdr_nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
 	init_str_hdr(&id->hdr_lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
 
-	init_unistr2(&id->uni_domain_name, domain_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&id->hdr_domain_name, &id->uni_domain_name);
-	init_unistr2(&id->uni_user_name, user_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&id->hdr_user_name, &id->uni_user_name);
-	init_unistr2(&id->uni_wksta_name, wksta_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&id->hdr_wksta_name, &id->uni_wksta_name);
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 
 	init_string2(&id->nt_chal_resp, (const char *)nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len);
 	init_string2(&id->lm_chal_resp, (const char *)lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len);
@@ -1223,8 +1090,7 @@ static BOOL net_io_id_info2(const char *desc,  NET_ID_INFO_2 *id, prs_struct *ps
 ********************************************************************/
 
 void init_sam_info(DOM_SAM_INFO *sam,
-				const char *logon_srv, const char *comp_name,
-				DOM_CRED *clnt_cred,
+				const char *logon_srv, const char *comp_name, DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr)
 {
@@ -1321,59 +1187,58 @@ static BOOL smb_io_sam_info(const char *desc, DOM_SAM_INFO *sam, prs_struct *ps,
 }
 
 /*************************************************************************
- Inits a NET_USER_INFO_3 structure.
-
- This is a network logon reply packet, and contains much information about
- the user.  This information is passed as a (very long) paramater list
- to avoid having to link in the PASSDB code to every program that deals 
- with this file.
+ Init
  *************************************************************************/
 
-void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, 
-			 uint32                user_rid,
-			 uint32                group_rid,
-
-			 const char*		user_name,
-			 const char*		full_name,
-			 const char*		home_dir,
-			 const char*		dir_drive,
-			 const char*		logon_script,
-			 const char*		profile_path,
-
-			 time_t unix_logon_time,
-			 time_t unix_logoff_time,
-			 time_t unix_kickoff_time,
-			 time_t unix_pass_last_set_time,
-			 time_t unix_pass_can_change_time,
-			 time_t unix_pass_must_change_time,
-			 
+void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 			 uint16 logon_count, uint16 bad_pw_count,
- 		 	 uint32 num_groups, const DOM_GID *gids,
-			 uint32 user_flgs, uchar nt_session_key[16],
-			 uchar lm_session_key[16],
+ 		 	 uint32 num_groups, DOM_GID *gids,
+			 uint32 user_flgs, uchar *sess_key,
  			 const char *logon_srv, const char *logon_dom,
-			 const DOM_SID *dom_sid, const char *other_sids)
+			 DOM_SID *dom_sid, const char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
-	unsigned int i;
+	int i;
 	int num_other_sids = 0;
 	
 	NTTIME 		logon_time, logoff_time, kickoff_time,
 			pass_last_set_time, pass_can_change_time,
 			pass_must_change_time;
 
+	int 		len_user_name, len_full_name, len_home_dir,
+			len_dir_drive, len_logon_script, len_profile_path;
+			
+	const char*		user_name = pdb_get_username(sampw);
+	const char*		full_name = pdb_get_fullname(sampw);
+	const char*		home_dir  = pdb_get_homedir(sampw);
+	const char*		dir_drive = pdb_get_dirdrive(sampw);
+	const char*		logon_script = pdb_get_logon_script(sampw);
+	const char*		profile_path = pdb_get_profile_path(sampw);
+
+	int len_logon_srv    = strlen(logon_srv);
+	int len_logon_dom    = strlen(logon_dom);
+
+	len_user_name    = strlen(user_name   );
+	len_full_name    = strlen(full_name   );
+	len_home_dir     = strlen(home_dir    );
+	len_dir_drive    = strlen(dir_drive   );
+	len_logon_script = strlen(logon_script);
+	len_profile_path = strlen(profile_path);
+
+
 	ZERO_STRUCTP(usr);
 
 	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
+
 	/* Create NTTIME structs */
-	unix_to_nt_time (&logon_time, 		 unix_logon_time);
-	unix_to_nt_time (&logoff_time, 		 unix_logoff_time);
-	unix_to_nt_time (&kickoff_time, 	 unix_kickoff_time);
-	unix_to_nt_time (&pass_last_set_time, 	 unix_pass_last_set_time);
-	unix_to_nt_time (&pass_can_change_time,	 unix_pass_can_change_time);
-	unix_to_nt_time (&pass_must_change_time, unix_pass_must_change_time);
+	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(sampw));
+	unix_to_nt_time (&logoff_time, 		TIME_T_MAX);
+	unix_to_nt_time (&kickoff_time, 	TIME_T_MAX);
+	unix_to_nt_time (&pass_last_set_time, 	pdb_get_pass_last_set_time(sampw));
+	unix_to_nt_time (&pass_can_change_time,	pdb_get_pass_can_change_time(sampw));
+	unix_to_nt_time (&pass_must_change_time,pdb_get_pass_must_change_time(sampw));
 
 	usr->logon_time            = logon_time;
 	usr->logoff_time           = logoff_time;
@@ -1382,61 +1247,64 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	usr->pass_can_change_time  = pass_can_change_time;
 	usr->pass_must_change_time = pass_must_change_time;
 
+	init_uni_hdr(&usr->hdr_user_name, len_user_name);
+	init_uni_hdr(&usr->hdr_full_name, len_full_name);
+	init_uni_hdr(&usr->hdr_logon_script, len_logon_script);
+	init_uni_hdr(&usr->hdr_profile_path, len_profile_path);
+	init_uni_hdr(&usr->hdr_home_dir, len_home_dir);
+	init_uni_hdr(&usr->hdr_dir_drive, len_dir_drive);
+
 	usr->logon_count = logon_count;
 	usr->bad_pw_count = bad_pw_count;
 
-	usr->user_rid = user_rid;
-	usr->group_rid = group_rid;
-	usr->num_groups = num_groups;
+	usr->user_rid = pdb_get_user_rid(sampw);
+	usr->group_rid = pdb_get_group_rid(sampw);
+	usr->num_groups = num_groups+1;
 
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	if (nt_session_key != NULL)
-		memcpy(usr->user_sess_key, nt_session_key, sizeof(usr->user_sess_key));
+	if (sess_key != NULL)
+		memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
 	else
 		memset((char *)usr->user_sess_key, '\0', sizeof(usr->user_sess_key));
+
+	init_uni_hdr(&usr->hdr_logon_srv, len_logon_srv);
+	init_uni_hdr(&usr->hdr_logon_dom, len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
 	memset((char *)usr->padding, '\0', sizeof(usr->padding));
-
-#if 0 /* JRATEST - exchange auth test. */
-	if (lm_session_key != NULL) 
-		memcpy(usr->padding, lm_session_key, sizeof(usr->user_sess_key));
-#endif
 
 	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
 
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
 	
-	init_unistr2(&usr->uni_user_name, user_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_user_name, &usr->uni_user_name);
-	init_unistr2(&usr->uni_full_name, full_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_full_name, &usr->uni_full_name);
-	init_unistr2(&usr->uni_logon_script, logon_script, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_logon_script, &usr->uni_logon_script);
-	init_unistr2(&usr->uni_profile_path, profile_path, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_profile_path, &usr->uni_profile_path);
-	init_unistr2(&usr->uni_home_dir, home_dir, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_home_dir, &usr->uni_home_dir);
-	init_unistr2(&usr->uni_dir_drive, dir_drive, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_dir_drive, &usr->uni_dir_drive);
+	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
+	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
+	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
+	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
+	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
+	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
 
-	usr->num_groups2 = num_groups;
+	/* always have at least one group == the user's primary group */
+	usr->num_groups2 = num_groups+1;
 
-	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups));
-	if (usr->gids == NULL && num_groups>0)
+	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups+1));
+	if (usr->gids == NULL)
 		return;
 
+	/* primary group **MUST** go first.  NT4's winmsd.exe will give
+	   "The Network statistics are currently not available.  9-5"
+	   What the heck is this?     -- jerry  */
+	usr->gids[0].g_rid = usr->group_rid;
+	usr->gids[0].attr  = 0x07;
 	for (i = 0; i < num_groups; i++) 
-		usr->gids[i] = gids[i];	
+		usr->gids[i+1] = gids[i];	
 		
-	init_unistr2(&usr->uni_logon_srv, logon_srv, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_logon_srv, &usr->uni_logon_srv);
-	init_unistr2(&usr->uni_logon_dom, logon_dom, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_logon_dom, &usr->uni_logon_dom);
+	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
+	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
 
 	init_dom_sid2(&usr->dom_sid, dom_sid);
 	/* "other" sids are set up above */
@@ -1450,15 +1318,14 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
  Jacobsen at HP. JRA.
 ********************************************************************/
 
-BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
-		       int depth, uint16 validation_level)
+static BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, int depth, uint16 validation_level)
 {
-	unsigned int i;
+	int i;
 
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "net_io_user_info3");
+	prs_debug(ps, depth, desc, "lsa_io_lsa_user_info");
 	depth++;
 
 	if (UNMARSHALLING(ps))
@@ -1486,17 +1353,17 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!smb_io_time("must change time", &usr->pass_must_change_time, ps, depth)) /* password must change time */
 		return False;
 
-	if(!smb_io_unihdr("hdr_user_name", &usr->hdr_user_name, ps, depth)) /* username unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_user_name, ps, depth)) /* username unicode string header */
 		return False;
-	if(!smb_io_unihdr("hdr_full_name", &usr->hdr_full_name, ps, depth)) /* user's full name unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_full_name, ps, depth)) /* user's full name unicode string header */
 		return False;
-	if(!smb_io_unihdr("hdr_logon_script", &usr->hdr_logon_script, ps, depth)) /* logon script unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_script, ps, depth)) /* logon script unicode string header */
 		return False;
-	if(!smb_io_unihdr("hdr_profile_path", &usr->hdr_profile_path, ps, depth)) /* profile path unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_profile_path, ps, depth)) /* profile path unicode string header */
 		return False;
-	if(!smb_io_unihdr("hdr_home_dir", &usr->hdr_home_dir, ps, depth)) /* home directory unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_home_dir, ps, depth)) /* home directory unicode string header */
 		return False;
-	if(!smb_io_unihdr("hdr_dir_drive", &usr->hdr_dir_drive, ps, depth)) /* home directory drive unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_dir_drive, ps, depth)) /* home directory drive unicode string header */
 		return False;
 
 	if(!prs_uint16("logon_count   ", ps, depth, &usr->logon_count))  /* logon count */
@@ -1515,12 +1382,12 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!prs_uint32("user_flgs     ", ps, depth, &usr->user_flgs))     /* user flags */
 		return False;
 
-	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* user session key */
+	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* unused user session key */
 		return False;
 
-	if(!smb_io_unihdr("hdr_logon_srv", &usr->hdr_logon_srv, ps, depth)) /* logon server unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_srv, ps, depth)) /* logon server unicode string header */
 		return False;
-	if(!smb_io_unihdr("hdr_logon_dom", &usr->hdr_logon_dom, ps, depth)) /* logon domain unicode string header */
+	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_dom, ps, depth)) /* logon domain unicode string header */
 		return False;
 
 	if(!prs_uint32("buffer_dom_id ", ps, depth, &usr->buffer_dom_id)) /* undocumented logon domain id pointer */
@@ -1540,17 +1407,17 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 		}
 	}
 		
-	if(!smb_io_unistr2("uni_user_name", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_full_name", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth)) /* logon script unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth)) /* logon script unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth)) /* profile path unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth)) /* profile path unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_home_dir", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth)) /* home directory unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth)) /* home directory unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_dir_drive", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth)) /* home directory drive unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth)) /* home directory drive unicode string */
 		return False;
 
 	if(!prs_align(ps))
@@ -1569,9 +1436,9 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 			return False;
 	}
 
-	if(!smb_io_unistr2("uni_logon_srv", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_logon_dom", &usr->uni_logon_dom, usr->hdr_logon_srv.buffer, ps, depth)) /* logon domain unicode string */
+	if(!smb_io_unistr2("unistr2", &usr->uni_logon_dom, usr->hdr_logon_srv.buffer, ps, depth)) /* logon domain unicode string */
 		return False;
 
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
@@ -1625,9 +1492,6 @@ BOOL net_io_q_sam_logon(const char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, 
 	if(!smb_io_sam_info("", &q_l->sam_id, ps, depth))
 		return False;
 
-	if(!prs_align_uint16(ps))
-		return False;
-	
 	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
 		return False;
 
@@ -1729,14 +1593,13 @@ BOOL net_io_r_sam_logoff(const char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps
 makes a NET_Q_SAM_SYNC structure.
 ********************************************************************/
 BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
-                         const char *cli_name, DOM_CRED *cli_creds, 
-                         DOM_CRED *ret_creds, uint32 database_id, 
-			 uint32 next_rid)
+                         const char *cli_name, DOM_CRED * cli_creds, 
+                         DOM_CRED *ret_creds, uint32 database_id)
 {
 	DEBUG(5, ("init_q_sam_sync\n"));
 
-	init_unistr2(&q_s->uni_srv_name, srv_name, UNI_STR_TERMINATE);
-	init_unistr2(&q_s->uni_cli_name, cli_name, UNI_STR_TERMINATE);
+	init_unistr2(&q_s->uni_srv_name, srv_name, strlen(srv_name) + 1);
+	init_unistr2(&q_s->uni_cli_name, cli_name, strlen(cli_name) + 1);
 
         if (cli_creds)
                 memcpy(&q_s->cli_creds, cli_creds, sizeof(q_s->cli_creds));
@@ -1744,11 +1607,11 @@ BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
 	if (cli_creds)
                 memcpy(&q_s->ret_creds, ret_creds, sizeof(q_s->ret_creds));
 	else
-		memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
+                memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
 
 	q_s->database_id = database_id;
 	q_s->restart_state = 0;
-	q_s->sync_context = next_rid;
+	q_s->sync_context = 0;
 	q_s->max_size = 0xffff;
 
 	return True;
@@ -1819,7 +1682,7 @@ static BOOL net_io_sam_delta_hdr(const char *desc, SAM_DELTA_HDR * delta,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_mod_count(const char *desc, SAM_DELTA_MOD_COUNT *info,
+static BOOL net_io_sam_delta_stamp(const char *desc, SAM_DELTA_STAMP *info,
                                    prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "net_io_sam_delta_stamp");
@@ -2195,12 +2058,12 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 		if (!prs_uint32("pwd_len", ps, depth, &len))
                         return False;
 		old_offset = ps->data_offset;
-		if (len > 0)
+		if (len == 0x44)
 		{
 			if (ps->io)
 			{
 				/* reading */
-                                if (!prs_hash1(ps, ps->data_offset, sess_key, len))
+                                if (!prs_hash1(ps, ps->data_offset, sess_key))
                                         return False;
 			}
 			if (!net_io_sam_passwd_info("pass", &info->pass, 
@@ -2210,7 +2073,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (!ps->io)
 			{
 				/* writing */
-                                if (!prs_hash1(ps, old_offset, sess_key, len))
+                                if (!prs_hash1(ps, old_offset, sess_key))
                                         return False;
 			}
 		}
@@ -2343,12 +2206,9 @@ static BOOL net_io_sam_alias_info(const char *desc, SAM_ALIAS_INFO * info,
 	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
                             info->hdr_sec_desc.buffer, ps, depth))
                 return False;
-
-	if (info->hdr_als_desc.buffer != 0) {
-		if (!smb_io_unistr2("uni_als_desc", &info->uni_als_desc,
-				    info->hdr_als_name.buffer, ps, depth))
-			return False;
-	}
+	if (!smb_io_unistr2("uni_als_desc", &info->uni_als_desc,
+                            info->hdr_als_name.buffer, ps, depth))
+                return False;
 
 	return True;
 }
@@ -2371,12 +2231,12 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
 	if (!prs_uint32("ptr_members", ps, depth, &info->ptr_members))
                 return False;
 
-	if (ps->data_offset + 16 > ps->buffer_size)
-		return False;
-	ps->data_offset += 16;
-
 	if (info->ptr_members != 0)
 	{
+                if (ps->data_offset + 16 > ps->buffer_size)
+                        return False;
+                ps->data_offset += 16;
+
 		if (!prs_uint32("num_sids", ps, depth, &info->num_sids))
                         return False;
 		if (info->num_sids != info->num_members)
@@ -2429,326 +2289,6 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_policy_info(const char *desc, SAM_DELTA_POLICY *info,
-				      prs_struct *ps, int depth)
-{
-	unsigned int i;
-	prs_debug(ps, depth, desc, "net_io_sam_policy_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("max_log_size", ps, depth, &info->max_log_size))
-                return False;
-	if (!prs_uint64("audit_retention_period", ps, depth,
-			&info->audit_retention_period))
-                return False;
-	if (!prs_uint32("auditing_mode", ps, depth, &info->auditing_mode))
-                return False;
-	if (!prs_uint32("num_events", ps, depth, &info->num_events))
-                return False;
-	if (!prs_uint32("ptr_events", ps, depth, &info->ptr_events))
-                return False;
-
-	if (!smb_io_unihdr("hdr_dom_name", &info->hdr_dom_name, ps, depth))
-		return False;
-
-	if (!prs_uint32("sid_ptr", ps, depth, &info->sid_ptr))
-                return False;
-
-	if (!prs_uint32("paged_pool_limit", ps, depth, &info->paged_pool_limit))
-                return False;
-	if (!prs_uint32("non_paged_pool_limit", ps, depth,
-			&info->non_paged_pool_limit))
-                return False;
-	if (!prs_uint32("min_workset_size", ps, depth, &info->min_workset_size))
-                return False;
-	if (!prs_uint32("max_workset_size", ps, depth, &info->max_workset_size))
-                return False;
-	if (!prs_uint32("page_file_limit", ps, depth, &info->page_file_limit))
-                return False;
-	if (!prs_uint64("time_limit", ps, depth, &info->time_limit))
-                return False;
-	if (!smb_io_time("modify_time", &info->modify_time, ps, depth))
-                return False;
-	if (!smb_io_time("create_time", &info->create_time, ps, depth))
-                return False;
-	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
-                return False;
-
-	for (i=0; i<4; i++) {
-		UNIHDR dummy;
-		if (!smb_io_unihdr("dummy", &dummy, ps, depth))
-			return False;
-	}
-
-	for (i=0; i<4; i++) {
-		uint32 reserved;
-		if (!prs_uint32("reserved", ps, depth, &reserved))
-			return False;
-	}
-
-	if (!prs_uint32("num_event_audit_options", ps, depth,
-			&info->num_event_audit_options))
-                return False;
-
-	for (i=0; i<info->num_event_audit_options; i++)
-		if (!prs_uint32("event_audit_option", ps, depth,
-				&info->event_audit_option))
-			return False;
-
-	if (!smb_io_unistr2("domain_name", &info->domain_name, True, ps, depth))
-                return False;
-
-	if(!smb_io_dom_sid2("domain_sid", &info->domain_sid, ps, depth))
-		return False;
-
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
-
-		return False;
-
-	return True;
-}
-
-#if 0
-
-/* This function is pretty broken - see bug #334 */
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_trustdoms_info(const char *desc, SAM_DELTA_TRUSTDOMS *info,
-				      prs_struct *ps, int depth)
-{
-	int i;
-
-	prs_debug(ps, depth, desc, "net_io_sam_trustdoms_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
-                return False;
-
-	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("sid", &info->sid, ps, depth))
-		return False;
-
-	if(!smb_io_unihdr("hdr_domain", &info->hdr_domain, ps, depth))
-		return False;
-
-	if(!prs_uint32("unknown0", ps, depth, &info->unknown0))
-                return False;
-	if(!prs_uint32("unknown1", ps, depth, &info->unknown1))
-                return False;
-	if(!prs_uint32("unknown2", ps, depth, &info->unknown2))
-                return False;
-
-	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
-                return False;
-	if(!prs_uint32("ptr", ps, depth, &info->ptr))
-                return False;
-
-	for (i=0; i<12; i++)
-		if(!prs_uint32("unknown3", ps, depth, &info->unknown3))
-                	return False;
-
-	if (!smb_io_unistr2("domain", &info->domain, True, ps, depth))
-                return False;
-
-	return True;
-}
-
-#endif
-
-#if 0
-
-/* This function doesn't work - see bug #334 */
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_secret_info(const char *desc, SAM_DELTA_SECRET *info,
-				   prs_struct *ps, int depth)
-{
-	int i;
-
-	prs_debug(ps, depth, desc, "net_io_sam_secret_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
-                return False;
-
-	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
-		return False;
-
-	if (!smb_io_unistr2("secret", &info->secret, True, ps, depth))
-                return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("count1", ps, depth, &info->count1))
-                return False;
-	if(!prs_uint32("count2", ps, depth, &info->count2))
-                return False;
-	if(!prs_uint32("ptr", ps, depth, &info->ptr))
-                return False;
-
-
-	if(!smb_io_time("time1", &info->time1, ps, depth)) /* logon time */
-		return False;
-	if(!prs_uint32("count3", ps, depth, &info->count3))
-                return False;
-	if(!prs_uint32("count4", ps, depth, &info->count4))
-                return False;
-	if(!prs_uint32("ptr2", ps, depth, &info->ptr2))
-                return False;
-	if(!smb_io_time("time2", &info->time2, ps, depth)) /* logon time */
-		return False;
-	if(!prs_uint32("unknow1", ps, depth, &info->unknow1))
-                return False;
-
-
-	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
-                return False;
-	if(!prs_uint32("ptr3", ps, depth, &info->ptr3))
-                return False;
-	for(i=0; i<12; i++)
-		if(!prs_uint32("unknow2", ps, depth, &info->unknow2))
-                	return False;
-
-	if(!prs_uint32("chal_len", ps, depth, &info->chal_len))
-                return False;
-	if(!prs_uint32("reserved1", ps, depth, &info->reserved1))
-                return False;
-	if(!prs_uint32("chal_len2", ps, depth, &info->chal_len2))
-                return False;
-
-	if(!prs_uint8s (False, "chal", ps, depth, info->chal, info->chal_len2))
-		return False;
-
-	if(!prs_uint32("key_len", ps, depth, &info->key_len))
-                return False;
-	if(!prs_uint32("reserved2", ps, depth, &info->reserved2))
-                return False;
-	if(!prs_uint32("key_len2", ps, depth, &info->key_len2))
-                return False;
-
-	if(!prs_uint8s (False, "key", ps, depth, info->key, info->key_len2))
-		return False;
-
-
-	if(!prs_uint32("buf_size3", ps, depth, &info->buf_size3))
-                return False;
-
-	if(!sec_io_desc("sec_desc2", &info->sec_desc2, ps, depth))
-		return False;
-
-
-	return True;
-}
-
-#endif
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
-				      prs_struct *ps, int depth)
-{
-	unsigned int i;
-
-	prs_debug(ps, depth, desc, "net_io_sam_privs_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_dom_sid2("sid", &info->sid, ps, depth))
-		return False;
-
-	if(!prs_uint32("priv_count", ps, depth, &info->priv_count))
-                return False;
-	if(!prs_uint32("priv_control", ps, depth, &info->priv_control))
-                return False;
-
-	if(!prs_uint32("priv_attr_ptr", ps, depth, &info->priv_attr_ptr))
-                return False;
-	if(!prs_uint32("priv_name_ptr", ps, depth, &info->priv_name_ptr))
-                return False;
-
-	if (!prs_uint32("paged_pool_limit", ps, depth, &info->paged_pool_limit))
-                return False;
-	if (!prs_uint32("non_paged_pool_limit", ps, depth,
-			&info->non_paged_pool_limit))
-                return False;
-	if (!prs_uint32("min_workset_size", ps, depth, &info->min_workset_size))
-                return False;
-	if (!prs_uint32("max_workset_size", ps, depth, &info->max_workset_size))
-                return False;
-	if (!prs_uint32("page_file_limit", ps, depth, &info->page_file_limit))
-                return False;
-	if (!prs_uint64("time_limit", ps, depth, &info->time_limit))
-                return False;
-	if (!prs_uint32("system_flags", ps, depth, &info->system_flags))
-                return False;
-	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
-                return False;
-
-	for (i=0; i<4; i++) {
-		UNIHDR dummy;
-		if (!smb_io_unihdr("dummy", &dummy, ps, depth))
-			return False;
-	}
-
-	for (i=0; i<4; i++) {
-		uint32 reserved;
-		if (!prs_uint32("reserved", ps, depth, &reserved))
-			return False;
-	}
-
-	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
-                return False;
-
-	info->attributes = talloc(ps->mem_ctx, sizeof(uint32) * info->attribute_count);
-
-	for (i=0; i<info->attribute_count; i++)
-		if(!prs_uint32("attributes", ps, depth, &info->attributes[i]))
-	                return False;
-
-	if(!prs_uint32("privlist_count", ps, depth, &info->privlist_count))
-                return False;
-
-	info->hdr_privslist = talloc(ps->mem_ctx, sizeof(UNIHDR) * info->privlist_count);
-	info->uni_privslist = talloc(ps->mem_ctx, sizeof(UNISTR2) * info->privlist_count);
-
-	for (i=0; i<info->privlist_count; i++)
-		if(!smb_io_unihdr("hdr_privslist", &info->hdr_privslist[i], ps, depth))
-			return False;
-
-	for (i=0; i<info->privlist_count; i++)
-		if (!smb_io_unistr2("uni_privslist", &info->uni_privslist[i], True, ps, depth))
-			return False;
-
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
-                return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
 static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 				 SAM_DELTA_CTR * delta, uint16 type,
 				 prs_struct *ps, int depth)
@@ -2756,69 +2296,70 @@ static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 	prs_debug(ps, depth, desc, "net_io_sam_delta_ctr");
 	depth++;
 
-	switch (type) {
+	switch (type)
+        {
                 /* Seen in sam deltas */
-                case SAM_DELTA_MODIFIED_COUNT:
-                        if (!net_io_sam_delta_mod_count("", &delta->mod_count, ps, depth))
+
+                case SAM_DELTA_SAM_STAMP:
+                {
+                        if (!net_io_sam_delta_stamp("", &delta->stamp,
+                                                    ps, depth))
                                 return False;
                         break;
+                }
 
 		case SAM_DELTA_DOMAIN_INFO:
-			if (!net_io_sam_domain_info("", &delta->domain_info, ps, depth))
+		{
+			if (!net_io_sam_domain_info("", &delta->domain_info,
+                                                    ps, depth))
                                 return False;
 			break;
-
+		}
 		case SAM_DELTA_GROUP_INFO:
-			if (!net_io_sam_group_info("", &delta->group_info, ps, depth))
+		{
+			if (!net_io_sam_group_info("", &delta->group_info,
+                                                   ps, depth))
                                 return False;
 			break;
-
+		}
 		case SAM_DELTA_ACCOUNT_INFO:
-			if (!net_io_sam_account_info("", sess_key, &delta->account_info, ps, depth))
+		{
+			if (!net_io_sam_account_info("", sess_key,
+                                                     &delta->account_info,
+                                                     ps, depth))
                                 return False;
 			break;
-
+		}
 		case SAM_DELTA_GROUP_MEM:
-			if (!net_io_sam_group_mem_info("", &delta->grp_mem_info, ps, depth))
+		{
+			if (!net_io_sam_group_mem_info("", 
+                                                       &delta->grp_mem_info,
+                                                       ps, depth))
                                 return False;
 			break;
-
+		}
 		case SAM_DELTA_ALIAS_INFO:
-                        if (!net_io_sam_alias_info("", &delta->alias_info, ps, depth))
+		{
+                        if (!net_io_sam_alias_info("", &delta->alias_info,
+                                                   ps, depth))
                                 return False;
 			break;
-
-		case SAM_DELTA_POLICY_INFO:
-                        if (!net_io_sam_policy_info("", &delta->policy_info, ps, depth))
-                                return False;
-			break;
-
+		}
 		case SAM_DELTA_ALIAS_MEM:
-			if (!net_io_sam_alias_mem_info("", &delta->als_mem_info, ps, depth))
+		{
+			if (!net_io_sam_alias_mem_info("", 
+                                                       &delta->als_mem_info,
+                                                       ps, depth))
                                 return False;
 			break;
-
-		case SAM_DELTA_PRIVS_INFO:
-			if (!net_io_sam_privs_info("", &delta->privs_info, ps, depth))
-                                return False;
-			break;
-
-			/* These guys are implemented but broken */
-
- 	        case SAM_DELTA_TRUST_DOMS:
-		case SAM_DELTA_SECRET_INFO:
-			break;
-
-			/* These guys are not implemented yet */
-
-  	        case SAM_DELTA_RENAME_GROUP:
-	        case SAM_DELTA_RENAME_USER:
-	        case SAM_DELTA_RENAME_ALIAS:
-	        case SAM_DELTA_DELETE_GROUP:
-	        case SAM_DELTA_DELETE_USER:
+		}
 		default:
-			DEBUG(0, ("Replication error: Unknown delta type 0x%x\n", type));
+		{
+			DEBUG(0,
+			      ("Replication error: Unknown delta type 0x%x\n",
+			       type));
 			break;
+		}
 	}
 
 	return True;
@@ -2923,8 +2464,8 @@ BOOL init_net_q_sam_deltas(NET_Q_SAM_DELTAS *q_s, const char *srv_name,
 {
 	DEBUG(5, ("init_net_q_sam_deltas\n"));
 
-	init_unistr2(&q_s->uni_srv_name, srv_name, UNI_STR_TERMINATE);
-	init_unistr2(&q_s->uni_cli_name, cli_name, UNI_STR_TERMINATE);
+	init_unistr2(&q_s->uni_srv_name, srv_name, strlen(srv_name) + 1);
+	init_unistr2(&q_s->uni_cli_name, cli_name, strlen(cli_name) + 1);
 
 	memcpy(&q_s->cli_creds, cli_creds, sizeof(q_s->cli_creds));
 	memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
@@ -2972,7 +2513,7 @@ reads or writes a structure.
 BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
                          NET_R_SAM_DELTAS *r_s, prs_struct *ps, int depth)
 {
-        unsigned int i;
+        int i;
 
 	prs_debug(ps, depth, desc, "net_io_r_sam_deltas");
 	depth++;

@@ -1,0 +1,132 @@
+
+
+
+     SSSSMMMMBBBBMMMMNNNNTTTT((((8888))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       SSSSMMMMBBBBMMMMNNNNTTTT((((8888))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbmnt - helper utility for mounting SMB filesystems
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbmmmmnnnntttt mmmmoooouuuunnnntttt----ppppooooiiiinnnntttt [ ----ssss <<<<sssshhhhaaaarrrreeee>>>> ]  [ ----rrrr ]  [ ----uuuu <<<<uuuuiiiidddd>>>> ]  [
+          ----gggg <<<<ggggiiiidddd>>>> ]  [ ----ffff <<<<mmmmaaaasssskkkk>>>> ]  [ ----dddd <<<<mmmmaaaasssskkkk>>>> ]  [ ----oooo <<<<ooooppppttttiiiioooonnnnssss>>>> ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          ssssmmmmbbbbmmmmnnnntttt is a helper application used by the smbmount program
+          to do the actual mounting of SMB shares. ssssmmmmbbbbmmmmnnnntttt can be
+          installed setuid root if you want normal users to be able to
+          mount their SMB shares.
+
+          A setuid smbmnt will only allow mounts on directories owned
+          by the user, and that the user has write permission on.
+
+          The ssssmmmmbbbbmmmmnnnntttt program is normally invoked by ssssmmmmbbbbmmmmoooouuuunnnntttt((((8888))))
+           It should not be invoked directly by users.
+
+          smbmount searches the normal PATH for smbmnt. You must
+          ensure that the smbmnt version in your path matches the
+          smbmount used.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----rrrr   mount the filesystem read-only
+
+          ----uuuu uuuuiiiidddd
+               specify the uid that the files will be owned by
+
+          ----gggg ggggiiiidddd
+               specify the gid that the files will be owned by
+
+          ----ffff mmmmaaaasssskkkk
+               specify the octal file mask applied
+
+          ----dddd mmmmaaaasssskkkk
+               specify the octal directory mask applied
+
+          ----oooo ooooppppttttiiiioooonnnnssss
+               list of options that are passed as-is to smbfs, if this
+               command is run on a 2.4 or higher Linux kernel.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          Volker Lendecke, Andrew Tridgell, Michael H. Warfield and
+          others.
+
+          The current maintainer of smbfs and the userspace tools
+          ssssmmmmbbbbmmmmoooouuuunnnntttt, ssssmmmmbbbbuuuummmmoooouuuunnnntttt, and ssssmmmmbbbbmmmmnnnntttt is Urban Widmark
+          <URL:mailto:urban@teststation.com>.  The SAMBA Mailing list
+          <URL:mailto:samba@samba.org> is the preferred place to ask
+          questions regarding these programs.
+
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBMMMMNNNNTTTT((((8888))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       SSSSMMMMBBBBMMMMNNNNTTTT((((8888))))
+
+
+
+          The conversion of this manpage for Samba 2.2 was performed
+          by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+

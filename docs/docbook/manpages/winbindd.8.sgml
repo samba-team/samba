@@ -1,0 +1,515 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<refentry id="winbindd">
+
+<refmeta>
+	<refentrytitle>winbindd</refentrytitle>
+	<manvolnum>8</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>winbindd</refname>
+	<refpurpose>Name Service Switch daemon for resolving names 
+	from NT servers</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>winbindd</command>
+		<arg choice="opt">-i</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This program is part of the <ulink url="samba.7.html">
+	Samba</ulink> suite.</para>
+
+	<para><command>winbindd</command> is a daemon that provides 
+	a service for the Name Service Switch capability that is present 
+	in most modern C libraries.  The Name Service Switch allows user 
+	and system information to be obtained from different databases 
+	services such as NIS or DNS.  The exact behaviour can be configured 
+	throught the <filename>/etc/nsswitch.conf</filename> file.  
+	Users and groups are allocated as they are resolved to a range 
+	of user and group ids specified by the administrator of the 
+	Samba system.</para>
+
+	<para>The service provided by <command>winbindd</command> is called `winbind' and 
+	can be used to resolve user and group information from a 
+	Windows NT server. The service can also provide authentication
+	services via an associated PAM module. </para>
+	
+	<para>
+	The <filename>pam_winbind</filename> module in the 2.2.2 release only 
+	supports the <parameter>auth</parameter> and <parameter>account</parameter> 
+	module-types.  The latter is simply
+	performs a getpwnam() to verify that the system can obtain a uid for the
+	user.  If the <filename>libnss_winbind</filename> library has been correctly 
+	installed, this should always suceed.
+	</para>
+
+	<para>The following nsswitch databases are implemented by 
+	the winbindd service: </para>
+
+	<variablelist>
+		<varlistentry>
+		<term>hosts</term>
+		<listitem><para>User information traditionally stored in 
+		the <filename>hosts(5)</filename> file and used by 
+		<command>gethostbyname(3)</command> functions. Names are
+		resolved through the WINS server or by broadcast.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>passwd</term>
+		<listitem><para>User information traditionally stored in 
+		the <filename>passwd(5)</filename> file and used by 
+		<command>getpwent(3)</command> functions. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>group</term>
+		<listitem><para>Group information traditionally stored in 
+		the <filename>group(5)</filename> file and used by 		
+		<command>getgrent(3)</command> functions. </para></listitem>
+		</varlistentry>
+	</variablelist>
+
+	<para>For example, the following simple configuration in the
+	<filename>/etc/nsswitch.conf</filename> file can be used to initially 
+	resolve user and group information from <filename>/etc/passwd
+	</filename> and <filename>/etc/group</filename> and then from the 
+	Windows NT server. </para>
+
+	<para><programlisting>
+passwd:         files winbind
+group:          files winbind
+	</programlisting></para>  
+
+	<para>The following simple configuration in the
+	<filename>/etc/nsswitch.conf</filename> file can be used to initially
+	resolve hostnames from <filename>/etc/hosts</filename> and then from the
+	WINS server.</para>
+
+</refsect1>
+
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>-d debuglevel</term>
+		<listitem><para>Sets the debuglevel to an integer between 
+		0 and 100. 0 is for no debugging and 100 is for reams and 
+		reams. To submit a bug report to the Samba Team, use debug 
+		level 100 (see BUGS.txt).   </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-i</term>
+		<listitem><para>Tells <command>winbindd</command> to not 
+		become a daemon and detach from the current terminal. This 
+		option is used by developers when interactive debugging 
+		of <command>winbindd</command> is required. </para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>NAME AND ID RESOLUTION</title>
+
+	<para>Users and groups on a Windows NT server are assigned 
+	a relative id (rid) which is unique for the domain when the 
+	user or group is created.  To convert the Windows NT user or group 
+	into a unix user or group, a mapping between rids and unix user 
+	and group ids is required.  This is one of the jobs that <command>
+	winbindd</command> performs. </para>
+
+	<para>As winbindd users and groups are resolved from a server, user 
+	and group ids are allocated from a specified range.  This
+	is done on a first come, first served basis, although all existing 
+	users and groups will be mapped as soon as a client performs a user 
+	or group enumeration command.  The allocated unix ids are stored 
+	in a database file under the Samba lock directory and will be 
+	remembered. </para>
+
+	<para>WARNING: The rid to unix id database is the only location 
+	where the user and group mappings are stored by winbindd.  If this 
+	file is deleted or corrupted, there is no way for winbindd to 
+	determine which user and group ids correspond to Windows NT user 
+	and group rids. </para>
+</refsect1>
+
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>Configuration of the <command>winbindd</command> daemon 
+	is done through configuration parameters in the <filename>smb.conf(5)
+	</filename> file.  All parameters should be specified in the 
+	[global] section of smb.conf. </para>
+
+	<variablelist>
+		<varlistentry>
+		<term>winbind separator</term>
+		<listitem><para>The winbind separator option allows you 
+		to specify how NT domain names and user names are combined 
+		into unix user names when presented to users. By default, 
+		<command>winbindd</command> will use the traditional '\' 
+		separator so that the unix user names look like 
+		DOMAIN\username. In some cases this separator character may 
+		cause problems as the '\' character has special meaning in 
+		unix shells.  In that case you can use the winbind separator 
+		option to specify an alternative separator character. Good 
+		alternatives may be '/' (although that conflicts
+		with the unix directory separator) or a '+ 'character. 
+		The '+' character appears to be the best choice for 100% 
+		compatibility with existing unix utilities, but may be an 
+		aesthetically bad choice depending on your taste. </para>
+		
+		<para>Default: <command>winbind separator = \ </command>
+		</para>
+		<para>Example: <command>winbind separator = + </command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>winbind uid</term>
+		<listitem><para>The winbind uid parameter specifies the 
+		range of user ids that are allocated by the winbindd daemon.  
+		This range of ids should have no existing local or NIS users 
+		within it as strange conflicts can occur otherwise. </para>
+
+		<para>Default: <command>winbind uid = &lt;empty string&gt; 
+		</command></para>
+		<para>Example: <command>winbind uid = 10000-20000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>winbind gid</term>
+		<listitem><para>The winbind gid parameter specifies the 
+		range of group ids that are allocated by the winbindd daemon.  
+		This range of group ids should have no existing local or NIS 
+		groups within it as strange conflicts can occur otherwise.</para> 
+
+		<para>Default: <command>winbind gid = &lt;empty string&gt;
+		</command></para> 	
+		<para>Example: <command>winbind gid = 10000-20000
+		</command> </para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>winbind cache time</term>
+		<listitem><para>This parameter specifies the number of 
+		seconds the winbindd daemon will cache user and group information 
+		before querying a Windows NT server again. When a item in the 
+		cache is older than this time winbindd will ask the domain 
+		controller for the sequence number of the server's account database. 
+		If the sequence number has not changed then the cached item is 
+		marked as valid for a further <parameter>winbind cache time
+		</parameter> seconds.  Otherwise the item is fetched from the 
+		server. This means that as long as the account database is not 
+		actively changing winbindd will only have to send one sequence 
+		number query packet every <parameter>winbind cache time
+		</parameter> seconds. </para>
+
+		<para>Default: <command>winbind cache time = 15</command>
+		</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>winbind enum users</term>
+		<listitem><para>On large installations it may be necessary 
+		to suppress the enumeration of users through the <command>
+		setpwent()</command>, <command>getpwent()</command> and 
+		<command>endpwent()</command> group of system calls.  If 
+		the <parameter>winbind enum users</parameter> parameter is false, 
+		calls to the <command>getpwent</command> system call will not 
+		return any data. </para>
+
+		<para><emphasis>Warning:</emphasis> Turning off user enumeration 
+		may cause some programs to behave oddly.  For example, the <command>finger</command> 
+		program relies on having access to the full user list when 
+		searching  for matching usernames. </para>
+
+		<para>Default: <command>winbind enum users = yes </command></para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>winbind enum groups</term>
+		<listitem><para>On large installations it may be necessary 
+		to suppress the enumeration of groups through the <command>
+		setgrent()</command>, <command>getgrent()</command> and 
+		<command>endgrent()</command> group of system calls.  If 
+		the <parameter>winbind enum groups</parameter> parameter is 
+		false, calls to the <command>getgrent()</command> system 
+		call will not return any data. </para>
+
+		<para><emphasis>Warning:</emphasis> Turning off group 
+		enumeration may cause some programs to behave oddly. 
+		</para>
+
+		<para>Default: <command>winbind enum groups = no </command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term>template homedir</term>
+		<listitem><para>When filling out the user information 
+		for a Windows NT user, the <command>winbindd</command> daemon 
+		uses this parameter to fill in the home directory for that user.  
+		If the string <parameter>%D</parameter> is present it is 
+		substituted with the user's Windows NT domain name.  If the 
+		string <parameter>%U</parameter> is present it is substituted
+		with the user's Windows NT user name. </para>
+
+		<para>Default: <command>template homedir = /home/%D/%U </command>
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>template shell</term>
+		<listitem><para>When filling out the user information for 
+ 		a Windows NT user, the <command>winbindd</command> daemon 
+		uses this parameter to fill in the shell for that user. 
+		</para>
+
+		<para>Default: <command>template shell = /bin/false </command>
+		</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>EXAMPLE SETUP</title>
+
+	<para>To setup winbindd for user and group lookups plus 
+	authentication from a domain controller use something like the 
+	following setup. This was tested on a RedHat 6.2 Linux box. </para>
+
+	<para>In <filename>/etc/nsswitch.conf</filename> put the 
+	following:</para>
+
+	<para><programlisting>
+passwd:     files winbind
+group:      files winbind
+	</programlisting></para>  
+
+	<para>In <filename>/etc/pam.d/*</filename> replace the 
+	<parameter>auth</parameter> lines with something like this: </para>
+
+ 
+	<para><programlisting>
+auth       required	/lib/security/pam_securetty.so
+auth       required	/lib/security/pam_nologin.so
+auth       sufficient	/lib/security/pam_winbind.so
+auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
+	</programlisting></para>
+  
+
+	<para>Note in particular the use of the <parameter>sufficient</parameter> 
+	keyword and the <parameter>use_first_pass</parameter> keyword. </para>
+
+	<para>Now replace the account lines with this: </para> 
+	
+	<para><command>account    required	/lib/security/pam_winbind.so
+	</command></para>
+ 
+  	<para>The next step is to join the domain. To do that use the 
+	<command>smbpasswd</command> program like this:  </para>
+ 
+	<para><command>smbpasswd -j DOMAIN -r PDC -U
+	Administrator</command></para>
+ 
+	<para>The username after the <parameter>-U</parameter> can be any
+	Domain user that has administrator privileges on the machine.
+	Substitute your domain name for "DOMAIN" and the name of your PDC
+	for "PDC".</para>
+
+	<para>Next copy <filename>libnss_winbind.so</filename> to 
+	<filename>/lib</filename> and <filename>pam_winbind.so</filename>
+	to <filename>/lib/security</filename>.  A symbolic link needs to be
+	made from <filename>/lib/libnss_winbind.so</filename> to
+	<filename>/lib/libnss_winbind.so.2</filename>.  If you are using an
+	older version of glibc then the target of the link should be
+	<filename>/lib/libnss_winbind.so.1</filename>.</para>
+
+	<para>Finally, setup a <filename>smb.conf</filename> containing directives like the 
+	following:  </para> 
+
+	<para><programlisting>
+[global]
+	winbind separator = +
+        winbind cache time = 10
+        template shell = /bin/bash
+        template homedir = /home/%D/%U
+        winbind uid = 10000-20000
+        winbind gid = 10000-20000
+        workgroup = DOMAIN
+        security = domain
+        password server = *
+	</programlisting></para>
+  
+
+	<para>Now start winbindd and you should find that your user and 
+	group database is expanded to include your NT users and groups, 
+	and that you can login to your unix box as a domain user, using 
+	the DOMAIN+user syntax for the username. You may wish to use the 
+	commands <command>getent passwd</command> and <command>getent group
+	</command> to confirm the correct operation of winbindd.</para>
+</refsect1>
+
+
+<refsect1>
+	<title>NOTES</title>
+
+	<para>The following notes are useful when configuring and 
+	running <command>winbindd</command>: </para>
+
+	<para><command>nmbd</command> must be running on the local machine 
+	for <command>winbindd</command> to work. <command>winbindd</command>
+	queries the list of trusted domains for the Windows NT server
+	on startup and when a SIGHUP is received.  Thus, for a running <command>
+	winbindd</command> to become aware of new trust relationships between 
+	servers, it must be sent a SIGHUP signal. </para>
+
+	<para>Client processes resolving names through the <command>winbindd</command>
+	nsswitch module read an environment variable named <envar>
+	$WINBINDD_DOMAIN</envar>.  If this variable contains a comma separated
+	list of Windows NT domain names, then winbindd will only resolve users
+	and groups within those Windows NT domains. </para>
+
+	<para>PAM is really easy to misconfigure.  Make sure you know what 
+	you are doing when modifying PAM configuration files.  It is possible 
+	to set up PAM such that you can no longer log into your system. </para>
+	
+	<para>If more than one UNIX machine is running <command>winbindd</command>, 
+	then in general the user and groups ids allocated by winbindd will not 
+	be the same.  The user and group ids will only be valid for the local 
+	machine.</para>
+
+	<para>If the the Windows NT RID to UNIX user and group id mapping 
+	file is damaged or destroyed then the mappings will be lost. </para>
+</refsect1>
+
+
+<refsect1>
+	<title>SIGNALS</title>
+
+	<para>The following signals can be used to manipulate the 
+	<command>winbindd</command> daemon. </para>
+
+	<variablelist>
+		<varlistentry>
+		<term>SIGHUP</term>
+		<listitem><para>Reload the <filename>smb.conf(5)</filename>
+		file and apply any parameter changes to the running 
+		version of winbindd.  This signal also clears any cached 
+		user and group information.  The list of other domains trusted 
+		by winbindd is also reloaded.  </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>SIGUSR1</term>
+		<listitem><para>The SIGUSR1 signal will cause <command>
+		winbindd</command> to write status information to the winbind 
+		log file including information about the number of user and 
+		group ids allocated by <command>winbindd</command>.</para>
+
+		<para>Log files are stored in the filename specified by the 
+		log file parameter.</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>FILES</title>
+
+	<variablelist>
+		<varlistentry>
+		<term><filename>/etc/nsswitch.conf(5)</filename></term>
+		<listitem><para>Name service switch configuration file.</para>
+		</listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>/tmp/.winbindd/pipe</term>
+		<listitem><para>The UNIX pipe over which clients communicate with 
+		the <command>winbindd</command> program.  For security reasons, the 
+		winbind client will only attempt to connect to the winbindd daemon 
+		if both the <filename>/tmp/.winbindd</filename> directory
+		and <filename>/tmp/.winbindd/pipe</filename> file are owned by 
+		root. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>/lib/libnss_winbind.so.X</term>
+		<listitem><para>Implementation of name service switch library.
+		</para></listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>$LOCKDIR/winbindd_idmap.tdb</term>
+		<listitem><para>Storage for the Windows NT rid to UNIX user/group 
+		id mapping.  The lock directory is specified when Samba is initially 
+		compiled using the <parameter>--with-lockdir</parameter> option.
+		This directory is by default <filename>/usr/local/samba/var/locks
+		</filename>. </para></listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>$LOCKDIR/winbindd_cache.tdb</term>
+		<listitem><para>Storage for cached user and group information.
+		</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 2.2 of
+        the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	
+	<para><filename>nsswitch.conf(5)</filename>,
+	<ulink url="samba.7.html">samba(7)</ulink>,
+	<ulink url="wbinfo.1.html">wbinfo(1)</ulink>,
+	<ulink url="smb.conf.5.html">smb.conf(5)</ulink></para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para><command>wbinfo</command> and <command>winbindd</command>
+	were written by Tim Potter.</para>
+	
+	<para>The conversion to DocBook for Samba 2.2 was done 
+	by Gerald Carter</para>
+</refsect1>
+
+</refentry>

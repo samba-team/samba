@@ -1,6 +1,5 @@
 /*
- * Unix SMB/CIFS implementation.
- * SMB parameters and setup
+ * Unix SMB/Netbios implementation. Version 1.9. SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
  * 
  * This program is free software; you can redistribute it and/or modify it under
@@ -19,11 +18,6 @@
  */
 
 #include "includes.h"
-
-#ifndef MAP_FAILED
-#define MAP_FAILED ((void *)-1)
-#endif
-
 
 static int gotalarm;
 
@@ -45,10 +39,9 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
 {
   SMB_STRUCT_FLOCK lock;
   int             ret;
-  void (*oldsig_handler)(int);
 
   gotalarm = 0;
-  oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+  CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
@@ -60,7 +53,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   /* Note we must *NOT* use sys_fcntl here ! JRA */
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
-  CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
+  CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 
   if (gotalarm) {
     DEBUG(0, ("do_file_lock: failed to %s file.\n",
@@ -261,7 +254,7 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 			continue;
 		}
 
-		p = (unsigned char *) strchr_m(linebuf, ':');
+		p = (unsigned char *) strchr(linebuf, ':');
 		if (p == NULL)
 		{
 			DEBUG(0, ("getfileline: malformed line entry (no :)\n"));
@@ -278,31 +271,40 @@ read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 ****************************************************************************/
-char *fgets_slash(char *s2,int maxlen,XFILE *f)
+char *fgets_slash(char *s2,int maxlen,FILE *f)
 {
   char *s=s2;
   int len = 0;
   int c;
   BOOL start_of_line = True;
 
-  if (x_feof(f))
+  if (feof(f))
     return(NULL);
 
   if (maxlen <2) return(NULL);
 
   if (!s2)
     {
+      char *t;
+
       maxlen = MIN(maxlen,8);
-      s = (char *)malloc(maxlen);
+      t = (char *)Realloc(s,maxlen);
+      if (!t) {
+        DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+        SAFE_FREE(s);
+        return(NULL);
+      } else
+        s = t;
     }
 
-  if (!s) return(NULL);
+  if (!s)
+    return(NULL);
 
   *s = 0;
 
   while (len < maxlen-1)
     {
-      c = x_getc(f);
+      c = getc(f);
       switch (c)
 	{
 	case '\r':
@@ -331,18 +333,18 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	  s[len++] = c;
 	  s[len] = 0;
 	}
-      if (!s2 && len > maxlen-3)
-	{
-	  char *t;
-	  
-	  maxlen *= 2;
-	  t = (char *)Realloc(s,maxlen);
-	  if (!t) {
-	    DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-	    SAFE_FREE(s);
-	    return(NULL);
-	  } else s = t;
-	}
+      if (!s2 && len > maxlen-3) {
+        char *t;
+
+        maxlen *= 2;
+        t = (char *)Realloc(s,maxlen);
+        if (!t) {
+          DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+          SAFE_FREE(s);
+          return(NULL);
+        } else
+          s = t;
+      }
     }
   return(s);
 }
@@ -351,7 +353,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 /****************************************************************************
 load from a pipe into memory
 ****************************************************************************/
-char *file_pload(char *syscmd, size_t *size)
+char *file_pload(const char *syscmd, size_t *size)
 {
 	int fd, n;
 	char *p, *tp;
@@ -367,19 +369,17 @@ char *file_pload(char *syscmd, size_t *size)
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
 		tp = Realloc(p, total + n + 1);
 		if (!tp) {
-		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
+			DEBUG(0,("file_pload: failed to exand buffer!\n"));
 			close(fd);
 			SAFE_FREE(p);
 			return NULL;
-		} else p = tp;
+		} else
+			p = tp;
 		memcpy(p+total, buf, n);
 		total += n;
 	}
 	if (p) p[total] = 0;
 
-	/* FIXME: Perhaps ought to check that the command completed
-	 * successfully (returned 0); if not the data may be
-	 * truncated. */
 	sys_pclose(fd);
 
 	if (size) *size = total;
@@ -433,48 +433,10 @@ char *file_load(const char *fname, size_t *size)
 }
 
 
-/*******************************************************************
-mmap (if possible) or read a file
-********************************************************************/
-void *map_file(char *fname, size_t size)
-{
-	size_t s2 = 0;
-	void *p = NULL;
-#ifdef HAVE_MMAP
-	if (lp_use_mmap()) {
-		int fd;
-		fd = open(fname, O_RDONLY, 0);
-		if (fd == -1) {
-			DEBUG(2,("Failed to load %s - %s\n", fname, strerror(errno)));
-			return NULL;
-		}
-		p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
-		close(fd);
-		if (p == MAP_FAILED) {
-			DEBUG(1,("Failed to mmap %s - %s\n", fname, strerror(errno)));
-			return NULL;
-		}
-	}
-#endif
-	if (!p) {
-		p = file_load(fname, &s2);
-		if (!p) return NULL;
-		if (s2 != size) {
-			DEBUG(1,("incorrect size for %s - got %lu expected %lu\n",
-				 fname, (unsigned long)s2, (unsigned long)size));
-			if (p) free(p);
-			return NULL;
-		}
-	}
-
-	return p;
-}
-
-
 /****************************************************************************
 parse a buffer into lines
 ****************************************************************************/
-static char **file_lines_parse(char *p, size_t size, int *numlines)
+static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert)
 {
 	int i;
 	char *s, **ret;
@@ -503,15 +465,21 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 		if (s[0] == '\r') s[0] = 0;
 	}
 
+	if (convert) {
+		for (i = 0; ret[i]; i++)
+			unix_to_dos(ret[i]);
+	}
+
 	return ret;
 }
 
 
 /****************************************************************************
 load a file into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free(). 
+must be freed with file_lines_free(). If convert is true calls unix_to_dos on
+the list.
 ****************************************************************************/
-char **file_lines_load(const char *fname, int *numlines)
+char **file_lines_load(const char *fname, int *numlines, BOOL convert)
 {
 	char *p;
 	size_t size;
@@ -519,7 +487,7 @@ char **file_lines_load(const char *fname, int *numlines)
 	p = file_load(fname, &size);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines);
+	return file_lines_parse(p, size, numlines, convert);
 }
 
 /****************************************************************************
@@ -527,7 +495,7 @@ load a fd into memory and return an array of pointers to lines in the file
 must be freed with file_lines_free(). If convert is true calls unix_to_dos on
 the list.
 ****************************************************************************/
-char **fd_lines_load(int fd, int *numlines)
+char **fd_lines_load(int fd, int *numlines, BOOL convert)
 {
 	char *p;
 	size_t size;
@@ -535,15 +503,16 @@ char **fd_lines_load(int fd, int *numlines)
 	p = fd_load(fd, &size);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines);
+	return file_lines_parse(p, size, numlines, convert);
 }
 
 
 /****************************************************************************
 load a pipe into memory and return an array of pointers to lines in the data
-must be freed with file_lines_free(). 
+must be freed with file_lines_free(). If convert is true calls unix_to_dos on
+the list.
 ****************************************************************************/
-char **file_lines_pload(char *syscmd, int *numlines)
+char **file_lines_pload(const char *syscmd, int *numlines, BOOL convert)
 {
 	char *p;
 	size_t size;
@@ -551,7 +520,7 @@ char **file_lines_pload(char *syscmd, int *numlines)
 	p = file_pload(syscmd, &size);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines);
+	return file_lines_parse(p, size, numlines, convert);
 }
 
 /****************************************************************************
@@ -586,21 +555,4 @@ void file_lines_slashcont(char **lines)
 			i++;
 		}
 	}
-}
-
-/*
-  save a lump of data into a file. Mostly used for debugging 
-*/
-BOOL file_save(const char *fname, void *packet, size_t length)
-{
-	int fd;
-	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	if (fd == -1) {
-		return False;
-	}
-	if (write(fd, packet, length) != (size_t)length) {
-		return False;
-	}
-	close(fd);
-	return True;
 }

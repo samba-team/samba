@@ -47,9 +47,7 @@ CFLAGS	= $(DEBUG)
 LDOPTS	=
 LDLIBS	= -lpcp_pmda -lpcp
 DSOOPTS	= -shared
-LDIRT	= profile.h metrics.h so_locations *.log help.dir help.pag *.pmda_$(IAM).so
-
-PROFILEHEADER = ../source/include/smbprofile.h
+LDIRT	= metrics.h so_locations *.log help.dir help.pag *.pmda_$(IAM).so
 
 INSTALL	= install
 CC	= cc
@@ -66,9 +64,6 @@ $(LIBTARGET):	profile.h metrics.h $(CFILES)
 
 metrics.h:	profile.h mkheader.pl
 	./mkheader.pl
-
-profile.h: 	$(PROFILEHEADER)
-	ln -s $(PROFILEHEADER) $@
 
 clobber clean:
 	rm -f $(LDIRT) $(TARGETS)

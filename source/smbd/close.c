@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    file closing
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -21,65 +22,64 @@
 #include "includes.h"
 
 /****************************************************************************
- Run a file if it is a magic script.
+run a file if it is a magic script
 ****************************************************************************/
-
 static void check_magic(files_struct *fsp,connection_struct *conn)
 {
-	if (!*lp_magicscript(SNUM(conn)))
+  if (!*lp_magicscript(SNUM(conn)))
+    return;
+
+  DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
+
+  {
+    char *p;
+    if (!(p = strrchr(fsp->fsp_name,'/')))
+      p = fsp->fsp_name;
+    else
+      p++;
+
+    if (!strequal(lp_magicscript(SNUM(conn)),p))
+      return;
+  }
+
+  {
+    int ret;
+    pstring magic_output;
+    pstring fname;
+	SMB_STRUCT_STAT st;
+	int tmp_fd, outfd;
+
+    pstrcpy(fname,fsp->fsp_name);
+    if (*lp_magicoutput(SNUM(conn)))
+      pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
+    else
+      slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
+
+    chmod(fname,0755);
+    ret = smbrun(fname,&tmp_fd);
+    DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
+    unlink(fname);
+	if (ret != 0 || tmp_fd == -1) {
+		if (tmp_fd != -1)
+			close(tmp_fd);
 		return;
-
-	DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
-
-	{
-		char *p;
-		if (!(p = strrchr_m(fsp->fsp_name,'/')))
-			p = fsp->fsp_name;
-		else
-			p++;
-
-		if (!strequal(lp_magicscript(SNUM(conn)),p))
-			return;
+	}
+	outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
+	if (outfd == -1) {
+		close(tmp_fd);
+		return;
 	}
 
-	{
-		int ret;
-		pstring magic_output;
-		pstring fname;
-		SMB_STRUCT_STAT st;
-		int tmp_fd, outfd;
-
-		pstrcpy(fname,fsp->fsp_name);
-		if (*lp_magicoutput(SNUM(conn)))
-			pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
-		else
-			slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
-
-		chmod(fname,0755);
-		ret = smbrun(fname,&tmp_fd);
-		DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
-		unlink(fname);
-		if (ret != 0 || tmp_fd == -1) {
-			if (tmp_fd != -1)
-				close(tmp_fd);
-			return;
-		}
-		outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
-		if (outfd == -1) {
-			close(tmp_fd);
-			return;
-		}
-
-		if (sys_fstat(tmp_fd,&st) == -1) {
-			close(tmp_fd);
-			close(outfd);
-			return;
-		}
-
-		transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
+	if (sys_fstat(tmp_fd,&st) == -1) {
 		close(tmp_fd);
 		close(outfd);
+		return;
 	}
+
+	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
+	close(tmp_fd);
+	close(outfd);
+  }
 }
 
 /****************************************************************************
@@ -98,6 +98,8 @@ static int close_filestruct(files_struct *fsp)
 		delete_write_cache(fsp);
 	}
 
+	fsp->is_directory = False; 
+    
 	conn->num_files_open--;
 	SAFE_FREE(fsp->wbmpx_ptr);
 
@@ -163,8 +165,8 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	share_entry_count = del_share_mode(fsp, &share_entry);
 
-	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
-		(unsigned long)share_entry_count, fsp->fsp_name ));
+	DEBUG(10,("close_normal_file: share_entry_count = %d for file %s\n",
+		share_entry_count, fsp->fsp_name ));
 
 	/*
 	 * We delete on close if it's the last open, and the
@@ -185,7 +187,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	if (normal_close && delete_on_close) {
 		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 			fsp->fsp_name));
-		if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
+		if(fsp->conn->vfs_ops.unlink(conn,dos_to_unix_static(fsp->fsp_name)) != 0) {
 			/*
 			 * This call can potentially fail as another smbd may have
 			 * had the file open with delete on close set and deleted
@@ -193,7 +195,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 			 * we log this but not at debug level zero.
 			 */
 
-		DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
+			DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));
 		}
 		process_pending_change_notify_queue((time_t)0);
@@ -233,7 +235,7 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 	file_free(fsp);
 
 	if (err == -1 || err1 == -1)
-		return errno;
+		return -1;
 	else
 		return 0;
 }
@@ -275,29 +277,30 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 		string_free(&fsp->fsp_name);
 	
 	file_free(fsp);
+
 	return 0;
 }
 
 /****************************************************************************
  Close a 'stat file' opened internally.
 ****************************************************************************/
-  
+
 static int close_stat(files_struct *fsp)
 {
 	/*
 	 * Do the code common to files and directories.
 	 */
 	close_filestruct(fsp);
-	
+
 	if (fsp->fsp_name)
 		string_free(&fsp->fsp_name);
-	
+
 	file_free(fsp);
 	return 0;
 }
 
 /****************************************************************************
- Close a files_struct.
+ Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
 int close_file(files_struct *fsp, BOOL normal_close)

@@ -1,11 +1,11 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997,
- *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002-2003.
+ *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Jeremy Allison                    2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,9 +25,6 @@
 /* This is the interface to the lsa server code. */
 
 #include "includes.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
 
 /***************************************************************************
  api_lsa_open_policy2
@@ -109,10 +106,8 @@ static BOOL api_lsa_enum_trust_dom(pipes_struct *p)
 	if(!lsa_io_q_enum_trust_dom("", &q_u, data, 0))
 		return False;
 
-	/* get required trusted domains information */
 	r_u.status = _lsa_enum_trust_dom(p, &q_u, &r_u);
 
-	/* prepare the response */
 	if(!lsa_io_r_enum_trust_dom("", &r_u, rdata, 0))
 		return False;
 
@@ -331,6 +326,7 @@ static BOOL api_lsa_priv_get_dispname(pipes_struct *p)
 	return True;
 }
 
+#if 0
 /***************************************************************************
  api_lsa_open_secret.
  ***************************************************************************/
@@ -360,6 +356,7 @@ static BOOL api_lsa_enum_accounts(pipes_struct *p)
 
 	return True;
 }
+#endif
 
 /***************************************************************************
  api_lsa_UNK_GET_CONNUSER
@@ -386,37 +383,6 @@ static BOOL api_lsa_unk_get_connuser(pipes_struct *p)
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_unk_get_connuser("", &r_u, rdata, 0)) {
 		DEBUG(0,("api_lsa_unk_get_connuser: Failed to marshall LSA_R_UNK_GET_CONNUSER.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-/***************************************************************************
- api_lsa_create_user
- ***************************************************************************/
-
-static BOOL api_lsa_create_account(pipes_struct *p)
-{
-	LSA_Q_CREATEACCOUNT q_u;
-	LSA_R_CREATEACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_create_account("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_create_account: failed to unmarshall LSA_Q_CREATEACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_create_account(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_create_account("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_create_account: Failed to marshall LSA_R_CREATEACCOUNT.\n"));
 		return False;
 	}
 
@@ -454,6 +420,7 @@ static BOOL api_lsa_open_account(pipes_struct *p)
 	return True;
 }
 
+#if 0
 /***************************************************************************
  api_lsa_get_privs
  ***************************************************************************/
@@ -474,7 +441,7 @@ static BOOL api_lsa_enum_privsaccount(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _lsa_enum_privsaccount(p, rdata, &q_u, &r_u);
+	r_u.status = _lsa_enum_privsaccount(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_enum_privsaccount("", &r_u, rdata, 0)) {
@@ -484,6 +451,7 @@ static BOOL api_lsa_enum_privsaccount(pipes_struct *p)
 
 	return True;
 }
+#endif
 
 /***************************************************************************
  api_lsa_getsystemaccount
@@ -518,217 +486,37 @@ static BOOL api_lsa_getsystemaccount(pipes_struct *p)
 
 
 /***************************************************************************
- api_lsa_setsystemaccount
- ***************************************************************************/
-
-static BOOL api_lsa_setsystemaccount(pipes_struct *p)
-{
-	LSA_Q_SETSYSTEMACCOUNT q_u;
-	LSA_R_SETSYSTEMACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_setsystemaccount("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_setsystemaccount: failed to unmarshall LSA_Q_SETSYSTEMACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_setsystemaccount(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_setsystemaccount("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_setsystemaccount: Failed to marshall LSA_R_SETSYSTEMACCOUNT.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-/***************************************************************************
- api_lsa_addprivs
- ***************************************************************************/
-
-static BOOL api_lsa_addprivs(pipes_struct *p)
-{
-	LSA_Q_ADDPRIVS q_u;
-	LSA_R_ADDPRIVS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_addprivs("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_addprivs: failed to unmarshall LSA_Q_ADDPRIVS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_addprivs(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_addprivs("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_addprivs: Failed to marshall LSA_R_ADDPRIVS.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-/***************************************************************************
- api_lsa_removeprivs
- ***************************************************************************/
-
-static BOOL api_lsa_removeprivs(pipes_struct *p)
-{
-	LSA_Q_REMOVEPRIVS q_u;
-	LSA_R_REMOVEPRIVS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_removeprivs("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_removeprivs: failed to unmarshall LSA_Q_REMOVEPRIVS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_removeprivs(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_removeprivs("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_removeprivs: Failed to marshall LSA_R_REMOVEPRIVS.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-/***************************************************************************
- api_lsa_query_secobj
- ***************************************************************************/
-
-static BOOL api_lsa_query_secobj(pipes_struct *p)
-{
-	LSA_Q_QUERY_SEC_OBJ q_u;
-	LSA_R_QUERY_SEC_OBJ r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_query_sec_obj("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_query_secobj: failed to unmarshall LSA_Q_QUERY_SEC_OBJ.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_query_secobj(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_query_sec_obj("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_query_secobj: Failed to marshall LSA_R_QUERY_SEC_OBJ.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-/***************************************************************************
- api_lsa_query_dnsdomainfo
- ***************************************************************************/
-
-static BOOL api_lsa_query_info2(pipes_struct *p)
-{
-	LSA_Q_QUERY_INFO2 q_u;
-	LSA_R_QUERY_INFO2 r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_query_info2("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_query_info2: failed to unmarshall LSA_Q_QUERY_INFO2.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_query_info2(p, &q_u, &r_u);
-
-	if (!lsa_io_r_query_info2("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_query_info2: failed to marshall LSA_R_QUERY_INFO2.\n"));
-		return False;
-	}
-
-	return True;
-}
-
-
-/***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
- 
+
 static struct api_struct api_lsa_cmds[] =
 {
-	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
-	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
-	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info       },
-	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom   },
-	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close            },
-	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret      },
-	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids      },
-	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names     },
-	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs       },
+	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2   },
+	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy    },
+	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info     },
+	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom },
+	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close          },
+	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret    },
+	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids    },
+	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names   },
+	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs     },
 	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
-	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
-	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
-	{ "LSA_CREATEACCOUNT"   , LSA_CREATEACCOUNT   , api_lsa_create_account   },
-	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
+#if 0
+	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts  },
+#endif
+	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser},
+	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account    },
+#if 0
 	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
-	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
-	{ "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
-	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
-	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
-	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
-	/* be careful of the adding of new RPC's.  See commentrs below about
-	   ADS DC capabilities                                               */
-	{ "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      }
+#endif
+	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount},
+	{ NULL                  , 0                   , NULL                   }
 };
 
-static int count_fns(void)
+/***************************************************************************
+ api_ntLsarpcTNP
+ ***************************************************************************/
+BOOL api_ntlsa_rpc(pipes_struct *p)
 {
-	int funcs = sizeof(api_lsa_cmds) / sizeof(struct api_struct);
-	
-	/*
-	 * NOTE: Certain calls can not be enabled if we aren't an ADS DC.  Make sure
-	 * these calls are always last and that you decrement by the amount of calls
-	 * to disable.
-	 */
-	if (!(SEC_ADS == lp_security() && ROLE_DOMAIN_PDC == lp_server_role())) {
-		funcs -= 1;
-	}
-
-	return funcs;
-}
-void lsa_get_pipe_fns( struct api_struct **fns, int *n_fns )
-{
-	*fns = api_lsa_cmds;
-	*n_fns = count_fns();
-}
-
-
-NTSTATUS rpc_lsa_init(void)
-{
-	int funcs = count_fns();
-
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsass", api_lsa_cmds, 
-		funcs);
+	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds);
 }

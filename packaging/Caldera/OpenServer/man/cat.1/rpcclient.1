@@ -1,0 +1,396 @@
+
+
+
+     RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          rpcclient - tool for executing client side  MS-RPC functions
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          rrrrppppcccccccclllliiiieeeennnntttt [ ----AAAA aaaauuuutttthhhhffffiiiilllleeee ]  [ ----cccc <<<<ccccoooommmmmmmmaaaannnndddd ssssttttrrrriiiinnnngggg>>>> ]  [ ----dddd
+          ddddeeeebbbbuuuugggglllleeeevvvveeeellll ]  [ ----hhhh ]  [ ----llll llllooooggggffffiiiilllleeee ]  [ ----NNNN ]  [ ----ssss <<<<ssssmmmmbbbb
+          ccccoooonnnnffffiiiigggg ffffiiiilllleeee>>>> ]  [ ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee[[[[%%%%ppppaaaasssssssswwwwoooorrrrdddd]]]] ]  [ ----WWWW wwwwoooorrrrkkkkggggrrrroooouuuupppp ]
+          [ ----NNNN ]  sssseeeerrrrvvvveeeerrrr
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          rrrrppppcccccccclllliiiieeeennnntttt is a utility initially developed to test MS-RPC
+          functionality in Samba itself. It has undergone several
+          stages of development and stability. Many system
+          administrators have now written scripts around it to manage
+          Windows NT clients from their UNIX workstation.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          sssseeeerrrrvvvveeeerrrr
+               NetBIOS name of Server to which to connect. The server
+               can be any SMB/CIFS server. The name is resolved using
+               the  _n_a_m_e _r_e_s_o_l_v_e _o_r_d_e_r line from _s_m_b._c_o_n_f(_5).
+
+          ----AAAA ffffiiiilllleeeennnnaaaammmmeeee
+               This option allows you to specify a file from which to
+               read the username and password used in the connection.
+               The format of the file is
+
+
+                         username = <value>
+                         password = <value>
+                         domain   = <value>
+
+
+
+               Make certain that the permissions on the file restrict
+               access from unwanted users.
+
+          ----cccc ''''ccccoooommmmmmmmaaaannnndddd ssssttttrrrriiiinnnngggg''''
+               execute semicolon separated commands (listed below))
+
+          ----dddd ddddeeeebbbbuuuugggglllleeeevvvveeeellll
+               set the debuglevel. Debug level 0 is the lowest and 100
+               being the highest. This should be set to 100 if you are
+               planning on submitting a bug report to the Samba team
+               (see _B_U_G_S._t_x_t).
+
+          ----hhhh   Print a summary of command line options.
+
+          ----llll llllooooggggbbbbaaaasssseeeennnnaaaammmmeeee
+               File name for log/debug files. The extension '.client'
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))
+
+
+
+               will be appended. The log file is never removed by the
+               client.
+
+          ----NNNN   instruct rrrrppppcccccccclllliiiieeeennnntttt not to ask for a password. By
+               default, rrrrppppcccccccclllliiiieeeennnntttt will prompt for a password. See also
+               the -_U option.
+
+          ----ssss ssssmmmmbbbb....ccccoooonnnnffff
+               Specifies the location of the all important _s_m_b._c_o_n_f
+               file.
+
+          ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee[[[[%%%%ppppaaaasssssssswwwwoooorrrrdddd]]]]
+               Sets the SMB username or username and password.
+
+               If %password is not specified, the user will be
+               prompted. The client will first check the UUUUSSSSEEEERRRR
+               environment variable, then the LLLLOOOOGGGGNNNNAAAAMMMMEEEE variable and if
+               either exists, the string is uppercased. If these
+               environmental variables are not found, the username
+               GUEST is used.
+
+               A third option is to use a credentials file which
+               contains the plaintext of the username and password.
+               This option is mainly provided for scripts where the
+               admin doesn't desire to pass the credentials on the
+               command line or via environment variables. If this
+               method is used, make certain that the permissions on
+               the file restrict access from unwanted users. See the
+               -_A for more details.
+
+               Be cautious about including passwords in scripts. Also,
+               on many systems the command line of a running process
+               may be seen via the ppppssss command. To be safe always allow
+               rrrrppppcccccccclllliiiieeeennnntttt to prompt for a password and type it in
+               directly.
+
+          ----WWWW ddddoooommmmaaaaiiiinnnn
+               Set the SMB domain of the username. This overrides the
+               default domain which is the domain defined in smb.conf.
+               If the domain specified is the same as the server's
+               NetBIOS name, it causes the client to log on using the
+               server's local SAM (as opposed to the Domain SAM).
+
+     CCCCOOOOMMMMMMMMAAAANNNNDDDDSSSS
+          LLLLSSSSAAAARRRRPPPPCCCC
+
+          o+ llllssssaaaaqqqquuuueeeerrrryyyy
+
+          o+ llllooooooookkkkuuuuppppssssiiiiddddssss - Resolve a list of SIDs to usernames.
+
+          o+ llllooooooookkkkuuuuppppnnnnaaaammmmeeeessss - Resolve s list of usernames to SIDs.
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))
+
+
+
+          o+ eeeennnnuuuummmmttttrrrruuuussssttttssss
+
+          SSSSAAAAMMMMRRRR
+
+          o+ qqqquuuueeeerrrryyyyuuuusssseeeerrrr
+
+          o+ qqqquuuueeeerrrryyyyggggrrrroooouuuupppp
+
+          o+ qqqquuuueeeerrrryyyyuuuusssseeeerrrrggggrrrroooouuuuppppssss
+
+          o+ qqqquuuueeeerrrryyyyggggrrrroooouuuuppppmmmmeeeemmmm
+
+          o+ qqqquuuueeeerrrryyyyaaaalllliiiiaaaassssmmmmeeeemmmm
+
+          o+ qqqquuuueeeerrrryyyyddddiiiissssppppiiiinnnnffffoooo
+
+          o+ qqqquuuueeeerrrryyyyddddoooommmmiiiinnnnffffoooo
+
+          o+ eeeennnnuuuummmmddddoooommmmggggrrrroooouuuuppppssss
+
+          SSSSPPPPOOOOOOOOLLLLSSSSSSSS
+
+          o+ aaaaddddddddddddrrrriiiivvvveeeerrrr <<<<aaaarrrrcccchhhh>>>> <<<<ccccoooonnnnffffiiiigggg>>>> - Execute an AddPrinterDriver()
+            RPC to install the printer driver information on the
+            server. Note that the driver files should already exist in
+            the directory returned by ggggeeeettttddddrrrriiiivvvveeeerrrrddddiiiirrrr. Possible values
+            for _a_r_c_h are the same as those for the ggggeeeettttddddrrrriiiivvvveeeerrrrddddiiiirrrr
+            command.  The _c_o_n_f_i_g parameter is defined as follows:
+
+
+                      Long Printer Name:\
+                      Driver File Name:\
+                      Data File Name:\
+                      Config File Name:\
+                      Help File Name:\
+                      Language Monitor Name:\
+                      Default Data Type:\
+                      Comma Separated list of Files
+
+
+
+            Any empty fields should be enter as the string "NULL".
+
+            Samba does not need to support the concept of Print
+            Monitors since these only apply to local printers whose
+            driver can make use of a bi-directional link for
+            communication. This field should be "NULL". On a remote NT
+            print server, the Print Monitor for a driver must already
+            be installed prior to adding the driver or else the RPC
+            will fail.
+
+          o+ aaaaddddddddpppprrrriiiinnnntttteeeerrrr <<<<pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee>>>> <<<<sssshhhhaaaarrrreeeennnnaaaammmmeeee>>>> <<<<ddddrrrriiiivvvveeeerrrrnnnnaaaammmmeeee>>>> <<<<ppppoooorrrrtttt>>>> -
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
+
+
+
+     RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))
+
+
+
+            Add a printer on the remote server. This printer will be
+            automatically shared. Be aware that the printer driver
+            must already be installed on the server (see aaaaddddddddddddrrrriiiivvvveeeerrrr)
+            and the _p_o_r_tmust be a valid port name (see eeeennnnuuuummmmppppoooorrrrttttssss.
+
+          o+ ddddeeeellllddddrrrriiiivvvveeeerrrr - Delete the specified printer driver for all
+            architectures. This does not delete the actual driver
+            files from the server, only the entry from the server's
+            list of drivers.
+
+          o+ eeeennnnuuuummmmddddaaaattttaaaa - Enumerate all printer setting data stored on
+            the server. On Windows NT clients, these values are stored
+            in the registry, while Samba servers store them in the
+            printers TDB. This command corresponds to the MS Platform
+            SDK GetPrinterData() function (* This command is currently
+            unimplemented).
+
+          o+ eeeennnnuuuummmmjjjjoooobbbbssss <<<<pppprrrriiiinnnntttteeeerrrr>>>> - List the jobs and status of a given
+            printer. This command corresponds to the MS Platform SDK
+            EnumJobs() function (* This command is currently
+            unimplemented).
+
+          o+ eeeennnnuuuummmmppppoooorrrrttttssss [[[[lllleeeevvvveeeellll]]]] - Executes an EnumPorts() call using the
+            specified info level. Currently only info levels 1 and 2
+            are supported.
+
+          o+ eeeennnnuuuummmmddddrrrriiiivvvveeeerrrrssss [[[[lllleeeevvvveeeellll]]]] - Execute an EnumPrinterDrivers()
+            call. This lists the various installed printer drivers for
+            all architectures. Refer to the MS Platform SDK
+            documentation for more details of the various flags and
+            calling options. Currently supported info levels are 1, 2,
+            and 3.
+
+          o+ eeeennnnuuuummmmpppprrrriiiinnnntttteeeerrrrssss [[[[lllleeeevvvveeeellll]]]] - Execute an EnumPrinters() call.
+            This lists the various installed and share printers. Refer
+            to the MS Platform SDK documentation for more details of
+            the various flags and calling options. Currently supported
+            info levels are 0, 1, and 2.
+
+          o+ ggggeeeettttddddaaaattttaaaa <<<<pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee>>>> - Retrieve the data for a given
+            printer setting. See the eeeennnnuuuummmmddddaaaattttaaaa command for more
+            information. This command corresponds to the
+            GetPrinterData() MS Platform SDK function (* This command
+            is currently unimplemented).
+
+          o+ ggggeeeettttddddrrrriiiivvvveeeerrrr <<<<pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee>>>> - Retrieve the printer driver
+            information (such as driver file, config file, dependent
+            files, etc...) for the given printer. This command
+            corresponds to the GetPrinterDriver() MS Platform SDK
+            function. Currently info level 1, 2, and 3 are supported.
+
+          o+ ggggeeeettttddddrrrriiiivvvveeeerrrrddddiiiirrrr <<<<aaaarrrrcccchhhh>>>> - Execute a
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+
+
+
+
+     RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))
+
+
+
+            GetPrinterDriverDirectory() RPC to retreive the SMB share
+            name and subdirectory for storing printer driver files for
+            a given architecture. Possible values for _a_r_c_h are
+            "Windows 4.0" (for Windows 95/98), "Windows NT x86",
+            "Windows NT PowerPC", "Windows Alpha_AXP", and "Windows NT
+            R4000".
+
+          o+ ggggeeeettttpppprrrriiiinnnntttteeeerrrr <<<<pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee>>>> - Retrieve the current printer
+            information. This command corresponds to the GetPrinter()
+            MS Platform SDK function.
+
+          o+ ooooppppeeeennnnpppprrrriiiinnnntttteeeerrrr <<<<pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee>>>> - Execute an OpenPrinterEx() and
+            ClosePrinter() RPC against a given printer.
+
+          o+ sssseeeettttddddrrrriiiivvvveeeerrrr <<<<pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee>>>> <<<<ddddrrrriiiivvvveeeerrrrnnnnaaaammmmeeee>>>> - Execute a
+            SetPrinter() command to update the printer driver
+            associated with an installed printer. The printer driver
+            must already be correctly installed on the print server.
+
+            See also the eeeennnnuuuummmmpppprrrriiiinnnntttteeeerrrrssss and eeeennnnuuuummmmddddrrrriiiivvvveeeerrrrssss commands for
+            obtaining a list of of installed printers and drivers.
+
+          GGGGEEEENNNNEEEERRRRAAAALLLL OOOOPPPPTTTTIIIIOOOONNNNSSSS
+
+          o+ ddddeeeebbbbuuuugggglllleeeevvvveeeellll - Set the current debug level used to log
+            information.
+
+          o+ hhhheeeellllpppp ((((????)))) - Print a listing of all known commands or
+            extended help on a particular command.
+
+          o+ qqqquuuuiiiitttt ((((eeeexxxxiiiitttt)))) - Exit rrrrppppcccccccclllliiiieeeennnntttt .
+
+     BBBBUUUUGGGGSSSS
+          rrrrppppcccccccclllliiiieeeennnntttt is designed as a developer testing tool and may
+          not be robust in certain areas (such as command line
+          parsing). It has been known to generate a core dump upon
+          failures when invalid parameters where passed to the
+          interpreter.
+
+          From Luke Leighton's original rpcclient man page:
+
+          """"WWWWAAAARRRRNNNNIIIINNNNGGGG!!!! The MSRPC over SMB code has been developed from
+          examining Network traces. No documentation is available from
+          the original creators (Microsoft) on how MSRPC over SMB
+          works, or how the individual MSRPC services work.
+          Microsoft's implementation of these services has been
+          demonstrated (and reported) to be... a bit flaky in places.
+
+          The development of Samba's implementation is also a bit
+          rough, and as more of the services are understood, it can
+          even result in versions of ssssmmmmbbbbdddd((((8888)))) and rrrrppppcccccccclllliiiieeeennnntttt((((1111)))) that are
+          incompatible for some commands or services. Additionally,
+
+
+
+     Page 5                                          (printed 1/7/103)
+
+
+
+
+
+
+     RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    RRRRPPPPCCCCCCCCLLLLIIIIEEEENNNNTTTT((((1111))))
+
+
+
+          the developers are sending reports to Microsoft, and
+          problems found or reported to Microsoft are fixed in Service
+          Packs, which may result in incompatibilities."
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original rpcclient man page was written by Matthew
+          Geddes, Luke Kenneth Casson Leighton, and rewritten by
+          Gerald Carter. The conversion to DocBook for Samba 2.2 was
+          done by Gerald Carter.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 6                                          (printed 1/7/103)
+
+
+

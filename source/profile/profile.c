@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    store smbd profiling information in shared memory
    Copyright (C) Andrew Tridgell 1999
    
@@ -23,12 +24,10 @@
 
 #ifdef WITH_PROFILE
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
-#endif /* WITH_PROFILE */
-
-#ifdef WITH_PROFILE
 static int shm_id;
 static BOOL read_only;
-#endif
+
+#endif /* WITH_PROFILE */
 
 struct profile_header *profile_h;
 struct profile_stats *profile_p;
@@ -71,7 +70,7 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
 		DEBUG(1,("INFO: Profiling values cleared from pid %d\n", (int)src));
 		break;
 	}
-#else /* WITH_PROFILE */
+#else /* ndef WITH_PROFILE */
 	DEBUG(1,("INFO: Profiling support unavailable in this build.\n"));
 #endif /* WITH_PROFILE */
 }
@@ -95,6 +94,7 @@ void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
 /*******************************************************************
   open the profiling shared memory area
   ******************************************************************/
+
 #ifdef WITH_PROFILE
 BOOL profile_setup(BOOL rdonly)
 {
@@ -136,10 +136,12 @@ BOOL profile_setup(BOOL rdonly)
 		return False;
 	}
 
-	if (shm_ds.shm_perm.cuid != sec_initial_uid() || shm_ds.shm_perm.cgid != sec_initial_gid()) {
-		DEBUG(0,("ERROR: we did not create the shmem (owned by another user)\n"));
+#if 0
+	if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != 0) {
+		DEBUG(0,("ERROR: root did not create the shmem\n"));
 		return False;
 	}
+#endif
 
 	if (shm_ds.shm_segsz != sizeof(*profile_h)) {
 		DEBUG(0,("WARNING: profile size is %d (expected %d). Deleting\n",

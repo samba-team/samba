@@ -1,13 +1,11 @@
-Preparer:	Gerald Carter <jerry@samba.org>
+Preparation Date: Fri Aug 21, 1998
+Preparer:	  John H Terpstra <jht@samba.org>
 
-Instructions:	Preparing Samba Packages for Red Hat Linux
+Instructions:	Preparing Samba Packages for Red Hat Linux 5.X
 ===============================================================
 
-We provide support only for the latest stable release of major 
-branches (e.g 6.2, 7.3, and 8.0).  The makerpms.sh script
-supports rpm  version 2.x, 3.x, and 4.x
+We provide support only for current versions of Red Hat Linux.
 
 To produce the RPMS simply type:
-
-	root# sh makerpms.sh
+	sh makerpms.sh
 

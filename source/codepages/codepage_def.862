@@ -1,0 +1,52 @@
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+# Codepage definition file for Code Page 862 - Hebrew
+# defines lower->upper mapping.
+# Written by Alexander Bokovoy (ab@alt-linux.org)
+
+# The columns are :
+# lower  upper  map to lower  map to upper
+#
+0x74	0x54	True	True
+0x63	0x43	True	True
+0x75	0x55	True	True
+0x64	0x44	True	True
+0x76	0x56	True	True
+0x65	0x45	True	True
+0x77	0x57	True	True
+0x66	0x46	True	True
+0x78	0x58	True	True
+0x67	0x47	True	True
+0x79	0x59	True	True
+0x68	0x48	True	True
+0x69	0x49	True	True
+0x7a	0x5a	True	True
+0x6a	0x4a	True	True
+0x6b	0x4b	True	True
+0x6c	0x4c	True	True
+0x6d	0x4d	True	True
+0x6e	0x4e	True	True
+0x6f	0x4f	True	True
+0xa4	0xa5	True	True
+0xe5	0xe4	True	True
+0xed	0xe8	True	True
+0x70	0x50	True	True
+0x71	0x51	True	True
+0x61	0x41	True	True
+0x72	0x52	True	True
+0x62	0x42	True	True
+0x73	0x53	True	True

@@ -191,17 +191,31 @@ static int EatComment( myFILE *InFile )
  *
  *****************************************************************************/
 
-static int Continuation(char *line, int pos )
+static int Continuation( char *line, int pos )
 {
-	pos--;
-	while( (pos >= 0) && isspace((int)line[pos]))
-		pos--;
+  int pos2 = 0;
 
-	return (((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
+  pos--;
+  while( (pos >= 0) && isspace((int)line[pos]) )
+     pos--;
+
+  /* we should recognize if `\` is part of a multibyte character or not. */
+  while(pos2 <= pos) {
+    size_t skip = 0;
+    skip = get_character_len(line[pos2]);
+    if (skip) {
+        pos2 += skip;
+    } else if (pos == pos2) {
+        return( ((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
+    } else  {
+        pos2++;
+    }
+  }
+  return (-1);
 }
 
 
-static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
+static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
   /* ------------------------------------------------------------------------ **
    * Scan a section name, and pass the name to function sfunc().
    *
@@ -237,7 +251,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
     if( i > (bSize - 2) )
       {
       char *tb;
-      
+
       tb = Realloc( bufr, bSize +BUFR_INC );
       if( NULL == tb )
         {
@@ -258,7 +272,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
           return( False );
           }
-        if( !sfunc(bufr) )            /* Got a valid name.  Deal with it. */
+        if( !sfunc( unix_to_dos(bufr) ) )            /* Got a valid name.  Deal with it. */
           return( False );
         (void)EatComment( InFile );     /* Finish off the line.             */
         return( True );
@@ -297,7 +311,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
   return( False );
   } /* Section */
 
-static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *), int c )
+static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   /* ------------------------------------------------------------------------ **
    * Scan a parameter name and value, and pass these two fields to pfunc().
    *
@@ -334,7 +348,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
     if( i > (bSize - 2) )       /* Ensure there's space for next char.    */
       {
       char *tb;
-      
+ 
       tb = Realloc( bufr, bSize + BUFR_INC );
       if( NULL == tb )
         {
@@ -401,16 +415,13 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
 
     if( i > (bSize - 2) )       /* Make sure there's enough room. */
       {
-      char *tb;
-      
-      tb = Realloc( bufr, bSize + BUFR_INC );
-      if( NULL == tb )
+      bSize += BUFR_INC;
+      bufr   = Realloc( bufr, bSize );
+      if( NULL == bufr )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
         return( False );
         }
-      bufr = tb;
-      bSize += BUFR_INC;
       }
 
     switch( c )
@@ -445,8 +456,8 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
   } /* Parameter */
 
 static BOOL Parse( myFILE *InFile,
-                   BOOL (*sfunc)(const char *),
-                   BOOL (*pfunc)(const char *, const char *) )
+                   BOOL (*sfunc)(char *),
+                   BOOL (*pfunc)(char *, char *) )
   /* ------------------------------------------------------------------------ **
    * Scan & parse the input.
    *
@@ -505,7 +516,7 @@ static BOOL Parse( myFILE *InFile,
   return( True );
   } /* Parse */
 
-static myFILE *OpenConfFile( const char *FileName )
+static myFILE *OpenConfFile( char *FileName )
   /* ------------------------------------------------------------------------ **
    * Open a configuration file.
    *
@@ -538,9 +549,9 @@ static myFILE *OpenConfFile( const char *FileName )
   return( ret );
   } /* OpenConfFile */
 
-BOOL pm_process( const char *FileName,
-                 BOOL (*sfunc)(const char *),
-                 BOOL (*pfunc)(const char *, const char *) )
+BOOL pm_process( char *FileName,
+                 BOOL (*sfunc)(char *),
+                 BOOL (*pfunc)(char *, char *) )
   /* ------------------------------------------------------------------------ **
    * Process the named parameter file.
    *

@@ -33,6 +33,7 @@
 
 
 #include "includes.h"
+#include "smb.h"
 
 #ifdef SYSV
 
@@ -47,7 +48,7 @@ static void populate_printers(void)
 	char **lines;
 	int i;
 
-	lines = file_lines_pload("/usr/bin/lpstat -v", NULL);
+	lines = file_lines_pload("/usr/bin/lpstat -v", NULL, False);
 	if (!lines) return;
 
 	for (i=0;lines[i];i++) {
@@ -56,8 +57,8 @@ static void populate_printers(void)
 		char *buf = lines[i];
 
 		/* eat "system/device for " */
-		if (((tmp = strchr_m(buf, ' ')) == NULL) ||
-		    ((tmp = strchr_m(++tmp, ' ')) == NULL))
+		if (((tmp = strchr(buf, ' ')) == NULL) ||
+		    ((tmp = strchr(++tmp, ' ')) == NULL))
 			continue;
 
 		/*
@@ -65,7 +66,7 @@ static void populate_printers(void)
 		 */
 
 		if(!strncmp("for ",++tmp,4)) {
-			tmp=strchr_m(tmp, ' ');
+			tmp=strchr(tmp, ' ');
 			tmp++;
 		}
 
@@ -84,7 +85,7 @@ static void populate_printers(void)
 		name = tmp;
 
 		/* truncate the ": ..." */
-		if ((tmp = strchr_m(name, ':')) != NULL)
+		if ((tmp = strchr(name, ':')) != NULL)
 			*tmp = '\0';
 		
 		/* add it to the cache */
@@ -117,7 +118,7 @@ void sysv_printer_fn(void (*fn)(char *, char *))
 	if (printers == NULL)
 		populate_printers();
 	for (tmp = printers; tmp != NULL; tmp = tmp->next)
-		(fn)(tmp->name, "");
+		(fn)(unix_to_dos_static(tmp->name), "");
 }
 
 
@@ -125,7 +126,7 @@ void sysv_printer_fn(void (*fn)(char *, char *))
  * provide the equivalent of pcap_printername_ok() for SVID/XPG4 conforming
  * systems.
  */
-int sysv_printername_ok(const char *name)
+int sysv_printername_ok(char *name)
 {
 	printer_t *tmp;
 

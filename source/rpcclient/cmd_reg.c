@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
@@ -88,7 +89,7 @@ static void cmd_reg_enum(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -247,7 +248,7 @@ static void cmd_reg_query_key(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -410,7 +411,7 @@ static void cmd_reg_create_val(struct client_info *info)
 	dump_data(10, (char *)value.buffer, value.buf_len);
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, keyname, parent_name,
@@ -489,7 +490,7 @@ static void cmd_reg_delete_val(struct client_info *info)
 	}
 	
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, keyname, parent_name,
@@ -564,7 +565,7 @@ static void cmd_reg_delete_key(struct client_info *info)
 	}
 	
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, parent_name, key_name,
@@ -653,7 +654,7 @@ static void cmd_reg_create_key(struct client_info *info)
 	sam_access.mask = SEC_RIGHTS_READ;
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, parent_key, parent_name,
@@ -732,7 +733,7 @@ static void cmd_reg_test_key_sec(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -827,7 +828,7 @@ static void cmd_reg_get_key_sec(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -895,13 +896,14 @@ static void cmd_reg_get_key_sec(struct client_info *info)
 nt registry shutdown
 ****************************************************************************/
 static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                 int argc, const char **argv)
+                                 int argc, char **argv)
 {
+	extern char *optarg;
+	extern int optind;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring msg;
 	uint32 timeout = 20;
-	BOOL force = False;
-	BOOL reboot = False;
+	uint16 flgs = 0;
 	int opt;
 
 	*msg = 0;
@@ -909,33 +911,37 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	while ((opt = getopt(argc, argv, "m:t:rf")) != EOF)
 	{
-		/*fprintf (stderr, "[%s]\n", argv[argc-1]);*/
+		fprintf (stderr, "[%s]\n", argv[argc-1]);
 	
 		switch (opt)
 		{
 			case 'm':
-				fstrcpy(msg, optarg);
-				/*fprintf (stderr, "[%s|%s]\n", optarg, msg);*/
+			{
+				safe_strcpy(msg, optarg, sizeof(msg)-1);
+				fprintf (stderr, "[%s|%s]\n", optarg, msg);
 				break;
-
+			}
 			case 't':
+			{
 				timeout = atoi(optarg);
-				/*fprintf (stderr, "[%s|%d]\n", optarg, timeout);*/
-				break;
-
+				fprintf (stderr, "[%s|%d]\n", optarg, timeout);
+			break;
+			}
 			case 'r':
-				reboot = True;
-				break;
-
+			{
+				flgs |= 0x100;
+			break;
+			}
 			case 'f':
-				force = True;
+			{
+				flgs |= 0x001;
 				break;
-
+			}
 		}
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, reboot, force);
+	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, flgs);
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
@@ -950,7 +956,7 @@ abort a shutdown
 ****************************************************************************/
 static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx, int argc, 
-                                       const char **argv)
+                                       char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
@@ -970,11 +976,11 @@ struct cmd_set reg_commands[] = {
 
 	{ "REG"  },
 
-	{ "shutdown", RPC_RTYPE_NTSTATUS, cmd_reg_shutdown, NULL, PI_WINREG, "Remote Shutdown",
-				"syntax: shutdown [-m message] [-t timeout] [-r] [-h] [-f] (-r == reboot, -h == halt, -f == force)" },
+	{ "shutdown",		cmd_reg_shutdown,		PIPE_WINREG, "Remote Shutdown",
+				"[-m message] [-t timeout] [-r] [-f] (-r == reboot, -f == force)" },
 				
-	{ "abortshutdown", RPC_RTYPE_NTSTATUS, cmd_reg_abort_shutdown, NULL, PI_WINREG, "Abort Shutdown",
-				"syntax: abortshutdown" },
+	{ "abortshutdown",	cmd_reg_abort_shutdown,		PIPE_WINREG, "Abort Shutdown",
+				"" },				
 /*
 	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
 				"<keyname>" },

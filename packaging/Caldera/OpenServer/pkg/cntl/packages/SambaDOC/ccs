@@ -1,0 +1,46 @@
+#!/bin/sh
+
+scriptname="$0"
+step="$1"
+keywords="$2"
+pkglist="$3"
+
+# Source in the standard functions library, ccsSetup.sh
+. ccsSetup.sh
+
+ccs_return_value=0
+
+PostExport()
+{
+    if [ -x /usr/bin/doctool ]; then
+        /usr/bin/doctool --add NetworkDoc/WinConnect/Samba/.directory >&- 2>&-
+        /usr/bin/doctool --add \
+            NetworkDoc/WinConnect/Samba/samba_help.desktop >&- 2>&-
+        /usr/bin/doctool --add \
+            NetworkDoc/WinConnect/Samba/samba_using.desktop >&- 2>&-
+        /usr/bin/doctool --add \
+            NetworkDoc/WinConnect/Samba/samba_configure.desktop >&- 2>&-
+    fi
+}
+
+PreUnexport()
+{
+    if [ -x /usr/bin/doctool ]; then
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/samba_help.desktop >&- 2>&-
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/samba_using.desktop >&- 2>&-
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/samba_configure.desktop >&- 2>&-
+        /usr/bin/doctool --remove \
+            NetworkDoc/WinConnect/Samba/.directory >&- 2>&-
+    fi
+}
+    
+case "$step" in
+        POST_EXPORT) PostExport ;;
+        PRE_UNEXPORT) PreUnexport ;;
+esac
+
+exit $ccs_return_value
+

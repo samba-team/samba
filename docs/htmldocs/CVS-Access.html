@@ -1,0 +1,193 @@
+<HTML
+><HEAD
+><TITLE
+>HOWTO Access Samba source code via CVS</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="CVS-ACCESS"
+>HOWTO Access Samba source code via CVS</A
+></H1
+><HR></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3"
+>Introduction</A
+></H1
+><P
+>Samba is developed in an open environment.  Developers use CVS
+(Concurrent Versioning System) to "checkin" (also known as 
+"commit") new source code.  Samba's various CVS branches can
+be accessed via anonymous CVS using the instructions
+detailed in this chapter.</P
+><P
+>This document is a modified version of the instructions found at
+<A
+HREF="http://samba.org/samba/cvs.html"
+TARGET="_top"
+>http://samba.org/samba/cvs.html</A
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN8"
+>CVS Access to samba.org</A
+></H1
+><P
+>The machine samba.org runs a publicly accessible CVS 
+repository for access to the source code of several packages, 
+including samba, rsync and jitterbug. There are two main ways of 
+accessing the CVS server on this host.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN11"
+>Access via CVSweb</A
+></H2
+><P
+>You can access the source code via your 
+favourite WWW browser. This allows you to access the contents of 
+individual files in the repository and also to look at the revision 
+history and commit logs of individual files. You can also ask for a diff 
+listing between any two versions on the repository.</P
+><P
+>Use the URL : <A
+HREF="http://samba.org/cgi-bin/cvsweb"
+TARGET="_top"
+>http://samba.org/cgi-bin/cvsweb</A
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN16"
+>Access via cvs</A
+></H2
+><P
+>You can also access the source code via a 
+normal cvs client.  This gives you much more control over you can 
+do with the repository and allows you to checkout whole source trees 
+and keep them up to date via normal cvs commands. This is the 
+preferred method of access if you are a developer and not
+just a casual browser.</P
+><P
+>To download the latest cvs source code, point your
+browser at the URL : <A
+HREF="http://www.cyclic.com/"
+TARGET="_top"
+>http://www.cyclic.com/</A
+>.
+and click on the 'How to get cvs' link. CVS is free software under 
+the GNU GPL (as is Samba).  Note that there are several graphical CVS clients
+which provide a graphical interface to the sometimes mundane CVS commands.
+Links to theses clients are also available from http://www.cyclic.com.</P
+><P
+>To gain access via anonymous cvs use the following steps. 
+For this example it is assumed that you want a copy of the 
+samba source code. For the other source code repositories 
+on this system just substitute the correct package name</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>	Install a recent copy of cvs. All you really need is a 
+	copy of the cvs client binary. 
+	</P
+></LI
+><LI
+><P
+>	Run the command 
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs -d :pserver:cvs@samba.org:/cvsroot login</B
+>
+	</P
+><P
+>	When it asks you for a password type <TT
+CLASS="USERINPUT"
+><B
+>cvs</B
+></TT
+>.
+	</P
+></LI
+><LI
+><P
+>	Run the command 
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</B
+>
+	</P
+><P
+>	This will create a directory called samba containing the 
+	latest samba source code (i.e. the HEAD tagged cvs branch). This 
+	currently corresponds to the 3.0 development tree. 
+	</P
+><P
+>	CVS branches other HEAD can be obtained by using the <TT
+CLASS="PARAMETER"
+><I
+>-r</I
+></TT
+>
+	and defining a tag name.  A list of branch tag names can be found on the
+	"Development" page of the samba web site.  A common request is to obtain the
+	latest 2.2 release code.  This could be done by using the following command.
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</B
+>
+	</P
+></LI
+><LI
+><P
+>	Whenever you want to merge in the latest code changes use 
+	the following command from within the samba directory: 
+	</P
+><P
+>	<B
+CLASS="COMMAND"
+>cvs update -d -P</B
+>
+	</P
+></LI
+></OL
+></DIV
+></DIV
+></DIV
+></BODY
+></HTML
+>

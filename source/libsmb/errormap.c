@@ -1,9 +1,8 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 3.0
  *  error mapping functions
  *  Copyright (C) Andrew Tridgell 2001
- *  Copyright (C) Andrew Bartlett 2001
- *  Copyright (C) Tim Potter 2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,7 +44,7 @@
 */
 
 /* NT status -> dos error map */
-static const struct {
+static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
@@ -98,10 +97,6 @@ static const struct {
 */
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_ACCESS_DENIED},
 	{ERRDOS,	111,	NT_STATUS_BUFFER_TOO_SMALL},
-/*
- * Not an official error, as only bit 0x80000000, not bits 0xC0000000 are set.
- */
-	{ERRDOS,	ERRmoredata,	STATUS_BUFFER_OVERFLOW},
 	{ERRDOS,	ERRbadfid,	NT_STATUS_OBJECT_TYPE_MISMATCH},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_NONCONTINUABLE_EXCEPTION},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_INVALID_DISPOSITION},
@@ -615,7 +610,7 @@ static const struct {
 
 
 /* dos -> nt status error map */
-static const struct {
+static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
@@ -870,7 +865,7 @@ static const struct {
 };
 
 /* errmap NTSTATUS->Win32 */
-static const struct {
+static struct {
 	NTSTATUS ntstatus;
 	WERROR werror;
 } ntstatus_to_werror_map[] = {
@@ -1414,7 +1409,7 @@ static const struct {
 /*****************************************************************************
 convert a dos eclas/ecode to a NT status32 code
  *****************************************************************************/
-NTSTATUS dos_to_ntstatus(uint8 eclass, uint32 ecode)
+NTSTATUS dos_to_ntstatus(int eclass, int ecode)
 {
 	int i;
 	if (eclass == 0 && ecode == 0) return NT_STATUS_OK;
@@ -1486,63 +1481,4 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 
 	/* a lame guess */
 	return W_ERROR(NT_STATUS_V(error) & 0xffff);
-}
-
-/* Mapping between Unix, DOS and NT error numbers */
-
-const struct unix_error_map unix_dos_nt_errmap[] = {
-	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-	{ ENOTDIR, ERRDOS, ERRbadpath,  NT_STATUS_NOT_A_DIRECTORY },
-	{ EIO, ERRHRD, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
-	{ EBADF, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EINVAL, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EEXIST, ERRDOS, ERRfilexists, NT_STATUS_OBJECT_NAME_COLLISION},
-	{ ENFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ EMFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ ENOSPC, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
-	{ ENOMEM, ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY },
-	{ EISDIR, ERRDOS, ERRnoaccess, NT_STATUS_FILE_IS_A_DIRECTORY},
-#ifdef EDQUOT
-	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
-#endif
-#ifdef ENOTEMPTY
-	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
-#endif
-#ifdef EXDEV
-	{ EXDEV, ERRDOS, ERRdiffdevice, NT_STATUS_NOT_SAME_DEVICE },
-#endif
-#ifdef EROFS
-	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
-#endif
-#ifdef ENAMETOOLONG
-	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
-#endif
-#ifdef EFBIG
-	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
-#endif
-	{ 0, 0, 0, NT_STATUS_OK }
-};
-
-/*********************************************************************
- Map an NT error code from a Unix error code.
-*********************************************************************/
-
-NTSTATUS map_nt_error_from_unix(int unix_error)
-{
-	int i = 0;
-
-	if (unix_error == 0)
-		return NT_STATUS_OK;
-
-	/* Look through list */
-	while(unix_dos_nt_errmap[i].unix_error != 0) {
-		if (unix_dos_nt_errmap[i].unix_error == unix_error)
-			return unix_dos_nt_errmap[i].nt_error;
-		i++;
-	}
-
-	/* Default return */
-	return NT_STATUS_ACCESS_DENIED;
 }

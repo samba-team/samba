@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    SMB wrapper functions
    Copyright (C) Andrew Tridgell 1998
    
@@ -27,6 +28,8 @@ static struct smbw_file *smbw_files;
 static struct smbw_server *smbw_srvs;
 
 struct bitmap *smbw_file_bmap;
+extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 fstring smbw_prefix = SMBW_PREFIX;
 
@@ -43,6 +46,8 @@ void smbw_init(void)
 {
 	extern BOOL in_client;
 	static int initialised;
+	static pstring servicesf = CONFIGFILE;
+	extern FILE *dbf;
 	char *p;
 	int eno;
 	pstring line;
@@ -55,9 +60,10 @@ void smbw_init(void)
 	smbw_busy++;
 
 	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
 	setup_logging("smbsh",True);
 
-	dbf = x_stderr;
+	dbf = stderr;
 
 	if ((p=smbw_getshared("LOGFILE"))) {
 		dbf = sys_fopen(p, "a");
@@ -68,18 +74,20 @@ void smbw_init(void)
 		exit(1);
 	}
 
+	charset_initialise();
+
 	in_client = True;
 
 	load_interfaces();
 
 	if ((p=smbw_getshared("SERVICESF"))) {
-		pstrcpy(dyn_CONFIGFILE, p);
+		pstrcpy(servicesf, p);
 	}
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(servicesf,True,False,False);
+	codepage_initialise(lp_client_code_page());
 
-	if (!init_names())
-		exit(1);
+	get_myname(global_myname);
 
 	if ((p=smbw_getshared("DEBUG"))) {
 		DEBUGLEVEL = atoi(p);
@@ -442,7 +450,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 	pstring ipenv;
 	struct in_addr ip;
 
-        zero_ip(&ip);
+	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
 	get_auth_data_fn(server, share, &workgroup, &username, &password);
@@ -461,18 +469,18 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
-	if ((p=strchr_m(server_n,'#')) && 
+	if ((p=strchr(server_n,'#')) && 
 	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
 		struct in_addr sip;
 		pstring s;
 
 		fstrcpy(group, server_n);
-		p = strchr_m(group,'#');
+		p = strchr(group,'#');
 		*p = 0;
 		
 		/* cache the workgroup master lookup */
@@ -493,7 +501,7 @@ struct smbw_server *smbw_server(char *server, char *share)
  again:
 	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
 
-        zero_ip(&ip);
+	zero_ip(&ip);
 	if ((p=smbw_getshared(ipenv))) {
 		ip = *(interpret_addr2(p));
 	}
@@ -1480,12 +1488,8 @@ say no to acls
 	st64->st_atime = st->st_atime;
 	st64->st_mtime = st->st_mtime;
 	st64->st_ctime = st->st_ctime;
-#ifdef HAVE_STAT_ST_BLKSIZE
 	st64->st_blksize = st->st_blksize;
-#endif
-#ifdef HAVE_STAT_ST_BLOCKS
 	st64->st_blocks = st->st_blocks;
-#endif
 }
 #endif
 
@@ -1516,11 +1520,11 @@ struct kernel_stat {
 	unsigned long int st_size;
 	unsigned long int st_blksize;
 	unsigned long int st_blocks;
-	unsigned long int st_atime_;
+	unsigned long int st_atime;
 	unsigned long int __unused1;
-	unsigned long int st_mtime_;
+	unsigned long int st_mtime;
 	unsigned long int __unused2;
-	unsigned long int st_ctime_;
+	unsigned long int st_ctime;
 	unsigned long int __unused3;
 	unsigned long int __unused4;
 	unsigned long int __unused5;
@@ -1549,14 +1553,10 @@ struct kernel_stat {
 	st->st_gid = kbuf->st_gid;
 	st->st_rdev = kbuf->st_rdev;
 	st->st_size = kbuf->st_size;
-#ifdef HAVE_STAT_ST_BLKSIZE
 	st->st_blksize = kbuf->st_blksize;
-#endif
-#ifdef HAVE_STAT_ST_BLOCKS
 	st->st_blocks = kbuf->st_blocks;
-#endif
-	st->st_atime = kbuf->st_atime_;
-	st->st_mtime = kbuf->st_mtime_;
-	st->st_ctime = kbuf->st_ctime_;
+	st->st_atime = kbuf->st_atime;
+	st->st_mtime = kbuf->st_mtime;
+	st->st_ctime = kbuf->st_ctime;
 }
 #endif

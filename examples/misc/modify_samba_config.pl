@@ -66,7 +66,7 @@ while (<CONFIGFILE>) {
 	
 	## check for a param = value
 	if ($_ =~ /=/) {
-		($param, $value) = split (/=/, $_,2);
+		($param, $value) = split (/=/, $_);
 		$param =~ s/./\l$&/g;
 		$param =~ s/\s+//g;
 		$value =~ s/^\s+//;

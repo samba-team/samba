@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Luke Kenneth Casson Leighton 1997-2001.
  *  
@@ -28,7 +29,7 @@ typedef const struct
 	NTSTATUS nt_errcode;
 } nt_err_code_struct;
 
-static nt_err_code_struct nt_errs[] =
+nt_err_code_struct nt_errs[] =
 {
 	{ "NT_STATUS_OK", NT_STATUS_OK },
 	{ "NT_STATUS_UNSUCCESSFUL", NT_STATUS_UNSUCCESSFUL },
@@ -533,116 +534,16 @@ static nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
-	{ "NT_STATUS_NOT_A_REPARSE_POINT", NT_STATUS_NOT_A_REPARSE_POINT },
-        { "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
-	{ "STATUS_MORE_ENTRIES", STATUS_MORE_ENTRIES },
+	{ "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
 	{ "STATUS_SOME_UNMAPPED", STATUS_SOME_UNMAPPED },
 	{ NULL, NT_STATUS(0) }
 };
 
-nt_err_code_struct nt_err_desc[] =
-{
-	{ "Success", 				NT_STATUS_OK },
-	{ "Undetermined error", 		NT_STATUS_UNSUCCESSFUL },
-	{ "Access denied", 			NT_STATUS_ACCESS_DENIED },
-	{ "Account locked out", 		NT_STATUS_ACCOUNT_LOCKED_OUT },
-	{ "Must change password", 		NT_STATUS_PASSWORD_MUST_CHANGE },
-	{ "Password is too short", 		NT_STATUS_PWD_TOO_SHORT },
-	{ "Password is too recent", 		NT_STATUS_PWD_TOO_RECENT },
-	{ "Password history conflict", 		NT_STATUS_PWD_HISTORY_CONFLICT },
-	{ "No logon servers", 			NT_STATUS_NO_LOGON_SERVERS },
-	{ "Improperly formed account name", 	NT_STATUS_INVALID_ACCOUNT_NAME },
-	{ "User exists", 			NT_STATUS_USER_EXISTS },
-	{ "No such user", 			NT_STATUS_NO_SUCH_USER },
-	{ "Group exists", 			NT_STATUS_GROUP_EXISTS },
-	{ "No such group", 			NT_STATUS_NO_SUCH_GROUP },
-	{ "Member not in group", 		NT_STATUS_MEMBER_NOT_IN_GROUP },
-	{ "Wrong Password", 			NT_STATUS_WRONG_PASSWORD },
-	{ "Ill formed password", 		NT_STATUS_ILL_FORMED_PASSWORD },
-	{ "Password restriction", 		NT_STATUS_PASSWORD_RESTRICTION },
-	{ "Logon failure", 			NT_STATUS_LOGON_FAILURE },
-	{ "Account restriction", 		NT_STATUS_ACCOUNT_RESTRICTION },
-	{ "Invalid logon hours", 		NT_STATUS_INVALID_LOGON_HOURS },
-	{ "Invalid workstation", 		NT_STATUS_INVALID_WORKSTATION },
-	{ "Password expired", 			NT_STATUS_PASSWORD_EXPIRED },
-	{ "Account disabled", 			NT_STATUS_ACCOUNT_DISABLED },
-	{ "Unexpected information received", 	NT_STATUS_INVALID_PARAMETER },
-	{ "Memory allocation error", 		NT_STATUS_NO_MEMORY },
-	{ "No domain controllers located", 	NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND },
-	{ "Account locked out", 		NT_STATUS_ACCOUNT_LOCKED_OUT },
-	{ "Named pipe not available", 		NT_STATUS_PIPE_NOT_AVAILABLE },
-	{ "Not implemented", 			NT_STATUS_NOT_IMPLEMENTED },
-	{ "Invalid information class", 		NT_STATUS_INVALID_INFO_CLASS },
-	{ "Information length mismatch", 	NT_STATUS_INFO_LENGTH_MISMATCH },
-	{ "Access violation", 			NT_STATUS_ACCESS_VIOLATION },
-	{ "Invalid handle", 			NT_STATUS_INVALID_HANDLE },
-	{ "Invalid parameter", 			NT_STATUS_INVALID_PARAMETER },
-	{ "No memory", 				NT_STATUS_NO_MEMORY },
-	{ "Buffer too small", 			NT_STATUS_BUFFER_TOO_SMALL },
-	{ "Revision mismatch", 			NT_STATUS_REVISION_MISMATCH },
-	{ "No logon servers", 			NT_STATUS_NO_LOGON_SERVERS },
-	{ "No such logon session", 		NT_STATUS_NO_SUCH_LOGON_SESSION },
-	{ "No such privilege", 			NT_STATUS_NO_SUCH_PRIVILEGE },
-	{ "Procedure not found", 		NT_STATUS_PROCEDURE_NOT_FOUND },
-	{ "Server disabled", 			NT_STATUS_SERVER_DISABLED },
-	{ "Invalid pipe state", 		NT_STATUS_INVALID_PIPE_STATE },
-	{ "Named pipe busy", 			NT_STATUS_PIPE_BUSY },
-	{ "Illegal function",		 	NT_STATUS_ILLEGAL_FUNCTION },
-	{ "Named pipe dicconnected", 		NT_STATUS_PIPE_DISCONNECTED },
-	{ "Named pipe closing", 		NT_STATUS_PIPE_CLOSING },
-	{ "Remote host not listening", 		NT_STATUS_REMOTE_NOT_LISTENING },
-	{ "Duplicate name on network", 		NT_STATUS_DUPLICATE_NAME },
-	{ "Print queue is full", 		NT_STATUS_PRINT_QUEUE_FULL },
-	{ "No print spool space available", 	NT_STATUS_NO_SPOOL_SPACE },
-	{ "Too many names", 			NT_STATUS_TOO_MANY_NAMES },
-	{ "Too many sessions", 			NT_STATUS_TOO_MANY_SESSIONS },
-	{ "Invalid server state", 		NT_STATUS_INVALID_SERVER_STATE },
-	{ "Invalid domain state", 		NT_STATUS_INVALID_DOMAIN_STATE },
-	{ "Invalid domain role", 		NT_STATUS_INVALID_DOMAIN_ROLE },
-	{ "No such domain", 			NT_STATUS_NO_SUCH_DOMAIN },
-	{ "Domain exists", 			NT_STATUS_DOMAIN_EXISTS },
-	{ "Domain limit exceeded", 		NT_STATUS_DOMAIN_LIMIT_EXCEEDED },
-	{ "Bad logon session state", 		NT_STATUS_BAD_LOGON_SESSION_STATE },
-	{ "Logon session collision", 		NT_STATUS_LOGON_SESSION_COLLISION },
-	{ "Invalid logon type", 		NT_STATUS_INVALID_LOGON_TYPE },
-	{ "Cancelled", 				NT_STATUS_CANCELLED },
-	{ "Invalid computer name", 		NT_STATUS_INVALID_COMPUTER_NAME },	
-	{ "Logon server conflict", 		NT_STATUS_LOGON_SERVER_CONFLICT },
-	{ "Time difference at domain controller", NT_STATUS_TIME_DIFFERENCE_AT_DC },
-	{ "Pipe broken", 			NT_STATUS_PIPE_BROKEN },
-	{ "Registry corrupt", 			NT_STATUS_REGISTRY_CORRUPT },
-	{ "Too many secrets", 			NT_STATUS_TOO_MANY_SECRETS },
-	{ "Too many SIDs", 			NT_STATUS_TOO_MANY_SIDS },
-	{ "Lanmanager cross encryption required", NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED },
-	{ "Log file full", 			NT_STATUS_LOG_FILE_FULL },
-	{ "No trusted LSA secret", 		NT_STATUS_NO_TRUST_LSA_SECRET },
-	{ "No trusted SAM account", 		NT_STATUS_NO_TRUST_SAM_ACCOUNT },
-	{ "Trusted domain failure", 		NT_STATUS_TRUSTED_DOMAIN_FAILURE },
-	{ "Trust relationship failure", 	NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE },
-	{ "Trust failure", 			NT_STATUS_TRUST_FAILURE },
-	{ "Netlogon service not started", 	NT_STATUS_NETLOGON_NOT_STARTED },
-	{ "Account expired", 			NT_STATUS_ACCOUNT_EXPIRED },
-	{ "Network credential conflict", 	NT_STATUS_NETWORK_CREDENTIAL_CONFLICT },
-	{ "Remote session limit", 		NT_STATUS_REMOTE_SESSION_LIMIT },
-	{ "No logon interdomain trust account", NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT },
-	{ "No logon workstation trust account", NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT },
-	{ "No logon server trust account", 	NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT },
-	{ "Domain trust inconsistent", 		NT_STATUS_DOMAIN_TRUST_INCONSISTENT },
-	{ "No user session key available", 	NT_STATUS_NO_USER_SESSION_KEY },
-	{ "User session deleted", 		NT_STATUS_USER_SESSION_DELETED },
-	{ "Insufficient server resources", 	NT_STATUS_INSUFF_SERVER_RESOURCES },
-	{ "Insufficient logon information", 	NT_STATUS_INSUFFICIENT_LOGON_INFO },
-	
-	{ "License quota exceeded", 		NT_STATUS_LICENSE_QUOTA_EXCEEDED },
-
-	{ NULL, NT_STATUS(0) }
-};
-
-
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-const char *nt_errstr(NTSTATUS nt_code)
+
+const char *get_nt_error_msg(NTSTATUS nt_code)
 {
         static pstring msg;
         int idx = 0;
@@ -660,30 +561,15 @@ const char *nt_errstr(NTSTATUS nt_code)
         return msg;
 }
 
-/************************************************************************
- Print friendler version fo NT error code
- ***********************************************************************/
- 
-const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
+const char *nt_errstr(NTSTATUS nt_code)
 {
-        int idx = 0;
-
-	while (nt_err_desc[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_err_desc[idx].nt_errcode) == NT_STATUS_V(nt_code)) 
-		{
-                        return nt_err_desc[idx].nt_errstr;
-		}
-		idx++;
-	}
-	
-	/* fall back to NT_STATUS_XXX string */
-	
-	return nt_errstr(nt_code);
+	return get_nt_error_msg(nt_code);
 }
 
 /*****************************************************************************
  returns an NT_STATUS constant as a string for inclusion in autogen C code
  *****************************************************************************/
+
 const char *get_nt_error_c_code(NTSTATUS nt_code)
 {
         static pstring out;
@@ -700,48 +586,4 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
 	slprintf(out, sizeof(out), "NT_STATUS(0x%08x)", NT_STATUS_V(nt_code));
 
         return out;
-}
-
-/*****************************************************************************
- returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
- *****************************************************************************/
-NTSTATUS nt_status_string_to_code(char *nt_status_str)
-{
-        int idx = 0;
-
-	while (nt_errs[idx].nt_errstr != NULL) {
-		if (strcmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
-                        return nt_errs[idx].nt_errcode;
-		}
-		idx++;
-	}
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
-/**
- * Squash an NT_STATUS in line with security requirements.
- * In an attempt to avoid giving the whole game away when users
- * are authenticating, NT replaces both NT_STATUS_NO_SUCH_USER and 
- * NT_STATUS_WRONG_PASSWORD with NT_STATUS_LOGON_FAILURE in certain situations 
- * (session setups in particular).
- *
- * @param nt_status NTSTATUS input for squashing.
- * @return the 'squashed' nt_status
- **/
-
-NTSTATUS nt_status_squash(NTSTATUS nt_status)
-{
-	if NT_STATUS_IS_OK(nt_status) {
-		return nt_status;		
-	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
-		/* Match WinXP and don't give the game away */
-		return NT_STATUS_LOGON_FAILURE;
-		
-	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
-		/* Match WinXP and don't give the game away */
-		return NT_STATUS_LOGON_FAILURE;
-	} else {
-		return nt_status;
-	}  
 }

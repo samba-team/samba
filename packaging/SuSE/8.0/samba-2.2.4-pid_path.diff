@@ -1,0 +1,121 @@
+--- source/include/proto.h
++++ source/include/proto.h	Sat Apr 20 22:26:47 2002
+@@ -1889,6 +1889,7 @@
+ char *lp_deleteprinter_cmd(void);
+ char *lp_os2_driver_map(void);
+ char *lp_lockdir(void);
++char *lp_piddir(void);
+ char *lp_utmpdir(void);
+ char *lp_wtmpdir(void);
+ BOOL lp_utmp(void);
+--- source/lib/util.c
++++ source/lib/util.c	Sat Apr 20 22:26:47 2002
+@@ -1836,6 +1836,26 @@
+ 	return fname;
+ }
+ 
++/*****************************************************************
++a useful function for returning a path in the Samba pid directory
++ *****************************************************************/  
++char *pid_path(char *name)
++{
++	static pstring fname;
++
++	pstrcpy(fname,lp_piddir());
++	trim_string(fname,"","/");
++	
++	if (!directory_exist(fname,NULL)) {
++		mkdir(fname,0755);
++	}
++	
++	pstrcat(fname,"/");
++	pstrcat(fname,name);
++
++	return fname;
++}
++
+ /*******************************************************************
+  Given a filename - get its directory name
+  NB: Returned in static storage.  Caveats:
+--- source/param/loadparm.c
++++ source/param/loadparm.c	Sat Apr 20 22:26:47 2002
+@@ -108,6 +108,7 @@
+ 	char *szDeletePrinterCommand;
+ 	char *szOs2DriverMap;
+ 	char *szLockDir;
++	char *szPidDir;
+ 	char *szRootdir;
+ 	char *szDefaultService;
+ 	char *szDfree;
+@@ -1024,6 +1025,7 @@
+ 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
+ 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0}, 
+ 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0},
++	{"pid dir", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, 0}, 
+ #ifdef WITH_UTMP
+ 	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
+ 	{"wtmp directory", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
+@@ -1262,6 +1264,7 @@
+ 	string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
+ 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
+ 	string_set(&Globals.szLockDir, LOCKDIR);
++	string_set(&Globals.szPidDir, PIDDIR);
+ #ifdef WITH_UTMP
+ 	string_set(&Globals.szUtmpDir, "");
+ 	string_set(&Globals.szWtmpDir, "");
+@@ -1521,6 +1524,7 @@
+ FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
+ FN_GLOBAL_STRING(lp_os2_driver_map, &Globals.szOs2DriverMap)
+ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
++FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
+ #ifdef WITH_UTMP
+ FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
+ FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
+--- source/utils/testparm.c
++++ source/utils/testparm.c	Sat Apr 20 22:26:47 2002
+@@ -72,6 +72,16 @@
+ 		ret = 1;
+ 	}
+ 
++	if (!directory_exist(lp_piddir(), &st)) {
++		printf("ERROR: tdb directory %s does not exist\n",
++		       lp_piddir());
++		ret = 1;
++	} else if ((st.st_mode & 0777) != 0755) {
++		printf("WARNING: pid directory %s should have permissions 0755 for browsing to work\n",
++		       lp_piddir());
++		ret = 1;
++	}
++
+ 	/*
+ 	 * Password server sanity checks.
+ 	 */
+--- source/lib/pidfile.c
++++ source/lib/pidfile.c	Sat Apr 20 22:26:47 2002
+@@ -37,7 +37,7 @@
+ 	unsigned ret;
+ 	pstring pidFile;
+ 
+-	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
++	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
+ 
+ 	fd = sys_open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
+ 	if (fd == -1) {
+@@ -70,7 +70,7 @@
+ 	return 0;
+ }
+ 
+-/* create a pid file in the lock directory. open it and leave it locked */
++/* create a pid file in the pid directory. open it and leave it locked */
+ void pidfile_create(char *name)
+ {
+ 	int     fd;
+@@ -78,7 +78,7 @@
+ 	pstring pidFile;
+ 	pid_t pid;
+ 
+-	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
++	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
+ 
+ 	pid = pidfile_pid(name);
+ 	if (pid != 0) {

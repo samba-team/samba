@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    run a command as a specified user
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -143,7 +144,7 @@ int smbrun(char *cmd, int *outfd)
 	/* point our stdout at the file we want output to go into */
 	if (outfd) {
 		close(1);
-		if (sys_dup2(*outfd,1) != 1) {
+		if (dup2(*outfd,1) != 1) {
 			DEBUG(2,("Failed to create stdout file descriptor\n"));
 			close(*outfd);
 			exit(80);

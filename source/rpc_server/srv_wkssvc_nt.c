@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -25,8 +26,7 @@
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+extern pstring global_myname;
 
 /*******************************************************************
  create_wks_info_100
@@ -39,17 +39,17 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 
 	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
 
-	pstrcpy (my_name, global_myname());
-	strupper_m(my_name);
+	pstrcpy (my_name, global_myname);
+	strupper(my_name);
 
 	pstrcpy (domain, lp_workgroup());
-	strupper_m(domain);
+	strupper(domain);
 
 	init_wks_info_100(inf,
 	                  0x000001f4, /* platform id info */
 	                  lp_major_announce_version(),
 	                  lp_minor_announce_version(),
-	                  my_name, domain);
+	                  my_name, unix_to_dos_static(domain));
 }
 
 /*******************************************************************

@@ -26,9 +26,7 @@
 
 /* Include header files from data in config.h file */
 
-#ifndef NO_CONFIG_H
 #include <config.h>
-#endif
 
 #include <stdio.h>
 
@@ -64,19 +62,34 @@
 #include <string.h>
 #endif
 
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <pwd.h>
-#include "nsswitch/winbind_nss.h"
+#include "nsswitch/sys_nss.h"
+
+/* Declarations for functions in winbind_nss.c
+   needed in winbind_nss_solaris.c (solaris wrapper to nss) */
+
+NSS_STATUS _nss_winbind_setpwent(void);
+NSS_STATUS _nss_winbind_endpwent(void);
+NSS_STATUS _nss_winbind_getpwent_r(struct passwd* result, char* buffer,
+				   size_t buflen, int* errnop);
+NSS_STATUS _nss_winbind_getpwuid_r(uid_t, struct passwd*, char* buffer,
+				   size_t buflen, int* errnop);
+NSS_STATUS _nss_winbind_getpwnam_r(const char* name, struct passwd* result,
+				   char* buffer, size_t buflen, int* errnop);
+
+NSS_STATUS _nss_winbind_setgrent(void);
+NSS_STATUS _nss_winbind_endgrent(void);
+NSS_STATUS _nss_winbind_getgrent_r(struct group* result, char* buffer,
+				   size_t buflen, int* errnop);
+NSS_STATUS _nss_winbind_getgrnam_r(const char *name,
+				   struct group *result, char *buffer,
+				   size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid,
+				   struct group *result, char *buffer,
+				   size_t buflen, int *errnop);
 
 /* I'm trying really hard not to include anything from smb.h with the
    result of some silly looking redeclaration of structures. */

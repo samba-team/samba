@@ -1,7 +1,8 @@
 /* this code is broken - there is a race condition with the unlink (tridge) */
 
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    pidfile handling
    Copyright (C) Andrew Tridgell 1998
    
@@ -21,6 +22,7 @@
 */
 
 #include "includes.h"
+
 
 #ifndef O_NONBLOCK
 #define O_NONBLOCK
@@ -100,7 +102,7 @@ void pidfile_create(const char *name)
 
 	memset(buf, 0, sizeof(buf));
 	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) sys_getpid());
-	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
+	if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
 		DEBUG(0,("ERROR: can't write to file %s: %s\n", 
 			 pidFile, strerror(errno)));
 		exit(1);

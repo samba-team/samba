@@ -1,10 +1,10 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
+ *  Copyright (C) Paul Ashton                       1997.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,9 +24,6 @@
 /* This is the interface to the wks pipe. */
 
 #include "includes.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
 
 /*******************************************************************
  api_wks_query_info
@@ -59,20 +56,16 @@ static BOOL api_wks_query_info(pipes_struct *p)
 /*******************************************************************
  \PIPE\wkssvc commands
  ********************************************************************/
-
-static struct api_struct api_wks_cmds[] =
+struct api_struct api_wks_cmds[] =
 {
-      { "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info }
+	{ "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info },
+	{ NULL             , 0            , NULL }
 };
 
-void wkssvc_get_pipe_fns( struct api_struct **fns, int *n_fns )
+/*******************************************************************
+ receives a wkssvc pipe and responds.
+ ********************************************************************/
+BOOL api_wkssvc_rpc(pipes_struct *p)
 {
-	*fns = api_wks_cmds;
-	*n_fns = sizeof(api_wks_cmds) / sizeof(struct api_struct);
-}
-
-NTSTATUS rpc_wks_init(void)
-{
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "wkssvc", "ntsvcs", api_wks_cmds,
-				    sizeof(api_wks_cmds) / sizeof(struct api_struct));
+	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds);
 }

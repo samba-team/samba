@@ -59,20 +59,19 @@ struct dfs_path
 	pstring reqpath;
 };
 
+#ifdef WITH_MSDFS
+
 #define RESOLVE_DFSPATH(name, conn, inbuf, outbuf)           	\
 { if ((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) &&       	\
       lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&		\
       dfs_redirect(name,conn,False))				\
-             return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,	\
-			       ERRSRV, ERRbadpath);; }		
+             return(dfs_path_error(inbuf,outbuf)); }
 
 #define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) 		\
 { if ( (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) ||      		\
        ((get_remote_arch() == RA_WIN95) && lp_msdfs_root(SNUM(conn))) )	\
 	 if (lp_host_msdfs() && dfs_redirect(name,conn,True))       	\
-	         return	ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,		\
-				   ERRSRV, ERRbadpath);; }          
-
+	         return(dfs_path_error(inbuf,outbuf)); }
  
 #define init_dfsroot(conn, inbuf, outbuf)                    	\
 { if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {        	\
@@ -81,5 +80,13 @@ struct dfs_path
 	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS 		\
 	      | SVAL(outbuf, smb_vwv2));   			\
 } }
+
+#else
+/* Stub macros */
+#define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) ;
+#define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) ;
+#define init_dfsroot(conn, inbuf, outbuf) ;
+
+#endif
 
 #endif /* _MSDFS_H */

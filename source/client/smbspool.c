@@ -1,9 +1,9 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0.
    SMB backend for the Common UNIX Printing System ("CUPS")
    Copyright 1999 by Easy Software Products
    Copyright Andrew Tridgell 1994-1998
-   Copyright Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ extern BOOL		in_client;	/* Boolean for client library */
  */
 
 static void		list_devices(void);
-static struct cli_state	*smb_connect(const char *, const char *, const char *, const char *, const char *);
+static struct cli_state	*smb_connect(char *, char *, char *, char *, char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 
 
@@ -52,11 +52,11 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   int		copies;		/* Number of copies */
   char		uri[1024],	/* URI */
 		*sep,		/* Pointer to separator */
-		*password;	/* Password */
-  const char	*username,	/* Username */
+		*username,	/* Username */
+		*password,	/* Password */
+		*workgroup,	/* Workgroup */
 		*server,	/* Server name */
 		*printer;	/* Printer name */
-  const char	*workgroup;	/* Workgroup */
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
@@ -133,7 +133,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Extract the destination from the URI...
   */
 
-  if ((sep = strrchr_m(uri, '@')) != NULL)
+  if ((sep = strrchr(uri, '@')) != NULL)
   {
     username = uri + 6;
     *sep++ = '\0';
@@ -144,7 +144,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     * Extract password as needed...
     */
 
-    if ((password = strchr_m(username, ':')) != NULL)
+    if ((password = strchr(username, ':')) != NULL)
       *password++ = '\0';
     else
       password = "";
@@ -156,7 +156,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     server   = uri + 6;
   }
 
-  if ((sep = strchr_m(server, '/')) == NULL)
+  if ((sep = strchr(server, '/')) == NULL)
   {
     fputs("ERROR: Bad URI - need printer name!\n", stderr);
     return (1);
@@ -165,7 +165,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   *sep++ = '\0';
   printer = sep;
 
-  if ((sep = strchr_m(printer, '/')) != NULL)
+  if ((sep = strchr(printer, '/')) != NULL)
   {
    /*
     * Convert to smb://[username:password@]workgroup/server/printer...
@@ -186,16 +186,21 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   setup_logging("smbspool", True);
 
+  TimeInit();
+  charset_initialise();
+
   in_client = True;   /* Make sure that we tell lp_load we are */
 
-  if (!lp_load(dyn_CONFIGFILE, True, False, False))
+  if (!lp_load(CONFIGFILE, True, False, False))
   {
-    fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+    fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", CONFIGFILE);
     return (1);
   }
 
   if (workgroup == NULL)
     workgroup = lp_workgroup();
+
+  codepage_initialise(lp_client_code_page());
 
   load_interfaces();
 
@@ -265,34 +270,94 @@ list_devices(void)
  */
 
 static struct cli_state *		/* O - SMB connection */
-smb_connect(const char *workgroup,		/* I - Workgroup */
-            const char *server,		/* I - Server */
-            const char *share,		/* I - Printer */
-            const char *username,		/* I - Username */
-            const char *password)		/* I - Password */
+smb_connect(char *workgroup,		/* I - Workgroup */
+            char *server,		/* I - Server */
+            char *share,		/* I - Printer */
+            char *username,		/* I - Username */
+            char *password)		/* I - Password */
 {
   struct cli_state	*c;		/* New connection */
+  struct nmb_name	called,		/* NMB name of server */
+			calling;	/* NMB name of client */
+  struct in_addr	ip;		/* IP address of server */
   pstring		myname;		/* Client name */
-  NTSTATUS nt_status;
+
 
  /*
   * Get the names and addresses of the client and server...
   */
 
   get_myname(myname);  
-  	
-  nt_status = cli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
-				  username, workgroup, password, 0, Undefined, NULL);
-  
-  if (!NT_STATUS_IS_OK(nt_status)) {
-	  fprintf(stderr, "ERROR:  Connection failed with error %s\n", nt_errstr(nt_status));
-	  return NULL;
+
+  zero_ip(&ip);
+
+  make_nmb_name(&calling, myname, 0x0);
+  make_nmb_name(&called, server, 0x20);
+
+ /*
+  * Open a new connection to the SMB server...
+  */
+
+  if ((c = cli_initialise(NULL)) == NULL)
+  {
+    fputs("ERROR: cli_initialise() failed...\n", stderr);
+    return (NULL);
   }
 
-  /*
-   * Return the new connection...
-   */
-  
+  if (!cli_set_port(c, SMB_PORT))
+  {
+    fputs("ERROR: cli_set_port() failed...\n", stderr);
+    cli_shutdown(c);
+    return (NULL);
+  }
+
+  if (!cli_connect(c, server, &ip))
+  {
+    fputs("ERROR: cli_connect() failed...\n", stderr);
+    cli_shutdown(c);
+    return (NULL);
+  }
+
+  if (!cli_session_request(c, &calling, &called))
+  {
+    fputs("ERROR: cli_session_request() failed...\n", stderr);
+    cli_shutdown(c);
+    return (NULL);
+  }
+
+  if (!cli_negprot(c))
+  {
+    fputs("ERROR: SMB protocol negotiation failed\n", stderr);
+    cli_shutdown(c);
+    return (NULL);
+  }
+
+ /*
+  * Do password stuff...
+  */
+
+  if (!cli_session_setup(c, username, 
+			 password, strlen(password),
+			 password, strlen(password),
+			 workgroup))
+  {
+    fprintf(stderr, "ERROR: SMB session setup failed: %s\n", cli_errstr(c));
+    cli_shutdown(c);
+    return (NULL);
+  }
+
+  if (!cli_send_tconX(c, share, "?????",
+		      password, strlen(password)+1))
+  {
+    fprintf(stderr, "ERROR: SMB tree connect failed: %s\n", cli_errstr(c));
+    cli_shutdown(c);
+    return (NULL);
+  }
+
+ /*
+  * Return the new connection...
+  */
+
   return (c);
 }
 

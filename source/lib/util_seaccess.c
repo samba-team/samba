@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000.
    Copyright (C) Tim Potter 2000.
    Copyright (C) Re-written by Jeremy Allison 2000.
@@ -20,15 +21,31 @@
 */
 
 #include "includes.h"
+#include "nterr.h"
+#include "sids.h"
 
-extern DOM_SID global_sid_Builtin;
+/**********************************************************************************
+ Check if this ACE has a SID in common with the token.
+**********************************************************************************/
+
+static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
+{
+	size_t i;
+
+	for (i = 0; i < token->num_sids; i++) {
+		if (sid_equal(&ace->trustee, &token->user_sids[i]))
+			return True;
+	}
+
+	return False;
+}
 
 /*********************************************************************************
  Check an ACE against a SID.  We return the remaining needed permission
  bits not yet granted. Zero means permission allowed (no more needed bits).
 **********************************************************************************/
 
-static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_desired, 
+static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
 			NTSTATUS *status)
 {
 	uint32 mask = ace->info.mask;
@@ -88,7 +105,7 @@ static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_des
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32 *granted, 
+static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, 
 			    uint32 desired, 
 			    NTSTATUS *status)
 {
@@ -210,7 +227,7 @@ void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
  "Access-Checking" document in MSDN.
 *****************************************************************************/ 
 
-BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
+BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status)
 {
@@ -248,13 +265,12 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 	}
 
 	/* The user sid is the first in the token */
-	if (DEBUGLVL(3)) {
-		DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
-		
-		for (i = 1; i < token->num_sids; i++) {
-			DEBUGADD(3, ("se_access_check: also %s\n",
-				  sid_to_string(sid_str, &token->user_sids[i])));
-		}
+
+	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
+
+	for (i = 1; i < token->num_sids; i++) {
+		DEBUG(3, ("se_access_check: also %s\n",
+			  sid_to_string(sid_str, &token->user_sids[i])));
 	}
 
 	/* Is the token the owner of the SID ? */
@@ -284,7 +300,7 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
 		SEC_ACE *ace = &the_acl->ace[i];
 
-		DEBUGADD(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
+		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
 			  (unsigned int)i, ace->type, ace->flags,
 			  sid_to_string(sid_str, &ace->trustee),
 			  (unsigned int) ace->info.mask, 
@@ -293,7 +309,7 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
 		if (NT_STATUS_V(*status)) {
 			*acc_granted = 0;
-			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, nt_errstr(*status)));
+			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, get_nt_error_msg(*status)));
 			return False;
 		}
 	}
@@ -316,42 +332,116 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 	return False;
 }
 
+/* Create a child security descriptor using another security descriptor as
+   the parent container.  This child object can either be a container or
+   non-container object. */
 
-/*******************************************************************
- samr_make_sam_obj_sd
- ********************************************************************/
-
-NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
+SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
+				      BOOL child_container)
 {
-	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid;
-	DOM_SID act_sid;
+	SEC_DESC_BUF *sdb;
+	SEC_DESC *sd;
+	SEC_ACL *new_dacl, *the_acl;
+	SEC_ACE *new_ace_list = NULL;
+	int new_ace_list_ndx = 0, i;
+	size_t size;
 
-	SEC_ACE ace[3];
-	SEC_ACCESS mask;
+	/* Currently we only process the dacl when creating the child.  The
+	   sacl should also be processed but this is left out as sacls are
+	   not implemented in Samba at the moment.*/
 
-	SEC_ACL *psa = NULL;
+	the_acl = parent_ctr->dacl;
 
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+	if (!(new_ace_list = talloc(ctx, sizeof(SEC_ACE) * the_acl->num_aces))) 
+		return NULL;
 
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
+	for (i = 0; the_acl && i < the_acl->num_aces; i++) {
+		SEC_ACE *ace = &the_acl->ace[i];
+		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
+		uint8 new_flags = 0;
+		BOOL inherit = False;
+		fstring sid_str;
 
-	/*basic access for every one*/
-	init_sec_access(&mask, GENERIC_RIGHTS_SAM_EXECUTE | GENERIC_RIGHTS_SAM_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		/* The OBJECT_INHERIT_ACE flag causes the ACE to be
+		   inherited by non-container children objects.  Container
+		   children objects will inherit it as an INHERIT_ONLY
+		   ACE. */
 
-	/*full access for builtin aliases Administrators and Account Operators*/
-	init_sec_access(&mask, GENERIC_RIGHTS_SAM_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		if (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
 
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
-		return NT_STATUS_NO_MEMORY;
+			if (!child_container) {
+				new_flags |= SEC_ACE_FLAG_OBJECT_INHERIT;
+			} else {
+				new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			}
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
-		return NT_STATUS_NO_MEMORY;
+			inherit = True;
+		}
 
-	return NT_STATUS_OK;
+		/* The CONAINER_INHERIT_ACE flag means all child container
+		   objects will inherit and use the ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+			if (!child_container) {
+				inherit = False;
+			} else {
+				new_flags |= SEC_ACE_FLAG_CONTAINER_INHERIT;
+			}
+		}
+
+		/* The INHERIT_ONLY_ACE is not used by the se_access_check()
+		   function for the parent container, but is inherited by
+		   all child objects as a normal ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			/* Move along, nothing to see here */
+		}
+
+		/* The SEC_ACE_FLAG_NO_PROPAGATE_INHERIT flag means the ACE
+		   is inherited by child objects but not grandchildren
+		   objects.  We clear the object inherit and container
+		   inherit flags in the inherited ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+			new_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT |
+				       SEC_ACE_FLAG_CONTAINER_INHERIT);
+		}
+
+		/* Add ACE to ACE list */
+
+		if (!inherit)
+			continue;
+
+		init_sec_access(&new_ace->info, ace->info.mask);
+		init_sec_ace(new_ace, &ace->trustee, ace->type,
+			     new_ace->info, new_flags);
+
+		sid_to_string(sid_str, &ace->trustee);
+
+		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
+			  " inherited as %s:%d/0x%02x/0x%08x\n", sid_str,
+			  ace->type, ace->flags, ace->info.mask,
+			  sid_str, new_ace->type, new_ace->flags,
+			  new_ace->info.mask));
+
+		new_ace_list_ndx++;
+	}
+
+	/* Create child security descriptor to return */
+	
+	new_dacl = make_sec_acl(ctx, ACL_REVISION, new_ace_list_ndx, new_ace_list);
+
+	/* Use the existing user and group sids.  I don't think this is
+	   correct.  Perhaps the user and group should be passed in as
+	   parameters by the caller? */
+
+	sd = make_sec_desc(ctx, SEC_DESC_REVISION,
+			   parent_ctr->owner_sid,
+			   parent_ctr->grp_sid,
+			   parent_ctr->sacl,
+			   new_dacl, &size);
+
+	sdb = make_sec_desc_buf(ctx, size, sd);
+
+	return sdb;
 }

@@ -25,16 +25,13 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
-#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD)
+#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX)
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
 #include <security/pam_appl.h> 
 
-#ifndef PAM_AUTHTOK_RECOVER_ERR
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
-#endif
-
 #endif
 
 #ifdef HAVE_SECURITY_PAM_MODULES_H
@@ -93,4 +90,5 @@ do {                             \
 #define on(x, y) (x & y)
 #define off(x, y) (!(x & y))
 
-#include "winbind_client.h"
+#include "winbind_nss_config.h"
+#include "winbindd_nss.h"

@@ -1,8 +1,9 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    time handling functions
-   Copyright (C) Andrew Tridgell 		1992-1998
-   Copyright (C) Stefan (metze) Metzmacher	2002   
+   Copyright (C) Andrew Tridgell 1992-1998
+   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -32,23 +33,14 @@ int extra_time_offset = 0;
 #define CHAR_BIT 8
 #endif
 
-#ifndef TIME_T_MIN
-#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
-		    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
-#endif
-#ifndef TIME_T_MAX
-#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
-#endif
-
-void get_nttime_max(NTTIME *t)
-{
-	/* FIXME: This is incorrect */
-	unix_to_nt_time(t, get_time_t_max());
-}
-
 /*******************************************************************
  External access to time_t_min and time_t_max.
 ********************************************************************/
+
+time_t get_time_t_min(void)
+{
+	return TIME_T_MIN;
+}
 
 time_t get_time_t_max(void)
 {
@@ -129,7 +121,7 @@ static int get_serverzone(void)
 
 /* Re-read the smb serverzone value */
 
-static struct timeval start_time_hires;
+static struct timeval start_time_hires; 
 
 void TimeInit(void)
 {
@@ -145,11 +137,11 @@ void TimeInit(void)
  done before a daemon fork then this is the start time from the parent
  daemon start. JRA.
 ***********************************************************************/
-
+ 
 void get_process_uptime(struct timeval *ret_time)
 {
 	struct timeval time_now_hires;
-
+ 
 	GetTimeOfDay(&time_now_hires);
 	ret_time->tv_sec = time_now_hires.tv_sec - start_time_hires.tv_sec;
 	ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
@@ -308,8 +300,7 @@ time_t nt_time_to_unix(NTTIME *nt)
   time_t l_time_min = TIME_T_MIN;
   time_t l_time_max = TIME_T_MAX;
 
-  if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff))
-	  return(0);
+  if (nt->high == 0) return(0);
 
   d = ((double)nt->high)*4.0*(double)(1<<30);
   d += (nt->low&0xFFF00000);
@@ -318,11 +309,8 @@ time_t nt_time_to_unix(NTTIME *nt)
   /* now adjust by 369 years to make the secs since 1970 */
   d -= TIME_FIXUP_CONSTANT;
 
-  if (d <= l_time_min)
-	  return (l_time_min);
-
-  if (d >= l_time_max)
-	  return (l_time_max);
+  if (!(l_time_min <= d && d <= l_time_max))
+    return(0);
 
   ret = (time_t)(d+0.5);
 
@@ -334,14 +322,13 @@ time_t nt_time_to_unix(NTTIME *nt)
 }
 
 /****************************************************************************
- Convert a NTTIME structure to a time_t.
- It's originally in "100ns units".
+convert a NTTIME structure to a time_t
+It's originally in "100ns units"
 
- This is an absolute version of the one above.
- By absolute I mean, it doesn't adjust from 1/1/1601 to 1/1/1970
- if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
+this is an absolute version of the one above.
+By absolute I mean, it doesn't adjust from 1/1/1601 to 1/1/1970
+if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
 ****************************************************************************/
-
 time_t nt_time_to_unix_abs(NTTIME *nt)
 {
 	double d;
@@ -371,8 +358,14 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 
 	ret = (time_t)(d+0.5);
 
+	/* this takes us from kludge-GMT to real GMT */
+	ret -= get_serverzone();
+	ret += LocTimeDiff(ret);
+
 	return(ret);
 }
+
+
 
 /****************************************************************************
 interprets an nt time into a unix time_t
@@ -424,13 +417,12 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 }
 
 /****************************************************************************
- Convert a time_t to a NTTIME structure
+convert a time_t to a NTTIME structure
 
- This is an absolute version of the one above.
- By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
- If the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
+this is an absolute version of the one above.
+By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
+if the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
 ****************************************************************************/
-
 void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 {
 	double d;
@@ -454,6 +446,9 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 		return;
 	}		
 
+	/* this converts GMT to kludge-GMT */
+	t -= LocTimeDiff(t) - get_serverzone(); 
+
 	d = (double)(t);
 	d *= 1.0e7;
 
@@ -465,9 +460,10 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 	nt->low=~nt->low;
 }
 
+
 /****************************************************************************
-take a Unix time and convert to an NTTIME structure and place in buffer 
-pointed to by p.
+take an NTTIME structure, containing high / low time.  convert to unix time.
+lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
 ****************************************************************************/
 void put_long_date(char *p,time_t t)
 {
@@ -482,7 +478,7 @@ check if it's a null mtime
 ****************************************************************************/
 BOOL null_mtime(time_t mtime)
 {
-  if (mtime == 0 || mtime == (time_t)0xFFFFFFFF || mtime == (time_t)-1)
+  if (mtime == 0 || mtime == 0xFFFFFFFF || mtime == (time_t)-1)
     return(True);
   return(False);
 }
@@ -693,7 +689,7 @@ char *timestring(BOOL hires)
 				 ".%06ld", 
 				 (long)tp.tv_usec);
 		} else {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
 		}
 #else
 		if (hires) {
@@ -743,14 +739,4 @@ void init_nt_time(NTTIME *nt)
 {
 	nt->high = 0x7FFFFFFF;
 	nt->low = 0xFFFFFFFF;
-}
-
-/****************************************************************************
-check if NTTIME is 0
-****************************************************************************/
-BOOL nt_time_is_zero(NTTIME *nt)
-{
-	if(nt->high==0) 
-		return True;
-	return False;
 }

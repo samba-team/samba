@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    error packet handling
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -40,9 +41,8 @@ int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file
 	int32 err = wbmpx->wr_error;
  
 	/* We can now delete the auxiliary struct */
-	free((char *)wbmpx);
-	fsp->wbmpx_ptr = NULL;
-	return error_packet(outbuf,NT_STATUS_OK,eclass,err,False,line,file);
+	SAFE_FREE(wbmpx);
+	return error_packet(outbuf,NT_STATUS_OK,eclass,err,line,file);
 }
 
 /****************************************************************************
@@ -76,7 +76,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 		}
 	}
 
-	return error_packet(outbuf,ntstatus,eclass,ecode,False,line,file);
+	return error_packet(outbuf,ntstatus,eclass,ecode,line,file);
 }
 
 
@@ -85,7 +85,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
 ****************************************************************************/
 
 int error_packet(char *outbuf,NTSTATUS ntstatus,
-		 uint8 eclass,uint32 ecode,BOOL force_dos, int line, const char *file)
+		 uint8 eclass,uint32 ecode,int line, const char *file)
 {
 	int outsize = set_message(outbuf,0,0,True);
 	extern uint32 global_client_caps;
@@ -93,11 +93,6 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	if (errno != 0)
 		DEBUG(3,("error string = %s\n",strerror(errno)));
   
-#if defined(DEVELOPER)
-	if (unix_ERR_class != SMB_SUCCESS || unix_ERR_code != 0 || !NT_STATUS_IS_OK(unix_ERR_ntstatus))
-		smb_panic("logic error in error processing");
-#endif
-
 	/*
 	 * We can explicitly force 32 bit error codes even when the
 	 * parameter "nt status" is set to no by pre-setting the
@@ -106,7 +101,7 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	 * when talking with clients that normally expect nt status codes. JRA.
 	 */
 
-	if ((lp_nt_status_support() || (SVAL(outbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) && (global_client_caps & CAP_STATUS32) && (!force_dos)) {
+	if ((lp_nt_status_support() || (SVAL(outbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) && (global_client_caps & CAP_STATUS32)) {
 		if (NT_STATUS_V(ntstatus) == 0 && eclass)
 			ntstatus = dos_to_ntstatus(eclass, ecode);
 		SIVAL(outbuf,smb_rcls,NT_STATUS_V(ntstatus));
@@ -115,7 +110,7 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 			 file, line,
 			 (int)CVAL(outbuf,smb_com),
 			 smb_fn_name(CVAL(outbuf,smb_com)),
-			 nt_errstr(ntstatus)));
+			 get_nt_error_msg(ntstatus)));
 		return outsize;
 	} 
 

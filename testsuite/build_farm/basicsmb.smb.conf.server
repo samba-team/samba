@@ -1,0 +1,3 @@
+security=server
+password server=user
+smb password file=NON_EXISTANT_FILE

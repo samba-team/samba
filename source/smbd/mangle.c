@@ -23,13 +23,12 @@
 static struct mangle_fns *mangle_fns;
 
 /* this allows us to add more mangling backends */
-static const struct {
+static struct {
 	const char *name;
 	struct mangle_fns *(*init_fn)(void);
 } mangle_backends[] = {
 	{ "hash", mangle_hash_init },
 	{ "hash2", mangle_hash2_init },
-	/*{ "tdb", mangle_tdb_init }, */
 	{ NULL, NULL }
 };
 
@@ -107,7 +106,7 @@ BOOL mangle_check_cache(char *s)
    map a long filename to a 8.3 name. 
  */
 
-void mangle_map(pstring OutName, BOOL need83, BOOL cache83, int snum)
+void mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
@@ -120,5 +119,5 @@ void mangle_map(pstring OutName, BOOL need83, BOOL cache83, int snum)
 
 	/* invoke the inane "mangled map" code */
 	mangle_map_filename(OutName, snum);
-	mangle_fns->name_map(OutName, need83, cache83, lp_defaultcase(snum));
+	mangle_fns->name_map(OutName, need83, cache83);
 }

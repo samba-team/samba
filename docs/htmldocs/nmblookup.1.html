@@ -1,0 +1,403 @@
+<HTML
+><HEAD
+><TITLE
+>nmblookup</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="NMBLOOKUP"
+>nmblookup</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>nmblookup&nbsp;--&nbsp;NetBIOS over TCP/IP client used to lookup NetBIOS 
+	names</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>nmblookup</B
+>  [-f] [-M] [-R] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] {name}</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN25"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>nmblookup</B
+> is used to query NetBIOS names 
+	and map them to IP addresses in a network using NetBIOS over TCP/IP 
+	queries. The options allow the name queries to be directed at a 
+	particular IP broadcast area or to a particular machine. All queries 
+	are done over UDP.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN31"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-f</DT
+><DD
+><P
+>Causes nmblookup to print out the flags
+		in the NMB packet headers. These flags will print out as 
+		strings like Authoritative, Recursion_Desired, Recursion_available, etc.
+		</P
+></DD
+><DT
+>-M</DT
+><DD
+><P
+>Searches for a master browser by looking 
+		up the  NetBIOS name <TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+> with a 
+		type of <TT
+CLASS="CONSTANT"
+>0x1d</TT
+>. If <TT
+CLASS="REPLACEABLE"
+><I
+>		name</I
+></TT
+> is "-" then it does a lookup on the special name 
+		<TT
+CLASS="CONSTANT"
+>__MSBROWSE__</TT
+>.</P
+></DD
+><DT
+>-R</DT
+><DD
+><P
+>Set the recursion desired bit in the packet 
+		to do a recursive lookup. This is used when sending a name 
+		query to a machine running a WINS server and the user wishes 
+		to query the names in the WINS server.  If this bit is unset 
+		the normal (broadcast responding) NetBIOS processing code 
+		on a machine is used instead. See rfc1001, rfc1002 for details.
+		</P
+></DD
+><DT
+>-S</DT
+><DD
+><P
+>Once the name query has returned an IP 
+		address then do a node status query as well. A node status 
+		query returns the NetBIOS names registered by a host.
+		</P
+></DD
+><DT
+>-r</DT
+><DD
+><P
+>Try and bind to UDP port 137 to send and receive UDP
+		datagrams. The reason for this option is a bug in Windows 95 
+		where it ignores the source port of the requesting packet 
+	 	and only replies to UDP port 137. Unfortunately, on most UNIX 
+		systems root privilege is needed to bind to this port, and 
+		in addition, if the <A
+HREF="nmbd.8.html"
+TARGET="_top"
+>nmbd(8)</A
+> 
+		daemon is running on this machine it also binds to this port.
+		</P
+></DD
+><DT
+>-A</DT
+><DD
+><P
+>Interpret <TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+> as 
+		an IP Address and do a node status query on this address.</P
+></DD
+><DT
+>-h</DT
+><DD
+><P
+>Print a help (usage) message.</P
+></DD
+><DT
+>-B &#60;broadcast address&#62;</DT
+><DD
+><P
+>Send the query to the given broadcast address. Without 
+		this option the default behavior of nmblookup is to send the 
+		query to the broadcast address of the network interfaces as 
+		either auto-detected or defined in the <A
+HREF="smb.conf.5.html#INTERFACES"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>interfaces</I
+></TT
+>
+		</A
+> parameter of the  <TT
+CLASS="FILENAME"
+>smb.conf (5)</TT
+> file.
+		</P
+></DD
+><DT
+>-U &#60;unicast address&#62;</DT
+><DD
+><P
+>Do a unicast query to the specified address or 
+		host <TT
+CLASS="REPLACEABLE"
+><I
+>unicast address</I
+></TT
+>. This option 
+		(along with the <TT
+CLASS="PARAMETER"
+><I
+>-R</I
+></TT
+> option) is needed to 
+		query a WINS server.</P
+></DD
+><DT
+>-d &#60;debuglevel&#62;</DT
+><DD
+><P
+>debuglevel is an integer from 0 to 10.</P
+><P
+>The default value if this parameter is not specified 
+		is zero.</P
+><P
+>The higher this value, the more detail will be logged 
+		about the activities of <B
+CLASS="COMMAND"
+>nmblookup</B
+>. At level 
+		0, only critical errors and serious warnings will be logged.</P
+><P
+>Levels above 1 will generate considerable amounts of 
+		log data, and should only be used when investigating a problem. 
+		Levels above 3 are designed for use only by developers and 
+		generate HUGE amounts of data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will override 
+		the <A
+HREF="smb.conf.5.html#LOGLEVEL"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>		log level</I
+></TT
+></A
+> parameter in the <TT
+CLASS="FILENAME"
+>		smb.conf(5)</TT
+> file.</P
+></DD
+><DT
+>-s &#60;smb.conf&#62;</DT
+><DD
+><P
+>This parameter specifies the pathname to 
+		the Samba configuration file, <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>		smb.conf(5)</A
+>.  This file controls all aspects of
+		the Samba setup on the machine.</P
+></DD
+><DT
+>-i &#60;scope&#62;</DT
+><DD
+><P
+>This specifies a NetBIOS scope that
+		<B
+CLASS="COMMAND"
+>nmblookup</B
+> will use to communicate with when 
+		generating NetBIOS names. For details on the use of NetBIOS 
+		scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are 
+		<EM
+>very</EM
+> rarely used, only set this parameter 
+		if you are the system administrator in charge of all the 
+		NetBIOS systems you communicate with.</P
+></DD
+><DT
+>-T</DT
+><DD
+><P
+>This causes any IP addresses found in the 
+		lookup to be looked up via a reverse DNS lookup into a 
+		DNS name, and printed out before each</P
+><P
+><EM
+>IP address .... NetBIOS name</EM
+></P
+><P
+> pair that is the normal output.</P
+></DD
+><DT
+>name</DT
+><DD
+><P
+>This is the NetBIOS name being queried. Depending 
+		upon the previous options this may be a NetBIOS name or IP address. 
+		If a NetBIOS name then the different name types may be specified 
+		by appending '#&#60;type&#62;' to the name. This name may also be
+		'*', which will return all registered names within a broadcast 
+		area.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN115"
+></A
+><H2
+>EXAMPLES</H2
+><P
+><B
+CLASS="COMMAND"
+>nmblookup</B
+> can be used to query 
+		a WINS server (in the same way <B
+CLASS="COMMAND"
+>nslookup</B
+> is 
+		used to query DNS servers). To query a WINS server, 
+		<B
+CLASS="COMMAND"
+>nmblookup</B
+> must be called like this:</P
+><P
+><B
+CLASS="COMMAND"
+>nmblookup -U server -R 'name'</B
+></P
+><P
+>For example, running :</P
+><P
+><B
+CLASS="COMMAND"
+>nmblookup -U samba.org -R 'IRIX#1B'</B
+></P
+><P
+>would query the WINS server samba.org for the domain 
+		master browser (1B name type) for the IRIX workgroup.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN127"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN130"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="nmbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>nmbd(8)</B
+></A
+>, 
+	<A
+HREF="samba.7.html"
+TARGET="_top"
+>samba(7)</A
+>, and	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN137"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,131 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<refentry id="findsmb">
+
+<refmeta>
+	<refentrytitle>findsmb</refentrytitle>
+	<manvolnum>1</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>findsmb</refname>
+	<refpurpose>list info about machines that respond to SMB 
+	name queries on a subnet</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>findsmb</command>
+		<arg choice="opt">subnet broadcast address</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+	
+	<para>This perl script is part of the <ulink url="samba.7.html">
+	Samba</ulink> suite.</para>
+
+	<para><command>findsmb</command> is a perl script that
+	prints out several pieces of information about machines 
+	on a subnet that respond to SMB  name query requests.
+	It uses <ulink url="nmblookup.1.html"><command>
+	nmblookup(1)</command></ulink> and <ulink url="smbclient.1.html">
+	<command>smbclient(1)</command></ulink> to obtain this information.
+	</para>
+</refsect1>		
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>subnet broadcast address</term>
+		<listitem><para>Without this option, <command>findsmb
+		</command> will probe the subnet of the machine where 
+		<command>findsmb</command> is run. This value is passed 
+		to <command>nmblookup</command> as part of the 
+		<constant>-B</constant> option</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>The output of <command>findsmb</command> lists the following 
+	information for all machines that respond to the initial 
+	<command>nmblookup</command> for any name: IP address, NetBIOS name, 
+	Workgroup name, operating system, and SMB server version.</para>
+
+	<para>There will be a '+' in front of the workgroup name for 
+	machines that are local master browsers for that workgroup. There 
+	will be an '*' in front of the workgroup name for 
+	machines that are the domain master browser for that workgroup. 
+	Machines that are running Windows, Windows 95 or Windows 98 will 
+	not show any information about the operating system or server 
+	version.</para>
+
+	<para>The command must be run on a system without <ulink
+	url="nmbd.8.html"><command>nmbd</command></ulink> running. 
+	If <command>nmbd</command> is running on the system, you will 
+	only  get the IP address and the DNS name of the machine. To 
+	get proper responses  from Windows 95 and Windows 98 machines, 
+	the command must be run as root. </para>
+
+	<para>For example running <command>findsmb</command> on a machine 
+	without <command>nmbd</command> running would yield output similar
+	to the following</para>
+
+	<screen><computeroutput>
+IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION 
+--------------------------------------------------------------------- 
+192.168.35.10   MINESET-TEST1  [DMVENGR]
+192.168.35.55   LINUXBOX      *[MYGROUP] [Unix] [Samba 2.0.6]
+192.168.35.56   HERBNT2        [HERB-NT]
+192.168.35.63   GANDALF        [MVENGR] [Unix] [Samba 2.0.5a for IRIX]
+192.168.35.65   SAUNA          [WORKGROUP] [Unix] [Samba 1.9.18p10]
+192.168.35.71   FROGSTAR       [ENGR] [Unix] [Samba 2.0.0 for IRIX]
+192.168.35.78   HERBDHCP1     +[HERB]
+192.168.35.88   SCNT2         +[MVENGR] [Windows NT 4.0] [NT LAN Manager 4.0]
+192.168.35.93   FROGSTAR-PC    [MVENGR] [Windows 5.0] [Windows 2000 LAN Manager]
+192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]
+	</computeroutput></screen>
+
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 2.2 of 
+	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>, 
+	<ulink url="smbclient.1.html"><command>smbclient(1)
+	</command></ulink>, and	<ulink url="nmblookup.1.html">
+	<command>nmblookup(1)</command></ulink>
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</para>
+</refsect1>
+
+</refentry>

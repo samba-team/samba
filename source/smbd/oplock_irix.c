@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.x
    IRIX kernel oplock processing
    Copyright (C) Andrew Tridgell 1992-1998
    

@@ -1,4 +1,4 @@
-Copyright (C) 1997-2003 - Samba-Team
+Copyright (C) 1997-2001 - Samba-Team
 
 The Samba package you have just unpacked contains the following:
 
@@ -8,19 +8,37 @@ Directory	Notes:
 docs		(Samba Documentation):
 ----		----------------------
 
-	All the Samba documentation for the 3.0 release have been converted to
-	docbook format. Because of this the man pages are now available 
-	in both traditional man page format (in the docs/manpages directory) 
-	and in HTML format (in the docs/htmldocs directory).
+	The Samba documentation for the 2.2 release has had all the man pages
+	converted to DocBook v4.1 source format. Because of this the man pages
+	are now available in both traditional man page format (in
+	the doc/manpages directory) and in HTML format (in the 
+	docs/htmldocs directory).
 
-	The Samba HOWTO Collection has undergone some rather large changes 
-	and covers all parts of configuration now. It is available 
-	as PDF (docs/Samba-HOWTO-Collection.pdf) or in HTML format (in 
-	the docs/htmldocs directory). Those with the docbook utilities installed 
-	can generate PostScript and text versions of the HOWTO as well.
+	The text documentation files have been moved into a
+	docs/textdocs directory and are in the (slow) process
+	of being converted to DocBook source format to allow them
+	to be easily converted to HTML.
+    
+	Note in particular two files - docs/textdocs/<your OS>_INSTALL.txt 
+	and docs/textdocs/DIAGNOSIS.txt.
 
-	The Samba FAQ is still a work in progress, but can be found in 
-	HTML format in docs/htmldocs.
+	There is the potential for there to be many *INSTALL.txt files, one
+	for each OS that Samba supports. However we are moving all this into
+	the new structure. For now, most people will be using 
+	htmldocs/UNIX_INSTALL.txt
+
+	Please pay close attention to all the files with a .txt extension
+	in the docs/textdocs directory and the htmldocs/* files. Most problems 
+	can be solved by reference to the two files mentioned.
+
+	The FAQ documentation can be accessed starting from Samba-meta-FAQ.html,
+	in the docs/faq directory. This is incomplete, but to quote from the 
+	abstract, it:
+	
+	"contains overview information for the Samba suite of programs, 
+	a quick-start guide, and pointers to all other Samba documentation. 
+	Other FAQs exist for specific client and server issues, and HOWTO 
+	documents for more extended topics to do with Samba software."
 
 
 examples	(Example configuration files):
@@ -32,15 +50,39 @@ examples	(Example configuration files):
 	Do read the smb.conf manual page in considering what settings are
 	appropriate for your site.
 
+	There are lots of interesting examples of how people have been able
+	to implement Samba for their use. Users may also be interested in
+	the VFS (Virtual File System) modules under this directory.
+
+SWAT:		The Samba Web Administration Tool
+-----		---------------------------------
+
+	SWAT is a web based tool for configuring and optimising the smb.conf
+	file. To use it, you need to have SWAT enabled in your inetd control
+	file (for more information check the packaging directories for examples
+	of how this can be done). Then you connect to SWAT using your favourite
+	web browser - point it at http://hostname:901, then log on as "root"
+	using the root password. If you log on using a non-root account SWAT
+	will not allow the smb.conf file to be changed.
+
 
 packaging	(Only for those wishing to build binary distributions):
 ---------	-------------------------------------------------------
 
 	Currently support is included for the following Linux Distributions :
 	
-		Pacfic HiTech, RedHat and SuSE.
+		Caldera, RedHat, SuSE, Mandrake, and TurboLinux.
+
+	Packaging support for TuboLinux is under ~samba/packaging/PHT - the
+	previous name of the company was Pacific HiTech, hence the PHT.
 
 	In addition, packaging support is available for SGI and Solaris systems.
+
+	SCO OpenServer and SCO UnixWare have been acquired by Caldera. We expect
+	that Caldera will in future integrate Samba into the above operating
+	systems. UnixWare has been renamed to OpenUnix. Look under the directory
+	~samba/packaging/Caldera for packaging support for these platforms.
+
 	We hope that other Unix OS vendors will contribute their binary
 	distribution packaging control files - and we hope to make their binary
 	packages available on the master ftp site under:
@@ -54,7 +96,7 @@ source		(The official Samba source files - expect more of these!):
 	To build your own binary files you will need a suitable ansi C
 	compiler.
 
-	Samba uses the GNU autoconf system. In
+	For Samba 2.2 the GNU autoconf system has been adopted. In
 	order to build a default Samba for your platform cd into
 	the source/ directory and then type :
 

@@ -1,0 +1,85 @@
+#!/bin/sh
+
+scriptname="$0"
+step="$1"
+keywords="$2"
+pkglist="$3"
+
+# Source in the standard functions library, ccsSetup.sh
+. ccsSetup.sh
+
+ccs_return_value=0
+
+SPOOL=/var/spool/samba
+PREFIX=/usr/lib/samba
+
+#
+# Build the codepages
+#
+PostExport()
+{
+    # restore preserved configuration files
+    if [ "${upgrade}" ]; then
+        for file in smb.conf smbusers smbpasswd lmhosts printers.def; do
+            ex_cmd cp -f ${CCS_PERSISTENT_STORAGE}/$file /etc/samba.d/$file
+        done
+    fi
+
+    if [ ! -d /etc/samba.d/codepages ]; then
+        mkdir /etc/samba.d/codepages
+    fi
+
+    for i in 437 737 775 850 852 861 866 932 936 949 950 1251
+    do
+        ${PREFIX}/bin/make_smbcodepage c $i \
+            ${PREFIX}/lib/codepages/src/codepage_def.$i \
+            /etc/samba.d/codepages/codepage.$i
+    done
+    for i in 437 737 850 852 861 866 932 936 949 950 \
+         ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+    do
+        ${PREFIX}/bin/make_unicodemap $i \
+            ${PREFIX}/lib/codepages/src/CP$i.TXT \
+            /etc/samba.d/codepages/unicode_map.$i
+    done
+}
+
+DisableStop()
+{
+    /etc/init.d/samba disable > /dev/null 2>&1
+    /etc/init.d/samba stop > /dev/null 2>&1
+}
+
+#
+# Remove the spool directory and codepages
+#
+PostUnexport()
+{
+    if [ -n "$SPOOL" -a -d "$SPOOL" ]; then
+         rm -rf ${SPOOL}/*
+    fi
+
+    rm -rf /etc/samba.d/codepages
+}
+
+#
+# Is this an upgrade?
+#
+upgrade=
+for word in $keywords
+do
+        case "$word" in
+                OLD_CUSTOM_UPGRADE) upgrade=nonSSOupgrade
+                ;;
+                UPGRADE) upgrade=SSOupgrade
+                ;;
+        esac
+done
+
+case "$step" in
+        POST_EXPORT) PostExport ;;
+        PRE_UNEXPORT) DisableStop ;;
+        POST_UNEXPORT) PostUnexport ;;
+esac
+
+exit $ccs_return_value

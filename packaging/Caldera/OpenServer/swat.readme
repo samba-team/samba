@@ -1,0 +1,40 @@
+This is a brief description of how to use the Samba Web
+Administration Tool on your machine.
+
+Launching
+---------
+
+To launch SWAT just run your favourite web browser and point it at
+http://localhost:598/ 
+
+Note that you can attach to SWAT from any IP connected machine but
+connecting from a remote machine leaves your connection open to
+password sniffing as passwords will be sent in the clear over the
+wire.
+
+You should be prompted for a username/password when you connect. You
+will need to provide the username "root" and the correct root
+password. 
+
+Running
+-------
+
+Just follow your nose! If you can't work out how to use it then maybe
+you should use "vi smb.conf" instead.
+
+
+WARNINGS
+--------
+
+SWAT will rewrite your smb.conf file. It will rearrange the entries
+and delete all comments, include= and copy= options. If you have a
+carefully crafted smb.conf then back it up or don't use SWAT!
+
+
+Development
+-----------
+
+Please join the samba-technical mailing list if you want to discuss
+the development of SWAT. Note that this list is for technical developer
+discussions and is not a general help list.
+

@@ -1,5 +1,5 @@
 PACKAGE=smbldap-tools
-RELEASE=0.8.2-1
+RELEASE=0.7
 DESTDIR = $(PACKAGE)-$(RELEASE)
 
 dist:	distclean $(DESTDIR).tgz 

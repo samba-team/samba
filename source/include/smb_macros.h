@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) John H Terpstra 1996-1999
@@ -26,7 +27,6 @@
 
 /* Misc bit macros */
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
-#define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
 /* for readability... */
@@ -36,15 +36,9 @@
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
-#ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
-
-/**
- * Free memory if the pointer and zero the pointer.
- *
- * @note You are explicitly allowed to pass NULL pointers -- they will
- * always be ignored.
- **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
 #endif
 
 /* zero a structure */
@@ -77,12 +71,6 @@
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FSP_BELONGS_CONN(fsp,conn) do {\
-			extern struct current_user current_user;\
-			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid));\
-			} while(0)
-
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
 #define CHECK_FSP(fsp,conn) do {\
@@ -104,14 +92,13 @@
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
 
-/* the service number for the [globals] defaults */ 
-#define GLOBAL_SECTION_SNUM	(-1)
 /* translates a connection number into a service number */
-#define SNUM(conn)         	((conn)?(conn)->service:GLOBAL_SECTION_SNUM)
-
+#define SNUM(conn)         ((conn)?(conn)->service:-1)
 
 /* access various service details */
 #define SERVICE(snum)      (lp_servicename(snum))
+#define PRINTCAP           (lp_printcapname())
+#define PRINTCOMMAND(snum) (lp_printcommand(snum))
 #define PRINTERNAME(snum)  (lp_printername(snum))
 #define CAN_WRITE(conn)    (!conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
@@ -122,9 +109,9 @@
 #define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
 #define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
 #define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
-#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list,(conn)->case_sensitive))
-#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list,(conn)->case_sensitive))
-#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list,(conn)->case_sensitive))
+#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list))
+#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
+#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
 
 /* 
  * Used by the stat cache code to check if a returned
@@ -133,6 +120,8 @@
 
 #define VALID_STAT(st) ((st).st_nlink != 0)  
 #define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_mode))
+
+#define SMBENCRYPT()       (lp_encrypted_passwords())
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -171,10 +160,9 @@
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,False,__LINE__,__FILE__)
-#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,True,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,status,0,0,False,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,False,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,__FILE__)
+#define ERROR_BOTH(nterr,class,x) error_packet(outbuf,nterr,class,x,__LINE__,__FILE__)
 
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
@@ -184,9 +172,6 @@
 /* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
 #define smb_buf(buf) (((char *)(buf)) + smb_size + CVAL(buf,smb_wct)*2)
 #define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
-
-/* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
-#define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
 
 /* Note that chain_size must be available as an extern int to this macro. */
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
@@ -209,7 +194,6 @@ true if two IP addresses are equal
 ****************************************************************************/
 
 #define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
-#define ip_service_equal(ip1,ip2) ( ((ip1).ip.s_addr == (ip2).ip.s_addr) && ((ip1).port == (ip2).port) )
 
 /*****************************************************************
  splits out the last subkey of a key
@@ -236,6 +220,7 @@ copy an IP address from one buffer to another
 
 #define putip(dest,src) memcpy(dest,src,4)
 
+
 /*******************************************************************
  Return True if a server has CIFS UNIX capabilities.
 ********************************************************************/
@@ -246,9 +231,7 @@ copy an IP address from one buffer to another
  Make a filename into unix format.
 ****************************************************************************/
 
-#define IS_DIRECTORY_SEP(c) ((c) == '\\' || (c) == '/')
 #define unix_format(fname) string_replace(fname,'\\','/')
-#define unix_format_w(fname) string_replace_w(fname, UCS2_CHAR('\\'), UCS2_CHAR('/'))
 
 /****************************************************************************
  Make a file into DOS format.
@@ -256,10 +239,52 @@ copy an IP address from one buffer to another
 
 #define dos_format(fname) string_replace(fname,'/','\\')
 
-/*****************************************************************************
- Check to see if we are a DO for this domain
-*****************************************************************************/
+/*******************************************************************
+ vfs stat wrapper that calls dos_to_unix.
+********************************************************************/
 
-#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
+#define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), dos_to_unix_static((fname)),(st)))
+
+/*******************************************************************
+ vfs lstat wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), dos_to_unix_static((fname)),(st)))
+
+/*******************************************************************
+ vfs fstat wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_fstat(fsp, fd, st) ((fsp)->conn->vfs_ops.fstat((fsp),(fd),(st)))
+
+/*******************************************************************
+ vfs rmdir wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_rmdir(conn,fname) ((conn)->vfs_ops.rmdir((conn),dos_to_unix_static((fname))))
+
+/*******************************************************************
+ vfs Unlink wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_unlink(conn, fname) ((conn)->vfs_ops.unlink((conn),dos_to_unix_static((fname))))
+
+/*******************************************************************
+ vfs chmod wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_chmod(conn,fname,mode) ((conn)->vfs_ops.chmod((conn),dos_to_unix_static((fname)),(mode)))
+
+/*******************************************************************
+ vfs chown wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_chown(conn,fname,uid,gid) ((conn)->vfs_ops.chown((conn),dos_to_unix_static((fname)),(uid),(gid)))
+
+/*******************************************************************
+ A wrapper for vfs_chdir().
+********************************************************************/
+
+#define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),dos_to_unix_static((fname))))
 
 #endif /* _SMB_MACROS_H */

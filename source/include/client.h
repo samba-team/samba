@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
@@ -27,7 +28,6 @@
    overlap on the wire. This size gives us a nice read/write size, which
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
-
 
 /*
  * These definitions depend on smb.h
@@ -70,6 +70,7 @@ struct cli_state {
 	int rap_error;
 	int privileges;
 
+	fstring eff_name;
 	fstring desthost;
 	fstring user_name;
 	fstring domain;
@@ -91,15 +92,15 @@ struct cli_state {
 	struct in_addr dest_ip;
 
 	struct pwd_info pwd;
-	DATA_BLOB secblob; /* cryptkey or negTokenInit */
+	unsigned char cryptkey[8];
 	uint32 sesskey;
 	int serverzone;
 	uint32 servertime;
 	int readbraw_supported;
 	int writebraw_supported;
 	int timeout; /* in milliseconds. */
-	size_t max_xmit;
-	size_t max_mux;
+	int max_xmit;
+	int max_mux;
 	char *outbuf;
 	char *inbuf;
 	unsigned int bufsize;
@@ -109,42 +110,25 @@ struct cli_state {
 
 	TALLOC_CTX *mem_ctx;
 
-	smb_sign_info sign_info;
-
-	/* the session key for this CLI, outside 
-	   any per-pipe authenticaion */
-	DATA_BLOB user_session_key;
-
 	/*
 	 * Only used in NT domain calls.
 	 */
 
-	int pipe_idx;                      /* Index (into list of known pipes) 
-					      of the pipe we're talking to, 
-					      if any */
-
+	uint32 nt_error;                   /* NT RPC error code. */
 	uint16 nt_pipe_fnum;               /* Pipe handle. */
-
-	/* Secure pipe parameters */
-	int pipe_auth_flags;
-
-	uint16 saved_netlogon_pipe_fnum;   /* The "first" pipe to get
-                                              the session key for the
-                                              schannel. */
-	struct netsec_auth_struct auth_info;
-
-	NTLMSSP_STATE *ntlmssp_pipe_state;
-
 	unsigned char sess_key[16];        /* Current session key. */
+	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
+	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
+	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
+	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
 	DOM_CRED clnt_cred;                /* Client credential. */
 	fstring mach_acct;                 /* MYNAME$. */
 	fstring srv_name_slash;            /* \\remote server. */
 	fstring clnt_name_slash;           /* \\local client. */
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
-
-	BOOL use_kerberos;
-	BOOL use_spnego;
+	vuser_key key;
+	uint32 ntlmssp_flags;
 
 	BOOL use_oplocks; /* should we use oplocks? */
 	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
@@ -155,15 +139,8 @@ struct cli_state {
 	BOOL force_dos_errors;
 
 	/* was this structure allocated by cli_initialise? If so, then
-           free in cli_shutdown() */
+			free in cli_shutdown() */
 	BOOL allocated;
-
-	/* Name of the pipe we're talking to, if any */
-	fstring pipe_name;
 };
-
-#define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
-#define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
-#define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
 
 #endif /* _CLIENT_H */

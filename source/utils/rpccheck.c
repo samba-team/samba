@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2.
    
    Copyright (C) Jean François Micouleau 2001
    
@@ -38,13 +39,14 @@ main()
 	setup_logging("", True);
 	DEBUGLEVEL=10;
 
-	ctx=talloc_init("main");
-	if (!ctx) exit(1);
+	ctx=talloc_init();
+	if (!ctx)
+		exit(1);
 
 	prs_init(&ps, 1600, 4, ctx, MARSHALL);
 
 	while (scanf("%s", s)!=-1) {
-		if (strlen(s)==2 && strchr_m(filter, *s)!=NULL && strchr_m(filter, *(s+1))!=NULL) {
+		if (strlen(s)==2 && strchr(filter, *s)!=NULL && strchr(filter, *(s+1))!=NULL) {
 			d=strtol(s, NULL, 16);
 			if(!prs_append_data(&ps, &d, 1))
 				printf("error while reading data\n");

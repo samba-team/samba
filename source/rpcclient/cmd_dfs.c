@@ -25,7 +25,7 @@
 /* Check DFS is supported by the remote server */
 
 static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              int argc, const char **argv)
+                              int argc, char **argv)
 {
 	BOOL dfs_exists;
 	NTSTATUS result;
@@ -44,10 +44,10 @@ static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                            int argc, const char **argv)
+                            int argc, char **argv)
 {
 	NTSTATUS result;
-	const char *entrypath, *servername, *sharename, *comment;
+	char *entrypath, *servername, *sharename, *comment;
 	uint32 flags = 0;
 
 	if (argc != 5) {
@@ -68,10 +68,10 @@ static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                               int argc, const char **argv)
+                               int argc, char **argv)
 {
 	NTSTATUS result;
-	const char *entrypath, *servername, *sharename;
+	char *entrypath, *servername, *sharename;
 
 	if (argc != 4) {
 		printf("Usage: %s entrypath servername sharename\n", argv[0]);
@@ -94,7 +94,7 @@ static void display_dfs_info_1(DFS_INFO_1 *info1)
 {
 	fstring temp;
 
-	unistr2_to_ascii(temp, &info1->entrypath, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info1->entrypath, sizeof(temp) - 1);
 	printf("entrypath: %s\n", temp);
 }
 
@@ -104,10 +104,10 @@ static void display_dfs_info_2(DFS_INFO_2 *info2)
 {
 	fstring temp;
 
-	unistr2_to_ascii(temp, &info2->entrypath, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info2->entrypath, sizeof(temp) - 1);
 	printf("entrypath: %s\n", temp);
 
-	unistr2_to_ascii(temp, &info2->comment, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info2->comment, sizeof(temp) - 1);
 	printf("\tcomment: %s\n", temp);
 
 	printf("\tstate: %d\n", info2->state);
@@ -121,10 +121,10 @@ static void display_dfs_info_3(DFS_INFO_3 *info3)
 	fstring temp;
 	int i;
 
-	unistr2_to_ascii(temp, &info3->entrypath, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info3->entrypath, sizeof(temp) - 1);
 	printf("entrypath: %s\n", temp);
 
-	unistr2_to_ascii(temp, &info3->comment, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info3->comment, sizeof(temp) - 1);
 	printf("\tcomment: %s\n", temp);
 
 	printf("\tstate: %d\n", info3->state);
@@ -133,10 +133,10 @@ static void display_dfs_info_3(DFS_INFO_3 *info3)
 	for (i = 0; i < info3->num_storages; i++) {
 		DFS_STORAGE_INFO *dsi = &info3->storages[i];
 
-		unistr2_to_ascii(temp, &dsi->servername, sizeof(temp) - 1);
+		unistr2_to_unix(temp, &dsi->servername, sizeof(temp) - 1);
 		printf("\t\tstorage[%d] servername: %s\n", i, temp);
 
-		unistr2_to_ascii(temp, &dsi->sharename, sizeof(temp) - 1);
+		unistr2_to_unix(temp, &dsi->sharename, sizeof(temp) - 1);
 		printf("\t\tstorage[%d] sharename: %s\n", i, temp);
 	}
 }
@@ -169,7 +169,7 @@ static void display_dfs_info_ctr(DFS_INFO_CTR *ctr)
 /* Enumerate dfs shares */
 
 static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             int argc, const char **argv)
+                             int argc, char **argv)
 {
 	DFS_INFO_CTR ctr;
 	NTSTATUS result;
@@ -192,10 +192,10 @@ static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                int argc, const char **argv)
+                                int argc, char **argv)
 {
 	NTSTATUS result;
-	const char *entrypath, *servername, *sharename;
+	char *entrypath, *servername, *sharename;
 	uint32 info_level = 1;
 	DFS_INFO_CTR ctr;
 
@@ -227,11 +227,11 @@ struct cmd_set dfs_commands[] = {
 
 	{ "DFS" },
 
-	{ "dfsexist",  RPC_RTYPE_NTSTATUS, cmd_dfs_exist,   NULL, PI_NETDFS, "Query DFS support",    "" },
-	{ "dfsadd",    RPC_RTYPE_NTSTATUS, cmd_dfs_add,     NULL, PI_NETDFS, "Add a DFS share",      "" },
-	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, "Remove a DFS share",   "" },
-	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, "Query DFS share info", "" },
-	{ "dfsenum",   RPC_RTYPE_NTSTATUS, cmd_dfs_enum,    NULL, PI_NETDFS, "Enumerate dfs shares", "" },
+	{ "dfsexist",   cmd_dfs_exist,   PIPE_NETDFS, "Query DFS support",    "" },
+	{ "dfsadd",     cmd_dfs_add,     PIPE_NETDFS, "Add a DFS share",      "" },
+	{ "dfsremove",  cmd_dfs_remove,  PIPE_NETDFS, "Remove a DFS share",   "" },
+	{ "dfsgetinfo", cmd_dfs_getinfo, PIPE_NETDFS, "Query DFS share info", "" },
+	{ "dfsenum",    cmd_dfs_enum,    PIPE_NETDFS, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };

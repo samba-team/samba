@@ -31,13 +31,15 @@
 #include <string.h>
 #include <pwd.h>
 #include "includes.h"
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
-#if !defined(HPUX)
+#endif
+#ifdef HAVE_SYS_SYSLOG_H
 #include <sys/syslog.h>
-#endif /*hpux*/
+#endif
 #include "winbind_nss_config.h"
 
-#if defined(HAVE_NSS_COMMON_H) || defined(HPUX) 
+#if defined(HAVE_NSS_COMMON_H) || defined(HPUX)
 
 #undef NSS_DEBUG
 
@@ -256,27 +258,8 @@ _nss_winbind_getgrgid_solwrap(nss_backend_t* be, void* args)
 static NSS_STATUS
 _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 {
-	int errnop;
-	struct nss_groupsbymem *gmem = (struct nss_groupsbymem *)args;
-
 	NSS_DEBUG("_nss_winbind_getgroupsbymember");
-
-	_nss_winbind_initgroups_dyn(gmem->username,
-		gmem->gid_array[0], /* Primary Group */
-		&gmem->numgids,
-		&gmem->maxgids,
-		&gmem->gid_array,
-		gmem->maxgids,
-		&errnop);
-
-	/*
-	 * If the maximum number of gids have been found, return
-	 * SUCCESS so the switch engine will stop searching. Otherwise
-	 * return NOTFOUND so nsswitch will continue to get groups
-	 * from the remaining database backends specified in the
-	 * nsswitch.conf file.
-	*/
-	return (gmem->numgids == gmem->maxgids ? NSS_STATUS_SUCCESS : NSS_STATUS_NOTFOUND);
+	return NSS_STATUS_NOTFOUND;
 }
 
 static NSS_STATUS
@@ -316,3 +299,5 @@ _nss_winbind_group_constr (const char* db_name,
 }
 
 #endif /* SUN_NSS */
+
+

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    functions to calculate the free disk space
    Copyright (C) Andrew Tridgell 1998
    
@@ -21,8 +22,9 @@
 #include "includes.h"
 
 /****************************************************************************
-normalise for DOS usage 
+ Normalise for DOS usage.
 ****************************************************************************/
+
 static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
@@ -59,10 +61,10 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
 
 
 /****************************************************************************
-  return number of 1K blocks available on a path and total number 
+ Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
-static SMB_BIG_UINT disk_free(const char *path, BOOL small_query, 
+static SMB_BIG_UINT disk_free(char *path, BOOL small_query, 
                               SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int dfree_retval;
@@ -80,28 +82,28 @@ static SMB_BIG_UINT disk_free(const char *path, BOOL small_query,
 
 	dfree_command = lp_dfree_command();
 	if (dfree_command && *dfree_command) {
-		const char *p;
+		char *p;
 		char **lines;
 		pstring syscmd;
 
 		slprintf(syscmd, sizeof(syscmd)-1, "%s %s", dfree_command, path);
 		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
 
-		lines = file_lines_pload(syscmd, NULL);
+		lines = file_lines_pload(syscmd, NULL, True);
 		if (lines) {
 			char *line = lines[0];
 
 			DEBUG (3, ("Read input from dfree, \"%s\"\n", line));
 
-			*dsize = STR_TO_SMB_BIG_UINT(line, &p);
-			while (p && *p && isspace(*p))
+			*dsize = (SMB_BIG_UINT)strtoul(line, &p, 10);
+			while (p && *p & isspace(*p))
 				p++;
 			if (p && *p)
-				*dfree = STR_TO_SMB_BIG_UINT(p, &p);
-			while (p && *p && isspace(*p))
+				*dfree = (SMB_BIG_UINT)strtoul(p, &p, 10);
+			while (p && *p & isspace(*p))
 				p++;
 			if (p && *p)
-				*bsize = STR_TO_SMB_BIG_UINT(p, NULL);
+				*bsize = (SMB_BIG_UINT)strtoul(p, NULL, 10);
 			else
 				*bsize = 1024;
 			file_lines_free(lines);
@@ -153,12 +155,12 @@ static SMB_BIG_UINT disk_free(const char *path, BOOL small_query,
 	return(dfree_retval);
 }
 
-
 /****************************************************************************
-wrap it to get filenames right
+ Wrap it to get filenames right.
 ****************************************************************************/
+
 SMB_BIG_UINT sys_disk_free(const char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	return disk_free(path,small_query, bsize,dfree,dsize);
+	return(disk_free(dos_to_unix_static(path),small_query, bsize,dfree,dsize));
 }

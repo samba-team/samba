@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# Postinstallscript written by Ron Record (rr@sco.com) 
+# 
+
+scriptname="$0"
+step="$1"
+keywords="$2"
+pkglist="$3"
+
+# Source in the standard functions library, ccsSetup.sh
+. ccsSetup.sh
+
+PKG_DIR=${SSO_SHARED_ROOT}/cntl/packages
+
+# call ccs in subsidiary packages with same arguments we were called with
+pkgCodes=`getPackageCode $pkglist`
+returnCode=$OK
+for pkg in $pkgCodes; do
+    pkgscript=${PKG_DIR}/${pkg}/ccs
+    if [ -f "$pkgscript" ]; then
+        ${pkgscript} "${step}" "${keywords}" "${pkglist}"
+
+        # exit with the most severe exit code of subsidiary package scripts
+        case "$?" in
+            $FAIL) returnCode=$FAIL ;;
+            $WARN) [ "$returnCode" -eq "$OK" ] && returnCode=$WARN ;;
+        esac
+    fi
+done
+    
+exit $returnCode
+

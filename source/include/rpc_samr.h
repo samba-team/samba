@@ -1,12 +1,11 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1997-2000
-   Copyright (C) Jean François Micouleau      1998-2001
-   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
-   
+   Copyright (C) Jean François Micouleau      1998-2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +25,9 @@
 #ifndef _RPC_SAMR_H /* _RPC_SAMR_H */
 #define _RPC_SAMR_H 
 
+
 #include "rpc_misc.h"
+
 
 /*******************************************************************
  the following information comes from a QuickView on samsrv.dll,
@@ -79,7 +80,7 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_CONNECT_ANON      0x00
 #define SAMR_CLOSE_HND         0x01
-#define SAMR_SET_SEC_OBJECT    0x02
+#define SAMR_UNKNOWN_2         0x02 /* set sec object? */
 #define SAMR_QUERY_SEC_OBJECT  0x03
 
 #define SAMR_UNKNOWN_4         0x04 /* profile info? */
@@ -127,7 +128,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2a        0x2a
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
-#define SAMR_REMOVE_SID_FOREIGN_DOMAIN        0x2d
+#define SAMR_UNKNOWN_2D        0x2d
 #define SAMR_UNKNOWN_2E        0x2e /* looks like an alias for SAMR_QUERY_DOMAIN_INFO */
 #define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
@@ -144,7 +145,16 @@ SamrTestPrivateFunctionsUser
 #define SAMR_GET_DOM_PWINFO    0x38
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
-#define SAMR_CONNECT4          0x3E
+
+
+typedef struct _DISP_USER_INFO {
+	SAM_ACCOUNT *sam;
+} DISP_USER_INFO;
+
+typedef struct _DISP_GROUP_INFO {
+	DOMAIN_GRP *grp;
+} DISP_GROUP_INFO;
+
 
 typedef struct logon_hours_info
 {
@@ -183,21 +193,15 @@ typedef struct sam_user_info_23
 
 	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 
-	uint32 fields_present; /* 0x09f8 27fa */
+	uint32 unknown_3; /* 0x09f8 27fa */
 
 	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* pointer to logon hours */
 
-	/* Was unknown_5. */
-	uint16 bad_password_count;
-	uint16 logon_count;
+	uint8 padding1[8];
 
-	uint8 padding1[6];
-		
-	uint8 passmustchange; /* 0x00 must change = 0x01 */
-
-	uint8 padding2;
+	uint32 unknown_5;     /* 0x0001 0000 */
 
 	uint8 pass[516];
 
@@ -308,22 +312,15 @@ typedef struct sam_user_info_21
 
 	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 
-	/* Was unknown_3 */
-	uint32 fields_present; /* 0x00ff ffff */
+	uint32 unknown_3; /* 0x00ff ffff */
 
 	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* unknown pointer */
 
-	/* Was unknown_5. */
-	uint16 bad_password_count;
-	uint16 logon_count;
+	uint32 unknown_5;     /* 0x0002 0000 */
 
-	uint8 padding1[6];
-		
-	uint8 passmustchange; /* 0x00 must change = 0x01 */
-
-	uint8 padding2;
+	uint8 padding1[8];
 
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
@@ -343,8 +340,6 @@ typedef struct sam_user_info_21
 
 } SAM_USER_INFO_21;
 
-#define PASS_MUST_CHANGE_AT_NEXT_LOGON	0x01
-#define PASS_DONT_CHANGE_AT_NEXT_LOGON	0x00
 
 /* SAM_USER_INFO_20 */
 typedef struct sam_user_info_20
@@ -456,26 +451,6 @@ typedef struct r_samr_usrdom_pwinfo_info
 	NTSTATUS status; 
 
 } SAMR_R_GET_USRDOM_PWINFO;
-
-/****************************************************************************
-SAMR_Q_SET_SEC_OBJ - info level 4.
-*****************************************************************************/
-
-/* SAMR_Q_SET_SEC_OBJ - */
-typedef struct q_samr_set_sec_obj_info
-{
-	POLICY_HND pol;          /* policy handle */
-	uint32 sec_info;         /* xxxx_SECURITY_INFORMATION 0x0000 0004 */
-	SEC_DESC_BUF *buf;
-
-} SAMR_Q_SET_SEC_OBJ;
-
-/* SAMR_R_SET_SEC_OBJ - */
-typedef struct r_samr_set_sec_obj_info
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_SET_SEC_OBJ;
 
 
 /****************************************************************************
@@ -1076,7 +1051,6 @@ typedef struct samr_group_info3
 
 typedef struct samr_group_info4
 {
-	uint16 level;
 	UNIHDR hdr_acct_desc;
 	UNISTR2 uni_acct_desc;
 
@@ -1485,7 +1459,7 @@ typedef struct r_samr_create_user_info
 {
 	POLICY_HND user_pol;       /* policy handle associated with user */
 
-	uint32 access_granted;
+	uint32 unknown_0;     /* 0x0007 03ff */
 	uint32 user_rid;      /* user RID */
 	NTSTATUS status;         /* return status */
 
@@ -1708,19 +1682,6 @@ typedef struct r_samr_connect_info
 
 } SAMR_R_CONNECT;
 
-/* SAMR_Q_CONNECT4 */
-typedef struct q_samr_connect4_info
-{
-	uint32 ptr_srv_name; /* pointer to server name */
-	UNISTR2 uni_srv_name;
-
-	uint32 unk_0; /* possible server name type, 1 for IP num, 2 for name */
-	uint32 access_mask;
-} SAMR_Q_CONNECT4;
-
-/* SAMR_R_CONNECT4 - same format as connect */
-typedef struct r_samr_connect_info SAMR_R_CONNECT4;       
-
 /* SAMR_Q_GET_DOM_PWINFO */
 typedef struct q_samr_get_dom_pwinfo
 {
@@ -1740,8 +1701,9 @@ typedef struct r_samr_get_dom_pwinfo
 	 * turned out to 12.  3 uint32's + NT_STATUS == 16 bytes.  Tested
 	 * using NT and 2k.  --jerry
 	 */
-	uint16 unk_0;
+	uint32 unk_0;
 	uint32 unk_1;
+	uint32 unk_2;
 	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;
@@ -1791,21 +1753,21 @@ typedef struct r_samr_chgpasswd_user_info
 } SAMR_R_CHGPASSWD_USER;
 
 
-/* SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN */
-typedef struct q_samr_remove_sid_foreign_domain_info
+/* SAMR_Q_UNKNOWN_2D */
+typedef struct q_samr_unknown_2d_info
 {
 	POLICY_HND dom_pol;   /* policy handle */
 	DOM_SID2 sid;         /* SID */
 
-} SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN;
+} SAMR_Q_UNKNOWN_2D;
 
 
-/* SAMR_R_REMOVE_SID_FOREIGN_DOMAIN */
-typedef struct r_samr_remove_sid_foreign_domain_info
+/* SAMR_R_UNKNOWN_2D - probably an open */
+typedef struct r_samr_unknown_2d_info
 {
 	NTSTATUS status;         /* return status */
 
-} SAMR_R_REMOVE_SID_FOREIGN_DOMAIN;
+} SAMR_R_UNKNOWN_2D;
 
 
 
@@ -1858,4 +1820,6 @@ typedef struct r_samr_set_domain_info
 
 } SAMR_R_SET_DOMAIN_INFO;
 
+
 #endif /* _RPC_SAMR_H */
+

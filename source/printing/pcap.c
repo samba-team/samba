@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    printcap parsing
    Copyright (C) Karl Auer 1993-1998
 
@@ -62,6 +63,8 @@
 
 #include "includes.h"
 
+#include "smb.h"
+
 #ifdef AIX
 /*  ******************************************
      Extend for AIX system and qconfig file
@@ -94,14 +97,14 @@ static int strlocate(char *xpLine,char *xpS)
 static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 {
 	int iEtat;
-	XFILE *pfile;
+	FILE *pfile;
 	char *line,*p;
 	pstring name,comment;
 	line  = NULL;
 	*name = 0;
 	*comment = 0;
 
-	if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
+	if ((pfile = sys_fopen(psz, "r")) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
 	      return;
@@ -117,7 +120,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 		{
 			case 0: /* locate an entry */
 			 if (*line == '\t' || *line == ' ') continue;
-			 if ((p=strchr_m(line,':')))
+			 if ((p=strchr(line,':')))
 			 {
 			 	*p = '\0';
 				p = strtok(line,":");
@@ -155,7 +158,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 		  	  break;
 		}
 	}
-	x_fclose(pfile);
+	fclose(pfile);
 }
 
 /* Scan qconfig file and locate de printername */
@@ -163,7 +166,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 static BOOL ScanQconfig(char *psz,char *pszPrintername)
 {
 	int iLg,iEtat;
-	XFILE *pfile;
+	FILE *pfile;
 	char *pName;
 	char *line;
 
@@ -176,7 +179,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		DEBUG(0,(" Unable to allocate memory for printer %s\n",pszPrintername));
 		return(False);
 	}
-	if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
+	if ((pfile = sys_fopen(psz, "r")) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
 	      SAFE_FREE(pName);
@@ -206,9 +209,9 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	 {
 		  	   /* name is found without stanza device  */
 		  	   /* probably a good printer ???		*/
-		  	   free (line);
+		  	   SAFE_FREE (line);
 		  	   SAFE_FREE(pName);
-		  	   x_fclose(pfile);
+		  	   fclose(pfile);
 		  	   return(True);
 		  	  }
 		  	
@@ -220,16 +223,16 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	  else if (strlocate(line,"device"))
 		  	  {
 		  		/* it's a good virtual printer */
-		  		free (line);
+		  		SAFE_FREE (line);
 		  		SAFE_FREE(pName);
-		  		x_fclose(pfile);
+		  		fclose(pfile);
 		  		return(True);
 		  	  }
 		  	  break;
 		}
 	}
-	free (pName);
-	x_fclose(pfile);
+	SAFE_FREE (pName);
+	fclose(pfile);
 	return(False);
 }
 #endif /* AIX */
@@ -239,14 +242,18 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 Scan printcap file pszPrintcapname for a printer called pszPrintername. 
 Return True if found, else False. Returns False on error, too, after logging 
 the error at level 0. For generality, the printcap name may be passed - if
-passed as NULL, the configuration will be queried for the name. 
+passed as NULL, the configuration will be queried for the name. pszPrintername
+must be in DOS codepage.
+The xxx_printername_ok functions need fixing to understand they are being
+given a DOS codepage. FIXME !! JRA.
 ***************************************************************************/
-BOOL pcap_printername_ok(const char *pszPrintername, const char *pszPrintcapname)
+
+BOOL pcap_printername_ok(char *pszPrintername, const char *pszPrintcapname)
 {
   char *line=NULL;
   const char *psz;
   char *p,*q;
-  XFILE *pfile;
+  FILE *pfile;
 
   if (pszPrintername == NULL || pszPrintername[0] == '\0')
     {
@@ -277,7 +284,7 @@ BOOL pcap_printername_ok(const char *pszPrintername, const char *pszPrintcapname
      return(ScanQconfig(psz,pszPrintername));
 #endif
 
-  if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
+  if ((pfile = sys_fopen(psz, "r")) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
       return(False);
@@ -288,27 +295,31 @@ BOOL pcap_printername_ok(const char *pszPrintername, const char *pszPrintcapname
       if (*line == '#' || *line == 0)
 	continue;
 
+      unix_to_dos(line);
+
       /* now we have a real printer line - cut it off at the first : */      
-      p = strchr_m(line,':');
+      p = strchr(line,':');
       if (p) *p = 0;
       
       /* now just check if the name is in the list */
       /* NOTE: I avoid strtok as the fn calling this one may be using it */
       for (p=line; p; p=q)
 	{
-	  if ((q = strchr_m(p,'|'))) *q++ = 0;
+	  if ((q = strchr(p,'|'))) *q++ = 0;
 
 	  if (strequal(p,pszPrintername))
 	    {
+	      /* normalise the case */
+	      pstrcpy(pszPrintername,p);
 	      SAFE_FREE(line);
-	      x_fclose(pfile);
+	      fclose(pfile);
 	      return(True);	      
 	    }
 	  p = q;
 	}
     }
 
-  x_fclose(pfile);
+  fclose(pfile);
   return(False);
 }
 
@@ -325,7 +336,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
   char *line;
   char *psz;
   char *p,*q;
-  XFILE *pfile;
+  FILE *pfile;
 
   /* only go looking if no printcap name supplied */
   if (((psz = lp_printcapname()) == NULL) || (psz[0] == '\0'))
@@ -356,7 +367,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
   }
 #endif
 
-  if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
+  if ((pfile = sys_fopen(psz, "r")) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
       return;
@@ -368,9 +379,11 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	continue;
 
       /* now we have a real printer line - cut it off at the first : */      
-      p = strchr_m(line,':');
+      p = strchr(line,':');
       if (p) *p = 0;
       
+      unix_to_dos(line);
+
       /* now find the most likely printer name and comment 
        this is pure guesswork, but it's better than nothing */
       *name = 0;
@@ -378,13 +391,13 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       for (p=line; p; p=q)
 	{
 	  BOOL has_punctuation;
-	  if ((q = strchr_m(p,'|'))) *q++ = 0;
+	  if ((q = strchr(p,'|'))) *q++ = 0;
 
-	  has_punctuation = (strchr_m(p,' ') || strchr_m(p,'\t') || strchr_m(p,'(') || strchr_m(p,')'));
+	  has_punctuation = (strchr(p,' ') || strchr(p,'\t') || strchr(p,'(') || strchr(p,')'));
 
 	  if (strlen(p)>strlen(comment) && has_punctuation)
 	    {
-	      pstrcpy(comment,p);
+	      StrnCpy(comment,p,sizeof(comment)-1);
 	      continue;
 	    }
 
@@ -395,11 +408,11 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	      continue;
 	    }
 
-	  if (!strchr_m(comment,' ') && 
+	  if (!strchr(comment,' ') && 
 	      strlen(p) > strlen(comment))
 	    {
-		    pstrcpy(comment,p);
-		    continue;
+	      StrnCpy(comment,p,sizeof(comment)-1);
+	      continue;
 	    }
 	}
 
@@ -409,5 +422,5 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       if (*name) 
 	fn(name,comment);
     }
-  x_fclose(pfile);
+  fclose(pfile);
 }

@@ -53,12 +53,6 @@
 
 #include "includes.h"
 
-#if 1
-#define M_DEBUG(level, x) DEBUG(level, x)
-#else
-#define M_DEBUG(level, x)
-#endif
-
 /* these flags are used to mark characters in as having particular
    properties */
 #define FLAG_BASECHAR 1
@@ -86,13 +80,6 @@
 static unsigned char char_flags[256];
 
 #define FLAG_CHECK(c, flag) (char_flags[(unsigned char)(c)] & (flag))
-
-/*
-  this determines how many characters are used from the original filename
-  in the 8.3 mangled name. A larger value leads to a weaker hash and more collisions.
-  The largest possible value is 6.
-*/
-static unsigned mangle_prefix;
 
 /* we will use a very simple direct mapped prefix cache. The big
    advantage of this cache structure is speed and low memory usage 
@@ -131,7 +118,7 @@ static u32 mangle_hash(const char *key, unsigned length)
 	   function */
 	strncpy(str, key, length);
 	str[length] = 0;
-	strupper_m(str);
+	strupper(str);
 
 	/* the length of a multi-byte string can change after a strupper_m */
 	length = strlen(str);
@@ -201,49 +188,45 @@ static const char *cache_lookup(u32 hash)
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
  */
-static BOOL is_mangled_component(const char *name, size_t len)
+static BOOL is_mangled_component(const char *name)
 {
-	unsigned int i;
+	int len, i;
 
-	M_DEBUG(10,("is_mangled_component %s (len %u) ?\n", name, (unsigned int)len));
+	DEBUG(10,("is_mangled_component %s ?\n", name));
 
 	/* check the length */
-	if (len > 12 || len < 8)
-		return False;
+	len = strlen(name);
+	if (len > 12 || len < 8) return False;
 
 	/* the best distinguishing characteristic is the ~ */
-	if (name[6] != '~')
-		return False;
+	if (len > 7 && name[6] != '~') return False;
 
 	/* check extension */
 	if (len > 8) {
-		if (name[8] != '.')
-			return False;
-		for (i=9; name[i] && i < len; i++) {
+		if (name[8] != '.') return False;
+		for (i=9; name[i]; i++) {
 			if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
 				return False;
 			}
 		}
 	}
 	
-	/* check lead characters */
-	for (i=0;i<mangle_prefix;i++) {
-		if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
-			return False;
-		}
+	/* check first character */
+	if (! FLAG_CHECK(name[0], FLAG_ASCII)) {
+		return False;
 	}
 	
 	/* check rest of hash */
 	if (! FLAG_CHECK(name[7], FLAG_BASECHAR)) {
 		return False;
 	}
-	for (i=mangle_prefix;i<6;i++) {
+	for (i=1;i<6;i++) {
 		if (! FLAG_CHECK(name[i], FLAG_BASECHAR)) {
 			return False;
 		}
 	}
 
-	M_DEBUG(10,("is_mangled_component %s (len %u) -> yes\n", name, (unsigned int)len));
+	DEBUG(10,("is_mangled %s -> yes\n", name));
 
 	return True;
 }
@@ -266,16 +249,19 @@ static BOOL is_mangled(const char *name)
 	const char *p;
 	const char *s;
 
-	M_DEBUG(10,("is_mangled %s ?\n", name));
+	DEBUG(10,("is_mangled %s ?\n", name));
 
 	for (s=name; (p=strchr(s, '/')); s=p+1) {
-		if (is_mangled_component(s, PTR_DIFF(p, s))) {
+		char *component = strndup(s, PTR_DIFF(p, s));
+		if (is_mangled_component(component)) {
+			free(component);
 			return True;
 		}
+		free(component);
 	}
 	
 	/* and the last part ... */
-	return is_mangled_component(s,strlen(s));
+	return is_mangled_component(s);
 }
 
 
@@ -304,8 +290,7 @@ static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
 	 the result we need in this case. Using strlen_m would not
 	 only be slower, it would be incorrect */
 	len = strlen(name);
-	if (len > 12)
-		return False;
+	if (len > 12) return False;
 
 	/* find the '.'. Note that once again we use the non-multibyte
            function */
@@ -325,7 +310,7 @@ static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
 		prefix_len = PTR_DIFF(dot_p, name);
 		suffix_len = len - (prefix_len+1);
 
-		if (prefix_len > 8 || suffix_len > 3 || suffix_len == 0) {
+		if (prefix_len > 8 || suffix_len > 3) {
 			return False;
 		}
 
@@ -368,19 +353,19 @@ static void mangle_reset(void)
 static BOOL check_cache(char *name)
 {
 	u32 hash, multiplier;
-	unsigned int i;
+	int i;
 	const char *prefix;
 	char extension[4];
 
 	/* make sure that this is a mangled name from this cache */
 	if (!is_mangled(name)) {
-		M_DEBUG(10,("check_cache: %s -> not mangled\n", name));
+		DEBUG(10,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
 
 	/* we need to extract the hash from the 8.3 name */
 	hash = base_reverse[(unsigned char)name[7]];
-	for (multiplier=36, i=5;i>=mangle_prefix;i--) {
+	for (multiplier=36, i=5;i>=1;i--) {
 		u32 v = base_reverse[(unsigned char)name[i]];
 		hash += multiplier * v;
 		multiplier *= 36;
@@ -389,7 +374,7 @@ static BOOL check_cache(char *name)
 	/* now look in the prefix cache for that hash */
 	prefix = cache_lookup(hash);
 	if (!prefix) {
-		M_DEBUG(10,("check_cache: %s -> %08X -> not found\n", name, hash));
+		DEBUG(10,("check_cache: %s -> %08X -> not found\n", name, hash));
 		return False;
 	}
 
@@ -402,10 +387,10 @@ static BOOL check_cache(char *name)
 	}
 
 	if (extension[0]) {
-		M_DEBUG(10,("check_cache: %s -> %s.%s\n", name, prefix, extension));
+		DEBUG(10,("check_cache: %s -> %s.%s\n", name, prefix, extension));
 		slprintf(name, sizeof(fstring), "%s.%s", prefix, extension);
 	} else {
-		M_DEBUG(10,("check_cache: %s -> %s\n", name, prefix));
+		DEBUG(10,("check_cache: %s -> %s\n", name, prefix));
 		fstrcpy(name, prefix);
 	}
 
@@ -427,7 +412,7 @@ static BOOL is_reserved_name(const char *name)
 		for (i=0; reserved_names[i]; i++) {
 			int len = strlen(reserved_names[i]);
 			/* note that we match on COM1 as well as COM1.foo */
-			if (strnequal(name, reserved_names[i], len) &&
+			if (strncasecmp(name, reserved_names[i], len) == 0 &&
 			    (name[len] == '.' || name[len] == 0)) {
 				return True;
 			}
@@ -449,23 +434,6 @@ static BOOL is_legal_name(const char *name)
 	size_t numdots = 0;
 
 	while (*name) {
-		if (((unsigned int)name[0]) > 128 && (name[1] != 0)) {
-			/* Possible start of mb character. */
-			char mbc[2];
-			/*
-			 * Note that if CH_UNIX is utf8 a string may be 3
-			 * bytes, but this is ok as mb utf8 characters don't
-			 * contain embedded ascii bytes. We are really checking
-			 * for mb UNIX asian characters like Japanese (SJIS) here.
-			 * JRA.
-			 */
-			if (convert_string(CH_UNIX, CH_UCS2, name, 2, mbc, 2, False) == 2) {
-				/* Was a good mb string. */
-				name += 2;
-				continue;
-			}
-		}
-
 		if (FLAG_CHECK(name[0], FLAG_ILLEGAL)) {
 			return False;
 		}
@@ -501,13 +469,13 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
+static void name_map(char *name, BOOL need83, BOOL cache83)
 {
 	char *dot_p;
-	char lead_chars[7];
+	char lead_char;
 	char extension[4];
-	unsigned int extension_length, i;
-	unsigned int prefix_len;
+	int extension_length, i;
+	int prefix_len;
 	u32 hash, v;
 	char new_name[13];
 
@@ -542,20 +510,15 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
 		if (i == 0 || i == 4) dot_p = NULL;
 	}
 
-	/* the leading characters in the mangled name is taken from
-	   the first characters of the name, if they are ascii otherwise
-	   '_' is used
+	/* the leading character in the mangled name is taken from
+	   the first character of the name, if it is ascii 
+	   otherwise '_' is used
 	*/
-	for (i=0;i<mangle_prefix && name[i];i++) {
-		lead_chars[i] = name[i];
-		if (! FLAG_CHECK(lead_chars[i], FLAG_ASCII)) {
-			lead_chars[i] = '_';
-		}
-		lead_chars[i] = toupper(lead_chars[i]);
+	lead_char = name[0];
+	if (! FLAG_CHECK(lead_char, FLAG_ASCII)) {
+		lead_char = '_';
 	}
-	for (;i<mangle_prefix;i++) {
-		lead_chars[i] = '_';
-	}
+	lead_char = toupper(lead_char);
 
 	/* the prefix is anything up to the first dot */
 	if (dot_p) {
@@ -580,12 +543,10 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
 	v = hash = mangle_hash(name, prefix_len);
 
 	/* now form the mangled name. */
-	for (i=0;i<mangle_prefix;i++) {
-		new_name[i] = lead_chars[i];
-	}
+	new_name[0] = lead_char;
 	new_name[7] = base_forward(v % 36);
 	new_name[6] = '~';	
-	for (i=5; i>=mangle_prefix; i--) {
+	for (i=5; i>=1; i--) {
 		v = v / 36;
 		new_name[i] = base_forward(v % 36);
 	}
@@ -604,7 +565,7 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
 		cache_insert(name, prefix_len, hash);
 	}
 
-	M_DEBUG(10,("name_map: %s -> %08X -> %s (cache=%d)\n", 
+	DEBUG(10,("name_map: %s -> %08X -> %s (cache=%d)\n", 
 		   name, hash, new_name, cache83));
 
 	/* and overwrite the old name */
@@ -627,7 +588,7 @@ static void init_tables(void)
 
 	memset(char_flags, 0, sizeof(char_flags));
 
-	for (i=1;i<128;i++) {
+	for (i=0;i<128;i++) {
 		if ((i >= '0' && i <= '9') || 
 		    (i >= 'a' && i <= 'z') || 
 		    (i >= 'A' && i <= 'Z')) {
@@ -689,15 +650,6 @@ static struct mangle_fns mangle_fns = {
 /* return the methods for this mangling implementation */
 struct mangle_fns *mangle_hash2_init(void)
 {
-	/* the mangle prefix can only be in the mange 1 to 6 */
-	mangle_prefix = lp_mangle_prefix();
-	if (mangle_prefix > 6) {
-		mangle_prefix = 6;
-	}
-	if (mangle_prefix < 1) {
-		mangle_prefix = 1;
-	}
-
 	init_tables();
 	mangle_reset();
 

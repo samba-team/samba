@@ -11,6 +11,11 @@
 
 #include "pam_winbind.h"
 
+/* prototypes from common.c */
+void init_request(struct winbindd_request *req,int rq_type);
+int write_sock(void *buffer, int count);
+int read_reply(struct winbindd_response *response);
+
 /* data tokens */
 
 #define MAX_PASSWD_TRIES	3
@@ -40,9 +45,9 @@ static int _pam_parse(int argc, const char **argv)
 		else if (!strcasecmp(*argv, "use_authtok"))
 			ctrl |= WINBIND_USE_AUTHTOK_ARG;
 		else if (!strcasecmp(*argv, "use_first_pass"))
-			ctrl |= WINBIND_USE_FIRST_PASS_ARG;
-		else if (!strcasecmp(*argv, "try_first_pass"))
 			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
+		else if (!strcasecmp(*argv, "try_first_pass"))
+			ctrl |= WINBIND_USE_FIRST_PASS_ARG;
 		else if (!strcasecmp(*argv, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
 		else {
@@ -74,7 +79,7 @@ static int converse(pam_handle_t *pamh, int nargs,
 }
 
 
-static int _make_remark(pam_handle_t * pamh, int type, const char *text)
+int _make_remark(pam_handle_t * pamh, int type, const char *text)
 {
 	int retval = PAM_SUCCESS;
 
@@ -94,35 +99,28 @@ static int _make_remark(pam_handle_t * pamh, int type, const char *text)
 	return retval;
 }
 
-static int pam_winbind_request(enum winbindd_cmd req_type,
-			       struct winbindd_request *request,
-			       struct winbindd_response *response)
+static int winbind_request(enum winbindd_cmd req_type,
+                           struct winbindd_request *request,
+                           struct winbindd_response *response)
 {
-
 	/* Fill in request and send down pipe */
 	init_request(request, req_type);
 	
 	if (write_sock(request, sizeof(*request)) == -1) {
 		_pam_log(LOG_ERR, "write to socket failed!");
-		close_sock();
 		return PAM_SERVICE_ERR;
 	}
 	
 	/* Wait for reply */
 	if (read_reply(response) == -1) {
 		_pam_log(LOG_ERR, "read from socket failed!");
-		close_sock();
 		return PAM_SERVICE_ERR;
 	}
-
-	/* We are done with the socket - close it and avoid mischeif */
-	close_sock();
 
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
 		if (response->data.auth.pam_error != PAM_SUCCESS) {
-			_pam_log(LOG_ERR, "request failed: %s, PAM error was %d, NT error was %s", 
-				 response->data.auth.error_string,
+			_pam_log(LOG_ERR, "request failed, PAM error was %d, NT error was %s", 
 				 response->data.auth.pam_error,
 				 response->data.auth.nt_status_string);
 			return response->data.auth.pam_error;
@@ -135,32 +133,27 @@ static int pam_winbind_request(enum winbindd_cmd req_type,
 	return PAM_SUCCESS;
 }
 
-static int pam_winbind_request_log(enum winbindd_cmd req_type,
-			       struct winbindd_request *request,
-			       struct winbindd_response *response,
-				   int ctrl,
-				   const char *user)
+/* talk to winbindd */
+static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 {
+	struct winbindd_request request;
+	struct winbindd_response response;
 	int retval;
 
-        retval = pam_winbind_request(req_type, request, response);
+	ZERO_STRUCT(request);
+
+	strncpy(request.data.auth.user, user, 
+                sizeof(request.data.auth.user)-1);
+
+	strncpy(request.data.auth.pass, pass, 
+                sizeof(request.data.auth.pass)-1);
+	
+        retval = winbind_request(WINBINDD_PAM_AUTH, &request, &response);
 
 	switch (retval) {
 	case PAM_AUTH_ERR:
 		/* incorrect password */
 		_pam_log(LOG_WARNING, "user `%s' denied access (incorrect password)", user);
-		return retval;
-	case PAM_ACCT_EXPIRED:
-		/* account expired */
-		_pam_log(LOG_WARNING, "user `%s' account expired", user);
-		return retval;
-	case PAM_AUTHTOK_EXPIRED:
-		/* password expired */
-		_pam_log(LOG_WARNING, "user `%s' password expired", user);
-		return retval;
-	case PAM_NEW_AUTHTOK_REQD:
-		/* password expired */
-		_pam_log(LOG_WARNING, "user `%s' new password required", user);
 		return retval;
 	case PAM_USER_UNKNOWN:
 		/* the user does not exist */
@@ -172,16 +165,8 @@ static int pam_winbind_request_log(enum winbindd_cmd req_type,
 		}	 
 		return retval;
 	case PAM_SUCCESS:
-		if (req_type == WINBINDD_PAM_AUTH) {
-			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' granted acces", user);
-		} else if (req_type == WINBINDD_PAM_CHAUTHTOK) {
-			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' password changed", user);
-		} else { 
-			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' OK", user);
-		}
+		/* Otherwise, the authentication looked good */
+		_pam_log(LOG_NOTICE, "user '%s' granted acces", user);
 		return retval;
 	default:
 		/* we don't know anything about this return value */
@@ -189,29 +174,12 @@ static int pam_winbind_request_log(enum winbindd_cmd req_type,
 			 retval, user);
 		return retval;
 	}
-}
-
-/* talk to winbindd */
-static int winbind_auth_request(const char *user, const char *pass, int ctrl)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-
-	ZERO_STRUCT(request);
-
-	strncpy(request.data.auth.user, user, 
-                sizeof(request.data.auth.user)-1);
-
-	strncpy(request.data.auth.pass, pass, 
-                sizeof(request.data.auth.pass)-1);
-	
-	
-        return pam_winbind_request_log(WINBINDD_PAM_AUTH, &request, &response, ctrl, user);
+     /* should not be reached */
 }
 
 /* talk to winbindd */
 static int winbind_chauthtok_request(const char *user, const char *oldpass,
-                                     const char *newpass, int ctrl)
+                                     const char *newpass)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -237,7 +205,7 @@ static int winbind_chauthtok_request(const char *user, const char *oldpass,
             request.data.chauthtok.newpass[0] = '\0';
         }
 	
-        return pam_winbind_request_log(WINBINDD_PAM_CHAUTHTOK, &request, &response, ctrl, user);
+        return winbind_request(WINBINDD_PAM_CHAUTHTOK, &request, &response);
 }
 
 /*
@@ -265,12 +233,12 @@ static char *_pam_delete(register char *xx)
  * obtain a password from the user
  */
 
-static int _winbind_read_password(pam_handle_t * pamh
-				  ,unsigned int ctrl
-				  ,const char *comment
-				  ,const char *prompt1
-				  ,const char *prompt2
-				  ,const char **pass)
+int _winbind_read_password(pam_handle_t * pamh
+			,unsigned int ctrl
+			,const char *comment
+			,const char *prompt1
+			,const char *prompt2
+			,const char **pass)
 {
 	int authtok_flag;
 	int retval;
@@ -437,7 +405,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 				     &password);
      
      if (retval != PAM_SUCCESS) {
-	 _pam_log(LOG_ERR, "Could not retrieve user's password");
+	 _pam_log(LOG_ERR, "Could not retrive user's password");
 	 return PAM_AUTHTOK_ERR;
      }
      
@@ -514,28 +482,26 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
     /* should not be reached */
     return PAM_IGNORE;
 }
-PAM_EXTERN
-int pam_sm_open_session(pam_handle_t *pamh, int flags,
-                int argc, const char **argv)
+
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
+		                int argc, const char **argv)
 {
-        /* parse arguments */
-        int ctrl = _pam_parse(argc, argv);
-        if (ctrl & WINBIND_DEBUG_ARG)
-              _pam_log(LOG_DEBUG,"libpam_winbind:pam_sm_open_session handler");
-        return PAM_SUCCESS;
-}
-PAM_EXTERN
-int pam_sm_close_session(pam_handle_t *pamh, int flags,
-                int argc, const char **argv)
-{
-        /* parse arguments */
-        int ctrl = _pam_parse(argc, argv);
-        if (ctrl & WINBIND_DEBUG_ARG)
-              _pam_log(LOG_DEBUG,"libpam_winbind:pam_sm_close_session handler");
-        return PAM_SUCCESS;
+	/* parse arguments */
+	int ctrl = _pam_parse(argc, argv);
+	if (ctrl & WINBIND_DEBUG_ARG)
+		_pam_log(LOG_DEBUG,"libpam_winbind:pam_sm_open_session handler");
+	return PAM_SUCCESS;
 }
 
-
+PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags,
+		                int argc, const char **argv)
+{
+	/* parse arguments */
+	int ctrl = _pam_parse(argc, argv);
+	if (ctrl & WINBIND_DEBUG_ARG)
+		_pam_log(LOG_DEBUG,"libpam_winbind:pam_sm_close_session handler");
+	return PAM_SUCCESS;
+}
 
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 				int argc, const char **argv)
@@ -609,7 +575,6 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		retval = winbind_auth_request(user, pass_old, ctrl);
 		
 		if (retval != PAM_ACCT_EXPIRED 
-		    && retval != PAM_AUTHTOK_EXPIRED
 		    && retval != PAM_NEW_AUTHTOK_REQD 
 		    && retval != PAM_SUCCESS) {
 			pass_old = NULL;
@@ -684,7 +649,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * rebuild the password database file.
 		 */
 
-		retval = winbind_chauthtok_request(user, pass_old, pass_new, ctrl);
+		retval = winbind_chauthtok_request(user, pass_old, pass_new);
 		_pam_overwrite(pass_new);
 		_pam_overwrite(pass_old);
 		pass_old = pass_new = NULL;
@@ -704,8 +669,8 @@ struct pam_module _pam_winbind_modstruct = {
      pam_sm_authenticate,
      pam_sm_setcred,
      pam_sm_acct_mgmt,
-     pam_sm_open_session,
-     pam_sm_close_session,
+     NULL,
+     NULL,
      pam_sm_chauthtok
 };
 

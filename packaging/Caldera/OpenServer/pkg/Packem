@@ -1,0 +1,15 @@
+#!/bin/sh
+
+P=`pwd`
+PKGTAR=`basename $P`-VOLS.tar
+PKGDIST=`basename $P`-dist.tar.gz
+
+DIRS=usr
+[ -d etc ] && DIRS="etc usr"
+cd archives/FLOPPY
+tar cf ../../$PKGTAR VOL*
+cd ../..
+tar cf - $DIRS | /usr/local/bin/gzip -9 > $PKGDIST
+[ -f $PKGTAR ] && rm -rf archives
+[ -f $PKGDIST ] && rm -rf $DIRS
+rm -rf sso

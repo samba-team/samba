@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    printing backend routines for smbd - using files_struct rather
    than only snum
    Copyright (C) Andrew Tridgell 1992-2000
@@ -46,23 +47,15 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 		fstrcat(name, p);
 	}
 
-	jobid = print_job_start(&current_user, SNUM(conn), name, NULL);
+	jobid = print_job_start(&current_user, SNUM(conn), name);
 	if (jobid == -1) {
 		file_free(fsp);
 		return NULL;
 	}
 
-	/* Convert to RAP id. */
-	fsp->rap_print_jobid = pjobid_to_rap(SNUM(conn), jobid);
-	if (fsp->rap_print_jobid == 0) {
-		/* We need to delete the entry in the tdb. */
-		pjob_delete(SNUM(conn), jobid);
-		file_free(fsp);
-		return NULL;
-	}
-
 	/* setup a full fsp */
-	fsp->fd = print_job_fd(SNUM(conn),jobid);
+	fsp->print_jobid = jobid;
+	fsp->fd = print_job_fd(jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
 	fsp->size = 0;
@@ -77,10 +70,11 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->directory_delete_on_close = False;
-	string_set(&fsp->fsp_name,print_job_fname(SNUM(conn),jobid));
+	fsp->conn = conn;
+	string_set(&fsp->fsp_name,print_job_fname(jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
-	SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf);
+	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;
@@ -95,9 +89,6 @@ print a file - called on closing the file
 ****************************************************************************/
 void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
-	uint32 jobid;
-	int snum;
-
 	if (fsp->share_mode == FILE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
@@ -106,15 +97,9 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 		sys_ftruncate(fsp->fd, 0);
 	}
 
+	print_job_end(fsp->print_jobid, normal_close);
+
 	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);
 	}
-
-	if (!rap_to_pjobid(fsp->rap_print_jobid, &snum, &jobid)) {
-		DEBUG(3,("print_fsp_end: Unable to convert RAP jobid %u to print jobid.\n",
-			(unsigned int)fsp->rap_print_jobid ));
-		return;
-	}
-
-	print_job_end(SNUM(fsp->conn),jobid, normal_close);
 }

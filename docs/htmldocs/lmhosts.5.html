@@ -1,0 +1,214 @@
+<HTML
+><HEAD
+><TITLE
+>lmhosts</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="LMHOSTS"
+>lmhosts</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>lmhosts&nbsp;--&nbsp;The Samba NetBIOS hosts file</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><TT
+CLASS="FILENAME"
+>lmhosts</TT
+> is the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> NetBIOS name to IP address mapping file.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN12"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This file is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><TT
+CLASS="FILENAME"
+>lmhosts</TT
+> is the <EM
+>Samba
+	</EM
+> NetBIOS name to IP address mapping file.  It 
+	is very similar to the <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> file 
+	format, except that the hostname component must correspond 
+	to the NetBIOS naming format.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN20"
+></A
+><H2
+>FILE FORMAT</H2
+><P
+>It is an ASCII file containing one line for NetBIOS name. 
+	The two fields on each line are separated from each other by 
+	white space. Any entry beginning with '#' is ignored. Each line 
+	in the lmhosts file contains the following information :</P
+><P
+></P
+><UL
+><LI
+><P
+>IP Address - in dotted decimal format.</P
+></LI
+><LI
+><P
+>NetBIOS Name - This name format is a 
+		maximum fifteen character host name, with an optional 
+		trailing '#' character followed by the NetBIOS name type 
+		as two hexadecimal digits.</P
+><P
+>If the trailing '#' is omitted then the given IP 
+		address will be returned for all names that match the given 
+		name, whatever the NetBIOS name type in the lookup.</P
+></LI
+></UL
+><P
+>An example follows :</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>#
+# Sample Samba lmhosts file.
+#
+192.9.200.1	TESTPC
+192.9.200.20	NTSERVER#20
+192.9.200.21	SAMBASERVER
+	</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Contains three IP to NetBIOS name mappings. The first 
+	and third will be returned for any queries for the names "TESTPC" 
+	and "SAMBASERVER" respectively, whatever the type component of 
+	the NetBIOS name requested.</P
+><P
+>The second mapping will be returned only when the "0x20" name 
+	type for a name "NTSERVER" is queried. Any other name type will not 
+	be resolved.</P
+><P
+>The default location of the <TT
+CLASS="FILENAME"
+>lmhosts</TT
+> file 
+	is in the same directory as the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+> 		
+	smb.conf(5)&#62;</A
+> file.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN37"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN40"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbclient(1)
+	</B
+></A
+>, <A
+HREF="smb.conf.5.html#NAMERESOLVEORDER"
+TARGET="_top"
+>	smb.conf(5)</A
+>, and <A
+HREF="smbpasswd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>	smbpasswd(8)</B
+></A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN48"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

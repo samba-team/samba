@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    handle unexpected packets
    Copyright (C) Andrew Tridgell 2000
    
@@ -146,7 +147,7 @@ check for a particular packet in the unexpected packet queue
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
 					 const char *mailslot_name)
 {
-	TDB_CONTEXT *tdb2;
+	TDB_CONTEXT *tdb2 = NULL;
 
 	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb2) return NULL;

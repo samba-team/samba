@@ -1,0 +1,378 @@
+<chapter id="pwencrypt">
+
+
+<chapterinfo>
+	<author>
+		<firstname>Jeremy</firstname><surname>Allison</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address>
+				<email>samba@samba.org</email>
+			</address>
+		</affiliation>
+	</author>
+	
+
+	<pubdate>19 Apr 1999</pubdate>
+</chapterinfo>
+	
+<title>LanMan and NT Password Encryption in Samba 2.x</title>
+
+
+<sect1>
+	<title>Introduction</title>
+	
+	<para>With the development of LanManager and Windows NT 
+	compatible password encryption for Samba, it is now able 
+	to validate user connections in exactly the same way as 
+	a LanManager or Windows NT server.</para>
+
+	<para>This document describes how the SMB password encryption 
+	algorithm works and what issues there are in choosing whether 
+	you want to use it. You should read it carefully, especially 
+	the part about security and the "PROS and CONS" section.</para>
+	
+</sect1>
+
+<sect1>
+	<title>How does it work?</title>
+
+	<para>LanManager encryption is somewhat similar to UNIX 
+	password encryption. The server uses a file containing a 
+	hashed value of a user's password.  This is created by taking 
+	the user's plaintext password, capitalising it, and either 
+	truncating to 14 bytes or padding to 14 bytes with null bytes. 
+	This 14 byte value is used as two 56 bit DES keys to encrypt 
+	a 'magic' eight byte value, forming a 16 byte value which is 
+	stored by the server and client. Let this value be known as 
+	the "hashed password".</para>
+	
+	<para>Windows NT encryption is a higher quality mechanism, 
+	consisting of doing an MD4 hash on a Unicode version of the user's 
+	password. This also produces a 16 byte hash value that is 
+	non-reversible.</para>
+
+	<para>When a client (LanManager, Windows for WorkGroups, Windows 
+	95 or Windows NT) wishes to mount a Samba drive (or use a Samba 
+	resource), it first requests a connection and negotiates the 
+	protocol that the client and server will use. In the reply to this 
+	request the Samba server generates and appends an 8 byte, random 
+	value - this is stored in the Samba server after the reply is sent 
+	and is known as the "challenge".  The challenge is different for 
+	every client connection.</para>
+
+	<para>The client then uses the hashed password (16 byte values 
+	described above), appended with 5 null bytes, as three 56 bit 
+	DES keys, each of which is used to encrypt the challenge 8 byte 
+	value, forming a 24 byte value known as the "response".</para>
+
+	<para>In the SMB call SMBsessionsetupX (when user level security 
+	is selected) or the call SMBtconX (when share level security is 
+	selected), the 24 byte response is returned by the client to the 
+	Samba server.  For Windows NT protocol levels the above calculation 
+	is done on both hashes of the user's password and both responses are 
+	returned in the SMB call, giving two 24 byte values.</para>
+
+	<para>The Samba server then reproduces the above calculation, using 
+	its own stored value of the 16 byte hashed password (read from the 
+	<filename>smbpasswd</filename> file - described later) and the challenge 
+	value that it kept from the negotiate protocol reply. It then checks 
+	to see if the 24 byte value it calculates matches the 24 byte value 
+	returned to it from the client.</para>
+
+	<para>If these values match exactly, then the client knew the 
+	correct password (or the 16 byte hashed value - see security note 
+	below) and is thus allowed access. If not, then the client did not 
+	know the correct password and is denied access.</para>
+
+	<para>Note that the Samba server never knows or stores the cleartext 
+	of the user's password - just the 16 byte hashed values derived from 
+	it. Also note that the cleartext password or 16 byte hashed values 
+	are never transmitted over the network - thus increasing security.</para>
+</sect1>
+
+<sect1>
+	<title>Important Notes About Security</title>
+	
+	<para>The unix and SMB password encryption techniques seem similar 
+	on the surface. This similarity is, however, only skin deep. The unix 
+	scheme typically sends clear text passwords over the network when 
+	logging in. This is bad. The SMB encryption scheme never sends the 
+	cleartext password over the network but it does store the 16 byte 
+	hashed values on disk. This is also bad. Why? Because the 16 byte hashed 
+	values are a "password equivalent". You cannot derive the user's 
+	password from them, but they could potentially be used in a modified 
+	client to gain access to a server. This would require considerable 
+	technical knowledge on behalf of the attacker but is perfectly possible. 
+	You should thus treat the smbpasswd file as though it contained the 
+	cleartext passwords of all your users. Its contents must be kept 
+	secret, and the file should be protected accordingly.</para>
+	
+	<para>Ideally we would like a password scheme which neither requires 
+	plain text passwords on the net or on disk. Unfortunately this 
+	is not available as Samba is stuck with being compatible with 
+	other SMB systems (WinNT, WfWg, Win95 etc). </para>
+
+	<warning>
+		<para>Note that Windows NT 4.0 Service pack 3 changed the 
+		default for permissible authentication so that plaintext 
+		passwords are <emphasis>never</emphasis> sent over the wire. 
+		The solution to this is either to switch to encrypted passwords 
+		with Samba or edit the Windows NT registry to re-enable plaintext 
+		passwords. See the document WinNT.txt for details on how to do 
+		this.</para>
+		
+		<para>Other Microsoft operating systems which also exhibit 
+		this behavior includes</para>
+		
+		<itemizedlist>
+			<listitem><para>MS DOS Network client 3.0 with 
+			the basic network redirector installed</para></listitem>
+			
+			<listitem><para>Windows 95 with the network redirector 
+			update installed</para></listitem>
+			
+			<listitem><para>Windows 98 [se]</para></listitem>
+			
+			<listitem><para>Windows 2000</para></listitem>
+		</itemizedlist>
+		
+		<para><emphasis>Note :</emphasis>All current release of 
+		Microsoft SMB/CIFS clients support authentication via the
+		SMB Challenge/Response mechanism described here.  Enabling
+		clear text authentication does not disable the ability
+		of the client to participate in encrypted authentication.</para>
+	</warning>
+
+	<sect2>
+		<title>Advantages of SMB Encryption</title>
+
+		<itemizedlist>
+			<listitem><para>plain text passwords are not passed across 
+			the network. Someone using a network sniffer cannot just 
+			record passwords going to the SMB server.</para>
+			</listitem>
+		 
+			<listitem><para>WinNT doesn't like talking to a server 
+			that isn't using SMB encrypted passwords. It will refuse 
+			to browse the server if the server is also in user level 
+			security mode. It will insist on prompting the user for the 
+			password on each connection, which is very annoying. The
+			only things you can do to stop this is to use SMB encryption.
+			</para></listitem>
+		</itemizedlist>
+	</sect2>
+
+
+	<sect2>
+		<title>Advantages of non-encrypted passwords</title>
+
+		<itemizedlist>
+			<listitem><para>plain text passwords are not kept 
+			on disk. </para></listitem>
+			
+			<listitem><para>uses same password file as other unix 
+			services such as login and ftp</para></listitem>
+			
+			<listitem><para>you are probably already using other 
+			services (such as telnet and ftp) which send plain text 
+			passwords over the net, so sending them for SMB isn't 
+			such a big deal.</para></listitem>
+		</itemizedlist>
+	</sect2>
+</sect1>
+
+
+<sect1>
+	<title><anchor id="SMBPASSWDFILEFORMAT">The smbpasswd file</title>
+	
+	<para>In order for Samba to participate in the above protocol 
+	it must be able to look up the 16 byte hashed values given a user name.
+	Unfortunately, as the UNIX password value is also a one way hash
+	function (ie. it is impossible to retrieve the cleartext of the user's
+	password given the UNIX hash of it), a separate password file
+	containing this 16 byte value must be kept. To minimise problems with
+	these two password files, getting out of sync, the UNIX <filename>
+	/etc/passwd</filename> and the <filename>smbpasswd</filename> file, 
+	a utility, <command>mksmbpasswd.sh</command>, is provided to generate
+	a smbpasswd file from a UNIX <filename>/etc/passwd</filename> file.
+	</para
+
+
+	<para>To generate the smbpasswd file from your <filename>/etc/passwd
+	</filename> file use the following command :</para>
+	
+	<para><prompt>$ </prompt><userinput>cat /etc/passwd | mksmbpasswd.sh
+	&gt; /usr/local/samba/private/smbpasswd</userinput></para>
+	
+	<para>If you are running on a system that uses NIS, use</para>
+
+	<para><prompt>$ </prompt><userinput>ypcat passwd | mksmbpasswd.sh
+	&gt; /usr/local/samba/private/smbpasswd</userinput></para>
+	
+	<para>The <command>mksmbpasswd.sh</command> program is found in 
+	the Samba source directory. By default, the smbpasswd file is 
+	stored in :</para>
+
+	<para><filename>/usr/local/samba/private/smbpasswd</filename></para>
+
+	<para>The owner of the <filename>/usr/local/samba/private/</filename> 
+	directory should be set to root, and the permissions on it should 
+	be set to 0500 (<command>chmod 500 /usr/local/samba/private</command>).
+	</para>
+
+	<para>Likewise, the smbpasswd file inside the private directory should 
+	be owned by root and the permissions on is should be set to 0600
+	(<command>chmod 600 smbpasswd</command>).</para>
+
+
+	<para>The format of the smbpasswd file is (The line has been 
+	wrapped here. It should appear as one entry per line in 
+	your smbpasswd file.)</para>
+	
+	<para><programlisting>
+username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
+	[Account type]:LCT-&lt;last-change-time&gt;:Long name
+	</programlisting></para>
+	
+	<para>Although only the <replaceable>username</replaceable>, 
+	<replaceable>uid</replaceable>, <replaceable>
+	XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</replaceable>,
+	[<replaceable>Account type</replaceable>] and <replaceable>
+	last-change-time</replaceable> sections are significant 
+	and are looked at in the Samba code.</para>
+
+	<para>It is <emphasis>VITALLY</emphasis> important that there by 32 
+	'X' characters between the two ':' characters in the XXX sections - 
+	the smbpasswd and Samba code will fail to validate any entries that 
+	do not have 32 characters  between ':' characters. The first XXX 
+	section is for the Lanman password hash, the second is for the 
+	Windows NT version.</para>
+
+	<para>When the password file is created all users have password entries
+	consisting of 32 'X' characters. By default this disallows any access
+	as this user. When a user has a password set, the 'X' characters change
+	to 32 ascii hexadecimal digits (0-9, A-F). These are an ascii
+	representation of the 16 byte hashed value of a user's password.</para>
+
+	<para>To set a user to have no password (not recommended), edit the file
+	using vi, and replace the first 11 characters with the ascii text
+	<constant>"NO PASSWORD"</constant> (minus the quotes).</para>
+
+	<para>For example, to clear the password for user bob, his smbpasswd file 
+	entry would look like :</para>
+
+	<para><programlisting>
+	bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
+	</programlisting></para>
+	
+	<para>If you are allowing users to use the smbpasswd command to set 
+	their own passwords, you may want to give users NO PASSWORD initially 
+	so they do not have to enter a previous password when changing to their 
+	new password (not recommended). In order for you to allow this the
+	<command>smbpasswd</command> program must be able to connect to the 
+	<command>smbd</command> daemon as that user with no password. Enable this 
+	by adding the line :</para>
+
+	<para><command>null passwords = yes</command></para>
+	
+	<para>to the [global] section of the smb.conf file (this is why 
+	the above scenario is not recommended). Preferably, allocate your
+	users a default password to begin with, so you do not have
+	to enable this on your server.</para>
+
+	<para><emphasis>Note : </emphasis>This file should be protected very 
+	carefully. Anyone with access to this file can (with enough knowledge of 
+	the protocols) gain access to your SMB server. The file is thus more 
+	sensitive than a normal unix <filename>/etc/passwd</filename> file.</para>
+</sect1>
+
+
+<sect1>
+	<title>The smbpasswd Command</title>
+	
+	<para>The smbpasswd command maintains the two 32 byte password fields 
+	in the smbpasswd file. If you wish to make it similar to the unix 
+	<command>passwd</command> or <command>yppasswd</command> programs, 
+	install it in <filename>/usr/local/samba/bin/</filename> (or your 
+	main Samba binary directory).</para>
+
+	<para>Note that as of Samba 1.9.18p4 this program <emphasis>MUST NOT 
+	BE INSTALLED</emphasis> setuid root (the new <command>smbpasswd</command> 
+	code enforces this restriction so it cannot be run this way by 
+	accident).</para>
+
+	<para><command>smbpasswd</command> now works in a client-server mode 
+	where it contacts the local smbd to change the user's password on its 
+	behalf. This has enormous benefits - as follows.</para>
+
+	<itemizedlist>
+		<listitem><para>smbpasswd no longer has to be setuid root - 
+		an enormous range of potential security problems is 
+		eliminated.</para></listitem>
+		
+		<listitem><para><command>smbpasswd</command> now has the capability 
+		to change passwords on Windows NT servers (this only works when 
+		the request is sent to the NT Primary Domain Controller if you 
+		are changing an NT Domain user's password).</para></listitem>
+	</itemizedlist>
+	
+	<para>To run smbpasswd as a normal user just type :</para>
+	
+	<para><prompt>$ </prompt><userinput>smbpasswd</userinput></para>
+	<para><prompt>Old SMB password: </prompt><userinput>&lt;type old value here - 
+	or hit return if there was no old password&gt;</userinput></para>
+	<para><prompt>New SMB Password: </prompt><userinput>&lt;type new value&gt;
+	</userinput></para>
+	<para><prompt>Repeat New SMB Password: </prompt><userinput>&lt;re-type new value
+	</userinput></para>
+	
+	<para>If the old value does not match the current value stored for 
+	that user, or the two new values do not match each other, then the 
+	password will not be changed.</para>
+	
+	<para>If invoked by an ordinary user it will only allow the user 
+	to change his or her own Samba password.</para>
+	
+	<para>If run by the root user smbpasswd may take an optional 
+	argument, specifying the user name whose SMB password you wish to 
+	change.  Note that when run as root smbpasswd does not prompt for 
+	or check the old password value, thus allowing root to set passwords 
+	for users who have forgotten their passwords.</para>
+	
+	<para><command>smbpasswd</command> is designed to work in the same way 
+	and be familiar to UNIX users who use the <command>passwd</command> or 
+	<command>yppasswd</command> commands.</para>
+
+	<para>For more details on using <command>smbpasswd</command> refer 
+	to the man page which will always be the definitive reference.</para>
+</sect1>
+
+
+<sect1>
+	<title>Setting up Samba to support LanManager Encryption</title>
+
+	<para>This is a very brief description on how to setup samba to 
+	support password encryption. </para>
+	
+	<orderedlist numeration="Arabic">
+		<listitem><para>compile and install samba as usual</para>
+		</listitem>
+		
+		<listitem><para>enable encrypted passwords in <filename>
+		smb.conf</filename> by adding the line <command>encrypt 
+		passwords = yes</command> in the [global] section</para>
+		</listitem>
+		
+		<listitem><para>create the initial <filename>smbpasswd</filename>
+		password file in the place you specified in the Makefile 
+		(--prefix=&lt;dir&gt;). See the notes under the <link
+		linkend="SMBPASSWDFILEFORMAT">The smbpasswd File</link>
+		section earlier in the document for details.</para>
+		</listitem>
+	</orderedlist>
+	
+	<para>Note that you can test things using smbclient.</para> 
+</sect1>
+
+</chapter>

@@ -1,43 +1,31 @@
-CC		= @CC@
-CFLAGS		= @CFLAGS@
-CPPFLAGS	= @CPPFLAGS@
-LDFLAGS		= @LDFLAGS@
-LDSHFLAGS	= @LDSHFLAGS@
-INSTALLCMD	= @INSTALL@
-SAMBA_SOURCE	= @SAMBA_SOURCE@
-SHLIBEXT	= @SHLIBEXT@
-OBJEXT		= @OBJEXT@ 
-FLAGS		=  $(CFLAGS) -Iinclude -I$(SAMBA_SOURCE)/include -I$(SAMBA_SOURCE)/ubiqx -I$(SAMBA_SOURCE)/smbwrapper  -I. $(CPPFLAGS) -I$(SAMBA_SOURCE)
+##########################################################################
+# Makefile.in for Samba VFS modules 
+###########################################################################
 
+CC=@CC@
+LIBTOOL=@LIBTOOL@
+CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
 
-prefix		= @prefix@
-libdir		= @libdir@
+VFS_OBJS=audit.so skel.so block/block.so recycle/recycle.so
 
-VFS_LIBDIR	= $(libdir)/vfs
+SHELL=/bin/sh
 
-# Auto target
-default: $(patsubst %.c,%.$(SHLIBEXT),$(wildcard *.c))
+default: $(VFS_OBJS)
 
 # Pattern rules
 
-%.$(SHLIBEXT): %.$(OBJEXT)
-	@echo "Linking $@"
-	@$(CC) $(LDSHFLAGS) $(LDFLAGS) -o $@ $<
+%.so: %.lo
+	@echo Linking $<
+	@$(LIBTOOL) --mode=link $(CC) -o $@ $< $(LDFLAGS)
 
-%.$(OBJEXT): %.c
-	@echo "Compiling $<"
-	@$(CC) $(FLAGS) -c $<
-
-
-install: default
-	$(INSTALLCMD) -d $(VFS_LIBDIR)
-	$(INSTALLCMD) -m 755 *.$(SHLIBEXT) $(VFS_LIBDIR)
+%.lo: %.c
+	@echo Compiling $<
+	@$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Misc targets
-clean:
-	rm -rf .libs
-	rm -f core *~ *% *.bak *.o *.$(SHLIBEXT)
 
-distclean: clean
-	rm config.* Makefile
+clean:
+	rm -rf .libs */.libs
+	rm -f core *~ *% *.bak *.o */*.o *.lo $(VFS_OBJS)
 

@@ -21,11 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
 #include "winbindd.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
 
 /* Use our own create socket code so we don't recurse.... */
 
@@ -87,31 +83,26 @@ static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
-	struct ip_service *ret = NULL;
-	struct in_addr *return_ip;
-	int j, i, flags = 0;
+	struct in_addr *ret = NULL;
+	struct in_addr  p;
+	int j, flags;
 
 	*count = 0;
 
-	/* always try with wins first */
-	if (resolve_wins(name,0x20,&ret,count)) {
-		if ( count == 0 )
-			return NULL;
-		if ( (return_ip = (struct in_addr *)malloc((*count)*sizeof(struct in_addr))) == NULL ) {
-			free( ret );
-			return NULL;
-		}
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1)
+		return NULL;
 
-		/* copy the IP addresses */
-		for ( i=0; i<(*count); i++ ) 
-			return_ip[i] = ret[i].ip;
-		
-		return return_ip;
+	p = wins_srv_ip();
+	if( !is_zero_ip(p) ) {
+		ret = name_query(fd,name,0x20,False,True, p, count, &flags);
+		goto out;
 	}
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1) {
-		return NULL;
+	if (lp_wins_support()) {
+		/* we are our own WINS server */
+		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count, &flags);
+		goto out;
 	}
 
 	/* uggh, we have to broadcast to each interface in turn */
@@ -119,12 +110,14 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	     j >= 0;
 	     j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
-		return_ip = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
-		if (return_ip) break;
+		ret = name_query(fd,name,0x20,True,True,*bcast,count, &flags);
+		if (ret) break;
 	}
 
+ out:
+
 	close(fd);
-	return return_ip;
+	return ret;
 }
 
 /* Get hostname from IP  */
@@ -135,10 +128,7 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 	int i, count, maxlen, size;
 	struct node_status *status;
 
-	/* Ensure null termination */
-	state->request.data.winsreq[sizeof(state->request.data.winsreq)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: wins_byip %s\n", (unsigned long)state->pid,
+	DEBUG(3, ("[%5d]: wins_byip %s\n", state->pid,
 		state->request.data.winsreq));
 
 	*response = '\0';
@@ -150,8 +140,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 		SAFE_FREE(status);
 		return WINBINDD_ERROR;
 	    }
-	    fstrcat(response,state->request.data.winsreq);
-	    fstrcat(response,"\t");
+	    safe_strcat(response,state->request.data.winsreq,maxlen);
+	    safe_strcat(response,"\t",maxlen);
 	    for (i = 0; i < count; i++) {
 		/* ignore group names */
 		if (status[i].flags & 0x80) continue;
@@ -161,8 +151,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 			    SAFE_FREE(status);
 			    return WINBINDD_ERROR;
 			}
-			fstrcat(response, status[i].name);
-			fstrcat(response, " ");
+			safe_strcat(response, status[i].name, maxlen);
+			safe_strcat(response, " ", maxlen);
 		}
 	    }
 	    /* make last character a newline */
@@ -182,10 +172,7 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 	fstring response;
 	char * addr;
 
-	/* Ensure null termination */
-	state->request.data.winsreq[sizeof(state->request.data.winsreq)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: wins_byname %s\n", (unsigned long)state->pid,
+	DEBUG(3, ("[%5d]: wins_byname %s\n", state->pid,
 		state->request.data.winsreq));
 
 	*response = '\0';
@@ -201,21 +188,18 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 		    }
 		    if (i != 0) {
 			/* Clear out the newline character */
-		        /* But only if there is something in there, 
-			   otherwise we clobber something in the stack */
-			if (strlen(response))
-				response[strlen(response)-1] = ' '; 
+			response[strlen(response)-1] = ' '; 
 		    }
-		    fstrcat(response,addr);
-		    fstrcat(response,"\t");
+		    safe_strcat(response,addr,maxlen);
+		    safe_strcat(response,"\t",maxlen);
 		}
 		size = strlen(state->request.data.winsreq) + strlen(response);
 		if (size > maxlen) {
 		    SAFE_FREE(ip_list);
 		    return WINBINDD_ERROR;
 		}   
-		fstrcat(response,state->request.data.winsreq);
-		fstrcat(response,"\n");
+		safe_strcat(response,state->request.data.winsreq,maxlen);
+		safe_strcat(response,"\n",maxlen);
 		SAFE_FREE(ip_list);
 	} else
 		return WINBINDD_ERROR;

@@ -1,0 +1,59 @@
+<html>
+<head>
+<meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type">
+<title>Configuring Samba on SCO OpenServer systems</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.48">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article">
+<div class="titlepage">
+<div><h2 class="title">
+<a name="id2744732"></a>Configuring Samba on SCO OpenServer systems</h2></div>
+<hr>
+</div>
+<p>After installing Samba, you must configure and activate it.  To
+do so, run the command <b>mkdev samba</b>.  When prompted, enter the appropriate information in these categories:  </p>
+<div class="variablelist"><dl>
+<dt><span class="term"><i><tt>Workgroup Name/NT-Domain</tt></i></span></dt>
+<dd><p>Default:  <tt>MYGROUP</tt>
+</p></dd>
+<dt><span class="term"><i><tt>Machine name</tt></i></span></dt>
+<dd><p>Default:  your system's name as reported by  the <b>uname -n</b> command,
+  capitalized.  For example, <tt>MYSYSTEM</tt>.</p></dd>
+<dt><span class="term"><i><tt>Windows Internet Naming Service (WINS)</tt></i> usage</span></dt>
+<dd>
+<p>Whether your network uses the Windows Internet Naming Service (WINS).  The use of WINS is recommended; failure to do so may significantly
+  increase your network traffic.  However, some sites are unable to use it
+  because, for example, of security policies.</p>
+<p>If you are using WINS, you will be asked whether your machine is intended
+to be the WINS server for your network. If some other machine will be the
+WINS server, you will be asked for its IP address.</p>
+<div class="note" style="margin-left: 0.5in; margin-right: 0.5in;">
+<h3 class="title">Note</h3>
+<p>A network may
+not have more than one WINS server.  If any other machine will be acting as
+the WINS server, your machine cannot do so.</p>
+</div>
+</dd>
+<dt><span class="term"><i><tt>Network interface(s)</tt></i></span></dt>
+<dd><p>The network interface(s) over which will Samba run.  For example, <tt>net0</tt>.</p></dd>
+<dt><span class="term"><i><tt>Microsoft
+  Security Domain or Active Directory</tt></i> usage</span></dt>
+<dd>
+<p>Whether your system is being installed into an already-existing Microsoft
+  Security Domain or Active Directory.</p>
+<div class="itemizedlist"><ul type="disc">
+<li><p>If <tt>Yes</tt>, you will be asked for the name of the Primary
+    Domain Controller.</p></li>
+<li><p>
+  If <tt>No</tt>, you will be asked whether <span class="emphasis"><i>your system</i></span> will be
+    the Primary Domain Controller. </p></li>
+</ul></div>
+</dd>
+</dl></div>
+<p>From the answers to these questions, an initial <a href="./smb.conf.5.html" target="_top"><tt>smb.conf</tt></a> file will be
+created that should work in most circumstances.  Additional configuration
+should be completed using the <a href="./swat.8.html" target="_top"><b>swat</b></a> utility.</p>
+<p>Once this initial configuration is complete, Samba will automatically be
+launched at boot time.</p>
+</div></body>
+</html>

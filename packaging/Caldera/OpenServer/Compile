@@ -1,0 +1,57 @@
+#!/bin/ksh
+#
+# invoke with -n as the first argument to get this script to tell
+# you what it would do without doing anything
+#
+
+V=
+[ "$1" = "-n" ] && V=echo
+
+CC="gcc"
+CFLAGS="-O3"
+CXX="g++"
+CXXFLAGS="-O3"
+RANLIB=true
+MAKE=/usr/gnu/bin/make
+if [ "$V" = "echo" ]
+then
+    echo "exporting the following shell variables:"
+    echo "CC=$CC"
+    echo "CXX=$CXX"
+    echo "RANLIB=$RANLIB"
+    echo "MAKE=$MAKE"
+    echo "CFLAGS=$CFLAGS"
+    echo "CXXFLAGS=$CXXFLAGS"
+else
+    export CC CXX RANLIB MAKE CFLAGS CXXFLAGS
+fi
+
+if [ "$V" = "echo" ]
+then
+    echo "cd ../../../source"
+    echo "rm -f mout-1 mout-2 mout-3 mout-4"
+    echo "make all 2>&1 | tee mout-1"
+    echo "make smbfilter debug2html 2>&1 | tee mout-2"
+    echo "make bin/smbspool bin/wbinfo 2>&1 | tee mout-3"
+    echo "cd ../examples/VFS"
+    echo "rm -f mout-1"
+    echo "gmake 2>&1 | tee mout-1"
+    echo "cd block"
+    echo "rm -f mout-1"
+    echo "gmake 2>&1 | tee mout-1"
+else
+    cd ../../../source
+    rm -f mout-1 mout-2 mout-3 mout-4
+    make all 2>&1 | tee mout-1
+    make smbfilter debug2html 2>&1 | tee mout-2
+    make bin/smbspool bin/wbinfo 2>&1 | tee mout-3
+    cd ../examples/VFS
+    rm -f mout-1
+    gmake 2>&1 | tee mout-1
+fi
+#
+# Not building :
+#     nsswitch - no <nss.h>
+#     rpctorture - improper use of client_info struct, dunno
+#     smbtorture, locktest, locktest2, masktest - used for dev. only
+#     smbwrapper, smbsh - untested and unlikely to work on osr5

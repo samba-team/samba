@@ -1,11 +1,17 @@
-#!/bin/sh -e
+#!/bin/sh
 #
 #
 
 if [ "$1" = purge ]; then
 
-	# Remove Samba's state files, both volatile and non-volatile
-	rm -Rf /var/run/samba/ /var/cache/samba/ /var/lib/samba
+	# Remove WINS.DAT, BROWSE.DAT and lock information file
+	rm -Rf /var/samba/
+
+	# Remove any files in the old and obsolete /var/lock/samba directory
+	rm -Rf /var/lock/samba/
+
+	# Remove files left in /etc/samba/
+	rm -Rf /etc/samba/MACHINE.SID
 
 	# Remove log files
 	rm -Rf /var/log/samba/
@@ -16,11 +22,13 @@ if [ "$1" = purge ]; then
 
 	# Remove NetBIOS entries from /etc/inetd.conf
 	update-inetd --remove netbios-ssn
+	update-inetd --remove netbios-ns
 
+	update-rc.d samba remove >/dev/null
 else
 	# Not purging, do not remove NetBIOS entries from /etc/inetd.conf
 	update-inetd --disable netbios-ssn
-
+	update-inetd --disable netbios-ns
 fi
 
 #DEBHELPER#

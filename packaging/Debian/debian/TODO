@@ -1,4 +1,8 @@
-Nothing in our list right now.
+In no particular order:
 
-Debian Samba Maintainers.-
-Sun Apr  6 01:34:21 EST 2003
+- Fix stuff in packaging/Debian/ (add infrastructure for stable
+  builds)
+- Compile with LDAP support.
+- Review /etc/init.d/samba (Brian White reports problems, should add
+  --oknodo to start-stop-daemon)
+

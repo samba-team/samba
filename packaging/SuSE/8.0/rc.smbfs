@@ -1,0 +1,48 @@
+#! /bin/bash
+# Copyright (c) 1996 SuSE GmbH Nuernberg, Germany.  All rights reserved.
+#
+# Author: Thomas Fehr <feedback@suse.de>, 1999
+#
+# /etc/init.d/smbfs
+#
+### BEGIN INIT INFO
+# Provides:       smbfs
+# Required-Start: $network $remote_fs syslog smb
+# Required-Stop:
+# Default-Start:  2 3 5
+# Default-Stop:
+# Description:    initscript for the smbclient
+### END INIT INFO
+
+smbfs=no
+if [ `cat /proc/mounts | grep " smbfs " | wc -l` -gt 0 ]
+then
+    smbfs=yes
+fi
+
+return=$rc_done
+case "$1" in
+    start|reload)
+	;;
+    stop)
+	if [ "$smbfs" = "yes" ]
+	then
+	    echo -n "Remove SMB File System"
+	    #
+	    # Unmount in background because during long timeouts
+	    #
+	    umount -at smbfs &
+	    sleep 2
+	    echo -e "$return"
+	fi
+	;;
+    restart)
+	$0 stop && $0 start || return=$rc_failed
+	;;
+    status)
+	;;
+    *)
+	echo "Usage: $0 {start|stop|status|reload|restart}"
+	exit 1
+esac
+exit 0

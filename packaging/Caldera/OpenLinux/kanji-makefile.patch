@@ -1,0 +1,11 @@
+--- source/Makefile.orig	Tue Jan 15 23:14:29 2002
++++ source/Makefile	Tue Jan 15 23:12:13 2002
+@@ -12,7 +12,7 @@
+ LIBS=-lcups  -ldl -lnsl -lpam
+ CC=gcc
+ SHLD=${CC} 
+-CFLAGS=-O -O2 -m486 -fno-strength-reduce 
++CFLAGS=-O -O2 -m486 -fno-strength-reduce -DKANJI=\"sjis\"
+ CPPFLAGS=-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE 
+ LDFLAGS=-s
+ AWK=mawk

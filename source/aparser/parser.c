@@ -460,12 +460,8 @@ realloc some memory for a parse structure
  ********************************************************************/
 BOOL io_realloc(char *name, io_struct *ps, void **ptr, unsigned size)
 {
-	BOOL ret = True;
-	void *tp;
-
-	tp = (void *)Realloc(*ptr, size);
-	if (tp) *ptr = tp;
-	else ret = False;
-	return ret;
+	(*ptr) = (void *)Realloc(*ptr, size);
+	if (*ptr) return True;
+	return False;
 }
 

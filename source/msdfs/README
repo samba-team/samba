@@ -1,0 +1,32 @@
+Setting up MS Dfs in Samba
+kalele@veritas.com March 2000
+
+Currently, MS Dfs support is a configure time parameter (--with-msdfs). Can be changed later to always compile it in..
+
+To have a server announce itself as a Dfs server, add a "host msdfs=yes" entry to smb.conf.
+
+To make a share a Dfs root, add a "msdfs root=yes" entry to the share definition 
+in the smb.conf file.
+e.g. 
+[pub]
+	path = /export/publicsmb
+	msdfs root = yes
+
+To create dfs volumes/junctions in the share, create symbolic links of the
+format msdfs:server1\share1,server2\share2 and so on.
+
+In the above example, create a dfs volume "dfsstorage" in the [pub] share as:
+cd /export/publicsmb
+ln -s msdfs:serverA\\share dfsstorage
+
+Clicking on dfsstorage from a dfs-aware client will show you the contents of 
+\\serverA\share
+
+Shares with "msdfs root = no" (which is the default) entries are served as normal 
+shares and the client stops talking Dfs with Samba after a tconX.
+
+NOTES: 
+* Windows clients need to be rebooted if a non-dfs root is made a dfs root or
+  vice versa. A better option is to introduce a new share and make it the dfs root.
+* Currently there's a restriction that msdfs symlink names should be all 
+  lowercase.

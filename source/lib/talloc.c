@@ -54,6 +54,27 @@
 
 #include "includes.h"
 
+struct talloc_chunk {
+	struct talloc_chunk *next;
+	size_t size;
+	void *ptr;
+};
+
+
+struct talloc_ctx {
+	struct talloc_chunk *list;
+	size_t total_alloc_size;
+
+	/** The name recorded for this pool, if any.  Should describe
+	 * the purpose for which it was allocated.  The string is
+	 * allocated within the pool. **/
+	char *name;
+
+	/** Pointer to the next allocate talloc pool, so that we can
+	 * summarize all talloc memory usage. **/
+	struct talloc_ctx *next_ctx;
+};
+
 
 /**
  * Start of linked list of all talloc pools.
@@ -61,7 +82,7 @@
  * @todo We should turn the global list off when using Insure++,
  * otherwise all the memory will be seen as still reachable.
  **/
-static TALLOC_CTX *list_head = NULL;
+TALLOC_CTX *list_head = NULL;
 
 
 /**
@@ -96,7 +117,7 @@ static void talloc_disenroll(TALLOC_CTX *t)
 
 
 /** Create a new talloc context. **/
-static TALLOC_CTX *talloc_init_internal(void)
+TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
 
@@ -115,27 +136,18 @@ static TALLOC_CTX *talloc_init_internal(void)
 
 /**
  * Create a new talloc context, with a name specifying its purpose.
+ * Please call this in preference to talloc_init().
  **/
-
- TALLOC_CTX *talloc_init(char const *fmt, ...) 
+ TALLOC_CTX *talloc_init_named(char const *fmt, ...) 
 {
 	TALLOC_CTX *t;
 	va_list ap;
 
-	t = talloc_init_internal();
+	t = talloc_init();
 	if (t && fmt) {
-		/*
-		 * t->name must not be talloced.
-		 * as destroying the pool would destroy it. JRA.
-		 */
-		t->name = NULL;
 		va_start(ap, fmt);
-		vasprintf(&t->name, fmt, ap);
+		t->name = talloc_vasprintf(t, fmt, ap);
 		va_end(ap);
-		if (!t->name) {
-			talloc_destroy(t);
-			t = NULL;
-		}
 	}
 	
 	return t;
@@ -222,7 +234,6 @@ void talloc_destroy(TALLOC_CTX *t)
 
 	talloc_destroy_pool(t);
 	talloc_disenroll(t);
-	SAFE_FREE(t->name);
 	memset(t, 0, sizeof(TALLOC_CTX));
 	SAFE_FREE(t);
 }
@@ -276,33 +287,6 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 		return NULL;
 }
 
-/** strdup_upper with a talloc */
-char *talloc_strdup_upper(TALLOC_CTX *t, const char *p)
-{
-	char *r;
-	if (p) {
-		char *q = strdup_upper(p);
-		if (q) { 
-			r = talloc_strdup(t, q);
-			SAFE_FREE(q);
-			return r;
-		} else {
-			return NULL;
-		}
-	} else {
-		return NULL;
-	}
-}
-
-/** strdup_w with a talloc */
-smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
-{
-	if (p)
-		return talloc_memdup(t, p, (strlen_w(p) + 1) * sizeof(smb_ucs2_t));
-	else
-		return NULL;
-}
-
 /**
  * Perform string formatting, and return a pointer to newly allocated
  * memory holding the result, inside a memory pool.
@@ -325,8 +309,7 @@ smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
 	char *ret;
 	va_list ap2;
 	
-	VA_COPY(ap2, ap);
-
+	VA_COPY(ap2, ap);  /* for systems were va_list is a struct */
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	ret = talloc(t, len+1);
@@ -369,7 +352,6 @@ smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
 	va_list ap2;
 
 	VA_COPY(ap2, ap);
-
 	s_len = strlen(s);
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
@@ -377,7 +359,6 @@ smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
 	if (!s) return NULL;
 
 	VA_COPY(ap2, ap);
-
 	vsnprintf(s+s_len, len+1, fmt, ap2);
 
 	return s;
@@ -418,7 +399,7 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 		if (it->name)
 			fstrcpy(what, it->name);
 		else
-			slprintf(what, sizeof(what), "@%p", it);
+			slprintf(what, sizeof what, "@%p", it);
 		
 		s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
 					   what,

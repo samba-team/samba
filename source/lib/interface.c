@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    multiple interface handling
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -26,7 +27,7 @@ static int total_probed;
 struct in_addr allones_ip;
 struct in_addr loopback_ip;
 
-static struct interface *local_interfaces;
+static struct interface *local_interfaces  = NULL;
 
 #define ALLONES  ((uint32)0xFFFFFFFF)
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
@@ -38,7 +39,8 @@ Try and find an interface that matches an ip. If we cannot, return NULL
 static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(ip)) return local_interfaces;
+	if (is_zero_ip(ip))
+		return local_interfaces;
 
 	for (i=local_interfaces;i;i=i->next)
 		if (CheckMask) {
@@ -94,18 +96,18 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 ****************************************************************************/
-static void interpret_interface(const char *token)
+static void interpret_interface(char *token)
 {
 	struct in_addr ip, nmask;
 	char *p;
 	int i, added=0;
 
-        zero_ip(&ip);
-        zero_ip(&nmask);
+	zero_ip(&ip);
+	zero_ip(&nmask);
 	
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
-		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
+		if (ms_fnmatch(token, probed_ifaces[i].name) == 0) {
 			add_interface(probed_ifaces[i].ip,
 				      probed_ifaces[i].netmask);
 			added = 1;
@@ -114,7 +116,7 @@ static void interpret_interface(const char *token)
 	if (added) return;
 
 	/* maybe it is a DNS name */
-	p = strchr_m(token,'/');
+	p = strchr(token,'/');
 	if (!p) {
 		ip = *interpret_addr2(token);
 		for (i=0;i<total_probed;i++) {
@@ -162,7 +164,8 @@ load the list of network interfaces
 ****************************************************************************/
 void load_interfaces(void)
 {
-	const char **ptr;
+	const char *ptr;
+	fstring token;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
 
@@ -190,7 +193,7 @@ void load_interfaces(void)
 
 	/* if we don't have a interfaces line then use all broadcast capable 
 	   interfaces except loopback */
-	if (!ptr || !*ptr || !**ptr) {
+	if (!ptr || !*ptr) {
 		if (total_probed <= 0) {
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 			exit(1);
@@ -205,11 +208,8 @@ void load_interfaces(void)
 		return;
 	}
 
-	if (ptr) {
-		while (*ptr) {
-			interpret_interface(*ptr);
-			ptr++;
-		}
+	while (next_token(&ptr,token,NULL,sizeof(token))) {
+		interpret_interface(token);
 	}
 
 	if (!local_interfaces) {
@@ -276,6 +276,19 @@ int iface_count(void)
 }
 
 /****************************************************************************
+ True if we have two or more interfaces.
+  **************************************************************************/
+BOOL we_are_multihomed(void)
+{
+	static int multi = -1;
+
+	if(multi == -1)
+		multi = (iface_count() > 1 ? True : False);
+	
+	return multi;
+}
+
+/****************************************************************************
   return the Nth interface
   **************************************************************************/
 struct interface *get_interface(int n)
@@ -318,21 +331,40 @@ struct in_addr *iface_n_bcast(int n)
 }
 
 
+/****************************************************************************
+this function provides a simple hash of the configured interfaces. It is
+used to detect a change in interfaces to tell us whether to discard
+the current wins.dat file.
+Note that the result is independent of the order of the interfaces
+  **************************************************************************/
+unsigned iface_hash(void)
+{
+	unsigned ret = 0;
+	struct interface *i;
+
+	for (i=local_interfaces;i;i=i->next) {
+		unsigned x1 = (unsigned)str_checksum(inet_ntoa(i->ip));
+		unsigned x2 = (unsigned)str_checksum(inet_ntoa(i->nmask));
+		ret ^= (x1 ^ x2);
+	}
+
+	return ret;
+}
+
+
 /* these 3 functions return the ip/bcast/nmask for the interface
    most appropriate for the given ip address. If they can't find
    an appropriate interface they return the requested field of the
    first known interface. */
 
+struct in_addr *iface_bcast(struct in_addr ip)
+{
+	struct interface *i = iface_find(ip, True);
+	return(i ? &i->bcast : &local_interfaces->bcast);
+}
+
 struct in_addr *iface_ip(struct in_addr ip)
 {
 	struct interface *i = iface_find(ip, True);
 	return(i ? &i->ip : &local_interfaces->ip);
-}
-
-/*
-  return True if a IP is directly reachable on one of our interfaces
-*/
-BOOL iface_local(struct in_addr ip)
-{
-	return iface_find(ip, True) ? True : False;
 }

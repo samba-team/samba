@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB client password change routine
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -20,6 +21,9 @@
 
 #include "includes.h"
 
+
+extern pstring global_myname;
+
 /*************************************************************
 change a password on a remote machine using IPC calls
 *************************************************************/
@@ -30,9 +34,6 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	struct nmb_name calling, called;
 	struct cli_state cli;
 	struct in_addr ip;
-	struct ntuser_creds creds;
-
-	NTSTATUS result;
 
 	*err_str = '\0';
 
@@ -50,7 +51,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		return False;
 	}
   
-	make_nmb_name(&calling, global_myname() , 0x0);
+	make_nmb_name(&calling, global_myname , 0x0);
 	make_nmb_name(&called , remote_machine, 0x20);
 	
 	if (!cli_session_request(&cli, &calling, &called)) {
@@ -69,28 +70,18 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		return False;
 	}
   
-	/* Given things like SMB signing, restrict anonymous and the like, 
-	   try an authenticated connection first */
-	if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd)+1, old_passwd, strlen(old_passwd)+1, "")) {
-		/*
-		 * We should connect as the anonymous user here, in case
-		 * the server has "must change password" checked...
-		 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
-		 */
+	/*
+	 * We should connect as the anonymous user here, in case
+	 * the server has "must change password" checked...
+	 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
+	 */
 
-		if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-			slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
-				 remote_machine, cli_errstr(&cli) );
-			cli_shutdown(&cli);
-			return False;
-		}
-
-		init_creds(&creds, "", "", NULL);
-		cli_init_creds(&cli, &creds);
-	} else {
-		init_creds(&creds, user_name, "", old_passwd);
-		cli_init_creds(&cli, &creds);
-	}
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}               
 
 	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
 		slprintf(err_str, err_str_len-1, "machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
@@ -99,54 +90,13 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		return False;
 	}
 
-	/* Try not to give the password away to easily */
-
-	cli.pipe_auth_flags = AUTH_PIPE_NTLMSSP;
-	cli.pipe_auth_flags |= AUTH_PIPE_SIGN;
-	cli.pipe_auth_flags |= AUTH_PIPE_SEAL;
+	if(!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
+		slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
+			remote_machine, cli_errstr(&cli) );
+		cli_shutdown(&cli);
+		return False;
+	}
 	
-	if ( !cli_nt_session_open( &cli, PI_SAMR ) ) {
-		if (lp_client_lanman_auth()) {
-			if (!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
-				slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
-					 remote_machine, cli_errstr(&cli) );
-				cli_shutdown(&cli);
-				return False;
-			}
-		} else {
-			slprintf(err_str, err_str_len-1, "machine %s does not support SAMR connections, but LANMAN password changed are disabled\n",
-				 remote_machine);
-			cli_shutdown(&cli);
-			return False;
-		}
-	}
-
-	if (!NT_STATUS_IS_OK(result = cli_samr_chgpasswd_user(&cli, cli.mem_ctx, user_name, 
-							      new_passwd, old_passwd))) {
-
-		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
-		    || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
-			/* try the old Lanman method */
-			if (lp_client_lanman_auth()) {
-				if (!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
-					slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
-						 remote_machine, cli_errstr(&cli) );
-					cli_shutdown(&cli);
-					return False;
-				}
-			} else {
-				slprintf(err_str, err_str_len-1, "machine %s does not support SAMR connections, but LANMAN password changed are disabled\n",
-					 remote_machine);
-				cli_shutdown(&cli);
-				return False;
-			}
-		} else {
-			slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
-				 remote_machine, get_friendly_nt_error_msg(result));
-			cli_shutdown(&cli);
-			return False;
-		}
-	}
 	cli_shutdown(&cli);
 	return True;
 }

@@ -1,0 +1,49 @@
+AC_INIT(global.ent)
+
+## check for the necesary install tools
+## Openjade includes 'onsgmls' while
+## the older jade package includes 'nsgmls'
+AC_PATH_PROG(JADE,openjade)
+
+if test -z "$JADE"; then
+	AC_PATH_PROG(JADE,jade)
+	AC_PATH_PROG(NSGMLS, nsgmls)
+else
+	AC_PATH_PROG(NSGMLS, onsgmls)
+fi
+
+AC_PATH_PROG(HTMLDOC, htmldoc)
+AC_PATH_PROG(SGMLSPL, sgmlspl)
+AC_PATH_PROG(PERL, perl)
+
+dnl ----------------------------------------------------------------
+dnl --with-sgml-share
+SGML_SHARE="/usr/local/share/sgml"
+
+AC_ARG_WITH(sgml-share,
+[  --with-sgml-share=DIR   change the default location of SGML stylesheets],
+[case "$withval" in
+        no) SGML_SHARE=""
+                ;;
+        yes)
+                ;;
+        /*|\\*)
+                SGML_SHARE="$withval"
+                ;;
+        *)
+                SGML_SHARE="/$withval"
+                ;;
+esac
+])dnl
+
+# The Makefile requires docbook2X in the share/sgml directory
+if [ ! test -f $SGML_SHARE/docbook2X/docbook2man-spec.pl ]; then
+	AC_MSG_ERROR("Unable to find dockbook2X. Make sure it is installed and that the sgml-share path is correct.")
+fi
+
+AC_SUBST(SGML_SHARE)dnl
+
+DOC_BUILD_DATE=`date '+%d-%m-%Y'`
+AC_SUBST(DOC_BUILD_DATE)
+
+AC_OUTPUT( Makefile stylesheets/ldp.dsl )

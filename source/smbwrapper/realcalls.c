@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    SMB wrapper functions for calls that syscall() can't do
    Copyright (C) Andrew Tridgell 1998
    

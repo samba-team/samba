@@ -1,0 +1,468 @@
+<HTML
+><HEAD
+><TITLE
+>smbsh</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBSH"
+>smbsh</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbsh&nbsp;--&nbsp;Allows access to Windows NT filesystem 
+	using UNIX commands</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>smbsh</B
+>  [-W workgroup] [-U username] [-P prefix] [-R &#60;name resolve order&#62;] [-d &#60;debug level&#62;] [-l logfile] [-L libdir]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN18"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>smbsh</B
+> allows you to access an NT filesystem 
+	using UNIX commands such as <B
+CLASS="COMMAND"
+>ls</B
+>, <B
+CLASS="COMMAND"
+>	egrep</B
+>, and <B
+CLASS="COMMAND"
+>rcp</B
+>. You must use a 
+	shell that is dynamically linked in order for <B
+CLASS="COMMAND"
+>smbsh</B
+> 
+	to work correctly.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN28"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-W WORKGROUP</DT
+><DD
+><P
+>Override the default workgroup specified in the 
+		workgroup parameter of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file 
+		for this session. This may be needed to connect to some 
+		servers. </P
+></DD
+><DT
+>-U username[%pass]</DT
+><DD
+><P
+>Sets the SMB username or username and password.
+		If this option is not specified, the user will be prompted for 
+		both the username and the password.  If %pass is not specified, 
+		the user will be prompted for the password.
+		</P
+></DD
+><DT
+>-P prefix</DT
+><DD
+><P
+>This option allows
+		the user to set the directory prefix for SMB access. The 
+		default value if this option is not specified is 
+		<EM
+>smb</EM
+>.
+		</P
+></DD
+><DT
+>-R &#60;name resolve order&#62;</DT
+><DD
+><P
+>This option is used to determine what naming 
+		services and in what order to resolve 
+		host names to IP addresses. The option takes a space-separated 
+		string of different name resolution options.</P
+><P
+>The options are :"lmhosts", "host", "wins" and "bcast". 
+		They cause names to be resolved as follows :</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>lmhosts</TT
+> : 
+			Lookup an IP address in the Samba lmhosts file. If the 
+			line in lmhosts has no name type attached to the 
+			NetBIOS name 
+			(see the <A
+HREF="lmhosts.5.html"
+TARGET="_top"
+>lmhosts(5)</A
+>
+			for details) then any name type matches for lookup.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>host</TT
+> : 
+			Do a standard host name to IP address resolution, using
+			the system <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+>, NIS, or DNS
+			lookups. This method of name resolution is operating 
+			system dependent, for instance on IRIX or Solaris this 
+			may be controlled by the <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf
+			</TT
+> file).  Note that this method is only used 
+			if the NetBIOS name type being queried is the 0x20 
+			(server) name type, otherwise it is ignored.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>wins</TT
+> : 
+			Query a name with the IP address listed in the 
+			<TT
+CLASS="PARAMETER"
+><I
+>wins server</I
+></TT
+> parameter.  If no 
+			WINS server has been specified this method will be 
+			ignored.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>bcast</TT
+> : 
+			Do a broadcast on each of the known local interfaces 
+			listed in the <TT
+CLASS="PARAMETER"
+><I
+>interfaces</I
+></TT
+>
+			parameter. This is the least reliable of the name 
+			resolution methods as it depends on the target host 
+			being on a locally connected subnet.
+			</P
+></LI
+></UL
+><P
+>If this parameter is not set then the name resolve order 
+		defined in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file parameter  
+		(name resolve order) will be used. </P
+><P
+>The default order is lmhosts, host, wins, bcast. Without 
+		this parameter or any entry in the <TT
+CLASS="PARAMETER"
+><I
+>name resolve order
+		</I
+></TT
+> parameter of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> 
+		file, the name resolution methods will be attempted in this 
+		order. </P
+></DD
+><DT
+>-d &#60;debug level&#62;</DT
+><DD
+><P
+>debug level is an integer from 0 to 10.</P
+><P
+>The default value if this parameter is not specified
+		is zero.</P
+><P
+>The higher this value, the more detail will be logged
+		about the activities of <B
+CLASS="COMMAND"
+>nmblookup</B
+>. At level
+		0, only critical errors and serious warnings will be logged.
+		</P
+></DD
+><DT
+>-l logfilename</DT
+><DD
+><P
+>If specified causes all debug messages to be
+		written to the file specified by <TT
+CLASS="REPLACEABLE"
+><I
+>logfilename
+		</I
+></TT
+>. If not specified then all messages will be 
+		written to<TT
+CLASS="REPLACEABLE"
+><I
+>stderr</I
+></TT
+>.
+		</P
+></DD
+><DT
+>-L libdir</DT
+><DD
+><P
+>This parameter specifies the location of the 
+		shared libraries used by <B
+CLASS="COMMAND"
+>smbsh</B
+>. The default
+		value is specified at compile time.
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN91"
+></A
+><H2
+>EXAMPLES</H2
+><P
+>To use the <B
+CLASS="COMMAND"
+>smbsh</B
+> command, execute <B
+CLASS="COMMAND"
+>	smbsh</B
+> from the prompt and enter the username and password 
+	that authenticates you to the machine running the Windows NT 
+	operating system.</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	<TT
+CLASS="PROMPT"
+>system% </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbsh</B
+></TT
+>
+	<TT
+CLASS="PROMPT"
+>Username: </TT
+><TT
+CLASS="USERINPUT"
+><B
+>user</B
+></TT
+>
+	<TT
+CLASS="PROMPT"
+>Password: </TT
+><TT
+CLASS="USERINPUT"
+><B
+>XXXXXXX</B
+></TT
+>
+	</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Any dynamically linked command you execute from 
+	this shell will access the <TT
+CLASS="FILENAME"
+>/smb</TT
+> directory 
+	using the smb protocol. For example, the command <B
+CLASS="COMMAND"
+>ls /smb
+	</B
+> will show a list of workgroups. The command 
+	<B
+CLASS="COMMAND"
+>ls /smb/MYGROUP </B
+> will show all the machines in 
+	the  workgroup MYGROUP. The command 
+	<B
+CLASS="COMMAND"
+>ls /smb/MYGROUP/&#60;machine-name&#62;</B
+> will show the share 
+	names for that machine. You could then, for example, use the <B
+CLASS="COMMAND"
+>	cd</B
+> command to change directories, <B
+CLASS="COMMAND"
+>vi</B
+> to 
+	edit files, and <B
+CLASS="COMMAND"
+>rcp</B
+>  to copy files.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN112"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN115"
+></A
+><H2
+>BUGS</H2
+><P
+><B
+CLASS="COMMAND"
+>smbsh</B
+> works by intercepting the standard 
+	libc calls with the dynamically loaded versions in <TT
+CLASS="FILENAME"
+>	smbwrapper.o</TT
+>. Not all calls have been "wrapped", so 
+	some programs may not function correctly under <B
+CLASS="COMMAND"
+>smbsh
+	</B
+>.</P
+><P
+>Programs which are not dynamically linked cannot make 
+	use of <B
+CLASS="COMMAND"
+>smbsh</B
+>'s functionality. Most versions 
+	of UNIX have a <B
+CLASS="COMMAND"
+>file</B
+> command that will 
+	describe how a program was linked.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN124"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>, 
+	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN130"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) John H Terpstra 1996-1998
@@ -86,7 +87,7 @@ typedef struct _SambaAfpInfo
 **
 ** We will be using infromation levels that are betwwen 0x300 and 0x399 for all Macintosh
 ** extentions calls. The first of these will be the SMB_MAC_QUERY_FS_INFO level which
-** will allow the server to return the MacQueryFSInfo structure. All fields are Little
+** will allow the server to return the MacQueryFSInfo structure. All feilds are Little
 ** Endian unless other wise specified.
 */
 #define SMB_MAC_QUERY_FS_INFO 0x301

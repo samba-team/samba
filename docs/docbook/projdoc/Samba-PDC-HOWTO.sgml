@@ -1,0 +1,1828 @@
+<chapter id="samba-pdc">
+
+
+<chapterinfo>
+	<author>
+		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
+		<affiliation>
+			<orgname>VA Linux Systems/Samba Team</orgname>
+			<address><email>jerry@samba.org</email></address>
+		</affiliation>
+		<firstname>David</firstname><surname>Bannon</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>dbannon@samba.org</email></address>
+		</affiliation>
+		
+	</author>
+	<pubdate> (26 Apr 2001) </pubdate>
+</chapterinfo>
+
+<title>
+How to Configure Samba 2.2 as a Primary Domain Controller
+</title>
+
+
+<!-- **********************************************************
+
+     Prerequisite Reading
+
+*************************************************************** -->
+<sect1>
+<title>Prerequisite Reading</title>
+
+<para>
+Before you continue reading in this chapter, please make sure 
+that you are comfortable with configuring basic files services
+in smb.conf and how to enable and administer password 
+encryption in Samba.  Theses two topics are covered in the
+<ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink> 
+manpage and the <ulink url="ENCRYPTION.html">Encryption chapter</ulink> 
+of this HOWTO Collection.
+</para>
+
+
+</sect1>
+
+
+
+<!-- **********************************************************
+
+     Background Information
+
+*************************************************************** -->
+<sect1>
+<title>
+Background
+</title>
+
+<note>
+<para>
+<emphasis>Author's Note:</emphasis> This document is a combination 
+of David Bannon's "Samba 2.2 PDC HOWTO" and "Samba NT Domain FAQ". 
+Both documents are superseded by this one.
+</para>
+</note>
+
+<para>
+Versions of Samba prior to release 2.2 had marginal capabilities to act
+as a Windows NT 4.0 Primary Domain Controller
+<indexterm><primary>Primary Domain Controller</primary></indexterm>
+(PDC).  With Samba 2.2.0, we are proud to announce official support for
+Windows NT 4.0-style domain logons from Windows NT 4.0 and Windows 
+2000 clients.  This article outlines the steps
+necessary for configuring Samba as a PDC.  It is necessary to have a
+working Samba server prior to implementing the PDC functionality.  If
+you have not followed the steps outlined in <ulink
+url="UNIX_INSTALL.html"> UNIX_INSTALL.html</ulink>, please make sure
+that your server is configured correctly before proceeding.  Another
+good resource in the <ulink url="smb.conf.5.html">smb.conf(5) man
+page</ulink>. The following functionality should work in 2.2:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	domain logons for Windows NT 4.0/2000 clients.
+	</para></listitem>
+	
+	<listitem><para>
+	placing a Windows 9x client in user level security
+	</para></listitem>
+	
+	<listitem><para>
+	retrieving a list of users and groups from a Samba PDC to
+	Windows 9x/NT/2000 clients
+	</para></listitem>
+	
+	<listitem><para>
+	roving (roaming) user profiles
+	</para></listitem>
+	
+	<listitem><para>
+	Windows NT 4.0-style system policies
+	</para></listitem>
+</itemizedlist>
+
+
+<para>
+The following pieces of functionality are not included in the 2.2 release:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Windows NT 4 domain trusts
+	</para></listitem>
+	
+	<listitem><para>
+	SAM replication with Windows NT 4.0 Domain Controllers
+	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
+	</para></listitem>
+	
+	<listitem><para>
+	Adding users via the User Manager for Domains
+	</para></listitem>
+
+	<listitem><para>
+	Acting as a Windows 2000 Domain Controller (i.e. Kerberos and 
+	Active Directory)
+	</para></listitem>
+</itemizedlist>
+
+<para>
+Please note that Windows 9x clients are not true members of a domain
+for reasons outlined in this article.  Therefore the protocol for
+support Windows 9x-style domain logons is completely different
+from NT4 domain logons and has been officially supported for some 
+time.
+</para>
+
+
+<para>
+Implementing a Samba PDC can basically be divided into 2 broad
+steps.
+</para>
+
+<orderedlist numeration="Arabic">
+	<listitem><para>
+	Configuring the Samba PDC
+	</para></listitem>
+	
+	<listitem><para>
+	Creating machine trust accounts	and joining clients 
+	to the domain
+	</para></listitem>
+</orderedlist>
+
+<para>
+There are other minor details such as user profiles, system
+policies, etc...  However, these are not necessarily specific
+to a Samba PDC as much as they are related to Windows NT networking
+concepts.  They will be mentioned only briefly here.
+</para>
+
+</sect1>
+
+
+<!-- **********************************************************
+
+     Configuring the Samba PDC
+
+*************************************************************** -->
+
+<sect1>
+<title>Configuring the Samba Domain Controller</title>
+
+<para>
+The first step in creating a working Samba PDC is to 
+understand the parameters necessary in smb.conf.  I will not
+attempt to re-explain the parameters here as they are more that
+adequately covered in <ulink url="smb.conf.5.html"> the smb.conf
+man page</ulink>.  For convenience, the parameters have been
+linked with the actual smb.conf description.
+</para>
+
+<para>
+Here is an example <filename>smb.conf</filename> for acting as a PDC:
+</para>
+
+<para><programlisting>
+[global]
+    ; Basic server settings
+    <ulink url="smb.conf.5.html#NETBIOSNAME">netbios name</ulink> = <replaceable>POGO</replaceable>
+    <ulink url="smb.conf.5.html#WORKGROUP">workgroup</ulink> = <replaceable>NARNIA</replaceable>
+
+    ; we should act as the domain and local master browser
+    <ulink url="smb.conf.5.html#OSLEVEL">os level</ulink> = 64
+    <ulink url="smb.conf.5.html#PERFERREDMASTER">preferred master</ulink> = yes
+    <ulink url="smb.conf.5.html#DOMAINMASTER">domain master</ulink> = yes
+    <ulink url="smb.conf.5.html#LOCALMASTER">local master</ulink> = yes
+    
+    ; security settings (must user security = user)
+    <ulink url="smb.conf.5.html#SECURITYEQUALSUSER">security</ulink> = user
+    
+    ; encrypted passwords are a requirement for a PDC
+    <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">encrypt passwords</ulink> = yes
+    
+    ; support domain logons
+    <ulink url="smb.conf.5.html#DOMAINLOGONS">domain logons</ulink> = yes
+    
+    ; where to store user profiles?
+    <ulink url="smb.conf.5.html#LOGONPATH">logon path</ulink> = \\%N\profiles\%u
+    
+    ; where is a user's home directory and where should it
+    ; be mounted at?
+    <ulink url="smb.conf.5.html#LOGONDRIVE">logon drive</ulink> = H:
+    <ulink url="smb.conf.5.html#LOGONHOME">logon home</ulink> = \\homeserver\%u
+    
+    ; specify a generic logon script for all users
+    ; this is a relative **DOS** path to the [netlogon] share
+    <ulink url="smb.conf.5.html#LOGONSCRIPT">logon script</ulink> = logon.cmd
+
+; necessary share for domain controller
+[netlogon]
+    <ulink url="smb.conf.5.html#PATH">path</ulink> = /usr/local/samba/lib/netlogon
+    <ulink url="smb.conf.5.html#READONLY">read only</ulink> = yes
+    <ulink url="smb.conf.5.html#WRITELIST">write list</ulink> = <replaceable>ntadmin</replaceable>
+    
+; share for storing user profiles
+[profiles]
+    <ulink url="smb.conf.5.html#PATH">path</ulink> = /export/smb/ntprofile
+    <ulink url="smb.conf.5.html#READONLY">read only</ulink> = no
+    <ulink url="smb.conf.5.html#CREATEMASK">create mask</ulink> = 0600
+    <ulink url="smb.conf.5.html#DIRECTORYMASK">directory mask</ulink> = 0700
+</programlisting></para>
+
+<para>
+There are a couple of points to emphasize in the above configuration.
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Encrypted passwords must be enabled.  For more details on how 
+	to do this, refer to <ulink url="ENCRYPTION.html">ENCRYPTION.html</ulink>.
+	</para></listitem>
+	
+	<listitem><para>
+	The server must support domain logons and a
+	<filename>[netlogon]</filename> share
+	</para></listitem>
+	
+	<listitem><para>
+	The server must be the domain master browser in order for Windows 
+	client to locate the server as a DC.  Please refer to the various 
+	Network Browsing documentation included with this distribution for 
+	details.
+	</para></listitem>
+</itemizedlist>    
+
+<para>
+As Samba 2.2 does not offer a complete implementation of group mapping
+between Windows NT groups and Unix groups (this is really quite
+complicated to explain in a short space), you should refer to the
+<ulink url="smb.conf.5.html#DOMAINADMINGROUP">domain admin
+group</ulink> smb.conf parameter for information of creating "Domain
+Admins" style accounts.
+</para>
+
+</sect1>
+
+
+<sect1>
+<title>Creating Machine Trust Accounts and Joining Clients to the
+Domain</title>
+
+<para>
+A machine trust account is a Samba account that is used to
+authenticate a client machine (rather than a user) to the Samba
+server.  In Windows terminology, this is known as a "Computer
+Account."</para>
+
+<para>
+The password of a machine trust account acts as the shared secret for
+secure communication with the Domain Controller.  This is a security
+feature to prevent an unauthorized machine with the same NetBIOS name
+from joining the domain and gaining access to domain user/group
+accounts.  Windows NT and 2000 clients use machine trust accounts, but
+Windows 9x clients do not.  Hence, a Windows 9x client is never a true
+member of a domain because it does not possess a machine trust
+account, and thus has no shared secret with the domain controller.
+</para>
+
+<para>A Windows PDC stores each machine trust account in the Windows
+Registry.  A Samba PDC, however, stores each machine trust account 
+in two parts, as follows:
+
+<itemizedlist>
+    <listitem><para>A Samba account, stored in the same location as user
+    LanMan and NT password hashes (currently
+    <filename>smbpasswd</filename>). The Samba account 
+    possesses and uses only the NT password hash.</para></listitem>
+
+    <listitem><para>A corresponding Unix account, typically stored in
+    <filename>/etc/passwd</filename>. (Future releases will alleviate the need to
+    create <filename>/etc/passwd</filename> entries.) </para></listitem>
+</itemizedlist>
+</para>
+
+<para>
+There are two ways to create machine trust accounts:
+</para>
+
+<itemizedlist>
+	<listitem><para> Manual creation. Both the Samba and corresponding
+	Unix account are created by hand.</para></listitem>
+	
+	<listitem><para> "On-the-fly" creation. The Samba machine trust
+	account is automatically created by Samba at the time the client
+	is joined to the domain. (For security, this is the
+	recommended method.) The corresponding Unix account may be
+	created automatically or manually. </para>
+	</listitem>
+
+</itemizedlist>
+
+<sect2>
+<title>Manual Creation of Machine Trust Accounts</title>
+
+<para>
+The first step in manually creating a machine trust account is to
+manually create the corresponding Unix account in
+<filename>/etc/passwd</filename>.  This can be done using
+<command>vipw</command> or other 'add user' command that is normally
+used to create new Unix accounts.  The following is an example for a
+Linux based Samba server:
+</para>
+
+<para>
+  <prompt>root# </prompt><command>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>"machine 
+nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ </command>
+</para>
+<para>
+<prompt>root# </prompt><command>passwd -l <replaceable>machine_name</replaceable>$</command>
+</para>
+
+<para>
+The <filename>/etc/passwd</filename> entry will list the machine name 
+with a "$" appended, won't have a password, will have a null shell and no 
+home directory. For example a machine named 'doppy' would have an 
+<filename>/etc/passwd</filename> entry like this:
+</para>
+
+<para><programlisting>
+doppy$:x:505:501:<replaceable>machine_nickname</replaceable>:/dev/null:/bin/false
+</programlisting></para>
+
+<para>
+Above, <replaceable>machine_nickname</replaceable> can be any
+descriptive name for the client, i.e., BasementComputer.
+<replaceable>machine_name</replaceable> absolutely must be the NetBIOS
+name of the client to be joined to the domain.  The "$" must be
+appended to the NetBIOS name of the client or Samba will not recognize
+this as a machine trust account.
+</para>
+
+
+<para>
+Now that the corresponding Unix account has been created, the next step is to create 
+the Samba account for the client containing the well-known initial 
+machine trust account password.  This can be done using the <ulink 
+url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> command 
+as shown here:
+</para>
+
+<para>
+<prompt>root# </prompt><command>smbpasswd -a -m <replaceable>machine_name</replaceable></command>
+</para>
+
+<para>
+where <replaceable>machine_name</replaceable> is the machine's NetBIOS
+name.  The RID of the new machine account is generated from the UID of 
+the corresponding Unix account.
+</para>
+
+<warning>
+	<title>Join the client to the domain immediately</title>
+
+	<para>
+	Manually creating a machine trust account using this method is the 
+	equivalent of creating a machine trust account on a Windows NT PDC using 
+	the "Server Manager".  From the time at which the account is created
+	to the time which the client joins the domain and changes the password,
+	your domain is vulnerable to an intruder joining your domain using a
+	a machine with the same NetBIOS name.  A PDC inherently trusts
+	members of the domain and will serve out a large degree of user 
+	information to such clients.  You have been warned!
+	</para>
+</warning>
+</sect2>
+
+
+<sect2>
+<title>"On-the-Fly" Creation of Machine Trust Accounts</title>
+
+<para>
+The second (and recommended) way of creating machine trust accounts is
+simply to allow the Samba server to create them as needed when the client
+is joined to the domain. </para>
+
+<para>Since each Samba machine trust account requires a corresponding
+Unix account, a method for automatically creating the
+Unix account is usually supplied; this requires configuration of the
+<ulink url="smb.conf.5.html#ADDUSERSCRIPT">add user script</ulink> 
+option in <filename>smb.conf</filename>.  This
+method is not required, however; corresponding Unix accounts may also
+be created manually.
+</para>
+
+
+<para>Below is an example for a RedHat 6.2 Linux system.
+</para>
+
+<para><programlisting>
+[global]
+   # <...remainder of parameters...>
+   add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u 
+</programlisting></para>
+
+</sect2>
+
+
+<sect2><title>Joining the Client to the Domain</title>
+
+<para>
+The procedure for joining a client to the domain varies with the
+version of Windows.
+</para>
+
+<itemizedlist>
+<listitem><para><emphasis>Windows 2000</emphasis></para>
+
+	<para> When the user elects to join the client to a domain, Windows prompts for
+	an account and password that is privileged to join the domain.  A
+	Samba administrative account (i.e., a Samba account that has root
+	privileges on the Samba server) must be entered here; the
+	operation will fail if an ordinary user account is given. 
+	The password for this account should be
+	set to a different password than the associated
+	<filename>/etc/passwd</filename> entry, for security
+	reasons. </para>
+
+	<para>The session key of the Samba administrative account acts as an
+	encryption key for setting the password of the machine trust
+	account. The machine trust account will be created on-the-fly, or
+	updated if it already exists.</para>
+</listitem>
+
+<listitem><para><emphasis>Windows NT</emphasis></para>
+
+    <para> If the machine trust account was created manually, on the
+	Identification Changes menu enter the domain name, but do not
+	check the box "Create a Computer Account in the Domain."  In this case,
+	the existing machine trust account is used to join the machine to
+	the domain.</para>
+
+    <para> If the machine trust account is to be created
+	on-the-fly, on the Identification Changes menu enter the domain
+	name, and check the box "Create a Computer Account in the Domain."  In
+	this case, joining the domain proceeds as above for Windows 2000
+	(i.e., you must supply a Samba administrative account when
+	prompted).</para>
+</listitem>
+</itemizedlist>
+
+</sect2>
+</sect1>
+<!-- **********************************************************
+
+     Common Problems
+
+*************************************************************** -->
+
+<sect1>
+<title>Common Problems and Errors</title>
+
+<para>
+</para>
+<itemizedlist>
+<listitem>
+	<para>
+	<emphasis>I cannot include a '$' in a machine name.</emphasis>
+	</para>
+    
+	<para>
+	A 'machine name' in (typically) <filename>/etc/passwd</> 	
+	of the machine name with a '$' appended. FreeBSD (and other BSD 
+	systems?) won't create a user with a '$' in their name.
+	</para>
+
+	<para>
+	The problem is only in the program used to make the entry, once 
+	made, it works perfectly. So create a user without the '$' and 
+	use <command>vipw</> to edit the entry, adding the '$'. Or create 
+	the whole entry with vipw if you like, make sure you use a 
+	unique User ID !
+	</para>
+</listitem>
+  
+<listitem>
+	<para>
+	<emphasis>I get told "You already have a connection to the Domain...." 
+	or "Cannot join domain, the credentials supplied conflict with an 
+	existing set.." when creating a machine trust account.</emphasis>
+	</para>
+
+	<para>
+	This happens if you try to create a machine trust account from the 
+	machine itself and already have a connection (e.g. mapped drive) 
+	to a share (or IPC$) on the Samba PDC.  The following command
+	will remove all network drive connections:
+	</para>
+
+	<para>
+	<prompt>C:\WINNT\></prompt> <command>net use * /d</command>
+	</para>
+
+	<para>
+	Further, if the machine is a already a 'member of a workgroup' that 
+	is the same name as the domain you are joining (bad idea) you will 
+	get this message.  Change the workgroup name to something else, it 
+	does not matter what, reboot, and try again.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>The system can not log you on (C000019B)....</emphasis>
+	</para>
+
+	<para>I joined the domain successfully but after upgrading 
+	to a newer version of the Samba code I get the message, "The system 
+	can not log you on (C000019B), Please try a gain or consult your 
+	system administrator" when attempting to logon.
+	</para>
+
+	<para>
+	This occurs when the domain SID stored in 
+	<filename>private/WORKGROUP.SID</filename> is 
+	changed.  For example, you remove the file and <command>smbd</command> automatically 
+	creates a new one.  Or you are swapping back and forth between 
+	versions 2.0.7, TNG and the HEAD branch code (not recommended).  The 
+	only way to correct the problem is to restore the original domain 
+	SID or remove the domain client from the domain and rejoin.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>The machine trust account for this computer either does not 
+	exist or is not accessible.</emphasis>
+	</para>
+
+	<para>
+	When I try to join the domain I get the message "The machine account 
+	for this computer either does not exist or is not accessible". What's 
+	wrong?
+	</para>
+
+	<para>
+	This problem is caused by the PDC not having a suitable machine trust account. 
+	If you are using the <parameter>add user script</parameter> method to create 
+	accounts then this would indicate that it has not worked. Ensure the domain 
+	admin user system is working.
+	</para>
+
+	<para>
+	Alternatively if you are creating account entries manually then they 
+	have not been created correctly. Make sure that you have the entry 
+	correct for the machine trust account in smbpasswd file on the Samba PDC. 
+	If you added the account using an editor rather than using the smbpasswd 
+	utility, make sure that the account name is the machine NetBIOS name 
+	with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 
+	in both /etc/passwd and the smbpasswd file. Some people have reported 
+	that inconsistent subnet masks between the Samba server and the NT 
+	client have caused this problem.   Make sure that these are consistent 
+	for both client and server.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+	I get a message about my account being disabled.</emphasis>
+	</para>
+
+	<para>
+	This problem is caused by a PAM related bug in Samba 2.2.0.  This bug is 
+	fixed in 2.2.1.  Other symptoms could be unaccessible shares on 
+	NT/W2K member servers in the domain or the following error in your smbd.log:
+	passdb/pampass.c:pam_account(268) PAM: UNKNOWN ERROR for User: %user%
+	</para>
+ 
+	<para>
+	At first be ensure to enable the useraccounts with <command>smbpasswd -e 
+	%user%</command>, this is normally done, when you create an account.
+	</para>
+
+	<para>
+	In order to work around this problem in 2.2.0, configure the 
+	<parameter>account</parameter> control flag in 
+	<filename>/etc/pam.d/samba</filename> file as follows:
+	</para> 
+
+	<para><programlisting>
+	account required        pam_permit.so
+	</programlisting></para>
+
+	<para>
+	If you want to remain backward compatibility to samba 2.0.x use
+	<filename>pam_permit.so</filename>, it's also possible to use 
+	<filename>pam_pwdb.so</filename>. There are some bugs if you try to 
+	use <filename>pam_unix.so</filename>, if you need this, be ensure to use
+	the most recent version of this file.
+	</para>
+</listitem>
+</itemizedlist>
+
+</sect1>
+
+
+
+<!-- **********************************************************
+
+     Policies and Profiles
+
+*************************************************************** -->
+
+<sect1>
+<title>
+System Policies and Profiles
+</title>
+
+<para>
+Much of the information necessary to implement System Policies and
+Roving User Profiles in a Samba domain is the same as that for 
+implementing these same items in a Windows NT 4.0 domain. 
+You should read the white paper <ulink url="http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp">Implementing
+Profiles and Policies in Windows NT 4.0</ulink> available from Microsoft.
+</para>
+
+<para>
+Here are some additional details:
+</para>
+
+<itemizedlist>
+
+<listitem>
+	<para>
+	<emphasis>What about Windows NT Policy Editor?</emphasis>
+	</para>
+
+	<para>
+	To create or edit <filename>ntconfig.pol</filename> you must use 
+	the NT Server Policy Editor, <command>poledit.exe</command>	which 
+	is included with NT Server but <emphasis>not NT Workstation</emphasis>. 
+	There is a Policy Editor on a NTws 
+	but it is not suitable for creating <emphasis>Domain Policies</emphasis>. 
+	Further, although the Windows 95 
+	Policy Editor can be installed on an NT Workstation/Server, it will not
+	work with NT policies because the registry key that are set by the policy templates. 
+	However, the files from the NT Server will run happily enough on an NTws. 	
+	You need <filename>poledit.exe, common.adm</> and <filename>winnt.adm</>. It is convenient
+	to put the two *.adm files in <filename>c:\winnt\inf</> which is where
+	the binary will look for them unless told otherwise. Note also that that 
+	directory is 'hidden'.
+	</para>
+
+	<para>
+	The Windows NT policy editor is also included with the Service Pack 3 (and 
+	later) for Windows NT 4.0. Extract the files using <command>servicepackname /x</command>, 
+	i.e. that's <command>Nt4sp6ai.exe /x</command> for service pack 6a.  The policy editor, 
+	<command>poledit.exe</command> and the associated template files (*.adm) should
+	be extracted as well.  It is also possible to downloaded the policy template 
+	files for Office97 and get a copy of the policy editor.  Another possible 
+	location is with the Zero Administration Kit available for download from Microsoft.
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	<emphasis>Can Win95 do Policies?</emphasis>
+	</para>
+
+	<para>
+	Install the group policy handler for Win9x to pick up group 
+	policies.   Look on the Win98 CD in <filename>\tools\reskit\netadmin\poledit</filename>. 
+	Install group policies on a Win9x client by double-clicking 
+	<filename>grouppol.inf</filename>. Log off and on again a couple of 
+	times and see if Win98 picks up group policies.  Unfortunately this needs 
+	to be done on every Win9x machine that uses group policies....
+	</para> 
+
+	<para>
+	If group policies don't work one reports suggests getting the updated 
+	(read: working) grouppol.dll for Windows 9x. The group list is grabbed 
+	from /etc/group.
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	<emphasis>How do I get 'User Manager' and 'Server Manager'</emphasis>
+	</para>
+
+	<para>
+	Since I don't need to buy an NT Server CD now, how do I get 
+	the 'User Manager for Domains', the 'Server Manager'?
+	</para>
+
+	<para>
+	Microsoft distributes a version of these tools called nexus for 
+	installation on Windows 95 systems.  The tools set includes
+	</para>
+	
+	<itemizedlist>
+		<listitem><para>Server Manager</para></listitem> 
+		
+		<listitem><para>User Manager for Domains</para></listitem> 
+
+		<listitem><para>Event Viewer</para></listitem> 
+	</itemizedlist>
+
+	<para>
+	Click here to download the archived file <ulink 
+	url="ftp://ftp.microsoft.com/Softlib/MSLFILES/NEXUS.EXE">ftp://ftp.microsoft.com/Softlib/MSLFILES/NEXUS.EXE</ulink>
+	</para>
+
+	<para>
+	The Windows NT 4.0 version of the 'User Manager for 
+	Domains' and 'Server Manager' are available from Microsoft via ftp 
+	from <ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE</ulink>
+	</para>
+</listitem>
+</itemizedlist>
+
+</sect1>
+
+
+
+<!-- **********************************************************
+
+     Getting Help
+
+*************************************************************** -->
+
+
+<sect1>
+<title>What other help can I get? </title>
+
+<para>
+There are many sources of information available in the form 
+of mailing lists, RFC's and documentation.  The docs that come 
+with the samba distribution contain very good explanations of 
+general SMB topics such as browsing.</para> 
+
+<itemizedlist>
+<listitem>
+	<para>
+	<emphasis>What are some diagnostics tools I can use to debug the domain logon 
+	process and where can I	find them?</emphasis>
+	</para>
+
+   <para>
+	One of the best diagnostic tools for debugging problems is Samba itself.  
+	You can use the -d option for both smbd and nmbd to specify what 
+	'debug level' at which to run.  See the man pages on smbd, nmbd  and 
+	smb.conf for more information on debugging options.  The debug 
+	level can range from 1 (the default) to 10 (100 for debugging passwords).
+	</para>
+	
+	<para>
+	Another helpful method of debugging is to compile samba using the 
+	<command>gcc -g </command> flag.   This will include debug 
+	information in the binaries and allow you to attach gdb to the 
+	running smbd / nmbd process.  In order to attach gdb to an smbd 
+	process for an NT workstation, first get the workstation to make the 
+	connection. Pressing ctrl-alt-delete and going down to the domain box 
+	is sufficient (at least, on the first time you join the domain) to 
+	generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation 
+	maintains an open connection, and therefore there will be an smbd 
+	process running (assuming that you haven't set a really short smbd 
+	idle timeout)  So, in between pressing ctrl alt delete, and actually 
+	typing in your password, you can gdb attach and continue.
+	</para>
+
+	<para>
+	Some useful samba commands worth investigating:
+	</para>
+	
+	<itemizedlist>
+		<listitem><para>testparam | more</para></listitem>
+		<listitem><para>smbclient -L //{netbios name of server}</para></listitem>
+	</itemizedlist>
+    
+	<para>
+	An SMB enabled version of tcpdump is available from 
+	<ulink url="http://www.tcpdump.org/">http://www.tcpdup.org/</ulink>.
+	Ethereal, another good packet sniffer for Unix and Win32
+	hosts, can be downloaded from <ulink 
+	url="http://www.ethereal.com/">http://www.ethereal.com</ulink>.
+	</para>
+	
+	<para>
+	For tracing things on the Microsoft Windows NT, Network Monitor 
+	(aka. netmon) is available on the Microsoft Developer Network CD's, 
+	the Windows NT Server install CD and the SMS CD's.  The version of 
+	netmon that ships with SMS allows for dumping packets between any two 
+	computers (i.e. placing the network interface in promiscuous mode).  
+	The version on the NT Server install CD will only allow monitoring 
+	of network traffic directed to the local NT box and broadcasts on the 
+	local subnet.  Be aware that Ethereal can read and write netmon 
+	formatted files.
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	<emphasis>How do I install 'Network Monitor' on an NT Workstation 
+	or a Windows 9x box?</emphasis>
+	</para>
+
+	<para>
+	Installing netmon on an NT workstation requires a couple 
+	of steps.  The following are for installing Netmon V4.00.349, which comes 
+	with Microsoft Windows NT Server 4.0, on Microsoft Windows NT 
+	Workstation 4.0.  The process should be similar for other version of 
+	Windows NT / Netmon.  You will need both the Microsoft Windows 
+	NT Server 4.0 Install CD and the Workstation 4.0 Install CD.
+	</para> 
+
+	<para>
+	Initially you will need to install 'Network Monitor Tools and Agent' 
+	on the NT Server.  To do this 
+	</para>
+
+	<itemizedlist>
+		<listitem><para>Goto Start - Settings - Control Panel - 
+		Network - Services - Add </para></listitem>
+		
+		<listitem><para>Select the 'Network Monitor Tools and Agent' and 
+		click on 'OK'.</para></listitem> 
+		
+		<listitem><para>Click 'OK' on the Network Control Panel.
+		</para></listitem> 
+		
+		<listitem><para>Insert the Windows NT Server 4.0 install CD 
+		when prompted.</para></listitem> 
+	</itemizedlist>
+
+	<para>
+	At this point the Netmon files should exist in 
+	<filename>%SYSTEMROOT%\System32\netmon\*.*</filename>.    
+	Two subdirectories exist as well, <filename>parsers\</filename> 
+	which contains the necessary DLL's for parsing the netmon packet 
+	dump, and <filename>captures\</filename>.
+	</para>
+
+	<para>
+	In order to install the Netmon tools on an NT Workstation, you will 
+	first need to install the 'Network  Monitor Agent' from the Workstation 
+	install CD.
+	</para>
+
+	<itemizedlist>
+		<listitem><para>Goto Start - Settings - Control Panel - 
+		Network - Services - Add</para></listitem> 
+
+		<listitem><para>Select the 'Network Monitor Agent' and click 
+		on 'OK'.</para></listitem> 
+		
+		<listitem><para>Click 'OK' on the Network Control Panel.
+		</para></listitem> 
+		
+		<listitem><para>Insert the Windows NT Workstation 4.0 install 
+		CD when prompted.</para></listitem> 
+	</itemizedlist>
+
+
+	<para>
+	Now copy the files from the NT Server in %SYSTEMROOT%\System32\netmon\*.* 
+	to %SYSTEMROOT%\System32\netmon\*.* on the Workstation and set 
+	permissions as  you deem appropriate for your site. You will need 
+	administrative rights on the NT box to run netmon.
+	</para>
+
+	<para>
+	To install Netmon on a Windows 9x box install the network monitor agent 
+	from the Windows 9x CD (\admin\nettools\netmon).  There is a readme 
+	file located with the netmon driver files on the CD if you need 
+	information on how to do this.  Copy the files from a working 
+	Netmon installation.
+	</para> 
+</listitem>
+
+
+
+
+<listitem>
+	<para>
+	The following is a list if helpful URLs and other links:
+	</para>
+
+	<itemizedlist>
+
+ 	<listitem><para>Home of Samba site <ulink url="http://samba.org">
+        http://samba.org</ulink>. We have a mirror near you !</para></listitem>
+
+	<listitem><para> The <emphasis>Development</emphasis> document 
+	on the Samba mirrors might mention your problem. If so,
+	it might mean that the developers are working on it.</para></listitem>
+ 
+	<listitem><para>See how Scott Merrill simulates a BDC behavior at 
+        <ulink url="http://www.skippy.net/linux/smb-howto.html">
+        http://www.skippy.net/linux/smb-howto.html</>. </para></listitem>
+
+	<listitem><para>Although 2.0.7 has almost had its day as a PDC, David Bannon will
+        keep the 2.0.7 PDC pages at <ulink url="http://bioserve.latrobe.edu.au/samba">
+        http://bioserve.latrobe.edu.au/samba</ulink> going for a while yet.</para></listitem>
+
+	<listitem><para>Misc links to CIFS information 
+        <ulink url="http://samba.org/cifs/">http://samba.org/cifs/</ulink></para></listitem>
+
+	<listitem><para>NT Domains for Unix <ulink url="http://mailhost.cb1.com/~lkcl/ntdom/">
+        http://mailhost.cb1.com/~lkcl/ntdom/</ulink></para></listitem>
+
+	<listitem><para>FTP site for older SMB specs: 
+        <ulink url="ftp://ftp.microsoft.com/developr/drg/CIFS/">
+        ftp://ftp.microsoft.com/developr/drg/CIFS/</ulink></para></listitem>
+
+	</itemizedlist>
+</listitem>
+</itemizedlist>
+
+
+<itemizedlist>
+<listitem>
+	<para>
+	<emphasis>How do I get help from the mailing lists?</emphasis>
+	</para>
+
+	<para>
+	There are a number of Samba related mailing lists. Go to <ulink 
+	url="http://samba.org">http://samba.org</ulink>, click on your nearest mirror
+	and then click on <command>Support</> and then click on <command>
+	Samba related mailing lists</>.
+	</para>
+
+	<para>
+	For questions relating to Samba TNG go to
+	<ulink url="http://www.samba-tng.org/">http://www.samba-tng.org/</ulink> 
+	It has been requested that you don't post questions about Samba-TNG to the
+	main stream Samba lists.</para>
+	 
+	<para>
+	If you post a message to one of the lists please observe the following guide lines :
+	</para>
+
+	<itemizedlist>
+
+	<listitem><para> Always remember that the developers are volunteers, they are 
+		not paid and they never guarantee to produce a particular feature at 
+		a particular time. Any time lines are 'best guess' and nothing more.
+		</para></listitem>
+
+	<listitem><para> Always mention what version of samba you are using and what 
+		operating system its running under. You should probably list the
+        relevant sections of your smb.conf file, at least the options 
+        in [global] that affect PDC support.</para></listitem>
+
+    <listitem><para>In addition to the version, if you obtained Samba via
+        CVS mention the date when you last checked it out.</para></listitem>
+
+	<listitem><para> Try and make your question clear and brief, lots of long, 
+		convoluted questions get deleted before	they are completely read ! 
+		Don't post html encoded messages (if you can select colour or font 
+		size its html).</para></listitem>
+
+	<listitem><para> If you run one of those nifty 'I'm on holidays' things when 
+		you are away, make sure its configured	to not answer mailing lists.
+		</para></listitem> 
+
+	<listitem><para> Don't cross post. Work out which is the best list to post to 
+		and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
+        Many people active on the lists subscribe to more 
+		than one list and get annoyed to see the same message two or more times. 
+		Often someone will see a message and thinking it would be better dealt 
+		with on another, will forward it on for you.</para></listitem>
+
+    <listitem><para>You might include <emphasis>partial</emphasis>
+        log files written at a debug level set to as much as 20.  
+        Please don't send the entire log but enough to give the context of the 
+        error messages.</para></listitem>
+
+    <listitem><para>(Possibly) If you have a complete netmon trace ( from the opening of 
+        the pipe to the error ) you can send the *.CAP file as well.</para></listitem> 
+
+    <listitem><para>Please think carefully before attaching a document to an email.
+        Consider pasting the relevant parts into the body of the message. The samba
+        mailing lists go to a huge number of people, do they all need a copy of your 
+        smb.conf in their attach directory?</para></listitem>
+
+	</itemizedlist>
+</listitem>
+
+
+<listitem>
+	<para>
+	<emphasis>How do I get off the mailing lists?</emphasis>
+	</para>
+
+	<para>To have your name removed from a samba mailing list, go to the
+	same place you went to to get on it. Go to <ulink 
+	url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
+	click on your nearest mirror and then click on <command>Support</> and 
+	then click on <command> Samba related mailing lists</>. Or perhaps see 
+	<ulink url="http://lists.samba.org/mailman/roster/samba-ntdom">here</ulink>
+	</para>
+
+	<para>
+	Please don't post messages to the list asking to be removed, you will just
+	be referred to the above address (unless that process failed in some way...)
+	</para>
+</listitem>
+</itemizedlist>
+
+</sect1>
+
+
+<!-- **********************************************************
+
+     Windows 9x domain control
+
+*************************************************************** -->
+<sect1>
+<title>Domain Control for Windows 9x/ME</title>
+
+<note>
+<para>
+The following section contains much of the original 
+DOMAIN.txt file previously included with Samba.  Much of 
+the material is based on what went into the book <emphasis>Special 
+Edition, Using Samba</emphasis>, by Richard Sharpe.
+</para>
+</note>
+
+<para>
+A domain and a workgroup are exactly the same thing in terms of network
+browsing.  The difference is that a distributable authentication
+database is associated with a domain, for secure login access to a
+network.  Also, different access rights can be granted to users if they
+successfully authenticate against a domain logon server (NT server and 
+other systems based on NT server support this, as does at least Samba TNG now).
+</para>
+
+<para>
+The SMB client logging on to a domain has an expectation that every other
+server in the domain should accept the same authentication information.
+Network browsing functionality of domains and workgroups is
+identical and is explained in BROWSING.txt. It should be noted, that browsing
+is totally orthogonal to logon support.
+</para>
+
+<para>
+Issues related to the single-logon network model are discussed in this
+section.  Samba supports domain logons, network logon scripts, and user
+profiles for MS Windows for workgroups and MS Windows 9X/ME clients
+which will be the focus of this section.
+</para>
+
+
+<para>
+When an SMB client in a domain wishes to logon it broadcast requests for a
+logon server.  The first one to reply gets the job, and validates its
+password using whatever mechanism the Samba administrator has installed.
+It is possible (but very stupid) to create a domain where the user
+database is not shared between servers, i.e. they are effectively workgroup
+servers advertising themselves as participating in a domain.  This
+demonstrates how authentication is quite different from but closely
+involved with domains.
+</para>
+
+
+<para>
+Using these features you can make your clients verify their logon via
+the Samba server; make clients run a batch file when they logon to
+the network and download their preferences, desktop and start menu.
+</para>
+
+<para>
+Before launching into the configuration instructions, it is 
+worthwhile lookingat how a Windows 9x/ME client performs a logon:
+</para>
+
+<orderedlist>
+<listitem>
+	<para>
+	The client broadcasts (to the IP broadcast address of the subnet it is in)
+	a NetLogon request. This is sent to the NetBIOS name DOMAIN<1c> at the
+	NetBIOS layer.  The client chooses the first response it receives, which
+	contains the NetBIOS name of the logon server to use in the format of 
+	\\SERVER.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	The client then connects to that server, logs on (does an SMBsessetupX) and
+	then connects to the IPC$ share (using an SMBtconX).
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	The client then does a NetWkstaUserLogon request, which retrieves the name
+	of the user's logon script. 
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	The client then connects to the NetLogon share and searches for this 	
+	and if it is found and can be read, is retrieved and executed by the client.
+	After this, the client disconnects from the NetLogon share.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	The client then sends a NetUserGetInfo request to the server, to retrieve
+	the user's home share, which is used to search for profiles. Since the
+	response to the NetUserGetInfo request does not contain much more 	
+	the user's home share, profiles for Win9X clients MUST reside in the user
+	home directory.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	The client then connects to the user's home share and searches for the 
+	user's profile. As it turns out, you can specify the user's home share as
+	a sharename and path. For example, \\server\fred\.profile.
+	If the profiles are found, they are implemented.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	The client then disconnects from the user's home share, and reconnects to
+	the NetLogon share and looks for CONFIG.POL, the policies file. If this is
+	found, it is read and implemented.
+	</para>
+</listitem>
+</orderedlist>
+
+
+<sect2>
+<title>Configuration Instructions:	Network Logons</title>
+
+<para>
+The main difference between a PDC and a Windows 9x logon 
+server configuration is that
+</para>
+
+<itemizedlist>
+
+<listitem><para>
+Password encryption is not required for a Windows 9x logon server.
+</para></listitem>
+
+<listitem><para>
+Windows 9x/ME clients do not possess machine trust accounts.
+</para></listitem>
+
+</itemizedlist>
+
+<para>
+Therefore, a Samba PDC will also act as a Windows 9x logon 
+server.
+</para>
+
+
+<warning>
+<title>security mode and master browsers</title>
+
+<para>
+There are a few comments to make in order to tie up some 
+loose ends.  There has been much debate over the issue of whether
+or not it is ok to configure Samba as a Domain Controller in security
+modes other than <constant>USER</constant>.  The only security mode 
+which  will not work due to technical reasons is <constant>SHARE</constant>
+mode security.  <constant>DOMAIN</constant> and <constant>SERVER</constant>
+mode security is really just a variation on SMB user level security.
+</para>
+
+<para>
+Actually, this issue is also closely tied to the debate on whether 
+or not Samba must be the domain master browser for its workgroup
+when operating as a DC.  While it may technically be possible
+to configure a server as such (after all, browsing and domain logons
+are two distinctly different functions), it is not a good idea to
+so.  You should remember that the DC must register the DOMAIN#1b NetBIOS 
+name.  This is the name used by Windows clients to locate the DC.
+Windows clients do not distinguish between the DC and the DMB.
+For this reason, it is very wise to configure the Samba DC as the DMB.
+</para>
+
+<para>
+Now back to the issue of configuring a Samba DC to use a mode other
+than "security = user".  If a Samba host is configured to use 
+another SMB server or DC in order to validate user connection 
+requests, then it is a fact that some other machine on the network 
+(the "password server") knows more about user than the Samba host.
+99% of the time, this other host is a domain controller.  Now 
+in order to operate in domain mode security, the "workgroup" parameter
+must be set to the name of the Windows NT domain (which already 
+has a domain controller, right?)
+</para>
+
+<para>
+Therefore configuring a Samba box as a DC for a domain that 
+already by definition has a PDC is asking for trouble.
+Therefore, you should always configure the Samba DC to be the DMB
+for its domain.
+</para>
+</warning>
+
+</sect2>
+
+
+<sect2>
+<title>Configuration Instructions:	Setting up Roaming User Profiles</title>
+
+<warning>
+<para>
+<emphasis>NOTE!</emphasis> Roaming profiles support is different 
+for Win9X and WinNT.
+</para>
+</warning>
+
+<para>
+Before discussing how to configure roaming profiles, it is useful to see how
+Win9X and WinNT clients implement these features.
+</para>
+
+<para>
+Win9X clients send a NetUserGetInfo request to the server to get the user's
+profiles location. However, the response does not have room for a separate 
+profiles location field, only the user's home share. This means that Win9X 
+profiles are restricted to being in the user's home directory.
+</para>
+
+
+<para>
+WinNT clients send a NetSAMLogon RPC request, which contains many fields, 
+including a separate field for the location of the user's profiles. 
+This means that support for profiles is different for Win9X and WinNT.
+</para>
+
+
+
+<sect3>
+<title>Windows NT Configuration</title>
+
+<para>
+To support WinNT clients, in the [global] section of smb.conf set the
+following (for example):
+</para>
+
+<para><programlisting>
+logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath
+</programlisting></para>
+
+<para>
+The default for this option is \\%N\%U\profile, namely
+\\sambaserver\username\profile.  The \\N%\%U service is created
+automatically by the [homes] service.
+If you are using a samba server for the profiles, you _must_ make the
+share specified in the logon path browseable. 
+</para>
+
+<note>
+<para>
+[lkcl 26aug96 - we have discovered a problem where Windows clients can
+maintain a connection to the [homes] share in between logins.  The
+[homes] share must NOT therefore be used in a profile path.]
+</para>
+</note>
+
+</sect3>
+
+
+<sect3>
+<title>Windows 9X Configuration</title>
+
+<para>
+To support Win9X clients, you must use the "logon home" parameter. Samba has
+now been fixed so that "net use/home" now works as well, and it, too, relies
+on the "logon home" parameter.
+</para>
+
+<para>
+By using the logon home parameter, you are restricted to putting Win9X 
+profiles in the user's home directory.   But wait! There is a trick you 
+can use. If you set the following in the [global] section of your 
+smb.conf file:
+</para>
+
+<para><programlisting>
+logon home = \\%L\%U\.profiles
+</programlisting></para>
+
+<para>
+then your Win9X clients will dutifully put their clients in a subdirectory
+of your home directory called .profiles (thus making them hidden).
+</para>
+
+<para>
+Not only that, but 'net use/home' will also work, because of a feature in 
+Win9X. It removes any directory stuff off the end of the home directory area
+and only uses the server and share portion. That is, it looks like you
+specified \\%L\%U for "logon home".
+</para>
+
+
+</sect3>
+
+
+<sect3>
+<title>Win9X and WinNT Configuration</title>
+
+<para>
+You can support profiles for both Win9X and WinNT clients by setting both the
+"logon home" and "logon path" parameters. For example:
+</para>
+
+<para><programlisting>
+logon home = \\%L\%U\.profiles
+logon path = \\%L\profiles\%U
+</programlisting></para>
+
+<note>
+<para>
+I have not checked what 'net use /home' does on NT when "logon home" is
+set as above.
+</para>
+</note>
+</sect3>
+
+
+
+<sect3>
+<title>Windows 9X Profile Setup</title>
+
+<para>
+When a user first logs in on Windows 9X, the file user.DAT is created,
+as are folders "Start Menu", "Desktop", "Programs" and "Nethood".  
+These directories and their contents will be merged with the local
+versions stored in c:\windows\profiles\username on subsequent logins,
+taking the most recent from each.  You will need to use the [global]
+options "preserve case = yes", "short preserve case = yes" and
+"case sensitive = no" in order to maintain capital letters in shortcuts
+in any of the profile folders.
+</para>
+
+
+<para>
+The user.DAT file contains all the user's preferences.  If you wish to
+enforce a set of preferences, rename their user.DAT file to user.MAN,
+and deny them write access to this file.
+</para>
+
+<orderedlist>
+<listitem>
+	<para>
+	On the Windows 95 machine, go to Control Panel | Passwords and
+	select the User Profiles tab.  Select the required level of
+	roaming preferences.  Press OK, but do _not_ allow the computer
+	to reboot.
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	On the Windows 95 machine, go to Control Panel | Network |
+	Client for Microsoft Networks | Preferences.  Select 'Log on to
+	NT Domain'.  Then, ensure that the Primary Logon is 'Client for
+	Microsoft Networks'.  Press OK, and this time allow the computer
+	to reboot.
+	</para>
+</listitem>
+
+</orderedlist>
+
+<para>
+Under Windows 95, Profiles are downloaded from the Primary Logon.
+If you have the Primary Logon as 'Client for Novell Networks', then
+the profiles and logon script will be downloaded from your Novell
+Server.  If you have the Primary Logon as 'Windows Logon', then the
+profiles will be loaded from the local machine - a bit against the
+concept of roaming profiles, if you ask me.
+</para>
+
+<para>
+You will now find that the Microsoft Networks Login box contains
+[user, password, domain] instead of just [user, password].  Type in
+the samba server's domain name (or any other domain known to exist,
+but bear in mind that the user will be authenticated against this
+domain and profiles downloaded from it, if that domain logon server
+supports it), user name and user's password.
+</para>
+
+<para>
+Once the user has been successfully validated, the Windows 95 machine
+will inform you that 'The user has not logged on before' and asks you
+if you wish to save the user's preferences?  Select 'yes'.
+</para>
+
+<para>
+Once the Windows 95 client comes up with the desktop, you should be able
+to examine the contents of the directory specified in the "logon path"
+on the samba server and verify that the "Desktop", "Start Menu",
+"Programs" and "Nethood" folders have been created.
+</para>
+
+<para>
+These folders will be cached locally on the client, and updated when
+the user logs off (if you haven't made them read-only by then :-).
+You will find that if the user creates further folders or short-cuts,
+that the client will merge the profile contents downloaded with the
+contents of the profile directory already on the local client, taking
+the newest folders and short-cuts from each set.
+</para>
+
+<para>
+If you have made the folders / files read-only on the samba server,
+then you will get errors from the w95 machine on logon and logout, as
+it attempts to merge the local and the remote profile.  Basically, if
+you have any errors reported by the w95 machine, check the Unix file
+permissions and ownership rights on the profile directory contents,
+on the samba server.
+</para>
+
+<para>
+If you have problems creating user profiles, you can reset the user's
+local desktop cache, as shown below.  When this user then next logs in,
+they will be told that they are logging in "for the first time".
+</para>
+
+<orderedlist>
+<listitem>
+	<para>
+	instead of logging in under the [user, password, domain] dialog,
+	press escape.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	run the regedit.exe program, and look in:
+	</para>
+	
+	<para>
+	HKEY_LOCAL_MACHINE\Windows\CurrentVersion\ProfileList
+	</para>
+
+	<para>
+	you will find an entry, for each user, of ProfilePath.  Note the
+	contents of this key (likely to be c:\windows\profiles\username),
+	then delete the key ProfilePath for the required user.
+	</para>
+
+	<para>
+	[Exit the registry editor].
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>WARNING</emphasis> - before deleting the contents of the 
+	directory listed in
+   the ProfilePath (this is likely to be c:\windows\profiles\username),
+   ask them if they have any important files stored on their desktop
+   or in their start menu.  delete the contents of the directory
+   ProfilePath (making a backup if any of the files are needed).
+	</para>
+
+	<para>
+   This will have the effect of removing the local (read-only hidden
+   system file) user.DAT in their profile directory, as well as the
+   local "desktop", "nethood", "start menu" and "programs" folders.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	search for the user's .PWL password-caching file in the c:\windows
+	directory, and delete it.
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	log off the windows 95 client.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	check the contents of the profile path (see "logon path" described
+	above), and delete the user.DAT or user.MAN file for the user,
+	making a backup if required.  
+	</para>
+</listitem>
+
+</orderedlist>
+
+<para>
+If all else fails, increase samba's debug log levels to between 3 and 10,
+and / or run a packet trace program such as tcpdump or netmon.exe, and
+look for any error reports.
+</para>
+
+<para>
+If you have access to an NT server, then first set up roaming profiles
+and / or netlogons on the NT server.  Make a packet trace, or examine
+the example packet traces provided with NT server, and see what the
+differences are with the equivalent samba trace.
+</para>
+
+</sect3>
+
+
+<sect3>
+<title>Windows NT Workstation 4.0</title>
+
+<para>
+When a user first logs in to a Windows NT Workstation, the profile
+NTuser.DAT is created.  The profile location can be now specified
+through the "logon path" parameter.  
+</para>
+
+<note>
+<para>
+[lkcl 10aug97 - i tried setting the path to
+\\samba-server\homes\profile, and discovered that this fails because
+a background process maintains the connection to the [homes] share
+which does _not_ close down in between user logins.  you have to
+have \\samba-server\%L\profile, where user is the username created
+from the [homes] share].
+</para>
+</note>
+
+<para>
+There is a parameter that is now available for use with NT Profiles:
+"logon drive".  This should be set to "h:" or any other drive, and
+should be used in conjunction with the new "logon home" parameter.
+</para>
+
+<para>
+The entry for the NT 4.0 profile is a _directory_ not a file.  The NT
+help on profiles mentions that a directory is also created with a .PDS
+extension.  The user, while logging in, must have write permission to
+create the full profile path (and the folder with the .PDS extension)
+[lkcl 10aug97 - i found that the creation of the .PDS directory failed,
+and had to create these manually for each user, with a shell script.
+also, i presume, but have not tested, that the full profile path must
+be browseable just as it is for w95, due to the manner in which they
+attempt to create the full profile path: test existence of each path
+component; create path component].
+</para>
+
+<para>
+In the profile directory, NT creates more folders than 95.  It creates
+"Application Data" and others, as well as "Desktop", "Nethood",
+"Start Menu" and "Programs".  The profile itself is stored in a file
+NTuser.DAT.  Nothing appears to be stored in the .PDS directory, and
+its purpose is currently unknown.
+</para>
+
+<para>
+You can use the System Control Panel to copy a local profile onto
+a samba server (see NT Help on profiles: it is also capable of firing
+up the correct location in the System Control Panel for you).  The
+NT Help file also mentions that renaming NTuser.DAT to NTuser.MAN
+turns a profile into a mandatory one.
+</para>
+
+<note>
+<para>
+[lkcl 10aug97 - i notice that NT Workstation tells me that it is
+downloading a profile from a slow link.  whether this is actually the
+case, or whether there is some configuration issue, as yet unknown,
+that makes NT Workstation _think_ that the link is a slow one is a
+matter to be resolved].
+</para>
+
+<para>
+[lkcl 20aug97 - after samba digest correspondence, one user found, and
+another confirmed, that profiles cannot be loaded from a samba server
+unless "security = user" and "encrypt passwords = yes" (see the file
+ENCRYPTION.txt) or "security = server" and "password server = ip.address.
+of.yourNTserver" are used.  Either of these options will allow the NT
+workstation to access the samba server using LAN manager encrypted
+passwords, without the user intervention normally required by NT
+workstation for clear-text passwords].
+</para>
+
+<para>
+[lkcl 25aug97 - more comments received about NT profiles: the case of
+the profile _matters_.  the file _must_ be called NTuser.DAT or, for
+a mandatory profile, NTuser.MAN].
+</para>
+</note>
+
+</sect3>
+
+
+<sect3>
+<title>Windows NT Server</title>
+
+<para>
+There is nothing to stop you specifying any path that you like for the
+location of users' profiles.  Therefore, you could specify that the
+profile be stored on a samba server, or any other SMB server, as long as
+that SMB server supports encrypted passwords.
+</para>
+
+</sect3>
+
+
+<sect3>
+<title>Sharing Profiles between W95 and NT Workstation 4.0</title>
+
+<warning>
+<title>Potentially outdated or incorrect material follows</title>
+<para>
+I think this is all bogus, but have not deleted it. (Richard Sharpe)
+</para>
+</warning>
+
+<para>
+The default logon path is \\%N\U%.  NT Workstation will attempt to create
+a directory "\\samba-server\username.PDS" if you specify the logon path
+as "\\samba-server\username" with the NT User Manager.  Therefore, you
+will need to specify (for example) "\\samba-server\username\profile".
+NT 4.0 will attempt to create "\\samba-server\username\profile.PDS", which
+is more likely to succeed.
+</para>
+
+<para>
+If you then want to share the same Start Menu / Desktop with W95, you will
+need to specify "logon path = \\samba-server\username\profile" [lkcl 10aug97
+this has its drawbacks: i created a shortcut to telnet.exe, which attempts
+to run from the c:\winnt\system32 directory.  this directory is obviously
+unlikely to exist on a Win95-only host].
+</para>
+
+<para>
+
+If you have this set up correctly, you will find separate user.DAT and
+NTuser.DAT files in the same profile directory.
+</para>
+
+<note>
+<para>
+[lkcl 25aug97 - there are some issues to resolve with downloading of
+NT profiles, probably to do with time/date stamps.  i have found that
+NTuser.DAT is never updated on the workstation after the first time that
+it is copied to the local workstation profile directory.  this is in
+contrast to w95, where it _does_ transfer / update profiles correctly].
+</para>
+</note>
+
+</sect3>
+
+</sect2>
+</sect1>
+
+
+<!-- **********************************************************
+
+     Appendix - DOMAIN_CONTROL.txt
+
+*************************************************************** -->
+
+<sect1>
+<title>
+DOMAIN_CONTROL.txt : Windows NT Domain Control & Samba
+</title>
+
+<warning>
+	<title>Possibly Outdated Material</title>
+
+	<para>
+	This appendix was originally authored by John H Terpstra of 
+	the Samba Team and is included here for posterity.
+	</para>
+</warning>
+
+
+<para>
+<emphasis>NOTE :</emphasis> 
+The term "Domain Controller" and those related to it refer to one specific
+method of authentication that can underly an SMB domain. Domain Controllers
+prior to Windows NT Server 3.1 were sold by various companies and based on 
+private extensions to the LAN Manager 2.1 protocol. Windows NT introduced
+Microsoft-specific ways of distributing the user authentication database.
+See DOMAIN.txt for examples of how Samba can participate in or create
+SMB domains based on shared authentication database schemes other than the 
+Windows NT SAM.
+</para>
+
+<para>
+Windows NT Server can be installed as either a plain file and print server
+(WORKGROUP workstation or server) or as a server that participates in Domain
+Control (DOMAIN member, Primary Domain controller or Backup Domain controller).
+The same is true for OS/2 Warp Server, Digital Pathworks and other similar
+products, all of which can participate in Domain Control along with Windows NT.
+</para>
+
+<para>
+To many people these terms can be confusing, so let's try to clear the air.
+</para>
+
+<para>
+Every Windows NT system (workstation or server) has a registry database.
+The registry contains entries that describe the initialization information
+for all services (the equivalent of Unix Daemons) that run within the Windows
+NT environment. The registry also contains entries that tell application
+software where to find dynamically loadable libraries that they depend upon.
+In fact, the registry contains entries that describes everything that anything
+may need to know to interact with the rest of the system.
+</para>
+
+<para>
+The registry files can be located on any Windows NT machine by opening a
+command prompt and typing:
+</para>
+
+<para>
+<prompt>C:\WINNT\></prompt> dir %SystemRoot%\System32\config
+</para>
+
+<para>
+The environment variable %SystemRoot% value can be obtained by typing:
+</para>
+
+<para>
+<prompt>C:\WINNT></prompt>echo %SystemRoot%
+</para>
+
+<para>
+The active parts of the registry that you may want to be familiar with are
+the files called: default, system, software, sam and security.
+</para>
+
+<para>
+In a domain environment, Microsoft Windows NT domain controllers participate
+in replication of the SAM and SECURITY files so that all controllers within
+the domain have an exactly identical copy of each.
+</para>
+
+<para>
+The Microsoft Windows NT system is structured within a security model that
+says that all applications and services must authenticate themselves before
+they can obtain permission from the security manager to do what they set out
+to do.
+</para>
+
+<para>
+The Windows NT User database also resides within the registry. This part of
+the registry contains the user's security identifier, home directory, group
+memberships, desktop profile, and so on.
+</para>
+
+<para>
+Every Windows NT system (workstation as well as server) will have its own
+registry. Windows NT Servers that participate in Domain Security control
+have a database that they share in common - thus they do NOT own an
+independent full registry database of their own, as do Workstations and
+plain Servers.
+</para>
+
+<para>
+The User database is called the SAM (Security Access Manager) database and
+is used for all user authentication as well as for authentication of inter-
+process authentication (i.e. to ensure that the service action a user has
+requested is permitted within the limits of that user's privileges).
+</para>
+
+<para>
+The Samba team have produced a utility that can dump the Windows NT SAM into 
+smbpasswd format: see ENCRYPTION.txt for information on smbpasswd and
+/pub/samba/pwdump on your nearest Samba mirror for the utility. This 
+facility is useful but cannot be easily used to implement SAM replication
+to Samba systems.
+</para>
+
+<para>
+Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
+can participate in a Domain security system that is controlled by Windows NT
+servers that have been correctly configured. Almost every domain will have
+ONE Primary Domain Controller (PDC). It is desirable that each domain will
+have at least one Backup Domain Controller (BDC).
+</para>
+
+<para>
+The PDC and BDCs then participate in replication of the SAM database so that
+each Domain Controlling participant will have an up to date SAM component
+within its registry.
+</para>
+
+</sect1>
+
+</chapter>

@@ -174,86 +174,14 @@ typedef struct nt_printer_driver_info_level
 	NT_PRINTER_DRIVER_INFO_LEVEL_6 *info_6;
 } NT_PRINTER_DRIVER_INFO_LEVEL;
 
-/* predefined registry key names for printer data */
-
-#define SPOOL_PRINTERDATA_KEY		"PrinterDriverData"
-#define SPOOL_DSSPOOLER_KEY		"DsSpooler"
-#define SPOOL_DSDRIVER_KEY		"DsDriver"
-#define SPOOL_DSUSER_KEY		"DsUser"
-#define SPOOL_PNPDATA_KEY		"PnPData"
-#define SPOOL_OID_KEY			"OID"
-
-/* predefined value names for printer data */
-#define SPOOL_REG_ASSETNUMBER		"assetNumber"
-#define SPOOL_REG_BYTESPERMINUTE	"bytesPerMinute"
-#define SPOOL_REG_DEFAULTPRIORITY	"defaultPriority"
-#define SPOOL_REG_DESCRIPTION		"description"
-#define SPOOL_REG_DRIVERNAME		"driverName"
-#define SPOOL_REG_DRIVERVERSION		"driverVersion"
-#define SPOOL_REG_FLAGS			"flags"
-#define SPOOL_REG_LOCATION		"location"
-#define SPOOL_REG_OPERATINGSYSTEM	"operatingSystem"
-#define SPOOL_REG_OPERATINGSYSTEMHOTFIX	"operatingSystemHotfix"
-#define SPOOL_REG_OPERATINGSYSTEMSERVICEPACK "operatingSystemServicePack"
-#define SPOOL_REG_OPERATINGSYSTEMVERSION "operatingSystemVersion"
-#define SPOOL_REG_PORTNAME		"portName"
-#define SPOOL_REG_PRINTATTRIBUTES	"printAttributes"
-#define SPOOL_REG_PRINTBINNAMES		"printBinNames"
-#define SPOOL_REG_PRINTCOLLATE		"printCollate"
-#define SPOOL_REG_PRINTCOLOR		"printColor"
-#define SPOOL_REG_PRINTDUPLEXSUPPORTED	"printDuplexSupported"
-#define SPOOL_REG_PRINTENDTIME		"printEndTime"
-#define SPOOL_REG_PRINTERNAME		"printerName"
-#define SPOOL_REG_PRINTFORMNAME		"printFormName"
-#define SPOOL_REG_PRINTKEEPPRINTEDJOBS	"printKeepPrintedJobs"
-#define SPOOL_REG_PRINTLANGUAGE		"printLanguage"
-#define SPOOL_REG_PRINTMACADDRESS	"printMACAddress"
-#define SPOOL_REG_PRINTMAXCOPIES	"printMaxCopies"
-#define SPOOL_REG_PRINTMAXRESOLUTIONSUPPORTED "printMaxResolutionSupported"
-#define SPOOL_REG_PRINTMAXXEXTENT	"printMaxXExtent"
-#define SPOOL_REG_PRINTMAXYEXTENT	"printMaxYExtent"
-#define SPOOL_REG_PRINTMEDIAREADY	"printMediaReady"
-#define SPOOL_REG_PRINTMEDIASUPPORTED	"printMediaSupported"
-#define SPOOL_REG_PRINTMEMORY		"printMemory"
-#define SPOOL_REG_PRINTMINXEXTENT	"printMinXExtent"
-#define SPOOL_REG_PRINTMINYEXTENT	"printMinYExtent"
-#define SPOOL_REG_PRINTNETWORKADDRESS	"printNetworkAddress"
-#define SPOOL_REG_PRINTNOTIFY		"printNotify"
-#define SPOOL_REG_PRINTNUMBERUP		"printNumberUp"
-#define SPOOL_REG_PRINTORIENTATIONSSUPPORTED "printOrientationsSupported"
-#define SPOOL_REG_PRINTOWNER		"printOwner"
-#define SPOOL_REG_PRINTPAGESPERMINUTE	"printPagesPerMinute"
-#define SPOOL_REG_PRINTRATE		"printRate"
-#define SPOOL_REG_PRINTRATEUNIT		"printRateUnit"
-#define SPOOL_REG_PRINTSEPARATORFILE	"printSeparatorFile"
-#define SPOOL_REG_PRINTSHARENAME	"printShareName"
-#define SPOOL_REG_PRINTSPOOLING		"printSpooling"
-#define SPOOL_REGVAL_PRINTWHILESPOOLING	"PrintWhileSpooling"
-#define SPOOL_REGVAL_PRINTAFTERSPOOLED	"PrintAfterSpooled"
-#define SPOOL_REGVAL_PRINTDIRECT	"PrintDirect"
-#define SPOOL_REG_PRINTSTAPLINGSUPPORTED "printStaplingSupported"
-#define SPOOL_REG_PRINTSTARTTIME	"printStartTime"
-#define SPOOL_REG_PRINTSTATUS		"printStatus"
-#define SPOOL_REG_PRIORITY		"priority"
-#define SPOOL_REG_SERVERNAME		"serverName"
-#define SPOOL_REG_SHORTSERVERNAME	"shortServerName"
-#define SPOOL_REG_UNCNAME		"uNCName"
-#define SPOOL_REG_URL			"url"
-#define SPOOL_REG_VERSIONNUMBER		"versionNumber"
-
-/* container for a single registry key */
-
-typedef struct {
-	char		*name;
-	REGVAL_CTR 	values;
-} NT_PRINTER_KEY;
-
-/* container for all printer data */
-
-typedef struct {
-	int		num_keys;
-	NT_PRINTER_KEY	*keys;
-} NT_PRINTER_DATA;
+typedef struct nt_printer_param
+{
+	fstring value;
+	uint32 type;
+	uint8 *data;
+	int data_len;
+	struct nt_printer_param *next;
+} NT_PRINTER_PARAM;
 
 #define MAXDEVICENAME	32
 
@@ -320,8 +248,9 @@ typedef struct nt_printer_info_level_2
 	fstring printprocessor;
 	fstring datatype;
 	fstring parameters;
-	NT_PRINTER_DATA data;
+	NT_PRINTER_PARAM *specific;
 	SEC_DESC_BUF *secdesc_buf;
+	/* not used but ... and how ??? */
 	uint32 changeid;
 	uint32 c_setprinter;
 	uint32 setuptime;	
@@ -404,81 +333,5 @@ typedef struct _form
 #define VS_VERSION_INFO_UNICODE_SIZE    (sizeof(VS_SIGNATURE)*2+4+VS_MINOR_OFFSET+4) /* not true size! */
 #define VS_VERSION_INFO_SIZE            (sizeof(VS_SIGNATURE)+4+VS_MINOR_OFFSET+4)   /* not true size! */
 #define VS_NE_BUF_SIZE                  4096  /* Must be > 2*VS_VERSION_INFO_SIZE */
-
-/* Notify spoolss clients that something has changed.  The
-   notification data is either stored in two uint32 values or a
-   variable length array. */
-
-#define SPOOLSS_NOTIFY_MSG_UNIX_JOBID 0x0001    /* Job id is unix  */
-
-typedef struct spoolss_notify_msg {
-	fstring printer;	/* Name of printer notified */
-	uint32 type;		/* Printer or job notify */
-	uint32 field;		/* Notify field changed */
-	uint32 id;		/* Job id */
-	uint32 len;		/* Length of data, 0 for two uint32 value */
-	uint32 flags;
-	union {
-		uint32 value[2];
-		char *data;
-	} notify;
-} SPOOLSS_NOTIFY_MSG;
-
-typedef struct {
-	fstring 		printername;
-	uint32			num_msgs;
-	SPOOLSS_NOTIFY_MSG	*msgs;
-} SPOOLSS_NOTIFY_MSG_GROUP;
-
-typedef struct {
-	TALLOC_CTX 			*ctx;
-	uint32				num_groups;
-	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
-} SPOOLSS_NOTIFY_MSG_CTR;
-
-#define PRINTER_HANDLE_IS_PRINTER	0
-#define PRINTER_HANDLE_IS_PRINTSERVER	1
-
-/* structure to store the printer handles */
-/* and a reference to what it's pointing to */
-/* and the notify info asked about */
-/* that's the central struct */
-typedef struct _Printer{
-	struct _Printer *prev, *next;
-	BOOL document_started;
-	BOOL page_started;
-	uint32 jobid; /* jobid in printing backend */
-	BOOL printer_type;
-	TALLOC_CTX *ctx;
-	union {
-	  	fstring handlename;
-		fstring printerservername;
-	} dev;
-	uint32 type;
-	uint32 access_granted;
-	struct {
-		uint32 flags;
-		uint32 options;
-		fstring localmachine;
-		uint32 printerlocal;
-		SPOOL_NOTIFY_OPTION *option;
-		POLICY_HND client_hnd;
-		BOOL client_connected;
-		uint32 change;
-		/* are we in a FindNextPrinterChangeNotify() call? */
-		BOOL fnpcn;
-	} notify;
-	struct {
-		fstring machine;
-		fstring user;
-	} client;
-	
-	/* devmode sent in the OpenPrinter() call */
-	NT_DEVICEMODE	*nt_devmode;
-	
-	/* cache the printer info */
-	NT_PRINTER_INFO_LEVEL *printer_info;
-	
-} Printer_entry;
 
 #endif /* NT_PRINTING_H_ */

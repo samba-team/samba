@@ -5,16 +5,12 @@
 # We want to reverse the patches in the opposite order we applied
 #	them, hence the 'ls|sort -r'.
 for patch in `ls debian/patches/*.patch | sort -r`; do
-	patch -p1 -R --ignore-whitespace < $patch
+	patch -p1 -R < $patch
 done
 
-# Unused code. See comment in the patch-source script.
-
-#TMPFILE=source/VERSION.debian
-#sed -e "s/^\(SAMBA_VERSION_VENDOR_SUFFIX=\).*$/\1/" source/VERSION > ${TMPFILE}
-#mv -f ${TMPFILE} source/VERSION
+perl -pi -e's/-.* for Debian//' source/include/version.h
 
 # Regenerate configure only if it is older than configure.in
-[ source/configure -ot source/configure.in ] && (cd source && autoheader && autoconf)
+[ source/configure -ot source/configure.in ] && (cd source && autoconf)
 
 exit 0

@@ -1,11 +1,12 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison               1998-2001.
- *  Copyright (C) Andrew Bartlett                   2001.
+ *  Copyirht  (C) Andrew Bartlett                   2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,8 +27,10 @@
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+extern BOOL sam_logon_in_ssb;
+extern pstring samlogon_user;
+extern pstring global_myname;
+extern DOM_SID global_sam_sid;
 
 /*************************************************************************
  init_net_r_req_chal:
@@ -72,40 +75,17 @@ NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u,
 	return r_u->status;
 }
 
-/****************************************************************************
-Send a message to smbd to do a sam synchronisation
-**************************************************************************/
-static void send_sync_message(void)
-{
-        TDB_CONTEXT *tdb;
-
-        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-                           TDB_DEFAULT, O_RDONLY, 0);
-
-        if (!tdb) {
-                DEBUG(3, ("send_sync_message(): failed to open connections "
-                          "database\n"));
-                return;
-        }
-
-        DEBUG(3, ("sending sam synchronisation message\n"));
-        
-        message_send_all(tdb, MSG_SMB_SAM_SYNC, NULL, 0, False, NULL);
-
-        tdb_close(tdb);
-}
-
 /*************************************************************************
  net_reply_logon_ctrl2:
  *************************************************************************/
 
 NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
 {
-        uint32 flags = 0x0;
-        uint32 pdc_connection_status = 0x0;
-        uint32 logon_attempts = 0x0;
-        uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-        const char *trusted_domain = "test_domain";
+	uint32 flags = 0x0;
+	uint32 pdc_connection_status = 0x0;
+	uint32 logon_attempts = 0x0;
+	uint32 tc_status = ERROR_NO_LOGON_SERVERS;
+	const char *trusted_domain = "test_domain";
 
         DEBUG(0, ("*** net long ctrl2 %d, %d, %d\n",
                   q_u->function_code, q_u->query_level, q_u->switch_value));
@@ -115,11 +95,8 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 
 	/* set up the Logon Control2 response */
 	init_net_r_logon_ctrl2(r_u, q_u->query_level,
-			       flags, pdc_connection_status, logon_attempts,
-			       tc_status, trusted_domain);
-
-        if (lp_server_role() == ROLE_DOMAIN_BDC)
-                send_sync_message();
+	                   flags, pdc_connection_status, logon_attempts,
+	                   tc_status, trusted_domain);
 
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
@@ -150,7 +127,7 @@ NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_T
  ***********************************************************************************/
 
 static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-				 DOM_CRED *srv_cred, NTSTATUS status)  
+                             DOM_CRED *srv_cred, NTSTATUS status)  
 {
 	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
 
@@ -167,9 +144,8 @@ static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
 static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
 	SAM_ACCOUNT *sampass = NULL;
-	const uint8 *pass;
+	uint8 *pass;
 	BOOL ret;
-	uint32 acct_ctrl;
 
 #if 0
     /*
@@ -188,37 +164,30 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 		return False;
 	}
 #endif /* 0 */
-
-	if(!NT_STATUS_IS_OK(pdb_init_sam(&sampass)))
+	if(!pdb_init_sam(&sampass))
 		return False;
 
 	/* JRA. This is ok as it is only used for generating the challenge. */
 	become_root();
 	ret=pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
- 
+
  	if (ret==False) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-		pdb_free_sam(&sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
-	if (!(acct_ctrl & ACB_DISABLED) &&
-	    ((acct_ctrl & ACB_DOMTRUST) ||
-	     (acct_ctrl & ACB_WSTRUST) ||
-	     (acct_ctrl & ACB_SVRTRUST)) &&
-	    ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) && ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
 		memcpy(md4pw, pass, 16);
 		dump_data(5, md4pw, 16);
- 		pdb_free_sam(&sampass);
+ 		pdb_free_sam(sampass);
 		return True;
 	}
  	
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-	pdb_free_sam(&sampass);
+	pdb_free_sam(sampass);
 	return False;
-
 }
 
 /*************************************************************************
@@ -228,25 +197,46 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 {
 	NTSTATUS status = NT_STATUS_OK;
+	fstring mach_acct;
 
-	rpcstr_pull(p->dc.remote_machine,q_u->uni_logon_clnt.buffer,sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
 
-	/* create a server challenge for the client */
-	/* Set these to random values. */
-	generate_random_buffer(p->dc.srv_chal.data, 8, False);
-	
-	memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
+	fstrcpy(mach_acct, dos_unistrn2(q_u->uni_logon_clnt.buffer,
+	                            q_u->uni_logon_clnt.uni_str_len));
 
-	memcpy(p->dc.clnt_chal.data          , q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-	memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	strlower(mach_acct);
+	fstrcat(mach_acct, "$");
 
-	memset((char *)p->dc.sess_key, '\0', sizeof(p->dc.sess_key));
+	if (get_md4pw((char *)p->dc.md4pw, mach_acct)) {
+		/* copy the client credentials */
+		memcpy(p->dc.clnt_chal.data          , q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 
-	p->dc.challenge_sent = True;
+		/* create a server challenge for the client */
+		/* Set these to random values. */
+		generate_random_buffer(p->dc.srv_chal.data, 8, False);
+
+		memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
+
+		memset((char *)p->dc.sess_key, '\0', sizeof(p->dc.sess_key));
+
+		/* from client / server challenges and md4 password, generate sess key */
+		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
+				(uchar *)p->dc.md4pw, p->dc.sess_key);
+
+		/* Save the machine account name. */
+		fstrcpy(p->dc.mach_acct, mach_acct);
+
+	} else {
+		/* lkclXXXX take a guess at a good error message to return :-) */
+		status = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+	}
+
 	/* set up the LSA REQUEST CHALLENGE response */
 	init_net_r_req_chal(r_u, &p->dc.srv_chal, status);
-	
-	return status;
+
+	return r_u->status;
 }
 
 /*************************************************************************
@@ -268,41 +258,26 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	NTSTATUS status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
-	fstring mach_acct;
+
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
 
 	srv_time.time = 0;
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
+	/* check that the client credentials are valid */
+	if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
 
-	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
+		/* create server challenge for inclusion in the reply */
+		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
 
-		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 p->dc.md4pw, p->dc.sess_key);
-		
-		/* check that the client credentials are valid */
-		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
-			
-			/* create server challenge for inclusion in the reply */
-			cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
-		
-			/* copy the received client credentials for use next time */
-			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			
-			/* Save the machine account name. */
-			fstrcpy(p->dc.mach_acct, mach_acct);
-		
-			p->dc.authenticated = True;
-
-		} else {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
+		/* copy the received client credentials for use next time */
+		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+		memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 	} else {
 		status = NT_STATUS_ACCESS_DENIED;
 	}
-	
-	/* set up the LSA AUTH response */
+
+	/* set up the LSA AUTH 2 response */
 	init_net_r_auth(r_u, &srv_cred, status);
 
 	return r_u->status;
@@ -330,60 +305,29 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 	NEG_FLAGS srv_flgs;
-	fstring mach_acct;
+
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
 
 	srv_time.time = 0;
 
-	if ( (lp_server_schannel() == True) &&
-	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
+	/* check that the client credentials are valid */
+	if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
 
-		/* schannel must be used, but client did not offer it. */
-		status = NT_STATUS_ACCESS_DENIED;
-	}
+		/* create server challenge for inclusion in the reply */
+		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-
-	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
-		
-		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 p->dc.md4pw, p->dc.sess_key);
-		
-		/* check that the client credentials are valid */
-		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
-			
-			/* create server challenge for inclusion in the reply */
-			cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
-			
-			/* copy the received client credentials for use next time */
-			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			
-			/* Save the machine account name. */
-			fstrcpy(p->dc.mach_acct, mach_acct);
-			
-			p->dc.authenticated = True;
-
-		} else {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
+		/* copy the received client credentials for use next time */
+		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+		memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 	} else {
 		status = NT_STATUS_ACCESS_DENIED;
 	}
-	
-	srv_flgs.neg_flags = 0x000001ff;
 
-	if (lp_server_schannel() != False) {
-		srv_flgs.neg_flags |= NETLOGON_NEG_SCHANNEL;
-	}
+	srv_flgs.neg_flags = 0x000001ff;
 
 	/* set up the LSA AUTH 2 response */
 	init_net_r_auth_2(r_u, &srv_cred, &srv_flgs, status);
-
-	if (NT_STATUS_IS_OK(status)) {
-		extern struct dcinfo last_dcinfo;
-		last_dcinfo = p->dc;
-	}
 
 	return r_u->status;
 }
@@ -394,51 +338,53 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
-	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
+	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	DOM_CRED srv_cred;
-	pstring workstation;
+	pstring mach_acct;
 	SAM_ACCOUNT *sampass=NULL;
-	BOOL ret = False;
+	BOOL ret=False;
 	unsigned char pwd[16];
 	int i;
-	uint32 acct_ctrl;
+
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred)))
+	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred))
 		return NT_STATUS_INVALID_HANDLE;
 
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
-	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
-		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
+	pstrcpy(mach_acct, dos_unistrn2(q_u->clnt_id.login.uni_acct_name.buffer,
+	                            q_u->clnt_id.login.uni_acct_name.uni_str_len));
 
-	DEBUG(3,("Server Password Set by Wksta:[%s] on account [%s]\n", workstation, p->dc.mach_acct));
-	
+	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+
+	/*
+	 * Check the machine account name we're changing is the same
+	 * as the one we've authenticated from. This prevents arbitrary
+	 * machines changing other machine account passwords.
+	 */
+
+	if (!strequal(mach_acct, p->dc.mach_acct)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	pdb_init_sam(&sampass);
 
 	become_root();
-	ret=pdb_getsampwnam(sampass, p->dc.mach_acct);
+	ret=pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
 
 	/* Ensure the account exists and is a machine account. */
-	
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
-	if (!(ret 
-	      && (acct_ctrl & ACB_WSTRUST ||
-		      acct_ctrl & ACB_SVRTRUST ||
-		      acct_ctrl & ACB_DOMTRUST))) {
-		pdb_free_sam(&sampass);
+	if (ret==False || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST)) {
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
-	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
-		pdb_free_sam(&sampass);
-		return NT_STATUS_ACCOUNT_DISABLED;
-	}
-
+				    				    
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < 16; i++)
 		DEBUG(100,("%02X ", q_u->pwd[i]));
@@ -447,33 +393,27 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
-	if (!pdb_set_lanman_passwd (sampass, pwd, PDB_CHANGED)) {
-		pdb_free_sam(&sampass);
+	if (!pdb_set_lanman_passwd (sampass, pwd)) {
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	if (!pdb_set_nt_passwd     (sampass, pwd, PDB_CHANGED)) {
-		pdb_free_sam(&sampass);
+	if (!pdb_set_nt_passwd(sampass, pwd)) {
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	if (!pdb_set_pass_changed_now     (sampass)) {
-		pdb_free_sam(&sampass);
-		/* Not quite sure what this one qualifies as, but this will do */
-		return NT_STATUS_UNSUCCESSFUL; 
-	}
+	pdb_set_acct_ctrl     (sampass, ACB_WSTRUST);
  
 	become_root();
-	ret = pdb_update_sam_account (sampass);
+	ret = pdb_update_sam_account (sampass,False);
 	unbecome_root();
- 
+
 	if (ret)
 		status = NT_STATUS_OK;
 
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
 
-	pdb_free_sam(&sampass);
+	pdb_free_sam(sampass);
 	return r_u->status;
 }
 
@@ -490,8 +430,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_NO_SUCH_USER;
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, 
-						     &q_u->sam_id.client.cred, &srv_cred)))
+	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, 
+	                &q_u->sam_id.client.cred, &srv_cred))
 		return NT_STATUS_INVALID_HANDLE;
 
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
@@ -505,6 +445,118 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	return r_u->status;
 }
 
+/*************************************************************************
+ net_login_interactive:
+ *************************************************************************/
+
+static NTSTATUS net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pipes_struct *p)
+{
+	uint8    *stored_nt_pwd, *stored_lanman_pwd;
+	char nt_pwd[16];
+	char lm_pwd[16];
+	unsigned char key[16];
+
+	memset(key, 0, 16);
+	memcpy(key, p->dc.sess_key, 8);
+
+	memcpy(lm_pwd, id1->lm_owf.data, 16);
+	memcpy(nt_pwd, id1->nt_owf.data, 16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("key:"));
+	dump_data(100, (char *)key, 16);
+
+	DEBUG(100,("lm owf password:"));
+	dump_data(100, lm_pwd, 16);
+
+	DEBUG(100,("nt owf password:"));
+	dump_data(100, nt_pwd, 16);
+#endif
+
+	SamOEMhash((uchar *)lm_pwd, key, 16);
+	SamOEMhash((uchar *)nt_pwd, key, 16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("decrypt of lm owf password:"));
+	dump_data(100, lm_pwd, 16);
+
+	DEBUG(100,("decrypt of nt owf password:"));
+	dump_data(100, nt_pwd, 16);
+#endif
+
+	/* JRA. Check the NT password first if it exists - this is a higher quality 
+           password, if it exists and it doesn't match - fail. */
+
+	stored_nt_pwd = pdb_get_nt_passwd(sampass);
+
+	if (stored_nt_pwd) {
+		if (memcmp(stored_nt_pwd, nt_pwd, 16) != 0) {
+			DEBUG(10,("net_login_interactive: NT password for user %s doesn't match.\n",
+				sampass->username));
+			return NT_STATUS_WRONG_PASSWORD;
+		} else
+			return NT_STATUS_OK;
+	}
+
+	stored_lanman_pwd = pdb_get_lanman_passwd(sampass);
+
+	if (stored_lanman_pwd && lp_lanman_auth()) {
+		if (memcmp(stored_lanman_pwd, lm_pwd, 16) != 0) {
+			DEBUG(10,("net_login_interactive: lanman password for user %s doesn't match.\n",
+				sampass->username));
+			return NT_STATUS_WRONG_PASSWORD;
+		} else
+			return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_WRONG_PASSWORD;
+}
+
+/*************************************************************************
+ _net_login_network:
+ *************************************************************************/
+
+static NTSTATUS net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
+{
+	uint8    *nt_pwd, *lanman_pwd;
+
+	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
+		id2->hdr_lm_chal_resp.str_str_len, 
+		id2->hdr_nt_chal_resp.str_str_len));
+
+	/* JRA. Check the NT password first if it exists - this is a higher quality 
+           password, if it exists and it doesn't match - fail. */
+
+	nt_pwd = pdb_get_nt_passwd(sampass);
+	lanman_pwd = pdb_get_lanman_passwd(sampass);
+
+	if (id2->hdr_nt_chal_resp.str_str_len == 24 && nt_pwd != NULL)	{
+		if(smb_password_check((char *)id2->nt_chal_resp.buffer, nt_pwd, id2->lm_chal)) 
+			return NT_STATUS_OK;
+		else
+			return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* lkclXXXX this is not a good place to put disabling of LM hashes in.
+	   if that is to be done, first move this entire function into a
+	   library routine that calls the two smb_password_check() functions.
+	   if disabling LM hashes (which nt can do for security reasons) then
+	   an attempt should be made to disable them everywhere (which nt does
+	   not do, for various security-hole reasons).
+	 */
+
+	if (lp_lanman_auth() && id2->hdr_lm_chal_resp.str_str_len == 24 &&
+		smb_password_check((char *)id2->lm_chal_resp.buffer,
+		                   lanman_pwd, id2->lm_chal)) 
+	{
+		return NT_STATUS_OK;
+	}
+
+
+	/* oops! neither password check succeeded */
+
+	return NT_STATUS_WRONG_PASSWORD;
+}
 
 /*************************************************************************
  _net_sam_logon
@@ -514,22 +566,16 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 {
 	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
-	NET_ID_INFO_CTR *ctr = q_u->sam_id.ctr;
 	DOM_CRED srv_cred;
+	SAM_ACCOUNT *sampass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
-	UNISTR2 *uni_samlogon_domain = NULL;
-	UNISTR2 *uni_samlogon_workstation = NULL;
-	fstring nt_username, nt_domain, nt_workstation;
-	auth_usersupplied_info *user_info = NULL;
-	auth_serversupplied_info *server_info = NULL;
-	extern userdom_struct current_user_info;
-	SAM_ACCOUNT *sampw;
-	struct auth_context *auth_context = NULL;
-	        
+	fstring nt_username;
+	BOOL ret;
+	uint16 acct_ctrl;
+   
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
-
 	ZERO_STRUCTP(usr_info);
 
  	/* store the user information, if there is any. */
@@ -540,20 +586,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
  
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
-
-
-	if ( (lp_server_schannel() == True) && (!p->netsec_auth_validated) ) {
-		/* 'server schannel = yes' should enforce use of
-		   schannel, the client did offer it in auth2, but
-		   obviously did not use it. */
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
+    
 	/* checks and updates credentials.  creates reply credentials */
-	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
+	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
 		return NT_STATUS_INVALID_HANDLE;
-
-	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+	else
+		memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
@@ -562,17 +600,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
     
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
-		uni_samlogon_user = &ctr->auth.id1.uni_user_name;
- 		uni_samlogon_domain = &ctr->auth.id1.uni_domain_name;
-
-                uni_samlogon_workstation = &ctr->auth.id1.uni_wksta_name;
+		uni_samlogon_user = &q_u->sam_id.ctr->auth.id1.uni_user_name;
             
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
-		uni_samlogon_user = &ctr->auth.id2.uni_user_name;
-		uni_samlogon_domain = &ctr->auth.id2.uni_domain_name;
-		uni_samlogon_workstation = &ctr->auth.id2.uni_wksta_name;
+		uni_samlogon_user = &q_u->sam_id.ctr->auth.id2.uni_user_name;
             
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
@@ -581,215 +614,116 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 
-	rpcstr_pull(nt_username,uni_samlogon_user->buffer,sizeof(nt_username),uni_samlogon_user->uni_str_len*2,0);
-	rpcstr_pull(nt_domain,uni_samlogon_domain->buffer,sizeof(nt_domain),uni_samlogon_domain->uni_str_len*2,0);
-	rpcstr_pull(nt_workstation,uni_samlogon_workstation->buffer,sizeof(nt_workstation),uni_samlogon_workstation->uni_str_len*2,0);
+	/* check username exists */
 
-	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, 
-                 nt_workstation, nt_domain));
-   	
-	fstrcpy(current_user_info.smb_name, nt_username);
-	sub_set_smb_name(nt_username);
-     
-	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
+	pstrcpy(nt_username, dos_unistrn2(uni_samlogon_user->buffer, uni_samlogon_user->uni_str_len));
 
-	status = NT_STATUS_OK;
-	
-	switch (ctr->switch_value) {
-	case NET_LOGON_TYPE:
+	DEBUG(3,("User:[%s]\n", nt_username));
+        
+	/*
+	 * Convert to a UNIX username.
+	 */
+
+	map_username(nt_username);
+
+	/* get the account information */
+	pdb_init_sam(&sampass);
+	become_root();
+	ret = pdb_getsampwnam(sampass, nt_username);
+	unbecome_root();
+
+	if (!ret)
 	{
-		const char *wksname = nt_workstation;
-		
-		if (!NT_STATUS_IS_OK(status = make_auth_context_fixed(&auth_context, ctr->auth.id2.lm_chal))) {
-			return status;
-		}
-
-		/* For a network logon, the workstation name comes in with two
-		 * backslashes in the front. Strip them if they are there. */
-
-		if (*wksname == '\\') wksname++;
-		if (*wksname == '\\') wksname++;
-
-		/* Standard challenge/response authenticaion */
-		if (!make_user_info_netlogon_network(&user_info, 
-						     nt_username, nt_domain, 
-						     wksname,
-						     ctr->auth.id2.lm_chal_resp.buffer,
-						     ctr->auth.id2.lm_chal_resp.str_str_len,
-						     ctr->auth.id2.nt_chal_resp.buffer,
-						     ctr->auth.id2.nt_chal_resp.str_str_len)) {
-			status = NT_STATUS_NO_MEMORY;
-		}	
-		break;
+		pdb_free_sam(sampass);
+		return NT_STATUS_NO_SUCH_USER;
 	}
-	case INTERACTIVE_LOGON_TYPE:
-		/* 'Interactive' autheticaion, supplies the password in its
-		   MD4 form, encrypted with the session key.  We will
-		   convert this to chellange/responce for the auth
-		   subsystem to chew on */
-	{
-		const uint8 *chal;
-		
-		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
-			return status;
-		}
-		
-		chal = auth_context->get_ntlm_challenge(auth_context);
-
-		if (!make_user_info_netlogon_interactive(&user_info, 
-							 nt_username, nt_domain, 
-							 nt_workstation, chal,
-							 ctr->auth.id1.lm_owf.data, 
-							 ctr->auth.id1.nt_owf.data, 
-							 p->dc.sess_key)) {
-			status = NT_STATUS_NO_MEMORY;
-		}
-		break;
-	}
-	default:
-		DEBUG(2,("SAM Logon: unsupported switch value\n"));
-		return NT_STATUS_INVALID_INFO_CLASS;
-	} /* end switch */
 	
-	if ( NT_STATUS_IS_OK(status) ) {
-		status = auth_context->check_ntlm_password(auth_context, 
-			user_info, &server_info);
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+
+	/* Validate password - if required. */
+
+	if (!(acct_ctrl & ACB_PWNOTREQ)) {
+		switch (q_u->sam_id.logon_level) {
+		case INTERACTIVE_LOGON_TYPE:
+			/* interactive login. */
+			status = net_login_interactive(&q_u->sam_id.ctr->auth.id1, sampass, p);
+			break;
+		case NET_LOGON_TYPE:
+			/* network login.  lm challenge and 24 byte responses */
+			status = net_login_network(&q_u->sam_id.ctr->auth.id2, sampass);
+			break;
+		}
 	}
 
-	(auth_context->free)(&auth_context);	
-	free_user_info(&user_info);
-	
-	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 
-		  nt_errstr(status)));
-
-	/* Check account and password */
-    
 	if (!NT_STATUS_IS_OK(status)) {
-		free_server_info(&server_info);
+		pdb_free_sam(sampass);
 		return status;
 	}
 
-	if (server_info->guest) {
-		/* We don't like guest domain logons... */
-		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST denied.\n"));
-		free_server_info(&server_info);
-		return NT_STATUS_LOGON_FAILURE;
+#ifdef WITH_PAM
+	become_root();
+	status = smb_pam_accountcheck(pdb_get_username(sampass));
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		pdb_free_sam(sampass);
+		return status;
 	}
+#endif
 
-	/* This is the point at which, if the login was successful, that
-           the SAM Local Security Authority should record that the user is
-           logged in to the domain.  */
+	if (acct_ctrl & ACB_DISABLED) {
+		pdb_free_sam(sampass);
+		return NT_STATUS_ACCOUNT_DISABLED;
+	}
+    
+	/* lkclXXXX this is the point at which, if the login was
+		successful, that the SAM Local Security Authority should
+		record that the user is logged in to the domain.
+	*/
     
 	{
 		DOM_GID *gids = NULL;
-		const DOM_SID *user_sid = NULL;
-		const DOM_SID *group_sid = NULL;
-		DOM_SID domain_sid;
-		uint32 user_rid, group_rid; 
-
 		int num_gids = 0;
 		pstring my_name;
-		fstring user_sid_string;
-		fstring group_sid_string;
-		uchar user_session_key[16];
-		uchar lm_session_key[16];
-		uchar netlogon_sess_key[16];
-
-		sampw = server_info->sam_account;
-
+		pstring my_workgroup;
+		pstring domain_groups;
+	
 		/* set up pointer indicating user/password failed to be found */
 		usr_info->ptr_user_info = 0;
+        
+		pstrcpy(my_workgroup, lp_workgroup());
+		pstrcpy(my_name, global_myname);
+		strupper(my_name);
 
-		user_sid = pdb_get_user_sid(sampw);
-		group_sid = pdb_get_group_sid(sampw);
-
-		sid_copy(&domain_sid, user_sid);
-		sid_split_rid(&domain_sid, &user_rid);
-
-		if (!sid_peek_check_rid(&domain_sid, group_sid, &group_rid)) {
-			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid %s\n but group sid %s.\nThe conflicting domain portions are not supported for NETLOGON calls\n", 	    
-				  pdb_get_domain(sampw), pdb_get_username(sampw),
-				  sid_to_string(user_sid_string, user_sid),
-				  sid_to_string(group_sid_string, group_sid)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		
-		pstrcpy(my_name, global_myname());
-
-		if (!NT_STATUS_IS_OK(status 
-				     = nt_token_to_group_list(p->mem_ctx, 
-							      &domain_sid, 
-							      server_info->ptok, 
-							      &num_gids, 
-							      &gids))) {
-			return status;
-		}
-
-		ZERO_STRUCT(netlogon_sess_key);
-		memcpy(netlogon_sess_key, p->dc.sess_key, 8);
-		if (server_info->user_session_key.length) {
-			memcpy(user_session_key, server_info->user_session_key.data, 
-			       MIN(sizeof(user_session_key), server_info->user_session_key.length));
-			SamOEMhash(user_session_key, netlogon_sess_key, 16);
-		}
-		if (server_info->lm_session_key.length) {
-			memcpy(lm_session_key, server_info->lm_session_key.data, 
-			       MIN(sizeof(lm_session_key), server_info->lm_session_key.length));
-			SamOEMhash(lm_session_key, netlogon_sess_key, 16);
-		}
-		ZERO_STRUCT(netlogon_sess_key);
-		
-		init_net_user_info3(p->mem_ctx, usr_info, 
-				    user_rid,
-				    group_rid,   
-				    pdb_get_username(sampw),
-				    pdb_get_fullname(sampw),
-				    pdb_get_homedir(sampw),
-				    pdb_get_dir_drive(sampw),
-				    pdb_get_logon_script(sampw),
-				    pdb_get_profile_path(sampw),
-				    pdb_get_logon_time(sampw),
-				    get_time_t_max(),
-				    get_time_t_max(),
-				    pdb_get_pass_last_set_time(sampw),
-				    pdb_get_pass_can_change_time(sampw),
-				    pdb_get_pass_must_change_time(sampw),
-				    
-				    0, /* logon_count */
-				    0, /* bad_pw_count */
-				    num_gids,    /* uint32 num_groups */
-				    gids    , /* DOM_GID *gids */
-				    0x20    , /* uint32 user_flgs (?) */
-				    server_info->user_session_key.length ? user_session_key : NULL,
-				    server_info->lm_session_key.length ? lm_session_key : NULL,
-				    my_name     , /* char *logon_srv */
-				    pdb_get_domain(sampw),
-				    &domain_sid,     /* DOM_SID *dom_sid */  
-				    /* Should be users domain sid, not servers - for trusted domains */
-				  
-				    NULL); /* char *other_sids */
-		ZERO_STRUCT(user_session_key);
-		ZERO_STRUCT(lm_session_key);
+		/*
+		 * This is the point at which we get the group
+		 * database - we should be getting the gid_t list
+		 * from /etc/group and then turning the uids into
+		 * rids and then into machine sids for this user.
+		 * JRA.
+		 */
+        
+		get_domain_user_groups(domain_groups, nt_username);
+        
+		/*
+		 * make_dom_gids allocates the gids array. JRA.
+		 */
+		gids = NULL;
+		num_gids = make_dom_gids(p->mem_ctx, domain_groups, &gids);
+        
+		init_net_user_info3(p->mem_ctx, usr_info, sampass,
+                            0, /* logon_count */
+                            0, /* bad_pw_count */
+                            num_gids,    /* uint32 num_groups */
+                            gids    , /* DOM_GID *gids */
+                            0x20    , /* uint32 user_flgs (?) */
+                            NULL, /* char sess_key[16] */
+                            my_name     , /* char *logon_srv */
+                            my_workgroup, /* char *logon_dom */
+                            &global_sam_sid,     /* DOM_SID *dom_sid */
+                            NULL); /* char *other_sids */
+        
 	}
-	free_server_info(&server_info);
+
+	pdb_free_sam(sampass);
 	return status;
 }
-
-/*************************************************************************
- _ds_enum_dom_trusts
- *************************************************************************/
-#if 0	/* JERRY -- not correct */
-NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
-			     DS_R_ENUM_DOM_TRUSTS *r_u)
-{
-	NTSTATUS status = NT_STATUS_OK;
-
-	/* TODO: According to MSDN, the can only be executed against a 
-	   DC or domain member running Windows 2000 or later.  Need
-	   to test against a standalone 2k server and see what it 
-	   does.  A windows 2000 DC includes its own domain in the 
-	   list.  --jerry */
-
-	return status;
-}
-#endif	/* JERRY */

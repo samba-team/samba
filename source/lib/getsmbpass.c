@@ -83,96 +83,71 @@ static int tcsetattr(int fd, int flags, struct sgttyb *t)
 static struct termios t;
 #endif /* SYSV_TERMIO */
 
-static SIG_ATOMIC_T gotintr;
-static int in_fd = -1;
-
-/***************************************************************
- Signal function to tell us were ^C'ed.
-****************************************************************/
-
-static void gotintr_sig(void)
+char *getsmbpass(const char *prompt)    
 {
-	gotintr = 1;
-	if (in_fd != -1)
-		close(in_fd); /* Safe way to force a return. */
-	in_fd = -1;
-}
+  FILE *in, *out;
+  int echo_off;
+  static char buf[256];
+  static size_t bufsize = sizeof(buf);
+  size_t nread;
 
-char *getsmbpass(const char *prompt)
-{
-	FILE *in, *out;
-	int echo_off;
-	static char buf[256];
-	static size_t bufsize = sizeof(buf);
-	size_t nread;
+  /* Catch problematic signals */
+  CatchSignal(SIGINT, SIGNAL_CAST SIG_IGN);
 
-	/* Catch problematic signals */
-	CatchSignal(SIGINT, SIGNAL_CAST gotintr_sig);
+  /* Try to write to and read from the terminal if we can.
+     If we can't open the terminal, use stderr and stdin.  */
 
-	/* Try to write to and read from the terminal if we can.
-		If we can't open the terminal, use stderr and stdin.  */
+  in = fopen ("/dev/tty", "w+");
+  if (in == NULL)
+    {
+      in = stdin;
+      out = stderr;
+    }
+  else
+    out = in;
 
-	in = fopen ("/dev/tty", "w+");
-	if (in == NULL) {
-		in = stdin;
-		out = stderr;
-	} else {
-		out = in;
+  setvbuf(in, NULL, _IONBF, 0);
+
+  /* Turn echoing off if it is on now.  */
+
+  if (tcgetattr (fileno (in), &t) == 0)
+    {
+	  if (ECHO_IS_ON(t))
+	{
+		TURN_ECHO_OFF(t);
+		echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
+		TURN_ECHO_ON(t);
 	}
+      else
+	echo_off = 0;
+    }
+  else
+    echo_off = 0;
 
-	setvbuf(in, NULL, _IONBF, 0);
+  /* Write the prompt.  */
+  fputs (prompt, out);
+  fflush (out);
 
-	/* Turn echoing off if it is on now.  */
+  /* Read the password.  */
+  buf[0] = 0;
+  fgets(buf, bufsize, in);
+  nread = strlen(buf);
+  if (buf[nread - 1] == '\n')
+    buf[nread - 1] = '\0';
 
-	if (tcgetattr (fileno (in), &t) == 0) {
-		if (ECHO_IS_ON(t)) {
-			TURN_ECHO_OFF(t);
-			echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
-			TURN_ECHO_ON(t);
-		} else {
-			echo_off = 0;
-		}
-	} else {
-		echo_off = 0;
-	}
+  /* Restore echoing.  */
+  if (echo_off)
+    (void) tcsetattr (fileno (in), TCSANOW, &t);
 
-	/* Write the prompt.  */
-	fputs(prompt, out);
-	fflush(out);
+  if (in != stdin)
+    /* We opened the terminal; now close it.  */
+    fclose (in);
 
-	/* Read the password.  */
-	buf[0] = 0;
-	if (!gotintr) {
-		in_fd = fileno(in);
-		fgets(buf, bufsize, in);
-	}
-	nread = strlen(buf);
-	if (buf[nread - 1] == '\n')
-		buf[nread - 1] = '\0';
+  /* Catch problematic signals */
+  CatchSignal(SIGINT, SIGNAL_CAST SIG_DFL);
 
-	/* Restore echoing.  */
-	if (echo_off) {
-		if (gotintr && in_fd == -1)
-			in = fopen ("/dev/tty", "w+");
-		if (in != NULL)
-			tcsetattr (fileno (in), TCSANOW, &t);
-	}
-
-	fprintf(out, "\n");
-	fflush(out);
-
-	if (in != stdin) /* We opened the terminal; now close it.  */
-		fclose(in);
-
-	/* Catch problematic signals */
-	CatchSignal(SIGINT, SIGNAL_CAST SIG_DFL);
-
-	if (gotintr) {
-		printf("Interupted by signal.\n");
-		fflush(stdout);
-		exit(1);
-	}
-	return buf;
+  printf("\n");
+  return buf;
 }
 
 #else

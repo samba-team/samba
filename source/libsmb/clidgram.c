@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    client dgram calls
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Richard Sharpe 2001
@@ -19,6 +20,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
+#define NO_SYSLOG
 
 #include "includes.h"
 
@@ -51,7 +54,9 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, const char *mailslot,
   dgram->header.flags.more = False;
   dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
   dgram->header.source_ip.s_addr = src_ip.s_addr;
+  /*fprintf(stderr, "Source IP = %0X\n", dgram->header.source_ip); */
   dgram->header.source_port = ntohs(src_port);
+  fprintf(stderr, "Source Port = %0X\n", dgram->header.source_port);
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
   dgram->header.packet_offset = 0;
   
@@ -75,7 +80,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, const char *mailslot,
   SSVAL(ptr,smb_vwv15,1);
   SSVAL(ptr,smb_vwv16,2);
   p2 = smb_buf(ptr);
-  fstrcpy(p2,mailslot);
+  pstrcpy(p2,mailslot);
   p2 = skip_string(p2,1);
 
   memcpy(p2,buf,len);
@@ -135,7 +140,7 @@ static char cli_backup_list[1024];
 
 int cli_get_backup_list(const char *myname, const char *send_to_name)
 {
-  pstring outbuf;
+  char outbuf[15];
   char *p;
   struct in_addr sendto_ip, my_ip;
   int dgram_sock;
@@ -262,3 +267,6 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
   return True;
 
 }
+
+
+

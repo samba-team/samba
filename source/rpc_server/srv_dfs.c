@@ -1,11 +1,11 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines for Dfs
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Shirish Kalele                    2000,
- *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
+ *  Copyright (C) Shirish Kalele               2000.
+ *  Copyright (C) Jeremy Allison				2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,8 +29,9 @@
 
 #define MAX_MSDFS_JUNCTIONS 256
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+extern pstring global_myname;
+
+#ifdef WITH_MSDFS
 
 /**********************************************************************
  api_dfs_exist
@@ -157,23 +158,28 @@ static BOOL api_dfs_enum(pipes_struct *p)
 /*******************************************************************
 \pipe\netdfs commands
 ********************************************************************/
-static struct api_struct api_netdfs_cmds[] =
+
+struct api_struct api_netdfs_cmds[] =
 {
-      {"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
-      {"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
-      {"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
-      {"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
-      {"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     }
+	{"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
+	{"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
+	{"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
+	{"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
+	{"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     },
+	{NULL,               0,                       NULL             }
 };
 
-void netdfs_get_pipe_fns( struct api_struct **fns, int *n_fns )
+/*******************************************************************
+receives a netdfs pipe and responds.
+********************************************************************/
+
+BOOL api_netdfs_rpc(pipes_struct *p)
 {
-	*fns = api_netdfs_cmds;
-	*n_fns = sizeof(api_netdfs_cmds) / sizeof(struct api_struct);
+	return api_rpcTNP(p, "api_netdfs_rpc", api_netdfs_cmds);
 }
 
-NTSTATUS rpc_dfs_init(void)
-{
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "netdfs", "netdfs", api_netdfs_cmds,
-				    sizeof(api_netdfs_cmds) / sizeof(struct api_struct));
-}
+#else
+
+ void dfs_dummy(void) {;} /* So some compilers don't complain. */
+
+#endif

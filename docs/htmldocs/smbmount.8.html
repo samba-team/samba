@@ -1,0 +1,468 @@
+<HTML
+><HEAD
+><TITLE
+>smbmount</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBMOUNT"
+>smbmount</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbmount&nbsp;--&nbsp;mount an smbfs filesystem</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>smbmount</B
+>  {service} {mount-point} [-o options]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN14"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+><B
+CLASS="COMMAND"
+>smbmount</B
+> mounts a Linux SMB filesystem. It 
+	is usually invoked as <B
+CLASS="COMMAND"
+>mount.smbfs</B
+> by
+	the <B
+CLASS="COMMAND"
+>mount(8)</B
+> command when using the 
+	"-t smbfs" option. This command only works in Linux, and the kernel must
+	support the smbfs filesystem. </P
+><P
+>Options to <B
+CLASS="COMMAND"
+>smbmount</B
+> are specified as a comma-separated
+	list of key=value pairs. It is possible to send options other
+	than those listed here, assuming that smbfs supports them. If
+	you get mount failures, check your kernel log for errors on
+	unknown options.</P
+><P
+><B
+CLASS="COMMAND"
+>smbmount</B
+> is a daemon. After mounting it keeps running until
+	the mounted smbfs is umounted. It will log things that happen
+	when in daemon mode using the "machine name" smbmount, so
+	typically this output will end up in <TT
+CLASS="FILENAME"
+>log.smbmount</TT
+>. The
+	<B
+CLASS="COMMAND"
+>smbmount</B
+> process may also be called mount.smbfs.</P
+><P
+><EM
+>NOTE:</EM
+> <B
+CLASS="COMMAND"
+>smbmount</B
+> 
+	calls <B
+CLASS="COMMAND"
+>smbmnt(8)</B
+> to do the actual mount. You 
+	must make sure that <B
+CLASS="COMMAND"
+>smbmnt</B
+> is in the path so 
+	that it can be found. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN31"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>username=&#60;arg&#62;</DT
+><DD
+><P
+>specifies the username to connect as. If
+		this is not given, then the environment variable <TT
+CLASS="ENVAR"
+>		USER</TT
+> is used. This option can also take the
+		form "user%password" or "user/workgroup" or
+		"user/workgroup%password" to allow the password and workgroup
+		to be specified as part of the username.</P
+></DD
+><DT
+>password=&#60;arg&#62;</DT
+><DD
+><P
+>specifies the SMB password. If this
+		option is not given then the environment variable
+		<TT
+CLASS="ENVAR"
+>PASSWD</TT
+> is used. If it can find
+		no password <B
+CLASS="COMMAND"
+>smbmount</B
+> will prompt
+		for a passeword, unless the guest option is
+		given. </P
+><P
+>		Note that password which contain the arguement delimiter
+		character (i.e. a comma ',') will failed to be parsed correctly
+		on the command line.  However, the same password defined
+		in the PASSWD environment variable or a credentials file (see
+		below) will be read correctly.
+		</P
+></DD
+><DT
+>credentials=&#60;filename&#62;</DT
+><DD
+><P
+>specifies a file that contains a username
+		and/or password. The format of the file is:</P
+><P
+>		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		username = &#60;value&#62;
+		password = &#60;value&#62;
+		</PRE
+></TD
+></TR
+></TABLE
+>
+		</P
+><P
+>This is preferred over having passwords in plaintext in a
+		shared file, such as <TT
+CLASS="FILENAME"
+>/etc/fstab</TT
+>. Be sure to protect any
+		credentials file properly.
+		</P
+></DD
+><DT
+>netbiosname=&#60;arg&#62;</DT
+><DD
+><P
+>sets the source NetBIOS name. It defaults 
+		to the local hostname. </P
+></DD
+><DT
+>uid=&#60;arg&#62;</DT
+><DD
+><P
+>sets the uid that will own all files on
+		the mounted filesystem.
+		It may be specified as either a username or a numeric uid.
+		</P
+></DD
+><DT
+>gid=&#60;arg&#62;</DT
+><DD
+><P
+>sets the gid that will own all files on
+		the mounted filesystem.
+		It may be specified as either a groupname or a numeric 
+		gid. </P
+></DD
+><DT
+>port=&#60;arg&#62;</DT
+><DD
+><P
+>sets the remote SMB port number. The default 
+		is 139. </P
+></DD
+><DT
+>fmask=&#60;arg&#62;</DT
+><DD
+><P
+>sets the file mask. This determines the 
+		permissions that remote files have in the local filesystem. 
+		The default is based on the current umask. </P
+></DD
+><DT
+>dmask=&#60;arg&#62;</DT
+><DD
+><P
+>sets the directory mask. This determines the 
+		permissions that remote directories have in the local filesystem. 
+		The default is based on the current umask. </P
+></DD
+><DT
+>debug=&#60;arg&#62;</DT
+><DD
+><P
+>sets the debug level. This is useful for 
+		tracking down SMB connection problems. A suggested value to
+		start with is 4. If set too high there will be a lot of
+		output, possibly hiding the useful output.</P
+></DD
+><DT
+>ip=&#60;arg&#62;</DT
+><DD
+><P
+>sets the destination host or IP address.
+		</P
+></DD
+><DT
+>workgroup=&#60;arg&#62;</DT
+><DD
+><P
+>sets the workgroup on the destination </P
+></DD
+><DT
+>sockopt=&#60;arg&#62;</DT
+><DD
+><P
+>sets the TCP socket options. See the <A
+HREF="smb.conf.5.html#SOCKETOPTIONS"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf
+		</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>socket options</I
+></TT
+> option.
+		</P
+></DD
+><DT
+>scope=&#60;arg&#62;</DT
+><DD
+><P
+>sets the NetBIOS scope </P
+></DD
+><DT
+>guest</DT
+><DD
+><P
+>don't prompt for a password </P
+></DD
+><DT
+>ro</DT
+><DD
+><P
+>mount read-only </P
+></DD
+><DT
+>rw</DT
+><DD
+><P
+>mount read-write </P
+></DD
+><DT
+>iocharset=&#60;arg&#62;</DT
+><DD
+><P
+>		sets the charset used by the Linux side for codepage
+		to charset translations (NLS). Argument should be the
+		name of a charset, like iso8859-1. (Note: only kernel
+		2.4.0 or later)
+		</P
+></DD
+><DT
+>codepage=&#60;arg&#62;</DT
+><DD
+><P
+>		sets the codepage the server uses. See the iocharset
+		option. Example value cp850. (Note: only kernel 2.4.0
+		or later)
+		</P
+></DD
+><DT
+>ttl=&#60;arg&#62;</DT
+><DD
+><P
+>		how long a directory listing is cached in milliseconds
+		(also affects visibility of file size and date
+		changes). A higher value means that changes on the
+		server take longer to be noticed but it can give
+		better performance on large directories, especially
+		over long distances. Default is 1000ms but something
+		like 10000ms (10 seconds) is probably more reasonable
+		in many cases.
+		(Note: only kernel 2.4.2 or later)
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN125"
+></A
+><H2
+>ENVIRONMENT VARIABLES</H2
+><P
+>The variable <TT
+CLASS="ENVAR"
+>USER</TT
+> may contain the username of the
+	person using the client.  This information is used only if the
+	protocol level is high enough to support session-level
+	passwords. The variable can be used to set both username and
+	password by using the format username%password.</P
+><P
+>The variable <TT
+CLASS="ENVAR"
+>PASSWD</TT
+> may contain the password of the
+	person using the client.  This information is used only if the
+	protocol level is high enough to support session-level
+	passwords.</P
+><P
+>The variable <TT
+CLASS="ENVAR"
+>PASSWD_FILE</TT
+> may contain the pathname
+	of a file to read the password from. A single line of input is
+	read and used as the password.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN133"
+></A
+><H2
+>BUGS</H2
+><P
+>Passwords and other options containing , can not be handled.
+	For passwords an alternative way of passing them is in a credentials
+	file or in the PASSWD environment.</P
+><P
+>The credentials file does not handle usernames or passwords with
+	leading space.</P
+><P
+>One smbfs bug is important enough to mention here, even if it
+	is a bit misplaced:</P
+><P
+></P
+><UL
+><LI
+><P
+>Mounts sometimes stop working. This is usually
+	caused by smbmount terminating. Since smbfs needs smbmount to
+	reconnect when the server disconnects, the mount will eventually go
+	dead. An umount/mount normally fixes this. At least 2 ways to
+	trigger this bug are known.</P
+></LI
+></UL
+><P
+>Note that the typical response to a bug report is suggestion
+	to try the latest version first. So please try doing that first,
+	and always include which versions you use of relevant software
+	when reporting bugs (minimum: samba, kernel, distribution)</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN142"
+></A
+><H2
+>SEE ALSO</H2
+><P
+>Documentation/filesystems/smbfs.txt in the linux kernel
+	source tree may contain additional options and information.</P
+><P
+>FreeBSD also has a smbfs, but it is not related to smbmount</P
+><P
+>For Solaris, HP-UX and others you may want to look at
+	<A
+HREF="smbsh.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbsh(1)</B
+></A
+> or at other
+	solutions, such as sharity or perhaps replacing the SMB server with
+	a NFS server.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN149"
+></A
+><H2
+>AUTHOR</H2
+><P
+>Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
+	and others.</P
+><P
+>The current maintainer of smbfs and the userspace
+	tools <B
+CLASS="COMMAND"
+>smbmount</B
+>, <B
+CLASS="COMMAND"
+>smbumount</B
+>,
+	and <B
+CLASS="COMMAND"
+>smbmnt</B
+> is <A
+HREF="mailto:urban@teststation.com"
+TARGET="_top"
+>Urban Widmark</A
+>.
+	The <A
+HREF="mailto:samba@samba.org"
+TARGET="_top"
+>SAMBA Mailing list</A
+>
+	is the preferred place to ask questions regarding these programs.
+	</P
+><P
+>The conversion of this manpage for Samba 2.2 was performed 
+	by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

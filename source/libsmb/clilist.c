@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    client directory list routines
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -22,13 +23,13 @@
 
 #include "includes.h"
 
-/****************************************************************************
- Interpret a long filename structure - this is mostly guesses at the moment.
- The length of the structure is returned
- The structure of a long filename depends on the info level. 260 is used
- by NT and 2 is used by OS/2
-****************************************************************************/
 
+/****************************************************************************
+interpret a long filename structure - this is mostly guesses at the moment
+The length of the structure is returned
+The structure of a long filename depends on the info level. 260 is used
+by NT and 2 is used by OS/2
+****************************************************************************/
 static int interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
@@ -41,7 +42,8 @@ static int interpret_long_filename(struct cli_state *cli,
 
 	memcpy(finfo,&def_finfo,sizeof(*finfo));
 
-	switch (level) {
+	switch (level)
+		{
 		case 1: /* OS/2 understands this */
 			/* these dates are converted to GMT by
                            make_unix_date */
@@ -53,14 +55,10 @@ static int interpret_long_filename(struct cli_state *cli,
 			len = CVAL(p, 26);
 			p += 27;
 			p += clistr_align_in(cli, p, 0);
-			/* the len+2 below looks strange but it is
-			   important to cope with the differences
-			   between win2000 and win9x for this call
-			   (tridge) */
 			p += clistr_pull(cli, finfo->name, p,
-					 sizeof(finfo->name),
-					 len+2, 
-					 STR_TERMINATE);
+				    sizeof(finfo->name),
+				    len, 
+				    STR_TERMINATE);
 			return PTR_DIFF(p, base);
 
 		case 2: /* this is what OS/2 uses mostly */
@@ -82,7 +80,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			
 		case 260: /* NT uses this, but also accepts 2 */
 		{
-			size_t namelen, slen;
+			int namelen, slen;
 			p += 4; /* next entry offset */
 			p += 4; /* fileindex */
 				
@@ -101,20 +99,13 @@ static int interpret_long_filename(struct cli_state *cli,
 			   cheap to calculate, I suppose, as
 			   no DST tables will be needed */
 			
-			finfo->ctime = interpret_long_date(p);
-			p += 8;
-			finfo->atime = interpret_long_date(p);
-			p += 8;
-			finfo->mtime = interpret_long_date(p);
-			p += 8;
-			p += 8;
-			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
-			p += 8;
+			finfo->ctime = interpret_long_date(p); p += 8;
+			finfo->atime = interpret_long_date(p); p += 8;
+			finfo->mtime = interpret_long_date(p); p += 8; p += 8;
+			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0); p += 8;
 			p += 8; /* alloc size */
-			finfo->mode = CVAL(p,0);
-			p += 4;
-			namelen = IVAL(p,0);
-			p += 4;
+			finfo->mode = CVAL(p,0); p += 4;
+			namelen = IVAL(p,0); p += 4;
 			p += 4; /* EA size */
 			slen = SVAL(p, 0);
 			p += 2; 
@@ -132,24 +123,20 @@ static int interpret_long_filename(struct cli_state *cli,
 				    namelen, 0);
 			return SVAL(base, 0);
 		}
-	}
+		}
 	
 	DEBUG(1,("Unknown long filename format %d\n",level));
 	return(SVAL(p,0));
 }
 
-/****************************************************************************
- Do a directory listing, calling fn on each file found.
-****************************************************************************/
 
+/****************************************************************************
+  do a directory listing, calling fn on each file found
+  ****************************************************************************/
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
-#if 0
-	int max_matches = 1366; /* Match W2k - was 512. */
-#else
 	int max_matches = 512;
-#endif
 	int info_level;
 	char *p, *p2;
 	pstring mask;
@@ -189,8 +176,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
 			p = param+12;
-			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
-					 STR_TERMINATE);
+			p += clistr_push(cli, param+12, mask, -1, 
+					 STR_TERMINATE|STR_CONVERT);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -199,8 +186,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			p = param+12;
-			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
-					 STR_TERMINATE);
+			p += clistr_push(cli, param+12, mask, -1, 
+					 STR_TERMINATE|STR_CONVERT);
 		}
 
 		param_len = PTR_DIFF(p, param);
@@ -211,12 +198,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				    &setup, 1, 0,           /* setup, length, max */
 				    param, param_len, 10,   /* param, length, max */
 				    NULL, 0, 
-#if 0
-				    /* w2k value. */
-				    MIN(16384,cli->max_xmit) /* data, length, max. */
-#else
-				    cli->max_xmit	    /* data, length, max. */
-#endif
+				    cli->max_xmit /* data, length, max */
 				    )) {
 			break;
 		}
@@ -230,17 +212,15 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			uint8 eclass;
 			uint32 ecode;
 			cli_dos_error(cli, &eclass, &ecode);
-			if (eclass != ERRSRV || ecode != ERRerror)
-				break;
-			smb_msleep(100);
+			if (eclass != ERRSRV || ecode != ERRerror) break;
+			msleep(100);
 			continue;
 		}
 
                 if (cli_is_error(cli) || !rdata || !rparam) 
 			break;
 
-		if (total_received == -1)
-			total_received = 0;
+		if (total_received == -1) total_received = 0;
 
 		/* parse out some important return info */
 		p = rparam;
@@ -263,7 +243,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* we might need the lastname for continuations */
 		if (ff_lastname > 0) {
-			switch(info_level) {
+			switch(info_level)
+				{
 				case 260:
 					clistr_pull(cli, mask, p+ff_lastname,
 						    sizeof(mask), 
@@ -287,9 +268,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		if (!tdl) {
 			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
 			break;
-		} else {
-			dirlist = tdl;
 		}
+		else dirlist = tdl;
 
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
@@ -309,8 +289,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		DEBUG(3,("received %d entries (eos=%d)\n",
 			 ff_searchcount,ff_eos));
 
-		if (ff_searchcount > 0)
-			loop_count = 0;
+		if (ff_searchcount > 0) loop_count = 0;
 
 		First = False;
 	}
@@ -325,11 +304,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	return(total_received);
 }
 
-/****************************************************************************
- Interpret a short filename structure.
- The length of the structure is returned.
-****************************************************************************/
 
+
+/****************************************************************************
+interpret a short filename structure
+The length of the structure is returned
+****************************************************************************/
 static int interpret_short_filename(struct cli_state *cli, char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
@@ -341,22 +321,20 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	/* this date is converted to GMT by make_unix_date */
 	finfo->ctime = make_unix_date(p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
-	finfo->size = IVAL(p,26);
+	finfo->size = (SMB_BIG_UINT) IVAL(p,26); /* This returns a 4 byte length, not 8 */
 	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
-	if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
-		strncpy(finfo->short_name,finfo->name, sizeof(finfo->short_name)-1);
-		finfo->short_name[sizeof(finfo->short_name)-1] = '\0';
-	}
-
+	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
+		fstrcpy(finfo->short_name,finfo->name);
+	
 	return(DIR_STRUCT_SIZE);
 }
 
 
 /****************************************************************************
- Do a directory listing, calling fn on each file found.
- this uses the old SMBsearch interface. It is needed for testing Samba,
- but should otherwise not be used.
-****************************************************************************/
+  do a directory listing, calling fn on each file found
+  this uses the old SMBsearch interface. It is needed for testing Samba,
+  but should otherwise not be used
+  ****************************************************************************/
 
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
@@ -392,7 +370,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE);
+		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE|STR_CONVERT);
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);
@@ -473,15 +451,16 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	return(num_received);
 }
 
-/****************************************************************************
- Do a directory listing, calling fn on each file found.
- This auto-switches between old and new style.
-****************************************************************************/
 
+/****************************************************************************
+  do a directory listing, calling fn on each file found
+  this auto-switches between old and new style
+  ****************************************************************************/
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *, void *), void *state)
 {
-	if (cli->protocol <= PROTOCOL_LANMAN1)
+	if (cli->protocol <= PROTOCOL_LANMAN1) {
 		return cli_list_old(cli, Mask, attribute, fn, state);
+	}
 	return cli_list_new(cli, Mask, attribute, fn, state);
 }

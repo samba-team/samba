@@ -1,0 +1,1211 @@
+<HTML
+><HEAD
+><TITLE
+>Unified Logons between Windows NT and UNIX using Winbind</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="WINBIND"
+>Unified Logons between Windows NT and UNIX using Winbind</A
+></H1
+><HR></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3"
+>Abstract</A
+></H1
+><P
+>Integration of UNIX and Microsoft Windows NT through 
+	a unified logon has been considered a "holy grail" in heterogeneous 
+	computing environments for a long time. We present 
+	<I
+CLASS="EMPHASIS"
+>winbind</I
+>, a component of the Samba suite 
+	of programs as a solution to the unified logon problem. Winbind 
+	uses a UNIX implementation 
+	of Microsoft RPC calls, Pluggable Authentication Modules, and the Name 
+	Service Switch to allow Windows NT domain users to appear and operate 
+	as UNIX users on a UNIX machine. This paper describes the winbind 
+	system, explaining the functionality it provides, how it is configured, 
+	and how it works internally.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN7"
+>Introduction</A
+></H1
+><P
+>It is well known that UNIX and Microsoft Windows NT have 
+	different models for representing user and group information and 
+	use different technologies for implementing them. This fact has 
+	made it difficult to integrate the two systems in a satisfactory 
+	manner.</P
+><P
+>One common solution in use today has been to create 
+	identically named user accounts on both the UNIX and Windows systems 
+	and use the Samba suite of programs to provide file and print services 
+	between the two. This solution is far from perfect however, as 
+	adding and deleting users on both sets of machines becomes a chore 
+	and two sets of passwords are required both of which
+	can lead to synchronization problems between the UNIX and Windows 
+	systems and confusion for users.</P
+><P
+>We divide the unified logon problem for UNIX machines into 
+	three smaller problems:</P
+><P
+></P
+><UL
+><LI
+><P
+>Obtaining Windows NT user and group information
+		</P
+></LI
+><LI
+><P
+>Authenticating Windows NT users
+		</P
+></LI
+><LI
+><P
+>Password changing for Windows NT users
+		</P
+></LI
+></UL
+><P
+>Ideally, a prospective solution to the unified logon problem 
+	would satisfy all the above components without duplication of 
+	information on the UNIX machines and without creating additional 
+	tasks for the system administrator when maintaining users and 
+	groups on either system. The winbind system provides a simple 
+	and elegant solution to all three components of the unified logon 
+	problem.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN20"
+>What Winbind Provides</A
+></H1
+><P
+>Winbind unifies UNIX and Windows NT account management by 
+	allowing a UNIX box to become a full member of a NT domain. Once 
+	this is done the UNIX box will see NT users and groups as if 
+	they were native UNIX users and groups, allowing the NT domain 
+	to be used in much the same manner that NIS+ is used within 
+	UNIX-only environments.</P
+><P
+>The end result is that whenever any 
+	program on the UNIX machine asks the operating system to lookup 
+	a user or group name, the query will be resolved by asking the 
+	NT domain controller for the specified domain to do the lookup.
+	Because Winbind hooks into the operating system at a low level 
+	(via the NSS name resolution modules in the C library) this 
+	redirection to the NT domain controller is completely 
+	transparent.</P
+><P
+>Users on the UNIX machine can then use NT user and group 
+	names as they would use "native" UNIX names. They can chown files 
+	so that they are owned by NT domain users or even login to the 
+	UNIX machine and run a UNIX X-Window session as a domain user.</P
+><P
+>The only obvious indication that Winbind is being used is 
+	that user and group names take the form DOMAIN\user and 
+	DOMAIN\group. This is necessary as it allows Winbind to determine 
+	that redirection to a domain controller is wanted for a particular 
+	lookup and which trusted domain is being referenced.</P
+><P
+>Additionally, Winbind provides an authentication service 
+	that hooks into the Pluggable Authentication Modules (PAM) system 
+	to provide authentication via a NT domain to any PAM enabled 
+	applications. This capability solves the problem of synchronizing 
+	passwords between systems since all passwords are stored in a single 
+	location (on the domain controller).</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN27"
+>Target Uses</A
+></H2
+><P
+>Winbind is targeted at organizations that have an 
+		existing NT based domain infrastructure into which they wish 
+		to put UNIX workstations or servers. Winbind will allow these 
+		organizations to deploy UNIX workstations without having to 
+		maintain a separate account infrastructure. This greatly 
+		simplifies the administrative overhead of deploying UNIX 
+		workstations into a NT based organization.</P
+><P
+>Another interesting way in which we expect Winbind to 
+		be used is as a central part of UNIX based appliances. Appliances
+		that provide file and print services to Microsoft based networks 
+		will be able to use Winbind to provide seamless integration of 
+		the appliance into the domain.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN31"
+>How Winbind Works</A
+></H1
+><P
+>The winbind system is designed around a client/server 
+	architecture. A long running <B
+CLASS="COMMAND"
+>winbindd</B
+> daemon 
+	listens on a UNIX domain socket waiting for requests
+	to arrive. These requests are generated by the NSS and PAM 
+	clients and processed sequentially.</P
+><P
+>The technologies used to implement winbind are described 
+	in detail below.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN36"
+>Microsoft Remote Procedure Calls</A
+></H2
+><P
+>Over the last two years, efforts have been underway 
+		by various Samba Team members to decode various aspects of 
+		the Microsoft Remote Procedure Call (MSRPC) system. This 
+		system is used for most network related operations between 
+		Windows NT machines including remote management, user authentication
+		and print spooling. Although initially this work was done 
+		to aid the implementation of Primary Domain Controller (PDC) 
+		functionality in Samba, it has also yielded a body of code which 
+		can be used for other purposes.</P
+><P
+>Winbind uses various MSRPC calls to enumerate domain users 
+		and groups and to obtain detailed information about individual 
+		users or groups. Other MSRPC calls can be used to authenticate 
+		NT domain users and to change user passwords. By directly querying 
+		a Windows PDC for user and group information, winbind maps the 
+		NT account information onto UNIX user and group names.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN40"
+>Name Service Switch</A
+></H2
+><P
+>The Name Service Switch, or NSS, is a feature that is 
+		present in many UNIX operating systems. It allows system 
+		information such as hostnames, mail aliases and user information 
+		to be resolved from different sources. For example, a standalone 
+		UNIX workstation may resolve system information from a series of 
+		flat files stored on the local filesystem. A networked workstation 
+		may first attempt to resolve system information from local files, 
+		and then consult a NIS database for user information or a DNS server 
+		for hostname information.</P
+><P
+>The NSS application programming interface allows winbind 
+		to present itself as a source of system information when 
+		resolving UNIX usernames and groups.  Winbind uses this interface, 
+		and information obtained from a Windows NT server using MSRPC 
+		calls to provide a new source of account enumeration.  Using standard 
+		UNIX library calls, one can enumerate the users and groups on
+		a UNIX machine running winbind and see all users and groups in 
+		a NT domain plus any trusted domain as though they were local 
+		users and groups.</P
+><P
+>The primary control file for NSS is 
+		<TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+>. 
+		When a UNIX application makes a request to do a lookup 
+		the C library looks in <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> 
+		for a line which matches the service type being requested, for 
+		example the "passwd" service type is used when user or group names 
+		are looked up. This	config line species which implementations 
+		of that service should be tried and in what order. If the passwd 
+		config line is:</P
+><P
+><B
+CLASS="COMMAND"
+>passwd: files example</B
+></P
+><P
+>then the C library will first load a module called 
+		<TT
+CLASS="FILENAME"
+>/lib/libnss_files.so</TT
+> followed by
+		the module <TT
+CLASS="FILENAME"
+>/lib/libnss_example.so</TT
+>. The 
+		C library will dynamically load each of these modules in turn 
+		and call resolver functions within the modules to try to resolve 
+		the request. Once the request is resolved the C library returns the
+		result to the application.</P
+><P
+>This NSS interface provides a very easy way for Winbind 
+		to hook into the operating system. All that needs to be done 
+		is to put <TT
+CLASS="FILENAME"
+>libnss_winbind.so</TT
+> in <TT
+CLASS="FILENAME"
+>/lib/</TT
+> 
+		then add "winbind" into <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> at 
+		the appropriate place. The C library will then call Winbind to 
+		resolve user and group names.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN56"
+>Pluggable Authentication Modules</A
+></H2
+><P
+>Pluggable Authentication Modules, also known as PAM, 
+		is a system for abstracting authentication and authorization 
+		technologies. With a PAM module it is possible to specify different 
+		authentication methods for different system applications without 
+		having to recompile these applications. PAM is also useful
+		for implementing a particular policy for authorization. For example, 
+		a system administrator may only allow console logins from users 
+		stored in the local password file but only allow users resolved from 
+		a NIS database to log in over the network.</P
+><P
+>Winbind uses the authentication management and password 
+		management PAM interface to integrate Windows NT users into a 
+		UNIX system. This allows Windows NT users to log in to a UNIX 
+		machine and be authenticated against a suitable Primary Domain 
+		Controller. These users can also change their passwords and have 
+		this change take effect directly on the Primary Domain Controller.
+		</P
+><P
+>PAM is configured by providing control files in the directory 
+		<TT
+CLASS="FILENAME"
+>/etc/pam.d/</TT
+> for each of the services that 
+		require authentication. When an authentication request is made 
+		by an application the PAM code in the C library looks up this
+		control file to determine what modules to load to do the 
+		authentication check and in what order. This interface makes adding 
+		a new authentication service for Winbind very easy, all that needs 
+		to be done is that the <TT
+CLASS="FILENAME"
+>pam_winbind.so</TT
+> module 
+		is copied to <TT
+CLASS="FILENAME"
+>/lib/security/</TT
+> and the PAM 
+		control files for relevant services are updated to allow 
+		authentication via winbind. See the PAM documentation
+		for more details.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN64"
+>User and Group ID Allocation</A
+></H2
+><P
+>When a user or group is created under Windows NT 
+		is it allocated a numerical relative identifier (RID). This is 
+		slightly different to UNIX which has a range of numbers that are 
+		used to identify users, and the same range in which to identify 
+		groups. It is winbind's job to convert RIDs to UNIX id numbers and
+		vice versa.  When winbind is configured it is given part of the UNIX 
+		user id space and a part of the UNIX group id space in which to 
+		store Windows NT users and groups. If a Windows NT user is 
+		resolved for the first time, it is allocated the next UNIX id from 
+		the range. The same process applies for Windows NT groups. Over 
+		time, winbind will have mapped all Windows NT users and groups
+		to UNIX user ids and group ids.</P
+><P
+>The results of this mapping are stored persistently in 
+		an ID mapping database held in a tdb database). This ensures that 
+		RIDs are mapped to UNIX IDs in a consistent way.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN68"
+>Result Caching</A
+></H2
+><P
+>An active system can generate a lot of user and group 
+		name lookups. To reduce the network cost of these lookups winbind 
+		uses a caching scheme based on the SAM sequence number supplied 
+		by NT domain controllers.  User or group information returned 
+		by a PDC is cached by winbind along with a sequence number also 
+		returned by the PDC. This sequence number is incremented by 
+		Windows NT whenever any user or group information is modified. If 
+		a cached entry has expired, the sequence number is requested from 
+		the PDC and compared against the sequence number of the cached entry. 
+		If the sequence numbers do not match, then the cached information 
+		is discarded and up to date information is requested directly 
+		from the PDC.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN71"
+>Installation and Configuration</A
+></H1
+><P
+>Many thanks to John Trostel <A
+HREF="mailto:jtrostel@snapserver.com"
+TARGET="_top"
+>jtrostel@snapserver.com</A
+>
+for providing the original Linux version of this HOWTO which 
+describes how to get winbind services up and running 
+to control access and authenticate users on your Linux box using 
+the winbind services which are included with the SAMBA 2.2.2 and later
+releases.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN75"
+>Introduction</A
+></H2
+><P
+>This HOWTO describes the procedures used to get winbind up and 
+running on a RedHat 7.1 system.  Winbind is capable of providing access
+and authentication control for Windows Domain users through an NT
+or Win2K PDC for 'regular' services, such as telnet and ftp, as
+well providing dynamic uid/gid allocation for Samba.</P
+><P
+>This HOWTO has been written from a 'RedHat-centric' perspective, so if
+you are using another distribution (or operating system), you may have
+to modify the instructions somewhat to fit the way your distribution works.</P
+><P
+></P
+><UL
+><LI
+><P
+>	<I
+CLASS="EMPHASIS"
+>Why should I to this?</I
+>
+	</P
+><P
+>This allows the SAMBA administrator to rely on the
+	authentication mechanisms on the NT/Win2K PDC for the authentication
+	of domain members.  NT/Win2K users no longer need to have separate
+	accounts on the SAMBA server.
+	</P
+></LI
+><LI
+><P
+>	<I
+CLASS="EMPHASIS"
+>Who should be reading this document?</I
+>
+	</P
+><P
+>	This HOWTO is designed for system administrators.  If you are
+	implementing SAMBA on a file server and wish to (fairly easily)
+	integrate existing NT/Win2K users from your PDC onto the
+	SAMBA server, this HOWTO is for you.
+	</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN88"
+>Requirements</A
+></H2
+><P
+>If you have a samba configuration file that you are currently
+using... <I
+CLASS="EMPHASIS"
+>BACK IT UP!</I
+>  If your system already uses PAM,
+<I
+CLASS="EMPHASIS"
+>back up the <TT
+CLASS="FILENAME"
+>/etc/pam.d</TT
+> (or <TT
+CLASS="FILENAME"
+>/etc/pam.conf</TT
+>)
+directory contents!</I
+> If you haven't already made a boot disk,
+<I
+CLASS="EMPHASIS"
+>MAKE ONE NOW!</I
+></P
+><P
+>Messing with the pam configuration files can make it nearly impossible
+to log in to your machine. That's why you want to be able to boot back
+into your machine in single user mode and restore your
+<TT
+CLASS="FILENAME"
+>/etc/pam.d</TT
+> (or <TT
+CLASS="FILENAME"
+>pam.conmf</TT
+>) back to
+the original state they were in if
+you get frustrated with the way things are going.</P
+><P
+>The first SAMBA release to inclue a stable winbindd daemon was 2.2.2.  Please refer to the
+<A
+HREF="http://samba.org/"
+TARGET="_top"
+>main SAMBA web page</A
+> or,
+better yet, your closest SAMBA mirror site for instructions on
+downloading the source code.  it is generally advised to obtain the lates
+Samba release as bugs are constantly being fixed.</P
+><P
+>To allow Domain users the ability to access SAMBA shares and
+files, as well as potentially other services provided by your
+SAMBA machine, PAM (pluggable authentication modules) must
+be setup properly on your machine.  In order to compile the
+winbind modules, you must have at the PAM libraries and header files resident
+on your system.  For recent RedHat systems (7.x, for instance), that
+means installing both <TT
+CLASS="FILENAME"
+>pam</TT
+> and <TT
+CLASS="FILENAME"
+>pam-devel</TT
+> RPM.
+The former is installed by default on all Linux systems of which the author is aware.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN104"
+>Testing Things Out</A
+></H2
+><P
+>Before starting, kill off all the SAMBA related daemons running on your server.  Kill off
+all <B
+CLASS="COMMAND"
+>smbd</B
+>, <B
+CLASS="COMMAND"
+>nmbd</B
+>, and <B
+CLASS="COMMAND"
+>winbindd</B
+> processes that may
+be running (<B
+CLASS="COMMAND"
+>winbindd</B
+> will only be running if you have ao previous Winbind
+installation...but why would you be reading tis if that were the case?).  To use PAM, you will
+want to make sure that you have the standard PAM package (for RedHat) which supplies the <TT
+CLASS="FILENAME"
+>/etc/pam.d</TT
+>
+directory structure, including the pam modules are used by pam-aware
+services, several pam libraries, and the <TT
+CLASS="FILENAME"
+>/usr/doc</TT
+>
+and <TT
+CLASS="FILENAME"
+>/usr/man</TT
+> entries for pam.  Samba will require
+the pam-devel package if you plan to build the <TT
+CLASS="FILENAME"
+>pam_winbind.so</TT
+> library or
+include the <B
+CLASS="COMMAND"
+>--with-pam</B
+> option to the configure script.
+This package includes the header files needed to compile pam-aware applications.</P
+><P
+>[I have no idea which Solaris packages are quired for PAM libraries and
+development files.  If you know, please mail me the information and I will include
+it in the next revision of this HOWTO.  --jerry@samba.org]</P
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN117"
+>Configure and Compile SAMBA</A
+></H3
+><P
+>The configuration and compilation of SAMBA is straightforward.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>./configure --with-winbind</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>make</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>make install</B
+></PRE
+></P
+><P
+>This will, by default, install SAMBA in <TT
+CLASS="FILENAME"
+>/usr/local/samba</TT
+>.
+See the main SAMBA documentation if you want to install SAMBA somewhere else.
+It will also build the winbindd executable and NSS library.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN130"
+>Configure <TT
+CLASS="FILENAME"
+>nsswitch.conf</TT
+> and the
+winbind libraries</A
+></H3
+><P
+>The libraries needed to run the <B
+CLASS="COMMAND"
+>winbindd</B
+> daemon
+through nsswitch need to be copied to their proper locations.</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>cp nsswitch/libnss_winbind.so /lib</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>chmod 755 /lib/libnss_winbind.so</B
+></P
+><P
+>It necessary to make the following symbolic link:</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</B
+></P
+><P
+>The <TT
+CLASS="FILENAME"
+>.2</TT
+> extension is due to the version of glibc used on your Linux host.
+for most modern systems, the file extension is correct.  However, some other operating systems,
+Solaris 7/8 being the most common, the destination filename should be replaced with
+<TT
+CLASS="FILENAME"
+>/lib/nss_winbind.so.1</TT
+></P
+><P
+>Now, as root edit <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> to
+allow user and group entries to be visible from the <B
+CLASS="COMMAND"
+>winbindd</B
+>
+daemon.  After editing, the file look appear:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	passwd:     files winbind
+	shadow:     files
+	group:      files winbind</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN152"
+>Configure <TT
+CLASS="FILENAME"
+>smb.conf</TT
+></A
+></H3
+><P
+>Several parameters are needed in the smb.conf file to control
+the behavior of <B
+CLASS="COMMAND"
+>winbindd</B
+>. Configure
+<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> These are described in more detail in
+the <A
+HREF="winbindd.8.html"
+TARGET="_top"
+>winbindd(8)</A
+> man page.  My
+<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file was modified to
+include the following entries in the [global] section:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>[global]
+     &#60;...&#62;
+     # separate domain and username with '+', like DOMAIN+username
+     <A
+HREF="winbindd.8.html#WINBINDSEPARATOR"
+TARGET="_top"
+>winbind separator</A
+> = +
+     # use uids from 10000 to 20000 for domain users
+     <A
+HREF="winbindd.8.html#WINBINDUID"
+TARGET="_top"
+>winbind uid</A
+> = 10000-20000
+     # use gids from 10000 to 20000 for domain groups
+     <A
+HREF="winbindd.8.html#WINBINDGID"
+TARGET="_top"
+>winbind gid</A
+> = 10000-20000
+     # allow enumeration of winbind users and groups
+     # might need to disable these next two for performance
+     # reasons on the winbindd host
+     <A
+HREF="winbindd.8.html#WINBINDENUMUSERS"
+TARGET="_top"
+>winbind enum users</A
+> = yes
+     <A
+HREF="winbindd.8.html#WINBINDENUMGROUP"
+TARGET="_top"
+>winbind enum groups</A
+> = yes
+     # give winbind users a real shell (only needed if they have telnet/sshd/etc... access)
+     <A
+HREF="winbindd.8.html#TEMPLATEHOMEDIR"
+TARGET="_top"
+>template homedir</A
+> = /home/winnt/%D/%U
+     <A
+HREF="winbindd.8.html#TEMPLATESHELL"
+TARGET="_top"
+>template shell</A
+> = /bin/bash</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN169"
+>Join the SAMBA server to the PDC domain</A
+></H3
+><P
+>Enter the following command to make the SAMBA server join the
+PDC domain, where <TT
+CLASS="REPLACEABLE"
+><I
+>DOMAIN</I
+></TT
+> is the name of
+your Windows domain and <TT
+CLASS="REPLACEABLE"
+><I
+>Administrator</I
+></TT
+> is
+a domain user who has administrative privileges in the domain.</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>/usr/local/samba/bin/smbpasswd -j DOMAIN -r PDC -U Administrator</B
+></P
+><P
+>The proper response to the command should be: "Joined the domain
+<TT
+CLASS="REPLACEABLE"
+><I
+>DOMAIN</I
+></TT
+>" where <TT
+CLASS="REPLACEABLE"
+><I
+>DOMAIN</I
+></TT
+>
+is your DOMAIN name.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN180"
+>Start up the winbindd daemon and test it!</A
+></H3
+><P
+>Eventually, you will want to modify your smb startup script to
+automatically invoke the winbindd daemon when the other parts of
+SAMBA start, but it is possible to test out just the winbind
+portion first.  To start up winbind services, enter the following
+command as root:</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>export PATH=$PATH:/usr/local/samba/bin</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>winbindd</B
+></P
+><P
+>I'm always paranoid and like to make sure the daemon
+is really running...</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>ps -ae | grep winbindd</B
+></P
+><P
+>This command should produce output like this, if the daemon is running</P
+><P
+>3025 ?        00:00:00 winbindd</P
+><P
+>Note that a sample RedHat init script for starting winbindd is included in
+the SAMBA sourse distribution as <TT
+CLASS="FILENAME"
+>packaging/RedHat/winbind.init</TT
+>.</P
+><P
+>Now... for the real test, try to get some information about the
+users on your PDC</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>wbinfo -u</B
+></P
+><P
+>This should echo back a list of users on your Windows users on
+your PDC.  For example, I get the following response:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>CEO+Administrator
+CEO+burdell
+CEO+Guest
+CEO+jt-ad
+CEO+krbtgt
+CEO+TsInternetUser</PRE
+></P
+><P
+>Obviously, I have named my domain 'CEO' and my <TT
+CLASS="PARAMETER"
+><I
+>winbind
+separator</I
+></TT
+> is '+'.</P
+><P
+>You can do the same sort of thing to get group information from
+the PDC:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>/usr/local/samba/bin/wbinfo -g</B
+>
+CEO+Domain Admins
+CEO+Domain Users
+CEO+Domain Guests
+CEO+Domain Computers
+CEO+Domain Controllers
+CEO+Cert Publishers
+CEO+Schema Admins
+CEO+Enterprise Admins
+CEO+Group Policy Creator Owners</PRE
+></P
+><P
+>The function 'getent' can now be used to get unified
+lists of both local and PDC users and groups.
+Try the following command:</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>getent passwd</B
+></P
+><P
+>You should get a list that looks like your <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+>
+list followed by the domain users with their new uids, gids, home
+directories and default shells.  If you do not, verify that the permissions on the
+libnss_winbind.so library are <TT
+CLASS="FILENAME"
+>rwxr-xr-x</TT
+>.</P
+><P
+>The same thing can be done for groups with the command</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>getent group</B
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN221"
+>Configure Winbind and PAM</A
+></H3
+><P
+>At this point we are assured that <B
+CLASS="COMMAND"
+>winbindd</B
+> and <B
+CLASS="COMMAND"
+>smbd</B
+>
+are working together.  If you want to use winbind to provide authentication for other
+services, keep reading.  The pam configuration files need to be altered in
+this step.  (Did you remember to make backups of your original
+<TT
+CLASS="FILENAME"
+>/etc/pam.d</TT
+> (or <TT
+CLASS="FILENAME"
+>/etc/pam.conf</TT
+>) file[s]? If not, do it now.)</P
+><P
+>You will need a PAM module to use <B
+CLASS="COMMAND"
+>winbindd</B
+> with these other services.  This
+module will be compiled in the <TT
+CLASS="FILENAME"
+>../source/nsswitch</TT
+> directory
+by invoking the command</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>make nsswitch/pam_winbind.so</B
+></P
+><P
+>from the <TT
+CLASS="FILENAME"
+>../source</TT
+> directory.  The
+<TT
+CLASS="FILENAME"
+>pam_winbind.so</TT
+> file should be copied to the location of
+your other pam security modules.  On Linux and Solaris systems, this is the
+<TT
+CLASS="FILENAME"
+>/lib/security</TT
+> directory.</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>cp nsswitch/pam_winbind.so /lib/security</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>chmod 755 /lib/security/pam_winbind.so</B
+></P
+><P
+>Other services, such as the normal login on the console (or a terminal
+session), telnet logins, and ftp service, can be modified to allow the use of winbind
+as an authentication service.  In order to enable these
+services, you may first need to change the entries in
+<TT
+CLASS="FILENAME"
+>/etc/xinetd.d</TT
+> (or <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+>).
+RedHat 7.1 uses the new xinetd.d structure, in this case you need
+to change the lines in <TT
+CLASS="FILENAME"
+>/etc/xinetd.d/telnet</TT
+>
+and <TT
+CLASS="FILENAME"
+>/etc/xinetd.d/wu-ftp</TT
+> from</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>enable = no</PRE
+></P
+><P
+>to</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>enable = yes</PRE
+></P
+><P
+>For ftp services to work properly, you will also need to either
+have individual directories for the domain users already present on
+the server, or change the home directory template to a general
+directory for all domain users.  These can be easily set using
+the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> global entry
+<B
+CLASS="COMMAND"
+>template homedir</B
+>.</P
+><P
+>The <TT
+CLASS="FILENAME"
+>/etc/pam.d/ftp</TT
+> file can be changed
+to allow winbind ftp access in a manner similar to the
+samba file.  My <TT
+CLASS="FILENAME"
+>/etc/pam.d/ftp</TT
+> file was
+changed to look like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>auth       required     /lib/security/pam_listfile.so item=user sense=deny file=/etc/ftpusers onerr=succeed
+auth       sufficient   /lib/security/pam_winbind.so
+auth       required     /lib/security/pam_stack.so service=system-auth
+auth       required     /lib/security/pam_shells.so
+account    sufficient   /lib/security/pam_winbind.so
+account    required     /lib/security/pam_stack.so service=system-auth
+session    required     /lib/security/pam_stack.so service=system-auth</PRE
+></P
+><P
+>The <TT
+CLASS="FILENAME"
+>/etc/pam.d/login</TT
+> file can be changed nearly the
+same way.  It now looks like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>auth       required     /lib/security/pam_securetty.so
+auth       sufficient   /lib/security/pam_winbind.so
+auth       sufficient   /lib/security/pam_unix.so use_first_pass
+auth       required     /lib/security/pam_stack.so service=system-auth
+auth       required     /lib/security/pam_nologin.so
+account    sufficient   /lib/security/pam_winbind.so
+account    required     /lib/security/pam_stack.so service=system-auth
+password   required     /lib/security/pam_stack.so service=system-auth
+session    required     /lib/security/pam_stack.so service=system-auth
+session    optional     /lib/security/pam_console.so</PRE
+></P
+><P
+>In this case, I added the <B
+CLASS="COMMAND"
+>auth sufficient /lib/security/pam_winbind.so</B
+>
+lines as before, but also added the <B
+CLASS="COMMAND"
+>required pam_securetty.so</B
+>
+above it, to disallow root logins over the network.  I also added a
+<B
+CLASS="COMMAND"
+>sufficient /lib/security/pam_unix.so use_first_pass</B
+>
+line after the <B
+CLASS="COMMAND"
+>winbind.so</B
+> line to get rid of annoying
+double prompts for passwords.</P
+><P
+>Note that a Solaris <TT
+CLASS="FILENAME"
+>/etc/pam.conf</TT
+> confiruation file looks
+very similar to this except thaty the service name is included as the first entry
+per line.  An example for the login service is given here.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>## excerpt from /etc/pam.conf on a Solaris 8 system
+login   auth required   /lib/security/pam_winbind.so
+login   auth required   /lib/security/$ISA/pam_unix.so.1 try_first_pass
+login   auth required   /lib/security/$ISA/pam_dial_auth.so.1 try_first_pass</PRE
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN274"
+>Limitations</A
+></H1
+><P
+>Winbind has a number of limitations in its current
+	released version that we hope to overcome in future
+	releases:</P
+><P
+></P
+><UL
+><LI
+><P
+>The mappings of Windows NT RIDs to UNIX ids
+		is not made algorithmically and depends on the order in which
+		unmapped users or groups are seen by winbind. It may be difficult
+		to recover the mappings of rid to UNIX id mapping if the file
+		containing this information is corrupted or destroyed.</P
+></LI
+><LI
+><P
+>Currently the winbind PAM module does not take
+		into account possible workstation and logon time restrictions
+		that may be been set for Windows NT users.</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN282"
+>Conclusion</A
+></H1
+><P
+>The winbind system, through the use of the Name Service 
+	Switch, Pluggable Authentication Modules, and appropriate 
+	Microsoft RPC calls have allowed us to provide seamless 
+	integration of Microsoft Windows NT domain users on a
+	UNIX system. The result is a great reduction in the administrative 
+	cost of running a mixed UNIX and NT network.</P
+></DIV
+></DIV
+></BODY
+></HTML
+>

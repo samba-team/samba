@@ -23,16 +23,25 @@
 */
 
 #include "includes.h"
-#include "nsswitch/winbind_nss.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
-
-extern DOM_SID global_sid_NULL;            		/* NULL sid */
+#include "nsswitch/sys_nss.h"
 
 NSS_STATUS winbindd_request(int req_type,
                                  struct winbindd_request *request,
                                  struct winbindd_response *response);
+
+static BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
+{
+        char *p = strchr(domuser,*lp_winbind_separator());
+
+        if (!p)
+                return False;
+
+        fstrcpy(user, p+1);
+        fstrcpy(domain, domuser);
+        domain[PTR_DIFF(p, domuser)] = 0;
+        strupper(domain);
+        return True;
+}
 
 /* Call winbindd to convert a name to a sid */
 
@@ -51,13 +60,17 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.name.dom_name, dom_name);
-	fstrcpy(request.data.name.name, name);
+	if (dom_name == NULL) {
+		if (!parse_domain_user(name, request.data.name.dom_name, request.data.name.name))
+			return False;
+	} else {
+		fstrcpy(request.data.name.dom_name, dom_name);
+		fstrcpy(request.data.name.name, name);
+	}
 
 	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
-		if (!string_to_sid(sid, response.data.sid.sid))
-			return False;
+		string_to_sid(sid, response.data.sid.sid);
 		*name_type = (enum SID_NAME_USE)response.data.sid.type;
 	}
 
@@ -66,7 +79,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 /* Call winbindd to convert sid to name */
 
-BOOL winbind_lookup_sid(const DOM_SID *sid, 
+BOOL winbind_lookup_sid(DOM_SID *sid, 
 			fstring dom_name, fstring name, 
                         enum SID_NAME_USE *name_type)
 {
@@ -103,7 +116,7 @@ BOOL winbind_lookup_sid(const DOM_SID *sid,
 
 /* Call winbindd to convert SID to uid */
 
-BOOL winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
+BOOL winbind_sid_to_uid(uid_t *puid, DOM_SID *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -159,8 +172,7 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 	/* Copy out result */
 
 	if (result == NSS_STATUS_SUCCESS) {
-		if (!string_to_sid(sid, response.data.sid.sid))
-			return False;
+		string_to_sid(sid, response.data.sid.sid);
 	} else {
 		sid_copy(sid, &global_sid_NULL);
 	}
@@ -170,7 +182,7 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 
 /* Call winbindd to convert SID to gid */
 
-BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
+BOOL winbind_sid_to_gid(gid_t *pgid, DOM_SID *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -226,37 +238,12 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	/* Copy out result */
 
 	if (result == NSS_STATUS_SUCCESS) {
-		if (!string_to_sid(sid, response.data.sid.sid))
-			return False;
+		string_to_sid(sid, response.data.sid.sid);
 	} else {
 		sid_copy(sid, &global_sid_NULL);
 	}
 
 	return (result == NSS_STATUS_SUCCESS);
-}
-
-BOOL winbind_allocate_rid(uint32 *rid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Make request */
-
-	result = winbindd_request(WINBINDD_ALLOCATE_RID, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	/* Copy out result */
-	*rid = response.data.rid;
-
-	return True;
 }
 
 /* Fetch the list of groups a user is a member of from winbindd.  This is
@@ -305,6 +292,11 @@ int winbind_initgroups(char *user, gid_t gid)
 		return initgroups(user, gid);
 	}
 
+	/* We need setgroups for this call to work. */
+#if !defined(HAVE_SETGROUPS)
+	return ENOSYS;
+#endif
+
 	result = wb_getgroups(user, &groups);
 
 	DEBUG(10,("winbind_getgroups: %s: result = %s\n", user, 
@@ -339,7 +331,6 @@ int winbind_initgroups(char *user, gid_t gid)
 		}
 
 		/* Set the groups */
-
 		if (sys_setgroups(ngroups, groups) == -1) {
 			errno = EPERM;
 			result = -1;
@@ -367,8 +358,11 @@ int winbind_initgroups(char *user, gid_t gid)
    time consuming.  If size is zero, list is not modified and the total
    number of groups for the user is returned. */
 
-int winbind_getgroups(const char *user, gid_t **list)
+int winbind_getgroups(const char *user, int size, gid_t *list)
 {
+	gid_t *groups = NULL;
+	int result, i;
+
 	/*
 	 * Don't do the lookup if the name has no separator _and_ we are not in
 	 * 'winbind use default domain' mode.
@@ -379,319 +373,102 @@ int winbind_getgroups(const char *user, gid_t **list)
 
 	/* Fetch list of groups */
 
-	return wb_getgroups(user, list);
-}
+	result = wb_getgroups(user, &groups);
 
-/**********************************************************************
- simple wrapper function to see if winbindd is alive
-**********************************************************************/
+	if (size == 0)
+		goto done;
 
-BOOL winbind_ping( void )
-{
-	NSS_STATUS result;
-
-	result = winbindd_request(WINBINDD_PING, NULL, NULL);
-
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/**********************************************************************
- Ask winbindd to create a local user
-**********************************************************************/
-
-BOOL winbind_create_user( const char *name, uint32 *rid )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-	
-	if ( !name )
-		return False;
-		
-	DEBUG(10,("winbind_create_user: %s\n", name));
-	
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	/* see if the caller wants a new RID returned */
-	
-	if ( rid ) 
-		request.flags = WBFLAG_ALLOCATE_RID;
-
-	fstrcpy( request.data.acct_mgt.username, name );
-	fstrcpy( request.data.acct_mgt.groupname, "" );
-	
-	result = winbindd_request( WINBINDD_CREATE_USER, &request, &response);
-	
-	if ( rid )
-		*rid = response.data.rid;
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/**********************************************************************
- Ask winbindd to create a local group
-**********************************************************************/
-
-BOOL winbind_create_group( const char *name, uint32 *rid )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-		
-	if ( !name )
-		return False;
-		
-	DEBUG(10,("winbind_create_group: %s\n", name));
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	/* see if the caller wants a new RID returned */
-	
-	if ( rid ) 
-		request.flags = WBFLAG_ALLOCATE_RID;
-		
-	fstrcpy( request.data.acct_mgt.groupname, name );
-	
-	
-	result = winbindd_request( WINBINDD_CREATE_GROUP, &request, &response);
-	
-	if ( rid )
-		*rid = response.data.rid;
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/**********************************************************************
- Ask winbindd to add a user to a local group
-**********************************************************************/
-
-BOOL winbind_add_user_to_group( const char *user, const char *group )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-		
-	if ( !user || !group )
-		return False;
-		
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	DEBUG(10,("winbind_add_user_to_group: user(%s), group(%s) \n", 
-		user, group));
-		
-	fstrcpy( request.data.acct_mgt.username, user );
-	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	result = winbindd_request( WINBINDD_ADD_USER_TO_GROUP, &request, &response);
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/**********************************************************************
- Ask winbindd to remove a user to a local group
-**********************************************************************/
-
-BOOL winbind_remove_user_from_group( const char *user, const char *group )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-		
-	if ( !user || !group )
-		return False;
-		
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	DEBUG(10,("winbind_remove_user_from_group: user(%s), group(%s) \n", 
-		user, group));
-		
-	ZERO_STRUCT(response);
-	
-	fstrcpy( request.data.acct_mgt.username, user );
-	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	result = winbindd_request( WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/**********************************************************************
- Ask winbindd to set the primary group for a user local user
-**********************************************************************/
-
-BOOL winbind_set_user_primary_group( const char *user, const char *group )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-		
-	if ( !user || !group )
-		return False;
-		
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	DEBUG(10,("winbind_set_user_primary_group: user(%s), group(%s) \n", 
-		user, group));
-
-	fstrcpy( request.data.acct_mgt.username, user );
-	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	result = winbindd_request( WINBINDD_SET_USER_PRIMARY_GROUP, &request, &response);
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-
-/**********************************************************************
- Ask winbindd to remove a user from its lists of accounts
-**********************************************************************/
-
-BOOL winbind_delete_user( const char *user )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-		
-	if ( !user )
-		return False;
-		
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	DEBUG(10,("winbind_delete_user: user (%s)\n", user));
-
-	fstrcpy( request.data.acct_mgt.username, user );
-	
-	result = winbindd_request( WINBINDD_DELETE_USER, &request, &response);
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/**********************************************************************
- Ask winbindd to remove a group from its lists of accounts
-**********************************************************************/
-
-BOOL winbind_delete_group( const char *group )
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	if ( !lp_winbind_enable_local_accounts() )
-		return False;
-		
-	if ( !group )
-		return False;
-		
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-	
-	DEBUG(10,("winbind_delete_group: group (%s)\n", group));
-
-	fstrcpy( request.data.acct_mgt.groupname, group );
-	
-	result = winbindd_request( WINBINDD_DELETE_GROUP, &request, &response);
-	
-	return result == NSS_STATUS_SUCCESS;
-}
-
-/***********************************************************************/
-#if 0	/* not needed currently since winbindd_acct was added -- jerry */
-
-/* Call winbindd to convert SID to uid. Do not allocate */
-
-BOOL winbind_sid_to_uid_query(uid_t *puid, const DOM_SID *sid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-	fstring sid_str;
-
-	if (!puid)
-		return False;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	sid_to_string(sid_str, sid);
-	fstrcpy(request.data.sid, sid_str);
-
-	request.flags = WBFLAG_QUERY_ONLY;
-	
-	/* Make request */
-
-	result = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
-
-	/* Copy out result */
-
-	if (result == NSS_STATUS_SUCCESS) {
-		*puid = response.data.uid;
+	if (result > size) {
+		result = -1;
+		errno = EINVAL; /* This is what getgroups() does */
+		goto done;
 	}
 
-	return (result == NSS_STATUS_SUCCESS);
-}
+	/* Copy list of groups across */
 
-/* Call winbindd to convert SID to gid.  Do not allocate */
-
-BOOL winbind_sid_to_gid_query(gid_t *pgid, const DOM_SID *sid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-	fstring sid_str;
-
-	if (!pgid)
-		return False;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	sid_to_string(sid_str, sid);
-	fstrcpy(request.data.sid, sid_str);
-	
-	request.flags = WBFLAG_QUERY_ONLY;
-
-	/* Make request */
-
-	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
-
-	/* Copy out result */
-
-	if (result == NSS_STATUS_SUCCESS) {
-		*pgid = response.data.gid;
+	for (i = 0; i < result; i++) {
+		list[i] = groups[i];
 	}
 
-	return (result == NSS_STATUS_SUCCESS);
+ done:
+	SAFE_FREE(groups);
+	return result;
 }
 
-#endif 	/* JERRY */
+/* Utility function. Convert a uid_t to a name if possible. */
 
-/***********************************************************************/
+BOOL winbind_uidtoname(fstring name, uid_t uid)
+{
+	DOM_SID sid;
+	fstring dom_name;
+	fstring user_name;
+	enum SID_NAME_USE name_type;
 
+	if (!winbind_uid_to_sid(&sid, uid))
+		return False;
+	if (!winbind_lookup_sid(&sid, dom_name, user_name, &name_type))
+		return False;
+
+	if (name_type != SID_NAME_USER)
+		return False;
+
+	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, 
+                 lp_winbind_separator(), user_name);
+
+	return True;
+}
+
+/* Utility function. Convert a gid_t to a name if possible. */
+
+BOOL winbind_gidtoname(fstring name, gid_t gid)
+{
+	DOM_SID sid;
+	fstring dom_name;
+	fstring group_name;
+	enum SID_NAME_USE name_type;
+
+	if (!winbind_gid_to_sid(&sid, gid))
+		return False;
+	if (!winbind_lookup_sid(&sid, dom_name, group_name, &name_type))
+		return False;
+
+	if (name_type != SID_NAME_DOM_GRP)
+		return False;
+
+	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, 
+                 lp_winbind_separator(), group_name);
+
+	return True;
+}
+
+/* Utility function. Convert a name to a uid_t if possible. */
+
+BOOL winbind_nametouid(uid_t *puid, const char *name)
+{
+	DOM_SID sid;
+	enum SID_NAME_USE name_type;
+
+	if (!winbind_lookup_name(NULL, name, &sid, &name_type))
+                return False;
+
+	if (name_type != SID_NAME_USER)
+		return False;
+
+	return winbind_sid_to_uid(puid, &sid);
+}
+
+/* Utility function. Convert a name to a gid_t if possible. */
+
+BOOL winbind_nametogid(gid_t *pgid, const char *gname)
+{
+	DOM_SID g_sid;
+	enum SID_NAME_USE name_type;
+
+	if (!winbind_lookup_name(NULL, gname, &g_sid, &name_type))
+                return False;
+
+	if (name_type != SID_NAME_DOM_GRP)
+		return False;
+
+	return winbind_sid_to_gid(pgid, &g_sid);
+}

@@ -1,0 +1,354 @@
+<HTML
+><HEAD
+><TITLE
+>make_smbcodepage</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="MAKE-SMBCODEPAGE"
+>make_smbcodepage</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>make_smbcodepage&nbsp;--&nbsp;construct a codepage file for Samba</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>make_smbcodepage</B
+>  {c|d} {codepage} {inputfile} {outputfile}</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN15"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>make_smbcodepage</B
+> compiles or de-compiles 
+	codepage files for use with the internationalization features 
+	of Samba 2.2</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN21"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>c|d</DT
+><DD
+><P
+>This tells <B
+CLASS="COMMAND"
+>make_smbcodepage</B
+> 
+		if it is compiling (<TT
+CLASS="PARAMETER"
+><I
+>c</I
+></TT
+>) a text format code 
+		page file to binary, or (<TT
+CLASS="PARAMETER"
+><I
+>d</I
+></TT
+>) de-compiling 
+		a binary codepage file to text. </P
+></DD
+><DT
+>codepage</DT
+><DD
+><P
+>This is the codepage we are processing (a 
+		number, e.g. 850). </P
+></DD
+><DT
+>inputfile</DT
+><DD
+><P
+>This is the input file to process. In 
+		the <TT
+CLASS="PARAMETER"
+><I
+>c</I
+></TT
+> case this will be a text 
+		codepage definition file such as the ones found in the Samba 	
+		<TT
+CLASS="FILENAME"
+>source/codepages</TT
+> directory. In
+		the <TT
+CLASS="PARAMETER"
+><I
+>d</I
+></TT
+> case this will be the 
+		binary format codepage definition file normally found in 
+		the <TT
+CLASS="FILENAME"
+>lib/codepages</TT
+> directory in the 
+		Samba install directory path.</P
+></DD
+><DT
+>outputfile</DT
+><DD
+><P
+>This is the output file to produce.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN47"
+></A
+><H2
+>Samba Codepage Files</H2
+><P
+>A text Samba codepage definition file is a description 
+	that tells  Samba how to map from upper to lower case for 
+	characters greater than ascii 127 in the specified DOS code page. 
+	Note that for certain DOS codepages (437 for example) mapping 
+	from lower to upper case may be non-symmetrical. For example, in
+	code page 437 lower case a acute maps to a plain upper case A 
+	when going from lower to upper case, but plain upper case A maps 
+	to plain lower case a when lower casing a character. </P
+><P
+>A binary Samba codepage definition file is a binary 
+	representation of the same information, including a value that
+	specifies what codepage this file is describing. </P
+><P
+>As Samba does not yet use UNICODE (current for Samba version 2.2) 
+	you must specify the client code page that your DOS and Windows 
+	clients are using if you wish to have case insensitivity done 
+	correctly for your particular language. The default codepage Samba 
+	uses is 850 (Western European). Text codepage definition sample files
+	are provided in the Samba distribution for codepages 437 (USA), 737 (Greek),
+	850 (Western European) 852 (MS-DOS Latin 2), 861 (Icelandic), 866 (Cyrillic),
+	932 (Kanji SJIS), 936 (Simplified Chinese), 949 (Hangul) and 950 (Traditional
+	Chinese). Users are encouraged to write text codepage definition files for
+	their own code pages and donate them to samba@samba.org. All codepage files
+	in the Samba <TT
+CLASS="FILENAME"
+>source/codepages</TT
+> directory are 
+ 	compiled and installed when a <B
+CLASS="COMMAND"
+>'make install'</B
+> 
+	command is issued there. </P
+><P
+>The client codepage used by the <B
+CLASS="COMMAND"
+>smbd</B
+> server 
+	is configured using the <B
+CLASS="COMMAND"
+>client code page</B
+> parameter 
+	in the <B
+CLASS="COMMAND"
+>smb.conf</B
+> file. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN58"
+></A
+><H2
+>Files</H2
+><P
+><B
+CLASS="COMMAND"
+>codepage_def.&#60;codepage&#62;</B
+></P
+><P
+>These are the input (text) codepage files provided in the 
+	Samba <TT
+CLASS="FILENAME"
+>source/codepages</TT
+> directory.</P
+><P
+>A text codepage definition file consists of multiple lines 
+	containing four fields. These fields are:</P
+><P
+></P
+><UL
+><LI
+><P
+><B
+CLASS="COMMAND"
+>lower</B
+>: which is the 
+		(hex) lower case character mapped on this line.</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>upper</B
+>: which is the (hex) 
+		upper case character that the lower case character will map to.
+		</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>map upper to lower</B
+> which 
+		is a boolean value (put either True or False here) which tells 
+		Samba if it is to map the given upper case character to the 
+		given lower case character when lower casing a filename.
+		</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>map lower to upper</B
+> which 
+		is a boolean value (put either True or False here) which tells 
+		Samba if it is to map the given lower case character to the 
+		given upper case character when upper casing a filename.
+		</P
+></LI
+></UL
+><P
+><B
+CLASS="COMMAND"
+>codepage.&#60;codepage&#62;</B
+> - These are the 
+	output (binary) codepage files produced  and placed in the Samba 
+	destination <TT
+CLASS="FILENAME"
+>lib/codepage</TT
+> directory. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN81"
+></A
+><H2
+>Installation</H2
+><P
+>The location of the server and its support files is a 
+	matter for individual system administrators. The following are 
+	thus suggestions only. </P
+><P
+>It is recommended that the <B
+CLASS="COMMAND"
+>make_smbcodepage
+	</B
+> program be installed under the <TT
+CLASS="FILENAME"
+>/usr/local/samba
+	</TT
+> hierarchy, in a directory readable by all, writeable 
+	only by root. The program itself should be executable by all.  The 
+	program should NOT be setuid or setgid! </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN87"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN90"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>, 
+	<A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN96"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,252 @@
+<HTML
+><HEAD
+><TITLE
+>testprns</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="TESTPRNS"
+>testprns</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>testprns&nbsp;--&nbsp;check printer name for validity with smbd</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>testprns</B
+>  {printername} [printcapname]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN13"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+>This tool is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>	Samba</A
+> suite.</P
+><P
+><B
+CLASS="COMMAND"
+>testprns</B
+> is a very simple test program 
+	to determine whether a given printer name is valid for use in 
+	a service to be provided by <A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>	smbd(8)</B
+></A
+>. </P
+><P
+>"Valid" in this context means "can be found in the 
+	printcap specified". This program is very stupid - so stupid in 
+	fact that it would be wisest to always specify the printcap file 
+	to use. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN22"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>printername</DT
+><DD
+><P
+>The printer name to validate.</P
+><P
+>Printer names are taken from the first field in each 
+		record in the printcap file, single printer names and sets 
+		of aliases separated by vertical bars ("|") are recognized. 
+		Note that no validation or checking of the printcap syntax is 
+		done beyond that required to extract the printer name. It may
+		be that the print spooling system is more forgiving or less 
+		forgiving than <B
+CLASS="COMMAND"
+>testprns</B
+>. However, if 
+		<B
+CLASS="COMMAND"
+>testprns</B
+> finds the printer then 
+		<B
+CLASS="COMMAND"
+>smbd</B
+> should do so as well. </P
+></DD
+><DT
+>printcapname</DT
+><DD
+><P
+>This is the name of the printcap file within
+		which to search for the given printer name. </P
+><P
+>If no printcap name is specified <B
+CLASS="COMMAND"
+>testprns
+		</B
+> will attempt to scan the printcap file name 
+		specified at compile time. </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN39"
+></A
+><H2
+>FILES</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/printcap</TT
+></DT
+><DD
+><P
+>This is usually the default printcap 
+		file to scan. See <TT
+CLASS="FILENAME"
+>printcap (5)</TT
+>. 
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN48"
+></A
+><H2
+>DIAGNOSTICS</H2
+><P
+>If a printer is found to be valid, the message 
+	"Printer name &#60;printername&#62; is valid" will be 
+	displayed. </P
+><P
+>If a printer is found to be invalid, the message
+	"Printer name &#60;printername&#62; is not valid" will be 
+	displayed. </P
+><P
+>All messages that would normally be logged during
+	operation of the Samba daemons are logged by this program to the 
+	file <TT
+CLASS="FILENAME"
+>test.log</TT
+> in the current directory. The
+	program runs at debuglevel 3, so quite extensive logging 
+	information is written. The log should be checked carefully 
+	for errors and warnings. </P
+><P
+>Other messages are self-explanatory. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN55"
+></A
+><H2
+>VERSION</H2
+><P
+>This man page is correct for version 2.2 of 
+	the Samba suite.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN58"
+></A
+><H2
+>SEE ALSO</H2
+><P
+><TT
+CLASS="FILENAME"
+>printcap(5)</TT
+>, 
+	<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>, 
+	<A
+HREF="smbclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbclient(1)</B
+></A
+>
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN66"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</P
+><P
+>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<A
+HREF="ftp://ftp.icce.rug.nl/pub/unix/"
+TARGET="_top"
+>	ftp://ftp.icce.rug.nl/pub/unix/</A
+>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>

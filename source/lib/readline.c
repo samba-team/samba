@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    Samba readline wrapper implementation
    Copyright (C) Simo Sorce 2001
    Copyright (C) Andrew Tridgell 2001
@@ -21,88 +22,26 @@
 
 #include "includes.h"
 
-#ifdef HAVE_LIBREADLINE
-#  ifdef HAVE_READLINE_READLINE_H
-#    include <readline/readline.h>
-#    ifdef HAVE_READLINE_HISTORY_H
-#      include <readline/history.h>
-#    endif
-#  else
-#    ifdef HAVE_READLINE_H
-#      include <readline.h>
-#      ifdef HAVE_HISTORY_H
-#        include <history.h>
-#      endif
-#    else
-#      undef HAVE_LIBREADLINE
-#    endif
-#  endif
-#endif
-
-#ifdef HAVE_NEW_LIBREADLINE
-#  define RL_COMPLETION_CAST (rl_completion_func_t *)
-#else
-/* This type is missing from libreadline<4.0  (approximately) */
-#  define RL_COMPLETION_CAST
-#endif /* HAVE_NEW_LIBREADLINE */
-
 /****************************************************************************
  Display the prompt and wait for input. Call callback() regularly
-****************************************************************************/
-
-static char *smb_readline_replacement(char *prompt, void (*callback)(void), 
-				char **(completion_fn)(const char *text, int start, int end))
-{
-	fd_set fds;
-	static pstring line;
-	struct timeval timeout;
-	int fd = x_fileno(x_stdin);
-	char *ret;
-
-	x_fprintf(dbf, "%s", prompt);
-	x_fflush(dbf);
-
-	while (1) {
-		timeout.tv_sec = 5;
-		timeout.tv_usec = 0;
-
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
-	
-		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
-			ret = x_fgets(line, sizeof(line), x_stdin);
-			return ret;
-		}
-		if (callback)
-			callback();
-	}
-}
-
-/****************************************************************************
- Display the prompt and wait for input. Call callback() regularly.
 ****************************************************************************/
 
 char *smb_readline(char *prompt, void (*callback)(void), 
 		   char **(completion_fn)(const char *text, int start, int end))
 {
+	char *ret;
+	int fd = fileno(stdin);
+
 #if HAVE_LIBREADLINE
-	if (isatty(x_fileno(x_stdin))) {
-		char *ret;
 
-		/* Aargh!  Readline does bizzare things with the terminal width
-		that mucks up expect(1).  Set CLI_NO_READLINE in the environment
-		to force readline not to be used. */
+	/*
+	 * Current versions of readline on Linux seem to have
+	 * problems with EOF on a pipe.
+	 */
 
-		if (getenv("CLI_NO_READLINE"))
-			return smb_readline_replacement(prompt, callback, completion_fn);
-
-		if (completion_fn) {
-			/* The callback prototype has changed slightly between
-			different versions of Readline, so the same function
-			works in all of them to date, but we get compiler
-			warnings in some.  */
-			rl_attempted_completion_function = RL_COMPLETION_CAST completion_fn;
-		}
+	if (isatty(fd)) {
+		if (completion_fn)
+			rl_attempted_completion_function = completion_fn;
 
 		if (callback)
 			rl_event_hook = (Function *)callback;
@@ -112,36 +51,36 @@ char *smb_readline(char *prompt, void (*callback)(void),
 		return ret;
 	} else
 #endif
-	return smb_readline_replacement(prompt, callback, completion_fn);
-}
+	{
+		fd_set fds;
+		extern FILE *dbf;
+		static pstring line;
+		struct timeval timeout;
 
-/****************************************************************************
- * return line buffer text
- ****************************************************************************/
-const char *smb_readline_get_line_buffer(void)
-{
-#if defined(HAVE_LIBREADLINE)
-	return rl_line_buffer;
-#else
-	return NULL;
-#endif
-}
+		fprintf(dbf, "%s", prompt);
+		fflush(dbf);
 
+		while (1) {
+			timeout.tv_sec = 5;
+			timeout.tv_usec = 0;
 
-/****************************************************************************
- * set completion append character
- ***************************************************************************/
-void smb_readline_ca_char(char c)
-{
-#if defined(HAVE_LIBREADLINE)
-	rl_completion_append_character = c;
-#endif
+			FD_ZERO(&fds);
+			FD_SET(fd,&fds);
+	
+			if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
+				ret = fgets(line, sizeof(line), stdin);
+				return ret;
+			}
+			if (callback)
+				callback();
+		}
+	}
 }
 
 /****************************************************************************
 history
 ****************************************************************************/
-int cmd_history(void)
+void cmd_history(void)
 {
 #if defined(HAVE_LIBREADLINE)
 	HIST_ENTRY **hlist;
@@ -155,7 +94,4 @@ int cmd_history(void)
 #else
 	DEBUG(0,("no history without readline support\n"));
 #endif
-
-	return 0;
 }
-
