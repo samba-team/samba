@@ -353,7 +353,7 @@ static BOOL make_sam_from_nisp_object(struct sam_passwd *pw_buf, nis_object *obj
 	pw_buf->logon_divs = 168; /* hours per week */
 	pw_buf->hours_len = 21; /* 21 times 8 bits = 168 */
 	memset(pw_buf->hours, 0xff, pw_buf->hours_len); /* available at all hours */
-	pw_buf->unknown_5 = 0x00020000; /* don't know */
+	pw_buf->unknown_5 = 0x00000000; /* don't know */
 	pw_buf->unknown_6 = 0x000004ec; /* don't know */
 
 	return True;

@@ -116,9 +116,8 @@ void pdb_init_sam(SAM_ACCOUNT *user)
 	user->logon_divs = 168; 	/* hours per week */
 	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
 	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
-	user->unknown_5 = 0x00020000; 	/* don't know */
-	user->unknown_5 = 0x000004ec; 	/* don't know */
-	
+	user->unknown_5 = 0x00000000; /* don't know */
+	user->unknown_6 = 0x000004ec; /* don't know */
 }
 
 /************************************************************
