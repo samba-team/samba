@@ -1,3 +1,9 @@
+Thu Jul 17 20:35:45 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kuser/klist.c: Print start time of ticket if available.
+
+	* lib/krb5/get_host_realm.c: Return error if no realm was found.
+
 Thu Jul 17 20:28:21 1997  Assar Westerlund  <assar@sics.se>
 
 	* kpasswd: non-working kpasswd added
