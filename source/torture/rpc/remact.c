@@ -37,7 +37,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = 5;
 	r.in.this.version.MinorVersion = 1;
-	uuid_generate_random(&r.in.this.cid);
+	r.in.this.cid = GUID_random();
 	GUID_from_string(CLSID_SIMPLE, &r.in.Clsid);
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
 	r.in.num_protseqs = 3;
