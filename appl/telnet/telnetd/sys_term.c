@@ -1154,7 +1154,7 @@ startslave(char *host, int autologin, char *autoname)
 	/*
 	 * Create utmp entry for child
 	 */
-	time(&wtmp.ut_time);
+	wtmp.ut_time = time(NULL);
 	wtmp.ut_type = LOGIN_PROCESS;
 	wtmp.ut_pid = pid;
 	strncpy(wtmp.ut_user,  "LOGIN", sizeof(wtmp.ut_user));
@@ -1423,7 +1423,7 @@ rmut(void)
 #ifdef HAVE_STRUCT_UTMP_UT_HOST
 	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
 #endif
-	    time(&wtmp.ut_time);
+	    wtmp.ut_time = time(NULL);
 	    write(f, &wtmp, sizeof(wtmp));
 	    close(f);
 	  }
@@ -1467,7 +1467,7 @@ rmut(void)
 #ifdef HAVE_STRUCT_UTMP_UT_HOST
 		strncpy(u->ut_host,  "", sizeof(u->ut_host));
 #endif
-		time(&u->ut_time);
+		u->ut_time = time(NULL);
 		write(f, u, sizeof(wtmp));
 		found++;
 	    }
@@ -1482,7 +1482,7 @@ rmut(void)
 #ifdef HAVE_STRUCT_UTMP_UT_HOST
 	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
 #endif
-	    time(&wtmp.ut_time);
+	    wtmp.ut_time = time(NULL);
 	    write(f, &wtmp, sizeof(wtmp));
 	    close(f);
 	}
