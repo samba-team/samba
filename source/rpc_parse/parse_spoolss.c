@@ -4701,7 +4701,7 @@ BOOL make_spool_buffer5(TALLOC_CTX *ctx, BUFFER5 *buf5, uint32 len, uint16 *src)
 	buf5->buf_len = len;
 	if((buf5->buffer=(uint16*)talloc(ctx, sizeof(uint16)*len)) == NULL)
 	{
-		DEBUG(0,("make_spool_buffer5: Unable to malloc memory for buffer!\n"));
+		DEBUG(0,("make_spool_buffer5: Unable to talloc memory for buffer!\n"));
 		return False;
 	}
 	
@@ -5622,124 +5622,10 @@ void free_printer_info_3(PRINTER_INFO_3 *printer)
 	}
 }
 
-static PRINTER_INFO_2 *prt2_dup(const PRINTER_INFO_2* from)
-{
-	PRINTER_INFO_2 *copy = (PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
-	if (copy != NULL) {
-		if (from != NULL)
-			memcpy(copy, from, sizeof(*copy));
-		else
-			ZERO_STRUCTP(copy);
-	}
-	return copy;
-}
-
-void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&free_printer_info_2;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
-				const PRINTER_INFO_2 *prt)
-{
-	void*(*fn)(const void*) = (void*(*)(const void*))&prt2_dup;
-	return (PRINTER_INFO_2*)add_copy_to_array(len,
-	           (void***)array, (const void*)prt, *fn, True);
-}
-
-static PRINTER_INFO_1 *prt1_dup(const PRINTER_INFO_1* from)
-{
-	PRINTER_INFO_1 *copy = (PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
-	if (copy != NULL) {
-		if (from != NULL)
-			memcpy(copy, from, sizeof(*copy));
-		else
-			ZERO_STRUCTP(copy);
-	}
-	return copy;
-}
-
-void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&free;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
-				const PRINTER_INFO_1 *prt)
-{
-	void*(*fn)(const void*) = (void*(*)(const void*))&prt1_dup;
-	return (PRINTER_INFO_1*)add_copy_to_array(len,
-	                   (void***)array, (const void*)prt, *fn, True);
-}
-
-static JOB_INFO_1 *job1_dup(const JOB_INFO_1* from)
-{
-	JOB_INFO_1 *copy = (JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
-	if (copy != NULL)
-	{
-		if (from != NULL)
-		{
-			memcpy(copy, from, sizeof(*copy));
-		}
-		else
-		{
-			ZERO_STRUCTP(copy);
-		}
-	}
-	return copy;
-}
-
-void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&free;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-JOB_INFO_1 *add_job1_to_array(uint32 *len, JOB_INFO_1 ***array,
-				const JOB_INFO_1 *job)
-{
-	void*(*fn)(const void*) = (void*(*)(const void*))&job1_dup;
-	return (JOB_INFO_1*)add_copy_to_array(len,
-	                   (void***)array, (const void*)job, *fn, True);
-}
-
-static JOB_INFO_2 *job2_dup(const JOB_INFO_2* from)
-{
-	JOB_INFO_2 *copy = (JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
-	if (copy != NULL)
-	{
-		if (from != NULL)
-		{
-			memcpy(copy, from, sizeof(*copy));
-		}
-		else
-		{
-			ZERO_STRUCTP(copy);
-		}
-	}
-	return copy;
-}
-
 void free_job_info_2(JOB_INFO_2 *job)
 {
-	if (job!=NULL)
-		free_devmode(job->devmode);
-}
-
-void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&free_job_info_2;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
-				const JOB_INFO_2 *job)
-{
-	void*(*fn)(const void*) = (void*(*)(const void*))&job2_dup;
-	return (JOB_INFO_2*)add_copy_to_array(len,
-	                   (void***)array, (const void*)job, *fn, True);
+    if (job!=NULL)
+        free_devmode(job->devmode);
 }
 
 /*******************************************************************
