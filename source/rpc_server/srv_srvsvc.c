@@ -1006,7 +1006,7 @@ static void srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
 
 	DEBUG(5,("srv_reply_net_remote_tod: %d\n", __LINE__));
 
-	t = LocalTime(&unixdate);
+	t = gmtime(&unixdate);
 
 	/* set up the */
 	make_time_of_day_info(&tod,
