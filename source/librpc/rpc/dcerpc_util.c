@@ -24,6 +24,9 @@
 #include "includes.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/gen_ndr/ndr_remact.h"
+#include "librpc/gen_ndr/ndr_oxidresolver.h"
+#include "librpc/gen_ndr/ndr_mgmt.h"
 #include "librpc/gen_ndr/tables.h"
 
 /*
@@ -659,7 +662,10 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	struct dcerpc_binding epmapper_binding;
 
 
-	if (!strcmp(uuid, DCERPC_EPMAPPER_UUID)) {
+	if (!strcmp(uuid, DCERPC_EPMAPPER_UUID) ||
+		!strcmp(uuid, DCERPC_MGMT_UUID) ||
+		!strcmp(uuid, DCERPC_IREMOTEACTIVATION_UUID) ||
+		!strcmp(uuid, DCERPC_IOXIDRESOLVER_UUID)) {
 		switch(binding->transport) {
 			case NCACN_IP_TCP: binding->endpoint = talloc_asprintf(mem_ctx, "%d", EPMAPPER_PORT); return NT_STATUS_OK;
 			case NCALRPC: binding->endpoint = EPMAPPER_IDENTIFIER; return NT_STATUS_OK;

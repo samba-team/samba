@@ -90,6 +90,7 @@ NTSTATUS dcerpc_IUnknown_QueryInterface(struct dcerpc_pipe *p, struct GUID *o, T
 WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface **ip, const char *domain, const char *user, const char *pass)
 {
 	struct RemoteActivation r;
+	int i;
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
 	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
@@ -110,7 +111,8 @@ WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *s
 	r.in.protseq = protseq;
 	r.in.Interfaces = num_ifaces;
 	r.in.pIIDs = iid;
-
+	r.out.ifaces = talloc_array_p(mem_ctx, struct pMInterfacePointer, num_ifaces);
+	
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Error while running RemoteActivation %s\n", nt_errstr(status)));
@@ -121,15 +123,21 @@ WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *s
 	if(!W_ERROR_IS_OK(r.out.hr)) { return r.out.hr; }
 	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
 
-	/* FIXME: Fill ip */
+	*ip = talloc_array_p(mem_ctx, struct dcom_interface, num_ifaces);
+	for (i = 0; i < num_ifaces; i++) {
+		(*ip)[i].object = r.out.ifaces[i].p->obj;
+		(*ip)[i].pipe = NULL; /* FIXME */
+	}
+
 	return WERR_OK;
 }
 
-WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface **ip, const char *domain, const char *user, const char *pass)
+WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface *ip, const char *domain, const char *user, const char *pass)
 {
 	struct RemoteActivation r;
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
+	struct pMInterfacePointer pm;
 	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
 	status = dcom_connect(&p, server, domain, user, pass);
@@ -149,6 +157,7 @@ WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char
 	r.in.Interfaces = 1;
 	r.in.pIIDs = iid;
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
+	r.out.ifaces = &pm;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -160,6 +169,8 @@ WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char
 	if(!W_ERROR_IS_OK(r.out.hr)) { return r.out.hr; }
 	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
 
-	/* FIXME: Fill ip */
+	ip->pipe = NULL; /* FIXME */
+	ip->object = pm.p->obj;
+
 	return WERR_OK;
 }

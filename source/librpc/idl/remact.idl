@@ -10,6 +10,7 @@
 [
 	uuid("4d9f4ab8-7d1c-11cf-861e-0020af6e7c57"),
 	pointer_default(unique),
+	endpoint("ncalrpc:", "ncacn_ip_tcp:[135]"),
 	depends(dcom)
 ]
 interface IRemoteActivation
@@ -22,7 +23,11 @@ interface IRemoteActivation
 		RPC_C_IMP_LEVEL_IMPERSONATE = 3,
 		RPC_C_IMP_LEVEL_DELEGATE = 4
 	} imp_levels;
-
+	
+	typedef struct {
+		MInterfacePointer *p;
+	} pMInterfacePointer;
+	
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	WERROR RemoteActivation (
 			[in] ORPCTHIS this,
@@ -32,7 +37,7 @@ interface IRemoteActivation
 			[in, unique] MInterfacePointer *pObjectStorage,
 			[in] uint32 ClientImpLevel,
 			[in] uint32 Mode,
-			[in] uint32 Interfaces,
+			[in,range(1,32768)] uint32 Interfaces,
 			[in, unique,size_is(Interfaces)] GUID *pIIDs,
 			[in] uint16 num_protseqs,
 			[in, size_is(num_protseqs)] uint16 protseq[],
@@ -42,7 +47,7 @@ interface IRemoteActivation
 			[out] uint32 AuthnHint,
 			[out] COMVERSION ServerVersion,
 			[out] WERROR hr,
-			[out,size_is(Interfaces)] MInterfacePointer ifaces[],
+			[out,size_is(Interfaces),ref] pMInterfacePointer *ifaces,
 			[out,size_is(Interfaces)] WERROR results[]
 			);
 }

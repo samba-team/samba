@@ -182,6 +182,7 @@ extern int errno;
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/gen_ndr/ndr_dcom.h"
 #include "lib/dcom/common/dcom.h"
 #include "smb_interfaces.h"
 #include "smbd/server.h"
