@@ -152,10 +152,10 @@ krb5_cc_close(krb5_context context,
 {
     krb5_error_code ret;
     ret = id->ops->close(context, id);
+#if 0 /* XXX */
     free(id->residual);
-#if 0
-    free(id);
 #endif
+    free(id);
     return ret;
 }
 
