@@ -62,7 +62,7 @@ static BOOL become_uid(uid_t uid)
 	set_effective_uid(uid);
 	current_user.uid = uid;
 
-	DO_PROFILE_INC(uid_changes)
+	DO_PROFILE_INC(uid_changes);
 
 	return True;
 }
