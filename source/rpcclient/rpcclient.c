@@ -201,8 +201,15 @@ void fetch_domain_sid(struct cli_state *cli)
 	uint32 result = 0, info_class = 5;
 	fstring domain_name;
 	static BOOL got_domain_sid;
+	TALLOC_CTX *mem_ctx;
 
 	if (got_domain_sid) return;
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
@@ -210,13 +217,13 @@ void fetch_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol) != NT_STATUS_NOPROBLEMO)) {
 		goto error;
 	}
 
-	if ((result = cli_lsa_query_info_policy(cli, &pol, info_class, 
+	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 						domain_name, &domain_sid))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto error;
@@ -224,8 +231,9 @@ void fetch_domain_sid(struct cli_state *cli)
 
 	got_domain_sid = True;
 
-	cli_lsa_close(cli, &pol);
+	cli_lsa_close(cli, mem_ctx, &pol);
 	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
 
 	return;
 

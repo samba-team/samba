@@ -84,8 +84,13 @@ void cli_samr_shutdown(struct cli_state *cli)
 
 /* Connect to SAMR database */
 
-uint32 cli_samr_connect(struct cli_state *cli, char *srv_name,
-			uint32 access_mask, POLICY_HND *connect_pol)
+uint32 cli_samr_connect(
+	struct cli_state *cli,
+	TALLOC_CTX *mem_ctx, 
+	char *srv_name,
+	uint32 access_mask, 
+	POLICY_HND *connect_pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CONNECT q;
@@ -97,8 +102,8 @@ uint32 cli_samr_connect(struct cli_state *cli, char *srv_name,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -132,7 +137,11 @@ uint32 cli_samr_connect(struct cli_state *cli, char *srv_name,
 
 /* Close SAMR handle */
 
-uint32 cli_samr_close(struct cli_state *cli, POLICY_HND *connect_pol)
+uint32 cli_samr_close(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *connect_pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CLOSE_HND q;
@@ -144,8 +153,8 @@ uint32 cli_samr_close(struct cli_state *cli, POLICY_HND *connect_pol)
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -179,9 +188,14 @@ uint32 cli_samr_close(struct cli_state *cli, POLICY_HND *connect_pol)
 
 /* Open handle on a domain */
 
-uint32 cli_samr_open_domain(struct cli_state *cli, POLICY_HND *connect_pol,
-			    uint32 access_mask, DOM_SID *domain_sid,
-			    POLICY_HND *domain_pol)
+uint32 cli_samr_open_domain(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *connect_pol,
+	uint32 access_mask, 
+	DOM_SID *domain_sid,
+	POLICY_HND *domain_pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_DOMAIN q;
@@ -193,8 +207,8 @@ uint32 cli_samr_open_domain(struct cli_state *cli, POLICY_HND *connect_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -228,9 +242,14 @@ uint32 cli_samr_open_domain(struct cli_state *cli, POLICY_HND *connect_pol,
 
 /* Open handle on a user */
 
-uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
-			  uint32 access_mask, uint32 user_rid,
-			  POLICY_HND *user_pol)
+uint32 cli_samr_open_user(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *domain_pol,
+	uint32 access_mask, 
+	uint32 user_rid,
+	POLICY_HND *user_pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_USER q;
@@ -242,8 +261,8 @@ uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -277,9 +296,14 @@ uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
 
 /* Open handle on a group */
 
-uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
-			  uint32 access_mask, uint32 group_rid,
-			  POLICY_HND *group_pol)
+uint32 cli_samr_open_group(
+	struct cli_state *cli,
+	TALLOC_CTX *mem_ctx, 
+	POLICY_HND *domain_pol,
+	uint32 access_mask, 
+	uint32 group_rid,
+	POLICY_HND *group_pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_GROUP q;
@@ -291,8 +315,8 @@ uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -326,8 +350,13 @@ uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
 
 /* Query user info */
 
-uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol, 
-			       uint16 switch_value, SAM_USERINFO_CTR *ctr)
+uint32 cli_samr_query_userinfo(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *user_pol, 
+	uint16 switch_value, 
+	SAM_USERINFO_CTR *ctr
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_USERINFO q;
@@ -339,8 +368,8 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -374,8 +403,13 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol,
 
 /* Query group info */
 
-uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
-				uint32 info_level, GROUP_INFO_CTR *ctr)
+uint32 cli_samr_query_groupinfo(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *group_pol,
+	uint32 info_level, 
+	GROUP_INFO_CTR *ctr
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_GROUPINFO q;
@@ -387,8 +421,8 @@ uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -422,8 +456,13 @@ uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
 
 /* Query user groups */
 
-uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
-				 uint32 *num_groups, DOM_GID **gid)
+uint32 cli_samr_query_usergroups(
+	struct cli_state *cli,
+	TALLOC_CTX *mem_ctx, 
+	POLICY_HND *user_pol,
+	uint32 *num_groups, 
+	DOM_GID **gid
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_USERGROUPS q;
@@ -435,8 +474,8 @@ uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -471,8 +510,14 @@ uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
 
 /* Query user groups */
 
-uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
-			       uint32 *num_mem, uint32 **rid, uint32 **attr)
+uint32 cli_samr_query_groupmem(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *group_pol,
+	uint32 *num_mem, 
+	uint32 **rid, 
+	uint32 **attr
+)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_GROUPMEM q;
@@ -484,8 +529,8 @@ uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 

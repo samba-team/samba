@@ -84,8 +84,13 @@ void cli_lsa_shutdown(struct cli_state *cli)
 
 /* Open a LSA policy handle */
 
-uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos, 
-			   uint32 des_access, POLICY_HND *pol)
+uint32 cli_lsa_open_policy(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	BOOL sec_qos, 
+	uint32 des_access, 
+	POLICY_HND *pol
+)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
@@ -98,8 +103,8 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
@@ -140,7 +145,11 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 
 /* Close a LSA policy handle */
 
-uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol)
+uint32 cli_lsa_close(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol
+)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
@@ -152,8 +161,8 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol)
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -187,9 +196,16 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol)
 
 /* Lookup a list of sids */
 
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
-			   int num_sids, DOM_SID *sids, char ***names, 
-			   uint32 **types, int *num_names)
+uint32 cli_lsa_lookup_sids(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol,
+	int num_sids, 
+	DOM_SID *sids, 
+	char ***names, 
+	uint32 **types, 
+	int *num_names
+)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -204,12 +220,12 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
-	init_q_lookup_sids(cli->mem_ctx, &q, pol, num_sids, sids, 1);
+	init_q_lookup_sids(mem_ctx, &q, pol, num_sids, sids, 1);
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
@@ -246,14 +262,14 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
 
 	(*num_names) = r.names->num_entries;
 	
-	if (!((*names) = (char **)malloc(sizeof(char *) * 
+	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) * 
 					 r.names->num_entries))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types) = (uint32 *)malloc(sizeof(uint32) * 
+	if (!((*types) = (uint32 *)talloc(mem_ctx, sizeof(uint32) * 
 				      r.names->num_entries))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
@@ -294,9 +310,16 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
 
 /* Lookup a list of names */
 
-uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
-			    int num_names, char **names, DOM_SID **sids,
-			    uint32 **types, int *num_sids)
+uint32 cli_lsa_lookup_names(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol,
+	int num_names, 
+	char **names, 
+	DOM_SID **sids,
+	uint32 **types, 
+	int *num_sids
+)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -310,12 +333,12 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
-	init_q_lookup_names(cli->mem_ctx, &q, pol, num_names, names);
+	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
@@ -349,14 +372,14 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
 
 	(*num_sids) = r.num_entries;
 
-	if (!((*sids = (DOM_SID *)malloc(sizeof(DOM_SID) *
+	if (!((*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
 					 r.num_entries)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types = (uint32 *)malloc(sizeof(uint32) *
+	if (!((*types = (uint32 *)talloc(mem_ctx, sizeof(uint32) *
 					  r.num_entries)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
@@ -395,9 +418,14 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
 
 /* Query info policy */
 
-uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol, 
-				 uint16 info_class, fstring domain_name, 
-				 DOM_SID * domain_sid)
+uint32 cli_lsa_query_info_policy(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol, 
+	uint16 info_class, 
+	fstring domain_name, 
+	DOM_SID * domain_sid
+)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
@@ -409,8 +437,8 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -479,9 +507,15 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol,
 
 /* Enumerate list of trusted domains */
 
-uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol, 
-			      uint32 *enum_ctx, uint32 *num_domains,
-			      char ***domain_names, DOM_SID **domain_sids)
+uint32 cli_lsa_enum_trust_dom(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol, 
+	uint32 *enum_ctx, 
+	uint32 *num_domains,
+	char ***domain_names, 
+	DOM_SID **domain_sids
+)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;
@@ -494,8 +528,8 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -527,14 +561,14 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Return output parameters */
 
-	if (!((*domain_names) = (char **)malloc(sizeof(char *) *
+	if (!((*domain_names) = (char **)talloc(mem_ctx, sizeof(char *) *
 						r.num_domains))) {
 		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*domain_sids) = (DOM_SID *)malloc(sizeof(DOM_SID) *
+	if (!((*domain_sids) = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
 						 r.num_domains))) {
 		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
