@@ -32,6 +32,7 @@ static const struct table_node archi_table[]= {
 
 	{"Windows 4.0",          "WIN40",	0 },
 	{"Windows NT x86",       "W32X86",	2 },
+	{"Windows NT x86",       "W32X86",	3 },
 	{"Windows NT R4000",     "W32MIPS",	2 },
 	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
 	{"Windows NT PowerPC",   "W32PPC",	2 },
