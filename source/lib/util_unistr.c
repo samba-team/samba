@@ -32,6 +32,7 @@ static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
 static uint8 *valid_table;
 
+
 /*******************************************************************
 load the case handling tables
 ********************************************************************/
@@ -45,7 +46,6 @@ void load_case_tables(void)
 
 	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
 	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
-	valid_table = map_file(lib_path("valid.dat"), 0x10000);
 
 	/* we would like Samba to limp along even if these tables are
 	   not available */
@@ -62,14 +62,50 @@ void load_case_tables(void)
 		for (i=0;i<0x10000;i++) lowcase_table[i] = i;
 		for (i=0;i<256;i++) lowcase_table[UCS2_CHAR(i)] = UCS2_CHAR(isupper(i)?tolower(i):i);
 	}
+}
 
-	if (!valid_table) {
-		const char *allowed = ".!#$%&'()_-@^`~";
-		DEBUG(1,("creating lame valid table\n"));
-		valid_table = malloc(0x10000);
-		for (i=0;i<0x10000;i++) valid_table[i] = 0;
-		for (i=0;i<256;i++) valid_table[UCS2_CHAR(i)] = isalnum(i) || strchr(allowed,i);
+/*
+  see if a ucs2 character can be mapped correctly to a dos character
+  and mapped back to the same character in ucs2
+*/
+static int check_dos_char(smb_ucs2_t c)
+{
+	char buf[10];
+	smb_ucs2_t c2 = 0;
+	int len1, len2;
+	len1 = convert_string(CH_UCS2, CH_DOS, &c, 2, buf, sizeof(buf));
+	if (len1 == 0) return 0;
+	len2 = convert_string(CH_DOS, CH_UCS2, buf, len1, &c2, 2);
+	if (len2 != 2) return 0;
+	return (c == c2);
+}
+
+/*******************************************************************
+load the valid character map table
+********************************************************************/
+void init_valid_table(void)
+{
+	static int initialised;
+	static int mapped_file;
+	int i;
+	const char *allowed = ".!#$%&'()_-@^`~";
+
+	if (initialised && mapped_file) return;
+	initialised = 1;
+
+	valid_table = map_file(lib_path("valid.dat"), 0x10000);
+	if (valid_table) {
+		mapped_file = 1;
+		return;
 	}
+
+	if (valid_table) free(valid_table);
+
+	DEBUG(2,("creating default valid table\n"));
+	valid_table = malloc(0x10000);
+	for (i=0;i<128;i++) valid_table[UCS2_CHAR(i)] = isalnum(i) || 
+				    strchr(allowed,i);
+	for (;i<0x10000;i++) valid_table[UCS2_CHAR(i)] = check_dos_char(i);
 }
 
 

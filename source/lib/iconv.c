@@ -125,6 +125,9 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 	memset(ret, 0, sizeof(*ret));
 
+	ret->from_name = strdup(fromcode);
+	ret->to_name = strdup(tocode);
+
 	/* check for the simplest null conversion */
 	if (strcmp(fromcode, tocode) == 0) {
 		ret->direct = iconv_copy;
@@ -202,6 +205,9 @@ int smb_iconv_close (smb_iconv_t cd)
 	if (cd->cd_push) iconv_close((iconv_t)cd->cd_push);
 #endif
 
+	SAFE_FREE(cd->from_name);
+	SAFE_FREE(cd->to_name);
+
 	memset(cd, 0, sizeof(*cd));
 	SAFE_FREE(cd);
 	return 0;
@@ -240,7 +246,7 @@ static size_t ascii_push(void *cd, char **inbuf, size_t *inbytesleft,
 	int ir_count=0;
 
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		(*outbuf)[0] = (*inbuf)[0];
+		(*outbuf)[0] = (*inbuf)[0] & 0x7F;
 		if ((*inbuf)[1]) ir_count++;
 		(*inbytesleft)  -= 2;
 		(*outbytesleft) -= 1;

@@ -1654,6 +1654,7 @@ typedef struct {
 	size_t (*push)(void *cd, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
 	void *cd_direct, *cd_pull, *cd_push;
+	char *from_name, *to_name;
 } *smb_iconv_t;
 
 /* The maximum length of a trust account password.
