@@ -625,45 +625,43 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   ******************************************************************/
 static void process_send_backup_list(struct packet_struct *p,char *buf)
 {
-	struct dgram_packet *dgram = &p->packet.dgram;
-	struct in_addr ip = dgram->header.source_ip;
-	struct domain_record *d; /* = find_domain(ip); */
-	struct work_record *work;
+  struct dgram_packet *dgram = &p->packet.dgram;
+  struct in_addr ip = dgram->header.source_ip;
+  struct domain_record *d; /* = find_domain(ip); */
+  struct work_record *work;
 
-	int count = CVAL(buf,0);
-	int token = SVAL(buf,1); /* sender's key index for the workgroup? */
-	int info  = SVAL(buf,3); /* XXXX don't know: some sort of info */
-	int name_type = dgram->dest_name.name_type;
+  int count = CVAL(buf,0);
+  int token = SVAL(buf,1); /* sender's key index for the workgroup? */
+  int info  = SVAL(buf,3); /* XXXX don't know: some sort of info */
+  int name_type = dgram->dest_name.name_type;
 
-	DEBUG(0,("Send Backup request to %s token=%d info = %x count=%d\n",
-			namestr(&dgram->dest_name), token, info, count));
-
-	if (same_context(dgram)) return;
-
-	if (count <= 0) return;
-
-	if (!d) return;
-
-	if (name_type != 0x1b && name_type != 0x1d)
+  DEBUG(0,("Send Backup request to %s token=%d info = %x count=%d\n",
+	   namestr(&dgram->dest_name), token, info, count));
+  
+  if (same_context(dgram)) return;
+  
+  if (count <= 0) return;
+  
+  if (name_type != 0x1b && name_type != 0x1d)
+    {
+      DEBUG(0, ("backup request to wrong type %d\n", name_type));
+      return;
+    }
+  
+  for (d = domainlist; d; d = d->next)
+    {
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		DEBUG(0, ("backup request to wrong type %d\n", name_type));
-		return;
-	}
-
-	for (d = domainlist; d; d = d->next)
-	{
-		for (work = d->workgrouplist; work; work = work->next)
-		{
-			if (strequal(work->work_group, dgram->dest_name.name))
-			{
-				DEBUG(3, ("found workgroup %s(%d)\n",
-						work->work_group, work->token));
-				send_backup_list(work->work_group,&dgram->source_name,
-								 count,token,info,name_type,ip);
-				return;
-			}
-		} 
-	}
+	  if (strequal(work->work_group, dgram->dest_name.name))
+	    {
+	      DEBUG(3, ("found workgroup %s(%d)\n",
+			work->work_group, work->token));
+	      send_backup_list(work->work_group,&dgram->source_name,
+			       count,token,info,name_type,ip);
+	      return;
+	    }
+	} 
+    }
 }
 
 
