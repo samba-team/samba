@@ -79,6 +79,7 @@ BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int por
 	}
 
 	set_blocking(sock->fd, False);
+	set_socket_options(sock->fd, lp_socket_options());
 
 	return True;
 }
