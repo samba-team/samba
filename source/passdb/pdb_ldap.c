@@ -81,6 +81,8 @@
 #define SAM_ACCOUNT struct sam_passwd
 #endif
 
+#define MODIFY_TIMESTAMP_STRING "modifyTimestamp"
+
 #include "smbldap.h"
 
 struct ldapsam_privates {
@@ -398,11 +400,8 @@ static time_t ldapsam_get_entry_timestamp(
 	pstring temp;	
 	struct tm tm;
 
-	if (!smbldap_get_single_pstring(
-		    ldap_state->smbldap_state->ldap_struct, entry,
-		    get_userattr_key2string(ldap_state->schema_ver, 
-					   LDAP_ATTR_MOD_TIMESTAMP), 
-		    temp)) 
+	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct,
+					entry, MODIFY_TIMESTAMP_STRING, temp)) 
 		return (time_t) 0;
 
 	strptime(temp, "%Y%m%d%H%M%SZ", &tm);
