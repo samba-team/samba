@@ -208,7 +208,8 @@ krb5_build_principal(krb5_context context,
 }
 
 krb5_error_code
-krb5_principal_set_component(krb5_principal p, int n, void *data, size_t len)
+krb5_principal_set_component(krb5_context context, krb5_principal p, 
+			     int n, void *data, size_t len)
 {
     krb5_data *tmp;
     if(p->ncomp <= n){
@@ -228,9 +229,8 @@ krb5_principal_set_component(krb5_principal p, int n, void *data, size_t len)
     return 0;
 }
 
-
 static void
-va_ext_princ(krb5_principal p, va_list ap)
+va_ext_princ(krb5_context context, krb5_principal p, va_list ap)
 {
     int n = 0;
     while(1){
@@ -240,14 +240,14 @@ va_ext_princ(krb5_principal p, va_list ap)
 	if(len == 0)
 	    break;
 	s = va_arg(ap, char*);
-	krb5_principal_set_component(p, n, s, len);
+	krb5_principal_set_component(context, p, n, s, len);
 	n++;
     }
     p->ncomp = n;
 }
 
 static void
-va_princ(krb5_principal p, va_list ap)
+va_princ(krb5_context context, krb5_principal p, va_list ap)
 {
     int n = 0;
     while(1){
@@ -257,7 +257,7 @@ va_princ(krb5_principal p, va_list ap)
 	if(s == NULL)
 	    break;
 	len = strlen(s);
-	krb5_principal_set_component(p, n, s, len);
+	krb5_principal_set_component(context, p, n, s, len);
 	n++;
     }
     p->ncomp = n;
@@ -269,7 +269,7 @@ build_principal(krb5_context context,
 		krb5_principal *principal,
 		int rlen,
 		const char *realm,
-		void (*func)(krb5_principal, va_list),
+		void (*func)(krb5_context, krb5_principal, va_list),
 		va_list ap)
 {
     krb5_principal p;
@@ -284,7 +284,7 @@ build_principal(krb5_context context,
 	return ENOMEM;
     }
   
-    (*func)(p, ap);
+    (*func)(context, p, ap);
     *principal = p;
     return 0;
 }
