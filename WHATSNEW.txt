@@ -1,6 +1,13 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha6
+
+- added "net time zone" command (tridge)
+- pam_smbpass updates (a.bokovoy@sam-solutions.net)
+- irix updates (herb)
+- net rpc join handles existing machine acct (tridge)
+
 Changes in alpha5
 
 - added "net time" command (tridge)
