@@ -177,7 +177,7 @@ NTSTATUS auth_builtin_init(void)
 
 	ops.name = "guest";
 	ops.init = auth_init_guest;
-	ret = register_backend("auth", &ops);
+	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
 			ops.name));
@@ -187,7 +187,7 @@ NTSTATUS auth_builtin_init(void)
 #ifdef DEVELOPER
 	ops.name = "name_to_ntstatus";
 	ops.init = auth_init_name_to_ntstatus;
-	ret = register_backend("auth", &ops);
+	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
 			ops.name));
@@ -196,7 +196,7 @@ NTSTATUS auth_builtin_init(void)
 
 	ops.name = "fixed_challenge";
 	ops.init = auth_init_fixed_challenge;
-	ret = register_backend("auth", &ops);
+	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
 			ops.name));

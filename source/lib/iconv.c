@@ -73,7 +73,7 @@ static const struct charset_functions builtin_functions[] = {
 
 static struct charset_functions *charsets = NULL;
 
-static NTSTATUS charset_register_backend(const void *_funcs) 
+NTSTATUS charset_register_backend(const void *_funcs) 
 {
 	struct charset_functions *funcs = memdup(_funcs,sizeof(struct charset_functions));
 	struct charset_functions *c = charsets;
@@ -90,22 +90,6 @@ static NTSTATUS charset_register_backend(const void *_funcs)
 	funcs->next = funcs->prev = NULL;
 	DLIST_ADD(charsets, funcs);
 	return NT_STATUS_OK;
-}
-
-static void lazy_initialize_iconv(void)
-{
-	static BOOL initialized = False;
-	int i;
-
-	if (!initialized) {
-		initialized = True;
-		register_subsystem("charset", charset_register_backend);
-
-		charset_init_static_modules;
-
-		for(i = 0; builtin_functions[i].name; i++) 
-			register_backend("charset", &builtin_functions[i]);
-	}
 }
 
 #ifdef HAVE_NATIVE_ICONV
@@ -179,7 +163,6 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	smb_iconv_t ret;
 	struct charset_functions *from, *to;
 	
-	lazy_initialize_iconv();
 	from = charsets;
 	to = charsets;
 

@@ -68,7 +68,6 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM REGISTRY
 [SUBSYSTEM::REGISTRY]
-INIT_FUNCTION = registry_init
 INIT_OBJ_FILES = \
 		lib/registry/common/reg_interface.o
 ADD_OBJ_FILES = \

@@ -190,7 +190,7 @@ NTSTATUS dcerpc_server_$name\_init(void)
 	ep_server.interface_by_name = $name\__op_interface_by_name;
 
 	/* register ourselves with the DCERPC subsystem. */
-	ret = register_backend(\"dcerpc\", &ep_server);
+	ret = dcerpc_register_ep_server(&ep_server);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,(\"Failed to register \'$name\' endpoint server!\\n\"));

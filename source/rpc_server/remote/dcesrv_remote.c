@@ -200,7 +200,7 @@ NTSTATUS dcerpc_server_remote_init(void)
 	ep_server.interface_by_name = remote_op_interface_by_name;
 
 	/* register ourselves with the DCERPC subsystem. */
-	ret = register_backend("dcerpc", &ep_server);
+	ret = dcerpc_register_ep_server(&ep_server);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'remote' endpoint server!\n"));
 		return ret;

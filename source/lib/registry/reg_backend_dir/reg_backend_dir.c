@@ -144,5 +144,5 @@ static struct registry_operations reg_backend_dir = {
 
 NTSTATUS registry_dir_init(void)
 {
-	return register_backend("registry", &reg_backend_dir);
+	return registry_register(&reg_backend_dir);
 }

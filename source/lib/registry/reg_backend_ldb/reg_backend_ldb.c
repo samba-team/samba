@@ -214,5 +214,5 @@ static struct registry_operations reg_backend_ldb = {
 
 NTSTATUS registry_ldb_init(void)
 {
-	return register_backend("registry", &reg_backend_ldb);
+	return registry_register(&reg_backend_ldb);
 }

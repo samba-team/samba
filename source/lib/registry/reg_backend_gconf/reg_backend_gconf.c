@@ -189,5 +189,5 @@ static struct registry_operations reg_backend_gconf = {
 
 NTSTATUS registry_gconf_init(void)
 {
-	return register_backend("registry", &reg_backend_gconf);
+	return registry_register(&reg_backend_gconf);
 }

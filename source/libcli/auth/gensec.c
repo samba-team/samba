@@ -751,7 +751,7 @@ NTSTATUS gensec_get_password(struct gensec_security *gensec_security,
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-static NTSTATUS gensec_register(const void *_ops)
+NTSTATUS gensec_register(const void *_ops)
 {
 	const struct gensec_security_ops *ops = _ops;
 	
@@ -803,15 +803,6 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 */
 NTSTATUS gensec_init(void)
 {
-	NTSTATUS status = register_subsystem("gensec", gensec_register); 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	gensec_init_static_modules;
-
 	gensec_dcerpc_schannel_init();
-
-	DEBUG(3,("GENSEC subsystem version %d initialised\n", GENSEC_INTERFACE_VERSION));
 	return NT_STATUS_OK;
 }

@@ -98,15 +98,8 @@ sub create_output($)
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 
-			push(@{$part->{MODULE_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 
-				$elem->{TYPE} eq "MODULE" and 
-				defined($elem->{INIT_FUNCTION}) and
-				$elem->{INIT_FUNCTION} ne "" and 
-				$elem->{SUBSYSTEM} eq $part->{NAME};
-
 			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 
 				$part->{OUTPUT_TYPE} eq "BINARY" and 
-				$elem->{TYPE} eq "SUBSYSTEM" and
 				defined($elem->{INIT_FUNCTION}) and 
 				$elem->{INIT_FUNCTION} ne "";
 		}

@@ -1100,7 +1100,7 @@ static int num_ep_servers;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-static NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
+NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
 {
 	const struct dcesrv_endpoint_server *ep_server = _ep_server;
 	
@@ -1164,24 +1164,6 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 	};
 
 	return &critical_sizes;
-}
-
-/*
-  initialise the DCERPC subsystem
-*/
-NTSTATUS dcerpc_server_init(void)
-{
-	NTSTATUS status;
-
-	status = register_subsystem("dcerpc", dcerpc_register_ep_server); 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	dcerpc_init_static_modules;
-
-	DEBUG(3,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
-	return NT_STATUS_OK;
 }
 
 static const struct server_service_ops dcesrv_ops = {

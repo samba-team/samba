@@ -72,7 +72,7 @@ const void *dcom_proxy_vtable_by_iid(const struct GUID *iid)
 	return iface->proxy_vtable;
 }
 
-static NTSTATUS dcom_register_interface(const void *_iface)
+NTSTATUS dcom_register_interface(const void *_iface)
 {
 	const struct dcom_interface *iface = _iface;
 	struct interface_list *l = talloc_zero_p(interfaces, struct interface_list);
@@ -84,7 +84,7 @@ static NTSTATUS dcom_register_interface(const void *_iface)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS dcom_register_class(const void *_class)
+NTSTATUS dcom_register_class(const void *_class)
 {
 	const struct dcom_class *class = _class;
 	struct class_list *l = talloc_zero_p(classes, struct class_list);
@@ -94,21 +94,4 @@ static NTSTATUS dcom_register_class(const void *_class)
 	DLIST_ADD(classes, l);
 	
 	return NT_STATUS_OK;
-}
-
-NTSTATUS libdcom_init(void)
-{
-	NTSTATUS status;
-
-	status = register_subsystem("dcom_interface", dcom_register_interface);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	register_subsystem("dcom_class", dcom_register_class);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	return status;
 }

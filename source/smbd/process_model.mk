@@ -34,7 +34,6 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
 ################################################
 # Start SUBSYSTEM PROCESS_MODEL
 [SUBSYSTEM::PROCESS_MODEL]
-INIT_FUNCTION = process_model_init
 INIT_OBJ_FILES = \
 		smbd/process_model.o
 #

@@ -190,7 +190,6 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM DCERPC
 [SUBSYSTEM::DCERPC]
-INIT_FUNCTION = dcerpc_server_init
 INIT_OBJ_FILES = \
 		rpc_server/dcerpc_server.o
 ADD_OBJ_FILES = \
