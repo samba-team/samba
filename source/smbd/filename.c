@@ -111,6 +111,11 @@ The bad_path arg is set to True if the filename walk failed. This is
 used to pick the correct error code to return between ENOENT and ENOTDIR
 as Windows applications depend on ERRbadpath being returned if a component
 of a pathname does not exist.
+
+On exit from unix_convert, if *pst was not null, then the file stat
+struct will be returned if the file exists and was found, if not this
+stat struct will be filled with zeros (and this can be detected by checking
+for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
@@ -127,6 +132,13 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   extern char magic_char;
 #endif
 
+  ZERO_STRUCTP(pst);
+
+  *dirpath = 0;
+  *bad_path = False;
+  if(saved_last_component)
+    *saved_last_component = 0;
+
   if (conn->printer) {
 	  /* we don't ever use the filenames on a printer share as a
 	     filename - so don't convert them */
@@ -134,15 +146,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   }
 
   DEBUG(5, ("unix_convert called on file \"%s\"\n", name));
-
-  *dirpath = 0;
-  *bad_path = False;
-  if(pst) {
-    ZERO_STRUCTP(pst);
-  }
-
-  if(saved_last_component)
-    *saved_last_component = 0;
 
   /* 
    * Convert to basic unix format - removing \ chars and cleaning it up.
@@ -165,7 +168,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * printing share.
    */
 
-  if (!*name && (!conn -> printer)) {
+  if (!*name) {
     name[0] = '.';
     name[1] = '\0';
   }
@@ -202,8 +205,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   pstrcpy(orig_path, name);
 
   if(stat_cache_lookup(conn, name, dirpath, &start, &st)) {
-    if(pst)
-      *pst = st;
+    *pst = st;
     return True;
   }
 
@@ -211,11 +213,10 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * stat the name - if it exists then we are all done!
    */
 
-  if (conn->vfs_ops.stat(conn,dos_to_unix(name,False),&st) == 0) {
+  if (vfs_stat(conn,name,&st) == 0) {
     stat_cache_add(orig_path, name);
     DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
-    if(pst)
-      *pst = st;
+    *pst = st;
     return(True);
   }
 
@@ -277,7 +278,8 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
        * Check if the name exists up to this point.
        */
 
-      if (conn->vfs_ops.stat(conn,dos_to_unix(name,False), &st) == 0) {
+      ZERO_STRUCT(st);
+      if (vfs_stat(conn,name, &st) == 0) {
         /*
          * It exists. it must either be a directory or this must be
          * the last part of the path for it to be OK.
@@ -308,8 +310,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
          * Try to find this part of the path in the directory.
          */
 
-        if (ms_has_wild(start) ||
-            !scan_directory(dirpath, start, conn, end?True:False)) {
+        if (ms_has_wild(start) || !scan_directory(dirpath, start, conn, end?True:False)) {
           if (end) {
             /*
              * An intermediate part of the name can't be found.
@@ -392,6 +393,14 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   if(!component_was_mangled && !name_has_wildcard)
     stat_cache_add(orig_path, name);
 
+  /*
+   * If we ended up resolving the entire path then return a valid
+   * stat struct if we got one.
+   */
+
+  if (VALID_STAT(st) && (strlen(orig_path) == strlen(name)))
+    *pst = st;
+
   /* 
    * The name has been resolved.
    */
@@ -426,15 +435,13 @@ BOOL check_name(char *name,connection_struct *conn)
      University of Geneva */
 
 #ifdef S_ISLNK
-  if (!lp_symlinks(SNUM(conn)))
-    {
+  if (!lp_symlinks(SNUM(conn))) {
       SMB_STRUCT_STAT statbuf;
       if ( (conn->vfs_ops.lstat(conn,dos_to_unix(name,False),&statbuf) != -1) &&
-          (S_ISLNK(statbuf.st_mode)) )
-        {
+                (S_ISLNK(statbuf.st_mode)) ) {
           DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
           ret=0; 
-        }
+      }
     }
 #endif
 
@@ -479,33 +486,29 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
     mangled = !check_mangled_cache( name );
 
   /* open the directory */
-  if (!(cur_dir = OpenDir(conn, path, True))) 
-    {
+  if (!(cur_dir = OpenDir(conn, path, True))) {
       DEBUG(3,("scan dir didn't open dir [%s]\n",path));
       return(False);
-    }
+  }
 
   /* now scan for matching names */
-  while ((dname = ReadDirName(cur_dir))) 
-    {
-      if (*dname == '.' &&
-	  (strequal(dname,".") || strequal(dname,"..")))
-	continue;
+  while ((dname = ReadDirName(cur_dir))) {
+      if (*dname == '.' && (strequal(dname,".") || strequal(dname,"..")))
+        continue;
 
       pstrcpy(name2,dname);
       if (!name_map_mangle(name2,False,True,SNUM(conn)))
         continue;
 
-      if ((mangled && mangled_equal(name,name2))
-	  || fname_equal(name, name2))
-	{
-	  /* we've found the file, change it's name and return */
-	  if (docache) DirCacheAdd(path,name,dname,SNUM(conn));
-	  pstrcpy(name, dname);
-	  CloseDir(cur_dir);
-	  return(True);
-	}
+      if ((mangled && mangled_equal(name,name2)) || fname_equal(name, name2)) {
+        /* we've found the file, change it's name and return */
+        if (docache)
+          DirCacheAdd(path,name,dname,SNUM(conn));
+        pstrcpy(name, dname);
+        CloseDir(cur_dir);
+        return(True);
     }
+  }
 
   CloseDir(cur_dir);
   return(False);

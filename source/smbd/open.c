@@ -88,12 +88,11 @@ static void check_for_pipe(char *fname)
 ****************************************************************************/
 
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,int flags,mode_t mode)
+		      char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode)
 {
 	extern struct current_user current_user;
 	pstring fname;
 	int accmode = (flags & O_ACCMODE);
-	SMB_STRUCT_STAT sbuf;
 
 	fsp->fd = -1;
 	fsp->oplock_type = NO_OPLOCK;
@@ -138,10 +137,12 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		return False;
 	}
 
-	if (conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf) == -1) {
-		DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
-		fd_close(conn, fsp);
-		return False;
+	if (!VALID_STAT(*psbuf)) {
+		if (vfs_fstat(fsp,fsp->fd,psbuf) == -1) {
+			DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
+			fd_close(conn, fsp);
+			return False;
+		}
 	}
 
 	/*
@@ -150,18 +151,18 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	 * so catch a directory open and return an EISDIR. JRA.
 	 */
 
-	if(S_ISDIR(sbuf.st_mode)) {
+	if(S_ISDIR(psbuf->st_mode)) {
 		fd_close(conn, fsp);
 		errno = EISDIR;
 		return False;
 	}
 
-	fsp->mode = sbuf.st_mode;
-	fsp->inode = sbuf.st_ino;
-	fsp->dev = sbuf.st_dev;
+	fsp->mode = psbuf->st_mode;
+	fsp->inode = psbuf->st_ino;
+	fsp->dev = psbuf->st_dev;
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->size = 0;
+	fsp->size = psbuf->st_size;
 	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
@@ -513,17 +514,17 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 
 
 /****************************************************************************
- Open a file with a share mode.
+ Open a file with a share mode. On output from this open we are guarenteeing
+ that 
 ****************************************************************************/
-files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int oplock_request, int *Access,int *action)
+files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
+				int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action)
 {
 	int flags=0;
 	int flags2=0;
 	int deny_mode = GET_DENY_MODE(share_mode);
 	BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
-	SMB_STRUCT_STAT sbuf;
-	BOOL file_existed = vfs_file_exist(conn, fname, &sbuf);
+	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL fcbopen = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
@@ -547,6 +548,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 		return NULL;
 
 	fsp->fd = -1;
+	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
 
 	DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
 		fname, share_mode, ofun, (int)mode,  oplock_request ));
@@ -619,7 +621,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 #endif /* O_SYNC */
   
 	if (flags != O_RDONLY && file_existed && 
-			(!CAN_WRITE(conn) || IS_DOS_READONLY(dos_mode(conn,fname,&sbuf)))) {
+			(!CAN_WRITE(conn) || IS_DOS_READONLY(dos_mode(conn,fname,psbuf)))) {
 		if (!fcbopen) {
 			DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
 				fname, !CAN_WRITE(conn) ? "share" : "file" ));
@@ -638,8 +640,9 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 	}
 
 	if (file_existed) {
-		dev = sbuf.st_dev;
-		inode = sbuf.st_ino;
+
+		dev = psbuf->st_dev;
+		inode = psbuf->st_ino;
 
 		lock_share_entry(conn, dev, inode);
 
@@ -659,10 +662,10 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 			flags,flags2,(int)mode));
 
-	fsp_open = open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode);
+	fsp_open = open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC)),mode);
 
 	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT) && fcbopen) {
-		if((fsp_open = open_file(fsp,conn,fname,O_RDONLY,mode)) == True)
+		if((fsp_open = open_file(fsp,conn,fname,psbuf,O_RDONLY,mode)) == True)
 			flags = O_RDONLY;
 	}
 
@@ -717,11 +720,16 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 	 * If requested, truncate the file.
 	 */
 
-	if ((flags2&O_TRUNC) && (truncate_unless_locked(conn,fsp) == -1)) {
-		unlock_share_entry_fsp(fsp);
-		fd_close(conn,fsp);
-		file_free(fsp);
-		return NULL;
+	if (flags2&O_TRUNC) {
+		/*
+		 * We are modifing the file after open - update the stat struct..
+		 */
+		if ((truncate_unless_locked(conn,fsp) == -1) || (vfs_fstat(fsp,fsp->fd,psbuf)==-1)) {
+			unlock_share_entry_fsp(fsp);
+			fd_close(conn,fsp);
+			file_free(fsp);
+			return NULL;
+		}
 	}
 
 	switch (flags) {
@@ -783,27 +791,25 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
  with the 'stat_open' flag set 
 ****************************************************************************/
 
-files_struct *open_file_stat(connection_struct *conn,
-		   char *fname, int smb_ofun, SMB_STRUCT_STAT *pst, int *action)
+files_struct *open_file_stat(connection_struct *conn, char *fname,
+							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action)
 {
 	extern struct current_user current_user;
-	files_struct *fsp = file_new();
+	files_struct *fsp = NULL;
 
+	if (!VALID_STAT(*psbuf)) {
+		DEBUG(0,("open_file_stat: unable to stat name = %s. Error was %s\n", fname, strerror(errno) ));
+		return NULL;
+	}
+
+	if(S_ISDIR(psbuf->st_mode)) {
+		DEBUG(0,("open_file_stat: %s is a directory !\n", fname ));
+		return NULL;
+	}
+
+	fsp = file_new();
 	if(!fsp)
 		return NULL;
-
-	if(conn->vfs_ops.stat(conn,dos_to_unix(fname, False), pst) < 0) {
-		DEBUG(0,("open_file_stat: unable to stat name = %s. Error was %s\n",
-			 fname, strerror(errno) ));
-		file_free(fsp);
-		return NULL;
-	}
-
-	if(S_ISDIR(pst->st_mode)) {
-		DEBUG(0,("open_file_stat: %s is a directory !\n", fname ));
-		file_free(fsp);
-		return NULL;
-	}
 
 	*action = FILE_WAS_OPENED;
 	
@@ -814,10 +820,12 @@ files_struct *open_file_stat(connection_struct *conn,
 	 */
 	
 	fsp->fd = -1;
-	fsp->mode = 0;
+	fsp->mode = psbuf->st_mode;
+	fsp->inode = psbuf->st_ino;
+	fsp->dev = psbuf->st_dev;
 	GetTimeOfDay(&fsp->open_time);
+	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->can_lock = False;
 	fsp->can_read = False;
@@ -851,20 +859,20 @@ files_struct *open_file_stat(connection_struct *conn,
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
-files_struct *open_directory(connection_struct *conn,
-		   char *fname, int smb_ofun, mode_t unixmode, int *action)
+files_struct *open_directory(connection_struct *conn, char *fname,
+							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action)
 {
 	extern struct current_user current_user;
-	SMB_STRUCT_STAT st;
 	BOOL got_stat = False;
 	files_struct *fsp = file_new();
 
 	if(!fsp)
 		return NULL;
 
-	if(conn->vfs_ops.stat(conn,dos_to_unix(fname, False), &st) == 0) {
+	fsp->conn = conn; /* THe vfs_fXXX() macros need this. */
+
+	if (VALID_STAT(*psbuf))
 		got_stat = True;
-	}
 
 	if (got_stat && (GET_FILE_OPEN_DISPOSITION(smb_ofun) == FILE_EXISTS_FAIL)) {
 		file_free(fsp);
@@ -876,7 +884,7 @@ files_struct *open_directory(connection_struct *conn,
 
 		if (got_stat) {
 
-			if(!S_ISDIR(st.st_mode)) {
+			if(!S_ISDIR(psbuf->st_mode)) {
 				DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 				file_free(fsp);
 				errno = EACCES;
@@ -903,6 +911,12 @@ files_struct *open_directory(connection_struct *conn,
 				file_free(fsp);
 				return NULL;
 			}
+
+			if(vfs_stat(conn,fname, psbuf) != 0) {
+				file_free(fsp);
+				return NULL;
+			}
+
 			*action = FILE_WAS_CREATED;
 
 		}
@@ -919,7 +933,7 @@ files_struct *open_directory(connection_struct *conn,
 			return NULL;
 		}
 
-		if(!S_ISDIR(st.st_mode)) {
+		if(!S_ISDIR(psbuf->st_mode)) {
 			DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 			file_free(fsp);
 			return NULL;
@@ -928,18 +942,19 @@ files_struct *open_directory(connection_struct *conn,
 		*action = FILE_WAS_OPENED;
 	}
 	
-	DEBUG(5,("open_directory: opening directory %s\n",
-		 fname));
+	DEBUG(5,("open_directory: opening directory %s\n", fname));
 
 	/*
 	 * Setup the files_struct for it.
 	 */
 	
 	fsp->fd = -1;
-	fsp->mode = 0;
+	fsp->mode = psbuf->st_mode;
+	fsp->inode = psbuf->st_ino;
+	fsp->dev = psbuf->st_dev;
 	GetTimeOfDay(&fsp->open_time);
+	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
@@ -983,7 +998,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   SMB_DEV_T dev;
   SMB_INO_T inode;
 
-  if (conn->vfs_ops.stat(conn,dos_to_unix(fname,False),&sbuf) == -1)
+  if (vfs_stat(conn,fname,&sbuf) == -1)
     return(True);
 
   dev = sbuf.st_dev;

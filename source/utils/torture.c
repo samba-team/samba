@@ -89,7 +89,7 @@ static void *shm_setup(int size)
 }
 
 
-static BOOL open_connection(struct cli_state *c)
+static BOOL open_nbt_connection(struct cli_state *c)
 {
 	struct nmb_name called, calling;
 	struct in_addr ip;
@@ -113,6 +113,17 @@ static BOOL open_connection(struct cli_state *c)
 	if (!cli_session_request(c, &calling, &called)) {
 		printf("%s rejected the session\n",host);
 		cli_shutdown(c);
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL open_connection(struct cli_state *c)
+{
+	ZERO_STRUCTP(c);
+
+	if (!open_nbt_connection(c)) {
 		return False;
 	}
 
@@ -140,7 +151,6 @@ static BOOL open_connection(struct cli_state *c)
 
 	return True;
 }
-
 
 
 static void close_connection(struct cli_state *c)
@@ -1617,6 +1627,28 @@ static void rand_buf(char *buf, int len)
 	}
 }
 
+/* send smb negprot commands, not reading the response */
+static void run_negprot_nowait(int dummy)
+{
+	int i;
+	static struct cli_state cli;
+
+	printf("starting negprot nowait test\n");
+
+	if (!open_nbt_connection(&cli)) {
+		return;
+	}
+
+	for (i=0;i<50000;i++) {
+		cli_negprot_send(&cli);
+	}
+
+	close_connection(&cli);
+
+	printf("finished negprot nowait test\n");
+}
+
+
 /* send random IPC commands */
 static void run_randomipc(int dummy)
 {
@@ -2054,6 +2086,7 @@ static struct {
 	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
 	{"TORTURE",run_torture,    FLAG_MULTIPROC},
 	{"RANDOMIPC", run_randomipc, 0},
+	{"NEGNOWAIT", run_negprot_nowait, 0},
 	{"NBW95",  run_nbw95, 0},
 	{"NBWNT",  run_nbwnt, 0},
 	{"OPLOCK",  run_oplock, 0},

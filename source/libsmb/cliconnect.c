@@ -334,6 +334,44 @@ BOOL cli_tdis(struct cli_state *cli)
 /****************************************************************************
 send a negprot command
 ****************************************************************************/
+void cli_negprot_send(struct cli_state *cli)
+{
+	char *p;
+	int numprots;
+	int plength;
+
+	memset(cli->outbuf,'\0',smb_size);
+
+	/* setup the protocol strings */
+	for (plength=0,numprots=0;
+	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
+	     numprots++)
+		plength += strlen(prots[numprots].name)+2;
+    
+	set_message(cli->outbuf,0,plength,True);
+
+	p = smb_buf(cli->outbuf);
+	for (numprots=0;
+	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
+	     numprots++) {
+		*p++ = 2;
+		pstrcpy(p,prots[numprots].name);
+		unix_to_dos(p,True);
+		p += strlen(p) + 1;
+	}
+
+	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	cli_setup_packet(cli);
+
+	CVAL(smb_buf(cli->outbuf),0) = 2;
+
+	cli_send_smb(cli);
+}
+
+
+/****************************************************************************
+send a negprot command
+****************************************************************************/
 BOOL cli_negprot(struct cli_state *cli)
 {
 	char *p;

@@ -637,6 +637,7 @@ BOOL cli_ulogoff(struct cli_state *cli);
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
+void cli_negprot_send(struct cli_state *cli);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
@@ -3605,12 +3606,12 @@ int reply_nttrans(connection_struct *conn,
 
 #if OLD_NTDOMAIN
 int fd_close(struct connection_struct *conn, files_struct *fsp);
-files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int oplock_request, int *Access,int *action);
-files_struct *open_file_stat(connection_struct *conn,
-		   char *fname, int smb_ofun, SMB_STRUCT_STAT *pst, int *action);
-files_struct *open_directory(connection_struct *conn,
-		   char *fname, int smb_ofun, mode_t unixmode, int *action);
+files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
+				int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action);
+files_struct *open_file_stat(connection_struct *conn, char *fname,
+							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action);
+files_struct *open_directory(connection_struct *conn, char *fname,
+							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 #endif
 
