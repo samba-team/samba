@@ -1418,6 +1418,26 @@ esac], [
 AC_MSG_RESULT($sampwlibname)
 AC_SUBST(SAM_PWDB_LIB)
 
+
+#################################################
+# check to use a tdb surs database
+AC_MSG_CHECKING(whether to use SURS tdb database)
+AC_ARG_WITH(surstdb,
+[  --with-surstdb     Use SURS tdb database
+  --without-surstdb  Don't use SURS tdb database (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_TDBSURS)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
 #################################################
 # check for a NISPLUS_HOME support 
 AC_MSG_CHECKING(whether to use NISPLUS_HOME)
