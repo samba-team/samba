@@ -19,8 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define PSTRING_SANCTIFY
-
 #include "includes.h"
 
 extern fstring global_myworkgroup;
@@ -119,7 +117,7 @@ static BOOL open_sockets_inetd(void)
 	close_low_fds();
 	
 	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-	set_socket_options(smbd_server_fd(), PSTR(user_socket_options));
+	set_socket_options(smbd_server_fd(), user_socket_options);
 
 	return True;
 }
@@ -185,7 +183,7 @@ max can be %d\n",
 
 			/* ready to listen */
 			set_socket_options(s,"SO_KEEPALIVE"); 
-			set_socket_options(s,PSTR(user_socket_options));
+			set_socket_options(s,user_socket_options);
       
 			if (listen(s, 5) == -1) {
 				DEBUG(0,("listen: %s\n",strerror(errno)));
@@ -207,7 +205,7 @@ max can be %d\n",
 		
 		/* ready to listen */
 		set_socket_options(s,"SO_KEEPALIVE"); 
-		set_socket_options(s,PSTR(user_socket_options));
+		set_socket_options(s,user_socket_options);
 
 		if (listen(s, 5) == -1) {
 			DEBUG(0,("open_sockets: listen: %s\n",
@@ -301,7 +299,7 @@ max can be %d\n",
 				am_parent = 0;
 				
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-				set_socket_options(smbd_server_fd(),PSTR(user_socket_options));
+				set_socket_options(smbd_server_fd(),user_socket_options);
 				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
@@ -358,9 +356,9 @@ BOOL reload_services(BOOL test)
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());
-		if (file_exist(PSTR(fname), NULL) &&
-		    !strcsequal(PSTR(fname), PSTR(dyn_CONFIGFILE))) {
-			pstrcpy(dyn_CONFIGFILE, PSTR(fname));
+		if (file_exist(fname, NULL) &&
+		    !strcsequal(fname, dyn_CONFIGFILE)) {
+			pstrcpy(dyn_CONFIGFILE, fname);
 			test = False;
 		}
 	}
@@ -372,7 +370,7 @@ BOOL reload_services(BOOL test)
 
 	lp_killunused(conn_snum_used);
 	
-	ret = lp_load(PSTR(dyn_CONFIGFILE), False, False, True);
+	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
 	load_printers();
 
@@ -387,7 +385,7 @@ BOOL reload_services(BOOL test)
 	{
 		if (smbd_server_fd() != -1) {      
 			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-			set_socket_options(smbd_server_fd(), PSTR(user_socket_options));
+			set_socket_options(smbd_server_fd(), user_socket_options);
 		}
 	}
 
@@ -430,12 +428,12 @@ static BOOL dump_core(void)
 	pstring dname;
 	
 	pstrcpy(dname,lp_logfile());
-	if ((p=strrchr_m(PSTR(dname),'/'))) *p=0;
+	if ((p=strrchr_m(dname,'/'))) *p=0;
 	pstrcat(dname,"/corefiles");
-	mkdir(PSTR(dname),0700);
-	sys_chown(PSTR(dname),getuid(),getgid());
-	chmod(PSTR(dname),0700);
-	if (chdir(PSTR(dname))) return(False);
+	mkdir(dname,0700);
+	sys_chown(dname,getuid(),getgid());
+	chmod(dname,0700);
+	if (chdir(dname)) return(False);
 	umask(~(0700));
 
 #ifdef HAVE_GETRLIMIT
@@ -453,7 +451,7 @@ static BOOL dump_core(void)
 #endif
 
 
-	DEBUG(0,("Dumping core in %s\n", PSTR(dname)));
+	DEBUG(0,("Dumping core in %s\n", dname));
 	abort();
 	return(True);
 }
@@ -538,15 +536,15 @@ static void init_structs(void )
 	 * set from the config file.
 	 */
 
-	if (!*PSTR(global_myname)) {
+	if (!*global_myname) {
 		char *p;
 		pstrcpy( global_myname, myhostname() );
-		p = strchr_m(PSTR(global_myname), '.' );
+		p = strchr_m(global_myname, '.' );
 		if (p) 
 			*p = 0;
 	}
 
-	strupper(PSTR_MUTABLE(global_myname));
+	strupper(global_myname);
 
 	conn_init();
 
@@ -622,7 +620,7 @@ static void usage(char *pname)
 		case 'l':
 			specified_logfile = True;
 			pstr_sprintf(logfile, "%s/log.smbd", optarg);
-			lp_set_logfile(PSTR(logfile));
+			lp_set_logfile(logfile);
 			break;
 
 		case 'a':
@@ -684,8 +682,8 @@ static void usage(char *pname)
 	append_log = True;
 
 	if(!specified_logfile) {
-		pstr_sprintf(logfile, "%s/log.smbd", PSTR(dyn_LOGFILEBASE));
-		lp_set_logfile(PSTR(logfile));
+		pstr_sprintf(logfile, "%s/log.smbd", dyn_LOGFILEBASE);
+		lp_set_logfile(logfile);
 	}
 
 	fstrcpy(remote_machine, "smbd");
