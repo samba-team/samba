@@ -110,7 +110,7 @@ typedef struct
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
-	char *szPassdbBackend;
+	char **szPassdbBackend;
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szWorkGroup;
@@ -690,7 +690,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, 0},
-	{"passdb backend", P_STRING, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, 0},
+	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, 0},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, 0},
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.bAlgorithmicRidBase, NULL, NULL, 0},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
@@ -1186,7 +1186,7 @@ static void init_globals(void)
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	string_set(&Globals.szPassdbBackend, "smbpasswd unixsam");
+	Globals.szPassdbBackend = lp_list_make("smbpasswd unixsam");
 
 	/* use the new 'hash2' method by default */
 	string_set(&Globals.szManglingMethod, "hash2");
@@ -1446,7 +1446,6 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
-FN_GLOBAL_STRING(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
@@ -1488,6 +1487,7 @@ FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
+FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)

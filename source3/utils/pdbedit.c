@@ -34,7 +34,7 @@ int export_database (struct pdb_context *in, char *db){
 	struct pdb_context *context;
 	SAM_ACCOUNT *user = NULL;
 
-	if (!NT_STATUS_IS_OK(make_pdb_context_name(&context, db))){
+	if (!NT_STATUS_IS_OK(make_pdb_context_string(&context, db))){
 		fprintf(stderr, "Can't initialize %s.\n", db);
 		return 1;
 	}
@@ -76,7 +76,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	if (!sam_pwent) return -1;
 	
 	if (verbosity) {
-		printf ("Unix username:        %s\n",  pdb_get_username(sam_pwent));
+		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
 		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		if (IS_SAM_UNIX_USER(sam_pwent)) {
 			uid = pdb_get_uid(sam_pwent);
@@ -457,10 +457,6 @@ int main (int argc, char **argv)
 	}
 
 
-	if (!backend_in) {
-		backend_in = lp_passdb_backend();
-	}
-
 	setparms = (full_name || home_dir || home_drive || logon_script || profile_path);
 
 	if (((add_user?1:0) + (delete_user?1:0) + (list_users?1:0) + (import?1:0) + (setparms?1:0)) + (backend_out?1:0) > 1) {
@@ -468,10 +464,16 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-
-	if (!NT_STATUS_IS_OK(make_pdb_context_name(&in, backend_in))){
-		fprintf(stderr, "Can't initialize %s.\n", backend_in);
-		return 1;
+	if (!backend_in) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&in, lp_passdb_backend()))){
+			fprintf(stderr, "Can't initialize passdb backend.\n");
+			return 1;
+		}
+	} else {
+		if (!NT_STATUS_IS_OK(make_pdb_context_string(&in, backend_in))){
+			fprintf(stderr, "Can't initialize passdb backend.\n");
+			return 1;
+		}
 	}
 
 	if (add_user) {

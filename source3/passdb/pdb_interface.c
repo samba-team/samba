@@ -314,14 +314,12 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 
 
 /******************************************************************
-  Make a pdb_context, given a text string.
+  Make a pdb_context, given an array of strings
  *******************************************************************/
 
-NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selected) 
+NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected) 
 {
-	/* HINT: Don't store 'selected' becouse its often an lp_ string and will 'go away' */
-	char *conf = smb_xstrdup(selected);
-	char *confcur = conf, *confnext;
+	int i = 0;
 	struct pdb_methods *curmethods, *tmpmethods;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
@@ -329,31 +327,34 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 		return nt_status;
 	}
 
-	while(confcur){
-		if(strchr(confcur, ' ')){
-			confnext = strchr(confcur,' ');
-			*confnext = '\0';
-			confnext++;
-		}else confnext = NULL;
-
+	while(selected[i]){
 		/* Try to initialise pdb */
-		DEBUG(5,("Trying to load: %s\n", confcur));
-		if(!NT_STATUS_IS_OK(make_pdb_methods_name(&curmethods, *context, confcur))){
-			DEBUG(5, ("Loading %s failed!\n", confcur));
+		DEBUG(5,("Trying to load: %s\n", selected[i]));
+		if(!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))){
+			DEBUG(5, ("Loading %s failed!\n", selected[i]));
 			SAFE_FREE(curmethods);
-			continue;
+			free_pdb_context(context);
+			return nt_status;
 		}
 		curmethods->parent = *context;
 		DLIST_ADD_END((*context)->pdb_methods, curmethods, tmpmethods);
-
-		if(!confnext)break;
-		confcur = confnext;
+		i++;
 	}
-	SAFE_FREE(conf);
 
-	nt_status = NT_STATUS_OK;
+	return NT_STATUS_OK;
+}
 
-	return nt_status;
+/******************************************************************
+  Make a pdb_context, given a text string.
+ *******************************************************************/
+
+NTSTATUS make_pdb_context_string(struct pdb_context **context, const char *selected) 
+{
+	NTSTATUS ret;
+	char **newsel = lp_list_make(selected);
+	ret = make_pdb_context_list(context, newsel);
+	lp_list_free(&newsel);
+	return ret;
 }
 
 /******************************************************************
@@ -367,13 +368,13 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 
 	if ((pdb_context) && (reload)) {
 		pdb_context->free_fn(&pdb_context);
-		if (!NT_STATUS_IS_OK(make_pdb_context_name(&pdb_context, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}
 
 	if (!pdb_context) {
-		if (!NT_STATUS_IS_OK(make_pdb_context_name(&pdb_context, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}

@@ -184,7 +184,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	*/
 
 	if (!pdb_set_user_sid_from_rid(sam_account, 
-			 fallback_pdb_uid_to_user_rid(pwd->pw_uid))) {
+				       fallback_pdb_uid_to_user_rid(pwd->pw_uid))) {
 		DEBUG(0,("Can't set User SID from RID!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
