@@ -70,7 +70,7 @@ struct SmbShmBlockDesc
 };
 
 #define	EOList_Addr	(struct SmbShmBlockDesc *)( 0 )
-#define EOList_Off      (NULL_OFFSET)
+#define EOList_Off      0
 
 #define	CellSize	sizeof(struct SmbShmBlockDesc)
 
@@ -158,7 +158,7 @@ static BOOL smb_shm_global_unlock(void)
 
 static void *smb_shm_offset2addr(int offset)
 {
-   if (offset == NULL_OFFSET )
+   if (offset == 0 )
       return (void *)(0);
    
    if (!smb_shm_header_p)
@@ -170,10 +170,10 @@ static void *smb_shm_offset2addr(int offset)
 static int smb_shm_addr2offset(void *addr)
 {
    if (!addr)
-      return NULL_OFFSET;
+      return 0;
    
    if (!smb_shm_header_p)
-      return NULL_OFFSET;
+      return 0;
    
    return (int)((char *)addr - (char *)smb_shm_header_p);
 }
@@ -193,7 +193,7 @@ static int smb_shm_alloc(int size)
    {
       /* not mapped yet */
       DEBUG(0,("ERROR smb_shm_alloc : shmem not mapped\n"));
-      return NULL_OFFSET;
+      return 0;
    }
    
    smb_shm_global_lock();
@@ -202,7 +202,7 @@ static int smb_shm_alloc(int size)
    {
       DEBUG(0,("ERROR smb_shm_alloc : shmem not consistent\n"));
       smb_shm_global_unlock();
-      return NULL_OFFSET;
+      return 0;
    }
    
    
@@ -225,7 +225,7 @@ static int smb_shm_alloc(int size)
    {
       DEBUG(0,("ERROR smb_shm_alloc : alloc of %d bytes failed, no free space found\n",size));
       smb_shm_global_unlock();
-      return (NULL_OFFSET);
+      return (0);
    }
    
    /* going to modify shared mem */
@@ -296,7 +296,7 @@ static BOOL smb_shm_create_hash_table( unsigned int size )
   smb_shm_global_lock();
   smb_shm_header_p->userdef_off = smb_shm_alloc( size );
 
-  if(smb_shm_header_p->userdef_off == NULL_OFFSET)
+  if(smb_shm_header_p->userdef_off == 0)
     {
       DEBUG(0,("smb_shm_create_hash_table: Failed to create hash table of size %d\n",size));
       smb_shm_global_unlock();
@@ -486,7 +486,7 @@ static BOOL smb_shm_initialize(int size)
    smb_shm_header_p->smb_shm_version = SMB_SHM_VERSION;
    smb_shm_header_p->total_size = size;
    smb_shm_header_p->first_free_off = AlignedHeaderSize;
-   smb_shm_header_p->userdef_off = NULL_OFFSET;
+   smb_shm_header_p->userdef_off = 0;
    
    first_free_block_p = (struct SmbShmBlockDesc *)smb_shm_offset2addr(smb_shm_header_p->first_free_off);
    first_free_block_p->next = EOList_Off;
@@ -638,7 +638,7 @@ static BOOL smb_shm_free(int offset)
 static int smb_shm_get_userdef_off(void)
 {
    if (!smb_shm_header_p)
-      return NULL_OFFSET;
+      return 0;
    else
       return smb_shm_header_p->userdef_off;
 }

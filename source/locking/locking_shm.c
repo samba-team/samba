@@ -112,9 +112,9 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
 
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
   
-  if(mode_array[hash_entry] == NULL_OFFSET)
+  if(mode_array[hash_entry] == 0)
   {
-    DEBUG(5,("get_share_modes (FAST_SHARE_MODES): hash bucket %d empty\n", hash_entry));
+    DEBUG(5,("get_share_modes hash bucket %d empty\n", hash_entry));
     return 0;
   }
 
@@ -137,16 +137,15 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
   
   if(!found)
   {
-    DEBUG(5,("get_share_modes (FAST_SHARE_MODES): no entry for \
-file dev = %d, ino = %d in hash_bucket %d\n", dev, inode, hash_entry));
+    DEBUG(5,("get_share_modes no entry for file dev = %d ino = %d\n",
+	     dev, inode));
     return (0);
   }
   
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-    DEBUG(0,("ERROR:get_share_modes (FAST_SHARE_MODES): Deleting old share mode \
-record due to old locking version %d for file dev = %d, inode = %d in hash \
-bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
+    DEBUG(0,("ERROR: get_share_modes  Deleting old share mode v1 %d dev=%d ino=%d\n", 
+	     file_scanner_p->locking_version, dev, inode));
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
@@ -163,7 +162,7 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
                  malloc(num_entries * sizeof(share_mode_entry));
     if(*old_shares == 0)
     {
-      DEBUG(0,("get_share_modes (FAST_SHARE_MODES): malloc fail !\n"));
+      DEBUG(0,("get_share_modes: malloc fail!\n"));
       return 0;
     }
   }
@@ -181,7 +180,6 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
     {
       /* Delete this share mode entry */
       shm_share_mode_entry *delete_entry_p = entry_scanner_p;
-      int share_mode = entry_scanner_p->e.share_mode;
 
       if(entry_prev_p == entry_scanner_p)
       {
@@ -203,17 +201,12 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
       /* PARANOIA TEST */
       if(file_scanner_p->num_share_mode_entries < 0)
       {
-        DEBUG(0,("PANIC ERROR:get_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
-for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
-             dev, inode, hash_entry));
+        DEBUG(0,("PANIC ERROR: get_share_mode: entries=%d dev=%d ino=%d\n",
+		 file_scanner_p->num_share_mode_entries,dev, inode));
         return 0;
       }
 
-      DEBUG(0,("get_share_modes (FAST_SHARE_MODES): process %d no longer exists and \
-it left a share mode entry with mode 0x%X for file dev = %d, ino = %d in hash \
-bucket %d (number of entries now = %d)\n", 
-            pid, share_mode, dev, inode, hash_entry,
-            file_scanner_p->num_share_mode_entries));
+      DEBUG(0,("get_share_modes: process %d no longer exists\n", pid));
 
       shmops->free(shmops->addr2offset(delete_entry_p));
     } 
@@ -229,8 +222,8 @@ bucket %d (number of entries now = %d)\n",
        memcpy(&share_array[num_entries_copied].time, &entry_scanner_p->e.time,
               sizeof(struct timeval));
        num_entries_copied++;
-       DEBUG(5,("get_share_modes (FAST_SHARE_MODES): Read share mode \
-record mode 0x%X pid=%d\n", entry_scanner_p->e.share_mode, entry_scanner_p->e.pid));
+       DEBUG(5,("get_share_modes Read share mode 0x%X pid=%d\n", 
+		entry_scanner_p->e.share_mode, entry_scanner_p->e.pid));
        entry_prev_p = entry_scanner_p;
        entry_scanner_p = (shm_share_mode_entry *)
                            shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
@@ -240,9 +233,8 @@ record mode 0x%X pid=%d\n", entry_scanner_p->e.share_mode, entry_scanner_p->e.pi
   /* If no valid share mode entries were found then this record shouldn't exist ! */
   if(num_entries_copied == 0)
   {
-    DEBUG(0,("get_share_modes (FAST_SHARE_MODES): file with dev %d, inode %d in \
-hash bucket %d has a share mode record but no entries - deleting\n", 
-                 dev, inode, hash_entry));
+    DEBUG(0,("get_share_modes: file with dev %d inode %d empty\n", 
+	     dev, inode));
     if(*old_shares)
       free((char *)*old_shares);
     *old_shares = 0;
@@ -254,8 +246,8 @@ hash bucket %d has a share mode record but no entries - deleting\n",
     shmops->free(shmops->addr2offset(file_scanner_p));
   }
 
-  DEBUG(5,("get_share_modes (FAST_SHARE_MODES): file with dev %d, inode %d in \
-hash bucket %d returning %d entries\n", dev, inode, hash_entry, num_entries_copied));
+  DEBUG(5,("get_share_modes: file with dev %d inode %d -> %d entries\n",
+	   dev, inode, num_entries_copied));
 
   return(num_entries_copied);
 }  
@@ -282,9 +274,9 @@ static void shm_del_share_mode(int token, int fnum)
 
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
  
-  if(mode_array[hash_entry] == NULL_OFFSET)
+  if(mode_array[hash_entry] == 0)
   {  
-    DEBUG(0,("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): hash bucket %d empty\n", 
+    DEBUG(0,("PANIC ERROR:del_share_mode hash bucket %d empty\n", 
                   hash_entry));
     return;
   }  
@@ -309,16 +301,15 @@ static void shm_del_share_mode(int token, int fnum)
     
   if(!found)
   {
-     DEBUG(0,("ERROR:del_share_mode (FAST_SHARE_MODES): no entry found for dev %d, \
-inode %d in hash bucket %d\n", dev, inode, hash_entry));
+     DEBUG(0,("ERROR: del_share_mode no entry for dev %d inode %d\n",
+	      dev, inode));
      return;
   }
   
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-    DEBUG(0,("ERROR: del_share_modes (FAST_SHARE_MODES): Deleting old share mode \
-record due to old locking version %d for file dev %d, inode %d hash bucket %d\n",
-       file_scanner_p->locking_version, dev, inode, hash_entry ));
+    DEBUG(0,("ERROR: del_share_modes Deleting old share mode v1 %d dev=%d ino=%d\n",
+	     file_scanner_p->locking_version, dev, inode));
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
@@ -353,9 +344,8 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
     /* Decrement the number of entries in the record. */
     file_scanner_p->num_share_mode_entries -= 1;
 
-    DEBUG(2,("del_share_modes (FAST_SHARE_MODES): \
-Deleting share mode entry dev = %d, inode = %d in hash bucket %d (num entries now = %d)\n",
-              dev, inode, hash_entry, file_scanner_p->num_share_mode_entries));
+    DEBUG(2,("del_share_modes Deleting share mode entry dev=%d ino=%d\n",
+              dev, inode));
     if(entry_prev_p == entry_scanner_p)
       /* We are at start of list */
       file_scanner_p->share_mode_entries = entry_scanner_p->next_share_mode_entry;
@@ -366,17 +356,16 @@ Deleting share mode entry dev = %d, inode = %d in hash bucket %d (num entries no
     /* PARANOIA TEST */
     if(file_scanner_p->num_share_mode_entries < 0)
     {
-      DEBUG(0,("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
-for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
-           dev, inode, hash_entry));
+      DEBUG(0,("PANIC ERROR:del_share_mode num_share_mode_entries=%d\n", 
+	       file_scanner_p->num_share_mode_entries));
       return;
     }
 
     /* If we deleted the last share mode entry then remove the share mode record. */
     if(file_scanner_p->num_share_mode_entries == 0)
     {
-      DEBUG(2,("del_share_modes (FAST_SHARE_MODES): num entries = 0, deleting share_mode \
-record dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
+      DEBUG(2,("del_share_modes num entries = 0, deleting share_mode dev=%d ino=%d\n", 
+	       dev, inode));
       if(file_prev_p == file_scanner_p)
         mode_array[hash_entry] = file_scanner_p->next_offset;
       else
@@ -386,8 +375,8 @@ record dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
   }
   else
   {
-    DEBUG(0,("ERROR: del_share_modes (FAST_SHARE_MODES): No share mode record found \
-dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
+    DEBUG(0,("ERROR: del_share_modes No share mode dev=%d ino=%d\n", 
+	     dev, inode));
   }
 }
 
@@ -435,19 +424,18 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   {
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
-    int new_offset = shmops->alloc( sizeof(share_mode_record) +
-                                        strlen(fs_p->name) + 1);
-    if(new_offset == NULL_OFFSET)
-    {
-      DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): shmops->alloc fail !\n"));
-      return False;
+    int new_offset = shmops->alloc(sizeof(share_mode_record) +
+				   strlen(fs_p->name) + 1);
+    if(new_offset == 0) {
+	    DEBUG(0,("ERROR:set_share_mode shmops->alloc fail!\n"));
+	    return False;
     }
     new_mode_p = shmops->offset2addr(new_offset);
     new_mode_p->locking_version = LOCKING_VERSION;
     new_mode_p->st_dev = dev;
     new_mode_p->st_ino = inode;
     new_mode_p->num_share_mode_entries = 0;
-    new_mode_p->share_mode_entries = NULL_OFFSET;
+    new_mode_p->share_mode_entries = 0;
     strcpy(new_mode_p->file_name, fs_p->name);
 
     /* Chain onto the start of the hash chain (in the hope we will be used first). */
@@ -456,21 +444,20 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
 
     file_scanner_p = new_mode_p;
 
-    DEBUG(3,("set_share_mode (FAST_SHARE_MODES): Created share record for %s (dev %d \
-inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
+    DEBUG(3,("set_share_mode: Created share record for %s (dev %d inode %d)\n", 
+	     fs_p->name, dev, inode));
   }
  
   /* Now create the share mode entry */ 
-  new_entry_offset = shmops->alloc( sizeof(shm_share_mode_entry));
-  if(new_entry_offset == NULL_OFFSET)
-  {
-    int delete_offset = mode_array[hash_entry];
-    DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): shmops->alloc fail 1!\n"));
-    /* Unlink the damaged record */
-    mode_array[hash_entry] = file_scanner_p->next_offset;
-    /* And delete it */
-    shmops->free( delete_offset );
-    return False;
+  new_entry_offset = shmops->alloc(sizeof(shm_share_mode_entry));
+  if(new_entry_offset == 0) {
+	  int delete_offset = mode_array[hash_entry];
+	  DEBUG(0,("ERROR:set_share_mode: shmops->alloc fail 1!\n"));
+	  /* Unlink the damaged record */
+	  mode_array[hash_entry] = file_scanner_p->next_offset;
+	  /* And delete it */
+	  shmops->free( delete_offset );
+	  return False;
   }
 
   new_entry_p = shmops->offset2addr(new_entry_offset);
@@ -488,18 +475,16 @@ inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
   /* PARANOIA TEST */
   if(file_scanner_p->num_share_mode_entries < 0)
   {
-    DEBUG(0,("PANIC ERROR:set_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
-for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
-         dev, inode, hash_entry));
+    DEBUG(0,("PANIC ERROR:set_share_mode num_share_mode_entries=%d\n", 
+	     file_scanner_p->num_share_mode_entries));
     return False;
   }
 
   /* Increment the share_mode_entries counter */
   file_scanner_p->num_share_mode_entries += 1;
 
-  DEBUG(3,("set_share_mode (FAST_SHARE_MODES): Created share entry for %s with mode \
-0x%X pid=%d (num_entries now = %d)\n",fs_p->name, fs_p->share_mode, new_entry_p->e.pid,
-                             file_scanner_p->num_share_mode_entries));
+  DEBUG(3,("set_share_mode: Created share entry for %s with mode 0x%X pid=%d\n",
+	   fs_p->name, fs_p->share_mode, new_entry_p->e.pid));
 
   return(True);
 }
@@ -526,9 +511,9 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
 
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
-  if(mode_array[hash_entry] == NULL_OFFSET)
+  if(mode_array[hash_entry] == 0)
   {
-    DEBUG(0,("PANIC ERROR:remove_share_oplock (FAST_SHARE_MODES): hash bucket %d empty\n",
+    DEBUG(0,("PANIC ERROR:remove_share_oplock: hash bucket %d empty\n",
                   hash_entry));
     return False;
   } 
@@ -553,16 +538,15 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
    
   if(!found)
   { 
-     DEBUG(0,("ERROR:remove_share_oplock (FAST_SHARE_MODES): no entry found for dev %d, \
-inode %d in hash bucket %d\n", dev, inode, hash_entry));
+     DEBUG(0,("ERROR:remove_share_oplock: no entry found for dev=%d ino=%d\n", 
+	      dev, inode));
      return False;
   } 
 
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-    DEBUG(0,("ERROR: remove_share_oplock (FAST_SHARE_MODES): Deleting old share mode \
-record due to old locking version %d for file dev %d, inode %d hash bucket %d\n",
-       file_scanner_p->locking_version, dev, inode, hash_entry ));
+    DEBUG(0,("ERROR: remove_share_oplock: Deleting old share mode v1=%d dev=%d ino=%d\n",
+	     file_scanner_p->locking_version, dev, inode));
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
@@ -598,8 +582,8 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
 
   if(!found)
   {
-    DEBUG(0,("ERROR: remove_share_oplock (FAST_SHARE_MODES): No oplock granted share \
-mode record found dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
+    DEBUG(0,("ERROR: remove_share_oplock: No oplock granted. dev=%d ino=%d\n", 
+	     dev, inode));
     return False;
   }
 
@@ -621,7 +605,7 @@ static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 
 	for( i = 0; i < shmops->hash_size(); i++) {
 		shmops->lock_hash_entry(i);
-		if(mode_array[i] == NULL_OFFSET)  {
+		if(mode_array[i] == 0)  {
 			shmops->unlock_hash_entry(i);
 			continue;
 		}
