@@ -1,3 +1,17 @@
+Changes in release 0.3d
+
+ * try to use an existing libdes
+
+ * lib/krb5, kdc: use correct usage type for ap-req messages.  This
+   should improve compatability with MIT krb5 when using 3DES
+   encryption types
+
+ * kdc: fix memory allocation problem
+
+ * update config.guess and config.sub
+
+ * bug fixes and portability enhancements
+
 Changes in release 0.3c
 
  * lib/krb5: memory caches now support the resolve operation
