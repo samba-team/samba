@@ -2205,7 +2205,7 @@ static int process(char *base_directory)
 
 	cli = do_connect(desthost, service);
 	if (!cli) {
-		return(False);
+		return 1;
 	}
 
 	if (*base_directory) do_cd(base_directory);
