@@ -222,6 +222,53 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	return result;
 }
 
+/* Enumerates privileges */
+
+static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx, int argc, 
+                                          char **argv) 
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uint32 enum_context=0;
+	uint32 pref_max_length=0x1000;
+	uint32 count=0;
+	char   **privs_name;
+	uint32 *privs_high;
+	uint32 *privs_low;
+	int i;
+
+	if (argc > 1) {
+		printf("Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_enum_privilege(cli, mem_ctx, &pol, &enum_context, pref_max_length,
+					&count, &privs_name, &privs_high, &privs_low);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Print results */
+	printf("found %d priviledges\n\n", count);
+
+	for (i = 0; i < count; i++) {
+		printf("%s \t\t%d:%d (0x%x:0x%x)\n", privs_name[i] ? privs_name[i] : "*unknown*",
+		       privs_high[i], privs_low[i], privs_high[i], privs_low[i]);
+	}
+
+ done:
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -232,6 +279,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lookupsids",  cmd_lsa_lookup_sids, 		PIPE_LSARPC, "Convert SIDs to names",     "" },
 	{ "lookupnames", cmd_lsa_lookup_names, 		PIPE_LSARPC, "Convert names to SIDs",     "" },
 	{ "enumtrust", 	 cmd_lsa_enum_trust_dom, 	PIPE_LSARPC, "Enumerate trusted domains", "" },
+	{ "enumprivs", 	 cmd_lsa_enum_privilege, 	PIPE_LSARPC, "Enumerate privileges",      "" },
 
 	{ NULL }
 };

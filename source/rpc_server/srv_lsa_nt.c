@@ -580,7 +580,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	DEBUG(0,("_lsa_priv_get_dispname: %s", name_asc));
 
 	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
-		if ( strcmp(name_asc, privs[i].priv)) {
+		if ( !strcmp(name_asc, privs[i].priv)) {
 			
 			fstrcpy(desc_asc, privs[i].description);
 		

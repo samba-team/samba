@@ -246,11 +246,14 @@ static BOOL lsa_io_obj_attr(char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps,
 	if(!prs_uint32("ptr_sec_qos ", ps, depth, &attr->ptr_sec_qos )) /* security quality of service (pointer) */
 		return False;
 
+	/* code commented out as it's not necessary true (tested with hyena). JFM, 11/22/2001 */
+#if 0
 	if (attr->len != prs_offset(ps) - start) {
 		DEBUG(3,("lsa_io_obj_attr: length %x does not match size %x\n",
 		         attr->len, prs_offset(ps) - start));
 		return False;
 	}
+#endif
 
 	if (attr->ptr_sec_qos != 0 && attr->sec_qos != NULL) {
 		if(!lsa_io_sec_qos("sec_qos", attr->sec_qos, ps, depth))
@@ -1281,6 +1284,20 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, in
 }
 
 /*******************************************************************
+ Inits an LSA_Q_ENUM_PRIVS structure.
+********************************************************************/
+
+void init_q_enum_privs(LSA_Q_ENUM_PRIVS *q_q, POLICY_HND *hnd, uint32 enum_context, uint32 pref_max_length)
+{
+	DEBUG(5, ("init_q_enum_privs\n"));
+
+	memcpy(&q_q->pol, hnd, sizeof(q_q->pol));
+
+	q_q->enum_context = enum_context;
+	q_q->pref_max_length = pref_max_length;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL lsa_io_q_enum_privs(char *desc, LSA_Q_ENUM_PRIVS *q_q, prs_struct *ps, int depth)
@@ -1381,6 +1398,10 @@ BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS *r_q, prs_struct *ps, int 
 	if (r_q->ptr) {
 		if(!prs_uint32("count1", ps, depth, &r_q->count1))
 			return False;
+
+		if (UNMARSHALLING(ps))
+			if (!(r_q->privs = (LSA_PRIV_ENTRY *)prs_alloc_mem(ps, sizeof(LSA_PRIV_ENTRY) * r_q->count1)))
+				return False;
 
 		if (!lsa_io_priv_entries("", r_q->privs, r_q->count1, ps, depth))
 			return False;
