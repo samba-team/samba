@@ -1031,6 +1031,8 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ADS_MODLIST mods;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
+	char *servicePrincipalName[3] = {NULL, NULL, NULL};
+	unsigned acct_control;
 
 	if (!(ctx = talloc_init_named("machine_account")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1048,15 +1050,24 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	}
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", hostname, ou_str, 
 				 ads->config.bind_path);
+	servicePrincipalName[0] = talloc_asprintf(ctx, "HOST/%s", hostname);
+	servicePrincipalName[1] = talloc_asprintf(ctx, "HOST/%s.%s", 
+						  hostname, 
+						  ads->config.realm);
+	strlower(&servicePrincipalName[1][5]);
+
 	free(ou_str);
 	if (!new_dn)
 		goto done;
 
 	if (!(samAccountName = talloc_asprintf(ctx, "%s$", hostname)))
 		goto done;
-	if (!(controlstr = talloc_asprintf(ctx, "%u", 
-		   UF_DONT_EXPIRE_PASSWD | UF_WORKSTATION_TRUST_ACCOUNT | 
-		   UF_TRUSTED_FOR_DELEGATION | UF_USE_DES_KEY_ONLY)))
+
+	acct_control = UF_WORKSTATION_TRUST_ACCOUNT | UF_DONT_EXPIRE_PASSWD;
+#ifndef ENCTYPE_ARCFOUR_HMAC
+	acct_control |= UF_USE_DES_KEY_ONLY;
+#endif
+	if (!(controlstr = talloc_asprintf(ctx, "%u", acct_control)))
 		goto done;
 
 	if (!(mods = ads_init_mods(ctx)))
@@ -1066,7 +1077,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
 	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
 	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
-	ads_mod_str(ctx, &mods, "servicePrincipalName", host_spn);
+	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
 	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
@@ -1092,6 +1103,23 @@ static void dump_binary(const char *field, struct berval **values)
 			printf("%02X", (unsigned char)values[i]->bv_val[j]);
 		}
 		printf("\n");
+	}
+}
+
+struct uuid {
+        uint32   i1;
+        uint16   i2;
+        uint16   i3;
+        uint8    s[8];
+};
+
+static void dump_guid(const char *field, struct berval **values)
+{
+	int i;
+	GUID guid;
+	for (i=0; values[i]; i++) {
+		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
+		printf("%s: %s\n", field, uuid_string_static(guid));
 	}
 }
 
@@ -1161,7 +1189,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		BOOL string;
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
-		{"objectGUID", False, dump_binary},
+		{"objectGUID", False, dump_guid},
 		{"nTSecurityDescriptor", False, dump_sd},
 		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
