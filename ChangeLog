@@ -1,5 +1,14 @@
 2005-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/verify_krb5_conf.c: cast argument to isdigit to
+	unsigned char
+
+	* lib/krb5/keytab_keyfile.c: cast argument to toupper to unsigned
+	char
+
+	* lib/asn1/hash.c (hashcaseadd): cast argument to toupper to
+	unsigned char
+
 	* appl/kf/kfd.c (kfd_match_version): cast argument to islower to
 	unsigned char
 

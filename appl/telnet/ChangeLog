@@ -1,3 +1,9 @@
+2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/telnet.c: cast argument to toupper to unsigned char
+
+	* telnet/commands.c: cast argument to is* to unsigned char
+
 2004-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/network.c: make network rings larger From: MAAAAA MOOOR
