@@ -50,7 +50,6 @@ struct posix_lock {
 	SMB_OFF_T start;
 	SMB_OFF_T size;
 	int lock_type;
-	size_t ref_count;
 };
 
 /*
@@ -284,89 +283,73 @@ static const char *posix_lock_type_name(int lock_type)
 }
 
 /****************************************************************************
- Add an entry into the POSIX locking tdb.
+ Add an entry into the POSIX locking tdb. Returns the number of records that
+ match the given start and size, or -1 on error.
 ****************************************************************************/
 
-static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type)
+static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
+	struct posix_lock pl;
 	struct posix_lock *entries;
-	size_t count, i, ref_count;
+	size_t i, count;
+	int num_records = 0;
 
 	/*
-	 * Windows is very strange. It allows a write lock to be downgraded to
-	 * a read lock, but reference counts the locks. This means if you get
-	 * the following sequence :
+	 * Windows is very strange. It allows read locks to be overlayed on 
+	 * a write lock, but leaves the write lock in force until the first
+	 * unlock. It also reference counts the locks. This means the following sequence :
 	 *
+	 * process1                                      process2
+	 * ------------------------------------------------------------------------
 	 * WRITE LOCK : start = 0, len = 10
+	 *                                            READ LOCK: start =0, len = 10 - FAIL
 	 * READ LOCK : start = 0, len = 10
-	 * 
-	 * then another process will be able to get a read lock, but the unlock
-	 * sequence must be done twice to remove the read lock.
-	 * 
-	 * Under POSIX, the same sequence would not be reference counted, but
+	 *                                            READ LOCK: start =0, len = 10 - FAIL
+	 * UNLOCK : start = 0, len = 10
+	 *                                            READ LOCK: start =0, len = 10 - OK
+	 *
+	 * Under POSIX, the same sequence in steps 1 and 2 would not be reference counted, but
 	 * would leave a single read lock over the 0-10 region. In order to
-	 * re-create Windows semantics mapped to POSIX locks, we reference
-	 * count the POSIX lock request, so that when multiple locks over a
-	 * region is requested of the Samba POSIX lock code (this can only
-	 * be an overlay of a read onto a write lock due to the checks already
-	 * being done in brlock.c) then we map the lock onto POSIX, but just
-	 * increment the reference count in the tdb. Unlocks decrement the
-	 * reference count and only do the POSIX unlock call when the refcount
-	 * reaches zero.
+	 * re-create Windows semantics mapped to POSIX locks, we create multiple TDB
+	 * entries, one for each overlayed lock request. We are guarenteed by the brlock
+	 * semantics that if a write lock is added, then it will be first in the array.
 	 */
 	
 	dbuf.dptr = NULL;
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	/* 
-	 * Look for an existing entry matching this region.
+	/*
+	 * New record.
 	 */
-	
+
+	pl.fd = fsp->fd;
+	pl.start = start;
+	pl.size = size;
+	pl.lock_type = lock_type;
+
+	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
+	if (!dbuf.dptr) {
+		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
+		goto fail;
+	}
+
+	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
+	dbuf.dsize += sizeof(pl);
+
+	count = (size_t)(dbuf.dsize / sizeof(pl));
 	entries = (struct posix_lock *)dbuf.dptr;
-	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
 
 	for (i = 0; i < count; i++) {
 		struct posix_lock *entry = &entries[i];
 
-		/* 
-		 * Just increment the ref_count on a matching entry.
-		 * Note we don't take lock type into account here.
-		 */
+		if (fsp->fd == entry->fd &&
+			start == entry->start &&
+			size == entry->size)
+			num_records++;
 
-		if ((entry->fd == fsp->fd) &&
-			(entry->start == start) &&
-			(entry->size == size)) {
-				/* Overwrite the lock type also. */
-				entry->lock_type = lock_type;
-				ref_count = ++entry->ref_count;
-				break;
-		}
-	}
-
-	if (i == count) {
-		struct posix_lock pl;
-
-		/*
-		 * New record needed.
-		 */
-
-		pl.fd = fsp->fd;
-		pl.start = start;
-		pl.size = size;
-		pl.lock_type = lock_type;
-		ref_count = pl.ref_count = 1;
-
-		dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
-		if (!dbuf.dptr) {
-			DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
-			goto fail;
-		}
-
-		memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
-		dbuf.dsize += sizeof(pl);
 	}
 
 	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
@@ -376,31 +359,33 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 
     free(dbuf.dptr);
 
-	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f, ref_count = %u :dev=%.0f inode=%.0f\n",
-			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size, (unsigned int)ref_count,
+	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: num_records = %d : dev=%.0f inode=%.0f\n",
+			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size, num_records,
 			(double)fsp->dev, (double)fsp->inode ));
 
-    return True;
+    return num_records;
 
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-    return False;
+    return -1;
 }
 
 /****************************************************************************
- Delete an entry from the POSIX locking tdb.
+ Delete an entry from the POSIX locking tdb. Returns a copy of the entry being
+ deleted and the number of remaining matching records, or -1 on error.
 ****************************************************************************/
 
-static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size)
+static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, struct posix_lock *pl)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
 	struct posix_lock *locks;
 	size_t i, count;
+	int num_records = 0;
 
 	dbuf.dptr = NULL;
-
+	
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
 	if (!dbuf.dptr) {
@@ -412,37 +397,51 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
 	locks = (struct posix_lock *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(*locks));
 
+	/*
+	 * Count the number of entries that match this
+	 * unlock request.
+	 */
+
+	for (i = 0; i < count; i++) {
+		struct posix_lock *entry = &locks[i];
+
+		if (entry->fd == fsp->fd &&
+			entry->start == start &&
+			entry->size == size) {
+				num_records++;
+		}
+	}
+
 	for (i=0; i<count; i++) { 
-		struct posix_lock *pl = &locks[i];
+		struct posix_lock *entry = &locks[i];
 
-		if (pl->fd == fsp->fd &&
-			pl->start == start &&
-			pl->size == size) {
+		if (entry->fd == fsp->fd &&
+			entry->start == start &&
+			entry->size == size) {
 
-			pl->ref_count--;
+			num_records--; /* We're deleting one. */
 
-			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, ref_count = %u\n",
+			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
 					posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
-					(unsigned int)pl->ref_count ));
+					(unsigned int)num_records ));
 
-			if (pl->ref_count == 0) {
-				/* Found it - delete it. */
-				if (count == 1) {
-					tdb_delete(posix_lock_tdb, kbuf);
-				} else {
-					if (i < count-1) {
-						memmove(&locks[i], &locks[i+1], sizeof(*locks)*((count-1) - i));
-					}
-					dbuf.dsize -= sizeof(*locks);
-					tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
-				}
+			/* Make a copy if requested. */
+			if (pl)
+				*pl = *entry;
+
+			/* Found it - delete it. */
+			if (count == 1) {
+				tdb_delete(posix_lock_tdb, kbuf);
 			} else {
-				/* Just re-store the new ref count. */
+				if (i < count-1) {
+					memmove(&locks[i], &locks[i+1], sizeof(*locks)*((count-1) - i));
+				}
+				dbuf.dsize -= sizeof(*locks);
 				tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 
 			free(dbuf.dptr);
-			return True;
+			return num_records;
 		}
 	}
 
@@ -451,7 +450,7 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-    return False;
+    return -1;
 }
 
 /****************************************************************************
@@ -678,6 +677,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	return True;
 }
 
+#if defined(LARGE_SMB_OFF_T)
 /****************************************************************************
  Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
 ****************************************************************************/
@@ -709,6 +709,7 @@ static uint32 map_lock_offset(uint32 high, uint32 low)
 
 	return (high|low);
 }
+#endif
 
 /****************************************************************************
  Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
@@ -838,6 +839,7 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	SMB_OFF_T count;
 	BOOL ret = True;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
+	int ref_count;
 
 	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
@@ -855,13 +857,25 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	 * file descriptors will not be held separately by the kernel (POSIX
 	 * braindamage), but will be merged into one continuous lock
 	 * range. We cope with this case in the release_posix_lock code
-	 * below. JRA.
+	 * below. We need to add the posix lock entry into the tdb before
+	 * doing the real posix lock call to deal with the locking overlay
+	 * case described above in add_posix_lock_entry().
 	 */
 
-    ret = posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type);
+	ref_count = add_posix_lock_entry(fsp,offset,count,posix_lock_type);
 
-	if (ret)
-		add_posix_lock_entry(fsp,offset,count,posix_lock_type);
+	if (ref_count == 1) {
+		/*
+		 * First lock entry created. Do a real POSIX lock.
+		 */
+	    ret = posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type);
+
+		/*
+		 * Oops, POSIX lock failed, delete the tdb entry.
+		 */
+		if (!ret)
+			delete_posix_lock_entry(fsp,offset,count,NULL);
+	}
 
 	return ret;
 }
@@ -1104,6 +1118,8 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	TALLOC_CTX *ul_ctx = NULL;
 	struct unlock_list *ulist = NULL;
 	struct unlock_list *ul = NULL;
+	struct posix_lock deleted_lock;
+	int num_entries;
 
 	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
 		fsp->fsp_name, (double)u_offset, (double)u_count ));
@@ -1121,7 +1137,30 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	 * if it may have been split into multiple smaller POSIX unlock ranges.
 	 */ 
 
-	delete_posix_lock_entry(fsp, offset, count);
+	num_entries = delete_posix_lock_entry(fsp, offset, count, &deleted_lock);
+
+	if (num_entries == -1) {
+        smb_panic("release_posix_lock: unable find entry to delete !\n");
+	}
+
+	/*
+	 * If num_entries is > 0, and the lock_type we just deleted from the tdb was
+	 * a POSIX write lock, then rather than doing an unlock we need to downgrade
+	 * the POSIX lock to a read lock.
+	 */
+
+	if (num_entries > 0 && deleted_lock.lock_type == F_WRLCK) {
+		return posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_RDLCK);
+	}
+
+	/*
+	 * Only do the POSIX unlock when the num_entries is now zero.
+	 */
+
+	if (num_entries > 0) {
+		DEBUG(10, ("release_posix_lock: num_entries = %d\n", num_entries ));
+		return True;
+	}
 
 	if ((ul_ctx = talloc_init()) == NULL) {
         DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));

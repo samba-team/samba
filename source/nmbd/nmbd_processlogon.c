@@ -162,7 +162,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       /* PDC and domain name */
       if (!short_request)  /* Make a full reply */
       {
-        q = ALIGN2(q, buf);
+        q = ALIGN2(q, outbuf);
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
         q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
