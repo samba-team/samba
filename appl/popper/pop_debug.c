@@ -212,7 +212,7 @@ main(int argc, char **argv)
     struct hostent *hp;
     int s;
     struct sockaddr_in sa;
-    int optind;
+    int optind = 0;
 
     set_progname(argv[0]);
 
