@@ -221,7 +221,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 
     sp = kadm5_log_goto_end (log_fd);
     right = sp->seek(sp, 0, SEEK_CUR);
-    printf ("%ld, looking for %d\n", right, s->version);
+    printf ("%ld, looking for %d\n", (long)right, s->version);
     for (;;) {
 	if (kadm5_log_previous (sp, &ver, &timestamp, &op, &len))
 	    abort ();
