@@ -37,8 +37,8 @@ void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark)
 
 	DEBUG(5,("make_srv_share_info1_str\n"));
 
-	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name));
-	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  ));
+	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name)+1);
+	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  )+1);
 }
 
 /*******************************************************************
@@ -380,7 +380,7 @@ void make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name)
 
 	DEBUG(5,("make_srv_sess_info0_str\n"));
 
-	make_unistr2(&(ss0->uni_name), name, strlen(name));
+	make_unistr2(&(ss0->uni_name), name, strlen(name)+1);
 }
 
 /*******************************************************************
@@ -478,8 +478,8 @@ void make_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user)
 
 	DEBUG(5,("make_srv_sess_info1_str\n"));
 
-	make_unistr2(&(ss1->uni_name), name, strlen(name));
-	make_unistr2(&(ss1->uni_user), name, strlen(user));
+	make_unistr2(&(ss1->uni_name), name, strlen(name)+1);
+	make_unistr2(&(ss1->uni_user), name, strlen(user)+1);
 }
 
 /*******************************************************************
@@ -777,8 +777,8 @@ void make_srv_conn_info1_str(CONN_INFO_1_STR *ss1, char *usr_name, char *net_nam
 
 	DEBUG(5,("make_srv_conn_info1_str\n"));
 
-	make_unistr2(&(ss1->uni_usr_name), usr_name, strlen(usr_name));
-	make_unistr2(&(ss1->uni_net_name), net_name, strlen(net_name));
+	make_unistr2(&(ss1->uni_usr_name), usr_name, strlen(usr_name)+1);
+	make_unistr2(&(ss1->uni_net_name), net_name, strlen(net_name)+1);
 }
 
 /*******************************************************************
