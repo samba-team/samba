@@ -1,5 +1,10 @@
 2003-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c (krb5_DES_AFS3_CMU_string_to_key): used p1
+	instead of the "illegal" salt #~, same change as kth-krb did
+	1999. Problems occur with crypt() that behaves like AT&T crypt
+	(openssl does this). Pointed out by Marcus Watts.
+
 	* admin/change.c (kt_change): collect all principals we are going
 	to change, and pick the highest kvno and use that to guess what
 	kvno the resulting kvno is going to be. Now two ktutil change in a
