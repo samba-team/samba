@@ -1,0 +1,73 @@
+!=
+!= Samba Printing Internals
+!= 
+!= Author : Gerald Carter <jerry@samba.org>
+!=
+!===================================================================
+
+The purpose of this document is to provide some insight into
+Samba's printing functionality and also to describe the semantics
+of certain features of Windows client printing.
+
+Print Queue TDB's
+------------------
+
+* matching lanman jobids, spoolss jobids, & lpd jobids
+* why ?
+* caching time
+
+
+ChangeID & Client Caching of Printer Information
+------------------------------------------------
+
+[To be filled in later]
+
+
+Windows NT/2K Printer Change Notify
+-----------------------------------
+
+When working with Windows NT+ clients, it is possible for a
+print server to use RPC to send asynchronous change notification
+events to clients for certain printer and print job attributes.
+This can be useful when the client needs to know that a new
+job has been added to the queue for a given printer or that the
+driver for a printer has been changed.  Note that this is done 
+entirely orthogonal to cache updates based on a new ChangeID for 
+a printer object.
+
+The basic set of RPC's used to implement change notification are
+
+  * RemoteFindFirstPrinterChangeNotifyEx ( RFFPCN )
+  * RemoteFindNextPrinterChangeNotifyEx ( RFNPCN )
+  * FindClosePrinterChangeNotify( FCPCN )
+  * ReplyOpenPrinter
+  * ReplyClosePrinter
+  * RouteRefreshPrinterChangeNotify ( RRPCN )
+
+One additional RPC is available to a server, but is never used by the
+Windows spooler service:
+
+  * RouteReplyPrinter()
+
+The opnum for all of these RPC's are defined in include/rpc_spoolss.h
+
+Windows NT print servers use a bizarre method of sending print
+notification event to clients.  The process of registering a new change
+notification handle is as follows.  The 'C' is for client and the
+'S' is for server.  All error conditions have been eliminated.
+
+C:	Obtain handle to printer or to the printer
+	server via the standard OpenPrinterEx() call.
+S:	Respond with a valid handle to object
+
+C:	Send a RFFPCN request with the previously obtained 
+	handle and either (a)
+
+
+
+* Back Channel
+* Methods of sending an event
+* Id numbers (print server handles, jobids, & printer handles )
+* event types ( jobs & printer attributes )
+* aggegating notifications
+
