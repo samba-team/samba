@@ -1,3 +1,7 @@
+2001-03-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken.awk: END has to be last with Sun's awk
+
 2001-03-26  Assar Westerlund  <assar@sics.se>
 
 	* parse_units.c (parse_something): do not check the return value
