@@ -277,6 +277,7 @@ static const struct {
 	{"seal", DCERPC_SEAL},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
+	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
 };
 
