@@ -848,6 +848,10 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 		case 3:
 			decode_printer_driver_3(mem_ctx, r.buffer, r.returned, &ctr->info3);
 			break;
+		default:
+			DEBUG(10, ("cli_spoolss_enumprinterdrivers: unknown info level %d\n",
+				   level));
+			return WERR_UNKNOWN_LEVEL;
 		}
 	}
 
