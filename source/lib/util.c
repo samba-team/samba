@@ -170,7 +170,6 @@ reopen the log files
 ****************************************************************************/
 void reopen_logs(void)
 {
-  extern FILE *dbf;
   pstring fname;
   
   if (DEBUGLEVEL > 0)
@@ -3647,7 +3646,6 @@ void reset_globals_after_fork()
  ******************************************************************/
 char *client_name(void)
 {
-  extern int Client;
   struct sockaddr sa;
   struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
   int     length = sizeof(sa);
@@ -3690,7 +3688,6 @@ char *client_name(void)
  ******************************************************************/
 char *client_addr(void)
 {
-  extern int Client;
   struct sockaddr sa;
   struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
   int     length = sizeof(sa);
