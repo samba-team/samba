@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -231,12 +231,30 @@ update_unit (int in, unsigned mult)
     return in % mult;
 }
 
+static int
+update_unit_approx (int in, unsigned mult)
+{
+    if (in / mult > 0)
+	return 0;
+    else
+	return update_unit (in, mult);
+}
+
 size_t
 unparse_units (int num, const struct units *units, char *s, size_t len)
 {
     return unparse_something (num, units, s, len,
 			      print_unit,
 			      update_unit,
+			      "0");
+}
+
+size_t
+unparse_units_approx (int num, const struct units *units, char *s, size_t len)
+{
+    return unparse_something (num, units, s, len,
+			      print_unit,
+			      update_unit_approx,
 			      "0");
 }
 
