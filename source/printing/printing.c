@@ -1226,6 +1226,9 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	int njobs, i;
 	BOOL can_job_admin;
 
+	/* Force and update so the count is accurate (i.e. not a cached count) */
+	print_queue_update(snum);
+	
 	can_job_admin = print_access_check(user, snum, JOB_ACCESS_ADMINISTER);
 	njobs = print_queue_status(snum, &queue, &status);
 
@@ -1237,7 +1240,6 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 		}
 	}
 
-	print_queue_update(snum);
 	safe_free(queue);
 
 	/* Send a printer notify message */
