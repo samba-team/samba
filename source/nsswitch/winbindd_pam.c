@@ -42,7 +42,9 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
         fstrcpy(user, p+1);
         fstrcpy(domain, domuser);
         domain[PTR_DIFF(p, domuser)] = 0;
-        strupper(domain);
+	unix_to_dos(domain, True);
+	strupper(domain);
+	dos_to_unix(domain, True);
 }
 
 /* Return a password structure from a username.  Specify whether cached data 

@@ -891,5 +891,21 @@ void parse_domain_user(char *domuser, fstring domain, fstring user)
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
+
+	unix_to_dos(domain, True);
 	strupper(domain);
+	dos_to_unix(domain, True);
+}
+
+/* Return the uppercased workgroup name */
+
+char *lp_uworkgroup(void)
+{
+	char *workgroup = lp_workgroup();
+
+	unix_to_dos(workgroup, True);
+	strupper(workgroup);
+	dos_to_unix(workgroup, True);
+
+	return workgroup;
 }
