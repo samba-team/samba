@@ -29,20 +29,18 @@
 #  define RL_COMPLETION_CAST
 #endif /* HAVE_NEW_LIBREADLINE */
 
-
 /****************************************************************************
-display the prompt and wait for input. Call callback() regularly
+ Display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
+
 static char *smb_readline_replacement(char *prompt, void (*callback)(void), 
-                                      char **(completion_fn)(char *text, 
-                                                             int start, 
-                                                             int end))
+				char **(completion_fn)(char *text, int start, int end))
 {
 	fd_set fds;
 	static pstring line;
 	struct timeval timeout;
 	int fd = fileno(stdin);
-        char *ret;
+	char *ret;
 
 	x_fprintf(dbf, "%s", prompt);
 	x_fflush(dbf);
@@ -58,43 +56,46 @@ static char *smb_readline_replacement(char *prompt, void (*callback)(void),
 			ret = fgets(line, sizeof(line), stdin);
 			return ret;
 		}
-		if (callback) callback();
+		if (callback)
+			callback();
 	}
 }
 
 /****************************************************************************
-display the prompt and wait for input. Call callback() regularly
+ Display the prompt and wait for input. Call callback() regularly.
 ****************************************************************************/
+
 char *smb_readline(char *prompt, void (*callback)(void), 
 		   char **(completion_fn)(char *text, int start, int end))
 {
 #if HAVE_LIBREADLINE
-	char *ret;
+	if (isatty(fileno(stdin))) {
+		char *ret;
 
-        /* Aargh!  Readline does bizzare things with the terminal width
-           that mucks up expect(1).  Set CLI_NO_READLINE in the environment
-           to force readline not to be used. */
+		/* Aargh!  Readline does bizzare things with the terminal width
+		that mucks up expect(1).  Set CLI_NO_READLINE in the environment
+		to force readline not to be used. */
 
-        if (getenv("CLI_NO_READLINE"))
-                return smb_readline_replacement(prompt, callback, 
-                                                completion_fn);
+		if (getenv("CLI_NO_READLINE"))
+			return smb_readline_replacement(prompt, callback, completion_fn);
 
-	if (completion_fn) {
-		/* The callback prototype has changed slightly between
-                   different versions of Readline, so the same function
-                   works in all of them to date, but we get compiler
-                   warnings in some.  */
-		rl_attempted_completion_function = RL_COMPLETION_CAST
-			completion_fn;
-	}
+		if (completion_fn) {
+			/* The callback prototype has changed slightly between
+			different versions of Readline, so the same function
+			works in all of them to date, but we get compiler
+			warnings in some.  */
+			rl_attempted_completion_function = RL_COMPLETION_CAST completion_fn;
+		}
 
-	if (callback) rl_event_hook = (Function *)callback;
-	ret = readline(prompt);
-	if (ret && *ret) add_history(ret);
-	return ret;
-#else
-        return smb_readline_replacement(prompt, callback, completion_fn);
+		if (callback)
+			rl_event_hook = (Function *)callback;
+		ret = readline(prompt);
+		if (ret && *ret)
+			add_history(ret);
+		return ret;
+	} else
 #endif
+	return smb_readline_replacement(prompt, callback, completion_fn);
 }
 
 /****************************************************************************
