@@ -131,7 +131,7 @@ diff -uNr samba-3.0alpha23.orig/source/dynconfig.c samba-3.0alpha23/source/dynco
 diff -uNr samba-3.0alpha23.orig/source/groupdb/mapping.c samba-3.0alpha23/source/groupdb/mapping.c
 --- samba-3.0alpha23.orig/source/groupdb/mapping.c	2003-03-30 20:28:28.000000000 -0600
 +++ samba-3.0alpha23/source/groupdb/mapping.c	2003-04-04 21:04:05.000000000 -0600
-@@ -218,7 +218,7 @@
+@@ -134,7 +134,7 @@
  	
  	if (tdb && local_pid == sys_getpid())
  		return True;
