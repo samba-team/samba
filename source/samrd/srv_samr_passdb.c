@@ -989,10 +989,8 @@ uint32 _samr_query_dispinfo(const POLICY_HND * domain_pol, uint16 level,
  ********************************************************************/
 uint32 _samr_delete_dom_user(POLICY_HND *user_pol)
 {
-        fstring user_name;
         uint32 user_rid = 0x0;
         DOM_SID user_sid;
-	struct sam_passwd *sam_pass;
 
         /* find the policy handle.  open a policy on it. */
         if (!get_policy_samr_sid(get_global_hnd_cache(), user_pol, &user_sid))

@@ -64,14 +64,14 @@ BOOL modify_trust_password(const char *domain, const char *srv_name,
  Do the same as security=server, but using NT Domain calls and a session
  key from the workstation trust account password.
 ************************************************************************/
-static uint32 domain_client_validate(const char *user, const char *domain,
-				     const char *acct_name, uint16 acct_type,
-				     const char *challenge,
-				     const char *smb_apasswd,
-				     int smb_apasslen,
-				     const char *smb_ntpasswd,
-				     int smb_ntpasslen,
-				     NET_USER_INFO_3 * info3)
+uint32 domain_client_validate(const char *server,
+			      const char *user, const char *domain,
+			      const char *acct_name, uint16 acct_type,
+			      const char *challenge,
+			      const char *smb_apasswd,
+			      int smb_apasslen,
+			      const char *smb_ntpasswd,
+			      int smb_ntpasslen, NET_USER_INFO_3 * info3)
 {
 	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
@@ -91,7 +91,11 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
 
-	if (!get_any_dc_name(domain, srv_name))
+	if (server != NULL)
+	{
+		fstrcpy(srv_name, server);
+	}
+	else if (!get_any_dc_name(domain, srv_name))
 	{
 		DEBUG(3,
 		      ("domain_client_validate: could not find domain %s, using local SAM\n",
@@ -128,10 +132,9 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 	   * Now start the NT Domain stuff :-).
 	 */
 
-	status =
-		cli_nt_setup_creds(srv_name, domain, global_myname,
-				   trust_acct, trust_passwd, acct_type,
-				   &validation_level);
+	status = cli_nt_setup_creds(srv_name, domain, global_myname,
+				    trust_acct, trust_passwd, acct_type,
+				    &validation_level);
 	if (status != 0x0)
 	{
 		DEBUG(0, ("domain_client_validate: credentials failed (%s)\n",
@@ -201,10 +204,9 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 
 	if (status != 0x0)
 	{
-		DEBUG(0,
-		      ("domain_client_validate: unable to validate password for user %s in domain \
-		%s to Domain controller %s.\n",
-		       user, domain, srv_name));
+		DEBUG(0, ("domain_client_validate: unable to validate \
+			password for user %s in domain %s to \
+			Domain controller %s.\n", user, domain, srv_name));
 		return status;
 	}
 
@@ -214,7 +216,7 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 	 * locked out / disabled" etc!!!!
 	 */
 
-	DEBUG(10, ("domain_client_validate: user %s\%s OK\n", domain, user));
+	DEBUG(10, ("domain_client_validate: user %s\\%s OK\n", domain, user));
 	DEBUG(3, ("domain_client_validate: check lockout / pwd expired!\n"));
 
 	return 0x0;
@@ -263,7 +265,7 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 
 	DEBUG(10, ("check_domain_security: %s(%d)\n", acct_name, acct_type));
 
-	return domain_client_validate(orig_user, domain,
+	return domain_client_validate(NULL, orig_user, domain,
 				      acct_name, acct_type,
 				      challenge,
 				      smb_apasswd, smb_apasslen,

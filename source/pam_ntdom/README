@@ -1,0 +1,176 @@
+This is the README for pam_ntdom v0.25
+--------------------------------------
+
+Getting pam_ntdom:
+
+	http://samba.org/cvs.html, obtain Samba with a tag of SAMBA_TNG.
+
+This Plug-in Authentication Module allows a Linux user to authenticate
+against an NT Server, Samba Server compiled with NT Domains enabled,
+AT & T Advance File/Print Sharer or SCO Domain Controller, using the NT
+Domain Authentication Protocol.
+
+This module is based on pam_smb (including this README file) which in
+turn was based on pam_unix_auth.
+
+Please see the end of this file for contact details.
+
+
+*****************
+  Configuration
+*****************
+
+Linux workstation
+-----------------
+
+This version of pam_ntdom works in conjunction with SAMBA_TNG installed
+on your local system.  You should not need to make any changes to your
+Samba configuration on the local system (except that it must be the
+SAMBA_TNG version).
+
+This version of pam_ntdom reads your Samba smb.conf file, so no additional
+configuration is required.
+
+
+**************
+  Installing
+**************
+
+1) Obtain (cvs or ftp) the SAMBA_TNG distribution.
+
+2) Run configure
+./configure
+
+3) run make bin/pam_ntdom_auth.so
+
+4) This will produce bin/.libs/pam_ntdom_auth.so.
+   Copy this file into the pam modules directory which for Redhat-4.2 is
+   /lib/security and for Solaris 2.6 is /usr/lib/security.
+
+   *** DO NOT COPY bin/pam_ntdom_auth.so it is only a libtool script! ***
+
+5) Install the module into the PAM system:
+
+For Linux:
+	You then need to change the configuration files in /etc/pam.d for the
+	applications you wish to use NT authentication with.
+
+My /etc/pam.d/login is as follows for NT authenticated logins.
+Note the pam_ntdom_auth.so line.
+
+#%PAM-1.0
+auth       required	/lib/security/pam_securetty.so
+auth	   required	/lib/security/pam_ntdom_auth.so
+auth       required	/lib/security/pam_nologin.so
+account    required	/lib/security/pam_pwdb.so
+password   required	/lib/security/pam_cracklib.so
+password   required	/lib/security/pam_pwdb.so shadow nullok use_authtok
+session    required	/lib/security/pam_pwdb.so
+
+For Solaris:
+	You need to change the /etc/pam.conf other line to
+
+other   auth required   /usr/lib/security/pam_ntdom_auth.so.1
+
+
+6) If you have not already installed and configured SAMBA_TNG, follow
+   the instructions in source/README.  You will not need to do
+   ./configure again, as that was already done in step 2) as instructed
+   in *this* README.
+
+   *** YOU MUST do a make install of SAMBA_TNG ***
+
+   this will copy the shared libraries into the location required by
+   pam_ntdom_auth.so.
+
+
+*************************
+  Further Configuration
+*************************
+
+The pam_ntdom modules has two configuration steps,
+	a) Command line options
+	b) Configuration file.
+
+A) Command line options
+	Most installations can skip this step as the module will 
+	work grand without any command line arguments.
+	These arguments go in the /etc/pam.d 
+	file on the auth line containing the pam_ntdom_auth.so module.
+
+	The pam_ntdom module accepts 3 command line options.
+	1. debug - This switches on syslog debugging of the module.
+
+	2. use_first_pass - This is a standard PAM Module command line option.
+	*********** N.B. Danger lurks here somewhere *****************
+
+	3. nolocal - This allows authentication of a username/password
+			pair which are not in the local password file.
+		 Do not switch this on unless you know what you are at.
+	**************************************************************
+
+************************
+Notes
+************************
+
+- The user must be in the password file to allow the user to login.
+
+- If the user hasn't a starred password the password in the file
+  will work.
+
+- If the user has a starred password it will go to the NT server
+  and validate the user in the domain specified in the smb.conf file
+
+
+************************
+Samba NT Domains
+************************
+
+As of 10jan98, the version of Samba required that supports NT Domains
+is available under the cvs tag SAMBA_TNG.  cvs instructions are at:
+
+	http://samba.org/cvs.html.
+
+Samba, the Digest Archives and a list of Commercial companies that
+support Samba is available from:
+
+	http://samba.org/listproc
+
+Details on NT Domain Authentication and progress being made is
+available from:
+
+	http://cb1.com/~lkcl/ntdomain.html
+
+
+************************
+Credits
+************************
+
+- Dave Airlie <David.Airlie@ul.ie> -- the Author of pam-smb, as all i've done
+  is replace his Validate_User function and rewrite this README file.
+	
+- Andrew Morgan <morgan@parc.power.net> -- the Linux PAM project person, and 
+  writer of the pam_unix_auth.c module, on which Dave Airlie based pam-smb.
+
+- Paul Ashton <paul@argo.demon.co.uk> -- Paul kicked the whole NT Domain
+  Authentication ball rolling, and first implemented NT Domains in Samba.
+  And second implemented it.
+
+- Andrew Tridgell and the Samba Team.  Andrew for inviting me to join
+  the team, back in August 96, and to the other Samba Team members for
+  putting up with and encouraging me ever since.
+
+- The Microsoft NT Development Team, for an exceptionally good design of a
+  remote administration / authentication protocol.
+
+
+************************
+Bugs and Comments
+************************
+
+Please report any bugs, comments and suggestions to:
+
+	samba-technical@samba.org
+
+putting "[PAM-NTDOM]" at the start of the subject line.
+

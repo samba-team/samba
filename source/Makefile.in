@@ -619,6 +619,13 @@ RPCCLIENT_OBJ = lib/cmd_interp.o \
 		$(STUB_UID_OBJ)
 RPCCLIENT_LIBS = $(SAMBA_LIBS)
 
+PAM_NTDOM_OBJ = pam_ntdom/pam_ntdom_auth.o \
+		pam_ntdom/rpc_validate.o \
+		pam_ntdom/support.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+PAM_NTDOM_LIBS = $(SAMBA_LIBS)
+
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
@@ -1092,6 +1099,10 @@ nsswitch/ntdom.so: $(NSS_OBJ) $(LIBSAMBA_OBJ)
 	@echo "Linking $@"
 	@$(LINK) -shared -o $@ $(NSS_OBJ) $(LIBSAMBA_OBJ)
 
+bin/pam_ntdom_auth.so: $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -shared -Xlinker -x -o $@ $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ)
+
 install: all \
 	installdirs \
 	install-libs installbin install-sbin \
@@ -1163,6 +1174,11 @@ all_other_proto_for_now:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 	  include/proto.h \
 	  $(PROTO_OBJ)
+
+pam_ntdom_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _PAM_NTDOM_PROTO_H_ pam_ntdom/pam_ntdom_proto.h \
+	  $(PAM_NTDOM_OBJ)
 
 winbindd_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
