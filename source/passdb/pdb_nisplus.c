@@ -130,10 +130,7 @@ static char *make_nisname_from_user_rid(uint32 rid, char *pfile)
 {
 	static pstring nisname;
 
-	safe_strcpy(nisname, "[user_rid=", sizeof(nisname)-1);
-	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, rid);
-	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
-	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
+	slprintf(nisname, sizeof(nisname)-1, "[user_rid=%d]%s", rid, pfile);
 
 	return nisname;
 }
@@ -145,10 +142,7 @@ static char *make_nisname_from_uid(int uid, char *pfile)
 {
 	static pstring nisname;
 
-	safe_strcpy(nisname, "[uid=", sizeof(nisname)-1);
-	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, uid);
-	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
-	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
+	slprintf(nisname, sizeof(nisname)-1, "[uid=%d]%s", uid, pfile);
 
 	return nisname;
 }
@@ -160,12 +154,46 @@ static char *make_nisname_from_name(char *user_name, char *pfile)
 {
 	static pstring nisname;
 
-	safe_strcpy(nisname, "[name=", sizeof(nisname)-1);
-	safe_strcat(nisname, user_name, sizeof(nisname) - strlen(nisname) - 1);
-	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
-	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
+	slprintf(nisname, sizeof(nisname)-1, "[name=%s]%s", user_name, pfile);
 
 	return nisname;
+}
+
+/***************************************************************
+ smb_passwd_table
+
+ * if only plain table in is in pfile, org_dir will be concated.
+ * so, at first we will clear path prefix from pfile, and
+ * then we will use pfiletmp as playground to put together full
+ * nisname string.
+ * such approach will make it possible to specify samba private dir
+ * AND still use NIS+ table. as all domain related data is normally
+ * stored in org_dir.DOMAIN, this should be ok to do.
+ ****************************************************************/
+static char *smb_passwd_table(){
+	char *sp, *p = lp_smb_passwd_file();
+#if 1
+	static pstring pfiletmp; 
+#endif
+
+	/* if lp_smb_passwd_file() returns anything wierd, pass it on */
+	if (!p || !*p) return p;
+	sp = strrchr( p, '/' );
+	if (sp) p=sp+1;
+
+#if 1
+	/* append org_dir ONLY if plain table name is used.
+	   why we do append it is because NIS_PATH env may not be set,
+	   should we check if it's set?
+	   do not append if lp_smb_passwd_file() returns an empty string
+	*/
+	if (!strchr(p, '.')){
+	  slprintf(pfiletmp, sizeof(pfiletmp)-1, "%s.org_dir", p);
+	  return pfiletmp;
+	}
+#endif
+	return p;
+	
 }
 
 /*************************************************************************
@@ -210,7 +238,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
    */
 
   pdb_set_logon_time(pw_buf, (time_t)0);
-  ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGON_T);
+  ptr = ENTRY_VAL(obj, NPF_LOGON_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LNT-", 4)==0)) {
     int i;
     ptr += 4;
@@ -224,7 +252,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
 
   pdb_set_logoff_time(pw_buf, get_time_t_max());
-  ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGOFF_T);
+  ptr = ENTRY_VAL(obj, NPF_LOGOFF_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LOT-", 4)==0)) {
     int i;
     ptr += 4;
@@ -238,7 +266,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
 
   pdb_set_kickoff_time(pw_buf, get_time_t_max());
-  ptr = (uchar *)ENTRY_VAL(obj, NPF_KICK_T);
+  ptr = ENTRY_VAL(obj, NPF_KICK_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "KOT-", 4)==0)) {
     int i;
     ptr += 4;
@@ -252,7 +280,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
 
   pdb_set_pass_last_set_time(pw_buf, (time_t)0);
-  ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDLSET_T);
+  ptr = ENTRY_VAL(obj, NPF_PWDLSET_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LCT-", 4)==0)) {
     int i;
     ptr += 4;
@@ -266,7 +294,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
   
   pdb_set_pass_can_change_time(pw_buf, (time_t)0);
-  ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDCCHG_T);
+  ptr = ENTRY_VAL(obj, NPF_PWDCCHG_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "CCT-", 4)==0)) {
     int i;
     ptr += 4;
@@ -280,7 +308,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
   
   pdb_set_pass_must_change_time(pw_buf, get_time_t_max()); /* Password never expires. */
-  ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDMCHG_T);
+  ptr = ENTRY_VAL(obj, NPF_PWDMCHG_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "MCT-", 4)==0)) {
     int i;
     ptr += 4;
@@ -312,10 +340,24 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   pdb_set_workstations(pw_buf, ENTRY_VAL(obj, NPF_WORKSTATIONS));
   pdb_set_munged_dial(pw_buf, NULL);
 
-  pdb_set_uid(pw_buf, atoi(ENTRY_VAL(obj, NPF_UID)));
-  pdb_set_gid(pw_buf, atoi(ENTRY_VAL(obj, NPF_SMB_GRPID)));
-  pdb_set_user_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_USER_RID)));
-  pdb_set_group_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_GROUP_RID)));
+/* Might want to consult sys_getpwnam for the following two.
+  for now, use same default as pdb_fill-default_sam */
+
+  ptr = ENTRY_VAL(obj, NPF_UID);
+  pdb_set_uid(pw_buf, ptr ? atoi(ptr) : -1);
+
+  ptr = ENTRY_VAL(obj, NPF_SMB_GRPID);
+  pdb_set_gid(pw_buf, ptr ? atoi(ptr) : -1);
+
+
+  ptr = ENTRY_VAL(obj, NPF_USER_RID); 
+  pdb_set_user_rid(pw_buf, ptr ? atoi(ptr) : 
+	pdb_uid_to_user_rid(pdb_get_uid(pw_buf)));
+
+  ptr = ENTRY_VAL(obj, NPF_GROUP_RID);
+  pdb_set_group_rid(pw_buf, ptr ? atoi(ptr) :
+	pdb_gid_to_group_rid(pdb_get_gid(pw_buf)));
+
 
   /* values, must exist for user */
   if( !(pdb_get_acct_ctrl(pw_buf) & ACB_WSTRUST) ) {
@@ -344,6 +386,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 			 sizeof(pstring));
     if( !(logon_script && *logon_script) ) {
       pstrcpy(logon_script, lp_logon_script());
+      pdb_set_logon_script(pw_buf, logon_script, False);
     }
     else
       pdb_set_logon_script(pw_buf, logon_script, True);
@@ -364,7 +407,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
 
   /* Check the lanman password column. */
-  ptr = (char *)ENTRY_VAL(obj, NPF_LMPWD);
+  ptr = ENTRY_VAL(obj, NPF_LMPWD);
   if (!pdb_set_lanman_passwd(pw_buf, NULL))
 	return False;
 
@@ -408,7 +451,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     memset(hours, 0xff, hours_len);
   }
   pdb_set_hours_len(pw_buf, hours_len);
-  pdb_set_hours(pw_buf, hours);
+  pdb_set_hours(pw_buf, (uchar *)hours);
 
   pdb_set_unknown_5(pw_buf, 0x00020000); /* don't know */
   pdb_set_unknown_6(pw_buf, 0x000004ec); /* don't know */
@@ -778,7 +821,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 	       ENTRY_LEN(old, NPF_HOURS))) {
       need_to_modify = True;
       /* set_single_attribute will add 1 for len ... */
-      set_single_attribute(obj, NPF_HOURS, pdb_get_hours(sampass), 
+      set_single_attribute(obj, NPF_HOURS, (char *)pdb_get_hours(sampass), 
 			   pdb_get_hours_len(sampass)-1, EN_MODIFIED);
     }  
   } else {
@@ -848,7 +891,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
     
     /* set_single_attribute will add 1 for len ... */
     set_single_attribute(obj, NPF_HOURS,
-			 pdb_get_hours(sampass),
+			 (char *)pdb_get_hours(sampass),
 			 pdb_get_hours_len(sampass)-1, 0);
   }
   
@@ -897,17 +940,10 @@ static nis_result *nisp_get_nis_list(char *nis_name, unsigned int flags)
  ****************************************************************/
 BOOL pdb_setsampwent(BOOL update)
 {
-	char *sp, * p = lp_smb_passwd_file();
-	pstring pfiletmp;
-
-	if( (sp = strrchr( p, '/' )) )
-	  safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
-	else
-	  safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
-	safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
+	char *pfile = smb_passwd_table();
 
 	pdb_endsampwent();	/* just in case */
-	global_nisp_ent.result = nisp_get_nis_list( pfiletmp, 0 );
+	global_nisp_ent.result = nisp_get_nis_list( pfile, 0 );
 	global_nisp_ent.enum_entry = 0;
 	return global_nisp_ent.result != NULL ? True : False;
 }
@@ -960,7 +996,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
 	nis_result *result = NULL;
 	pstring nisname;
 	BOOL ret;
-	char *pfile = lp_smb_passwd_file();
+	char *pfile = smb_passwd_table();
         int i;
 
 	if (!*pfile)
@@ -968,10 +1004,8 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
 		DEBUG(0, ("No SMB password file set\n"));
 		return False;
 	}
-	if( strrchr( pfile, '/') )
-                pfile = strrchr( pfile, '/') + 1;
 
-	slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir", sname, pfile);
+	slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s", sname, pfile);
 	DEBUG(10, ("search by nisname: %s\n", nisname));
 
 	/* Search the table. */
@@ -995,22 +1029,15 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 	nis_result *result;
 	char *nisname;
 	BOOL ret;
-	char *sp, *p = lp_smb_passwd_file();
-	pstring pfiletmp;
+	char *pfile = smb_passwd_table();
 
-	if (!*p)
+	if (!*pfile)
 	{
 		DEBUG(0, ("no SMB password file set\n"));
 		return False;
 	}
 
-	if( (sp = strrchr( p, '/' )) )
-          safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
-        else
-          safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
-        safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-
-	nisname = make_nisname_from_user_rid(rid, pfiletmp);
+	nisname = make_nisname_from_user_rid(rid, pfile);
 
 	DEBUG(10, ("search by rid: %s\n", nisname));
 
@@ -1032,7 +1059,7 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
  *************************************************************************/
 BOOL pdb_delete_sam_account(char *sname)
 {
-  char *pfile = lp_smb_passwd_file();
+  char *pfile = smb_passwd_table();
   pstring nisname;
   nis_result *result, *delresult;
   nis_object *obj;
@@ -1043,10 +1070,8 @@ BOOL pdb_delete_sam_account(char *sname)
       DEBUG(0, ("no SMB password file set\n"));
       return False;
     }
-  if( strrchr( pfile, '/') )
-	  pfile = strrchr( pfile, '/') + 1;
   
-  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir", sname, pfile);
+  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s", sname, pfile);
   
   /* Search the table. */
   
@@ -1089,15 +1114,14 @@ BOOL pdb_delete_sam_account(char *sname)
 BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 {
   int local_user = 0;
-  char           *pfile;
+  char           *pfile = smb_passwd_table();
   pstring	  pfiletmp;
   char           *nisname;
-  nis_result     *result = NULL,
-    *tblresult = NULL;
-  nis_object new_obj;
+  nis_result     *result = NULL, *tblresult = NULL;
+  nis_object new_obj, *obj;
   entry_col *ecol;
   int ta_maxcol;
-  
+ 
   /*
    * 1. find user domain.
    *   a. try nis search in passwd.org_dir - if found use domain from result.
@@ -1112,25 +1136,13 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
    *      domain. 
    *   b. smbpasswd domain is found, fill data and add entry.
    *
-   * pfile should contain ONLY table name, org_dir will be concated.
-   * so, at first we will clear path prefix from pfile, and
-   * then we will use pfiletmp as playground to put together full
-   * nisname string.
-   * such approach will make it possible to specify samba private dir
-   * AND still use NIS+ table. as all domain related data is normally
-   * stored in org_dir.DOMAIN, this should be ok do do.
    */
 
-  pfile = lp_smb_passwd_file();
-  if( strrchr( pfile, '/') )
-    pfile = strrchr( pfile, '/') + 1;
 
   /*
    * Check if user is already there.
    */
   safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-  safe_strcat(pfiletmp, ".org_dir",
-	      sizeof(pfiletmp)-strlen(pfiletmp)-1);
 
   if(pdb_get_username(newpwd) != NULL) {
     nisname = make_nisname_from_name(pdb_get_username(newpwd),
@@ -1166,6 +1178,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
    * domain, where smbpasswd entry should be stored.
    */
 
+#if 0
   nisname = make_nisname_from_name(pdb_get_username(newpwd),
 				     "passwd.org_dir");
   
@@ -1208,11 +1221,8 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
        */
       if (!local_user) /* free previous failed search result */
 	nis_freeresult(tblresult);
-      
-      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-      safe_strcat(pfiletmp, ".org_dir",
-		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
-      tblresult = nis_lookup(pfiletmp, MASTER_ONLY|FOLLOW_LINKS|\
+#endif
+      tblresult = nis_lookup(pfile, MASTER_ONLY|FOLLOW_LINKS|\
 			     FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP);
       if (tblresult->status != NIS_SUCCESS)
 	{
@@ -1222,29 +1232,29 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		     nis_sperrno(tblresult->status)));
 	  return False;
 	}
+      obj = NIS_RES_OBJECT(tblresult);
       /* we need full name for nis_add_entry() */
-      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-      safe_strcat(pfiletmp, ".", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-      safe_strcat(pfiletmp, NIS_RES_OBJECT(tblresult)->zo_domain,
-		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
+      slprintf(pfiletmp, sizeof(pfiletmp)-1, "%s.%s", obj->zo_name,
+		obj->zo_domain);
+#if 0
     }
+#endif
 
   memset((char *)&new_obj, 0, sizeof (new_obj));
   /* fill entry headers */
   /* we do not free these. */
-  new_obj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
-  new_obj.zo_owner  = NIS_RES_OBJECT(tblresult)->zo_owner;
-  new_obj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
-  new_obj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
+  new_obj.zo_name   = obj->zo_name;
+  new_obj.zo_owner  = obj->zo_owner;
+  new_obj.zo_group  = obj->zo_group;
+  new_obj.zo_domain = obj->zo_domain;
   /* uints */
-  new_obj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
-  new_obj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
+  new_obj.zo_access = obj->zo_access;
+  new_obj.zo_ttl    = obj->zo_ttl;
 
   new_obj.zo_data.zo_type = ENTRY_OBJ;
-  new_obj.EN_data.en_type =
-    NIS_RES_OBJECT(tblresult)->TA_data.ta_type;
+  new_obj.EN_data.en_type = obj->TA_data.ta_type;
 
-  ta_maxcol = NIS_RES_OBJECT(tblresult)->TA_data.ta_maxcol;
+  ta_maxcol = obj->TA_data.ta_maxcol;
   
   if(!(ecol = (entry_col*)malloc(ta_maxcol*sizeof(entry_col)))) {
     DEBUG(0, ("memory allocation failure\n"));
@@ -1288,7 +1298,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
   nis_object new_obj;
   entry_col *ecol;
   int ta_maxcol;
-  char *pfile = lp_smb_passwd_file();
+  char *pfile = smb_passwd_table();
   pstring nisname;
   int i;
 
@@ -1297,10 +1307,8 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
       DEBUG(0, ("no SMB password file set\n"));
       return False;
     }
-  if( strrchr( pfile, '/') )
-	  pfile = strrchr( pfile, '/') + 1;
   
-  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir",
+  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s",
 	   pdb_get_username(newpwd), pfile);
   
   DEBUG(10, ("search by name: %s\n", nisname));
@@ -1343,7 +1351,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 
   if ( init_nisp_from_sam(&new_obj, newpwd, obj) == True ) {
     slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.%s",
-	   pdb_get_username(newpwd), pfile, obj->zo_domain);
+	   pdb_get_username(newpwd), obj->zo_name, obj->zo_domain);
 
     DEBUG(10, ("NIS+ table update: %s\n", nisname));
     addresult =
