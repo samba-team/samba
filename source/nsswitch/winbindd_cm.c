@@ -394,6 +394,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if ( !*(*cli)->domain )
 		fstrcpy( (*cli)->domain, domain->name );
 
+	(*cli)->pipe_auth_flags = 0;
 	if ( !cli_nt_session_open (*cli, pipe_index) ) {
 
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;

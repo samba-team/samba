@@ -141,7 +141,7 @@ int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flag
 	}
 		
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
-		if (cli->nt_pipe_fnum[cli->pipe_idx])
+		if (cli->pipes[cli->pipe_idx].fnum)
 			cli_nt_session_close(cli);
 	}
 
@@ -4561,7 +4561,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
+	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
 
 
@@ -4628,7 +4628,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
+	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
 	 
 	talloc_destroy(mem_ctx);

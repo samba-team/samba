@@ -288,7 +288,7 @@ enum client_action
 	{
 		int i;
 		for (i=0; i<PI_MAX_PIPES; i++)
-			smb_cli->nt_pipe_fnum[i]   = 0xffff;
+			smb_cli->pipes[i].fnum   = 0xffff;
 	}
 
 	setup_logging(pname, True);

@@ -42,14 +42,18 @@
  *
  * @param cli Handle on an initialised SMB connection */
 
-NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				BOOL sec_qos, uint32 des_access,
+				POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
 	LSA_R_OPEN_POL r;
 	LSA_SEC_QOS qos;
 	NTSTATUS result;
+
+	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -71,7 +75,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_open_pol("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENPOLICY, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_OPENPOLICY, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -97,6 +101,13 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+{
+	return rpccli_lsa_open_policy(&cli->pipes[PI_LSARPC], mem_ctx,
+				      sec_qos, des_access, pol);
 }
 
 /** Open a LSA policy handle
@@ -165,13 +176,15 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /** Close a LSA policy handle */
 
-NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                       POLICY_HND *pol)
+NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
+			  POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
 	LSA_R_CLOSE r;
 	NTSTATUS result;
+
+	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -186,7 +199,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_lsa_q_close(&q, pol);
 
 	if (!lsa_io_q_close("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_CLOSE, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_CLOSE, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -212,6 +225,12 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                       POLICY_HND *pol)
+{
+	return rpccli_lsa_close(&cli->pipes[PI_LSARPC], mem_ctx, pol);
 }
 
 /** Lookup a list of sids */
@@ -436,14 +455,17 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  *
  *  @param domain_sid - returned remote server's domain sid */
 
-NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                   POLICY_HND *pol, uint16 info_class, 
-                                   char **domain_name, DOM_SID **domain_sid)
+NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol, uint16 info_class, 
+				      char **domain_name, DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
 	LSA_R_QUERY_INFO r;
 	NTSTATUS result;
+
+	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -458,7 +480,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_query(&q, pol, info_class);
 
 	if (!lsa_io_q_query("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -520,6 +542,15 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                   POLICY_HND *pol, uint16 info_class, 
+                                   char **domain_name, DOM_SID **domain_sid)
+{
+	return rpccli_lsa_query_info_policy(&cli->pipes[PI_LSARPC], mem_ctx,
+					    pol, info_class, domain_name,
+					    domain_sid);
 }
 
 /** Query info policy2

@@ -488,7 +488,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
 		 rpcclient/display_sec.o rpcclient/cmd_ds.o \
 		 rpcclient/cmd_echo.o rpcclient/cmd_shutdown.o \
-		 rpcclient/cmd_epmapper.o
+		 rpcclient/cmd_epmapper.o rpcclient/cmd_test.o
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
