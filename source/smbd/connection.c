@@ -102,7 +102,5 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) return False;
 
-	tdb_close(tdb);
-
 	return True;
 }
