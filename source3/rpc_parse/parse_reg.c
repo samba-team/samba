@@ -1737,7 +1737,7 @@ BOOL reg_io_r_open_entry(const char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *p
 Inits a structure.
 ********************************************************************/
 void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s, const char *msg,
-			uint32 timeout, BOOL reboot, BOOL force)
+			uint32 timeout, BOOL do_reboot, BOOL force)
 {
 	int msg_len;
 	msg_len = strlen(msg);
@@ -1751,7 +1751,7 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s, const char *msg,
 
 	q_s->timeout = timeout;
 
-	q_s->reboot = reboot ? 1 : 0;
+	q_s->do_reboot = reboot ? 1 : 0;
 	q_s->force = force ? 1 : 0;
 
 }
