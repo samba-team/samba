@@ -1411,7 +1411,7 @@ enum server_types
 
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
-		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,PRINT_CUPS};
+		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,PRINT_CUPS,PRINT_LPRNT,PRINT_LPROS2};
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};
