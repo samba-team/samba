@@ -45,6 +45,10 @@ RCSID("$Id$");
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 #include <sys/wait.h>
 
 #include <netinet/in.h>
@@ -851,7 +855,7 @@ filename_check(char *filename)
 	p++;
 	while(*p && (isalnum(*p) || strchr(good_chars, *p)))
 	    p++;
-	if(*p == NULL)
+	if(*p == '\0')
 	    return 0;
     }
     lreply(553, "\"%s\" is an illegal filename.", filename);

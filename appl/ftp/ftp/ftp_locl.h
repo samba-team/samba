@@ -5,7 +5,17 @@
 #include <config.h>
 #endif
 
+#include <pwd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
 #include <sys/param.h>
+#include <sys/time.h>
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
@@ -28,16 +38,6 @@
 #include <netdb.h>
 
 extern int h_errno;
-
-#include <pwd.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-#include <netinet/in.h>
 
 #include "extern.h"
 #include "common.h"

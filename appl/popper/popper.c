@@ -16,7 +16,7 @@ extern  state_table *   pop_get_command();
 int hangup = FALSE ;
 
 static RETSIGTYPE
-catchSIGHUP()
+catchSIGHUP(int sig)
 {
     hangup = TRUE ;
 
@@ -30,7 +30,7 @@ int     pop_timeout = POP_TIMEOUT;
 jmp_buf env;
 
 static RETSIGTYPE
-ring()
+ring(int sig)
 {
   longjmp(env,1);
 }

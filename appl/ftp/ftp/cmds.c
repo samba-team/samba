@@ -435,7 +435,7 @@ mput(int argc, char **argv)
 					if (!*tp) {
 						tp = cp;
 						tp2 = tmpbuf;
-						while ((*tp2 = *tp) != NULL) {
+						while ((*tp2 = *tp) != '\0') {
 						     if (isupper(*tp2)) {
 						        *tp2 = 'a' + *tp2 - 'A';
 						     }
@@ -570,7 +570,7 @@ usage:
 		if (!*tp) {
 			tp = argv[2];
 			tp2 = tmpbuf;
-			while ((*tp2 = *tp) != NULL) {
+			while ((*tp2 = *tp) != '\0') {
 				if (isupper(*tp2)) {
 					*tp2 = 'a' + *tp2 - 'A';
 				}
