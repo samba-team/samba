@@ -29,10 +29,10 @@
 /* the stages of this call */
 enum savefile_stage {SAVEFILE_OPEN, SAVEFILE_WRITE, SAVEFILE_CLOSE};
 
-
 static void savefile_handler(struct smbcli_request *req);
 
 struct savefile_state {
+	enum savefile_stage stage;
 	off_t total_written;
 	struct smb_composite_savefile *io;
 	union smb_open *io_open;
@@ -62,7 +62,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the close is done */
-	c->stage = SAVEFILE_CLOSE;
+	state->stage = SAVEFILE_CLOSE;
 	state->req->async.fn = savefile_handler;
 	state->req->async.private = c;
 
@@ -106,7 +106,7 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the first write is done */
-	c->stage = SAVEFILE_WRITE;
+	state->stage = SAVEFILE_WRITE;
 	state->req->async.fn = savefile_handler;
 	state->req->async.private = c;
 	talloc_free(state->io_open);
@@ -189,7 +189,7 @@ static void savefile_handler(struct smbcli_request *req)
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
-	switch (c->stage) {
+	switch (state->stage) {
 	case SAVEFILE_OPEN:
 		c->status = savefile_open(c, state->io);
 		break;
@@ -226,12 +226,12 @@ struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree,
 	if (c == NULL) goto failed;
 
 	c->state = SMBCLI_REQUEST_SEND;
-	c->stage = SAVEFILE_OPEN;
 	c->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(c, struct savefile_state);
 	if (state == NULL) goto failed;
 
+	state->stage = SAVEFILE_OPEN;
 	state->total_written = 0;
 	state->io = io;
 
