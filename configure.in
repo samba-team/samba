@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
-AC_PREREQ(2.52)
+AC_PREREQ(2.53)
 AC_INIT(heimdal, 0.4f, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
@@ -12,6 +12,9 @@ AC_PROG_CC_STDC
 AM_INIT_AUTOMAKE(heimdal,0.4f)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
+
+test "$sysconfdir" = '${prefix}/etc' && sysconfdir='/etc'
+test "$localstatedir" = '${prefix}/var' && localstatedir='/var/heimdal'
 
 AC_CANONICAL_HOST
 CANONICAL_HOST=$host
@@ -177,15 +180,17 @@ AM_CONDITIONAL(DCE, test "$enable_dce" = yes)
 
 ## XXX quite horrible:
 if test -f /etc/ibmcxx.cfg; then
-	dpagaix_LDADD=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/libraries/{;s/^[[^=]]*=\(.*\)/\1/;s/,/ /gp;}'`
-	dpagaix_CFLAGS=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/options/{;s/^[[^=]]*=\(.*\)/\1/;s/-q[^,]*//;s/,/ /gp;}'`
+	dpagaix_ldadd=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/libraries/{;s/^[[^=]]*=\(.*\)/\1/;s/,/ /gp;}'`
+	dpagaix_cflags=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/options/{;s/^[[^=]]*=\(.*\)/\1/;s/-q[^,]*//;s/,/ /gp;}'`
+	dpagaix_ldflags=
 else
-	dpagaix_CFLAGS="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
-	dpagaix_LDADD="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
-	dpagaix_LDFLAGS="-Wl,-bI:dfspag.exp"
+	dpagaix_cflags="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
+	dpagaix_ldadd="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
+	dpagaix_ldflags="-Wl,-bI:dfspag.exp"
 fi
-AC_SUBST(dpagaix_CFLAGS)
-AC_SUBST(dpagaix_LDADD)
+AC_SUBST(dpagaix_cflags)
+AC_SUBST(dpagaix_ldadd)
+AC_SUBST(dpagaix_ldflags)
 
 rk_OTP
 
