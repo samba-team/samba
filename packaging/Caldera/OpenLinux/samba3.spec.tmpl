@@ -235,11 +235,8 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 #	--with-pam_smbpass \
 #	--with-nisplus-home \
 
-make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so everything
+make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so modules everything
 (cd tdb; make tdbdump tdbtest tdbtorture tdbtool)
-
-cd ../examples/VFS
-make srcdir=../../source
 
 %Install
 %{mkDESTDIR}
@@ -260,7 +257,7 @@ mkdir -p $DESTDIR/usr/share/samba/codepages/src
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 
-make -C source DESTDIR=$RPM_BUILD_ROOT install installclientlib 
+make -C source DESTDIR=$RPM_BUILD_ROOT install-everything installclientlib 
 
 strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 # Add links for mount.smbfs
@@ -280,12 +277,6 @@ done
 for i in tdbdump tdbtest tdbtorture tdbtool
 do
 	install -m 755 source/tdb/$i $DESTDIR/usr/sbin
-done
-
-# Add VFS Modules
-for i in audit.so recycle.so netatalk.so skel.so
-do
-	install -m755 examples/VFS/$i $DESTDIR/lib/samba
 done
 
 # Install the nsswitch library extension file
