@@ -7,3 +7,9 @@ a pdb plugin. It just prints the name of the function that is executed using
 DEBUG. Maybe it's nice to include some of the arguments to the function in the 
 future too..
 
+To debug passdb backends, try to run gdb on the 'pdbedit' executable. That's really much easier than restarting smbd constantly and attaching with your debugger.
+
+New passdb plugins should go into the samba lib directory, (/usr/lib/samba/ for
+most distributions) and should be prefixed with 'pdb_'. An example would be: 
+/usr/lib/samba/pdb_test.so
+

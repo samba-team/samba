@@ -462,9 +462,9 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
  Open the TDB passwd database for SAM account enumeration.
 ****************************************************************/
 
-static BOOL tdbsam_setsampwent(struct pdb_context *context, BOOL update)
+static BOOL tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	
 	/* Open tdb passwd */
 	if (!(tdb_state->passwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
@@ -490,9 +490,9 @@ static void close_tdb(struct tdbsam_privates *tdb_state)
  End enumeration of the TDB passwd list.
 ****************************************************************/
 
-static void tdbsam_endsampwent(struct pdb_context *context)
+static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	close_tdb(tdb_state);
 	
 	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
@@ -502,9 +502,9 @@ static void tdbsam_endsampwent(struct pdb_context *context)
  Get one SAM_ACCOUNT from the TDB (next in line)
 *****************************************************************/
 
-static BOOL tdbsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
+static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_DATA 	data;
 	char *prefix = USERPREFIX;
 	int  prefixlen = strlen (prefix);
@@ -550,9 +550,9 @@ static BOOL tdbsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
  Lookup a name in the SAM TDB
 ******************************************************************/
 
-static BOOL tdbsam_getsampwnam (struct pdb_context *context, SAM_ACCOUNT *user, const char *sname)
+static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *user, const char *sname)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
 	fstring 	keystr;
@@ -606,9 +606,9 @@ static BOOL tdbsam_getsampwnam (struct pdb_context *context, SAM_ACCOUNT *user, 
  Search by rid
  **************************************************************************/
 
-static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, uint32 rid)
+static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *user, uint32 rid)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 		*pwd_tdb;
 	TDB_DATA 		data, key;
 	fstring 		keystr;
@@ -644,16 +644,16 @@ static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, 
 	
 	tdb_close (pwd_tdb);
 	
-	return tdbsam_getsampwnam (context, user, name);
+	return tdbsam_getsampwnam (my_methods, user, name);
 }
 
 /***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_delete_sam_account(struct pdb_context *context, const SAM_ACCOUNT *sam_pass)
+static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT *sam_pass)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	key;
 	fstring 	keystr;
@@ -707,9 +707,9 @@ static BOOL tdbsam_delete_sam_account(struct pdb_context *context, const SAM_ACC
  Update the TDB SAM
 ****************************************************************************/
 
-static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpwd, int flag)
+static BOOL tdb_update_sam(struct pdb_methods *my_methods, const SAM_ACCOUNT* newpwd, int flag)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb = NULL;
 	TDB_DATA 	key, data;
 	uint8		*buf = NULL;
@@ -823,18 +823,18 @@ done:
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_update_sam_account (struct pdb_context *context, const SAM_ACCOUNT *newpwd)
+static BOOL tdbsam_update_sam_account (struct pdb_methods *my_methods, const SAM_ACCOUNT *newpwd)
 {
-	return (tdb_update_sam(context, newpwd, TDB_MODIFY));
+	return (tdb_update_sam(my_methods, newpwd, TDB_MODIFY));
 }
 
 /***************************************************************************
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_add_sam_account (struct pdb_context *context, const SAM_ACCOUNT *newpwd)
+static BOOL tdbsam_add_sam_account (struct pdb_methods *my_methods, const SAM_ACCOUNT *newpwd)
 {
-	return (tdb_update_sam(context, newpwd, TDB_INSERT));
+	return (tdb_update_sam(my_methods, newpwd, TDB_INSERT));
 }
 
 static void free_private_data(void **vp) 
