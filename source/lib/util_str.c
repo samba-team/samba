@@ -275,6 +275,7 @@ int StrnCaseCmp(const char *s, const char *t, size_t n)
 /*******************************************************************
   compare 2 strings - DOS codepage.
 ********************************************************************/
+
 BOOL strequal(const char *s1, const char *s2)
 {
   if (s1 == s2) return(True);
@@ -286,6 +287,7 @@ BOOL strequal(const char *s1, const char *s2)
 /*******************************************************************
   compare 2 strings - UNIX codepage.
 ********************************************************************/
+
 BOOL strequal_unix(const char *s1, const char *s2)
 {
   pstring dos_s1, dos_s2;
@@ -300,6 +302,7 @@ BOOL strequal_unix(const char *s1, const char *s2)
 /*******************************************************************
   compare 2 strings up to and including the nth char.
   ******************************************************************/
+
 BOOL strnequal(const char *s1,const char *s2,size_t n)
 {
   if (s1 == s2) return(True);
@@ -454,6 +457,13 @@ void strupper(char *s)
       }
     }
   }
+}
+
+void strupper_unix(char *s)
+{
+	unix_to_dos(s);
+	strupper(s);
+	dos_to_unix(s);
 }
 
 /* Convert a string to upper case, but don't modify it */

@@ -122,45 +122,51 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			pstrcpy(servicesf,optarg);
 			break;
 		case 'a':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_ADD_USER;
 			break;
 		case 'x':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_DELETE_USER;
 			new_passwd = strdup_x("XXXXXX");
 			break;
 		case 'd':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_DISABLE_USER;
 			new_passwd = strdup_x("XXXXXX");
 			break;
 		case 'e':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_ENABLE_USER;
 			break;
 		case 'm':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_TRUST_ACCOUNT;
 			break;
 		case 'n':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_SET_NO_PASSWORD;
 			new_passwd = strdup_x("NO PASSWORD");
 			break;
 		case 'j':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			new_domain = optarg;
-			unix_to_dos(new_domain);
-			strupper(new_domain);
-			dos_to_unix(new_domain);
+			strupper_unix(new_domain);
 			joining_domain = True;
 			break;
 		case 'r':
 			remote_machine = optarg;
 			break;
 		case 'S': 
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			local_flags |= LOCAL_GET_DOM_SID;
 			break;
 		case 's':
@@ -170,7 +176,8 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			stdin_passwd_get = True;
 			break;
 		case 'w':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 #ifdef WITH_LDAP_SAM
 			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
 			fstrcpy(ldap_secret, optarg);
@@ -180,7 +187,8 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			goto bad_args;
 #endif			
 		case 'R':
-			if (!amroot) goto bad_args;
+			if (!amroot)
+				goto bad_args;
 			lp_set_name_resolve_order(optarg);
 			break;
 		case 'D':
@@ -551,7 +559,7 @@ static int join_domain_byuser(char *domain, char *remote,
 	/* Display success or failure */
 
 	if (retval != 0) {
-		trust_password_delete(domain);
+		secrets_trust_password_delete(domain);
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 	} else {
 		printf("Joined domain %s.\n",domain);
@@ -588,7 +596,7 @@ static int join_domain(char *domain, char *remote)
 	   domain if we are locally set up as a domain
 	   controller. */
 
-	if(strequal(remote, global_myname_dos())) {
+	if(strequal(remote, global_myname_unix())) {
 		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
 		return 1;
 	}
@@ -634,7 +642,7 @@ machine %s in domain %s.\n", global_myname_unix(), domain);
 	ret = change_trust_account_password( domain, pdc_name);
 	
 	if(!ret) {
-		trust_password_delete(domain);
+		secrets_trust_password_delete(domain);
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 		return 1;
 	} else {
@@ -653,7 +661,7 @@ static int set_domain_sid_from_dc( const char *domain, const char *remote )
 	
 	pstrcpy(pdc_name, remote ? remote : "");
 
-	if(strequal(pdc_name, global_myname_dos())) {
+	if(strequal(pdc_name, global_myname_unix())) {
 		fprintf(stderr, "Cannot fetch domain sid for %s as the domain controller name is our own.\n", domain);
 		return 1;
 	}
@@ -677,7 +685,7 @@ static int set_domain_sid_from_dc( const char *domain, const char *remote )
 	}
 
 	if (!fetch_domain_sid( returned_domain, pdc_name, &domain_sid) 
-		|| !secrets_store_domain_sid(global_myname_dos(), &domain_sid))
+		|| !secrets_store_domain_sid(global_myname_unix(), &domain_sid))
 	{
 		fprintf(stderr,"Failed to get domain SID for %s.\n",domain);
 		return 1;
@@ -884,7 +892,7 @@ static int process_root(void)
 	 */
 	 
 	if (local_flags & LOCAL_GET_DOM_SID) {
-		return set_domain_sid_from_dc(lp_workgroup_dos(), remote_machine);
+		return set_domain_sid_from_dc(lp_workgroup_unix(), remote_machine);
 	}
 
 	/*

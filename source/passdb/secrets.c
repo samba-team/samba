@@ -134,10 +134,7 @@ char *trust_keystr(const char *domain)
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
 		 SECRETS_MACHINE_ACCT_PASS, domain);
 
-	unix_to_dos(keystr);
-	strupper(keystr);
-	dos_to_unix(keystr);	
-
+	strupper_unix(keystr);
 	return keystr;
 }
 
@@ -173,16 +170,17 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 	    size != sizeof(*pass))
 		return False;
 
-	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+	if (pass_last_set_time)
+		*pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
 	SAFE_FREE(pass);
 	return True;
 }
 
-
 /************************************************************************
  Routine to set the trust account password for a domain.
 ************************************************************************/
+
 BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
 {
 	struct machine_acct_pass pass;
@@ -197,7 +195,7 @@ BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
  Routine to delete the trust account password file for a domain.
 ************************************************************************/
 
-BOOL trust_password_delete(const char *domain)
+BOOL secrets_trust_password_delete(const char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
 }
@@ -339,7 +337,7 @@ getting mutex at offset %lu for server %s\n", timeout, offset, name ));
 /*
   unlock a named mutex
 */
-void secrets_named_mutex_release(char *name)
+void secrets_named_mutex_release(const char *name)
 {
 	struct flock fl;
 
