@@ -328,7 +328,12 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 	if (pw_buf == NULL) return NULL;
 
 	pwfile = getpwnam(pw_buf->smb_name);
-	if (pwfile == NULL) return NULL;
+	if (pwfile == NULL)
+	{
+		DEBUG(0,"getsmbfile21pwent: smbpasswd database is corrupt!\n"));
+		DEBUG(0,"getsmbfile21pwent: username %s not in unix passwd database!\n", pw_buf->smb_name));
+		return NULL;
+	}
 
 	pdb_init_sam(&user);
 
