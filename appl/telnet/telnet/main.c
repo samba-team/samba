@@ -160,6 +160,8 @@ main(int argc, char **argv)
 	int ch;
 	char *user;
 
+	setprogname(argv[0]);
+
 #ifdef KRB5
 	krb5_init();
 #endif

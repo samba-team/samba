@@ -163,6 +163,8 @@ main(int argc, char **argv)
     netip = netibuf;
     nfrontp = nbackp = netobuf;
 
+    setprogname(argv[0]);
+
     progname = *argv;
 #ifdef ENCRYPTION
     nclearto = 0;
