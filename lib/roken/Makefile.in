@@ -64,11 +64,11 @@ SOURCES = \
 	getipnodebyaddr.c \
 	getipnodebyname.c \
 	getnameinfo.c \
+	getnameinfo_verified.c \
 	getopt.c \
 	getusershell.c \
 	glob.c \
 	hstrerror.c \
-	inaddr2str.c \
 	inet_aton.c \
 	inet_ntop.c \
 	initgroups.c \
@@ -137,7 +137,7 @@ OBJECTS = \
 	get_default_username.o \
 	get_window_size.o \
 	getarg.o \
-	inaddr2str.o \
+	getnameinfo_verified.o \
 	issuid.o \
 	k_getpwnam.o \
 	k_getpwuid.o \
