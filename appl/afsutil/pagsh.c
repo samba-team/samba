@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -62,6 +62,24 @@ RCSID("$Id$");
 
 #include <err.h>
 #include <roken.h>
+#include <getarg.h>
+
+static int help_flag;
+static int version_flag;
+
+struct getargs args[] = {
+    { "version", 0,  arg_flag, &version_flag },
+    { "help",	'h', arg_flag, &help_flag },
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(int ecode)
+{
+    arg_printusage(args, num_args, NULL, "[cell]... [path]...");
+    exit(ecode);
+}
 
 /*
  * Run command with a new ticket file / credentials cache / token
