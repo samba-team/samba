@@ -590,8 +590,13 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
 
 	  auth = XauReadAuth(f);
 	  fclose(f);
-	  n = auth->name_length;
-	  d = auth->data_length;
+	  if (auth != NULL) {
+	      n = auth->name_length;
+	      d = auth->data_length;
+	  } else {
+	      n = 0;
+	      d = 0;
+	  }
 	  if (bigendianp) {
 	       len[0] = n >> 8;
 	       len[1] = n & 0xFF;
@@ -605,20 +610,16 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
 	  }
 	  if (krb_net_write (xserver, len, 6) != 6)
 	       return 1;
-	  if(krb_net_write (xserver, auth->name, n) != n)
+	  if(n != 0 && krb_net_write (xserver, auth->name, n) != n)
 	       return 1;
 	  npad = (4 - (n % 4)) % 4;
-	  if (npad) { 
-	       if (krb_net_write (xserver, zeros, npad) != npad)
-		    return 1;
-	  }
-	  if (krb_net_write (xserver, auth->data, d) != d)
+	  if (npad && krb_net_write (xserver, zeros, npad) != npad)
+	      return 1;
+	  if (d != 0 && krb_net_write (xserver, auth->data, d) != d)
 	       return 1;
 	  dpad = (4 - (d % 4)) % 4;
-	  if (dpad) { 
-	       if (krb_net_write (xserver, zeros, dpad) != dpad)
-		    return 1;
-	  }
+	  if (dpad && krb_net_write (xserver, zeros, dpad) != dpad)
+	      return 1;
 	  XauDisposeAuth(auth);
      } else {
 	  if(krb_net_write(xserver, zeros, 6) != 6)
