@@ -7,9 +7,6 @@
 	be loaded into smbd before a client connects. This improves
 	the speed of smbd when reacting to new connections somewhat. </para>
 
-	<para>It is recommended to only use this option on heavy-performance
-	servers.</para> 
-
 	<para>Default: <command>preload modules = </command></para>
 
 	<para>Example: <command>preload modules = /usr/lib/samba/passdb/mysql.so+++ </command></para>

@@ -4163,12 +4163,11 @@ void lp_remove_service(int snum)
 
 void lp_copy_service(int snum, const char *new_name)
 {
-	char *oldname = lp_servicename(snum);
 	do_section(new_name);
 	if (snum >= 0) {
 		snum = lp_servicenumber(new_name);
 		if (snum >= 0)
-			lp_do_parameter(snum, "copy", oldname);
+			lp_do_parameter(snum, "copy", lp_servicename(snum));
 	}
 }
 
