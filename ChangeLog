@@ -1,5 +1,10 @@
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
+	* lib/hdb/mkey.c (hdb_unseal_keys_mkey, hdb_seal_keys_mkey,
+	hdb_unseal_keys, hdb_seal_keys): check that we have the correct
+	master key and that we manage to decrypt the key properly,
+	returning an error code.  fix all callers to check return value.
+
 	* tools/krb5-config.in: use @LIB_des_appl@
 	* tools/Makefile.am (krb5-config): add LIB_des_appl
 	* configure.in (LIB_des): set correctly
