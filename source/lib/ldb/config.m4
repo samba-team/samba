@@ -1,4 +1,4 @@
-if test x"$HAVE_LDAP" = x"yes"; then
+if test x"$with_ldap_support" = x"yes"; then
 SMB_SUBSYSTEM(LIBLDB_LDAP,[lib/ldb/ldb_ldap/ldb_ldap.o])
 fi
 
@@ -12,7 +12,7 @@ SMB_SUBSYSTEM(LIBLDB,[lib/ldb/common/ldb.o],
 		lib/ldb/ldb_tdb/ldb_pack.o \
 		lib/ldb/ldb_tdb/ldb_index.o \
 		lib/ldb/ldb_tdb/ldb_match.o \
-	        \$(LIBLDAP_LDAP_OBJS)],
+	        \$(LIBLDB_LDAP_OBJS)],
 		lib/ldb/include/ldb.h)
 
 SMB_SUBSYSTEM(LDBADD,[],
