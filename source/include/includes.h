@@ -962,6 +962,10 @@ size_t strnlen(const char *s, size_t n);
 unsigned long strtoul(const char *nptr, char **endptr, int base);
 #endif
 
+#ifndef HAVE_SETENV
+int setenv(const char *name, const char *value, int overwrite); 
+#endif
+
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
 /* stupid glibc */
 int setresuid(uid_t ruid, uid_t euid, uid_t suid);

@@ -240,7 +240,9 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	uint8 b;
 	struct nesting *nesting;
 	
-	asn1_read_uint8(data, &b);
+	if (!asn1_read_uint8(data, &b))
+		return False;
+
 	if (b != tag) {
 		data->has_error = True;
 		return False;
@@ -251,13 +253,18 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 		return False;
 	}
 
-	asn1_read_uint8(data, &b);
+	if (!asn1_read_uint8(data, &b)) {
+		return False;
+	}
+
 	if (b & 0x80) {
 		int n = b & 0x7f;
-		asn1_read_uint8(data, &b);
+		if (!asn1_read_uint8(data, &b))
+			return False;
 		nesting->taglen = b;
 		while (n > 1) {
-			asn1_read_uint8(data, &b);
+			if (!asn1_read_uint8(data, &b)) 
+				return False;
 			nesting->taglen = (nesting->taglen << 8) | b;
 			n--;
 		}
@@ -404,7 +411,11 @@ BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
 	asn1_read_uint8(data, &b);
 	asn1_end_tag(data);
-	return !data->has_error && (v == b);
+
+	if (v != b)
+		data->has_error = False;
+
+	return !data->has_error;
 }
 
 /* write an enumarted value to the stream */

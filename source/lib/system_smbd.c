@@ -39,7 +39,7 @@
 static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
 	gid_t *gids_saved;
-	int ret, ngrp_saved;
+	int ret, ngrp_saved, num_gids;
 
 	if (non_root_mode()) {
 		*grpcnt = 0;
@@ -78,9 +78,16 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 	set_effective_gid(gid);
 	setgid(gid);
 
-	ret = getgroups(*grpcnt, groups);
-	if (ret >= 0) {
-		*grpcnt = ret;
+	num_gids = getgroups(0, NULL);
+	if (num_gids + 1 > *grpcnt) {
+		*grpcnt = num_gids + 1;
+		ret = -1;
+	} else {
+		ret = getgroups(*grpcnt - 1, &groups[1]);
+		if (ret >= 0) {
+			groups[0] = gid;
+			*grpcnt = ret + 1;
+		}
 	}
 
 	restore_re_gid();
