@@ -68,7 +68,7 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
    decode */
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16 v)
 {
-	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & 0x10) {
+	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, v);
 	} else {
 		RSSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, v);
@@ -77,7 +77,7 @@ void dcerpc_set_frag_length(DATA_BLOB *blob, uint16 v)
 
 uint16 dcerpc_get_frag_length(DATA_BLOB *blob)
 {
-	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & 0x10) {
+	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		return SVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
 	} else {
 		return RSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
@@ -86,7 +86,7 @@ uint16 dcerpc_get_frag_length(DATA_BLOB *blob)
 
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16 v)
 {
-	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & 0x10) {
+	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		SSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET, v);
 	} else {
 		RSSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET, v);
@@ -108,7 +108,7 @@ static NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & 0x10)) {
+	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
 		ndr->flags |= DCERPC_PULL_BIGENDIAN;
 	}
 
@@ -137,7 +137,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & 0x10)) {
+	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
 		ndr->flags |= DCERPC_PULL_BIGENDIAN;
 	}
 
@@ -169,7 +169,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & 0x10)) {
+	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
 		ndr->flags |= DCERPC_PULL_BIGENDIAN;
 	}
 
@@ -306,7 +306,7 @@ static void init_dcerpc_hdr(struct dcerpc_pipe *p, struct dcerpc_packet *pkt)
 	if (p->flags & DCERPC_PUSH_BIGENDIAN) {
 		pkt->drep[0] = 0;
 	} else {
-		pkt->drep[0] = 0x10;
+		pkt->drep[0] = DCERPC_DREP_LE;
 	}
 	pkt->drep[1] = 0;
 	pkt->drep[2] = 0;
@@ -599,7 +599,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 		*stub_data_out = payload;
 	}
 
-	if (!(pkt.drep[0] & 0x10)) {
+	if (!(pkt.drep[0] & DCERPC_DREP_LE)) {
 		p->flags |= DCERPC_PULL_BIGENDIAN;
 	} else {
 		p->flags &= ~DCERPC_PULL_BIGENDIAN;
