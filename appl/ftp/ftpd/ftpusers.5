@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.Dd April 19, 1997
+.Dd May 7, 1997
 .Dt FTPUSERS 5
 .Os KTH-KRB
 .Sh NAME
@@ -10,24 +10,29 @@ FTP access list file.
 .Sh DESCRIPTION
 .Pa /etc/ftpusers
 contains a list of users that should be allowed or denied FTP
-access. It contains a list of users, one on each line, followed by
-either 
+access. Each line contains a user, optionally followed by
+.Dq allow 
+(anything but
 .Dq allow
-or 
-.Dq deny .
-Any string that isn't
-.Dq allow
-is taken as
-.Dq deny .
-If a user is not mentioned in the file, he is allowed access, unless
-the semi-user
+is ignored).  The semi-user
 .Dq *
-is denied, or the file doesn't exist at all.
+matches any user.  Users that has an explicit
+.Dq allow ,
+or that does not match any line, are allowed access. Anyone else is
+denied access.
+
+Note that this is compatible with the old format, where this file
+contained a list of users that should be denied access.
 .Sh EXAMPLES
-This will allow anyone but ``foo'' to use FTP:
+This will deny anyone but
+.Dq foo
+and
+.Dq bar
+to use FTP:
 .Bd -literal
-foo deny
-* allow
+foo allow
+bar allow
+*
 .Ed
 .Sh SEE ALSO
 .Xr ftpd 8
