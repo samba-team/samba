@@ -30,8 +30,9 @@ extern int DEBUGLEVEL;
  Deal with a response packet when querying a name.
 ****************************************************************************/
 
-static void query_name_response(struct subnet_record *subrec,
-                       struct response_record *rrec, struct packet_struct *p)
+static void query_name_response( struct subnet_record   *subrec,
+                                 struct response_record *rrec,
+                                 struct packet_struct   *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
   BOOL success = False;
@@ -52,9 +53,14 @@ static void query_name_response(struct subnet_record *subrec,
     {
       /* WINS server is telling us to wait. Pretend we didn't get
          the response but don't send out any more query requests. */
-  
-      DEBUG(5,("query_name_response: WACK from WINS server %s in querying \
-name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(question_name), subrec->subnet_name));
+
+      if( DEBUGLVL( 5 ) )
+        {
+        dbgtext( "query_name_response: " );
+        dbgtext( "WACK from WINS server %s ", inet_ntoa(p->ip) );
+        dbgtext( "in querying name %s ", nmb_namestr(question_name) );
+        dbgtext( "on subnet %s.\n", subrec->subnet_name );
+        }
   
       rrec->repeat_count = 0;
       /* How long we should wait for. */
@@ -66,18 +72,26 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(question_name), subrec->
     {
       success = False;
 
-      DEBUG(5,("query_name_response: On subnet %s - negative response \
-from IP %s for name %s. Error code was %d.\n", subrec->subnet_name, inet_ntoa(p->ip), 
-                      nmb_namestr(question_name), nmb->header.rcode));
+      if( DEBUGLVL( 5 ) )
+        {
+        dbgtext( "query_name_response: On subnet %s ", subrec->subnet_name );
+        dbgtext( "- negative response from IP %s ", inet_ntoa(p->ip) );
+        dbgtext( "for name %s. ", nmb_namestr(question_name) );
+        dbgtext( "Error code was %d.\n", nmb->header.rcode );
+        }
     }
     else
     {
       success = True;
 
       putip((char *)&answer_ip,&nmb->answers->rdata[2]);
-      DEBUG(5,("query_name_response: On subnet %s - positive response from IP %s \
-for name %s. IP of that name is %s\n", subrec->subnet_name, inet_ntoa(p->ip),
-                    nmb_namestr(question_name), inet_ntoa(answer_ip)));
+      if( DEBUGLVL( 5 ) )
+        {
+        dbgtext( "query_name_response: On subnet %s ", subrec->subnet_name );
+        dbgtext( "- positive response from IP %s ", inet_ntoa(p->ip) );
+        dbgtext( "for name %s.  ", nmb_namestr(question_name) );
+        dbgtext( "IP of that name is %s\n", inet_ntoa(answer_ip) );
+        }
 
       /* Interestingly, we could add these names to our namelists, and
          change nmbd to a model that checked its own name cache first,
@@ -87,10 +101,15 @@ for name %s. IP of that name is %s\n", subrec->subnet_name, inet_ntoa(p->ip),
   }
   else if( rrec->num_msgs > 1)
   {
-    DEBUG(0,("query_name_response: Multiple (%d) responses received for a query on \
-subnet %s for name %s. This response was from IP %s\n", 
-        rrec->num_msgs, subrec->subnet_name, nmb_namestr(question_name), 
-        inet_ntoa(p->ip) ));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "query_name_response: " );
+      dbgtext( "Multiple (%d) responses ", rrec->num_msgs );
+      dbgtext( "received for a query on subnet %s ", subrec->subnet_name );
+      dbgtext( "for name %s.\nThis response ", nmb_namestr(question_name) );
+      dbgtext( "was from IP %s, reporting", inet_ntoa(p->ip) );
+      dbgtext( "an IP address of %s.\n", inet_ntoa(answer_ip) );
+      }
 
     /* We have already called the success or fail function, so we
        don't call again here. Leave the response record around in
@@ -128,9 +147,12 @@ static void query_name_timeout_response(struct subnet_record *subrec,
 
   if(failed)
   {
-    DEBUG(5,("query_name_timeout_response: No response to querying name %s on subnet %s.\n",
-        nmb_namestr(question_name), subrec->subnet_name));
-
+    if( DEBUGLVL( 5 ) )
+      {
+      dbgtext( "query_name_timeout_response: No response to " );
+      dbgtext( "query for name %s ", nmb_namestr(question_name) );
+      dbgtext( "on subnet %s.\n", subrec->subnet_name );
+      }
     if(rrec->fail_fn)
       (*rrec->fail_fn)(subrec, rrec, question_name, 0);
   }
@@ -201,8 +223,12 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
     rrec.rdlength = namerec->data.num_ips * 6;
     if(rrec.rdlength > MAX_DGRAM_SIZE)
     {
-      DEBUG(0,("query_name: nmbd internal error - there are %d ip addresses for name %s.\n",
-               namerec->data.num_ips, nmb_namestr(&nmbname) ));
+      if( DEBUGLVL( 0 ) )
+        {
+        dbgtext( "query_name: nmbd internal error - " );
+        dbgtext( "there are %d ip addresses ", namerec->data.num_ips );
+        dbgtext( "for name %s.\n", nmb_namestr(&nmbname) );
+        }
       return False;
     }
 
@@ -226,8 +252,11 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
         userdata,
         &nmbname) == NULL)
   {
-    DEBUG(0,("query_name: Failed to send packet trying to query name %s\n",
-          nmb_namestr(&nmbname)));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "query_name: Failed to send packet " );
+      dbgtext( "trying to query name %s\n", nmb_namestr(&nmbname) );
+      }
     return True;
   }
   return False;
@@ -255,8 +284,11 @@ BOOL query_name_from_wins_server(struct in_addr ip_to,
         userdata,
         &nmbname) == NULL)
   {
-    DEBUG(0,("query_name_from_wins_server: Failed to send packet trying to query name %s\n",
-          nmb_namestr(&nmbname)));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "query_name_from_wins_server: Failed to send packet " );
+      dbgtext( "trying to query name %s\n", nmb_namestr(&nmbname) );
+      }
     return True;
   }
   return False;
