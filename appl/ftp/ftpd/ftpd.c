@@ -208,25 +208,12 @@ int use_builtin_ls;
 static int help_flag;
 static int version_flag;
 
-static int
-log_collect(int short_flag, int argc, char **argv, 
-	    int *optind, int *optarg, void *data)
-{
-    (*(int*)data)++;
-    return 0;
-}
-
-static getarg_collect_info log_collect_info = {
-    log_collect,
-    &logflag
-};
-
 struct getargs args[] = {
     { NULL, 'a', arg_string, &auth_string, "required authentication" },
     { NULL, 'i', arg_flag, &interactive_flag, "don't assume stdin is a socket" },
     { NULL, 'p', arg_string, &port_string, "what port to listen to" },
     { NULL, 'g', arg_string, &guest_umask_string, "umask for guest logins" },
-    { NULL, 'l', arg_collect, &log_collect_info, "log more stuff", "" },
+    { NULL, 'l', arg_counter, &logflag, "log more stuff", "" },
     { NULL, 't', arg_integer, &ftpd_timeout, "initial timeout" },
     { NULL, 'T', arg_integer, &maxtimeout, "max timeout" },
     { NULL, 'u', arg_string, &umask_string, "umask for user logins" },
