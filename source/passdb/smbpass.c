@@ -139,16 +139,6 @@ struct smb_passwd *getsmbfilepwent(void *vp)
 		/* Skip the ':' */
 		p++;
 
-		if (*p == '*' || *p == 'X')
-		{
-			/* Password deliberately invalid - end here. */
-			DEBUG(10, ("getsmbfilepwent: entry invalidated for unix user %s\n", unix_name));
-			pw_buf.smb_nt_passwd = NULL;
-			pw_buf.smb_passwd = NULL;
-			pw_buf.acct_ctrl |= ACB_DISABLED;
-			return &pw_buf;
-		}
-
 		if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
 		{
 			DEBUG(0, ("getsmbfilepwent: malformed password entry (passwd too short)\n"));
@@ -239,6 +229,18 @@ struct smb_passwd *getsmbfilepwent(void *vp)
 				pw_buf.acct_ctrl |= ACB_WSTRUST;
 			}
 		}
+
+		if (*p == '*' || *p == 'X')
+		{
+			/* Password deliberately invalid - end here. */
+			DEBUG(10, ("getsmbfilepwent: entry invalidated for unix user %s\n", unix_name));
+			pw_buf.smb_nt_passwd = NULL;
+			pw_buf.smb_passwd = NULL;
+			pw_buf.acct_ctrl |= ACB_DISABLED;
+		}
+
+		DEBUG(6,("unixuser:%s uid:%d acb:%x\n",
+		          pw_buf.unix_name, pw_buf.unix_uid, pw_buf.acct_ctrl));
 
 		return &pw_buf;
 	}
@@ -410,8 +412,14 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("mod_smbfilepwd_entry: password entries\n"));
-	dump_data(100, pwd->smb_passwd, 16);
-	dump_data(100, pwd->smb_nt_passwd, 16);
+	if (pwd->smb_passwd != NULL)
+	{
+		dump_data(100, pwd->smb_passwd, 16);
+	}
+	if (pwd->smb_nt_passwd != NULL)
+	{
+		dump_data(100, pwd->smb_nt_passwd, 16);
+	}
 #endif
   if (!*pfile) {
     DEBUG(0, ("No SMB password file set\n"));

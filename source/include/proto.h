@@ -1529,11 +1529,12 @@ struct smb_passdb_ops *file_initialise_password_db(void);
 
 /*The following definitions come from  passdb/smbpasschange.c  */
 
-BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
-			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
-			   char *new_passwd, 
-			   char *err_str, size_t err_str_len,
-			   char *msg_str, size_t msg_str_len);
+BOOL local_password_change(char *user_name,
+				BOOL add_user,
+				uint16 acb_info, uint16 acb_mask,
+				char *new_passwd, 
+				char *err_str, size_t err_str_len,
+				char *msg_str, size_t msg_str_len);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 

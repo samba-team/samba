@@ -1,6 +1,7 @@
 /*
- * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module. Copyright
- * (C) Jeremy Allison 1995-1998
+ * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module.
+ * Copyright (C) Jeremy Allison               1995-1999
+ * Copyright (C) Luke Kenneth Casson Leighton 1996-1999
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -67,7 +68,8 @@ static void usage(void)
 		printf("  -d                   disable user\n");
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
-		printf("  -m                   machine trust account\n");
+		printf("  -m                   workstation trust account\n");
+		printf("  -i                   inter-domain trust account\n");
 	}
 	exit(1);
 }
@@ -221,35 +223,47 @@ static char *prompt_for_new_password(BOOL stdin_get)
 change a password either locally or remotely
 *************************************************************/
 static BOOL password_change(const char *remote_machine, char *user_name, 
-			    char *old_passwd, char *new_passwd, 
-			    BOOL add_user, BOOL enable_user, 
-			    BOOL disable_user, BOOL set_no_password,
-			    BOOL trust_account)
+				char *old_passwd, char *new_passwd, 
+				BOOL add_user, 
+				uint16 acb_info, uint16 acb_mask)
 {
 	BOOL ret;
 	pstring err_str;
 	pstring msg_str;
 
-	if (remote_machine != NULL) {
-		if (add_user || enable_user || disable_user || set_no_password || trust_account) {
+	if (remote_machine != NULL)
+	{
+		if (add_user ||
+		    IS_BITS_SET_SOME(acb_info, ACB_PWNOTREQ | ACB_WSTRUST | ACB_DOMTRUST | ACB_SVRTRUST) ||
+		    (IS_BITS_SET_SOME(acb_mask, ACB_DISABLED) && 
+		     IS_BITS_CLR_ALL(acb_info, ACB_DISABLED)))
+		{
 			/* these things can't be done remotely yet */
 			return False;
 		}
 		ret = remote_password_change(remote_machine, user_name, 
-									 old_passwd, new_passwd, err_str, sizeof(err_str));
-		if(*err_str)
+		                            old_passwd, new_passwd,
+		                            err_str, sizeof(err_str));
+		if (*err_str != 0)
+		{
 			fprintf(stderr, err_str);
+		}
 		return ret;
 	}
 	
-	ret = local_password_change(user_name, trust_account, add_user, enable_user, 
-				     disable_user, set_no_password, new_passwd, 
-				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
+	ret = local_password_change(user_name, add_user, acb_info, acb_mask,
+				     new_passwd, 
+				     err_str, sizeof(err_str),
+	                             msg_str, sizeof(msg_str));
 
-	if(*msg_str)
+	if (*msg_str != 0)
+	{
 		printf(msg_str);
-	if(*err_str)
+	}
+	if (*err_str != 0)
+	{
 		fprintf(stderr, err_str);
+	}
 
 	return ret;
 }
@@ -262,8 +276,11 @@ static int process_root(int argc, char *argv[])
 {
 	struct passwd  *pwd;
 	int ch;
+	uint16 acb_info = 0;
+	uint16 acb_mask = 0;
 	BOOL joining_domain = False;
-	BOOL trust_account = False;
+	BOOL wks_trust_account = False;
+	BOOL dom_trust_account = False;
 	BOOL add_user = False;
 	BOOL disable_user = False;
 	BOOL enable_user = False;
@@ -275,65 +292,97 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
-		switch(ch) {
-		case 'a':
-			add_user = True;
-			break;
-		case 'd':
-			disable_user = True;
-			new_passwd = "XXXXXX";
-			break;
-		case 'e':
-			enable_user = True;
-			break;
-		case 'D':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		case 'n':
-			set_no_password = True;
-			new_passwd = "NO PASSWORD";
-		case 'r':
-			remote_machine = optarg;
-			break;
-		case 's':
-			set_line_buffering(stdin);
-			set_line_buffering(stdout);
-			set_line_buffering(stderr);
-			stdin_passwd_get = True;
-			break;
-		case 'R':
-			lp_set_name_resolve_order(optarg);
-			break;
-		case 'm':
-			trust_account = True;
-			break;
-		case 'j':
-			new_domain = optarg;
-			strupper(new_domain);
-			joining_domain = True;
-			break;
-		case 'U':
-			user_name = optarg;
-			break;
-		default:
-			usage();
+	while ((ch = getopt(argc, argv, "adehimnj:r:sR:D:U:")) != EOF)
+	{
+		switch(ch)
+		{
+			case 'a':
+			{
+				add_user = True;
+				break;
+			}
+			case 'd':
+			{
+				disable_user = True;
+				new_passwd = "XXXXXX";
+				break;
+			}
+			case 'e':
+			{
+				enable_user = True;
+				break;
+			}
+			case 'D':
+			{
+				DEBUGLEVEL = atoi(optarg);
+				break;
+			}
+			case 'n':
+			{
+				set_no_password = True;
+				new_passwd = "NO PASSWORD";
+			}
+			case 'r':
+			{
+				remote_machine = optarg;
+				break;
+			}
+			case 's':
+			{
+				set_line_buffering(stdin);
+				set_line_buffering(stdout);
+				set_line_buffering(stderr);
+				stdin_passwd_get = True;
+				break;
+			}
+			case 'R':
+			{
+				lp_set_name_resolve_order(optarg);
+				break;
+			}
+			case 'i':
+			{
+				dom_trust_account = True;
+				break;
+			}
+			case 'm':
+			{
+				wks_trust_account = True;
+				break;
+			}
+			case 'j':
+			{
+				new_domain = optarg;
+				strupper(new_domain);
+				joining_domain = True;
+				break;
+			}
+			case 'U':
+			{
+				user_name = optarg;
+				break;
+			}
+			default:
+			{
+				usage();
+			}
 		}
 	}
 	
 	argc -= optind;
 	argv += optind;
 
-
 	/*
 	 * Ensure add_user and either remote machine or join domain are
 	 * not both set.
 	 */	
-	if(add_user && ((remote_machine != NULL) || joining_domain)) {
+	if (add_user && ((remote_machine != NULL) || joining_domain))
+	{
 		usage();
 	}
 	
-	if(joining_domain) {
+	if (joining_domain)
+	{
 		if (argc != 0) usage();
 		return join_domain(new_domain, remote_machine);
 	}
@@ -365,7 +414,8 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (trust_account) {
+	if (wks_trust_account || dom_trust_account)
+	{
 		/* add the $ automatically */
 		static fstring buf;
 
@@ -402,7 +452,8 @@ static int process_root(int argc, char *argv[])
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
 	}
 	
-	if (!new_passwd) {
+	if (!new_passwd)
+	{
 
 		/*
 		 * If we are trying to enable a user, first we need to find out
@@ -413,31 +464,76 @@ static int process_root(int argc, char *argv[])
 		 * smbpasswd file) then we need to prompt for a new password.
 		 */
 
-		if(enable_user) {
+		if (enable_user)
+		{
 			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
-			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
+			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL))
+			{
 				new_passwd = "XXXX"; /* Don't care. */
 			}
 		}
 
 		if(!new_passwd)
+		{
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
+		}
 	}
 	
+	if (enable_user)
+	{
+		acb_mask |= ACB_DISABLED;
+		acb_info &= ~ACB_DISABLED;
+	}
+
+	if (disable_user)
+	{
+		acb_mask |= ACB_DISABLED;
+		acb_info |= ACB_DISABLED;
+	}
+
+	if (set_no_password)
+	{
+		acb_mask |= ACB_PWNOTREQ;
+		acb_info |= ACB_PWNOTREQ;
+	}
+
+	if (wks_trust_account)
+	{
+		acb_mask |= ACB_WSTRUST;
+		acb_info |= ACB_WSTRUST;
+	}
+	else if (dom_trust_account)
+	{
+		acb_mask |= ACB_DOMTRUST;
+		acb_info |= ACB_DOMTRUST;
+	}
+	else
+	{
+		acb_mask |= ACB_NORMAL;
+		acb_info |= ACB_NORMAL;
+	}
+
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
-			     add_user, enable_user, disable_user, set_no_password,
-			     trust_account)) {
+			     add_user, acb_info, acb_mask))
+	{
 		fprintf(stderr,"Failed to change password entry for %s\n", user_name);
 		return 1;
 	} 
 
-	if(disable_user) {
+	if (disable_user)
+	{
 		printf("User %s disabled.\n", user_name);
-	} else if(enable_user) {
+	}
+	if (enable_user)
+	{
 		printf("User %s enabled.\n", user_name);
-	} else if (set_no_password) {
+	}
+	if (set_no_password)
+	{
 		printf("User %s - set to no password.\n", user_name);
-	} else {
+	}
+	if (!disable_user && !enable_user && !set_no_password)
+	{
 		printf("Password changed for user %s\n", user_name);
 	}
 	return 0;
@@ -457,8 +553,10 @@ static int process_nonroot(int argc, char *argv[])
 	char *user_name = NULL;
 	char *new_passwd = NULL;
 
-	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF) {
-		switch(ch) {
+	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF)
+	{
+		switch(ch)
+		{
 		case 'D':
 			DEBUGLEVEL = atoi(optarg);
 			break;
@@ -523,8 +621,10 @@ static int process_nonroot(int argc, char *argv[])
 		exit(0);
 	}
 
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
-			     False, False, False, False, False)) {
+	if (!password_change(remote_machine, user_name,
+	                     old_passwd, new_passwd,
+			     False, 0x0, 0x0))
+	{
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		return 1;
 	}

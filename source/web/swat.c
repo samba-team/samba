@@ -584,6 +584,8 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 			    BOOL add_user, BOOL enable_user, BOOL disable_user)
 {
 	BOOL ret = False;
+	uint16 acb_info = 0;
+	uint16 acb_mask = 0;
 	pstring err_str;
 	pstring msg_str;
 
@@ -606,9 +608,22 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return False;
 	}
 	
-	ret = local_password_change(user_name, False, add_user, enable_user, 
-				     disable_user, False, new_passwd, err_str, sizeof(err_str),
-					 msg_str, sizeof(msg_str));
+	if (enable_user)
+	{
+		acb_mask |= ACB_DISABLED;
+		acb_info &= ~ACB_DISABLED;
+	}
+
+	if (disable_user)
+	{
+		acb_mask |= ACB_DISABLED;
+		acb_info |= ACB_DISABLED;
+	}
+
+	ret = local_password_change(user_name, add_user,
+	                            acb_info, acb_mask,
+				    new_passwd, err_str, sizeof(err_str),
+	                            msg_str, sizeof(msg_str));
 
 	if(*msg_str)
 		printf("%s\n<p>", msg_str);
