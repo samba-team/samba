@@ -221,12 +221,13 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 
 	if (remote_machine != NULL) {
 		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
-							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
+				   LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) 
+		{
 			/* these things can't be done remotely yet */
 			return False;
 		}
-		ret = remote_password_change(remote_machine, user_name, 
-									 old_passwd, new_passwd, err_str, sizeof(err_str));
+		ret = remote_password_change(remote_machine, user_name, old_passwd, 
+					     new_passwd, err_str, sizeof(err_str));
 		if(*err_str)
 			fprintf(stderr, err_str);
 		return ret;
@@ -402,9 +403,11 @@ static int process_root(int argc, char *argv[])
 		 * smbpasswd file) then we need to prompt for a new password.
 		 */
 
-		if(local_flags & LOCAL_ENABLE_USER) {
-			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
-			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
+		if(local_flags & LOCAL_ENABLE_USER) 
+		{
+			SAM_ACCOUNT *sampass = pdb_getsampwnam(user_name);
+			if((sampass != NULL) && (pdb_get_lanman_passwd(sampass) != NULL)) 
+			{
 				new_passwd = xstrdup("XXXX"); /* Don't care. */
 			}
 		}
@@ -418,18 +421,20 @@ static int process_root(int argc, char *argv[])
 		}
 	}
 	
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) {
+	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) 
+	{
 		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
 		result = 1;
 		goto done;
 	} 
 
-	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
-		struct smb_passwd *smb_pass = getsmbpwnam(user_name);
+	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) 
+	{
+		SAM_ACCOUNT *sampass = pdb_getsampwnam(user_name);
 		printf("Password changed for user %s.", user_name );
-		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_DISABLED ))
+		if( (sampass != NULL) && (pdb_get_acct_ctrl(sampass)&ACB_DISABLED) )
 			printf(" User has disabled flag set.");
-		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ))
+		if((sampass != NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
 			printf(" User has no password flag set.");
 		printf("\n");
 	}
@@ -554,7 +559,7 @@ int main(int argc, char **argv)
 	
 	charset_initialise();
 	
-	if(!initialize_password_db()) {
+	if(!initialize_password_db(True)) {
 		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}

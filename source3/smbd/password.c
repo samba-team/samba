@@ -289,15 +289,15 @@ update the encrypted smbpasswd file from the plaintext username and password
 *****************************************************************************/
 static BOOL update_smbpassword_file(char *user, char *password)
 {
-	struct smb_passwd *smbpw;
-	BOOL ret;
+	SAM_ACCOUNT 	*sampass = NULL;
+	BOOL 		ret;
 	
 	become_root();
-	smbpw = getsmbpwnam(user);
+	sampass = pdb_getsampwnam(user);
 	unbecome_root();
 
-	if(smbpw == NULL) {
-		DEBUG(0,("getsmbpwnam returned NULL\n"));
+	if(sampass == NULL) {
+		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
 		return False;
 	}
 
@@ -305,21 +305,17 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	 * Remove the account disabled flag - we are updating the
 	 * users password from a login.
 	 */
-	smbpw->acct_ctrl &= ~ACB_DISABLED;
+	pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED);
 
 	/* Here, the flag is one, because we want to ignore the
            XXXXXXX'd out password */
-	ret = change_oem_password( smbpw, password, True);
+	ret = change_oem_password( sampass, password, True);
 	if (ret == False) {
 		DEBUG(3,("change_oem_password returned False\n"));
 	}
 
 	return ret;
 }
-
-
-
-
 
 /****************************************************************************
 core of smb password checking routine.
@@ -367,19 +363,22 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
+BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24])
 {
 	uchar challenge[8];
+	char* user_name;
+	BYTE *nt_pw, *lm_pw;
 
-	if (!lm_pass || !smb_pass) return(False);
+	if (!lm_pass || !sampass) 
+		return(False);
 
-	DEBUG(4,("Checking SMB password for user %s\n", 
-		 smb_pass->smb_name));
+	user_name = pdb_get_username(sampass);
+	
+	DEBUG(4,("Checking SMB password for user %s\n",user_name));
 
-	if(smb_pass->acct_ctrl & ACB_DISABLED) {
-		DEBUG(1,("account for user %s was disabled.\n", 
-			 smb_pass->smb_name));
+	if(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
+		DEBUG(1,("account for user %s was disabled.\n", user_name));
 		return(False);
 	}
 
@@ -398,35 +397,36 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 		memcpy(challenge, chal, 8);
 	}
 
-	if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL)) {
+	nt_pw = pdb_get_nt_passwd(sampass);
+	
+	if ((Protocol >= PROTOCOL_NT1) && (nt_pw != NULL)) {
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
 		DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-		if (smb_password_check((char *)nt_pass, 
-				       (uchar *)smb_pass->smb_nt_passwd, 
-				       challenge)) {
+		if (smb_password_check((char *)nt_pass, (uchar *)nt_pw, challenge)) 
+		{
 			DEBUG(4,("NT MD4 password check succeeded\n"));
 			return(True);
 		}
 		DEBUG(4,("NT MD4 password check failed\n"));
 	}
 
-	/* Try against the lanman password. smb_pass->smb_passwd == NULL means
-	   no password, allow access. */
+	/* Try against the lanman password. pdb_get_lanman_passwd(sampass) == NULL 
+	   means no password, allow access. */
 
 	DEBUG(4,("Checking LM MD4 password\n"));
 
-	if((smb_pass->smb_passwd == NULL) && 
-	   (smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
-		DEBUG(4,("no password required for user %s\n",
-			 smb_pass->smb_name));
+	lm_pw = pdb_get_lanman_passwd(sampass);
+	
+	if((lm_pw == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ)) 
+	{
+		DEBUG(4,("no password required for user %s\n",user_name));
 		return True;
 	}
 
-	if((smb_pass->smb_passwd != NULL) && 
-	   smb_password_check((char *)lm_pass, 
-			      (uchar *)smb_pass->smb_passwd, challenge)) {
+	if((lm_pw != NULL) && smb_password_check((char *)lm_pass,(uchar *)lm_pw, challenge)) 
+	{
 		DEBUG(4,("LM MD4 password check succeeded\n"));
 		return(True);
 	}
@@ -443,18 +443,19 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-BOOL pass_check_smb(char *user, char *domain,
-		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
-		struct passwd *pwd)
+BOOL pass_check_smb(char *user, char *domain, uchar *chal, 
+                    uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd)
 {
 	struct passwd *pass;
-	struct smb_passwd *smb_pass;
+	SAM_ACCOUNT *sampass;
 
 	if (!lm_pwd || !nt_pwd)
 	{
 		return(False);
 	}
 
+	/* FIXME! this code looks to be unnecessary now that the passdb
+	   validates that the username exists and has a valid uid */
 	if (pwd != NULL && user == NULL)
 	{
 		pass = (struct passwd *) pwd;
@@ -462,6 +463,8 @@ BOOL pass_check_smb(char *user, char *domain,
 	}
 	else
 	{
+		/* I don't get this call here.  I think it should be moved.
+		   Need to check on it.     --jerry */
 		pass = smb_getpwnam(user,True);
 	}
 
@@ -471,38 +474,45 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(False);
 	}
 
-	smb_pass = getsmbpwnam(user);
-
-	if (smb_pass == NULL)
+	/* get the account information */
+	sampass = pdb_getsampwnam(user);
+	if (sampass == NULL)
 	{
-		DEBUG(1,("Couldn't find user '%s' in smb_passwd file.\n", user));
+		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user));
 		return(False);
 	}
 
 	/* Quit if the account was disabled. */
-	if(smb_pass->acct_ctrl & ACB_DISABLED) {
+	if(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
 		DEBUG(1,("Account for user '%s' was disabled.\n", user));
 		return(False);
 	}
 
-	/* Ensure the uid's match */
+	/* Ensure the uid's match 
+	   FIXME!  This also seems unnecessary --jerry */
+#if 0	/* GWC */
 	if (smb_pass->smb_userid != pass->pw_uid)
 	{
 		DEBUG(0,("Error : UNIX and SMB uids in password files do not match for user '%s'!\n", user));
 		return(False);
 	}
+#endif
 
-	if (smb_pass->acct_ctrl & ACB_PWNOTREQ) {
-		if (lp_null_passwords()) {
-			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
+	if (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) 
+	{
+		if (lp_null_passwords()) 
+		{
+			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", user));
 			return(True);
-		} else {
-			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", smb_pass->smb_name));
+		} 
+		else 
+		{
+			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", user));
 			return(False);
 		}		
 	}
 
-	if (smb_password_ok(smb_pass, chal, lm_pwd, nt_pwd))
+	if (smb_password_ok(sampass, chal, lm_pwd, nt_pwd))
 	{
 		return(True);
 	}

@@ -216,6 +216,12 @@ BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
 	return True;
 }
 
+/* -------------------------------------------------------------
+  	Functions to implement the RpcHandle list
+ -------------------------------------------------------------- */
+ 
+ 
+ 
 /***************************************************************
  Return True if the to RPC_HND_NODEs are eqivalent in value.
  Return False if they are not.  Since a POLICY_HND is really 
@@ -318,4 +324,5 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd)
 	else
 		return located->cli;
 }
+
 

@@ -32,11 +32,15 @@ extern pstring global_myname;
 
 BOOL global_machine_password_needs_changing = False;
 
+
+static int mach_passwd_lock_depth;
+static FILE *mach_passwd_fp;
+
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
+static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 {
   if (fd < 0)
     return False;
@@ -58,7 +62,7 @@ BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
  Unlock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-BOOL pw_file_unlock(int fd, int *plock_depth)
+static BOOL pw_file_unlock(int fd, int *plock_depth)
 {
   BOOL ret=True;
 
@@ -73,9 +77,6 @@ BOOL pw_file_unlock(int fd, int *plock_depth)
                  strerror(errno)));
   return ret;
 }
-
-static int mach_passwd_lock_depth;
-static FILE *mach_passwd_fp;
 
 /************************************************************************
  Routine to get the name for an old trust account file.

@@ -243,8 +243,8 @@ BOOL unbecome_authenticated_pipe_user(pipes_struct *p)
 	return pop_sec_ctx();
 }
 
-/* Temporarily become a root user.  Must match with unbecome_root(). */
 
+/* Temporarily become a root user.  Must match with unbecome_root(). */
 void become_root(void)
 {
 	push_sec_ctx();

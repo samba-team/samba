@@ -1733,7 +1733,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   {
     fstring saved_pass2;
-    struct smb_passwd *smbpw = NULL;
+    SAM_ACCOUNT *sampass;
 
     /*
      * Save the new password as change_oem_password overwrites it
@@ -1742,8 +1742,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
     fstrcpy(saved_pass2, pass2);
 
-    if (check_plaintext_password(user,pass1,strlen(pass1),&smbpw) &&
-        change_oem_password(smbpw,pass2,False))
+    if (check_plaintext_password(user,pass1,strlen(pass1),&sampass) &&
+        change_oem_password(sampass,pass2,False))
     {
       SSVAL(*rparam,0,NERR_Success);
 
@@ -1784,10 +1784,10 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   if(SVAL(*rparam,0) != NERR_Success)
   {
-    struct smb_passwd *sampw = NULL;
+    SAM_ACCOUNT *hnd = NULL;
 
-    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampw) && 
-       change_lanman_password(sampw,(unsigned char *)pass1,(unsigned char *)pass2))
+    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd) && 
+       change_lanman_password(hnd,(unsigned char *)pass1,(unsigned char *)pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }
