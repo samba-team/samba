@@ -269,8 +269,8 @@ gss_auth(void *app_data, char *host)
 			       GSS_C_NT_HOSTBASED_SERVICE,
 			       &target_name);
     if (GSS_ERROR(maj_stat)) {
-	int new_stat;
-	int msg_ctx = 0;
+	OM_uint32 new_stat;
+	OM_uint32 msg_ctx = 0;
 	gss_buffer_desc status_string;
 	    
 	gss_display_status(&new_stat,
@@ -318,8 +318,8 @@ gss_auth(void *app_data, char *host)
 					NULL,
 					NULL);
 	if (GSS_ERROR(maj_stat)) {
-	    int new_stat;
-	    int msg_ctx = 0;
+	    OM_uint32 new_stat;
+	    OM_uint32 msg_ctx = 0;
 	    gss_buffer_desc status_string;
 	    
 	    gss_display_status(&new_stat,
