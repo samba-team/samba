@@ -74,26 +74,9 @@ char *p = parmname;
 	return parmname;
 }
 
-/* start the page with standard stuff */
-static void print_header(void)
-{
-	if (!cgi_waspost()) {
-		printf("Expires: 0\r\n");
-	}
-	printf("Content-type: text/html\r\n\r\n");
-	printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
-	printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"%simages/background.jpg\">\n\n", cgi_rooturl());
-}
-
-
-/* finish off the page */
-static void print_footer(void)
-{
-	printf("\n</BODY>\n</HTML>\n");
-}
 
 /* include a lump of html in a page */
-static void include_html(char *fname)
+static int include_html(char *fname)
 {
 	FILE *f = fopen(fname,"r");
 	char buf[1024];
@@ -101,7 +84,7 @@ static void include_html(char *fname)
 
 	if (!f) {
 		printf("ERROR: Can't open %s\n", fname);
-		return;
+		return 0;
 	}
 
 	while (!feof(f)) {
@@ -111,7 +94,32 @@ static void include_html(char *fname)
 	}
 
 	fclose(f);
+	return 1;
 }
+
+/* start the page with standard stuff */
+static void print_header(void)
+{
+	if (!cgi_waspost()) {
+		printf("Expires: 0\r\n");
+	}
+	printf("Content-type: text/html\r\n\r\n");
+
+	if (!include_html("include/header.html")) {
+		printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
+		printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"%simages/background.jpg\">\n\n", cgi_rooturl());
+	}
+}
+
+
+/* finish off the page */
+static void print_footer(void)
+{
+	if (!include_html("include/footer.html")) {
+		printf("\n</BODY>\n</HTML>\n");
+	}
+}
+
 
 
 /* display one editable parameter in a form */
@@ -358,8 +366,6 @@ static void image_link(char *name,char *hlink, char *src, int width, int height)
    with a title */
 static void show_main_buttons(void)
 {
-	printf("<H2 align=center>Samba Web Administration Tool</H2>\n");
-
 	image_link("Home", "", "images/home.gif", 50, 50);
 	image_link("Globals", "globals", "images/globals.gif", 50, 50);
 	image_link("Shares", "shares", "images/shares.gif", 50, 50);
