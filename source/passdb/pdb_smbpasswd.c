@@ -1293,7 +1293,7 @@ void pdb_endsampwent (void)
 BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 {
 	struct smb_passwd *pw_buf=NULL;
-
+	BOOL done = False;
 	DEBUG(5,("pdb_getsampwent\n"));
 
 	if (user==NULL) {
@@ -1304,14 +1304,19 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	/* do we have an entry? */
-	pw_buf = getsmbfilepwent(global_vp);
-	if (pw_buf == NULL) 
-		return False;
+	while (!done)
+	{
+		/* do we have an entry? */
+		pw_buf = getsmbfilepwent(global_vp);
+		if (pw_buf == NULL) 
+			return False;
 
-	/* build the SAM_ACCOUNT entry from the smb_passwd struct. */
-	if (!build_sam_account(user, pw_buf))
-		return False;
+		/* build the SAM_ACCOUNT entry from the smb_passwd struct. 
+		   We loop in case the user in the pdb does not exist in 
+		   the local system password file */
+		if (build_sam_account(user, pw_buf))
+			done = True;
+	}
 
 	DEBUG(5,("pdb_getsampwent:done\n"));
 
