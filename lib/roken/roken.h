@@ -195,7 +195,7 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 char *strerror(int eno);
 #endif
 
-#ifndef HAVE_HSTRERROR
+#if !defined(HAVE_HSTRERROR) || defined(NEED_HSTRERROR_PROTO)
 char *hstrerror(int herr);
 #endif
 
