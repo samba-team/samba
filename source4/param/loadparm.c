@@ -198,8 +198,8 @@ typedef struct
 	BOOL bLanmanAuth;
 	BOOL bNTLMAuth;
 	BOOL bUseSpnego;
-	BOOL server_signing;
-	BOOL client_signing;
+	int  server_signing;
+	int  client_signing;
 	BOOL bClientLanManAuth;
 	BOOL bClientNTLMv2Auth;
 	BOOL bHostMSDfs;
@@ -456,12 +456,12 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{SMB_SIGNING_SUPPORTED, "1"},
 	{SMB_SIGNING_SUPPORTED, "On"},
 	{SMB_SIGNING_SUPPORTED, "enabled"},
-	{SMB_SIGNING_SUPPORTED, "auto"},
 	{SMB_SIGNING_REQUIRED, "required"},
 	{SMB_SIGNING_REQUIRED, "mandatory"},
 	{SMB_SIGNING_REQUIRED, "force"},
 	{SMB_SIGNING_REQUIRED, "forced"},
 	{SMB_SIGNING_REQUIRED, "enforced"},
+	{SMB_SIGNING_AUTO, "auto"},
 	{-1, NULL}
 };
 
@@ -939,7 +939,7 @@ static void init_globals(void)
 	do_parameter("load printers", "True");
 
 	do_parameter("max mux", "50");
-	do_parameter("max xmit", "65535");
+	do_parameter("max xmit", "12288");
 	do_parameter("lpqcachetime", "10");
 	do_parameter("DisableSpoolss", "False");
 	do_parameter("password level", "0");
@@ -1006,7 +1006,7 @@ static void init_globals(void)
 	do_parameter("name cache timeout", "660"); /* In seconds */
 
 	do_parameter("client signing", "Yes");
-	do_parameter("server signing", "Yes");
+	do_parameter("server signing", "auto");
 
 	do_parameter("use spnego", "True");
 
