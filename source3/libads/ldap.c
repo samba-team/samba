@@ -167,20 +167,32 @@ static BOOL ads_try_netbios(ADS_STRUCT *ads)
 
 	DEBUG(6,("ads_try_netbios: looking for workgroup '%s'\n", workgroup));
 
-	if (!get_dc_list(True, workgroup, &ip_list, &count) &&
-	    !get_dc_list(False, workgroup, &ip_list, &count)) {
-		return False;
-	}
-
-	for (i=0;i<count;i++) {
-		DEBUG(6,("ads_try_netbios: trying server '%s'\n", inet_ntoa(ip_list[i])));
-		if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
-			free(ip_list);
-			return True;
+	/* try the PDC first */
+	if (get_dc_list(True, workgroup, &ip_list, &count)) { 
+		for (i=0;i<count;i++) {
+			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
+				 inet_ntoa(ip_list[i])));
+			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
+				free(ip_list);
+				return True;
+			}
 		}
+		free(ip_list);
 	}
 
-	free(ip_list);
+	/* now any DC, including backups */
+	if (get_dc_list(False, workgroup, &ip_list, &count)) { 
+		for (i=0;i<count;i++) {
+			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
+				 inet_ntoa(ip_list[i])));
+			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
+				free(ip_list);
+				return True;
+			}
+		}
+		free(ip_list);
+	}
+
 	return False;
 }
 
