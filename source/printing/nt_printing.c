@@ -176,42 +176,58 @@ static nt_forms_struct default_forms[] = {
 	{"PRC Envelope #10 Rotated",0x1,0x6fd10,0x4f1a0,0x0,0x0,0x6fd10,0x4f1a0}
 };
 
-static void upgrade_to_version_2(void)
+static BOOL upgrade_to_version_2(void)
 {
 	TDB_DATA kbuf, newkey, dbuf;
+ 
+	DEBUG(0,("upgrade_to_version_2: upgrading print tdb's to version 2\n"));
+ 
+	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
+			newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-	DEBUG(0,("upgrade_to_version_2:upgrading to version 2\n"));
-
-	for (kbuf = tdb_firstkey(tdb_drivers);
-	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_2:moving form\n"));
-			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) break;
-			tdb_delete(tdb_drivers, kbuf);
+			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) {
+				DEBUG(0,("upgrade_to_version_2: failed to move form. Error (%s).\n", tdb_errorstr(tdb_forms)));
+				return False;
+			}
+			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				DEBUG(0,("upgrade_to_version_2: failed to delete form. Error (%s)\n", tdb_errorstr(tdb_drivers)));
+				return False;
+			}
 		}
-
+ 
 		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_2:moving printer\n"));
-			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) break;
-			tdb_delete(tdb_drivers, kbuf);
+			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
+				DEBUG(0,("upgrade_to_version_2: failed to move printer. Error (%s)\n", tdb_errorstr(tdb_printers)));
+				return False;
+			}
+			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				DEBUG(0,("upgrade_to_version_2: failed to delete printer. Error (%s)\n", tdb_errorstr(tdb_drivers)));
+				return False;
+			}
 		}
-
+ 
 		if (strncmp(kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_2:moving secdesc\n"));
-			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) break;
-			tdb_delete(tdb_drivers, kbuf);
+			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
+				DEBUG(0,("upgrade_to_version_2: failed to move secdesc. Error (%s)\n", tdb_errorstr(tdb_printers)));
+				return False;
+			}
+			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				DEBUG(0,("upgrade_to_version_2: failed to delete secdesc. Error (%s)\n", tdb_errorstr(tdb_drivers)));
+				return False;
+			}
 		}
-
+ 
 		safe_free(dbuf.dptr);
 	}
 
-
-
+	return True;
 }
-
 
 /****************************************************************************
 open the NT printing tdb
@@ -250,9 +266,10 @@ BOOL nt_printing_init(void)
 	tdb_lock_bystring(tdb_drivers, vstring);
 	if (tdb_fetch_int(tdb_drivers, vstring) != NTDRIVERS_DATABASE_VERSION) {
 	
-		if (tdb_fetch_int(tdb_drivers, vstring) == NTDRIVERS_DATABASE_VERSION_1)
-			upgrade_to_version_2();
-		else
+		if (tdb_fetch_int(tdb_drivers, vstring) == NTDRIVERS_DATABASE_VERSION_1) {
+			if (!upgrade_to_version_2())
+				return False;
+		} else
 			tdb_traverse(tdb_drivers, (tdb_traverse_func)tdb_delete, NULL);
 
 		tdb_store_int(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
@@ -2912,7 +2929,8 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 	int ret;
 
 	if (!tdb_printers)
-		nt_printing_init();	
+		if (!nt_printing_init())
+			return False;
 
 	DEBUG(5,("printer_driver_in_use: Beginning search through printers.tdb...\n"));
 	
