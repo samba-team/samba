@@ -1,3 +1,13 @@
+Changes in release 0.2g:
+
+ * lots of bug fixes:
+   * push works
+   * repair appl/test programs
+   * sockaddr_storage works on solaris (alignment issues)
+   * works better with non-roken getaddrinfo
+   * rsh works
+   * some non standard C constructs removed
+
 Changes in release 0.2f:
 
  * support SRV records for kpasswd
