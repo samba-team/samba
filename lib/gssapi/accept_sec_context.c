@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -92,6 +92,11 @@ gss_accept_sec_context
     output_token->length = 0;
     output_token->value   = NULL;
 
+    if (src_name != NULL)
+	*src_name = NULL;
+    if (mech_type)
+	*mech_type = GSS_KRB5_MECHANISM;
+
     if (*context_handle == GSS_C_NO_CONTEXT) {
 	*context_handle = malloc(sizeof(**context_handle));
 	if (*context_handle == GSS_C_NO_CONTEXT) {
@@ -106,9 +111,7 @@ gss_accept_sec_context
     (*context_handle)->flags = 0;
     (*context_handle)->more_flags = 0;
     (*context_handle)->ticket = NULL;
-
-    if (src_name != NULL)
-	*src_name = NULL;
+    (*context_handle)->lifetime = GSS_C_INDEFINITE;
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
@@ -361,6 +364,7 @@ gss_accept_sec_context
 
     if (ret_flags)
 	*ret_flags = flags;
+    (*context_handle)->lifetime = ticket->ticket.endtime;
     (*context_handle)->flags = flags;
     (*context_handle)->more_flags |= OPEN;
 
@@ -368,7 +372,7 @@ gss_accept_sec_context
 	*mech_type = GSS_KRB5_MECHANISM;
 
     if (time_rec)
-	*time_rec = GSS_C_INDEFINITE;
+	*time_rec = (*context_handle)->lifetime;
 
     if(flags & GSS_C_MUTUAL_FLAG) {
 	krb5_data outbuf;
@@ -391,6 +395,7 @@ gss_accept_sec_context
 	    goto failure;
     } else {
 	output_token->length = 0;
+	output_token->value = NULL;
     }
 
     (*context_handle)->ticket = ticket;
@@ -400,6 +405,7 @@ gss_accept_sec_context
     krb5_free_ticket (context, ticket);
 #endif
 
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 
   failure:
