@@ -1916,7 +1916,7 @@ static struct encryption_type etypes[] = {
 	&checksum_none,
 	NULL,
 	F_PSEUDO,
-	DES3_CBC_encrypt_null_ivec,
+	DES3_CBC_encrypt,
     },
 };
 
