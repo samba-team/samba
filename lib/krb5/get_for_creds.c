@@ -263,7 +263,11 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	return ret;
     }    
 
-    krb5_crypto_init(context, auth_context->local_subkey, 0, &crypto);
+    ret = krb5_crypto_init(context, auth_context->local_subkey, 0, &crypto);
+    if (ret) {
+	free_KRB_CRED(&cred);
+	return ret;
+    }
     ret = krb5_encrypt_EncryptedData (context,
 				      crypto,
 				      KRB5_KU_KRB_CRED,
