@@ -52,12 +52,16 @@ krb5_mk_error(krb5_context context,
 {
     KRB_ERROR msg;
     unsigned char buf[1024];
+    struct timeval tv;
+
+    gettimeofday (&tv, NULL);
     
     memset(&msg, 0, sizeof(msg));
-    msg.pvno = 5;
+    msg.pvno     = 5;
     msg.msg_type = krb_error;
-    msg.stime = time(0);
-    if(ctime){
+    msg.stime    = tv.tv_sec;
+    msg.susec    = tv.tv_usec;
+    if(ctime) {
 	msg.ctime = &ctime;
     }
     msg.error_code = error_code;
@@ -76,4 +80,3 @@ krb5_mk_error(krb5_context context,
     memcpy(reply->data, buf + sizeof(buf) - reply->length, reply->length);
     return 0;
 }
-
