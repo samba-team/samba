@@ -1,3 +1,4 @@
+
 /*
  * MySQL password backend for samba
  * Copyright (C) Jelmer Vernooij 2002
@@ -63,12 +64,10 @@ static int mysqlsam_debug_level = DBGC_ALL;
 #undef DBGC_CLASS
 #define DBGC_CLASS mysqlsam_debug_level
 
-PDB_MODULE_VERSIONING_MAGIC
-
 typedef struct pdb_mysql_data {
 	MYSQL *handle;
 	MYSQL_RES *pwent;
-	char *location;
+	const char *location;
 } pdb_mysql_data;
 
 /* Used to construct insert and update queries */
@@ -947,8 +946,8 @@ static NTSTATUS mysqlsam_enum_group_mapping(struct pdb_methods *methods,
 }
 
 
-NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
-		 char *location)
+static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_methods ** pdb_method,
+		 const char *location)
 {
 	NTSTATUS nt_status;
 	struct pdb_mysql_data *data;
@@ -1031,4 +1030,12 @@ NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 	DEBUG(5, ("Connected to mysql db\n"));
 
 	return NT_STATUS_OK;
+}
+
+int pdb_mysql_init() 
+{
+	if(smb_register_passdb("mysql", mysqlsam_init, PASSDB_INTERFACE_VERSION))
+		return 0;
+
+	return 1;
 }

@@ -140,7 +140,8 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 QUOTAOBJS=@QUOTAOBJS@
 
 VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ 
-PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
+PDB_MODULES = @PDB_MODULES@
+MODULES = $(VFS_MODULES) $(PDB_MODULES)
 
 ######################################################################
 # object file lists
@@ -292,10 +293,8 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
-		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
-		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
-		passdb/pdb_unix.o passdb/pdb_guest.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o passdb/pdb_nisplus.o
+		passdb/machine_sid.o passdb/util_sam_sid.o \
+		passdb/pdb_compat.o @PDB_STATIC@
 
 PDB_XML_OBJ = passdb/pdb_xml.o
 PDB_MYSQL_OBJ = passdb/pdb_mysql.o
