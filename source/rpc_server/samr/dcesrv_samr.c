@@ -55,7 +55,7 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	/* make sure the sam database is accessible */
 	c_state->sam_ctx = samdb_connect(mem_ctx);
 	if (c_state->sam_ctx == NULL) {
-		talloc_destroy(c_state);
+		talloc_free(c_state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 

@@ -255,7 +255,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	*p = talloc_p(mem_ctx, struct dcesrv_connection);
 	if (! *p) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -332,7 +332,7 @@ void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 		free_session_info(&p->auth_state.session_info);
 	}
 
-	talloc_destroy(p->mem_ctx);
+	talloc_free(p->mem_ctx);
 }
 
 static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
@@ -544,7 +544,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_OTHER);
 	}
 
-	talloc_destroy(call->mem_ctx);
+	talloc_free(call->mem_ctx);
 
 	/* we don't send a reply to a auth3 request, except by a
 	   fault */
@@ -735,7 +735,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	call = talloc_p(mem_ctx, struct dcesrv_call_state);
 	if (!call) {
 		talloc_free(dce_conn->partial_input.data);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	call->mem_ctx = mem_ctx;
@@ -748,7 +748,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 	if (!ndr) {
 		talloc_free(dce_conn->partial_input.data);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -759,7 +759,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(dce_conn->partial_input.data);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -841,7 +841,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	   it to the list of pending calls. We add it to the end to keep the call
 	   list in the order we will answer */
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 	}
 
 	return status;
@@ -924,7 +924,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	if (call->replies == NULL) {
 		/* we're done with the whole call */
 		DLIST_REMOVE(dce_conn->call_list, call);
-		talloc_destroy(call->mem_ctx);
+		talloc_free(call->mem_ctx);
 	}
 
 	return status;

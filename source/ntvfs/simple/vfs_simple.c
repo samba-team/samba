@@ -803,7 +803,7 @@ static NTSTATUS svfs_search_first(struct smbsrv_request *req, union smb_search_f
 	/* work out if we are going to keep the search state */
 	if ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
 	    ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
-		talloc_destroy(search->mem_ctx);
+		talloc_free(search->mem_ctx);
 	} else {
 		private->next_search_handle++;
 		DLIST_ADD(private->search, search);
@@ -893,7 +893,7 @@ found:
 	if ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
 	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
 		DLIST_REMOVE(private->search, search);
-		talloc_destroy(search->mem_ctx);
+		talloc_free(search->mem_ctx);
 	}
 
 	return NT_STATUS_OK;
@@ -915,7 +915,7 @@ static NTSTATUS svfs_search_close(struct smbsrv_request *req, union smb_search_c
 	}
 
 	DLIST_REMOVE(private->search, search);
-	talloc_destroy(search->mem_ctx);
+	talloc_free(search->mem_ctx);
 
 	return NT_STATUS_OK;
 }

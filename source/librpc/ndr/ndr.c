@@ -152,7 +152,7 @@ struct ndr_push *ndr_push_init(void)
 /* free a ndr_push structure */
 void ndr_push_free(struct ndr_push *ndr)
 {
-	talloc_destroy(ndr);
+	talloc_free(ndr);
 }
 
 

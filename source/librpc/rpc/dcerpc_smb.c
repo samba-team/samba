@@ -393,7 +393,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	}
 	status = smb_raw_open(tree, mem_ctx, &io);
 	free(name);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
                 return status;
