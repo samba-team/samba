@@ -33,8 +33,6 @@ LIB = $(LIBNAME).$(LIBEXT)
 SOURCES = 3cbc_enc.c \
           3ecb_enc.c \
           cfb_enc.c \
-          enc_writ.c \
-          enc_read.c \
           cbc_enc.c \
           fcrypt.c \
           key_par.c \
@@ -51,8 +49,6 @@ SOURCES = 3cbc_enc.c \
 OBJECTS = 3cbc_enc.o \
           3ecb_enc.o \
           cfb_enc.o \
-          enc_writ.o \
-          enc_read.o \
           cbc_enc.o \
           fcrypt.o \
           key_par.o \
