@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,8 +37,8 @@ RCSID("$Id$");
 
 static int version_flag;
 static int help_flag;
-static char *ktname = HPROP_KEYTAB;
-static char *database;
+static const char *ktname = HPROP_KEYTAB;
+static const char *database;
 static char *mkeyfile;
 static int to_stdout;
 static int verbose_flag;

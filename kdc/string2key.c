@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,7 @@ int afs;
 char *principal;
 char *cell;
 char *password;
-char *keytype_str = "des-cbc-md5";
+const char *keytype_str = "des-cbc-md5";
 int version;
 int help;
 

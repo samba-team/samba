@@ -37,7 +37,7 @@
 
 RCSID("$Id$");
 
-static char *config_file;	/* location of kdc config file */
+static const char *config_file;	/* location of kdc config file */
 
 int require_preauth = -1;	/* 1 == require preauth for all principals */
 
@@ -51,7 +51,7 @@ struct dbinfo *databases;
 HDB **db;
 int num_db;
 
-char *port_str;
+const char *port_str;
 
 int enable_http = -1;
 krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
@@ -130,9 +130,9 @@ usage(int ret)
 static void
 get_dbinfo(krb5_config_section *cf)
 {
-    krb5_config_binding *top_binding = NULL;
-    krb5_config_binding *db_binding;
-    krb5_config_binding *default_binding = NULL;
+    const krb5_config_binding *top_binding = NULL;
+    const krb5_config_binding *db_binding;
+    const krb5_config_binding *default_binding = NULL;
     struct dbinfo *di, **dt;
     const char *default_dbname = HDB_DEFAULT_DB;
     const char *default_mkey = HDB_DB_DIR "/m-key";
@@ -140,7 +140,7 @@ get_dbinfo(krb5_config_section *cf)
 
     databases = NULL;
     dt = &databases;
-    while((db_binding = (krb5_config_binding *)
+    while((db_binding = (const krb5_config_binding *)
 	   krb5_config_get_next(context, cf, &top_binding, 
 				krb5_config_list, 
 				"kdc", 
