@@ -1,3 +1,22 @@
+2004-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_keyblock.3: add prototypes, describe
+	krb5_keyblock_zero
+
+2004-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_for_creds.c (add_addrs): don't add same address
+	multiple times
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): try to
+	handle errors better for previous commit
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): If tickets
+	are address-less, forward address-less tickets.
+	
+	* lib/krb5/get_cred.c: rename get_krbtgt to _krb5_get_krbtgt and
+	export it
+
 2003-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/error_string.c: protect error_string with mutex
