@@ -56,6 +56,8 @@ NTSTATUS pull_spoolss_FormInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 	NDR_ALLOC_N(ndr, *info, count);
 	for (i=0;i<count;i++) {
+		ndr->data += ndr->offset;
+		ndr->offset = 0;
 		NDR_CHECK(ndr_pull_spoolss_FormInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
@@ -73,6 +75,8 @@ NTSTATUS pull_spoolss_JobInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 	NDR_ALLOC_N(ndr, *info, count);
 	for (i=0;i<count;i++) {
+		ndr->data += ndr->offset;
+		ndr->offset = 0;
 		NDR_CHECK(ndr_pull_spoolss_JobInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
@@ -90,6 +94,8 @@ NTSTATUS pull_spoolss_DriverInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 	NDR_ALLOC_N(ndr, *info, count);
 	for (i=0;i<count;i++) {
+		ndr->data += ndr->offset;
+		ndr->offset = 0;
 		NDR_CHECK(ndr_pull_spoolss_DriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
