@@ -3,7 +3,7 @@
 
    NetBIOS name cache module.
 
-   Copyright (C) Tim Potter, 2002
+   Copyright (C) Tim Potter, 2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -260,4 +260,94 @@ void namecache_flush(void)
 	else
 		DEBUG(5, ("namecache_flush: deleted %d cache entr%s\n", 
 			  result, result == 1 ? "y" : "ies"));
+}
+
+/* Return true if a dead WINS server record is in the namecache */
+
+BOOL namecache_wins_get(char *keystr)
+{
+	TDB_DATA key, value;
+	time_t *timeout, now;
+	BOOL result = False;
+
+	if (!enable_namecache)
+		return False;
+
+	/* Look up key */
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	value = tdb_fetch(namecache_tdb, key);
+
+	if (!value.dptr)
+		return False;	/* No key: WINS server is alive */
+
+	/* Check timestamp on returned key */
+
+	timeout = (time_t *)value.dptr;
+
+	now = time(NULL);
+
+	if (now > *timeout) {
+
+		DEBUG(5, ("namecache_wins_get: entry for %s expired\n",
+			  keystr));
+
+		tdb_delete(namecache_tdb, key);
+
+		goto done;
+	}
+
+	if ((*timeout - now) > lp_name_cache_timeout()) {
+
+		DEBUG(5, ("namecache_wins_get: entry for %s has bad expiry %ld\n",
+			  keystr, *timeout));
+
+		tdb_delete(namecache_tdb, key);
+
+		goto done;
+	}
+
+	/* WINS server is marked as dead */
+
+	result = True;
+
+done:
+	SAFE_FREE(value.dptr);
+
+	return result;
+}
+
+/* Delete a dead WINS server record */
+
+void namecache_wins_del(char *keystr)
+{
+	TDB_DATA key;
+
+	if (!enable_namecache)
+		return;
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	tdb_delete(namecache_tdb, key);
+}
+
+/* Set a dead WINS server record */
+
+void namecache_wins_set(char *keystr, time_t timeout)
+{
+	TDB_DATA key, value;
+
+	if (!enable_namecache)
+		return;
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	value.dptr = (char *)&timeout;
+	value.dsize = sizeof(timeout);
+
+	tdb_store(namecache_tdb, key, value, TDB_REPLACE);
 }
