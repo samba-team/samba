@@ -22,7 +22,7 @@ CLEANFILES = $(foo_DATA) asn1.h asn1_err.h hdb_asn1.h hdb_err.h heim_err.h \
 krb5-types.h: bits
 	./bits krb5-types.h
 
-base64.h.h:
+base64.h:
 	$(LN_S) $(top_srcdir)/lib/roken/base64.h .
 cache.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/cache.h .
