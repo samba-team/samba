@@ -758,13 +758,25 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 
 	if (fallback_pdb_rid_is_user(rid)) {
 		uid_t uid;
+		struct passwd *pw = NULL;
 
 		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));
 
        		uid = fallback_pdb_user_rid_to_uid(rid);
-		slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);	
-
-		return False;  /* Indicates that this user was 'not mapped' */
+		pw = sys_getpwuid( uid );
+		
+		DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
+			 pw ? "succeeded" : "failed" ));
+			 
+		if ( !pw )
+			slprintf(name, "unix_user.%u", (unsigned int)uid);	
+		else 
+			fstrcpy( name, pw->pw_name );
+			
+		DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
+			 (unsigned int)rid ));
+			 
+		return ( pw != NULL );
 	} else {
 		gid_t gid;
 		struct group *gr; 
@@ -779,16 +791,15 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		DEBUG(5,("local_lookup_sid: looking up gid %u %s\n", (unsigned int)gid,
 			 gr ? "succeeded" : "failed" ));
 			
-		if(!gr) {
+		if( !gr )
 			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
-			return False; /* Indicates that this group was 'not mapped' */
-		}
-			
-		fstrcpy( name, gr->gr_name);
+		else
+			fstrcpy( name, gr->gr_name);
 			
 		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
 			 (unsigned int)rid ));
-		return True;   
+			 
+		return ( gr != NULL );
 	}
 }
 
