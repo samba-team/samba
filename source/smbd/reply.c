@@ -3821,7 +3821,7 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
      */
       
     if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0){
-      DEBUG(0,("get_lock_count: Warning : a large file count (%x << 32 | %x) was sent and we don't \
+      DEBUG(1,("get_lock_count: Warning : a large file count (%x << 32 | %x) was sent and we don't \
 support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)),
             (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) ));
 
@@ -3873,7 +3873,7 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
      */
       
     if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0){
-      DEBUG(0,("get_lock_count: Warning : a large file offset (%x << 32 | %x) was sent and we don't \
+      DEBUG(1,("get_lock_count: Warning : a large file offset (%x << 32 | %x) was sent and we don't \
 support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)),
             (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) ));
 
