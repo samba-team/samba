@@ -96,15 +96,6 @@ struct ldapsam_privates {
 	
 	/* configuration items */
 	int schema_ver;
-
-	BOOL permit_non_unix_accounts;
-	
-	uint32 low_allocated_user_rid; 
-	uint32 high_allocated_user_rid; 
-
-	uint32 low_allocated_group_rid; 
-	uint32 high_allocated_group_rid; 
-
 };
 
 /**********************************************************************
@@ -338,423 +329,7 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 	ldap_memfree(dn);
 	return NT_STATUS_OK;
 }
-					  
-/**********************************************************************
- Add the sambaDomain to LDAP, so we don't have to search for this stuff
- again.  This is a once-add operation for now.
-
- TODO:  Add other attributes, and allow modification.
-*********************************************************************/
-static NTSTATUS add_new_domain_info(struct ldapsam_privates *ldap_state) 
-{
-	fstring sid_string;
-	fstring algorithmic_rid_base_string;
-	pstring filter, dn;
-	LDAPMod **mods = NULL;
-	int rc;
-	int ldap_op;
-	LDAPMessage *result = NULL;
-	int num_result;
-	char **attr_list;
-
-	slprintf (filter, sizeof (filter) - 1, "(&(%s=%s)(objectclass=%s))", 
-		  get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		  ldap_state->domain_name, LDAP_OBJ_DOMINFO);
-
-	attr_list = get_attr_list( dominfo_attr_list );
-	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, 
-				   attr_list, &result);
-	free_attr_list( attr_list );
-
-	if (rc != LDAP_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	num_result = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
-	
-	if (num_result > 1) {
-		DEBUG (0, ("More than domain with that name exists: bailing out!\n"));
-		ldap_msgfree(result);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	/* Check if we need to add an entry */
-	DEBUG(3,("Adding new domain\n"));
-	ldap_op = LDAP_MOD_ADD;
-
-	snprintf(dn, sizeof(dn), "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		ldap_state->domain_name, lp_ldap_suffix());
-
-	/* Free original search */
-	ldap_msgfree(result);
-
-	/* make the changes - the entry *must* not already have samba attributes */
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		ldap_state->domain_name);
-
-	/* If we don't have an entry, then ask secrets.tdb for what it thinks.  
-	   It may choose to make it up */
-
-	sid_to_string(sid_string, get_global_sam_sid());
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID), sid_string);
-
-	slprintf(algorithmic_rid_base_string, sizeof(algorithmic_rid_base_string) - 1, "%i", algorithmic_rid_base());
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
-			algorithmic_rid_base_string);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
-
-	switch(ldap_op)
-	{
-	case LDAP_MOD_ADD: 
-		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
-		break;
-	case LDAP_MOD_REPLACE: 
-		rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
-		break;
-	default: 	
-		DEBUG(0,("Wrong LDAP operation type: %d!\n", ldap_op));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
-	if (rc!=LDAP_SUCCESS) {
-		char *ld_error = NULL;
-		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(1,
-		      ("failed to %s domain dn= %s with: %s\n\t%s\n",
-		       ldap_op == LDAP_MOD_ADD ? "add" : "modify",
-		       dn, ldap_err2string(rc),
-		       ld_error?ld_error:"unknown"));
-		SAFE_FREE(ld_error);
-
-		ldap_mods_free(mods, True);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	DEBUG(2,("added: domain = %s in the LDAP database\n", ldap_state->domain_name));
-	ldap_mods_free(mods, True);
-	return NT_STATUS_OK;
-}
-
-/**********************************************************************
-Search for the domain info entry
-*********************************************************************/
-static NTSTATUS ldapsam_search_domain_info(struct ldapsam_privates *ldap_state,
-					   LDAPMessage ** result, BOOL try_add)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	pstring filter;
-	int rc;
-	char **attr_list;
-	int count;
-
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))",
-		LDAP_OBJ_DOMINFO,
-		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		ldap_state->domain_name);
-
-	DEBUG(2, ("Searching for:[%s]\n", filter));
-
-
-	attr_list = get_attr_list( dominfo_attr_list );
-	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, 
-				   attr_list , result);
-	free_attr_list( attr_list );
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(2,("Problem during LDAPsearch: %s\n", ldap_err2string (rc)));
-		DEBUG(2,("Query was: %s, %s\n", lp_ldap_suffix(), filter));
-	} else if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, *result) < 1) {
-		DEBUG(3, ("Got no domain info entries for domain %s\n",
-			  ldap_state->domain_name));
-		ldap_msgfree(*result);
-		*result = NULL;
-		if (try_add && NT_STATUS_IS_OK(ret = add_new_domain_info(ldap_state))) {
-			return ldapsam_search_domain_info(ldap_state, result, False);
-		} else {
-			DEBUG(0, ("Adding domain info failed with %s\n", nt_errstr(ret)));
-			return ret;
-		}
-	} else if ((count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, *result)) > 1) {
-		DEBUG(0, ("Got too many (%d) domain info entries for domain %s\n",
-			  count, ldap_state->domain_name));
-		ldap_msgfree(*result);
-		*result = NULL;
-		return ret;
-	} else {
-		return NT_STATUS_OK;
-	}
-	
-	return ret;
-}
-
-/**********************************************************************
- Even if the sambaDomain attribute in LDAP tells us that this RID is 
- safe to use, always check before use.  
-*********************************************************************/
-static BOOL sid_in_use(struct ldapsam_privates *ldap_state, 
-		       const DOM_SID *sid, int *error) 
-{
-	fstring filter;
-	fstring sid_string;
-	LDAPMessage *result = NULL;
-	int count;
-	int rc;
-	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
-
-	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID, sid_to_string(sid_string, sid));
-
-	rc = smbldap_search_suffix(ldap_state->smbldap_state, 
-				   filter, sid_attr, &result);
-
-	if (rc != LDAP_SUCCESS)	{
-		char *ld_error = NULL;
-		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
-		DEBUG(2, ("Failed to check if sid %s is alredy in use: %s\n", 
-			  sid_string, ld_error));
-		SAFE_FREE(ld_error);
-
-		*error = rc;
-		return True;
-	}
-	
-	if ((count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result)) > 0) {
-		DEBUG(3, ("Sid %s already in use - trying next RID\n",
-			  sid_string));
-		ldap_msgfree(result);
-		return True;
-	}
-
-	ldap_msgfree(result);
-
-	/* good, sid is not in use */
-	return False;
-}
-
-/**********************************************************************
- Set the new nextRid attribute, and return one we can use.
-
- This also checks that this RID is actually free - in case the admin
- manually stole it :-).
-*********************************************************************/
-static NTSTATUS ldapsam_next_rid(struct ldapsam_privates *ldap_state, uint32 *rid, int rid_type)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	int rc;
-	LDAPMessage *domain_result = NULL;
-	LDAPMessage *entry  = NULL;
-	char *dn;
-	LDAPMod **mods = NULL;
-	fstring old_rid_string;
-	fstring next_rid_string;
-	fstring algorithmic_rid_base_string;
-	uint32 next_rid;
-	uint32 alg_rid_base;
-	int attempts = 0;
-	char *ld_error = NULL;
-
-	if ( ldap_state->schema_ver != SCHEMAVER_SAMBASAMACCOUNT ) {
-		DEBUG(0, ("Allocated RIDs require the %s objectclass used by 'ldapsam'\n", 
-			LDAP_OBJ_SAMBASAMACCOUNT));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	while (attempts < 10) 
-	{
-		if (!NT_STATUS_IS_OK(ret = ldapsam_search_domain_info(ldap_state, &domain_result, True))) {
-			return ret;
-		}
-	
-		entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, domain_result);
-		if (!entry) {
-			DEBUG(0, ("Could not get domain info entry\n"));
-			ldap_msgfree(domain_result);
-			return ret;
-		}
-
-		if ((dn = ldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry)) == NULL) {
-			DEBUG(0, ("Could not get domain info DN\n"));
-			ldap_msgfree(domain_result);
-			return ret;
-		}
-
-		/* yes, we keep 3 seperate counters, one for rids between 1000 (BASE_RID) and 
-		   algorithmic_rid_base.  The other two are to avoid stomping on the 
-		   different sets of algorithmic RIDs */
-		
-		if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE),
-					 algorithmic_rid_base_string)) 
-		{
-			
-			alg_rid_base = (uint32)atol(algorithmic_rid_base_string);
-		} else {
-			alg_rid_base = algorithmic_rid_base();
-			/* Try to make the modification atomically by enforcing the
-			   old value in the delete mod. */
-			slprintf(algorithmic_rid_base_string, sizeof(algorithmic_rid_base_string)-1, "%d", alg_rid_base);
-			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, 
-					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
-					 algorithmic_rid_base_string);
-		}
-
-		next_rid = 0;
-
-		if (alg_rid_base > BASE_RID) {
-			/* we have a non-default 'algorithmic rid base', so we have 'low' rids that we 
-			   can allocate to new users */
-			if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID),
-						 old_rid_string)) 
-			{
-				*rid = (uint32)atol(old_rid_string);
-			} else {
-				*rid = BASE_RID;
-			}
-
-			next_rid = *rid+1;
-			if (next_rid >= alg_rid_base) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			
-			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
-				
-			/* Try to make the modification atomically by enforcing the
-			   old value in the delete mod. */
-			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, 
-					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID), 
-					 next_rid_string);
-		}
-
-		if (!next_rid) { /* not got one already */
-			switch (rid_type) {
-			case USER_RID_TYPE:
-				if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
-							 old_rid_string)) 
-				{
-					
-					*rid = (uint32)atol(old_rid_string);
-					
-				} else {
-					*rid = ldap_state->low_allocated_user_rid;
-				}
-				break;
-			case GROUP_RID_TYPE:
-				if (smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
-							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
-							 old_rid_string)) 
-				{
-					*rid = (uint32)atol(old_rid_string);
-				} else {
-					*rid = ldap_state->low_allocated_group_rid;
-				}
-				break;
-			}
-			
-			/* This is the core of the whole routine. If we had
-			   scheme-style closures, there would be a *lot* less code
-			   duplication... */
-
-			next_rid = *rid+RID_MULTIPLIER;
-			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
-			
-			switch (rid_type) {
-			case USER_RID_TYPE:
-				if (next_rid > ldap_state->high_allocated_user_rid) {
-					return NT_STATUS_UNSUCCESSFUL;
-				}
-				
-				/* Try to make the modification atomically by enforcing the
-				   old value in the delete mod. */
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, 
-						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
-						 next_rid_string);
-				break;
-				
-			case GROUP_RID_TYPE:
-				if (next_rid > ldap_state->high_allocated_group_rid) {
-					return NT_STATUS_UNSUCCESSFUL;
-				}
-				
-				/* Try to make the modification atomically by enforcing the
-				   old value in the delete mod. */
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods,
-						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
-						 next_rid_string);
-				break;
-			}
-		}
-
-		if ((rc = ldap_modify_s(ldap_state->smbldap_state->ldap_struct, dn, mods)) == LDAP_SUCCESS) {
-			DOM_SID dom_sid;
-			DOM_SID sid;
-			pstring domain_sid_string;
-			int error = 0;
-
-			if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, domain_result,
-				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
-				domain_sid_string)) 
-			{
-				ldap_mods_free(mods, True);
-				ldap_memfree(dn);
-				ldap_msgfree(domain_result);
-				return ret;
-			}
-
-			if (!string_to_sid(&dom_sid, domain_sid_string)) { 
-				ldap_mods_free(mods, True);
-				ldap_memfree(dn);
-				ldap_msgfree(domain_result);
-				return ret;
-			}
-
-			ldap_mods_free(mods, True);
-			mods = NULL;
-			ldap_memfree(dn);
-			ldap_msgfree(domain_result);
-
-			sid_copy(&sid, &dom_sid);
-			sid_append_rid(&sid, *rid);
-
-			/* check RID is not in use */
-			if (sid_in_use(ldap_state, &sid, &error)) {
-				if (error) {
-					return ret;
-				}
-				continue;
-			}
-
-			return NT_STATUS_OK;
-		}
-
-		ld_error = NULL;
-		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
-		DEBUG(2, ("Failed to modify rid: %s\n", ld_error ? ld_error : "(NULL"));
-		SAFE_FREE(ld_error);
-
-		ldap_mods_free(mods, True);
-		mods = NULL;
-
-		ldap_memfree(dn);
-		dn = NULL;
-
-		ldap_msgfree(domain_result);
-		domain_result = NULL;
-
-		{
-			/* Sleep for a random timeout */
-			unsigned sleeptime = (sys_random()*sys_getpid()*attempts);
-			attempts += 1;
-			
-			sleeptime %= 100;
-			msleep(sleeptime);
-		}
-	}
-
-	DEBUG(0, ("Failed to set new RID\n"));
-	return ret;
-}
+		  
 
 /* New Interface is being implemented here */
 
@@ -1191,34 +766,6 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			      "uid", pdb_get_username(sampass));
 
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
-
-	if (pdb_get_init_flags(sampass, PDB_USERSID) == PDB_DEFAULT) {
-		if (ldap_state->permit_non_unix_accounts) {
-			if (!NT_STATUS_IS_OK(ldapsam_next_rid(ldap_state, &rid, USER_RID_TYPE))) {
-				DEBUG(0, ("NO user RID specified on account %s, and "
-					  "finding next available NUA RID failed, "
-					  "cannot store!\n",
-					  pdb_get_username(sampass)));
-				ldap_mods_free(*mods, True);
-				return False;
-			}
-		} else {
-			DEBUG(0, ("NO user RID specified on account %s, "
-				  "cannot store!\n", pdb_get_username(sampass)));
-			ldap_mods_free(*mods, True);
-			return False;
-		}
-
-		/* now that we have figured out the RID, always store it, as
-		   the schema requires it (either as a SID or a RID) */
-		   
-		if (!pdb_set_user_sid_from_rid(sampass, rid, PDB_CHANGED)) {
-			DEBUG(0, ("Could not store RID back onto SAM_ACCOUNT for user %s!\n", 
-				  pdb_get_username(sampass)));
-			ldap_mods_free(*mods, True);
-			return False;
-		}
-	}
 
 	/* only update the RID if we actually need to */
 	if (need_update(sampass, PDB_USERSID)) 
@@ -2733,10 +2280,8 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	struct ldapsam_privates *ldap_state;
 	uint32 alg_rid_base;
 	pstring alg_rid_base_string;
-	uint32 low_idmap_uid, high_idmap_uid;
-	uint32 low_idmap_gid, high_idmap_gid;
-	LDAPMessage *result;
-	LDAPMessage *entry;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	DOM_SID ldap_domain_sid;
 	DOM_SID secrets_domain_sid;
 	pstring domain_sid_string;
@@ -2748,14 +2293,17 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	(*pdb_method)->name = "ldapsam";
 
 	ldap_state = (*pdb_method)->private_data;
-	ldap_state->schema_ver = SCHEMAVER_SAMBASAMACCOUNT;	
-	ldap_state->permit_non_unix_accounts = False;
+	ldap_state->schema_ver = SCHEMAVER_SAMBASAMACCOUNT;
 
 	/* Try to setup the Domain Name, Domain SID, algorithmic rid base */
-
-	if (!NT_STATUS_IS_OK(nt_status = ldapsam_search_domain_info(ldap_state, &result, True))) {
+	
+	nt_status = smbldap_search_domain_info(ldap_state->smbldap_state, &result, 
+		ldap_state->domain_name, True);
+	
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(2, ("WARNING: Could not get domain info, nor add one to the domain\n"));
-		DEBUGADD(2, ("Continuing on regardless, will be unable to allocate new users/groups, and will risk BDCs having inconsistant SIDs\n"));
+		DEBUGADD(2, ("Continuing on regardless, will be unable to allocate new users/groups, "
+			"and will risk BDCs having inconsistant SIDs\n"));
 		sid_copy(&ldap_state->domain_sid, get_global_sam_sid());
 		return NT_STATUS_OK;
 	}
@@ -2796,21 +2344,6 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 		}
 	}
 	ldap_msgfree(result);
-	
-	/* check for non-unix account ranges */
-
-	if (lp_idmap_uid(&low_idmap_uid, &high_idmap_uid) 
-		&&  lp_idmap_gid(&low_idmap_gid, &high_idmap_gid)) 
-	{
-		DEBUG(2, ("Enabling non-unix account ranges\n"));
-
-		ldap_state->permit_non_unix_accounts = True;
-
-		ldap_state->low_allocated_user_rid   = fallback_pdb_uid_to_user_rid(low_idmap_uid);
-		ldap_state->high_allocated_user_rid  = fallback_pdb_uid_to_user_rid(high_idmap_uid);
-		ldap_state->low_allocated_group_rid  = pdb_gid_to_group_rid(low_idmap_gid);
-		ldap_state->high_allocated_group_rid = pdb_gid_to_group_rid(high_idmap_gid);
-	}
 
 	return NT_STATUS_OK;
 }

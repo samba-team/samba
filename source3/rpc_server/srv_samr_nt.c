@@ -2204,6 +2204,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	uint32 acc_granted;
 	SEC_DESC *psd;
 	size_t    sd_size;
+	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 
@@ -2272,6 +2273,17 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	   
 	pw = Get_Pwnam(account);
 	
+	/*********************************************************************
+	 * HEADS UP!  If we have to create a new user account, we have to get 
+	 * a new RID from somewhere.  This used to be done by the passdb 
+	 * backend. It has been moved into idmap now.  Since idmap is now 
+	 * wrapped up behind winbind, this means you have to run winbindd if you
+	 * want new accounts to get a new RID when "enable rid algorithm = no".
+	 * Tough.  We now have a uniform way of allocating RIDs regardless
+	 * of what ever passdb backend people may use.
+	 *                                             --jerry (2003-07-10)
+	 *********************************************************************/
+	
 	if ( !pw ) {
 		/* 
 		 * we can't check both the ending $ and the acb_info.
@@ -2293,15 +2305,17 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
   		}
 		else	/* no add user script -- ask winbindd to do it */
 		{
-			if ( !winbind_create_user( account ) )
-				DEBUG(3,("_api_samr_create_user: winbind_create_user(%s) failed\n", account));
+			if ( !winbind_create_user( account, &new_rid ) ) {
+				DEBUG(3,("_api_samr_create_user: winbind_create_user(%s) failed\n", 
+					account));
+			}
 		}
 		
 	}
 	
-	/* implicit call to getpwnam() next */
+	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
-	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account)) )
+	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account, new_rid)) )
 		return nt_status;
 		
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
@@ -3711,12 +3725,25 @@ static int smb_delete_user(const char *unix_user)
 	pstring del_script;
 	int ret;
 
+	/* try winbindd first since it is impossible to determine where 
+	   a user came from via NSS.  Try the delete user script if this fails
+	   meaning the user did not exist in winbindd's list of accounts */
+
+	if ( winbind_delete_user( unix_user ) ) {
+		DEBUG(3,("winbind_delete_user: removed user (%s)\n", unix_user));
+		return 0;
+	}
+
+
+	/* fall back to 'delete user script' */
+
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
 	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
 	ret = smbrun(del_script,NULL);
 	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+
 	return ret;
 }
 

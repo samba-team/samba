@@ -526,16 +526,36 @@ static BOOL wbinfo_create_user(char *username)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
+	request.flags = WBFLAG_ALLOCATE_RID;
 	fstrcpy(request.data.acct_mgt.username, username);
 
 	result = winbindd_request(WINBINDD_CREATE_USER, &request, &response);
 	
-	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
+	if ( result == NSS_STATUS_SUCCESS )
+		d_printf("New RID is %d\n", response.data.rid);
+	
+        return result == NSS_STATUS_SUCCESS;
+}
 
+/******************************************************************
+ remove a winbindd user
+******************************************************************/
+
+static BOOL wbinfo_delete_user(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.acct_mgt.username, username);
+
+	result = winbindd_request(WINBINDD_DELETE_USER, &request, &response);
+	
         return result == NSS_STATUS_SUCCESS;
 }
 
@@ -558,12 +578,28 @@ static BOOL wbinfo_create_group(char *groupname)
 
 	result = winbindd_request(WINBINDD_CREATE_GROUP, &request, &response);
 	
-	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
+        return result == NSS_STATUS_SUCCESS;
+}
 
+/******************************************************************
+ remove a winbindd group
+******************************************************************/
+
+static BOOL wbinfo_delete_group(char *groupname)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.acct_mgt.groupname, groupname);
+
+	result = winbindd_request(WINBINDD_DELETE_GROUP, &request, &response);
+	
         return result == NSS_STATUS_SUCCESS;
 }
 
@@ -614,12 +650,6 @@ static BOOL wbinfo_add_user_to_group(char *string)
 
 	result = winbindd_request(WINBINDD_ADD_USER_TO_GROUP, &request, &response);
 	
-	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
-
         return result == NSS_STATUS_SUCCESS;
 }
 
@@ -647,12 +677,6 @@ static BOOL wbinfo_remove_user_from_group(char *string)
 
 	result = winbindd_request(WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
 	
-	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
-
         return result == NSS_STATUS_SUCCESS;
 }
 
@@ -851,7 +875,9 @@ int main(int argc, char **argv)
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
 		{ "create-user", 'c', POPT_ARG_STRING, &string_arg, 'c', "Create a local user account", "name" },
+		{ "delete-user", 'x', POPT_ARG_STRING, &string_arg, 'x', "Delete a local user account", "name" },
 		{ "create-group", 'C', POPT_ARG_STRING, &string_arg, 'C', "Create a local group", "name" },
+		{ "delete-group", 'X', POPT_ARG_STRING, &string_arg, 'X', "Delete a local group", "name" },
 		{ "add-to-group", 'o', POPT_ARG_STRING, &string_arg, 'o', "Add user to group", "user:group" },
 		{ "del-from-group", 'O', POPT_ARG_STRING, &string_arg, 'O', "Remove user from group", "user:group" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
@@ -1033,6 +1059,18 @@ int main(int argc, char **argv)
 		case 'O':
 			if ( !wbinfo_remove_user_from_group(string_arg) ) {
 				d_printf("Could not remove user kfrom group\n");
+				goto done;
+			}
+			break;
+		case 'x':
+			if ( !wbinfo_delete_user(string_arg) ) {
+				d_printf("Could not delete user account\n");
+				goto done;
+			}
+			break;
+		case 'X':
+			if ( !wbinfo_delete_group(string_arg) ) {
+				d_printf("Could not delete group\n");
 				goto done;
 			}
 			break;

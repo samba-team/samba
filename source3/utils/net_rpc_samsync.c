@@ -444,7 +444,9 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 		else {
 			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
-			if ( !winbind_create_user( account ) )
+			
+			/* don't need a RID allocated since the user already has a SID */
+			if ( !winbind_create_user( account, NULL ) )
 				DEBUG(4,("fetch_account_info: winbind_create_user() failed\n"));
 		}
 		

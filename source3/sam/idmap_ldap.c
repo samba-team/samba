@@ -42,7 +42,11 @@ struct ldap_idmap_state {
 	struct smbldap_state *smbldap_state;
 	TALLOC_CTX *mem_ctx;
 
-	/* struct ldap_idmap_state *prev, *next; */
+	uint32 low_allocated_user_rid;
+	uint32 high_allocated_user_rid;
+	uint32 low_allocated_group_rid;
+	uint32 high_allocated_group_rid;
+
 };
 
 #define LDAP_MAX_ALLOC_ID 128              /* number tries while allocating
@@ -55,6 +59,282 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id, int id
 					   const char *ldap_dn, LDAPMessage *entry);
 static NTSTATUS ldap_idmap_close(void);
 
+
+/**********************************************************************
+ Even if the sambaDomain attribute in LDAP tells us that this RID is 
+ safe to use, always check before use.  
+*********************************************************************/
+
+static BOOL sid_in_use(struct ldap_idmap_state *state, 
+		       const DOM_SID *sid, int *error) 
+{
+	fstring filter;
+	fstring sid_string;
+	LDAPMessage *result = NULL;
+	int count;
+	int rc;
+	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
+
+	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID, sid_to_string(sid_string, sid));
+
+	rc = smbldap_search_suffix(state->smbldap_state, 
+				   filter, sid_attr, &result);
+
+	if (rc != LDAP_SUCCESS)	{
+		char *ld_error = NULL;
+		ldap_get_option(state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(2, ("Failed to check if sid %s is alredy in use: %s\n", 
+			  sid_string, ld_error));
+		SAFE_FREE(ld_error);
+
+		*error = rc;
+		return True;
+	}
+	
+	if ((count = ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
+		DEBUG(3, ("Sid %s already in use - trying next RID\n",
+			  sid_string));
+		ldap_msgfree(result);
+		return True;
+	}
+
+	ldap_msgfree(result);
+
+	/* good, sid is not in use */
+	return False;
+}
+
+/**********************************************************************
+ Set the new nextRid attribute, and return one we can use.
+
+ This also checks that this RID is actually free - in case the admin
+ manually stole it :-).
+*********************************************************************/
+static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid, 
+                              int rid_type)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	int rc;
+	LDAPMessage *domain_result = NULL;
+	LDAPMessage *entry  = NULL;
+	char *dn;
+	LDAPMod **mods = NULL;
+	fstring old_rid_string;
+	fstring next_rid_string;
+	fstring algorithmic_rid_base_string;
+	uint32 next_rid;
+	uint32 alg_rid_base;
+	int attempts = 0;
+	char *ld_error = NULL;
+
+	while (attempts < 10) 
+	{
+		if (!NT_STATUS_IS_OK(ret = smbldap_search_domain_info(state->smbldap_state, 
+			&domain_result, get_global_sam_name(), True))) 
+		{
+			return ret;
+		}
+	
+		entry = ldap_first_entry(state->smbldap_state->ldap_struct, domain_result);
+		if (!entry) {
+			DEBUG(0, ("Could not get domain info entry\n"));
+			ldap_msgfree(domain_result);
+			return ret;
+		}
+
+		if ((dn = ldap_get_dn(state->smbldap_state->ldap_struct, entry)) == NULL) {
+			DEBUG(0, ("Could not get domain info DN\n"));
+			ldap_msgfree(domain_result);
+			return ret;
+		}
+
+		/* yes, we keep 3 seperate counters, one for rids between 1000 (BASE_RID) and 
+		   algorithmic_rid_base.  The other two are to avoid stomping on the 
+		   different sets of algorithmic RIDs */
+		
+		if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE),
+					 algorithmic_rid_base_string)) 
+		{
+			
+			alg_rid_base = (uint32)atol(algorithmic_rid_base_string);
+		} else {
+			alg_rid_base = algorithmic_rid_base();
+			/* Try to make the modification atomically by enforcing the
+			   old value in the delete mod. */
+			slprintf(algorithmic_rid_base_string, sizeof(algorithmic_rid_base_string)-1, "%d", alg_rid_base);
+			smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+					 algorithmic_rid_base_string);
+		}
+
+		next_rid = 0;
+
+		if (alg_rid_base > BASE_RID) {
+			/* we have a non-default 'algorithmic rid base', so we have 'low' rids that we 
+			   can allocate to new users */
+			if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID),
+						 old_rid_string)) 
+			{
+				*rid = (uint32)atol(old_rid_string);
+			} else {
+				*rid = BASE_RID;
+			}
+
+			next_rid = *rid+1;
+			if (next_rid >= alg_rid_base) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			
+			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
+				
+			/* Try to make the modification atomically by enforcing the
+			   old value in the delete mod. */
+			smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID), 
+					 next_rid_string);
+		}
+
+		if (!next_rid) { /* not got one already */
+			switch (rid_type) {
+			case USER_RID_TYPE:
+				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
+							 old_rid_string)) 
+				{
+					
+					*rid = (uint32)atol(old_rid_string);
+					
+				} else {
+					*rid = state->low_allocated_user_rid;
+				}
+				break;
+			case GROUP_RID_TYPE:
+				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry, 
+							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
+							 old_rid_string)) 
+				{
+					*rid = (uint32)atol(old_rid_string);
+				} else {
+					*rid = state->low_allocated_group_rid;
+				}
+				break;
+			}
+			
+			/* This is the core of the whole routine. If we had
+			   scheme-style closures, there would be a *lot* less code
+			   duplication... */
+
+			next_rid = *rid+RID_MULTIPLIER;
+			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
+			
+			switch (rid_type) {
+			case USER_RID_TYPE:
+				if (next_rid > state->high_allocated_user_rid) {
+					return NT_STATUS_UNSUCCESSFUL;
+				}
+				
+				/* Try to make the modification atomically by enforcing the
+				   old value in the delete mod. */
+				smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
+						 next_rid_string);
+				break;
+				
+			case GROUP_RID_TYPE:
+				if (next_rid > state->high_allocated_group_rid) {
+					return NT_STATUS_UNSUCCESSFUL;
+				}
+				
+				/* Try to make the modification atomically by enforcing the
+				   old value in the delete mod. */
+				smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods,
+						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
+						 next_rid_string);
+				break;
+			}
+		}
+
+		if ((rc = ldap_modify_s(state->smbldap_state->ldap_struct, dn, mods)) == LDAP_SUCCESS) {
+			DOM_SID dom_sid;
+			DOM_SID sid;
+			pstring domain_sid_string;
+			int error = 0;
+
+			if (!smbldap_get_single_attribute(state->smbldap_state->ldap_struct, domain_result,
+				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
+				domain_sid_string)) 
+			{
+				ldap_mods_free(mods, True);
+				ldap_memfree(dn);
+				ldap_msgfree(domain_result);
+				return ret;
+			}
+
+			if (!string_to_sid(&dom_sid, domain_sid_string)) { 
+				ldap_mods_free(mods, True);
+				ldap_memfree(dn);
+				ldap_msgfree(domain_result);
+				return ret;
+			}
+
+			ldap_mods_free(mods, True);
+			mods = NULL;
+			ldap_memfree(dn);
+			ldap_msgfree(domain_result);
+
+			sid_copy(&sid, &dom_sid);
+			sid_append_rid(&sid, *rid);
+
+			/* check RID is not in use */
+			if (sid_in_use(state, &sid, &error)) {
+				if (error) {
+					return ret;
+				}
+				continue;
+			}
+
+			return NT_STATUS_OK;
+		}
+
+		ld_error = NULL;
+		ldap_get_option(state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(2, ("Failed to modify rid: %s\n", ld_error ? ld_error : "(NULL"));
+		SAFE_FREE(ld_error);
+
+		ldap_mods_free(mods, True);
+		mods = NULL;
+
+		ldap_memfree(dn);
+		dn = NULL;
+
+		ldap_msgfree(domain_result);
+		domain_result = NULL;
+
+		{
+			/* Sleep for a random timeout */
+			unsigned sleeptime = (sys_random()*sys_getpid()*attempts);
+			attempts += 1;
+			
+			sleeptime %= 100;
+			msleep(sleeptime);
+		}
+	}
+
+	DEBUG(0, ("Failed to set new RID\n"));
+	return ret;
+}
+
+
+/*****************************************************************************
+ Allocate a new RID
+*****************************************************************************/
+
+static NTSTATUS ldap_allocate_rid(uint32 *rid, int rid_type)
+{
+	return ldap_next_rid( &ldap_state, rid, rid_type );
+}
 
 /*****************************************************************************
  Allocate a new uid or gid
@@ -675,6 +955,7 @@ static void ldap_idmap_status(void)
 
 static struct idmap_methods ldap_methods = {
 	ldap_idmap_init,
+	ldap_allocate_rid,
 	ldap_allocate_id,
 	ldap_get_sid_from_id,
 	ldap_get_id_from_sid,

@@ -350,7 +350,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	NTSTATUS nt_status;
 	char *password1, *password2, *staticpass;
 	
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pwent, username))) {
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pwent, username, 0))) {
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}

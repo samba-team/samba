@@ -1,11 +1,11 @@
 /*
  * Unix SMB/CIFS implementation. 
  * SMB parameters and setup
- * Copyright (C) Andrew Tridgell 1992-1998
- * Copyright (C) Simo Sorce 2000-2002
- * Copyright (C) Gerald Carter 2000
- * Copyright (C) Jeremy Allison 2001
- * Copyright (C) Andrew Bartlett 2002
+ * Copyright (C) Andrew Tridgell   1992-1998
+ * Copyright (C) Simo Sorce        2000-2002
+ * Copyright (C) Gerald Carter     2000
+ * Copyright (C) Jeremy Allison    2001
+ * Copyright (C) Andrew Bartlett   2002
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -48,13 +48,6 @@ struct tdbsam_privates {
 
 	/* retrive-once info */
 	const char *tdbsam_location;
-
-	BOOL permit_non_unix_accounts;
-
-	BOOL algorithmic_rids;
-
-	uint32 low_nua_rid; 
-	uint32 high_nua_rid;
 };
 
 /***************************************************************
@@ -342,59 +335,29 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 	fstring		name;
 	BOOL		ret = True;
 	uint32		user_rid;
-	BOOL		tdb_ret;
 
 	/* invalidate the existing TDB iterator if it is open */
+	
 	if (tdb_state->passwd_tdb) {
 		tdb_close(tdb_state->passwd_tdb);
 		tdb_state->passwd_tdb = NULL;
 	}
 
  	/* open the account TDB passwd*/
+	
 	pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
-  	if (!pwd_tdb)
-	{
-		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd (%s)!\n", tdb_state->tdbsam_location));
+	
+  	if (!pwd_tdb) {
+		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd (%s)!\n", 
+			tdb_state->tdbsam_location));
 		return False;
 	}
 
 	if (!pdb_get_group_rid(newpwd)) {
-		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
+		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",
+			pdb_get_username(newpwd)));
 		ret = False;
 		goto done;
-	}
-
-	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
-	if (!(user_rid = pdb_get_user_rid(newpwd))) {
-		if ((flag & TDB_INSERT) && tdb_state->permit_non_unix_accounts) {
-			uint32 lowrid, highrid;
-			if (!pdb_get_free_rid_range(&lowrid, &highrid)) {
-				/* should never happen */
-				DEBUG(0, ("tdbsam: something messed up, no high/low rids but nua enabled ?!\n"));
-				ret = False;
-				goto done;
-			}
-			user_rid = lowrid;
-			tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
-			if (!tdb_ret) {
-				ret = False;
-				goto done;
-			}
-			if (user_rid > highrid) {
-				DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
-				ret = False;
-				goto done;
-			}
-			if (!pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED)) {
-				DEBUG(0, ("tdbsam: not able to set new allocated user RID into sam account!\n"));
-				ret = False;
-				goto done;
-			}
-		} else {
-			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
-			ret = False;
-			goto done;
-		}
 	}
 
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
@@ -531,7 +494,6 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
-	uid_t low_nua_uid, high_nua_uid;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
@@ -568,19 +530,6 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->private_data = tdb_state;
 
 	(*pdb_method)->free_private_data = free_private_data;
-
-	if (lp_idmap_uid(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(3, ("idmap uid range defined, non unix accounts enabled\n"));
-
-		tdb_state->permit_non_unix_accounts = True;
-
-		tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
-
-		tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
-
-	} else {
-		tdb_state->algorithmic_rids = True;
-	}
 
 	return NT_STATUS_OK;
 }
