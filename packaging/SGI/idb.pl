@@ -32,7 +32,7 @@ open(MAKEFILE,"../../source/Makefile") || die "Unable to open Makefile\n";
 @mprogs = grep(/^MPROGS /,@makefile);
 @progs = grep(/^PROGS /,@makefile);
 @scripts = grep(/^SCRIPTS /,@makefile);
-@codepage = grep(/^CODEPAGELIST/,@makefile);
+@codepagelist = grep(/^CODEPAGELIST/,@makefile);
 close MAKEFILE;
 
 if (@sprogs) {
@@ -61,15 +61,17 @@ if (@scripts) {
   @scripts[0] =~ s/\$\(srcdir\)\///g;
   @scripts = split(' ',@scripts[0]);
 }
-if (@codepage) {
-  @codepage[0] =~ s/^.*\=//;
-  chdir '../../source';
-  # if we have codepages we need to create them for the package
-  system("chmod +x ./script/installcp.sh");
-  system("./script/installcp.sh . . ../packaging/SGI/codepages ./bin @codepage[0]");
-  chdir $curdir;
-  @codepage = sort split(' ',@codepage[0]);
-}
+
+# we need to create codepages for the package
+@codepagelist[0] =~ s/^.*\=//;
+chdir '../../source';
+system("chmod +x ./script/installcp.sh");
+system("./script/installcp.sh . . ../packaging/SGI/codepages ./bin @codepagelist[0]");
+chdir $curdir;
+opendir(DIR,'./codepages') || die "Can't open codepages directory";
+@codepage = sort readdir(DIR);
+closedir(DIR);
+
 # install the swat files
 chdir '../../source';
 system("chmod +x ./script/installswat.sh");
@@ -156,12 +158,10 @@ while (@docs) {
 }
 
 print IDB "d 0755 root sys usr/samba/lib packaging/SGI samba.sw.base\n";
-if (@codepage) {
-  print IDB "d 0755 root sys usr/samba/lib/codepages packaging/SGI samba.sw.base\n";
-  while (@codepage) {
-    $nextpage = shift @codepage;
-    print IDB "f 0644 root sys usr/samba/lib/codepages/codepage.$nextpage packaging/SGI/codepages/codepage.$nextpage samba.sw.base\n";
-  }
+print IDB "d 0755 root sys usr/samba/lib/codepages packaging/SGI samba.sw.base\n";
+while (@codepage) {
+  $nextpage = shift @codepage;
+  print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage packaging/SGI/codepages/$nextpage samba.sw.base\n";
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(suggest)\n";
 
@@ -238,7 +238,7 @@ sub dodir {
 
     ($dev,$ino,$mode,$nlink) = stat('.') unless $nlink;
 
-    opendir(DIR,'.') || die "Can't open $dir";
+    opendir(DIR,'.') || die "Can't open current directory";
     local(@filenames) = sort readdir(DIR);
     closedir(DIR);
 
