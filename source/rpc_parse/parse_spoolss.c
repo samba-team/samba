@@ -1690,15 +1690,27 @@ static BOOL spoolss_io_read_buffer(char *desc, prs_struct *ps, int depth, BUFFER
 	if (buffer->ptr != 0x0000)
 	{
 		prs_uint32("size", ps, depth, &(buffer->size));	
-		buffer->data=(uint8 *)malloc( (buffer->size) * sizeof(uint8) );
-		prs_uint8s(True,"buffer", ps, depth, buffer->data, buffer->size);	
+		if (ps->io)
+		{
+			/* reading */
+			buffer->data=(uint8 *)malloc( buffer->size * sizeof(uint8) );
+		}
+		if (buffer->data == NULL)
+		{
+			return False;
+		}
+		prs_uint8s(True, "buffer", ps, depth, buffer->data, buffer->size);	
 		prs_align(ps);
 
 	}
 	else
 	{
-		buffer->data=0x0000;
-		buffer->size=0x0000;
+		if (ps->io)
+		{
+			/* reading */
+			buffer->data=0x0000;
+			buffer->size=0x0000;
+		}
 	}
 
 	return True;
@@ -1886,29 +1898,66 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
 }
 
 /*******************************************************************
+ * make a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u,
+				uint32 flags,
+				const char* servername,
+				uint32 level,
+				uint32 size)
+{
+	size_t len_name = servername != NULL ? strlen(servername) : 0;
+
+	DEBUG(5,("make_spoolss_q_enumprinters.  size: %d\n", size));
+
+	q_u->flags = flags;
+
+	make_unistr2(&(q_u->servername), servername, len_name);
+
+	q_u->level = level;
+	q_u->buffer.ptr = (size != 0) ? 1 : 0;
+	q_u->buffer.size = size;
+	q_u->buffer.data = (uint8 *)Realloc( NULL,
+	                            (q_u->buffer.size) * sizeof(uint8) );
+	q_u->buf_size = size;
+
+	return True;
+}
+
+/*******************************************************************
  * read a structure.
  * called from spoolss_enumprinters (srv_spoolss.c)
  ********************************************************************/
 BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u,
                                prs_struct *ps, int depth)
 {
-	uint32 useless_ptr;
+	uint32 useless_ptr = 0x01;
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinters");
 	depth++;
 
 	prs_align(ps);
 
 	prs_uint32("flags", ps, depth, &(q_u->flags));
-
 	prs_uint32("useless ptr", ps, depth, &useless_ptr);
 
 	smb_io_unistr2("", &(q_u->servername),True,ps,depth);
-	
 	prs_align(ps);
 
 	prs_uint32("level", ps, depth, &(q_u->level));
 
 	spoolss_io_read_buffer("buffer", ps, depth, &(q_u->buffer));	
+
+	if (!ps->io)
+	{
+		/* writing */
+		if (q_u->buffer.data != NULL)
+		{
+			free(q_u->buffer.data);
+		}
+		q_u->buffer.data = NULL;
+	}
+
+	prs_uint32("buf_size", ps, depth, &q_u->buf_size);
 
 	return True;
 }
@@ -1926,6 +1975,7 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 	int i;
 	uint32 start_offset, end_offset, beginning;
 	uint32 bufsize_required=0;
+	uint32 tmp_ct = 0;
 
 	PRINTER_INFO_1 *info1;
 	PRINTER_INFO_2 *info2;
@@ -1935,76 +1985,120 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 	prs_align(ps);
 	prs_uint32("pointer", ps, depth, &useless_ptr);
 
-	for(i=0;i<r_u->returned;i++)
+	if (!ps->io)
 	{
-		switch (r_u->level)
+		/* writing */
+		for(i=0;i<r_u->returned;i++)
 		{
-			case 1:
-				info1 = r_u->printer.printers_1[i];
-				bufsize_required += spoolss_size_printer_info_1(info1);	
-				break;
-			case 2:
-				info2 = r_u->printer.printers_2[i];
-				bufsize_required += spoolss_size_printer_info_2(info2);	
-				break;
+			switch (r_u->level)
+			{
+				case 1:
+					info1 = r_u->printer.printers_1[i];
+					bufsize_required += spoolss_size_printer_info_1(info1);	
+					break;
+				case 2:
+					info2 = r_u->printer.printers_2[i];
+					bufsize_required += spoolss_size_printer_info_2(info2);	
+					break;
+			}
 		}
-	}
 
-	DEBUG(4,("spoolss_io_r_enumprinters, size needed: %d\n",bufsize_required));
-	DEBUG(4,("spoolss_io_r_enumprinters, size offered: %d\n",r_u->offered));
+		DEBUG(4,("spoolss_io_r_enumprinters, size needed: %d\n",bufsize_required));
+		DEBUG(4,("spoolss_io_r_enumprinters, size offered: %d\n",r_u->offered));
 
-	if (r_u->offered<bufsize_required)
-	{	
-		/* 
-		 * so the buffer is too small to handle datas
-		 * reply the minimum size required in the status
-		 * make the buffer equal 0
-		 * and reply no printers in buffer
-		 */
-		r_u->status=ERROR_INSUFFICIENT_BUFFER;
-		r_u->offered=0;
-		/*r_u->returned=0;*/
+		if (r_u->offered<bufsize_required)
+		{	
+			/* 
+			 * so the buffer is too small to handle datas
+			 * reply the minimum size required in the status
+			 * make the buffer equal 0
+			 * and reply no printers in buffer
+			 */
+			r_u->status=ERROR_INSUFFICIENT_BUFFER;
+			r_u->offered=0;
+			/*r_u->returned=0;*/
+			
+			DEBUG(4,("spoolss_io_r_enumprinters, buffer too small\n"));
+
+			prs_uint32("size of buffer", ps, depth, &(r_u->offered));
+			prs_uint32("size of buffer needed", ps, depth, &(bufsize_required));
+			prs_uint32("count", ps, depth, &(r_u->returned));
+			prs_uint32("status", ps, depth, &(r_u->status));
+			return False;
+		}	
 		
-		DEBUG(4,("spoolss_io_r_enumprinters, buffer too small\n"));
-
-		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
-		prs_uint32("size of buffer needed", ps, depth, &(bufsize_required));
-		prs_uint32("count", ps, depth, &(r_u->returned));
-		prs_uint32("status", ps, depth, &(r_u->status));
-		return False;
-	}	
-	
-	mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
-	DEBUG(4,("spoolss_io_r_enumprinters, buffer large enough\n"));
+		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
+		
+		DEBUG(4,("spoolss_io_r_enumprinters, buffer large enough\n"));
+	}
 	
 	prs_uint32("size of buffer", ps, depth, &(r_u->offered));
 
-	beginning=ps->offset;
-	start_offset=ps->offset;
-	end_offset=start_offset+r_u->offered;
+	/* have to skip to end of buffer when reading, and have to record
+	 * size of buffer when writing.  *shudder*.
+	 */
+
+	beginning = ps->offset;
+	start_offset = ps->offset;
+	end_offset = start_offset + r_u->offered;
 		
+	if (ps->io)
+	{
+		/* reading */
+		ps->offset = beginning + r_u->offered;
+
+		prs_align(ps);
+		prs_uint32("buffer size", ps, depth, &(bufsize_required));
+		prs_uint32("count", ps, depth, &(r_u->returned));
+
+		ps->offset = beginning;
+	}
+	
+	tmp_ct = 0;
+
 	for(i=0;i<r_u->returned;i++)
 	{
 		switch (r_u->level)
 		{
 			case 1:
+			{
+				if (ps->io)
+				{
+					/* reading */
+					r_u->printer.printers_1[i] = add_print1_to_array(&tmp_ct, &r_u->printer.printers_1, NULL);
+				}
 				info1=r_u->printer.printers_1[i];
+				if (info1 == NULL)
+				{
+					return False;
+				}
 				smb_io_printer_info_1(desc, info1, ps, depth, 
 				                      &start_offset, &end_offset);	
 				break;
+			}
 			case 2:
+			{
+				if (ps->io)
+				{
+					/* reading */
+					r_u->printer.printers_2[i] = add_print2_to_array(&tmp_ct, &r_u->printer.printers_2, NULL);
+				}
 				info2=r_u->printer.printers_2[i];
+				if (info2 == NULL)
+				{
+					return False;
+				}
 				smb_io_printer_info_2(desc, info2, ps, depth, 
 				                      &start_offset, &end_offset);	
 				break;
+			}
 		}
 	}
 
-	ps->offset=beginning+r_u->offered;
+	ps->offset = beginning + r_u->offered;
 	prs_align(ps);
 	
-	prs_uint32("size of buffer needed", ps, depth, &(bufsize_required));
+	prs_uint32("buffer size", ps, depth, &(bufsize_required));
 	prs_uint32("count", ps, depth, &(r_u->returned));
 	prs_uint32("status", ps, depth, &(r_u->status));
 

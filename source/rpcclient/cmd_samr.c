@@ -1435,7 +1435,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		if (!add_chars_to_array(&num_names, &names, tmp))
+		if (add_chars_to_array(&num_names, &names, tmp) == NULL)
 		{
 			return;
 		}
@@ -1971,7 +1971,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	while (res && next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		if (!add_chars_to_array(&num_names, &names, tmp))
+		if (add_chars_to_array(&num_names, &names, tmp) == NULL)
 		{
 			return;
 		}

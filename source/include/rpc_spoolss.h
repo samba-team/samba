@@ -811,7 +811,7 @@ typedef struct spool_q_enumprinters
 	UNISTR2 servername;
 	uint32 level;
 	BUFFER buffer;
-/*	uint32 buf_size;*/
+	uint32 buf_size;
 } SPOOL_Q_ENUMPRINTERS;
 
 typedef struct spool_r_enumprinters
@@ -825,6 +825,7 @@ typedef struct spool_r_enumprinters
 	union {
 		PRINTER_INFO_1 **printers_1;
 		PRINTER_INFO_2 **printers_2;
+		void *info;
 	} printer;
 } SPOOL_R_ENUMPRINTERS;
 

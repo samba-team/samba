@@ -3245,23 +3245,28 @@ void free_void_array(uint32 num_entries, void **entries,
 	}
 }
 
-BOOL add_item_to_array(uint32 *len, void ***array, const void *item,
-	void*(item_dup)(const void*))
+void* add_item_to_array(uint32 *len, void ***array, const void *item,
+	void*(item_dup)(const void*), BOOL alloc_anyway)
 {
 	if (len == NULL || array == NULL || item_dup == NULL)
 	{
-		return False;
+		return NULL;
 	}
 
 	(*array) = (void**)Realloc((*array), ((*len)+1)*sizeof((*array)[0]));
 
 	if ((*array) != NULL)
 	{
-		(*array)[(*len)] = item_dup(item);
+		void* copy = NULL;
+		if (item != NULL || alloc_anyway)
+		{
+			copy = item_dup(item);
+		}
+		(*array)[(*len)] = copy;
 		(*len)++;
-		return True;
+		return copy;
 	}
-	return True;
+	return NULL;
 }
 
 void free_char_array(uint32 num_entries, char **entries)
@@ -3270,10 +3275,11 @@ void free_char_array(uint32 num_entries, char **entries)
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
-BOOL add_chars_to_array(uint32 *len, char ***array, const char *name)
+char* add_chars_to_array(uint32 *len, char ***array, const char *name)
 {
 	void*(*fn)(const void*) = (void*(*)(const void*))&strdup;
-	return add_item_to_array(len, (void***)array, (const void*)name, *fn);
+	return (char*)add_item_to_array(len,
+	                     (void***)array, (const void*)name, *fn, False);
 				
 }
 
@@ -3283,10 +3289,11 @@ void free_unistr_array(uint32 num_entries, UNISTR2 **entries)
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
-BOOL add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name)
+UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name)
 {
 	void*(*fn)(const void*) = (void*(*)(const void*))&unistr2_dup;
-	return add_item_to_array(len, (void***)array, (const void*)name, *fn);
+	return (UNISTR2*)add_item_to_array(len,
+	                   (void***)array, (const void*)name, *fn, False);
 }
 
 void free_sid_array(uint32 num_entries, DOM_SID **entries)
@@ -3295,9 +3302,72 @@ void free_sid_array(uint32 num_entries, DOM_SID **entries)
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
-BOOL add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid)
+DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid)
 {
 	void*(*fn)(const void*) = (void*(*)(const void*))&sid_dup;
-	return add_item_to_array(len, (void***)array, (const void*)sid, *fn);
+	return (DOM_SID*)add_item_to_array(len,
+	                  (void***)array, (const void*)sid, *fn, False);
+}
+
+static PRINTER_INFO_2 *prt2_dup(const PRINTER_INFO_2* from)
+{
+	PRINTER_INFO_2 *copy = (PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
+	if (copy != NULL)
+	{
+		if (from != NULL)
+		{
+			memcpy(copy, from, sizeof(*copy));
+		}
+		else
+		{
+			memset(copy, 0, sizeof(*copy));
+		}
+	}
+	return copy;
+}
+
+void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
+				const PRINTER_INFO_2 *prt)
+{
+	void*(*fn)(const void*) = (void*(*)(const void*))&prt2_dup;
+	return (PRINTER_INFO_2*)add_item_to_array(len,
+	           (void***)array, (const void*)prt, *fn, True);
+}
+
+static PRINTER_INFO_1 *prt1_dup(const PRINTER_INFO_1* from)
+{
+	PRINTER_INFO_1 *copy = (PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
+	if (copy != NULL)
+	{
+		if (from != NULL)
+		{
+			memcpy(copy, from, sizeof(*copy));
+		}
+		else
+		{
+			memset(copy, 0, sizeof(*copy));
+		}
+	}
+	return copy;
+}
+
+void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
+				const PRINTER_INFO_1 *prt)
+{
+	void*(*fn)(const void*) = (void*(*)(const void*))&prt1_dup;
+	return (PRINTER_INFO_1*)add_item_to_array(len,
+	                   (void***)array, (const void*)prt, *fn, True);
 }
 

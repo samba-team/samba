@@ -482,14 +482,20 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 void free_void_array(uint32 num_entries, void **entries,
 		void(free_item)(void*));
-BOOL add_item_to_array(uint32 *len, void ***array, const void *item,
-	void*(item_dup)(const void*));
+void* add_item_to_array(uint32 *len, void ***array, const void *item,
+	void*(item_dup)(const void*), BOOL alloc_anyway);
 void free_char_array(uint32 num_entries, char **entries);
-BOOL add_chars_to_array(uint32 *len, char ***array, const char *name);
+char* add_chars_to_array(uint32 *len, char ***array, const char *name);
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
-BOOL add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
+UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
-BOOL add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
+PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
+				const PRINTER_INFO_2 *prt);
+void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
+PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
+				const PRINTER_INFO_1 *prt);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -2037,6 +2043,11 @@ BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
+BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
+			uint32 flags, char *servername,
+			uint32 level,
+			uint32 *count,
+			void ***printers);
 BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
 			char *printername,
 			uint32 cbbuf, uint32 devmod, uint32 des_access,
@@ -2968,6 +2979,11 @@ BOOL spoolss_io_q_getprinterdriver2(char *desc,
                                     prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
                                prs_struct *ps, int depth);
+BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u,
+				uint32 flags,
+				const char* servername,
+				uint32 level,
+				uint32 size);
 BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u,
                                prs_struct *ps, int depth);
 BOOL spoolss_io_r_enumprinters(char *desc,
@@ -3415,6 +3431,7 @@ void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
+void cmd_spoolss_enum_printers(struct client_info *info);
 void cmd_spoolss_open_printer_ex(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */

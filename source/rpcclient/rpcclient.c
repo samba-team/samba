@@ -236,9 +236,15 @@ commands[] =
 	 */
 
 	{
+		"spoolenum",
+		cmd_spoolss_enum_printers,
+		"Spool Printer Enum Test",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"spoolopen",
 		cmd_spoolss_open_printer_ex,
-		"Spool Printer Open Test",
+		"<printer name> Spool Printer Open Test",
 		{COMPL_NONE, COMPL_NONE}
 	},
 	/*

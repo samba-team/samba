@@ -40,6 +40,46 @@ extern int smb_tidx;
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
+void cmd_spoolss_enum_printers(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+	fstring srv_name;
+	void **printers = NULL;
+	uint32 count = 0;
+
+	BOOL res = True;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, smb_cli->desthost);
+	strupper(srv_name);
+
+	DEBUG(5, ("cmd_spoolss_open_printer_ex: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open SPOOLSS session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SPOOLSS, &nt_pipe_fnum) : False;
+
+	res = res ? spoolss_enum_printers(smb_cli, nt_pipe_fnum, 
+	                        0x40, srv_name, 1, &count, &printers) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+		report(out_hnd, "OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_spoolss_enum_printer: query failed\n"));
+	}
+
+	free_void_array(count, printers, free);
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
 void cmd_spoolss_open_printer_ex(struct client_info *info)
 {
 	uint16 nt_pipe_fnum;
