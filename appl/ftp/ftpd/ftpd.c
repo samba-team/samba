@@ -202,7 +202,7 @@ static char *port_string;
 static char *umask_string;
 static char *auth_string;
 
-int use_builtin_ls;
+int use_builtin_ls = -1;
 
 static int help_flag;
 static int version_flag;
@@ -230,6 +230,24 @@ usage (int code)
 {
     arg_printusage(args, num_args, NULL, "");
     exit (code);
+}
+
+/* output contents of a file */
+static int
+show_file(const char *file, int code)
+{
+    FILE *f;
+    char buf[128];
+
+    f = fopen(file, "r");
+    if(f == NULL)
+	return -1;
+    while(fgets(buf, sizeof(buf), f)){
+	buf[strcspn(buf, "\r\n")] = '\0';
+	lreply(code, "%s", buf);
+    }
+    fclose(f);
+    return 0;
 }
 
 int
@@ -376,27 +394,12 @@ main(int argc, char **argv)
     tmpline[0] = '\0';
 
     /* If logins are disabled, print out the message. */
-    if ((fd = fopen(_PATH_NOLOGIN,"r")) != NULL) {
-	while (fgets(line, sizeof(line), fd) != NULL) {
-	    if ((cp = strchr(line, '\n')) != NULL)
-		*cp = '\0';
-	    lreply(530, "%s", line);
-	}
-	fflush(stdout);
-	fclose(fd);
+    if(show_file(_PATH_NOLOGIN, 530) == 0) {
 	reply(530, "System not available.");
 	exit(0);
     }
-    if ((fd = fopen(_PATH_FTPWELCOME, "r")) != NULL) {
-	while (fgets(line, sizeof(line), fd) != NULL) {
-	    if ((cp = strchr(line, '\n')) != NULL)
-		*cp = '\0';
-	    lreply(220, "%s", line);
-	}
-	fflush(stdout);
-	fclose(fd);
-	/* reply(220,) must follow */
-    }
+    show_file(_PATH_FTPWELCOME, 220);
+    /* reply(220,) must follow */
     gethostname(hostname, sizeof(hostname));
 	
     reply(220, "%s FTP server (%s"
@@ -703,24 +706,6 @@ checkaccess(char *name)
 #undef	ALLOWED
 #undef	NOT_ALLOWED
 
-/* output contents of /etc/issue.net, or /etc/issue */
-static void
-show_issue(int code)
-{
-    FILE *f;
-    char buf[128];
-
-    f = fopen("/etc/issue.net", "r");
-    if(f == NULL)
-	f = fopen("/etc/issue", "r");
-    if(f){
-	while(fgets(buf, sizeof(buf), f)){
-	    buf[strcspn(buf, "\r\n")] = '\0';
-	    lreply(code, "%s", buf);
-	}
-	fclose(f);
-    }
-}
 
 int do_login(int code, char *passwd)
 {
@@ -764,21 +749,26 @@ int do_login(int code, char *passwd)
 	reply(550, "Can't set uid.");
 	return -1;
     }
+
+    if(use_builtin_ls == -1) {
+	struct stat st;
+	/* if /bin/ls exist and is a regular file, use it, otherwise
+           use built-in ls */
+	if(stat("/bin/ls", &st) == 0 &&
+	   S_ISREG(st.st_mode))
+	    use_builtin_ls = 0;
+	else
+	    use_builtin_ls = 1;
+    }
+
     /*
      * Display a login message, if it exists.
      * N.B. reply(code,) must follow the message.
      */
-    if ((fd = fopen(_PATH_FTPLOGINMESG, "r")) != NULL) {
-	char *cp, line[LINE_MAX];
-
-	while (fgets(line, sizeof(line), fd) != NULL) {
-	    if ((cp = strchr(line, '\n')) != NULL)
-		*cp = '\0';
-	    lreply(code, "%s", line);
-	}
-    }
+    show_file(_PATH_FTPLOGINMESG, code);
+    if(show_file(_PATH_ISSUE_NET, code) != 0)
+	show_file(_PATH_ISSUE, code);
     if (guest) {
-	show_issue(code);
 	reply(code, "Guest login ok, access restrictions apply.");
 #ifdef HAVE_SETPROCTITLE
 	snprintf (proctitle, sizeof(proctitle),
@@ -802,7 +792,6 @@ int do_login(int code, char *passwd)
 		   passwd);
 	}
     } else {
-	show_issue(code);
 	reply(code, "User %s logged in.", pw->pw_name);
 #ifdef HAVE_SETPROCTITLE
 	snprintf(proctitle, sizeof(proctitle), "%s: %s", remotehost, pw->pw_name);
@@ -956,8 +945,8 @@ retrieve(const char *cmd, char *name)
 			{".tar", "/bin/gtar cPf - %s", NULL},
 			{".tar.gz", "/bin/gtar zcPf - %s", NULL},
 			{".tar.Z", "/bin/gtar ZcPf - %s", NULL},
-			{".gz", "/bin/gzip -c %s", "/bin/gzip -c -d %s"},
-			{".Z", "/bin/compress -c %s", "/bin/uncompress -c -d %s"},
+			{".gz", "/bin/gzip -c -- %s", "/bin/gzip -c -d -- %s"},
+			{".Z", "/bin/compress -c -- %s", "/bin/uncompress -c -- %s"},
 			{NULL, NULL}
 		    };
 		    struct cmds *p;
@@ -1500,7 +1489,7 @@ statfilecmd(char *filename)
 	int c;
 	char line[LINE_MAX];
 
-	snprintf(line, sizeof(line), "/bin/ls -la %s", filename);
+	snprintf(line, sizeof(line), "/bin/ls -la -- %s", filename);
 	fin = ftpd_popen(line, "r", 1, 0);
 	lreply(211, "status of %s:", filename);
 	while ((c = getc(fin)) != EOF) {
@@ -2091,9 +2080,9 @@ list_file(char *file)
 	pdata = -1;
     } else {
 #ifdef HAVE_LS_A
-	const char *cmd = "/bin/ls -lA %s";
+	const char *cmd = "/bin/ls -lA -- %s";
 #else
-	const char *cmd = "/bin/ls -la %s";
+	const char *cmd = "/bin/ls -la -- %s";
 #endif
 	retrieve(cmd, file);
     }
@@ -2144,7 +2133,7 @@ send_file_list(char *whichf)
        */
       if (dirname[0] == '-' && *dirlist == NULL &&
 	  transflag == 0) {
-	retrieve("/bin/ls %s", dirname);
+	retrieve("/bin/ls -- %s", dirname);
 	goto out;
       }
       perror_reply(550, whichf);
@@ -2239,7 +2228,7 @@ find(char *pattern)
     FILE *f;
 
     snprintf(line, sizeof(line),
-	     "/bin/locate -d %s %s",
+	     "/bin/locate -d %s -- %s",
 	     ftp_rooted("/etc/locatedb"),
 	     pattern);
     f = ftpd_popen(line, "r", 1, 1);
