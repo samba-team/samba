@@ -96,7 +96,7 @@ enabled. PHT TurboLinux has built in support for quotas in PAM.
 
 %build
 cd source
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-smbwrapper
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-smbwrapper --with-automount --with-quotas
 make all smbwrapper
 
 %install
