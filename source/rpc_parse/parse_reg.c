@@ -1736,8 +1736,8 @@ BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int
 /*******************************************************************
 Inits a structure.
 ********************************************************************/
-void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s,
-			 const char *msg, uint32 timeout, uint16 flags)
+void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s, const char *msg,
+			uint32 timeout, BOOL reboot, BOOL force)
 {
 	int msg_len;
 	msg_len = strlen(msg);
@@ -1750,7 +1750,9 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s,
 	init_unistr2(&(q_s->uni_msg), msg, msg_len);
 
 	q_s->timeout = timeout;
-	q_s->flags = flags;
+
+	q_s->reboot = reboot ? 1 : 0;
+	q_s->force = force ? 1 : 0;
 
 }
 
@@ -1785,7 +1787,9 @@ BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
 
 	if (!prs_uint32("timeout", ps, depth, &(q_s->timeout)))
 		return False;
-	if (!prs_uint16("flags  ", ps, depth, &(q_s->flags)))
+	if (!prs_uint8("force  ", ps, depth, &(q_s->force)))
+		return False;
+	if (!prs_uint8("reboot ", ps, depth, &(q_s->reboot)))
 		return False;
 
 	return True;
