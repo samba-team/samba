@@ -687,6 +687,9 @@
 /* Define if you have the sigprocmask function.  */
 #undef HAVE_SIGPROCMASK
 
+/* Define if you have the sigset function.  */
+#undef HAVE_SIGSET
+
 /* Define if you have the snprintf function.  */
 #undef HAVE_SNPRINTF
 

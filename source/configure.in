@@ -412,8 +412,8 @@ AC_CHECK_LIB(cups,httpConnect)
 
 if test x"$ac_cv_lib_cups_httpConnect" = x"yes"; then
         AC_CHECK_HEADERS(cups/cups.h cups/language.h)
-        if x"$ac_cv_header_cups_cups_h" = x"yes"; then
-                if x"$ac_cv_header_cups_language_h" = x"yes"; then
+        if test x"$ac_cv_header_cups_cups_h" = x"yes"; then
+                if test x"$ac_cv_header_cups_language_h" = x"yes"; then
                         AC_DEFINE(HAVE_CUPS)
                 fi
         fi
@@ -615,7 +615,7 @@ fi
 AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
-AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
+AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
