@@ -125,7 +125,8 @@ send a message to a named destination
 ****************************************************************************/
 static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL duplicates)
 {
-	pid_t pid;
+	BOOL retval = False;
+	pid_t pid = 0;
 	TDB_CONTEXT *the_tdb;
 
 	the_tdb = tdb_open_log(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
@@ -136,12 +137,11 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 
 	/* "smbd" is the only broadcast operation */
 	if (strequal(dest,"smbd")) {
-		return message_send_all(the_tdb,msg_type, buf, len, duplicates);
+		retval = message_send_all(the_tdb,msg_type, buf, len, duplicates);
 	} else if (strequal(dest,"nmbd")) {
 		pid = pidfile_pid(dest);
 		if (pid == 0) {
 			fprintf(stderr,"Can't find pid for nmbd\n");
-			return False;
 		}
 	} else if (strequal(dest,"self")) {
 		pid = getpid();
@@ -149,11 +149,14 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 		pid = atoi(dest);
 		if (pid == 0) {
 			fprintf(stderr,"Not a valid pid\n");
-			return False;
 		}		
 	} 
 
-	return message_send_pid(pid, msg_type, buf, len, duplicates);
+	tdb_close(the_tdb);
+	if (pid)
+		return message_send_pid(pid, msg_type, buf, len, duplicates);
+	else
+		return retval;
 }
 
 /****************************************************************************
