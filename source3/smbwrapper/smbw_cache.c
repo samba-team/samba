@@ -87,9 +87,9 @@ static void free_name_list(struct name_list *name_list)
 
 		next = tmp->next;
 
-		free(tmp->name);
-		free(tmp->comment);
-		free(tmp);
+		SAFE_FREE(tmp->name);
+		SAFE_FREE(tmp->comment);
+		SAFE_FREE(tmp);
 		
 		tmp = next;
 	}

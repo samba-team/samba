@@ -701,8 +701,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   if((outbuf = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL)
   {
     DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
-    free(inbuf);
-    inbuf = NULL;
+    SAFE_FREE(inbuf);
     return False;
   }
 
@@ -840,8 +839,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   file_chain_restore();
 
   /* Free the buffers we've been using to recurse. */
-  free(inbuf);
-  free(outbuf);
+  SAFE_FREE(inbuf);
+  SAFE_FREE(outbuf);
 
   /* We need this in case a readraw crossed on the wire. */
   if(global_oplock_break)
@@ -1217,8 +1216,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		}
 	}
 
-	if (share_list)
-		free((char *)share_list);
+	SAFE_FREE(share_list);
 	unlock_share_entry_fsp(fsp);
 
 	/* Paranoia check... */

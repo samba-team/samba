@@ -2466,10 +2466,8 @@ int reply_trans2(connection_struct *conn,
   
 	if ((total_params && !params)  || (total_data && !data)) {
 		DEBUG(2,("Out of memory in reply_trans2\n"));
-		if(params)
-		  free(params);
-		if(data)
-		  free(data); 
+		SAFE_FREE(params);
+		SAFE_FREE(data); 
 		END_PROFILE(SMBtrans2);
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
@@ -2508,10 +2506,8 @@ int reply_trans2(connection_struct *conn,
 				else
 					DEBUG(0,("reply_trans2: %s in getting secondary trans2 response.\n",
 						 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
-				if(params)
-					free(params);
-				if(data)
-					free(data);
+				SAFE_FREE(params);
+				SAFE_FREE(data);
 				END_PROFILE(SMBtrans2);
 				return ERROR_DOS(ERRSRV,ERRerror);
 			}
@@ -2632,10 +2628,8 @@ int reply_trans2(connection_struct *conn,
 	default:
 		/* Error in request */
 		DEBUG(2,("Unknown request %d in trans2 call\n", tran_call));
-		if(params)
-			free(params);
-		if(data)
-			free(data);
+		SAFE_FREE(params);
+		SAFE_FREE(data);
 		END_PROFILE(SMBtrans2);
 		return ERROR_DOS(ERRSRV,ERRerror);
 	}
@@ -2647,10 +2641,8 @@ int reply_trans2(connection_struct *conn,
 	   an error packet. 
 	*/
 	
-	if(params)
-		free(params);
-	if(data)
-		free(data);
+	SAFE_FREE(params);
+	SAFE_FREE(data);
 	END_PROFILE(SMBtrans2);
 	return outsize; /* If a correct response was needed the
 			   call_trans2xxx calls have already sent

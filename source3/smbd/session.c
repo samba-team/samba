@@ -145,8 +145,7 @@ void session_yield(uint16 vuid)
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	safe_free(dbuf.dptr);
-	dbuf.dptr = NULL;
+	SAFE_FREE(dbuf.dptr);
 
 #if WITH_UTMP	
 	if (lp_utmp()) {

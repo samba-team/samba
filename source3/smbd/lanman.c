@@ -945,10 +945,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   
 	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
-	if (queue)
-		free(queue);
-	if (tmpdata)	
-		free (tmpdata);
+	SAFE_FREE(queue);
+	SAFE_FREE(tmpdata);
 
 	return(True);
 }
@@ -1038,7 +1036,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
       }
   }
 
-  if (subcntarr) free(subcntarr);
+  SAFE_FREE(subcntarr);
  
   *rdata_len = desc.usedlen;
   *rparam_len = 8;
@@ -1049,11 +1047,11 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   SSVAL(*rparam,6,queuecnt);
   
   for (i = 0; i < queuecnt; i++) {
-    if (queue && queue[i]) free(queue[i]);
+    if (queue) SAFE_FREE(queue[i]);
   }
 
-  if (queue) free(queue);
-  if (status) free(status);
+  SAFE_FREE(queue);
+  SAFE_FREE(status);
   
   return True;
 }
@@ -1403,7 +1401,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,counted+missed);
 
-  if (servers) free(servers);
+  SAFE_FREE(servers);
 
   DEBUG(3,("NetServerEnum domain = %s uLevel=%d counted=%d total=%d\n",
 	   domain,uLevel,counted,counted+missed));
@@ -2274,7 +2272,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	    pstrcpy(comment,servers[i].comment);	    
 	  }
       }
-      if (servers) free(servers);
+      SAFE_FREE(servers);
 
       SCVAL(p,0,lp_major_announce_version());
       SCVAL(p,1,lp_minor_announce_version());
@@ -2939,8 +2937,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,desc.neededlen);
 
-  if (queue) free(queue);
-  if (tmpdata) free(tmpdata);
+  SAFE_FREE(queue);
+  SAFE_FREE(tmpdata);
 
   DEBUG(4,("WPrintJobGetInfo: errorcode %d\n",desc.errcode));
   return(True);
@@ -3009,7 +3007,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   SSVAL(*rparam,4,succnt);
   SSVAL(*rparam,6,count);
 
-  if (queue) free(queue);
+  SAFE_FREE(queue);
 
   DEBUG(4,("WPrintJobEnumerate: errorcode %d\n",desc.errcode));
   return(True);
@@ -3128,7 +3126,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   SSVAL(*rparam,4,desc.neededlen);
 
   DEBUG(4,("WPrintDestGetInfo: errorcode %d\n",desc.errcode));
-  if (tmpdata) free (tmpdata);
+  SAFE_FREE(tmpdata);
   return(True);
 }
 
@@ -3478,10 +3476,8 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
   send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 
-  if (rdata )
-    free(rdata);
-  if (rparam)
-    free(rparam);
+  SAFE_FREE(rdata);
+  SAFE_FREE(rparam);
   
   return -1;
 }

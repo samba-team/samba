@@ -499,7 +499,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 				if(opb_ret == False) {
 					DEBUG(0,("open_mode_check: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
-					free((char *)old_shares);
+					SAFE_FREE(old_shares);
 					errno = EACCES;
 					unix_ERR_class = ERRDOS;
 					unix_ERR_code = ERRbadshare;
@@ -518,7 +518,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 			   if we can too */
 			
 			if(check_share_mode(share_entry, share_mode, fname, fcbopen, p_flags) == False) {
-				free((char *)old_shares);
+				SAFE_FREE(old_shares);
 				errno = EACCES;
 				return -1;
 			}
@@ -526,7 +526,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 		} /* end for */
 		
 		if(broke_oplock) {
-			free((char *)old_shares);
+			SAFE_FREE(old_shares);
 			num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
 			oplock_contention_count++;
 			
@@ -565,7 +565,7 @@ dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fn
 					 * other process's entry.
 					 */
 					
-					free((char *)old_shares);
+					SAFE_FREE(old_shares);
 					num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
 					break;
 				}
@@ -575,7 +575,7 @@ dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fn
 	} while(broke_oplock);
 	
 	if(old_shares != 0)
-		free((char *)old_shares);
+		SAFE_FREE(old_shares);
 	
 	/*
 	 * Refuse to grant an oplock in case the contention limit is
@@ -1237,7 +1237,7 @@ dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (doub
               DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
 
-              free((char *)old_shares);
+              SAFE_FREE(old_shares);
               return False;
             }
             lock_share_entry(conn, dev, inode);
@@ -1267,7 +1267,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
       if(broke_oplock)
       {
-        free((char *)old_shares);
+        SAFE_FREE(old_shares);
         num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
       }
     } while(broke_oplock);
@@ -1288,7 +1288,6 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 free_and_exit:
 
   unlock_share_entry(conn, dev, inode);
-  if(old_shares != NULL)
-    free((char *)old_shares);
+  SAFE_FREE(old_shares);
   return(ret);
 }

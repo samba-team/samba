@@ -76,7 +76,7 @@ static void change_notify_remove(struct change_notify *cnbp)
 	cnotify->remove_notify(cnbp->change_data);
 	DLIST_REMOVE(change_notify_list, cnbp);
 	ZERO_STRUCTP(cnbp);
-	free(cnbp);
+	SAFE_FREE(cnbp);
 }
 
 
@@ -188,7 +188,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	cnbp->change_data = cnotify->register_notify(conn, fsp->fsp_name, flags);
 	
 	if (!cnbp->change_data) {
-		free(cnbp);
+		SAFE_FREE(cnbp);
 		return False;
 	}
 
