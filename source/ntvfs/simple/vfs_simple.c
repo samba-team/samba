@@ -47,12 +47,13 @@ static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
 	struct tcon_context *conn = req->conn;
 	struct svfs_private *private;
 
-	conn->ntvfs_private = talloc(conn->mem_ctx, sizeof(struct svfs_private));
+	conn->ntvfs_private = talloc_p(conn->mem_ctx, struct svfs_private);
 
 	private = conn->ntvfs_private;
 
 	private->next_search_handle = 0;
 	private->connectpath = talloc_strdup(conn->mem_ctx, lp_pathname(conn->service));
+	private->open_files = NULL;
 
 	/* the directory must exist */
 	if (stat(private->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
