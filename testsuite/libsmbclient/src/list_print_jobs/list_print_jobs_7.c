@@ -42,8 +42,8 @@ void print_list_fn(struct print_job_info *pji)
 	strcpy(g_print_user,pji->user);
 	strcpy(g_print_name,pji->name);
 
-	//fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %u, User: %s, Name: %s\n",
-	//		          pji->id, pji->priority, pji->size, pji->user, pji->name);
+	/* fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %u, User: %s, Name: %s\n",
+			          pji->id, pji->priority, pji->size, pji->user, pji->name); */
 	
 }
 
@@ -76,8 +76,8 @@ int main(int argc, char** argv)
 		message = malloc(msg_len);
 		message[msg_len - 1] = 0;	
 		strncpy(message,argv[5],msg_len);
-		//printf("Message: %s\n",message);
-		//printf("Message len: %i\n",msg_len);
+		/* printf("Message: %s\n",message); */
+		/* printf("Message len: %i\n",msg_len); */
 
 		smbc_init(auth_fn, 0);
 		smbc_unlink(url);
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
 
 		if (( (g_print_size > 0) && (g_print_size > 0) && (strcasecmp(g_username,g_print_user)==0) ))
-		//  && (strlen(g_print_name) > 0) ))
+		/*  && (strlen(g_print_name) > 0) )) */
 			err = 0;
 
 		else

@@ -50,8 +50,8 @@ int main(int argc, char** argv)
 		message = malloc(msg_len);
 		message[msg_len - 1] = 0;	
 		strncpy(message,argv[5],msg_len);
-		//printf("Message: %s\n",message);
-		//printf("Message len: %i\n",msg_len);
+		/* printf("Message: %s\n",message); */
+		/* printf("Message len: %i\n",msg_len); */
 
 		smbc_init(auth_fn, 0);
 		smbc_unlink(url);

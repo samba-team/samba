@@ -83,9 +83,9 @@ int main(int argc, char** argv)
 		}
 
 		dh = smbc_opendir(url);
-		//printf("directory handle: %i\n",dh);
+		/* printf("directory handle: %i\n",dh); */
 		err = smbc_lseekdir(dh,0);
-		//printf("err: %i\n",err);
+		/* printf("err: %i\n",err); */
 
 		if ( err < 0 )	
 

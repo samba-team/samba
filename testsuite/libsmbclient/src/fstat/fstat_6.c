@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 		smbc_close(fd);
 		free(message);
 
-		mode_mask = mode_mask | S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH; //0666 or 33206
+		mode_mask = mode_mask | S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH; /* 0666 or 33206 */
 
 		if ( st.st_mode != mode_mask )
 			err = 1;

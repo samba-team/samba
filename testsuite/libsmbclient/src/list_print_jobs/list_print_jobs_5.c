@@ -50,8 +50,8 @@ void print_list_fn(struct print_job_info *pji)
 	strcpy(g_print_user,pji->user);
 	strcpy(g_print_name,pji->name);
 
-	//fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %u, User: %s, Name: %s\n",
-	//		          pji->id, pji->priority, pji->size, pji->user, pji->name);
+	/* fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %u, User: %s, Name: %s\n",
+			          pji->id, pji->priority, pji->size, pji->user, pji->name); */
 	
 }
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 
 		smbc_init(auth_fn, 0);
 
-		while ( ! print_queue_empty ) // Wait until the queue is empty
+		while ( ! print_queue_empty ) /* Wait until the queue is empty */
 		{
 			sleep(1);
 			print_queue_empty = 1;
