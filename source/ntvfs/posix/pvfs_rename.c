@@ -162,7 +162,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	status = pvfs_resolve_partial(pvfs, mem_ctx, 
 				      dir_path, fname2, &name2);
 	if (NT_STATUS_IS_OK(status)) {
-		status = pvfs_can_delete(pvfs, name2);
+		status = pvfs_can_delete(pvfs, req, name2);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return status;
