@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -282,7 +282,6 @@ prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
 	krb5_data_free (&data);
 	return ENOMEM;
     }
-    krb5_storage_seek(sp, data.length - 4, SEEK_SET);
     krb5_store_int32(sp, ONE_PRINC);
     krb5_storage_free(sp);
 
