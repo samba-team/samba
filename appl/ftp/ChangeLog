@@ -1,3 +1,7 @@
+Thu Mar 11 14:54:59 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* ftp/ruserpass.c: add some if-braces
+
 Wed Mar 10 20:02:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftpd/ftpd_locl.h: remove ifdef HAVE_FNMATCH
