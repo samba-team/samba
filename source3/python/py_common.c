@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "Python.h"
 
+#include "python/py_common.h"
+
 /* Return a tuple of (error code, error string) from a WERROR */
 
 PyObject *py_werror_tuple(WERROR werror)
@@ -114,4 +116,80 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 
 	Py_INCREF(Py_None);
 	return Py_None;
+}
+
+struct cli_state *open_pipe_creds(char *system_name, PyObject *creds, 
+				  cli_pipe_fn *connect_fn,
+				  struct cli_state *cli)
+{
+	struct ntuser_creds nt_creds;
+
+	if (!cli) {
+		cli = (struct cli_state *)malloc(sizeof(struct cli_state));
+		if (!cli)
+			return NULL;
+	}
+
+	ZERO_STRUCTP(cli);
+
+	/* Extract credentials from the python dictionary and initialise
+	   the ntuser_creds struct from them. */
+
+	ZERO_STRUCT(nt_creds);
+	nt_creds.pwd.null_pwd = True;
+
+	if (creds && PyDict_Size(creds) > 0) {
+		char *username, *password, *domain;
+		PyObject *username_obj, *password_obj, *domain_obj;
+
+		/* Check credentials passed are valid.  This means the
+		   username, domain and password keys must exist and be
+		   string objects. */
+
+		username_obj = PyDict_GetItemString(creds, "username");
+		domain_obj = PyDict_GetItemString(creds, "domain");
+		password_obj = PyDict_GetItemString(creds, "password");
+
+		if (!username_obj || !domain_obj || !password_obj) {
+		error:
+
+			/* TODO: Either pass in the exception for the
+			   module calling open_pipe_creds() or have a
+			   global samba python module exception. */
+
+			PyErr_SetString(PyExc_RuntimeError, 
+					"invalid credentials");
+			return NULL;
+		}
+
+		if (!PyString_Check(username_obj) || 
+		    !PyString_Check(domain_obj) || 
+		    !PyString_Check(password_obj))
+			goto error;
+
+		username = PyString_AsString(username_obj);
+		domain = PyString_AsString(domain_obj);
+		password = PyString_AsString(password_obj);
+
+		if (!username || !domain || !password)
+			goto error;
+
+		/* Initialise nt_creds structure with passed creds */
+
+		fstrcpy(nt_creds.user_name, username);
+		fstrcpy(nt_creds.domain, domain);
+
+		if (lp_encrypted_passwords())
+			pwd_make_lm_nt_16(&nt_creds.pwd, password);
+		else
+			pwd_set_cleartext(&nt_creds.pwd, password);
+
+		nt_creds.pwd.null_pwd = False;
+	}
+
+	/* Now try to connect */
+
+	connect_fn(cli, system_name, &nt_creds);
+
+	return cli;
 }
