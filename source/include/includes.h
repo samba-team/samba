@@ -824,6 +824,8 @@ extern int errno;
 
 #include "mangle.h"
 
+#include "module.h"
+
 #include "nsswitch/winbind_client.h"
 
 #include "genparser.h"
