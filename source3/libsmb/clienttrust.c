@@ -42,116 +42,32 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char new_trust_passwd_hash[16],
                           uint16 sec_chan)
 {
-	uint16 nt_pipe_fnum;
-	struct cli_state cli;
 	struct nmb_name calling, called;
+	fstring trust_acct;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, remote_machine);
+	strupper(srv_name);
+
+	fstrcpy(trust_acct, global_myname);
+	fstrcat(trust_acct, "$");
 
 	make_nmb_name(&calling, global_myname , 0x0 , scope);
 	make_nmb_name(&called , remote_machine, 0x20, scope);
 
-	ZERO_STRUCT(cli);
-	if(cli_initialise(&cli) == NULL)
-	{
-		DEBUG(0,("modify_trust_password: unable to initialize client \
-connection.\n"));
-		return False;
-	}
-
-	if(!resolve_name( remote_machine, &cli.dest_ip, 0x20))
-	{
-		DEBUG(0,("modify_trust_password: Can't resolve address for \
-%s\n", remote_machine));
-		return False;
-	}
-
-	if (ismyip(cli.dest_ip))
-	{
-		DEBUG(0,("modify_trust_password: Machine %s is one of our \
-addresses. Cannot add to ourselves.\n", remote_machine));
-		return False;
-	}
-
-	cli.protocol = PROTOCOL_NT1;
-
-	pwd_set_nullpwd(&cli.usr.pwd);
-
-	if (!cli_establish_connection(&cli, remote_machine, &cli.dest_ip,
-	                              &calling, &called,
-	                              "IPC$", "IPC", False, True))
-	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: machine %s rejected the SMB \
-session. Error was : %s.\n", remote_machine, errstr ));
-		cli_shutdown(&cli);
-		return False;
-	}
-
-
-	if (cli.protocol != PROTOCOL_NT1)
-	{
-		DEBUG(0,("modify_trust_password: machine %s didn't negotiate \
-NT protocol.\n", remote_machine));
-		cli_shutdown(&cli);
-		return False;
-	}
-
-	if (!(IS_BITS_SET_ALL(cli.sec_mode, 1)))
-	{
-		DEBUG(0,("modify_trust_password: machine %s isn't in user \
-level security mode\n", remote_machine));
-		cli_shutdown(&cli);
-		return False;
-	}
-
-	/*
-	* Ok - we have an anonymous connection to the IPC$ share.
-	* Now start the NT Domain stuff :-).
-	*/
-
-	if (!cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum))
-	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: unable to open the domain \
-client session to server %s. Error was : %s.\n", remote_machine, errstr ));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
-		return False;
-	} 
-
-	if (cli_nt_setup_creds(&cli, nt_pipe_fnum, 
-	                       cli.mach_acct, global_myname,
+	if (cli_nt_setup_creds(srv_name, global_myname, trust_acct,
 	                       orig_trust_passwd_hash, sec_chan) != 0x0)
 	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: unable to setup the PDC \
-credentials to server %s. Error was : %s.\n", remote_machine, errstr ));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
 		return False;
 	} 
 
-	if (!cli_nt_srv_pwset( &cli, nt_pipe_fnum, new_trust_passwd_hash,
+	if (!cli_nt_srv_pwset( srv_name, global_myname, trust_acct,
+	                       new_trust_passwd_hash,
 	                       sec_chan ) )
 	{
-		fstring errstr;
-		cli_safe_errstr(&cli, errstr, sizeof(errstr));
-		DEBUG(0,("modify_trust_password: unable to change password for \
-workstation %s in domain %s to Domain controller %s. Error was %s.\n",
-		            global_myname, domain, remote_machine, errstr ));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
 		return False;
 	}
-
-	cli_nt_session_close(&cli, nt_pipe_fnum);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
 
 	return True;
 }

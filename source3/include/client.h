@@ -153,9 +153,6 @@ struct cli_state
 	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
 	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
 	DOM_CRED clnt_cred;                /* Client credential. */
-	fstring mach_acct;                 /* MYNAME$. */
-	fstring srv_name_slash;            /* \\remote server. */
-	fstring clnt_name_slash;           /* \\local client. */
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
 };

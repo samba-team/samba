@@ -44,23 +44,34 @@ BOOL synchronise_passdb(void)
 	unsigned char smb_passwd[16];
 	unsigned char smb_nt_passwd[16];
 	uchar trust_passwd[16];
+	fstring trust_acct;
 
+	fstring srv_name;
 	char *mode;
 	BOOL success;
 	BOOL ret;
 	int i;
+
+	DEBUG(0,("cannot make connection to multi-list of servers yet!\n"));
 
 	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
 		return False;
 	}
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, lp_passwordserver()); /* LKCL XXXX oops! */
+	strupper(srv_name);
+
+	fstrcpy(trust_acct, global_myname);
+	fstrcat(trust_acct, "$");
+
 	if (!trust_get_passwd(trust_passwd, lp_workgroup(), global_myname))
 	{
 		return False;
 	}
 
-	ret = do_sam_sync(&cli, trust_passwd, cli.mach_acct, global_myname,
+	ret = net_sam_sync(srv_name, global_myname, trust_acct, trust_passwd,
 	                  hdr_deltas, deltas, &num);
 
 	if (ret)

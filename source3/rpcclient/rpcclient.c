@@ -49,9 +49,6 @@ static void cmd_set (struct client_info *info, int argc, char *argv[]);
 
 static struct user_credentials usr;
 
-static struct cli_state smbcli;
-struct cli_state *smb_cli = &smbcli;
-
 static struct client_info cli_info;
 
 static char  **cmd_argv = NULL;
@@ -788,14 +785,14 @@ static BOOL process( struct client_info *info, char *cmd_str)
 		fflush(out_hnd);
 
 #ifdef CLIX
-		line[0] = wait_keyboard(smb_cli);
+		line[0] = wait_keyboard(NULL);
 		/* this might not be such a good idea... */
 		if ( line[0] == EOF)
 		{
 			break;
 		}
 #else
-		wait_keyboard(smb_cli);
+		wait_keyboard(NULL);
 #endif
 
 		/* and get a response */
@@ -1185,7 +1182,7 @@ static char *complete_printersenum(char *text, int state)
 	{
 		fstring srv_name;
 		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, smb_cli->desthost);
+		fstrcat(srv_name, cli_info.dest_host);
 		strupper(srv_name);
 
 		free_print1_array(num, ctr);
@@ -1193,7 +1190,7 @@ static char *complete_printersenum(char *text, int state)
 		num = 0;
 
 		/* Iterate all users */
-		if (!msrpc_spoolss_enum_printers(smb_cli, srv_name,
+		if (!msrpc_spoolss_enum_printers(srv_name,
 		                   1, &num, (void***)&ctr,
 		                   NULL))
 		{
@@ -1608,10 +1605,6 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	{
 		load_interfaces();
 	}
-
-	fstrcpy(cli_info.mach_acct, cli_info.myhostname);
-	strupper(cli_info.mach_acct);
-	fstrcat(cli_info.mach_acct, "$");
 
 	if (cmd_str != NULL)
 	{
