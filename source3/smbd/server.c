@@ -729,11 +729,11 @@ static void usage(char *pname)
 		become_daemon();
 	}
 
-	check_kernel_oplocks();
-
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);
 	}
+
+	check_kernel_oplocks();
 
 	if (is_daemon) {
 		pidfile_create("smbd");
