@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -125,20 +125,67 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 #endif
 
 /*
- * Allocate and listen on a local X server socket and a TCP socket.
- * Return the display number.
+ * 0 if all is OK
+ * -1 if bind failed badly
+ * 1 if dpy is already used
  */
 
-int
-get_xsockets (int *unix_socket, int *tcp_socket)
+static int
+try_one (struct x_socket *s, int dpy, const char *pattern)
 {
-     int unixfd, tcpfd = -1;
-     struct sockaddr_un unixaddr;
-     struct sockaddr_in tcpaddr;
+    struct sockaddr_un addr;
+    int fd;
+
+    fd = socket (AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0)
+	err (1, "socket AF_UNIX");
+    memset (&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    snprintf (addr.sun_path, sizeof(addr.sun_path), pattern, dpy);
+    if(bind(fd,
+	    (struct sockaddr *)&addr,
+	    sizeof(addr)) < 0) {
+	close (fd);
+	if (errno == EADDRINUSE ||
+	    errno == EACCES) /* Cray return EACCESS */
+	    return 1;
+	else
+	    return -1;
+    }
+    s->fd = fd;
+    s->pathname = strdup (addr.sun_path);
+    if (s->pathname == NULL)
+	errx (1, "strdup: out of memory");
+    return 0;
+}
+
+/*
+ * Allocate and listen on a number of local X server socket and a TCP
+ * socket.  Return the display number.
+ */
+
+static char *x_paths[] = {
+X_UNIX_PATH "%u",
+"/var/X/.X11-pipe/X" "%u",
+"/var/X/.X11-unix/X" "%u",
+"/usr/spool/sockets/X11/" "%u",
+NULL
+};
+
+int
+get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
+{
      int dpy;
      int oldmask;
      struct in_addr local;
      char *dir, *p;
+     struct x_socket *s;
+     int n;
+     int i;
+
+     s = malloc (sizeof(*s) * 5);
+     if (s == NULL)
+	 errx (1, "malloc: out of memory");
 
      if((dir = strdup (X_UNIX_PATH)) == NULL)
 	 errx (1, "strdup: out of memory");
@@ -156,25 +203,30 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      local.s_addr = htonl(INADDR_LOOPBACK);
 
      for(dpy = 4; dpy < 256; ++dpy) {
-	 unixfd = socket (AF_UNIX, SOCK_STREAM, 0);
-	 if (unixfd < 0)
-	     err (1, "socket AF_UNIX");
-	 memset (&unixaddr, 0, sizeof(unixaddr));
-	 unixaddr.sun_family = AF_UNIX;
-	 snprintf (unixaddr.sun_path, sizeof(unixaddr.sun_path),
-		   X_UNIX_PATH "%u", dpy);
-	 if(bind(unixfd,
-		 (struct sockaddr *)&unixaddr,
-		 sizeof(unixaddr)) < 0) {
-	     close (unixfd);
-	     if (errno == EADDRINUSE ||
-		 errno == EACCES) /* Cray return EACCESS */
-		 continue;
-	     else
-		 return -1;
+	 int tcpfd;
+	 char **path;
+	 int tmp;
+
+	 n = 0;
+	 for (path = x_paths; *path; ++path) {
+	     tmp = try_one (&s[n], dpy, *path);
+	     if (tmp == -1) {
+		 if (errno != ENOTDIR && errno != ENOENT)
+		     return -1;
+	     } else if (tmp == 1) {
+		 while(--n >= 0) {
+		     close (s[n].fd);
+		     free (s[n].pathname);
+		 }
+		 break;
+	     } else if (tmp == 0)
+		 ++n;
 	 }
+	 if (tmp == 1)
+	     continue;
 
 	 if (tcp_socket) {
+	     struct sockaddr_in tcpaddr;
 	     int one = 1;
 
 	     tcpfd = socket (AF_INET, SOCK_STREAM, 0);
@@ -190,27 +242,29 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 	     tcpaddr.sin_port = htons(6000 + dpy);
 	     if (bind (tcpfd, (struct sockaddr *)&tcpaddr,
 		       sizeof(tcpaddr)) < 0) {
-		 close (unixfd);
 		 close (tcpfd);
+		 while(--n >= 0) {
+		     close (s[n].fd);
+		     free (s[n].pathname);
+		 }
 		 if (errno == EADDRINUSE)
 		     continue;
 		 else
 		     return -1;
 	     }
+	     s[n].fd = tcpfd;
+	     s[n].pathname = NULL;
+	     ++n;
 	 }
 	 break;
      }
      if (dpy == 256)
 	 errx (1, "no free x-servers");
-     if (listen (unixfd, SOMAXCONN) < 0)
-	 err (1, "listen");
-     if (tcp_socket)
-	 if (listen (tcpfd, SOMAXCONN) < 0)
-	     err (1, "listen");
-     strcpy(x_socket, unixaddr.sun_path);
-     *unix_socket = unixfd;
-     if (tcp_socket)
-	 *tcp_socket = tcpfd;
+     for (i = 0; i < n; ++i)
+	 if (listen (s[i].fd, SOMAXCONN) < 0)
+	     err (1, "listen %s", s[i].pathname ? s[i].pathname : "tcp");
+     *number = n;
+     *sockets = s;
      return dpy;
 }
 
