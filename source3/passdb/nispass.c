@@ -234,6 +234,9 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	fstring group_rid;
 	fstring acb;
 		          
+	fstring smb_passwd;
+	fstring smb_nt_passwd;
+
 	fstring logon_t;
 	fstring logoff_t;
 	fstring kick_t;
@@ -307,6 +310,9 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
 	new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(new_obj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
 
+	pdb_sethexpwd(smb_passwd   , newpwd->smb_passwd   , newpwd->acct_ctrl);
+	pdb_sethexpwd(smb_nt_passwd, newpwd->smb_nt_passwd, newpwd->acct_ctrl);
+
 #if 0
 	pdb_set_logon_time      (logon_t  , sizeof(logon_t  ), newpwd->logon_time           );
 	pdb_set_logoff_time     (logoff_t , sizeof(logoff_t ), newpwd->logoff_time          );
@@ -325,29 +331,28 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl), sizeof(acb)); 
 
-	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)              , 0);
-	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                           , 0);
-	set_single_attribute(&new_obj, NPF_USER_RID      , user_rid             , strlen(user_rid)                      , 0);
-	set_single_attribute(&new_obj, NPF_SMB_GRPID     , smb_grpid            , strlen(smb_grpid)                     , 0);
-	set_single_attribute(&new_obj, NPF_GROUP_RID     , group_rid            , strlen(group_rid)                     , 0);
-	set_single_attribute(&new_obj, NPF_ACB           , acb                  , strlen(acb)                           , 0);
-	set_single_attribute(&new_obj, NPF_LMPWD         , newpwd->smb_passwd   , newpwd->smb_passwd   != NULL ? 16 : 0 , EN_CRYPT);
-	set_single_attribute(&new_obj, NPF_NTPWD         , newpwd->smb_nt_passwd, newpwd->smb_nt_passwd != NULL ? 16 : 0, EN_CRYPT);
-	set_single_attribute(&new_obj, NPF_LOGON_T       , logon_t              , strlen(logon_t)                       , 0);
-	set_single_attribute(&new_obj, NPF_LOGOFF_T      , logoff_t             , strlen(logoff_t)                      , 0);
-	set_single_attribute(&new_obj, NPF_KICK_T        , kick_t               , strlen(kick_t)                        , 0);
-	set_single_attribute(&new_obj, NPF_PWDLSET_T     , pwdlset_t            , strlen(pwdlset_t)                     , 0);
-	set_single_attribute(&new_obj, NPF_PWDLCHG_T     , pwdlchg_t            , strlen(pwdlchg_t)                     , 0);
-	set_single_attribute(&new_obj, NPF_PWDMCHG_T     , pwdmchg_t            , strlen(pwdmchg_t)                     , 0);
-	set_single_attribute(&new_obj, NPF_FULL_NAME     , newpwd->full_name    , strlen(newpwd->full_name)             , 0);
-	set_single_attribute(&new_obj, NPF_HOME_DIR      , newpwd->home_dir     , strlen(newpwd->home_dir)              , 0);
-	set_single_attribute(&new_obj, NPF_DIR_DRIVE     , newpwd->dir_drive    , strlen(newpwd->dir_drive)             , 0);
-	set_single_attribute(&new_obj, NPF_LOGON_SCRIPT  , newpwd->logon_script , strlen(newpwd->logon_script)          , 0);
-	set_single_attribute(&new_obj, NPF_PROFILE_PATH  , newpwd->profile_path , strlen(newpwd->profile_path)          , 0);
-	set_single_attribute(&new_obj, NPF_ACCT_DESC     , newpwd->acct_desc    , strlen(newpwd->acct_desc)             , 0);
-	set_single_attribute(&new_obj, NPF_WORKSTATIONS  , newpwd->workstations , strlen(newpwd->workstations)          , 0);
-	set_single_attribute(&new_obj, NPF_HOURS         , newpwd->hours        , newpwd->hours_len                     , 0);
-
+	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)     , 0);
+	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                  , 0);
+	set_single_attribute(&new_obj, NPF_USER_RID      , user_rid             , strlen(user_rid)             , 0);
+	set_single_attribute(&new_obj, NPF_SMB_GRPID     , smb_grpid            , strlen(smb_grpid)            , 0);
+	set_single_attribute(&new_obj, NPF_GROUP_RID     , group_rid            , strlen(group_rid)            , 0);
+	set_single_attribute(&new_obj, NPF_ACB           , acb                  , strlen(acb)                  , 0);
+	set_single_attribute(&new_obj, NPF_LMPWD         , smb_passwd           , strlen(smb_passwd)           , EN_CRYPT);
+	set_single_attribute(&new_obj, NPF_NTPWD         , smb_nt_passwd        , strlen(smb_nt_passwd)        , EN_CRYPT);
+	set_single_attribute(&new_obj, NPF_LOGON_T       , logon_t              , strlen(logon_t)              , 0);
+	set_single_attribute(&new_obj, NPF_LOGOFF_T      , logoff_t             , strlen(logoff_t)             , 0);
+	set_single_attribute(&new_obj, NPF_KICK_T        , kick_t               , strlen(kick_t)               , 0);
+	set_single_attribute(&new_obj, NPF_PWDLSET_T     , pwdlset_t            , strlen(pwdlset_t)            , 0);
+	set_single_attribute(&new_obj, NPF_PWDLCHG_T     , pwdlchg_t            , strlen(pwdlchg_t)            , 0);
+	set_single_attribute(&new_obj, NPF_PWDMCHG_T     , pwdmchg_t            , strlen(pwdmchg_t)            , 0);
+	set_single_attribute(&new_obj, NPF_FULL_NAME     , newpwd->full_name    , strlen(newpwd->full_name)    , 0);
+	set_single_attribute(&new_obj, NPF_HOME_DIR      , newpwd->home_dir     , strlen(newpwd->home_dir)     , 0);
+	set_single_attribute(&new_obj, NPF_DIR_DRIVE     , newpwd->dir_drive    , strlen(newpwd->dir_drive)    , 0);
+	set_single_attribute(&new_obj, NPF_LOGON_SCRIPT  , newpwd->logon_script , strlen(newpwd->logon_script) , 0);
+	set_single_attribute(&new_obj, NPF_PROFILE_PATH  , newpwd->profile_path , strlen(newpwd->profile_path) , 0);
+	set_single_attribute(&new_obj, NPF_ACCT_DESC     , newpwd->acct_desc    , strlen(newpwd->acct_desc)    , 0);
+	set_single_attribute(&new_obj, NPF_WORKSTATIONS  , newpwd->workstations , strlen(newpwd->workstations) , 0);
+	set_single_attribute(&new_obj, NPF_HOURS         , newpwd->hours        , newpwd->hours_len            , 0);
 
 	obj = &new_obj;
 

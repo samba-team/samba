@@ -344,8 +344,8 @@ static void api_net_auth_2( int uid,
 		cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred.challenge), srv_time, &srv_cred);
 
 		/* copy the received client credentials for use next time */
-		memcpy(vuser->dc.clnt_cred.challenge.data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
-		memcpy(vuser->dc.srv_cred.challenge.data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
+		memcpy(vuser->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(vuser->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 	}
 	else
 	{

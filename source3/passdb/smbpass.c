@@ -253,7 +253,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 
     if (*p == '[')
 	{
-      pw_buf.acct_ctrl = pdb_decode_acct_ctrl(p);
+      pw_buf.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 
       /* Must have some account type set. */
       if(pw_buf.acct_ctrl == 0)
@@ -952,5 +952,5 @@ struct passdb_ops *file_initialize_password_db(void)
 }
 
 #else
- void dummy_function(void) { } /* stop some compilers complaining */
+	static void dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_SMBPASS_DB */

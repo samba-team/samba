@@ -736,7 +736,7 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 		lm_chal_resp = lm_owf;
 	}
 
-	memcpy(&(id->lm_chal), lm_challenge, sizeof(id->lm_chal));
+	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
 	make_str_hdr(&(id->hdr_nt_chal_resp), 24, 24, nt_chal_resp != NULL ? 1 : 0);
 	make_str_hdr(&(id->hdr_lm_chal_resp), 24, 24, lm_chal_resp != NULL ? 1 : 0);
 
