@@ -4,22 +4,25 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+extern DIR *smbw_opendir(const char *fname);
+extern struct dirent *smbw_readdir(DIR *dirp);
+
 static void usage(void)
 {
-	printf("
-smbw_sample - a sample program that uses smbw
-
-smbw_sample <options> path
-
-  options:
-     -W workgroup
-     -l logfile
-     -P prefix
-     -d debuglevel
-     -U username%%password
-     -R resolve order
-
-note that path must start with /smb/
+	printf("\n \
+smbw_sample - a sample program that uses smbw\n \
+\n \
+smbw_sample <options> path\n \
+\n \
+  options:\n \
+     -W workgroup\n \
+     -l logfile\n \
+     -P prefix\n \
+     -d debuglevel\n \
+     -U username%%password\n \
+     -R resolve order\n \
+\n \
+note that path must start with /smb/\n \
 ");
 }
 
