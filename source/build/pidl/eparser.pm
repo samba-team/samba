@@ -27,7 +27,7 @@ sub fn_prefix($)
 {
 	my $fn = shift;
 	if ($fn->{TYPE} eq "TYPEDEF") {
-		if (util::has_property($fn->{DATA}, "public")) {
+		if (util::has_property($fn, "public")) {
 			return "";
 		}
 	}
@@ -166,7 +166,7 @@ sub NeededFunction($)
 sub NeededTypedef($)
 {
 	my $t = shift;
-	if (util::has_property($t->{DATA}, "public")) {
+	if (util::has_property($t, "public")) {
 		$needed{"pull_$t->{NAME}"} = 1;
 	}
 
@@ -277,7 +277,7 @@ sub ParseHeader($$)
 		    # unions.
 
 		    if ($d->{TYPE} eq "TYPEDEF" and 
-			util::has_property($d->{DATA}, "public")) {
+			util::has_property($d, "public")) {
 			
 			if ($d->{DATA}{TYPE} eq "STRUCT") { 
 			    pidl "void ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree, struct $d->{NAME} *r);\n\n";

@@ -26,13 +26,13 @@ sub NeededFunction($)
 sub NeededTypedef($)
 {
 	my $t = shift;
-	if (util::has_property($t->{DATA}, "public")) {
+	if (util::has_property($t, "public")) {
 		$needed{"pull_$t->{NAME}"} = 1;
 		$needed{"push_$t->{NAME}"} = 1;		
 	}
 
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
-		if (util::has_property($t->{DATA}, "gensize")) {
+		if (util::has_property($t, "gensize")) {
 			$needed{"ndr_size_$t->{NAME}"} = 1;
 		}
 

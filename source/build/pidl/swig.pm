@@ -586,7 +586,7 @@ sub ParseUnion($)
 
     $result .= "}\n\n";
 
-    if (util::has_property($u->{DATA}, "public")) {
+    if (util::has_property($u, "public")) {
 
 	# Generate function to unmarshall an array of structures.
 	# Used exclusively (?) in the spoolss pipe.
@@ -613,7 +613,7 @@ sub ParseUnion($)
 
     $result .= "%}\n\n";    
 
-    if (util::has_property($u->{DATA}, "public")) {
+    if (util::has_property($u, "public")) {
 
 	$result .= "%typemap(in, numinputs=0) union $u->{NAME} **EMPTY (union $u->{NAME} *temp_$u->{NAME}) {\n";
 	$result .= "\t\$1 = &temp_$u->{NAME};\n";
