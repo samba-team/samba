@@ -8,7 +8,7 @@
 <title>Samba / MS Windows Network Browsing Guide</title>
 
 <para>
-This document contains detailed informataion as well as a fast track guide to
+This document contains detailed information as well as a fast track guide to
 implementing browsing across subnets and / or across workgroups (or domains).
 WINS is the best tool for resolution of NetBIOS names to IP addesses. WINS is
 NOT involved in browse list handling except by way of name to address resolution.
