@@ -83,11 +83,11 @@ static void mount_cifs_usage(void)
 	printf(" to a local directory.\n\nOptions:\n");
 	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
 	printf("\nLess commonly used options:");
-	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,\n\trw,ro,sep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,directio");
-	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions (e.g. most Samba versions):");
+	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,\n\tdirectio");
+	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions\n\t(e.g. most Samba versions):");
 	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>");
 	printf("\n\nRarely used options:");
-	printf("\n\tport=<tcpport>,rsize=<size>,wsize=<size>,unc=<unc_name>,ip=<ip_address>,dev,nodev");
+	printf("\n\tport=<tcpport>,rsize=<size>,wsize=<size>,unc=<unc_name>,ip=<ip_address>,\n\tdev,nodev,nouser_xattr,netbiosname,hard,soft,intr,nointr,noacl");
 	printf("\n\nOptions are described in more detail in the manual page");
 	printf("\n\tman 8 mount.cifs\n");
 	printf("\nTo display the version number of the mount helper:");
