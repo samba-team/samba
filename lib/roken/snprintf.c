@@ -62,181 +62,6 @@ struct state {
   /* XXX - methods */
 };
 
-static int as_append_char (struct state *state, char c);
-static int sn_append_char (struct state *state, char c);
-static int as_reserve (struct state *, size_t);
-static int sn_reserve (struct state *, size_t);
-static int append_number (struct state *state,
-			  unsigned long num, unsigned base, char *rep,
-			  int width, int zerop, int minusp);
-static int append_string (struct state *state,
-			  char *arg,
-			  int prec);
-static int xyzprintf (struct state *state, const char *format, va_list ap);
-
-#ifndef HAVE_SNPRINTF
-int
-snprintf (char *str, size_t sz, const char *format, ...)
-{
-  va_list args;
-  int ret;
-
-  va_start(args, format);
-  ret = vsnprintf (str, sz, format, args);
-
-  /* XXX - This is real paranoia! */
-  {
-    int ret2;
-    char *tmp;
-
-    tmp = malloc (sz);
-    if (tmp == NULL)
-      abort ();
-
-    ret2 = vsprintf (tmp, format, args);
-    if (ret != ret2 || strcmp(str, tmp))
-      abort ();
-    free (tmp);
-  }
-
-  va_end(args);
-  return ret;
-}
-#endif
-
-#ifndef HAVE_ASPRINTF
-int
-asprintf (char **ret, const char *format, ...)
-{
-  va_list args;
-  int val;
-
-  va_start(args, format);
-  val = vasprintf (ret, format, args);
-
-  /* XXX - more paranoia */
-  {
-    int ret2;
-    char *tmp;
-    tmp = malloc (val + 1);
-    if (tmp == NULL)
-      abort ();
-
-    ret2 = vsprintf (tmp, format, args);
-    if (val != ret2 || strcmp(*ret, tmp))
-      abort ();
-    free (tmp);
-  }
-
-  va_end(args);
-  return val;
-}
-#endif
-
-#ifndef HAVE_ASNPRINTF
-int
-asnprintf (char **ret, size_t max_sz, const char *format, ...)
-{
-  va_list args;
-  int val;
-
-  va_start(args, format);
-  val = vasnprintf (ret, max_sz, format, args);
-
-  /* XXX - more paranoia */
-  {
-    int ret2;
-    char *tmp;
-    tmp = malloc (val + 1);
-    if (tmp == NULL)
-      abort ();
-
-    ret2 = vsprintf (tmp, format, args);
-    if (val != ret2 || strcmp(*ret, tmp))
-      abort ();
-    free (tmp);
-  }
-
-  va_end(args);
-  return val;
-}
-#endif
-
-#ifndef HAVE_VASPRINTF
-int
-vasprintf (char **ret, const char *format, va_list args)
-{
-  return vasnprintf (ret, 0, format, args);
-}
-#endif
-
-
-#ifndef HAVE_VASNPRINTF
-int
-vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
-{
-  int st;
-  size_t len;
-  struct state state;
-
-  state.max_sz = max_sz;
-  state.sz     = min(1, max_sz);
-  state.str    = malloc(state.sz);
-  if (state.str == NULL) {
-    *ret = NULL;
-    return -1;
-  }
-  state.s = state.str;
-  state.theend = state.s + state.sz - 1;
-  state.append_char = as_append_char;
-  state.reserve     = as_reserve;
-
-  st = xyzprintf (&state, format, args);
-  if (st) {
-    free (state.str);
-    *ret = NULL;
-    return -1;
-  } else {
-    char *tmp;
-
-    *state.s = '\0';
-    len = state.s - state.str;
-    tmp = realloc (state.str, len+1);
-    if (state.str == NULL) {
-      free (state.str);
-      *ret = NULL;
-      return -1;
-    }
-    *ret = tmp;
-    return len;
-  }
-}
-#endif
-
-#ifndef HAVE_VSNPRINTF
-int
-vsnprintf (char *str, size_t sz, const char *format, va_list args)
-{
-  struct state state;
-  int ret;
-
-  state.max_sz = 0;
-  state.sz     = sz;
-  state.str    = str;
-  state.s      = str;
-  state.theend = str + sz - 1;
-  state.append_char = sn_append_char;
-  state.reserve     = sn_reserve;
-
-  ret = xyzprintf (&state, format, args);
-  *state.s = '\0';
-  if (ret)
-    return sz;
-  else
-    return state.s - state.str;
-}
-#endif
-
 static int
 sn_reserve (struct state *state, size_t n)
 {
@@ -516,3 +341,167 @@ xyzprintf (struct state *state, const char *format, va_list ap)
   }
   return 0;
 }
+
+#ifndef HAVE_SNPRINTF
+int
+snprintf (char *str, size_t sz, const char *format, ...)
+{
+  va_list args;
+  int ret;
+
+  va_start(args, format);
+  ret = vsnprintf (str, sz, format, args);
+
+  /* XXX - This is real paranoia! */
+  {
+    int ret2;
+    char *tmp;
+
+    tmp = malloc (sz);
+    if (tmp == NULL)
+      abort ();
+
+    ret2 = vsprintf (tmp, format, args);
+    if (ret != ret2 || strcmp(str, tmp))
+      abort ();
+    free (tmp);
+  }
+
+  va_end(args);
+  return ret;
+}
+#endif
+
+#ifndef HAVE_ASPRINTF
+int
+asprintf (char **ret, const char *format, ...)
+{
+  va_list args;
+  int val;
+
+  va_start(args, format);
+  val = vasprintf (ret, format, args);
+
+  /* XXX - more paranoia */
+  {
+    int ret2;
+    char *tmp;
+    tmp = malloc (val + 1);
+    if (tmp == NULL)
+      abort ();
+
+    ret2 = vsprintf (tmp, format, args);
+    if (val != ret2 || strcmp(*ret, tmp))
+      abort ();
+    free (tmp);
+  }
+
+  va_end(args);
+  return val;
+}
+#endif
+
+#ifndef HAVE_ASNPRINTF
+int
+asnprintf (char **ret, size_t max_sz, const char *format, ...)
+{
+  va_list args;
+  int val;
+
+  va_start(args, format);
+  val = vasnprintf (ret, max_sz, format, args);
+
+  /* XXX - more paranoia */
+  {
+    int ret2;
+    char *tmp;
+    tmp = malloc (val + 1);
+    if (tmp == NULL)
+      abort ();
+
+    ret2 = vsprintf (tmp, format, args);
+    if (val != ret2 || strcmp(*ret, tmp))
+      abort ();
+    free (tmp);
+  }
+
+  va_end(args);
+  return val;
+}
+#endif
+
+#ifndef HAVE_VASPRINTF
+int
+vasprintf (char **ret, const char *format, va_list args)
+{
+  return vasnprintf (ret, 0, format, args);
+}
+#endif
+
+
+#ifndef HAVE_VASNPRINTF
+int
+vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
+{
+  int st;
+  size_t len;
+  struct state state;
+
+  state.max_sz = max_sz;
+  state.sz     = min(1, max_sz);
+  state.str    = malloc(state.sz);
+  if (state.str == NULL) {
+    *ret = NULL;
+    return -1;
+  }
+  state.s = state.str;
+  state.theend = state.s + state.sz - 1;
+  state.append_char = as_append_char;
+  state.reserve     = as_reserve;
+
+  st = xyzprintf (&state, format, args);
+  if (st) {
+    free (state.str);
+    *ret = NULL;
+    return -1;
+  } else {
+    char *tmp;
+
+    *state.s = '\0';
+    len = state.s - state.str;
+    tmp = realloc (state.str, len+1);
+    if (state.str == NULL) {
+      free (state.str);
+      *ret = NULL;
+      return -1;
+    }
+    *ret = tmp;
+    return len;
+  }
+}
+#endif
+
+#ifndef HAVE_VSNPRINTF
+int
+vsnprintf (char *str, size_t sz, const char *format, va_list args)
+{
+  struct state state;
+  int ret;
+
+  state.max_sz = 0;
+  state.sz     = sz;
+  state.str    = str;
+  state.s      = str;
+  state.theend = str + sz - 1;
+  state.append_char = sn_append_char;
+  state.reserve     = sn_reserve;
+
+  ret = xyzprintf (&state, format, args);
+  *state.s = '\0';
+  if (ret)
+    return sz;
+  else
+    return state.s - state.str;
+}
+#endif
+
