@@ -150,41 +150,47 @@ struct debuglevel_message {
  */
 
 #define DEBUGLVL( level ) \
-  ( ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+  ( ((level) <= MAX_DEBUG_LEVEL) && \
+     ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
      (!DEBUGLEVEL_CLASS[ DBGC_CLASS ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUGLVLC( dbgc_class, level ) \
-  ( ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+  ( ((level) <= MAX_DEBUG_LEVEL) && \
+     ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUG( level, body ) \
-  (void)( ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
+           ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGC( dbgc_class, level, body ) \
-  (void)( ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
+           ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
 	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
-  (void)( ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
+           ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
 
 #define DEBUGADDC( dbgc_class, level, body ) \
-  (void)( ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
+          ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
