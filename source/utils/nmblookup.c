@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    NBT client - used to lookup netbios names
-   Copyright (C) Andrew Tridgell 1994-1998
+
+   Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) Jelmer Vernooij 2003 (Conversion to popt)
    
    This program is free software; you can redistribute it and/or modify
@@ -20,280 +22,264 @@
    
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
+#include "dynconfig.h"
+#include "libcli/nbt/libnbt.h"
+#include "lib/cmdline/popt_common.h"
+#include "system/iconv.h"
 
-extern BOOL AllowDebugChange;
+/* command line options */
+static struct {
+	const char *broadcast_address;
+	const char *unicast_address;
+	BOOL find_master;
+	BOOL wins_lookup;
+	BOOL node_status;
+	BOOL root_port;
+	BOOL lookup_by_ip;
+} options;
 
-static BOOL give_flags = False;
-static BOOL use_bcast = True;
-static BOOL got_bcast = False;
-static struct in_addr bcast_addr;
-static BOOL recursion_desired = False;
-static BOOL translate_addresses = False;
-static int ServerFD= -1;
-static int RootPort = False;
-static BOOL find_status=False;
-
-/****************************************************************************
-  open the socket communication
-  **************************************************************************/
-static BOOL open_sockets(void)
+/*
+  clean any binary from a node name
+*/
+static const char *clean_name(TALLOC_CTX *mem_ctx, const char *name)
 {
-  ServerFD = open_socket_in( SOCK_DGRAM,
-                             (RootPort ? 137 : 0),
-                             (RootPort ?   0 : 3),
-                             interpret_addr(lp_socket_address()), True );
-
-  if (ServerFD == -1)
-    return(False);
-
-  set_socket_options( ServerFD, "SO_BROADCAST" );
-
-  DEBUG(3, ("Socket opened.\n"));
-  return True;
+	char *ret = talloc_strdup(mem_ctx, name);
+	int i;
+	for (i=0;ret[i];i++) {
+		if (!isprint(ret[i])) ret[i] = '.';
+	}
+	return ret;
 }
 
-/****************************************************************************
-turn a node status flags field into a string
-****************************************************************************/
-static char *node_status_flags(unsigned char flags)
+/*
+  turn a node status flags field into a string
+*/
+static char *node_status_flags(TALLOC_CTX *mem_ctx, uint16_t flags)
 {
-	static fstring ret;
-	fstrcpy(ret,"");
-	
-	fstrcat(ret, (flags & 0x80) ? "<GROUP> " : "        ");
-	if ((flags & 0x60) == 0x00) fstrcat(ret,"B ");
-	if ((flags & 0x60) == 0x20) fstrcat(ret,"P ");
-	if ((flags & 0x60) == 0x40) fstrcat(ret,"M ");
-	if ((flags & 0x60) == 0x60) fstrcat(ret,"H ");
-	if (flags & 0x10) fstrcat(ret,"<DEREGISTERING> ");
-	if (flags & 0x08) fstrcat(ret,"<CONFLICT> ");
-	if (flags & 0x04) fstrcat(ret,"<ACTIVE> ");
-	if (flags & 0x02) fstrcat(ret,"<PERMANENT> ");
+	char *ret;
+	const char *group = "       ";
+	const char *type = "B";
+
+	if (flags & NBT_NM_GROUP) {
+		group = "<GROUP>";
+	}
+
+	switch (flags & NBT_NM_OWNER_TYPE) {
+	case NBT_NODE_B: 
+		type = "B";
+		break;
+	case NBT_NODE_P: 
+		type = "P";
+		break;
+	case NBT_NODE_M: 
+		type = "M";
+		break;
+	case NBT_NODE_H: 
+		type = "H";
+		break;
+	}
+
+	ret = talloc_asprintf(mem_ctx, "%s %s", group, type);
+
+	if (flags & NBT_NM_DEREGISTER) {
+		ret = talloc_asprintf_append(ret, " <DEREGISTERING>");
+	}
+	if (flags & NBT_NM_CONFLICT) {
+		ret = talloc_asprintf_append(ret, " <CONFLICT>");
+	}
+	if (flags & NBT_NM_ACTIVE) {
+		ret = talloc_asprintf_append(ret, " <ACTIVE>");
+	}
+	if (flags & NBT_NM_PERMANENT) {
+		ret = talloc_asprintf_append(ret, " <PERMANENT>");
+	}
 	
 	return ret;
 }
 
-/****************************************************************************
-turn the NMB Query flags into a string
-****************************************************************************/
-static char *query_flags(int flags)
+/* do a single node status */
+static void do_node_status(struct nbt_name_socket *nbtsock,
+			   const char *addr)
 {
-	static fstring ret1;
-	fstrcpy(ret1, "");
+	struct nbt_name_status io;
+	NTSTATUS status;
 
-	if (flags & NM_FLAGS_RS) fstrcat(ret1, "Response ");
-	if (flags & NM_FLAGS_AA) fstrcat(ret1, "Authoritative ");
-	if (flags & NM_FLAGS_TC) fstrcat(ret1, "Truncated ");
-	if (flags & NM_FLAGS_RD) fstrcat(ret1, "Recursion_Desired ");
-	if (flags & NM_FLAGS_RA) fstrcat(ret1, "Recursion_Available ");
-	if (flags & NM_FLAGS_B)  fstrcat(ret1, "Broadcast ");
+	io.in.name.name = "*";
+	io.in.name.type = 0;
+	io.in.name.scope = NULL;
+	io.in.dest_addr = addr;
+	io.in.timeout = 3;
 
-	return ret1;
+	status = nbt_name_status(nbtsock, nbtsock, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		int i;
+		printf("Node status reply from %s\n",
+		       io.out.reply_from);
+		for (i=0;i<io.out.status.num_names;i++) {
+			d_printf("\t%-16s <%02x>  %s\n", 
+				 clean_name(nbtsock, io.out.status.names[i].name),
+				 io.out.status.names[i].type,
+				 node_status_flags(nbtsock, io.out.status.names[i].nb_flags));
+		}
+		printf("\n\tMAC Address = %02X-%02X-%02X-%02X-%02X-%02X\n",
+		       io.out.status.statistics.unit_id[0],
+		       io.out.status.statistics.unit_id[1],
+		       io.out.status.statistics.unit_id[2],
+		       io.out.status.statistics.unit_id[3],
+		       io.out.status.statistics.unit_id[4],
+		       io.out.status.statistics.unit_id[5]);
+	}
 }
 
-/****************************************************************************
-do a node status query
-****************************************************************************/
-static void do_node_status(int fd, const char *name, int type, struct in_addr ip)
+/* do a single node query */
+static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
+			      const char *addr, 
+			      const char *node_name, 
+			      enum nbt_name_type node_type,
+			      BOOL broadcast)
 {
-	struct nmb_name nname;
-	int count, i, j;
-	struct node_status *status;
-	struct node_status_extra extra;
-	fstring cleanname;
+	struct nbt_name_query io;
+	NTSTATUS status;
 
-	d_printf("Looking up status of %s\n",inet_ntoa(ip));
-	make_nmb_name(&nname, name, type);
-	status = node_status_query(fd,&nname,ip, &count, &extra);
-	if (status) {
-		for (i=0;i<count;i++) {
-			pull_ascii_fstring(cleanname, status[i].name);
-			for (j=0;cleanname[j];j++) {
-				if (!isprint((int)cleanname[j])) cleanname[j] = '.';
-			}
-			d_printf("\t%-15s <%02x> - %s\n",
-			       cleanname,status[i].type,
-			       node_status_flags(status[i].flags));
+	io.in.name.name = node_name;
+	io.in.name.type = node_type;
+	io.in.name.scope = NULL;
+	io.in.dest_addr = addr;
+	io.in.broadcast = broadcast;
+	io.in.wins_lookup = options.wins_lookup;
+	io.in.timeout = 3;
+
+	status = nbt_name_query(nbtsock, nbtsock, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("%s %s<%02x>\n",
+		       io.out.reply_addr,
+		       io.out.name.name,
+		       io.out.name.type);
+		if (options.node_status) {
+			do_node_status(nbtsock, io.out.reply_addr);
 		}
-		d_printf("\n\tMAC Address = %02X-%02X-%02X-%02X-%02X-%02X\n",
-				extra.mac_addr[0], extra.mac_addr[1],
-				extra.mac_addr[2], extra.mac_addr[3],
-				extra.mac_addr[4], extra.mac_addr[5]);
-		d_printf("\n");
-		SAFE_FREE(status);
+	}
+
+	return status;
+}
+
+
+static void process_one(const char *name)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	enum nbt_name_type node_type = NBT_NAME_CLIENT;
+	char *node_name, *p;
+	struct nbt_name_socket *nbtsock;
+	
+	if (options.find_master) {
+		node_type = NBT_NAME_MASTER;
+		if (*name == '-') {
+			name = "\01\02__MSBROWSE__\02";
+			node_type = NBT_NAME_MS;
+		}
+	}
+
+	p = strchr(name, '#');
+	if (p) {
+		node_name = talloc_strndup(tmp_ctx, name, PTR_DIFF(p,name));
+		node_type = (enum nbt_name_type)strtol(p+1, NULL, 16);
 	} else {
-		d_printf("No reply from %s\n\n",inet_ntoa(ip));
+		node_name = talloc_strdup(tmp_ctx, name);
 	}
-}
 
+	nbtsock = nbt_name_socket_init(tmp_ctx, NULL);
 
-/****************************************************************************
-send out one query
-****************************************************************************/
-static BOOL query_one(const char *lookup, unsigned int lookup_type)
-{
-	int j, count, flags = 0;
-	struct in_addr *ip_list=NULL;
+	if (options.root_port) {
+		NTSTATUS status;
+		status = socket_listen(nbtsock->sock, "0.0.0.0", NBT_NAME_SERVICE_PORT, 0, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to bind to local port 137 - %s\n", nt_errstr(status));
+			return;
+		}
+	}
 
-	if (got_bcast) {
-		d_printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
-		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
-				     use_bcast?True:recursion_desired,
-				     bcast_addr,&count, &flags, NULL);
+	if (options.lookup_by_ip) {
+		do_node_status(nbtsock, name);
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	if (options.broadcast_address) {
+		do_node_query(nbtsock, options.broadcast_address, node_name, node_type, True);
+	} else if (options.unicast_address) {
+		do_node_query(nbtsock, options.unicast_address, node_name, node_type, False);
 	} else {
-		struct in_addr *bcast;
-		for (j=iface_count() - 1;
-		     !ip_list && j >= 0;
-		     j--) {
-			bcast = iface_n_bcast(j);
-			d_printf("querying %s on %s\n", 
-			       lookup, inet_ntoa(*bcast));
-			ip_list = name_query(ServerFD,lookup,lookup_type,
-					     use_bcast,
-					     use_bcast?True:recursion_desired,
-					     *bcast,&count, &flags, NULL);
+		int i, num_interfaces = iface_count();
+		for (i=0;i<num_interfaces;i++) {
+			const char *bcast = sys_inet_ntoa(*iface_n_bcast(i));
+			NTSTATUS status = do_node_query(nbtsock, bcast, node_name, node_type, True);
+			if (NT_STATUS_IS_OK(status)) break;
 		}
 	}
 
-	if (!ip_list) return False;
+	talloc_free(tmp_ctx);
+ }
 
-	if (give_flags)
-	  d_printf("Flags: %s\n", query_flags(flags));
-
-	for (j=0;j<count;j++) {
-		if (translate_addresses) {
-			struct hostent *host = gethostbyaddr((char *)&ip_list[j], sizeof(ip_list[j]), AF_INET);
-			if (host) {
-				d_printf("%s, ", host -> h_name);
-			}
-		}
-		d_printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
-	}
-
-	/* We can only do find_status if the ip address returned
-	   was valid - ie. name_query returned true.
-	*/
-	if (find_status) {
-		do_node_status(ServerFD, lookup, lookup_type, ip_list[0]);
-	}
-
-	safe_free(ip_list);
-
-	return (ip_list != NULL);
-}
-
-
-/****************************************************************************
+/*
   main program
-****************************************************************************/
+*/
 int main(int argc,char *argv[])
 {
-  int opt;
-  unsigned int lookup_type = 0x0;
-  fstring lookup;
-  static BOOL find_master=False;
-  static BOOL lookup_by_ip = False;
-  poptContext pc;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{ "broadcast", 'B', POPT_ARG_STRING, &options.broadcast_address, 
+		  'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
 
-  struct poptOption long_options[] = {
-	  POPT_AUTOHELP
-	  { "broadcast", 'B', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
-	  { "flags", 'f', POPT_ARG_VAL, &give_flags, True, "List the NMB flags returned" },
-	  { "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
-	  { "master-browser", 'M', POPT_ARG_VAL, &find_master, True, "Search for a master browser" },
-	  { "recursion", 'R', POPT_ARG_VAL, &recursion_desired, True, "Set recursion desired in package" },
-	  { "status", 'S', POPT_ARG_VAL, &find_status, True, "Lookup node status as well" },
-	  { "translate", 'T', POPT_ARG_NONE, NULL, 'T', "Translate IP addresses into names" },
-	  { "root-port", 'r', POPT_ARG_VAL, &RootPort, True, "Use root port 137 (Win95 only replies to this)" },
-	  { "lookup-by-ip", 'A', POPT_ARG_VAL, &lookup_by_ip, True, "Do a node status on <name> as an IP Address" },
-	  POPT_COMMON_SAMBA
-	  POPT_COMMON_CONNECTION
-	  { 0, 0, 0, 0 }
-  };
+		{ "unicast", 'U', POPT_ARG_STRING, &options.unicast_address, 
+		  'U', "Specify address to use for unicast" },
+
+		{ "master-browser", 'M', POPT_ARG_VAL, &options.find_master, 
+		  True, "Search for a master browser" },
+
+		{ "wins", 'W', POPT_ARG_VAL, &options.wins_lookup, True, "Do a WINS lookup" },
+
+		{ "status", 'S', POPT_ARG_VAL, &options.node_status, 
+		  True, "Lookup node status as well" },
+
+		{ "root-port", 'r', POPT_ARG_VAL, &options.root_port, 
+		  True, "Use root port 137 (Win95 only replies to this)" },
+
+		{ "lookup-by-ip", 'A', POPT_ARG_VAL, &options.lookup_by_ip, 
+		  True, "Do a node status on <name> as an IP Address" },
+
+		POPT_COMMON_SAMBA
+		{ 0, 0, 0, 0 }
+	};
 	
-  *lookup = 0;
+	setup_logging(argv[0], True);
 
-  setup_logging(argv[0],True);
+	pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+	
+	poptSetOtherOptionHelp(pc, "<NODE> ...");
 
-  pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
-					  POPT_CONTEXT_KEEP_FIRST);
+	while ((poptGetNextOpt(pc) != -1)) /* noop */ ;
 
-  poptSetOtherOptionHelp(pc, "<NODE> ...");
+	/* swallow argv[0] */
+	poptGetArg(pc);
 
-  while ((opt = poptGetNextOpt(pc)) != -1) {
-	  switch (opt) {
-	  case 'B':
-		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
-		  got_bcast = True;
-		  use_bcast = True;
-		  break;
-	  case 'U':
-		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
-		  got_bcast = True;
-		  use_bcast = False;
-		  break;
-	  case 'T':
-		  translate_addresses = !translate_addresses;
-		  break;
-	  }
-  }
+	if(!poptPeekArg(pc)) { 
+		poptPrintUsage(pc, stderr, 0);
+		exit(1);
+	}
+	
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	load_interfaces();
+	
+	while (poptPeekArg(pc)) {
+		const char *name = poptGetArg(pc);
 
-  poptGetArg(pc); /* Remove argv[0] */
+		process_one(name);
+	}
 
-  if(!poptPeekArg(pc)) { 
-	  poptPrintUsage(pc, stderr, 0);
-	  exit(1);
-  }
+	poptFreeContext(pc);
 
-  if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-	  fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-  }
-
-  load_interfaces();
-  if (!open_sockets()) return(1);
-
-  while(poptPeekArg(pc))
-  {
-	  char *p;
-	  struct in_addr ip;
-
-	  fstrcpy(lookup,poptGetArg(pc));
-
-	  if(lookup_by_ip)
-	  {
-		  ip = *interpret_addr2(lookup);
-		  fstrcpy(lookup,"*");
-		  do_node_status(ServerFD, lookup, lookup_type, ip);
-		  continue;
-	  }
-
-	  if (find_master) {
-		  if (*lookup == '-') {
-			  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
-			  lookup_type = 1;
-		  } else {
-			  lookup_type = 0x1d;
-		  }
-	  }
-
-	  p = strchr_m(lookup,'#');
-	  if (p) {
-		  *p = '\0';
-		  sscanf(++p,"%x",&lookup_type);
-	  }
-
-	  if (!query_one(lookup, lookup_type)) {
-		  d_printf( "name_query failed to find name %s", lookup );
-		  if( 0 != lookup_type )
-			  d_printf( "#%02x", lookup_type );
-		  d_printf( "\n" );
-	  }
-  }
-
-  poptFreeContext(pc);
-
-  return(0);
+	return 0;
 }
