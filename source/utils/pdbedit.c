@@ -416,6 +416,7 @@ int main (int argc, char **argv)
 	static char *profile_path = NULL;
 	static char *config_file = dyn_CONFIGFILE;
 	static char *new_debuglevel = NULL;
+	static char *account_policy = NULL;
 
 	struct pdb_context *in;
 	poptContext pc;
@@ -437,33 +438,50 @@ int main (int argc, char **argv)
 		{"export",	'e',POPT_ARG_STRING,&backend_out,0,"export user accounts to backend", NULL},
 		{"debuglevel",'D', POPT_ARG_STRING, &new_debuglevel,0,"set debuglevel",NULL},
 		{"configfile",'c',POPT_ARG_STRING, &config_file,0,"use different configuration file",NULL},
+		{"account-policy-get",'P',POPT_ARG_STRING, &account_policy,0,"get the value of an account policy (like maximum password age)",NULL},
+		
 		{0,0,0,0}
 	};
-
+	
 	setup_logging("pdbedit", True);
-
+	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
-						POPT_CONTEXT_KEEP_FIRST);
-
+			    POPT_CONTEXT_KEEP_FIRST);
+	
 	while((opt = poptGetNextOpt(pc)) != -1);
-
+	
 	if (new_debuglevel){
 		debug_parse_levels(new_debuglevel);
 		AllowDebugChange = False;
 	}
-
+	
 	if (!lp_load(config_file,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-				config_file);
+			config_file);
 		exit(1);
 	}
-
-
+	
+	
 	setparms = (full_name || home_dir || home_drive || logon_script || profile_path);
-
-	if (((add_user?1:0) + (delete_user?1:0) + (list_users?1:0) + (import?1:0) + (setparms?1:0)) + (backend_out?1:0) > 1) {
+	
+	if (((add_user?1:0) + (delete_user?1:0) + (list_users?1:0) + (import?1:0) + (setparms?1:0)) + (backend_out?1:0) + (account_policy?1:0) > 1) {
 		fprintf (stderr, "Incompatible options on command line!\n");
 		exit(1);
+	}
+	
+	if (account_policy) {
+		uint32 value;
+		int field = account_policy_name_to_feildnum(account_policy);
+		if (field == 0) {
+			fprintf(stderr, "No account policy by that name\n");
+			exit(1);
+		}
+		if (!account_policy_get(field, &value)){
+			fprintf(stderr, "valid account policy, but unable to fetch value!\n");
+			exit(1);
+		}
+		printf("account policy value for %s is %u\n", account_policy, value);
+		exit(0);
 	}
 
 	if (!backend_in) {
