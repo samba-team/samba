@@ -3599,23 +3599,6 @@ int interpret_protocol(char *str,int def)
   return(def);
 }
 
-/****************************************************************************
-interpret a security level
-****************************************************************************/
-int interpret_security(char *str,int def)
-{
-  if (strequal(str,"SERVER"))
-    return(SEC_SERVER);
-  if (strequal(str,"USER"))
-    return(SEC_USER);
-  if (strequal(str,"SHARE"))
-    return(SEC_SHARE);
-  
-  DEBUG(0,("Unrecognised security level %s\n",str));
-  
-  return(def);
-}
-
 
 /****************************************************************************
 interpret an internet address or name into an IP address in 4 byte form
