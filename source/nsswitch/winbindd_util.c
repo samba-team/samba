@@ -1,10 +1,10 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.0
 
    Winbind daemon for ntdom nss module
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter 2000-2001
+   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,21 @@
 
 #include "winbindd.h"
 #include "sids.h"
+
+/**
+ * @file winbindd_util.c
+ *
+ * Winbind daemon for NT domain authentication nss module.
+ **/
+
+
+/**
+ * Used to clobber name fields that have an undefined value.
+ *
+ * Correct code should never look at a field that has this value.
+ **/
+static const fstring name_deadbeef = "<deadbeef>";
+
 
 /* Globals for domain list stuff */
 
@@ -434,9 +449,22 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 	return rv;
 }
 
-/* Lookup a name in a domain from a sid */
-
-BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name, enum SID_NAME_USE *type)
+/**
+ * @brief Lookup a name in a domain from a sid.
+ *
+ * @param sid Security ID you want to look up.
+ *
+ * @param name On success, set to the name corresponding to @p sid.
+ * 
+ * @param type On success, contains the type of name: alias, group or
+ * user.
+ *
+ * @retval True if the name exists, in which case @p name and @p type
+ * are set, otherwise False.
+ **/
+BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
+				 fstring name,
+				 enum SID_NAME_USE *type)
 {
 	int num_sids = 1, num_names = 0;
 	uint32 *types = NULL;
@@ -448,9 +476,12 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name, enum SID_NAME_USE *
 
 	/* First check cache. */
 	if (winbindd_lookup_name_by_sid_in_cache(sid, name, type)) {
-		if (*type == SID_NAME_USE_NONE)
+		if (*type == SID_NAME_USE_NONE) {
+			fstrcpy(name, name_deadbeef);
+			*type = SID_NAME_UNKNOWN;
 			return False; /* Negative cache hit. */
-		return True;
+		} else 
+			return True;
 	}
 
 	/* Lookup name */
@@ -467,7 +498,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name, enum SID_NAME_USE *
 
 	/* Return name and type if successful */
         
-	if (NT_STATUS_IS_OK(result)) {
+	if ((rv = NT_STATUS_IS_OK(result))) {
                 
 		/* Return name */
                 
@@ -482,17 +513,16 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name, enum SID_NAME_USE *
 		store_sid_by_name_in_cache(names[0], sid, types[0]);
 		store_name_by_sid_in_cache(sid, names[0], types[0]);
 	} else {
-		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
-		fstring sidstr;
-
-		sid_to_string(sidstr, sid);
+		/* OK, so we tried to look up a name in this sid, and
+		 * didn't find it.  Therefore add a negative cache
+		 * entry.  */
 		store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
+		*type = SID_NAME_UNKNOWN;
+		fstrcpy(name, name_deadbeef);
 	}
 
-	rv = NT_STATUS_IS_OK(result);
         
  done:
-
 	talloc_destroy(mem_ctx);
 
 	return rv;
