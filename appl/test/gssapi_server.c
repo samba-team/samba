@@ -137,6 +137,8 @@ proto (int sock, const char *service)
     krb5_ccache ccache;
     u_char init_buf[4];
     u_char acct_buf[4];
+    gss_OID mech_oid;
+    char *mech, *p;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -187,7 +189,7 @@ proto (int sock, const char *service)
 				    input_token,
 				    &input_chan_bindings,
 				    &client_name,
-				    NULL,
+				    &mech_oid,
 				    output_token,
 				    NULL,
 				    NULL,
@@ -205,6 +207,18 @@ proto (int sock, const char *service)
 	}
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
     
+    p = (char *)mech_oid->elements;
+    if (mech_oid->length == GSS_KRB5_MECHANISM->length
+	&& memcmp(p, GSS_KRB5_MECHANISM->elements, mech_oid->length) == 0)
+	mech = "Kerberos 5";
+    else if (mech_oid->length == GSS_SPNEGO_MECHANISM->length
+	&& memcmp(p, GSS_SPNEGO_MECHANISM->elements, mech_oid->length) == 0)
+	mech = "SPNEGO"; /* XXX Silly, wont show up */
+    else
+	mech = "Unknown";
+
+    printf("Using mech: %s\n", mech);
+
     if (delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
        krb5_context context;
 
