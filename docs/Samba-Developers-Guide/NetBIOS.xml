@@ -18,7 +18,7 @@
 <title>NETBIOS</title>
 
 <para>
-NetBIOS runs over the following tranports: TCP/IP; NetBEUI and IPX/SPX.
+NetBIOS runs over the following transports: TCP/IP; NetBEUI and IPX/SPX.
 Samba only uses NetBIOS over TCP/IP.  For details on the TCP/IP NetBIOS 
 Session Service NetBIOS Datagram Service, and NetBIOS Names, see
 rfc1001.txt and rfc1002.txt.
