@@ -2919,7 +2919,7 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	 */
 	
 	if (info_1->p_datatype != 0) {
-		unistr2_to_ascii(datatype, &info_1->docname, sizeof(datatype));
+		unistr2_to_ascii(datatype, &info_1->datatype, sizeof(datatype));
 		if (strcmp(datatype, "RAW") != 0) {
 			(*jobid)=0;
 			return ERROR_INVALID_DATATYPE;
