@@ -155,6 +155,44 @@ CLASS="COMMAND"
 ></LI
 ></UL
 ></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN190"
+></A
+>3.3. Microsoft Access database opening errors</H1
+><P
+>Here are some notes on running MS-Access on a Samba drive from <A
+HREF="stefank@esi.com.au"
+TARGET="_top"
+>Stefan Kjellberg</A
+></P
+><P
+><P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>Opening a database in 'exclusive' mode does NOT work. Samba ignores r/w/share modes on file open.</TD
+></TR
+><TR
+><TD
+>Make sure that you open the database as 'shared' and to 'lock modified records'</TD
+></TR
+><TR
+><TD
+>Of course locking must be enabled for the particular share (smb.conf)</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></P
+></DIV
 ></DIV
 ><DIV
 CLASS="NAVFOOTER"
