@@ -31,6 +31,9 @@ while(<>) {
 	next;
     }
     if(/\{/){
+	if (!/\}/) {
+	    $brace++;
+	}
 	$_ = $line;
 	while(s/\*\//\ca/){
 	    s/\/\*(.|\n)*\ca//;
@@ -77,7 +80,6 @@ while(<>) {
 	    }
 	}
 	$line = "";
-	$brace++;
     }
     if(/\}/){
 	$brace--;
