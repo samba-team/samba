@@ -51,8 +51,6 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 
 	ret[strlen(ret)-1] = '\0';
 
-	printf("RETURNING: %s\n", ret);
-
 	if(strlen(ret) == 0) return NULL;
 	
 	return ret;
@@ -64,9 +62,6 @@ static int ldb_close_registry(void *data)
 	ldb_close((struct ldb_context *)data);
 	return 0;
 }
-
-
-
 
 static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, struct registry_key *p, const char *name, uint32_t access_mask, SEC_DESC *sec, struct registry_key **new)
 {
@@ -94,7 +89,6 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	*subkey = talloc_p(mem_ctx, struct registry_key);
 	(*subkey)->name = talloc_strdup(mem_ctx, el->values[0].data);
 	(*subkey)->backend_data = talloc_strdup(mem_ctx, msg[idx]->dn);
-	printf("Retrieved: %s\n", (*subkey)->backend_data);
 
 	ldb_search_free(c, msg);
 	return WERR_OK;
@@ -158,7 +152,6 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 	*key = talloc_p(mem_ctx, struct registry_key);
 	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\'));
 	(*key)->backend_data = talloc_strdup(mem_ctx, msg[0]->dn);
-	printf("Retrieved: %s\n", (*key)->backend_data);
 
 	ldb_search_free(c, msg);
 
@@ -183,7 +176,7 @@ static struct registry_operations reg_backend_ldb = {
 	.name = "ldb",
 	.open_hive = ldb_open_hive,
 	.open_key = ldb_open_key,
-/*	.fetch_subkeys = ldb_fetch_subkeys,
+/*
 	.fetch_values = ldb_fetch_values,*/
 	.get_subkey_by_index = ldb_get_subkey_by_id,
 	.add_key = ldb_add_key,
