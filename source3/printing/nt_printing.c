@@ -3683,7 +3683,6 @@ WERROR nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
-	extern DOM_SID global_sam_sid;
 	SEC_ACE ace[3];
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
@@ -3709,7 +3708,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  		   This should emulate a lanman printer as security
  		   settings can't be changed. */
 
-		sid_copy(&owner_sid, &global_sam_sid);
+		sid_copy(&owner_sid, get_global_sam_sid());
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	}
 

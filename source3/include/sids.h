@@ -23,7 +23,7 @@
 #ifndef _SIDS_H
 #define _SIDS_H 
 
-extern DOM_SID global_sam_sid;
+extern DOM_SID *global_sam_sid;
 extern fstring global_sam_name;
 
 extern DOM_SID global_member_sid;

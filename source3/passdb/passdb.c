@@ -32,7 +32,6 @@
  * responsible.
  */
 
-extern DOM_SID global_sam_sid;
 extern pstring global_myname;
 
 /************************************************************
@@ -699,7 +698,7 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 
 	fstrcpy(user, c_user);
 
-	sid_copy(&local_sid, &global_sam_sid);
+	sid_copy(&local_sid, get_global_sam_sid());
 
 	/*
 	 * Special case for MACHINE\Everyone. Map to the world_sid.
@@ -787,12 +786,11 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 
 DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-	extern DOM_SID global_sam_sid;
 	struct passwd *pass;
 	SAM_ACCOUNT *sam_user = NULL;
 	fstring str; /* sid string buffer */
 
-	sid_copy(psid, &global_sam_sid);
+	sid_copy(psid, get_global_sam_sid());
 
 	if((pass = getpwuid_alloc(uid))) {
 
@@ -830,8 +828,6 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	extern DOM_SID global_sam_sid;
-
 	DOM_SID dom_sid;
 	uint32 rid;
 	fstring str;
@@ -846,7 +842,7 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 * We can only convert to a uid if this is our local
 	 * Domain SID (ie. we are the controling authority).
 	 */
-	if (!sid_equal(&global_sam_sid, &dom_sid))
+	if (!sid_equal(get_global_sam_sid(), &dom_sid))
 		return False;
 
 	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
@@ -878,10 +874,9 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-	extern DOM_SID global_sam_sid;
 	GROUP_MAP map;
 
-	sid_copy(psid, &global_sam_sid);
+	sid_copy(psid, get_global_sam_sid());
 	
 	if (get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_copy(psid, &map.sid);
@@ -899,7 +894,6 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	extern DOM_SID global_sam_sid;
 	DOM_SID dom_sid;
 	uint32 rid;
 	fstring str;
@@ -917,7 +911,7 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 * Or in the Builtin SID too. JFM, 11/30/2001
 	 */
 
-	if (!sid_equal(&global_sam_sid, &dom_sid))
+	if (!sid_equal(get_global_sam_sid(), &dom_sid))
 		return False;
 
 	if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {

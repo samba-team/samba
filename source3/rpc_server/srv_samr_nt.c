@@ -31,7 +31,6 @@
 
 extern fstring global_myworkgroup;
 extern pstring global_myname;
-extern DOM_SID global_sam_sid;
 extern DOM_SID global_sid_Builtin;
 
 extern rid_name domain_group_rids[];
@@ -684,7 +683,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		}
 		SAFE_FREE(map);
 		
-	} else if (sid_equal(sid, &global_sam_sid) && !lp_hide_local_users()) {
+	} else if (sid_equal(sid, get_global_sam_sid()) && !lp_hide_local_users()) {
 		struct sys_grent *glist;
 		struct sys_grent *grp;
 		struct passwd *pw;
@@ -1386,7 +1385,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 		group_attrs[i] = SID_NAME_UNKNOWN;
 		*group_names[i] = '\0';
 
-		if (sid_equal(&pol_sid, &global_sam_sid)) {
+		if (sid_equal(&pol_sid, get_global_sam_sid())) {
 			sid_copy(&sid, &pol_sid);
 			sid_append_rid(&sid, q_u->rid[i]);
 
@@ -1841,7 +1840,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			num_users=info->disp_info.num_user_account;
 			free_samr_db(info);
 			
-			r_u->status=load_group_domain_entries(info, &global_sam_sid);
+			r_u->status=load_group_domain_entries(info, get_global_sam_sid());
 			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
 				return r_u->status;
@@ -2770,7 +2769,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 		if(!get_local_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
 			return NT_STATUS_NO_SUCH_ALIAS;
 	} else {
-		if (sid_equal(&alias_sid, &global_sam_sid)) {
+		if (sid_equal(&alias_sid, get_global_sam_sid())) {
 			DEBUG(10, ("lookup on Server SID\n"));
 			if(!get_local_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
 				return NT_STATUS_NO_SUCH_ALIAS;
@@ -2789,7 +2788,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 		struct passwd *pass;
 		uint32 rid;
 
-		sid_copy(&temp_sid, &global_sam_sid);
+		sid_copy(&temp_sid, get_global_sam_sid());
 
 		pass = getpwuid_alloc(uid[i]);
 		if (!pass) continue;
@@ -2863,7 +2862,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	DEBUG(10, ("sid is %s\n", group_sid_str));
 
 	/* can we get a query for an SID outside our domain ? */
-	if (!sid_equal(&group_sid, &global_sam_sid))
+	if (!sid_equal(&group_sid, get_global_sam_sid()))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	sid_append_rid(&group_sid, group_rid);
@@ -2946,7 +2945,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	sid_to_string(alias_sid_str, &alias_sid);
 	DEBUG(10, ("sid is %s\n", alias_sid_str));
 
-	if (sid_compare(&alias_sid, &global_sam_sid)>0) {
+	if (sid_compare(&alias_sid, get_global_sam_sid())>0) {
 		DEBUG(10, ("adding member on Server SID\n"));
 		if(!get_local_group_from_sid(alias_sid, &map, MAPPING_WITHOUT_PRIV))
 			return NT_STATUS_NO_SUCH_ALIAS;
@@ -3095,7 +3094,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	sid_to_string(group_sid_str, &group_sid);
 	DEBUG(10, ("sid is %s\n", group_sid_str));
 
-	if (sid_compare(&group_sid, &global_sam_sid)<=0)
+	if (sid_compare(&group_sid, get_global_sam_sid())<=0)
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	DEBUG(10, ("lookup on Domain SID\n"));
@@ -3103,7 +3102,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	sid_copy(&user_sid, &global_sam_sid);
+	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, q_u->rid);
 
 	ret = pdb_init_sam(&sam_user);
@@ -3182,7 +3181,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	if(!sid_check_is_in_our_domain(&group_sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	sid_copy(&user_sid, &global_sam_sid);
+	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, q_u->rid);
 
 	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
@@ -3315,7 +3314,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	DEBUG(10, ("sid is %s\n", group_sid_str));
 
 	/* we check if it's our SID before deleting */
-	if (!sid_equal(&dom_sid, &global_sam_sid))
+	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	DEBUG(10, ("lookup on Domain SID\n"));
@@ -3372,7 +3371,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	DEBUG(10, ("sid is %s\n", alias_sid_str));
 
 	/* we check if it's our SID before deleting */
-	if (!sid_equal(&dom_sid, &global_sam_sid))
+	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	DEBUG(10, ("lookup on Local SID\n"));
@@ -3422,7 +3421,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid)) 
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!sid_equal(&dom_sid, &global_sam_sid))
+	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* TODO: check if allowed to create group and add a become_root/unbecome_root pair.*/
@@ -3443,7 +3442,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
 
 	/* add the group to the mapping table */
-	sid_copy(&info_sid, &global_sam_sid);
+	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, r_u->rid);
 	sid_to_string(sid_string, &info_sid);
 
@@ -3480,7 +3479,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid)) 
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!sid_equal(&dom_sid, &global_sam_sid))
+	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* TODO: check if allowed to create group  and add a become_root/unbecome_root pair.*/
@@ -3500,7 +3499,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
 
-	sid_copy(&info_sid, &global_sam_sid);
+	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, r_u->rid);
 	sid_to_string(sid_string, &info_sid);
 
@@ -3686,10 +3685,10 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* this should not be hard-coded like this */
-	if (!sid_equal(&sid, &global_sam_sid))
+	if (!sid_equal(&sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	sid_copy(&info_sid, &global_sam_sid);
+	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, q_u->rid_group);
 	sid_to_string(sid_string, &info_sid);
 
@@ -3778,7 +3777,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			num_users=info->disp_info.num_user_account;
 			free_samr_db(info);
 			
-			r_u->status=load_group_domain_entries(info, &global_sam_sid);
+			r_u->status=load_group_domain_entries(info, get_global_sam_sid());
 			if (NT_STATUS_IS_ERR(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
 				return r_u->status;
