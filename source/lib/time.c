@@ -495,6 +495,8 @@ char *http_timestring(time_t t)
   else
 #ifndef HAVE_STRFTIME
   fstrcpy(buf, asctime(tm));
+  if(buf[strlen(buf)-1] == '\n')
+    buf[strlen(buf)-1] = 0;
 #else /* !HAVE_STRFTIME */
   strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
 #endif /* !HAVE_STRFTIME */
