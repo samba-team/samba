@@ -258,6 +258,11 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 
+	/* WINS functions */
+
+	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
+	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
+
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

@@ -7,20 +7,6 @@
 
 int main(int argc, char **argv);
 
-#if 0
-/* The following definitions come from nsswitch/winbindd_ads.c  */
-
-ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			       const char *exp,
-			       const char **attrs, void **res);
-ADS_STATUS ads_search_retry(ADS_STRUCT *ads, void **res, 
-			    const char *exp, 
-			    const char **attrs);
-ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
-			       const char *dn, 
-			       const char **attrs);
-#endif
-
 /* The following definitions come from nsswitch/winbindd_cache.c  */
 
 void wcache_flush_cache(void);
@@ -124,4 +110,9 @@ BOOL winbindd_param_init(void);
 BOOL check_domain_env(char *domain_env, char *domain);
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user);
+
+/* The following definitions come from nsswitch/winbindd_wins.c  */
+
+enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state);
 #endif /* _PROTO_H_ */
