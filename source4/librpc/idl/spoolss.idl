@@ -483,13 +483,28 @@
 		[in,out,ref] uint32 *buf_size
 	);
 
+	typedef struct {
+		uint32 flags;
+		unistr *formname;
+		uint32 width;
+		uint32 length;
+		uint32 left;
+		uint32 top;
+		uint32 right;
+		uint32 bottom;
+	} spoolss_SetFormInfo1;
+
+	typedef union {
+		[case(1)] spoolss_AddFormInfo1 *info1;
+	} spoolss_SetFormInfo;
+
 	/******************/
 	/* Function: 0x21 */
 	WERROR spoolss_SetForm(
 		[in,ref] policy_handle *handle,
 		[in] unistr formname,
 		[in] uint32 level,
-		[in,switch_is(level)] spoolss_AddFormInfo info
+		[in,switch_is(level)] spoolss_SetFormInfo info
 	);
 
 	typedef [nodiscriminant,public] union {
