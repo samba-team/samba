@@ -48,6 +48,8 @@
 static uid_t initial_uid;
 static gid_t initial_gid;
 
+static BOOL sec_initialised;
+
 /****************************************************************************
 remember what uid we got started as - this allows us to run correctly
 as non-root while catching trapdoor systems
@@ -56,6 +58,8 @@ void sec_init(void)
 {
 	initial_uid = geteuid();
 	initial_gid = getegid();
+
+	sec_initialise = True;
 }
 
 /****************************************************************************
@@ -63,6 +67,9 @@ some code (eg. winbindd) needs to know what uid we started as
 ****************************************************************************/
 uid_t sec_initial_uid(void)
 {
+	if (!sec_initialise)
+		smb_panic("sec_initial_uid() called before sec_init()\n");
+
 	return initial_uid;
 }
 
@@ -71,6 +78,9 @@ some code (eg. winbindd, profiling shm) needs to know what gid we started as
 ****************************************************************************/
 gid_t sec_initial_gid(void)
 {
+	if (!sec_initialise)
+		smb_panic("sec_initial_gid() called before sec_init()\n");
+
 	return initial_gid;
 }
 
@@ -79,6 +89,9 @@ are we running in non-root mode?
 ****************************************************************************/
 BOOL non_root_mode(void)
 {
+	if (!sec_initialise)
+		smb_panic("non_root_mode() called before sec_init()\n");
+
 	return (initial_uid != (uid_t)0);
 }
 
