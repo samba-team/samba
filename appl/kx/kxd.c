@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -91,12 +91,18 @@ fatal (int fd, des_cblock *key, des_key_schedule schedule,
 }
 
 static void
-cleanup(void)
+cleanup(int nsockets, struct x_socket *sockets)
 {
+    int i;
+
     if(xauthfile[0])
 	unlink(xauthfile);
-    if(x_socket[0])
-	unlink(x_socket);
+    for (i = 0; i < nsockets; ++i) {
+	if (sockets[i].pathname != NULL) {
+	    unlink (sockets[i].pathname);
+	    free (sockets[i].pathname);
+	}
+    }
 }
 
 static int
@@ -345,10 +351,11 @@ doit(int sock, int tcpp)
 {
      des_key_schedule schedule;
      des_cblock key;
-     int localx, tcpx;
      struct sockaddr_in me, him;
      int flags;
      u_char msg[1024], *p;
+     struct x_socket *sockets;
+     int nsockets;
 
      flags = recv_conn (sock, &key, schedule, &me, &him);
 
@@ -356,7 +363,7 @@ doit(int sock, int tcpp)
 	  int tmp;
 	  int len;
 
-	  tmp = get_xsockets (&localx, tcpp ? &tcpx : NULL);
+	  tmp = get_xsockets (&nsockets, &sockets, tcpp);
 	  if (tmp < 0)
 	       return 1;
 	  display_num = tmp;
@@ -370,7 +377,7 @@ doit(int sock, int tcpp)
              fatal (sock, &key, schedule, &me, &him,
                     "Cookie-creation failed with: %s",
 		    strerror(errno));
-             cleanup();
+             cleanup(nsockets, sockets);
 	     return 1;
 	  }
 
@@ -388,41 +395,53 @@ doit(int sock, int tcpp)
 	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
 			      &me, &him) < 0) {
 	      syslog (LOG_ERR, "write: %m");
-	      cleanup();
+	      cleanup(nsockets, sockets);
 	      return 1;
 	  }
 	  for (;;) {
 	       pid_t child;
 	       int fd;
-	       int zero = 0;
 	       fd_set fds;
+	       int i;
+	       int ret;
 	       
 	       FD_ZERO(&fds);
-	       FD_SET(localx, &fds);
 	       FD_SET(sock, &fds);
-	       if (tcpp)
-		    FD_SET(tcpx, &fds);
-	       if(select(FD_SETSIZE, &fds, NULL, NULL, NULL) <=0)
+	       for (i = 0; i < nsockets; ++i)
+		   FD_SET(sockets[i].fd, &fds);
+	       ret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+	       if(ret <= 0)
 		   continue;
 	       if(FD_ISSET(sock, &fds)){
 		   /* there are no processes left on the remote side
 		    */
-		   cleanup();
+		   cleanup(nsockets, sockets);
 		   exit(0);
-	       } else if(FD_ISSET(localx, &fds))
-		   fd = accept (localx, NULL, &zero);
-	       else if(tcpp && FD_ISSET(tcpx, &fds)) {
-		   struct sockaddr_in peer;
-		   int len = sizeof(peer);
+	       } else if(ret) {
+		   for (i = 0; i < nsockets; ++i) {
+		       if (FD_ISSET(sockets[i].fd, &fds)) {
+			   if (sockets[i].pathname == NULL) {
+			       struct sockaddr_in peer;
+			       int len = sizeof(peer);
 
-		   fd = accept (tcpx, (struct sockaddr *)&peer, &len);
-		   /* XXX */
-		   if (fd >= 0 && suspicious_address (fd, peer)) {
-		       close (fd);
-		       continue;
+			       fd = accept (sockets[i].fd,
+					    (struct sockaddr *)&peer,
+					    &len);
+			       /* XXX */
+			       if (fd >= 0 && suspicious_address (fd, peer)) {
+				   close (fd);
+				   fd = -1;
+				   errno = EINTR;
+			       }
+			   } else {
+			       int zero = 0;
+
+			       fd = accept (sockets[i].fd, NULL, &zero);
+			   }
+		       }
+		       break;
 		   }
-	       } else
-		   continue;
+	       }
 	       if (fd < 0)
 		    if (errno == EINTR)
 			 continue;
@@ -436,9 +455,8 @@ doit(int sock, int tcpp)
 		   syslog (LOG_ERR, "fork: %m");
 		   return 1;
 	       } else if (child == 0) {
-		    close (localx);
-		    if (tcpp)
-			 close (tcpx);
+		    for (i = 0; i < nsockets; ++i)
+			close (sockets[i].fd);
 		    return doit_conn (fd, sock, flags,
 				      &key, schedule, &me, &him);
 	       } else {
@@ -479,7 +497,7 @@ doit(int sock, int tcpp)
 		  syslog (LOG_ERR, "fork: %m");
 		  return 1;
 	      } else if (child == 0) {
-		  return doit_conn (localx, sock, flags,
+		  return doit_conn (sock, sock, flags,
 				    &key, schedule, &me, &him);
 	      } else {
 	      }

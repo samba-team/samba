@@ -353,13 +353,15 @@ doit_active (char *host, char *user,
     des_key_schedule schedule;
     des_cblock key;
     int otherside;
-    int rendez_vous1 = 0, rendez_vous2 = 0;
+    int nsockets;
+    struct x_socket *sockets;
     struct sockaddr_in me, him;
     u_char msg[1024], *p;
     int len = strlen(user);
     void *ret;
     u_int32_t tmp;
     char *s;
+    int i;
 
     otherside = connect_host (host, user, &key, schedule, port,
 			      &me, &him);
@@ -415,8 +417,7 @@ doit_active (char *host, char *user,
     } else
 	p++;
 
-    tmp = get_xsockets (&rendez_vous1,
-			tcpp ? &rendez_vous2 : NULL);
+    tmp = get_xsockets (&nsockets, &sockets, tcpp);
     if (tmp < 0)
 	return 1;
     display_num = tmp;
@@ -430,23 +431,19 @@ doit_active (char *host, char *user,
     for (;;) {
 	fd_set fdset;
 	pid_t child;
-	int fd, thisfd;
+	int fd, thisfd = -1;
 	int zero = 0;
 
 	FD_ZERO(&fdset);
-	if (rendez_vous1)
-	    FD_SET(rendez_vous1, &fdset);
-	if (rendez_vous2)
-	    FD_SET(rendez_vous2, &fdset);
+	for (i = 0; i < nsockets; ++i)
+	    FD_SET(sockets[i].fd, &fdset);
 	if (select(FD_SETSIZE, &fdset, NULL, NULL, NULL) <= 0)
 	    continue;
-	if (rendez_vous1 && FD_ISSET(rendez_vous1, &fdset))
-	    thisfd = rendez_vous1;
-	else if (rendez_vous2 && FD_ISSET(rendez_vous2, &fdset))
-	    thisfd = rendez_vous2;
-	else
-	    continue;
-
+	for (i = 0; i < nsockets; ++i)
+	    if (FD_ISSET(sockets[i].fd, &fdset)) {
+		thisfd = sockets[i].fd;
+		break;
+	    }
 	fd = accept (thisfd, NULL, &zero);
 	if (fd < 0)
 	    if (errno == EINTR)
@@ -484,10 +481,8 @@ doit_active (char *host, char *user,
 	    int s;
 	    struct sockaddr_in addr;
 
-	    if (rendez_vous1)
-		close (rendez_vous1);
-	    if (rendez_vous2)
-		close (rendez_vous2);
+	    for (i = 0; i < nsockets; ++i)
+		close (sockets[i].fd);
 
 	    addr = him;
 	    close (otherside);
