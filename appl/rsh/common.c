@@ -58,17 +58,15 @@ do_read (int fd,
 	    krb5_data data;
 
 	    ret = krb5_net_read (context, &fd, &len, 4);
-	    if (ret == 0)
-		return 0;
-	    if (ret != 4)
-		return -1;
+	    if (ret <= 0)
+		return ret;
 	    len = ntohl(len);
 	    outer_len = krb5_get_wrapped_length (context, crypto, len);
 	    if (outer_len > sz)
 		abort ();
 	    ret = krb5_net_read (context, &fd, buf, outer_len);
-	    if (ret != outer_len)
-		return -1;
+	    if (ret <= 0)
+		return ret;
 
 	    status = krb5_decrypt(context, crypto, KRB5_KU_OTHER_ENCRYPTED, 
 				  buf, outer_len, &data);
