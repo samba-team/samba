@@ -305,6 +305,7 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 char *smbd_mktemp(char *template);
 void *memdup(void *p, size_t size);
 char *myhostname(void);
+char *parent_dirname(const char *path);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -1214,6 +1215,7 @@ BOOL lp_dos_filetimes(int );
 BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
+BOOL lp_inherit_perms(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int _lp_security_mask(int );
@@ -2443,7 +2445,7 @@ void DirCacheFlush(int snum);
 
 /*The following definitions come from  smbd/dosmode.c  */
 
-mode_t unix_mode(connection_struct *conn,int dosmode);
+mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname);
 int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf);
 int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st);
 int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);

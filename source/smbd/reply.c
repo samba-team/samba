@@ -1547,7 +1547,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
-  unixmode = unix_mode(conn,aARCH);
+  unixmode = unix_mode(conn,aARCH,fname);
       
   open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
                    unixmode, oplock_request,&rmode,NULL);
@@ -1649,7 +1649,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  unixmode = unix_mode(conn,smb_attr | aARCH);
+  unixmode = unix_mode(conn,smb_attr | aARCH, fname);
       
   open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
 	               oplock_request, &rmode,&smb_action);
@@ -1773,7 +1773,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
     }
   
-  unixmode = unix_mode(conn,createmode);
+  unixmode = unix_mode(conn,createmode,fname);
   
   fsp = file_new();
   if (!fsp)
@@ -1853,7 +1853,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   pstrcat(fname,"/TMXXXXXX");
   unix_convert(fname,conn,0,&bad_path,NULL);
   
-  unixmode = unix_mode(conn,createmode);
+  unixmode = unix_mode(conn,createmode,fname);
   
   fsp = file_new();
   if (fsp)
@@ -3077,7 +3077,7 @@ int reply_printopen(connection_struct *conn,
 
 	/* Open for exclusive use, write only. */
 	open_file_shared(fsp,conn,fname2, SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unix_mode(conn,0), 0, NULL, NULL);
+                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unix_mode(conn,0,fname2), 0, NULL, NULL);
 
 	if (!fsp->open) {
 		file_free(fsp);
@@ -3236,7 +3236,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR,directory));
   
   if (ret < 0)
   {

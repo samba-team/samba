@@ -3251,3 +3251,31 @@ char *myhostname(void)
 	}
 	return ret;
 }
+
+/*******************************************************************
+ Given a filename - get its directory name
+ NB: Returned in static storage.  Caveats:
+ o  Not safe in thread environment.
+ o  Caller must not free.
+ o  If caller wishes to preserve, they should copy.
+********************************************************************/
+
+char *parent_dirname(const char *path)
+{
+	static pstring dirpath;
+	char *p;
+
+	if (!path)
+		return(NULL);
+
+	pstrcpy(dirpath, path);
+	p = strrchr(dirpath, '/');  /* Find final '/', if any */
+	if (!p) {
+		pstrcpy(dirpath, ".");    /* No final "/", so dir is "." */
+	} else {
+		if (p == dirpath)
+			++p;    /* For root "/", leave "/" in place */
+		*p = '\0';
+	}
+	return dirpath;
+}
