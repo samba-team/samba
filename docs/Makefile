@@ -4,7 +4,7 @@
 # 		James Moore <jmoore@php.net>
 # 		Gerald Carter <jerry@samba.org>
 # 		Jelmer Vernooij <jelmer@samba.org>
--include Makefile.settings
+include Makefile.settings
 
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
@@ -17,7 +17,7 @@ MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES
 DATETIME := $(shell date +%Y%m%d%H%M%S)
 
 ifndef OUTPUTDIR
-Makefile.settings: Makefile.settings.in configure
+Makefile.settings: configure
 	@echo Makefile.settings not present, trying to run configure...
 	@./configure
 
@@ -91,20 +91,18 @@ $(HTMLDIR)/index.html: htmldocs.html
 	mkdir -p $(@D)
 	cp $< $@
 	
-$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css  xslt/html-chunk.xsl
+$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl %-images-html-chunks
 	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
-	mkdir -p $(@D)/images
-	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $(@D)
 
 # Single large HTML files
 $(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
 	mkdir -p $(@D)
 	cp $< $@
 
+$(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS)): $(HTMLDIR)/%.html: %-images-html-single
+
 $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl 
-	mkdir -p $(@D)/images
-	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $(@D)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 # Attributions
@@ -116,15 +114,13 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	mkdir -p $(@D)
 	$(HTML2TEXT) -nobs -style pretty -o $@ $<
 
-$(TXTDIR)/%/: $(HTMLDIR)/%/index.html 
-	$(MAKE) `echo $(HTMLDIR)/$*/*.html | $(PERL) -p -e 's|$(HTMLDIR)|$(TXTDIR)|g;s/\.html/\.txt/g;'`
-
 # Tex files
 %.tex: $(DOCBOOKDIR)/%.xml xslt/latex.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
+	touch $@
 
 $(PDFDIR)/%.pdf: %.pdf
 	mkdir -p $(@D)
@@ -136,11 +132,46 @@ $(PDFDIR)/%.pdf: %.pdf
 %.ind: %.idx
 	$(MAKEINDEX) $<
 
+# Dependency files
+%.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
+	$(XSLTPROC) \
+		--novalid \
+		--stringparam txtbasedir "$(TXTDIR)/$*/" \
+		--stringparam target "$*" \
+		-o $@ xslt/generate-dependencies.xsl $<
+	@echo "$*-images-latex-png: \$$(addsuffix .png, \$$($*-images-latex))" >> $@
+	@echo "	touch \$$@" >> $@
+	@echo >> $@
+	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@
+	@echo "	touch \$$@" >> $@
+	@echo >> $@
+	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
+	@echo "	mkdir -p \$$(@D)" >> $@
+	@echo "	cp \$$< \$$@" >> $@
+	@echo >> $@
+	@echo "\$$(HTMLDIR)/$*/%: $*/%" >> $@
+	@echo "	mkdir -p \$$(@D)" >> $@
+	@echo "	cp \$$< \$$@" >> $@
+	@echo >> $@
+	@echo "\$$(HTMLHELPDIR)/$*/%: $*/%" >> $@
+	@echo "	mkdir -p \$$(@D)" >> $@
+	@echo "	cp \$$< \$$@" >> $@
+	@echo >> $@
+	@echo "$*-images-html-single: \$$(addprefix \$$(HTMLDIR)/, \$$($*-images-html))" >> $@
+	@echo "	touch \$$@" >> $@
+	@echo "$*-images-html-chunks: \$$(addprefix \$$(HTMLDIR)/$*/, \$$($*-images-html))" >> $@
+	@echo "	touch \$$@" >> $@
+	@echo "$*-images-htmlhelp: \$$(addprefix \$$(HTMLHELPDIR)/$*/, \$$($*-images-html))" >> $@
+	@echo "	touch \$$@" >> $@
+
+ifdef OUTPUTDIR
+include $(addsuffix .d,$(MAIN_DOCS))
+endif
+
 # Adobe PDF files
-%.pdf: %.tex %.ind latexfigures 
-	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".png" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
+%.pdf: %.tex %.ind latexfigures %-images-latex-png
 	-$(PDFLATEX) $<
-	$(THUMBPDF) $*.pdf
+	$(THUMBPDF) --quiet $*.pdf
 	-$(PDFLATEX) $<
 
 # DVI files
@@ -148,8 +179,7 @@ $(DVIDIR)/%.dvi: %.dvi
 	mkdir -p $(@D)
 	cp $< $@
 
-%.dvi: %.tex %.idx 
-	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".eps" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
+%.dvi: %.tex %.idx %-images-latex-eps
 	-$(LATEX) $< 
 
 %.png: %.dia
@@ -176,10 +206,11 @@ $(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
 	mkdir -p $(@D)
 	JAVA_OPTS=-Xmx250m $(FOP) -q -d $< -pdf $@
 
-$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
-	mkdir -p $@/images
-	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $@
-	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
+$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
+	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm \
+				--stringparam manifest.in.base.dir "$@/" \
+				--stringparam base.dir "$@/" \
+	http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
 # Plucker docs
 $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html 
@@ -228,7 +259,7 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 
 # Validation verification
 %-validate: %/index.xml
-	-cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
+	cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
 
 # Find undocumented parameters
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
@@ -264,11 +295,11 @@ clobber: clean
 
 clean: 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f *.xml
+	rm -f *.xml *.d
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Always keep intermediate files if we can
 .SECONDARY:
-.PHONY: clean clobber latexfigures archive release everything all
+.PHONY: clean clobber archive release everything all
