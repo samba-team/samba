@@ -3268,6 +3268,8 @@ and will risk BDCs having inconsistant SIDs\n"));
 	}
 
 	ldap_state->domain_dn = smb_xstrdup(dn);
+	ldap_memfree(dn);
+
 	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
 				 domain_sid_string)) {
