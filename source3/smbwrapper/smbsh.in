@@ -1,15 +1,15 @@
-#!/bin/sh
+#! /bin/sh
 
-LIBDIR=/home/tridge/samba/source/smbwrapper
+SMBW_LIBDIR=${SMBW_LIBDIR-@builddir@/smbwrapper}
 
-if [ ! -f $LIBDIR/smbwrapper.so ]; then
+if [ ! -f ${SMBW_LIBDIR}/smbwrapper.so ]; then
     echo You need to set LIBDIR in smbsh
     exit
 fi
 
 # a simple launcher for the smbwrapper.so preloadde library
 
-if [ x$SMBW_USER = x ]; then
+if [ x"${SMBW_USER+set}" != x"set" ]; then
     echo username?
     read user
     SMBW_USER=$user
@@ -17,19 +17,19 @@ if [ x$SMBW_USER = x ]; then
 fi
 
 # this doesn't hide the password - we need a proper launch app for that
-if [ x$SMBW_PASSWORD = x ]; then
+if [ x"${SMBW_PASSWORD+set}" != x"set" ]; then
     echo password?
     read pass
     SMBW_PASSWORD=$pass
     export SMBW_PASSWORD
 fi
 
-LD_PRELOAD=$LIBDIR/smbwrapper.so
-export LD_PRELOAD
-
 PWD=`pwd`
 export PWD
 PS1='smbsh$ '
 export PS1
-bash
-echo done
+
+LD_PRELOAD=$SMBW_LIBDIR/smbwrapper.so
+export LD_PRELOAD
+
+exec ${SMBW_SHELL-${SHELL-/bin/sh}} ${1+"$@"}

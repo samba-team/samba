@@ -1,4 +1,5 @@
 .deps
+bin
 Makefile
 Makefile.RPM
 config
