@@ -25,41 +25,41 @@
 struct event_context {	
 	/* list of filedescriptor events */
 	struct fd_event {
+		struct event_context *event_ctx;
 		struct fd_event *next, *prev;
 		int fd;
 		uint16_t flags; /* see EVENT_FD_* flags */
 		void (*handler)(struct event_context *ev, struct fd_event *fde, 
 				struct timeval t, uint16_t flags);
 		void *private;
-		int ref_count;
 	} *fd_events;
 
 	/* list of timed events */
 	struct timed_event {
+		struct event_context *event_ctx;
 		struct timed_event *next, *prev;
 		struct timeval next_event;
 		void (*handler)(struct event_context *ev, struct timed_event *te, 
 				struct timeval t);
 		void *private;
-		int ref_count;
 	} *timed_events;
 
 	/* list of loop events - called on each select() */
 	struct loop_event {
+		struct event_context *event_ctx;
 		struct loop_event *next, *prev;
 		void (*handler)(struct event_context *ev, struct loop_event *le, 
 				struct timeval t);
 		void *private;
-		int ref_count;
 	} *loop_events;
 
 	/* list of signal events */
 	struct signal_event {
+		struct event_context *event_ctx;
 		struct signal_event *next, *prev;
 		int signum;
 		void (*handler)(struct event_context *ev, struct signal_event *se, int signum, void *sigarg);
 		void *private;
-		int ref_count;
 	} *signal_events;
 
 	/* the maximum file descriptor number in fd_events */
@@ -74,6 +74,13 @@ struct event_context {
 	/* This is the talloc parent for all concrete event structures in this
 	 * event context. This makes merging easy. */
 	void *events;
+
+	/* this is changed by the destructors for any event type. It
+	   is used to detect event destruction by event handlers,
+	   which means the code that is calling all event handles
+	   needs to assume that the linked list is no longer valid 
+	*/
+	uint32_t destruction_count;
 };
 
 

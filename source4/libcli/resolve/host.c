@@ -57,9 +57,6 @@ static int host_destructor(void *ptr)
 	if (state->child != (pid_t)-1) {
 		kill(state->child, SIGTERM);
 	}
-	if (state->fde) {
-		event_remove_fd(state->event_ctx, state->fde);
-	}
 	return 0;
 }
 
@@ -174,6 +171,7 @@ struct smbcli_composite *resolve_name_host_send(struct nbt_name *name,
 		close(fd[1]);
 		goto failed;
 	}
+	talloc_steal(state, state->fde);
 
 	/* signal handling in posix really sucks - doing this in a library
 	   affects the whole app, but what else to do?? */
