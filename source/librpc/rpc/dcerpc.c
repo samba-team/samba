@@ -393,13 +393,11 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 	syntax.major_version = version;
 	syntax.minor_version = 0;
 
-	status = GUID_from_string("8a885d04-1ceb-11c9-9fe8-08002b104860", 
-				   &transfer_syntax.uuid);
+	status = GUID_from_string(NDR_GUID, &transfer_syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	transfer_syntax.major_version = 2;
+	transfer_syntax.major_version = NDR_GUID_VERSION;
 	transfer_syntax.minor_version = 0;
 
 	return dcerpc_bind(p, mem_ctx, &syntax, &transfer_syntax);
