@@ -12,15 +12,18 @@
 <sect1>
 
 	<title>Joining an NT Domain with Samba 3.0</title>
+<!--changed by RS: IMHO, this would read better and be easier to reference as a listrather than written out in paragraph form-->
+	<para>
+	<variablelist>
+	<varlistentry><term>"Assumptions:"</term>
+	<listitem>NetBIOS name: <constant>SERV1</constant></listitem>
+	<listitem>Win2K/NT domain name: <constant>DOM</constant></listitem>
+	<listitem>Domain's PDC NetBIOS name: <constant>DOMPDC</constant></listitem>
+	<listitem>Domain's BDC NetBIOS names: <constant>DOMBDC1</constant> and <constant>DOMBDC2</constant></listitem>
+	</variablelist>
+	</para>
 
-	<para>Assume you have a Samba 3.0 server with a NetBIOS name of 
-	<constant>SERV1</constant> and are joining a Win2k or NT domain called
-	<constant>DOM</constant>, which has a PDC with a NetBIOS name
-	of <constant>DOMPDC</constant> and two backup domain controllers 
-	with NetBIOS names <constant>DOMBDC1</constant> and <constant>DOMBDC2
-	</constant>.</para>
-
-	<para>Firstly, you must edit your &smb.conf; file to tell Samba it should
+	<para>First, you must edit your &smb.conf; file to tell Samba it should
 	now use domain security.</para>
 	
 	<para>Change (or add) your <ulink url="smb.conf.5.html#SECURITY">
@@ -83,7 +86,7 @@
 	<para>in your terminal window. See the <ulink url="net.8.html">
 	net(8)</ulink> man page for more details.</para>
 	
-	<para>This process joins the server to thedomain
+	<para>This process joins the server to the domain
 	without having to create the machine trust account on the PDC
 	beforehand.</para>
 
@@ -129,7 +132,7 @@
 	means Samba servers now participate in domain trust relationships in 
 	exactly the same way NT servers do (i.e., you can add Samba servers into 
 	a resource domain and have the authentication passed on from a resource
-	domain PDC to an account domain PDC.</para>
+	domain PDC to an account domain PDC).</para>
 
 	<para>In addition, with <command>security = server</command> every Samba 
 	daemon on a server has to keep a connection open to the 
