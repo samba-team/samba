@@ -261,15 +261,35 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (connection_num < 0)
     return(connection_error(inbuf,outbuf,connection_num));
 
-  set_message(outbuf,2,strlen(devicename)+1,True);
+  if (Protocol < PROTOCOL_NT1)
+  {
+    set_message(outbuf,2,strlen(devicename)+1,True);
+    strcpy(smb_buf(outbuf),devicename);
+  }
+  else
+  {
+    char *fsname = "NTFS";
+    int devlen = strlen(devicename)+1;
+    int fslen = strlen(fsname)+1;
+    int len = devlen + fslen + 1;
+
+    char *p;
+    set_message(outbuf,3,3,True);
+
+    p = smb_buf(outbuf);
+    strcpy(p,devicename); p = skip_string(p,1); /* device name */
+    strcpy(p,fsname); p = skip_string(p,1); /* filesystem type e.g NTFS */
+
+    set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
+
+    SSVAL(outbuf, smb_vwv2, 0x0); /* optional support */
+  }
   
   DEBUG(3,("%s tconX service=%s user=%s cnum=%d\n",timestring(),service,user,connection_num));
   
   /* set the incoming and outgoing tid to the just created one */
   SSVAL(inbuf,smb_tid,connection_num);
   SSVAL(outbuf,smb_tid,connection_num);
-
-  strcpy(smb_buf(outbuf),devicename);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
