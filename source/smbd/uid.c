@@ -121,6 +121,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		return False;
 
 	if (conn->force_user || 
+		conn->admin_user ||
 	    lp_security() == SEC_SHARE ||
 	    !(vuser) || (vuser->guest)) {
 		uid = conn->uid;
