@@ -47,6 +47,7 @@ krb5_build_ap_req (krb5_context context,
 		   krb5_data authenticator,
 		   krb5_data *ret)
 {
+  krb5_error_code ret = 0;
   AP_REQ ap;
   Ticket t;
   size_t len;
@@ -71,9 +72,12 @@ krb5_build_ap_req (krb5_context context,
 
   ret->length = length_AP_REQ(&ap);
   ret->data = malloc(ret->length);
-  encode_AP_REQ((unsigned char *)ret->data + ret->length - 1,
-		ret->length, &ap, &len);
+  if(ret->data == NULL)
+      ret = ENOMEM;
+  else
+      encode_AP_REQ((unsigned char *)ret->data + ret->length - 1,
+		    ret->length, &ap, &len);
   free_AP_REQ(&ap);
   
-  return 0;
+  return ret;
 }
