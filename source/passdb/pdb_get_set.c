@@ -1173,13 +1173,13 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 	uchar new_lanman_p16[LM_HASH_LEN];
 	uchar new_nt_p16[NT_HASH_LEN];
 	uchar current_ntpw_copy[NT_HASH_LEN];
-	uchar *current_ntpw = NULL;
+	const uchar *current_ntpw;
 
 	if (!sampass || !plaintext)
 		return False;
 
 	/* Store the current password for history purposes. */
-	current_ntpw = (uint8 *)pdb_get_nt_passwd(sampass);
+	current_ntpw = pdb_get_nt_passwd(sampass);
 	if (current_ntpw) {
 		memcpy (current_ntpw_copy, current_ntpw, NT_HASH_LEN);
 	}
