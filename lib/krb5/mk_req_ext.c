@@ -55,11 +55,13 @@ krb5_mk_req_extended(krb5_context context,
   Checksum *c_opt;
 
   krb5_auth_context ac;
-  if(auth_context){
+  if(auth_context) {
       if(*auth_context == NULL)
 	  r = krb5_auth_con_init(context, auth_context);
+      else
+	  r = 0;
       ac = *auth_context;
-  }else
+  } else
       r = krb5_auth_con_init(context, &ac);
   if(r)
       return r;
