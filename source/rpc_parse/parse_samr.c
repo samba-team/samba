@@ -6141,8 +6141,15 @@ make a SAMR_ENC_PASSWD structure.
 ********************************************************************/
 BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, const char pass[512])
 {
+	ZERO_STRUCTP(pwd);
+
 	if (pwd == NULL) return False;
 
+	if (pass == NULL)
+	{
+		pwd->ptr = 0;
+		return True;
+	}
 	pwd->ptr = 1;
 	memcpy(pwd->pass, pass, sizeof(pwd->pass)); 
 
@@ -6162,7 +6169,10 @@ BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int de
 	prs_align(ps);
 
 	prs_uint32("ptr", ps, depth, &(pwd->ptr));
-	prs_uint8s(False, "pwd", ps, depth, pwd->pass, sizeof(pwd->pass)); 
+	if (pwd->ptr != 0)
+	{
+		prs_uint8s(False, "pwd", ps, depth, pwd->pass, sizeof(pwd->pass)); 
+	}
 
 	return True;
 }
@@ -6172,7 +6182,15 @@ makes a SAMR_ENC_HASH structure.
 ********************************************************************/
 BOOL make_enc_hash(SAMR_ENC_HASH *hsh, const uchar hash[16])
 {
+	ZERO_STRUCTP(hsh);
+
 	if (hsh == NULL) return False;
+
+	if (hash == NULL)
+	{
+		hsh->ptr = 0;
+		return True;
+	}
 
 	hsh->ptr = 1;
 	memcpy(hsh->hash, hash, sizeof(hsh->hash));
@@ -6193,7 +6211,10 @@ BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("ptr ", ps, depth, &(hsh->ptr));
-	prs_uint8s(False, "hash", ps, depth, hsh->hash, sizeof(hsh->hash)); 
+	if (hsh->ptr != 0)
+	{
+		prs_uint8s(False, "hash", ps, depth, hsh->hash, sizeof(hsh->hash)); 
+	}
 
 	return True;
 }

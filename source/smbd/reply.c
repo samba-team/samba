@@ -66,6 +66,7 @@ static void overflow_attack(int len)
 ****************************************************************************/
 static void map_nt_and_unix_username(const char *domain, char *user)
 {
+#if 0
 	DOM_NAME_MAP gmep;
 	fstring nt_username;
 
@@ -73,7 +74,7 @@ static void map_nt_and_unix_username(const char *domain, char *user)
 	 * Pass the user through the NT -> unix user mapping
 	 * function.
 	 */
-   
+
 	if (lp_server_role() != ROLE_DOMAIN_NONE)
 	{
 		memset(nt_username, 0, sizeof(nt_username));
@@ -92,6 +93,9 @@ static void map_nt_and_unix_username(const char *domain, char *user)
 			fstrcpy(user, gmep.unix_name);
 		}
 	}
+#else
+	DEBUG(1,("map_nt_and_unix_username: NT->Unix map DISABLED\n"));
+#endif
 
 	/*
 	 * Pass the user through the unix -> unix user mapping
@@ -644,52 +648,46 @@ user %s attempted down-level SMB connection\n", user));
   if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
     guest = True;
 
-  /* 
-   * Check with orig_user for security=server and
-   * security=domain.
-   */
+	if (!guest && !check_hosts_equiv(user))
+	{
+		/* 
+		 * Check with orig_user for security=server and
+		 * security=domain.
+		 */
 
-  if (!guest && !check_hosts_equiv(user))
-  {
+		DEBUG(10,("Checking SMB password, user %s domain %s\n",
+			   user, domain));
+		if(!password_ok(orig_user, domain,
+				smb_apasswd,smb_apasslen,
+				smb_ntpasswd,smb_ntpasslen,
+				NULL, user_sess_key))
+		{
+			DEBUG(0,("SMB LM/NT Password did not match!\n"));
 
-    /* 
-     * If we get here then the user wasn't guest and the remote
-     * authentication methods failed. Check the SMB authentication
-     * methods on this local server.
-     *
-     */
+			if (lp_security() >= SEC_USER) 
+			{
+				if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
+					return(ERROR(ERRSRV,ERRbadpw));
 
-      DEBUG(10,("Checking SMB password\n"));
-      if(!password_ok(user, domain,
-                      smb_apasswd,smb_apasslen,
-                      smb_ntpasswd,smb_ntpasslen,
-                      NULL, user_sess_key))
-    {
-        DEBUG(0,("SMB LM/NT Password did not match!\n"));
+				if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
+				{
+					if (Get_Pwnam(user,True))
+						return(ERROR(ERRSRV,ERRbadpw));
+				}
 
-      if (lp_security() >= SEC_USER) 
-      {
-        if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
-          return(ERROR(ERRSRV,ERRbadpw));
+				/*
+				 * ..else if lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD
+				 * Then always map to guest account - as done below.
+				 */
+			}
 
-        if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
-        {
-         if (Get_Pwnam(user,True))
-            return(ERROR(ERRSRV,ERRbadpw));
-        }
+			if (*smb_apasswd || !Get_Pwnam(user,True))
+				pstrcpy(user,lp_guestaccount(-1));
+			DEBUG(3,("Registered username %s for guest access\n",user));
+			guest = True;
+		}
 
-        /*
-         * ..else if lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD
-         * Then always map to guest account - as done below.
-         */
-      }
-
-      if (*smb_apasswd || !Get_Pwnam(user,True))
-         pstrcpy(user,lp_guestaccount(-1));
-      DEBUG(3,("Registered username %s for guest access\n",user));
-      guest = True;
-    }
-  }
+	}
 
   if (!Get_Pwnam(user,True)) {
     DEBUG(3,("No such user %s - using guest account\n",user));

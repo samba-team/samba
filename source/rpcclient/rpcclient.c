@@ -1330,16 +1330,19 @@ static void set_user_password(struct ntuser_creds *u,
 	{
 		if (password == NULL)
 		{
+			DEBUG(10,("set_user_password: NULL pwd\n"));
 			pwd_set_nullpwd(&(u->pwd));
 		}
 		else
 		{
 			/* generate 16 byte hashes */
+			DEBUG(10,("set_user_password: generate\n"));
 			pwd_make_lm_nt_16(&(u->pwd), password);
 		}
 	}
 	else 
 	{
+		DEBUG(10,("set_user_password: read\n"));
 		pwd_read(&(u->pwd), "Enter Password:", True);
 	}
 }
@@ -1561,14 +1564,16 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	pstring password; /* local copy only, if one is entered */
-	info->reuse = False;
+	extern struct user_creds *usr_creds;
 
+	usr_creds = &usr;
+
+	info->reuse = False;
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
 #else /* KANJI */
 	*term_code = 0;
 #endif /* KANJI */
-
 
 	if (argc > 1 && *argv[1] != '-')
 	{
@@ -1582,7 +1587,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	while ((opt = getopt(argc, argv, "Rs:B:O:M:S:i:N:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	while ((opt = getopt(argc, argv, "Rs:B:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -1745,30 +1750,11 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	DEBUG(10,("cmd_set: options: %x\n", cmd_set_options));
-
-	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
-	{
-		return;
-	}
-
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
 	{
 		setup_logging(debugf, interactive);
 		reopen_logs();
 	}
-
-	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
-	{
-		set_user_password(&usr.ntc, True, NULL);
-	}
-	else if (IS_BITS_SET_ALL(cmd_set_options, CMD_PASS))
-	{
-		set_user_password(&usr.ntc, True, password);
-	}
-
-	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
 
 	strupper(global_myname);
 	fstrcpy(cli_info.myhostname, global_myname);
@@ -1786,6 +1772,25 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	{
 		load_interfaces();
 	}
+
+	DEBUG(10,("cmd_set: options: %x\n", cmd_set_options));
+
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
+	{
+		return;
+	}
+
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
+	{
+		set_user_password(&usr.ntc, True, NULL);
+	}
+	else if (IS_BITS_SET_ALL(cmd_set_options, CMD_PASS))
+	{
+		set_user_password(&usr.ntc, True, password);
+	}
+
+	/* paranoia: destroy the local copy of the password */
+	bzero(password, sizeof(password)); 
 
 	if (cmd_str != NULL)
 	{
@@ -1865,9 +1870,11 @@ void readline_init(void)
 
 	DEBUGLEVEL = 2;
 
-	usr.ntc.ntlmssp_flags = 0x0;
+	copy_user_creds(&usr, NULL);
 
 	usr_creds = &usr;
+	usr.ptr_ntc = 1;
+
 	out_hnd = stdout;
 	fstrcpy(debugf, argv[0]);
 
@@ -1910,6 +1917,8 @@ void readline_init(void)
 	cmd_set_options &= ~CMD_HELP;
 	cmd_set_options &= ~CMD_NOPW;
 
+	codepage_initialise(lp_client_code_page());
+
 	cmd_set(&cli_info, argc, argv);
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
@@ -1917,8 +1926,6 @@ void readline_init(void)
 		free_connections();
 		exit(0);
 	}
-
-	codepage_initialise(lp_client_code_page());
 
 	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 

@@ -406,10 +406,14 @@ void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24])
 #endif
 }
 
-BOOL make_oem_passwd_hash(char data[516], const char *pwrd, 
+BOOL make_oem_passwd_hash(uchar data[516],
+				const char *pwrd, int new_pw_len,
 				const uchar old_pw_hash[16], BOOL unicode)
 {
-	int new_pw_len = strlen(pwrd) * (unicode ? 2 : 1);
+	if (new_pw_len == 0)
+	{
+		new_pw_len = strlen(pwrd) * (unicode ? 2 : 1);
+	}
 
 	if (new_pw_len > 512)
 	{
@@ -423,7 +427,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *pwrd,
 	 * for this area to make it harder to
 	 * decrypt. JRA.
 	 */
-	generate_random_buffer((unsigned char *)data, 516, False);
+	generate_random_buffer(data, 516, False);
 	if (unicode)
 	{
 		ascii_to_unibuf(&data[512 - new_pw_len], pwrd, new_pw_len);
@@ -438,7 +442,10 @@ BOOL make_oem_passwd_hash(char data[516], const char *pwrd,
 	DEBUG(100,("make_oem_pwrd_hash\n"));
 	dump_data(100, data, 516);
 #endif
-	SamOEMhash( (unsigned char *)data, (const char*)old_pw_hash, True);
+	if (old_pw_hash != NULL)
+	{
+		SamOEMhash( data, old_pw_hash, True);
+	}
 
 	return True;
 }
@@ -533,12 +540,17 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
 
 	if ((*new_pw_len) < 0 || (*new_pw_len) > new_pwrd_size - 1)
 	{
-		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", (*new_pw_len)));
+		DEBUG(0,("decode_pw_buffer: incorrect password length (%d).\n",
+		          (*new_pw_len)));
 		return False;
 	}
 
 	memcpy(new_pwrd, &buffer[512-(*new_pw_len)], (*new_pw_len));
 	new_pwrd[(*new_pw_len)] = '\0';
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, new_pwrd, (*new_pw_len));
+#endif
 
 	return True;
 }

@@ -22,121 +22,6 @@ void cmd_tar(void);
 int process_tar(void);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
-/*The following definitions come from  groupdb/aliasdb.c  */
-
-BOOL initialise_alias_db(void);
-LOCAL_GRP *iterate_getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *iterate_getaliasrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *iterate_getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL add_domain_alias(LOCAL_GRP **alss, int *num_alss, LOCAL_GRP *als);
-BOOL iterate_getuseraliasntnam(const char *user_name, LOCAL_GRP **alss, int *num_alss);
-BOOL enumdomaliases(LOCAL_GRP **alss, int *num_alss);
-void *startaliasent(BOOL update);
-void endaliasent(void *vp);
-LOCAL_GRP *getaliasent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL add_alias_entry(LOCAL_GRP *newgrp);
-BOOL mod_alias_entry(LOCAL_GRP* als);
-BOOL del_alias_entry(uint32 rid);
-BOOL add_alias_member(uint32 rid, DOM_SID *member_sid);
-BOOL del_alias_member(uint32 rid, DOM_SID *member_sid);
-LOCAL_GRP *getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *getaliasrid(uint32 alias_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL getuseraliasntnam(const char *user_name, LOCAL_GRP **als, int *num_alss);
-void aldb_init_als(LOCAL_GRP *als);
-BOOL make_alias_line(char *p, int max_len,
-				LOCAL_GRP *als,
-				LOCAL_GRP_MEMBER **mem, int *num_mem);
-
-/*The following definitions come from  groupdb/aliasfile.c  */
-
-struct aliasdb_ops *file_initialise_alias_db(void);
-
-/*The following definitions come from  groupdb/aliasldap.c  */
-
-struct aliasdb_ops *ldap_initialise_alias_db(void);
-
-/*The following definitions come from  groupdb/aliasunix.c  */
-
-BOOL get_unixalias_members(struct group *grp,
-				int *num_mem, LOCAL_GRP_MEMBER **members);
-struct aliasdb_ops *unix_initialise_alias_db(void);
-
-/*The following definitions come from  groupdb/builtindb.c  */
-
-BOOL initialise_builtin_db(void);
-LOCAL_GRP *iterate_getbuiltingid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *iterate_getbuiltinrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *iterate_getbuiltinntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL add_domain_builtin(LOCAL_GRP **blts, int *num_blts, LOCAL_GRP *blt);
-BOOL iterate_getuserbuiltinntnam(const char *user_name, LOCAL_GRP **blts, int *num_blts);
-BOOL enumdombuiltins(LOCAL_GRP **blts, int *num_blts);
-void *startbuiltinent(BOOL update);
-void endbuiltinent(void *vp);
-LOCAL_GRP *getbuiltinent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL add_builtin_entry(LOCAL_GRP *newblt);
-BOOL mod_builtin_entry(LOCAL_GRP* blt);
-BOOL add_builtin_member(uint32 rid, DOM_SID *member_sid);
-BOOL del_builtin_member(uint32 rid, DOM_SID *member_sid);
-LOCAL_GRP *getbuiltinntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *getbuiltinrid(uint32 builtin_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-LOCAL_GRP *getbuiltingid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL getuserbuiltinntnam(const char *user_name, LOCAL_GRP **blt, int *num_blts);
-void bidb_init_blt(LOCAL_GRP *blt);
-BOOL make_builtin_line(char *p, int max_len,
-				LOCAL_GRP *blt,
-				LOCAL_GRP_MEMBER **mem, int *num_mem);
-
-/*The following definitions come from  groupdb/builtinldap.c  */
-
-struct aliasdb_ops *ldap_initialise_builtin_db(void);
-
-/*The following definitions come from  groupdb/builtinunix.c  */
-
-BOOL get_unixbuiltin_members(struct group *grp,
-				int *num_mem, LOCAL_GRP_MEMBER **members);
-struct aliasdb_ops *unix_initialise_builtin_db(void);
-
-/*The following definitions come from  groupdb/groupdb.c  */
-
-BOOL initialise_group_db(void);
-DOMAIN_GRP *iterate_getgroupgid(gid_t gid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-DOMAIN_GRP *iterate_getgrouprid(uint32 rid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-DOMAIN_GRP *iterate_getgroupntnam(const char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-BOOL add_domain_group(DOMAIN_GRP **grps, int *num_grps, DOMAIN_GRP *grp);
-BOOL iterate_getusergroupsnam(const char *user_name, DOMAIN_GRP **grps, int *num_grps);
-BOOL enumdomgroups(DOMAIN_GRP **grps, int *num_grps);
-void *startgroupent(BOOL update);
-void endgroupent(void *vp);
-DOMAIN_GRP *getgroupent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-BOOL add_group_entry(DOMAIN_GRP *newgrp);
-BOOL del_group_entry(uint32 rid);
-BOOL mod_group_entry(DOMAIN_GRP* grp);
-BOOL add_group_member(uint32 rid, uint32 member_rid);
-BOOL del_group_member(uint32 rid, uint32 member_rid);
-DOMAIN_GRP *getgroupntnam(const char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-DOMAIN_GRP *getgrouprid(uint32 group_rid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-DOMAIN_GRP *getgroupgid(gid_t gid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
-BOOL getusergroupsntnam(const char *user_name, DOMAIN_GRP **grp, int *num_grps);
-void gpdb_init_grp(DOMAIN_GRP *grp);
-BOOL make_group_line(char *p, int max_len,
-				DOMAIN_GRP *grp,
-				DOMAIN_GRP_MEMBER **mem, int *num_mem);
-
-/*The following definitions come from  groupdb/groupfile.c  */
-
-struct groupdb_ops *file_initialise_group_db(void);
-
-/*The following definitions come from  groupdb/groupldap.c  */
-
-struct groupdb_ops *ldap_initialise_group_db(void);
-
-/*The following definitions come from  groupdb/groupunix.c  */
-
-BOOL get_unixgroup_members(struct group *grp,
-				int *num_mem, DOMAIN_GRP_MEMBER **members);
-struct groupdb_ops *unix_initialise_group_db(void);
-
 /*The following definitions come from  lib/access.c  */
 
 BOOL allow_access(char *deny_list,char *allow_list,
@@ -363,6 +248,11 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 /*The following definitions come from  lib/snprintf.c  */
 
 
+/*The following definitions come from  lib/stub_uid.c  */
+
+void become_root(BOOL save_dir);
+void unbecome_root(BOOL restore_dir);
+
 /*The following definitions come from  lib/system.c  */
 
 int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval);
@@ -520,11 +410,13 @@ BOOL become_user_permanently(uid_t uid, gid_t gid);
 char *get_trusted_serverlist(const char* domain);
 char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pwdb_decode_acct_ctrl(const char *p);
+time_t pwdb_get_time_last_changed(const char *p);
 time_t pwdb_get_last_set_time(const char *p);
 void pwdb_set_logon_time(char *p, int max_len, time_t t);
 void pwdb_set_logoff_time(char *p, int max_len, time_t t);
 void pwdb_set_kickoff_time(char *p, int max_len, time_t t);
 void pwdb_set_can_change_time(char *p, int max_len, time_t t);
+void pwdb_set_time_last_changed(char *p, int max_len, time_t t);
 void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
@@ -609,6 +501,19 @@ uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 char *lookup_wk_alias_rid(uint32 rid);
 char *lookup_wk_user_rid(uint32 rid);
 char *lookup_wk_group_rid(uint32 rid);
+char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
+uint16 pwdb_decode_acct_ctrl(const char *p);
+time_t pwdb_get_time_last_changed_time(const char *p);
+time_t pwdb_get_last_set_time(const char *p);
+void pwdb_set_logon_time(char *p, int max_len, time_t t);
+void pwdb_set_logoff_time(char *p, int max_len, time_t t);
+void pwdb_set_kickoff_time(char *p, int max_len, time_t t);
+void pwdb_set_can_change_time(char *p, int max_len, time_t t);
+void pwdb_set_last_change_time(char *p, int max_len, time_t t);
+void pwdb_set_must_change_time(char *p, int max_len, time_t t);
+void pwdb_set_last_set_time(char *p, int max_len, time_t t);
+void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
+BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 
 /*The following definitions come from  lib/util_sid.c  */
 
@@ -967,7 +872,8 @@ void ntv2_owf_gen(const uchar owf[16],
 				const char *domain_n,
 				uchar kr_buf[16]);
 void NTLMSSPOWFencrypt(uchar pwrd[8], uchar *ntlmchalresp, uchar p24[24]);
-BOOL make_oem_passwd_hash(char data[516], const char *pwrd, 
+BOOL make_oem_passwd_hash(uchar data[516],
+				const char *pwrd, int new_pw_len,
 				const uchar old_pw_hash[16], BOOL unicode);
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
@@ -1681,20 +1587,6 @@ BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb);
 BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override);
 struct smb_passdb_ops *mysql_initialise_password_db(void);
 
-/*The following definitions come from  passdb/mysqlsampass.c  */
-
-void *mysql_fill_sam_passwd( MYSQL_ROW *row );
-struct sam_passwd *mysql_getsampwent(void *vp);
-struct sam_passwd *mysql_getsampwrid(uint32 rid);
-struct sam_passwd *mysql_getsampwuid(uid_t uid);
-struct sam_passwd *mysql_getsampwntnam(const char *nt_name);
-struct sam_disp_info *mysql_getsamdispntnam(const char *nt_name);
-struct sam_disp_info *mysql_getsamdisprid(uint32 rid);
-struct sam_disp_info *mysql_getsamdispent(void *vp);
-BOOL mysql_add_sampwd_entry(struct sam_passwd *sam);
-BOOL mysql_mod_sampwd_entry(struct sam_passwd *sam, BOOL override);
-struct sam_passdb_ops *mysql_initialise_sam_password_db(void);
-
 /*The following definitions come from  passdb/nispass.c  */
 
 struct passdb_ops *nisplus_initialise_password_db(void);
@@ -1722,68 +1614,6 @@ struct smb_passwd *getsmbpwuid(uid_t unix_uid);
 void pwdb_init_smb(struct smb_passwd *user);
 struct smb_passwd *pwdb_smb_map_names(struct smb_passwd *smb);
 
-/*The following definitions come from  passdb/passgrp.c  */
-
-BOOL initialise_passgrp_db(void);
-struct smb_passwd *iterate_getsmbgrprid(uint32 user_rid,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-struct smb_passwd *iterate_getsmbgrpuid(uid_t unix_uid,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-struct smb_passwd *iterate_getsmbgrpntnam(const char *nt_name,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-void *startsmbgrpent(BOOL update);
-void endsmbgrpent(void *vp);
-struct smb_passwd *getsmbgrpent(void *vp,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-struct smb_passwd *getsmbgrpntnam(char *name,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-struct smb_passwd *getsmbgrprid(uint32 user_rid,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-struct smb_passwd *getsmbgrpuid(uid_t unix_uid,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss);
-
-/*The following definitions come from  passdb/passgrpldap.c  */
-
-struct passgrp_ops *ldap_initialise_password_grp(void);
-
-/*The following definitions come from  passdb/sampass.c  */
-
-struct sam_passdb_ops *file_initialise_sam_password_db(void);
-
-/*The following definitions come from  passdb/sampassdb.c  */
-
-BOOL initialise_sam_password_db(void);
-void *startsam21pwent(BOOL update);
-void endsam21pwent(void *vp);
-struct sam_passwd *getsam21pwent(void *vp);
-BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
-struct sam_passwd *iterate_getsam21pwntnam(const char *ntname);
-struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
-struct sam_passwd *iterate_getsam21pwuid(uid_t uid);
-struct sam_disp_info *getsamdisprid(uint32 rid);
-struct sam_passwd *getsam21pwntnam(const char *name);
-struct sam_passwd *getsam21pwrid(uint32 rid);
-void pwdb_init_sam(struct sam_passwd *user);
-struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user);
-void copy_id23_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_23 *from);
-void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
-struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user);
-struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user);
-struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam);
-
-/*The following definitions come from  passdb/sampassldap.c  */
-
-BOOL ldap_search_by_rid(uint32 rid);
-BOOL ldap_search_by_ntname(const char *ntname);
-struct sam_passdb_ops *ldap_initialise_sam_password_db(void);
-
 /*The following definitions come from  passdb/smbpass.c  */
 
 struct smb_passwd *getsmbfilepwent(void *vp);
@@ -1807,14 +1637,6 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
 BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname);
 BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);
-
-/*The following definitions come from  passdb/smbpassgroup.c  */
-
-struct passgrp_ops *file_initialise_password_grp(void);
-
-/*The following definitions come from  passdb/smbpassgroupunix.c  */
-
-struct passgrp_ops *unix_initialise_password_grp(void);
 
 /*The following definitions come from  printing/nt_printing.c  */
 
@@ -2494,6 +2316,11 @@ BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user,
 				const uchar lm_oldhash[16],
 				const uchar nt_oldhash[16],
 				const char* new_passwd);
+BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user, 
+				const uchar lm_newpass[516],
+				const uchar lm_hshhash[16],
+				const uchar nt_newpass[516],
+				const uchar nt_hshhash[16]);
 
 /*The following definitions come from  rpc_parse/parse_at.c  */
 
@@ -4136,11 +3963,8 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
 BOOL pass_oem_change(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash);
-BOOL check_oem_password(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash,
-                        struct smb_passwd **psmbpw, UNISTR2 *new_passwd);
-BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd, BOOL override);
+BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd,
+				BOOL unicode, BOOL override);
 BOOL update_smbpassword_file(char *user, char *password);
 
 /*The following definitions come from  smbd/close.c  */
@@ -4351,9 +4175,6 @@ BOOL authorise_login(int snum,char *user, char *domain,
 BOOL check_hosts_equiv(char *user);
 struct cli_state *server_client(void);
 struct cli_state *server_cryptkey(void);
-BOOL check_server_security(char *user, char *domain, 
-		     char *pass, int passlen,
-		     char *ntpass, int ntpasslen);
 
 /*The following definitions come from  smbd/pipes.c  */
 

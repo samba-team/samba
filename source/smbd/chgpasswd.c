@@ -561,58 +561,13 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
 }
 
 /***********************************************************
- Code to check and change the OEM hashed password.
-************************************************************/
-BOOL pass_oem_change(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash)
-{
-	UNISTR2 new_passwd;
-	struct smb_passwd *sampw;
-	BOOL ret = check_oem_password( user, lmdata, lmhash, ntdata, nthash,
-	                               &sampw, 
-	                               &new_passwd);
-
-	/* now we check to see if we are actually allowed to change the
-	   password. */
-	   
-	if (ret && (sampw->acct_ctrl & ACB_PWLOCK))
-	{
-		ret = False;
-	}
-	
-	/* 
-	 * At this point we have the new case-sensitive plaintext
-	 * password in the fstring new_passwd. If we wanted to synchronise
-	 * with UNIX passwords we would call a UNIX password changing 
-	 * function here. However it would have to be done as root
-	 * as the plaintext of the old users password is not 
-	 * available. JRA.
-	 */
-
-	if ( ret && lp_unix_password_sync())
-	{
-		ret = chgpasswd(user,"", (char*)new_passwd.buffer, True);
-	}
-
-	if (ret)
-	{
-		ret = change_oem_password( sampw, &new_passwd, False );
-	}
-
-	ZERO_STRUCT(new_passwd);
-
-	return ret;
-}
-
-/***********************************************************
  Code to check the OEM hashed password.
 
  this function ignores the 516 byte nt OEM hashed password
  but does use the lm OEM password to check the nt hashed-hash.
 
 ************************************************************/
-BOOL check_oem_password(char *user,
+static BOOL check_oem_password(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash,
                         struct smb_passwd **psmbpw, UNISTR2 *new_passwd)
@@ -630,7 +585,7 @@ BOOL check_oem_password(char *user,
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
 	become_root(False);
-	*psmbpw = smbpw = getsmbpwnam(user);
+	(*psmbpw) = smbpw = getsmbpwnam(user);
 	unbecome_root(False);
 
 	if (smbpw == NULL)
@@ -639,7 +594,7 @@ BOOL check_oem_password(char *user,
 		return False;
 	}
 
-	if (smbpw->acct_ctrl & ACB_DISABLED)
+	if (IS_BITS_SET_ALL(smbpw->acct_ctrl, ACB_DISABLED))
 	{
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
 		return False;
@@ -753,31 +708,104 @@ BOOL check_oem_password(char *user,
 }
 
 /***********************************************************
+ Code to check and change the OEM hashed password.
+************************************************************/
+BOOL pass_oem_change(char *user,
+			uchar *lmdata, uchar *lmhash,
+			uchar *ntdata, uchar *nthash)
+{
+	UNISTR2 new_passwd;
+	struct smb_passwd *sampw = NULL;
+	BOOL ret = check_oem_password( user, lmdata, lmhash, ntdata, nthash,
+	                               &sampw, 
+	                               &new_passwd);
+
+	/* now we check to see if we are actually allowed to change the
+	   password. */
+	   
+	if (ret && (sampw == NULL ||
+	            IS_BITS_SET_ALL(sampw->acct_ctrl,ACB_PWLOCK)))
+	{
+		if (sampw == NULL)
+		{
+			DEBUG(3,("pass_oem_change: account %s not known\n",
+				user));
+		}
+		else
+		{
+			DEBUG(3,("pass_oem_change: account %s disabled (%x)\n",
+				user, sampw->acct_ctrl));
+		}
+		ret = False;
+	}
+	
+	/* 
+	 * At this point we have the new case-sensitive plaintext
+	 * password in the fstring new_passwd. If we wanted to synchronise
+	 * with UNIX passwords we would call a UNIX password changing 
+	 * function here. However it would have to be done as root
+	 * as the plaintext of the old users password is not 
+	 * available. JRA.
+	 */
+
+	if ( ret && lp_unix_password_sync())
+	{
+		ret = chgpasswd(user,"", (char*)new_passwd.buffer, True);
+	}
+
+	if (ret)
+	{
+		ret = change_oem_password( sampw, &new_passwd,
+		                           ntdata != NULL, False );
+	}
+
+	ZERO_STRUCT(new_passwd);
+
+	return ret;
+}
+
+/***********************************************************
  Code to change the oem password. Changes both the lanman
  and NT hashes.
  override = False, normal
  override = True, override XXXXXXXXXX'd password
 ************************************************************/
 
-BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd, BOOL override)
+BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd,
+				BOOL unicode, BOOL override)
 {
-  int ret;
-  uchar new_nt_p16[16];
-  uchar new_p16[16];
+	int ret;
+	uchar new_nt_p16[16];
+	uchar new_p16[16];
 
-  nt_lm_owf_genW(new_passwd, new_nt_p16, new_p16);
+	DEBUG(100,("change_oem_password: %d\n", __LINE__));
 
-  smbpw->smb_passwd = new_p16;
-  smbpw->smb_nt_passwd = new_nt_p16;
-  
-  /* Now write it into the file. */
-  become_root(0);
-  ret = mod_smbpwd_entry(smbpw,override);
-  unbecome_root(0);
+	if (unicode)
+	{
+		nt_lm_owf_genW(new_passwd, new_nt_p16, new_p16);
+	}
+	else
+	{
+		nt_lm_owf_gen((char*)new_passwd->buffer, new_nt_p16, new_p16);
+	}
 
- 	ZERO_STRUCTP(new_passwd);
+	DEBUG(100,("change_oem_password: %d\n", __LINE__));
+	dbgflush();
 
-  return ret;
+	smbpw->smb_passwd = new_p16;
+	smbpw->smb_nt_passwd = new_nt_p16;
+
+	DEBUG(100,("change_oem_password: %d\n", __LINE__));
+	dbgflush();
+
+	/* Now write it into the file. */
+	become_root(0);
+	ret = mod_smbpwd_entry(smbpw,override);
+	unbecome_root(0);
+
+	ZERO_STRUCTP(new_passwd);
+
+	return ret;
 }
 
 /****************************************************************************
@@ -803,7 +831,7 @@ BOOL update_smbpassword_file(char *user, char *password)
 
 	/* Here, the flag is one, because we want to ignore the
            XXXXXXX'd out password */
-	ret = change_oem_password( smbpw, &newpw, True);
+	ret = change_oem_password( smbpw, &newpw, True, True);
 	if (!ret)
 	{
 		DEBUG(3,("change_oem_password returned False\n"));

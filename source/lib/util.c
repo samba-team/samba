@@ -3416,6 +3416,19 @@ static time_t get_time_from_string(const char *p)
 }
 
 /*******************************************************************
+ gets password time last changed time
+ ********************************************************************/
+
+time_t pwdb_get_time_last_changed(const char *p)
+{
+	if (*p && !StrnCaseCmp(p, "TLC-", 4))
+	{
+		return get_time_from_string(p + 4);
+	}
+	return (time_t)-1;
+}
+
+/*******************************************************************
  gets password last set time
  ********************************************************************/
 
@@ -3467,6 +3480,14 @@ void pwdb_set_kickoff_time(char *p, int max_len, time_t t)
 void pwdb_set_can_change_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "CCT", t);
+}
+
+/*******************************************************************
+ sets password last change time
+ ********************************************************************/
+void pwdb_set_time_last_changed(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "TLC", t);
 }
 
 /*******************************************************************
@@ -3537,3 +3558,4 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl)
 		return strhex_to_str(pwd, 32, p) == 16;
 	}
 }
+

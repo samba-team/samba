@@ -420,6 +420,7 @@ void copy_nt_creds(struct ntuser_creds *to,
 {
 	if (from == NULL)
 	{
+		DEBUG(10,("copy_nt_creds: null creds\n"));
 		to->domain[0] = 0;
 		to->user_name[0] = 0;
 		pwd_set_nullpwd(&to->pwd);
@@ -431,6 +432,8 @@ void copy_nt_creds(struct ntuser_creds *to,
 	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
 	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
 	to->ntlmssp_flags = from->ntlmssp_flags;
+	DEBUG(10,("copy_nt_creds: user %s domain %s nopw %s\n",
+	       to->user_name, to->domain, BOOLSTR(pwd_is_nullpwd(&to->pwd))));
 };
 
 void copy_user_creds(struct user_creds *to,
@@ -462,11 +465,11 @@ void copy_user_creds(struct user_creds *to,
 	{
 		copy_unix_creds(&to->uxc, &from->uxc);
 	}
-	if (to->ptr_ntc != 0)
+	if (to->ptr_nts != 0)
 	{
 		copy_nt_sec_creds(&to->nts, &from->nts);
 	}
-	if (to->ptr_uxc != 0)
+	if (to->ptr_uxs != 0)
 	{
 		copy_unix_sec_creds(&to->uxs, &from->uxs);
 	}

@@ -56,10 +56,6 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 int            shares_only = 0;            /* Added by RJS */
 int            locks_only  = 0;            /* Added by RJS */
 
-/* we need these because we link to locking*.o */
- void become_root(BOOL save_dir) {}
- void unbecome_root(BOOL restore_dir) {}
-
 
 /* added by OH */
 static void Ucrit_addUsername(char *username)

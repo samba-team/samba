@@ -43,9 +43,6 @@ BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5)
 	BOOL res1 = True;
 	fstring dom3;
 	fstring dom5;
-	extern struct user_creds *usr_creds;
-	
-	usr_creds = NULL;
 
 	if (sid3 == NULL && sid5 == NULL)
 	{
@@ -135,10 +132,6 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	DOM_SID sid5;
 	fstring dom3;
 	fstring dom5;
-
-	extern struct user_creds *usr_creds;
-	
-	usr_creds = NULL;
 
 	if (!cli_connection_init_list(server, PIPE_LSARPC, &con))
 	{

@@ -127,6 +127,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/vagent.o \
 		lib/util_hnd.o
 
+STUB_UID_OBJ = lib/stub_uid.c
+
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
 
@@ -202,11 +204,13 @@ SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o \
              passdb/smbpasschange.o passdb/mysqlpass.o \
-             lib/util_pwdb.o lib/domain_namemap.o lib/sids.o
+             lib/util_pwdb.o lib/domain_namemap.o
+
+SIDDB_OBJ = lib/sids.o
 
 PROFILE_OBJ = profile/profile.o
 
-SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
+SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
@@ -214,8 +218,9 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o smbd/vfs.o \
 	    smbd/vfs-wrap.o smbd/dfs.o \
-		rpc_server/srv_lookup.o \
-		smbd/challenge.o
+		smbd/challenge.o \
+		passdb/smbpassfile.o \
+		passdb/pass_check.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 
@@ -280,7 +285,6 @@ LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
 		rpc_client/cli_samr.o   \
                 rpc_parse/parse_lsa.o \
 		lsarpcd/srv_lsa.o \
-		lib/sids.o \
 		passdb/smbpassfile.o
 
 SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
@@ -291,7 +295,8 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+           $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
@@ -323,7 +328,7 @@ SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) $(LOCKING_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
@@ -334,13 +339,15 @@ SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+           $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+           $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -361,8 +368,9 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(UBIQX_OBJ) $(LIB_OBJ)
+           $(PARAM_OBJ) \
+           $(SIDDB_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(UBIQX_OBJ) $(LIB_OBJ) $(STUB_UID_OBJ)
 
 SMBRUN_OBJ = utils/smbrun.o
 
@@ -376,7 +384,7 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
                       $(UBIQX_OBJ) $(LIB_OBJ)
 
 STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(STUB_UID_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -387,6 +395,7 @@ TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
 SMBPASSWD_OBJ = utils/smbpasswd.o rpc_client/cli_netlogon_sync.o \
 		$(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(PASSDB_OBJ) \
+           $(SIDDB_OBJ) $(STUB_UID_OBJ)\
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
@@ -411,7 +420,9 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_eventlog.o \
 		$(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
+		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(SIDDB_OBJ) $(PASSDB_OBJ) \
+		$(STUB_UID_OBJ)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -459,6 +470,7 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(SIDDB_OBJ) \
 		$(PASSDB_OBJ) 
 
 PROTO_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) $(SAMRD_OBJ1) \
@@ -770,6 +782,11 @@ finddead:
 	nm */*.o |grep 'U ' | awk '{print $$2}' | sort -u > nmused.txt
 	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
+
+finddeadsmbd:
+	nm $(SMBD_OBJ) |grep 'U ' | awk '{print $$2}' | sort -u > nmusedsmbd.txt
+	nm $(SMBD_OBJ) |grep 'T ' | awk '{print $$3}' | sort -u > nmfnssmbd.txt
+	comm -13 nmusedsmbd.txt nmfnssmbd.txt 
 
 # Rules for maintainers (--enable-maintainer-mode)
 AUTOCONF=@AUTOCONF@

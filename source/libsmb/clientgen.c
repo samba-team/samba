@@ -2453,7 +2453,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   strupper(upper_case_old_pw);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-	if (!make_oem_passwd_hash( data, new_password, old_pw_hash, False))
+	if (!make_oem_passwd_hash( data, new_password, 0, old_pw_hash, False))
 	{
 		return False;
 	}
@@ -3057,10 +3057,11 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	nmb_safe_namestr(calling, callingstr, sizeof(callingstr));
 	nmb_safe_namestr(called , calledstr , sizeof(calledstr ));
 
-	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s] with NTLM%s\n",
+	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s] with NTLM%s, nopw: %s\n",
 		          callingstr, calledstr, inet_ntoa(*dest_ip),
 	              cli->usr.user_name, cli->usr.domain,
-			cli->use_ntlmv2 ? "v2" : "v1"));
+			cli->use_ntlmv2 ? "v2" : "v1",
+			BOOLSTR(pwd_is_nullpwd(&cli->usr.pwd))));
 
 	/* establish connection */
 

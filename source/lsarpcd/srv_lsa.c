@@ -258,12 +258,10 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 				sid_to_string(tmp, &find_sid);
 				DEBUG(10,("lookup sam name: %s %s\n",
 				           tmp, find_name));
-				become_root(False); /* allows msrpc loop-back */
 				status = lookup_sam_name(NULL,
 				                         &find_sid,
 				                         find_name,
 							 &rid, &sid_name_use);
-				unbecome_root(False);
 				sid_copy(&sid, &find_sid);
 			}
 			else
@@ -376,11 +374,9 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 			if (sid_equal(&find_sid, &global_sam_sid) ||
 			    sid_equal(&find_sid, &global_sid_S_1_5_20))
 			{
-				become_root(False); /* allows msrpc loop-back */
 				status = lookup_sam_rid(dom_name,
 				             &find_sid, rid,
 				             name, &sid_name_use);
-				unbecome_root(False);
 			}
 			else
 			{

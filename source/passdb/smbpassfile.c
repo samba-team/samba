@@ -127,8 +127,6 @@ BOOL trust_password_delete( char *domain, char *name )
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time)
 {
   char linebuf[256];
-  char *p;
-  int i;
 
   linebuf[0] = '\0';
 
@@ -169,8 +167,9 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
    * Get the hex password.
    */
 
-  if (!pwdb_gethexpwd((char *)linebuf, (char *)ret_pwd, NULL) || linebuf[32] != ':' || 
-         strncmp(&linebuf[33], "TLC-", 4)) {
+  if (!pwdb_gethexpwd((char *)linebuf, (char *)ret_pwd, NULL) ||
+       linebuf[32] != ':')
+         {
     DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
 #ifdef DEBUG_PASSWORD
     DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
@@ -185,25 +184,17 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
   /*
    * Get the last changed time.
    */
-  p = &linebuf[37];
 
-  for(i = 0; i < 8; i++) {
-    if(p[i] == '\0' || !isxdigit((int)p[i])) {
+  (*pass_last_set_time) = pwdb_get_time_last_changed(&linebuf[33]);
+
+  if ((*pass_last_set_time) == -1)
+  {
       DEBUG(0,("get_trust_account_password: Malformed trust password file (no timestamp).\n"));
 #ifdef DEBUG_PASSWORD
       DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
 #endif
       return False;
-    }
   }
-
-  /*
-   * p points at 8 characters of hex digits -
-   * read into a time_t as the seconds since
-   * 1970 that the password was last changed.
-   */
-
-  *pass_last_set_time = (time_t)strtol(p, NULL, 16);
 
   return True;
 }
@@ -216,7 +207,6 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
 BOOL set_trust_account_password( unsigned char *md4_new_pwd)
 {
   char linebuf[64];
-  int i;
 
   if(sys_fseek( mach_passwd_fp, (SMB_OFF_T)0, SEEK_SET) == -1) {
     DEBUG(0,("set_trust_account_password: Failed to seek to start of file. Error was %s.\n",
@@ -224,10 +214,8 @@ BOOL set_trust_account_password( unsigned char *md4_new_pwd)
     return False;
   } 
 
-  for (i = 0; i < 16; i++)
-    slprintf(&linebuf[(i*2)], sizeof(linebuf) -  (i*2) - 1, "%02X", md4_new_pwd[i]);
-
-  slprintf(&linebuf[32], 32, ":TLC-%08X\n", (unsigned)time(NULL));
+  pwdb_gethexpwd((char *)linebuf, (char *)md4_new_pwd, 0);
+  pwdb_set_time_last_changed(&linebuf[32], 32, (unsigned)time(NULL));
 
   if(fwrite( linebuf, 1, 46, mach_passwd_fp)!= 46) {
     DEBUG(0,("set_trust_account_password: Failed to write file. Warning - the trust \

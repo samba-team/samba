@@ -1676,9 +1676,6 @@ BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user,
 				const uchar nt_oldhash[16],
 				const char* new_passwd)
 {
-	BOOL res  = True;
-	BOOL res1 = True;
-
 	char nt_newpass[516];
 	uchar nt_hshhash[16];
 	uchar nt_newhash[16];
@@ -1687,20 +1684,7 @@ BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user,
 	uchar lm_newhash[16];
 	uchar lm_hshhash[16];
 
-	struct cli_connection *con = NULL;
 	extern struct user_creds *usr_creds;
-
-	nt_lm_owf_gen(new_passwd, nt_newhash, lm_newhash);
-	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash, True);
-	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash, True);
-	E_old_pw_hash(nt_newhash, lm_oldhash, lm_hshhash);
-	E_old_pw_hash(nt_newhash, nt_oldhash, nt_hshhash);
-
-#ifdef DEBUG_PASSWORD
-	dump_data(100, nt_newhash, 16);
-	dump_data(100, lm_oldhash, 16);
-	dump_data(100, lm_hshhash, 16);
-#endif
 
 	usr_creds->ntc.ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
 		                    NTLMSSP_NEGOTIATE_OEM |
@@ -1712,13 +1696,43 @@ BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user,
 		                    NTLMSSP_NEGOTIATE_00001000 |
 		                    NTLMSSP_NEGOTIATE_00002000;
 
+	nt_lm_owf_gen(new_passwd, nt_newhash, lm_newhash);
+	make_oem_passwd_hash(nt_newpass, new_passwd, 0, nt_oldhash, True);
+	make_oem_passwd_hash(lm_newpass, new_passwd, 0, lm_oldhash, True);
+	E_old_pw_hash(nt_newhash, lm_oldhash, lm_hshhash);
+	E_old_pw_hash(nt_newhash, nt_oldhash, nt_hshhash);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, nt_newhash, 16);
+	dump_data(100, lm_oldhash, 16);
+	dump_data(100, lm_hshhash, 16);
+#endif
+
+	return msrpc_sam_ntpasswd_set(srv_name, user,
+	                        lm_newpass, lm_hshhash,
+	                        nt_newpass, nt_hshhash);
+}
+
+/****************************************************************************
+SAM password change
+****************************************************************************/
+BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user, 
+				const uchar lm_newpass[516],
+				const uchar lm_hshhash[16],
+				const uchar nt_newpass[516],
+				const uchar nt_hshhash[16])
+{
+	BOOL res  = True;
+	BOOL res1 = True;
+
+	struct cli_connection *con = NULL;
+
+	DEBUG(10,("msrpc_sam_ntpasswd_set: user: %s\n", user));
+
 	/* open SAMR session.  */
 	res = res ? cli_connection_init(srv_name, PIPE_SAMR, &con) : False;
 
-	/* establish a connection. */
-	res1 = res ? samr_unknown_38(con, srv_name) : False;
-
-	/* establish a connection. */
+	res1 = res  ? samr_unknown_38(con, srv_name) : False;
 	res1 = res1 ? samr_chgpasswd_user(con, srv_name, user,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;

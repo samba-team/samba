@@ -46,9 +46,6 @@ static BOOL have_write_access = False;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
-/* we need these because we link to locking*.o */
- void become_root(BOOL save_dir) {}
- void unbecome_root(BOOL restore_dir) {}
 
 /****************************************************************************
 ****************************************************************************/

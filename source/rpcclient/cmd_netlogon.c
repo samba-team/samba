@@ -124,7 +124,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		nt_password = getpass("Enter NT Login password:");
 	}
 
-	nt_lm_owf_gen(nt_pw, lm_pw, nt_password);
+	nt_lm_owf_gen(nt_password, nt_pw, lm_pw);
 
 	DEBUG(5,("do_nt_login_test: username %s from: %s\n",
 	            nt_user_name, info->myhostname));
@@ -165,10 +165,10 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	memset(trust_passwd, 0, 16);
 
 	/* do an NT login */
-	res = res ? cli_nt_login_interactive(srv_name, info->myhostname,
+	res = res ? (cli_nt_login_interactive(srv_name, info->myhostname,
 	                 usr_creds->ntc.domain, nt_user_name,
 	                 getuid(), lm_pw, nt_pw,
-	                 &info->dom.ctr, &info->dom.user_info3) : False;
+	                 &info->dom.ctr, &info->dom.user_info3) == 0x0) : False;
 
 
 #if 0

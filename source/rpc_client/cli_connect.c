@@ -102,6 +102,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 
 	memset(con, 0, sizeof(*con));
 	con->type = MSRPC_NONE;
+
 	copy_user_creds(&con->usr_creds, usr_creds);
 	con->usr_creds.reuse = reuse;
 
@@ -116,9 +117,11 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 
 	if (strequal(srv_name, "\\\\."))
 	{
+		become_root(False);
 		con->type = MSRPC_LOCAL;
 		con->usr_creds.reuse = False;
 		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con->usr_creds, False);
+		unbecome_root(False);
 	}
 	else
 	{
@@ -292,7 +295,8 @@ BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 	 * allocate
 	 */
 
-	DEBUG(10,("cli_connection_init: %s %s\n", srv_name, pipe_name));
+	DEBUG(10,("cli_connection_init: %s %s\n",
+	            srv_name != NULL ? srv_name : "<null>", pipe_name));
 
 	*con = cli_con_get(srv_name, pipe_name, reuse);
 

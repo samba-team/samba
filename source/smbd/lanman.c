@@ -523,7 +523,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       return;
     }
 
-    if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
+    if ((p=(char *)malloc(8192*sizeof(char))) == NULL) {
       DEBUG(0,("fill_printq_info: malloc fail !\n"));
       desc->errcode=NERR_notsupported;
       fclose(f);
@@ -628,7 +628,7 @@ static int get_printerdrivernumber(int snum)
     return(0);
   }
 
-  if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
+  if ((p=(char *)malloc(8192*sizeof(char))) == NULL) {
     DEBUG(3,("get_printerdrivernumber: malloc fail !\n"));
     fclose(f);
     return 0;
@@ -723,7 +723,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
-  } else if(uLevel == 0) {
+  } else if (uLevel == 0) {
 	/*
 	 * This is a *disgusting* hack.
 	 * This is *so* bad that even I'm embarrassed (and I
@@ -794,17 +794,17 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))
       queuecnt++;
   if (uLevel > 0) {
-    if((queue = (print_queue_struct**)malloc(queuecnt*sizeof(print_queue_struct*))) == NULL) {
+    if ((queue = (print_queue_struct**)malloc(queuecnt*sizeof(print_queue_struct*))) == NULL) {
       DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
       return False;
     }
     memset(queue,0,queuecnt*sizeof(print_queue_struct*));
-    if((status = (print_status_struct*)malloc(queuecnt*sizeof(print_status_struct))) == NULL) {
+    if ((status = (print_status_struct*)malloc(queuecnt*sizeof(print_status_struct))) == NULL) {
       DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
       return False;
     }
     memset(status,0,queuecnt*sizeof(print_status_struct));
-    if((subcntarr = (int*)malloc(queuecnt*sizeof(int))) == NULL) {
+    if ((subcntarr = (int*)malloc(queuecnt*sizeof(int))) == NULL) {
       DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
       return False;
     }
@@ -951,7 +951,7 @@ static int get_server_info(uint32 servertype,
 	/* Filter the servers/domains we return based on what was asked for. */
 
 	/* Check to see if we are being asked for a local list only. */
-	if(local_list_only && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0)) {
+	if (local_list_only && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0)) {
 	  DEBUG(4,("r: local list only"));
 	  ok = False;
 	}
@@ -1519,6 +1519,9 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   char *p = skip_string(param+2,2);
   fstring user;
   fstring pass1,pass2;
+  uchar pwbuf[516];
+  uchar nt_pw[16];
+  uchar lm_pw[16];
 
   fstrcpy(user,p);
 
@@ -1554,12 +1557,11 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
    * Older versions of Windows seem to do this.
    */
 
-  if (password_ok(user, global_myworkgroup, pass1,strlen(pass1), NULL, 0,
-                   NULL, NULL) &&
-      chgpasswd(user,pass1,pass2,False))
-  {
-    SSVAL(*rparam,0,NERR_Success);
-  }
+	nt_lm_owf_gen(pass1, nt_pw, lm_pw);
+	if (msrpc_sam_ntchange_pwd("\\\\.", user, lm_pw, nt_pw, pass2))
+	{
+		SSVAL(*rparam,0,NERR_Success);
+	}
 
   /*
    * If the plaintext change failed, attempt
@@ -1567,21 +1569,22 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
    * after trying the samr method.
    */
 
-  if(SVAL(*rparam,0) != NERR_Success)
-  {
-    struct smb_passwd *sampw = NULL;
+	if (SVAL(*rparam,0) != NERR_Success)
+	{
+		if (make_oem_passwd_hash(pwbuf, pass1, 16, NULL, False) &&
+		    msrpc_sam_ntpasswd_set("\\\\.", user, 
+			     pwbuf, pass2, /* lm pw */
+			     NULL, NULL)) /* nt pw */
+		{
+			SSVAL(*rparam,0,NERR_Success);
+		}
+	}
 
-    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampw) && 
-       change_lanman_password(sampw,(unsigned char *)pass1,(unsigned char *)pass2))
-    {
-      SSVAL(*rparam,0,NERR_Success);
-    }
-  }
+	ZERO_STRUCT(pwbuf);
+	ZERO_STRUCT(pass1);
+	ZERO_STRUCT(pass2);
 
-  bzero(pass1,sizeof(fstring));
-  bzero(pass2,sizeof(fstring));	 
-	 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************
@@ -1605,13 +1608,13 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
   /*
    * Check the parameter definition is correct.
    */
-  if(!strequal(param + 2, "zsT")) {
+  if (!strequal(param + 2, "zsT")) {
     DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
     return False;
   }
   p = skip_string(p, 1);
 
-  if(!strequal(p, "B516B16")) {
+  if (!strequal(p, "B516B16")) {
     DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
     return False;
   }
@@ -1634,7 +1637,9 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
    */
   (void)Get_Pwnam( user, True);
 
-  if (pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))
+  if (msrpc_sam_ntpasswd_set("\\\\.", user, 
+                             (uchar*) data, (uchar *)&data[516], /* lm pw */
+                             NULL, NULL)) /* nt pw */
   {
     SSVAL(*rparam,0,NERR_Success);
   }
@@ -2264,7 +2269,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
     /* With share level security vuid will always be zero.
        Don't depend on vuser being non-null !!. JRA */
     user_struct *vuser = get_valid_user_struct(vuid);
-    if(vuser != NULL)
+    if (vuser != NULL)
       DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, vuser->name));
 
     *rparam_len = 6;
@@ -3114,7 +3119,7 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
   rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
 
-  if(!rdata || !rparam) {
+  if (!rdata || !rparam) {
     DEBUG(0,("api_reply: malloc fail !\n"));
     return -1;
   }

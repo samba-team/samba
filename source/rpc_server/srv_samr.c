@@ -1685,15 +1685,35 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 	uint32 status = 0x0;
 	fstring user_name;
 	fstring wks;
+	uchar *lm_newpass = NULL;
+	uchar *nt_newpass = NULL;
+	uchar *lm_oldhash = NULL;
+	uchar *nt_oldhash = NULL;
 
 	unistr2_to_ascii(user_name, &q_u->uni_user_name, sizeof(user_name)-1);
 	unistr2_to_ascii(wks, &q_u->uni_dest_host, sizeof(wks)-1);
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
+	if (q_u->lm_newpass.ptr)
+	{
+		lm_newpass = q_u->lm_newpass.pass;
+	}
+	if (q_u->lm_oldhash.ptr)
+	{
+		lm_oldhash = q_u->lm_oldhash.hash;
+	}
+	if (q_u->nt_newpass.ptr)
+	{
+        	nt_newpass = q_u->nt_newpass.pass;
+	}
+	if (q_u->nt_oldhash.ptr)
+	{
+        	nt_oldhash = q_u->nt_oldhash.hash;
+        }
 	if (!pass_oem_change(user_name,
-	                     q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-	                     q_u->nt_newpass.pass, q_u->nt_oldhash.hash))
+	                     lm_newpass, lm_oldhash,
+	                     nt_newpass, nt_oldhash))
 	{
 		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}

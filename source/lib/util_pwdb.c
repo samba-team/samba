@@ -395,4 +395,3 @@ char *lookup_wk_group_rid(uint32 rid)
 {
 	return lookup_wk_rid(rid, domain_group_rids);
 }
-

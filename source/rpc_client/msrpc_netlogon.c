@@ -51,7 +51,14 @@ static uint32 domain_client_validate( char *user, char *domain,
 	uint32 status;
 	fstring trust_acct;
 	fstring srv_name;
-	BOOL cleartext = smb_apasslen != 24 && smb_ntpasslen == 0;
+	BOOL cleartext = smb_apasslen != 0 && smb_apasslen != 24 &&
+	                 smb_ntpasslen == 0;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("domain_client_validate: %s %s\n", user, domain));
+	dump_data(100, smb_apasswd, smb_apasslen);
+	dump_data(100, smb_ntpasswd, smb_ntpasslen);
+#endif
 
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
