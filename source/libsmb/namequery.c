@@ -913,7 +913,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   /* Save in name cache */
   for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
     DEBUG(100, ("Storing name %s of type %d (ip: %s)\n", name,
-                name_type, inet_ntoa(*return_iplist[i])));
+                name_type, inet_ntoa((*return_iplist)[i])));
     
   namecache_store(name, name_type, *return_count, *return_iplist);
 
