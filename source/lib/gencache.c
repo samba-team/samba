@@ -29,7 +29,7 @@
 #define TIMEOUT_LEN 12
 #define CACHE_DATA_FMT	"%12u/%s"
 
-static TDB_CONTEXT *cache;
+static struct tdb_wrap *cache;
 
 /**
  * @file gencache.c
@@ -62,8 +62,8 @@ BOOL gencache_init(void)
 		return False;
 	}
 
-	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT,
-	                     O_RDWR|O_CREAT, 0644);
+	cache = tdb_wrap_open(NULL, cache_fname, 0, TDB_DEFAULT,
+			      O_RDWR|O_CREAT, 0644);
 
 	SAFE_FREE(cache_fname);
 	if (!cache) {
@@ -83,10 +83,10 @@ BOOL gencache_init(void)
  
 BOOL gencache_shutdown(void)
 {
-	/* tdb_close routine returns -1 on error */
 	if (!cache) return False;
 	DEBUG(5, ("Closing cache file\n"));
-	return tdb_close(cache) != -1;
+	talloc_free(cache);
+	return True;
 }
 
 
@@ -125,7 +125,7 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	           = %s (%d seconds %s)\n", keybuf.dptr, value, ctime(&timeout),
 	           (int)(timeout - time(NULL)), timeout > time(NULL) ? "ahead" : "in the past"));
 		
-	ret = tdb_store(cache, keybuf, databuf, 0);
+	ret = tdb_store(cache->tdb, keybuf, databuf, 0);
 	SAFE_FREE(valstr);
 	SAFE_FREE(keybuf.dptr);
 	SAFE_FREE(databuf.dptr);
@@ -178,7 +178,7 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 	              timeout > time(NULL) ? "ahead" : "in the past"));
 
 		
-	ret = tdb_store(cache, keybuf, databuf, TDB_REPLACE);
+	ret = tdb_store(cache->tdb, keybuf, databuf, TDB_REPLACE);
 
 	SAFE_FREE(datastr);
 	SAFE_FREE(old_valstr);
@@ -211,7 +211,7 @@ BOOL gencache_del(const char *keystr)
 	keybuf.dptr = strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
-	ret = tdb_delete(cache, keybuf);
+	ret = tdb_delete(cache->tdb, keybuf);
 	
 	SAFE_FREE(keybuf.dptr);
 	return ret == 0;
@@ -243,7 +243,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	
 	keybuf.dptr = strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
-	databuf = tdb_fetch(cache, keybuf);
+	databuf = tdb_fetch(cache->tdb, keybuf);
 	SAFE_FREE(keybuf.dptr);
 	
 	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
@@ -317,7 +317,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	if (!gencache_init()) return;
 
 	DEBUG(5, ("Searching cache keys with pattern %s\n", keystr_pattern));
-	node = tdb_search_keys(cache, keystr_pattern);
+	node = tdb_search_keys(cache->tdb, keystr_pattern);
 	first_node = node;
 	
 	while (node) {
@@ -328,7 +328,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		 * We don't use gencache_get function, because we need to iterate through
 		 * all of the entries. Validity verification is up to fn routine.
 		 */
-		databuf = tdb_fetch(cache, node->node_key);
+		databuf = tdb_fetch(cache->tdb, node->node_key);
 		if (!databuf.dptr || databuf.dsize <= TIMEOUT_LEN) {
 			SAFE_FREE(databuf.dptr);
 			SAFE_FREE(keystr);
@@ -360,7 +360,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 int gencache_lock_entry( const char *key )
 {
-	return tdb_lock_bystring(cache, key, 0);
+	return tdb_lock_bystring(cache->tdb, key, 0);
 }
 
 /********************************************************************
@@ -369,8 +369,7 @@ int gencache_lock_entry( const char *key )
 
 void gencache_unlock_entry( const char *key )
 {
-	tdb_unlock_bystring(cache, key);
-	return;
+	tdb_unlock_bystring(cache->tdb, key);
 }
 
 
