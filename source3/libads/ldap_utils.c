@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+
+#ifdef HAVE_LDAP
 /*
   a wrapper around ldap_search_s that retries depending on the error code
   this is supposed to catch dropped connections and auto-reconnect
@@ -88,3 +90,4 @@ ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res,
 	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
 				   "(objectclass=*)", attrs, res);
 }
+#endif
