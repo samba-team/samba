@@ -375,7 +375,7 @@ void add_domain_names(time_t t)
     add_logon_names();
 
   /* Do the domain master names. */
-  if(lp_server_role() == ROLE_DOMAIN_PDC)
+  if(lp_domain_master())
   {
     if(we_are_a_wins_client())
     {
