@@ -30,7 +30,7 @@ close(IN);
 open(IN,$topdir.$doc_file) || die("Can't open $topdir$doc_file");
 
 while(<IN>) {
-	if( /<term><anchor id="([^"]*)">([^<]*?)([ ]*)\(.\)([ ]*)<\/term>/g ) {
+	if( /<term><anchor id="([^"]*)"\/>([^<]*?)([ ]*)\(.\)([ ]*)<\/term>/g ) {
 		$key = $1;
 		$value = $2;
 		$doc{$value} = $key;
