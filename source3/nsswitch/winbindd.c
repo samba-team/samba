@@ -677,10 +677,12 @@ int main(int argc, char **argv)
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
 
-        /* glibc (?) likes to print "User defined signal 1" and exit if a
-           SIGUSR1 is received before a handler is installed */
+	/* glibc (?) likes to print "User defined signal 1" and exit if a
+		SIGUSR1 is received before a handler is installed */
 
  	CatchSignal(SIGUSR1, SIG_IGN);
+
+	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", dyn_LOGFILEBASE);
 
 	/* Initialise for running in non-root mode */
 
