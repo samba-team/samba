@@ -1680,9 +1680,9 @@ dnl ])
 
         LIBS="$ic_save_LIBS"
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
-		CPPFLAGS=$save_CPPFLAGS
-		CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-		export CPPFLAGS
+  	   CPPFLAGS=$save_CPPFLAGS
+	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
