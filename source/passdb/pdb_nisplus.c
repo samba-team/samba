@@ -395,7 +395,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
   }
   
   pdb_set_unknown_3(pw_buf, 0xffffff); /* don't know */
-  pdb_set_logons_divs(pw_buf, 168);     /* hours per week */
+  pdb_set_logon_divs(pw_buf, 168);     /* hours per week */
 		      
 		      if( (hours_len = ENTRY_LEN(obj, NPF_HOURS)) == 21 ) {
     memcpy(hours, ENTRY_VAL(obj, NPF_HOURS), hours_len);

@@ -133,13 +133,14 @@ static void samr_clear_passwd_fields( SAM_USER_INFO_21 *pass, int num_entries)
 
 static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 {
+	
 	if (!sam_pass)
 		return;
 
-	if (sam_pass->lm_pw)
-		memset(sam_pass->lm_pw, '\0', 16);
-	if (sam_pass->nt_pw)
-		memset(sam_pass->nt_pw, '\0', 16);
+	/* These now zero out the old password */
+
+	pdb_set_lanman_passwd(sam_pass, NULL);
+	pdb_set_nt_passwd(sam_pass, NULL);
 }
 
 
@@ -163,7 +164,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 
 	for (pdb_init_sam(&pwd); pdb_getsampwent(pwd) == True; pwd=NULL, pdb_init_sam(&pwd) ) {
 		
-		if (acb_mask != 0 && !(pwd->acct_ctrl & acb_mask)) {
+		if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
 			pdb_free_sam(&pwd);
 			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
 			continue;
@@ -295,7 +296,7 @@ static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 		user_name_len = strlen(pdb_get_username(pwd))+1;
 		init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pdb_get_username(pwd), user_name_len);
 		init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
-		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
+		pw_buf[(*num_entries)].user_rid = pdb_get_user_rid(pwd);
 		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 		
 		/* Now check if the NT compatible password is available. */
@@ -307,7 +308,7 @@ static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
 			  (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
 		
-		if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
+		if (acb_mask == 0 || (pdb_get_acct_ctrl(pwd) & acb_mask)) {
 			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
 			(*num_entries)++;
 		} else {
@@ -1394,7 +1395,6 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
         	return NT_STATUS_NO_SUCH_USER;
 	}
 
-	samr_clear_sam_passwd(sampass);
 	pdb_free_sam(&sampass);
 
 	/* Get the domain SID stored in the domain policy */
@@ -1447,7 +1447,6 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 	ZERO_STRUCTP(id10);
 	init_sam_user_info10(id10, pdb_get_acct_ctrl(smbpass) );
 
-	samr_clear_sam_passwd(smbpass);
 	pdb_free_sam(&smbpass);
 
 	return True;
@@ -1723,13 +1722,11 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	unbecome_root();
 
 	if (ret == False) {
-		samr_clear_sam_passwd(sam_pass);
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if(!get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
-		samr_clear_sam_passwd(sam_pass);
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -1739,7 +1736,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 	
-	samr_clear_sam_passwd(sam_pass);
 	pdb_free_sam(&sam_pass);
 
 	return r_u->status;
@@ -1998,7 +1994,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	r_u->user_rid=sam_pass->user_rid;
+	r_u->user_rid=pdb_get_user_rid(sam_pass);
 	r_u->unknown_0 = 0x000703ff;
 
 	pdb_free_sam(&sam_pass);
@@ -2897,21 +2893,21 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	/* check if the user exists before trying to remove it from the group */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwrid(sam_pass, rid)) {
-		DEBUG(5,("_samr_del_aliasmem:User %s doesn't exist.\n", sam_pass->username));
+		DEBUG(5,("_samr_del_aliasmem:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	/* if the user is not in the group */
-	if(!user_in_group_list(sam_pass->username, grp_name)) {
+	if(!user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_IN_ALIAS;
 	}
 
-	smb_delete_user_group(grp_name, sam_pass->username);
+	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
 
 	/* check if the user has been removed then ... */
-	if(user_in_group_list(sam_pass->username, grp_name)) {
+	if(user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
 	}
@@ -3016,21 +3012,21 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	/* check if the user exists before trying to remove it from the group */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwrid(sam_pass, rid)) {
-		DEBUG(5,("User %s doesn't exist.\n", sam_pass->username));
+		DEBUG(5,("User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	/* if the user is not in the group */
-	if(!user_in_group_list(sam_pass->username, grp_name)) {
+	if(!user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
 
-	smb_delete_user_group(grp_name, sam_pass->username);
+	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
 
 	/* check if the user has been removed then ... */
-	if(user_in_group_list(sam_pass->username, grp_name)) {
+	if(user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_ACCESS_DENIED;		/* don't know what to reply else */
 	}
@@ -3064,7 +3060,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	/* check if the user exists before trying to delete */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwrid(sam_pass, rid)) {
-		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", sam_pass->username));
+		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3075,11 +3071,11 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	 * as the script is not necessary present
 	 * and maybe the sysadmin doesn't want to delete the unix side
 	 */
-	smb_delete_user(sam_pass->username);
+	smb_delete_user(pdb_get_username(sam_pass));
 
 	/* and delete the samba side */
-	if (!pdb_delete_sam_account(sam_pass->username)) {
-		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", sam_pass->username));
+	if (!pdb_delete_sam_account(pdb_get_username(sam_pass))) {
+		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_CANNOT_DELETE;
 	}

@@ -87,8 +87,8 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 			gid = pdb_get_gid(sam_pwent);
 			printf ("user ID/Group:  %d/%d\n", uid, gid);
 		}
-		printf ("user RID/GRID:  %u/%u\n", (unsigned int)sam_pwent->user_rid,
-			(unsigned int)sam_pwent->group_rid);
+		printf ("user RID/GRID:  %u/%u\n", (unsigned int)pdb_get_user_rid(sam_pwent),
+			(unsigned int)pdb_get_group_rid(sam_pwent));
 		printf ("Full Name:      %s\n", pdb_get_fullname(sam_pwent));
 		printf ("Home Directory: %s\n", pdb_get_homedir(sam_pwent));
 		printf ("HomeDir Drive:  %s\n", pdb_get_dirdrive(sam_pwent));
