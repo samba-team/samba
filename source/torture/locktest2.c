@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 
 static fstring password;
 static fstring username;

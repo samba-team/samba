@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/dir.h"
+#include "system/filesys.h"
 
 #ifdef HAVE_DLOPEN
 

@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
 
