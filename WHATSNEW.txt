@@ -153,6 +153,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add 'net rpc group add'.
     * Implement 'net groupmap set' and 'net groupmap cleanup'.
     * Add 'net rpc group [add|del]mem' for domain groups and aliases.
+    * Fix wb_delgrpmem (wbinfo -o)
 
 
 o   Herb Lewis <herb@samba.org>
