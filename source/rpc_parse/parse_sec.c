@@ -128,9 +128,6 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	if(!sec_io_access("info ", &psa->info, ps, depth))
 		return False;
 
-	if(!prs_align(ps))
-		return False;
-
 	/* check whether object access is present */
 	if (!sec_ace_object(psa->type)) {
 		if (!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
@@ -675,13 +672,13 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 
 	*sd_size = (size_t)((offset == 0) ? SEC_DESC_HEADER_SIZE : offset);
 
-	if (dst->owner_sid != NULL) {
+	if (dst->owner_sid != NULL)
 		dst->off_owner_sid = offset_sid;
+		
+	/* sid_size() returns 0 if the sid is NULL so this is ok */
+		
+	if (dst->grp_sid != NULL)
 		dst->off_grp_sid = offset_sid + sid_size(dst->owner_sid);
-	}
-	else
-		if (dst->grp_sid != NULL)
-			dst->off_grp_sid = offset_sid;
 
 	return dst;
 
@@ -798,8 +795,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
 
 		ps->data_offset = tmp_offset;
 	}
@@ -821,6 +816,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
+			
 		ps->data_offset = tmp_offset;
 	}
 
