@@ -4,10 +4,18 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_des)
 
-BUILT_SOURCES = asn1_Key.c asn1_Event.c asn1_HDBFlags.c asn1_hdb_entry.c \
-	asn1_Salt.c hdb_err.c hdb_err.h asn1_GENERATION.c
+BUILT_SOURCES = \
+	$(foo:.x=.c)	\
+	hdb_err.c \
+	hdb_err.h
 
-foo = asn1_Key.x asn1_GENERATION.x asn1_Event.x asn1_HDBFlags.x asn1_hdb_entry.x asn1_Salt.x
+foo = \
+	asn1_Event.x \
+	asn1_GENERATION.x \
+	asn1_HDBFlags.x \
+	asn1_Key.x \
+	asn1_Salt.x \
+	asn1_hdb_entry.x
 
 CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
 
@@ -20,14 +28,27 @@ LDADD = libhdb.la \
 	$(LIB_roken) \
 	$(LIB_ldopen)
 
-lib_LTLIBRARIES = libhdb.la
+if OPENLDAP_MODULE
+
+ldap_so = hdb_ldap.la
+hdb_ldap_la_SOURCES = hdb-ldap.c
+hdb_ldap_la_LDFLAGS = -module
+
+else
+
+ldap = hdb-ldap.c
+
+endif
+
+
+lib_LTLIBRARIES = libhdb.la $(ldap_so)
 libhdb_la_LDFLAGS = -version-info 7:5:0
 
 hdb_source =					\
 	common.c				\
 	db.c					\
 	db3.c					\
-	hdb-ldap.c				\
+	$(ldap)					\
 	hdb.c					\
 	keytab.c				\
 	mkey.c					\
