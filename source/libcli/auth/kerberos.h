@@ -21,6 +21,16 @@
 
 #if defined(HAVE_KRB5)
 
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#else
+#define	KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
+
 #ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif
@@ -40,11 +50,16 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 /* Samba wrapper function for krb5 functionality. */
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
+krb5_error_code ads_krb5_mk_req(krb5_context context, 
+				krb5_auth_context *auth_context, 
+				const krb5_flags ap_req_options,
+				const char *principal,
+				krb5_ccache ccache, 
+				krb5_data *outbuf);
 #endif /* HAVE_KRB5 */
 
