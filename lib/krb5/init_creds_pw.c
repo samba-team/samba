@@ -353,7 +353,7 @@ change_password (krb5_context context,
     ret = (*prompter) (context, data, p, 0, NULL);
     free (p);
     if (result_code == 0) {
-	strncpy (newpw, buf1, newpw_sz);
+	strlcpy (newpw, buf1, newpw_sz);
 	ret = 0;
     } else
 	ret = ENOTTY;
