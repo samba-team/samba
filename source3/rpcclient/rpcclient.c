@@ -35,9 +35,9 @@
 	add_reg_commands();
 	add_ntl_commands();
 	add_at_commands();
-	add_spl_commands();
 	add_dfs_commands();
 #endif
+	add_spl_commands();
 
 	return command_main(argc, argv);
 }
