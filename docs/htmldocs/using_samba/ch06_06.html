@@ -105,33 +105,43 @@ roaming profile</i> because the user can roam around from machine to machine and
 Figure 6.6</a> illustrates local and roaming profiles.   </p><H4 CLASS="figure">
 <A CLASS="title" NAME="ch06-71393">
 Figure 6.6: Local profiles versus roaming profiles</a></h4><IMG CLASS="graphic" SRC="figs/sam.0606.gif" ALT="Figure 6.6"><P CLASS="para">
-Samba will provide roaming profiles if it is configured for domain logons and you provide a tree of directories pointed to by the <CODE CLASS="literal">
-logon</code> <CODE CLASS="literal">
-path</code> option. This option is typically used with one of the user variables, as shown in this example:</p><PRE CLASS="programlisting">
+
+
+<!-- 2.0.7 amendment begins, davecb -->
+<P>Samba will provide roaming profiles if it is configured for domain logons
+and you set <CODE CLASS="literal">logon path</CODE> to the user's home
+directory and <CODE CLASS="literal">logon home </CODE> to a
+subdirectory of the user's home directory used to store profiles. These
+options are typically used with one of the user variables, as shown in this
+example:
+<PRE CLASS="programlisting">
 [global]
-	domain logons = yes
-	security = user
+        domain logons = yes
+        security = user
 	workgroup = SIMPLE
 	os level = 34
 	local master = yes
 	preferred master = yes
 	domain master = yes
 
-	logon path =  \\hydra\profile\%U</pre><P CLASS="para">
-We need to create a new share to support the profiles, which is a basic disk share accessible only by the Samba process' user (<CODE CLASS="literal">root</code>). This share must be writeable, but should not be browseable. In addition, we must create a directory for each user who wishes to log on (based on how we specified our <CODE CLASS="literal">
-logon</code> <CODE CLASS="literal">
-path</code> in the example above), which is accessible only by that user. For an added measure of security, we use the <CODE CLASS="literal">
-directory</code> <CODE CLASS="literal">
-mode</code> and <CODE CLASS="literal">
-create</code> <CODE CLASS="literal">
-mode</code> options to keep anyone who connects to it from viewing or altering the files created in those directories:</p><PRE CLASS="programlisting">
-[profile]
-  comment = User profiles
-  path = /export/samba/profile
-  create mode = 0600
-  directory mode = 0700
-  writable = yes
-  browsable = no</pre><P CLASS="para">
+	logon home = \\%N\%U
+	logon path = \\%N\%U\profile <!-- from the man page -->
+</PRE>
+<P> Samba versions previous to 2.0.6 allowed Win9X machines to store
+profiles in separate shares, but that prevented the clients from setting
+their <CODE CLASS="literal">logon path</CODE> so they could get their home
+directory mounted by saying "net use /home".  This was corrected in
+2.0.6.</P>
+
+<!-- end of profiles modification -->
+<!-- WARNING: we never warn anywhere that "Windows clients can sometimes
+maintain a connection to the [homes] share, even though there is 
+no user logged in. Therefore, it is vital that the logon path does not 
+include a reference to the homes share."  I read the above as being
+equivalen to the homes share, just not leiterally [homes]. I expect
+the bug will persist. davecb-->
+
+
 Once a user initially logs on, the Windows client will create a <I CLASS="filename">
 user.dat</i> or <I CLASS="filename">
 ntuser.dat</i> file&nbsp;- depending on which operating system the client is running. The client then uploads the contents of the desktop, the Start Menu, the Network Neighborhood, and the programs folders in individual folders in the directory. When the user subsequently logs on, those contents will be downloaded from the server and activated for the client machine with which the user is logging on. When he or she logs off, those contents will be uploaded back on the server until the next time the user connects. If you look at the directory listing of a profile folder, you'll see the following:</p><PRE CLASS="programlisting">

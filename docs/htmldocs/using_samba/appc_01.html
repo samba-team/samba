@@ -965,6 +965,30 @@ smb.conf</i> at the line where it appears. This option does not understand the v
 </div>
 <p>&nbsp;</p>
 
+<!-- added for 2.0.7,. davecb -->
+
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>inherit permissions = boolean</i></b>
+<P CLASS="refpurpose">Default: NO</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: YES, NO</p>
+
+<P CLASS="para">
+If set, subdirectories will be created with the same permissions
+as the directory they are in.  This overrides
+<CODE CLASS="literal">create mask, directory mask, force create mode
+</CODE> and <CODE CLASS="literal"> force directory mode</CODE>, but
+not <CODE CLASS="literal">map archive, map hidden </CODE> and <CODE CLASS="literal">
+map system</CODE>. Will never set the <CODE CLASS="literal">setuid
+</CODE> bit. New in 2.0.7, this is a means of ensuring Unix permissions
+can be propagated to subdirectories, especially in [homes].<p>
+
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+<!-- end of 2.0.7 -->
+
 <DIV CLASS="refentry">
 <DIV CLASS="refnamediv"><b><i>[global] interfaces = interface list</i></b>
 <P CLASS="refpurpose">Default: NULL</p></div><BLOCKQUOTE>
@@ -1671,6 +1695,21 @@ Sets minimum spool space required before accepting a print request.</p>
 </div>
 <p>&nbsp;</p>
 
+<!-- 2.0.7, davecb -->
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>min password length  = characters</i></b>
+<P CLASS="refpurpose">Default: 5</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: decimal number of characters</p>
+
+<P CLASS="para">
+Sets the shortest password Samba will pass to the Unix passwd command.
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+<!-- sne 2.0.7 -->
+
 <DIV CLASS="refentry">
 <DIV CLASS="refnamediv"><b><i>[global] min wins ttl = seconds</i></b>
 <P CLASS="refpurpose">Default: 21600 (6 hrs)</p></div><BLOCKQUOTE>
@@ -1725,6 +1764,24 @@ Sets the NetBIOS name by which a Samba server is known, or primary name if NetBI
 </blockquote>
 </div>
 <p>&nbsp;</p>
+
+<!-- 2.0.7, davecb -->
+
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>netbios scope = string</i></b>
+<P CLASS="refpurpose">Default: NULL</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: string</p>
+
+<P CLASS="para">
+Sets the NetBIOS scope string. Samba will not communicate with a machine
+with a different scope. This was an early predecessor of workgroups: avoid
+setting it. Added in 2.0.7. <!-- why was it added, anyway? -->
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+<!-- end 2.0.7 -->
 
 <DIV CLASS="refentry">
 <DIV CLASS="refnamediv"><b><i>[global] networkstation user login = boolean</i></b>
@@ -2660,6 +2717,34 @@ TCP_NODELAY</code> sends even tiny packets to keep delay low. Recommended wherev
 </div>
 <p>&nbsp;</p>
 
+<!-- 2.0.7, davecb -->
+
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>[global] source environment = string</i></b>
+<P CLASS="refpurpose">Default: NULL</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: pathname</p>
+
+<P CLASS="para">
+This pathname parameter causes Samba to read a list of environment
+variables from a named file on startup. This can be useful in setting
+up Samba in a clustered environment. This is new in 2.0.7.</p>
+
+<p> The file must be owned by root and not be world writable,
+and if the filename begins with a "|" (pipe) character, it must point to
+a command which is neither world writable nor resides
+in a world writable directory.</p>
+
+<p> The data should be in the form of lines such as
+<CODE CLASS="literal">SAMBA_NETBIOS_NAME=myhostname</CODE>.
+This variable will then be available in the smb.conf files as $%SAMBA_NETBIOS_NAME.</p>
+
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+<!-- end of 2.0.7 -->
+
 <DIV CLASS="refentry">
 <DIV CLASS="refnamediv"><b><i>[global] status = boolean</i></b>
 <P CLASS="refpurpose">Default: YES</p></div><BLOCKQUOTE>
@@ -2881,6 +2966,45 @@ Names a file of Unix-to-Windows name pairs; used to map different spellings of a
 </div>
 <p>&nbsp;</p>
 
+<!-- 2.0.7 -->
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>[global] utmp = boolean</i></b>
+<P CLASS="refpurpose">Default: NO</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: YES, NO</p>
+
+<P CLASS="para">
+This is available if Samba has been configured with the option
+<CODE CLASS="literal"> --with-utmp</CODE>.
+If set, Samba will add utmp/utmpx records whenever a
+connection is made to a Samba server. New in 2.0.7, sites may use this 
+to record the user connecting to a Samba share.
+</p>
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+
+
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>[global] utmp directory = string</i></b>
+<P CLASS="refpurpose">Default: NULL</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: pathname</p>
+
+<P CLASS="para">
+This is available if Samba has been configured with the option 
+<CODE CLASS="literal">--with-utmp</CODE>. If it and <CODE CLASS="literal">
+utmp </CODE> are set, Samba will look in the specified directory
+insteqad of the default system directory for utmp/utmpx files.
+New in 2.0.7, also called <CODE CLASS="literal"> utmp dir</CODE>.
+</p>
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+<!-- end of 2.0.7 ->
+
 <DIV CLASS="refentry">
 <DIV CLASS="refnamediv"><b><i>valid chars = list</i></b>
 <P CLASS="refpurpose">Default: NULL</p></div><BLOCKQUOTE>
@@ -3049,6 +3173,28 @@ read list</code>.</p>
 </blockquote>
 </div>
 <p>&nbsp;</p>
+
+<!-- 2.0.7 addendum, davecb -->
+<DIV CLASS="refentry">
+<DIV CLASS="refnamediv"><b><i>write cache size = decimal number</i></b>
+<P CLASS="refpurpose">Default: 0 (Disabled)</p></div><BLOCKQUOTE>
+<DIV CLASS="refsynopsisdiv">
+<P CLASS="para">Allowable values: decimal number of bytes</p>
+
+<P CLASS="para">
+Sets the size of a write buffer that Samba uses to pre-accumulate
+write into, so as to write with a particular size that's optimal for
+a given filesystem. Typically this is used with RAID drives, which
+have a preferred write size, systems with large memory and slow disks, etc.</p>
+
+<p> As of Samba 2.0.7, this applies to the first 10 oplocked files,
+which are also found in shares where this option is set.
+</p>
+</div>
+</blockquote>
+</div>
+<p>&nbsp;</p>
+<!-- end of 2.0.7 addendum -->
 
 <DIV CLASS="refentry">
 <DIV CLASS="refnamediv"><b><i>write ok = boolean</i></b>

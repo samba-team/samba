@@ -45,7 +45,16 @@ Additional Samba Information </a></font></b></td><TD ALIGN="RIGHT" VALIGN="TOP" 
 <div>
 <H2 CLASS="sect1">
 <A CLASS="title" NAME="ch08-pgfId-958954">
-8.5 Recently Added Options</a></h2><P CLASS="para">Samba has several options that appeared around the time of Samba 2.0, but are not entirely supported. However, we will give you a brief overview of their workings in this section. These options are shown in <A CLASS="xref" HREF="ch08_05.html#ch08-72538">
+
+<!-- 2.0.7 amendments begin, davecb --> 8.5 Recently Added
+Options</a></h2><P CLASS="para">Samba has several options that appeared
+around the time of Samba 2.0, but either were not entirely supported or were
+in the process of being developed.  With Samba 2.0.7, several more were
+introduced. We will give you a brief overview of their workings in this
+section. These options are shown in <A CLASS="xref"
+HREF="ch08_05.html#ch08-72538">
+<!-- end of first addition -->
+
 Table 8.9</a>. </p><br>
 <TABLE CLASS="table" BORDER="1" CELLPADDING="3">
 <CAPTION CLASS="table">
@@ -63,6 +72,7 @@ Function</p></th><TH CLASS="entry" ALIGN="LEFT" ROWSPAN="1" COLSPAN="1">
 Default</p></th><TH CLASS="entry" ALIGN="LEFT" ROWSPAN="1" COLSPAN="1">
 <P CLASS="para">
 Scope</p></th></tr></thead><TBODY CLASS="tbody">
+
 <TR CLASS="row" VALIGN="TOP">
 <TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
 <P CLASS="para">
@@ -76,7 +86,9 @@ Sets the interval between checks when a client asks to wait for a change in a sp
 <CODE CLASS="literal">
 60</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
 <P CLASS="para">
-Global</p></td></tr><TR CLASS="row" VALIGN="TOP">
+Global</p></td></tr>
+
+<TR CLASS="row" VALIGN="TOP">
 <TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
 <P CLASS="para">
 <CODE CLASS="literal">
@@ -116,7 +128,118 @@ Sets the size of the stat cache.</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="
 <CODE CLASS="literal">
 50</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
 <P CLASS="para">
-Global</p></td></tr></tbody></table><DIV CLASS="sect2">
+Global</p></td></tr>
+
+<!-- 2.0.7 table insertions begin -->
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+utmp</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+boolean</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Turns on logging of Samba users in the utmp file. Requires --with-utmp. </p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+no</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Share</p></td></tr>
+
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+utmp dir</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+string (pathname)</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Sets the directory where Samba expects to find the utmp/utmpx file.</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+None</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Share</p></td></tr>
+
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+inherit permissions</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+boolean</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Sets the permissions of newly created directories to the same as their parent.</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+no</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Share</p></td></tr>
+
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+write cache size</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+numerical (bytes)</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Sets the size of a write cache (buffer) used for oplocked files.</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+0</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Share</p></td></tr>
+
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+source environment</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+string (pathname)</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Sets a file to read environment variable from.</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+None</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Global</p></td></tr>
+
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+min password length</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+numerical (number of characters)</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Sets the minimum length of a new password which Samba will try to update the password file with .</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+5</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Global</p></td></tr>
+
+
+<TR CLASS="row" VALIGN="TOP">
+<TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+netbios scope</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+string</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Sets the NetBIOS scope.</p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+<CODE CLASS="literal">
+None</code></p></td><TD CLASS="entry" ROWSPAN="1" COLSPAN="1">
+<P CLASS="para">
+Global</p></td></tr>
+<!-- end of 2.0.7 insertions-->
+</tbody></table>
+
+<DIV CLASS="sect2">
 <H3 CLASS="sect2">
 <A CLASS="title" NAME="ch08-pgfId-959050">
 8.5.1 change notify timeout</a></h3><P CLASS="para">
@@ -152,8 +275,86 @@ stat</code> <CODE CLASS="literal">
 cache</code> <CODE CLASS="literal">
 size</code> global option sets the size of the cache entries to be used for the <CODE CLASS="literal">
 stat</code> <CODE CLASS="literal">
-cache</code> option. The default here is 50. Again, the Samba team recommends that you never change this parameter.</p></div></div></blockquote>
-<div>
+cache</code> option. The default here is 50. Again, the Samba team recommends that you never change this parameter.</p>
+
+===
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add1"> 
+8.5.5 utmp</a></h3> 
+<P CLASS="para">If you specified <CODE CLASS="literal">
+--with-utmp </CODE> when configuring, this option will turn on utmp logging
+of users: they will appear in the utmp file and you will be able to see if
+they are on with <I>last(1)</I>.  It defaults to <CODE
+CLASS="literal">no</code>.</p>
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add2"> 
+8.5.6 utmp dir</a></h3> 
+<P CLASS="para">
+If <CODE CLASS="literal">utmp</CODE> is set, the utmp dir option will change the directory Samba
+looks in for the utmp files.  If it is not set, the default system 
+location will be used.</p>
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add3"> 
+8.5.7 inherit permissions</a></h3> 
+<P CLASS="para">
+This option causes new files and directories to be created with
+the same permissions as the directory they're in. For example, 
+subdirectories will inherit setgid bits from their parents.
+This option will override the <CODE CLASS="literal">create
+mask, directory mask, force create mode</CODE> and <CODE CLASS="literal">
+force directory mode</CODE> options, but not the <CODE CLASS="literal">
+map archive, map hidden</CODE> and <CODE CLASS="literal">map system</CODE>
+options. It will never set the <CODE CLASS="literal">setuid</CODE> bit.
+This option defaults to off.</p>
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add4"> 
+8.5.8 write cache size</a></h3> 
+<P CLASS="para">The <CODE CLASS="literal">write cache size</code> 
+share option sets the size of a cache used by Samba while
+writing oplocked files.  The files will be written in <I>cachesize</I>
+blocks, so you can tune Samba's write size to the optimum size for
+your filesystem or RAID disk array.</p>
+
+<p>The caching applies to the first 10 files opened with oplocks if set,
+and defaults to zero (off) initially.</p>
+
+<p>As with all caching schemes, data that hasn't been written 
+will be lost if the system crashes.</p>
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add5"> 
+8.5.9 source environment</a></h3> 
+<P CLASS="para">
+This options specifies a file of environment variables that Samba
+will read on startup. <!-- and when else? When an smb.conf is read?
+when a child  server process is started? --> The variables set in this
+files can then be used in smb.conf files as $%<I>name</I>.  For example,
+HOME=/home/sofia in the environment file could be used in a smb.conf
+file as "path = "$HOME"</p>
+
+<p>If the pathname begins with a "|" (pipe) symbol, Samba will attempt
+to run it and read its standard output.</p>
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add6"> 
+8.5.10 min password length</a></h3> 
+<P CLASS="para">This option sets the minimum length, in characters,
+of a plain text password that Samba will accept when performing UNIX 
+password changing. This is used to tell Samba about system-defined
+minimums, so it can return an appropriate error to the client.</p>
+
+
+<H3 CLASS="sect2"> <A CLASS="title" NAME="ch08-pgfId-959060-add1"> 
+8.5.11 netbios scope</a></h3> 
+<P CLASS="para">
+This sets the NetBIOS scope that Samba will operate under: Samba
+will not communicate with any machine with a different scope.
+This should not be set unless every machine on your LAN also sets 
+this value.  It was a predecessor to workgroups, and the Samba
+team recommends against using it.</p>
+
+<!-- end of 2.0.7 additions. -->
+
+<div></div></div></blockquote>
+
 <center>
 <hr noshade size=1><TABLE WIDTH="515" BORDER="0" CELLSPACING="0" CELLPADDING="0">
 <TR>

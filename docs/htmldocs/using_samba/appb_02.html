@@ -194,9 +194,47 @@ read</code> <CODE CLASS="literal">
 size</code> to be the maximum amount of data that Samba would want to read from the client via the network. Actually, it's not. In fact, it's an option to trigger <I CLASS="firstterm">
 write ahead</i>. This means that if Samba gets behind reading from the disk and writing to the network (or vice versa) by the specified amount, it will start overlapping network writes with disk reads (or vice versa).</p><P CLASS="para">
 The read size doesn't have a big performance effect on Unix, unless you set its value quite small. At that point, it causes a detectable slowdown. For this reason, it defaults to 2048 and can't be set lower than 1024.</p></div><DIV CLASS="sect3">
+
 <H4 CLASS="sect3">
-<A CLASS="title" NAME="appb-pgfId-950907">
-B.2.2.9 read prediction </a></h4><P CLASS="para">Besides being counterintuitive, this option is also obsolete. It enables Samba to read ahead on files opened read only by the clients. The option is disabled in Samba 2.0 (and late 1.9) Because it interferes with opportunistic locking.</p></div></div><DIV CLASS="sect2">
+<A CLASS="title" NAME="appb-pgfId-950907"> 
+B.2.2.9 read prediction </a></h4>
+
+<P CLASS="para">Besides being counterintuitive, this option is also
+obsolete. It enables Samba to read ahead on files opened read only by the
+clients. The option is disabled in Samba 2.0 (and late 1.9) because it
+interferes with opportunistic locking.</p>
+
+<H4 CLASS="sect3">
+<A CLASS="title" NAME="appb-pgfId-950907-add1"> 
+B.2.2.10 write cache size </a></h4>
+
+<P CLASS="para">
+This parameter was introduced in Samba 2.0.7 to allow tuning the
+write-size of RAID disks, as well as allowing general caching of
+writes on machines with lots of memory but slow disks.</p>
+
+<p> It specifies in bytes the size of a per-file write cache that
+Samba will create for an oplocked file. This can improve performance
+significantly by causing writes to be done in large 
+chunk sizes. </p>
+
+<p> Up to 10 write caches can be active simultaneously per smbd, each of
+the specified size, allocated to the first 10 oplocked files. As with 
+other filesystem caches, crashing before the data is written can corrupt
+files. </P>
+
+<p> Setting <CODE CLASS="literal"> sync always </CODE> will override the 
+write caching, and setting <CODE CLASS="literal">strict sync</CODE> will
+allow Windows clients to override it.  Alas, Windows Explorer defaults
+to setting the sync bit, so setting <CODE CLASS="literal">strict sync</CODE>
+can be a big performance hit.</p>
+
+<p> As it's new, we haven't many reports on the performance increase, and
+merely suspect it will be considerable.</p>
+</div></div><DIV CLASS="sect2">
+
+
+
 <H3 CLASS="sect2">
 <A CLASS="title" NAME="appb-pgfId-948407">
 B.2.3 Other Samba Options</a></h3><P CLASS="para">The following Samba options will affect performance if they're set incorrectly, much like the debug level. They're mentioned here so you will know what to look out for:</p><DL CLASS="variablelist">
