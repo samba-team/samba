@@ -222,18 +222,19 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 	if (!req) {
 		return NULL;
 	}
-	
+
+	/* Watch out, this changes the req->out.* pointers */
+	if (command == SMBtrans && parms->in.trans_name) {
+		namelen = smbcli_req_append_string(req, parms->in.trans_name, 
+						STR_TERMINATE);
+	}
+
 	/* fill in SMB parameters */
 	outparam = req->out.data + padding;
 	outdata = outparam + parms->in.params.length;
 
 	/* make sure we don't leak data via the padding */
 	memset(req->out.data, 0, padding);
-
-	if (command == SMBtrans && parms->in.trans_name) {
-		namelen = smbcli_req_append_string(req, parms->in.trans_name, 
-						STR_TERMINATE);
-	}
 
 	/* primary request */
 	SSVAL(req->out.vwv,VWV(0),parms->in.params.length);
