@@ -537,6 +537,7 @@ static struct functable net_func[] = {
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"debuglevel",  'd', POPT_ARG_STRING, &debuglevel},
+		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0}
 	};
 

@@ -585,6 +585,7 @@ out_free:
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ NULL }
 	};
 

@@ -597,7 +597,7 @@ WINBINDD_OBJ = \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ)
 
-WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o
+WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o $(POPT_LIB_OBJ)
 
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
 

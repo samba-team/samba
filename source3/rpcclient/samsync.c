@@ -632,6 +632,7 @@ struct poptOption popt_common_interactive[] = {
 		  "Replicate SAM changes" },
 		{ "serial", 0, POPT_ARG_INT, &serial, 0, "SAM serial number" },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_auth_info },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_interactive },
 		POPT_AUTOHELP

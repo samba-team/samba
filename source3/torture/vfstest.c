@@ -495,6 +495,7 @@ int main(int argc, char *argv[])
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 0, "Execute specified list of commands" },
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Write output to specified logfile" },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0}
 	};
 
