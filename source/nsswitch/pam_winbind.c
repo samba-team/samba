@@ -45,7 +45,9 @@ static int _pam_parse(int argc, const char **argv)
 			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 		else if (!strcasecmp(*argv, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
-		else if (!strncasecmp(*argv, "required_membership", strlen("required_membership")))
+		else if (!strncasecmp(*argv, "require_membership_of", strlen("require_membership_of")))
+			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
+		else if (!strncasecmp(*argv, "require-membership-of", strlen("require-membership-of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 		else {
 			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *argv);
@@ -213,28 +215,28 @@ static int winbind_auth_request(const char *user, const char *pass, const char *
 	/* lookup name? */ 
 	if (!strncmp("S-", member, 2) == 0) {
 		
-		struct winbindd_request request;
-		struct winbindd_response response;
+		struct winbindd_request sid_request;
+		struct winbindd_response sid_response;
 
-		ZERO_STRUCT(request);
-		ZERO_STRUCT(response);
+		ZERO_STRUCT(sid_request);
+		ZERO_STRUCT(sid_response);
 
 		if (ctrl & WINBIND_DEBUG_ARG)
 			_pam_log(LOG_DEBUG, "no sid given, looking up: %s\n", member);
 
 		/* fortunatly winbindd can handle non-separated names */
-		strcpy(request.data.name.name, member);
+		strcpy(sid_request.data.name.name, member);
 
-		if (pam_winbind_request_log(WINBINDD_LOOKUPNAME, &request, &response, ctrl, user)) {
+		if (pam_winbind_request_log(WINBINDD_LOOKUPNAME, &sid_request, &sid_response, ctrl, user)) {
 			_pam_log(LOG_INFO, "could not lookup name: %s\n", member); 
 			return PAM_AUTH_ERR;
 		}
 
-		member = strdup(response.data.sid.sid);
+		member = sid_response.data.sid.sid;
 	}
 
-	strncpy(request.data.auth.required_membership_sid, member, 
-	        sizeof(request.data.auth.required_membership_sid)-1);
+	strncpy(request.data.auth.require_membership_of_sid, member, 
+	        sizeof(request.data.auth.require_membership_of_sid)-1);
 	
         return pam_winbind_request_log(WINBINDD_PAM_AUTH, &request, &response, ctrl, user);
 }
@@ -488,13 +490,14 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      /* Retrieve membership-string here */
      for ( i=0; i<argc; i++ ) {
 
-	 if (!strncmp(argv[i], "required_membership", strlen("required_membership"))) {
+	 if ((strncmp(argv[i], "require_membership_of", strlen("require_membership_of")) == 0) 
+	     || (strncmp(argv[i], "require-membership-of", strlen("require-membership-of")) == 0)) {
 
 	     char *p;
 	     char *parm = strdup(argv[i]);
 
 	     if ( (p = strchr( parm, '=' )) == NULL) {
-	     	_pam_log(LOG_INFO, "no \"=\" delimiter for \"required_membership\" found\n");
+	     	_pam_log(LOG_INFO, "no \"=\" delimiter for \"require_membership_of\" found\n");
 		break;
 	     }
 
