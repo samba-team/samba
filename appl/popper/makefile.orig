@@ -1,5 +1,7 @@
 #@(#)@(#)Makefile	2.5  2.5 4/3/91
 
+CC = gcc #-static
+
 CSRCS		=	pop_dele.c pop_dropcopy.c pop_dropinfo.c \
 			pop_get_command.c pop_get_subcommand.c pop_init.c \
 			pop_last.c pop_list.c pop_log.c pop_lower.c \
@@ -42,6 +44,8 @@ MAKEFILE	=	Makefile
 #		KERBEROS	-	Use Kerberos V4 style authentification
 #
 
+RESLIBS = #-lresolv -l44bsd
+
 ATHENA = /usr/athena
 KRBDEFS =  -DKERBEROS -I${ATHENA}/include
 KRBLIBS = ${ATHENA}/lib/libkrb.a ${ATHENA}/lib/libdes.a
@@ -63,7 +67,7 @@ MANDIR		=	/usr/local/man/cat8
 
 
 ${TARGET}: ${OBJS}
-	cc  ${OBJS} -o ${TARGET} ${KRBLIBS}
+	$(CC)  ${OBJS} -o ${TARGET} ${KRBLIBS} ${RESLIBS}
 
 tar: ${SRCS} ${DOCS} ${MAKEFILE}
 	rm -f ${TAR} *.Z*
