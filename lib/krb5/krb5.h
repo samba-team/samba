@@ -363,6 +363,16 @@ krb5_auth_getremoteseqnumber(krb5_context context,
 			     int32_t *seqnumber);
 
 krb5_error_code
+krb5_auth_setlocalseqnumber(krb5_context context,
+			    krb5_auth_context auth_context,
+			    int32_t seqnumber);
+
+krb5_error_code
+krb5_auth_setremoteseqnumber(krb5_context context,
+			     krb5_auth_context auth_context,
+			     int32_t seqnumber);
+
+krb5_error_code
 krb5_auth_getauthenticator(krb5_context context,
 			   krb5_auth_context auth_context,
 			   krb5_authenticator *authenticator);
