@@ -553,7 +553,7 @@ $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.i
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
 .deps/.stamp: .deps/.dummy
-	@:
+	@: >> $@ || : > $@
 
 .deps/depend: .deps/.stamp
 	@echo Updating dependencies
