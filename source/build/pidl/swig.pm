@@ -216,7 +216,7 @@ sub FieldToPython($$)
 	my($extra_args) = "";
 
 	if (isunion($e->{TYPE})) {
-	    $extra_args = ", switch_is";
+	    $extra_args = ", $e->{NAME}_switch_is";
 	}
 
 	if ($e->{POINTERS} == 0) {
@@ -291,7 +291,7 @@ sub ParseFunction($)
 
     foreach my $e (@{$fn->{DATA}}) {
 	if (isunion($e->{TYPE})) {
-	    $result .= ", int switch_is";
+	    $result .= ", int $e->{NAME}_switch_is";
 	}
     }
     $result .= ")\n";
