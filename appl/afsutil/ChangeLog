@@ -1,3 +1,7 @@
+2003-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pagsh.c: unconditionally set KRBTKFILE
+	
 2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afslog.c (log_func): drop the error number
