@@ -16,6 +16,25 @@ possible for Samba-3 to NT4 trust (and vice versa), as well as Samba3 to Samba3 
 </para>
 
 <sect1>
+<title>Features and Benefits</title>
+
+<para>
+Samba-3 can participate in Samba-to-Samba as well as in Samba-to-MS Windows NT4 style
+trust relationships. This imparts to Samba similar scalability as is possible with
+MS Windows NT4.
+</para>
+
+<para>
+Given that Samba-3 has the capability to function with a scalable backend authentication
+database such as LDAP, and given it's ability to run in Primary as well as Backup Domain control
+modes, the administrator would be well advised to consider alternatives to the use of
+Interdomain trusts simplt because by the very nature of how this works it is fragile.
+That was after all a key reason for the development and adoption of Microsoft Active Directory.
+</para>
+
+</sect1>
+
+<sect1>
 <title>Trust Relationship Background</title>
 
 <para>
@@ -217,6 +236,17 @@ the <filename>secrets.tdb</filename> file.
 </para></note>
 
 </sect2>
+</sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+Interdomain trust relationships should NOT be attempted on networks that are unstable
+or that suffer regular outages. Network stability and integrity are key concerns with
+distributed trusted domains.
+</para>
+
 </sect1>
 
 </chapter>
