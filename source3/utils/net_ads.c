@@ -23,7 +23,7 @@
 
 #ifdef HAVE_ADS
 
-int net_ads_usage(void)
+int net_ads_usage(int argc, const char **argv)
 {
 	d_printf(
 "\nnet ads join"\
@@ -208,7 +208,7 @@ int net_ads(int argc, const char **argv)
 
 #else
 
-int net_ads_usage(void)
+int net_ads_usage(int argc, const char **argv)
 {
 	d_printf("ADS support not compiled in\n");
 	return -1;
@@ -216,7 +216,7 @@ int net_ads_usage(void)
 
 int net_ads(int argc, const char **argv)
 {
-	return net_ads_usage();
+	return net_ads_usage(argc, argv);
 }
 
 #endif

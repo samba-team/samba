@@ -310,19 +310,19 @@ static struct in_addr dest_ip;
   call the specified usage function 
 */
 int net_run_function(int argc, const char **argv, struct functable *table, 
-		     int (*usage_fn)(void))
+		     int (*usage_fn)(int argc, const char **argv))
 {
 	int i;
-	if (argc < 1) {
-		return usage_fn();
-	}
+
+	if (argc < 1)
+		return usage_fn(argc, argv);
+
 	for (i=0; table[i].funcname; i++) {
-		if (StrCaseCmp(argv[0], table[i].funcname) == 0) {
+		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
 			return table[i].fn(argc-1, argv+1);
-		}
 	}
 	d_printf("No command: %s\n", argv[0]);
-	return usage_fn();
+	return usage_fn(argc, argv);
 }
 
 
@@ -502,7 +502,7 @@ static BOOL make_ipc_connection(unsigned flags)
 }
 
 
-static int general_usage(void)
+static int general_usage(int argc, const char **argv)
 {
 	d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
 	d_printf(SERVER_USAGE);
@@ -518,17 +518,17 @@ static int general_usage(void)
 	return -1;
 }
 
-static int net_usage(void)
+static int net_usage(int argc, const char **argv)
 {
 	d_printf(NET_USAGE);
 	return -1;
 }
 
-static int file_usage(void)
+static int file_usage(int argc, const char **argv)
 {
 	d_printf(NET_FILE_USAGE); /* command syntax */
 
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
@@ -554,27 +554,31 @@ static void one_file_fn(const char *pPath, const char *pUser, uint16 perms,
 
 static int net_file_close(int argc, const char **argv)
 {
-	if (argc == 0) {
-		return file_usage();
-	}
-	if (!make_ipc_connection(0)) return -1;
+	if (argc == 0)
+		return file_usage(argc, argv);
+
+	if (!make_ipc_connection(0)) 
+                return -1;
+
 	return cli_NetFileClose(cli, atoi(argv[0]));
 }
 
 static int net_file_info(int argc, const char **argv)
 {
-	if (argc == 0) {
-		return file_usage();
-	}
-	if (!make_ipc_connection(0)) return -1;
+	if (argc == 0)
+		return file_usage(argc, argv);
+
+	if (!make_ipc_connection(0)) 
+                return -1;
+
 	return cli_NetFileGetInfo(cli, atoi(argv[0]), one_file_fn);
 }
 
 static int net_file_user(int argc, const char **argv)
 {
-	if (argc == 0) {
-		return file_usage();
-	}
+	if (argc == 0)
+		return file_usage(argc, argv);
+
 	d_printf("net file user not implemented yet\n");
 	return -1;
 }
@@ -589,7 +593,8 @@ static int net_file(int argc, const char **argv)
 	};
 	
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 
 		/* list open files */
 		d_printf(FILE_ENUM_DISPLAY); /* file list header */
@@ -599,10 +604,10 @@ static int net_file(int argc, const char **argv)
 	return net_run_function(argc, argv, func, file_usage);
 }
 		       
-static int share_usage(void)
+static int share_usage(int argc, const char **argv)
 {
 	d_printf(NET_SHARE_USAGE); /* command syntax */
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
@@ -622,7 +627,10 @@ static int net_share_delete(int argc, const char **argv)
 		d_printf(ERRMSG_SHARENAME_MISSING);
 		return -1;
 	}
-	if (!make_ipc_connection(0)) return -1;
+
+	if (!make_ipc_connection(0)) 
+                return -1;
+
 	return cli_NetShareDelete(cli, argv[0]);
 }
 
@@ -637,7 +645,8 @@ static int net_share_add(int argc, const char **argv)
 		return -1;
 	}
 			
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	sharename = strdup(argv[0]);
 	p = strchr(sharename, '=');
@@ -667,7 +676,8 @@ static int net_share(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 		if (opt_long_list_entries) {
 			d_printf(SHARE_ENUM_DISPLAY);
 			return cli_RNetShareEnum(cli, long_share_fn, NULL);
@@ -679,11 +689,11 @@ static int net_share(int argc, const char **argv)
 }
 		    
 		
-static int session_usage(void)
+static int session_usage(int argc, const char **argv)
 {
 	d_printf(NET_SESSION_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
     
@@ -724,14 +734,17 @@ static int net_session_info(int argc, const char **argv)
 	int res;
 	const char *sessname;
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
-	if (argc == 0) return session_usage();
+	if (argc == 0) 
+                return session_usage(argc, argv);
 
 	sessname = argv[0];
 
 	res = cli_NetSessionGetInfo(cli, sessname, display_session_func);
-	if (res < 0) return res;
+	if (res < 0) 
+                return res;
 
 	d_printf(SESSION_DISPLAY_CONNS);
 	return cli_NetConnectionEnum(cli, sessname, display_conns_func);
@@ -741,7 +754,8 @@ static int net_session_delete(int argc, const char **argv)
 {
 	if (!make_ipc_connection(0)) return -1;
 
-	if (argc == 0) return session_usage();
+	if (argc == 0) 
+                return session_usage(argc, argv);
 
 	return cli_NetSessionDel(cli, argv[0]);
 }
@@ -756,7 +770,8 @@ static int net_session(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 		return cli_NetSessionEnum(cli, list_sessions_func);
 	}
 
@@ -772,42 +787,44 @@ static void display_server_func(const char *name, uint32 m, const char *comment,
 }
 
 
-static int server_usage(void)
+static int server_usage(int argc, const char **argv)
 {
 	d_printf(NET_SERVER_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 		    
 static int net_server(int argc, const char **argv)
 {
-	if (!make_ipc_connection(FLAGS_MASTER)) return -1;
+	if (!make_ipc_connection(FLAGS_MASTER)) 
+                return -1;
 	d_printf(SERVER_ENUM_DISPLAY); /* header for list of servers */
 	return cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, display_server_func,NULL); 
 }
 		      
-static int domain_usage(void)
+static int domain_usage(int argc, const char **argv)
 {
 	d_printf(NET_DOMAIN_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
 		  
 static int net_domain(int argc, const char **argv)
 {
-	if (!make_ipc_connection(FLAGS_DMB)) return -1;
+	if (!make_ipc_connection(FLAGS_DMB)) 
+                return -1;
 	d_printf(DOMAIN_ENUM_DISPLAY); /* header for list of domains */
 	return cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, display_server_func,NULL);	
 }
 		      
-static int printq_usage(void)
+static int printq_usage(int argc, const char **argv)
 {
 	d_printf(NET_PRINTQ_USAGE);
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }	
 
@@ -867,18 +884,22 @@ static void enum_jobs(uint16 jobid, const char *ownername, const char *notifynam
 
 static int net_printq_info(int argc, const char **argv)
 {
-	if (argc == 0) return printq_usage();
+	if (argc == 0) 
+                return printq_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_NetPrintQGetInfo(cli, argv[0], enum_queue, enum_jobs);
 }
 
 static int net_printq_delete(int argc, const char **argv)
 {
-	if (argc == 0) return printq_usage();
+	if (argc == 0) 
+                return printq_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_printjob_del(cli, atoi(argv[0]));
 }
@@ -892,7 +913,8 @@ static int net_printq(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 		return cli_NetPrintQEnum(cli, enum_queue, enum_jobs);
 	}
 
@@ -900,11 +922,11 @@ static int net_printq(int argc, const char **argv)
 }
 
 	
-static int user_usage(void)
+static int user_usage(int argc, const char **argv)
 {
 	d_printf(NET_USER_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 } 
 	
@@ -926,9 +948,11 @@ void group_member_fn(const char *user_name, void *state)
 
 static int net_user_delete(int argc, const char **argv)
 {
-	if (argc == 0) return user_usage();
+	if (argc == 0) 
+                return user_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_NetUserDelete(cli, argv[0]);
 }
@@ -937,12 +961,15 @@ static int net_user_add(int argc, const char **argv)
 {
 	RAP_USER_INFO_1 userinfo;
 
-	if (argc == 0) return user_usage();
+	if (argc == 0) 
+                return user_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 			
 	safe_strcpy(userinfo.user_name, argv[0], sizeof(userinfo.user_name));
-	if (opt_flags == -1) opt_flags = 0x21; 
+	if (opt_flags == -1) 
+                opt_flags = 0x21; 
 			
 	userinfo.userflags = opt_flags;
 	userinfo.reserved1 = '\0';
@@ -956,9 +983,11 @@ static int net_user_add(int argc, const char **argv)
 
 static int net_user_info(int argc, const char **argv)
 {
-	if (argc == 0) return user_usage();
+	if (argc == 0) 
+                return user_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_NetUserGetGroups(cli, argv[0], group_member_fn, NULL);
 }
@@ -973,7 +1002,8 @@ int net_user(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 		if (opt_long_list_entries) {
 			d_printf(USER_ENUM_DISPLAY);
 			return cli_RNetUserEnum(cli, long_user_fn, NULL);
@@ -985,11 +1015,11 @@ int net_user(int argc, const char **argv)
 }
 
 
-static int group_usage(void)
+static int group_usage(int argc, const char **argv)
 {
 	d_printf(NET_GROUP_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
@@ -1005,8 +1035,12 @@ static void group_fn(const char *group_name, const char *comment, void *state)
 
 static int net_group_delete(int argc, const char **argv)
 {
-	if (argc == 0) return group_usage();
-	if (!make_ipc_connection(0)) return -1;
+	if (argc == 0) 
+                return group_usage(argc, argv);
+
+	if (!make_ipc_connection(0)) 
+                return -1;
+
 	return cli_NetGroupDelete(cli, argv[0]);
 }
 
@@ -1014,8 +1048,11 @@ static int net_group_add(int argc, const char **argv)
 {
 	RAP_GROUP_INFO_1 grinfo;
 
-	if (argc == 0) return group_usage();
-	if (!make_ipc_connection(0)) return -1;
+	if (argc == 0) 
+                return group_usage(argc, argv);
+
+	if (!make_ipc_connection(0)) 
+                return -1;
 			
 	/* BB check for length 21 or smaller explicitly ? BB */
 	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name));
@@ -1034,7 +1071,8 @@ static int net_group(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 		if (opt_long_list_entries) {
 			d_printf("%-21.21s %-50.50s\n", GROUP_STR, COMMENT_STR); 
 			d_printf("-----------------------------\n");
@@ -1046,38 +1084,44 @@ static int net_group(int argc, const char **argv)
 	return net_run_function(argc, argv, func, group_usage);
 }
 
-static int groupmember_usage(void)
+static int groupmember_usage(int argc, const char **argv)
 {
 	d_printf(NET_GROUPMEMBER_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
 
 static int net_groupmember_add(int argc, const char **argv)
 {
-	if (argc != 2) return groupmember_usage();
+	if (argc != 2) 
+                return groupmember_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_NetGroupAddUser(cli, argv[0], argv[1]);
 }
 
 static int net_groupmember_delete(int argc, const char **argv)
 {
-	if (argc != 2) return groupmember_usage();
+	if (argc != 2) 
+                return groupmember_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_NetGroupDelUser(cli, argv[0], argv[1]);
 }
 
 static int net_groupmember_list(int argc, const char **argv)
 {
-	if (argc == 0) return groupmember_usage();
+	if (argc == 0) 
+                return groupmember_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 
 	return cli_NetGroupGetUsers(cli, argv[0], group_member_fn, NULL ); 
 }
@@ -1094,11 +1138,11 @@ static int net_groupmember(int argc, const char **argv)
 	return net_run_function(argc, argv, func, groupmember_usage);
 }
 
-static int validate_usage(void)
+static int validate_usage(int argc, const char **argv)
 {
 	d_printf(NET_VALIDATE_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
@@ -1108,11 +1152,11 @@ static int net_validate(int argc, const char **argv)
 	return 0;
 }
 
-static int service_usage(void)
+static int service_usage(int argc, const char **argv)
 {
 	d_printf(NET_SERVICE_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
@@ -1137,7 +1181,8 @@ static int net_service(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!make_ipc_connection(0)) return -1;
+		if (!make_ipc_connection(0)) 
+                        return -1;
 		if (opt_long_list_entries) {
 			d_printf("%-15.15s %-50.50s\n", SERVICE_STR, COMMENT_STR); 
 			d_printf("-----------------------------\n");
@@ -1149,30 +1194,32 @@ static int net_service(int argc, const char **argv)
 	return net_run_function(argc, argv, func, service_usage);
 }
 
-static int password_usage(void)
+static int password_usage(int argc, const char **argv)
 {
 	d_printf(NET_PASSWORD_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
 
 static int net_password(int argc, const char **argv)
 {
-	if (argc < 3) return password_usage();
+	if (argc < 3) 
+                return password_usage(argc, argv);
 
-	if (!make_ipc_connection(0)) return -1;
+	if (!make_ipc_connection(0)) 
+                return -1;
 	
 	/* BB Add check for password lengths? */
 	return cli_oem_change_password(cli, argv[0], argv[2], argv[1]);
 }
 
-static int admin_usage(void)
+static int admin_usage(int argc, const char **argv)
 {
 	d_printf(NET_ADMIN_USAGE); /* command syntax */
 	
-	general_usage();
+	general_usage(argc, argv);
 	return -1;
 }
 
@@ -1183,7 +1230,7 @@ static int net_admin(int argc, const char **argv)
 	return 0;
 }
 
-static int help_usage(void)
+static int help_usage(int argc, const char **argv)
 {
 	d_printf("\n"\
 "Usage: net help <function>\n"\
@@ -1243,7 +1290,7 @@ static struct functable net_func[] = {
 /****************************************************************************
   main program
 ****************************************************************************/
-int main(int argc,char *argv[])
+int main(int argc, const char **argv)
 {
 	int opt,i;
 	char *p;
@@ -1286,7 +1333,7 @@ int main(int argc,char *argv[])
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'h':
-			net_usage();
+			net_usage(argc, argv);
 			exit(0);
 			break;
 		case 'I':
@@ -1307,7 +1354,7 @@ int main(int argc,char *argv[])
 			break;
 		default:
 			d_printf(ERRMSG_INVALID_OPTION, (char)opt, opt);
-			net_usage();
+			net_usage(argc, argv);
 		}
 	}
 
@@ -1340,10 +1387,12 @@ int main(int argc,char *argv[])
 	}
 
 	if (!*global_myname) {
-		char *p;
+		char *p2;
+
 		fstrcpy(global_myname, myhostname());
-		p = strchr_m(global_myname, '.');
-		if (p) *p = 0;
+		p2 = strchr_m(global_myname, '.');
+		if (p2) 
+                        *p2 = 0;
 	}
 	
 	load_interfaces();
