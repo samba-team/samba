@@ -268,16 +268,14 @@ BOOL initialise_wins(void)
     /* add all entries that have 60 seconds or more to live */
     if ((ttl - 60) > time_now || ttl == PERMANENT_TTL)
     {
-      struct name_record *namerec;
-
       if(ttl != PERMANENT_TTL)
         ttl -= time_now;
     
-      DEBUG(4, ("initialise_wins: add name: %s#%02x ttl = %d first IP %s flags = %2x\n",
+      DEBUG( 4, ("initialise_wins: add name: %s#%02x ttl = %d first IP %s flags = %2x\n",
            name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
 
-      namerec = add_name_to_subnet(wins_server_subnet, name, type, nb_flags, 
-                                   ttl, REGISTER_NAME, num_ips, ip_list);
+      (void)add_name_to_subnet( wins_server_subnet, name, type, nb_flags, 
+                                    ttl, REGISTER_NAME, num_ips, ip_list );
 
     }
     else
@@ -834,8 +832,8 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
    * Name did not exist - add it.
    */
 
-  add_name_to_subnet(subrec, question->name, question->name_type,
-                     nb_flags, ttl, REGISTER_NAME, 1, &from_ip);
+  (void)add_name_to_subnet( subrec, question->name, question->name_type,
+                            nb_flags, ttl, REGISTER_NAME, 1, &from_ip );
 
   send_wins_name_registration_response(0, ttl, p);
 }
@@ -1123,8 +1121,8 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
    * Name did not exist - add it.
    */
 
-  add_name_to_subnet(subrec, question->name, question->name_type,
-                     nb_flags, ttl, REGISTER_NAME, 1, &from_ip);
+  (void)add_name_to_subnet( subrec, question->name, question->name_type,
+                            nb_flags, ttl, REGISTER_NAME, 1, &from_ip );
 
   send_wins_name_registration_response(0, ttl, p);
 }

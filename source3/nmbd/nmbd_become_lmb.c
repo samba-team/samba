@@ -43,8 +43,9 @@ void insert_permanent_name_into_unicast( struct subnet_record *subrec,
   if((namerec = find_name_on_subnet(unicast_subnet, nmbname, FIND_SELF_NAME)) == NULL)
   {
     /* The name needs to be created on the unicast subnet. */
-    add_name_to_subnet( unicast_subnet, nmbname->name, nmbname->name_type,
-                        nb_type, PERMANENT_TTL, PERMANENT_NAME, 1, &subrec->myip);
+    (void)add_name_to_subnet( unicast_subnet, nmbname->name,
+                              nmbname->name_type, nb_type,
+                              PERMANENT_TTL, PERMANENT_NAME, 1, &subrec->myip);
   }
   else
   {

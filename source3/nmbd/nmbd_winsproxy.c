@@ -78,8 +78,9 @@ returned for name %s.\n", namestr(nmbname) ));
   if(rrec == PERMANENT_TTL)
     ttl = lp_max_ttl();
 
-  namerec = add_name_to_subnet( orig_broadcast_subnet, nmbname->name, nmbname->name_type,
-                         nb_flags, ttl, WINS_PROXY_NAME, num_ips, iplist);
+  namerec = add_name_to_subnet( orig_broadcast_subnet, nmbname->name,
+                                nmbname->name_type, nb_flags, ttl,
+                                WINS_PROXY_NAME, num_ips, iplist );
 
   if(iplist != &ip)
     free((char *)iplist);
