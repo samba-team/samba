@@ -511,6 +511,7 @@ reply to a session setup command
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   uint16 sess_vuid;
+  uchar user_sess_key[16];
   int gid;
   int uid;
   int   smb_bufsize;    
@@ -706,13 +707,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
     if(smb_ntpasslen)
     {
-      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
+      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL,user_sess_key))
         DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
       else
         valid_nt_password = True;
     } 
 
-    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL))
+    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL,user_sess_key))
     {
       if (lp_security() >= SEC_USER) 
       {
@@ -791,7 +792,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest);
+  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest,user_sess_key);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);

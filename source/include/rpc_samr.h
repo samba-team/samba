@@ -68,7 +68,7 @@ SamrRemoveMultipleMembersFromAlias
 x SamrSetInformationAlias
 SamrSetInformationDomain
 x SamrSetInformationGroup
-SamrSetInformationUser
+x SamrSetInformationUser
 SamrSetMemberAttributesOfGroup
 SamrSetSecurityObject
 SamrShutdownSamServer
@@ -114,6 +114,7 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_OPEN_USER         0x22
 #define SAMR_CREATE_USER       0x32
+#define SAMR_SET_USERINFO      0x3A
 
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_QUERY_USERGROUPS  0x27
@@ -122,7 +123,6 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2C        0x2c
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
-#define SAMR_UNKNOWN_32        0x32
 #define SAMR_QUERY_DISPINFO4   0x33 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 4 */
 #define SAMR_UNKNOWN_34        0x34
@@ -139,6 +139,67 @@ typedef struct logon_hours_info
 	uint8 hours[32];
 
 } LOGON_HRS;
+
+/* SAM_USER_INFO_23 */
+typedef struct sam_user_info_23
+{
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* NULL - user name unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home drive unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_acct_desc  ;  /* user description */
+	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
+	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
+
+	uint8 lm_pwd[16];    /* lm user passwords */
+	uint8 nt_pwd[16];    /* nt user passwords */
+
+	uint32 user_rid;      /* Primary User ID */
+	uint32 group_rid;     /* Primary Group ID */
+
+	uint16 acb_info; /* account info (ACB_xxxx bit-mask) */
+	/* uint8 pad[2] */
+
+	uint32 unknown_3; /* 0x09f8 27fa */
+
+	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	/* uint8 pad[2] */
+	uint32 ptr_logon_hrs; /* pointer to logon hours */
+
+	uint8 padding1[8];
+
+	uint32 unknown_5;     /* 0x0001 0000 */
+
+	uint8 pass[516];
+
+	UNISTR2 uni_user_name;    /* NULL - username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
+	UNISTR2 uni_workstations; /* login from workstations unicode string */
+	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
+
+	uint32 unknown_6; /* 0x0000 04ec */
+	uint32 padding4;
+
+	LOGON_HRS logon_hrs;
+
+} SAM_USER_INFO_23;
+
 
 /* SAM_USER_INFO_21 */
 typedef struct sam_user_info_21
@@ -375,7 +436,7 @@ SAMR_Q_QUERY_DOMAIN_INFO - probably a query on domain group info.
 typedef struct q_samr_query_domain_info
 {
 	POLICY_HND domain_pol;   /* policy handle */
-	uint16 switch_value;     /* 0x0002 */
+	uint16 switch_value;     /* 0x0002, 0x0001 */
 
 } SAMR_Q_QUERY_DOMAIN_INFO;
 
@@ -394,7 +455,7 @@ typedef struct sam_unknown_info_7_info
 
 } SAM_UNK_INFO_7;
 
-typedef struct sam_unknown_info_2_info
+typedef struct sam_unknown_info_2_inf
 {
 	uint32 unknown_0; /* 0x0000 0000 */
 	uint32 unknown_1; /* 0x8000 0000 */
@@ -425,11 +486,21 @@ typedef struct sam_unknown_info_2_info
 
 } SAM_UNK_INFO_2;
 
+typedef struct sam_unknown_info_1_inf
+{
+	uint8 padding[12]; /* 12 bytes zeros */
+	uint32 unknown_1; /* 0x8000 0000 */
+	uint32 unknown_2; /* 0x0000 0000 */
+	uint32 unknown_3; /* 0x0000 0000 */
+
+} SAM_UNK_INFO_1;
+
 
 typedef struct sam_unknown_ctr_info
 {
 	union
 	{
+		SAM_UNK_INFO_1 inf1;
 		SAM_UNK_INFO_2 inf2;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
@@ -1035,6 +1106,30 @@ typedef struct r_samr_query_usergroup_info
 } SAMR_R_QUERY_USERGROUPS;
 
 
+/* SAMR_Q_SET_USERINFO - set sam info */
+typedef struct q_samr_set_user_info
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;      /* 0x0017 */
+	uint16 switch_value2;      /* 0x0017 */
+
+	union
+	{
+		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
+		void* id; /* to make typecasting easy */
+
+	} info;
+
+} SAMR_Q_SET_USERINFO;
+
+/* SAMR_R_SET_USERINFO - set sam info */
+typedef struct r_samr_set_user_info
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_SET_USERINFO;
+
+
 /* SAMR_Q_QUERY_USERINFO - probably a get sam info */
 typedef struct q_samr_query_user_info
 {
@@ -1229,33 +1324,6 @@ typedef struct r_samr_create_user_info
 } SAMR_R_CREATE_USER;
 
 
-
-/* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */
-typedef struct q_samr_unknown_32_info
-{
-	POLICY_HND pol;             /* policy handle */
-
-	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
-	UNISTR2 uni_mach_acct;       /* unicode machine account name */
-
-	uint32 acct_ctrl;            /* 32 bit ACB_XXXX */
-	uint16 unknown_1;            /* 16 bit unknown - 0x00B0 */
-	uint16 unknown_2;            /* 16 bit unknown - 0xe005 */
-
-} SAMR_Q_UNKNOWN_32;
-
-
-/* SAMR_R_UNKNOWN_32 - probably a "create SAM entry" */
-typedef struct r_samr_unknown_32_info
-{
-    POLICY_HND pol;       /* policy handle */
-
-	/* rid4.unknown - fail: 0030 success: 0x03ff */
-	DOM_RID4 rid4;         /* rid and attributes */
-
-	uint32 status;         /* return status - fail: 0xC000 0099: user exists */
-
-} SAMR_R_UNKNOWN_32;
 
 /* SAMR_Q_QUERY_GROUPMEM - query group members */
 typedef struct q_samr_query_groupmem_info

@@ -211,7 +211,15 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	uchar nt_owf[24];
 	struct smb_passwd *smb_pass = NULL;
 	
+	user_struct *vuser = get_valid_user_struct(p->vuid);
+
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
+
+	if (vuser == NULL)
+	{
+		DEBUG(0,("get user struct %d failed\n", p->vuid));
+		return False;
+	}
 
 	if (p->ntlmssp_resp.hdr_lm_resp.str_str_len == 0) return False;
 	if (p->ntlmssp_resp.hdr_nt_resp.str_str_len == 0) return False;
@@ -256,7 +264,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	become_root(True);
 	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
 	                      (uchar*)p->ntlmssp_chal.challenge,
-	                      lm_owf, nt_owf, NULL);
+	                      lm_owf, nt_owf, NULL, vuser->dc.user_sess_key);
 	smb_pass = getsmbpwnam(p->user_name);
 	unbecome_root(True);
 

@@ -613,6 +613,7 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
 	char *user; /* name of user who *opened* this connection */
+
 	uid_t uid; /* uid of user who *opened* this connection */
 	gid_t gid; /* gid of user who *opened* this connection */
 
@@ -709,6 +710,7 @@ struct dcinfo
 
   uchar  sess_key[8]; /* Session key */
   uchar  md4pw[16];   /* md4(machine password) */
+  uchar  user_sess_key[16]; /* user session key (md4 nt#) */
 };
 
 typedef struct

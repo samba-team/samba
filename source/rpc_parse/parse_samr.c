@@ -450,6 +450,38 @@ void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth
 }
 
 /*******************************************************************
+makes a structure.
+********************************************************************/
+void make_unk_info1(SAM_UNK_INFO_1 *u_1)
+{
+	if (u_1 == NULL) return;
+
+	memset(u_1->padding, 0, sizeof(u_1->padding)); /* 12 bytes zeros */
+	u_1->unknown_1 = 0x80000000;
+	u_1->unknown_2 = 0x00000000;
+	u_1->unknown_3 = 0x00000000;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, int depth)
+{
+	if (u_1 == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info1");
+	depth++;
+
+	prs_uint8s(False, "padding", ps, depth, u_1->padding, sizeof(u_1->padding)); /* 12 bytes zeros */
+
+	prs_uint32("unknown_1", ps, depth, &u_1->unknown_1); /* 0x8000 0000 */
+	prs_uint32("unknown_2", ps, depth, &u_1->unknown_2); /* 0x0000 0000 */
+	prs_uint32("unknown_3", ps, depth, &u_1->unknown_3); /* 0x0000 0000 */
+
+	prs_align(ps);
+}
+
+/*******************************************************************
 makes a SAMR_R_QUERY_DOMAIN_INFO structure.
 ********************************************************************/
 void make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
@@ -505,6 +537,11 @@ void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 			case 0x02:
 			{
 				sam_io_unk_info2("unk_inf2", &r_u->ctr->info.inf2, ps, depth);
+				break;
+			}
+			case 0x01:
+			{
+				sam_io_unk_info1("unk_inf1", &r_u->ctr->info.inf1, ps, depth);
 				break;
 			}
 			default:
@@ -3850,6 +3887,25 @@ void samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+void make_samr_r_create_user(SAMR_R_CREATE_USER *r_u,
+				POLICY_HND *user_pol,
+				uint32 unk_0, uint32 user_rid,
+				uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("samr_make_samr_r_create_user\n"));
+
+	memcpy(&r_u->user_pol, user_pol, sizeof(r_u->user_pol));
+	
+	r_u->unknown_0 = unk_0;
+	r_u->user_rid = user_rid;
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 void samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return;
@@ -4048,6 +4104,186 @@ void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 
 	prs_uint8s (False, "padding_9", ps, depth, usr->padding_9, sizeof(usr->padding_9));
 }
+
+/*************************************************************************
+ make_sam_user_info23
+
+ unknown_3 = 0x09f8 27fa
+ unknown_5 = 0x0001 0000
+ unknown_6 = 0x0000 04ec 
+
+ *************************************************************************/
+void make_sam_user_info23(SAM_USER_INFO_23 *usr,
+
+	NTTIME *logon_time, /* all zeros */
+	NTTIME *logoff_time, /* all zeros */
+	NTTIME *kickoff_time, /* all zeros */
+	NTTIME *pass_last_set_time, /* all zeros */
+	NTTIME *pass_can_change_time, /* all zeros */
+	NTTIME *pass_must_change_time, /* all zeros */
+
+	char *user_name, /* NULL */
+	char *full_name,
+	char *home_dir,
+	char *dir_drive,
+	char *logon_script,
+	char *profile_path,
+	char *description,
+	char *workstations,
+	char *unknown_str,
+	char *munged_dial,
+
+	uint32 user_rid, /* 0x0000 0000 */
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	LOGON_HRS *hrs,
+	uint32 unknown_5,
+	char newpass[516],
+	uint32 unknown_6)
+{
+	int len_user_name    = user_name    != NULL ? strlen(user_name   ) : 0;
+	int len_full_name    = full_name    != NULL ? strlen(full_name   ) : 0;
+	int len_home_dir     = home_dir     != NULL ? strlen(home_dir    ) : 0;
+	int len_dir_drive    = dir_drive    != NULL ? strlen(dir_drive   ) : 0;
+	int len_logon_script = logon_script != NULL ? strlen(logon_script) : 0;
+	int len_profile_path = profile_path != NULL ? strlen(profile_path) : 0;
+	int len_description  = description  != NULL ? strlen(description ) : 0;
+	int len_workstations = workstations != NULL ? strlen(workstations) : 0;
+	int len_unknown_str  = unknown_str  != NULL ? strlen(unknown_str ) : 0;
+	int len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial ) : 0;
+
+	usr->logon_time            = *logon_time; /* all zeros */
+	usr->logoff_time           = *logoff_time; /* all zeros */
+	usr->kickoff_time          = *kickoff_time; /* all zeros */
+	usr->pass_last_set_time    = *pass_last_set_time; /* all zeros */
+	usr->pass_can_change_time  = *pass_can_change_time; /* all zeros */
+	usr->pass_must_change_time = *pass_must_change_time; /* all zeros */
+
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   ); /* NULL */
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   );
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    );
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   );
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
+	make_uni_hdr(&(usr->hdr_acct_desc   ), len_description );
+	make_uni_hdr(&(usr->hdr_workstations), len_workstations);
+	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str );
+	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial );
+
+	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
+	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+
+	usr->user_rid  = user_rid; /* 0x0000 0000 */
+	usr->group_rid = group_rid;
+	usr->acb_info = acb_info;
+	usr->unknown_3 = unknown_3; /* 09f8 27fa */
+
+	usr->logon_divs = logon_divs; /* should be 168 (hours/week) */
+	usr->ptr_logon_hrs = hrs ? 1 : 0;
+
+	bzero(usr->padding1, sizeof(usr->padding1));
+
+	usr->unknown_5 = unknown_5; /* 0x0001 0000 */
+
+	memcpy(usr->pass, newpass, sizeof(usr->pass));
+
+	make_unistr2(&(usr->uni_user_name   ), user_name   , len_user_name   ); /* NULL */
+	make_unistr2(&(usr->uni_full_name   ), full_name   , len_full_name   );
+	make_unistr2(&(usr->uni_home_dir    ), home_dir    , len_home_dir    );
+	make_unistr2(&(usr->uni_dir_drive   ), dir_drive   , len_dir_drive   );
+	make_unistr2(&(usr->uni_logon_script), logon_script, len_logon_script);
+	make_unistr2(&(usr->uni_profile_path), profile_path, len_profile_path);
+	make_unistr2(&(usr->uni_acct_desc ), description , len_description );
+	make_unistr2(&(usr->uni_workstations), workstations, len_workstations);
+	make_unistr2(&(usr->uni_unknown_str ), unknown_str , len_unknown_str );
+	make_unistr2(&(usr->uni_munged_dial ), munged_dial , len_munged_dial );
+
+	usr->unknown_6 = unknown_6; /* 0x0000 04ec */
+	usr->padding4 = 0;
+
+	if (hrs)
+	{
+		memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
+	}
+	else
+	{
+		memset(&(usr->logon_hrs), 0xff, sizeof(usr->logon_hrs));
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void sam_io_user_info23(char *desc,  SAM_USER_INFO_23 *usr, prs_struct *ps, int depth)
+{
+	if (usr == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_user_info");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_time("logon_time           ", &(usr->logon_time)           , ps, depth);
+	smb_io_time("logoff_time          ", &(usr->logoff_time)          , ps, depth); 
+	smb_io_time("kickoff_time         ", &(usr->kickoff_time)         , ps, depth); 
+	smb_io_time("pass_last_set_time   ", &(usr->pass_last_set_time)   , ps, depth); 
+	smb_io_time("pass_can_change_time ", &(usr->pass_can_change_time) , ps, depth); 
+	smb_io_time("pass_must_change_time", &(usr->pass_must_change_time), ps, depth); 
+
+	smb_io_unihdr("hdr_user_name   ", &(usr->hdr_user_name)   , ps, depth); /* username unicode string header */
+	smb_io_unihdr("hdr_full_name   ", &(usr->hdr_full_name)   , ps, depth); /* user's full name unicode string header */
+	smb_io_unihdr("hdr_home_dir    ", &(usr->hdr_home_dir)    , ps, depth); /* home directory unicode string header */
+	smb_io_unihdr("hdr_dir_drive   ", &(usr->hdr_dir_drive)   , ps, depth); /* home directory drive */
+	smb_io_unihdr("hdr_logon_script", &(usr->hdr_logon_script), ps, depth); /* logon script unicode string header */
+	smb_io_unihdr("hdr_profile_path", &(usr->hdr_profile_path), ps, depth); /* profile path unicode string header */
+	smb_io_unihdr("hdr_acct_desc   ", &(usr->hdr_acct_desc  ) , ps, depth); /* account description */
+	smb_io_unihdr("hdr_workstations", &(usr->hdr_workstations), ps, depth); /* workstations user can log on from */
+	smb_io_unihdr("hdr_unknown_str ", &(usr->hdr_unknown_str ), ps, depth); /* unknown string */
+	smb_io_unihdr("hdr_munged_dial ", &(usr->hdr_munged_dial ), ps, depth); /* workstations user can log on from */
+
+	prs_uint8s (False, "lm_pwd        ", ps, depth, usr->lm_pwd   , sizeof(usr->lm_pwd   ));
+	prs_uint8s (False, "nt_pwd        ", ps, depth, usr->nt_pwd   , sizeof(usr->nt_pwd   ));
+
+	prs_uint32("user_rid      ", ps, depth, &(usr->user_rid     ));       /* User ID */
+	prs_uint32("group_rid     ", ps, depth, &(usr->group_rid    ));      /* Group ID */
+	prs_uint16("acb_info      ", ps, depth, &(usr->acb_info     ));      /* Group ID */
+	prs_align(ps);
+
+	prs_uint32("unknown_3     ", ps, depth, &(usr->unknown_3    ));
+	prs_uint16("logon_divs    ", ps, depth, &(usr->logon_divs   ));     /* logon divisions per week */
+	prs_align(ps);
+	prs_uint32("ptr_logon_hrs ", ps, depth, &(usr->ptr_logon_hrs));
+	prs_uint8s (False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1));
+	prs_uint32("unknown_5     ", ps, depth, &(usr->unknown_5    ));
+
+	prs_uint8s (False, "password      ", ps, depth, usr->pass, sizeof(usr->pass));
+
+	/* here begins pointed-to data */
+
+	smb_io_unistr2("uni_user_name   ", &(usr->uni_user_name)   , usr->hdr_user_name   .buffer, ps, depth); /* username unicode string */
+	smb_io_unistr2("uni_full_name   ", &(usr->uni_full_name)   , usr->hdr_full_name   .buffer, ps, depth); /* user's full name unicode string */
+	smb_io_unistr2("uni_home_dir    ", &(usr->uni_home_dir)    , usr->hdr_home_dir    .buffer, ps, depth); /* home directory unicode string */
+	smb_io_unistr2("uni_dir_drive   ", &(usr->uni_dir_drive)   , usr->hdr_dir_drive   .buffer, ps, depth); /* home directory drive unicode string */
+	smb_io_unistr2("uni_logon_script", &(usr->uni_logon_script), usr->hdr_logon_script.buffer, ps, depth); /* logon script unicode string */
+	smb_io_unistr2("uni_profile_path", &(usr->uni_profile_path), usr->hdr_profile_path.buffer, ps, depth); /* profile path unicode string */
+	smb_io_unistr2("uni_acct_desc   ", &(usr->uni_acct_desc   ), usr->hdr_acct_desc   .buffer, ps, depth); /* user description unicode string */
+	smb_io_unistr2("uni_workstations", &(usr->uni_workstations), usr->hdr_workstations.buffer, ps, depth); /* worksations user can log on from */
+	smb_io_unistr2("uni_unknown_str ", &(usr->uni_unknown_str ), usr->hdr_unknown_str .buffer, ps, depth); /* unknown string */
+	smb_io_unistr2("uni_munged_dial ", &(usr->uni_munged_dial ), usr->hdr_munged_dial .buffer, ps, depth); /* worksations user can log on from */
+
+	prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6  ));
+	prs_uint32("padding4      ", ps, depth, &(usr->padding4   ));
+
+	if (usr->ptr_logon_hrs)
+	{
+		sam_io_logon_hrs("logon_hrs", &(usr->logon_hrs)   , ps, depth);
+		prs_align(ps);
+	}
+}
+
 
 /*************************************************************************
  make_sam_user_info21
@@ -4354,13 +4590,46 @@ void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 }
 
 /*******************************************************************
+makes a SAMR_Q_SET_USERINFO structure.
+********************************************************************/
+void make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
+				POLICY_HND *hnd,
+				uint16 switch_value, void *info)
+{
+	if (q_u == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_samr_q_set_userinfo\n"));
+
+	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+	q_u->switch_value  = switch_value;
+	q_u->switch_value2 = switch_value;
+
+	switch (switch_value)
+	{
+		case 0x17:
+		{
+			q_u->info.id23 = (SAM_USER_INFO_23*)info;
+
+			break;
+		}
+
+		default:
+		{
+			DEBUG(4,("make_samr_q_set_userinfo: unsupported switch level\n"));
+			break;
+		}
+	}
+}
+
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth)
+void samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_32");
+	prs_debug(ps, depth, desc, "samr_io_q_set_userinfo");
 	depth++;
 
 	prs_align(ps);
@@ -4368,34 +4637,65 @@ void samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, i
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
 	prs_align(ps);
 
-	smb_io_unihdr ("", &(q_u->hdr_mach_acct), ps, depth); 
-	smb_io_unistr2("", &(q_u->uni_mach_acct), q_u->hdr_mach_acct.buffer, ps, depth); 
+	prs_uint16("switch_value ", ps, depth, &(q_u->switch_value )); 
+	prs_uint16("switch_value2", ps, depth, &(q_u->switch_value2)); 
 
 	prs_align(ps);
 
-	prs_uint32("acct_ctrl", ps, depth, &(q_u->acct_ctrl));
-	prs_uint16("unknown_1", ps, depth, &(q_u->unknown_1));
-	prs_uint16("unknown_2", ps, depth, &(q_u->unknown_2));
+	switch (q_u->switch_value)
+	{
+		case 0:
+		{
+			break;
+		}
+		case 23:
+		{
+			q_u->info.id = Realloc(NULL, sizeof(*q_u->info.id23));
+			if (q_u->info.id == NULL)
+			{
+				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
+				return;
+			}
+			sam_io_user_info23("", q_u->info.id23, ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(2,("samr_io_q_query_userinfo: unknown switch level\n"));
+			break;
+		}
+			
+	}
+	prs_align(ps);
+}
+
+/*******************************************************************
+makes a SAMR_R_SET_USERINFO structure.
+********************************************************************/
+void make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status)
+				
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_set_userinfo\n"));
+
+	r_u->status = status;         /* return status */
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth)
+void samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_32");
+	prs_debug(ps, depth, desc, "samr_io_r_set_userinfo");
 	depth++;
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol", &(r_u->pol), ps, depth); 
-	prs_align(ps);
-
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
-
 
 /*******************************************************************
 makes a SAMR_Q_CONNECT structure.

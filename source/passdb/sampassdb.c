@@ -124,6 +124,20 @@ struct sam_passwd *getsam21pwent(void *vp)
 }
 
 /************************************************************************
+ Routine to search the smb passwd file for an entry matching the username.
+ and then modify its password entry. We can't use the startsampwent()/
+ getsampwent()/endsampwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
+************************************************************************/
+
+BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
+{
+ 	return pwdb_ops->mod_sam21pwd_entry(pwdb_sam_map_names(pwd), override);
+}
+
+/************************************************************************
  Utility function to search sam passwd by name.  use this if your database
  does not have search facilities.
 *************************************************************************/

@@ -187,7 +187,7 @@ struct smb_passwd *ldap_getpw(void)
 		smbpw.acct_ctrl = ACB_NORMAL;
 
 	if(ldap_get_attribute("lmPassword", temp)) {
-		pwdb_gethexpwd(temp, smblmpwd);
+		pwdb_gethexpwd(temp, smblmpwd, NULL);
 		smbpw.smb_passwd = smblmpwd;
 	} else {
 		smbpw.smb_passwd = NULL;
@@ -195,7 +195,7 @@ struct smb_passwd *ldap_getpw(void)
 	}
 
 	if(ldap_get_attribute("ntPassword", temp)) {
-		pwdb_gethexpwd(temp, smbntpwd);
+		pwdb_gethexpwd(temp, smbntpwd, NULL);
 		smbpw.smb_nt_passwd = smbntpwd;
 	} else {
 		smbpw.smb_nt_passwd = NULL;

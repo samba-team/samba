@@ -212,15 +212,6 @@ typedef struct domrid3_info
 
 } DOM_RID3;
 
-/* DOM_RID4 - rid + user attributes */
-typedef struct domrid4_info
-{
-	uint32 unknown;      
-	uint16 attr;
-	uint32 rid;  /* user RID */
-
-} DOM_RID4;
-
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info
 {

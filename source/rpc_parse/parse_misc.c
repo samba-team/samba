@@ -703,16 +703,6 @@ void smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-creates a DOM_RID4 structure.
-********************************************************************/
-void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
-{
-	rid4->unknown = unknown;
-	rid4->attr    = attr;
-	rid4->rid     = rid;
-}
-
-/*******************************************************************
 makes a DOM_CLNT_SRV structure.
 ********************************************************************/
 static void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)

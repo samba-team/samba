@@ -415,9 +415,26 @@ void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl)
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-BOOL pwdb_gethexpwd(const char *p, char *pwd)
+BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl)
 {
-	return strhex_to_str(pwd, 32, p) == 16;
+	if (strnequal(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32))
+	{
+		if (acct_ctrl != NULL)
+		{
+			*acct_ctrl |= ACB_PWNOTREQ;
+		}
+		pwd[0] = 0;
+		return True;
+	}
+	else if (strnequal(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32))
+	{
+		pwd[0] = 0;
+		return True;
+	}
+	else
+	{
+		return strhex_to_str(pwd, 32, p) == 16;
+	}
 }
 
 

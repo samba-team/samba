@@ -1944,6 +1944,27 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 }
 
 /*******************************************************************
+ set_user_info_23
+ ********************************************************************/
+static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
+{
+	static struct sam_passwd *pwd;
+	fstring new_pw;
+	if (!decode_pw_buffer(id23->pass, new_pw, sizeof(new_pw), True))
+	{
+		return False;
+	}
+#ifdef DEBUG_PASSWORD
+	DEBUG(0,("New Password: %s\n", new_pw));
+#endif
+#if 0
+	return mod_sam21pwd_entry(&pwd, True);
+#else
+	return True;
+#endif
+}
+
+/*******************************************************************
  api_samr_query_userinfo
  ********************************************************************/
 static void api_samr_query_userinfo( uint16 vuid, prs_struct *data, prs_struct *rdata)
@@ -1951,6 +1972,87 @@ static void api_samr_query_userinfo( uint16 vuid, prs_struct *data, prs_struct *
 	SAMR_Q_QUERY_USERINFO q_u;
 	samr_io_q_query_userinfo("", &q_u, data, 0);
 	samr_reply_query_userinfo(&q_u, rdata);
+}
+
+
+/*******************************************************************
+ samr_reply_set_userinfo
+ ********************************************************************/
+static void samr_reply_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
+				prs_struct *rdata, uchar user_sess_key[16])
+{
+	SAMR_R_SET_USERINFO r_u;
+
+	uint32 status = 0x0;
+	uint32 rid = 0x0;
+
+	DEBUG(5,("samr_reply_set_userinfo: %d\n", __LINE__));
+
+	/* search for the handle */
+	if (status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* find the user's rid */
+	if (status == 0x0 && (rid = get_lsa_policy_samr_rid(&(q_u->pol))) == 0xffffffff)
+	{
+		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	DEBUG(5,("samr_reply_set_userinfo: rid:0x%x\n", rid));
+
+	/* ok!  user info levels (there are lots: see MSDEV help), off we go... */
+	if (status == 0x0)
+	{
+		switch (q_u->switch_value)
+		{
+			case 23:
+			{
+				SAM_USER_INFO_23 *id23 = q_u->info.id23;
+				SamOEMhash(id23->pass, user_sess_key, True);
+				status = set_user_info_23(id23, rid) ? 0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
+				break;
+			}
+
+			default:
+			{
+				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+
+				break;
+			}
+		}
+	}
+
+	make_samr_r_set_userinfo(&r_u, status);
+
+	/* store the response in the SMB stream */
+	samr_io_r_set_userinfo("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_reply_set_userinfo: %d\n", __LINE__));
+
+}
+
+/*******************************************************************
+ api_samr_set_userinfo
+ ********************************************************************/
+static void api_samr_set_userinfo( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	user_struct *vuser = get_valid_user_struct(vuid);
+	SAMR_Q_SET_USERINFO q_u;
+	ZERO_STRUCT(q_u);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("set user info: sess_key: "));
+	dump_data(100, vuser->dc.user_sess_key, 16);
+#endif
+	samr_io_q_set_userinfo("", &q_u, data, 0);
+	samr_reply_set_userinfo(&q_u, rdata, vuser->dc.user_sess_key);
+
+	if (q_u.info.id != NULL)
+	{
+		free(q_u.info.id);
+	}
 }
 
 
@@ -2310,6 +2412,13 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 
 				break;
 			}
+			case 0x01:
+			{
+				switch_value = 0x1;
+				make_unk_info1(&ctr.info.inf1);
+
+				break;
+			}
 			default:
 			{
 				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
@@ -2340,50 +2449,19 @@ static void api_samr_query_dom_info( uint16 vuid, prs_struct *data, prs_struct *
 
 
 /*******************************************************************
- samr_reply_unknown_32
+ samr_reply_create_user
  ********************************************************************/
-static void samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
-				prs_struct *rdata,
-				int status)
+static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
+				prs_struct *rdata)
 {
-	int i;
-	SAMR_R_UNKNOWN_32 r_u;
-
-	/* set up the SAMR unknown_32 response */
-	bzero(r_u.pol.data, POL_HND_SIZE);
-	if (status == 0)
-	{
-		for (i = 4; i < POL_HND_SIZE; i++)
-		{
-			r_u.pol.data[i] = i+1;
-		}
-	}
-
-	make_dom_rid4(&(r_u.rid4), 0x0030, 0, 0);
-	r_u.status    = status;
-
-	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	samr_io_r_unknown_32("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
- api_samr_unknown_32
- ********************************************************************/
-static void api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdata)
-{
-	uint32 status = 0;
 	struct sam_passwd *sam_pass;
-	fstring mach_acct;
+	fstring user_name;
 
-	SAMR_Q_UNKNOWN_32 q_u;
-
-	/* grab the samr unknown 32 */
-	samr_io_q_unknown_32("", &q_u, data, 0);
+	SAMR_R_CREATE_USER r_u;
+	POLICY_HND pol;
+	uint32 status = 0x0;
+	uint32 user_rid = 0xffffffff;
+	BOOL pol_open = False;
 
 	/* find the machine account: tell the caller if it exists.
 	   lkclXXXX i have *no* idea if this is a problem or not
@@ -2391,26 +2469,91 @@ static void api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdat
 	   reply if the account already exists...
 	 */
 
-	unistr2_to_ascii(mach_acct, &q_u.uni_mach_acct, sizeof(mach_acct)-1);
+	/* find the policy handle.  open a policy on it. */
+	if (status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->domain_pol)) == -1))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
 
-	become_root(True);
-	sam_pass = getsam21pwntnam(mach_acct);
-	unbecome_root(True);
+	/* get a (unique) handle.  open a policy on it. */
+	if (status == 0x0 && !(pol_open = open_lsa_policy_hnd(&pol)))
+	{
+		status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	unistr2_to_ascii(user_name, &q_u->uni_name, sizeof(user_name)-1);
+
+	sam_pass = getsam21pwntnam(user_name);
 
 	if (sam_pass != NULL)
 	{
-		/* machine account exists: say so */
+		/* account exists: say so */
 		status = 0xC0000000 | NT_STATUS_USER_EXISTS;
 	}
 	else
 	{
-		/* this could cause trouble... */
-		DEBUG(0,("trouble!\n"));
-		status = 0;
+		pstring err_str;
+		pstring msg_str;
+
+		if (!local_password_change(user_name, True,
+		          q_u->acb_info | ACB_DISABLED, 0xffff,
+		          NULL,
+		          err_str, sizeof(err_str),
+		          msg_str, sizeof(msg_str)))
+		{
+			DEBUG(0,("%s\n", err_str));
+			status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		}
+		else
+		{
+			sam_pass = getsam21pwntnam(user_name);
+			if (sam_pass == NULL)
+			{
+				/* account doesn't exist: say so */
+				status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			}
+			else
+			{
+				user_rid = sam_pass->user_rid;
+			}
+		}
 	}
 
+	/* associate the RID with the (unique) handle. */
+	if (status == 0x0 && !set_lsa_policy_samr_rid(&pol, user_rid))
+	{
+		/* oh, whoops.  don't know what error message to return, here */
+		status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (status != 0 && pol_open)
+	{
+		close_lsa_policy_hnd(&pol);
+	}
+
+	DEBUG(5,("samr_create_user: %d\n", __LINE__));
+
+	make_samr_r_create_user(&r_u, &pol, 0x000703ff, user_rid, status);
+
+	/* store the response in the SMB stream */
+	samr_io_r_create_user("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_create_user: %d\n", __LINE__));
+
+}
+
+/*******************************************************************
+ api_samr_create_user
+ ********************************************************************/
+static void api_samr_create_user( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_CREATE_USER q_u;
+
+	/* grab the samr unknown 32 */
+	samr_io_q_create_user("", &q_u, data, 0);
+
 	/* construct reply. */
-	samr_reply_unknown_32(&q_u, rdata, status);
+	samr_reply_create_user(&q_u, rdata);
 }
 
 
@@ -2709,6 +2852,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_LOOKUP_NAMES"     , SAMR_LOOKUP_NAMES     , api_samr_lookup_names     },
 	{ "SAMR_OPEN_USER"        , SAMR_OPEN_USER        , api_samr_open_user        },
 	{ "SAMR_QUERY_USERINFO"   , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },
+	{ "SAMR_SET_USERINFO"     , SAMR_SET_USERINFO     , api_samr_set_userinfo     },
 	{ "SAMR_QUERY_DOMAIN_INFO", SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info   },
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
@@ -2716,7 +2860,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_DISPINFO4"  , SAMR_QUERY_DISPINFO4  , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
 	{ "SAMR_QUERY_GROUPINFO"  , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
-	{ "SAMR_0x32"             , SAMR_UNKNOWN_32       , api_samr_unknown_32       },
+	{ "SAMR_CREATE_USER"      , SAMR_CREATE_USER      , api_samr_create_user      },
 	{ "SAMR_LOOKUP_RIDS"      , SAMR_LOOKUP_RIDS      , api_samr_lookup_rids      },
 	{ "SAMR_UNKNOWN_38"       , SAMR_UNKNOWN_38       , api_samr_unknown_38       },
 	{ "SAMR_CHGPASSWD_USER"   , SAMR_CHGPASSWD_USER   , api_samr_chgpasswd_user   },
