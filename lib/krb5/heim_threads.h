@@ -81,6 +81,8 @@
 
 #elif defined(ENABLE_PTHREAD_SUPPORT) && !defined(__NetBSD__)
 
+#include <pthread.h>
+
 #define HEIMDAL_MUTEX pthread_mutex_t
 #define HEIMDAL_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 #define HEIMDAL_MUTEX_init(m) pthread_mutex_init(m, NULL)
