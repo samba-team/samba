@@ -33,6 +33,7 @@ krb5_rd_safe(krb5_context context,
   /* check sender address */
 
   if (safe.safe_body.s_address
+      && auth_context->remote_address
       && !krb5_address_compare (context,
 				auth_context->remote_address,
 				safe.safe_body.s_address)) {

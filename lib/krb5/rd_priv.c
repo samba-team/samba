@@ -43,6 +43,7 @@ krb5_rd_priv(krb5_context context,
   /* check sender address */
 
   if (part.s_address
+      && auth_context->remote_address
       && !krb5_address_compare (context,
 				auth_context->remote_address,
 				part.s_address)) {
