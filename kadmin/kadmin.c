@@ -120,6 +120,10 @@ static SL_cmd commands[] = {
 	"Deletes all principals matching the expressions."
     },
     { "del_entry" },
+    {
+	"del_enctype",	del_enctype,	"del_enctype principal enctype...",
+	"Delete all the mentioned enctypes for principal."
+    },
     { 
 	"ext_keytab",	ext_keytab, 	"ext_keytab expression...",
 	"Extracts the keys of all principals matching the expressions,\n"

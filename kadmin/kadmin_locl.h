@@ -96,6 +96,7 @@ extern void * kadm_handle;
 DECL(add_new_key);
 DECL(cpw_entry);
 DECL(del_entry);
+DECL(del_enctype);
 DECL(exit_kadmin);
 DECL(ext_keytab);
 DECL(get_entry);
