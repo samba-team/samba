@@ -454,16 +454,16 @@ krb5_error_code
 krb5_set_default_in_tkt_etypes(krb5_context context, 
 			       const krb5_enctype *etypes)
 {
-    int i;
     krb5_enctype *p = NULL;
+    int i;
 
     if(etypes) {
-	for (i = 0; etypes[i]; ++i)
-	    if(!krb5_enctype_valid(context, etypes[i])) {
-		krb5_set_error_string(context, "enctype %d not supported",
-				      etypes[i]);
-		return KRB5_PROG_ETYPE_NOSUPP;
-	    }
+	for (i = 0; etypes[i]; ++i) {
+	    krb5_error_code ret;
+	    ret = krb5_enctype_valid(context, etypes[i]);
+	    if (ret)
+		return ret;
+	}
 	++i;
 	ALLOC(p, i);
 	if(!p) {
