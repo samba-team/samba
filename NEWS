@@ -1,3 +1,7 @@
+Changes in release 0.0u:
+
+ * lots of bug fixes
+
 Changes in release 0.0t:
 
  * more robust parsing of krb5.conf
