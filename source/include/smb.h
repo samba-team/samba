@@ -876,6 +876,9 @@ typedef enum
   P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
 
+/* passed to br lock code */
+enum brl_type {READ_LOCK, WRITE_LOCK};
+
 struct enum_list {
 	int value;
 	char *name;
