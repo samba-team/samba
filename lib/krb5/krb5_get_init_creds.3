@@ -54,7 +54,9 @@
 .Nm krb5_get_init_creds_opt_set_rewew_life ,
 .Nm krb5_get_init_creds_opt_set_salt ,
 .Nm krb5_get_init_creds_opt_set_tkt_life ,
-.Nm krb5_get_init_creds_password
+.Nm krb5_get_init_creds_password ,
+.Nm krb5_prompt ,
+.Nm krb5_prompter_posix
 .Nd kerberos 5 initial authentication functions.
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -203,6 +205,15 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "const char *in_tkt_service"
 .Fa "krb5_get_init_creds_opt *options"
 .Fc
+.Ft int
+.Fo krb5_prompter_posix
+.Fa "krb5_context context"
+.Fa "void *data"
+.Fa "const char *name"
+.Fa "const char *banner"
+.Fa "int num_prompts"
+.Fa "krb5_prompt prompts[]"
+.Fc
 .Sh DESCRIPTION
 Getting initial credential ticket for a principal.
 This interface that replaces the deprecated
@@ -233,6 +244,44 @@ is the least specialized function and can, with the right in data,
 behave like the later two.
 The later two are there for compatibly with older releases and that
 they are slightly easier to use.
+.Pp
+.Li krb5_prompt
+is a structure containing the following elements:
+.Bd -literal
+typedef struct {
+    const char *prompt;
+    int hidden;
+    krb5_data *reply;
+    krb5_prompt_type type
+} krb5_prompt;
+.Ed
+.Pp
+.Fa prompt
+is the prompt that should shown to the user
+If
+.Fa hidden
+is set, the prompter function shouldn't echo the output to the display
+device.
+.Fa reply
+must be preallocated, it will not be allocated in by the prompter
+function.
+Possible value for the
+.Fa type
+element are:
+.Bl -tag -compact -offset indent
+.It KRB5_PROMPT_TYPE_PASSWORD
+.It KRB5_PROMPT_TYPE_NEW_PASSWORD
+.It KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN
+.It KRB5_PROMPT_TYPE_PREAUTH
+.El
+.Pp
+.Fn krb5_prompter_posix
+is a the default prompter function in a posix environment.
+It matches the
+.Fa krb5_prompter_fct
+and can be used in the
+.Fa krb5_get_init_creds
+functions.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_creds 3 ,
