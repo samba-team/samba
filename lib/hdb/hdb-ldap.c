@@ -927,6 +927,10 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    ret = krb5_parse_name(context, unparsed_name, &ent->principal);
 	    if (ret)
 		goto out;
+	} else {
+	    krb5_set_error_string(context, "hdb-ldap: ldap entry missing"
+				  "principal name");
+	    return HDB_ERR_NOENTRY;
 	}
     }
 
