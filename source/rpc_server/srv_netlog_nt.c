@@ -421,7 +421,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 		if(smb_password_check((char *)id2->nt_chal_resp.buffer,
 		                   smb_pass->smb_nt_passwd,
                            id2->lm_chal)) 
-			return 0x0;
+			return NT_STATUS_NO_PROBLEMO;
 		else
 			return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -439,7 +439,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 		                   smb_pass->smb_passwd,
 		                   id2->lm_chal))
 	{
-		return 0x0;
+		return NT_STATUS_NO_PROBLEMO;
 	}
 
 
