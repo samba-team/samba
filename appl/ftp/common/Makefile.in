@@ -17,10 +17,10 @@ INSTALL = @INSTALL@
 
 prefix 	= @prefix@
 
-SOURCES = glob.c sockbuf.c buffer.c
+SOURCES = sockbuf.c buffer.c
 OBJECTS = $(libcommon_OBJS)
 
-libcommon_OBJS = glob.o sockbuf.o buffer.o
+libcommon_OBJS = sockbuf.o buffer.o
 
 LIBNAME = $(LIBPREFIX)common
 LIBEXT = a
