@@ -51,7 +51,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
-#ifdef SMB_LARGE_OFF_T
+#ifdef LARGE_SMB_OFF_T
         /*
 	 * We only want to do the following if we understand large offsets
 	 * otherwise the compiler is likely to get upset with us
@@ -59,7 +59,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	if (bigoffset)
 		SIVAL(cli->outbuf,smb_vwv10,(offset>>32) & 0xffffffff);
 
-#endif /* SMB_LARGE_OFF_T */
+#endif /* LARGE_SMB_OFF_T */
 
 	return cli_send_smb(cli);
 }
@@ -279,14 +279,14 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
 
-#ifdef SMB_LARGE_OFF_T
+#ifdef LARGE_SMB_OFF_T
         /*
 	 * We only want to do the following if we understand large offsets
 	 * otherwise the compiler is likely to get upset with us
 	 */
 	if (bigoffset)
 		SIVAL(cli->outbuf,smb_vwv12,(offset>>32) & 0xffffffff);
-#endif /* SMB_LARGE_OFF_T */
+#endif /* LARGE_SMB_OFF_T */
 
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
 	memcpy(p, buf, size);

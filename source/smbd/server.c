@@ -708,7 +708,11 @@ static void usage(char *pname)
 
 	pstrcpy(remote_machine, "smbd");
 
-	setup_logging(argv[0],interactive);
+	/*
+	 * Only want interactive behaviour if the user has not also
+	 * specified a logfile dir etc.
+	 */
+	setup_logging(argv[0],interactive & !specified_logfile);
 
 	charset_initialise();
 
