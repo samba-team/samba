@@ -368,7 +368,7 @@ static BOOL handle_protocol(char *pszParmValue,int *val);
 static BOOL handle_security(char *pszParmValue,int *val);
 static BOOL handle_case(char *pszParmValue,int *val);
 static BOOL handle_printing(char *pszParmValue,int *val);
-static BOOL handle_character_set(char *pszParmValue,int *val);
+static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_announce_as(char *pszParmValue, int *val);
 #ifdef KANJI
 static BOOL handle_coding_system(char *pszParmValue,int *val);
@@ -1443,10 +1443,10 @@ static BOOL handle_coding_system(char *pszParmValue,int *val)
 /***************************************************************************
 handle the interpretation of the character set system parameter
 ***************************************************************************/
-static BOOL handle_character_set(char *pszParmValue,int *val)
+static BOOL handle_character_set(char *pszParmValue,char **ptr)
 {
-  string_set(&Globals.szCharacterSet,pszParmValue);
-  *val = interpret_character_set(pszParmValue,*val);
+  string_set(ptr,pszParmValue);
+  interpret_character_set(pszParmValue);
   return(True);
 }
 

@@ -10,7 +10,7 @@ BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
 
 char *unix2dos_format(char *str,BOOL overwrite);
 char *dos2unix_format(char *str, BOOL overwrite);
-int interpret_character_set(char *str, int def);
+void interpret_character_set(char *str);
 
 /*The following definitions come from  charset.c  */
 
