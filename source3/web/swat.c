@@ -999,7 +999,7 @@ static void printers_page(void)
 {
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	int opt;
 	char *page;
 
@@ -1016,8 +1016,8 @@ static void printers_page(void)
 	/* we don't want any SIGPIPE messages */
 	BlockSignals(True,SIGPIPE);
 
-	dbf = sys_fopen("/dev/null", "w");
-	if (!dbf) dbf = stderr;
+	dbf = x_fopen("/dev/null", O_WRONLY, 0);
+	if (!dbf) dbf = x_stderr;
 
 	/* we don't want stderr screwing us up */
 	close(2);

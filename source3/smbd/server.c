@@ -781,11 +781,6 @@ static void usage(char *pname)
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",MAXSTATUS,True);
 
-	/* Attempt to migrate from an old 2.0.x machine account file. */
-	if (!migrate_from_old_password_file(global_myworkgroup)) {
-		DEBUG(0,("Failed to migrate from old MAC file.\n"));
-	}
-
 	if (!open_sockets(is_daemon,port))
 		exit(1);
 

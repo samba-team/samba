@@ -71,7 +71,7 @@ stack dir_stack = {NULL, 0}; /* Want an empty stack */
 #define SEPARATORS " \t\n\r"
 extern int DEBUGLEVEL;
 extern struct cli_state *cli;
-extern FILE *dbf;
+extern XFILE *dbf;
 
 /* These defines are for the do_setrattr routine, to indicate
  * setting and reseting of file attributes in the function call */
@@ -1533,7 +1533,7 @@ accordingly.
 ***************************************************************************/
 static int read_inclusion_file(char *filename)
 {
-  FILE *inclusion = NULL;
+  XFILE *inclusion = NULL;
   char buf[MAXPATHLEN + 1];
   char *inclusion_buffer = NULL;
   int inclusion_buffer_size = 0;
@@ -1545,7 +1545,7 @@ static int read_inclusion_file(char *filename)
 
   clipn = 0;
   buf[MAXPATHLEN] = '\0'; /* guarantee null-termination */
-  if ((inclusion = sys_fopen(filename, "r")) == NULL) {
+  if ((inclusion = x_fopen(filename, O_RDONLY, 0)) == NULL) {
     /* XXX It would be better to include a reason for failure, but without
      * autoconf, it's hard to use strerror, sys_errlist, etc.
      */
@@ -1553,7 +1553,7 @@ static int read_inclusion_file(char *filename)
     return 0;
   }
 
-  while ((! error) && (fgets(buf, sizeof(buf)-1, inclusion))) {
+  while ((! error) && (x_fgets(buf, sizeof(buf)-1, inclusion))) {
     if (inclusion_buffer == NULL) {
       inclusion_buffer_size = 1024;
       if ((inclusion_buffer = malloc(inclusion_buffer_size)) == NULL) {
@@ -1584,7 +1584,7 @@ static int read_inclusion_file(char *filename)
     inclusion_buffer_sofar += strlen(buf) + 1;
     clipn++;
   }
-  fclose(inclusion);
+  x_fclose(inclusion);
 
   if (! error) {
     /* Allocate an array of clipn + 1 char*'s for cliplist */
@@ -1827,7 +1827,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
      * tar output
     */
     if (tarhandle == 1) 
-      dbf = stderr;
+      dbf = x_stderr;
   } else {
     if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
       {

@@ -3077,11 +3077,11 @@ static void usage(void)
 	int gotpass = 0;
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	static pstring servicesf = CONFIGFILE;
 	BOOL correct = True;
 
-	dbf = stdout;
+	dbf = x_stdout;
 
 #ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);

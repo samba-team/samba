@@ -802,7 +802,7 @@ You can string acls together with spaces, commas or newlines\n\
 	pstring filename;
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	int opt;
 	char *p;
 	static pstring servicesf = CONFIGFILE;
@@ -816,7 +816,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	setlinebuf(stdout);
 
-	dbf = stderr;
+	dbf = x_stderr;
 
 	if (argc < 3 || argv[1][0] == '-') {
 		usage();

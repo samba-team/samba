@@ -149,9 +149,9 @@ void cgi_load_variables(FILE *f1)
 			len = content_length;
 		}
 	} else {
-		fseek(f, 0, SEEK_END);
-		len = ftell(f);
-		fseek(f, 0, SEEK_SET);
+		struct stat st;
+		fstat(fileno(f), &st);
+		len = st.st_size;
 	}
 
 

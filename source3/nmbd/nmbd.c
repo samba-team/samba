@@ -666,7 +666,7 @@ static void usage(char *pname)
  int main(int argc,char *argv[])
 {
   int opt;
-  extern FILE *dbf;
+  extern XFILE *dbf;
   extern char *optarg;
   extern BOOL  append_log;
 
@@ -876,7 +876,7 @@ static void usage(char *pname)
   process();
 
   if (dbf)
-    fclose(dbf);
+    x_fclose(dbf);
   return(0);
 } /* main */
 

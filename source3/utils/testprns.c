@@ -35,7 +35,7 @@
 #include "smb.h"
 
 /* these live in util.c */
-extern FILE *dbf;
+extern XFILE *dbf;
 extern int DEBUGLEVEL;
 
 int main(int argc, char *argv[])
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
       printf("Usage: testprns printername [printcapfile]\n");
    else
    {
-      dbf = sys_fopen("test.log", "w");
+      dbf = x_fopen("test.log", O_WRONLY|O_CREAT|O_TRUNC, 0644);
       if (dbf == NULL) {
          printf("Unable to open logfile.\n");
       } else {
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
             printf("Printer name %s is not valid.\n", argv[1]);
          else
             printf("Printer name %s is valid.\n", argv[1]);
-         fclose(dbf);
+         x_fclose(dbf);
       }
    }
    return (0);

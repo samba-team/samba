@@ -630,16 +630,6 @@ BOOL yesno(char *p)
   return(False);
 }
 
-#ifdef HPUX
-/****************************************************************************
-this is a version of setbuffer() for those machines that only have setvbuf
-****************************************************************************/
- void setbuffer(FILE *f,char *buf,int bufsize)
-{
-  setvbuf(f,buf,_IOFBF,bufsize);
-}
-#endif
-
 /****************************************************************************
 expand a pointer to be a particular size
 ****************************************************************************/
