@@ -1,3 +1,7 @@
+2001-09-13  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c (dataconn): don't wait forever on accept
+
 2001-08-28  Jacques Vidrine <n@nectar.com>
 
 	* ftpd/ftpd.c, ftpd/ftpd.8: On systems with IP_PORTRANGE, have
