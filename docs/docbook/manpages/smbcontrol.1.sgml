@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="smbcontrol.1">
 
 <refmeta>
@@ -16,6 +18,7 @@
 	<cmdsynopsis>
 		<command>smbcontrol</command>
 		<arg>-i</arg>
+		<arg>-s</arg>
 	</cmdsynopsis>
 	
 	<cmdsynopsis>
@@ -44,6 +47,8 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
+		&stdarg.help;
+		&stdarg.configfile;
 		<varlistentry>
 		<term>-i</term>
 		<listitem><para>Run interactively. Individual commands 
@@ -70,107 +75,12 @@
 		
 		<varlistentry>
 		<term>message-type</term>
-		<listitem><para>One of: <constant>close-share</constant>,
-		<constant>debug</constant>, 
-		<constant>force-election</constant>, <constant>ping
-		</constant>, <constant>profile</constant>, <constant>
-		debuglevel</constant>, <constant>profilelevel</constant>, 
-		or <constant>printnotify</constant>.</para>
+		<listitem><para>Type of message to send. See 
+		the section <constant>MESSAGE-TYPES</constant> for details.
+		</para></listitem></varlistentry>
+		
 
-		<para>The <constant>close-share</constant> message-type sends a 
-		message to smbd which will then close the client connections to
-		the named share. Note that this doesn't affect client connections
-		to any other shares. This message-type takes an argument of the
-		share name for which client connections will be closed, or the
-		"*" character which will close all currently open shares.
-		This may be useful if you made changes to the access controls on the share.
-		This message can only be sent to <constant>smbd</constant>.</para>
-
-		<para>The <constant>debug</constant> message-type allows 
-		the debug level to be set to the value specified by the 
-		parameter. This can be sent to any of the destinations.</para>
-
-		<para>The <constant>force-election</constant> message-type can only be 
-		sent to the <constant>nmbd</constant> destination. This message 
-		causes the <command>nmbd</command> daemon to force a new browse
-		master election.</para>
-
-		<para>The <constant>ping</constant> message-type sends the 
-		number of "ping" messages specified by the parameter and waits 
-		for the same number of  reply "pong" messages. This can be sent to 
-		any of the destinations.</para>
-
-		<para>The <constant>profile</constant> message-type sends a 
-		message to an smbd to change the profile settings based on the 
-		parameter. The parameter can be "on" to turn on profile stats 
-		collection, "off" to turn off profile stats collection, "count"
-		to enable only collection of count stats (time stats are 
-		disabled), and "flush" to zero the current profile stats. This can 
-		be sent to any smbd or nmbd destinations.</para>
-
-		<para>The <constant>debuglevel</constant> message-type sends 
-		a "request debug level" message. The current debug level setting 
-		is returned by a  "debuglevel" message. This can be 
-		sent to any of the destinations.</para>
-
-		<para>The <constant>profilelevel</constant> message-type sends 
-		a "request profile level" message.  The current profile level 
-		setting is returned by a  "profilelevel" message. This can be sent 
-		to any smbd or nmbd destinations.</para>
-
-		<para>The <constant>printnotify</constant> message-type sends a 
-		message to smbd which in turn sends a printer notify message to 
-		any Windows NT clients connected to a printer. This message-type
-		takes the following arguments:
-
-		<variablelist>
-
-		    <varlistentry>
-		    <term>queuepause printername</term>
-		    <listitem><para>Send a queue pause change notify
-		    message to the printer specified.</para></listitem>
- 		    </varlistentry>
-
-		    <varlistentry>
-		    <term>queueresume printername</term>
-		    <listitem><para>Send a queue resume change notify
-		    message for the printer specified.</para></listitem>
- 		    </varlistentry>
-
-		    <varlistentry>
-		    <term>jobpause printername unixjobid</term>
-		    <listitem><para>Send a job pause change notify
-		    message for the printer and unix jobid
-		    specified.</para></listitem> 
- 		    </varlistentry>
-
-		    <varlistentry>
-		    <term>jobresume printername unixjobid</term>
-		    <listitem><para>Send a job resume change notify
-		    message for the printer and unix jobid
-		    specified.</para></listitem>  
-		    </varlistentry>
-
-		    <varlistentry>
-		    <term>jobdelete printername unixjobid</term>
-		    <listitem><para>Send a job delete change notify
-		    message for the printer and unix jobid
-		    specified.</para></listitem> 
-		    </varlistentry>
-
-		</variablelist>
-
-		Note that this message only sends notification that an
-		event has occured.  It doesn't actually cause the
-		event to happen.
-
-		This message can only be sent to <constant>smbd</constant>. 
-		</para>
-
-		</listitem>
-		</varlistentry>
-
-
+	
 		<varlistentry>
 		<term>parameters</term>
 		<listitem><para>any parameters required for the message-type</para>
@@ -181,9 +91,173 @@
 </refsect1>
 
 <refsect1>
+	<title>MESSAGE-TYPES</title>
+
+	<para>Available message types are:</para>
+
+	<variablelist>
+	<varlistentry><term>close-share</term>
+	<listitem><para>Order smbd to close the client 
+	connections to the named share. Note that this doesn't affect client 
+	connections to any other shares. This message-type takes an argument of the
+	share name for which client connections will be closed, or the
+	"*" character which will close all currently open shares.
+	This may be useful if you made changes to the access controls on the share.
+	This message can only be sent to <constant>smbd</constant>.</para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>debug</term>
+	<listitem><para>Set debug level to the value specified by the 
+	parameter. This can be sent to any of the destinations.</para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>force-election</term>
+	<listitem><para>This message causes the <command>nmbd</command> daemon to 
+	force a new browse master election. </para>
+	</listitem></varlistentry>
+
+	<varlistentry>
+	<term>ping</term>
+	<listitem><para>
+	Send specified number of "ping" messages and 
+	wait for the same number of  reply "pong" messages. This can be sent to 
+	any of the destinations.</para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>profile</term>
+	<listitem><para>Change profile settings of a daemon, based on the 
+	parameter. The parameter can be "on" to turn on profile stats 
+	collection, "off" to turn off profile stats collection, "count"
+	to enable only collection of count stats (time stats are 
+	disabled), and "flush" to zero the current profile stats. This can 
+	be sent to any smbd or nmbd destinations.</para>
+	</listitem></varlistentry>
+
+	<varlistentry>
+	<term>debuglevel</term>
+	<listitem><para>
+	Request debuglevel of a certain daemon and write it to stdout. This 
+	can be sent to any of the destinations.</para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>profilelevel</term>
+	<listitem><para>
+	Request profilelevel of a certain daemon and write it to stdout. 
+	This can be sent to any smbd or nmbd destinations.</para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>printnotify</term>
+	<listitem><para>
+	Order smbd to send a printer notify message to any Windows NT clients 
+	connected to a printer. This message-type takes the following arguments:
+	</para>
+	
+	<variablelist>
+
+	    <varlistentry>
+	    <term>queuepause printername</term>
+	    <listitem><para>Send a queue pause change notify
+	    message to the printer specified.</para></listitem>
+ 	    </varlistentry>
+
+	    <varlistentry>
+	    <term>queueresume printername</term>
+	    <listitem><para>Send a queue resume change notify
+	    message for the printer specified.</para></listitem>
+ 	    </varlistentry>
+
+		<varlistentry>
+	    <term>jobpause printername unixjobid</term>
+	    <listitem><para>Send a job pause change notify
+	    message for the printer and unix jobid
+	    specified.</para></listitem> 
+ 	    </varlistentry>
+
+	    <varlistentry>
+	    <term>jobresume printername unixjobid</term>
+	    <listitem><para>Send a job resume change notify
+	    message for the printer and unix jobid
+	    specified.</para></listitem>  
+	    </varlistentry>
+
+	    <varlistentry>
+	    <term>jobdelete printername unixjobid</term>
+	    <listitem><para>Send a job delete change notify
+	    message for the printer and unix jobid
+	    specified.</para></listitem> 
+	    </varlistentry>
+	</variablelist>
+
+	<para>
+	Note that this message only sends notification that an
+	event has occured.  It doesn't actually cause the
+	event to happen.
+	</para>
+
+	<para>This message can only be sent to <constant>smbd</constant>. </para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>samsync</term>
+	<listitem><para>Order smbd to synchronise sam database from PDC (being BDC). Can only be sent to <constant>smbd</constant>. </para>
+	<note><para>Not working at the moment</para></note>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>samrepl</term>
+	<listitem><para>Send sam replication message, with specified serial. Can only be sent to <constant>smbd</constant>. Should not be used manually.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>dmalloc-mark</term>
+	<listitem><para>Set a mark for dmalloc. Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. </para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>dmalloc-log-changed</term>
+	<listitem><para>
+	Dump the pointers that have changed since the mark set by dmalloc-mark. 
+	Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. </para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>shutdown</term>
+	<listitem><para>Shut down specified daemon. Can be sent to both smbd and nmbd.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>tallocdump and pool-usage</term>
+	<listitem><para>Print a human-readable description of all 
+	talloc(pool) memory usage by the specified daemon/process. Available 
+	for both smbd and nmbd.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>drvupgrade</term>
+	<listitem><para>Force clients of printers using specified driver 
+	to update their local version of the driver. Can only be 
+	sent to smbd.</para></listitem>
+	</varlistentry>
+
+</variablelist>
+</refsect1>
+
+<refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 
