@@ -26,7 +26,7 @@
 __asm__(".globl __open; __open = open");
 #endif
 
- int open(__const char *name, int flags, mode_t mode)
+ int open(const char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);

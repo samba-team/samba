@@ -21,12 +21,19 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __chdir; __chdir = chdir");
-#endif
-
- int chdir(const char *name)
+ int rename(const char *oldname,const char *newname)
 {
-	return smbw_chdir(name);
-}
+	int p1, p2;
+	p1 = smbw_path(oldname); 
+	p2 = smbw_path(newname); 
+	if (p1 ^ p2) {
+		/* can't cross filesystem boundaries */
+		errno = EXDEV;
+		return -1;
+	}
+	if (p1 && p2) {
+		return smbw_rename(oldname, newname);
+	}
 
+	return real_rename(oldname, newname);
+}

@@ -21,7 +21,7 @@
 
 #include "wrapper.h"
 
- int __xstat(int vers, __const char *name, struct stat *st)
+ int __xstat(int vers, const char *name, struct stat *st)
 {
 	struct kernel_stat kbuf;
 	int ret;
@@ -83,7 +83,7 @@
 	}
 }
 
- int stat(__const char *name, struct stat *st)
+ int stat(const char *name, struct stat *st)
 {
 	return __xstat(_STAT_VER, name, st);
 }

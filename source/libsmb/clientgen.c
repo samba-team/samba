@@ -448,7 +448,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *))
+BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, char *))
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -807,11 +807,10 @@ BOOL cli_tdis(struct cli_state *cli)
 	return CVAL(cli->inbuf,smb_rcls) == 0;
 }
 
-#if UNUSED_CODE
 /****************************************************************************
 rename a file
 ****************************************************************************/
-BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst)
+BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
 {
         char *p;
 
@@ -844,7 +843,6 @@ BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst)
 
         return True;
 }
-#endif
 
 /****************************************************************************
 delete a file
@@ -2167,7 +2165,13 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		if (!IS_BITS_SET_ALL(nt_err, 0xc0000000)) return 0;
 
 		switch (nt_err & 0xFFFFFF) {
-		case NT_STATUS_ACCESS_VIOLATION: return EPERM;
+		case NT_STATUS_ACCESS_VIOLATION: return EACCES;
+		case NT_STATUS_NO_SUCH_FILE: return ENOENT;
+		case NT_STATUS_NO_SUCH_DEVICE: return ENODEV;
+		case NT_STATUS_INVALID_HANDLE: return EBADF;
+		case NT_STATUS_NO_MEMORY: return ENOMEM;
+		case NT_STATUS_ACCESS_DENIED: return EACCES;
+		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
 		}
 
 		/* for all other cases - a default code */

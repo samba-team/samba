@@ -219,16 +219,11 @@ void clean_fname(char *name)
 /***************************************************** 
 parse a smb path into its components. 
 *******************************************************/
-char *smbw_parse_path(char *fname, char **server, char **share, char **path)
+char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 {
-	static fstring rshare, rserver;
-	static pstring rpath, s;
+	static pstring s;
 	char *p, *p2;
 	int len;
-
-	(*server) = rserver;
-	(*share) = rshare;
-	(*path) = rpath;
 
 	if (fname[0] == '/') {
 		pstrcpy(s, fname);
@@ -251,13 +246,15 @@ char *smbw_parse_path(char *fname, char **server, char **share, char **path)
 		len = strlen(p);
 	}
 
-	strncpy(rserver, p, len);
-	rserver[len] = 0;		
+	len = MIN(len,sizeof(fstring)-1);
+
+	strncpy(server, p, len);
+	server[len] = 0;		
 
 	p = p2;
 	if (!p) {
-		fstrcpy(rshare,"IPC$");
-		fstrcpy(rpath,"");
+		fstrcpy(share,"IPC$");
+		pstrcpy(path,"");
 		goto ok;
 	}
 
@@ -269,24 +266,26 @@ char *smbw_parse_path(char *fname, char **server, char **share, char **path)
 	} else {
 		len = strlen(p);
 	}
+
+	len = MIN(len,sizeof(fstring)-1);
 	
-	fstrcpy(rshare, p);
-	rshare[len] = 0;
+	strncpy(share, p, len);
+	share[len] = 0;
 
 	p = p2;
 	if (!p) {
-		pstrcpy(rpath,"\\");
+		pstrcpy(path,"\\");
 		goto ok;
 	}
 
-	pstrcpy(rpath,p);
+	pstrcpy(path,p);
 
-	string_sub(rpath, "/", "\\");
+	string_sub(path, "/", "\\");
 
  ok:
 	DEBUG(5,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
 		 fname, smb_cwd,
-		 *server, *share, *path));
+		 server, share, path));
 
 	return s;
 }
@@ -295,9 +294,10 @@ char *smbw_parse_path(char *fname, char **server, char **share, char **path)
 determine if a path name (possibly relative) is in the 
 smb name space
 *******************************************************/
-BOOL smbw_path(char *path)
+BOOL smbw_path(const char *path)
 {
-	char *server, *share, *s;
+	fstring server, share;
+	pstring s;
 	char *cwd;
 	int l;
 
@@ -307,7 +307,7 @@ BOOL smbw_path(char *path)
 
 	DEBUG(3,("smbw_path(%s)\n", path));
 
-	cwd = smbw_parse_path(path, &server, &share, &s);
+	cwd = smbw_parse_path(path, server, share, s);
 
 	l = strlen(SMBW_PREFIX)-1;
 
@@ -324,7 +324,17 @@ return a unix errno from a SMB error pair
 *******************************************************/
 int smbw_errno(struct cli_state *c)
 {
-	return cli_error(c, NULL, NULL);
+	uint8 eclass;
+	uint32 ecode;
+	int ret;
+
+	ret = cli_error(c, &eclass, &ecode);
+
+	if (ret) {
+		DEBUG(3,("smbw_error %d %d (0x%x)\n", 
+			 (int)eclass, (int)ecode, (int)ecode));
+	}
+	return ret;
 }
 
 /***************************************************** 
@@ -540,7 +550,7 @@ void smbw_dir_add(struct file_info *finfo)
 /***************************************************** 
 add a entry to a directory listing
 *******************************************************/
-void smbw_share_add(char *share, uint32 type, char *comment)
+void smbw_share_add(const char *share, uint32 type, const char *comment)
 {
 	struct file_info finfo;
 
@@ -556,10 +566,10 @@ void smbw_share_add(char *share, uint32 type, char *comment)
 /***************************************************** 
 open a directory on the server
 *******************************************************/
-int smbw_dir_open(const char *fname1, int flags)
+int smbw_dir_open(const char *fname, int flags)
 {
-	char *fname = strdup(fname1);
-	char *server, *share, *path;
+	fstring server, share;
+	pstring path;
 	struct smbw_server *srv=NULL;
 	struct smbw_dir *dir=NULL;
 	pstring mask;
@@ -575,7 +585,7 @@ int smbw_dir_open(const char *fname1, int flags)
 	smbw_init();
 
 	/* work out what server they are after */
-	smbw_parse_path(fname, &server, &share, &path);
+	smbw_parse_path(fname, server, share, path);
 
 	DEBUG(4,("dir_open share=%s\n", share));
 
@@ -633,7 +643,6 @@ int smbw_dir_open(const char *fname1, int flags)
 	if (dir) {
 		free_dir(dir);
 	}
-	if (fname) free(fname);
 
 	return -1;
 }
@@ -642,10 +651,10 @@ int smbw_dir_open(const char *fname1, int flags)
 /***************************************************** 
 a wrapper for open()
 *******************************************************/
-int smbw_open(const char *fname1, int flags, mode_t mode)
+int smbw_open(const char *fname, int flags, mode_t mode)
 {
-	char *fname = strdup(fname1);
-	char *server, *share, *path;
+	fstring server, share;
+	pstring path;
 	struct smbw_server *srv=NULL;
 	int eno, fd = -1;
 	struct smbw_file *file=NULL;
@@ -662,7 +671,7 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 	smbw_busy++;	
 
 	/* work out what server they are after */
-	smbw_parse_path(fname, &server, &share, &path);
+	smbw_parse_path(fname, server, share, path);
 
 	/* get a connection to the server */
 	srv = smbw_server(server, share);
@@ -677,9 +686,8 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 		fd = cli_open(&srv->cli, path, flags, DENY_NONE);
 	}
 	if (fd == -1) {
-		if (fname) free(fname);
 		/* it might be a directory. Maybe we should use chkpath? */
-		fd = smbw_dir_open(fname1, flags);
+		fd = smbw_dir_open(fname, flags);
 		smbw_busy--;
 		return fd;
 	}
@@ -716,17 +724,12 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 
 	DLIST_ADD(smbw_files, file);
 
-	DEBUG(4,("opened %s\n", fname1));
-
-	free(fname);
+	DEBUG(4,("opened %s\n", fname));
 
 	smbw_busy--;
 	return file->fd;
 
  failed:
-	if (fname) {
-		free(fname);
-	}
 	if (fd != -1) {
 		cli_close(&srv->cli, fd);
 	}
@@ -809,16 +812,16 @@ int smbw_fstat(int fd, struct stat *st)
 /***************************************************** 
 a wrapper for stat()
 *******************************************************/
-int smbw_stat(char *fname1, struct stat *st)
+int smbw_stat(const char *fname, struct stat *st)
 {
 	struct smbw_server *srv;
-	char *server, *share, *path;
-	char *fname = strdup(fname1);
+	fstring server, share;
+	pstring path;
 	time_t m_time=0, a_time=0, c_time=0;
 	size_t size=0;
 	uint32 mode=0;
 
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname1));
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
 
 	if (!fname) {
 		errno = EINVAL;
@@ -830,7 +833,7 @@ int smbw_stat(char *fname1, struct stat *st)
 	smbw_busy++;
 
 	/* work out what server they are after */
-	smbw_parse_path(fname, &server, &share, &path);
+	smbw_parse_path(fname, server, share, path);
 
 	/* get a connection to the server */
 	srv = smbw_server(server, share);
@@ -859,7 +862,6 @@ int smbw_stat(char *fname1, struct stat *st)
 	return 0;
 
  failed:
-	if (fname) free(fname);
 	smbw_busy--;
 	return -1;
 }
@@ -1046,7 +1048,7 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 /***************************************************** 
 a wrapper for access()
 *******************************************************/
-int smbw_access(char *name, int mode)
+int smbw_access(const char *name, int mode)
 {
 	struct stat st;
 	/* how do we map this properly ?? */
@@ -1056,7 +1058,7 @@ int smbw_access(char *name, int mode)
 /***************************************************** 
 a wrapper for realink() - needed for correct errno setting
 *******************************************************/
-int smbw_readlink(char *path, char *buf, size_t bufsize)
+int smbw_readlink(const char *path, char *buf, size_t bufsize)
 {
 	struct stat st;
 	int ret;
@@ -1078,10 +1080,11 @@ int smbw_readlink(char *path, char *buf, size_t bufsize)
 /***************************************************** 
 a wrapper for chdir()
 *******************************************************/
-int smbw_chdir(char *name)
+int smbw_chdir(const char *name)
 {
 	struct smbw_server *srv;
-	char *server, *share, *path;
+	fstring server, share;
+	pstring path;
 	uint32 mode = aDIR;
 	char *cwd;
 
@@ -1099,7 +1102,7 @@ int smbw_chdir(char *name)
 	DEBUG(4,("%s (%s)\n", __FUNCTION__, name));
 
 	/* work out what server they are after */
-	cwd = smbw_parse_path(name, &server, &share, &path);
+	cwd = smbw_parse_path(name, server, share, path);
 
 	if (strncmp(cwd,SMBW_PREFIX,strlen(SMBW_PREFIX))) {
 		if (real_chdir(cwd) == 0) {
@@ -1151,3 +1154,99 @@ int smbw_chdir(char *name)
 	return -1;
 }
 
+
+/***************************************************** 
+a wrapper for unlink()
+*******************************************************/
+int smbw_unlink(const char *fname)
+{
+	struct smbw_server *srv;
+	fstring server, share;
+	pstring path;
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+
+	if (!fname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(fname, server, share, path);
+
+	/* get a connection to the server */
+	srv = smbw_server(server, share);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_unlink(&srv->cli, path)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
+
+
+/***************************************************** 
+a wrapper for rename()
+*******************************************************/
+int smbw_rename(const char *oldname, const char *newname)
+{
+	struct smbw_server *srv;
+	fstring server1, share1;
+	pstring path1;
+	fstring server2, share2;
+	pstring path2;
+
+	DEBUG(4,("%s (%s, %s)\n", __FUNCTION__, oldname, newname));
+
+	if (!oldname || !newname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(oldname, server1, share1, path1);
+	smbw_parse_path(newname, server2, share2, path2);
+
+	if (strcmp(server1, server2) || strcmp(share1, share2)) {
+		/* can't cross filesystems */
+		errno = EXDEV;
+		return -1;
+	}
+
+	/* get a connection to the server */
+	srv = smbw_server(server1, share1);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_rename(&srv->cli, path1, path2)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <syscall.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -6,4 +8,3 @@
 #include <sys/stat.h>
 #include "kernel_stat.h"
 #include "realcalls.h"
-

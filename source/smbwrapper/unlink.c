@@ -21,12 +21,11 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __chdir; __chdir = chdir");
-#endif
-
- int chdir(const char *name)
+ int unlink(const char *name)
 {
-	return smbw_chdir(name);
-}
+	if (smbw_path(name)) {
+		return smbw_unlink(name);
+	}
 
+	return real_unlink(name);
+}
