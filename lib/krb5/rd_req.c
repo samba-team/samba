@@ -55,7 +55,7 @@ decrypt_authenticator (krb5_context context,
 krb5_error_code
 krb5_decode_ap_req(krb5_context context,
 		   const krb5_data *inbuf,
-		   AP_REQ *ap_req)
+		   krb5_ap_req *ap_req)
 {
     krb5_error_code ret;
     size_t len;
@@ -82,7 +82,7 @@ krb5_decode_ap_req(krb5_context context,
 krb5_error_code
 krb5_verify_ap_req(krb5_context context,
 		   krb5_auth_context *auth_context,
-		   AP_REQ *ap_req,
+		   krb5_ap_req *ap_req,
 		   krb5_const_principal server,
 		   krb5_keyblock *keyblock,
 		   krb5_flags *ap_req_options,
@@ -205,7 +205,7 @@ krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_ticket **ticket)
 {
     krb5_error_code ret;
-    AP_REQ ap_req;
+    krb5_ap_req ap_req;
     size_t len;
     struct timeval now;
 
