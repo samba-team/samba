@@ -361,27 +361,35 @@ static void manage_squid_basic_request(enum squid_mode squid_mode,
 static void offer_gss_spnego_mechs(void) {
 
 	DATA_BLOB token;
-	ASN1_DATA asn1;
 	SPNEGO_DATA spnego;
 	ssize_t len;
 	char *reply_base64;
 
+	pstring principal;
+	pstring myname_lower;
+
 	ZERO_STRUCT(spnego);
+
+	pstrcpy(myname_lower, global_myname());
+	strlower_m(myname_lower);
+
+	pstr_sprintf(principal, "%s$@%s", myname_lower, lp_realm());
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = smb_xmalloc(sizeof(char *) * 2);
+	spnego.negTokenInit.mechTypes = smb_xmalloc(sizeof(char *) * 3);
+#ifdef HAVE_KRB5
+	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
+	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[2] = NULL;
+#else
 	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_NTLMSSP);
 	spnego.negTokenInit.mechTypes[1] = NULL;
+#endif
 
-	ZERO_STRUCT(asn1);
-	asn1_push_tag(&asn1, ASN1_SEQUENCE(0));
-	asn1_push_tag(&asn1, ASN1_CONTEXT(0));
-	asn1_write_GeneralString(&asn1, "NONE");
-	asn1_pop_tag(&asn1);
-	asn1_pop_tag(&asn1);
-	spnego.negTokenInit.mechListMIC = data_blob(asn1.data, asn1.length);
-	asn1_free(&asn1);
+
+	spnego.negTokenInit.mechListMIC = data_blob(principal,
+						    strlen(principal));
 
 	len = write_spnego_data(&token, &spnego);
 	free_spnego_data(&spnego);
@@ -506,6 +514,56 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 						       request.negTokenInit.mechToken,
 						       &response.negTokenTarg.responseToken);
 		}
+
+#ifdef HAVE_KRB5
+		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
+
+			char *principal;
+			DATA_BLOB auth_data;
+			DATA_BLOB ap_rep;
+			uint8 session_key[16];
+
+			if ( request.negTokenInit.mechToken.data == NULL ) {
+				DEBUG(1, ("Client did not provide Kerberos data\n"));
+				x_fprintf(x_stdout, "BH\n");
+				return;
+			}
+
+			response.type = SPNEGO_NEG_TOKEN_TARG;
+			response.negTokenTarg.supportedMech = strdup(OID_KERBEROS5_OLD);
+			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+			response.negTokenTarg.responseToken = data_blob(NULL, 0);
+
+			status = ads_verify_ticket(lp_realm(),
+						   &request.negTokenInit.mechToken,
+						   &principal, &auth_data, &ap_rep,
+						   session_key);
+
+			/* Now in "principal" we have the name we are
+                           authenticated as. */
+
+			if (NT_STATUS_IS_OK(status)) {
+
+				domain = strchr(principal, '@');
+
+				if (domain == NULL) {
+					DEBUG(1, ("Did not get a valid principal "
+						  "from ads_verify_ticket\n"));
+					x_fprintf(x_stdout, "BH\n");
+					return;
+				}
+
+				*domain++ = '\0';
+				domain = strdup(domain);
+				user = strdup(principal);
+
+				data_blob_free(&ap_rep);
+				data_blob_free(&auth_data);
+
+				SAFE_FREE(principal);
+			}
+		}
+#endif
 
 	} else {
 
