@@ -410,7 +410,6 @@ WERROR cli_srvsvc_net_file_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SRV_Q_NET_FILE_CLOSE q;
 	SRV_R_NET_FILE_CLOSE r;
 	WERROR result = W_ERROR(ERRgeneral);
-	int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
