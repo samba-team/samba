@@ -74,21 +74,13 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
         --with-quotas \
         --with-smbmount \
         --with-pam \
-        --with-profile \
         --with-syslog \
         --with-utmp \
-        --with-vfs \
-        --with-msdfs \
         --with-netatalk \
-	--with-acl-support \
         --with-sambabook=%{prefix}/share/swat/using_samba
 
 make -j${NUMCPU} proto
-make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so
-make -j${NUMCPU} smbtorture debug2html locktest2
-make -j${NUMCPU} masktest bin/smbspool
-#make -j${NUMCPU} rpctorture locktest smbwrapper bin/wbinfo
-
+make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so debug2html
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -109,7 +101,6 @@ mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
       make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool
-#      smbsh smbwrapper.so 
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -120,8 +111,7 @@ done
 
 # Install secure binary files
 for i in smbd nmbd swat smbmount smbumount smbmnt debug2html \
-      smbtorture smbfilter locktest2 masktest
-#     wbinfo
+      smbfilter
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
