@@ -631,6 +631,9 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 			req->state = RPC_REQUEST_DONE;
 			req->status = status;
 			DLIST_REMOVE(p->pending, req);
+			if (req->async.callback) {
+				req->async.callback(req);
+			}
 		}
 		return;
 	}
@@ -655,6 +658,9 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 		req->status = status;
 		req->state = RPC_REQUEST_DONE;
 		DLIST_REMOVE(p->pending, req);
+		if (req->async.callback) {
+			req->async.callback(req);
+		}
 		return;
 	}
 
@@ -664,6 +670,9 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		req->state = RPC_REQUEST_DONE;
 		DLIST_REMOVE(p->pending, req);
+		if (req->async.callback) {
+			req->async.callback(req);
+		}
 		return;
 	}
 
@@ -674,6 +683,9 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		req->state = RPC_REQUEST_DONE;
 		DLIST_REMOVE(p->pending, req);
+		if (req->async.callback) {
+			req->async.callback(req);
+		}
 		return;
 	}
 
@@ -686,6 +698,9 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 			req->status = NT_STATUS_NO_MEMORY;
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->pending, req);
+			if (req->async.callback) {
+				req->async.callback(req);
+			}
 			return;
 		}
 		memcpy(req->payload.data+req->payload.length, 
@@ -706,6 +721,10 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 		req->flags |= DCERPC_PULL_BIGENDIAN;
 	} else {
 		req->flags &= ~DCERPC_PULL_BIGENDIAN;
+	}
+
+	if (req->async.callback) {
+		req->async.callback(req);
 	}
 }
 
@@ -737,6 +756,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->payload = data_blob(NULL, 0);
 	req->flags = 0;
 	req->fault_code = 0;
+	req->async.callback = NULL;
 
 	init_dcerpc_hdr(p, &pkt);
 
