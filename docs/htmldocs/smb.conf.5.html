@@ -1411,6 +1411,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#LANMANAUTH"
+><TT
+CLASS="PARAMETER"
+><I
+>lanman printing only</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#LARGEREADWRITE"
 ><TT
 CLASS="PARAMETER"
@@ -2817,7 +2829,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN909"
+NAME="AEN913"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4224,7 +4236,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1377"
+NAME="AEN1381"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -9370,9 +9382,35 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="LANMANPRINTINGONLY"
+></A
+>lanman printing only (G)</DT
+><DD
+><P
+>Enabling this parameter will disables Samba's support
+		for the SPOOLSS set of MS-RPC's and will yield identical behavior
+		as Samba 2.0.x.  Windows NT/2000 clients will downgrade to using 
+		Lanman style printing commands. Windows 9x/ME will be uneffected by 
+		the parameter. However, this will also disable the ability to upload
+		printer drivers to a Samba server via the Windows NT Add Printer 
+		Wizard or by using the NT printer properties dialog window.  It will
+		also disable the capability of Windows NT/2000 clients to download
+		print drivers from the Samba host upon demand.
+		<EM
+>Be very careful about enabling this parameter.</EM
+>		
+		</P
+><P
+>Default : <B
+CLASS="COMMAND"
+>lanman printing only = no</B
+></P
+></DD
+><DT
+><A
 NAME="LARGEREADWRITE"
 ></A
->large readwrite(G)</DT
+>large readwrite (G)</DT
 ><DD
 ><P
 >This parameter determines whether or not <A
@@ -18527,7 +18565,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5852"
+NAME="AEN5864"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18557,7 +18595,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5858"
+NAME="AEN5870"
 ></A
 ><H2
 >VERSION</H2
@@ -18568,7 +18606,7 @@ NAME="AEN5858"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5861"
+NAME="AEN5873"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18647,7 +18685,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5881"
+NAME="AEN5893"
 ></A
 ><H2
 >AUTHOR</H2
