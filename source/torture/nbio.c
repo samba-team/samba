@@ -280,7 +280,7 @@ void nb_deltree(char *dname)
 
 	cli_list(c, mask, aDIR, delete_fn, NULL);
 	free(mask);
-	nb_rmdir(dname);
+	cli_rmdir(c, dname);
 
 	if (total_deleted) printf("WARNING: Cleaned up %d files\n", total_deleted);
 }
