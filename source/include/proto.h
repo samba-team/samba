@@ -791,6 +791,7 @@ UNISTR2 *unistr2_new(const char *init);
 UNISTR2 *unistr2_assign(UNISTR2 *str, const uint16 *src, size_t len);
 UNISTR2 *unistr2_assign_ascii(UNISTR2 *str, const char *buf, int len);
 UNISTR2 *unistr2_assign_ascii_str(UNISTR2 *str, const char *buf);
+void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from);
 UNISTR2 *unistr2_grow(UNISTR2 *str, size_t new_size);
 BOOL unistr2upper(UNISTR2 *str, const UNISTR2 *from);
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);

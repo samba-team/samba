@@ -1,3 +1,5 @@
+#ifndef _TALLOC_H_
+#define _TALLOC_H_
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -30,3 +32,4 @@ typedef struct {
 	struct talloc_chunk *list;
 } TALLOC_CTX;
 
+#endif
