@@ -390,6 +390,17 @@ static BOOL deal_with_credentials(user_struct *vuser,
 	UTIME new_clnt_time;
 	uint32 new_cred;
 
+	DEBUG(5,("deal_with_credentials: %d\n", __LINE__));
+
+	/* increment client time by one second */
+	new_clnt_time.time = clnt_cred->timestamp.time + 1;
+
+	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
+	new_cred = IVAL(vuser->dc.clnt_cred.data, 0);
+	new_cred += new_clnt_time.time;
+
+	DEBUG(5,("deal_with_credentials: new_cred[0]=%lx\n", new_cred));
+
 	/* doesn't matter that server time is 0 */
 	srv_cred->timestamp.time = 0;
 
@@ -400,25 +411,16 @@ static BOOL deal_with_credentials(user_struct *vuser,
 		return False;
 	}
 
-	/* increment client time by one second */
-	new_clnt_time.time = clnt_cred->timestamp.time + 1;
-
 	DEBUG(5,("deal_with_credentials: new_clnt_time=%lx\n", new_clnt_time.time));
 
 	/* create server credentials for inclusion in the reply */
 	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), new_clnt_time,
 	            &(srv_cred->challenge));
 	
-	DEBUG(5,("deal_with_credentials: %d\n", __LINE__));
-
 	DEBUG(5,("deal_with_credentials: clnt_cred[0]=%lx\n",
 	          vuser->dc.clnt_cred.data[0]));
 
-	new_cred = IVAL(vuser->dc.clnt_cred.data, 0);
-	new_cred += new_clnt_time.time;
-
-	DEBUG(5,("deal_with_credentials: new_cred[0]=%lx\n", new_cred));
-
+	/* store new seed in client and server credentials */
 	SIVAL(vuser->dc.clnt_cred.data, 0, new_cred);
 	SIVAL(vuser->dc.srv_cred .data, 0, new_cred);
 
