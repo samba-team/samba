@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
@@ -201,9 +200,9 @@
 
 #define POLICY_HND_SIZE 20
 
-#define ONE_VALUE 01
-#define TWO_VALUE 02
-#define POINTER   03
+#define ONE_VALUE 1
+#define TWO_VALUE 2
+#define POINTER   3
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01

@@ -2184,7 +2184,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->paperlength      = 0;
 	nt_devmode->paperwidth       = 0;
 	nt_devmode->scale            = 0x64;
-	nt_devmode->copies           = 01;
+	nt_devmode->copies           = 1;
 	nt_devmode->defaultsource    = BIN_FORMSOURCE;
 	nt_devmode->printquality     = RES_HIGH;           /* 0x0258 */
 	nt_devmode->color            = COLOR_MONOCHROME;
@@ -3443,19 +3443,16 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
-                uint32 owner_rid;
 
-		/* Backup plan - make printer owned by admins or root.
-		   This should emulate a lanman printer as security
-		   settings can't be changed. */
+		/* Backup plan - make printer owned by admins or root.  This should
+		   emulate a lanman printer as security settings can't be
+		   changed. */
 
-		sid_peek_rid(&owner_sid, &owner_rid);
-
-		if (owner_rid != BUILTIN_ALIAS_RID_PRINT_OPS &&
-		    owner_rid != BUILTIN_ALIAS_RID_ADMINS &&
-		    owner_rid != DOMAIN_USER_RID_ADMIN &&
-		    !lookup_name("root", &owner_sid, &name_type)) {
-			sid_copy(&owner_sid, &global_sid_World);
+		if (!lookup_name( "Printer Administrators", &owner_sid, &name_type) &&
+			!lookup_name( "Administrators", &owner_sid, &name_type) &&
+			!lookup_name( "Administrator", &owner_sid, &name_type) &&
+			!lookup_name("root", &owner_sid, &name_type)) {
+						sid_copy(&owner_sid, &global_sid_World);
 		}
 	}
 
@@ -3508,7 +3505,6 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	char *temp;
 
 	mem_ctx = talloc_init();
-
 	if (mem_ctx == NULL)
 		return False;
 
@@ -3523,24 +3519,14 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	if (tdb_prs_fetch(tdb, key, &ps, mem_ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("creating default secdesc for %s\n", printername));
+		DEBUG(4,("using default secdesc for %s\n", printername));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb())) {
 			talloc_destroy(mem_ctx);
 			return False;
 		}
 
-                /* Save default security descriptor for later */
-
-                prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
-                         sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
-
-                if (sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1))
-                        tdb_prs_store(tdb, key, &ps);
-
 		talloc_destroy(mem_ctx);
-                prs_mem_free(&ps);
-
 		return True;
 	}
 
@@ -3684,16 +3670,17 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	BOOL result;
 	char *pname;
 	extern struct current_user current_user;
-        user_struct *us;
 	
 	/* If user is NULL then use the current_user structure */
 
 	if (!user) user = &current_user;
 
-	/* Always printer admins to do anything */
+	/* Always allow root or printer admins to do anything */
 
-        if ((us = get_valid_user_struct(user->vuid)) && us->printer_admin)
-                return True;
+	if (user->uid == 0 ||
+	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
+		return True;
+	}
 
 	/* Get printer name */
 
