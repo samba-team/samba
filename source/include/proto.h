@@ -88,6 +88,9 @@ void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
 char *my_workgroup(void);
 char *volume_label(int snum);
+BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
+int file_lock(char *name,int timeout);
+void file_unlock(int fd);
 BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset);
 BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
@@ -115,19 +118,19 @@ void do_announce_request(char *info, char *to_name, int announce_type,
 void announce_backup(void);
 void announce_host(void);
 void announce_master(void);
-struct work_record *remove_workgroup(struct domain_record *d, 
+struct work_record *remove_workgroup(struct subnet_record *d, 
 				     struct work_record *work);
 void expire_browse_cache(time_t t);
-struct work_record *find_workgroupstruct(struct domain_record *d, 
+struct work_record *find_workgroupstruct(struct subnet_record *d, 
 					 fstring name, BOOL add);
-struct domain_record *find_domain(struct in_addr source_ip);
+struct subnet_record *find_domain(struct in_addr ip);
 void dump_workgroups(void);
-struct domain_record *add_domain_entry(struct in_addr source_ip, 
+struct subnet_record *add_subnet_entry(struct in_addr source_ip, 
 				       struct in_addr source_mask,
 				       char *name, BOOL add);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 					      time_t ttl, struct in_addr ip);
-struct server_record *add_server_entry(struct domain_record *d, 
+struct server_record *add_server_entry(struct subnet_record *d, 
 				       struct work_record *work,
 				       char *name,int servertype, 
 				       int ttl,char *comment,
@@ -136,9 +139,9 @@ void write_browse_list(void);
 void expire_servers(time_t t);
 void check_master_browser(void);
 void browser_gone(char *work_name, struct in_addr ip);
-void send_election(struct domain_record *d, char *group,uint32 criterion,
+void send_election(struct subnet_record *d, char *group,uint32 criterion,
 		   int timeup,char *name);
-void become_nonmaster(struct domain_record *d, struct work_record *work);
+void become_nonmaster(struct subnet_record *d, struct work_record *work);
 void run_elections(void);
 void process_election(struct packet_struct *p,char *buf);
 BOOL check_elections(void);
@@ -254,6 +257,13 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+char *Strstr(char *s, char *p);
+time_t Mktime(struct tm      *t);
+int InNetGr(char *group,char *host,char *user,char *dom);
+void *malloc_wrapped(int size,char *file,int line);
+void *realloc_wrapped(void *ptr,int size,char *file,int line);
+void free_wrapped(void *ptr,char *file,int line);
+void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 int reply_special(char *inbuf,char *outbuf);
 int reply_tcon(char *inbuf,char *outbuf);
 int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize);
@@ -402,9 +412,6 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
 void setup_logging(char *pname,BOOL interactive);
 void reopen_logs(void);
-BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
-int file_lock(char *name,int timeout);
-void file_unlock(int fd);
 BOOL is_a_socket(int fd);
 BOOL next_token(char **ptr,char *buff,char *sep);
 char **toktocliplist(int *ctok, char *sep);
@@ -509,13 +516,6 @@ char *gidtoname(int gid);
 void BlockSignals(BOOL block);
 void ajt_panic(void);
 char *readdirname(void *p);
-void *malloc_wrapped(int size,char *file,int line);
-void *realloc_wrapped(void *ptr,int size,char *file,int line);
-void free_wrapped(void *ptr,char *file,int line);
-char *Strstr(char *s, char *p);
-time_t Mktime(struct tm      *t);
-int InNetGr(char *group,char *host,char *user,char *dom);
-void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 int	VT_Check(char	*buffer);
 int VT_Start_utmp(void);
 int VT_Stop_utmp(void);
