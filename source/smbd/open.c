@@ -685,7 +685,8 @@ dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fn
 	return num_share_modes;
 }
 
-static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode, mode_t new_mode)
+static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode,
+		mode_t new_mode, mode_t *returned_mode)
 {
 	uint32 old_dos_mode, new_dos_mode;
 	SMB_STRUCT_STAT sbuf;
@@ -698,14 +699,25 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 	sbuf.st_mode = new_mode;
 	new_dos_mode = dos_mode(conn, path, &sbuf);
 
+	/*
+	 * We only set returned mode to be the same as new_mode if
+	 * the file attributes need to be changed.
+	 */
+
+	*returned_mode = (mode_t)0;
+
 	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
 	if (lp_map_system(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && !(new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
 			return False;
+		if  (!(old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && (new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
+			*returned_mode = new_mode;
 	}
 	if (lp_map_hidden(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && !(new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
 			return False;
+		if (!(old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && (new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
+			*returned_mode = new_mode;
 	}
 	return True;
 }
@@ -763,6 +775,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	files_struct *fsp = NULL;
 	int open_mode=0;
 	uint16 port = 0;
+	mode_t new_mode = (mode_t)0;
 
 	if (conn->printer) {
 		/* printers are handled completely differently. Most
@@ -822,7 +835,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	/* We only care about matching attributes on file exists and truncate. */
 	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
-		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode)) {
+		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode, &new_mode)) {
 			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
 						fname, psbuf->st_mode, mode ));
 			file_free(fsp);
@@ -1091,11 +1104,36 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 */
 
 	if (!file_existed && !def_acl && (conn->vfs_ops.fchmod_acl != NULL)) {
+
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+
 		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
 			errno = saved_errno; /* Ignore ENOSYS */
+
+	} else if (new_mode) {
+
+		int ret = -1;
+
+		/* Attributes need changing. File already existed. */
+
+		if (conn->vfs_ops.fchmod_acl != NULL) {
+			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+			ret = conn->vfs_ops.fchmod_acl(fsp, fsp->fd, new_mode);
+
+			if (ret == -1 && errno == ENOSYS) {
+				errno = saved_errno; /* Ignore ENOSYS */
+			} else {
+				DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
+					fname, (int)new_mode));
+				ret = 0; /* Don't do the fchmod below. */
+			}
+		}
+
+		if ((ret == -1) && (conn->vfs_ops.fchmod(fsp, fsp->fd, new_mode) == -1))
+			DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
+				fname, (int)new_mode));
 	}
-		
+
 	unlock_share_entry_fsp(fsp);
 
 	conn->num_files_open++;
