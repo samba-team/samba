@@ -62,11 +62,15 @@ krb5_auth_con_setaddrs(krb5_context context,
     if (local_addr) {
 	if (auth_context->local_address)
 	    krb5_free_address (context, auth_context->local_address);
+	else
+	    auth_context->local_address = malloc(sizeof(krb5_address));
 	krb5_copy_address(context, local_addr, auth_context->local_address);
     }
     if (remote_addr) {
 	if (auth_context->remote_address)
 	    krb5_free_address (context, auth_context->remote_address);
+	else
+	    auth_context->remote_address = malloc(sizeof(krb5_address));
 	krb5_copy_address(context, remote_addr, auth_context->remote_address);
     }
     return 0;
