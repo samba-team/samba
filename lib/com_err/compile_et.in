@@ -2,25 +2,23 @@
 
 # $Id$ 
 
-case "@srcdir@" in
-    /*)
-    srcdir="@srcdir@"
-    ;;
-    *)
-    srcdir="`dirname $0`/@srcdir@"
-    ;;
-esac
+while :; do
+	case "$1" in
+	-lang*)
+		shift 
+		shift
+		;;
+	-debug)
+		shift
+		;;
+	*)
+		break
+		;;
+	esac
+done
 
-file="$srcdir/compile_et.awk"
-
-if [ $# != 1 ]; then
-    echo "Usage: compile_et file.et"
-    exit 1
-fi
-
-if [ ! -f "$file" ]; then
-    echo "compile_et: File not found: $file"
-    exit 1
-fi
-
-@AWK@ -f "$file" "$1"
+for i do
+    @awk@ '
+#awksrc
+' "$i"
+done
