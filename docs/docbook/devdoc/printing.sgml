@@ -28,7 +28,7 @@ Printing Interface to Various Back ends
 
 <para>
 Samba uses a table of function pointers to seven functions.  The
-function prototypes are defined in the <VarName>printif</VarName> structure declared
+function prototypes are defined in the <varname>printif</varname> structure declared
 in <filename>printing.h</filename>.
 </para>
 
@@ -199,7 +199,7 @@ object when the client issues a GetJob(level == 2) request.
 
 <sect1>
 <title>
-ChangeID & Client Caching of Printer Information
+ChangeID and Client Caching of Printer Information
 </title>
 
 <para>
@@ -345,7 +345,7 @@ information</para></listitem>
 </itemizedlist>
 
 <para>
-A <VarName>SPOOL_NOTIFY_INFO</VarName> contains:
+A <varname>SPOOL_NOTIFY_INFO</varname> contains:
 </para>
 
 <itemizedlist>
@@ -359,7 +359,7 @@ in the SPOOL_NOTIFY_INFO_DATA array</para></listitem>
 </itemizedlist>
 
 <para>
-The <VarName>SPOOL_NOTIFY_INFO_DATA</VarName> entries contain:
+The <varname>SPOOL_NOTIFY_INFO_DATA</varname> entries contain:
 </para>
 
 <itemizedlist>
