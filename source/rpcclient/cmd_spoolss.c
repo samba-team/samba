@@ -104,14 +104,14 @@ static void display_sec_ace(SEC_ACE *ace)
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-static void display_sec_acl(SEC_ACL *acl)
+static void display_sec_acl(SEC_ACL *the_acl)
 {
-	if (acl->size != 0 && acl->num_aces != 0) {
+	if (the_acl->size != 0 && the_acl->num_aces != 0) {
 		int i;
 
-		printf("\t\tRevision:[%d]\n", acl->revision);
-		for (i = 0; i < acl->num_aces; i++) {
-			display_sec_ace(&acl->ace[i]);
+		printf("\t\tRevision:[%d]\n", the_acl->revision);
+		for (i = 0; i < the_acl->num_aces; i++) {
+			display_sec_ace(&the_acl->ace[i]);
 		}
 	}
 }
@@ -146,7 +146,7 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 {
 	uint32 		result = NT_STATUS_UNSUCCESSFUL; 
 	pstring		printername;
-	fstring		server, user;
+	fstring		the_server, user;
 	POLICY_HND	hnd;
 	TALLOC_CTX 	*mem_ctx;
 	
@@ -165,8 +165,8 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 	}
 
 
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf (the_server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (the_server);
 	fstrcpy  (user, cli->user_name);
 	fstrcpy  (printername, argv[1]);
 
@@ -179,7 +179,7 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 
 	/* Open the printer handle */
 	result = cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
-				MAXIMUM_ALLOWED_ACCESS, server, user, &hnd);
+				MAXIMUM_ALLOWED_ACCESS, the_server, user, &hnd);
 
 	if (result == NT_STATUS_NOPROBLEMO) {
 		printf ("Printer %s opened successfully\n", printername);
@@ -515,7 +515,7 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername, 
 			servername,
-			username;
+			the_username;
 	TALLOC_CTX	*mem_ctx;
 
 	if (argc == 1 || argc > 3) {
@@ -544,12 +544,12 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
 	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy  (username, cli->user_name);
+	fstrcpy  (the_username, cli->user_name);
 	
 	/* get a printer handle */
 	if ((result = cli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, servername,
-		username, &pol)) != NT_STATUS_NOPROBLEMO) {
+		the_username, &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
  
@@ -712,7 +712,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	BOOL 		opened_hnd = False;
 	PRINTER_DRIVER_CTR 	ctr;
 	fstring 	printername, 
-			server, 
+			the_server, 
 			user;
 	uint32		i;
 	TALLOC_CTX	*mem_ctx;
@@ -737,8 +737,8 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	}
 
 	/* get the arguments need to open the printer handle */
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf (the_server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (the_server);
 	fstrcpy  (user, cli->user_name);
 	fstrcpy  (printername, argv[1]);
 	if (argc == 3)
@@ -746,7 +746,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 
 	/* Open a printer handle */
 	if ((result=cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
-		    MAXIMUM_ALLOWED_ACCESS, server, user, &pol)) != NT_STATUS_NO_PROBLEMO) 
+		    MAXIMUM_ALLOWED_ACCESS, the_server, user, &pol)) != NT_STATUS_NO_PROBLEMO) 
 	{
 		printf ("Error opening printer handle for %s!\n", printername);
 		return result;
@@ -818,7 +818,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 	uint32 		result=0, 
 			info_level = 1;
 	PRINTER_DRIVER_CTR 	ctr;
-	fstring 	server;
+	fstring 	the_server;
 	uint32		i, j,
 			returned;
 	TALLOC_CTX	*mem_ctx;
@@ -843,8 +843,8 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 	}
 
 	/* get the arguments need to open the printer handle */
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf (the_server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (the_server);
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
@@ -1157,7 +1157,7 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 				level = 2;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
-	fstring			server;
+	fstring			the_server;
 	TALLOC_CTX		*mem_ctx = NULL;
 	
 	/* parse the command arguements */
@@ -1174,8 +1174,8 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 	}
 
 
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf (the_server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (the_server);
 
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
@@ -1188,7 +1188,7 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 	/* Fill in the DRIVER_INFO_3 struct */
 	ZERO_STRUCT(info2);
 #if 0	/* JERRY */
-	init_unistr( &info2.servername, 	server);
+	init_unistr( &info2.servername, 	the_server);
 #endif
 	init_unistr( &info2.printername,	argv[1]);
 	init_unistr( &info2.sharename, 		argv[2]);
@@ -1241,7 +1241,7 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 	PRINTER_INFO_2		info2;
 	fstring			servername,
 				printername,
-				username;
+				the_username;
 	TALLOC_CTX		*mem_ctx = NULL;
 	
 	/* parse the command arguements */
@@ -1260,7 +1260,7 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
 	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy  (username, cli->user_name);
+	fstrcpy  (the_username, cli->user_name);
 
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
@@ -1272,7 +1272,7 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 		
 	/* get a printer handle */
 	if ((result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-		MAXIMUM_ALLOWED_ACCESS, servername, username, &pol)) 
+		MAXIMUM_ALLOWED_ACCESS, servername, the_username, &pol)) 
 		!= NT_STATUS_NOPROBLEMO) 
 	{
 		goto done;
