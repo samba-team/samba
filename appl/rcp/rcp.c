@@ -54,7 +54,8 @@ void	 source (int, char *[]);
 void	 tolocal (int, char *[]);
 void	 toremote (char *, int, char *[]);
 
-int      do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout);
+int      do_cmd(const char *host, const char *remuser, const char *cmd,
+		int *fdin, int *fdout);
 
 static int fflag, tflag;
 
@@ -133,8 +134,9 @@ main(int argc, char **argv)
 
 	remin = remout = -1;
 	/* Command to be executed on remote system using "rsh". */
-	 sprintf(cmd, "rcp%s%s%s", iamrecursive ? " -r" : "", 
-		       pflag ? " -p" : "", targetshouldbedirectory ? " -d" : "");
+	snprintf(cmd, sizeof(cmd),
+		 "rcp%s%s%s", iamrecursive ? " -r" : "", 
+		 pflag ? " -p" : "", targetshouldbedirectory ? " -d" : "");
 
 	signal(SIGPIPE, lostconn);
 
@@ -151,7 +153,7 @@ main(int argc, char **argv)
 void
 toremote(char *targ, int argc, char **argv)
 {
-	int i, len;
+	int i;
 	char *bp, *host, *src, *suser, *thost, *tuser;
 
 	*targ++ = 0;
@@ -178,37 +180,34 @@ toremote(char *targ, int argc, char **argv)
 			if (*src == 0)
 				src = ".";
 			host = strchr(argv[i], '@');
-			len = strlen(_PATH_RSH) + strlen(argv[i]) +
-			    strlen(src) + (tuser ? strlen(tuser) : 0) +
-			    strlen(thost) + strlen(targ) + CMDNEEDS + 20;
-			if (!(bp = malloc(len)))
-				err(1, "malloc");
 			if (host) {
-				*host++ = 0;
+				*host++ = '\0';
 				suser = argv[i];
 				if (*suser == '\0')
 					suser = pwd->pw_name;
 				else if (!okname(suser))
 					continue;
-				snprintf(bp, len,
+				asprintf(&bp,
 				    "%s %s -l %s -n %s %s '%s%s%s:%s'",
 				    _PATH_RSH, host, suser, cmd, src,
 				    tuser ? tuser : "", tuser ? "@" : "",
 				    thost, targ);
-			} else
-				snprintf(bp, len,
+			} else {
+				asprintf(&bp,
 				    "exec %s %s -n %s %s '%s%s%s:%s'",
 				    _PATH_RSH, argv[i], cmd, src,
 				    tuser ? tuser : "", tuser ? "@" : "",
 				    thost, targ);
+			}
+			if (bp == NULL)
+				err (1, "malloc");
 			susystem(bp, userid);
 			free(bp);
 		} else {			/* local to remote */
 			if (remin == -1) {
-				len = strlen(targ) + CMDNEEDS + 20;
-				if (!(bp = malloc(len)))
-					err(1, "malloc");
-				snprintf(bp, len, "%s -t %s", cmd, targ);
+				asprintf(&bp, "%s -t %s", cmd, targ);
+				if (bp == NULL)
+					err (1, "malloc");
 				host = thost;
 
 				if (do_cmd(host, tuser, bp, &remin, &remout) < 0)
@@ -232,13 +231,11 @@ tolocal(int argc, char **argv)
 
 	for (i = 0; i < argc - 1; i++) {
 		if (!(src = colon(argv[i]))) {		/* Local to local. */
-			len = strlen(_PATH_CP) + strlen(argv[i]) +
-			    strlen(argv[argc - 1]) + 20;
-			if (!(bp = malloc(len)))
-				err(1, "malloc");
-			snprintf(bp, len, "exec %s%s%s %s %s", _PATH_CP,
+			asprintf(&bp, "exec %s%s%s %s %s", _PATH_CP,
 			    iamrecursive ? " -PR" : "", pflag ? " -p" : "",
 			    argv[i], argv[argc - 1]);
+			if (bp == NULL)
+				err (1, "malloc");
 			if (susystem(bp, userid))
 				++errs;
 			free(bp);
@@ -258,10 +255,9 @@ tolocal(int argc, char **argv)
 			else if (!okname(suser))
 				continue;
 		}
-		len = strlen(src) + CMDNEEDS + 20;
-		if ((bp = malloc(len)) == NULL)
-			err(1, "malloc");
-		snprintf(bp, len, "%s -f %s", cmd, src);
+		asprintf(&bp, "%s -f %s", cmd, src);
+		if (bp == NULL)
+			err (1, "malloc");
 		if (do_cmd(host, suser, bp, &remin, &remout) < 0) {
 			free(bp);
 			++errs;
@@ -714,7 +710,8 @@ run_err(const char *fmt, ...)
  */
 
 int 
-do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout)
+do_cmd(const char *host, const char *remuser, const char *cmd,
+       int *fdin, int *fdout)
 {
 	int pin[2], pout[2], reserved[2];
 
