@@ -1,3 +1,9 @@
+Sat May 30 00:19:51 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/convert_creds.c: import _krb_time_to_life, to avoid
+ 	runtime dependencies on libkrb with some shared library
+ 	implementations
+
 Fri May 29 00:09:02 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kuser/kinit_options.c: Default options for kinit.
