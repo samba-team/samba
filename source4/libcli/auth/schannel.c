@@ -23,7 +23,6 @@
 #include "includes.h"
 
 struct schannel_state {
-	TALLOC_CTX *mem_ctx;
 	uint8_t session_key[16];
 	uint32_t seq_num;
 	BOOL initiator;
@@ -219,7 +218,7 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
-	(*sig) = data_blob_talloc(state->mem_ctx, NULL, 32);
+	(*sig) = data_blob_talloc(mem_ctx, NULL, 32);
 
 	memcpy(sig->data, netsec_sig, 8);
 	memcpy(sig->data+8, seq_num, 8);
@@ -256,7 +255,7 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
-	(*sig) = data_blob_talloc(state->mem_ctx, NULL, 32);
+	(*sig) = data_blob_talloc(mem_ctx, NULL, 32);
 
 	memcpy(sig->data, netsec_sig, 8);
 	memcpy(sig->data+8, seq_num, 8);
@@ -277,7 +276,7 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
 void schannel_end(struct schannel_state **state)
 {
 	if (*state) {
-		talloc_destroy((*state)->mem_ctx);
+		talloc_free(*state);
 		(*state) = NULL;
 	}
 }
@@ -289,20 +288,11 @@ NTSTATUS schannel_start(struct schannel_state **state,
 			const uint8_t session_key[16],
 			BOOL initiator)
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("schannel_state");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*state) = talloc_p(mem_ctx, struct schannel_state);
+	(*state) = talloc_p(NULL, struct schannel_state);
 	if (!(*state)) {
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*state)->mem_ctx = mem_ctx;
 	memcpy((*state)->session_key, session_key, 16);
 	(*state)->initiator = initiator;
 	(*state)->seq_num = 0;
