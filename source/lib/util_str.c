@@ -1189,6 +1189,7 @@ char *strchr_m(const char *s, char c)
 	while (*s && (((unsigned char)s[0]) & 0x80)) {
 		if (*s == c)
 			return s;
+		s++;
 	}
 
 	if (!*s)
