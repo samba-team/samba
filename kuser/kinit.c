@@ -846,7 +846,13 @@ main (int argc, char **argv)
 
 	ret = simple_execvp_timed(argv[1], argv+1, 
 				  renew_func, &ctx, timeout);
-
+#define EX_NOEXEC	126
+#define EX_NOTFOUND	127
+	if(ret == EX_NOEXEC)
+	    krb5_warnx(context, "permission denied: %s", argv[1]);
+	else if(ret == EX_NOTFOUND)
+	    krb5_warnx(context, "command not found: %s", argv[1]);
+	
 	krb5_cc_destroy(context, ccache);
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
 	if(k_hasafs())
