@@ -271,7 +271,11 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 
 	unbecome_user();
 	smb_pass = get_smbpwnam(mach_acct);
-	become_user(cnum, vuid);
+	if (!become_user(cnum, vuid))
+	{
+		DEBUG(0,("update_dcinfo: become_user failed\n"));
+		return False;
+	}
 
 	if (smb_pass != NULL)
 	{
