@@ -818,7 +818,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_connect(cli, dest_host, dest_ip))
 		{
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-					  callingstr, inet_ntoa(*dest_ip)));
+					  dest_host, inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}
