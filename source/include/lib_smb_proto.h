@@ -118,7 +118,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 char *get_trusted_serverlist(const char *domain);
 BOOL cli_connect_servers_auth(struct cli_state *cli,
-				char *p,
+				char *server,
 				const struct ntuser_creds *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
 BOOL get_any_dc_name(const char *domain, char *srv_name);

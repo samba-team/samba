@@ -156,13 +156,13 @@ static void winbindd_kill_connections(void)
 	lsa_close(&server_state.lsa_handle);
 	
 	for (domain=domain_list; domain; domain=domain->next) {
-		if (domain->sam_handle_open) {
-			lsa_close(&domain->sam_handle);
-			domain->sam_handle_open = False;
-		}
 		if (domain->sam_dom_handle_open) {
-			lsa_close(&domain->sam_dom_handle);
+			samr_close(&domain->sam_dom_handle);
 			domain->sam_dom_handle_open = False;
+		}
+		if (domain->sam_handle_open) {
+			samr_close(&domain->sam_handle);
+			domain->sam_handle_open = False;
 		}
 		DLIST_REMOVE(domain_list, domain);
 		free(domain);

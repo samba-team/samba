@@ -507,7 +507,7 @@ BOOL modify_trust_password(const char *domain, const char *srv_name,
 			   const uchar orig_trust_passwd_hash[16],
 			   const uchar new_trust_passwd_hash[16],
 			   uint16 sec_chan);
-uint32 domain_client_validate_backend(const char *server,
+uint32 domain_client_validate_backend(const char *srv_name,
 				      const char *user, const char *domain,
 				      const char *acct_name, uint16 acct_type,
 				      const unsigned char trust_passwd[16],

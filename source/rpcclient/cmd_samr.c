@@ -985,6 +985,21 @@ uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 }
 #endif
 
+/* this is a hack to integrate TNG with Samba 3.0 */ 
+static BOOL lsa_local_set_secret(char *domain, uchar ntpw[16])
+{
+	static fstring keystr;
+	struct machine_acct_pass pass;
+
+	secrets_init();
+	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
+
+	memcpy(pass.hash, ntpw, 16);
+	pass.mod_time = time(NULL);
+	return secrets_store(keystr, &pass, sizeof(pass));
+}
+
+
 /****************************************************************************
 SAM create domain user.
 ****************************************************************************/
@@ -1009,6 +1024,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	fstring ascii_pwd;
 	BOOL use_ascii_pwd = False;
 	uint32 status = NT_STATUS_ACCESS_DENIED;
+	BOOL lsa_local = False;
 
 	BOOL res = True;
 	POLICY_HND lsa_pol;
@@ -1039,7 +1055,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,
-		       "createuser: <acct name> [-i] [-s] [-j] domain_name [-p password]\n");
+		       "createuser: <acct name> [-i] [-s] [-L] [-j] domain_name [-p password]\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1056,7 +1072,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		acb_info = ACB_WSTRUST;
 	}
 
-	while ((opt = getopt_long(argc, argv, "isj:p:w:", NULL, NULL)) != EOF)
+	while ((opt = getopt_long(argc, argv, "isj:p:w:L", NULL, NULL)) != EOF)
 	{
 		switch (opt)
 		{
@@ -1083,6 +1099,9 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 				use_ascii_pwd = True;
 				break;
 			}
+		        case 'L':
+				lsa_local = True;
+				break;
 		}
 	}
 
@@ -1204,7 +1223,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	ZERO_STRUCT(ascii_pwd);
 
-	if (join_domain)
+	if (join_domain && !lsa_local)
 	{
 		/*
 		 * ok.  this looks really weird, but if you don't open
@@ -1237,7 +1256,6 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			POLICY_HND pol_sec;
 			BOOL res1;
 			BOOL res2 = False;
-
 			uchar ntpw[16];
 
 			nt_owf_genW(&upw, ntpw);
@@ -1249,29 +1267,28 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			       domain);
 
 			/* attempt to create, and if already exist, open */
-			res1 = lsa_create_secret(&lsa_pol, "$MACHINE.ACC",
-						 0x020003, &pol_sec);
+			if (lsa_local) {
+				res2 = res1 = res = lsa_local_set_secret(domain, ntpw);
+				status = res ? NT_STATUS_NOPROBLEMO : NT_STATUS_ACCESS_DENIED;
+			} else {
+				res1 = lsa_create_secret(&lsa_pol, "$MACHINE.ACC",
+							 0x020003, &pol_sec);
 
-			if (res1)
-			{
-				report(out_hnd, "Create $MACHINE.ACC: OK\n");
-			}
-			else
-			{
-				res1 = lsa_open_secret(&lsa_pol,
-						       "$MACHINE.ACC",
-						       0x020003, &pol_sec);
+				if (res1) {
+					report(out_hnd, "Create $MACHINE.ACC: OK\n");
+				} else {
+					res1 = lsa_open_secret(&lsa_pol,
+							       "$MACHINE.ACC",
+							       0x020003, &pol_sec);
+				}
 
-			}
-
-			/* valid pol_sec on $MACHINE.ACC, set trust passwd */
-			if (res1)
-			{
-				STRING2 secret;
-				secret_store_data(&secret, password, plen);
-				status = lsa_set_secret(&pol_sec, &secret);
-				res2 = status == NT_STATUS_NOPROBLEMO;
-
+				/* valid pol_sec on $MACHINE.ACC, set trust passwd */
+				if (res1) {
+					STRING2 secret;
+					secret_store_data(&secret, password, plen);
+					status = lsa_set_secret(&pol_sec, &secret);
+					res2 = status == NT_STATUS_NOPROBLEMO;
+				}
 			}
 
 			if (res2)
@@ -1285,8 +1302,10 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 				status = NT_STATUS_ACCESS_DENIED;
 			}
 
-			res1 = res1 ? lsa_close(&pol_sec) : False;
-			res = res ? lsa_close(&lsa_pol) : False;
+			if (!lsa_local) {
+				res1 = res1 ? lsa_close(&pol_sec) : False;
+				res = res ? lsa_close(&lsa_pol) : False;
+			}
 
 			memset(ntpw, 0, sizeof(ntpw));
 		}
