@@ -39,7 +39,10 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
-	string_to_sid(&sid, state->request.data.sid);
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
 
 	/* Don't look up BUILTIN sids */
 
