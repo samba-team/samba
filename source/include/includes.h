@@ -45,6 +45,16 @@
 #undef HAVE_TERMIOS_H
 #endif
 
+#ifdef RELIANTUNIX
+/*
+ * <unistd.h> has to be included before any other to get
+ * large file support on Reliant UNIX
+ */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#endif /* RELIANTUNIX */
+
 
 #include <sys/types.h>
 

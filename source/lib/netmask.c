@@ -37,6 +37,13 @@
 
 #ifdef HAVE_NETMASK_IFCONF
 
+#ifdef RELIANTUNIX
+/*
+ * <unistd.h> must be included first to compile this file on ReliantUNIX
+ */
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>

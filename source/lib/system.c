@@ -212,6 +212,8 @@ int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 {
 #if defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
   return fseek64(fp, offset, whence);
+#elif defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEKO64)
+  return fseeko64(fp, offset, whence);
 #else
   return fseek(fp, offset, whence);
 #endif
@@ -225,6 +227,8 @@ SMB_OFF_T sys_ftell(FILE *fp)
 {
 #if defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
   return (SMB_OFF_T)ftell64(fp);
+#elif defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELLO64)
+  return (SMB_OFF_T)ftello64(fp);
 #else
   return (SMB_OFF_T)ftell(fp);
 #endif

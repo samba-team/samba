@@ -376,6 +376,7 @@ case "$host_os" in
 		*next2*) AC_DEFINE(NEXT2);;
 		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
 		*sysv4.2*) AC_CHECK_LIB(resolv, strcasecmp);;
+		*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX);;
 esac
 
 # try to work out how to produce pic code with this compiler

@@ -39,7 +39,7 @@ pid_t pidfile_pid(char *name)
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
-	fd = open(pidFile, O_NONBLOCK | O_RDWR);
+	fd = sys_open(pidFile, O_NONBLOCK | O_RDWR);
 	if (fd == -1) {
 		return 0;
 	}
