@@ -217,11 +217,15 @@ void locking_close_file(files_struct *fsp)
 /****************************************************************************
  Initialise the locking functions.
 ****************************************************************************/
+
+static int open_read_only;
+
 BOOL locking_init(int read_only)
 {
 	brl_init(read_only);
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
 	tdb = tdb_open(lock_path("locking.tdb"), 
 		       0, TDB_CLEAR_IF_FIRST, 
@@ -236,6 +240,8 @@ BOOL locking_init(int read_only)
 	if (!posix_locking_init(read_only))
 		return False;
 
+	open_read_only = read_only;
+
 	return True;
 }
 
@@ -244,7 +250,9 @@ BOOL locking_init(int read_only)
 ******************************************************************/
 BOOL locking_end(void)
 {
-	if (tdb && tdb_close(tdb) != 0) return False;
+	brl_shutdown(open_read_only);
+	if (tdb && tdb_close(tdb) != 0)
+		return False;
 	return True;
 }
 

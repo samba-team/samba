@@ -113,12 +113,16 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 
 
 /****************************************************************************
-delete a record if it is for a dead process
+ Delete a record if it is for a dead process, if check_self is true, then
+ delete any records belonging to this pid also (there shouldn't be any).
 ****************************************************************************/
+
 static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct lock_struct *locks;
 	int count, i;
+	BOOL check_self = *(BOOL *)state;
+	pid_t mypid = sys_getpid();
 
 	tdb_chainlock(tdb, kbuf);
 
@@ -128,7 +132,20 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
-		if (process_exists(lock->context.pid)) continue;
+		/* If check_self is true we want to remove our own records. */
+		if (check_self && (mypid == lock->context.pid)) {
+
+			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
+					(unsigned int)lock->context.pid ));
+
+		} else if (process_exists(lock->context.pid)) {
+
+			DEBUG(10,("locking : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
+			continue;
+		}
+
+		DEBUG(10,("locking : delete_fn. Deleting record for process %u\n",
+				(unsigned int)lock->context.pid ));
 
 		if (count > 1 && i < count-1) {
 			memmove(&locks[i], &locks[i+1], 
@@ -152,9 +169,13 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 /****************************************************************************
  Open up the brlock.tdb database.
 ****************************************************************************/
+
 void brl_init(int read_only)
 {
-	if (tdb) return;
+	BOOL check_self = False;
+
+	if (tdb)
+		return;
 	tdb = tdb_open(lock_path("brlock.tdb"), 0, TDB_CLEAR_IF_FIRST, 
 		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!tdb) {
@@ -163,11 +184,27 @@ void brl_init(int read_only)
 	}
 
 	/* delete any dead locks */
-	if (!read_only) {
-		tdb_traverse(tdb, delete_fn, NULL);
-	}
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
 }
 
+/****************************************************************************
+ Close down the brlock.tdb database.
+****************************************************************************/
+
+void brl_shutdown(int read_only)
+{
+	BOOL check_self = True;
+
+	if (tdb)
+		return;
+
+	/* delete any dead locks */
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
+
+	tdb_close(tdb);
+}
 
 /****************************************************************************
  Lock a range of bytes.

@@ -558,47 +558,48 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
                                   char *smb_apasswd, int smb_apasslen,
                                   char *smb_ntpasswd, int smb_ntpasslen)
 {
-  BOOL ret = False;
+	BOOL ret = False;
 
-  if(lp_security() != SEC_SERVER)
-    return False;
+	if(lp_security() != SEC_SERVER)
+		return False;
 
-  if (!check_domain_match(orig_user, domain))
-     return False;
+	if (!check_domain_match(orig_user, domain))
+		return False;
 
-  ret = server_validate(orig_user, domain, 
-                            smb_apasswd, smb_apasslen, 
-                            smb_ntpasswd, smb_ntpasslen);
-  if(ret) {
-    struct passwd *pwd = NULL;
+	ret = server_validate(orig_user, domain, 
+					smb_apasswd, smb_apasslen, 
+					smb_ntpasswd, smb_ntpasslen);
 
-    /*
-     * User validated ok against Domain controller.
-     * If the admin wants us to try and create a UNIX
-     * user on the fly, do so.
-     * Note that we can never delete users when in server
-     * level security as we never know if it was a failure
-     * due to a bad password, or the user really doesn't exist.
-     */
-    if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True))) {
-      smb_create_user(unix_user, NULL);
-    }
+	if(ret) {
+		struct passwd *pwd = NULL;
 
-    if(lp_adduser_script() && pwd) {
-      SMB_STRUCT_STAT st;
+		/*
+		 * User validated ok against Domain controller.
+		 * If the admin wants us to try and create a UNIX
+		 * user on the fly, do so.
+		 * Note that we can never delete users when in server
+		 * level security as we never know if it was a failure
+		 * due to a bad password, or the user really doesn't exist.
+		 */
 
-      /*
-       * Also call smb_create_user if the users home directory
-       * doesn't exist. Used with winbindd to allow the script to
-       * create the home directory for a user mapped with winbindd.
-       */
+		if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True)))
+			smb_create_user(unix_user, NULL);
 
-      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
-        smb_create_user(unix_user, pwd->pw_dir);
-    }
-  }
+		if(lp_adduser_script() && pwd) {
+			SMB_STRUCT_STAT st;
 
-  return ret;
+			/*
+			 * Also call smb_create_user if the users home directory
+			 * doesn't exist. Used with winbindd to allow the script to
+			 * create the home directory for a user mapped with winbindd.
+			 */
+
+			if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
+				smb_create_user(unix_user, pwd->pw_dir);
+		}
+	}
+
+	return ret;
 }
 
 /****************************************************************************
@@ -643,7 +644,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
        * create the home directory for a user mapped with winbindd.
        */
 
-      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
+      if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
         smb_create_user(unix_user, pwd->pw_dir);
     }
 

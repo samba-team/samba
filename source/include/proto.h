@@ -1199,6 +1199,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 /*The following definitions come from  locking/brlock.c  */
 
 void brl_init(int read_only);
+void brl_shutdown(int read_only);
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
