@@ -252,19 +252,27 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 {
         char *destend = dest + len;
         register uint16 c;
+	
+	/* deal with NULL src strings */
+	if (src == NULL)
+	{
+		*dest = '\0';
+	}
+	else
+	{
+        	while (dest < destend)
+	        {
+        	        c = *(src++);
+                	if (c == 0)
+	                {	
+        	                break;
+                	}
 
-        while (dest < destend)
-        {
-                c = *(src++);
-                if (c == 0)
-                {
-                        break;
-                }
+	                *(dest++) = (char)c;
+        	}
 
-                *(dest++) = (char)c;
-        }
-
-        *dest = 0;
+	        *dest = 0;
+	}
 }
 
 /*******************************************************************
