@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 # Copyright (C) 2002, 2003 by Martin Pool <mbp@samba.org>
+# Copyright (C) 2003 by Tim Potter <tpot@samba.org>
 # 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -20,6 +21,7 @@
 """comfychair: a Python-based instrument of software torture.
 
 Copyright (C) 2002, 2003 by Martin Pool <mbp@samba.org>
+Copyright (C) 2003 by Tim Potter <tpot@samba.org>
 
 This is a test framework designed for testing programs written in
 Python, or (through a fork/exec interface) any other language.
@@ -163,9 +165,10 @@ why."""
                ("%s terminated with signal %d", cmd, os.WTERMSIG(waitstatus))
         rc = os.WEXITSTATUS(waitstatus)
         self.test_log = self.test_log + ("""Run command: %s
-Wait status: %#x
+Wait status: %#x (exit code %d, signal %d)
 Output:
-%s""" % (cmd, waitstatus, output))
+%s""" % (cmd, waitstatus, os.WEXITSTATUS(waitstatus), os.WTERMSIG(waitstatus),
+         output))
         if skip_on_noexec and rc == 127:
             # Either we could not execute the command or the command
             # returned exit code 127.  According to system(3) we can't
