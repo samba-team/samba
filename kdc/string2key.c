@@ -47,6 +47,7 @@ int afs;
 char *principal;
 char *cell;
 char *password;
+char *keytype_str = "des";
 int version;
 int help;
 
@@ -59,6 +60,7 @@ struct getargs args[] = {
 #endif
     { "password", 'w', arg_string, &password, "Password to use", "password" },
     { "principal",'p', arg_string, &principal, "Kerberos v5 principal to use", "principal" },
+    { "keytype",  'k', arg_string, &keytype_str, "Keytype" },
     { "version",    0, arg_flag,   &version, "print version" },
     { "help",       0, arg_flag,   &help, NULL }
 };
@@ -81,8 +83,11 @@ int main(int argc, char **argv)
     int i;
     int optind;
     char buf[1024];
+    krb5_keytype keytype;
+    krb5_error_code ret;
 
     set_progname(argv[0]);
+    krb5_init_context(&context);
     optind = 0;
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
@@ -100,6 +105,18 @@ int main(int argc, char **argv)
 
     if (argc > 1)
 	usage(1);
+
+    if(!version5 && !version4 && !afs)
+	version5 = 1;
+
+    ret = krb5_string_to_keytype(context, keytype_str, &keytype);
+    if(ret)
+	krb5_err(context, 1, ret, "%s", keytype);
+    
+    if(keytype != KEYTYPE_DES && (afs || version4))
+	krb5_errx(context, 1, 
+		  "DES is the only valid keytype for AFS and Kerberos 4");
+    
 
     if(version5 && principal == NULL){
 	printf("Kerberos v5 principal: ");
@@ -123,12 +140,11 @@ int main(int argc, char **argv)
     }
 	
     if(version5){
-	krb5_init_context(&context);
 	krb5_parse_name(context, principal, &princ);
 	salt.length = 0;
 	salt.data = NULL;
 	krb5_get_salt(princ, &salt);
-	krb5_string_to_key(password, &salt, &key);
+	krb5_string_to_key(password, &salt, keytype, &key);
 	printf("Kerberos v5 key: ");
 	for(i = 0; i < key.keyvalue.length; i++)
 	    printf("%02x", ((unsigned char*)key.keyvalue.data)[i]);
