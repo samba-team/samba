@@ -599,7 +599,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
 	    $(RPC_LSA_DS_OBJ) $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) \
 	    $(RPC_SPOOLSS_OBJ) $(RPC_ECHO_OBJ) $(RPC_EPMAPPER_OBJ) \
-	    $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o
+	    $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o libsmb/passchange.o
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
