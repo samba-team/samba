@@ -1031,7 +1031,7 @@
 
 /**************************/
 /* srvsvc_NetTransport    */
-/**************************/		
+/**************************/
 	typedef struct {
 		uint32 count;
 		uint8 addr[count];
@@ -1119,11 +1119,17 @@
 	WERROR srvsvc_NET_REMOTE_TOD(
 		);
 
+/**************************/
+/* srvsvc_NetServiceBits  */
+/**************************/
 	/******************/
 	/* Function: 0x1d */
 	WERROR srvsvc_NETRSERVERSETSERVICEBITS(
 		);
 
+/**************************/
+/* srvsvc_NetPath         */
+/**************************/
 	/******************/
 	/* Function: 0x1e */
 	WERROR srvsvc_NETRPRPATHTYPE(
@@ -1139,6 +1145,9 @@
 	WERROR srvsvc_NETRPRPATHCOMPARE(
 		);
 
+/**************************/
+/* srvsvc_NetName         */
+/**************************/
 	/******************/
 	/* Function: 0x21 */
 	WERROR srvsvc_NET_NAME_VALIDATE(
@@ -1154,6 +1163,9 @@
 	WERROR srvsvc_NETRPRNAMECOMPARE(
 		);
 
+/**************************/
+/* srvsvc_NetShare ...    */
+/**************************/
 	/******************/
 	/* Function: 0x24 */
 	/* Note, there must be some way to return entries read vs 
