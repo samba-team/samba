@@ -7,7 +7,7 @@ INCLUDES = -I$(top_builddir)/include -I$(srcdir)/../krb5
 lib_LIBRARIES = libgssapi.a
 
 libgssapi_a_SOURCES = \
-	accept_sec_context.c add_oid_set_member.c \
+	8003.c accept_sec_context.c add_oid_set_member.c \
 	create_emtpy_oid_set.c decapsulate.c \
 	delete_sec_context.c display_name.c \
 	duplicate_name.c encapsulate.c external.c \

@@ -1,3 +1,20 @@
+Mon Jun 16 05:41:43 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/gssapi/wrap.c, unwrap.c: do encrypt and add sequence number
+
+	* lib/gssapi/get_mic.c, verify_mic.c: Add sequence number.
+
+	* lib/gssapi/accept_sec_context.c (gss_accept_sec_context): Set
+ 	KRB5_AUTH_CONTEXT_DO_SEQUENCE.  Verify 8003 checksum.
+
+	* lib/gssapi/8003.c: New file.
+
+	* lib/krb/krb5.h: Define a `krb_authenticator' as an ASN.1
+ 	Authenticator.
+
+	* lib/krb5/auth_context.c: New functions
+ 	`krb5_auth_setlocalseqnumber' and `krb5_auth_setremoteseqnumber'
+
 Tue Jun 10 00:35:54 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5: Preapre for use of some asn1-types.
