@@ -22,7 +22,8 @@ exec_prefix = @exec_prefix@
 libdir = @libdir@
 
 PICFLAGS = @REAL_PICFLAGS@
-SHARED = @REAL_SHARED@
+SHARED = @SHARED@
+LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
@@ -74,5 +75,6 @@ dist: $(DISTFILES)
 $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
-	rm -f $(LIB)
-	ld -shared -o $@ -hidden -exported_symbol siad_\* $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a ../../roken/libroken.a @LIB_getpwnam_r@ -lc
+	rm -f $@
+	$(LDSHARED) -shared -o $@ -rpath,$(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken @LIB_getpwnam_r@ -lc
+#	ld -shared -o $@ -hidden -exported_symbol siad_\* $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a ../../roken/libroken.a @LIB_getpwnam_r@ -lc

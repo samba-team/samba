@@ -23,7 +23,8 @@ exec_prefix = @exec_prefix@
 libdir = @libdir@
 
 PICFLAGS = @REAL_PICFLAGS@
-SHARED = @REAL_SHARED@
+SHARED = @SHARED@
+LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
@@ -75,4 +76,4 @@ $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken
+	$(LDSHARED) $(SHARED) -o $@ $(OBJECTS) -rpath,$(libdir) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken
