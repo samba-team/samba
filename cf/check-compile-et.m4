@@ -61,7 +61,7 @@ if test "${krb_cv_com_err}" = "yes"; then
     LIB_com_err_so=""
     AC_MSG_NOTICE(Using the already-installed com_err)
 else
-    COMPILE_ET="\$(top_builddir)/lib/com_err_compile_et"
+    COMPILE_ET="\$(top_builddir)/lib/com_err/compile_et"
     DIR_com_err="com_err"
     LIB_com_err="\$(top_builddir)/lib/com_err/libcom_err.la"
     LIB_com_err_a="\$(top_builddir)/lib/com_err/.libs/libcom_err.a"
