@@ -1334,7 +1334,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     p = mask;
     while(*p)
     {
-      if((skip = skip_multibyte_char( *p )) != 0 )
+      if((skip = get_character_len( *p )) != 0 )
       {
         p += skip;
       }

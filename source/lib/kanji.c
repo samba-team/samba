@@ -80,6 +80,8 @@ int (*is_multibyte_char_1)(char) = is_kanji_multibyte_char_1;
 
 #endif /* KANJI */
 
+BOOL global_is_multibyte_codepage = False;
+
 /* jis si/so sequence */
 static char jis_kso = JIS_KSO;
 static char jis_ksi = JIS_KSI;
@@ -1163,17 +1165,6 @@ static BOOL not_multibyte_char_1(char c)
 }
 
 /*******************************************************************
- Function to determine if we are in a multibyte code page.
-*******************************************************************/
-
-static BOOL is_multibyte_codepage_val = False;
-
-BOOL is_multibyte_codepage(void)
-{
-  return is_multibyte_codepage_val;
-}
-
-/*******************************************************************
  Setup the function pointers for the functions that are replaced
  when multi-byte codepages are used.
 
@@ -1193,7 +1184,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = sj_strtok;
     _skip_multibyte_char = skip_kanji_multibyte_char;
     is_multibyte_char_1 = is_kanji_multibyte_char_1;
-    is_multibyte_codepage_val = True;
+    global_is_multibyte_codepage = True;
     break;
   case HANGUL_CODEPAGE:
     multibyte_strchr = generic_multibyte_strchr;
@@ -1202,7 +1193,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = hangul_is_multibyte_char_1;
-    is_multibyte_codepage_val = True;
+    global_is_multibyte_codepage = True;
     break;
   case BIG5_CODEPAGE:
     multibyte_strchr = generic_multibyte_strchr;
@@ -1211,7 +1202,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = big5_is_multibyte_char_1;
-    is_multibyte_codepage_val = True;
+    global_is_multibyte_codepage = True;
     break;
   case SIMPLIFIED_CHINESE_CODEPAGE:
     multibyte_strchr = generic_multibyte_strchr;
@@ -1220,7 +1211,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = simpch_is_multibyte_char_1;
-    is_multibyte_codepage_val = True;
+    global_is_multibyte_codepage = True;
     break;
   /*
    * Single char size code page.
@@ -1232,7 +1223,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, const char *)) strtok;
     _skip_multibyte_char = skip_non_multibyte_char;
     is_multibyte_char_1 = not_multibyte_char_1;
-    is_multibyte_codepage_val = False;
+    global_is_multibyte_codepage = False;
     break; 
   }
 }

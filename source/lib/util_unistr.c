@@ -51,7 +51,7 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len)
 {
 	int ret = 0;
 	while (*src && (len > 2)) {
-		size_t skip = skip_multibyte_char(*src);
+		size_t skip = get_character_len(*src);
 		smb_ucs2_t val = (*src & 0xff);
 
 		/*
@@ -269,7 +269,7 @@ size_t dos_struni2(char *dst, const char *src, size_t max_len)
 
 	if (src != NULL) {
 		for (; *src && len < max_len-2; len++, dst +=2) {
-			size_t skip = skip_multibyte_char(*src);
+			size_t skip = get_character_len(*src);
 			smb_ucs2_t val = (*src & 0xff);
 
 			/*
@@ -609,7 +609,7 @@ smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
 	dst_len /= sizeof(smb_ucs2_t); /* Convert to smb_ucs2_t units. */
 
 	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
-		size_t skip = skip_multibyte_char(*src);
+		size_t skip = get_character_len(*src);
 		smb_ucs2_t val = (*src & 0xff);
 
 		/*
