@@ -123,7 +123,7 @@ arg_match_long(struct getargs *args, size_t num_args,
 {
     int i;
     char *optarg;
-    int negate = 0;
+    int negate;
     int partial_match = 0;
     struct getargs *partial = NULL;
     struct getargs *current = NULL;
@@ -138,32 +138,31 @@ arg_match_long(struct getargs *args, size_t num_args,
     for (i = 0; i < num_args; ++i) {
 	if(args[i].long_name) {
 	    int len = strlen(args[i].long_name);
+	    char *p = argv;
+	    int p_len = argv_len;
+	    negate = 0;
 
-	    if (strncmp (args[i].long_name, argv, len) == 0) {
-		current = &args[i];
-		optarg  = argv + len;
+	    for (;;) {
+		if (strncmp (args[i].long_name, p, len) == 0) {
+		    current = &args[i];
+		    optarg  = p + len;
+		} else if (strncmp (args[i].long_name,
+				    p,
+				    p_len) == 0) {
+		    ++partial_match;
+		    partial = &args[i];
+		    optarg  = p + p_len;
+		} else if (args[i].type == arg_flag
+			   && strncmp (argv, "no-", 3) == 0) {
+		    negate = !negate;
+		    p += 3;
+		    p_len -= 3;
+		    continue;
+		}
 		break;
-	    } else if (args[i].type == arg_flag
-		       && strncmp (argv, "no-", 3) == 0
-		       && strncmp (args[i].long_name, argv + 3, len) == 0) {
-		current = &args[i];
-		optarg  = argv + len + 3;
-		negate  = 1;
-		break;
-	    } else if (strncmp (args[i].long_name, argv, argv_len) == 0) {
-		++partial_match;
-		partial = &args[i];
-		optarg  = argv + argv_len;
-	    } else if (args[i].type == arg_flag
-		       && strncmp (argv, "no-", 3) == 0
-		       && strncmp (args[i].long_name,
-				   argv + 3,
-				   argv_len - 3) == 0) {
-		++partial_match;
-		partial = &args[i];
-		optarg  = argv + argv_len;
-		negate = 1;
 	    }
+	    if (current)
+		break;
 	}
     }
     if (current == NULL)
