@@ -181,7 +181,7 @@ POPT_LIB_OBJ = lib/popt_common.o
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
 
-PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
+PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o
 
 KRBCLIENT_OBJ = libads/kerberos.o
 
@@ -280,7 +280,7 @@ SAM_STATIC_MODULES = sam/sam_plugin.o sam/sam_skel.o sam/sam_ads.o
 SAM_OBJ = sam/account.o sam/get_set_account.o sam/get_set_group.o \
 		sam/get_set_domain.o sam/interface.o $(SAM_STATIC_MODULES)
 
-SAMTEST_OBJ = torture/samtest.o torture/cmd_sam.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(READLINE_OBJ) lib/util_seaccess.o $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(GROUPDB_OBJ)
+SAMTEST_OBJ = torture/samtest.o torture/cmd_sam.o $(PARAM_OBJ) $(SAM_OBJ) $(LIB_OBJ)  $(LIBSMB_OBJ) $(UBIQX_OBJ) $(READLINE_OBJ) lib/util_seaccess.o $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(GROUPDB_OBJ)
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -373,8 +373,8 @@ WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) $(UBIQX_OBJ) \
 SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o 
 
-SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
+SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(LIBSMB_OBJ) \
+		   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
 	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
 	   $(POPT_LIB_OBJ)
 
@@ -436,8 +436,8 @@ SMBWRAPPER_OBJ1 = smbwrapper/wrapped.o
 SMBWRAPPER_OBJ = $(SMBW_OBJ) $(SMBWRAPPER_OBJ1)
 
 LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
-		   libsmb/libsmb_cache.o $(LIB_OBJ) \
-	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
+		   libsmb/libsmb_cache.o $(PARAM_OBJ) $(LIB_OBJ) \
+	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ)
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -445,7 +445,7 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 
 LIBBIGBALLOFMUD_MAJOR = 0
 
-LIBBIGBALLOFMUD_OBJ = $(LIB_OBJ) $(UBIQX_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
+LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_OBJ) $(UBIQX_OBJ) $(SECRETS_OBJ) \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
 	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ)
 
@@ -462,9 +462,9 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o
 
-NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
+NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+	  $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ)
 
@@ -484,19 +484,19 @@ NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBNMB_OBJ) \
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o 
 
-SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) \
-	$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) \
+	$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
+MASKTEST_OBJ = torture/masktest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-MSGTEST_OBJ = torture/msgtest.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
+MSGTEST_OBJ = torture/msgtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-LOCKTEST_OBJ = torture/locktest.o $(LOCKING_OBJ) $(KRBCLIENT_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ)
+LOCKTEST_OBJ = torture/locktest.o $(PARAM_OBJ) $(LOCKING_OBJ) $(KRBCLIENT_OBJ) \
+			   $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
+NSSTEST_OBJ = torture/nsstest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
@@ -507,16 +507,15 @@ VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
 
-LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) \
-		$(KRBCLIENT_OBJ) $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ)
+LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
+		$(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-		$(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		 $(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
+SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
+			   $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) \
+			   $(PASSDB_GET_SET_OBJ) $(LIBMSRPC_OBJ) $(SECRETS_OBJ) \
+			   $(POPT_LIB_OBJ)
 
-TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
+TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_OBJ) $(UBIQX_OBJ)
 
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
@@ -530,7 +529,7 @@ RPCTORTURE_OBJ = torture/rpctorture.o \
 
 DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 
-SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
+SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ) $(KRBCLIENT_OBJ) 
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) \
@@ -1121,8 +1120,8 @@ installclientlib:
 
 # Python extensions
 
-PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
-	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+PYTHON_OBJS = $(PARAM_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
+	$(UBIQX_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
 
 python_ext: $(PYTHON_OBJS)
