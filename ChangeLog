@@ -1,6 +1,20 @@
 Tue Sep 23 03:00:53 1997  Assar Westerlund  <assar@sics.se>
 
- 	(krb5_sendto_kdc): no data returned means no contact?
+	* lib/krb5/encrypt.c: fix checksumtype for des3-cbc-sha1
+
+	* lib/krb5/rd_safe.c: fix check for keyed and collision-proof
+ 	checksum
+
+	* lib/krb5/context.c (valid_etype): remove hard-coded constants
+	(default_etypes): include DES3
+
+	* kdc/kerberos5.c: fix check for keyed and collision-proof
+ 	checksum
+
+	* admin/util.c (init_des_key, set_password): DES3 keys also
+
+ 	* lib/krb/send_to_kdc.c (krb5_sendto_kdc): no data returned means
+ 	no contact?
 
 	* lib/krb5/addr_families.c: fix typo in `ipv6_anyaddr'
 
