@@ -75,24 +75,69 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 
 static SL_cmd commands[] = {
     /* commands that are only available with `-l' */
-    { "dump",		dump, "dump [file]"},
-    { "load",		load, "load file"},
-    { "merge",		merge, "merge file"},
-    { "init",		init, "init realm..."},
+    { 
+	"dump",		dump,		"dump [file]",
+	"Dumps the database in a human readable format to the\n"
+	"specified file, or the standard out." 
+    },
+    { 
+	"load",		load,		"load file",
+	"Loads a previously dumped file."
+    },
+    { 
+	"merge",	merge,		"merge file" ,
+	"Merges the contents of a dump file into the database."
+    },
+    { 
+	"init",		init,		"init realm...",
+	"Initializes the default principals for a realm.\n"
+	"Creates the database if necessary."
+    },
     /* common commands */
-    { "add_new_key",	add_new_key, 	"add_new_key principal"},
+    { 
+	"add",	add_new_key, 	"add principal" ,
+	"Adds a principal to the database."
+    },
+    { "add_new_key"},
     { "ank"},
-    { "cpw",		cpw_entry, 	"cpw_entry principal..."},
+    { 
+	"passwd",	cpw_entry, 	"passwd expression..." ,
+	"Changes the password of one or more principals\n"
+	"matching the expressions."
+    },
     { "change_password"},
-    { "passwd"},
-    { "del_entry",	del_entry, 	"del_entry principal..."},
-    { "delete" },
-    { "ext_keytab",	ext_keytab, 	"ext_keytab principal..."},
-    { "get_entry",	get_entry, 	"get_entry principal"},
-    { "rename",		rename_entry, 	"rename source target"},
-    { "modify",		mod_entry, 	"modify principal" },
-    { "privileges",	get_privs,	"privileges" },
-    { "list_principals",list_princs, 	"list expression..." },
+    { "cpw"},
+    { 
+	"delete",	del_entry, 	"delete expression...",
+	"Deletes all principals matching the expressions."
+    },
+    { "del_entry" },
+    { 
+	"ext_keytab",	ext_keytab, 	"ext_keytab expression...",
+	"Extracts the keys of all principals matching the expressions,\n"
+	"and stores them in a keytab." 
+    },
+    { 
+	"get",		get_entry, 	"get expression...",
+	"Shows information about principals matching the expressions."
+    },
+    { "get_entry" },
+    { 
+	"rename",	rename_entry, 	"rename source target",
+	"Renames `source' to `target'."
+    },
+    { 
+	"modify",	mod_entry, 	"modify principal",
+	"Modifies some attributes of the specified principal."
+    },
+    { 
+	"privileges",	get_privs,	"privileges",
+	"Shows which kinds of operations you are allowed to perform."
+    },
+    { 
+	"list",		list_princs,	"list expression...", 
+	"Lists principals in a terse format. The same as `get -t'." 
+    },
     { "help",		help, "help"},
     { "?"},
     { "exit",		exit_kadmin, "exit"},
