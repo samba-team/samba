@@ -42,6 +42,7 @@ static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
+	pstring_sub(remark,"%S",lp_servicename(snum));
 	len_net_name = strlen(net_name);
 
 	/* work out the share type */
@@ -73,6 +74,7 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
+	pstring_sub(remark,"%S",lp_servicename(snum));
 	pstrcpy(path, lp_pathname(snum));
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
