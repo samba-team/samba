@@ -84,8 +84,13 @@ static uint32 domain_sequence_number(struct winbindd_domain *domain)
 	result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
 							switch_value, &ctr);
 
-	if (NT_STATUS_IS_OK(result))
+	if (NT_STATUS_IS_OK(result)) {
 		seqnum = ctr.info.inf2.seq_num;
+		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)seqnum ));
+	} else {
+		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",
+			(unsigned)seqnum, domain->name ));
+	}
 
   done:
 
@@ -134,9 +139,10 @@ static uint32 cached_sequence_number(struct winbindd_domain *domain)
 static BOOL cache_domain_expired(struct winbindd_domain *domain, 
                                  uint32 seq_num)
 {
-	if (cached_sequence_number(domain) != seq_num) {
-		DEBUG(3,("seq %u for %s has expired\n", (unsigned)seq_num, 
-			 domain->name));
+	uint32 cache_seq = cached_sequence_number(domain);
+	if (cache_seq != seq_num) {
+		DEBUG(3,("seq %u for %s has expired (not == %u)\n", (unsigned)seq_num, 
+			 domain->name, (unsigned)cache_seq ));
 		return True;
 	}
 
