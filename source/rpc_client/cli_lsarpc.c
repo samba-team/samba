@@ -1143,10 +1143,12 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 		if (p && r_q.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,
-			      ("LSA_ENUMTRUSTDOM: %s\n",
-			       get_nt_error_msg(r_q.status)));
 			p = r_q.status == 0x8000001a || r_q.status == 0x0;
+			if (!p) {
+				DEBUG(0,
+				      ("LSA_ENUMTRUSTDOM: %s\n",
+				       get_nt_error_msg(r_q.status)));
+			}
 		}
 
 		if (p)
