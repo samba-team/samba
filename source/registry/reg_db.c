@@ -106,6 +106,12 @@ static BOOL init_registry_data( void )
 	if ( !regdb_store_reg_keys( keyname, &subkeys ) )
 		return False;
 		
+	/* HKEY_CLASSES_ROOT*/
+		
+	pstrcpy( keyname, KEY_HKCR );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ) )
+		return False;
+		
 	return True;
 }
 
@@ -233,6 +239,7 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	int i;
 	fstring subkeyname;
 
+	DEBUG(10,("regdb_fetch_reg_keys: Enter key => [%s]\n", key ? key : "NULL"));
 	
 	pstrcpy( path, key );
 	
@@ -257,6 +264,8 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	}
 
 	SAFE_FREE( dbuf.dptr );
+	
+	DEBUG(10,("regdb_fetch_reg_keys: Exit [%d] items\n", num_items));
 	
 	return num_items;
 }

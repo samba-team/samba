@@ -78,33 +78,35 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 				char *subkeyname, uint32 access_granted  )
 {
 	REGISTRY_KEY 	*regkey = NULL;
-	pstring      	parent_keyname;
 	NTSTATUS     	result = NT_STATUS_OK;
 	REGSUBKEY_CTR	subkeys;
 	
-	if ( parent ) {
-		pstrcpy( parent_keyname, parent->name );
-		pstrcat( parent_keyname, "\\" );
-	}
-	else
-		*parent_keyname = '\0';
+	DEBUG(7,("open_registry_key: name = [%s][%s]\n", 
+		parent ? parent->name : "NULL", subkeyname));
 
-	DEBUG(7,("open_registry_key: name = [%s][%s]\n", parent_keyname, subkeyname));
-
-	/* All registry keys **must** have a name of non-zero length */
-	
-	if (!subkeyname || !*subkeyname )
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			
 	if ((regkey=(REGISTRY_KEY*)malloc(sizeof(REGISTRY_KEY))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 		
 	ZERO_STRUCTP( regkey );
 	
-	/* copy the name */
+	/* 
+	 * very crazy, but regedit.exe on Win2k will attempt to call 
+	 * REG_OPEN_ENTRY with a keyname of "".  We should return a new 
+	 * (second) handle here on the key->name.  regedt32.exe does 
+	 * not do this stupidity.   --jerry
+	 */
 	
-	pstrcpy( regkey->name, parent_keyname );
-	pstrcat( regkey->name, subkeyname );
+	if (!subkeyname || !*subkeyname ) {
+		pstrcpy( regkey->name, parent->name );	
+	}
+	else {
+		pstrcpy( regkey->name, "" );
+		if ( parent ) {
+			pstrcat( regkey->name, parent->name );
+			pstrcat( regkey->name, "\\" );
+		}
+		pstrcat( regkey->name, subkeyname );
+	}
 	
 	/* Look up the table of registry I/O operations */
 
@@ -227,7 +229,8 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	if ( !key )
 		return False;
 
-	ZERO_STRUCTP( &val );
+
+	ZERO_STRUCTP( &values );
 	
 	regval_ctr_init( &values );
 	
@@ -274,7 +277,6 @@ NTSTATUS _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 }
 
 /*******************************************************************
- reg_reply_open
  ********************************************************************/
 
 NTSTATUS _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
@@ -283,7 +285,14 @@ NTSTATUS _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *
 }
 
 /*******************************************************************
- reg_reply_open
+ ********************************************************************/
+
+NTSTATUS _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HKCR *q_u, REG_R_OPEN_HKCR *r_u)
+{
+	return open_registry_key( p, &r_u->pol, NULL, KEY_HKCR, 0x0 );
+}
+
+/*******************************************************************
  ********************************************************************/
 
 NTSTATUS _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HKU *q_u, REG_R_OPEN_HKU *r_u)
@@ -310,7 +319,7 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
 	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
 	
 	DEBUG(5,("reg_open_entry: Enter\n"));
-	
+		   
 	result = open_registry_key( p, &pol, key, name, 0x0 );
 	
 	init_reg_r_open_entry( r_u, &pol, result );
@@ -326,64 +335,83 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
 
 NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
-	NTSTATUS status = NT_STATUS_OK;
-	char *value = NULL;
-	uint32 type = 0x1; /* key type: REG_SZ */
-	UNISTR2 *uni_key = NULL;
-	BUFFER2 *buf = NULL;
-	fstring name;
-	REGISTRY_KEY *key = find_regkey_index_by_hnd( p, &q_u->pol );
+	NTSTATUS 		status = NT_STATUS_NO_SUCH_FILE;
+	fstring 		name;
+	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	REGISTRY_VALUE		*val = NULL;
+	REGISTRY_VALUE		emptyval;
+	REGVAL_CTR		regvals;
+	int			i;
 
 	DEBUG(5,("_reg_info: Enter\n"));
 
-	if ( !key )
+	if ( !regkey )
 		return NT_STATUS_INVALID_HANDLE;
 		
-	DEBUG(7,("_reg_info: policy key name = [%s]\n", key->name));
-
+	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
+	
 	rpcstr_pull(name, q_u->uni_type.buffer, sizeof(name), q_u->uni_type.uni_str_len*2, 0);
 
-	DEBUG(5,("reg_info: checking subkey: %s\n", name));
+	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
 
-	uni_key = (UNISTR2 *)talloc_zero(p->mem_ctx, sizeof(UNISTR2));
-	buf = (BUFFER2 *)talloc_zero(p->mem_ctx, sizeof(BUFFER2));
+	ZERO_STRUCTP( &regvals );
+	
+	regval_ctr_init( &regvals );
 
-	if (!uni_key || !buf)
-		return NT_STATUS_NO_MEMORY;
-
+	/* couple of hard coded registry values */
+	
 	if ( strequal(name, "RefusePasswordChange") ) {
-		type=0xF770;
-		status = NT_STATUS_NO_SUCH_FILE;
-		init_unistr2(uni_key, "", 0);
-		init_buffer2(buf, (uint8*) uni_key->buffer, uni_key->uni_str_len*2);
-		
-		buf->buf_max_len=4;
-
+		ZERO_STRUCTP( &emptyval );
+		val = &emptyval;
+	
 		goto out;
 	}
 
-	switch (lp_server_role()) {
-		case ROLE_DOMAIN_PDC:
-		case ROLE_DOMAIN_BDC:
-			value = "LanmanNT";
-			break;
-		case ROLE_STANDALONE:
-			value = "ServerNT";
-			break;
-		case ROLE_DOMAIN_MEMBER:
-			value = "WinNT";
-			break;
+	if ( strequal(name, "ProductType") ) {
+		/* This makes the server look like a member server to clients */
+		/* which tells clients that we have our own local user and    */
+		/* group databases and helps with ACL support.                */
+		
+		switch (lp_server_role()) {
+			case ROLE_DOMAIN_PDC:
+			case ROLE_DOMAIN_BDC:
+				regval_ctr_addvalue( &regvals, "ProductType", REG_SZ, "LanmanNT", strlen("LanmanNT")+1 );
+				break;
+			case ROLE_STANDALONE:
+				regval_ctr_addvalue( &regvals, "ProductType", REG_SZ, "ServerNT", strlen("ServerNT")+1 );
+				break;
+			case ROLE_DOMAIN_MEMBER:
+				regval_ctr_addvalue( &regvals, "ProductType", REG_SZ, "WinNT", strlen("WinNT")+1 );
+				break;
+		}
+		
+		val = regval_ctr_specific_value( &regvals, 0 );
+		
+		status = NT_STATUS_OK;
+		
+		goto out;
 	}
 
-	/* This makes the server look like a member server to clients */
-	/* which tells clients that we have our own local user and    */
-	/* group databases and helps with ACL support.                */
+	/* else fall back to actually looking up the value */
+	
+	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
+	{
+		DEBUG(10,("_reg_info: Testing value [%s]\n", val->valuename));
+		if ( StrCaseCmp( val->valuename, name ) == 0 ) {
+			DEBUG(10,("_reg_info: Found match for value [%s]\n", name));
+			status = NT_STATUS_OK;
+			break;
+		}
+		
+		free_registry_value( val );
+	}
 
-	init_unistr2(uni_key, value, strlen(value)+1);
-	init_buffer2(buf, (uint8*)uni_key->buffer, uni_key->uni_str_len*2);
   
- out:
-	init_reg_r_info(q_u->ptr_buf, r_u, buf, type, status);
+out:
+	new_init_reg_r_info(q_u->ptr_buf, r_u, val, status);
+	
+	regval_ctr_destroy( &regvals );
+	free_registry_value( val );
 
 	DEBUG(5,("_reg_info: Exit\n"));
 
@@ -455,7 +483,7 @@ NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u
 {
 	NTSTATUS 	status = NT_STATUS_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
-	char		*subkey;
+	char		*subkey = NULL;
 	
 	
 	DEBUG(5,("_reg_enum_key: Enter\n"));
@@ -518,7 +546,7 @@ NTSTATUS _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALU
 	DEBUG(5,("_reg_enum_value: Exit\n"));
 	
 done:	
-	SAFE_FREE( val );
+	free_registry_value( val );
 	
 	return status;
 }

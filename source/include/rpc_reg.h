@@ -26,7 +26,6 @@
 
 /* winreg pipe defines 
    NOT IMPLEMENTED !!
-#define REG_OPEN_HKCR		0x00
 #define _REG_UNK_01		0x01
 #define _REG_UNK_03		0x03
 #define REG_CREATE_KEY		0x06
@@ -45,6 +44,7 @@
 */
 
 /* Implemented */
+#define REG_OPEN_HKCR		0x00
 #define REG_OPEN_HKLM		0x02
 #define REG_OPEN_HKU		0x04
 #define REG_CLOSE		0x05
@@ -65,6 +65,7 @@
 
 #define KEY_HKLM	"HKLM"
 #define KEY_HKU		"HKU"
+#define KEY_HKCR	"HKCR"
 #define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
 #define KEY_TREE_ROOT	""
 
@@ -93,12 +94,16 @@ typedef struct {
 	fstring		valuename;
 	uint16		type;
 	uint32		size;	/* in bytes */
+	void 		*data_p;
+#if 0
 	union {
 		char	*string;
-		uint32	dword;
+		uint32	*dword;
 		uint8	*binary;
 		void 	*void_ptr;	/* for casting only */
 	} data;
+#endif
+
 } REGISTRY_VALUE;
 
 /* container for regostry values */
@@ -145,7 +150,7 @@ typedef struct _RegistryKey {
 	struct _RegistryKey *prev, *next;
 
 	POLICY_HND	hnd;
-	fstring 	name; 	/* full name of registry key */
+	pstring 	name; 	/* full name of registry key */
 	REGISTRY_HOOK	*hook;
 	
 } REGISTRY_KEY;
@@ -551,7 +556,7 @@ typedef struct r_reg_info_info
 	uint32 type;		/* key datatype  */
 
 	uint32 ptr_uni_val;	/* key value pointer */
-	BUFFER2 *uni_val;	/* key value */
+	BUFFER2 uni_val;	/* key value */
 
 	uint32 ptr_max_len;
 	uint32 buf_max_len;
