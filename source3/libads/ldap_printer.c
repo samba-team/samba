@@ -53,6 +53,20 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 	return status;	
 }
 
+ADS_STATUS ads_find_printers(ADS_STRUCT *ads, void **res)
+{
+	char *ldap_expr;
+	const char *attrs[] = { "objectClass", "printerName", "location", "driverName",
+				"serverName", "description", NULL };
+
+	/* For the moment only display all printers */
+
+	ldap_expr = "(&(!(showInAdvancedViewOnly=TRUE))(uncName=*)"
+		"(objectCategory=printQueue))";
+
+	return ads_search(ads, res, ldap_expr, attrs);
+}
+
 /*
   modify a printer entry in the directory
 */
@@ -338,4 +352,3 @@ BOOL get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 }
 
 #endif
-

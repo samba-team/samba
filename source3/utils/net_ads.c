@@ -726,6 +726,8 @@ int net_ads_join(int argc, const char **argv)
 int net_ads_printer_usage(int argc, const char **argv)
 {
 	d_printf(
+"\nnet ads printer search <printer>"
+"\n\tsearch for a printer in the directory"
 "\nnet ads printer info <printer> <server>"
 "\n\tlookup info in directory for printer on server"
 "\n\t(note: printer defaults to \"*\", server defaults to local)\n"
@@ -736,6 +738,35 @@ int net_ads_printer_usage(int argc, const char **argv)
 "\n\tremove printer from directory"
 "\n\t(note: printer name is required)\n");
 	return -1;
+}
+
+static int net_ads_printer_search(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	void *res = NULL;
+
+	if (!(ads = ads_startup())) 
+		return -1;
+
+	rc = ads_find_printers(ads, &res);
+
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_find_printer: %s\n", ads_errstr(rc));
+		ads_msgfree(ads, res);
+		return -1;
+	}
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("No results found\n");
+		ads_msgfree(ads, res);
+		return -1;
+	}
+
+	ads_dump(ads, res);
+	ads_msgfree(ads, res);
+
+	return 0;
 }
 
 static int net_ads_printer_info(int argc, const char **argv)
@@ -882,6 +913,7 @@ static int net_ads_printer_remove(int argc, const char **argv)
 static int net_ads_printer(int argc, const char **argv)
 {
 	struct functable func[] = {
+		{"SEARCH", net_ads_printer_search},
 		{"INFO", net_ads_printer_info},
 		{"PUBLISH", net_ads_printer_publish},
 		{"REMOVE", net_ads_printer_remove},
