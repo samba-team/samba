@@ -352,6 +352,7 @@ krb5_rd_req(krb5_context context,
     krb5_error_code ret;
     krb5_ap_req ap_req;
     krb5_keyblock *keyblock = NULL;
+    krb5_principal service = NULL;
 
     if (*auth_context == NULL) {
 	ret = krb5_auth_con_init(context, auth_context);
@@ -363,6 +364,13 @@ krb5_rd_req(krb5_context context,
     if(ret)
 	return ret;
 
+    if(server == NULL){
+	principalname2krb5_principal(&service,
+				     ap_req.ticket.sname,
+				     ap_req.ticket.realm);
+	server = service;
+    }
+
     if(ap_req.ap_options.use_session_key == 0 || 
        (*auth_context)->keyblock == NULL){
 	ret = get_key_from_keytab(context, 
@@ -371,8 +379,7 @@ krb5_rd_req(krb5_context context,
 				  server,
 				  keytab,
 				  &keyblock);
-	if(ret)
-	    return ret;
+	goto out;
     }
 	
 
@@ -388,6 +395,8 @@ krb5_rd_req(krb5_context context,
 	krb5_free_keyblock(context, keyblock);
 
     free_AP_REQ(&ap_req);
-
+out:
+    if(service)
+	krb5_free_principal(context, service);
     return ret;
 }
