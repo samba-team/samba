@@ -528,6 +528,7 @@ static struct shmem_ops shmops = {
 /*******************************************************************
   open the shared memory
   ******************************************************************/
+
 struct shmem_ops *sysv_shm_open(int ronly)
 {
 	BOOL other_processes;
@@ -536,6 +537,8 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	union semun su;
 	int i;
 	pid_t pid;
+	struct passwd *root_pwd = sys_getpwuid((uid_t)0);
+	gid_t root_gid = root_pwd ? root_pwd->pw_gid : (gid_t)0;
 
 	read_only = ronly;
 
@@ -593,7 +596,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	hash_size = sem_ds.sem_nsems-1;
 
 	if (!read_only) {
-		if (sem_ds.sem_perm.cuid != 0 || sem_ds.sem_perm.cgid != 0) {
+		if (sem_ds.sem_perm.cuid != 0 || sem_ds.sem_perm.cgid != root_gid) {
 			DEBUG(0,("ERROR: root did not create the semaphore\n"));
 			return NULL;
 		}
@@ -684,7 +687,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	}
 
 	if (!read_only) {
-		if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != 0) {
+		if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != root_gid) {
 			DEBUG(0,("ERROR: root did not create the shmem\n"));
 			global_unlock();
 			return NULL;
