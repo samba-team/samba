@@ -372,10 +372,15 @@ static long unoct(char *p, int ndgs)
 }
 
 /****************************************************************************
-Compare two strings in a slash insensitive way
+Compare two strings in a slash insensitive way, allowing s1 to match s2 
+if s1 is an "initial" string (up to directory marker).  Thus, if s2 is 
+a file in any subdirectory of s1, declare a match.
 ***************************************************************************/
-int strslashcmp(char *s1,char *s2)
+static
+int strslashcmp(char *s1, char *s2)
 {
+  char *s1_0=s1;
+
   while(*s1 && *s2 &&
 	(*s1 == *s2
 	 || tolower(*s1) == tolower(*s2)
@@ -383,6 +388,17 @@ int strslashcmp(char *s1,char *s2)
 	 || (*s1 == '/' && *s2=='\\'))) {
 	  s1++; s2++;
   }
+
+  /* if s1 has a trailing slash, it compared equal, so s1 is an "initial" 
+     string of s2.
+   */
+  if (!*s1 && s1 != s1_0 && (*(s1-1) == '/' || *(s1-1) == '\\')) return 0;
+
+  /* ignore trailing slash on s1 */
+  if (!*s2 && (*s1 == '/' || *s1 == '\\') && !*(s1+1)) return 0;
+
+  /* check for s1 is an "initial" string of s2 */
+  if (*s2 == '/' || *s2 == '\\') return 0;
 
   return *s1-*s2;
 }
@@ -1127,11 +1143,6 @@ static void do_tar(file_info *finfo)
 
     strcpy(exclaim, cur_dir);
     *(exclaim+strlen(exclaim)-1)='\0';
-
-    if (clipfind(cliplist, clipn, exclaim)) {
-      DEBUG(3,("Skipping directory %s\n", exclaim));
-      return;
-    }
 
     strcat(exclaim, "\\");
     strcat(exclaim, finfo->name);
