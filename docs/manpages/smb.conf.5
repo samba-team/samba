@@ -3926,6 +3926,8 @@ Default: \fBmax open files = 10000\fR
 This parameter limits the maximum number of 
 jobs allowable in a Samba printer queue at any given moment.
 If this number is exceeded, \fB smbd(8)\fRwill remote "Out of Space" to the client.
+See all \fItotal
+print jobs\fR.
 
 Default: \fBmax print jobs = 1000\fR
 
@@ -6246,12 +6248,13 @@ Synonym for \fI debug timestamp\fR.
 \fBtotal print jobs (G)\fR
 This parameter accepts an integer value which defines
 a limit on the maximum number of print jobs that will be accepted 
-on a printer share at any given time. If a print job is submitted
+system wide at any given time. If a print job is submitted
 by a client which will exceed this number, then smbd will return an 
 error indicating that no space is available on the server. The 
 default value of 0 means that no such limit exists. This parameter
 can be used to prevent a server from exceeding its capacity and is
-designed as a printing throttle.
+designed as a printing throttle. See also 
+\fImax print jobs\fR.
 
 Default: \fBtotal print jobs = 0\fR
 

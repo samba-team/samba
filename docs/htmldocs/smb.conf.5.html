@@ -9968,6 +9968,16 @@ CLASS="COMMAND"
 >		smbd(8)</B
 ></A
 > will remote "Out of Space" to the client.
+		See all <A
+HREF="#TOTALPRINTJOBS"
+><TT
+CLASS="PARAMETER"
+><I
+>total
+		print jobs</I
+></TT
+></A
+>.
 		</P
 ><P
 >Default: <B
@@ -15680,12 +15690,22 @@ NAME="TOTALPRINTJOBS"
 ><P
 >This parameter accepts an integer value which defines
 		a limit on the maximum number of print jobs that will be accepted 
-		on a printer share at any given time.  If a print job is submitted
+		system wide at any given time.  If a print job is submitted
 		by a client which will exceed this number, then smbd will return an 
 		error indicating that no space is available on the server.  The 
 		default value of 0 means that no such limit exists.  This parameter
 		can be used to prevent a server from exceeding its capacity and is
-		designed as a printing throttle.</P
+		designed as a printing throttle.  See also 
+		<A
+HREF="#MAXPRINTJOBS"
+><TT
+CLASS="PARAMETER"
+><I
+>max print jobs</I
+></TT
+></A
+>.
+		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -17135,7 +17155,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5399"
+NAME="AEN5403"
 ></A
 ><H2
 >WARNINGS</H2
@@ -17165,7 +17185,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5405"
+NAME="AEN5409"
 ></A
 ><H2
 >VERSION</H2
@@ -17176,7 +17196,7 @@ NAME="AEN5405"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5408"
+NAME="AEN5412"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -17255,7 +17275,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5428"
+NAME="AEN5432"
 ></A
 ><H2
 >AUTHOR</H2
