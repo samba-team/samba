@@ -1,3 +1,8 @@
+2003-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_in_tkt.c (make_pa_enc_timestamp): make sure first
+	argument to krb5_us_timeofday have correct type
+	
 2003-05-05  Assar Westerlund  <assar@kth.se>
 
 	* include/make_crypto.c (main): include aes.h if ENABLE_AES
