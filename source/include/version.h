@@ -1,1 +1,1 @@
-#define VERSION "2.1.0-prealpha"
+#define VERSION "TNG-prealpha"
