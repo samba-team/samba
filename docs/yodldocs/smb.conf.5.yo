@@ -4130,7 +4130,7 @@ lose elections to Windows machines. See BROWSING.txt in the Samba
 docs/ directory for details.
 
   bf(Default:)
-tt(	os level = 0)
+tt(	os level = 20)
 
   bf(Example:)
 tt(	os level = 65    ; This will win against any NT Server)
