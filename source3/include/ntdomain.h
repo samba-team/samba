@@ -164,22 +164,22 @@ typedef struct pipes_struct
 	/*
 	 * Unix user name and credentials.
 	 */
-	fstring unix_user_name;
-	uid_t uid;
-	gid_t gid;
 
-    /*
-     * Set to true when an RPC bind has been done on this pipe.
-     */
+	fstring pipe_user_name;
+	user_struct pipe_user;
 
-    BOOL pipe_bound;
-
-    /*
-     * Set to true when we should return fault PDU's for everything.
-     */
-
-    BOOL fault_state;
-
+	/*
+	 * Set to true when an RPC bind has been done on this pipe.
+	 */
+	
+	BOOL pipe_bound;
+	
+	/*
+	 * Set to true when we should return fault PDU's for everything.
+	 */
+	
+	BOOL fault_state;
+	
 	/*
 	 * Struct to deal with multiple pdu inputs.
 	 */

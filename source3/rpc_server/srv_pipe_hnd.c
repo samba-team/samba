@@ -106,6 +106,8 @@ static BOOL pipe_init_outgoing_data(output_data *o_data)
  Attempt to find a remote process to communicate RPC's with.
 ****************************************************************************/
 
+#if 0
+
 static void attempt_remote_rpc_connect(pipes_struct *p)
 {
 	struct user_creds usr;
@@ -151,6 +153,8 @@ static void attempt_remote_rpc_connect(pipes_struct *p)
 	if (p->m == NULL)
 		DEBUG(10,("attempt_remote_rpc_connect: msrpc redirect failed - using local implementation.\n"));
 }
+
+#endif
 
 /****************************************************************************
  Find first available pipe slot.
@@ -248,8 +252,10 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	 */	
 	prs_init(&p->out_data.rdata, 0, 4, MARSHALL);
 	
-	p->uid = (uid_t)-1;
-	p->gid = (gid_t)-1;
+	ZERO_STRUCT(p->pipe_user);
+
+	p->pipe_user.uid = (uid_t)-1;
+	p->pipe_user.gid = (gid_t)-1;
 	
 	fstrcpy(p->name, pipe_name);
 	
