@@ -1,0 +1,41 @@
+Index: configure.in
+===================================================================
+RCS file: /data/cvs/samba/source/configure.in,v
+retrieving revision 1.292
+diff -u -r1.292 configure.in
+--- configure.in	2002/03/19 02:32:31	1.292
++++ configure.in	2002/03/19 23:32:36
+@@ -2690,7 +2690,7 @@
+ builddir=`pwd`
+ AC_SUBST(builddir)
+ 
+-AC_OUTPUT(include/stamp-h Makefile)
++AC_OUTPUT(include/stamp-h Makefile python/setup.py)
+ 
+ #################################################
+ # Print very concise instructions on building/use
+Index: Makefile.in
+===================================================================
+RCS file: /data/cvs/samba/source/Makefile.in,v
+retrieving revision 1.458
+diff -u -r1.458 Makefile.in
+--- Makefile.in	2002/03/19 12:13:02	1.458
++++ Makefile.in	2002/03/19 23:32:08
+@@ -778,6 +778,17 @@
+ 	-$(INSTALLCMD) -d ${prefix}/include
+ 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
+ 
++# Python extensions
++
++PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
++	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)
++
++python_ext: $(PYTHON_OBJS)
++	@echo python python/setup.py build
++	@PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(FLAGS)" \
++		python python/setup.py build
++
++
+ # revert to the previously installed version
+ revert:
+ 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) 
