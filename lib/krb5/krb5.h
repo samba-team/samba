@@ -42,7 +42,7 @@
 #define __KRB5_H__
 
 #include <time.h>
-#include <bits.h>
+#include <krb5-types.h>
 
 #include <des.h>
 #include <asn1_err.h>

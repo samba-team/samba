@@ -52,7 +52,7 @@
 
 #include <sys/types.h>
 
-#include <bits.h>
+#include <krb5-types.h>
 
 /*
  * Now define the three implementation-dependent types.

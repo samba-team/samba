@@ -45,7 +45,7 @@
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
-#include <bits.h>
+#include <krb5-types.h>
 
 struct md5 {
   unsigned offset;

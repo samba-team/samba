@@ -44,7 +44,7 @@ RCSID("$Id$");
 
 #include <des.h>
 #include <des_locl.h>
-#include <bits.h>
+#include <krb5-types.h>
 
 #include <string.h>
 
