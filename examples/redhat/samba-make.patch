@@ -1,5 +1,5 @@
-*** samba-1.9.16p11/source/Makefile.orig
---- samba-1.9.16p11/source/Makefile
+*** samba-1.9.17a1/source/Makefile.orig	Sun May 11 22:44:55 1997
+--- samba-1.9.17a1/source/Makefile	Sun May 11 22:51:53 1997
 ***************
 *** 5,20 ****
   
@@ -11,7 +11,7 @@
   # architectures or share the samba binaries across NFS then
   # you will probably want to change this layout.
 ! BASEDIR = /usr/local/samba
-  BINDIR = $(BASEDIR)/bin
+! BINDIR = /usr/local/bin
 ! SBINDIR = $(BASEDIR)/bin
 ! LIBDIR = $(BASEDIR)/lib
 ! VARDIR = $(BASEDIR)/var
@@ -28,10 +28,10 @@
   # architectures or share the samba binaries across NFS then
   # you will probably want to change this layout.
 ! BASEDIR = /usr
-  BINDIR = $(BASEDIR)/bin
+! BINDIR = $(BASEDIR)/bin
 ! SBINDIR = $(BASEDIR)/sbin
 ! LIBDIR = /etc
-! VARDIR = /var
+! VARDIR = /var/log
   
   # The permissions to give the executables
   INSTALLPERMS = 0755
@@ -55,7 +55,7 @@
   # RPM_OPT_FLAGS is needed when building an RPM distribution package
   # for RedHat Linux.
 ! FLAGS1 = $(RPM_OPT_FLAGS)
-! #FLAGS1 = -O
+! # FLAGS1 = -O
   LIBS1 = 
   
   # You will need to use a ANSI C compiler. This means under SunOS 4 you can't 
@@ -65,13 +65,7 @@
   # This may help with some versions of make
   SHELL = /bin/sh
 ***************
-*** 42,54 ****
-  # set these to where to find various files
-  # These can be overridden by command line switches (see smbd(8))
-  # or in smb.conf (see smb.conf(5))
-! SMBLOGFILE = $(VARDIR)/log.smb
-! NMBLOGFILE = $(VARDIR)/log.nmb
-  CONFIGFILE = $(LIBDIR)/smb.conf
+*** 48,54 ****
   LMHOSTSFILE = $(LIBDIR)/lmhosts
   
   # the directory where lock files go
@@ -79,17 +73,11 @@
   
   # set this to the default group you want your machine to appear in
   # for browsing. This can also be set in nmbd (see nmbd(8))
---- 42,54 ----
-  # set these to where to find various files
-  # These can be overridden by command line switches (see smbd(8))
-  # or in smb.conf (see smb.conf(5))
-! SMBLOGFILE = $(VARDIR)/log/log.smb
-! NMBLOGFILE = $(VARDIR)/log/log.nmb
-  CONFIGFILE = $(LIBDIR)/smb.conf
+--- 48,54 ----
   LMHOSTSFILE = $(LIBDIR)/lmhosts
   
   # the directory where lock files go
-! LOCKDIR = $(VARDIR)/lock/samba
+! LOCKDIR = /var/lock/samba
   
   # set this to the default group you want your machine to appear in
   # for browsing. This can also be set in nmbd (see nmbd(8))
@@ -113,7 +101,7 @@
   # This is for AFS authentication.  If you use AFS then set AFS_BASE 
   # according to your system layout, and uncomment the other lines as well.
 ***************
-*** 180,187 ****
+*** 181,188 ****
   # contributed by Andrew.Tridgell@anu.edu.au
   # AXPROC defines DEC Alpha Processor
   # FLAGSM = -DLINUX -DAXPROC
@@ -122,7 +110,7 @@
   
   # Use this for Linux with shadow passwords and quota
   # contributed by xeno@mix.hive.no
---- 180,187 ----
+--- 181,188 ----
   # contributed by Andrew.Tridgell@anu.edu.au
   # AXPROC defines DEC Alpha Processor
   # FLAGSM = -DLINUX -DAXPROC
