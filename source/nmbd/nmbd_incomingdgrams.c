@@ -547,7 +547,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 {                     
   char outbuf[1024];
   char *p, *countptr, *nameptr;
-  int count = 0;
+  unsigned int count = 0;
   int len;
   struct server_record *servrec;
 
@@ -582,7 +582,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
     if((sizeof(outbuf) - len) < 16)
       break;
 
-    if(count >= max_number_requested)
+    if(count >= (unsigned int)max_number_requested)
       break;
 
     if(strnequal(servrec->serv.name, myname,15))
