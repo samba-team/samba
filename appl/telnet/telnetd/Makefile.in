@@ -50,7 +50,7 @@ all: $(PROGS)
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd$(EXECSUFFIX): $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../libtelnet -ltelnet $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
 
 install: all
 	$(MKINSTALLDIRS) $(libexecdir)
