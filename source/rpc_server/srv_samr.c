@@ -38,7 +38,7 @@ extern rid_name domain_alias_rids[];
   dynamically returns the correct user info..... JRA.
  ********************************************************************/
 
-static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
+static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
                                 int *total_entries, int *num_entries,
                                 int max_num_entries,
                                 uint16 acb_mask)
@@ -51,14 +51,14 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	if (pw_buf == NULL) return False;
 
-	vp = startsmbpwent(False);
+	vp = startsampwent(False);
 	if (!vp)
 	{
-		DEBUG(0, ("get_smbpwd_entries: Unable to open SMB password file.\n"));
+		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password file.\n"));
 		return False;
 	}
 
-	while (((pwd = getsmbpwent(vp)) != NULL) && (*num_entries) < max_num_entries)
+	while (((pwd = getsampwent(vp)) != NULL) && (*num_entries) < max_num_entries)
 	{
 		int user_name_len = strlen(pwd->smb_name);
 		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len-1);
@@ -75,7 +75,7 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
-		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x",
+		DEBUG(5, ("get_sampwd_entries: idx: %d user %s, uid %d, acb %x",
 		(*num_entries), pwd->smb_name, pwd->smb_userid, pwd->acct_ctrl));
 
 		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
@@ -91,7 +91,7 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
 		(*total_entries)++;
 	}
 
-	endsmbpwent(vp);
+	endsampwent(vp);
 
 	return (*num_entries) > 0;
 }
@@ -295,7 +295,7 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("samr_reply_enum_dom_users: %d\n", __LINE__));
 
 	become_root(True);
-	got_pwds = get_smbpwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
+	got_pwds = get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root(True);
 
 	make_samr_r_enum_dom_users(&r_e, total_entries,
@@ -466,7 +466,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 #ifndef USE_LDAP
 	become_root(True);
 
-	got_pwds = get_smbpwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+	got_pwds = get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 
 	unbecome_root(True);
 #endif /* USE_LDAP */
@@ -633,7 +633,7 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 
 		/* find the user account */
 		become_root(True);
-		smb_pass = get_smbpwd_entry(user_name, 0);
+		smb_pass = get_sampwd_entry(user_name, 0);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)
@@ -825,7 +825,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	}
 
 	become_root(True);
-	smb_pass = getsmbpwuid(q_u->user_rid);
+	smb_pass = getsampwuid(q_u->user_rid);
 	unbecome_root(True);
 
 	/* check that the RID exists in our domain. */
@@ -896,7 +896,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	struct smb_passwd *smb_pass;
 
 	become_root(True);
-	smb_pass = getsmbpwuid(rid);
+	smb_pass = getsampwuid(rid);
 	unbecome_root(True);
 
 	if (smb_pass == NULL)
@@ -1117,7 +1117,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		become_root(True);
-		smb_pass = getsmbpwuid(rid);
+		smb_pass = getsampwuid(rid);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)
@@ -1213,7 +1213,7 @@ static void api_samr_unknown_32( int uid, prs_struct *data, prs_struct *rdata)
 	                            q_u.uni_mach_acct.uni_str_len));
 
 	become_root(True);
-	smb_pass = getsmbpwnam(mach_acct);
+	smb_pass = getsampwnam(mach_acct);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)
