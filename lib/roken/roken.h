@@ -3,6 +3,8 @@
 #ifndef __ROKEN_H__
 #define __ROKEN_H__
 
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 
@@ -33,10 +35,6 @@ int getdtablesize(void);
 #ifdef RETSIGTYPE
 typedef RETSIGTYPE (*SigAction)(/* int??? */);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
-#endif
-
-#ifndef HAVE_SNPRINTF
-int snprintf(char *s, int n, const char *fmt, ...);
 #endif
 
 #ifndef HAVE_STRERROR
