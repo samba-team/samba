@@ -12,7 +12,7 @@ is a very small 'glue' program, which runs shell commands for
 the
 .B smbd
 daemon (see
-.B smbd(8)).
+.BR smbd (8)).
 
 It first changes to the highest effective user and group ID that it can, 
 then runs the command line provided using the system() call. This program is
@@ -30,14 +30,13 @@ The PATH variable set for the environment in which
 .B smbrun
 is executed will affect what executables are located and executed if a
 fully-qualified path is not given in the command.
-
 .SH INSTALLATION
 The location of the server and its support files is a matter for individual
 system administrators. The following are thus suggestions only.
 
 It is recommended that the
 .B smbrun
-program be installed under the /usr/local hierarchy, in a directory readable
+program be installed under the /usr/local/samba hierarchy, in a directory readable
 by all, writeable only by root. The program should be executable by all.
 The program should NOT be setuid or setgid!
 .SH VERSION
@@ -48,12 +47,16 @@ the program has extensions or parameter semantics that differ from or are not
 covered by this man page. Please notify these to the address below for 
 rectification.
 .SH SEE ALSO
-.B smbd(8), 
-.B smb.conf(8) 
+.BR smbd (8), 
+.BR smb.conf (8) 
 .SH DIAGNOSTICS
-If smbrun cannot be located or cannot be executed by
+If
+.B smbrun
+cannot be located or cannot be executed by
 .B smbd
-then appropriate messages will be found in the smbd logs. Other diagnostics are
+then appropriate messages will be found in the
+.B smbd
+logs. Other diagnostics are
 dependent on the shell-command being run. It is advisable for your shell
 commands to issue suitable diagnostics to aid trouble-shooting.
 .SH BUGS
@@ -63,8 +66,9 @@ The original Samba software and related utilities were created by
 Andrew Tridgell (samba-bugs@anu.edu.au). Andrew is also the Keeper
 of the Source for this project.
 
-This man page was written by Karl Auer (Karl.Auer@anu.edu.au)
+This man page was written by Karl Auer (Karl.Auer@anu.edu.au).
 
 See
-.B smb.conf(5) for a full list of contributors and details of how to 
+.BR smb.conf (5)
+for a full list of contributors and details of how to 
 submit bug reports, comments etc.

@@ -18,7 +18,9 @@ is a very simple test program to check an
 .B smbd
 configuration
 file for internal correctness. If this program reports no problems, you can use
-the configuration file with confidence that smbd will successfully
+the configuration file with confidence that
+.B smbd
+will successfully
 load the configuration file.
 
 Note that this is NOT a guarantee that the services specified in the
@@ -56,18 +58,18 @@ parameter is supplied, or strange things may happen.
 .SH FILES
 .B smb.conf
 .RS 3
-This is usually the name of the configuration file used by smbd.
+This is usually the name of the configuration file used by
+.BR smbd .
 .RE
 .SH ENVIRONMENT VARIABLES
 Not applicable.
-
 .SH INSTALLATION
 The location of the server and its support files is a matter for individual
 system administrators. The following are thus suggestions only.
 
 It is recommended that the
 .B testparm
-program be installed under the /usr/local hierarchy, in a directory readable
+program be installed under the /usr/local/samba hierarchy, in a directory readable
 by all, writeable only by root. The program itself should be executable by all.
 The program should NOT be setuid or setgid!
 .SH VERSION
@@ -78,8 +80,8 @@ the program has extensions or parameter semantics that differ from or are not
 covered by this man page. Please notify these to the address below for 
 rectification.
 .SH SEE ALSO
-.B smb.conf(5),
-.B smbd(8)
+.BR smb.conf (5),
+.BR smbd (8)
 .SH DIAGNOSTICS
 The program will issue a message saying whether the configuration file loaded
 OK or not. This message may be preceded by errors and warnings if the file
@@ -96,9 +98,12 @@ The original Samba software and related utilities were created by
 Andrew Tridgell (samba-bugs@anu.edu.au). Andrew is also the Keeper
 of the Source for this project.
 
-The testparm program and this man page were written by Karl Auer
-(Karl.Auer@anu.edu.au)
+The
+.B testparm
+program and this man page were written by Karl Auer
+(Karl.Auer@anu.edu.au).
 
 See
-.B samba(7) for a full list of contributors and details on how to 
+.BR samba (7)
+for a full list of contributors and details on how to 
 submit bug reports, comments etc.

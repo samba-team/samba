@@ -4,24 +4,26 @@ nmbd \- provide netbios nameserver support to clients
 .SH SYNOPSIS
 .B nmbd
 [
-.B -D
+.B \-D
 ] [
-.B -H
+.B \-H
 .I netbios hosts file
 ] [
-.B -d
+.B \-d
 .I debuglevel
 ] [
-.B -l
+.B \-l
 .I log basename
 ] [
-.B -p
+.B \-n
+.I netbios name
+] [
+.B \-p
 .I port number
 ] [
-.B -s
-.I config file name
+.B \-s
+.I configuration file
 ]
-
 .SH DESCRIPTION
 This program is part of the Samba suite.
 
@@ -37,7 +39,7 @@ This program simply listens for such requests, and if its own name is specified
 it will respond with the IP number of the host it is running on. "Its own name"
 is by default the name of the host it is running on, but this can be overriden
 with the
-.B -n
+.B \-n
 option (see "OPTIONS" below). Using the
 
 Nmbd can also be used as a WINS (Windows Internet Name Server)
@@ -45,18 +47,18 @@ server. It will do this automatically by default. What this basically
 means is that it will respond to all name requests that it receives
 that are not broadcasts, as long as it can resolve the name.
 .SH OPTIONS
-.B -B
+.B \-B
 
 .RS 3
 This option is obsolete. Please use the interfaces option in smb.conf
 .RE
-.B -I
+.B \-I
 
 .RS 3
 This option is obsolete. Please use the interfaces option in smb.conf
 .RE
 
-.B -D
+.B \-D
 
 .RS 3
 If specified, this parameter causes the server to operate as a daemon. That is,
@@ -66,19 +68,20 @@ appropriate port.
 By default, the server will NOT operate as a daemon.
 .RE
 
-.B -C comment string
+.B \-C comment string
 
 .RS 3
 This option is obsolete. Please use the "server string" option in smb.conf
 .RE
 
-.B -G
+.B \-G
 
 .RS 3
 This option is obsolete. Please use the "workgroup" option in smb.conf
 .RE
 
-.B -H
+.B \-H
+.I netbios hosts file
 
 .RS 3
 It may be useful in some situations to be able to specify a list of
@@ -90,7 +93,7 @@ The file contains three columns. Lines beginning with a # are ignored
 as comments. The first column is an IP address, or a hostname. If it
 is a hostname then it is interpreted as the IP address returned by
 gethostbyname() when read. Any IP address of 0.0.0.0 will be
-interpreted as the servers own IP address.
+interpreted as the server's own IP address.
 
 The second column is a netbios name. This is the name that the server
 will respond to. It must be less than 20 characters long.
@@ -98,17 +101,22 @@ will respond to. It must be less than 20 characters long.
 The third column is optional, and is intended for flags. Currently the
 only flag supported is M. 
 
-A M means that this name is the default netbios name for this
-machine. This has the same affect as specifying the -n option to nmbd.
+An M means that this name is the default netbios name for this
+machine. This has the same affect as specifying the
+.B \-n
+option to
+.BR nmbd .
 
 NOTE: The G and S flags are now obsolete and are replaced by the
 "interfaces" and "remote announce" options in smb.conf.
 
 After startup the server waits for queries, and will answer queries to
 any name known to it. This includes all names in the netbios hosts
-file (if any) and it's own name.
+file (if any) and its own name.
 
-The primary intention of the -H option is to allow a mapping from
+The primary intention of the
+.B \-H
+option is to allow a mapping from
 netbios names to internet domain names.
 
 .B Example:
@@ -127,25 +135,26 @@ netbios names to internet domain names.
         130.45.3.213 FREDDY
 
 .RE
-.B -N
+.B \-N
 
 .RS 3
 This option is obsolete. Please use the "interfaces" option in
 smb.conf instead.
 .RE
 
-.B -d
+.B \-d
 .I debuglevel
 .RS 3
-This option set the debug level. See smb.conf(5)
+This option sets the debug level. See
+.BR smb.conf (5).
 .RE
 
-.B -l
+.B \-l
 .I log file
 
 .RS 3
 If specified,
-.I logfile
+.I log file
 specifies a base filename into which operational data from the running server
 will be logged.
 
@@ -156,7 +165,7 @@ name specified was "log" then the file log.nmb would contain debug
 info.
 .RE
 
-.B -n
+.B \-n
 .I netbios name
 
 .RS 3
@@ -164,7 +173,7 @@ This option allows you to override the Netbios name that Samba uses
 for itself. 
 .RE
 
-.B -p
+.B \-p
 .I port number
 .RS 3
 
@@ -173,6 +182,17 @@ port number is a positive integer value.
 Don't use this option unless you are an expert, in which case you
 won't need help!
 
+.B \-s
+.I configuration file
+
+.RS 3
+The default configuration file name is determined at compile time.
+
+The file specified contains the configuration details required by the server.
+See
+.BR smb.conf (5)
+for more information.
+.RE
 .SH VERSION
 
 This man page is (mostly) correct for version 1.9.16 of the Samba
@@ -182,22 +202,15 @@ that your version of the server has extensions or parameter semantics
 that differ from or are not covered by this man page. Please notify
 these to the address below for rectification.
 .SH SEE ALSO
-.B inetd(8),
-.B smbd(8), 
-.B smb.conf(5),
-.B smbclient(1),
-.B testparm(1), 
-.B testprns(1)
-
+.BR inetd (8),
+.BR smbd (8), 
+.BR smb.conf (5),
+.BR smbclient (1),
+.BR testparm (1), 
+.BR testprns (1)
 .SH CREDITS
 The original Samba software and related utilities were created by 
 Andrew Tridgell (samba-bugs@anu.edu.au). Andrew is also the Keeper
 of the Source for this project.
 
-This man page originally written by Karl Auer (Karl.Auer@anu.edu.au)
-
-
-
-
-
-
+This man page was originally written by Karl Auer (Karl.Auer@anu.edu.au).
