@@ -379,29 +379,50 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_ACCESS_DENIED;
 	}
 #endif
-
+	
+	/* this does not need a become root since the access check has been 
+	   done on the handle already */
+	   
 	if (del_a_printer( Printer->sharename ) != 0) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->sharename));
 		return WERR_BADFID;
 	}
 
+	/* the delete printer script shoudl be run as root if the user has perms */
+	
 	if (*lp_deleteprinter_cmd()) {
 
 		char *cmd = lp_deleteprinter_cmd();
 		pstring command;
 		int ret;
-
+		SE_PRIV se_printop = SE_PRINT_OPERATOR;
+		BOOL is_print_op;
+		
 		pstr_sprintf(command, "%s \"%s\"", cmd, Printer->sharename);
 
+		is_print_op = user_has_privileges( p->pipe_user.nt_user_token, &se_printop );
+	
 		DEBUG(10,("Running [%s]\n", command));
+
+		/********** BEGIN SePrintOperatorPrivlege BLOCK **********/
+	
+		if ( is_print_op )
+			become_root();
+		
 		ret = smbrun(command, NULL);
-		if (ret != 0) {
-			return WERR_BADFID; /* What to return here? */
-		}
+		
+		if ( is_print_op )
+			unbecome_root();
+
+		/********** BEGIN SePrintOperatorPrivlege BLOCK **********/
+
 		DEBUGADD(10,("returned [%d]\n", ret));
 
-		/* Send SIGHUP to process group... is there a better way? */
-		kill(0, SIGHUP);
+		if (ret != 0) 
+			return WERR_BADFID; /* What to return here? */
+
+		/* Tell everyone we updated smb.conf. */
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 		/* go ahead and re-read the services immediately */
 		reload_services( False );
@@ -5984,7 +6005,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
+static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	extern userdom_struct current_user_info;
 	char *cmd = lp_addprinter_cmd();
@@ -5994,6 +6015,8 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	int ret;
 	int fd;
 	fstring remote_machine = "%m";
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	BOOL is_print_op;
 
 	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
 	
@@ -6002,8 +6025,22 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, printer->info_2->comment, remote_machine);
 
+	is_print_op = user_has_privileges( token, &se_printop );
+
 	DEBUG(10,("Running [%s]\n", command));
+
+	/********* BEGIN SePrintOperatorPrivilege **********/
+
+	if ( is_print_op )
+		become_root();
+	
 	ret = smbrun(command, &fd);
+
+	if ( is_print_op )
+		unbecome_root();
+
+	/********* END SePrintOperatorPrivilege **********/
+
 	DEBUGADD(10,("returned [%d]\n", ret));
 
 	if ( ret != 0 ) {
@@ -6012,22 +6049,25 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 		return False;
 	}
 
+	/* Tell everyone we updated smb.conf. */
+	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+
+	/* reload our services immediately */
+	reload_services( False );
+
 	numlines = 0;
 	/* Get lines and convert them back to dos-codepage */
 	qlines = fd_lines_load(fd, &numlines);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	close(fd);
 
-	if(numlines) {
+	/* Set the portname to what the script says the portname should be. */
+	/* but don't require anything to be return from the script exit a good error code */
+
+	if (numlines) {
 		/* Set the portname to what the script says the portname should be. */
 		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
 		DEBUGADD(6,("Line[0] = [%s]\n", qlines[0]));
-
-		/* Send SIGHUP to process group... is there a better way? */
-		kill(0, SIGHUP);
-		
-		/* reload our services immediately */
-		reload_services( False );
 	}
 
 	file_lines_free(qlines);
@@ -6122,7 +6162,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			|| !strequal(printer->info_2->portname, old_printer->info_2->portname)
 			|| !strequal(printer->info_2->location, old_printer->info_2->location)) )
 	{
-		if ( !add_printer_hook(printer) ) {
+		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -7416,7 +7456,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
-		if ( !add_printer_hook(printer) ) {
+		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
 	}
