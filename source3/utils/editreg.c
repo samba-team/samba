@@ -1008,9 +1008,6 @@ REG_KEY *nt_add_reg_key_list(KEY_LIST *list, char * name, REG_KEY *parent, int c
   }
 
   return NULL;
- error:
-  if (lname) free(lname);
-  return NULL;
 }
 
 REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create)
@@ -2483,7 +2480,7 @@ CMD *regedit4_get_cmd(int fd)
   cmd->cmd = CMD_NONE;
   cmd->key = NULL;
   cmd->val_spec_list = cmd->val_spec_last = NULL;
-  while (cl = get_cmd_line(fd)) {
+  while ((cl = get_cmd_line(fd))) {
 
     strip_comment(cl);     /* remove anything beyond a comment char */
     trim_trailing_spaces(cl);
