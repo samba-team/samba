@@ -525,7 +525,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	}
     }
     if (mask & KADM5_PW_EXPIRATION) {
-	if (log.ent_pw_end == NULL) {
+	if (log_ent.pw_end == NULL) {
 	    ent.pw_end = NULL;
 	} else {
 	    if (ent.pw_end == NULL)
