@@ -107,12 +107,18 @@ try these commands:
 
       smbclient //localhost/test -Uadministrator%SOMEPASSWORD
     or
-     ./script/tests/test_posix.sh //localhost/test administrator
-    SOMEPASSWORD
+     ./script/tests/test_posix.sh //localhost/test administrator SOMEPASSWORD
 
 Note that to pass all the tests you would need to be using a
 filesystem with user_xattr support. On many Linux systems with an ext3
 filesystem this means mounting with the "-o user_xattr"
 option. Consult your filesystem and kernel docs for more details.
 
+If you don't have a filesystem with xattr support, then you can
+simulate it by using the option:
 
+   posix:eadb = /usr/local/samba/eadb.tdb
+
+that will place all extra file attributes (NT ACLs, DOS EAs, streams
+etc), in that tdb. It is not efficient, and doesn't scale well, but at
+least it gives you a choice when you don't have a modern filesystem.
