@@ -692,7 +692,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 */
 
 		if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
-			pstrcat(fname, "\\");
+			pstrcat(fname, "/");
 			dir_name_len++;
 		}
 
@@ -1243,7 +1243,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 */
 
 		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
-			pstrcat(fname, "\\");
+			pstrcat(fname, "/");
 			dir_name_len++;
 		}
 
