@@ -48,7 +48,7 @@ extract_ticket(krb5_context context,
     principalname2krb5_principal(&creds->client, 
 				 rep->part1.cname, 
 				 rep->part1.crealm);
-    free (rep->part1.crealm);
+    /* free (rep->part1.crealm); */
     /*     krb5_principal_free (rep.part1.cname);*/
     {
 	char buf[1024];
@@ -203,26 +203,27 @@ krb5_get_in_tkt(krb5_context context,
     req.length = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
 				sizeof(buf),
 				&a);
-    if (req.length < 0)
+    if (req.length < 0){
+	free_AS_REQ(&a);
 	return ASN1_PARSE_ERROR;
-    req.data = buf + sizeof(buf) - req.length;
-    if (addrs == NULL) {
-	int i;
-
-	for (i = 0; i < a.req_body.addresses->len; ++i)
-	    krb5_data_free (&a.req_body.addresses->val[i].address);
-	free (a.req_body.addresses->val);
     }
+    free_AS_REQ(&a);
+    req.data = buf + sizeof(buf) - req.length;
 
     err = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
     if (err) {
 	return err;
     }
-    if(decode_AS_REP(resp.data, resp.length, &rep.part1) < 0)
+    if(decode_AS_REP(resp.data, resp.length, &rep.part1) < 0){
+	krb5_data_free(&resp);
 	return ASN1_PARSE_ERROR;
+    }
+    krb5_data_free(&resp);
 
     err = extract_ticket(context, &rep, creds, key_proc, keyseed, 
 			 decrypt_proc, decryptarg);
+
+    free_KDC_REP(&rep.part1);
     if(err)
 	return err;
     return krb5_cc_store_cred (context, ccache, creds);
