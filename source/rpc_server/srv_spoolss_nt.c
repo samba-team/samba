@@ -63,7 +63,7 @@ typedef struct _Printer{
 	struct _Printer *prev, *next;
 	BOOL document_started;
 	BOOL page_started;
-	int jobid; /* jobid in printing backend */
+	uint32 jobid; /* jobid in printing backend */
 	BOOL printer_type;
 	union {
 	  	fstring handlename;
@@ -1889,46 +1889,55 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
 	if (!Printer) {
-		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
 		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		status = WERR_BADFID;
+		goto done;
 	}
 	
-	if ( !get_printer_snum(p,handle, &snum) )
-		return WERR_BADFID;
-
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-	if ( !W_ERROR_IS_OK(status) )
-		return status;
-
 	unistr2_to_dos(value, valuename, sizeof(value)-1);
 	
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
 		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
 	else
-		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, in_size );
+	{
+		if ( !get_printer_snum(p,handle, &snum) ) {
+			status = WERR_BADFID;
+			goto done;
+		}
 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		if ( !W_ERROR_IS_OK(status) )
+			goto done;
+
+		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, *out_size );
+	}
+
+	if (*needed > *out_size)
+		status = WERR_MORE_DATA;
+	
+done:
 	if ( !W_ERROR_IS_OK(status) ) 
 	{
-		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		DEBUG(5, ("error: allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
 		
 		if (*out_size) {
-			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
+			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL) {
+				if ( printer ) 
+					free_a_printer( &printer, 2 );
 				return WERR_NOMEM;
+			}
 		} 
-		else
+		else {
 			*data = NULL;
 		}
-
-	if (*needed > *out_size)
-		status = WERR_MORE_DATA;
+	}
 
 	/* cleanup & exit */
 
-	free_a_printer( &printer, 2 );
+	if ( printer )
+		free_a_printer( &printer, 2 );
 	
 	return status;
 }
@@ -7877,26 +7886,27 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	*out_size = in_size;
 		
 	if (!Printer) {
-		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
 		DEBUG(2,("_spoolss_getprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		status = WERR_BADFID;
+		goto done;
 	}
 
 	/* Is the handle to a printer or to the server? */
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-	{
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
 		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 	   
-	if ( !get_printer_snum(p,handle, &snum) )
-		return WERR_BADFID;
+	if ( !get_printer_snum(p,handle, &snum) ) {
+		status = WERR_BADFID;
+		goto done;
+	}
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
-	if ( !W_ERROR_IS_OK(status) )
-		return status;
+	if ( !W_ERROR_IS_OK(status) ) 
+		goto done;
 		
 	/* check to see if the keyname is valid */
 	if ( !strlen(keyname) ) {
@@ -7906,6 +7916,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	 
 	if ( lookup_printerkey( &printer->info_2->data, keyname ) == -1 ) {
 		DEBUG(4,("_spoolss_getprinterdataex: Invalid keyname [%s]\n", keyname ));
+		free_a_printer( &printer, 2 );
 		status = WERR_BADFILE;
 		goto done;
 	}
@@ -7914,9 +7925,13 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename, type, data, needed, in_size );
 	
+	if (*needed > *out_size)
+		status = WERR_MORE_DATA;
+
+done:
 	if ( !W_ERROR_IS_OK(status) ) 
 	{
-		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		DEBUG(5, ("error: allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
 		
@@ -7927,15 +7942,13 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 				goto done;
 			}
 		} 
-		else 
+		else {
 			*data = NULL;
 		}
+	}
 
-	if (*needed > *out_size)
-		status = WERR_MORE_DATA;
-
-done:
-	free_a_printer( &printer, 2 );
+	if ( printer )
+		free_a_printer( &printer, 2 );
 	
 	return status;
 }
@@ -7957,6 +7970,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
 	fstring			valuename;
 	fstring			keyname;
+	char			*oid_string;
+	UNISTR2			uni_oid;
 
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
@@ -7991,11 +8006,39 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
         unistr2_to_dos( valuename, &q_u->value, sizeof(valuename) - 1);
         unistr2_to_dos( keyname, &q_u->key, sizeof(keyname) - 1);
+	
+	/* check for OID in valuename */
+	
+	if ( (oid_string = strchr( valuename, ',' )) != NULL )
+	{
+		*oid_string = '\0';
+		oid_string++;
+	}
 		
 	/* save the registry data */
 	
 	status = set_printer_dataex( printer, keyname, valuename, type, data, real_len ); 
 
+	/* save the OID if one was specified and the previous set call succeeded */
+	
+	if ( W_ERROR_IS_OK(status) && oid_string )
+	{
+
+		fstrcat( keyname, "\\" );
+		fstrcat( keyname, SPOOL_OID_KEY );
+		
+		/* 
+		 * I'm not checking the status here on purpose.  Don't know 
+		 * if this is right, but I'm returning the status from the 
+		 * previous set_printer_dataex() call.  I have no idea if 
+		 * this is right.    --jerry
+		 */
+		 
+		init_unistr2(  &uni_oid, oid_string, strlen(oid_string)+1 );	
+		set_printer_dataex( printer, keyname, valuename, 
+		                    REG_SZ, (void*)uni_oid.buffer, uni_oid.uni_str_len*sizeof(uint16) );		
+	}
+	
 	free_a_printer(&printer, 2);
 		
 	return status;
