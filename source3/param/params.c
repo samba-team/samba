@@ -537,7 +537,7 @@ static myFILE *OpenConfFile( char *FileName )
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
     free(ret);
-    ret = NULL;
+    return NULL;
     }
 
   ret->p = ret->buf;
