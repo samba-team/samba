@@ -1101,6 +1101,8 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 			DOM_R_REF *ref,
 			LSA_TRANS_NAME_ENUM *trn,
 			uint32 *mapped_count);
+uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
+			   fstring domain_name, DOM_SID *domain_sid);
 uint32 _lsa_close(POLICY_HND *hnd);
 uint32 _lsa_open_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
@@ -3937,9 +3939,6 @@ BOOL last_challenge(unsigned char *challenge);
 
 BOOL chgpasswd(const char *_name,char *oldpass,char *newpass, BOOL as_root);
 BOOL chgpasswd(const char *name,char *oldpass,char *newpass, BOOL as_root);
-BOOL check_lanman_password(char *user, uchar *pass1, 
-                           uchar *pass2, struct smb_passwd **psmbpw);
-BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2);
 BOOL pass_oem_change(const char *user,
 			const uchar *lmdata, const uchar *lmhash,
 			const uchar *ntdata, const uchar *nthash);

@@ -469,38 +469,20 @@ static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 	LSA_Q_QUERY_INFO q_i;
 	fstring name;
 	uint32 status = 0x0;
-	DOM_SID *sid = NULL;
-	memset(name, 0, sizeof(name));
+	DOM_SID sid;
 
+	memset(name, 0, sizeof(name));
+	ZERO_STRUCT(sid);
 	ZERO_STRUCT(q_i);
 
 	/* grab the info class and policy handle */
 	lsa_io_q_query("", &q_i, data, 0);
 
-	switch (q_i.info_class)
-	{
-		case 0x03:
-		{
-			fstrcpy(name, global_myworkgroup);
-			sid = &global_member_sid;
-			break;
-		}
-		case 0x05:
-		{
-			fstrcpy(name, global_sam_name);
-			sid = &global_sam_sid;
-			break;
-		}
-		default:
-		{
-			DEBUG(5,("unknown info level in Lsa Query: %d\n",
-			          q_i.info_class));
-			status = 0xC000000 | NT_STATUS_INVALID_INFO_CLASS;
-		}
-	}
+	status = _lsa_query_info_pol(&q_i.pol, q_i.info_class,
+				     name, &sid);
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, name, sid, status);
+	lsa_reply_query_info(&q_i, rdata, name, &sid, status);
 }
 
 /***************************************************************************

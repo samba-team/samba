@@ -73,28 +73,6 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 }
 
 /***************************************************************************
-make_dom_query
- ***************************************************************************/
-static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
-{
-	fstring sid_str;
-	int domlen = strlen(dom_name);
-
-	d_q->uni_dom_str_len = (domlen+1) * 2;
-	d_q->uni_dom_max_len = domlen * 2;
-
-	d_q->buffer_dom_name = domlen  != 0    ? 1 : 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid  = dom_sid != NULL ? 1 : 0; /* domain sid pointer */
-
-	/* this string is supposed to be character short */
-	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
-	d_q->uni_domain_name.uni_max_len++;
-
-	sid_to_string(sid_str, dom_sid);
-	make_dom_sid2(&(d_q->dom_sid), dom_sid);
-}
-
-/***************************************************************************
 _lsa_enum_trust_dom
  ***************************************************************************/
 uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
@@ -109,39 +87,6 @@ uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 	*sids = NULL;
 
 	return 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM;
-}
-
-/***************************************************************************
-lsa_reply_query_info
- ***************************************************************************/
-static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
-				char *dom_name, DOM_SID *dom_sid,
-				uint32 status)
-{
-	LSA_R_QUERY_INFO r_q;
-
-	ZERO_STRUCT(r_q);
-
-	r_q.status = status;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_q.status == NT_STATUS_NOPROBLEMO && !find_policy_by_hnd(get_global_hnd_cache(), &q_q->pol))
-	{
-		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-	if (r_q.status == NT_STATUS_NOPROBLEMO)
-	{
-		/* set up the LSA QUERY INFO response */
-
-		r_q.undoc_buffer = 0x1; 
-		r_q.info_class = q_q->info_class;
-
-		make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
-
-		r_q.status = NT_STATUS_NOPROBLEMO;
-	}
-	/* store the response in the SMB stream */
-	lsa_io_r_query("", &r_q, rdata, 0);
 }
 
 /***************************************************************************
@@ -411,21 +356,21 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 /***************************************************************************
 _lsa_query_info
  ***************************************************************************/
-static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
-                                prs_struct *rdata )
+uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
+			   fstring domain_name, DOM_SID *domain_sid)
 {
-	LSA_Q_QUERY_INFO q_i;
 	fstring name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
-	DOM_SID *sid = NULL;
+	const DOM_SID *sid = NULL;
+
 	memset(name, 0, sizeof(name));
 
-	ZERO_STRUCT(q_i);
+	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	/* grab the info class and policy handle */
-	lsa_io_q_query("", &q_i, data, 0);
-
-	switch (q_i.info_class)
+	switch (info_class)
 	{
 		case 0x03:
 		{
@@ -442,14 +387,21 @@ static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 		}
 		default:
 		{
-			DEBUG(5,("unknown info level in Lsa Query: %d\n",
-			          q_i.info_class));
+			DEBUG(3, ("unknown info level in Lsa Query: %d\n",
+			          info_class));
 			status = 0xC000000 | NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
+	if (domain_sid && sid)
+	{
+		sid_copy(domain_sid, sid);
+	}
+	if (domain_name)
+	{
+		fstrcpy(domain_name, name);
+	}
 
-	/* construct reply.  */
-	lsa_reply_query_info(&q_i, rdata, name, sid, status);
+	return status;
 }
 
 /***************************************************************************
