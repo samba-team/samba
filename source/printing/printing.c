@@ -26,12 +26,14 @@ static BOOL * lpq_cache_reset=NULL;
 
 static int check_lpq_cache(int snum) {
   static int lpq_caches=0;
-  
+  int i;
+
   if (lpq_caches <= snum) {
       BOOL * p;
       p = (BOOL *) Realloc(lpq_cache_reset,(snum+1)*sizeof(BOOL));
       if (p) {
 	 lpq_cache_reset=p;
+	 for (i=lpq_caches; i<snum+1; i++) lpq_cache_reset[i] = False;
 	 lpq_caches = snum+1;
       }
   }
