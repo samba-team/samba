@@ -26,12 +26,8 @@ krb5_init_context(krb5_context *context)
     return 0;
 }
 
-void krb5_os_free_context(krb5_context context)
-{
-  
-}
-
-void krb5_free_context(krb5_context context)
+void
+krb5_free_context(krb5_context context)
 {
   int i;
 
