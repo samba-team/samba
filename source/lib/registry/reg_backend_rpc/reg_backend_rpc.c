@@ -91,6 +91,8 @@ struct {
 { NULL, NULL }
 };
 
+static WERROR rpc_query_key(REG_KEY *k);
+
 static WERROR rpc_open_registry(REG_HANDLE *h, const char *location, const char *credentials)
 {
 	struct rpc_data *mydata = talloc(h->mem_ctx, sizeof(struct rpc_data));
@@ -204,27 +206,43 @@ static WERROR rpc_get_value_by_index(REG_KEY *parent, int n, REG_VAL **value)
 	struct rpc_data *mydata = parent->handle->backend_data;
 	struct winreg_EnumValueName vn;
 	NTSTATUS status;
-	struct rpc_key_data *mykeydata = parent->backend_data;
+	struct rpc_key_data *mykeydata;
 	uint32 type = 0x0, requested_len = 0, returned_len = 0;
+	WERROR error;
 
-	/* FIXME */
-	
+	error = rpc_key_put_rpc_data(parent, &mykeydata);
+	if(!W_ERROR_IS_OK(error)) return error;
+
+	/* Root is a special case */
+	if(parent->backend_data == parent->handle->backend_data) {
+		return WERR_NO_MORE_ITEMS;
+	}
+
+	if(mykeydata->num_values == -1) {
+		error = rpc_query_key(parent);
+		if(!W_ERROR_IS_OK(error)) return error;
+	}
+
+	requested_len = mykeydata->max_valdatalen;
+
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
 	r.in.type = r.out.type = &type;
 	r.in.requested_len = r.out.requested_len = &requested_len;
 	r.in.returned_len = r.out.returned_len = &returned_len;
-	bn.max_len = mykeydata->max_valnamelen*3;
-	bn.offset = 0;
-	bn.len = 0;
-	bn.buffer = NULL;
-	vn.max_len = mykeydata->max_valnamelen*3;	
-	vn.buf = &bn;
+	vn.max_len = mykeydata->max_valnamelen * 2;
+	vn.len = 0;
+	vn.buf = NULL;
+	if(vn.max_len > 0) {
+		vn.len = 0;
+		vn.max_len = mykeydata->max_valnamelen*2;
+		vn.buf = "";
+	}
 	r.in.name = r.out.name = &vn;
-	vb.max_len = mykeydata->max_valdatalen*3;
+	vb.max_len = mykeydata->max_valdatalen;
 	vb.offset = 0x0;
 	vb.len = 0x0;
-	vb.buffer = NULL;
+	vb.buffer = talloc_array_p(parent->mem_ctx, uint8, mykeydata->max_valdatalen);
 	r.in.value = r.out.value = &vb;
 
 	status = dcerpc_winreg_EnumValue(mydata->pipe, parent->mem_ctx, &r);
@@ -234,10 +252,11 @@ static WERROR rpc_get_value_by_index(REG_KEY *parent, int n, REG_VAL **value)
 	
 	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 		*value = reg_val_new(parent, NULL);
-		(*value)->name = (char *)r.out.name->buf->buffer;
+		(*value)->name = r.out.name->buf;
 		(*value)->data_type = type;
 		(*value)->data_len = r.out.value->len;
 		(*value)->data_blk = r.out.value->buffer;
+		exit(1);
 		return WERR_OK;
 	}
 	
