@@ -1,3 +1,19 @@
+2004-06-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): if the
+	krbtgt is without addresses, default to not sending our own
+	addrport
+
+	* lib/asn1/lex.l: add support for /* */ and partial line --
+	comments
+
+	* kuser/Makefile.am: don't install copy_cred_cache manpage
+	
+2004-06-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/init_creds.c (_krb5_get_init_creds_opt_copy): if
+	copying a static opt, make sure to allocate the "private" field
+
 2004-06-24  Love  <lha@stacken.kth.se>
 
 	* kdc/config.c: add enable_pkinit_princ_in_cert
