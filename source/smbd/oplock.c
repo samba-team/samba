@@ -370,6 +370,9 @@ int setup_oplock_select_set( fd_set *fds)
   int maxfd = oplock_sock;
   FD_SET(oplock_sock,fds);
 
+  if(oplock_sock == -1)
+    return 0;
+
 #if defined(HAVE_KERNEL_OPLOCKS)
   if(lp_kernel_oplocks()) {
     FD_SET(oplock_pipe_read,fds); 

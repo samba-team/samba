@@ -258,7 +258,8 @@ void respond_to_all_remaining_local_messages(void)
    */
 
   FD_ZERO(&fds);
-  (void)setup_oplock_select_set(&fds);
+  if(!setup_oplock_select_set(&fds))
+    return;
 
   /*
    * Keep doing receive_local_message with a 1 ms timeout until
