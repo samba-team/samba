@@ -184,11 +184,10 @@ init_auth
     OM_uint32 ret = GSS_S_FAILURE;
     krb5_error_code kret;
     krb5_flags ap_options;
-    krb5_creds this_cred, *cred;
+    krb5_creds this_cred, *cred = NULL;
     krb5_data outbuf;
-    krb5_ccache ccache;
+    krb5_ccache ccache = NULL;
     u_int32_t flags;
-    Authenticator *auth;
     krb5_data authenticator;
     Checksum cksum;
     krb5_enctype enctype;
@@ -213,6 +212,7 @@ init_auth
     (*context_handle)->more_flags   = 0;
     (*context_handle)->ticket       = NULL;
     (*context_handle)->lifetime     = GSS_C_INDEFINITE;
+    (*context_handle)->order	    = NULL;
     HEIMDAL_MUTEX_init(&(*context_handle)->ctx_id_mutex);
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
@@ -349,14 +349,13 @@ init_auth
     }
     
     if (req_flags & GSS_C_REPLAY_FLAG)
-	;                               /* XXX */
+	flags |= GSS_C_REPLAY_FLAG;
     if (req_flags & GSS_C_SEQUENCE_FLAG)
-	;                               /* XXX */
+	flags |= GSS_C_SEQUENCE_FLAG;
     if (req_flags & GSS_C_ANON_FLAG)
 	;                               /* XXX */
     flags |= GSS_C_CONF_FLAG;
     flags |= GSS_C_INTEG_FLAG;
-    flags |= GSS_C_SEQUENCE_FLAG;
     flags |= GSS_C_TRANS_FLAG;
     
     if (ret_flags)
@@ -392,7 +391,7 @@ init_auth
 				     enctype,
 				     cred,
 				     &cksum,
-				     &auth,
+				     NULL,
 				     &authenticator,
 				     KRB5_KU_AP_REQ_AUTH);
 
@@ -423,10 +422,21 @@ init_auth
 	goto failure;
 
     krb5_data_free (&outbuf);
+    krb5_free_creds(gssapi_krb5_context, cred);
+    free_Checksum(&cksum);
+    if (initiator_cred_handle == GSS_C_NO_CREDENTIAL)
+	krb5_cc_close(gssapi_krb5_context, ccache);
 
     if (flags & GSS_C_MUTUAL_FLAG) {
 	return GSS_S_CONTINUE_NEEDED;
     } else {
+	ret = gssapi_msg_order_create(minor_status,
+				      &(*context_handle)->order,
+				      gssapi_msg_order_f(flags),
+				      0, 0);
+	if (ret)
+	    goto failure;
+
 	if (time_rec)
 	    *time_rec = lifetime_rec;
 
@@ -437,15 +447,21 @@ init_auth
  failure:
     krb5_auth_con_free (gssapi_krb5_context,
 			(*context_handle)->auth_context);
+    krb5_data_free (&outbuf);
+    if(cred)
+	krb5_free_creds(gssapi_krb5_context, cred);
+    if (ccache && initiator_cred_handle == GSS_C_NO_CREDENTIAL)
+	krb5_cc_close(gssapi_krb5_context, ccache);
     if((*context_handle)->source)
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->source);
     if((*context_handle)->target)
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
+    if((*context_handle)->order)
+	gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
-    krb5_data_free (&outbuf);
     *context_handle = GSS_C_NO_CONTEXT;
     return ret;
 }
@@ -467,7 +483,7 @@ repl_mutual
             OM_uint32 * time_rec
            )
 {
-    OM_uint32 ret;
+    OM_uint32 ret, seq_number;
     krb5_error_code kret;
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
@@ -501,6 +517,20 @@ repl_mutual
     krb5_free_ap_rep_enc_part (gssapi_krb5_context,
 			       repl);
     
+    krb5_auth_getremoteseqnumber (gssapi_krb5_context,
+				  (*context_handle)->auth_context,
+				  &seq_number);
+
+    ret = gssapi_msg_order_create(minor_status,
+				  &(*context_handle)->order,
+				  gssapi_msg_order_f((*context_handle)->flags),
+				  seq_number, 0);
+    if (ret) {
+	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+	gssapi_krb5_set_error_string ();
+	return GSS_S_FAILURE;
+    }
+	
     (*context_handle)->more_flags |= OPEN;
 
     *minor_status = 0;
