@@ -1313,7 +1313,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Now start the NT Domain stuff :-).
    */
 
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
+  if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
     DEBUG(0,("domain_client_validate: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
