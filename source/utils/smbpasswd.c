@@ -975,12 +975,12 @@ int main(int argc, char **argv)
 	set_auth_parameters(argc, argv);
 #endif /* HAVE_SET_AUTH_PARAMETERS */
 
+	charset_initialise();
+	
 	process_options(argc, argv, amroot);
 	TimeInit();
 	
 	setup_logging("smbpasswd", True);
-	
-	charset_initialise();
 	
 	if(!initialize_password_db(False)) {
 		fprintf(stderr, "Can't setup password database vectors.\n");
