@@ -50,7 +50,7 @@ static void get_rand_seed(int *new_seed)
 BOOL secrets_init(void)
 {
 	pstring fname;
-	char dummy;
+	unsigned char dummy;
 
 	if (tdb)
 		return True;
