@@ -508,7 +508,7 @@ static void usage(char *pname)
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
 	int port = SMB_PORT;
-	int port445 = 455;
+	int port445 = 445;
 	int opt;
 	extern char *optarg;
 	
