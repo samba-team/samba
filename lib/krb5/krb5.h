@@ -235,7 +235,9 @@ typedef AP_REQ krb5_ap_req;
 
 struct krb5_cc_ops;
 
-#define KRB5_DEFAULT_CCROOT "FILE:/tmp/krb5cc_"
+#define KRB5_DEFAULT_CCFILE_ROOT "/tmp/krb5cc_"
+
+#define KRB5_DEFAULT_CCROOT "FILE:" KRB5_DEFAULT_CCFILE_ROOT
 
 typedef void *krb5_cc_cursor;
 
