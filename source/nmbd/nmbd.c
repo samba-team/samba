@@ -625,7 +625,7 @@ int main(int argc,char *argv[])
           strupper(myname);
           break;
         case 'l':
-          sprintf(debugf,"%s.nmb",optarg);
+          slprintf(debugf,sizeof(debugf)-1, "%s.nmb",optarg);
           break;
         case 'i':
           pstrcpy(scope,optarg);

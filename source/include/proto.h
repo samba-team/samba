@@ -1331,6 +1331,11 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid);
 BOOL add_smbpwd_entry(struct smb_passwd* pwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
 
+/*The following definitions come from  snprintf.c  */
+
+int vslprintf(char *str, int n, char *format, va_list ap);
+int slprintf(char *str, int n, char *format, ...);
+
 /*The following definitions come from  status.c  */
 
 void Ucrit_addUsername(pstring username);

@@ -664,7 +664,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	
 	shm_header_p = (struct ShmHeader *)shmat(shm_id, 0, 
 						 read_only?SHM_RDONLY:0);
-	if ((int)shm_header_p == -1) {
+	if ((long)shm_header_p == -1) {
 		DEBUG(0,("Can't attach to IPC area\n"));
 		global_unlock();
 		return NULL;

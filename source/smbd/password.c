@@ -1555,7 +1555,7 @@ BOOL check_hosts_equiv(char *user)
       char *home = get_home_dir(user);
       if (home)
 	{
-	  sprintf(rhostsfile, "%s/.rhosts", home);
+	  slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
 	  if (check_user_equiv(user,client_name(),rhostsfile))
 	    return(True);
 	}

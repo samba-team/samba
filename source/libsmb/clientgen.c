@@ -547,7 +547,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		memcpy(pword, pass, passlen);
 	}
 
-	sprintf(fullshare, "\\\\%s\\%s", cli->desthost, share);
+	slprintf(fullshare, sizeof(fullshare)-1,
+		 "\\\\%s\\%s", cli->desthost, share);
 
 	set_message(cli->outbuf,4,
 		    2 + strlen(fullshare) + passlen + strlen(dev),True);

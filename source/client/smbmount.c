@@ -350,7 +350,7 @@ static void cmd_mount(char *inbuf,char *outbuf)
 	string_replace(share_name, '\\', '/');
 	string_replace(share_name, ' ', '_');
 
-	sprintf(mount_command, "smbmnt %s -s %s", mount_point, share_name);
+	slprintf(mount_command, sizeof(mount_command)-1,"smbmnt %s -s %s", mount_point, share_name);
 
 	while(next_token(NULL, buf, NULL))
 	{
@@ -830,7 +830,7 @@ static void usage(char *pname)
 	  DEBUGLEVEL = atoi(optarg);
 	break;
       case 'l':
-	sprintf(debugf,"%s.client",optarg);
+	slprintf(debugf,sizeof(debugf)-1,"%s.client",optarg);
 	break;
       case 'p':
 	port = atoi(optarg);
@@ -888,7 +888,7 @@ static void usage(char *pname)
 	if (nt_domain_logon)
 	{
 		int ret = 0;
-		sprintf(service,"\\\\%s\\IPC$",query_host);
+		slprintf(service,sizeof(service), "\\\\%s\\IPC$",query_host);
 		strupper(service);
 		connect_as_ipc = True;
 

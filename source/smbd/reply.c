@@ -1115,7 +1115,7 @@ int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   smb_setlen(outbuf,outsize - 4);
   
   if ((! *directory) && dptr_path(dptr_num))
-    sprintf(directory,"(%s)",dptr_path(dptr_num));
+    slprintf(directory, sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
   DEBUG(4,("%s %s mask=%s path=%s cnum=%d dtype=%d nument=%d of %d\n",
 	timestring(),
@@ -1682,7 +1682,7 @@ int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_bufsize)
 	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
 
 	    error = ERRnoaccess;
-	    sprintf(fname,"%s/%s",directory,dname);
+	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,cnum,dirtype)) continue;
 	    if (!sys_unlink(fname)) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
@@ -2587,7 +2587,7 @@ int reply_printopen(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 
     if (strlen(s) > 10) s[10] = 0;
 
-    sprintf(fname,"%s.XXXXXX",s);  
+    slprintf(fname,sizeof(fname)-1, "%s.XXXXXX",s);  
   }
 
   fnum = find_free_file();
@@ -3203,7 +3203,7 @@ int reply_mv(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
 
 	    error = ERRnoaccess;
-	    sprintf(fname,"%s/%s",directory,dname);
+	    slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
 	    if (!can_rename(fname,cnum)) {
 		    DEBUG(6,("rename %s refused\n", fname));
 		    continue;
@@ -3416,7 +3416,7 @@ int reply_copy(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
 
 	    error = ERRnoaccess;
-	    sprintf(fname,"%s/%s",directory,dname);
+	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    strcpy(destname,newname);
 	    if (resolve_wildcards(fname,destname) && 
 		copy_file(directory,newname,cnum,ofun,

@@ -1215,7 +1215,8 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
   if (!(*(iSERVICE(i).comment)))
     {
       pstring comment;
-      sprintf(comment,"Home directory of %s",pszHomename);
+      slprintf(comment,sizeof(comment),
+	       "Home directory of %s",pszHomename);
       string_set(&iSERVICE(i).comment,comment);
     }
   iSERVICE(i).bAvailable = sDefault.bAvailable;
@@ -1246,7 +1247,8 @@ static BOOL lp_add_ipc(void)
   if (i < 0)
     return(False);
 
-  sprintf(comment,"IPC Service (%s)", Globals.szServerString );
+  slprintf(comment,sizeof(comment),
+	   "IPC Service (%s)", Globals.szServerString );
 
   string_set(&iSERVICE(i).szPath,tmpdir());
   string_set(&iSERVICE(i).szUsername,"");
@@ -1904,13 +1906,13 @@ static void parameter_string(struct parm_struct *p,void *ptr,char *s)
 	case P_GSTRING:
 	case P_UGSTRING:
 		if ((char *)ptr)
-			sprintf(s, "%s",(char *)ptr);
+			slprintf(s, sizeof(pstring)-1, "%s",(char *)ptr);
 		break;
 		
 	case P_STRING:
 	case P_USTRING:
 		if (*(char **)ptr)
-			sprintf(s, "%s",*(char **)ptr);
+			slprintf(s, sizeof(pstring)-1,"%s",*(char **)ptr);
 		break;
 	}
 }

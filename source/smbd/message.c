@@ -53,7 +53,7 @@ static void msg_deliver(void)
     }
 
   /* put it in a temporary file */
-  sprintf(s,"%s/msg.XXXXXX",tmpdir());
+  slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
   fstrcpy(name,(char *)mktemp(s));
 
   fd = open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
