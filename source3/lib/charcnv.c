@@ -55,6 +55,30 @@ static const char *charset_name(charset_t ch)
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
 	else if (ch == CH_UTF8) ret = "UTF8";
 
+#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
+	if (ret && strcasecmp(ret, "LOCALE") == 0) {
+		const char *ln = NULL;
+
+#ifdef HAVE_SETLOCALE
+		setlocale(LC_ALL, "");
+#endif
+		ln = nl_langinfo(CODESET);
+		if (ln) {
+			/* Check whether the charset name is supported
+			   by iconv */
+			smb_iconv_t handle = smb_iconv_open(ln,"UCS-2LE");
+			if (handle == (smb_iconv_t) -1) {
+				DEBUG(5,("Locale charset '%s' unsupported, using ASCII instead\n", ln));
+				ln = NULL;
+			} else {
+				DEBUG(5,("Substituting charset '%s' for LOCALE\n", ln));
+				smb_iconv_close(handle);
+			}
+		}
+		ret = ln;
+	}
+#endif
+
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
 }

@@ -1281,8 +1281,13 @@ static void init_globals(void)
 	/* using UTF8 by default allows us to support all chars */
 	string_set(&Globals.unix_charset, "UTF8");
 
-	/* using UTF8 by default allows us to support all chars */
+#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
+	/* If the system supports nl_langinfo(), try to grab the value
+	   from the user's locale */
+	string_set(&Globals.display_charset, "LOCALE");
+#else
 	string_set(&Globals.display_charset, "ASCII");
+#endif
 
 	/* Use codepage 850 as a default for the dos character set */
 	string_set(&Globals.dos_charset, "CP850");
