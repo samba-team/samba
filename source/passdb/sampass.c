@@ -88,14 +88,6 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	DEBUG(5,("getsamfile21pwent\n"));
 
-	user->full_name    = NULL;
-	user->home_dir     = NULL;
-	user->dir_drive    = NULL;
-	user->logon_script = NULL;
-	user->profile_path = NULL;
-	user->acct_desc    = NULL;
-	user->workstations = NULL;
-
 	user = pwdb_smb_to_sam(getsmbfilepwent(vp));
 	if (user == NULL)
 	{
