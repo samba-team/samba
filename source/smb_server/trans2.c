@@ -262,6 +262,7 @@ static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct smb_trans2 *tr
 
 		push_nttime(trans->out.data.data, 0, fsinfo.volume_info.out.create_time);
 		SIVAL(trans->out.data.data,       8, fsinfo.volume_info.out.serial_number);
+		SSVAL(trans->out.data.data,      16, 0); /* padding */
 		trans2_append_data_string(req, trans, 
 					  &fsinfo.volume_info.out.volume_name, 
 					  12, STR_UNICODE);
@@ -555,6 +556,7 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 		push_nttime(trans->out.data.data, 16, st->all_info.out.write_time);
 		push_nttime(trans->out.data.data, 24, st->all_info.out.change_time);
 		SIVAL(trans->out.data.data,       32, st->all_info.out.attrib);
+		SIVAL(trans->out.data.data,       36, 0);
 		SBVAL(trans->out.data.data,       40, st->all_info.out.alloc_size);
 		SBVAL(trans->out.data.data,       48, st->all_info.out.size);
 		SIVAL(trans->out.data.data,       56, st->all_info.out.nlink);
