@@ -93,15 +93,15 @@ sl_help (SL_cmd *cmds, int argc, char **argv)
 		    "Try \"help\" for a list of all commands\n",
 		    argv[1]);
 	else {
-	    printf ("%s\t%s", c->name, c->usage);
+	    printf ("%s\t%s\n", c->name, c->usage);
 	    if(c->help && *c->help)
 		printf ("%s\n", c->help);
 	    if((++c)->name && c->func == NULL) {
-		printf ("\nSynonyms:");
+		printf ("Synonyms:");
 		while (c->name && c->func == NULL)
 		    printf ("\t%s", (c++)->name);
+		printf ("\n");
 	    }
-	    printf ("\n");
 	}
     }
 }
