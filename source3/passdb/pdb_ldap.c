@@ -2993,7 +2993,7 @@ and will risk BDCs having inconsistant SIDs\n"));
 	}
 
 	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+				 get_attr_key2string( dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE ),
 				 alg_rid_base_string)) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {
