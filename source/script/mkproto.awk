@@ -24,7 +24,7 @@ END {
 #      use_ldap_define = 0;
 #    }
     print ""
-    print "/*The following definitions come from ",FILENAME," */"
+    print "/* The following definitions come from",FILENAME," */"
     print ""
     current_file=FILENAME
   }
