@@ -1041,7 +1041,6 @@ void *str_to_val(int type, char *val, int *len)
 
   default:
     return NULL;
-    break;
   }
 
   return NULL;
@@ -1212,7 +1211,7 @@ int string_to_sid(DOM_SID **sid, char *sid_str)
     lstr = strchr(lstr + 1, '-'); 
   }
 
-  return 1;
+  /*return 1; */ /* Not Reached ... */
 }
 
 /*
@@ -1380,7 +1379,7 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
   else { /* Create more space in the list ... */
     if (!(list = (KEY_LIST *)realloc(list, sizeof(KEY_LIST) + 
 				     (list->max_keys + REG_KEY_LIST_SIZE - 1) 
-				     * sizeof(REG_KEY *))));
+				     * sizeof(REG_KEY *))))
       goto error;
 
     list->max_keys += REG_KEY_LIST_SIZE;
@@ -1586,7 +1585,7 @@ int data_to_ascii(unsigned char *datap, int len, int type, char *ascii, int asci
     if (verbose) fprintf(stderr, "Len: %d\n", len);
     /* FIXME. This has to be fixed. It has to be UNICODE */ 
     return uni_to_ascii(datap, ascii, len, ascii_max);
-    break;
+    break; /*NOTREACHED*/
 
   case REG_TYPE_EXPANDSZ:
     return uni_to_ascii(datap, ascii, len, ascii_max);
