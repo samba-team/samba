@@ -106,15 +106,15 @@ UNIX system database. This is a simple system to administer.
 <title>smb.conf for Reference Documentation Server</title>
 <smbconfcomment> Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>&example.server.samba;</value></smbconfoption>
-<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>guest</value></smbconfoption>
-<smbconfoption><name>wins server</name><value>192.168.1.1</value></smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
+<smbconfoption name="netbios name">&example.server.samba;</smbconfoption>
+<smbconfoption name="security">SHARE</smbconfoption>
+<smbconfoption name="passdb backend">guest</smbconfoption>
+<smbconfoption name="wins server">192.168.1.1</smbconfoption>
 <smbconfsection>[data]</smbconfsection>
-<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
-<smbconfoption><name>path</name><value>/export</value></smbconfoption>
-<smbconfoption><name>guest only</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Data</smbconfoption>
+<smbconfoption name="path">/export</smbconfoption>
+<smbconfoption name="guest only">Yes</smbconfoption>
 </smbconfexample>
 
 <para>
@@ -198,21 +198,21 @@ The contents of the &smb.conf; file is shown in <link linkend="AnonPtrSvr">the n
 <title>&smb.conf; for Anonymous Printing</title>
 <smbconfcomment> Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>&example.server.samba;</value></smbconfoption>
-<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>guest</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
+<smbconfoption name="netbios name">&example.server.samba;</smbconfoption>
+<smbconfoption name="security">SHARE</smbconfoption>
+<smbconfoption name="passdb backend">guest</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printer admin">root</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 </para>
 

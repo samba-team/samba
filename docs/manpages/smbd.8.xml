@@ -136,7 +136,7 @@
 		<term>-p &lt;port number(s)&gt;</term>
 		<listitem><para><replaceable>port number(s)</replaceable> is a 
 		space or comma-separated list of TCP ports smbd should listen on.
-		The default value is taken from the <smbconfoption><name>ports</name></smbconfoption> parameter in &smb.conf;</para>
+		The default value is taken from the <smbconfoption name="ports"/> parameter in &smb.conf;</para>
 
 		<para>The default ports are 139 (used for SMB over NetBIOS over TCP)
 			and port 445 (used for plain SMB over TCP).
@@ -225,7 +225,7 @@
 	<para>Samba uses PAM for authentication (when presented with a plaintext 
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
-	by the limitations of the SMB protocol and the <smbconfoption><name>obey pam restrictions</name></smbconfoption> <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	by the limitations of the SMB protocol and the <smbconfoption name="obey pam restrictions"/> <citerefentry><refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> paramater.  When this is set, the following restrictions apply:
 	</para>
 

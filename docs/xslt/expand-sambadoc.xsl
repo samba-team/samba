@@ -7,10 +7,8 @@
 	(C) Alexander Bokovoy 					2002-2004
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:exsl="http://exslt.org/common"
 	xmlns:samba="http://samba.org/common"
-	version="1.1"
-	extension-element-prefixes="exsl">
+	version="1.1">
 
 	<xsl:import href="../settings.xsl"/>
 
@@ -83,18 +81,18 @@
 		<xsl:element name="member">
 			<xsl:element name="indexterm">
 				<xsl:element name="primary">
-					<xsl:value-of select="name"/>
+					<xsl:value-of select="@name"/>
 				</xsl:element>
 			</xsl:element>
 			<xsl:element name="parameter">
 				<xsl:text disable-output-escaping="yes">
 					&lt;?latex \hspace{1cm} ?&gt;
 				</xsl:text>
-				<xsl:value-of select="name"/>
+				<xsl:value-of select="@name"/>
 				<xsl:choose>
-					<xsl:when test="value != ''">
+					<xsl:when test="text() != ''">
 						<xsl:text> = </xsl:text>
-						<xsl:value-of select="value"/>
+						<xsl:value-of select="text()"/>
 					</xsl:when>
 				</xsl:choose>
 			</xsl:element>
@@ -126,7 +124,7 @@
 		<!-- Include an index term -->
 		<xsl:element name="indexterm">
 			<xsl:element name="primary">
-				<xsl:value-of select="name"/>
+				<xsl:value-of select="@name"/>
 			</xsl:element>
 		</xsl:element>
 

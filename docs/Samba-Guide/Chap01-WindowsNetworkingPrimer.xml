@@ -704,7 +704,7 @@
 	    </indexterm>
 	    <indexterm><primary>nobody</primary></indexterm>
 		Samba has a special name for the <constant>NULL</constant>, or empty, user account.
-		It calls that the <smbconfoption><name>guest account</name></smbconfoption>. The
+		It calls that the <smbconfoption name="guest account"/>. The
 		default value of this parameter is <constant>nobody</constant>; however, this can be
 		changed to map the function of the guest account to any other UNIX identity. Some
 		UNIX administrators prefer to map this account to the system default anonymous
@@ -1128,7 +1128,7 @@
 		It should be noted that the <parameter>guest account</parameter> is essential to
 		Samba operation. Either the operating system must have an account called <constant>nobody</constant>
 		or there must be an entry in the &smb.conf; file with a valid UNIX account. For example,
-		<smbconfoption><name>guest account</name><value>ftp</value></smbconfoption>.
+		<smbconfoption name="guest account">ftp</smbconfoption>.
 		</para>
 
 	</answer>
@@ -1238,7 +1238,7 @@
 	<question>
 
 		<para>
-		Is it necessary to specify <smbconfoption><name>encrypt passwords</name><value>Yes</value></smbconfoption>
+		Is it necessary to specify <smbconfoption name="encrypt passwords">Yes</smbconfoption>
 		when Samba-3 is configured as a Domain Member?
 		</para>
 
@@ -1266,7 +1266,7 @@
 		<para>
 		Yes. This is a local function on the server. The default setting is to use the UNIX account
 		<constant>nobody</constant>. If this account does not exist on the UNIX server, then it is
-		necessary to provide a <smbconfoption><name>guest account</name><value>an_account</value></smbconfoption>,
+		necessary to provide a <smbconfoption name="guest account">an_account</smbconfoption>,
 		where <constant>an_account</constant> is a valid local UNIX user account.
 		</para>
 

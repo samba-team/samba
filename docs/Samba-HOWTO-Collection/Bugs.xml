@@ -80,36 +80,36 @@ detail, but may use too much disk space.
 </para>
 
 <para>
-To set the debug level, use the <smbconfoption><name>log level</name></smbconfoption> in your 
+To set the debug level, use the <smbconfoption name="log level"/> in your 
 &smb.conf;. You may also find it useful to set the log 
 level higher for just one machine and keep separate logs for each machine. 
 To do this, add the following lines to your main &smb.conf; file:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>log level</name><value>10</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/usr/local/samba/lib/log.%m</value></smbconfoption>
-<smbconfoption><name>include</name><value>/usr/local/samba/lib/smb.conf.%m</value></smbconfoption>
+<smbconfoption name="log level">10</smbconfoption>
+<smbconfoption name="log file">/usr/local/samba/lib/log.%m</smbconfoption>
+<smbconfoption name="include">/usr/local/samba/lib/smb.conf.%m</smbconfoption>
 </smbconfblock></para>
 
 <para>
 and create a file <filename>/usr/local/samba/lib/smb.conf.<replaceable>machine</replaceable></filename> where
 <replaceable>machine</replaceable> is the name of the client you wish to debug. In that file
 put any &smb.conf; commands you want, for example 
-<smbconfoption><name>log level</name></smbconfoption> may be useful. This also allows you to 
+<smbconfoption name="log level"/> may be useful. This also allows you to 
 experiment with different security systems, protocol levels and so on, on just 
 one machine.
 </para>
 
 <para>
-The &smb.conf; entry <smbconfoption><name>log level</name></smbconfoption> 
-is synonymous with the parameter <smbconfoption><name>debuglevel</name></smbconfoption> that has
+The &smb.conf; entry <smbconfoption name="log level"/> 
+is synonymous with the parameter <smbconfoption name="debuglevel"/> that has
 been used in older versions of Samba and is being retained for backward 
 compatibility of &smb.conf; files.
 </para>
 
 <para>
-As the <smbconfoption><name>log level</name></smbconfoption> value is increased, you will record 
+As the <smbconfoption name="log level"/> value is increased, you will record 
 a significantly greater level of debugging information. For most 
 debugging operations, you may not need a setting higher than 
 <constant>3</constant>. Nearly 
@@ -128,9 +128,9 @@ prepared for a large volume of log data.
 
 <para>
 <smbconfblock>
-<smbconfoption><name>log level</name><value>0 tdb:3 passdb:5 auth:4 vfs:2</value></smbconfoption>
-<smbconfoption><name>max log size</name><value>0</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/var/log/samba/%U.%m.log</value></smbconfoption>
+<smbconfoption name="log level">0 tdb:3 passdb:5 auth:4 vfs:2</smbconfoption>
+<smbconfoption name="max log size">0</smbconfoption>
+<smbconfoption name="log file">/var/log/samba/%U.%m.log</smbconfoption>
 </smbconfblock>
 </para>
 

@@ -38,9 +38,9 @@
 
 	<para>
 	A Samba server can be made a DFS server by setting the global 
-	Boolean <smbconfoption><name>host msdfs</name></smbconfoption>
+	Boolean <smbconfoption name="host msdfs"/>
 	parameter in the &smb.conf; file. You designate a share as a DFS
-	root using the Share Level Boolean <smbconfoption><name>msdfs root</name></smbconfoption> parameter. A DFS root directory on Samba hosts DFS
+	root using the Share Level Boolean <smbconfoption name="msdfs root"/> parameter. A DFS root directory on Samba hosts DFS
 	links in the form of symbolic links that point to other servers. For example, a symbolic link
 	<filename>junction-&gt;msdfs:storage1\share1</filename> in the share directory acts
 	as the DFS junction. When DFS-aware clients attempt to access the junction link,
@@ -65,12 +65,12 @@
 <smbconfexample id="dfscfg">
 <title>smb.conf with DFS configured</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>netbios name</name><value>&example.server.samba;</value></smbconfoption>
-<smbconfoption><name>host msdfs  </name><value>yes</value></smbconfoption>
+<smbconfoption name="netbios name">&example.server.samba;</smbconfoption>
+<smbconfoption name="host msdfs  ">yes</smbconfoption>
 
 <smbconfsection>[dfs]</smbconfsection>
-<smbconfoption><name>path</name><value>/export/dfsroot</value></smbconfoption>
-<smbconfoption><name>msdfs root</name><value>yes</value></smbconfoption>
+<smbconfoption name="path">/export/dfsroot</smbconfoption>
+<smbconfoption name="msdfs root">yes</smbconfoption>
 </smbconfexample>
 </para>
 

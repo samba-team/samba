@@ -643,63 +643,63 @@ hosts:	files wins
 <title>Accounting Office Network &smb.conf; File &smbmdash; [globals] Section</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>BILLMORE</value></smbconfoption>
-<smbconfoption><name>passwd chat</name><value>*New*Password* \</value></smbconfoption>
+<smbconfoption name="workgroup">BILLMORE</smbconfoption>
+<smbconfoption name="passwd chat">*New*Password* \</smbconfoption>
 <member><parameter>%n\n*Re-enter*new*password* %n\n *Password*changed*</parameter></member>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/usr/sbin/useradd -m '%u'</value></smbconfoption>
-<smbconfoption><name>delete user script</name><value>/usr/sbin/userdel -r '%u'</value></smbconfoption>
-<smbconfoption><name>add group script</name><value>/usr/sbin/groupadd '%g'</value></smbconfoption>
-<smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel '%g'</value></smbconfoption>
-<smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G '%g' '%u'</value></smbconfoption>
-<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd \</value></smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="syslog">0</smbconfoption>
+<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="add user script">/usr/sbin/useradd -m '%u'</smbconfoption>
+<smbconfoption name="delete user script">/usr/sbin/userdel -r '%u'</smbconfoption>
+<smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
+<smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
+<smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
+<smbconfoption name="add machine script">/usr/sbin/useradd \</smbconfoption>
 <member><parameter>-s /bin/false -d /var/lib/nobody '%u'</parameter></member>
-<smbconfoption><name>logon script</name><value>scripts\login.bat</value></smbconfoption>
-<smbconfoption><name>logon path</name><value> </value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printing</name><value>CUPS</value></smbconfoption>
+<smbconfoption name="logon script">scripts\login.bat</smbconfoption>
+<smbconfoption name="logon path"> </smbconfoption>
+<smbconfoption name="logon drive">X:</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="wins support">Yes</smbconfoption>
+<smbconfoption name="printing">CUPS</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="acct3conf">
 <title>Accounting Office Network &smb.conf; File &smbmdash; Services and Shares Section</title>
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>SMB Print Spool</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[netlogon]</smbconfsection>
-<smbconfoption><name>comment</name><value>Network Logon Service</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/%U</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Network Logon Service</smbconfoption>
+<smbconfoption name="path">/data/%U</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[accounts]</smbconfsection>
-<smbconfoption><name>comment</name><value>Accounting Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/accounts</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%G</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Accounting Files</smbconfoption>
+<smbconfoption name="path">/data/accounts</smbconfoption>
+<smbconfoption name="valid users">%G</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[finsvcs]</smbconfsection>
-<smbconfoption><name>comment</name><value>Financial Service Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/finsvcs</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%G</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Financial Service Files</smbconfoption>
+<smbconfoption name="path">/data/finsvcs</smbconfoption>
+<smbconfoption name="valid users">%G</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 </smbconfexample>
 
 		<sect2>

@@ -122,7 +122,7 @@ as follows:
 <itemizedlist>
 	<listitem><para>
 	A Domain Security Account (stored in the 
-	<smbconfoption><name>passdb backend</name></smbconfoption> that has been configured in the
+	<smbconfoption name="passdb backend"/> that has been configured in the
 	&smb.conf; file. The precise nature of the account information that is
 	stored depends on the type of backend database that has been chosen.
 	</para>
@@ -276,7 +276,7 @@ information to such clients. You have been warned!
 <title>Managing Domain Machine Accounts using NT4 Server Manager</title>
 
 <para>
-A working <smbconfoption><name>add machine script</name></smbconfoption> is essential
+A working <smbconfoption name="add machine script"/> is essential
 for machine trust accounts to be automatically created. This applies no matter whether
 one uses automatic account creation, or if one wishes to use the NT4 Domain Server Manager.
 </para>
@@ -370,7 +370,7 @@ Here is an example for a Red Hat Linux system.
 <para><smbconfblock>
 <smbconfsection>[global]</smbconfsection>
 <smbconfcomment>&lt;...remainder of parameters...&gt;</smbconfcomment>
-<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -d /var/lib/nobody -g 100 \</value></smbconfoption>
+<smbconfoption name="add machine script">/usr/sbin/useradd -d /var/lib/nobody -g 100 \</smbconfoption>
 <member><parameter>  -s /bin/false -M %u</parameter></member>
 </smbconfblock></para>
 
@@ -405,7 +405,7 @@ with the version of Windows.
 	The name of the account that is used to create Domain Member machine accounts can be
 	anything the network administrator may choose. If it is other than <constant>root</constant>
 	then this is easily mapped to <constant>root</constant> in the file named in the &smb.conf; parameter
-	<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>.
+	<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>.
 	</para>
 
 	<para>
@@ -511,24 +511,24 @@ First, you must edit your &smb.conf; file to tell Samba it should now use domain
 
 <para>
 	Change (or add) your 
-	<smbconfoption><name>security</name></smbconfoption> line in the [global] section 
+	<smbconfoption name="security"/> line in the [global] section 
 of your &smb.conf; to read:
 </para>
 
 <para>
 <smbconfblock>
-<smbconfoption><name>security</name><value>domain</value></smbconfoption>
+<smbconfoption name="security">domain</smbconfoption>
 </smbconfblock>
 </para>
 
 <para>
-Next change the <smbconfoption><name>workgroup</name></smbconfoption> line in the <smbconfsection>[global]</smbconfsection>
+Next change the <smbconfoption name="workgroup"/> line in the <smbconfsection>[global]</smbconfsection>
 section to read: 
 </para>
 
 <para>
 <smbconfblock>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -537,20 +537,20 @@ This is the name of the domain we are joining.
 </para>
 
 <para>
-You must also have the parameter <smbconfoption><name>encrypt passwords</name></smbconfoption>
+You must also have the parameter <smbconfoption name="encrypt passwords"/>
 set to <constant>yes</constant> in order for your users to authenticate to the NT PDC.
 This is the default setting if this parameter is not specified. There is no need to specify this
 parameter, but if it is specified in the &smb.conf; file, it must be set to <constant>Yes</constant>.
 </para>
 
 <para>
-Finally, add (or modify) a <smbconfoption><name>password server</name></smbconfoption> line in the [global]
+Finally, add (or modify) a <smbconfoption name="password server"/> line in the [global]
 section to read: 
 </para>
 
 <para>
 <smbconfblock>
-<smbconfoption><name>password server</name><value>DOMPDC DOMBDC1 DOMBDC2</value></smbconfoption>
+<smbconfoption name="password server">DOMPDC DOMBDC1 DOMBDC2</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -570,7 +570,7 @@ set this line to be:
 
 <para>
 <smbconfblock>
-<smbconfoption><name>password server</name><value>*</value></smbconfoption>
+<smbconfoption name="password server">*</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -661,7 +661,7 @@ to your server. This means that if Domain user <constant>DOM\fred
 </constant> attaches to your Domain Security Samba server, there needs 
 to be a local UNIX user fred to represent that user in the UNIX 
 file system. This is similar to the older Samba security mode 
-<smbconfoption><name>security</name><value>server</value></smbconfoption>,
+<smbconfoption name="security">server</smbconfoption>,
 where Samba would pass through the authentication request to a Windows 
 NT server in the same way as a Windows 95 or Windows 98 server would.
 </para>
@@ -682,11 +682,11 @@ domain PDC to an account domain PDC).
 </para>
 
 <para>
-In addition, with <smbconfoption><name>security</name><value>server</value></smbconfoption>, every Samba 
+In addition, with <smbconfoption name="security">server</smbconfoption>, every Samba 
 daemon on a server has to keep a connection open to the 
 authenticating server for as long as that daemon lasts. This can drain 
 the connection resources on a Microsoft NT server and cause it to run 
-out of available connections. With <smbconfoption><name>security</name><value>domain</value></smbconfoption>, 
+out of available connections. With <smbconfoption name="security">domain</smbconfoption>, 
 however, the Samba daemons connect to the PDC/BDC only for as long 
 as is necessary to authenticate the user and then drop the connection, 
 thus conserving PDC connection resources.
@@ -731,24 +731,24 @@ You must use at least the following three options in &smb.conf;:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>realm</name><value>your.kerberos.REALM</value></smbconfoption>
-<smbconfoption><name>security</name><value>ADS</value></smbconfoption>
+<smbconfoption name="realm">your.kerberos.REALM</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
 <smbconfcomment>The following parameter need only be specified if present.</smbconfcomment>
 <smbconfcomment>The default setting is not present is Yes.</smbconfcomment>
-<smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption>
+<smbconfoption name="encrypt passwords">yes</smbconfoption>
 </smbconfblock></para>
 
 <para>
 In case samba cannot correctly identify the appropriate ADS server using the realm name, use the 
-<smbconfoption><name>password server</name></smbconfoption> option in &smb.conf;:
+<smbconfoption name="password server"/> option in &smb.conf;:
 <smbconfblock>
-<smbconfoption><name>password server</name><value>your.kerberos.server</value></smbconfoption>
+<smbconfoption name="password server">your.kerberos.server</smbconfoption>
 </smbconfblock>
 </para>
 
 <note><para>
 You do <emphasis>not</emphasis> need a smbpasswd file, and older clients will be authenticated as 
-if <smbconfoption><name>security</name><value>domain</value></smbconfoption>, although it will not do any harm and 
+if <smbconfoption name="security">domain</smbconfoption>, although it will not do any harm and 
 allows you to have local users not in the domain.
 </para></note>
 
@@ -997,14 +997,14 @@ This may be needed in particular when sharing files over both CIFS and NFS.
 <para>To use the <emphasis>LDAP</emphasis> <parameter>ldap idmap suffix</parameter>, set:</para>
 
 <smbconfblock>
-<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap,dc=quenya,dc=org</value></smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap,dc=quenya,dc=org</smbconfoption>
 </smbconfblock>
 
-<para>See the &smb.conf; man page entry for the <smbconfoption><name>ldap idmap suffix</name><value></value></smbconfoption>
+<para>See the &smb.conf; man page entry for the <smbconfoption name="ldap idmap suffix"></smbconfoption>
 parameter for further information.</para>
 
 <para>
-Do not forget to specify also the <smbconfoption><name>ldap admin dn</name></smbconfoption>
+Do not forget to specify also the <smbconfoption name="ldap admin dn"/>
 and to make certain to set the LDAP administrative password into the <filename>secrets.tdb</filename> using:
 <screen>
 &rootprompt; smbpasswd -w ldap-admin-password
@@ -1053,9 +1053,9 @@ Please try again later.'</errorname> Why?</quote>
 </para>
 
 <para>
-You should check that there is an <smbconfoption><name>add machine script</name></smbconfoption> in your &smb.conf;
+You should check that there is an <smbconfoption name="add machine script"/> in your &smb.conf;
 file. If there is not, please add one that is appropriate for your OS platform. If a script
-has been defined, you will need to debug its operation. Increase the <smbconfoption><name>log level</name><value></value></smbconfoption>
+has been defined, you will need to debug its operation. Increase the <smbconfoption name="log level"></smbconfoption>
 in the &smb.conf; file to level 10, then try to rejoin the domain. Check the logs to see which
 operation is failing.
 </para>
@@ -1088,7 +1088,7 @@ Possible causes include:
 </itemizedlist>
 
 <para>
-The <smbconfoption><name>add machine script</name></smbconfoption> does not create the
+The <smbconfoption name="add machine script"/> does not create the
 machine account in the Samba backend database, it is there only to create a UNIX system
 account to which the Samba backend database account can be mapped.
 </para>
@@ -1099,7 +1099,7 @@ account to which the Samba backend database account can be mapped.
 	<title>I Can't Join a Windows 2003 PDC</title>
 
 	<para>Windows 2003 requires SMB signing. Client side SMB signing has been implemented in Samba-3.0.
-	Set <smbconfoption><name>client use spnego</name><value>yes</value></smbconfoption> when communicating 
+	Set <smbconfoption name="client use spnego">yes</smbconfoption> when communicating 
 	with a Windows 2003 server.</para>
 </sect2>
 

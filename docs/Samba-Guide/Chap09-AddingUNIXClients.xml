@@ -201,7 +201,7 @@
 		      <primary>mapping</primary>
 		    </indexterm>
 				If the parameter 
-			<smbconfoption><name>idmap backend</name><value>ldap:ldap://myserver.domain</value></smbconfoption>
+			<smbconfoption name="idmap backend">ldap:ldap://myserver.domain</smbconfoption>
 				was specified and the LDAP server has been configured with a container in which it may
 				store the IDMAP entries, all Domain Members may share a common mapping.
 				</para></listitem>
@@ -230,7 +230,7 @@
 	      </indexterm>
 			If you wish to make use of accounts (users and/or groups) that are local to (i.e., capable
 			of being resolved using) the name service switch (NSS) facility, it is imperative to use the 
-			<smbconfoption><name>winbind enable local accounts</name><value>Yes</value></smbconfoption>
+			<smbconfoption name="winbind enable local accounts">Yes</smbconfoption>
 			in the &smb.conf; file. This parameter specifically applies only to Domain Controllers, 
 			not to Domain Member servers.
 			</para></listitem>
@@ -278,7 +278,7 @@
 	  </indexterm>
 		In the situation where UNIX accounts are held on the Domain Member server itself, the only effective
 		way to use them involves the &smb.conf; entry 
-		<smbconfoption><name>winbind trusted domains only</name><value>Yes</value></smbconfoption>. This forces 
+		<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>. This forces 
 		Samba (<command>smbd</command>) to perform a <command>getpwnam()</command> system call that can
 		then be controlled via <filename>/etc/nsswitch.conf</filename> file settings. The use of this parameter
 		disables the use of Samba with Trusted Domains (i.e., External Domains).
@@ -672,49 +672,49 @@ Joined domain MEGANET2.
 <title>Samba Domain Member in Samba Domain Control Context &smbmdash; &smb.conf; File</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>unix charset</name><value>LOCALE</value></smbconfoption>
-<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
-<smbconfoption><name>security</name><value>DOMAIN</value></smbconfoption>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>log level</name><value>10</value></smbconfoption>
-<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-<smbconfoption><name>max log size</name><value>50</value></smbconfoption>
-<smbconfoption><name>smb ports</name><value>139 445</value></smbconfoption>
-<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>wins server</name><value>192.168.2.1</value></smbconfoption>
-<smbconfoption><name>ldap suffix</name><value>dc=abmas,dc=biz</value></smbconfoption>
-<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap</value></smbconfoption>
-<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
-<smbconfoption><name>idmap backend</name><value>ldap:ldap://lapdc.abmas.biz</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
-<smbconfoption><name>winbind trusted domains only</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="unix charset">LOCALE</smbconfoption>
+<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+<smbconfoption name="security">DOMAIN</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="log level">10</smbconfoption>
+<smbconfoption name="syslog">0</smbconfoption>
+<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+<smbconfoption name="max log size">50</smbconfoption>
+<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="wins server">192.168.2.1</smbconfoption>
+<smbconfoption name="ldap suffix">dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldap://lapdc.abmas.biz</smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
+<smbconfoption name="printer admin">root</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>SMB Print Spool</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[print$]</smbconfsection>
-<smbconfoption><name>comment</name><value>Printer Drivers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/drivers</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>root, Administrator</value></smbconfoption>
-<smbconfoption><name>write list</name><value>root</value></smbconfoption>
+<smbconfoption name="comment">Printer Drivers</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+<smbconfoption name="admin users">root, Administrator</smbconfoption>
+<smbconfoption name="write list">root</smbconfoption>
 </smbconfexample>
 
 <example id="ch9-ldifadd">
@@ -970,45 +970,45 @@ MEGANET2+PIOps:x:10005:
 <title>Samba Domain Member Server &smb.conf; File for NT4 Domain</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>unix charset</name><value>LOCALE</value></smbconfoption>
-<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
-<smbconfoption><name>security</name><value>DOMAIN</value></smbconfoption>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-<smbconfoption><name>max log size</name><value>0</value></smbconfoption>
-<smbconfoption><name>smb ports</name><value>139 445</value></smbconfoption>
-<smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>wins server</name><value>192.168.2.1</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
-<smbconfoption><name>template primary group</name><value>"Domain Users"</value></smbconfoption>
-<smbconfoption><name>template shell</name><value>/bin/bash</value></smbconfoption>
-<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root</value></smbconfoption>
-<smbconfoption><name>hosts allow</name><value>192.168.2., 192.168.3., 127.</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="unix charset">LOCALE</smbconfoption>
+<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+<smbconfoption name="security">DOMAIN</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="log level">1</smbconfoption>
+<smbconfoption name="syslog">0</smbconfoption>
+<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+<smbconfoption name="max log size">0</smbconfoption>
+<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="wins server">192.168.2.1</smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+<smbconfoption name="template primary group">"Domain Users"</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind separator">+</smbconfoption>
+<smbconfoption name="printer admin">root</smbconfoption>
+<smbconfoption name="hosts allow">192.168.2., 192.168.3., 127.</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>SMB Print Spool</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[print$]</smbconfsection>
-<smbconfoption><name>comment</name><value>Printer Drivers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/drivers</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>root, Administrator</value></smbconfoption>
-<smbconfoption><name>write list</name><value>root</value></smbconfoption>
+<smbconfoption name="comment">Printer Drivers</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+<smbconfoption name="admin users">root, Administrator</smbconfoption>
+<smbconfoption name="write list">root</smbconfoption>
 </smbconfexample>
 
 <example id="ch9-nsswbnd">
@@ -1642,43 +1642,43 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <title>Samba Domain Member &smb.conf; File for Active Directory Membership</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>unix charset</name><value>LOCALE</value></smbconfoption>
-<smbconfoption><name>workgroup</name><value>LONDON</value></smbconfoption>
-<smbconfoption><name>realm</name><value>LONDON.ABMAS.BIZ</value></smbconfoption>
-<smbconfoption><name>server string</name><value>Samba 3.0.12</value></smbconfoption>
-<smbconfoption><name>security</name><value>ADS</value></smbconfoption>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-<smbconfoption><name>syslog</name><value>0</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/var/log/samba/%m</value></smbconfoption>
-<smbconfoption><name>max log size</name><value>50</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
-<smbconfoption><name>template primary group</name><value>"Domain Users"</value></smbconfoption>
-<smbconfoption><name>template shell</name><value>/bin/bash</value></smbconfoption>
-<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="unix charset">LOCALE</smbconfoption>
+<smbconfoption name="workgroup">LONDON</smbconfoption>
+<smbconfoption name="realm">LONDON.ABMAS.BIZ</smbconfoption>
+<smbconfoption name="server string">Samba 3.0.12</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="log level">1</smbconfoption>
+<smbconfoption name="syslog">0</smbconfoption>
+<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+<smbconfoption name="max log size">50</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="ldap ssl">no</smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+<smbconfoption name="template primary group">"Domain Users"</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind separator">+</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>SMB Print Spool</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[print$]</smbconfsection>
-<smbconfoption><name>comment</name><value>Printer Drivers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/drivers</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>root, Administrator</value></smbconfoption>
-<smbconfoption><name>write list</name><value>root</value></smbconfoption>
+<smbconfoption name="comment">Printer Drivers</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+<smbconfoption name="admin users">root, Administrator</smbconfoption>
+<smbconfoption name="write list">root</smbconfoption>
 </smbconfexample>
 
 	</sect2>

@@ -42,8 +42,8 @@
     service to <command>smbd</command>, <command>ntlm_auth</command>
     and the <command>pam_winbind.so</command> PAM module, by managing connections to
     domain controllers.  In this configuraiton the
-    <smbconfoption><name>idmap uid</name></smbconfoption> and
-    <smbconfoption><name>idmap gid</name></smbconfoption>
+    <smbconfoption name="idmap uid"/> and
+    <smbconfoption name="idmap gid"/>
     parameters are not required. (This is known as `netlogon proxy only mode'.)</para>
 
         <para> The Name Service Switch allows user 
@@ -229,25 +229,25 @@ hosts:		files wins
 
 	<itemizedlist>
 		<listitem><para>
-		<smbconfoption><name>winbind separator</name></smbconfoption></para></listitem>
+		<smbconfoption name="winbind separator"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>idmap uid</name></smbconfoption></para></listitem>
+		<smbconfoption name="idmap uid"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>idmap gid</name></smbconfoption></para></listitem>
+		<smbconfoption name="idmap gid"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>idmap backend</name></smbconfoption></para></listitem>
+		<smbconfoption name="idmap backend"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>winbind cache time</name></smbconfoption></para></listitem>
+		<smbconfoption name="winbind cache time"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>winbind enum users</name></smbconfoption></para></listitem>
+		<smbconfoption name="winbind enum users"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>winbind enum groups</name></smbconfoption></para></listitem>
+		<smbconfoption name="winbind enum groups"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>template homedir</name></smbconfoption></para></listitem>
+		<smbconfoption name="template homedir"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>template shell</name></smbconfoption></para></listitem>
+		<smbconfoption name="template shell"/></para></listitem>
 		<listitem><para>
-		<smbconfoption><name>winbind use default domain</name></smbconfoption></para></listitem>
+		<smbconfoption name="winbind use default domain"/></para></listitem>
 	</itemizedlist>
 </refsect1>
 

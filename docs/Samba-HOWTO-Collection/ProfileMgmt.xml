@@ -75,14 +75,14 @@ For example, to support Windows NT4/200x clients, set the following in the [glob
 
 <para>
 <smbconfblock>
-<smbconfoption><name>logon path</name><value> </value></smbconfoption>
+<smbconfoption name="logon path"> </smbconfoption>
 <member><parameter>\\profileserver\profileshare\profilepath\%U\moreprofilepath</parameter></member>
 </smbconfblock>
 
 This is typically implemented like:
 
 <smbconfblock>
-<smbconfoption><name>logon path</name><value>\\%L\Profiles\%u</value></smbconfoption>
+<smbconfoption name="logon path">\\%L\Profiles\%u</smbconfoption>
 </smbconfblock>
 where <quote>%L</quote> translates to the name of the Samba server and <quote>%u</quote> translates to the user name.
 </para>
@@ -107,7 +107,7 @@ to not use the <smbconfsection>homes</smbconfsection> meta-service name as part 
 <title>Windows 9x/Me User Profiles</title>
 
 <para>
-To support Windows 9x/Me clients, you must use the <smbconfoption><name>logon home</name></smbconfoption>
+To support Windows 9x/Me clients, you must use the <smbconfoption name="logon home"/>
 parameter. Samba has been fixed so <userinput>net use /home</userinput> now works as well and it, too, relies
 on the <command>logon home</command> parameter.
 </para>
@@ -118,7 +118,7 @@ directory.  But wait! There is a trick you can use. If you set the following in 
 <smbconfsection>[global]</smbconfsection> section of your &smb.conf; file:
 </para>
 <para><smbconfblock>
-<smbconfoption><name>logon home</name><value>\\%L\%U\.profiles</value></smbconfoption>
+<smbconfoption name="logon home">\\%L\%U\.profiles</smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -130,7 +130,7 @@ of your home directory called <filename>.profiles</filename> (making them hidden
 Not only that, but <userinput>net use /home</userinput> will also work because of a feature in
 Windows 9x/Me. It removes any directory stuff off the end of the home directory area
 and only uses the server and share portion. That is, it looks like you
-specified <filename>\\%L\%U</filename> for <smbconfoption><name>logon home</name></smbconfoption>.
+specified <filename>\\%L\%U</filename> for <smbconfoption name="logon home"/>.
 </para>
 </sect3>
 
@@ -139,12 +139,12 @@ specified <filename>\\%L\%U</filename> for <smbconfoption><name>logon home</name
 
 <para>
 You can support profiles for Windows 9x and Windows NT clients by setting both the
-<smbconfoption><name>logon home</name></smbconfoption> and <smbconfoption><name>logon path</name></smbconfoption> parameters. For example:
+<smbconfoption name="logon home"/> and <smbconfoption name="logon path"/> parameters. For example:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>logon home</name><value>\\%L\%u\.profiles</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\\%L\profiles\%u</value></smbconfoption>
+<smbconfoption name="logon home">\\%L\%u\.profiles</smbconfoption>
+<smbconfoption name="logon path">\\%L\profiles\%u</smbconfoption>
 </smbconfblock></para>
 
 </sect3>
@@ -168,7 +168,7 @@ There are three ways of doing this:
 		<term>In &smb.conf;</term>
 		<listitem><para>
 		Affect the following settings and ALL clients will be forced to use a local profile:
-		<smbconfoption><name>logon home</name><value> </value></smbconfoption> and <smbconfoption><name>logon path</name><value> </value></smbconfoption>
+		<smbconfoption name="logon home"> </smbconfoption> and <smbconfoption name="logon path"> </smbconfoption>
 		</para>
 
 		<para>
@@ -230,9 +230,9 @@ When a user first logs in on Windows 9X, the file user.DAT is created, as are fo
 <filename>Nethood</filename>. These directories and their contents will be merged with the local
 versions stored in <filename>c:\windows\profiles\username</filename> on subsequent logins, taking the
 most recent from each.	You will need to use the <smbconfsection>[global]</smbconfsection> options
-<smbconfoption><name>preserve case</name><value>yes</value></smbconfoption>,
-<smbconfoption><name>short preserve case</name><value>yes</value></smbconfoption> and
-<smbconfoption><name>case sensitive</name><value>no</value></smbconfoption>
+<smbconfoption name="preserve case">yes</smbconfoption>,
+<smbconfoption name="short preserve case">yes</smbconfoption> and
+<smbconfoption name="case sensitive">no</smbconfoption>
 in order to maintain capital letters in shortcuts in any of the profile folders.
 </para>
 
@@ -275,7 +275,7 @@ if that domain logon server supports it), user name and user's password.
 wish to save the user's preferences?</computeroutput> Select <guibutton>Yes</guibutton>. </para>
 
 <para> Once the Windows 9x/Me client comes up with the desktop, you should be able to examine the
-contents of the directory specified in the <smbconfoption><name>logon path</name></smbconfoption> on
+contents of the directory specified in the <smbconfoption name="logon path"/> on
 the Samba server and verify that the <filename>Desktop</filename>, <filename>Start Menu</filename>,
 <filename>Programs</filename> and <filename>Nethood</filename> folders have been created. </para>
 
@@ -329,7 +329,7 @@ shown below. When this user next logs in, the user will be told that he/she is l
 	</para></listitem>
 
 	<listitem><para>
-	Check the contents of the profile path (see <smbconfoption><name>logon path</name></smbconfoption>
+	Check the contents of the profile path (see <smbconfoption name="logon path"/>
 	described above) and delete the <filename>user.DAT</filename> or <filename>user.MAN</filename>
 	file for the user, making a backup if required. 
 	</para></listitem>
@@ -364,12 +364,12 @@ provided with Windows NT4/200x server, and see what the differences are with the
 <title>Windows NT4 Workstation</title>
 
 <para> When a user first logs in to a Windows NT Workstation, the profile NTuser.DAT is created. The profile
-location can be now specified through the <smbconfoption><name>logon path</name></smbconfoption> parameter.
+location can be now specified through the <smbconfoption name="logon path"/> parameter.
 </para>
 
-<para> There is a parameter that is now available for use with NT Profiles: <smbconfoption><name>logon drive</name></smbconfoption>. 
+<para> There is a parameter that is now available for use with NT Profiles: <smbconfoption name="logon drive"/>. 
 This should be set to <filename>H:</filename> or any other drive, and should be used in conjunction with
-the new <smbconfoption><name>logon home</name></smbconfoption> parameter. </para>
+the new <smbconfoption name="logon home"/> parameter. </para>
 
 <para> The entry for the NT4 profile is a directory not a file. The NT help on Profiles mentions that a
 directory is also created with a .PDS extension. The user, while logging in, must have write permission
@@ -513,8 +513,8 @@ user logs on again with the newer version of MS Windows. </para>
 
 <para> If you then want to share the same Start Menu/Desktop with W9x/Me, you will need to specify a common
 location for the profiles. The &smb.conf; parameters that need to be common are 
-<smbconfoption><name>logon path</name></smbconfoption> and 
-<smbconfoption><name>logon home</name></smbconfoption>. </para>
+<smbconfoption name="logon path"/> and 
+<smbconfoption name="logon home"/>. </para>
 
 <para> If you have this set up correctly, you will find separate <filename>user.DAT</filename> and
 <filename>NTuser.DAT</filename> files in the same profile directory. </para>
@@ -1094,9 +1094,9 @@ First, the Samba server needs to be configured as a Domain Controller. This can 
 setting in &smb.conf;: </para>
 
 <smbconfblock>
-<smbconfoption><name>security</name><value>user</value></smbconfoption>
-<smbconfoption><name>os level</name><value>32 (or more)</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
+<smbconfoption name="security">user</smbconfoption>
+<smbconfoption name="os level">32 (or more)</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
 </smbconfblock>
 
 <para> There must be a <smbconfsection>[netlogon]</smbconfsection> share that is world readable. It is
@@ -1115,9 +1115,9 @@ so they do not interoperate with domain profiles. </para>
 <para> For roaming profiles, add to &smb.conf;: </para>
 
 <smbconfblock>
-<smbconfoption><name>logon path</name><value>\\%N\profiles\%U</value></smbconfoption>
+<smbconfoption name="logon path">\\%N\profiles\%U</smbconfoption>
 <smbconfcomment>Default logon drive is Z:</smbconfcomment>
-<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
+<smbconfoption name="logon drive">H:</smbconfoption>
 <smbconfcomment>This requires a PROFILES share that is world writable.</smbconfcomment>
 </smbconfblock>
 

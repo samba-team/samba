@@ -48,7 +48,7 @@ the directory for names - it knows that if a file does not exist in upper case t
 </para>
 
 <para>
-The secret to this is really in the <smbconfoption><name>case sensitive</name><value>True</value></smbconfoption>
+The secret to this is really in the <smbconfoption name="case sensitive">True</smbconfoption>
 line. This tells smbd never to scan for case-insensitive versions of names. So if an application asks for a file
 called <filename>FOO</filename>, and it can not be found by a simple stat call, then smbd will return file not
 found immediately without scanning the containing directory for a version of a different case. The other

@@ -91,8 +91,8 @@
 
 	<para>
 	Printing with CUPS in the most basic &smb.conf; setup in Samba-3.0 (as was true for 2.2.x) only needs two
-	settings: <smbconfoption><name>printing</name><value>cups</value></smbconfoption> and
-	<smbconfoption><name>printcap</name><value>cups</value></smbconfoption>. CUPS does not need a printcap file.
+	settings: <smbconfoption name="printing">cups</smbconfoption> and
+	<smbconfoption name="printcap">cups</smbconfoption>. CUPS does not need a printcap file.
 	However, the <filename>cupsd.conf</filename> configuration file knows of two related directives that control
 	how such a file will be automatically created and maintained by CUPS for the convenience of third-party
 	applications (example: <parameter>Printcap /etc/printcap</parameter> and <parameter>PrintcapFormat BSD</parameter>).
@@ -114,7 +114,7 @@
 		</para>
 
 		<para>
-		When Samba is compiled against <filename>libcups</filename>, <smbconfoption><name>printcap</name><value>cups</value></smbconfoption>
+		When Samba is compiled against <filename>libcups</filename>, <smbconfoption name="printcap">cups</smbconfoption>
 		uses the CUPS API to list printers, submit jobs, query queues, and so on. Otherwise it maps to the System V
 		commands with an additional <command>-oraw</command> option for printing. On a Linux
 		system, you can use the <command>ldd</command> utility to find out details (ldd may not be present on
@@ -137,16 +137,16 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 		</para>
 
 		<tip><para> Should it be necessary, for any reason, to set your own print commands, you can do this by setting
-		<smbconfoption><name>printing</name><value>sysv</value></smbconfoption>. However, you will lose all the benefits
+		<smbconfoption name="printing">sysv</smbconfoption>. However, you will lose all the benefits
 		of tight CUPS/Samba integration. When you do this you must manually configure the printing system commands
 		(most important: 
-		<smbconfoption><name>print command</name></smbconfoption>; other commands are
-		<smbconfoption><name>lppause command</name></smbconfoption>,
-		<smbconfoption><name>lpresume command</name></smbconfoption>,
-		<smbconfoption><name>lpq command</name></smbconfoption>,
-		<smbconfoption><name>lprm command</name></smbconfoption>,
-		<smbconfoption><name>queuepause command</name></smbconfoption> and
-		<smbconfoption><name>queue resume command</name></smbconfoption>).</para></tip>
+		<smbconfoption name="print command"/>; other commands are
+		<smbconfoption name="lppause command"/>,
+		<smbconfoption name="lpresume command"/>,
+		<smbconfoption name="lpq command"/>,
+		<smbconfoption name="lprm command"/>,
+		<smbconfoption name="queuepause command"/> and
+		<smbconfoption name="queue resume command"/>).</para></tip>
 	</sect2>
 
 	<sect2>
@@ -159,19 +159,19 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 		<para><smbconfexample id="cups-exam-simple">
 		<title>Simplest printing-related smb.conf</title>
 		<smbconfsection>[global]</smbconfsection>
-		<smbconfoption><name>load printers</name><value>yes</value></smbconfoption>
-		<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-		<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+		<smbconfoption name="load printers">yes</smbconfoption>
+		<smbconfoption name="printing">cups</smbconfoption>
+		<smbconfoption name="printcap name">cups</smbconfoption>
 
 		<smbconfsection>[printers]</smbconfsection>
-		<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-		<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-		<smbconfoption><name>browseable</name><value>no</value></smbconfoption>
-		<smbconfoption><name>public</name><value>yes</value></smbconfoption>
-		<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
-		<smbconfoption><name>writable</name><value>no</value></smbconfoption>
-		<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
-		<smbconfoption><name>printer admin</name><value>root, @ntadmins</value></smbconfoption>
+		<smbconfoption name="comment">All Printers</smbconfoption>
+		<smbconfoption name="path">/var/spool/samba</smbconfoption>
+		<smbconfoption name="browseable">no</smbconfoption>
+		<smbconfoption name="public">yes</smbconfoption>
+		<smbconfoption name="guest ok">yes</smbconfoption>
+		<smbconfoption name="writable">no</smbconfoption>
+		<smbconfoption name="printable">yes</smbconfoption>
+		<smbconfoption name="printer admin">root, @ntadmins</smbconfoption>
 
 		</smbconfexample></para>
 
@@ -206,45 +206,45 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<para><smbconfexample id="overridesettings">
 	<title>Overriding global CUPS settings for one printer</title>
 	<smbconfsection>[global]</smbconfsection>
-	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-	<smbconfoption><name>load printers</name><value>yes</value></smbconfoption>
+	<smbconfoption name="printing">cups</smbconfoption>
+	<smbconfoption name="printcap name">cups</smbconfoption>
+	<smbconfoption name="load printers">yes</smbconfoption>
 
 	<smbconfsection>[printers]</smbconfsection>
-	<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-	<smbconfoption><name>public</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>writable</name><value>no</value></smbconfoption>
-	<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>root, @ntadmins</value></smbconfoption>
+	<smbconfoption name="comment">All Printers</smbconfoption>
+	<smbconfoption name="path">/var/spool/samba</smbconfoption>
+	<smbconfoption name="public">yes</smbconfoption>
+	<smbconfoption name="guest ok">yes</smbconfoption>
+	<smbconfoption name="writable">no</smbconfoption>
+	<smbconfoption name="printable">yes</smbconfoption>
+	<smbconfoption name="printer admin">root, @ntadmins</smbconfoption>
 
 	<smbconfsection>[special_printer]</smbconfsection>
-	<smbconfoption><name>comment</name><value>A special printer with his own settings</value></smbconfoption>
-	<smbconfoption><name>path</name><value>/var/spool/samba-special</value></smbconfoption>
-	<smbconfoption><name>printing</name><value>sysv</value></smbconfoption>
-	<smbconfoption><name>printcap</name><value>lpstat</value></smbconfoption>
-	<smbconfoption><name>print command</name><value>echo "NEW: `date`: printfile %f" \</value></smbconfoption>
+	<smbconfoption name="comment">A special printer with his own settings</smbconfoption>
+	<smbconfoption name="path">/var/spool/samba-special</smbconfoption>
+	<smbconfoption name="printing">sysv</smbconfoption>
+	<smbconfoption name="printcap">lpstat</smbconfoption>
+	<smbconfoption name="print command">echo "NEW: `date`: printfile %f" \</smbconfoption>
 	<member><parameter> >> /tmp/smbprn.log ; \</parameter></member>
 	<member><parameter>echo "     `date`: p-%p s-%s f-%f" >> /tmp/smbprn.log ; \</parameter></member>
 	<member><parameter>echo "     `date`: j-%j J-%J z-%z c-%c" >> /tmp/smbprn.log ; rm %f</parameter></member>
-	<smbconfoption><name>public</name><value>no</value></smbconfoption>
-	<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
-	<smbconfoption><name>writable</name><value>no</value></smbconfoption>
-	<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
-	<smbconfoption><name>printer admin</name><value>kurt</value></smbconfoption>
-	<smbconfoption><name>hosts deny</name><value>0.0.0.0</value></smbconfoption>
-	<smbconfoption><name>hosts allow</name><value>turbo_xp, 10.160.50.23, 10.160.51.60</value></smbconfoption>
+	<smbconfoption name="public">no</smbconfoption>
+	<smbconfoption name="guest ok">no</smbconfoption>
+	<smbconfoption name="writable">no</smbconfoption>
+	<smbconfoption name="printable">yes</smbconfoption>
+	<smbconfoption name="printer admin">kurt</smbconfoption>
+	<smbconfoption name="hosts deny">0.0.0.0</smbconfoption>
+	<smbconfoption name="hosts allow">turbo_xp, 10.160.50.23, 10.160.51.60</smbconfoption>
 	</smbconfexample></para>
 
 	<para>
 	This special share is only there for testing purposes. It does not write the print job to a file. It just logs the job parameters
 	known to Samba into the <filename>/tmp/smbprn.log</filename> file and deletes the job-file. Moreover, the
-	<smbconfoption><name>printer admin</name></smbconfoption> of this share is <quote>kurt</quote> (not the <quote>@ntadmins</quote> group),
+	<smbconfoption name="printer admin"/> of this share is <quote>kurt</quote> (not the <quote>@ntadmins</quote> group),
 	guest access is not allowed, the share isn't published to the Network Neighborhood (so you need to know it is there), and it only
 	allows access from only three hosts. To prevent CUPS kicking in and taking over the print jobs for that share, we need to set
-	<smbconfoption><name>printing</name><value>sysv</value></smbconfoption> and
-	<smbconfoption><name>printcap</name><value>lpstat</value></smbconfoption>.
+	<smbconfoption name="printing">sysv</smbconfoption> and
+	<smbconfoption name="printcap">lpstat</smbconfoption>.
 	</para>
 	</sect2>
 </sect1>
@@ -337,10 +337,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 		<step><para>
 		In the &smb.conf; file <constant>[printers]</constant> section add
-		<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>,
+		<smbconfoption name="use client driver">Yes</smbconfoption>,
 		and in the <constant>[global]</constant> section add
-		<smbconfoption><name>printing</name><value>CUPS</value></smbconfoption>, plus
-		<smbconfoption><name>printcap</name><value>CUPS</value></smbconfoption>.
+		<smbconfoption name="printing">CUPS</smbconfoption>, plus
+		<smbconfoption name="printcap">CUPS</smbconfoption>.
 		</para></step>
 
 		<step><para>
@@ -2140,13 +2140,13 @@ section:
 </para>
 
 <smbconfblock>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-<smbconfoption><name>printcap</name><value>cups</value></smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
+<smbconfoption name="printcap">cups</smbconfoption>
 </smbconfblock>
 
 <para>
 When these parameters are specified, all manually set print directives
-(like <smbconfoption><name>print command</name></smbconfoption>, or <smbconfoption><name>lppause command</name></smbconfoption>) in &smb.conf; (as well as
+(like <smbconfoption name="print command"/>, or <smbconfoption name="lppause command"/>) in &smb.conf; (as well as
 in Samba itself) will be ignored. Instead, Samba will directly
 interface with CUPS through its application program interface (API),
 as long as Samba has been compiled with CUPS library (libcups)
@@ -2155,7 +2155,7 @@ other print commands are set up, then printing will use the
 <emphasis>System V</emphasis> AT&amp;T command set, with the -oraw
 option automatically passing through (if you want your own defined
 print commands to work with a Samba that has CUPS support compiled in,
-simply use <smbconfoption><name>printing</name><value>sysv</value></smbconfoption>).
+simply use <smbconfoption name="printing">sysv</smbconfoption>).
 </para>
 
 <para>
@@ -2170,7 +2170,7 @@ simply use <smbconfoption><name>printing</name><value>sysv</value></smbconfoptio
 
 <para>
 Samba <emphasis>must</emphasis> use its own spool directory (it is set
-by a line similar to <smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>,
+by a line similar to <smbconfoption name="path">/var/spool/samba</smbconfoption>,
 in the <smbconfsection>[printers]</smbconfsection> or
 <smbconfsection>[printername]</smbconfsection> section of
 &smb.conf;). Samba receives the job in its own
@@ -2454,27 +2454,27 @@ Prior to running <command>cupsaddsmb</command>, you need the settings in
 <para><smbconfexample id="cupsadd-ex">
 <title>smb.conf for cupsaddsmb usage</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>load printers</name><value>yes</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption name="load printers">yes</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>no</value></smbconfoption>
-<smbconfoption><name>public</name><value>yes</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="browseable">no</smbconfoption>
+<smbconfoption name="public">yes</smbconfoption>
 <smbconfcomment>setting depends on your requirements</smbconfcomment>
-<smbconfoption><name>guest ok</name><value>yes</value></smbconfoption>
-<smbconfoption><name>writable</name><value>no</value></smbconfoption>
-<smbconfoption><name>printable</name><value>yes</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root</value></smbconfoption>
+<smbconfoption name="guest ok">yes</smbconfoption>
+<smbconfoption name="writable">no</smbconfoption>
+<smbconfoption name="printable">yes</smbconfoption>
+<smbconfoption name="printer admin">root</smbconfoption>
  <smbconfsection>[print$]</smbconfsection>
-<smbconfoption><name>comment</name><value>Printer Drivers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/etc/samba/drivers</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>yes</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
-<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
-<smbconfoption><name>write list</name><value>root</value></smbconfoption>
+<smbconfoption name="comment">Printer Drivers</smbconfoption>
+<smbconfoption name="path">/etc/samba/drivers</smbconfoption>
+<smbconfoption name="browseable">yes</smbconfoption>
+<smbconfoption name="guest ok">no</smbconfoption>
+<smbconfoption name="read only">yes</smbconfoption>
+<smbconfoption name="write list">root</smbconfoption>
 </smbconfexample></para>
 </sect2>
 
@@ -2834,7 +2834,7 @@ associated with this printer is copied from
 Windows client installations via Point'n'Print. Before we can run the
 command successfully, we need to be sure that we can authenticate
 toward Samba. If you have a small network, you are probably using user-level
-security (<smbconfoption><name>security</name><value>user</value></smbconfoption>). 
+security (<smbconfoption name="security">user</smbconfoption>). 
 </para>
 
 <para>
@@ -3037,7 +3037,7 @@ If you get:
 SetPrinter call failed!
 result was WERR_ACCESS_DENIED
 </screen>
-It means that you might have set <smbconfoption><name>use client driver</name><value>yes</value></smbconfoption> for this printer. 
+It means that you might have set <smbconfoption name="use client driver">yes</smbconfoption> for this printer. 
 Set it to <quote>no</quote> will solve the problem. Refer to man samba(5) for explanantion on 
 <parameter>use client driver</parameter>.
 </para>
@@ -3418,7 +3418,7 @@ preconditions to complete successfully:
 </para>
 <itemizedlist>
 
-<listitem><para>You are connected as <smbconfoption><name>printer admin</name></smbconfoption> or root (this is <emphasis>not</emphasis> the <quote>Printer Operators</quote> group in
+<listitem><para>You are connected as <smbconfoption name="printer admin"/> or root (this is <emphasis>not</emphasis> the <quote>Printer Operators</quote> group in
 NT, but the <emphasis>printer admin</emphasis> group as defined in
 the <smbconfsection>[global]</smbconfsection> section of
 &smb.conf;).</para></listitem>
@@ -4903,7 +4903,7 @@ requested by marketing for the mailing, and so on).
 <para>
 Samba print files pass through two spool directories. One is the
 incoming directory managed by Samba, (set in the
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
 directive in the <smbconfsection>[printers]</smbconfsection> section of
 &smb.conf;). The other is the spool directory of
 your UNIX print subsystem. For CUPS it is normally
@@ -4968,19 +4968,19 @@ things:
 on Linux by running <userinput>ldd `which smbd'</userinput>).</para></listitem>
 
 <listitem><para>A Samba-&smb.conf; setting of
-		<smbconfoption><name>printing</name><value>cups</value></smbconfoption>.</para></listitem>
+		<smbconfoption name="printing">cups</smbconfoption>.</para></listitem>
 
 <listitem><para>Another Samba-&smb.conf; setting of
-		<smbconfoption><name>printcap</name><value>cups</value></smbconfoption>.</para></listitem>
+		<smbconfoption name="printcap">cups</smbconfoption>.</para></listitem>
 </itemizedlist>
 
 <note><para>
 In this case, all other manually set printing-related commands (like
-<smbconfoption><name>print command</name></smbconfoption>, 
-<smbconfoption><name>lpq command</name></smbconfoption>, 
-<smbconfoption><name>lprm command</name></smbconfoption>, 
-<smbconfoption><name>lppause command</name></smbconfoption> or
-<smbconfoption><name>lpresume command</name></smbconfoption>) are ignored and they should normally have no
+<smbconfoption name="print command"/>, 
+<smbconfoption name="lpq command"/>, 
+<smbconfoption name="lprm command"/>, 
+<smbconfoption name="lppause command"/> or
+<smbconfoption name="lpresume command"/>) are ignored and they should normally have no
 influence whatsoever on your printing.
 </para></note>
 </sect2>
@@ -4989,9 +4989,9 @@ influence whatsoever on your printing.
 <title>Manual Configuration</title>
 
 <para>
-If you want to do things manually, replace the <smbconfoption><name>printing</name><value>cups</value></smbconfoption>
-by <smbconfoption><name>printing</name><value>bsd</value></smbconfoption>. Then your manually set commands may work
-(I haven't tested this), and a <smbconfoption><name>print command</name><value>lp -d %P %s; rm %s"</value></smbconfoption>
+If you want to do things manually, replace the <smbconfoption name="printing">cups</smbconfoption>
+by <smbconfoption name="printing">bsd</smbconfoption>. Then your manually set commands may work
+(I haven't tested this), and a <smbconfoption name="print command">lp -d %P %s; rm %s"</smbconfoption>
 may do what you need.
 </para>
 </sect2>
@@ -5130,7 +5130,7 @@ Samba.</para>
 	<sect2 id="root-ask-loop">
 		<title><quote>cupsaddsmb</quote> Keeps Asking for Root Password in Never-ending Loop</title>
 
-		<para>Have you <smbconfoption><name>security</name><value>user</value></smbconfoption>? Have
+		<para>Have you <smbconfoption name="security">user</smbconfoption>? Have
 		you used <command>smbpasswd</command> to give root a Samba account?
 		You can do two things: open another terminal and execute
 		<command>smbpasswd -a root</command> to create the account and
@@ -5189,7 +5189,7 @@ Samba.</para>
 
 <para>Once you are connected as the wrong user (for
 example, as <constant>nobody</constant>, which often occurs if you have 
-<smbconfoption><name>map to guest</name><value>bad user</value></smbconfoption>), Windows Explorer will not accept an
+<smbconfoption name="map to guest">bad user</smbconfoption>), Windows Explorer will not accept an
 attempt to connect again as a different user. There will not be any byte
 transfered on the wire to Samba, but still you'll see a stupid error
 message that makes you think Samba has denied access. Use
@@ -5215,9 +5215,9 @@ printer in question and select
 <para>You see per <command>smbstatus</command> that you are
 connected as user nobody; while you want to be root or
 printer admin. This is probably due to 
-<smbconfoption><name>map to guest</name><value>bad user</value></smbconfoption>, which silently connects you under the guest account
+<smbconfoption name="map to guest">bad user</smbconfoption>, which silently connects you under the guest account
 when you gave (maybe by accident) an incorrect username. Remove
-<smbconfoption><name>map to guest</name></smbconfoption>, if you want to prevent
+<smbconfoption name="map to guest"/>, if you want to prevent
 this.</para></sect2>
 
 <sect2>
@@ -5368,7 +5368,7 @@ Do you see any difference? I don't either. However, only the last
 one, which you arrived at with steps <quote>C.1.-6.</quote>, will save any settings
 permanently and be the defaults for new users. If you want all clients
 to get the same defaults, you need to conduct these steps <emphasis>as
-Administrator</emphasis> (<smbconfoption><name>printer admin</name></smbconfoption> in
+Administrator</emphasis> (<smbconfoption name="printer admin"/> in
 &smb.conf;) <emphasis>before</emphasis> a client
 downloads the driver (the clients can later set their own
 <emphasis>per-user defaults</emphasis> by following the
@@ -5407,7 +5407,7 @@ again.</para></sect2>
 <para>Have you ever by accident set the CUPS spool directory to
 the same location? (<parameter>RequestRoot /var/spool/samba/</parameter> in <filename>cupsd.conf</filename> or
 the other way round: <filename>/var/spool/cups/</filename> is set as
-<smbconfoption><name>path</name></smbconfoption>> in the <smbconfsection>[printers]</smbconfsection>
+<smbconfoption name="path"/>> in the <smbconfsection>[printers]</smbconfsection>
 section). These <parameter>must</parameter> be different. Set
 <!--FIXME-->
 <parameter>RequestRoot /var/spool/cups/</parameter> in

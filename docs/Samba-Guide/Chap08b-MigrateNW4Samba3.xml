@@ -533,199 +533,199 @@ shadow:   files ldap
 <title>Samba Configuration File &smbmdash; smb.conf Part A</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>MASSIVE</value></smbconfoption>
-<smbconfoption><name>server string</name><value>Corp File Server</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://localhost</value></smbconfoption>
-<smbconfoption><name>pam password change</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>log level</name><value>1</value></smbconfoption>
-<smbconfoption><name>log file</name><value>/data/samba/log/%m.log</value></smbconfoption>
-<smbconfoption><name>name resolve order</name><value>wins host bcast</value></smbconfoption>
-<smbconfoption><name>time server</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/opt/IDEALX/sbin/smbldap-useradd -m "%u"</value></smbconfoption>
-<smbconfoption><name>add group script</name><value>/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</value></smbconfoption>
-<smbconfoption><name>add user to group script</name><value></value></smbconfoption>
+<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+<smbconfoption name="netbios name">MASSIVE</smbconfoption>
+<smbconfoption name="server string">Corp File Server</smbconfoption>
+<smbconfoption name="passdb backend">ldapsam:ldap://localhost</smbconfoption>
+<smbconfoption name="pam password change">Yes</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="log level">1</smbconfoption>
+<smbconfoption name="log file">/data/samba/log/%m.log</smbconfoption>
+<smbconfoption name="name resolve order">wins host bcast</smbconfoption>
+<smbconfoption name="time server">Yes</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m "%u"</smbconfoption>
+<smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</smbconfoption>
+<smbconfoption name="add user to group script"></smbconfoption>
 <member><parameter>/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"</parameter></member>
-<smbconfoption><name>delete user from group script</name><value></value></smbconfoption>
+<smbconfoption name="delete user from group script"></smbconfoption>
 <member><parameter>/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"</parameter></member>
-<smbconfoption><name>set primary group script</name><value></value></smbconfoption>
+<smbconfoption name="set primary group script"></smbconfoption>
 <member><parameter>/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"</parameter></member>
-<smbconfoption><name>add machine script</name><value>/usr/local/sbin/smbldap-useradd -w "%m"</value></smbconfoption>
-<smbconfoption><name>logon script</name><value>logon.bat</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\\%L\profiles\%U\%a</value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
-<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
-<smbconfoption><name>ldap idmap suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>ldap suffix</name><value>ou=MEGANET2,dc=abmas,dc=biz</value></smbconfoption>
-<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
-<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>root, "@Domain Admins"</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>"@Domain Admins"</value></smbconfoption>
-<smbconfoption><name>force printername</name><value>Yes</value></smbconfoption>
+<smbconfoption name="add machine script">/usr/local/sbin/smbldap-useradd -w "%m"</smbconfoption>
+<smbconfoption name="logon script">logon.bat</smbconfoption>
+<smbconfoption name="logon path">\\%L\profiles\%U\%a</smbconfoption>
+<smbconfoption name="logon drive">H:</smbconfoption>
+<smbconfoption name="logon home">\\%L\%U</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="wins support">Yes</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap passwd sync">Yes</smbconfoption>
+<smbconfoption name="ldap suffix">ou=MEGANET2,dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="ldap ssl">no</smbconfoption>
+<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+<smbconfoption name="admin users">root, "@Domain Admins"</smbconfoption>
+<smbconfoption name="printer admin">"@Domain Admins"</smbconfoption>
+<smbconfoption name="force printername">Yes</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch8smbconf2">
 <title>Samba Configuration File &smbmdash; smb.conf Part B</title>
 <smbconfsection>[netlogon]</smbconfsection>
-<smbconfoption><name>comment</name><value>Network logon service</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/netlogon</value></smbconfoption>
-<smbconfoption><name>write list</name><value>"@Domain Admins"</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Network logon service</smbconfoption>
+<smbconfoption name="path">/data/samba/netlogon</smbconfoption>
+<smbconfoption name="write list">"@Domain Admins"</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 
 <smbconfsection>[profiles]</smbconfsection>
-<smbconfoption><name>comment</name><value>Roaming Profile Share</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/profiles/</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>veto files</name><value>desktop.ini</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Roaming Profile Share</smbconfoption>
+<smbconfoption name="path">/data/samba/profiles/</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="profile acls">Yes</smbconfoption>
+<smbconfoption name="veto files">desktop.ini</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
-<smbconfoption><name>veto files</name><value>desktop.ini</value></smbconfoption>
-<smbconfoption><name>hide files</name><value>desktop.ini</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="create mask">0770</smbconfoption>
+<smbconfoption name="veto files">desktop.ini</smbconfoption>
+<smbconfoption name="hide files">desktop.ini</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[software]</smbconfsection>
-<smbconfoption><name>comment</name><value>Software for %a computers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/shares/software/%a</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Software for %a computers</smbconfoption>
+<smbconfoption name="path">/data/samba/shares/software/%a</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 
 <smbconfsection>[public]</smbconfsection>
-<smbconfoption><name>comment</name><value>Public Files</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/shares/public</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Public Files</smbconfoption>
+<smbconfoption name="path">/data/samba/shares/public</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 
 <smbconfsection>[PDF]</smbconfsection>
-<smbconfoption><name>comment</name><value>Location of documents printed to PDFCreator printer</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/shares/pdf</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Location of documents printed to PDFCreator printer</smbconfoption>
+<smbconfoption name="path">/data/samba/shares/pdf</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch8smbconf3">
 <title>Samba Configuration File &smbmdash; smb.conf Part C</title>
 <smbconfsection>[EVERYTHING]</smbconfsection>
-<smbconfoption><name>comment</name><value>All shares</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>"@Domain Admins"</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All shares</smbconfoption>
+<smbconfoption name="path">/data/samba</smbconfoption>
+<smbconfoption name="valid users">"@Domain Admins"</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[CDROM]</smbconfsection>
-<smbconfoption><name>comment</name><value>CD-ROM on MASSIVE</value></smbconfoption>
-<smbconfoption><name>path</name><value>/mnt</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">CD-ROM on MASSIVE</smbconfoption>
+<smbconfoption name="path">/mnt</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 
 <smbconfsection>[print$]</smbconfsection>
-<smbconfoption><name>comment</name><value>Printer Drivers Share</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/drivers</value></smbconfoption>
-<smbconfoption><name>write list</name><value>root</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Printer Drivers Share</smbconfoption>
+<smbconfoption name="path">/data/samba/drivers</smbconfoption>
+<smbconfoption name="write list">root</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/spool</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0644</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/data/samba/spool</smbconfoption>
+<smbconfoption name="create mask">0644</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[acct_hp8500]</smbconfsection>
-<smbconfoption><name>comment</name><value>"Accounting Color Laser Printer"</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/spool/private</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@acct, @acct_admin, @hr, "@Domain Admins",\</value></smbconfoption>
+<smbconfoption name="comment">"Accounting Color Laser Printer"</smbconfoption>
+<smbconfoption name="path">/data/samba/spool/private</smbconfoption>
+<smbconfoption name="valid users">@acct, @acct_admin, @hr, "@Domain Admins",\</smbconfoption>
 <member><parameter>@Receptionist, dwayne, terri, danae, jerry</parameter></member>
-<smbconfoption><name>create mask</name><value>0644</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>copy</name><value>printers</value></smbconfoption>
+<smbconfoption name="create mask">0644</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="copy">printers</smbconfoption>
 
 <smbconfsection>[plotter]</smbconfsection>
-<smbconfoption><name>comment</name><value>Engineering Plotter</value></smbconfoption>
-<smbconfoption><name>path</name><value>/data/samba/spool</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0644</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>copy</name><value>printers</value></smbconfoption>
+<smbconfoption name="comment">Engineering Plotter</smbconfoption>
+<smbconfoption name="path">/data/samba/spool</smbconfoption>
+<smbconfoption name="create mask">0644</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="copy">printers</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch8smbconf4">
 <title>Samba Configuration File &smbmdash; smb.conf Part D</title>
 <smbconfsection>[APPS]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/Apps</value></smbconfoption>
-<smbconfoption><name>force group</name><value>"Domain Users"</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/Apps</smbconfoption>
+<smbconfoption name="force group">"Domain Users"</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[ACCT]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/Accounting</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@acct, "@Domain Admins"</value></smbconfoption>
-<smbconfoption><name>force group</name><value>acct</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0660</value></smbconfoption>
-<smbconfoption><name>directory mask</name><value>0770</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/Accounting</smbconfoption>
+<smbconfoption name="valid users">@acct, "@Domain Admins"</smbconfoption>
+<smbconfoption name="force group">acct</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="create mask">0660</smbconfoption>
+<smbconfoption name="directory mask">0770</smbconfoption>
 
 <smbconfsection>[ACCT_ADMIN]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/Acct_Admin</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@”acct_admin”</value></smbconfoption>
-<smbconfoption><name>force group</name><value>acct_admin</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/Acct_Admin</smbconfoption>
+<smbconfoption name="valid users">@”acct_admin”</smbconfoption>
+<smbconfoption name="force group">acct_admin</smbconfoption>
 
 <smbconfsection>[HR_PR]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/HR_PR</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@hr, @acct_admin</value></smbconfoption>
-<smbconfoption><name>force group</name><value>hr</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/HR_PR</smbconfoption>
+<smbconfoption name="valid users">@hr, @acct_admin</smbconfoption>
+<smbconfoption name="force group">hr</smbconfoption>
 
 <smbconfsection>[ENGR]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/Engr</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@engr, @receptionist, @truss, "@Domain Admins", cheri</value></smbconfoption>
-<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/Engr</smbconfoption>
+<smbconfoption name="valid users">@engr, @receptionist, @truss, "@Domain Admins", cheri</smbconfoption>
+<smbconfoption name="force group">engr</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="create mask">0770</smbconfoption>
 
 <smbconfsection>[DATA]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/DATA</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@engr, @receptionist, @truss, "@Domain Admins", cheri</value></smbconfoption>
-<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
-<smbconfoption><name>copy</name><value>engr</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/DATA</smbconfoption>
+<smbconfoption name="valid users">@engr, @receptionist, @truss, "@Domain Admins", cheri</smbconfoption>
+<smbconfoption name="force group">engr</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="create mask">0770</smbconfoption>
+<smbconfoption name="copy">engr</smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch8smbconf5">
 <title>Samba Configuration File &smbmdash; smb.conf Part E</title>
 <smbconfsection>[X]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/X</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@engr, @acct</value></smbconfoption>
-<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
-<smbconfoption><name>copy</name><value>engr</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/X</smbconfoption>
+<smbconfoption name="valid users">@engr, @acct</smbconfoption>
+<smbconfoption name="force group">engr</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="create mask">0770</smbconfoption>
+<smbconfoption name="copy">engr</smbconfoption>
 
 <smbconfsection>[NETWORK]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/network</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>"@Domain Users"</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/network</smbconfoption>
+<smbconfoption name="valid users">"@Domain Users"</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="create mask">0770</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 
 <smbconfsection>[UTILS]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/Utils</value></smbconfoption>
-<smbconfoption><name>write list</name><value>"@Domain Admins"</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/Utils</smbconfoption>
+<smbconfoption name="write list">"@Domain Admins"</smbconfoption>
 
 <smbconfsection>[SYS]</smbconfsection>
-<smbconfoption><name>path</name><value>/data/samba/shares/SYS</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>chad</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="path">/data/samba/shares/SYS</smbconfoption>
+<smbconfoption name="valid users">chad</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 
 	<para>

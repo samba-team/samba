@@ -478,11 +478,11 @@ Before using any of the following options, please refer to the man page for &smb
 
 	<para>
 	User and group-based controls can prove quite useful. In some situations it is distinctly desirable to affect all
-	file system operations as if a single user were doing so. The use of the <smbconfoption><name>force user</name></smbconfoption> and 
-	<smbconfoption><name>force group</name></smbconfoption> behavior will achieve this. In other situations it may be necessary to effect a
+	file system operations as if a single user were doing so. The use of the <smbconfoption name="force user"/> and 
+	<smbconfoption name="force group"/> behavior will achieve this. In other situations it may be necessary to effect a
 	paranoia level of control to ensure that only particular authorized persons will be able to access a share or
-	its contents. Here the use of the <smbconfoption><name>valid users</name></smbconfoption> or the
-	<smbconfoption><name>invalid users</name></smbconfoption> may be most useful.
+	its contents. Here the use of the <smbconfoption name="valid users"/> or the
+	<smbconfoption name="invalid users"/> may be most useful.
 	</para>
 
 	<para>
@@ -508,7 +508,7 @@ Before using any of the following options, please refer to the man page for &smb
 		</thead>
 		<tbody>
 		<row>
-			<entry><smbconfoption><name>admin users</name></smbconfoption></entry>
+			<entry><smbconfoption name="admin users"/></entry>
 			<entry><para>
 			List of users who will be granted administrative privileges on the share.
 			They will do all file operations as the super-user (root). 
@@ -517,59 +517,59 @@ Before using any of the following options, please refer to the man page for &smb
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>force group</name></smbconfoption></entry>
+			<entry><smbconfoption name="force group"/></entry>
 			<entry><para>
 			Specifies a UNIX group name that will be assigned as the default primary group
 			for all users connecting to this service.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>force user</name></smbconfoption></entry>
+			<entry><smbconfoption name="force user"/></entry>
 			<entry><para>
 			Specifies a UNIX user name that will be assigned as the default user for all users connecting to this service.
 			This is useful for sharing files. Incorrect use can cause security problems.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>guest ok</name></smbconfoption></entry>
+			<entry><smbconfoption name="guest ok"/></entry>
 			<entry><para>
 			If this parameter is set for a service, then no password is required to connect to the service. Privileges will be 
 			those of the  guest account.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>invalid users</name></smbconfoption></entry>
+			<entry><smbconfoption name="invalid users"/></entry>
 			<entry><para>
 			List of users that should not be allowed to login to this service.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>only user</name></smbconfoption></entry>
+			<entry><smbconfoption name="only user"/></entry>
 			<entry><para>
 			Controls whether connections with usernames not in the user list will be allowed.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>read list</name></smbconfoption></entry>
+			<entry><smbconfoption name="read list"/></entry>
 			<entry><para>
 			List of users that are given read-only access to a service. Users in this list
 			will not be given write access, no matter what the  read only  option is set to. 
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>username</name></smbconfoption></entry>
+			<entry><smbconfoption name="username"/></entry>
 			<entry><para>
 			Refer to the &smb.conf; man page for more information -- this is a complex and potentially misused parameter.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>valid users</name></smbconfoption></entry>
+			<entry><smbconfoption name="valid users"/></entry>
 			<entry><para>
 			List of users that should be allowed to login to this service.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>write list</name></smbconfoption></entry>
+			<entry><smbconfoption name="write list"/></entry>
 			<entry><para>
 			List of users that are given read-write access to a service.
 			</para></entry>
@@ -607,67 +607,67 @@ Before using any of the following options, please refer to the man page for &smb
 		</thead>
 		<tbody>
 		<row>
-			<entry><smbconfoption><name>create mask</name></smbconfoption></entry>
+			<entry><smbconfoption name="create mask"/></entry>
 			<entry><para>
 			Refer to the &smb.conf; man page.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>directory mask</name></smbconfoption></entry>
+			<entry><smbconfoption name="directory mask"/></entry>
 			<entry><para>
 			The octal modes used when converting DOS modes to UNIX modes when creating UNIX directories.
 			See also: directory security mask.
 			</para></entry></row>
 		<row>
-			<entry><smbconfoption><name>dos filemode</name></smbconfoption></entry>
+			<entry><smbconfoption name="dos filemode"/></entry>
 			<entry><para>
 			Enabling this parameter allows a user who has write access to the file to modify the permissions on it.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>force create mode</name></smbconfoption></entry>
+			<entry><smbconfoption name="force create mode"/></entry>
 			<entry><para>
 			This parameter specifies a set of UNIX mode bit permissions that will always be set on a file created by Samba.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>force directory mode</name></smbconfoption></entry>
+			<entry><smbconfoption name="force directory mode"/></entry>
 			<entry><para>
 			This parameter specifies a set of UNIX mode bit permissions that will always be set on a directory created by Samba.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>force directory security mode</name></smbconfoption></entry>
+			<entry><smbconfoption name="force directory security mode"/></entry>
 			<entry><para>
 			Controls UNIX permission bits modified when a Windows NT client is manipulating UNIX permissions on a directory.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>force security mode</name></smbconfoption></entry>
+			<entry><smbconfoption name="force security mode"/></entry>
 			<entry><para>
 			Controls UNIX permission bits modified when a Windows NT client manipulates UNIX permissions.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>hide unreadable</name></smbconfoption></entry>
+			<entry><smbconfoption name="hide unreadable"/></entry>
 			<entry><para>
 			Prevents clients from seeing the existence of files that cannot be read.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>hide unwriteable files</name></smbconfoption></entry>
+			<entry><smbconfoption name="hide unwriteable files"/></entry>
 			<entry><para>
 			Prevents clients from seeing the existence of files that cannot be written to. Unwriteable directories are shown as usual. 
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>nt acl support</name></smbconfoption></entry>
+			<entry><smbconfoption name="nt acl support"/></entry>
 			<entry><para>
 			This parameter controls whether smbd will attempt to map UNIX permissions into Windows NT access control lists.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>security mask</name></smbconfoption></entry>
+			<entry><smbconfoption name="security mask"/></entry>
 			<entry><para>
 			Controls UNIX permission bits modified when a Windows NT client is manipulating the UNIX permissions on a file.
 			</para></entry>
@@ -699,9 +699,9 @@ Before using any of the following options, please refer to the man page for &smb
 		<tbody>
 		<row>
 			<entry>
-			<smbconfoption><name>case sensitive</name></smbconfoption>,
-			<smbconfoption><name>default case</name></smbconfoption>,
-			<smbconfoption><name>short preserve case</name></smbconfoption>
+			<smbconfoption name="case sensitive"/>,
+			<smbconfoption name="default case"/>,
+			<smbconfoption name="short preserve case"/>
 			</entry>
 			<entry><para>
 			This means that all file name lookup will be done in a case sensitive manner. 
@@ -709,32 +709,32 @@ Before using any of the following options, please refer to the man page for &smb
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>csc policy</name></smbconfoption></entry>
+			<entry><smbconfoption name="csc policy"/></entry>
 			<entry><para>
 			Client Side Caching Policy - parallels MS Windows client side file caching capabilities.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>dont descend</name></smbconfoption></entry>
+			<entry><smbconfoption name="dont descend"/></entry>
 			<entry><para>
 			Allows specifying a comma-delimited list of directories that the server should always show as empty.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>dos filetime resolution</name></smbconfoption></entry>
+			<entry><smbconfoption name="dos filetime resolution"/></entry>
 			<entry><para>
 			This option is mainly used as a compatibility option for Visual C++ when used against Samba shares.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>dos filetimes</name></smbconfoption></entry>
+			<entry><smbconfoption name="dos filetimes"/></entry>
 			<entry><para>
 			DOS and Windows allow users to change file time stamps if they can write to the file. POSIX semantics prevent this.
 			This option allows DOS and Windows behavior.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>fake oplocks</name></smbconfoption></entry>
+			<entry><smbconfoption name="fake oplocks"/></entry>
 			<entry><para>
 			Oplocks are the way that SMB clients get permission from a server to locally cache file operations. If a server grants an
 			oplock, the client is free to assume that it is the only one accessing the file and it will aggressively cache file data.
@@ -742,22 +742,22 @@ Before using any of the following options, please refer to the man page for &smb
 		</row>
 		<row>
 			<entry>
-			<smbconfoption><name>hide dot files</name></smbconfoption>,
-			<smbconfoption><name>hide files</name></smbconfoption>,
-			<smbconfoption><name>veto files</name></smbconfoption>
+			<smbconfoption name="hide dot files"/>,
+			<smbconfoption name="hide files"/>,
+			<smbconfoption name="veto files"/>
 			</entry>
 			<entry><para>
 			Note: MS Windows Explorer allows over-ride of files marked as hidden so they will still be visible.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>read only</name></smbconfoption></entry>
+			<entry><smbconfoption name="read only"/></entry>
 			<entry><para>
 			If this parameter is yes, then users of a service may not create or modify files in the service's directory.
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>veto files</name></smbconfoption></entry>
+			<entry><smbconfoption name="veto files"/></entry>
 			<entry><para>
 			List of files and directories that are neither visible nor accessible.
 			</para></entry>
@@ -953,7 +953,7 @@ Before using any of the following options, please refer to the man page for &smb
 		</para>
 
 		<para>
-		If the parameter <smbconfoption><name>nt acl support</name></smbconfoption> is set to <constant>false</constant>,
+		If the parameter <smbconfoption name="nt acl support"/> is set to <constant>false</constant>,
 		the file owner will be shown as the NT user <emphasis>Everyone</emphasis>.
 		</para>
 
@@ -991,7 +991,7 @@ Before using any of the following options, please refer to the man page for &smb
 		GECOS field of the UNIX password database).</para>
 
 		<para>
-		If the parameter <smbconfoption><name>nt acl support</name></smbconfoption> is set to <constant>false</constant>,
+		If the parameter <smbconfoption name="nt acl support"/> is set to <constant>false</constant>,
 		the file owner will be shown as the NT user <constant>Everyone</constant> and the permissions will be
 		shown as NT <quote>Full Control</quote>.
 		</para>
@@ -1049,7 +1049,7 @@ Before using any of the following options, please refer to the man page for &smb
 		with the standard Samba permission masks and mapping of DOS 
 		attributes that need to also be taken into account.</para>
 
-		<para>If the parameter <smbconfoption><name>nt acl support</name></smbconfoption>
+		<para>If the parameter <smbconfoption name="nt acl support"/>
 		is set to <constant>false</constant>, any attempt to set 
 		security permissions will fail with an <errorname>`Access Denied'
 		</errorname> message.</para>
@@ -1097,10 +1097,10 @@ Before using any of the following options, please refer to the man page for &smb
 		These are:
 
 		<itemizedlist>
-			<listitem><smbconfoption><name>security mask</name></smbconfoption></listitem>
-			<listitem><smbconfoption><name>force security mode</name></smbconfoption></listitem>
-			<listitem><smbconfoption><name>directory security mask</name></smbconfoption></listitem>
-			<listitem><smbconfoption><name>force directory security mode</name></smbconfoption></listitem>
+			<listitem><smbconfoption name="security mask"/></listitem>
+			<listitem><smbconfoption name="force security mode"/></listitem>
+			<listitem><smbconfoption name="directory security mask"/></listitem>
+			<listitem><smbconfoption name="force directory security mode"/></listitem>
 		</itemizedlist>
 
 		</para>
@@ -1109,22 +1109,22 @@ Before using any of the following options, please refer to the man page for &smb
 		permissions, Samba maps the given permissions into a user/group/world 
 		r/w/x triplet set, and then checks the changed permissions for a 
 		file against the bits set in the  
-		<smbconfoption><name>security mask</name></smbconfoption> parameter. Any bits that 
+		<smbconfoption name="security mask"/> parameter. Any bits that 
 		were changed that are not set to <quote>1</quote> in this parameter are left alone 
 		in the file permissions.</para>
 
-		<para>Essentially, zero bits in the <smbconfoption><name>security mask</name></smbconfoption>
+		<para>Essentially, zero bits in the <smbconfoption name="security mask"/>
 		may be treated as a set of bits the user is <emphasis>not</emphasis> 
 		allowed to change, and one bits are those the user is allowed to change.
 		</para>
 
 		<para>If not explicitly set, this parameter defaults to the same value as 
-		the <smbconfoption><name>create mask</name></smbconfoption> parameter. To allow a user to modify all the
+		the <smbconfoption name="create mask"/> parameter. To allow a user to modify all the
 		user/group/world permissions on a file, set this parameter to 0777.
 		</para>
 
 		<para>Next Samba checks the changed permissions for a file against the bits set in the 
-		<smbconfoption><name>force security mode</name></smbconfoption> parameter. Any bits 
+		<smbconfoption name="force security mode"/> parameter. Any bits 
 		that were changed that correspond to bits set to <quote>1</quote> in this parameter 
 		are forced to be set.</para>
 
@@ -1132,10 +1132,10 @@ Before using any of the following options, please refer to the man page for &smb
 		may be treated as a set of bits that, when modifying security on a file, the user has always set to be <quote>on</quote>.</para>
 
 		<para>If not explicitly set, this parameter defaults to the same value 
-		as the <smbconfoption><name>force create mode</name></smbconfoption> parameter.
+		as the <smbconfoption name="force create mode"/> parameter.
 		To allow a user to modify all the user/group/world permissions on a file
 		with no restrictions set this parameter to 000. The
-		<smbconfoption><name>security mask</name></smbconfoption> and <parameter>force 
+		<smbconfoption name="security mask"/> and <parameter>force 
 		security mode</parameter> parameters are applied to the change 
 		request in that order.</para>
 
@@ -1146,11 +1146,11 @@ Before using any of the following options, please refer to the man page for &smb
 		</parameter> parameter instead of <parameter>force security mode
 		</parameter>.</para>
 
-		<para>The <smbconfoption><name>directory security mask</name></smbconfoption> parameter 
+		<para>The <smbconfoption name="directory security mask"/> parameter 
 		by default is set to the same value as the <parameter>directory mask
 		</parameter> parameter and the <parameter>force directory security 
 		mode</parameter> parameter by default is set to the same value as 
-		the <smbconfoption><name>force directory mode</name></smbconfoption> parameter.
+		the <smbconfoption name="force directory mode"/> parameter.
 		In this way Samba enforces the permission restrictions that 
 		an administrator can set on a Samba share, while still allowing users 
 		to modify the permission bits within that restriction.</para>
@@ -1162,10 +1162,10 @@ Before using any of the following options, please refer to the man page for &smb
 		</para>
 
 		<smbconfblock>
-			<smbconfoption><name>security mask</name><value>0777</value></smbconfoption>
-			<smbconfoption><name>force security mode</name><value>0</value></smbconfoption>
-			<smbconfoption><name>directory security mask</name><value>0777</value></smbconfoption>
-			<smbconfoption><name>force directory security mode</name><value>0</value></smbconfoption>
+			<smbconfoption name="security mask">0777</smbconfoption>
+			<smbconfoption name="force security mode">0</smbconfoption>
+			<smbconfoption name="directory security mask">0777</smbconfoption>
+			<smbconfoption name="force directory security mode">0</smbconfoption>
 		</smbconfblock>
 	</sect2>
 
@@ -1305,8 +1305,8 @@ drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
 		<para>
 		Now in your &smb.conf; for the share add:
 		<smbconfblock>
-<smbconfoption><name>force create mode</name><value>0775</value></smbconfoption>
-<smbconfoption><name>force directory mode</name><value>6775</value></smbconfoption>
+<smbconfoption name="force create mode">0775</smbconfoption>
+<smbconfoption name="force directory mode">6775</smbconfoption>
 		</smbconfblock>
 		</para>
 
@@ -1319,8 +1319,8 @@ drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
 		<para>
 		An alternative is to set in the &smb.conf; entry for the share:
 		<smbconfblock>
-<smbconfoption><name>force user</name><value>jack</value></smbconfoption>
-<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
+<smbconfoption name="force user">jack</smbconfoption>
+<smbconfoption name="force group">engr</smbconfoption>
 		</smbconfblock>
 		</para>
 	</step>
@@ -1332,8 +1332,8 @@ drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
 		<title>File Operations Done as <emphasis>root</emphasis> with <emphasis>force user</emphasis> Set</title>
 
 		<para>
-		When you have a user in <smbconfoption><name>admin users</name></smbconfoption>, Samba will always do file operations for
-		this user as <emphasis>root</emphasis>, even if <smbconfoption><name>force user</name></smbconfoption> has been set.
+		When you have a user in <smbconfoption name="admin users"/>, Samba will always do file operations for
+		this user as <emphasis>root</emphasis>, even if <smbconfoption name="force user"/> has been set.
 		</para>
 	</sect2>
 	
@@ -1362,8 +1362,8 @@ drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
 
 		<para>
 		<smbconfblock>
-                <smbconfoption><name>force create mode</name><value>0660</value></smbconfoption>
-                <smbconfoption><name>force directory mode</name><value>0770</value></smbconfoption>
+                <smbconfoption name="force create mode">0660</smbconfoption>
+                <smbconfoption name="force directory mode">0770</smbconfoption>
 		</smbconfblock>
 		</para>
 

@@ -109,7 +109,7 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 		and not copy an installed driver from an OS/2 system.</para>
 		
 		<para>Install the NT driver first for that printer. Then, add to your &smb.conf; a parameter,
-		<smbconfoption><name>os2 driver map</name><value><replaceable>filename</replaceable></value></smbconfoption>. 
+		<smbconfoption name="os2 driver map"><replaceable>filename</replaceable></smbconfoption>. 
 		Next, in the file specified by <replaceable>filename</replaceable>, map the 
 		name of the NT driver name to the OS/2 driver name as follows:</para>
 		
@@ -189,7 +189,7 @@ type <userinput>EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE</userinput>.
 Then add an icon for it via the <application>Program Manager</application> <guimenu>New</guimenu> Menu. 
 This program allows you to control how WFW handles passwords, i.e.,
 Disable Password Caching and so on.
-for use with <smbconfoption><name>security</name><value>user</value></smbconfoption>.
+for use with <smbconfoption name="security">user</smbconfoption>.
 </para>
 
 </sect2>
@@ -199,7 +199,7 @@ for use with <smbconfoption><name>security</name><value>user</value></smbconfopt
 
 <para>Windows for Workgroups uppercases the password before sending it to the server.
 UNIX passwords can be case-sensitive though. Check the &smb.conf; information on
-<smbconfoption><name>password level</name></smbconfoption> to specify what characters
+<smbconfoption name="password level"/> to specify what characters
 Samba should try to uppercase when checking.</para>
 
 </sect2>
@@ -293,14 +293,14 @@ most likely occur if it is not.
 <para> 
 In order to serve profiles successfully to Windows 2000 SP2 
 clients (when not operating as a PDC), Samba must have 
-<smbconfoption><name>nt acl support</name><value>no</value></smbconfoption>
+<smbconfoption name="nt acl support">no</smbconfoption>
 added to the file share which houses the roaming profiles.
 If this is not done, then the Windows 2000 SP2 client will
 complain about not being able to access the profile (Access 
 Denied) and create multiple copies of it on disk (DOMAIN.user.001,
 DOMAIN.user.002, and so on). See the &smb.conf; man page
 for more details on this option. Also note that the 
-<smbconfoption><name>nt acl support</name></smbconfoption> parameter was formally a global parameter in
+<smbconfoption name="nt acl support"/> parameter was formally a global parameter in
 releases prior to Samba 2.2.2.
 </para>
 
@@ -311,11 +311,11 @@ releases prior to Samba 2.2.2.
 <para><smbconfexample id="minimalprofile">
 <title>Minimal profile share</title>
 <smbconfsection>[profile]</smbconfsection>
-<smbconfoption><name>path</name><value>/export/profile</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
-<smbconfoption><name>directory mask</name><value>0700</value></smbconfoption>
-<smbconfoption><name>nt acl support</name><value>no</value></smbconfoption>
-<smbconfoption><name>read only</name><value>no</value></smbconfoption>
+<smbconfoption name="path">/export/profile</smbconfoption>
+<smbconfoption name="create mask">0600</smbconfoption>
+<smbconfoption name="directory mask">0700</smbconfoption>
+<smbconfoption name="nt acl support">no</smbconfoption>
+<smbconfoption name="read only">no</smbconfoption>
 </smbconfexample></para>
 
 <para>
@@ -328,7 +328,7 @@ for the <errorname>access denied</errorname> message.
 </para>
 
 <para>
-By disabling the <smbconfoption><name>nt acl support</name></smbconfoption> parameter, Samba will send
+By disabling the <smbconfoption name="nt acl support"/> parameter, Samba will send
 the Windows 200x client a response to the QuerySecurityDescriptor trans2 call, which causes the client
 to set a default ACL for the profile. This default ACL includes:
 </para>

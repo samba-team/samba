@@ -580,17 +580,17 @@ linkend="winbindcfg">the next example</link>, was modified to include the necess
 <smbconfsection>[global]</smbconfsection>
      &lt;...&gt;
 <smbconfcomment> separate domain and username with '\', like DOMAIN\username</smbconfcomment>
-<smbconfoption><name>winbind separator</name><value>\</value></smbconfoption>
+<smbconfoption name="winbind separator">\</smbconfoption>
 <smbconfcomment> use uids from 10000 to 20000 for domain users</smbconfcomment>
-<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
 <smbconfcomment> use gids from 10000 to 20000 for domain groups</smbconfcomment>
-<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
 <smbconfcomment> allow enumeration of winbind users and groups</smbconfcomment>
-<smbconfoption><name>winbind enum users</name><value>yes</value></smbconfoption>
-<smbconfoption><name>winbind enum groups</name><value>yes</value></smbconfoption>
+<smbconfoption name="winbind enum users">yes</smbconfoption>
+<smbconfoption name="winbind enum groups">yes</smbconfoption>
 <smbconfcomment> give winbind users a real shell (only needed if they have telnet access)</smbconfcomment>
-<smbconfoption><name>template homedir</name><value>/home/winnt/%D/%U</value></smbconfoption>
-<smbconfoption><name>template shell</name><value>/bin/bash</value></smbconfoption>
+<smbconfoption name="template homedir">/home/winnt/%D/%U</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
 </smbconfexample></para>
 
 </sect3>
@@ -709,7 +709,7 @@ your PDC. For example, I get the following response:
 </screen></para>
 
 <para>
-Obviously, I have named my domain <quote>CEO</quote> and my <smbconfoption><name>winbind separator</name></smbconfoption> is <quote>\</quote>.
+Obviously, I have named my domain <quote>CEO</quote> and my <smbconfoption name="winbind separator"/> is <quote>\</quote>.
 </para>
 
 <para>
@@ -996,11 +996,11 @@ have individual directories for the domain users already present on
 the server, or change the home directory template to a general
 directory for all domain users. These can be easily set using 
 the &smb.conf; global entry 
-<smbconfoption><name>template homedir</name></smbconfoption>.
+<smbconfoption name="template homedir"/>.
 </para>
 
 <note>
-	<para>The directory in <smbconfoption><name>template homedir</name></smbconfoption> is not created automatically! Use pam_mkhomedir or pre-create 
+	<para>The directory in <smbconfoption name="template homedir"/> is not created automatically! Use pam_mkhomedir or pre-create 
 		the directories of users to make sure users can log in on UNIX with 
 		their own home directory.
 	</para>
@@ -1208,8 +1208,8 @@ cost of running a mixed UNIX and NT network.</para>
 
 	<para><quote>
 	My &smb.conf; file is correctly configured. I have specified 
-	<smbconfoption><name>idmap uid</name><value>12000</value></smbconfoption>, 
-	and <smbconfoption><name>idmap gid</name><value>3000-3500</value></smbconfoption>
+	<smbconfoption name="idmap uid">12000</smbconfoption>, 
+	and <smbconfoption name="idmap gid">3000-3500</smbconfoption>
 	and <command>winbind</command> is running. When I do the following it all works fine.
 	</quote></para>
 

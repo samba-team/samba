@@ -345,7 +345,7 @@ NT4/200x/XP clients:
 
 <itemizedlist>
 	<listitem><para>Configuration of basic TCP/IP and MS Windows networking.</para></listitem>
-	<listitem><para>Correct designation of the Server Role (<smbconfoption><name>security</name><value>user</value></smbconfoption>).</para></listitem>
+	<listitem><para>Correct designation of the Server Role (<smbconfoption name="security">user</smbconfoption>).</para></listitem>
 	<listitem><para>Consistent configuration of Name Resolution<footnote><para>See <link linkend="NetworkBrowsing">Network Browsing</link>, and 
 		<link linkend="integrate-ms-networks">Integrating MS Windows Networks with Samba</link>.</para></footnote>.</para></listitem>
 	<listitem><para>Domain logons for Windows NT4/200x/XP Professional clients.</para></listitem>
@@ -361,7 +361,7 @@ The following provisions are required to serve MS Windows 9x/Me clients:
 
 <itemizedlist>
 	<listitem><para>Configuration of basic TCP/IP and MS Windows networking.</para></listitem>
-	<listitem><para>Correct designation of the server role (<smbconfoption><name>security</name><value>user</value></smbconfoption>).</para></listitem>
+	<listitem><para>Correct designation of the server role (<smbconfoption name="security">user</smbconfoption>).</para></listitem>
 	<listitem><para>Network Logon Configuration (since Windows 9x/Me/XP Home are not technically domain
 	members, they do not really participate in  the security aspects of Domain logons as such).</para></listitem>
 	<listitem><para>Roaming Profile Configuration.</para></listitem>
@@ -404,7 +404,7 @@ A Domain Controller is an SMB/CIFS server that:
 
 <para>
 It is rather easy to configure Samba to provide these. Each Samba Domain Controller must provide
-the NETLOGON service that Samba calls the <smbconfoption><name>domain logons</name></smbconfoption> functionality
+the NETLOGON service that Samba calls the <smbconfoption name="domain logons"/> functionality
 (after the name of the parameter in the &smb.conf; file). Additionally, one server in a Samba-3
 Domain must advertise itself as the Domain Master Browser<footnote><para>See <link linkend="NetworkBrowsing">Network Browsing</link>.</para></footnote>.
 This causes the Primary Domain Controller to claim a domain-specific NetBIOS name that identifies it as a
@@ -429,30 +429,30 @@ in &smb.conf;. An example &smb.conf; for acting as a PDC can be found in <link l
 <smbconfexample id="pdc-example">
 <title>smb.conf for being a PDC</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>netbios name</name><value><replaceable>BELERIAND</replaceable></value></smbconfoption>
-<smbconfoption><name>workgroup</name><value><replaceable>&example.workgroup;</replaceable></value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>tdbsam</value></smbconfoption>
-<smbconfoption><name>os level</name><value>33</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>local master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>security</name><value>user</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>yes</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\\%N\profiles\%U</value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\\homeserver\%U\winprofile</value></smbconfoption>
-<smbconfoption><name>logon script</name><value>logon.cmd</value></smbconfoption>
+<smbconfoption name="netbios name"><replaceable>BELERIAND</replaceable></smbconfoption>
+<smbconfoption name="workgroup"><replaceable>&example.workgroup;</replaceable></smbconfoption>
+<smbconfoption name="passdb backend">tdbsam</smbconfoption>
+<smbconfoption name="os level">33</smbconfoption>
+<smbconfoption name="preferred master">yes</smbconfoption>
+<smbconfoption name="domain master">yes</smbconfoption>
+<smbconfoption name="local master">yes</smbconfoption>
+<smbconfoption name="security">user</smbconfoption>
+<smbconfoption name="domain logons">yes</smbconfoption>
+<smbconfoption name="logon path">\\%N\profiles\%U</smbconfoption>
+<smbconfoption name="logon drive">H:</smbconfoption>
+<smbconfoption name="logon home">\\homeserver\%U\winprofile</smbconfoption>
+<smbconfoption name="logon script">logon.cmd</smbconfoption>
 
 <smbconfsection>[netlogon]</smbconfsection>
-<smbconfoption><name>path</name><value>/var/lib/samba/netlogon</value></smbconfoption>
-<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
-<smbconfoption><name>write list</name><value><replaceable>ntadmin</replaceable></value></smbconfoption>
+<smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+<smbconfoption name="read only">yes</smbconfoption>
+<smbconfoption name="write list"><replaceable>ntadmin</replaceable></smbconfoption>
 
 <smbconfsection>[profiles]</smbconfsection>
-<smbconfoption><name>path</name><value>/var/lib/samba/profiles</value></smbconfoption>
-<smbconfoption><name>read only</name><value>no</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
-<smbconfoption><name>directory mask</name><value>0700</value></smbconfoption>
+<smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
+<smbconfoption name="read only">no</smbconfoption>
+<smbconfoption name="create mask">0600</smbconfoption>
+<smbconfoption name="directory mask">0700</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -521,11 +521,11 @@ of operation. The following &smb.conf; parameters are the essentials alone:
 
 <para>
 <smbconfblock>
-<smbconfoption><name>netbios name</name><value>BELERIAND</value></smbconfoption>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>security</name><value>User</value></smbconfoption>
+<smbconfoption name="netbios name">BELERIAND</smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="domain master">Yes</smbconfoption>
+<smbconfoption name="security">User</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -573,8 +573,8 @@ an integral part of the essential functionality that is provided by a Domain Con
 
 <para>
 All Domain Controllers must run the netlogon service (<emphasis>domain logons</emphasis>
-in Samba). One Domain Controller must be configured with <smbconfoption><name>domain master</name><value>Yes</value></smbconfoption>
-(the Primary Domain Controller); on all Backup Domain Controllers <smbconfoption><name>domain master</name><value>No</value></smbconfoption>
+in Samba). One Domain Controller must be configured with <smbconfoption name="domain master">Yes</smbconfoption>
+(the Primary Domain Controller); on all Backup Domain Controllers <smbconfoption name="domain master">No</smbconfoption>
 must be set.
 </para>
 
@@ -584,14 +584,14 @@ must be set.
 <smbconfexample id="PDC-config">
 <title>smb.conf for being a PDC</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>(Yes on PDC, No on BDCs)</value></smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="domain master">(Yes on PDC, No on BDCs)</smbconfoption>
 
 <smbconfsection>[netlogon]</smbconfsection>
-<smbconfoption><name>comment</name><value>Network Logon Service</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/netlogon</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Network Logon Service</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 
 </sect3>
@@ -791,11 +791,11 @@ For this reason, it is wise to configure the Samba DC as the DMB.
 
 <para>
 Now back to the issue of configuring a Samba DC to use a mode other than
-<smbconfoption><name>security</name><value>user</value></smbconfoption>. If a Samba host is
+<smbconfoption name="security">user</smbconfoption>. If a Samba host is
 configured to use another SMB server or DC in order to validate user connection requests,
-it is a fact that some other machine on the network (the <smbconfoption><name>password server</name></smbconfoption>)
+it is a fact that some other machine on the network (the <smbconfoption name="password server"/>)
 knows more about the user than the Samba host. About 99% of the time, this other host is
-a Domain Controller. Now to operate in domain mode security, the <smbconfoption><name>workgroup</name></smbconfoption>
+a Domain Controller. Now to operate in domain mode security, the <smbconfoption name="workgroup"/>
 parameter must be set to the name of the Windows NT domain (which already has a Domain Controller).
 If the domain does not already have a Domain Controller, you do not yet have a Domain.
 </para>
@@ -803,7 +803,7 @@ If the domain does not already have a Domain Controller, you do not yet have a D
 <para>
 Configuring a Samba box as a DC for a domain that already by definition has a
 PDC is asking for trouble. Therefore, you should always configure the Samba DC
-to be the DMB for its domain and set <smbconfoption><name>security</name><value>user</value></smbconfoption>.
+to be the DMB for its domain and set <smbconfoption name="security">user</smbconfoption>.
 This is the only officially supported mode of operation.
 </para>
 
@@ -909,7 +909,7 @@ wrong?</quote>
 
 <para>
 This problem is caused by the PDC not having a suitable Machine Trust Account. 
-If you are using the <smbconfoption><name>add machine script</name></smbconfoption> method to create 
+If you are using the <smbconfoption name="add machine script"/> method to create 
 accounts then this would indicate that it has not worked. Ensure the domain 
 admin user system is working.
 </para>
