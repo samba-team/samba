@@ -690,7 +690,6 @@ doit(struct sockaddr_in *who)
     ourpty = getpty(&ptynum);
     if (ourpty < 0)
 	fatal(net, "All network ports in use");
-    set_utid();
 
 #ifdef _SC_CRAY_SECURE_SYS
     /*
