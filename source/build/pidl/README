@@ -1,0 +1,35 @@
+This directory contains the source code of the pidl (Perl IDL) 
+compiler. 
+
+pidl.pl is the main file of pidl.
+
+Pidl works by building a parse tree from a .pidl file (a simple 
+dump of it's internal parse tree) or a .idl file 
+(a file format mostly like the IDL file format midl uses). 
+The IDL file parser is in idl.yp (a yacc file converted to 
+perl code by yapp)
+
+After a parse tree is present, pidl will call one of it's backends 
+(which one depends on the options given on the command-line). Here is 
+a list of current backends:
+
+client.pm - Generates client call functions in C
+dump.pm - Converts the parse tree back to an IDL file
+eparser.pm - Generates a parser for the ethereal network sniffer
+header.pm - Generates a header file with structures
+parser.pm - Generates pull/push functions for parsing 
+server.pm - Generates server side implementation in C
+template.pm - Generates stubs in C for server implementation
+validator.pm  - Validates the parse tree
+
+Other files in this directory are:
+tables.pl - Generates a table of available interfaces from a list of IDL files 
+util.pm - Misc utility functions used by *.pm and pidl.pl
+
+Tips for hacking on pidl:
+ - Look at the pidl's parse tree by using the --keep option and looking 
+   at the generated .pidl file. 
+ - The various backends have a lot in common, if you don't understand how one 
+   implements something, look at the others
+ - See pidl(1) and the documentation on midl
+ - See 'info bison' and yapp(1) for information on the file format of idl.yp 
