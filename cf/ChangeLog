@@ -1,5 +1,7 @@
 Mon Mar  1 11:23:41 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* have-struct-field.m4: remove extra AC_MSG_RESULT
+
 	* proto-compat.m4: typo
 
 	* krb-func-getcwd-broken.m4: update to autoconf 2.13
