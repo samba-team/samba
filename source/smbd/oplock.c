@@ -616,15 +616,15 @@ oplocks. Returning success.\n"));
   }
 
   /* 
-   * Do the appropriate reply - none in the kernel case.
+   * Do the appropriate reply - none in the kernel or level II case.
    */
 
-  if((break_cmd_type == OPLOCK_BREAK_CMD) || (break_cmd_type == LEVEL_II_OPLOCK_BREAK_CMD))
+  if(SVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET) == OPLOCK_BREAK_CMD)
   {
     struct sockaddr_in toaddr;
 
     /* Send the message back after OR'ing in the 'REPLY' bit. */
-    SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,break_cmd_type | CMD_REPLY);
+    SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD | CMD_REPLY);
 
     memset((char *)&toaddr,'\0',sizeof(toaddr));
     toaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -1164,13 +1164,20 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
   }
 
   /*
+   * If we just sent a message to a level II oplock share entry then
+   * we are done and may return.
+   */
+
+  if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
+    DEBUG(3,("request_oplock_break: sent break message to level II entry.\n"));
+    return True;
+  }
+
+  /*
    * Now we must await the oplock broken message coming back
    * from the target smbd process. Timeout if it fails to
    * return in (OPLOCK_BREAK_TIMEOUT + OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR) seconds.
    * While we get messages that aren't ours, loop.
-   * Note that we now require responses even for level2 oplock break
-   * requests to prevent multiple messages being sent for the same
-   * level2 break request.
    */
 
   start_time = time(NULL);
@@ -1181,7 +1188,6 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
     char op_break_reply[OPBRK_CMD_HEADER_LEN+OPLOCK_BREAK_MSG_LEN];
     int32 reply_msg_len;
     uint16 reply_from_port;
-    uint16 reply_cmd;
     char *reply_msg_start;
     fd_set fds;
 
@@ -1251,13 +1257,8 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
      * Test to see if this is the reply we are awaiting.
      */
 
-    reply_cmd = SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET);
-
-    if((reply_cmd & CMD_REPLY) &&
-       (
-         ((reply_cmd & ~CMD_REPLY) == OPLOCK_BREAK_CMD) ||
-         ((reply_cmd & ~CMD_REPLY) ==  LEVEL_II_OPLOCK_BREAK_CMD)
-       ) &&
+    if((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & CMD_REPLY) &&
+       ((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == OPLOCK_BREAK_CMD) &&
        (reply_from_port == share_entry->op_port) && 
        (memcmp(&reply_msg_start[OPLOCK_BREAK_PID_OFFSET], 
                &op_break_msg[OPLOCK_BREAK_PID_OFFSET],
