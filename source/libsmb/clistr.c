@@ -103,6 +103,7 @@ cli->capabilities) to a char* destination
 flags can have:
   CLISTR_CONVERT   means convert from dos to unix codepage
   CLISTR_TERMINATE means the string in src is null terminated
+  CLISTR_UNICODE   means to force as unicode
 if CLISTR_TERMINATE is set then src_len is ignored
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
@@ -115,12 +116,12 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli, PTR_DIFF(cli->inbuf, src))) {
+	if (clistr_align(cli, PTR_DIFF(src, cli->inbuf))) {
 		src++;
 		if (src_len > 0) src_len--;
 	}
 
-	if (!(cli->capabilities & CAP_UNICODE)) {
+	if (!(flags & CLISTR_UNICODE) && !(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
 		if (flags & CLISTR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
@@ -159,7 +160,7 @@ if src_len is -1 then assume the source is null terminated
 ****************************************************************************/
 int clistr_pull_size(struct cli_state *cli, const void *src, int src_len)
 {
-	if (clistr_align(cli, PTR_DIFF(cli->inbuf, src))) {
+	if (clistr_align(cli, PTR_DIFF(src, cli->inbuf))) {
 		src++;
 		if (src_len > 0) src_len--;
 	}
