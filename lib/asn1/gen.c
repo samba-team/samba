@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -424,6 +424,7 @@ generate_type (const Symbol *s)
 	     "#include <stdio.h>\n"
 	     "#include <stdlib.h>\n"
 	     "#include <time.h>\n"
+	     "#include <string.h>\n"
 	     "#include <errno.h>\n",
 	     orig_filename);
 
