@@ -199,16 +199,24 @@ done:
 
 int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 {
-	int migrated = 0;
+	int migrated = 0, i;
 	NTSTATUS nt_status;
 	SAM_TRUST_PASSWD trust;
 	const size_t max_name_len = sizeof(trust.private.uni_name)/2;
+	time_t lct;
 	/* nt workstation trust */
 	const char* dom_name = lp_workgroup();
 	uint8 wks_pass[16];
-	time_t lct;
 	uint32 chan = 0;
 	DOM_SID dom_sid;
+	/* nt domain trust */
+	TALLOC_CTX *mem_ctx = NULL;
+	const unsigned int max_trusts = 10;
+	int enum_ctx = 0, num_trusts;
+	TRUSTDOM **trusts;
+	char *trust_name = NULL, *pass;
+	size_t trust_name_len = 0;
+	DOM_SID sid;
 
 	/* sanity-check */
 	if (!pdb_ctx) return 0;
@@ -218,6 +226,10 @@ int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 
 	/* NT Workstation trust passwords */
 	if (secrets_fetch_trust_account_password(dom_name, wks_pass, &lct, &chan)) {
+		memset(&trust, 0, sizeof(trust));
+
+		/* TODO: put a lock on trust wks password */
+
 		/* flags */
 		trust.private.flags = PASS_TRUST_NT;
 		switch (chan) {
@@ -251,8 +263,35 @@ int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 	}
 
 	/* NT Domain trust passwords */
+	mem_ctx = talloc_init("trust password migration");
+	do {
+		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, max_trusts,
+							&num_trusts, &trusts);
+		for (i = 0; i < (num_trusts - enum_ctx); i++) {
+			memset(&trust, 0, sizeof(trust));
+			trust.private.flags = PASS_TRUST_NT | PASS_TRUST_DOMAIN;
+			pull_ucs2_allocate(&trust_name, trusts[i]->name);
+			trust_name_len = strlen_w(trusts[i]->name);
+
+			if (secrets_fetch_trusted_domain_password(trust_name, &pass, &sid, &lct)) {
+				strncpy_w(trust.private.uni_name, trusts[i]->name, trust_name_len);
+				trust.private.uni_name_len = trust_name_len;
+				sid_copy(&trust.private.domain_sid, &sid);
+				trust.private.mod_time = lct;
+			}
+
+			nt_status = pdb_ctx->pdb_add_trust_passwd(pdb_ctx, &trust);
+			migrated++;
+
+			SAFE_FREE(trust_name);
+		}
+
+	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES));
+	talloc_destroy(mem_ctx);
 
 	/* ADS Workstation trust passwords */
+	memset(&trust, 0, sizeof(trust));
+	
 
 	/* We're done with migration */
 	secrets_passwords_migrated(True);
