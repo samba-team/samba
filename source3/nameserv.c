@@ -80,14 +80,18 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
      don't really own */  
   remove_netbios_name(d,name,type,SELF,n2->ip_flgs[0].ip);
 
-  if (ip_equal(d->bcast_ip, ipgrp)) {
-    if (!lp_wins_support()) {
+  if (ip_equal(d->bcast_ip, ipgrp))
+  {
+    if (!lp_wins_support())
+    {
       /* not a WINS server: we have to release them on the network */
       queue_netbios_pkt_wins(d,ClientNMB,NMB_REL,NAME_RELEASE,
 			     name, type, 0, 0,0,NULL,NULL,
 			     False, True, ipzero, ipzero);
     }
-  } else {
+  }
+  else
+  {
     /* local interface: release them on the network */
     queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
 			 name, type, 0, 0,0,NULL,NULL,
@@ -181,19 +185,47 @@ void add_domain_names(time_t t)
       make_nmb_name(&n,lp_workgroup(),0x1c,scope);
       if (!find_name(d->namelist, &n, FIND_SELF))
       {
+        /* logon servers are group names - we don't expect this to fail. */
         DEBUG(0,("%s attempting to become logon server for %s %s\n",
              timestring(), lp_workgroup(), inet_ntoa(d->bcast_ip)));
         become_logon_server(d, work);
       }
     }
+
     if (lp_domain_master() && work && work->dom_state == DOMAIN_NONE)
     {
       make_nmb_name(&n,lp_workgroup(),0x1b,scope);
       if (!find_name(d->namelist, &n, FIND_SELF))
       {
-        DEBUG(1,("%s attempting to become logon server for %s %s\n",
-             timestring(), lp_workgroup(), inet_ntoa(d->bcast_ip)));
-        become_domain_master(d, work);
+        if (ip_equal(d->bcast_ip,ipgrp))
+        {
+          if (lp_wins_support())
+          {
+            /* use the wins server's capabilities (indirectly).  if
+               someone has already register the domain<1b> name with 
+               the WINS server, then the WINS server's job is to _check_
+               that the owner still wants it, before giving it away.
+             */
+               
+            DEBUG(1,("%s initiating becoming logon server for %s %s\n",
+            		timestring(), lp_workgroup(), inet_ntoa(d->bcast_ip)));
+            become_domain_master(d, work);
+          }
+        }
+        else
+        {
+          /* send out a query to establish whether there's a 
+             domain controller on the local subnet.  if not,
+             we can become a domain controller on that subnet.
+             it's only polite that we check, before claiming the
+             NetBIOS name 0x1b.
+           */
+
+          queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
+          			lp_workgroup(), 0x1b,
+          			0, 0,0,NULL,NULL,
+          			True, True, d->bcast_ip, d->bcast_ip);
+        }
       }
     }
   }

@@ -160,6 +160,34 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  break;
 	}
 
+	case NAME_QUERY_DOMAIN:
+	{
+	  /* if no response received, there is no domain controller on
+         this local subnet.  it's ok for us to register
+       */
+
+	  if (!n->bcast)
+	  {
+		 DEBUG(0,("NAME_QUERY_DOMAIN incorrectly used - contact samba-bugs!\n"));
+         /* XXXX whoops. someone's using this to unicast a packet.  this state
+            should only be used for broadcast checks
+          */
+         break;
+	  }
+	  if (n->num_msgs == 0)
+	  {
+	    if (ismyip(n->send_ip))
+	    {
+          struct work_record *work = find_workgroupstruct(d,n->name.name,False);
+          if (work && d)
+          {
+		    become_domain_master(d,work);
+          }
+        }
+	  }
+	  break;
+	}
+
 	default:
 	{
 	  /* nothing to do but delete the dead expected-response structure */
