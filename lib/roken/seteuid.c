@@ -48,7 +48,7 @@ RCSID("$Id$");
 #include "roken.h"
 
 int
-seteuid(int euid)
+seteuid(uid_t euid)
 {
 #ifdef HAVE_SETREUID
     return setreuid(-1, euid);
