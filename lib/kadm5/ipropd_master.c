@@ -415,6 +415,8 @@ main(int argc, char **argv)
     signal_fd = make_signal_socket (context);
     listen_fd = make_listen_socket (context);
 
+    signal (SIGPIPE, SIG_IGN);
+
     for (;;) {
 	slave *p;
 	fd_set readset;
