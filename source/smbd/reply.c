@@ -1775,7 +1775,12 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * However the requested READ size IS affected by max_recv. Insanity.... JRA.
 	 */
 
-	numtoread = MIN(numtoread,max_recv);
+	if (numtoread > max_recv) {
+		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u). \
+Returning short read of maximum allowed for compatibility with Windows 2000.\n",
+			(unsigned int)numtoread, (unsigned int)max_recv ));
+		numtoread = MIN(numtoread,max_recv);
+	}
 	nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
@@ -1820,7 +1825,12 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 	/*
 	 * The requested read size cannot be greater than max_recv. JRA.
 	 */
-	numtoread = MIN(numtoread,max_recv);
+	if (numtoread > max_recv) {
+		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u). \
+Returning short read of maximum allowed for compatibility with Windows 2000.\n",
+			(unsigned int)numtoread, (unsigned int)max_recv ));
+		numtoread = MIN(numtoread,max_recv);
+	}
 
 	data = smb_buf(outbuf) + 3;
   
