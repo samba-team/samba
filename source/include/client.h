@@ -129,6 +129,7 @@ struct cli_state {
 	vuser_key key;
 	uint32 ntlmssp_flags;
 	BOOL use_kerberos;
+	BOOL use_spnego;
 
 	BOOL use_oplocks; /* should we use oplocks? */
 	BOOL use_level_II_oplocks; /* should we use level II oplocks? */

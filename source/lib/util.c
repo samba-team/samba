@@ -1938,7 +1938,7 @@ DATA_BLOB data_blob(void *p, size_t length)
 {
 	DATA_BLOB ret;
 
-	if (!p) {
+	if (!p || !length) {
 		ZERO_STRUCT(ret);
 		return ret;
 	}
