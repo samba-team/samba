@@ -47,6 +47,13 @@ create_random_entry(krb5_principal princ,
     int mask = 0;
     krb5_keyblock *keys;
     int n_keys, i;
+    char *name;
+
+    ret = krb5_unparse_name(context, princ, &name);
+    if (ret) {
+	krb5_warn(context, ret, "failed to unparse principal name");
+	return ret;
+    }
 
     memset(&ent, 0, sizeof(ent));
     ent.principal = princ;
@@ -63,26 +70,40 @@ create_random_entry(krb5_principal princ,
     mask |= KADM5_ATTRIBUTES;
 
     ret = kadm5_create_principal(kadm_handle, &ent, mask, "hemlig");
-    if(ret)
-	return ret;
+    if(ret) {
+	krb5_warn(context, ret, "create_random_entry(%s): randkey failed", 
+		  name);
+	goto out;
+    }
     ret = kadm5_randkey_principal(kadm_handle, princ, &keys, &n_keys);
-    if(ret)
-	return ret;
+    if(ret) {
+	krb5_warn(context, ret, "create_random_entry*%s): randkey failed",
+		  name);
+	goto out;
+    }
     for(i = 0; i < n_keys; i++)
 	krb5_free_keyblock_contents(context, &keys[i]);
     free(keys);
     ret = kadm5_get_principal(kadm_handle, princ, &ent, 
 			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
-    if(ret)
-	return ret;
+    if(ret) {
+	krb5_warn(context, ret, "create_random_entry(%s): "
+		  "unable to get principal", name);
+	goto out;
+    }
     ent.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
     ent.kvno = 1;
     ret = kadm5_modify_principal(kadm_handle, &ent, 
 				 KADM5_ATTRIBUTES|KADM5_KVNO);
     kadm5_free_principal_ent (kadm_handle, &ent);
-    if(ret)
-	return ret;
-    return 0;
+    if(ret) {
+	krb5_warn(context, ret, "create_random_entry(%s): "
+		  "unable to modify principal", name);
+	goto out;
+    }
+ out:
+    free(name);
+    return ret;
 }
 
 static struct getargs args[] = {
