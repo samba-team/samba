@@ -37,7 +37,7 @@ extern FILE *out_hnd;
 
 static void sam_display_domain(const char *domain)
 {
-	report(out_hnd, "Domain Name: %s\n", domain);
+	DEBUG(0, ("Domain Name: %s\n", domain));
 }
 
 static void sam_display_dom_info(const char *domain, const DOM_SID *sid,
@@ -45,7 +45,7 @@ static void sam_display_dom_info(const char *domain, const DOM_SID *sid,
 {
 	fstring sidstr;
 	sid_to_string(sidstr, sid);
-	report(out_hnd, "Domain Name:\t%s\tSID:\t%s\n", domain, sidstr);
+	DEBUG(0, ("Domain Name:\t%s\tSID:\t%s\n", domain, sidstr));
 	display_sam_unk_ctr(out_hnd, ACTION_HEADER, switch_value, ctr);
 	display_sam_unk_ctr(out_hnd, ACTION_ENUMERATE, switch_value, ctr);
 	display_sam_unk_ctr(out_hnd, ACTION_FOOTER, switch_value, ctr);
@@ -63,8 +63,8 @@ static void sam_display_alias_info(const char *domain, const DOM_SID *sid,
 static void sam_display_alias(const char *domain, const DOM_SID *sid,
 			      uint32 alias_rid, const char *alias_name)
 {
-	report(out_hnd, "Alias RID: %8x  Alias Name: %s\n",
-	       alias_rid, alias_name);
+	DEBUG(0, ("Alias RID: %8x  Alias Name: %s\n",
+	       alias_rid, alias_name));
 }
 
 static void sam_display_alias_members(const char *domain, const DOM_SID *sid,
@@ -93,8 +93,8 @@ static void sam_display_group_info(const char *domain, const DOM_SID *sid,
 static void sam_display_group(const char *domain, const DOM_SID *sid,
 			      uint32 group_rid, const char *group_name)
 {
-	report(out_hnd, "Group RID: %8x  Group Name: %s\n",
-	       group_rid, group_name);
+	DEBUG(0, ("Group RID: %8x  Group Name: %s\n",
+	       group_rid, group_name));
 }
 
 static void sam_display_group_members(const char *domain, const DOM_SID *sid,
@@ -127,8 +127,8 @@ static void sam_display_user_info(const char *domain, const DOM_SID *sid,
 static void sam_display_user(const char *domain, const DOM_SID *sid,
 			     uint32 user_rid, const char *user_name)
 {
-	report(out_hnd, "User RID: %8x  User Name: %s\n",
-	       user_rid, user_name);
+	DEBUG(0, ("User RID: %8x  User Name: %s\n",
+	       user_rid, user_name));
 }
 
 
@@ -151,12 +151,12 @@ uint32 cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	report(out_hnd, "SAM NT Password Change\n");
+	DEBUG(0, ("SAM NT Password Change\n"));
 
 	if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 	{
-		report(out_hnd,
-		       "please use 'lsaquery' first, to ascertain the SID\n");
+		DEBUG(0, (
+		       "please use 'lsaquery' first, to ascertain the SID\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -177,7 +177,7 @@ uint32 cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 				 nt_oldhash);
 	}
 
-	report(out_hnd, "User: %s Domain: %s\n", acct_name, domain);
+	DEBUG(0, ("User: %s Domain: %s\n", acct_name, domain));
 
 	pwd = (char *)getpass("New Password: ");
 	ZERO_STRUCT(new_passwd);
@@ -195,7 +195,7 @@ uint32 cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 
 	if (!strequal(new_passwd, new_passwd2))
 	{
-		report(out_hnd, "New passwords differ!\n");
+		DEBUG(0, ("New passwords differ!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -203,10 +203,10 @@ uint32 cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	if (msrpc_sam_ntchange_pwd(srv_name, domain, acct_name,
 				   lm_oldhash, nt_oldhash, new_passwd))
 	{
-		report(out_hnd, "NT Password changed OK\n");
+		DEBUG(0, ("NT Password changed OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
-	report(out_hnd, "NT Password change FAILED\n");
+	DEBUG(0, ("NT Password change FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -229,7 +229,7 @@ uint32 cmd_sam_test(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	report(out_hnd, "SAM Encryption Test\n");
+	DEBUG(0, ("SAM Encryption Test\n"));
 
 	usr_creds->ntc.ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
 		NTLMSSP_NEGOTIATE_OEM |
@@ -273,14 +273,14 @@ uint32 cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "lookupdomain: <name>\n");
+		DEBUG(0, ("lookupdomain: <name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	domain = argv[1];
 	strupper(domain);
 
-	report(out_hnd, "Lookup Domain %s in SAM Server\n", domain);
+	DEBUG(0, ("Lookup Domain %s in SAM Server\n", domain));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -297,11 +297,11 @@ uint32 cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 		DEBUG(5, ("cmd_sam_lookup_domain: succeeded\n"));
 
 		sid_to_string(str_sid, &dom_sid);
-		report(out_hnd, "Domain:\t%s\tSID:\t%s\n", domain, str_sid);
+		DEBUG(0, ("Domain:\t%s\tSID:\t%s\n", domain, str_sid));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_lookup_domain: failed\n"));
-	report(out_hnd, "Lookup Domain: FAILED\n");
+	DEBUG(0, ("Lookup Domain: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -320,8 +320,8 @@ static void fill_domain_sid(const char *srv_name,
 
 	if (ret != 0x0)
 	{
-		report(out_hnd, "Domain %s: %s\n",
-		       new_domain, get_nt_error_msg(ret));
+		DEBUG(0, ("Domain %s: %s\n",
+		       new_domain, get_nt_error_msg(ret)));
 	}
 	else
 	{
@@ -361,8 +361,8 @@ uint32 cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "samlookupnames [-d <domain>] <name> [<name> ...]\n");
+		DEBUG(0, (
+		       "samlookupnames [-d <domain>] <name> [<name> ...]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -384,13 +384,13 @@ uint32 cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid_dom) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
-	report(out_hnd, "SAM Lookup Names\n");
+	DEBUG(0, ("SAM Lookup Names\n"));
 
 	argc -= optind;
 	argv += optind;
@@ -400,8 +400,8 @@ uint32 cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	if (num_names <= 0)
 	{
-		report(out_hnd,
-		       "samlookupnames [-d <domain>] <name> [<name> ...]\n");
+		DEBUG(0, (
+		       "samlookupnames [-d <domain>] <name> [<name> ...]\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -425,9 +425,9 @@ uint32 cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	{
 		for (i = 0; i < num_rids; i++)
 		{
-			report(out_hnd, "RID: %s -> %d (%d: %s)\n",
+			DEBUG(0, ("RID: %s -> %d (%d: %s)\n",
 			       names[i], rids[i], types[i],
-			       get_sid_name_use_str(types[i]));
+			       get_sid_name_use_str(types[i])));
 		}
 	}
 
@@ -470,8 +470,8 @@ uint32 cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n");
+		DEBUG(0, (
+		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -493,21 +493,21 @@ uint32 cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid_dom) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
-	report(out_hnd, "SAM Lookup Rids\n");
+	DEBUG(0, ("SAM Lookup Rids\n"));
 
 	argc -= optind;
 	argv += optind;
 
 	if (argc <= 0)
 	{
-		report(out_hnd,
-		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n");
+		DEBUG(0, (
+		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -544,9 +544,9 @@ uint32 cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	{
 		for (i = 0; i < num_names; i++)
 		{
-			report(out_hnd, "Name: %s -> %d (%d: %s)\n",
+			DEBUG(0, ("Name: %s -> %d (%d: %s)\n",
 			       names[i], rids[i], types[i],
-			       get_sid_name_use_str(types[i]));
+			       get_sid_name_use_str(types[i])));
 		}
 	}
 
@@ -595,16 +595,16 @@ uint32 cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
+		DEBUG(0, (
+		       "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -613,7 +613,7 @@ uint32 cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 
 	alias_rid = get_number(argv[0]);
 
-	report(out_hnd, "SAM Domain Alias Member\n");
+	DEBUG(0, ("SAM Domain Alias Member\n"));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -639,8 +639,8 @@ uint32 cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 
 		if (res2)
 		{
-			report(out_hnd, "SID deleted from Alias 0x%x: %s\n",
-			       alias_rid, argv[0]);
+			DEBUG(0, ("SID deleted from Alias 0x%x: %s\n",
+			       alias_rid, argv[0]));
 		}
 	}
 
@@ -651,11 +651,11 @@ uint32 cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_del_aliasmem: succeeded\n"));
-		report(out_hnd, "Delete Domain Alias Member: OK\n");
+		DEBUG(0, ("Delete Domain Alias Member: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_del_aliasmem: failed\n"));
-	report(out_hnd, "Delete Domain Alias Member: FAILED\n");
+	DEBUG(0, ("Delete Domain Alias Member: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -696,21 +696,21 @@ uint32 cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "delalias <alias name>\n");
+		DEBUG(0, ("delalias <alias name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name = argv[1];
 
-	report(out_hnd, "SAM Delete Domain Alias\n");
+	DEBUG(0, ("SAM Delete Domain Alias\n"));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -754,11 +754,11 @@ uint32 cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_delete_dom_alias: succeeded\n"));
-		report(out_hnd, "Delete Domain Alias: OK\n");
+		DEBUG(0, ("Delete Domain Alias: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_delete_dom_alias: failed\n"));
-	report(out_hnd, "Delete Domain Alias: FAILED\n");
+	DEBUG(0, ("Delete Domain Alias: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -802,23 +802,23 @@ uint32 cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "addaliasmem <alias name> [member name1] [member name2] ...\n");
+		DEBUG(0, (
+		       "addaliasmem <alias name> [member name1] [member name2] ...\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	num_names = argc - 1;
 	names = argv + 1;
 
-	report(out_hnd, "SAM Domain Alias Member\n");
+	DEBUG(0, ("SAM Domain Alias Member\n"));
 
 	/* lookup domain controller; receive a policy handle */
 	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True,
@@ -874,8 +874,8 @@ uint32 cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 		if (res2)
 		{
 			sid_to_string(tmp, &sids[i]);
-			report(out_hnd, "SID added to Alias 0x%x: %s\n",
-			       alias_rid, tmp);
+			DEBUG(0, ("SID added to Alias 0x%x: %s\n",
+			       alias_rid, tmp));
 		}
 	}
 
@@ -888,11 +888,11 @@ uint32 cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_add_aliasmem: succeeded\n"));
-		report(out_hnd, "Add Domain Alias Member: OK\n");
+		DEBUG(0, ("Add Domain Alias Member: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_add_aliasmem: failed\n"));
-	report(out_hnd, "Add Domain Alias Member: FAILED\n");
+	DEBUG(0, ("Add Domain Alias Member: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -928,16 +928,16 @@ uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 3)
 	{
-		report(out_hnd,
-		       "createtrusting: <Domain Name> <PDC Name> [password]\n");
+		DEBUG(0, (
+		       "createtrusting: <Domain Name> <PDC Name> [password]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -972,16 +972,16 @@ uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 			set_passwd = True;
 		}
 	}
-	report(out_hnd, "SAM Create Domain Trusting Account\n");
+	DEBUG(0, ("SAM Create Domain Trusting Account\n"));
 
 	if (msrpc_sam_create_dom_user(srv_name,
 				      acct_name, ACB_WSTRUST, &user_rid) ==
 	    NT_STATUS_NOPROBLEMO)
 	{
-		report(out_hnd, "Create Domain User: OK\n");
+		DEBUG(0, ("Create Domain User: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
-	report(out_hnd, "Create Domain User: FAILED\n");
+	DEBUG(0, ("Create Domain User: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 #endif
@@ -1053,16 +1053,16 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 		if (status != NT_STATUS_NOPROBLEMO)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return status;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "createuser: <acct name> [-i] [-s] [-L] [-j] domain_name [-p password]\n");
+		DEBUG(0, (
+		       "createuser: <acct name> [-i] [-s] [-L] [-j] domain_name [-p password]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1120,7 +1120,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			}
 		        case 'L':
 				if (getuid() != 0) {
-					report(out_hnd, "you must be root to use the -L option\n");
+					DEBUG(0, ("you must be root to use the -L option\n"));
 					return NT_STATUS_INVALID_PARAMETER;
 				}
 				lsa_local = True;
@@ -1167,10 +1167,10 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	}
 	strupper(wks_name);
 
-	report(out_hnd, "SAM Create Domain User\n");
+	DEBUG(0, ("SAM Create Domain User\n"));
 	if (join_domain && acb_info == ACB_NORMAL)
 	{
-		report(out_hnd, "can only join trust accounts to a domain\n");
+		DEBUG(0, ("can only join trust accounts to a domain\n"));
 		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
@@ -1185,9 +1185,9 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		    !lookup_pdc_name(global_myname, domain, &srv_ip, 
 				     srv_name))
 		{
-			report(out_hnd,
+			DEBUG(0, (
 			       "could not locate server for domain %s\n",
-			       domain);
+			       domain));
 			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
 
@@ -1195,23 +1195,23 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 		if (status != NT_STATUS_NOPROBLEMO)
 		{
-			report(out_hnd,
-			       "could not find SID for domain %s\n", domain);
+			DEBUG(0, (
+			       "could not find SID for domain %s\n", domain));
 			return status;
 		}
 	}
 
-	report(out_hnd, "Domain: %s Name: %s ACB: %s\n",
+	DEBUG(0, ("Domain: %s Name: %s ACB: %s\n",
 	       domain, acct_name,
 	       pwdb_encode_acct_ctrl(acb_info,
-				     NEW_PW_FORMAT_SPACE_PADDED_LEN));
+				     NEW_PW_FORMAT_SPACE_PADDED_LEN)));
 
 	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
 	{
 		if (password != NULL)
 		{
-			report(out_hnd,
-			       ("Workstation and Server Trust Accounts are randomly auto-generated\n"));
+			DEBUG(0, (
+			       ("Workstation and Server Trust Accounts are randomly auto-generated\n")));
 			memset(&upw, 0, sizeof(upw));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1231,14 +1231,14 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			strlower(ascii_pwd);
 			use_ascii_pwd = True;
 
-			report(out_hnd,
+			DEBUG(0, (
 			       "Resetting Trust Account to insecure, initial, well-known value: \"%s\"\n",
-			       ascii_pwd);
-			report(out_hnd,
+			       ascii_pwd));
+			DEBUG(0, (
 			       "%s can now be joined to the domain, which should\n",
-			       name);
-			report(out_hnd,
-			       "be done on a private, secure network as soon as possible\n");
+			       name));
+			DEBUG(0, (
+			       "be done on a private, secure network as soon as possible\n"));
 		}
 	}
 
@@ -1266,11 +1266,11 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 		if (!res)
 		{
-			report(out_hnd, "Connection to %s FAILED\n",
-			       wks_name);
-			report(out_hnd,
+			DEBUG(0, ("Connection to %s FAILED\n",
+			       wks_name));
+			DEBUG(0, (
 			       "(Do a \"use \\\\%s -U localadmin\")\n",
-			       wks_name);
+			       wks_name));
 		}
 	}
 
@@ -1283,11 +1283,11 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 					      acct_name, acb_info, password,
 					      plen, &user_rid)) !=
 	    NT_STATUS_NOPROBLEMO) {
-		report(out_hnd, "Create Domain User: FAILED\n");
+		DEBUG(0, ("Create Domain User: FAILED\n"));
 		goto done;
 	}
 
-	report(out_hnd, "Create Domain User: OK\n");
+	DEBUG(0, ("Create Domain User: OK\n"));
 
 	if (join_domain) {
 		POLICY_HND pol_sec;
@@ -1300,8 +1300,8 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		strupper(domain);
 		strupper(name);
 		
-		report(out_hnd, "Join %s to Domain %s\n", name,
-		       domain);
+		DEBUG(0, ("Join %s to Domain %s\n", name,
+		       domain));
 		
 		/* attempt to create, and if already exist, open */
 		if (lsa_local) {
@@ -1314,7 +1314,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 						 0x020003, &pol_sec);
 			
 			if (res1) {
-				report(out_hnd, "Create $MACHINE.ACC: OK\n");
+				DEBUG(0, ("Create $MACHINE.ACC: OK\n"));
 			} else {
 				res1 = lsa_open_secret(&lsa_pol,
 						       "$MACHINE.ACC",
@@ -1331,10 +1331,10 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		}
 		
 		if (res2) {
-			report(out_hnd, "Set $MACHINE.ACC: OK\n");
+			DEBUG(0, ("Set $MACHINE.ACC: OK\n"));
 			status = NT_STATUS_NOPROBLEMO;
 		} else {
-			report(out_hnd, "Set $MACHINE.ACC: FAILED\n");
+			DEBUG(0, ("Set $MACHINE.ACC: FAILED\n"));
 			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -1384,8 +1384,8 @@ uint32 cmd_sam_create_dom_alias(struct client_info *info, int argc,
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -1393,8 +1393,8 @@ uint32 cmd_sam_create_dom_alias(struct client_info *info, int argc,
 
 	if ((argc < 2) || (argc > 3))
 	{
-		report(out_hnd,
-		       "createalias: <acct name> [acct description]\n");
+		DEBUG(0, (
+		       "createalias: <acct name> [acct description]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1409,9 +1409,9 @@ uint32 cmd_sam_create_dom_alias(struct client_info *info, int argc,
 		safe_strcpy(acct_desc, argv[2], sizeof(acct_desc) - 1);
 	}
 
-	report(out_hnd, "SAM Create Domain Alias\n");
-	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
-	       domain, acct_name, acct_desc);
+	DEBUG(0, ("SAM Create Domain Alias\n"));
+	DEBUG(0, ("Domain: %s Name: %s Description: %s\n",
+	       domain, acct_name, acct_desc));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1432,11 +1432,11 @@ uint32 cmd_sam_create_dom_alias(struct client_info *info, int argc,
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_create_dom_alias: succeeded\n"));
-		report(out_hnd, "Create Domain Alias: OK\n");
+		DEBUG(0, ("Create Domain Alias: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_create_dom_alias: failed\n"));
-	report(out_hnd, "Create Domain Alias: FAILED\n");
+	DEBUG(0, ("Create Domain Alias: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1473,16 +1473,16 @@ uint32 cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "delgroupmem: <group rid> [member rid1] [member rid2] ...\n");
+		DEBUG(0, (
+		       "delgroupmem: <group rid> [member rid1] [member rid2] ...\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1491,7 +1491,7 @@ uint32 cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 
 	group_rid = get_number(argv[0]);
 
-	report(out_hnd, "SAM Add Domain Group member\n");
+	DEBUG(0, ("SAM Add Domain Group member\n"));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1516,8 +1516,8 @@ uint32 cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 
 		if (res2)
 		{
-			report(out_hnd, "RID deleted from Group 0x%x: 0x%x\n",
-			       group_rid, member_rid);
+			DEBUG(0, ("RID deleted from Group 0x%x: 0x%x\n",
+			       group_rid, member_rid));
 		}
 	}
 
@@ -1528,11 +1528,11 @@ uint32 cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_del_groupmem: succeeded\n"));
-		report(out_hnd, "Add Domain Group Member: OK\n");
+		DEBUG(0, ("Add Domain Group Member: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_del_groupmem: failed\n"));
-	report(out_hnd, "Add Domain Group Member: FAILED\n");
+	DEBUG(0, ("Add Domain Group Member: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1573,21 +1573,21 @@ uint32 cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "deluser <user name>\n");
+		DEBUG(0, ("deluser <user name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name = argv[1];
 
-	report(out_hnd, "SAM Delete Domain User\n");
+	DEBUG(0, ("SAM Delete Domain User\n"));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1635,11 +1635,11 @@ uint32 cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_delete_dom_user: succeeded\n"));
-		report(out_hnd, "Delete Domain User: OK\n");
+		DEBUG(0, ("Delete Domain User: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_delete_dom_user: failed\n"));
-	report(out_hnd, "Delete Domain User: FAILED\n");
+	DEBUG(0, ("Delete Domain User: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1681,21 +1681,21 @@ uint32 cmd_sam_delete_dom_group(struct client_info *info, int argc,
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "delgroup <group name>\n");
+		DEBUG(0, ("delgroup <group name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name = argv[1];
 
-	report(out_hnd, "SAM Delete Domain Group\n");
+	DEBUG(0, ("SAM Delete Domain Group\n"));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1739,11 +1739,11 @@ uint32 cmd_sam_delete_dom_group(struct client_info *info, int argc,
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_delete_dom_group: succeeded\n"));
-		report(out_hnd, "Delete Domain Group: OK\n");
+		DEBUG(0, ("Delete Domain Group: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_delete_dom_group: failed\n"));
-	report(out_hnd, "Delete Domain Group: FAILED\n");
+	DEBUG(0, ("Delete Domain Group: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1795,16 +1795,16 @@ uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 3)
 	{
-		report(out_hnd,
-		       "addgroupmem <group name> [member name1] [member name2] ...\n");
+		DEBUG(0, (
+		       "addgroupmem <group name> [member name1] [member name2] ...\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1819,7 +1819,7 @@ uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	num_names = argc;
 	names = (char **)argv;
 
-	report(out_hnd, "SAM Add Domain Group member\n");
+	DEBUG(0, ("SAM Add Domain Group member\n"));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1869,9 +1869,9 @@ uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 
 	if (res2 && group_types[0] == SID_NAME_ALIAS)
 	{
-		report(out_hnd,
+		DEBUG(0, (
 		       "%s is a local alias, not a group.  Use addaliasmem command instead\n",
-		       group_name);
+		       group_name));
 		safe_free(group_rids);
 		safe_free(group_types);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1883,21 +1883,21 @@ uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 
 	if (num_rids == 0)
 	{
-		report(out_hnd, "Member names not known\n");
+		DEBUG(0, ("Member names not known\n"));
 	}
 	for (i = 0; i < num_rids && res2 && res1; i++)
 	{
 		if (types[i] == SID_NAME_UNKNOWN)
 		{
-			report(out_hnd, "Name %s unknown\n", names[i]);
+			DEBUG(0, ("Name %s unknown\n", names[i]));
 		}
 		else
 		{
 			if (samr_add_groupmem(&pol_grp, rids[i]))
 			{
-				report(out_hnd,
+				DEBUG(0, (
 				       "RID added to Group 0x%x: 0x%x\n",
-				       group_rids[0], rids[i]);
+				       group_rids[0], rids[i]));
 			}
 		}
 	}
@@ -1919,11 +1919,11 @@ uint32 cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	if (res2)
 	{
 		DEBUG(5, ("cmd_sam_add_groupmem: succeeded\n"));
-		report(out_hnd, "Add Domain Group Member: OK\n");
+		DEBUG(0, ("Add Domain Group Member: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_add_groupmem: failed\n"));
-	report(out_hnd, "Add Domain Group Member: FAILED\n");
+	DEBUG(0, ("Add Domain Group Member: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1960,16 +1960,16 @@ uint32 cmd_sam_create_dom_group(struct client_info *info, int argc,
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if ((argc < 2) || (argc > 3))
 	{
-		report(out_hnd,
-		       "creategroup: <acct name> [acct description]\n");
+		DEBUG(0, (
+		       "creategroup: <acct name> [acct description]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1985,9 +1985,9 @@ uint32 cmd_sam_create_dom_group(struct client_info *info, int argc,
 	}
 
 
-	report(out_hnd, "SAM Create Domain Group\n");
-	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
-	       domain, acct_name, acct_desc);
+	DEBUG(0, ("SAM Create Domain Group\n"));
+	DEBUG(0, ("Domain: %s Name: %s Description: %s\n",
+	       domain, acct_name, acct_desc));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2008,11 +2008,11 @@ uint32 cmd_sam_create_dom_group(struct client_info *info, int argc,
 	if (res1)
 	{
 		DEBUG(5, ("cmd_sam_create_dom_group: succeeded\n"));
-		report(out_hnd, "Create Domain Group: OK\n");
+		DEBUG(0, ("Create Domain Group: OK\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	DEBUG(5, ("cmd_sam_create_dom_group: failed\n"));
-	report(out_hnd, "Create Domain Group: FAILED\n");
+	DEBUG(0, ("Create Domain Group: FAILED\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -2047,8 +2047,8 @@ uint32 cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -2075,7 +2075,7 @@ uint32 cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	report(out_hnd, "SAM Enumerate Users\n");
+	DEBUG(0, ("SAM Enumerate Users\n"));
 
 	res1 = msrpc_sam_enum_users(srv_name, domain, &sid1,
 			     &sam, &num_sam_entries,
@@ -2127,15 +2127,15 @@ uint32 cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samgroupmem <name>\n");
+		DEBUG(0, ("samgroupmem <name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2143,9 +2143,9 @@ uint32 cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Query Group: %s\n", group_name);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	       info->myhostname, srv_name, domain, sid_str);
+	DEBUG(0, ("SAM Query Group: %s\n", group_name));
+	DEBUG(0, ("From: %s To: %s Domain: %s SID: %s\n",
+	       info->myhostname, srv_name, domain, sid_str));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2218,15 +2218,15 @@ uint32 cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samgroup <name>\n");
+		DEBUG(0, ("samgroup <name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2234,9 +2234,9 @@ uint32 cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Query Group: %s\n", group_name);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	       info->myhostname, srv_name, domain, sid_str);
+	DEBUG(0, ("SAM Query Group: %s\n", group_name));
+	DEBUG(0, ("From: %s To: %s Domain: %s SID: %s\n",
+	       info->myhostname, srv_name, domain, sid_str));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2306,15 +2306,15 @@ uint32 cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samquerysec <name>\n");
+		DEBUG(0, ("samquerysec <name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2325,9 +2325,9 @@ uint32 cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Query User: %s\n", user_name);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	       info->myhostname, srv_name, domain, sid_str);
+	DEBUG(0, ("SAM Query User: %s\n", user_name));
+	DEBUG(0, ("From: %s To: %s Domain: %s SID: %s\n",
+	       info->myhostname, srv_name, domain, sid_str));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2421,15 +2421,15 @@ uint32 cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samuser <name> [-u] [-g] [-a]\n");
+		DEBUG(0, ("samuser <name> [-u] [-g] [-a]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2467,9 +2467,9 @@ uint32 cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Query User: %s\n", user_name);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	       info->myhostname, srv_name, domain, sid_str);
+	DEBUG(0, ("SAM Query User: %s\n", user_name));
+	DEBUG(0, ("From: %s To: %s Domain: %s SID: %s\n",
+	       info->myhostname, srv_name, domain, sid_str));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2563,16 +2563,16 @@ uint32 cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd,
-		       "samuserset2 <name> [-s <acb_bits>] [-c <acb_bits]\n");
+		DEBUG(0, (
+		       "samuserset2 <name> [-s <acb_bits>] [-c <acb_bits]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2609,7 +2609,7 @@ uint32 cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Set User Info: %s\n", user_name);
+	DEBUG(0, ("SAM Set User Info: %s\n", user_name));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2694,11 +2694,11 @@ uint32 cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	if (res1)
 	{
-		report(out_hnd, "Set User Info: OK\n");
+		DEBUG(0, ("Set User Info: OK\n"));
 		DEBUG(5, ("cmd_sam_query_user: succeeded\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
-	report(out_hnd, "Set User Info: Failed\n");
+	DEBUG(0, ("Set User Info: Failed\n"));
 	DEBUG(5, ("cmd_sam_query_user: failed\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -2759,8 +2759,8 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -2770,8 +2770,8 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 	if (argc == 0)
 	{
-		report(out_hnd, "samuserset <name> [<-p password> [-F fullname] [-H homedrive]\n");
-		report(out_hnd, "                  [-D homedrive] [-P profilepath] [-L logonscript]]\n");
+		DEBUG(0, ("samuserset <name> [<-p password> [-F fullname] [-H homedrive]\n"));
+		DEBUG(0, ("                  [-D homedrive] [-P profilepath] [-L logonscript]]\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2848,26 +2848,26 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 	if (set_info_21 && !set_passwd) 
 	{
-		report(out_hnd, "To Change the User Info, you MUST specify -p!\n");
+		DEBUG(0, ("To Change the User Info, you MUST specify -p!\n"));
 		DEBUG(5, ("cmd_sam_query_user: failed\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Set User Info: %s\n", user_name);
+	DEBUG(0, ("SAM Set User Info: %s\n", user_name));
 	if (set_passwd)
-		report(out_hnd, "Password: %s\n", password);
+		DEBUG(0, ("Password: %s\n", password));
 	if (set_full_name)
-		report(out_hnd, "Full Name: %s\n", full_name);
+		DEBUG(0, ("Full Name: %s\n", full_name));
 	if (set_home_dir)
-		report(out_hnd, "Home Drive: %s\n", home_dir);
+		DEBUG(0, ("Home Drive: %s\n", home_dir));
 	if (set_dir_drive)
-		report(out_hnd, "Dir Drive: %s\n", dir_drive);
+		DEBUG(0, ("Dir Drive: %s\n", dir_drive));
 	if (set_profile_path)
-		report(out_hnd, "Profile Path: %s\n", profile_path);
+		DEBUG(0, ("Profile Path: %s\n", profile_path));
 	if (set_logon_script)
-		report(out_hnd, "Logon Script: %s\n", logon_script);
+		DEBUG(0, ("Logon Script: %s\n", logon_script));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2915,7 +2915,6 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 			SAM_USER_INFO_21 *usr21 = ctr.info.id21;
 			SAM_USER_INFO_21 *p = g_new(SAM_USER_INFO_21, 1);
 			/* send user info query, level 0x15 */
-			report(out_hnd, "Before\n");
 			display_sam_user_info_21(out_hnd, ACTION_HEADER, usr21);
 			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr21);
 			display_sam_user_info_21(out_hnd, ACTION_FOOTER, usr21);
@@ -2945,7 +2944,6 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 			        len_logon_script = logon_script != NULL ? strlen(logon_script) : 0;
 				make_unistr2(&(usr21->uni_logon_script), logon_script, len_logon_script);
 			}
-			report(out_hnd, "After\n");
 			display_sam_user_info_21(out_hnd, ACTION_HEADER, usr21);
 			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr21);
 			display_sam_user_info_21(out_hnd, ACTION_FOOTER, usr21);
@@ -2978,7 +2976,6 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 					      usr21->unknown_6);
 
 			usr = p;
-			report(out_hnd, "After Make\n");
 			display_sam_user_info_21(out_hnd, ACTION_HEADER, usr);
 			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr);
 			display_sam_user_info_21(out_hnd, ACTION_FOOTER, usr);
@@ -3001,15 +2998,15 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 	if (set_passwd && res1 && res2)
 	{
-		report(out_hnd, "Set User Info: OK\n");
+		DEBUG(0, ("Set User Info: OK\n"));
 		DEBUG(5, ("cmd_sam_query_user: succeeded\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
-	report(out_hnd, "Set User Info: Failed\n");
+	DEBUG(0, ("Set User Info: Failed\n"));
 	if (!res1)
-		report(out_hnd, "Password change failed\n");
+		DEBUG(0, ("Password change failed\n"));
 	if (!res2)
-		report(out_hnd, "User Info change failed\n");
+		DEBUG(0, ("User Info change failed\n"));
 	DEBUG(5, ("cmd_sam_query_user: failed\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -3018,7 +3015,7 @@ static void sam_display_disp_info(const char *domain, const DOM_SID *sid,
 				  uint16 info, uint32 num,
 				  SAM_DISPINFO_CTR * ctr)
 {
-	report(out_hnd, "SAM Display Info for Domain %s\n", domain);
+	DEBUG(0, ("SAM Display Info for Domain %s\n", domain));
 
 	display_sam_disp_info_ctr(out_hnd, ACTION_HEADER, info, num, ctr);
 	display_sam_disp_info_ctr(out_hnd, ACTION_ENUMERATE, info, num, ctr);
@@ -3104,8 +3101,8 @@ uint32 cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -3151,7 +3148,7 @@ uint32 cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samaliasmem [DOMAIN\\]<name>\n");
+		DEBUG(0, ("samaliasmem [DOMAIN\\]<name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -3162,8 +3159,8 @@ uint32 cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -3180,9 +3177,9 @@ uint32 cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Query Alias: %s\n", alias_name);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	       info->myhostname, srv_name, domain, sid_str);
+	DEBUG(0, ("SAM Query Alias: %s\n", alias_name));
+	DEBUG(0, ("From: %s To: %s Domain: %s SID: %s\n",
+	       info->myhostname, srv_name, domain, sid_str));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -3256,15 +3253,15 @@ uint32 cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	{
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samalias <name>\n");
+		DEBUG(0, ("samalias <name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -3272,9 +3269,9 @@ uint32 cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 
 	sid_to_string(sid_str, &sid);
 
-	report(out_hnd, "SAM Query Alias: %s\n", alias_name);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	       info->myhostname, srv_name, domain, sid_str);
+	DEBUG(0, ("SAM Query Alias: %s\n", alias_name));
+	DEBUG(0, ("From: %s To: %s Domain: %s SID: %s\n",
+	       info->myhostname, srv_name, domain, sid_str));
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -3366,13 +3363,13 @@ uint32 cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
-	report(out_hnd, "SAM Enumerate Aliases\n");
+	DEBUG(0, ("SAM Enumerate Aliases\n"));
 
 	res1 = msrpc_sam_enum_aliases(srv_name, domain, &sid1,
 			       &sam, &num_sam_entries,
@@ -3420,8 +3417,8 @@ uint32 cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
 		    0x0)
 		{
-			report(out_hnd,
-			       "please use 'lsaquery' first, to ascertain the SID\n");
+			DEBUG(0, (
+			       "please use 'lsaquery' first, to ascertain the SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -3443,7 +3440,7 @@ uint32 cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	report(out_hnd, "SAM Enumerate Groups\n");
+	DEBUG(0, ("SAM Enumerate Groups\n"));
 
 	res1 = msrpc_sam_enum_groups(srv_name, domain, &sid1,
 			      &sam, &num_sam_entries,
@@ -3491,7 +3488,7 @@ uint32 cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	report(out_hnd, "SAM Enumerate Domains\n");
+	DEBUG(0, ("SAM Enumerate Domains\n"));
 
 	res1 = msrpc_sam_enum_domains(srv_name,
 			       &sam, &num_sam_entries,
