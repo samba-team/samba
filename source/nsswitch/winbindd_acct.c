@@ -37,6 +37,29 @@ static TDB_CONTEXT *account_tdb;
 
 extern userdom_struct current_user_info;
 
+struct _check_primary_grp {
+	gid_t	gid;
+	BOOL	found;
+};
+
+/**********************************************************************
+**********************************************************************/
+
+static void free_winbindd_gr( WINBINDD_GR *grp )
+{
+	int i;
+
+	if ( !grp )
+		return;
+		
+	for ( i=0; i<grp->num_gr_mem; i++ )
+		SAFE_FREE( grp->gr_mem[i] );
+
+	SAFE_FREE( grp->gr_mem );
+	
+	return;
+}
+
 /*****************************************************************************
  Initialise auto-account database. 
 *****************************************************************************/
@@ -649,8 +672,17 @@ static BOOL wb_delgrpmember( WINBINDD_GR *grp, const char *user )
 	if ( !found ) 
 		return False;
 
-	memmove( grp->gr_mem[i], grp->gr_mem[i+1], sizeof(char*)*(grp->num_gr_mem-(i+1)) );
-	grp->num_gr_mem--;
+	/* still some remaining members */
+
+	if ( grp->num_gr_mem > 1 ) {
+		memmove( grp->gr_mem[i], grp->gr_mem[i+1], sizeof(char*)*(grp->num_gr_mem-(i+1)) );
+		grp->num_gr_mem--;
+	}
+	else {	/* last one */
+		free_winbindd_gr( grp );
+		grp->gr_mem = NULL;
+		grp->num_gr_mem = 0;
+	}
 				
 	return True;
 }
@@ -658,34 +690,59 @@ static BOOL wb_delgrpmember( WINBINDD_GR *grp, const char *user )
 /**********************************************************************
 **********************************************************************/
 
-static void free_winbindd_gr( WINBINDD_GR *grp )
+static int cleangroups_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+		       void *state)
 {
-	int i;
-
-	if ( !grp )
-		return;
-		
-	for ( i=0; i<grp->num_gr_mem; i++ )
-		SAFE_FREE( grp->gr_mem[i] );
-
-	SAFE_FREE( grp->gr_mem );
+	int len;
+	fstring key;
+	char *name = (char*)state;
 	
-	return;
+	snprintf( key, sizeof(key), "%s/NAME", WBKEY_GROUP );
+	len = strlen(key);
+	
+	/* if this is a group entry then, check the members */
+	
+	if ( (strncmp(kbuf.dptr, key, len) == 0) && dbuf.dptr ) {
+		WINBINDD_GR *grp;
+		
+		if ( !(grp = string2group( dbuf.dptr )) ) {
+			DEBUG(0,("cleangroups_traverse_fn: Failure to parse [%s]\n",
+				dbuf.dptr));
+			return 0;
+		}
+		
+		/* just try to delete the user and rely on wb_delgrpmember()
+		   to tell you whether or not the group changed.  This is more 
+		   effecient than testing group membership first since the 
+		   checks for deleting a user from a group is essentially the 
+		   same as checking if he/she is a member */
+		   
+		if ( wb_delgrpmember( grp, name ) ) {
+			DEBUG(10,("cleanupgroups_traverse_fn: Removed user (%s) from group (%s)\n",
+				name, grp->gr_name));
+			wb_storegrnam( grp );
+		}
+		
+		free_winbindd_gr( grp );
+	}
+
+	return 0;
 }
 
 /**********************************************************************
 **********************************************************************/
 
-static BOOL wb_delete_user( const char *name)
+static BOOL wb_delete_user( WINBINDD_PW *pw)
 {
 	char *namekey;
+	char *uidkey;
 	
 	if ( !account_tdb && !winbindd_accountdb_init() ) {
-		DEBUG(0,("wb_storepwnam: Failed to open winbindd account db\n"));
+		DEBUG(0,("wb_delete_user: Failed to open winbindd account db\n"));
 		return False;
 	}
 
-	namekey = acct_userkey_byname( name );
+	namekey = acct_userkey_byname( pw->pw_name );
 	
 	/* lock the main entry first */
 	
@@ -694,20 +751,101 @@ static BOOL wb_delete_user( const char *name)
 		return False;
 	}
 	
+	/* remove user from all groups */
+	
+	tdb_traverse(account_tdb, cleangroups_traverse_fn, (void *)pw->pw_name);
+	
+	/* remove the user */
+	uidkey = acct_userkey_byuid( pw->pw_uid );
 	
 	tdb_delete_bystring( account_tdb, namekey );
+	tdb_delete_bystring( account_tdb, uidkey );
+	
 	tdb_unlock_bystring( account_tdb, namekey );
 	
 	return True;
+}
+
+/**********************************************************************
+**********************************************************************/
+
+static int isprimarygroup_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, 
+                                      TDB_DATA dbuf, void *params)
+{
+	int len;
+	fstring key;
+	struct _check_primary_grp *check = (struct _check_primary_grp*)params;
+	
+	snprintf( key, sizeof(key), "%s/NAME", WBKEY_PASSWD );
+	len = strlen(key);
+	
+	/* if this is a group entry then, check the members */
+	
+	if ( (strncmp(kbuf.dptr, key, len) == 0) && dbuf.dptr ) {
+		WINBINDD_PW *pw;;
+		
+		if ( !(pw = string2passwd( dbuf.dptr )) ) {
+			DEBUG(0,("isprimarygroup_traverse_fn: Failure to parse [%s]\n",
+				dbuf.dptr));
+			return 0;
+		}
+		
+		if ( check->gid == pw->pw_gid ) {
+			check->found = True;
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 
 /**********************************************************************
 **********************************************************************/
 
-static BOOL wb_delete_group( const char *name)
+static BOOL wb_delete_group( WINBINDD_GR *grp )
 {
-	return False;
+	struct _check_primary_grp check;
+	char *namekey;
+	char *gidkey;
+	
+	if ( !account_tdb && !winbindd_accountdb_init() ) {
+		DEBUG(0,("wb_delete_group: Failed to open winbindd account db\n"));
+		return False;
+	}
+	
+	/* lock the main entry first */
+	
+	namekey = acct_groupkey_byname( grp->gr_name );	
+	if ( tdb_lock_bystring(account_tdb, namekey, 0) == -1 ) {
+		DEBUG(0,("wb_delete_group: Failed to lock %s\n", namekey));
+		return False;
+	}
+	
+	/* is this group the primary group for any user?  If 
+	   so deny delete */
+	   
+	check.found = False;	
+	tdb_traverse(account_tdb, isprimarygroup_traverse_fn, (void *)&check);
+	
+	if ( check.found ) {
+		DEBUG(4,("wb_delete_group: Cannot delete group (%s) since it "
+			"is the primary group for some users\n", grp->gr_name));
+		return False;
+	}
+	
+	/* We're clear.  Delete the group */
+	
+	DEBUG(5,("wb_delete_group: Removing group (%s)\n", grp->gr_name));
+	
+	gidkey = acct_groupkey_bygid( grp->gr_gid );
+	
+	tdb_delete_bystring( account_tdb, namekey );
+	tdb_delete_bystring( account_tdb, gidkey );
+	
+	tdb_unlock_bystring( account_tdb, namekey );
+	
+	return True;
 }
 
 /**********************************************************************
@@ -722,6 +860,8 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 	WINBINDD_GR *wb_grp;
 	struct group *unix_grp;
 	gid_t primary_gid;
+	uint32 flags = state->request.flags;
+	uint32 rid;
 	
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_create_user: non-privileged access denied!\n"));
@@ -781,8 +921,27 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 	
 	pw.pw_uid = id.uid;
 	pw.pw_gid = primary_gid;
+	
+	/* store the new entry */
+	
+	if ( !wb_storepwnam(&pw) )
+		return WINBINDD_ERROR;
+		
+	/* do we need a new RID? */
+	
+	if ( flags & WBFLAG_ALLOCATE_RID ) {
+		if ( !NT_STATUS_IS_OK(idmap_allocate_rid(&rid, USER_RID_TYPE)) ) {
+			DEBUG(0,("winbindd_create_user: RID allocation failure!  Cannot create user (%s)\n",
+				user));
+			wb_delete_user( &pw );
+			
+			return WINBINDD_ERROR;
+		}
+		
+		state->response.data.rid = rid;
+	}
 
-	return ( wb_storepwnam(&pw) ? WINBINDD_OK : WINBINDD_ERROR );
+	return WINBINDD_OK;
 }
 
 /**********************************************************************
@@ -794,6 +953,8 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 	char *group;
 	unid_t id;
 	WINBINDD_GR grp;
+	uint32 flags = state->request.flags;
+	uint32 rid;
 	
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_create_group: non-privileged access denied!\n"));
@@ -821,8 +982,25 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 	grp.gr_gid      = id.gid;
 	grp.gr_mem      = NULL;	/* start with no members */
 	grp.num_gr_mem  = 0;
+	
+	if ( !wb_storegrnam(&grp) )
+		return WINBINDD_ERROR;
+		
+	/* do we need a new RID? */
+	
+	if ( flags & WBFLAG_ALLOCATE_RID ) {
+		if ( !NT_STATUS_IS_OK(idmap_allocate_rid(&rid, GROUP_RID_TYPE)) ) {
+			DEBUG(0,("winbindd_create_group: RID allocation failure!  Cannot create group (%s)\n",
+				group));
+			wb_delete_group( &grp );
+			
+			return WINBINDD_ERROR;
+		}
+		
+		state->response.data.rid = rid;
+	}
 
-	return ( wb_storegrnam(&grp) ? WINBINDD_OK : WINBINDD_ERROR );
+	return WINBINDD_OK;
 }
 
 /**********************************************************************
@@ -989,8 +1167,7 @@ enum winbindd_result winbindd_delete_user(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 	
-	
-	return ( wb_delete_user(user) ? WINBINDD_OK : WINBINDD_ERROR );
+	return ( wb_delete_user(pw) ? WINBINDD_OK : WINBINDD_ERROR );
 }
 
 /**********************************************************************
@@ -1001,6 +1178,7 @@ enum winbindd_result winbindd_delete_group(struct winbindd_cli_state *state)
 {
 	WINBINDD_GR *grp;
 	char *group;
+	BOOL ret;
 
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_delete_group: non-privileged access denied!\n"));
@@ -1016,13 +1194,15 @@ enum winbindd_result winbindd_delete_group(struct winbindd_cli_state *state)
 	/* make sure it is a valid group */
 	
 	if ( !(grp = wb_getgrnam( group )) ) {
-		DEBUG(4,("winbindd_delete_user: Cannot delete a non-existent group\n"));
+		DEBUG(4,("winbindd_delete_group: Cannot delete a non-existent group\n"));
 		return WINBINDD_ERROR;
 	}
 	
+	ret = wb_delete_group(grp);
+	
 	free_winbindd_gr( grp );
 	
-	return ( wb_delete_group(group) ? WINBINDD_OK : WINBINDD_ERROR );
+	return ( ret ? WINBINDD_OK : WINBINDD_ERROR );
 }
 
 

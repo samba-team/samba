@@ -148,6 +148,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_LMKEY      		0x0008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
 #define WBFLAG_QUERY_ONLY		0x0020
+#define WBFLAG_ALLOCATE_RID		0x0040
 
 /* Winbind request structure */
 
@@ -257,6 +258,7 @@ struct winbindd_response {
 			char nt_session_key[16];
 			char first_8_lm_hash[8];
 		} auth;
+		uint32 rid;	/* create user or group */
 	} data;
 
 	/* Variable length return data */

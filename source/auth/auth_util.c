@@ -56,10 +56,12 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 
 /****************************************************************************
  Add and Delete UNIX users on demand, based on NTSTATUS codes.
+ We don't care about RID's here so ignore.
 ****************************************************************************/
 
 void auth_add_user_script(const char *domain, const char *username)
 {
+	uint32 rid;
 	/*
 	 * User validated ok against Domain controller.
 	 * If the admin wants us to try and create a UNIX
@@ -75,8 +77,10 @@ void auth_add_user_script(const char *domain, const char *username)
 		   However, a host set for 'security = server' might run winbindd for 
 		   account allocation */
 		   
-		if ( !winbind_create_user(username) )
+		if ( !winbind_create_user(username, NULL) ) {
 			DEBUG(5,("auth_add_user_script: winbindd_create_user() failed\n"));
+			rid = 0;
+		}
 	}
 }
 

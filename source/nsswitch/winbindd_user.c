@@ -308,6 +308,19 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 		free_getent_state(state->getpwent_state);
 		state->getpwent_state = NULL;
 	}
+
+#if 0	/* JERRY */
+	/* add any local users we have */
+	        
+	if ( (domain_state = (struct getent_state *)malloc(sizeof(struct getent_state))) == NULL )
+		return WINBINDD_ERROR;
+                
+	ZERO_STRUCTP(domain_state);
+
+	/* Add to list of open domains */
+                
+	DLIST_ADD(state->getpwent_state, domain_state);
+#endif
         
 	/* Create sam pipes for each domain we know about */
         

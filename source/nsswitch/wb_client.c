@@ -371,7 +371,7 @@ BOOL winbind_ping( void )
  Ask winbindd to create a local user
 **********************************************************************/
 
-BOOL winbind_create_user( const char *name )
+BOOL winbind_create_user( const char *name, uint32 *rid )
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -384,6 +384,11 @@ BOOL winbind_create_user( const char *name )
 		return False;
 		
 	DEBUG(10,("winbind_create_user: %s\n", name));
+	
+	/* see if the caller wants a new RID returned */
+	
+	if ( rid ) 
+		request.flags = WBFLAG_ALLOCATE_RID;
 
 	fstrcpy( request.data.acct_mgt.username, name );
 	fstrcpy( request.data.acct_mgt.groupname, "" );
@@ -392,6 +397,9 @@ BOOL winbind_create_user( const char *name )
 	
 	result = winbindd_request( WINBINDD_CREATE_USER, &request, &response);
 	
+	if ( rid )
+		*rid = response.data.rid;
+	
 	return result == NSS_STATUS_SUCCESS;
 }
 
@@ -399,7 +407,7 @@ BOOL winbind_create_user( const char *name )
  Ask winbindd to create a local group
 **********************************************************************/
 
-BOOL winbind_create_group( const char *name )
+BOOL winbind_create_group( const char *name, uint32 *rid )
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -413,11 +421,19 @@ BOOL winbind_create_group( const char *name )
 		
 	DEBUG(10,("winbind_create_group: %s\n", name));
 
+	/* see if the caller wants a new RID returned */
+	
+	if ( rid ) 
+		request.flags = WBFLAG_ALLOCATE_RID;
+		
 	fstrcpy( request.data.acct_mgt.groupname, name );
 	
 	ZERO_STRUCT(response);
 	
 	result = winbindd_request( WINBINDD_CREATE_GROUP, &request, &response);
+	
+	if ( rid )
+		*rid = response.data.rid;
 	
 	return result == NSS_STATUS_SUCCESS;
 }
@@ -509,5 +525,59 @@ BOOL winbind_set_user_primary_group( const char *user, const char *group )
 	return result == NSS_STATUS_SUCCESS;
 }
 
+
+/**********************************************************************
+ Ask winbindd to remove a user from its lists of accounts
+**********************************************************************/
+
+BOOL winbind_delete_user( const char *user )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+		
+	if ( !user )
+		return False;
+		
+	DEBUG(10,("winbind_delete_user: user (%s)\n", user));
+
+	fstrcpy( request.data.acct_mgt.username, user );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_DELETE_USER, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
+
+/**********************************************************************
+ Ask winbindd to remove a group from its lists of accounts
+**********************************************************************/
+
+BOOL winbind_delete_group( const char *group )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+		
+	if ( !group )
+		return False;
+		
+	DEBUG(10,("winbind_delete_group: group (%s)\n", group));
+
+	fstrcpy( request.data.acct_mgt.groupname, group );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_DELETE_GROUP, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
 
 

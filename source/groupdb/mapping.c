@@ -756,7 +756,7 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 
 	/* Try winbindd */
 
-	if ( winbind_create_group( unix_group ) ) {
+	if ( winbind_create_group( unix_group, NULL ) ) {
 		DEBUG(3,("smb_create_group: winbindd created the group (%s)\n",
 			unix_group));
 		return 0;
@@ -783,14 +783,12 @@ int smb_delete_group(char *unix_group)
 		DEBUG(3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
 		return ret;
 	}
-#if 0	
+
 	if ( winbind_delete_group( unix_group ) ) {
 		DEBUG(3,("smb_delete_group: winbindd deleted the group (%s)\n",
 			unix_group));
 		return 0;
 	}
-		
-#endif
 		
 	return -1;
 }

@@ -290,41 +290,37 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 
 /*************************************************************
  Initialises a SAM_ACCOUNT ready to add a new account, based
- on the unix user if possible.
+ on the UNIX user.  Pass in a RID if you have one
  ************************************************************/
 
-NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
+NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
+                          uint32 rid)
 {
-	NTSTATUS nt_status = NT_STATUS_NO_MEMORY;
-
-	struct passwd *pwd;
+	NTSTATUS 	nt_status = NT_STATUS_NO_MEMORY;
+	struct passwd 	*pwd;
+	BOOL		ret;
 	
 	pwd = Get_Pwnam(username);
 
-	if (pwd) {
-		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(new_sam_acct, pwd))) {
-			*new_sam_acct = NULL;
-			return nt_status;
-		}
-	} else {
-		DOM_SID g_sid;
-		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
-			*new_sam_acct = NULL;
-			return nt_status;
-		}
-		if (!pdb_set_username(*new_sam_acct, username, PDB_SET)) {
-			pdb_free_sam(new_sam_acct);
-			return nt_status;
-		}
-
-		pdb_set_domain (*new_sam_acct, get_global_sam_name(), PDB_DEFAULT);
-
-		/* set Domain Users by default ! */
-		sid_copy(&g_sid, get_global_sam_sid());
-		sid_append_rid(&g_sid, DOMAIN_GROUP_RID_USERS);
-		pdb_set_group_sid(*new_sam_acct, &g_sid, PDB_SET);
+	if (!pwd) 
+		return NT_STATUS_NO_SUCH_USER;
+	
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(new_sam_acct, pwd))) {
+		*new_sam_acct = NULL;
+		return nt_status;
 	}
-	return NT_STATUS_OK;
+	
+	/* see if we need to generate a new rid using the 2.2 algorithm */
+	if ( rid == 0 && lp_enable_rid_algorithm() ) {
+		DEBUG(10,("pdb_init_sam_new: no RID specified.  Generating one via old algorithm\n"));
+		rid = fallback_pdb_uid_to_user_rid(pwd->pw_uid);
+	}
+	
+	/* set the new SID */
+	
+	ret = pdb_set_user_sid_from_rid( *new_sam_acct, rid, PDB_SET );
+	 
+	return (ret ? NT_STATUS_OK : NT_STATUS_NO_SUCH_USER);
 }
 
 
@@ -920,8 +916,8 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		pdb_free_sam(&sam_pass);
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
-			/* Might not exist in /etc/passwd */
-			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name))) {
+			/* Might not exist in /etc/passwd.  Use rid algorithm here */
+			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name, 0))) {
 				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
 				return False;
 			}
@@ -1243,121 +1239,6 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 
 	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u)\n", sid_string_static(psid),
 		(unsigned int)*pgid));
-
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-BOOL pdb_get_free_ugid_range(uint32 *low, uint32 *high)
-{
-	uid_t u_low, u_high;
-	gid_t g_low, g_high;
-
-	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
-		return False;
-	}
-	
-	*low  = (u_low < g_low)   ? u_low  : g_low;
-	*high = (u_high < g_high) ? u_high : g_high;
-	
-	return True;
-}
-
-/******************************************************************
- Get the the non-algorithmic RID range if idmap range are defined
-******************************************************************/
-
-BOOL pdb_get_free_rid_range(uint32 *low, uint32 *high)
-{
-	uint32 id_low, id_high;
-
-	if (!lp_enable_rid_algorithm()) {
-		*low = BASE_RID;
-		*high = (uint32)-1;
-	}
-
-	if (!pdb_get_free_ugid_range(&id_low, &id_high)) {
-		return False;
-	}
-
-	*low = fallback_pdb_uid_to_user_rid(id_low);
-	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
-		*high = (uint32)-1;
-	} else {
-		*high = fallback_pdb_uid_to_user_rid(id_high);
-	}
-
-	return True;
-}
-
-/**********************************************************************
- Get the free RID base if idmap is configured, otherwise return 0
-**********************************************************************/
-
-uint32 pdb_get_free_rid_base(void)
-{
-	uint32 low, high;
-	if (pdb_get_free_rid_range(&low, &high)) {
-		return low;
-	}
-	return 0;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-BOOL pdb_check_ugid_is_in_free_range(uint32 id)
-{
-	uint32 low, high;
-
-	if (!pdb_get_free_ugid_range(&low, &high)) {
-		return False;
-	}
-	if (id < low || id > high) {
-		return False;
-	}
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-BOOL pdb_check_rid_is_in_free_range(uint32 rid)
-{
-	uint32 low, high;
-
-	if (!pdb_get_free_rid_range(&low, &high)) {
-		return False;
-	}
-	if (rid < algorithmic_rid_base()) {
-		return True;
-	}
-
-	if (rid < low || rid > high) {
-		return False;
-	}
-
-	return True;
-}
-
-/**********************************************************************
- if it is a foreign SID or if the SID is in the free range, return true
-**********************************************************************/
-
-BOOL pdb_check_sid_is_in_free_range(const DOM_SID *sid)
-{
-	if (sid_compare_domain(get_global_sam_sid(), sid) == 0) {
-	
-		uint32 rid;
-
-		if (sid_peek_rid(sid, &rid)) {
-			return pdb_check_rid_is_in_free_range(rid);
-		}
-
-		return False;
-	}
 
 	return True;
 }
