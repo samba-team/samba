@@ -2610,6 +2610,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc oldjoin \t\t\tto join a domain created in server manager\n\n\n");
 	d_printf("  net rpc testjoin \t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
+        d_printf("  net rpc password <username> [<password>] -Uadmin_username%%admin_pass");
 	d_printf("  net rpc group \t\tto list groups\n");
 	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
 	d_printf("  net rpc file \t\t\tto list open files\n");
