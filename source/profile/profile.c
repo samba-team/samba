@@ -73,6 +73,22 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
 	}
 }
 
+/****************************************************************************
+receive a request profile level message
+****************************************************************************/
+void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+        int level;
+
+#ifdef WITH_PROFILE
+	level = 1 + (do_profile_flag?2:0) + (do_profile_times?4:0);
+#else
+	level = 0;
+#endif
+	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %d\n",src));
+	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int));
+}
+
 /*******************************************************************
   open the profiling shared memory area
   ******************************************************************/
@@ -140,6 +156,7 @@ BOOL profile_setup(BOOL rdonly)
 
 	profile_p = &profile_h->stats;
 	message_register(MSG_PROFILE, profile_message);
+	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message);
 	return True;
 }
 
