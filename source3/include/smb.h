@@ -1629,6 +1629,8 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
+
+	int session_id; /* used by utmp and pam session code */
 } user_struct;
 
 #include "ntdomain.h"

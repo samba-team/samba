@@ -110,8 +110,9 @@ user_struct *get_valid_user_struct(uint16 vuid)
 
 	for (usp=validated_users;usp;usp=usp->next,count++) {
 		if (vuid == usp->vuid) {
-			if (count > 10)
-                DLIST_PROMOTE(validated_users, usp);
+			if (count > 10) {
+				DLIST_PROMOTE(validated_users, usp);
+			}
 			return usp;
 		}
 	}
@@ -129,12 +130,28 @@ void invalidate_vuid(uint16 vuid)
 	if (vuser == NULL)
 		return;
 
+	session_yield(vuid);
+
 	DLIST_REMOVE(validated_users, vuser);
 
 	safe_free(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
 	safe_free(vuser);
 	num_validated_vuids--;
+}
+
+/****************************************************************************
+invalidate all vuid entries for this process
+****************************************************************************/
+void invalidate_all_vuids(void)
+{
+	user_struct *usp, *next=NULL;
+
+	for (usp=validated_users;usp;usp=next) {
+		next = usp->next;
+		
+		invalidate_vuid(usp->vuid);
+	}
 }
 
 /****************************************************************************
@@ -244,8 +261,8 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest)
+int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
+		  char *domain,BOOL guest)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -305,12 +322,15 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
 	DEBUG(3, ("Clearing default real name\n"));
-	fstrcpy(vuser->user.full_name, "<Full Name>");
-	if (lp_unix_realname()) {
-		if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
-			DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
-			fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
-		}
+	if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
+		DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
+		fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
+	}
+
+	if (!session_claim(vuser->vuid)) {
+		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
+		invalidate_vuid(vuser->vuid);
+		return -1;
 	}
 
 	return vuser->vuid;
@@ -737,6 +757,13 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		     BOOL *guest,BOOL *force,uint16 vuid)
 {
   BOOL ok = False;
+  user_struct *vuser = get_valid_user_struct(vuid);
+
+  if (lp_security() > SEC_SHARE && !vuser) {
+	  DEBUG(1,("authorise_login: refusing user %s with no session setup\n",
+		   user));
+	  return False;
+  }
   
   *guest = False;
   
@@ -760,9 +787,6 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
   if (!(GUEST_ONLY(snum) && GUEST_OK(snum)))
     {
-
-      user_struct *vuser = get_valid_user_struct(vuid);
-
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
 	ok = password_ok(user,password, pwlen, NULL);

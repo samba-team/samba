@@ -1627,7 +1627,7 @@ char *lp_lockdir(void);
 char *lp_utmpdir(void);
 char *lp_wtmpdir(void);
 char *lp_utmp_hostname(void);
-BOOL lp_utmp_consolidate(void);
+BOOL lp_utmp(void);
 char *lp_rootdir(void);
 char *lp_source_environment(void);
 char *lp_defaultservice(void);
@@ -1717,7 +1717,6 @@ BOOL lp_debug_hires_timestamp(void);
 BOOL lp_debug_pid(void);
 BOOL lp_debug_uid(void);
 BOOL lp_browse_list(void);
-BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
 BOOL lp_bind_interfaces_only(void);
 BOOL lp_unix_password_sync(void);
@@ -1824,7 +1823,6 @@ BOOL lp_map_archive(int );
 BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
 BOOL lp_posix_locking(int );
-BOOL lp_utmp(int );
 BOOL lp_share_modes(int );
 BOOL lp_oplocks(int );
 BOOL lp_level2_oplocks(int );
@@ -1911,7 +1909,7 @@ BOOL pdb_generate_sam_sid(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty);
+BOOL pam_session(BOOL flag, const char *in_user, char *tty);
 BOOL pam_accountcheck(char * user);
 BOOL pam_passcheck(char * user, char * password);
 
@@ -4105,11 +4103,12 @@ void generate_next_challenge(char *challenge);
 BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
+void invalidate_all_vuids(void);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest);
+int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
+		  char *domain,BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
@@ -4260,6 +4259,11 @@ int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
 
+/*The following definitions come from  smbd/session.c  */
+
+BOOL session_claim(uint16 vuid);
+void session_yield(uint16 vuid);
+
 /*The following definitions come from  smbd/srvstr.c  */
 
 int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int flags);
@@ -4310,6 +4314,13 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
 BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
 BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
+
+/*The following definitions come from  smbd/utmp.c  */
+
+void sys_utmp_yield(const char *username, const char *hostname, 
+		    const char *id_str, int id_num);
+void sys_utmp_claim(const char *username, const char *hostname, 
+		    const char *id_str, int id_num);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 

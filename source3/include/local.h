@@ -173,4 +173,12 @@
 /* Minimum length of allowed password when changing UNIX password. */
 #define MINPASSWDLENGTH 5
 
+/* maximum ID number used for session control. This cannot be larger
+   than 62*62 for the current code */
+#define MAX_SESSION_ID 3000
+
+#ifndef SESSION_TEMPLATE
+#define SESSION_TEMPLATE "smb/%d"
+#endif
+
 #endif
