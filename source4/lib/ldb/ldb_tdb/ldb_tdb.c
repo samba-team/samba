@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb_tdb.h"
+#include "ldb/ldb_tdb/ldb_tdb.h"
 
 /*
   form a TDB_DATA for a record key

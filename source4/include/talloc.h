@@ -51,6 +51,10 @@ char *talloc_asprintf_append(TALLOC_CTX *t, char *, const char *, ...)
 #define talloc_array_p(ctx, type, count) (type *)talloc_realloc_array(ctx, NULL, sizeof(type), count)
 #define talloc_realloc_p(ctx, p, type, count) (type *)talloc_realloc_array(ctx, p, sizeof(type), count)
 
+#define malloc_p(type) (type *)malloc(sizeof(type))
+#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
+#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
+
 /** @} */
 
 #endif /* ndef _TALLOC_H_ */

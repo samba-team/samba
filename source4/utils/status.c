@@ -114,7 +114,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 		d_printf("NONE            ");
 
 	  d_printf(" %s   %s",fname,
-             asctime(LocalTime((time_t *)&e->time.tv_sec)));
+             asctime(localtime((time_t *)&e->time.tv_sec)));
 	}
 }
 
@@ -511,7 +511,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	d_printf("%-10.10s   %5d   %-12s  %s",
 	       crec.name,(int)crec.pid,
 	       crec.machine,
-	       asctime(LocalTime(&crec.start)));
+	       asctime(localtime(&crec.start)));
 
 	return 0;
 }

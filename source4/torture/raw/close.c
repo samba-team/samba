@@ -79,7 +79,7 @@ BOOL torture_raw_close(int dummy)
 
 	if (basetime != nt_time_to_unix(&finfo.all_info.out.write_time)) {
 		printf("Incorrect write time on file - %s - %s\n",
-		       time_string(mem_ctx, basetime), 
+		       timestring(mem_ctx, basetime), 
 		       nt_time_string(mem_ctx, &finfo.all_info.out.write_time));
 		dump_all_info(mem_ctx, &finfo);
 		ret = False;
