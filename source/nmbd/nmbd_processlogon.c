@@ -143,7 +143,10 @@ logons are not enabled.\n",
 					int dom_len = CVAL(q, 0);
 					q+= 1;
 					DEBUG(10,("domain name :%s\n", q));
-					q += dom_len;
+					if (dom_len != 0)
+					{
+						q = skip_string(q, 1);
+					}
 					q += 16;
 				}
 
