@@ -28,13 +28,17 @@
 /*
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
-   and puts 24 bytes of encrypted password into p24 */
-void SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
+   and puts 24 bytes of encrypted password into p24 
+
+   Returns False if password must have been truncated to create LM hash
+*/
+BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 {
+	BOOL ret;
 	uchar p21[21];
 
 	memset(p21,'\0',21);
-	E_deshash(passwd, p21); 
+	ret = E_deshash(passwd, p21); 
 
 	SMBOWFencrypt(p21, c8, p24);
 
@@ -44,6 +48,8 @@ void SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 	dump_data(100, (const char *)c8, 8);
 	dump_data(100, (char *)p24, 24);
 #endif
+
+	return ret;
 }
 
 /**
