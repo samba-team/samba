@@ -30,10 +30,10 @@ RCSID("$Id$");
  */
 static
 int
-sumFile (const char *name, int len, void *sum_)
+sumFile (const char *name, int len, void *res)
 {
-  int32_t *sum = sum_;
-  int32_t buf[1024*2];
+  u_int32_t sum[2];
+  u_int32_t buf[1024*2];
   int fd, i;
 
   fd = open (name, 0);
@@ -57,6 +57,7 @@ sumFile (const char *name, int len, void *sum_)
       len -= n;
     }
   close (fd);
+  memcpy (res, &sum, sizeof(sum));
   return 0;
 }
 
