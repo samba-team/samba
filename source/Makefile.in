@@ -194,15 +194,18 @@ LIBCLIUTIL_OBJ = libcli/util/asn1.o \
 	     libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o
 
 LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
-		librpc/ndr/ndr_echo.o librpc/ndr/ndr_misc.o librpc/ndr/ndr_lsa.o \
-		librpc/ndr/ndr_dfs.o librpc/ndr/ndr_samr.o \
-		librpc/ndr/ndr_spoolss.o librpc/ndr/ndr_spoolss_buf.o \
-		librpc/ndr/ndr_wkssvc.o librpc/ndr/ndr_srvsvc.o  librpc/ndr/ndr_atsvc.o
+		 librpc/ndr/ndr_spoolss_buf.o \
+		librpc/gen_ndr/ndr_echo.o   librpc/gen_ndr/ndr_misc.o \
+		librpc/gen_ndr/ndr_lsa.o    librpc/gen_ndr/ndr_dfs.o \
+		librpc/gen_ndr/ndr_samr.o   librpc/gen_ndr/ndr_spoolss.o \
+		librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_srvsvc.o \
+		librpc/gen_ndr/ndr_atsvc.o
 
-LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/rpc_echo.o librpc/rpc/rpc_lsa.o \
-		librpc/rpc/dcerpc_smb.o librpc/rpc/rpc_dfs.o librpc/rpc/rpc_spoolss.o \
-		librpc/rpc/rpc_samr.o librpc/rpc/rpc_wkssvc.o librpc/rpc/rpc_srvsvc.o \
-		librpc/rpc/rpc_atsvc.o
+LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_smb.o \
+		librpc/gen_rpc/rpc_echo.o librpc/gen_rpc/rpc_lsa.o \
+		librpc/gen_rpc/rpc_dfs.o librpc/gen_rpc/rpc_spoolss.o \
+		librpc/gen_rpc/rpc_samr.o librpc/gen_rpc/rpc_wkssvc.o \
+		librpc/gen_rpc/rpc_srvsvc.o librpc/gen_rpc/rpc_atsvc.o
 
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
