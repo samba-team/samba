@@ -20,7 +20,7 @@ LDADD = libhdb.la \
 	$(DBLIB)
 
 lib_LTLIBRARIES = libhdb.la
-libhdb_la_LDFLAGS = -version-info 3:0:0
+libhdb_la_LDFLAGS = -version-info 3:1:0
 
 libhdb_la_SOURCES = 				\
 		    keytab.c			\
