@@ -421,16 +421,14 @@ static BOOL dump_core(void)
 /****************************************************************************
 update the current smbd process count
 ****************************************************************************/
+
 static void decrement_smbd_process_count(void)
 {
 	int total_smbds;
 
 	if (lp_max_smbd_processes()) {
-		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		if ((total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds")) > 0)
-			tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds - 1);
-		
-		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+		total_smbds = 0;
+		tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
 	}
 }
 

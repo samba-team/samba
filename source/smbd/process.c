@@ -781,12 +781,12 @@ static BOOL smbd_process_limit(void)
 		/* Always add one to the smbd process count, as exit_server() always
 		 * subtracts one.
 		 */
-		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds");
-		total_smbds = total_smbds < 0 ? 1 : total_smbds + 1;
-		tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds);
-		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		
+
+		total_smbds = 1; /* In case we need to create the entry. */
+
+		if (tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
+			return True;
+
 		return total_smbds > lp_max_smbd_processes();
 	}
 	else
