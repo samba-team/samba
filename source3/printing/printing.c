@@ -818,6 +818,8 @@ static void set_updating_pid(const fstring printer_name, BOOL delete)
 	TDB_DATA key;
 	TDB_DATA data;
 	pid_t updating_pid = sys_getpid();
+	uint8 buffer[4];
+	
 	struct tdb_print_db *pdb = get_print_db_byname(printer_name);
 
 	if (!pdb)
@@ -833,8 +835,9 @@ static void set_updating_pid(const fstring printer_name, BOOL delete)
 		return;
 	}
 	
-	data.dptr = (void *)&updating_pid;
-	data.dsize = sizeof(pid_t);
+	SIVAL( buffer, 0, updating_pid);
+	data.dptr = (void *)buffer;
+	data.dsize = 4;		/* we always assume this is a 4 byte value */
 
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
 	release_print_db(pdb);
