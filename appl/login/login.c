@@ -152,9 +152,6 @@ krb5_verify(struct passwd *pwd, const char *password)
     krb5_error_code ret;
     krb5_principal princ;
 
-    if(ret)
-	return 1;
-	    
     ret = krb5_parse_name(context, pwd->pw_name, &princ);
     if(ret){
 	krb5_free_context(context);
