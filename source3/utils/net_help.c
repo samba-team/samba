@@ -42,11 +42,12 @@ int net_common_flags_usage(int argc, const char **argv)
 	d_printf("Valid miscellaneous options are:\n"); /* misc options */
 	d_printf("\t-p or --port=<port>\t\tconnection port on target\n");
 	d_printf("\t-W or --myworkgroup=<wg>\tclient workgroup\n");
-	d_printf("\t-d or --debug=<level>\t\tdebug level (0-10)\n");
+	d_printf("\t-d or --debuglevel=<level>\t\tdebug level (0-10)\n");
 	d_printf("\t-n or --myname=<name>\t\tclient name\n");
 	d_printf("\t-U or --user=<name>\t\tuser name\n");
-	d_printf("\t-s or --conf=<path>\t\tpathname of smb.conf file\n");
+	d_printf("\t-s or --configfile=<path>\t\tpathname of smb.conf file\n");
 	d_printf("\t-l or --long\t\t\tDisplay full information\n");
+	d_printf("\t-V or --version\t\tPrint samba version information\n");
 	d_printf("\t-P or --machine-pass\t\tAuthenticate as machine account\n");
 	return -1;
 }

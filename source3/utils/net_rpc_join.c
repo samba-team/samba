@@ -63,7 +63,7 @@ int net_rpc_join_ok(const char *domain)
 
 	if (!secrets_fetch_trust_account_password(domain,
 						  stored_md4_trust_password, NULL)) {
-		DEBUG(0,("Could not reterive domain trust secret"));
+		DEBUG(0,("Could not retreive domain trust secret"));
 		goto done;
 	}
 	
