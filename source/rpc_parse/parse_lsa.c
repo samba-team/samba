@@ -138,8 +138,7 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps,
  Inits an LSA_SEC_QOS structure.
 ********************************************************************/
 
-void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
-		      uint32 unknown)
+void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff)
 {
 	DEBUG(5, ("init_lsa_sec_qos\n"));
 
@@ -147,7 +146,6 @@ void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
 	qos->sec_imp_level = imp_lev;
 	qos->sec_ctxt_mode = ctxt;
 	qos->effective_only = eff;
-	qos->unknown = unknown;
 }
 
 /*******************************************************************
@@ -178,13 +176,10 @@ static BOOL lsa_io_sec_qos(char *desc,  LSA_SEC_QOS *qos, prs_struct *ps,
 		return False;
 	if(!prs_uint8 ("effective_only", ps, depth, &qos->effective_only))
 		return False;
-	if(!prs_uint32("unknown       ", ps, depth, &qos->unknown))
-		return False;
 
 	if (qos->len != prs_offset(ps) - start) {
 		DEBUG(3,("lsa_io_sec_qos: length %x does not match size %x\n",
 		         qos->len, prs_offset(ps) - start));
-		return False;
 	}
 
 	return True;
@@ -255,7 +250,11 @@ static BOOL lsa_io_obj_attr(char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps,
 	}
 #endif
 
-	if (attr->ptr_sec_qos != 0 && attr->sec_qos != NULL) {
+	if (attr->ptr_sec_qos != 0) {
+		if (UNMARSHALLING(ps))
+			if (!(attr->sec_qos = (LSA_SEC_QOS *)prs_alloc_mem(ps,sizeof(LSA_SEC_QOS))))
+				return False;
+
 		if(!lsa_io_sec_qos("sec_qos", attr->sec_qos, ps, depth))
 			return False;
 	}
@@ -277,8 +276,7 @@ void init_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
 
 	r_q->ptr = 1; /* undocumented pointer */
 
-	if (qos == NULL)
-		r_q->des_access = desired_access;
+	r_q->des_access = desired_access;
 
 	r_q->system_name = system_name;
 	init_lsa_obj_attr(&r_q->attr, attributes, qos);
@@ -304,10 +302,8 @@ BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps,
 	if(!lsa_io_obj_attr("", &r_q->attr, ps, depth))
 		return False;
 
-	if (r_q->attr.ptr_sec_qos == 0) {
-		if(!prs_uint32("des_access", ps, depth, &r_q->des_access))
-			return False;
-	}
+	if(!prs_uint32("des_access", ps, depth, &r_q->des_access))
+		return False;
 
 	return True;
 }
@@ -344,8 +340,7 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
 
 	r_q->ptr = 1; /* undocumented pointer */
 
-	if (qos == NULL)
-		r_q->des_access = desired_access;
+	r_q->des_access = desired_access;
 
 	init_unistr2(&r_q->uni_server_name, server_name, 
 		     strlen(server_name) + 1);
@@ -371,10 +366,8 @@ BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps,
 	if(!lsa_io_obj_attr("", &r_q->attr, ps, depth))
 		return False;
 
-	if (r_q->attr.ptr_sec_qos == 0) {
-		if(!prs_uint32("des_access", ps, depth, &r_q->des_access))
-			return False;
-	}
+	if(!prs_uint32("des_access", ps, depth, &r_q->des_access))
+		return False;
 
 	return True;
 }
@@ -1607,6 +1600,9 @@ BOOL lsa_io_q_unk_get_connuser(char *desc, LSA_Q_UNK_GET_CONNUSER *q_c, prs_stru
 
 	if(!smb_io_unistr2("uni2_srvname", &q_c->uni2_srvname, q_c->ptr_srvname, ps, depth)) /* server name to be looked up */
 		return False;
+
+	if (!prs_align(ps))
+	  return False;
 
 	if(!prs_uint32("unk1", ps, depth, &q_c->unk1))
 		return False;
