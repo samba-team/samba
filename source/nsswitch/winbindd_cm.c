@@ -487,7 +487,7 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 		return False;
 
 	/* Now try to find the server names of at least one IP address, hosts
-	 * not replying are cached as such */
+	 * not replying should be cached as such, but are not currently. TODO */
 
 	for (i=0; i<num; i++) {
 
