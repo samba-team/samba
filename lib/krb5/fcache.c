@@ -618,7 +618,31 @@ fcc_remove_cred(krb5_context context,
 		 krb5_flags which,
 		 krb5_creds *cred)
 {
-    return 0; /* XXX */
+    krb5_error_code ret;
+    krb5_ccache copy;
+
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &copy);
+    if (ret)
+	return ret;
+
+    ret = krb5_cc_copy_cache(context, id, copy);
+    if (ret) {
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
+
+    ret = krb5_cc_remove_cred(context, copy, which, cred);
+    if (ret) {
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
+
+    fcc_destroy(context, id);
+
+    ret = krb5_cc_copy_cache(context, copy, id);
+    krb5_cc_destroy(context, copy);
+
+    return ret;
 }
 
 static krb5_error_code
