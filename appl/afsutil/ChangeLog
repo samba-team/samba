@@ -1,3 +1,8 @@
+2004-07-27  Love  <lha@stacken.kth.se>
+
+	* pagsh.c: use setprogname, if we stripped off -c, try use the
+	fallback code
+	
 2003-10-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pagsh.c: mkstemp formats must end in exactly six X's
