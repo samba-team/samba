@@ -60,9 +60,14 @@ SOURCES=`awk '/^Source/ {print $2}' samba.spec |grep -v "%{"`
 PATCHES=`awk  '/^Patch/ {print $2}' samba.spec`
 
 for i in $PATCHES $SOURCES;do
+	# We have two cases to fix, one where it's bzip2'ed
+	# in the spec and not in CVS, one where it's bzip2'ed 
+	# in CVS but not in the spec
 	[ -e $i ] && cp -av $i $SRCDIR
 	i_nobz2=`echo $i|sed -e 's/.bz2$//'`
+	i_bz2=$i.bz2
 	[ -e $i_nobz2 ] && bzip2 -kf $i_nobz2  && mv -fv $i $SRCDIR
+	[ -e $i_bz2 ] && bunzip2 -kf $i_bz2 && mv -fv $i $SRCDIR
 done
 
 echo Getting Ready to build release package

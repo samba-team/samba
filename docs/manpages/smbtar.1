@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBTAR" "1" "02 May 2002" "" ""
+.TH "SMBTAR" "1" "28 August 2002" "" ""
 .SH NAME
 smbtar \- shell script for backing up SMB/CIFS shares  directly to UNIX tape drives
 .SH SYNOPSIS
@@ -11,10 +11,10 @@ smbtar \- shell script for backing up SMB/CIFS shares  directly to UNIX tape dri
 \fBsmbtar\fR \fB-s server\fR [ \fB-p password\fR ]  [ \fB-x services\fR ]  [ \fB-X\fR ]  [ \fB-d directory\fR ]  [ \fB-u user\fR ]  [ \fB-t tape\fR ]  [ \fB-t tape\fR ]  [ \fB-b blocksize\fR ]  [ \fB-N filename\fR ]  [ \fB-i\fR ]  [ \fB-r\fR ]  [ \fB-l loglevel\fR ]  [ \fB-v\fR ]  \fBfilenames\fR
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Sambasuite.
+This tool is part of the  Samba suite.
 .PP
 \fBsmbtar\fR is a very small shell script on top 
-of \fBsmbclient(1)\fR
+of \fBsmbclient(1)\fR 
 which dumps SMB shares directly to tape. 
 .SH "OPTIONS"
 .TP
@@ -92,16 +92,16 @@ with GNU tar and may not work well with other versions.
 .PP
 See the \fBDIAGNOSTICS\fR section for the 
 \fBsmbclient(1)\fR 
-command.
+ command.
 .SH "VERSION"
 .PP
 This man page is correct for version 2.2 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBsmbd(8)\fR, 
-\fBsmbclient(1)\fR, 
-smb.conf(5),
+\fBsmbd(8)\fR 
+\fBsmbclient(1)\fR 
+smb.conf(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 

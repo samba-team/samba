@@ -1,3 +1,4 @@
+
 /*
  * Unix SMB/Netbios implementation. 
  * Version 1.9. 
@@ -33,7 +34,7 @@ extern int optind;
 
 /* forced running in root-mode */
 static BOOL local_mode;
-static BOOL joining_domain = False, got_pass = False, got_username = False;
+static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = FALSE; 
 static int local_flags = 0;
 static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
@@ -94,6 +95,7 @@ static void usage(void)
 #endif
 	printf("  -x                   delete user\n");
 	printf("  -j DOMAIN            join domain name\n");
+	printf("  -t DOMAIN            change trust account password on domain\n");
 	printf("  -S DOMAIN            Retrieve the domain SID for DOMAIN\n");
 	printf("  -R ORDER             name resolve order\n");
 
@@ -114,7 +116,7 @@ static void process_options(int argc, char **argv, BOOL amroot)
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnj:r:sw:R:D:U:LS")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehmnj:t:r:sw:R:D:U:LS")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = amroot = True;
@@ -155,6 +157,12 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			strupper(new_domain);
 			joining_domain = True;
 			break;
+                case 't':
+                        if (!amroot) goto bad_args;
+                        new_domain = optarg;
+                        strupper(new_domain);
+			changing_trust_pw = True;
+                        break;
 		case 'r':
 			remote_machine = optarg;
 			break;
@@ -837,7 +845,7 @@ static int process_root(void)
 	 */	
 	if ( ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) 
 		|| ( (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) 
-		      && ((remote_machine != NULL) || joining_domain) ) ) 
+		      && ((remote_machine != NULL) || joining_domain || changing_trust_pw) ) ) 
 	{
 		usage();
 	}
@@ -876,6 +884,17 @@ static int process_root(void)
 		}
 	}
 	
+
+        /* Change Trust Password */
+                
+        if (changing_trust_pw) {
+        	if (change_trust_account_password(new_domain, remote_machine)) {
+			return 0;
+		}
+		return 1;
+        }
+
+
 	/* 
 	 * get the domain sid from a PDC and store it in secrets.tdb 
 	 * Used for Samba PDC/BDC installations.

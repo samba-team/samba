@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "17 June 2002" "" ""
+.TH "SMBD" "8" "28 August 2002" "" ""
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
@@ -26,12 +26,12 @@ An extensive description of the services that the
 server can provide is given in the man page for the 
 configuration file controlling the attributes of those 
 services (see \fIsmb.conf(5)
-\fR. This man page will not describe the 
+\fR This man page will not describe the 
 services, but will concentrate on the administrative aspects 
 of running the server.
 .PP
 Please note that there are significant security 
-implications to running this server, and the \fIsmb.conf(5)\fR
+implications to running this server, and the \fIsmb.conf(5)\fR 
 manpage should be regarded as mandatory reading before
 proceeding with installation.
 .PP
@@ -110,7 +110,7 @@ data, most of which is extremely cryptic.
 
 Note that specifying this parameter here will 
 override the log
-levelfile.
+level file.
 .TP
 \fB-l <log directory>\fR
 If specified,
@@ -120,7 +120,7 @@ file will be created for informational and debug
 messages from the running server. The log 
 file generated is never removed by the server although 
 its size may be controlled by the max log size
-option in the \fI smb.conf(5)\fRfile. \fBBeware:\fR
+option in the \fI smb.conf(5)\fR file. \fBBeware:\fR
 If the directory specified does not exist, \fBsmbd\fR
 will log to the default debug log location defined at compile time.
 
@@ -128,9 +128,9 @@ The default log directory is specified at
 compile time.
 .TP
 \fB-O <socket options>\fR
-See the socket options
+See the socket options 
 parameter in the \fIsmb.conf(5)
-\fRfile for details.
+\fR file for details.
 .TP
 \fB-p <port number>\fR
 \fIport number\fR is a positive integer
@@ -161,7 +161,7 @@ configuration details required by the server. The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See \fI smb.conf(5)\fRfor more information.
+to provide. See \fI smb.conf(5)\fR for more information.
 The default configuration file name is determined at
 compile time.
 .SH "FILES"
@@ -198,7 +198,7 @@ install this file are \fI/usr/samba/lib/smb.conf\fR
 and \fI/etc/smb.conf\fR.
 
 This file describes all the services the server
-is to make available to clients. See  \fIsmb.conf(5)\fRfor more information.
+is to make available to clients. See  \fIsmb.conf(5)\fR for more information.
 .SH "LIMITATIONS"
 .PP
 On some systems \fBsmbd\fR cannot change uid back
@@ -280,7 +280,7 @@ it to die on its own.
 .PP
 The debug log level of \fBsmbd\fR may be raised
 or lowered using \fBsmbcontrol(1)
-\fRprogram (SIGUSR[1|2] signals are no longer used in
+\fR program (SIGUSR[1|2] signals are no longer used in
 Samba 2.2). This is to allow transient problems to be diagnosed,
 whilst still running at a normally low log level.
 .PP
@@ -293,10 +293,10 @@ them after, however this would affect performance.
 .SH "SEE ALSO"
 .PP
 hosts_access(5), \fBinetd(8)\fR, 
-\fBnmbd(8)\fR, 
+\fBnmbd(8)\fR 
 \fIsmb.conf(5)\fR
-, \fBsmbclient(1)
-\fR, and the Internet RFC's
+ \fBsmbclient(1)
+\fR and the Internet RFC's
 \fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
 In addition the CIFS (formerly SMB) specification is available 
 as a link from the Web page  

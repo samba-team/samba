@@ -657,8 +657,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   errno = 0;
   last_message = type;
 
-  /* make sure this is an SMB packet */
-  if ((strncmp(smb_base(inbuf),"\377SMB",4) != 0) || (size - 4 < smb_size)) {
+  /* make sure this is an SMB packet. smb_size contains NetBIOS header so subtract 4 from it. */
+  if ((strncmp(smb_base(inbuf),"\377SMB",4) != 0) || (size < (smb_size-4))) {
     DEBUG(0,("Non-SMB packet of length %d. Terminating server\n",smb_len(inbuf)));
     exit_server("Non-SMB packet");
     return(-1);
