@@ -647,7 +647,7 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 	if (count == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	if (count == 0) {
+	if (count == 0 || r->in.max_size == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -677,7 +677,8 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
 	r->out.num_entries = count - first;
-	r->out.num_entries = MIN(r->out.num_entries, 1+(r->in.max_size/54));
+	r->out.num_entries = MIN(r->out.num_entries, 
+				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
 	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
 	if (!r->out.sam) {
