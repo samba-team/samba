@@ -50,7 +50,7 @@ BOOL cli_oplock_ack(struct cli_tree *tree, uint16_t fnum, uint16_t ack_level)
 set the oplock handler for a connection
 ****************************************************************************/
 void cli_oplock_handler(struct cli_transport *transport, 
-			BOOL (*handler)(struct cli_transport *, uint16, uint16, uint8, void *),
+			BOOL (*handler)(struct cli_transport *, uint16_t, uint16_t, uint8_t, void *),
 			void *private)
 {
 	transport->oplock.handler = handler;
