@@ -1935,6 +1935,9 @@ pasv(void)
 		return;
 	}
 
+	if(pdata != -1)
+	    close(pdata);
+
 	pdata = socket(ctrl_addr->sa_family, SOCK_STREAM, 0);
 	if (pdata < 0) {
 		perror_reply(425, "Can't open passive connection");
