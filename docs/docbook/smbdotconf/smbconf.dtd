@@ -4,4 +4,7 @@
 <!ATTLIST  parameter  basic     CDATA  #REQUIRED >
 <!ATTLIST  parameter  wizard    CDATA  #REQUIRED >
 <!ATTLIST  parameter  advanced  CDATA  #REQUIRED >
+<!ATTLIST  parameter  share     CDATA  #REQUIRED >
+<!ATTLIST  parameter  print     CDATA  #REQUIRED >
 <!ATTLIST  parameter  developer CDATA  #REQUIRED >
+<!ATTLIST  parameter  hide      CDATA  #REQUIRED >
