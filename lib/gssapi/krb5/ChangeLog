@@ -1,4 +1,20 @@
+2003-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* arcfour.c (_gssapi_verify_mic_arcfour): Do the checksum on right
+	area. Swap filler check, it was reversed.
+	
+	* Makefile.am (libgssapi_la_SOURCES): += arcfour.c
+	
+	* gssapi_locl.h: include "arcfour.h"
+	
+	* arcfour.c: arcfour gss-api mech, get_mic/verify_mic working
+
+	* arcfour.h: arcfour gss-api mech, get_mic/verify_mic working
+	
 2003-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi_locl.h: always include cfx.h add prototype for
+	_gssapi_decapsulate
 
 	* cfx.[ch]: Implementation of draft-ietf-krb-wg-gssapi-cfx-00.txt
 	from Luke Howard <lukeh@PADL.COM>
