@@ -436,7 +436,9 @@ static NTSTATUS full_request(struct dcerpc_pipe *p,
 
 	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
 		struct event_context *ctx = p->transport.event_context(p);
-		event_loop_once(ctx);
+		if (event_loop_once(ctx) != 0) {
+			return NT_STATUS_CONNECTION_DISCONNECTED;
+		}
 	}
 
 	return state->status;
@@ -882,7 +884,9 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 
 	while (req->state == RPC_REQUEST_PENDING) {
 		struct event_context *ctx = dcerpc_event_context(req->p);
-		event_loop_once(ctx);
+		if (event_loop_once(ctx) != 0) {
+			return NT_STATUS_CONNECTION_DISCONNECTED;
+		}
 	}
 	*stub_data = req->payload;
 	status = req->status;
