@@ -347,3 +347,24 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	
 	tdb_search_list_free(first_node);
 }
+
+/********************************************************************
+ lock a key
+********************************************************************/
+
+int gencache_lock_entry( const char *key )
+{
+	return tdb_lock_bystring(cache, key, 0);
+}
+
+/********************************************************************
+ unlock a key
+********************************************************************/
+
+void gencache_unlock_entry( const char *key )
+{
+	tdb_unlock_bystring(cache, key);
+	return;
+}
+
+

@@ -26,6 +26,7 @@
 #define DBGC_CLASS DBGC_ALL	/* there's no proper class yet */
 
 #define TDOMKEY_FMT  "TDOM/%s"
+#define TDOMTSKEY    "TDOMCACHE/TIMESTAMP"
 
 
 /**
@@ -186,6 +187,71 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 }
 
 
+/*******************************************************************
+ fetch the timestamp from the last update 
+*******************************************************************/
+
+uint32 trustdom_cache_fetch_timestamp( void )
+{
+	char *value;
+	time_t timeout;
+	uint32 timestamp;
+
+	/* init the cache */
+	if (!gencache_init()) 
+		return False;
+		
+	if (!gencache_get(TDOMTSKEY, &value, &timeout)) {
+		DEBUG(5, ("no timestamp for trusted domain cache located.\n"));
+		return 0;
+	} 
+
+	timestamp = atoi(value);
+		
+	return timestamp;
+}
+
+/*******************************************************************
+ store the timestamp from the last update 
+*******************************************************************/
+
+BOOL trustdom_cache_store_timestamp( uint32 t, time_t timeout )
+{
+	fstring value;
+
+	/* init the cache */
+	if (!gencache_init()) 
+		return False;
+		
+	snprintf(value, sizeof(value), "%d", t );
+		
+	if (!gencache_set(TDOMTSKEY, value, timeout)) {
+		DEBUG(5, ("failed to set timestamp for trustdom_cache\n"));
+		return False;
+	} 
+
+	return True;
+}
+
+
+/*******************************************************************
+ lock the timestamp entry in the trustdom_cache
+*******************************************************************/
+
+BOOL trustdom_cache_lock_timestamp( void )
+{
+	return gencache_lock_entry( TDOMTSKEY ) != -1;
+}
+
+/*******************************************************************
+ unlock the timestamp entry in the trustdom_cache
+*******************************************************************/
+
+void trustdom_cache_unlock_timestamp( void )
+{
+	gencache_unlock_entry( TDOMTSKEY );
+}
+
 /**
  * Delete single trustdom entry. Look at the
  * gencache_iterate definition.
@@ -216,3 +282,61 @@ void trustdom_cache_flush(void)
 	DEBUG(5, ("Trusted domains cache flushed\n"));
 }
 
+/********************************************************************
+ update the trustdom_cache if needed 
+********************************************************************/
+#define TRUSTDOM_UPDATE_INTERVAL	600
+
+void update_trustdom_cache( void )
+{
+	char **domain_names;
+	DOM_SID *dom_sids;
+	uint32 num_domains;
+	uint32 last_check;
+	int time_diff;
+	TALLOC_CTX *mem_ctx = NULL;
+	time_t now = time(NULL);
+	int i;
+	
+	/* get the timestamp.  We have to initialise it if the last timestamp == 0 */
+	
+	if ( (last_check = trustdom_cache_fetch_timestamp()) == 0 ) 
+		trustdom_cache_store_timestamp(0, now+TRUSTDOM_UPDATE_INTERVAL);
+
+	time_diff = now - last_check;
+	
+	if ( (time_diff > 0) && (time_diff < TRUSTDOM_UPDATE_INTERVAL) ) {
+		DEBUG(10,("update_trustdom_cache: not time to update trustdom_cache yet\n"));
+		return;
+	}
+		
+	/* lock the timestamp */
+	if ( !trustdom_cache_lock_timestamp() )
+		return;
+	
+	if ( !(mem_ctx = talloc_init("update_trustdom_cache")) ) {
+		DEBUG(0,("update_trustdom_cache: talloc_init() failed!\n"));
+		goto done;
+	}
+
+	/* get the domains and store them */
+	
+	if ( enumerate_domain_trusts(mem_ctx, lp_workgroup(), &domain_names, 
+		&num_domains, &dom_sids) ) 
+	{
+		for ( i=0; i<num_domains; i++ ) {
+			trustdom_cache_store( domain_names[i], NULL, &dom_sids[i], 
+				now+TRUSTDOM_UPDATE_INTERVAL);
+		}
+		
+		trustdom_cache_store_timestamp( now, now+TRUSTDOM_UPDATE_INTERVAL );
+	}
+
+done:	
+	/* unlock and we're done */
+	trustdom_cache_unlock_timestamp();
+	
+	talloc_destroy( mem_ctx );
+	
+	return;
+}
