@@ -1,4 +1,20 @@
+2003-03-19  Love Hörquist Åstrand <lha@it.su.se>
+
+	* kafs.3: document the kafs_settoken functions write about the
+	krb5_appdefault option for kerberos 5 afs tokens fix prototypes
+	
 2003-03-18  Love Hörquist Åstrand <lha@it.su.se>
+
+	* afskrb5.c (kafs_settoken5): change signature to include a
+	krb5_context, use v5_convert
+	(v5_convert): new function, converts a krb5_ccreds to a kafs_token in
+	three diffrent ways, not at all, local 524/2b, and using 524
+	(v5_to_kt): add code to do local 524/2b
+	(get_cred): use v5_convert
+
+
+	* kafs.h (kafs_settoken5): change signature to include a
+	krb5_context
 
 	* Makefile.am: always build the libkafs library now that the
 	kerberos 5 can stand on their own
