@@ -2122,8 +2122,11 @@ jfm: I should use this comment for the text file to explain
 
 */
 
-/* Check a user has permissions to perform the given operation */
+/****************************************************************************
+ Check a user has permissions to perform the given operation 
 
+   if user is NULL then use the current_user structure
+ ****************************************************************************/
 BOOL print_access_check(struct current_user *user, int snum,
 			uint32 required_access)
 {
@@ -2132,14 +2135,23 @@ BOOL print_access_check(struct current_user *user, int snum,
 	BOOL result;
 	char *pname;
 	int i;
+	extern struct current_user current_user;
 	
-	/* Get printer name */
+	if (!user) user = &current_user;
 
+	/* always allow root or printer admins to do anything */
+	if (user->uid==0 ||
+	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
+		return True;
+	}
+
+	/* Get printer name */
 	pname = PRINTERNAME(snum);
 	if (!pname || !*pname) pname = SERVICE(snum);
 
-	/* Get printer security descriptor */
+	if (!pname || !*pname) return False;
 
+	/* Get printer security descriptor */
 	nt_printing_getsec(pname, &secdesc);
 
 	/* The ACE for Full Control in a printer security descriptor
@@ -2173,7 +2185,6 @@ BOOL print_access_check(struct current_user *user, int snum,
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
 
 	/* Free mallocated memory */
-
 	free_sec_desc_buf(&secdesc);
 
 	return result;
@@ -2207,5 +2218,6 @@ BOOL print_time_access_check(int snum)
 
 	return ok;
 }
+
 
 #undef OLD_NTDOMAIN

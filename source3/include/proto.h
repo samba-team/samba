@@ -1461,6 +1461,7 @@ char *lp_force_user(int );
 char *lp_force_group(int );
 char *lp_readlist(int );
 char *lp_writelist(int );
+char *lp_printer_admin(int );
 char *lp_fstype(int );
 char *lp_vfsobj(int );
 char *lp_mangled_map(int );
@@ -1734,6 +1735,7 @@ void print_fsp_end(files_struct *fsp);
 
 /*The following definitions come from  printing/printing.c  */
 
+#if OLD_NTDOMAIN
 BOOL print_backend_init(void);
 BOOL print_job_exists(int jobid);
 int print_job_snum(int jobid);
@@ -1754,6 +1756,7 @@ int print_queue_snum(char *qname);
 BOOL print_queue_pause(struct current_user *user, int snum);
 BOOL print_queue_resume(struct current_user *user, int snum);
 BOOL print_queue_purge(struct current_user *user, int snum);
+#endif
 
 /*The following definitions come from  profile/profile.c  */
 
