@@ -2778,7 +2778,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 
 	if (parm_table[parmnum].flags & FLAG_DEPRECATED)
 	{
-		DEBUG(1, ("WARNING: The \"%s\"option is deprecated\n",
+		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
 			  pszParmName));
 	}
 
