@@ -1,3 +1,14 @@
+2003-01-31  Love Hörquist Åstrand <lha@it.su.se>
+
+	* kdc/hpropd.8: s/databases/a database/ s/Not/not/
+
+	* kdc/hprop.8: add missing .
+	
+2003-01-30  Love Hörquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: documentation for of boolean, etypes,
+	address, write out encryption type in sentences, s/Host/host
+	
 2003-01-26  Love Hörquist Åstrand <lha@it.su.se>
 
 	* lib/asn1/check-gen.c: add checks for Authenticator too
