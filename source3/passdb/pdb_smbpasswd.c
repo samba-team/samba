@@ -1572,8 +1572,8 @@ NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	
 	privates->permit_non_unix_accounts = True;
 
-	if (!lp_non_unix_account_range(&privates->low_nua_userid, &privates->high_nua_userid)) {
-		DEBUG(0, ("cannot use smbpasswd_nua without 'non unix account range' in smb.conf!\n"));
+	if (!lp_winbind_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
+		DEBUG(0, ("cannot use smbpasswd_nua without 'winbind uid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
