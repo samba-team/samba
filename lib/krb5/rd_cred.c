@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,7 +40,7 @@ krb5_rd_cred(krb5_context context,
 	     krb5_auth_context auth_context,
 	     krb5_data *in_data,
 	     krb5_creds ***ret_creds,
-	     krb5_replay_data *out_data)
+	     krb5_replay_data *outdata)
 {
     krb5_error_code ret;
     size_t len;
@@ -49,6 +49,11 @@ krb5_rd_cred(krb5_context context,
     krb5_data enc_krb_cred_part_data;
     krb5_crypto crypto;
     int i;
+
+    if ((auth_context->flags & 
+	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
+	outdata == NULL)
+	return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
 
     *ret_creds = NULL;
 
@@ -70,9 +75,9 @@ krb5_rd_cred(krb5_context context,
     }
 
     if (cred.enc_part.etype == ETYPE_NULL) {  
-       /* DK: MIT GSS-API Compatibility */
-       enc_krb_cred_part_data.length = cred.enc_part.cipher.length;
-       enc_krb_cred_part_data.data   = cred.enc_part.cipher.data;
+	/* DK: MIT GSS-API Compatibility */
+	enc_krb_cred_part_data.length = cred.enc_part.cipher.length;
+	enc_krb_cred_part_data.data   = cred.enc_part.cipher.data;
     } else {
 	if (auth_context->remote_subkey)
 	    ret = krb5_crypto_init(context, auth_context->remote_subkey,
@@ -80,7 +85,7 @@ krb5_rd_cred(krb5_context context,
 	else
 	    ret = krb5_crypto_init(context, auth_context->keyblock,
 				   0, &crypto);
-          /* DK: MIT rsh */
+	/* DK: MIT rsh */
 
 	if (ret)
 	    goto out;
@@ -185,25 +190,23 @@ krb5_rd_cred(krb5_context context,
 	}
     }
 
-    if(out_data != NULL) {
+    if ((auth_context->flags & 
+	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE))) {
+	/* if these fields are not present in the cred-part, silently
+           return zero */
+	memset(outdata, 0, sizeof(*outdata));
 	if(enc_krb_cred_part.timestamp)
-	    out_data->timestamp = *enc_krb_cred_part.timestamp;
-	else 
-	    out_data->timestamp = 0;
+	    outdata->timestamp = *enc_krb_cred_part.timestamp;
 	if(enc_krb_cred_part.usec)
-	    out_data->usec = *enc_krb_cred_part.usec;
-	else 
-	    out_data->usec = 0;
+	    outdata->usec = *enc_krb_cred_part.usec;
 	if(enc_krb_cred_part.nonce)
-	    out_data->seq = *enc_krb_cred_part.nonce;
-	else 
-	    out_data->seq = 0;
+	    outdata->seq = *enc_krb_cred_part.nonce;
     }
     
     /* Convert to NULL terminated list of creds */
 
     *ret_creds = calloc(enc_krb_cred_part.ticket_info.len + 1, 
-		       sizeof(**ret_creds));
+			sizeof(**ret_creds));
 
     if (*ret_creds == NULL) {
 	ret = ENOMEM;
@@ -259,7 +262,7 @@ krb5_rd_cred(krb5_context context,
     (*ret_creds)[i] = NULL;
     return 0;
 
-out:
+  out:
     free_KRB_CRED (&cred);
     if(*ret_creds) {
 	for(i = 0; (*ret_creds)[i]; i++)

@@ -181,12 +181,20 @@ gets and modifies the flags for a
 .Nm krb5_auth_context
 structure. Possible flags to set are:
 .Bl -tag -width Ds
-.It Dv KRB5_AUTH_CONTEXT_DO_TIME
-check timestamp on incoming packets.
-.\".It Dv KRB5_AUTH_CONTEXT_RET_TIME
 .It Dv KRB5_AUTH_CONTEXT_DO_SEQUENCE
 Generate and check sequence-number on each packet.
-.\".It Dv KRB5_AUTH_CONTEXT_RET_SEQUENCE
+.It Dv KRB5_AUTH_CONTEXT_DO_TIME
+Check timestamp on incoming packets.
+.It Dv KRB5_AUTH_CONTEXT_RET_SEQUENCE , Dv KRB5_AUTH_CONTEXT_RET_TIME
+Return sequence numbers and time stamps in the outdata parameter of
+.Xr krb5_rd_cred 3 ,
+.Xr krb5_rd_priv 3 ,
+.Xr krb5_rd_safe 3 ,
+.Xr krb5_mk_priv 3 
+and
+.Xr krb5_mk_safe 3 .
+Setting this flag requires that parameter to be passed to these
+functions.
 .\".It Dv KRB5_AUTH_CONTEXT_PERMIT_ALL
 .El
 .Pp
