@@ -44,7 +44,7 @@ struct idmap_methods {
 	NTSTATUS (*init)(const char *init_str);
 
 	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, int id_type);
-	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, DOM_SID *sid);
+	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const DOM_SID *sid);
 	NTSTATUS (*set_mapping)(DOM_SID *sid, unid_t id, int id_type);
 
 	/* Called when backend is unloaded */

@@ -24,33 +24,33 @@
 static struct {
   const char *name;
   /* Function to create a member of the idmap_methods list */
-  BOOL (*reg_meth)(struct idmap_methods **methods);
-  struct idmap_methods *methods;
-} builtin_idmap_functions[] = {
+  BOOL (*reg_meth)(struct winbindd_idmap_methods **methods);
+  struct winbindd_idmap_methods *methods;
+} builtin_winbindd_idmap_functions[] = {
   { "tdb", winbind_idmap_reg_tdb, NULL },
   /*  { "ldap", winbind_idmap_reg_ldap, NULL },*/
   { NULL, NULL, NULL }
 };
 
 /* singleton pattern: uberlazy evaluation */
-static struct idmap_methods *impl;
+static struct winbindd_idmap_methods *impl;
 
-static struct idmap_methods *get_impl(const char *name)
+static struct winbindd_idmap_methods *get_impl(const char *name)
 {
   int i = 0;
-  struct idmap_methods *ret = NULL;
+  struct winbindd_idmap_methods *ret = NULL;
 
-  while (builtin_idmap_functions[i].name && 
-         strcmp(builtin_idmap_functions[i].name, name)) {
+  while (builtin_winbindd_idmap_functions[i].name && 
+         strcmp(builtin_winbindd_idmap_functions[i].name, name)) {
     i++;
   }
 
-  if (builtin_idmap_functions[i].name) {
-    if (!builtin_idmap_functions[i].methods) {
-      builtin_idmap_functions[i].reg_meth(&builtin_idmap_functions[i].methods);
+  if (builtin_winbindd_idmap_functions[i].name) {
+    if (!builtin_winbindd_idmap_functions[i].methods) {
+      builtin_winbindd_idmap_functions[i].reg_meth(&builtin_winbindd_idmap_functions[i].methods);
     }
 
-    ret = builtin_idmap_functions[i].methods;
+    ret = builtin_winbindd_idmap_functions[i].methods;
   }
 
   return ret;
@@ -62,13 +62,13 @@ BOOL winbindd_idmap_init(void)
   BOOL ret = False;
 
   DEBUG(3, ("winbindd_idmap_init: using '%s' as backend\n", 
-            lp_idmap_backend()));
+            lp_winbind_backend()));
 
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
     if (!impl) {
       DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-                lp_idmap_backend()));
+                lp_winbind_backend()));
     }
   }
 
@@ -87,10 +87,10 @@ BOOL winbindd_idmap_get_uid_from_sid(DOM_SID *sid, uid_t *uid)
   BOOL ret = False;
 
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
     if (!impl) {
       DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-                lp_idmap_backend()));
+                lp_winbind_backend()));
     }
   }
 
@@ -107,10 +107,10 @@ BOOL winbindd_idmap_get_gid_from_sid(DOM_SID *sid, gid_t *gid)
   BOOL ret = False;
 
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
     if (!impl) {
       DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-                lp_idmap_backend()));
+                lp_winbind_backend()));
     }
   }
 
@@ -127,10 +127,10 @@ BOOL winbindd_idmap_get_sid_from_uid(uid_t uid, DOM_SID *sid)
   BOOL ret = False;
 
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
     if (!impl) {
       DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-                lp_idmap_backend()));
+                lp_winbind_backend()));
     }
   }
 
@@ -147,14 +147,14 @@ BOOL winbindd_idmap_get_sid_from_gid(gid_t gid, DOM_SID *sid)
   BOOL ret = False;
 
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
   }
 
   if (impl) {
     ret = impl->get_sid_from_gid(gid, sid);
   } else {
     DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-              lp_idmap_backend()));
+              lp_winbind_backend()));
   }
 
   return ret;
@@ -166,14 +166,14 @@ BOOL winbindd_idmap_close(void)
   BOOL ret = False;
 
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
   }
 
   if (impl) {
     ret = impl->close();
   } else {
     DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-              lp_idmap_backend()));
+              lp_winbind_backend()));
   }
 
   return ret;
@@ -183,14 +183,13 @@ BOOL winbindd_idmap_close(void)
 void winbindd_idmap_status(void)
 {
   if (!impl) {
-    impl = get_impl(lp_idmap_backend());
+    impl = get_impl(lp_winbind_backend());
   }
 
   if (impl) {
     impl->status();
   } else {
     DEBUG(0, ("winbindd_idmap_init: could not load backend '%s'\n",
-              lp_idmap_backend()));
+              lp_winbind_backend()));
   }
 }
-

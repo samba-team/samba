@@ -722,6 +722,33 @@ static void store_gid_sid_cache(const DOM_SID *psid, const enum SID_NAME_USE sid
 
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 {
+#ifdef WITH_IDMAP
+	unid_t id;
+
+	DEBUG(10,("uid_to_sid: uid = [%d]\n", uid));
+
+	id.uid = uid;
+	if (NT_STATUS_IS_OK(idmap_get_sid_from_id(psid, id, ID_USERID))) {
+		DEBUG(10, ("uid_to_sid: sid = [%s]\n", sid_string_static(psid)));
+		return psid;
+	}
+
+	/* If mapping is not found in idmap try with traditional method,
+	   then stores the result in idmap.
+	   We may add a switch in future to allow smooth migrations to
+	   idmap-only db  ---Simo */	
+
+	become_root();
+	psid = local_uid_to_sid(psid, uid);
+        unbecome_root();
+
+	DEBUG(10,("uid_to_sid: algorithmic %u -> %s\n", (unsigned int)uid, sid_string_static(psid)));
+	if (psid)
+		idmap_set_mapping(psid, id, ID_USERID);
+
+	return psid;
+	
+#else
 	uid_t low, high;
 	enum SID_NAME_USE sidtype;
 	fstring sid;
@@ -729,7 +756,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 	if (fetch_sid_from_uid_cache(psid, &sidtype, uid))
 		return psid;
 
-	if (lp_winbind_uid(&low, &high) && uid >= low && uid <= high) {
+	if (lp_idmap_uid(&low, &high) && uid >= low && uid <= high) {
 		if (winbind_uid_to_sid(psid, uid)) {
 
 			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
@@ -751,6 +778,7 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 		store_uid_sid_cache(psid, SID_NAME_USER, uid);
 
 	return psid;
+#endif
 }
 
 /*****************************************************************
@@ -761,6 +789,33 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 {
+#ifdef WITH_IDMAP
+	unid_t id;
+
+	DEBUG(10,("gid_to_sid: gid = [%d]\n", gid));
+
+		id.gid = gid;
+	if (NT_STATUS_IS_OK(idmap_get_sid_from_id(psid, id, ID_GROUPID))) {
+		DEBUG(10, ("gid_to_sid: sid = [%s]\n", sid_string_static(psid)));
+		return psid;
+	}
+
+	/* If mapping is not found in idmap try with traditional method,
+	   then stores the result in idmap.
+	   We may add a switch in future to allow smooth migrations to
+	   idmap-only db  ---Simo */	
+
+	become_root();
+	psid = local_gid_to_sid(psid, gid);
+        unbecome_root();
+
+	DEBUG(10,("gid_to_sid: algorithmic %u -> %s\n", (unsigned int)gid, sid_string_static(psid)));
+	if (psid)
+		idmap_set_mapping(psid, id, ID_GROUPID);
+
+	return psid;
+	
+#else
 	gid_t low, high;
 	enum SID_NAME_USE sidtype;
 	fstring sid;
@@ -768,7 +823,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 	if (fetch_sid_from_gid_cache(psid, &sidtype, gid))
 		return psid;
 
-	if (lp_winbind_gid(&low, &high) && gid >= low && gid <= high) {
+	if (lp_idmap_gid(&low, &high) && gid >= low && gid <= high) {
 		if (winbind_gid_to_sid(psid, gid)) {
 
 			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
@@ -789,6 +844,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 		store_gid_sid_cache(psid, SID_NAME_DOM_GRP, gid);
 
 	return psid;
+#endif
 }
 
 /*****************************************************************
@@ -800,6 +856,35 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
+#ifdef WITH_IDMAP
+	unid_t id;
+	int type;
+
+	DEBUG(10,("sid_to_uid: sid = [%s]\n", sid_string_static(psid)));
+
+	*sidtype = SID_NAME_USER;
+
+	type = ID_USERID;
+	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &type, psid))) {
+		DEBUG(10,("sid_to_uid: uid = [%d]\n", id.uid));
+		*puid = id.uid;
+		return True;
+	}
+
+	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
+		BOOL result;
+		become_root();
+		result = local_sid_to_uid(puid, psid, sidtype);
+		unbecome_root();
+		if (result) {
+			id.uid = *puid;
+			DEBUG(10,("sid_to_uid: uid = [%d]\n", id.uid));
+			idmap_set_mapping(psid, id, ID_USERID);
+			return True;
+		}
+	}
+	return False;
+#else
 	fstring sid_str;
 
 	if (fetch_uid_from_cache(puid, psid, *sidtype))
@@ -873,6 +958,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 	store_uid_sid_cache(psid, *sidtype, *puid);
 	return True;
+#endif
 }
 
 /*****************************************************************
@@ -884,6 +970,37 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 {
+#ifdef WITH_IDMAP
+	unid_t id;
+	int type;
+
+	DEBUG(10,("sid_to_gid: sid = [%s]\n", sid_string_static(psid)));
+
+	*sidtype = SID_NAME_ALIAS;
+
+	type = ID_GROUPID;
+	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &type, psid))) {
+		DEBUG(10,("sid_to_gid: gid = [%d]\n", id.gid));
+		*pgid = id.gid;
+		return True;
+	}
+
+	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
+		BOOL result;
+		become_root();
+		result = local_sid_to_gid(pgid, psid, sidtype);
+		unbecome_root();
+		if (result) {
+			id.gid = *pgid;
+			DEBUG(10,("sid_to_gid: gid = [%d]\n", id.gid));
+			idmap_set_mapping(psid, id, ID_GROUPID);
+			return True;
+		}
+	}
+
+	return False;
+
+#else
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
 
@@ -944,5 +1061,6 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 
 	store_gid_sid_cache(psid, *sidtype, *pgid);
 	return True;
+#endif
 }
 

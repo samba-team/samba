@@ -380,12 +380,12 @@ BOOL winbindd_param_init(void)
 {
 	/* Parse winbind uid and winbind_gid parameters */
 
-	if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
+	if (!lp_idmap_uid(&server_state.uid_low, &server_state.uid_high)) {
 		DEBUG(0, ("winbind uid range missing or invalid\n"));
 		return False;
 	}
 	
-	if (!lp_winbind_gid(&server_state.gid_low, &server_state.gid_high)) {
+	if (!lp_idmap_gid(&server_state.gid_low, &server_state.gid_high)) {
 		DEBUG(0, ("winbind gid range missing or invalid\n"));
 		return False;
 	}

@@ -798,6 +798,8 @@ extern int errno;
 
 #include "gums.h"
 
+#include "idmap.h"
+
 #include "session.h"
 
 #include "asn_1.h"

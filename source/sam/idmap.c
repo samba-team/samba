@@ -17,8 +17,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*/
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.*/
 
 #include "includes.h"
 
@@ -34,14 +33,13 @@ static struct {
 
 } remote_idmap_functions[] = {
 
-	{ "tdb", idmap_reg_tdb, NULL },
-	/* { "ldap", idmap_reg_ldap, NULL },*/
+	{ "winbind", idmap_reg_winbind, NULL },
 	{ NULL, NULL, NULL }
 
 };
 
-static struct idmap_methods *local_cache;
-static struct idmap_methods *remote_repo;
+static struct idmap_methods *local_map;
+static struct idmap_methods *remote_map;
 
 static struct idmap_methods *get_methods(const char *name)
 {
@@ -64,48 +62,33 @@ static struct idmap_methods *get_methods(const char *name)
 	return ret;
 }
 
-/* Load idmap backend functions */
-BOOL load_methods(void)
+/* Initialize backend */
+BOOL idmap_init(const char *remote_backend)
 {
-	if (!local_cache) {
-		idmap_reg_tdb(&local_cache);
+	if (!local_map) {
+		idmap_reg_tdb(&local_map);
+		local_map->init("idmap.tdb");
 	}
 	
-	if (!remote_repo && lp_idmap_backend()) {
-		DEBUG(3, ("load_methods: using '%s' as remote backend\n", lp_idmap_backend()));
+	if (!remote_map && remote_backend && *remote_backend != 0) {
+		DEBUG(3, ("load_methods: using '%s' as remote backend\n", remote_backend));
 		
-		remote_repo = get_methods(lp_idmap_backend());
-		if (!remote_repo) {
-			DEBUG(0, ("load_methods: could not load remote backend '%s'\n", lp_idmap_backend()));
+		remote_map = get_methods(remote_backend);
+		if (!remote_map) {
+			DEBUG(0, ("load_methods: could not load remote backend '%s'\n", remote_backend));
 			return False;
 		}
+		remote_map->init("");
 	}
-
-	idmap_init();
 
 	return True;
 }
 
-/* Initialize backend */
-NTSTATUS idmap_init(void)
+NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
 	NTSTATUS ret;
 
-	ret = remote_repo->init("idmap.tdb");
-	if (NT_STATUS_IS_ERR(ret)) {
-		DEBUG(3, ("idmap_init: init failed!\n"));
-	}
-
-	return ret;
-}
-
-static NTSTATUS idmap_set_mapping(DOM_SID *sid, unid_t id, int id_type)
-{
-	NTSTATUS ret;
-
-	if (!load_methods()) return NT_STATUS_UNSUCCESSFUL;
-
-	ret = local_cache->set_mapping(sid, id, id_type);
+	ret = local_map->set_mapping(sid, id, id_type);
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG (0, ("idmap_set_mapping: Error, unable to modify local cache!\n"));
 		return ret;
@@ -113,8 +96,8 @@ static NTSTATUS idmap_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 
 	/* Being able to update the remote cache is seldomly right.
 	   Generally this is a forbidden operation. */
-	if (!(id_type & ID_CACHE) && (remote_repo != NULL)) {
-		remote_repo->set_mapping(sid, id, id_type);
+	if (!(id_type & ID_CACHE) && (remote_map != NULL)) {
+		remote_map->set_mapping(sid, id, id_type);
 		if (NT_STATUS_IS_ERR(ret)) {
 			DEBUG (0, ("idmap_set_mapping: Error, unable to modify remote cache!\n"));
 		}
@@ -124,23 +107,22 @@ static NTSTATUS idmap_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 }
 
 /* Get ID from SID */
-NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, DOM_SID *sid)
+NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret;
 	int loc_type;
 
-	if (!load_methods()) return NT_STATUS_UNSUCCESSFUL;
-
 	loc_type = *id_type;
-	if (remote_repo) { /* We have a central remote idmap */
+	if (remote_map) { /* We have a central remote idmap */
 		loc_type |= ID_NOMAP;
 	}
-	ret = local_cache->get_id_from_sid(id, &loc_type, sid);
+	ret = local_map->get_id_from_sid(id, &loc_type, sid);
 	if (NT_STATUS_IS_ERR(ret)) {
-		if (remote_repo) {
-			ret = remote_repo->get_id_from_sid(id, id_type, sid);
+		if (remote_map) {
+			ret = remote_map->get_id_from_sid(id, id_type, sid);
 			if (NT_STATUS_IS_ERR(ret)) {
 				DEBUG(3, ("idmap_get_id_from_sid: error fetching id!\n"));
+				return ret;
 			} else {
 				loc_type |= ID_CACHE;
 				idmap_set_mapping(sid, *id, loc_type);
@@ -159,18 +141,17 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	NTSTATUS ret;
 	int loc_type;
 
-	if (!load_methods()) return NT_STATUS_UNSUCCESSFUL;
-
 	loc_type = id_type;
-	if (remote_repo) {
+	if (remote_map) {
 		loc_type = id_type | ID_NOMAP;
 	}
-	ret = local_cache->get_sid_from_id(sid, id, loc_type);
+	ret = local_map->get_sid_from_id(sid, id, loc_type);
 	if (NT_STATUS_IS_ERR(ret)) {
-		if (remote_repo) {
-			ret = remote_repo->get_sid_from_id(sid, id, id_type);
+		if (remote_map) {
+			ret = remote_map->get_sid_from_id(sid, id, id_type);
 			if (NT_STATUS_IS_ERR(ret)) {
 				DEBUG(3, ("idmap_get_sid_from_id: unable to fetch sid!\n"));
+				return ret;
 			} else {
 				loc_type |= ID_CACHE;
 				idmap_set_mapping(sid, id, loc_type);
@@ -186,15 +167,13 @@ NTSTATUS idmap_close(void)
 {
 	NTSTATUS ret;
 
-	if (!load_methods()) return NT_STATUS_UNSUCCESSFUL;
-
-	ret = local_cache->close();
+	ret = local_map->close();
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG(3, ("idmap_close: failed to close local cache!\n"));
 	}
 
-	if (remote_repo) {
-		ret = remote_repo->close();
+	if (remote_map) {
+		ret = remote_map->close();
 		if (NT_STATUS_IS_ERR(ret)) {
 			DEBUG(3, ("idmap_close: failed to close remote idmap repository!\n"));
 		}
@@ -206,9 +185,7 @@ NTSTATUS idmap_close(void)
 /* Dump backend status */
 void idmap_status(void)
 {
-	if (load_methods()) {
-		local_cache->status();
-		remote_repo->status();
-	}
+	local_map->status();
+	if (remote_map) remote_map->status();
 }
 

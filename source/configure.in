@@ -2442,6 +2442,27 @@ AC_ARG_WITH(ldapsam,
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for IDMAP
+
+AC_DEFINE(WITH_IDMAP,1, [Include IDMAP support])
+
+AC_MSG_CHECKING(whether to use IDMAP only for [ug]id mapping)
+AC_ARG_WITH(idmap,
+[  --with-idmap           Include experimental IDMAP support (default=yes)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_IDMAP,1,[Whether to include experimental IDMAP support])
+    ;;
+  no)
+    AC_MSG_RESULT(no)
+    AC_DEFINE(WITH_IDMAP,0,[Whether to include experimental IDMAP support])
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
 ########################################################################################
 ##
 ## END OF TESTS FOR SAM BACKENDS.  
