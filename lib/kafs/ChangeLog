@@ -1,3 +1,10 @@
+1999-07-07  Assar Westerlund  <assar@sics.se>
+
+	* afskrb5.c (krb5_realm_of_cell): new function
+
+	* afskrb.c (krb_realm_of_cell): new function
+	(afslog_uid_int): call krb_get_lrealm correctly
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* common.c (realm_of_cell): rename to _kafs_realm_of_cell and
