@@ -347,12 +347,12 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return NT_STATUS_OK;
 
  fail:
-	if (dbuf.dptr) free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return status;
 }
@@ -411,7 +411,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 				tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 
-			free(dbuf.dptr);
+			SAFE_FREE(dbuf.dptr);
 			tdb_chainunlock(tdb, kbuf);
 			return True;
 		}
@@ -439,7 +439,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 				tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 
-			free(dbuf.dptr);
+			SAFE_FREE(dbuf.dptr);
 			tdb_chainunlock(tdb, kbuf);
 			return True;
 		}
@@ -448,7 +448,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	/* we didn't find it */
 
  fail:
-	if (dbuf.dptr) free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
@@ -501,12 +501,12 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	}
 
 	/* no conflicts - we could have added it */
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return True;
 
  fail:
-	if (dbuf.dptr) free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
@@ -559,7 +559,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 
 	/* we didn't find it */
  fail:
-	if (dbuf.dptr) free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 }
 
