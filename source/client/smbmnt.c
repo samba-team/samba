@@ -118,7 +118,7 @@ static int mount_ok(char *mount_point)
                 errno = ENOTDIR;
                 return -1;
         }
-	
+
         if ((getuid() != 0) && 
 	    ((getuid() != st.st_uid) || 
 	     ((st.st_mode & S_IRWXU) != S_IRWXU))) {
@@ -155,7 +155,7 @@ static int mount_ok(char *mount_point)
 	}
 
         if (geteuid() != 0) {
-                fprintf(stderr, "smbmnt must be installed suid root for direct user mounts\n");
+                fprintf(stderr, "smbmnt must be installed suid root for direct user mounts (%d,%d)\n", getuid(), geteuid());
                 exit(1);
         }
 

@@ -33,7 +33,7 @@ for p in $*; do
  chmod $INSTALLPERMS $BINDIR/$p2
 
  # this is a special case, mount needs this in a specific location
- if [ $p = smbmount ]; then
+ if [ $p2 = smbmount ]; then
    ln -sf $BINDIR/$p2 /sbin/mount.smb
  fi
 done

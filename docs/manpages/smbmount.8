@@ -15,14 +15,14 @@ must support the smbfs filesystem\&.
 Options to smbmount are specified as a comma separated list of
 key=value pairs\&. 
 .PP 
-.IP "\fBuser=<arg>\fP" 
+.IP "\fBusername=<arg>\fP" 
 specifies the username to connect as\&. If this is
 not given then the environment variable USER is used\&. This option can
 also take the form user%password or user/workgroup or
 user/workgroup%password to allow the password and workgroup to be
 specified as part of the username\&.
 .IP 
-.IP "\fBpasswd=<arg>\fP" 
+.IP "\fBpassword=<arg>\fP" 
 specifies the SMB password\&. If not given then
 smbmount will prompt for a passeword, unless the guest option is
 given\&.

@@ -20,13 +20,13 @@ Options to smbmount are specified as a comma separated list of
 key=value pairs. 
 
 startdit()
-dit(bf(user=<arg>)) specifies the username to connect as. If this is
+dit(bf(username=<arg>)) specifies the username to connect as. If this is
 not given then the environment variable USER is used. This option can
 also take the form user%password or user/workgroup or
 user/workgroup%password to allow the password and workgroup to be
 specified as part of the username.
 
-dit(bf(passwd=<arg>)) specifies the SMB password. If not given then
+dit(bf(password=<arg>)) specifies the SMB password. If not given then
 smbmount will prompt for a passeword, unless the guest option is
 given.
 

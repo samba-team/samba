@@ -444,24 +444,28 @@ static void usage(void)
 	printf("Version %s\n\n",VERSION);
 
 	printf(
-"Options: \n"
-"\tuser=<arg>                      SMB username\n"
-"\tpasswd=<arg>                    SMB password\n"
-"\tnetbiosname=<arg>               source NetBIOS name\n"
-"\tuid=<arg>                       mount uid or username\n"
-"\tgid=<arg>                       mount gid or groupname\n"
-"\tport=<arg>                      remote SMB port number\n"
-"\tfmask=<arg>                     file umask\n"
-"\tdmask=<arg>                     directory umask\n"
-"\tdebug=<arg>                     debug level\n"
-"\tip=<arg>                        destination host or IP address\n"
-"\tworkgroup=<arg>                 workgroup on destination\n"
-"\tsockopt=<arg>                   TCP socket options\n"
-"\tscope=<arg>                     NetBIOS scope\n"
-"\tguest                           don't prompt for a password\n"
-"\tro                              mount read-only\n"
-"\trw                              mount read-write\n"
-"\n");
+"Options:
+      username=<arg>                  SMB username
+      password=<arg>                  SMB password
+      netbiosname=<arg>               source NetBIOS name
+      uid=<arg>                       mount uid or username
+      gid=<arg>                       mount gid or groupname
+      port=<arg>                      remote SMB port number
+      fmask=<arg>                     file umask
+      dmask=<arg>                     directory umask
+      debug=<arg>                     debug level
+      ip=<arg>                        destination host or IP address
+      workgroup=<arg>                 workgroup on destination
+      sockopt=<arg>                   TCP socket options
+      scope=<arg>                     NetBIOS scope
+      guest                           don't prompt for a password
+      ro                              mount read-only
+      rw                              mount read-write
+
+This command is designed to be run from within /bin/mount by giving
+the option '-t smb'. For example:
+  mount -t smb -o user=tridge,passwd=foobar //fjall/test /data/test
+");
 }
 
 
@@ -480,7 +484,7 @@ static void parse_mount_smb(int argc, char **argv)
 	extern char *optarg;
 	int val;
 
-	if (argc < 2) {
+	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
@@ -508,7 +512,8 @@ static void parse_mount_smb(int argc, char **argv)
                         val = atoi(opteq + 1);
                         *opteq = '\0';
 
-                        if (!strcmp(opts, "user") || !strcmp(opts, "logon")) {
+                        if (!strcmp(opts, "username") || 
+			    !strcmp(opts, "logon")) {
 				char *lp;
 				pstrcpy(username,opteq+1);
 				if ((lp=strchr(username,'%'))) {
@@ -521,7 +526,8 @@ static void parse_mount_smb(int argc, char **argv)
 					*lp = 0;
 					pstrcpy(workgroup,lp+1);
 				}
-			} else if(!strcmp(opts, "passwd")) {
+			} else if(!strcmp(opts, "passwd") ||
+				  !strcmp(opts, "password")) {
 				pstrcpy(password,opteq+1);
 				got_pass = True;
 				memset(opteq+1,'X',strlen(password));
@@ -587,7 +593,7 @@ static void parse_mount_smb(int argc, char **argv)
 	static pstring servicesf = CONFIGFILE;
 	char *p;
 
-	DEBUGLEVEL = 2;
+	DEBUGLEVEL = 1;
 	
 	setup_logging("mount.smb",True);
 
