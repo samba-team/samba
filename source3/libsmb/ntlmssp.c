@@ -37,71 +37,7 @@ static const uint8 *get_challenge(struct ntlmssp_state *ntlmssp_state)
 	return chal;
 }
 
-NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
-{
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("NTLMSSP context");
-	
-	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
-	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_start: talloc failed!\n"));
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ZERO_STRUCTP(*ntlmssp_state);
-
-	(*ntlmssp_state)->mem_ctx = mem_ctx;
-	(*ntlmssp_state)->get_challenge = get_challenge;
-
-	(*ntlmssp_state)->get_global_myname = global_myname;
-	(*ntlmssp_state)->get_domain = lp_workgroup;
-	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ntlmssp_server_end(NTLMSSP_STATE **ntlmssp_state)
-{
-	TALLOC_CTX *mem_ctx = (*ntlmssp_state)->mem_ctx;
-
-	data_blob_free(&(*ntlmssp_state)->chal);
-	data_blob_free(&(*ntlmssp_state)->lm_resp);
-	data_blob_free(&(*ntlmssp_state)->nt_resp);
-
-	SAFE_FREE((*ntlmssp_state)->user);
-	SAFE_FREE((*ntlmssp_state)->domain);
-	SAFE_FREE((*ntlmssp_state)->workstation);
-
-	talloc_destroy(mem_ctx);
-	*ntlmssp_state = NULL;
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state, 
-			       DATA_BLOB request, DATA_BLOB *reply) 
-{
-	uint32 ntlmssp_command;
-	*reply = data_blob(NULL, 0);
-
-	if (!msrpc_parse(&request, "Cd",
-			 "NTLMSSP",
-			 &ntlmssp_command)) {
-		
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
-	if (ntlmssp_command == NTLMSSP_NEGOTIATE) {
-		return ntlmssp_negotiate(ntlmssp_state, request, reply);
-	} else if (ntlmssp_command == NTLMSSP_AUTH) {
-		return ntlmssp_auth(ntlmssp_state, request, reply);
-	} else {
-		return NT_STATUS_LOGON_FAILURE;
-	}
-}
-
-static const char *ntlmssp_target_name(NTLMSSP_STATE *ntlmssp_state, 
+static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 				       uint32 neg_flags, uint32 *chal_flags) 
 {
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
@@ -119,8 +55,8 @@ static const char *ntlmssp_target_name(NTLMSSP_STATE *ntlmssp_state,
 	}
 }
 
-NTSTATUS ntlmssp_negotiate(NTLMSSP_STATE *ntlmssp_state, 
-			   DATA_BLOB request, DATA_BLOB *reply) 
+static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
+					 DATA_BLOB request, DATA_BLOB *reply) 
 {
 	DATA_BLOB struct_blob;
 	fstring dnsname, dnsdomname;
@@ -222,8 +158,8 @@ NTSTATUS ntlmssp_negotiate(NTLMSSP_STATE *ntlmssp_state,
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-NTSTATUS ntlmssp_auth(NTLMSSP_STATE *ntlmssp_state, 
-		      DATA_BLOB request, DATA_BLOB *reply) 
+static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
+				    DATA_BLOB request, DATA_BLOB *reply) 
 {
 	DATA_BLOB sess_key;
 	uint32 ntlmssp_command, neg_flags;
@@ -279,3 +215,68 @@ NTSTATUS ntlmssp_auth(NTLMSSP_STATE *ntlmssp_state,
 
 	return nt_status;
 }
+
+NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
+{
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("NTLMSSP context");
+	
+	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
+	if (!*ntlmssp_state) {
+		DEBUG(0,("ntlmssp_start: talloc failed!\n"));
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCTP(*ntlmssp_state);
+
+	(*ntlmssp_state)->mem_ctx = mem_ctx;
+	(*ntlmssp_state)->get_challenge = get_challenge;
+
+	(*ntlmssp_state)->get_global_myname = global_myname;
+	(*ntlmssp_state)->get_domain = lp_workgroup;
+	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ntlmssp_server_end(NTLMSSP_STATE **ntlmssp_state)
+{
+	TALLOC_CTX *mem_ctx = (*ntlmssp_state)->mem_ctx;
+
+	data_blob_free(&(*ntlmssp_state)->chal);
+	data_blob_free(&(*ntlmssp_state)->lm_resp);
+	data_blob_free(&(*ntlmssp_state)->nt_resp);
+
+	SAFE_FREE((*ntlmssp_state)->user);
+	SAFE_FREE((*ntlmssp_state)->domain);
+	SAFE_FREE((*ntlmssp_state)->workstation);
+
+	talloc_destroy(mem_ctx);
+	*ntlmssp_state = NULL;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state, 
+			       DATA_BLOB request, DATA_BLOB *reply) 
+{
+	uint32 ntlmssp_command;
+	*reply = data_blob(NULL, 0);
+
+	if (!msrpc_parse(&request, "Cd",
+			 "NTLMSSP",
+			 &ntlmssp_command)) {
+		
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (ntlmssp_command == NTLMSSP_NEGOTIATE) {
+		return ntlmssp_server_negotiate(ntlmssp_state, request, reply);
+	} else if (ntlmssp_command == NTLMSSP_AUTH) {
+		return ntlmssp_server_auth(ntlmssp_state, request, reply);
+	} else {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+}
+
