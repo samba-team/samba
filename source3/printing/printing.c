@@ -835,7 +835,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 
 	/* Work out the size. */
 	data.dsize = 0;
-	data.dsize += tdb_pack(NULL, 0, NULL, "d", qcount);
+	data.dsize += tdb_pack(NULL, 0, "d", qcount);
 
 	for (i = 0; i < pts->qcount; i++) {
 		data.dsize += tdb_pack(NULL, 0, "ddddddff",
