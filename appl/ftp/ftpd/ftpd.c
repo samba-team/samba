@@ -89,6 +89,8 @@ RCSID("$Id$");
 #include <kafs.h>
 #include "roken.h"
 
+#undef SKEY
+
 void yyparse();
 
 extern char *optarg;
