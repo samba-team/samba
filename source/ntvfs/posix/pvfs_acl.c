@@ -208,7 +208,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		sd = acl->info.sd;
 		break;
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return NT_STATUS_INVALID_ACL;
 	}
 
 	new_sd = info->set_secdesc.in.sd;
@@ -263,7 +263,7 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 		sd = acl->info.sd;
 		break;
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return NT_STATUS_INVALID_ACL;
 	}
 
 	normalise_sd_flags(sd, info->query_secdesc.in.secinfo_flags);
@@ -273,3 +273,79 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 	return NT_STATUS_OK;
 }
 
+
+/*
+  default access check function based on unix permissions
+  doing this saves on building a full security descriptor
+  for the common case of access check on files with no 
+  specific NT ACL
+*/
+NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs, 
+				struct smbsrv_request *req,
+				struct pvfs_filename *name,
+				uint32_t *access_mask)
+{
+	uid_t uid = geteuid();
+	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
+
+	/* owner and root get extra permissions */
+	if (uid == 0 || uid == name->st.st_uid) {
+		max_bits |= SEC_STD_ALL;
+	}
+
+	if (*access_mask == SEC_FLAG_MAXIMUM_ALLOWED) {
+		*access_mask = max_bits;
+		return NT_STATUS_OK;
+	}
+
+	if (*access_mask & ~max_bits) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/*
+  check the security descriptor on a file, if any
+  
+  *access_mask is modified with the access actually granted
+*/
+NTSTATUS pvfs_access_check(struct pvfs_state *pvfs, 
+			   struct smbsrv_request *req,
+			   struct pvfs_filename *name,
+			   uint32_t *access_mask)
+{
+	struct nt_user_token *token = req->session->session_info->nt_user_token;
+	struct xattr_NTACL *acl;
+	NTSTATUS status;
+	struct security_descriptor *sd;
+
+	acl = talloc_p(req, struct xattr_NTACL);
+	if (acl == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pvfs_acl_load(pvfs, name, -1, acl);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		talloc_free(acl);
+		return pvfs_access_check_unix(pvfs, req, name, access_mask);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (acl->version) {
+	case 1:
+		sd = acl->info.sd;
+		break;
+	default:
+		return NT_STATUS_INVALID_ACL;
+	}
+
+	status = sec_access_check(sd, token, *access_mask, access_mask);
+
+	talloc_free(acl);
+	
+	return status;
+}
