@@ -85,9 +85,13 @@ sub DumpUnionElement($)
     my($element) = shift;
     my($res);
 
-    $res .= "[case($element->{CASE})] ";
-    $res .= DumpElement($element->{DATA});
-    $res .= ";\n";
+    if ($element->{CASE} eq "default") {
+	$res .= "[default] ;\n";
+    } else {
+	$res .= "[case($element->{CASE})] ";
+	$res .= DumpElement($element->{DATA});
+	$res .= ";\n";
+    }
 
     return $res;
 }
