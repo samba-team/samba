@@ -271,8 +271,10 @@ BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *q_u,
 	                      ps, depth))
 		return False;
 
+#if 0
 	if(!prs_uint32("unknown_2", ps, depth, &q_u->unknown_2))
 		return False;
+#endif
 
 	return True;
 }

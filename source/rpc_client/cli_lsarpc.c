@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "rpc_client.h"
 
 /** @defgroup lsa LSA - Local Security Architecture
  *  @ingroup rpc_client
@@ -636,89 +637,68 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 char ***domain_names, DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
-	LSA_Q_ENUM_TRUST_DOM q;
-	LSA_R_ENUM_TRUST_DOM r;
-	NTSTATUS result;
+	LSA_Q_ENUM_TRUST_DOM in;
+	LSA_R_ENUM_TRUST_DOM out;
 	int i;
+	fstring tmp;
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-	/* Marshall data and send request */
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
 
 	/* 64k is enough for about 2000 trusted domains */
-        init_q_enum_trust_dom(&q, pol, *enum_ctx, 0x10000);
+	
+        init_q_enum_trust_dom(&in, pol, *enum_ctx, 0x10000);
 
-	if (!lsa_io_q_enum_trust_dom("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMTRUSTDOM, 
+	            in, out, 
+	            qbuf, rbuf,
+	            lsa_io_q_enum_trust_dom,
+	            lsa_io_r_enum_trust_dom, 
+	            NT_STATUS_UNSUCCESSFUL );
+
+
+	/* check for an actual error */
+
+	if ( !NT_STATUS_IS_OK(out.status) 
+		&& !NT_STATUS_EQUAL(out.status, NT_STATUS_NO_MORE_ENTRIES) 
+		&& !NT_STATUS_EQUAL(out.status, STATUS_MORE_ENTRIES) )
+	{
+		return out.status;
 	}
-
-	/* Unmarshall response */
-
-	if (!lsa_io_r_enum_trust_dom("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
-	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-
-		/* An actual error ocured */
-
-		goto done;
-	}
-
+		
 	/* Return output parameters */
 
-	if (r.num_domains) {
+	*num_domains  = out.count;
+	*enum_ctx     = out.enum_context;
+	
+	if ( out.count ) {
 
 		/* Allocate memory for trusted domain names and sids */
 
-		*domain_names = TALLOC_ARRAY(mem_ctx, char *, r.num_domains);
-
-		if (!*domain_names) {
+		if ( !(*domain_names = TALLOC_ARRAY(mem_ctx, char *, out.count)) ) {
 			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		*domain_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, r.num_domains);
-		if (!domain_sids) {
+		if ( !(*domain_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, out.count)) ) {
 			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* Copy across names and sids */
 
-		for (i = 0; i < r.num_domains; i++) {
-			fstring tmp;
+		for (i = 0; i < out.count; i++) {
 
-			unistr2_to_ascii(tmp, &r.uni_domain_name[i], 
-					 sizeof(tmp) - 1);
+			rpcstr_pull( tmp, out.domlist->domains[i].name.string->buffer, 
+				sizeof(tmp), out.domlist->domains[i].name.length, 0);
 			(*domain_names)[i] = talloc_strdup(mem_ctx, tmp);
-			sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
+
+			sid_copy(&(*domain_sids)[i], &out.domlist->domains[i].sid->sid );
 		}
 	}
 
-	*num_domains = r.num_domains;
-	*enum_ctx = r.enum_context;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
-	return result;
+	return out.status;
 }
 
 

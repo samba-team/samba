@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell               1992-1997
+   Copyright (C) Luke Kenneth Casson Leighton  1996-1997
+   Copyright (C) Paul Ashton                   1997
+   Copyright (C) Gerald (Jerry) Carter         2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -305,31 +306,32 @@ typedef struct lsa_r_query_info2
 	NTSTATUS status;
 } LSA_R_QUERY_INFO2;
 
-/* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
-typedef struct lsa_enum_trust_dom_info
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 enum_context; /* enumeration context handle */
-	uint32 preferred_len; /* preferred maximum length */
+/*******************************************************/
 
+typedef struct {
+	POLICY_HND pol; 
+	uint32 enum_context; 
+	uint32 preferred_len; 	/* preferred maximum length */
 } LSA_Q_ENUM_TRUST_DOM;
 
-/* LSA_R_ENUM_TRUST_DOM - response to LSA enumerate trusted domains */
-typedef struct lsa_r_enum_trust_dom_info
-{
-	uint32 enum_context; /* enumeration context handle */
-	uint32 num_domains; /* number of domains */
-	uint32 ptr_enum_domains; /* buffer pointer to num domains */
+typedef struct {
+	UNISTR4	name;
+	DOM_SID2 *sid;
+} DOMAIN_INFO;
 
-	/* this lot is only added if ptr_enum_domains is non-NULL */
-	uint32 num_domains2; /* number of domains */
-	UNIHDR2 *hdr_domain_name;
-	UNISTR2 *uni_domain_name;
-	DOM_SID2 *domain_sid;
+typedef struct {
+	uint32 count;
+	DOMAIN_INFO *domains;
+} DOMAIN_LIST;
 
-	NTSTATUS status; /* return code */
-
+typedef struct {
+	uint32 enum_context;
+	uint32 count;
+	DOMAIN_LIST *domlist;
+	NTSTATUS status; 
 } LSA_R_ENUM_TRUST_DOM;
+
+/*******************************************************/
 
 /* LSA_Q_CLOSE */
 typedef struct lsa_q_close_info
