@@ -1948,7 +1948,7 @@ static void truncate_unless_locked(int fnum, int cnum, int token,
 				   BOOL *share_locked)
 {
   if (Files[fnum].can_write){
-    if (is_locked(fnum,cnum,0x3FFFFFFF,0)){
+    if (is_locked(fnum,cnum,0x3FFFFFFF,0,F_WRLCK)){
       /* If share modes are in force for this connection we
          have the share entry locked. Unlock it before closing. */
       if (*share_locked && lp_share_modes(SNUM(cnum)))
@@ -2861,6 +2861,20 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
           return True; 
         }
         close(Client); /* The parent doesn't need this socket */
+
+        /*
+         * Force parent to check log size after spawning child.
+         * Fix from klausr@ITAP.Physik.Uni-Stuttgart.De.
+         * The parent smbd will log to logserver.smb. 
+         * It writes only two messages for each child
+         * started/finished. But each child writes, say, 50 messages also in
+         * logserver.smb, begining with the debug_count of the parent, before the
+         * child opens its own log file logserver.client. In a worst case
+         * scenario the size of logserver.smb would be checked after about
+         * 50*50=2500 messages (ca. 100kb).
+         */
+        force_check_log_size();
+
 #endif /* NO_FORK_DEBUG */
       } /* end for num */
     } /* end while 1 */

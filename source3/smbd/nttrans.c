@@ -620,12 +620,12 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     p += 8;
     SIVAL(p,0,fmode); /* File Attributes. */
     p += 12;
-    if(sizeof(off_t) == 8) {
+#if OFF_T_IS_64_BITS
       SIVAL(p,0, file_len & 0xFFFFFFFF);
       SIVAL(p,4, file_len >> 32);
-    } else {
+#else /* OFF_T_IS_64_BITS */
       SIVAL(p,0,file_len);
-    }
+#endif /* OFF_T_IS_64_BITS */
     p += 12;
     SCVAL(p,0,fsp->is_directory ? 1 : 0);
   }
@@ -822,12 +822,12 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
     p += 8;
     SIVAL(p,0,fmode); /* File Attributes. */
     p += 12;
-    if(sizeof(off_t) == 8) {
+#if OFF_T_IS_64_BITS
       SIVAL(p,0, file_len & 0xFFFFFFFF);
       SIVAL(p,4, (file_len >> 32));
-    } else {
+#else /* OFF_T_IS_64_BITS */
       SIVAL(p,0,file_len);
-    }
+#endif /* OFF_T_IS_64_BITS */
   }
 
   /* Send the required number of replies */
