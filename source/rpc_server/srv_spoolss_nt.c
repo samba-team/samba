@@ -22,7 +22,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -2936,10 +2935,11 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	
 	Printer->jobid = print_job_start(&user, snum, jobname);
 
-	/* need to map error codes properly - for now give out of
-	   memory as I don't know the correct codes (tridge) */
+	/* An error occured in print_job_start() so return an appropriate
+	   NT error code. */
+
 	if (Printer->jobid == -1) {
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return map_nt_error_from_unix(errno);
 	}
 	
 	Printer->document_started=True;
@@ -3082,7 +3082,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	   descriptor.  By experimentation with two NT machines, the user
 	   requires Full Access to the printer to change security
 	   information. */ 
-	if (!print_access_check(&user, snum, PRINTER_ACE_FULL_CONTROL)) {
+	if (!print_access_check(&user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
@@ -3226,7 +3226,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("printer property change denied by security "
 			  "descriptor\n"));
 		result = ERROR_ACCESS_DENIED;
@@ -4245,7 +4245,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	}
 
 	/* you must be a printer admin to add a new printer */
-	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;		
 	}
@@ -4562,7 +4562,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
 		return ERROR_ACCESS_DENIED;
