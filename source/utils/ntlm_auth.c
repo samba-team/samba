@@ -447,7 +447,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		x_fprintf(x_stdout, "%s %s %s\n", reply_code, 
 			  out_base64 ? out_base64 : "*", 
 			  reply_arg ? reply_arg : "*");
-
+		break;
 	default:
 		if (out_base64) {
 			x_fprintf(x_stdout, "%s %s\n", reply_code, out_base64);
@@ -757,7 +757,7 @@ enum {
 
 	/* Samba client initialisation */
 
-	setup_logging("ntlm_auth", DEBUG_STDOUT);
+	setup_logging("ntlm_auth", DEBUG_STDERR);
 
 	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
 		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
