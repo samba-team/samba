@@ -446,7 +446,7 @@ struct smb_passwd *getldappwnam(char *name)
 
 struct smb_passwd *getldappwuid(unsigned int uid)
 {
-  return get_ldappwd_entry(NULL, uid);
+	return get_ldappwd_entry(NULL, uid);
 }
 
 /***************************************************************
@@ -456,16 +456,56 @@ struct smb_passwd *getldappwuid(unsigned int uid)
  do not call this function directly.  use passdb.c instead.
 
  ****************************************************************/
+
+struct ldap_enum_info
+{
+	LDAP *ldap_struct;
+	LDAPMessage *result;
+	LDAPMessage *entry;
+};
+
+static struct ldap_enum_info ldap_ent;
+
 void *startldappwent(BOOL update)
 {
-  return NULL;
-}
+	int scope = LDAP_SCOPE_ONELEVEL;
+	int rc;
 
-/***************************************************************
- End enumeration of the ldap passwd list.
-****************************************************************/
-void endldappwent(void *vp)
-{
+	char filter[256];
+
+	if (!ldap_open_connection(&ldap_ent.ldap_struct)) /* open a connection to the server */
+		return NULL;
+
+	if (!ldap_connect_system(ldap_ent.ldap_struct)) /* connect as system account */
+		return NULL;
+
+	/* when the class is known the search is much faster */
+	switch (0)
+	{
+		case 1:
+		{
+			strcpy(filter, "objectclass=sambaAccount");
+			break;
+		}
+		case 2:
+		{
+			strcpy(filter, "objectclass=sambaMachine");
+			break;
+		}
+		default:
+		{
+			strcpy(filter, "(|(objectclass=sambaMachine)(objectclass=sambaAccount))");
+			break;
+		}
+	}
+
+	rc=ldap_search_s(ldap_ent.ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, &ldap_ent.result);
+
+	DEBUG(2,("%d entries in the base!\n", ldap_count_entries(ldap_ent.ldap_struct, ldap_ent.result) ));
+
+  	ldap_ent.entry = ldap_first_entry(ldap_ent.ldap_struct, ldap_ent.result);
+
+	return &ldap_ent;
 }
 
 /*************************************************************************
@@ -476,7 +516,23 @@ void endldappwent(void *vp)
  *************************************************************************/
 struct smb_passwd *getldappwent(void *vp)
 {
-  return NULL;
+
+	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
+	ldap_vp->entry = ldap_next_entry(ldap_vp->ldap_struct, ldap_vp->entry);
+/*
+	make_ldap_sam_user_info_21(ldap_struct, entry, &(pw_buf[(*num_entries)]) );
+*/
+	return NULL;
+}
+
+/***************************************************************
+ End enumeration of the ldap passwd list.
+****************************************************************/
+void endldappwent(void *vp)
+{
+	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
+	ldap_msgfree(ldap_vp->result);
+	ldap_unbind(ldap_vp->ldap_struct);
 }
 
 /*************************************************************************
@@ -502,6 +558,5 @@ BOOL setldappwpos(void *vp, unsigned long tok)
 {
 	return False;
 }
-
 
 #endif
