@@ -303,6 +303,7 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 	for (i = 0; i < 8; i++)
 	{
 		dc->srv_chal.data[i] = 0xA5;
+		dc->srv_cred.data[i] = 0xA5;
 	}
 
 	/* from client / server challenges and md4 password, generate sess key */
@@ -347,7 +348,6 @@ static void api_lsa_auth_2( user_struct *vuser,
 {
 	LSA_Q_AUTH_2 q_a;
 
-	DOM_CHAL srv_chal;
 	UTIME srv_time;
 
 	srv_time.time = 0;
@@ -357,14 +357,17 @@ static void api_lsa_auth_2( user_struct *vuser,
 
 	/* check that the client credentials are valid */
 	cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
-                &(vuser->dc.srv_cred), srv_time);
+                &(vuser->dc.clnt_cred), srv_time);
 
-	/* create server credentials for inclusion in the reply */
-	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), srv_time, &srv_chal);
+	/* create server challenge for inclusion in the reply */
+	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred), srv_time, &(vuser->dc.srv_chal));
 
-	/* construct reply.  */
+	/* update the client credentials (copy server challenge) for use next time */
+	memcpy(vuser->dc.clnt_cred.data, vuser->dc.srv_chal.data, sizeof(vuser->dc.clnt_cred.data));
+
+	/* construct reply. */
 	*rdata_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata,
-					&srv_chal, 0x0);
+					&(vuser->dc.srv_chal), 0x0);
 }
 
 
@@ -378,7 +381,7 @@ static BOOL deal_with_credentials(user_struct *vuser,
 
 	/* check that the client credentials are valid */
 	if (cred_assert(&(clnt_cred->challenge), vuser->dc.sess_key,
-                    &(vuser->dc.srv_cred), clnt_cred->timestamp))
+                    &(vuser->dc.clnt_cred), clnt_cred->timestamp))
 	{
 		return False;
 	}
