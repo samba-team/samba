@@ -206,7 +206,7 @@ NTSTATUS context_sam_lookup_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN 
 
 NTSTATUS context_sam_update_domain(const SAM_CONTEXT *context, const SAM_DOMAIN_HANDLE *domain)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 
 	DEBUG(5,("context_sam_update_domain: %d\n", __LINE__));
@@ -426,7 +426,7 @@ NTSTATUS context_sam_add_account(const SAM_CONTEXT *context, const SAM_ACCOUNT_H
 
 NTSTATUS context_sam_update_account(const SAM_CONTEXT *context, const SAM_ACCOUNT_HANDLE *account)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	DEBUG(5,("context_sam_update_account: %d\n", __LINE__));
@@ -452,7 +452,7 @@ NTSTATUS context_sam_update_account(const SAM_CONTEXT *context, const SAM_ACCOUN
 
 NTSTATUS context_sam_delete_account(const SAM_CONTEXT *context, const SAM_ACCOUNT_HANDLE *account)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	DEBUG(5,("context_sam_delete_account: %d\n", __LINE__));
@@ -632,7 +632,7 @@ NTSTATUS context_sam_add_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDL
 
 NTSTATUS context_sam_update_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	DEBUG(5,("context_sam_update_group: %d\n", __LINE__));
@@ -658,7 +658,7 @@ NTSTATUS context_sam_update_group(const SAM_CONTEXT *context, const SAM_GROUP_HA
 
 NTSTATUS context_sam_delete_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	DEBUG(5,("context_sam_delete_group: %d\n", __LINE__));
@@ -771,7 +771,7 @@ NTSTATUS context_sam_get_group_by_name(const SAM_CONTEXT *context, const NT_USER
 
 NTSTATUS context_sam_add_member_to_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	
@@ -796,7 +796,7 @@ NTSTATUS context_sam_add_member_to_group(const SAM_CONTEXT *context, const SAM_G
 
 NTSTATUS context_sam_delete_member_from_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	/* invalid group or member specified */
@@ -819,7 +819,7 @@ NTSTATUS context_sam_delete_member_from_group(const SAM_CONTEXT *context, const 
 
 NTSTATUS context_sam_enum_groupmembers(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group, uint32 *members_count, SAM_GROUP_MEMBER **members)
 {
-	SAM_METHODS *tmp_methods;
+	const SAM_METHODS *tmp_methods;
 	NTSTATUS     nt_status;
 	
 	/* invalid group specified */
@@ -986,7 +986,7 @@ static NTSTATUS check_correct_backend_entries(SAM_BACKEND_ENTRY **backend_entrie
 		}
 		for (j = i + 1; j < *nBackends; j++) {
 			if (sid_equal((*backend_entries)[i].domain_sid, (*backend_entries)[j].domain_sid)) {
-				DEBUG(2,("two backend modules claim the same domain %s",
+				DEBUG(0,("two backend modules claim the same domain %s\n",
 					sid_string_static((*backend_entries)[j].domain_sid)));
 				return NT_STATUS_INVALID_PARAMETER;			
 			}
@@ -999,12 +999,11 @@ static NTSTATUS check_correct_backend_entries(SAM_BACKEND_ENTRY **backend_entrie
 	if (increase_by > 0) {
 		*nBackends += increase_by;
 
-		(*backend_entries) = (SAM_BACKEND_ENTRY *)realloc((*backend_entries), sizeof(SAM_BACKEND_ENTRY) * (*nBackends));
+		(*backend_entries) = (SAM_BACKEND_ENTRY *)realloc((*backend_entries), sizeof(SAM_BACKEND_ENTRY) * (*nBackends+1));
 		if (!has_workgroup) {
-			/* should be replaced by the default sam module */
-			DEBUG(4,("There was no backend specified for domain %s useing plugin\n",
-				lp_workgroup()));
-			(*backend_entries)[i].module_name   = "plugin";
+			DEBUG(4,("There was no backend specified for domain %s; using %s\n",
+				lp_workgroup(), SAM_DEFAULT_BACKEND));
+			(*backend_entries)[i].module_name   = SAM_DEFAULT_BACKEND;
 			(*backend_entries)[i].module_params = NULL;
 			(*backend_entries)[i].domain_name   = lp_workgroup();
 			(*backend_entries)[i].domain_sid    = (DOM_SID *)malloc(sizeof(DOM_SID)); 
@@ -1012,9 +1011,9 @@ static NTSTATUS check_correct_backend_entries(SAM_BACKEND_ENTRY **backend_entrie
 			i++;
 		}
 		if (!has_builtin) {
-			/* should be replaced by the default sam module */
-			DEBUG(4,("There was no backend specified for domain BUILTIN useing plugin\n"));
-			(*backend_entries)[i].module_name   = "plugin";
+			DEBUG(4,("There was no backend specified for domain BUILTIN; using %s\n", 
+					 SAM_DEFAULT_BACKEND));
+			(*backend_entries)[i].module_name   = SAM_DEFAULT_BACKEND;
 			(*backend_entries)[i].module_params = NULL;
 			(*backend_entries)[i].domain_name   = "BUILTIN";
 			(*backend_entries)[i].domain_sid    = (DOM_SID *)malloc(sizeof(DOM_SID)); 

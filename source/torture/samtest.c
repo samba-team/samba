@@ -23,18 +23,11 @@
 */
 
 #include "includes.h"
+#include "samtest.h"
 
 struct func_entry {
 	char *name;
 	int (*fn)(struct connection_struct *conn, const char *path);
-};
-
-struct cmd_set {
-	char *name;
-	NTSTATUS (*fn)(struct sam_context *sam, TALLOC_CTX *mem_ctx, int argc, 
-                       char **argv);
-	char *description;
-	char *usage;
 };
 
 /* List to hold groups of commands */
@@ -164,9 +157,10 @@ static struct cmd_set separator_command[] = {
 
 
 /*extern struct cmd_set sam_commands[];*/
+extern struct cmd_set sam_commands[];
 static struct cmd_set *samtest_command_list[] = {
 	samtest_commands,
-/*	sam_commands, NOT YET */
+	sam_commands,
 	NULL
 };
 
@@ -336,12 +330,10 @@ int main(int argc, char *argv[])
 	int 			opt;
 	static char		*cmdstr = "";
 	static char *opt_logfile=NULL;
-	static int		opt_debuglevel;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
 	extern BOOL 		AllowDebugChange;
 	static struct sam_context sam;
-	int i;
 
 
 	/* make sure the vars that get altered (4th field) are in
