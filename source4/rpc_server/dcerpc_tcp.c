@@ -107,6 +107,8 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
+	blob.length = ret;
+
 	dcesrv_input(r->dce, &blob);
 
 	data_blob_free(&blob);

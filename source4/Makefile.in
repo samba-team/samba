@@ -285,6 +285,7 @@ SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o \
 	ntvfs/ntvfs_generic.o @NTVFS_STATIC@
 
 SMBD_RPC_OBJ = rpc_server/dcerpc_server.o \
+		rpc_server/dcesrv_auth.o \
 		rpc_server/dcerpc_tcp.o \
 		rpc_server/handles.o \
 		rpc_server/echo/rpc_echo.o \
