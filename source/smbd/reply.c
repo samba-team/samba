@@ -54,7 +54,6 @@ static void overflow_attack(int len)
 		dbgtext( "attempting to exploit an old bug.\n" );
 		dbgtext( "Attack was from IP = %s.\n", client_addr() );
 	}
-	exit_server("possible attack");
 }
 
 
@@ -288,6 +287,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	if (passlen > MAX_PASS_LEN) {
 		overflow_attack(passlen);
+		return(ERROR(ERRDOS,ERRbuftoosmall));
 	}
  
 	memcpy(password,smb_buf(inbuf),passlen);
