@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "smb.h"
 
 #define SECURITY_MASK 0
 #define SECURITY_SET  0

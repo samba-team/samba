@@ -19,7 +19,6 @@
  */
 
 #include "printing.h"
-#include "smb.h"
 
 #ifdef HAVE_CUPS
 #include <cups/cups.h>

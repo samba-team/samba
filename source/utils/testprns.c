@@ -31,7 +31,6 @@
  */
 
 #include "includes.h"
-#include "smb.h"
 
 int main(int argc, char *argv[])
 {
