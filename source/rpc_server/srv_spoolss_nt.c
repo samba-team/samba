@@ -1444,9 +1444,9 @@ static void spoolss_notify_server_name(int snum,
 
 	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
-	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, 0);
+	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
@@ -1478,8 +1478,8 @@ static void spoolss_notify_printer_name(int snum,
 		p++;
 	}
 
-	len = rpcstr_push(temp, p, sizeof(temp)-2, 0);
-	data->notify_data.data.length = len / 2 - 1;
+	len = rpcstr_push(temp, p, sizeof(temp)-2, STR_TERMINATE);
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1502,9 +1502,9 @@ static void spoolss_notify_share_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, lp_servicename(snum),  sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, lp_servicename(snum), sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1529,9 +1529,9 @@ static void spoolss_notify_port_name(int snum,
 
 	/* even if it's strange, that's consistant in all the code */
 
-	len = rpcstr_push(temp, printer->info_2->portname,  sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, printer->info_2->portname, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1556,8 +1556,8 @@ static void spoolss_notify_driver_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp) - 2, 0);
-	data->notify_data.data.length = len / 2 - 1;
+	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp)-2, STR_TERMINATE);
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1581,12 +1581,12 @@ static void spoolss_notify_comment(int snum,
 	uint32 len;
 
 	if (*printer->info_2->comment == '\0')
-		len = rpcstr_push(temp, lp_comment(snum), sizeof(temp) - 2, 0);
+		len = rpcstr_push(temp, lp_comment(snum), sizeof(temp)-2, STR_TERMINATE);
 
 	else
-		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp) - 2, 0);
+		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1611,9 +1611,9 @@ static void spoolss_notify_location(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1650,9 +1650,9 @@ static void spoolss_notify_sepfile(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1676,9 +1676,9 @@ static void spoolss_notify_print_processor(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1702,10 +1702,9 @@ static void spoolss_notify_parameters(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp) -
-			 2, 0);
+	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1729,9 +1728,9 @@ static void spoolss_notify_datatype(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, 0);
+	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1768,6 +1767,7 @@ static void spoolss_notify_attributes(int snum,
 				      TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0] = printer->info_2->attributes;
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1780,6 +1780,7 @@ static void spoolss_notify_priority(int snum,
 				    TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0] = printer->info_2->priority;
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1792,6 +1793,7 @@ static void spoolss_notify_default_priority(int snum,
 					    TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0] = printer->info_2->default_priority;
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1804,6 +1806,7 @@ static void spoolss_notify_start_time(int snum,
 				      TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0] = printer->info_2->starttime;
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1816,6 +1819,7 @@ static void spoolss_notify_until_time(int snum,
 				      TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0] = printer->info_2->untiltime;
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1833,6 +1837,7 @@ static void spoolss_notify_status(int snum,
 	memset(&status, 0, sizeof(status));
 	print_queue_status(snum, &q, &status);
 	data->notify_data.value[0]=(uint32) status.status;
+	data->notify_data.value[1] = 0;
 	SAFE_FREE(q);
 }
 
@@ -1850,6 +1855,7 @@ static void spoolss_notify_cjobs(int snum,
 
 	memset(&status, 0, sizeof(status));
 	data->notify_data.value[0] = print_queue_status(snum, &q, &status);
+	data->notify_data.value[1] = 0;
 	SAFE_FREE(q);
 }
 
@@ -1865,6 +1871,7 @@ static void spoolss_notify_average_ppm(int snum,
 	/* always respond 8 pages per minutes */
 	/* a little hard ! */
 	data->notify_data.value[0] = printer->info_2->averageppm;
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1879,10 +1886,10 @@ static void spoolss_notify_username(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, queue->user, sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, queue->user, sizeof(temp)-2, STR_TERMINATE);
 
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1903,6 +1910,7 @@ static void spoolss_notify_job_status(int snum,
 				      TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0]=nt_printj_status(queue->status);
+	data->notify_data.value[1] = 0;
 }
 
 /*******************************************************************
@@ -1917,9 +1925,9 @@ static void spoolss_notify_job_name(int snum,
 	pstring temp;
 	uint32 len;
 
-	len = rpcstr_push(temp, queue->file, sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, queue->file, sizeof(temp)-2, STR_TERMINATE);
 	
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1966,9 +1974,9 @@ static void spoolss_notify_job_status_string(int snum,
 	}
 #endif /* NO LONGER NEEDED. */
 
-	len = rpcstr_push(temp, p, sizeof(temp) - 2, 0);
+	len = rpcstr_push(temp, p, sizeof(temp) - 2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len / 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1989,6 +1997,7 @@ static void spoolss_notify_job_time(int snum,
 				    TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0]=0x0;
+	data->notify_data.value[1]=0;
 }
 
 /*******************************************************************
@@ -2001,6 +2010,7 @@ static void spoolss_notify_job_size(int snum,
 				    TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0]=queue->size;
+	data->notify_data.value[1]=0;
 }
 
 /*******************************************************************
@@ -2013,6 +2023,7 @@ static void spoolss_notify_job_position(int snum,
 					TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.value[0]=queue->job;
+	data->notify_data.value[1]=0;
 }
 
 /*******************************************************************
@@ -2032,7 +2043,7 @@ static void spoolss_notify_submitted_time(int snum,
 
 	len = sizeof(SYSTEMTIME);
 
-	data->notify_data.data.length = len/2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
