@@ -109,7 +109,7 @@ parse_ports(char *str)
     p = strtok_r(str, " \t", &pos);
     while(p){
 	if(strcmp(p, "+") == 0) {
-#ifdef AF_INET6
+#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
 	    add_standard_ports(AF_INET6);
 #else
 	    add_standard_ports(AF_INET);
@@ -119,13 +119,13 @@ parse_ports(char *str)
 	    if(q){
 		*q = 0;
 		*q++;
-#ifdef AF_INET6
+#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
 		add_port(AF_INET6, p, q);
 #else
 		add_port(AF_INET, p, q);
 #endif
 	    }else {
-#ifdef AF_INET6
+#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
 		add_port(AF_INET6, p, "udp");
 		add_port(AF_INET6, p, "tcp");
 #else
