@@ -119,6 +119,9 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
   int cmd = CVAL(inbuf,smb_com);
   int flgs2 = SVAL(outbuf,smb_flg2); 
 
+  if (errno != 0)
+    DEBUG(3,("error string = %s\n",strerror(errno)));
+  
   if ((flgs2 & FLAGS2_32_BIT_ERROR_CODES) == FLAGS2_32_BIT_ERROR_CODES)
   {
     SIVAL(outbuf,smb_rcls,error_code);
@@ -138,9 +141,6 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 	      error_code ) );
 
   }
-  
-  if (errno != 0)
-    DEBUG(3,("error string = %s\n",strerror(errno)));
   
   return(outsize);
 }
