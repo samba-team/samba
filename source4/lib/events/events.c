@@ -58,7 +58,7 @@
 #include "system/time.h"
 #include "system/select.h"
 #include "dlinklist.h"
-#include "events.h"
+#include "lib/events/events.h"
 
 /* use epoll if it is available */
 #if defined(HAVE_EPOLL_CREATE) && defined(HAVE_SYS_EPOLL_H)

@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 

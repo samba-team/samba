@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "dlinklist.h"
 #include "libcli/nbt/libnbt.h"
 

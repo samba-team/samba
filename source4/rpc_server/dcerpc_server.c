@@ -27,7 +27,7 @@
 #include "auth/auth.h"
 #include "dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "smbd/service_stream.h"
 
 /*
