@@ -729,6 +729,7 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="PREFEREDMASTER"><parameter>prefered master</parameter></link></para></listitem>
 		<listitem><para><link linkend="PREFERREDMASTER"><parameter>preferred master</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRELOAD"><parameter>preload</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRELOADMODULES"><parameter>preload modules</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTCAP"><parameter>printcap</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTCAPNAME"><parameter>printcap name</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRIVATEDIR"><parameter>private dir</parameter></link></para></listitem>
@@ -3452,7 +3453,7 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 
 		<varlistentry>
 		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
-		<listitem><para> Inverted synonym for <link linked="LDAPDELETEDN"><parameter>
+		<listitem><para> Inverted synonym for <link linkend="LDAPDELETEDN"><parameter>
 		ldap delete dn</parameter></link>.</para>
 		</listitem>
 		</varlistentry>
@@ -5964,6 +5965,21 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="PRELOADMODULES"/>preload modules (G)</term>
+		<listitem><para>This is a list of paths to modules that should 
+		be loaded into smbd before a client connects. This improves 
+		the speed of smbd when reacting to new connections somewhat. </para>
+
+		<para>It is recommended to only use this option on heavy-performance 
+		servers.</para>
+
+		<para>Default: <command>preload modules = </command></para>
+		
+		<para>Example: <command>preload modules = /usr/lib/samba/passdb/mysql.so</command></para>
+
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="PRESERVECASE"/>preserve case (S)</term>

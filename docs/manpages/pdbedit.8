@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "PDBEDIT" "8" "24 March 2003" "" ""
+.TH "PDBEDIT" "8" "30 March 2003" "" ""
 
 .SH NAME
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
 
-\fBpdbedit\fR [ \fB-l\fR ] [ \fB-v\fR ] [ \fB-w\fR ] [ \fB-u username\fR ] [ \fB-f fullname\fR ] [ \fB-h homedir\fR ] [ \fB-D drive\fR ] [ \fB-S script\fR ] [ \fB-p profile\fR ] [ \fB-a\fR ] [ \fB-m\fR ] [ \fB-x\fR ] [ \fB-i passdb-backend\fR ] [ \fB-e passdb-backend\fR ] [ \fB-b passdb-backend\fR ] [ \fB-d debuglevel\fR ] [ \fB-s configfile\fR ] [ \fB-P account-policy\fR ] [ \fB-C value\fR ]
+\fBpdbedit\fR [ \fB-l\fR ] [ \fB-v\fR ] [ \fB-w\fR ] [ \fB-u username\fR ] [ \fB-f fullname\fR ] [ \fB-h homedir\fR ] [ \fB-D drive\fR ] [ \fB-S script\fR ] [ \fB-p profile\fR ] [ \fB-a\fR ] [ \fB-m\fR ] [ \fB-x\fR ] [ \fB-i passdb-backend\fR ] [ \fB-e passdb-backend\fR ] [ \fB-g\fR ] [ \fB-b passdb-backend\fR ] [ \fB-g\fR ] [ \fB-d debuglevel\fR ] [ \fB-s configfile\fR ] [ \fB-P account-policy\fR ] [ \fB-C value\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -174,6 +174,22 @@ This option will ease migration from one passdb backend to
 another and will ease backing up.
 
 Example: \fBpdbedit -e smbpasswd:/root/samba-users.backup\fR
+.TP
+\fB-g\fR
+If you specify \fI-g\fR,
+then \fI-i in-backend -e out-backend\fR
+applies to the group mapping instead of the user database.
+
+This option will ease migration from one passdb backend to
+another and will ease backing up.
+.TP
+\fB-g\fR
+If you specify \fI-g\fR,
+then \fI-i in-backend -e out-backend\fR
+applies to the group mapping instead of the user database.
+
+This option will ease migration from one passdb backend to
+another and will ease backing up.
 .TP
 \fB-b passdb-backend\fR
 Use a different default passdb backend. 

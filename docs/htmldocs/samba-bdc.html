@@ -13,7 +13,7 @@ REL="UP"
 TITLE="Type of installation"
 HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="Samba as a NT4 or Win2k Primary Domain Controller"
+TITLE="Samba as an NT4 or Win2k Primary Domain Controller"
 HREF="samba-pdc.html"><LINK
 REL="NEXT"
 TITLE="Samba as a ADS domain member"
@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-BDC"
 ></A
->Chapter 6. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
+>Chapter 7. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1177"
->6.1. Prerequisite Reading</A
+NAME="AEN1278"
+>7.1. Prerequisite Reading</A
 ></H1
 ><P
 >Before you continue reading in this chapter, please make sure
@@ -97,8 +97,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1181"
->6.2. Background</A
+NAME="AEN1282"
+>7.2. Background</A
 ></H1
 ><P
 >What is a Domain Controller? It is a machine that is able to answer
@@ -142,8 +142,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1189"
->6.3. What qualifies a Domain Controller on the network?</A
+NAME="AEN1290"
+>7.3. What qualifies a Domain Controller on the network?</A
 ></H1
 ><P
 >Every machine that is a Domain Controller for the domain SAMBA has to
@@ -159,8 +159,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1192"
->6.3.1. How does a Workstation find its domain controller?</A
+NAME="AEN1293"
+>7.3.1. How does a Workstation find its domain controller?</A
 ></H2
 ><P
 >A NT workstation in the domain SAMBA that wants a local user to be
@@ -178,8 +178,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1195"
->6.3.2. When is the PDC needed?</A
+NAME="AEN1296"
+>7.3.2. When is the PDC needed?</A
 ></H2
 ><P
 >Whenever a user wants to change his password, this has to be done on
@@ -194,8 +194,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1198"
->6.4. Can Samba be a Backup Domain Controller to an NT PDC?</A
+NAME="AEN1299"
+>7.4. Can Samba be a Backup Domain Controller to an NT PDC?</A
 ></H1
 ><P
 >With version 2.2, no. The native NT SAM replication protocols have
@@ -217,8 +217,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1203"
->6.5. How do I set up a Samba BDC?</A
+NAME="AEN1304"
+>7.5. How do I set up a Samba BDC?</A
 ></H1
 ><P
 >Several things have to be done:</P
@@ -284,8 +284,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1220"
->6.5.1. How do I replicate the smbpasswd file?</A
+NAME="AEN1321"
+>7.5.1. How do I replicate the smbpasswd file?</A
 ></H2
 ><P
 >Replication of the smbpasswd file is sensitive. It has to be done
@@ -305,8 +305,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1224"
->6.5.2. Can I do this all with LDAP?</A
+NAME="AEN1325"
+>7.5.2. Can I do this all with LDAP?</A
 ></H2
 ><P
 >The simple answer is YES.  Samba's pdb_ldap code supports
@@ -361,7 +361,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Samba as a NT4 or Win2k Primary Domain Controller</TD
+>Samba as an NT4 or Win2k Primary Domain Controller</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

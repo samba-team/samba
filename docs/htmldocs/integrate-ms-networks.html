@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="INTEGRATE-MS-NETWORKS"
 ></A
->Chapter 9. Integrating MS Windows networks with Samba</H1
+>Chapter 10. Integrating MS Windows networks with Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1416"
->9.1. Agenda</A
+NAME="AEN1517"
+>10.1. Agenda</A
 ></H1
 ><P
 >To identify the key functional mechanisms of MS Windows networking 
@@ -147,8 +147,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1438"
->9.2. Name Resolution in a pure Unix/Linux world</A
+NAME="AEN1539"
+>10.2. Name Resolution in a pure Unix/Linux world</A
 ></H1
 ><P
 >The key configuration files covered in this section are:</P
@@ -189,8 +189,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1454"
->9.2.1. <TT
+NAME="AEN1555"
+>10.2.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></A
@@ -270,8 +270,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1470"
->9.2.2. <TT
+NAME="AEN1571"
+>10.2.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></A
@@ -308,8 +308,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1481"
->9.2.3. <TT
+NAME="AEN1582"
+>10.2.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></A
@@ -337,8 +337,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1489"
->9.2.4. <TT
+NAME="AEN1590"
+>10.2.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 ></A
@@ -406,8 +406,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1501"
->9.3. Name resolution as used within MS Windows networking</A
+NAME="AEN1602"
+>10.3. Name resolution as used within MS Windows networking</A
 ></H1
 ><P
 >MS Windows networking is predicated about the name each machine 
@@ -491,8 +491,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1513"
->9.3.1. The NetBIOS Name Cache</A
+NAME="AEN1614"
+>10.3.1. The NetBIOS Name Cache</A
 ></H2
 ><P
 >All MS Windows machines employ an in memory buffer in which is 
@@ -518,8 +518,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1518"
->9.3.2. The LMHOSTS file</A
+NAME="AEN1619"
+>10.3.2. The LMHOSTS file</A
 ></H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 
@@ -621,8 +621,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1526"
->9.3.3. HOSTS file</A
+NAME="AEN1627"
+>10.3.3. HOSTS file</A
 ></H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 2000 in 
@@ -643,8 +643,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1531"
->9.3.4. DNS Lookup</A
+NAME="AEN1632"
+>10.3.4. DNS Lookup</A
 ></H2
 ><P
 >This capability is configured in the TCP/IP setup area in the network 
@@ -663,8 +663,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1534"
->9.3.5. WINS Lookup</A
+NAME="AEN1635"
+>10.3.5. WINS Lookup</A
 ></H2
 ><P
 >A WINS (Windows Internet Name Server) service is the equivaent of the 
@@ -704,8 +704,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1546"
->9.4. How browsing functions and how to deploy stable and 
+NAME="AEN1647"
+>10.4. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></H1
 ><P
@@ -771,8 +771,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1556"
->9.5. MS Windows security options and how to configure 
+NAME="AEN1657"
+>10.5. MS Windows security options and how to configure 
 Samba for seemless integration</A
 ></H1
 ><P
@@ -898,8 +898,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1584"
->9.5.1. Use MS Windows NT as an authentication server</A
+NAME="AEN1685"
+>10.5.1. Use MS Windows NT as an authentication server</A
 ></H2
 ><P
 >This method involves the additions of the following parameters 
@@ -934,8 +934,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1592"
->9.5.2. Make Samba a member of an MS Windows NT security domain</A
+NAME="AEN1693"
+>10.5.2. Make Samba a member of an MS Windows NT security domain</A
 ></H2
 ><P
 >This method involves additon of the following paramters in the smb.conf file:</P
@@ -997,8 +997,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1609"
->9.5.3. Configure Samba as an authentication server</A
+NAME="AEN1710"
+>10.5.3. Configure Samba as an authentication server</A
 ></H2
 ><P
 >This mode of authentication demands that there be on the 
@@ -1034,8 +1034,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1616"
->9.5.3.1. Users</A
+NAME="AEN1717"
+>10.5.3.1. Users</A
 ></H3
 ><P
 >A user account that may provide a home directory should be 
@@ -1057,8 +1057,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1621"
->9.5.3.2. MS Windows NT Machine Accounts</A
+NAME="AEN1722"
+>10.5.3.2. MS Windows NT Machine Accounts</A
 ></H3
 ><P
 >These are required only when Samba is used as a domain 
@@ -1078,8 +1078,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1626"
->9.6. Conclusions</A
+NAME="AEN1727"
+>10.6. Conclusions</A
 ></H1
 ><P
 >Samba provides a flexible means to operate as...</P
