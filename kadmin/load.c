@@ -496,12 +496,12 @@ load(int argc, char **argv)
 	usage ("load");
 	return 0;
     }
-    if(argc - optind < 2 || help_flag) {
+    if(argc - optind != 1 || help_flag) {
 	usage ("load");
 	return 0;
     }
 
-    doit(argv[1], 0);
+    doit(argv[optind], 0);
     return 0;
 }
 
@@ -517,11 +517,11 @@ merge(int argc, char **argv)
 	usage ("merge");
 	return 0;
     }
-    if(argc - optind < 2 || help_flag) {
+    if(argc - optind != 1 || help_flag) {
 	usage ("merge");
 	return 0;
     }
 
-    doit(argv[1], 1);
+    doit(argv[optind], 1);
     return 0;
 }
