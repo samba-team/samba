@@ -162,17 +162,6 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
-				       const char *name) 
-{
-	gensec_security->ops = gensec_security_by_name(name);
-	if (!gensec_security->ops) {
-		DEBUG(1, ("Could not find GENSEC backend for name=%s\n", name));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	return gensec_start_mech(gensec_security);
-}
-
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
 				       uint8_t authtype) 
 {

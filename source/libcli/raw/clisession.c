@@ -421,7 +421,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 		goto done;
 	}
 
-	status = gensec_start_mech_by_name(session->gensec, "spnego");
+	status = gensec_start_mech_by_oid(session->gensec, OID_SPNEGO);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
 			  nt_errstr(status)));
