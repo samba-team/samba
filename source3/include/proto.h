@@ -1923,7 +1923,7 @@ void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct
 void sec_io_info(char *desc, SEC_INFO *t, prs_struct *ps, int depth);
 void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth);
 void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth);
-void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth);
+void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data);
 void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */

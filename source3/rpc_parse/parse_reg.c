@@ -559,10 +559,7 @@ void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 	if (sec_buf != NULL)
 	{
 		make_buf_hdr(&(q_i->hdr_sec), buf_len, 0);
-		q_i->data->max_len = buf_len;
-		q_i->data->undoc = 0;
-		q_i->data->len = 0;
-		q_i->data->sec = NULL;
+		make_sec_desc_buf(q_i->data, buf_len, NULL);
 	}
 }
 
