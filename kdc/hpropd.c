@@ -145,46 +145,6 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
 }
 #endif /* KRB4 */
 
-static int
-open_socket(krb5_context context)
-{
-    int s, s2;
-    int sin_len;
-    struct sockaddr_in sin;
-    int one = 1;
-
-    sin_len = sizeof(sin);
-    if(getpeername(0, (struct sockaddr*)&sin, &sin_len)){
-	s = socket(AF_INET, SOCK_STREAM, 0);
-	if(s < 0){
-	    krb5_warn(context, errno, "socket");
-	    return -1;
-	}
-	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_port = krb5_getportbyname (context, "hprop", "tcp",
-					   HPROP_PORT);
-	if(bind(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-	    krb5_warn(context, errno, "bind");
-	    close(s);
-	    return -1;
-	}
-	if(listen(s, 5) < 0){
-	    krb5_warn(context, errno, "listen");
-	    close(s);
-	    return -1;
-	}
-
-	s2 = accept(s, NULL, 0);
-	if(s2 < 0)
-	    krb5_warn(context, errno, "accept");
-	close(s);
-	return s2;
-    }
-    return 0;
-}
-
 static int help_flag;
 static int version_flag;
 static int print_dump;
@@ -271,18 +231,26 @@ main(int argc, char **argv)
     if(from_stdin)
 	fd = STDIN_FILENO;
     else {
-	fd = open_socket(context);
-	if(fd < 0)
-	    krb5_errx(context, 1, "Failed to obtain socket - exiting");
-	
+	mini_inetd (krb5_getportbyname (context, "hprop", "tcp",
+					HPROP_PORT));
+	fd = STDIN_FILENO;
 	{
-	    int sin_len;
-	    struct sockaddr_in sin;
-	    sin_len = sizeof(sin);
-	    if(getpeername(fd, (struct sockaddr*)&sin, &sin_len) < 0)
+	    int sa_len;
+	    struct sockaddr_storage ss;
+	    struct sockaddr *sa = (struct sockaddr *)&ss;
+	    char addr_name[256];
+
+	    sa_len = sizeof(ss);
+	    if(getpeername(fd, sa, &sa_len) < 0)
 		krb5_err(context, 1, errno, "getpeername");
-	    krb5_log(context, fac, 0, "Connection from %s",
-		     inet_ntoa(sin.sin_addr));
+	    if (inet_ntop(sa->sa_family,
+			  socket_get_address (sa),
+			  addr_name,
+			  sizeof(addr_name)) == NULL)
+		strcpy_truncate (addr_name, "unknown address",
+				 sizeof(addr_name));
+
+	    krb5_log(context, fac, 0, "Connection from %s", addr_name);
 	}
     
 	gethostname(hostname, sizeof(hostname));

@@ -67,30 +67,53 @@ static int kaspecials_flag;
 static int
 open_socket(krb5_context context, const char *hostname)
 {
-    int s;
-    struct hostent *hp;
-    struct sockaddr_in sin;
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if(s < 0){
-	warn("socket");
-	return -1;
-    }
-    hp = roken_gethostbyname(hostname);
+    struct hostent *hp = NULL;
+    int error;
+    int af;
+    char **h;
+    int port;
+
+#ifdef HAVE_IPV6
+    if (hp == NULL)
+	hp = getipnodebyname (hostname, AF_INET6, 0, &error);
+#endif
+    if (hp == NULL)
+	hp = getipnodebyname (hostname, AF_INET, 0, &error);
+
     if(hp == NULL){
-	warnx("%s: %s", hostname, hstrerror(h_errno));
-	close(s);
+	warnx("%s: %s", hostname, hstrerror(error));
 	return -1;
     }
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT);
-    memcpy(&sin.sin_addr, hp->h_addr, hp->h_length);
-    if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-	warn("connect");
-	close(s);
-	return -1;
+
+    port = krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT);
+
+    af = hp->h_addrtype;
+
+    for (h = hp->h_addr_list; *h != NULL; ++h) {
+	int s;
+	struct sockaddr_storage sa_ss;
+	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
+
+	s = socket(af, SOCK_STREAM, 0);
+	if(s < 0){
+	    warn("socket");
+	    freehostent (hp);
+	    return -1;
+	}
+
+	sa->sa_family = af;
+	socket_set_address_and_port (sa, *h, port);
+
+	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
+	    warn ("connect(%s)", hostname);
+	    close (s);
+	    continue;
+	}
+	freehostent (hp);
+	return s;
     }
-    return s;
+    freehostent (hp);
+    return -1;
 }
 
 struct prop_data{
@@ -158,6 +181,10 @@ v4_prop(void *arg, Principal *p)
     ent.keys.len = 3;
     ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
     ent.keys.val[0].mkvno = NULL;
+#if 0
+    ent.keys.val[0].mkvno = malloc (sizeof(*ent.keys.val[0].mkvno));
+    *(ent.keys.val[0].mkvno) = p->kdc_key_ver; /* XXX */
+#endif
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = pa_pw_salt;
     ent.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
