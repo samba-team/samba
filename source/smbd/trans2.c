@@ -676,8 +676,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	 * Ensure we have enough parameters to perform the operation.
 	 */
 
-	if (total_params < 29)
-		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+	if (total_params < 29) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	open_mode = SVAL(params, 2);
 	open_attr = SVAL(params,6);
@@ -1413,8 +1414,9 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
-	if (total_params < 12)
-		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+	if (total_params < 12) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	*directory = *mask = 0;
 
@@ -1641,8 +1643,9 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	int space_remaining;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
-	if (total_params < 12)
-		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+	if (total_params < 12) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	*mask = *directory = *resume_name = 0;
 
@@ -2171,7 +2174,7 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 	if (total_params < 4) {
 		DEBUG(0,("call_trans2setfsinfo: requires total_params(%d) >= 4 bytes!\n",
 			total_params));
-		return ERROR_DOS(ERRDOS,ERRinvalidparam);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	fsp = file_fsp(params,0);
@@ -2429,8 +2432,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	ZERO_STRUCT(sbuf);
 
 	if (tran_call == TRANSACT2_QFILEINFO) {
-		if (total_params < 4)
-			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+		if (total_params < 4) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);
@@ -2485,8 +2489,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		NTSTATUS status = NT_STATUS_OK;
 
 		/* qpathinfo */
-		if (total_params < 6)
-			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+		if (total_params < 6) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 
 		info_level = SVAL(params,0);
 
@@ -3314,8 +3319,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	ZERO_STRUCT(sbuf);
 
 	if (tran_call == TRANSACT2_SETFILEINFO) {
-		if (total_params < 4)
-			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+		if (total_params < 4) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
@@ -3361,8 +3367,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 	} else {
 		/* set path info */
-		if (total_params < 6)
-			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+		if (total_params < 6) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 
 		info_level = SVAL(params,0);    
 		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status, False);
@@ -3426,8 +3433,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
 		{
-			if (total_data < 12)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 12) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			/* access time */
 			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
@@ -3442,12 +3450,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				return ERROR_NT(status);
 			break;
 
+#if 0
+		/* The following 2 info levels are only valid on query, not set. Remove them. JRA. */
 		/* XXXX um, i don't think this is right.
 			it's also not in the cifs6.txt spec.
 		*/
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
 			if (total_data < 28)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 			tvs.actime = make_unix_date2(pdata+8);
 			tvs.modtime = make_unix_date2(pdata+12);
@@ -3458,13 +3468,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		/* XXXX nor this.  not in cifs6.txt, either. */
 		case SMB_INFO_QUERY_ALL_EAS:
 			if (total_data < 28)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 			tvs.actime = make_unix_date2(pdata+8);
 			tvs.modtime = make_unix_date2(pdata+12);
 			size = IVAL(pdata,16);
 			dosmode = IVAL(pdata,24);
 			break;
+#endif
 
 		case SMB_SET_FILE_BASIC_INFO:
 		case SMB_FILE_BASIC_INFORMATION:
@@ -3473,8 +3484,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			time_t write_time;
 			time_t changed_time;
 
-			if (total_data < 36)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 36) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			/* Ignore create time at offset pdata. */
 
@@ -3505,8 +3517,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			int ret = -1;
 			SMB_BIG_UINT allocation_size;
 
-			if (total_data < 8)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 8) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			allocation_size = (SMB_BIG_UINT)IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
@@ -3579,8 +3592,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_SET_FILE_END_OF_FILE_INFO:
 		{
-			if (total_data < 8)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 8) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
@@ -3598,8 +3612,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		{
 			BOOL delete_on_close;
 
-			if (total_data < 1)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 1) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			delete_on_close = (CVAL(pdata,0) ? True : False);
 
@@ -3627,8 +3642,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		{
 			SMB_BIG_UINT position_information;
 
-			if (total_data < 8)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 8) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			position_information = (SMB_BIG_UINT)IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
@@ -3644,6 +3660,26 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			break;
 		}
 
+		/* From tridge Samba4 : 
+		 * MODE_INFORMATION in setfileinfo (I have no
+		 * idea what "mode information" on a file is - it takes a value of 0,
+		 * 2, 4 or 6. What could it be?).
+		 */
+
+		case SMB_FILE_MODE_INFORMATION:
+		{
+			uint32 mode;
+
+			if (total_data < 4) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+			mode = IVAL(pdata,0);
+			if (mode != 0 && mode != 2 && mode != 4 && mode != 6) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+			break;
+		}
+
 		/*
 		 * CIFS UNIX extensions.
 		 */
@@ -3652,8 +3688,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		{
 			uint32 raw_unixmode;
 
-			if (total_data < 100)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 100) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
 			   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
@@ -3702,8 +3739,9 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if (tran_call == TRANSACT2_SETFILEINFO)
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-				if (raw_unixmode == SMB_MODE_NO_CHANGE)
-					return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+				if (raw_unixmode == SMB_MODE_NO_CHANGE) {
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 
 #if defined(HAVE_MAKEDEV)
 				dev = makedev(dev_major, dev_minor);
@@ -3871,8 +3909,9 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			pstring base_name;
 			char *p;
 
-			if (total_data < 12)
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			if (total_data < 12) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
 			overwrite = (CVAL(pdata,0) ? True : False);
 			root_fid = IVAL(pdata,4);
@@ -3925,7 +3964,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			BOOL valid_def_acls = True;
 
 			if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 			posix_acl_version = SVAL(pdata,0);
 			num_file_acls = SVAL(pdata,2);
@@ -3942,12 +3981,12 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
 			if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
 					(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
-				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
 			if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
@@ -4115,8 +4154,9 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
 
-	if (total_params < 4)
-		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+	if (total_params < 4) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4163,8 +4203,9 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	char *params = *pparams;
 	uint16 info_level;
 
-	if (total_params < 6)
-		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+	if (total_params < 6) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	info_level = SVAL(params,4);
 	DEBUG(3,("call_trans2findnotifyfirst - info_level %d\n", info_level));
@@ -4239,8 +4280,9 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
-	if (total_params < 2)
-		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+	if (total_params < 2) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	max_referral_level = SVAL(params,0);
 
@@ -4423,7 +4465,7 @@ int reply_trans2(connection_struct *conn,
 			DEBUG(2,("Invalid smb_sucnt in trans2 call(%u)\n",suwcnt));
 			DEBUG(2,("Transaction is %d\n",tran_call));
 			END_PROFILE(SMBtrans2);
-			ERROR_DOS(ERRDOS,ERRinvalidparam);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	}
     
