@@ -446,7 +446,7 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 	/* construct reply.  always indicate failure.  nt keeps going... */
 	*rdata_len = lsa_reply_srv_pwset(&q_a, *rdata + 0x18, *rdata,
 					&srv_cred,
-	                NT_STATUS_WRONG_PASSWORD|0xC000000);
+	                NT_STATUS_WRONG_PASSWORD|0xC0000000);
 }
 
 
