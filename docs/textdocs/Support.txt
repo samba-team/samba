@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 2.0.0-alpha10 09 Oct 1998
+!== Support.txt for Samba release 2.0.0-alpha11 09 Oct 1998
 !==
 The Samba Consultants List
 ==========================
