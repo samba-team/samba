@@ -158,6 +158,7 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
+int sys_statvfs( const char *path, SMB_STRUCT_STATVFS *fsd);
 int sys_ftruncate(int fd, SMB_OFF_T offset);
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);
@@ -1669,7 +1670,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 /*The following definitions come from  smbd/dfree.c  */
 
-int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 
 /*The following definitions come from  smbd/dir.c  */
 
@@ -1796,7 +1796,7 @@ uint16 fd_attempt_close(file_fd_struct *fd_ptr);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,
-		   char *fname, int smb_ofun, int unixmode, int *action);
+		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */

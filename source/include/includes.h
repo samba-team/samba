@@ -375,6 +375,18 @@
 #endif
 
 /*
+ * Type for statvfs structure.
+ */
+
+#ifndef SMB_STRUCT_STATVFS
+#  if defined(STAT_STATVFS64)
+#    define SMB_STRUCT_STATVFS struct statvfs64
+#  else
+#    define SMB_STRUCT_STATVFS struct statvfs
+#  endif
+#endif
+
+/*
  * Defines for 64 bit fcntl locks.
  */
 
@@ -411,9 +423,11 @@
 #endif
 
 #if defined(HAVE_LONGLONG)
-#define SMB_BIG_INTEGER unsigned long long
+#define SMB_BIG_UINT unsigned long long
+#define SMB_BIG_INT long long
 #else
-#define SMB_BIG_INTEGER unsigned long
+#define SMB_BIG_UINT unsigned long
+#define SMB_BIG_INT long
 #endif
 
 #ifndef MIN

@@ -143,7 +143,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 {
   SMB_STRUCT_STAT st1;
   int mask=0;
-  int tmp;
+  mode_t tmp;
   mode_t unixmode;
 
   if (!st) {

@@ -586,7 +586,6 @@ static struct parm_struct parm_table[] =
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL,  0},
 
   {"Tuning Options", P_SEP, P_SEPARATOR},
-  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  0},
   {"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL,   NULL,  0},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL,   NULL,  0},
   {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
@@ -685,17 +684,18 @@ static struct parm_struct parm_table[] =
 
   {"WINS Options", P_SEP, P_SEPARATOR},
   {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL,   NULL,  0},
-  {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL,  0},
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL,   NULL,  FLAG_BASIC},
+  {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
 
   {"Locking Options", P_SEP, P_SEPARATOR},
+  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  0},
+  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_GLOBAL},
+  {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
+  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_GLOBAL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_GLOBAL},
-  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
-  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
-  {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
 
 #ifdef WITH_LDAP
   {"Ldap Options", P_SEP, P_SEPARATOR},

@@ -444,13 +444,12 @@ static void open_file(files_struct *fsp,connection_struct *conn,
   if ((fd_ptr->fd >=0) && 
       conn->printer && lp_minprintspace(SNUM(conn))) {
     pstring dname;
-    int dum1,dum2,dum3;
+    SMB_BIG_UINT dum1,dum2,dum3;
     char *p;
     pstrcpy(dname,fname);
     p = strrchr(dname,'/');
     if (p) *p = 0;
-    if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
-	lp_minprintspace(SNUM(conn))) {
+    if (sys_disk_free(dname,&dum1,&dum2,&dum3) < (SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
       if(fd_attempt_close(fd_ptr) == 0)
         dos_unlink(fname);
       fsp->fd_ptr = 0;
@@ -957,7 +956,7 @@ dev = %x, inode = %.0f\n", oplock_request, fname, (unsigned int)dev, (double)ino
  Open a directory from an NT SMB call.
 ****************************************************************************/
 int open_directory(files_struct *fsp,connection_struct *conn,
-		   char *fname, int smb_ofun, int unixmode, int *action)
+		   char *fname, int smb_ofun, mode_t unixmode, int *action)
 {
 	extern struct current_user current_user;
 	SMB_STRUCT_STAT st;

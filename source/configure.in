@@ -550,6 +550,26 @@ AC_ARG_WITH(netatalk,
 AC_CHECKING(how to get filesystem space usage)
 space=no
 
+# Test for statvfs64.
+if test $space = no; then
+  # SVR4
+  AC_CACHE_CHECK([statvfs64 function (SVR4)], fu_cv_sys_stat_statvfs64,
+  [AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/statvfs.h>
+  main ()
+  {
+    struct statvfs64 fsd;
+    exit (statfs64 (".", &fsd));
+  }],
+  fu_cv_sys_stat_statvfs64=yes,
+  fu_cv_sys_stat_statvfs64=no)])
+  if test $fu_cv_sys_stat_statvfs64 = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATVFS64)
+  fi
+fi
+
 # Perform only the link test since it seems there are no variants of the
 # statvfs function.  This check is more than just AC_CHECK_FUNCS(statvfs)
 # because that got a false positive on SCO OSR5.  Adding the declaration

@@ -179,6 +179,19 @@ int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
+ An statvfs() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_statvfs( const char *path, SMB_STRUCT_STATVFS *fsd)
+{
+#if defined(STAT_STATVFS64)
+  return statvfs64(path, fsd);
+#else
+  return statvfs(path, fsd);
+#endif
+}
+
+/*******************************************************************
  An ftruncate() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 

@@ -399,21 +399,21 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 }
 
 /*************************************************************************
- Return the current position in the smbpasswd list as an SMB_BIG_INTEGER
+ Return the current position in the smbpasswd list as an SMB_BIG_UINT.
  This must be treated as an opaque token.
 *************************************************************************/
 
-static SMB_BIG_INTEGER getsmbfilepwpos(void *vp)
+static SMB_BIG_UINT getsmbfilepwpos(void *vp)
 {
-  return (SMB_BIG_INTEGER)sys_ftell((FILE *)vp);
+  return (SMB_BIG_UINT)sys_ftell((FILE *)vp);
 }
 
 /*************************************************************************
- Set the current position in the smbpasswd list from an SMB_BIG_INTEGER.
+ Set the current position in the smbpasswd list from an SMB_BIG_UINT.
  This must be treated as an opaque token.
 *************************************************************************/
 
-static BOOL setsmbfilepwpos(void *vp, SMB_BIG_INTEGER tok)
+static BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok)
 {
   return !sys_fseek((FILE *)vp, (SMB_OFF_T)tok, SEEK_SET);
 }

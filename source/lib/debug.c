@@ -204,7 +204,7 @@ void reopen_logs( void )
 
     if( !strcsequal( fname, debugf ) || !dbf || !file_exist( debugf, NULL ) )
       {
-      int oldumask = umask( 022 );
+      mode_t oldumask = umask( 022 );
 
       pstrcpy( debugf, fname );
       if( dbf )
@@ -314,7 +314,7 @@ va_dcl
     {
     if( !dbf )
       {
-      int oldumask = umask( 022 );
+      mode_t oldumask = umask( 022 );
 
       if( append_log )
         dbf = fopen( debugf, "a" );

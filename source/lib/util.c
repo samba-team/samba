@@ -1089,9 +1089,9 @@ trim the specified elements off the front and back of a string
 BOOL trim_string(char *s,char *front,char *back)
 {
   BOOL ret = False;
-  int front_len = (front && *front) ? strlen(front) : 0;
-  int back_len = (back && *back) ? strlen(back) : 0;
-  int s_len;
+  size_t front_len = (front && *front) ? strlen(front) : 0;
+  size_t back_len = (back && *back) ? strlen(back) : 0;
+  size_t s_len;
 
   while (front_len && strncmp(s, front, front_len) == 0)
   {
