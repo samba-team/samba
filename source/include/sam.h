@@ -51,7 +51,7 @@ int sam_version(void)\
 typedef struct sam_domain_handle {
 	TALLOC_CTX *mem_ctx;
 	uint32 access_granted;
-	struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
+	const struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
 	void (*free_fn)(struct sam_domain_handle **);
 	struct domain_data {
 		DOM_SID sid; /*SID of the domain. Should not be changed */
@@ -75,7 +75,7 @@ typedef struct sam_domain_handle {
 typedef struct sam_account_handle {
 	TALLOC_CTX *mem_ctx;
 	uint32 access_granted;
-	struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
+	const struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
 	void (*free_fn)(struct sam_account_handle **);
 	struct sam_account_data {
 		uint32 init_flag;
@@ -115,7 +115,7 @@ typedef struct sam_account_handle {
 typedef struct sam_group_handle {
 	TALLOC_CTX *mem_ctx;
 	uint32 access_granted;
-	struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
+	const struct sam_methods *current_sam_methods; /* sam_methods creating this handle */
 	void (*free_fn)(struct sam_group_handle **);
 	struct sam_group_data {
 		char *group_name;
