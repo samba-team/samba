@@ -1234,8 +1234,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 
 	/* Create NTTIME structs */
 	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(sampw));
-	unix_to_nt_time (&logoff_time, 		pdb_get_logoff_time(sampw));
-	unix_to_nt_time (&kickoff_time, 	pdb_get_kickoff_time(sampw));
+	unix_to_nt_time (&logoff_time, 		TIME_T_MAX);
+	unix_to_nt_time (&kickoff_time, 	TIME_T_MAX);
 	unix_to_nt_time (&pass_last_set_time, 	pdb_get_pass_last_set_time(sampw));
 	unix_to_nt_time (&pass_can_change_time,	pdb_get_pass_can_change_time(sampw));
 	unix_to_nt_time (&pass_must_change_time,pdb_get_pass_must_change_time(sampw));
