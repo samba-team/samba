@@ -38,7 +38,22 @@ extern pstring global_myname;
  ******************************************************************/
 static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 {
-	struct smb_passwd *smb_pass;
+	POLICY_HND sam_pol;
+	POLICY_HND dom_pol;
+	POLICY_HND usr_pol;
+	SAM_USERINFO_CTR ctr;
+	uint32 user_rid = 0xffffffff;
+
+	uint32 status_sam = 0x0;
+	uint32 status_dom = 0x0;
+	uint32 status_usr = 0x0;
+	uint32 status_pwd = 0x0;
+
+	UNISTR2 uni_trust_acct;
+
+	ZERO_STRUCT(ctr);
+
+	make_unistr2(&uni_trust_acct, trust_acct, strlen(trust_acct));
 
 #if 0
     /*
@@ -58,26 +73,63 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	}
 #endif /* 0 */
 
+	/*
+	 * must do all this as root
+	 */
 	become_root(True);
-	smb_pass = getsmbpwnam(trust_acct);
+
+	status_sam = _samr_connect(NULL, 0x02000000, &sam_pol);
+	if (status_sam == 0x0)
+	{
+		status_dom = _samr_open_domain(&sam_pol, 0x02000000,
+		                               &global_sam_sid, &dom_pol);
+	}
+	if (status_dom == 0x0)
+	{
+		uint32 type;
+		uint32 num_rids;
+		uint32 num_types;
+
+		status_usr = _samr_lookup_names(&dom_pol, 1, 0x3e8, 1,
+		                                &uni_trust_acct,
+		                                &num_rids, &user_rid,
+		                                &num_types, &type);
+		if (type != SID_NAME_USER)
+		{
+			status_usr = NT_STATUS_ACCESS_DENIED;
+		}
+	}
+	if (status_usr == 0x0)
+	{
+		status_usr = _samr_open_user(&dom_pol, 0x02000000,
+		                             user_rid, &usr_pol);
+	}
+	if (status_usr == 0x0)
+	{
+		status_pwd = _samr_query_userinfo(&usr_pol, 0x12, &ctr);
+	}
+	if (status_usr == 0x0) _samr_close(&usr_pol);
+	if (status_dom == 0x0) _samr_close(&dom_pol);
+	if (status_sam == 0x0) _samr_close(&sam_pol);
+
+	/*
+	 * all done - now no longer need to be root
+	 */
 	unbecome_root(True);
 
-	if ((smb_pass) != NULL && !(smb_pass->acct_ctrl & ACB_DISABLED) &&
-        (smb_pass->smb_nt_passwd != NULL))
+	if (status_pwd == 0x0 && ctr.info.id12 != NULL)
 	{
-		memcpy(md4pw, smb_pass->smb_nt_passwd, 16);
+		memcpy(md4pw, ctr.info.id12->lm_pwd, 16);
 		dump_data(5, md4pw, 16);
 
-		return True;
-	}
-	if (strequal(trust_name, global_myname))
-	{
-		DEBUG(0,("get_md4pw: *** LOOPBACK DETECTED - USING NULL KEY ***\n"));
-		memset(md4pw, 0, 16);
+		free_samr_userinfo_ctr(&ctr);
 		return True;
 	}
 
-	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", trust_acct));
+	free_samr_userinfo_ctr(&ctr);
+
+	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n",
+	          trust_acct));
 	return False;
 }
 
@@ -282,11 +334,11 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 
 	/* create a server challenge for the client */
 	/* Set these to random values. */
-      generate_random_buffer(srv_chal->data, sizeof(srv_chal->data), False);
+	generate_random_buffer(srv_chal->data, sizeof(srv_chal->data), False);
 
 	/* copy the server credentials */
-	memcpy(dc.clnt_chal.data          , srv_chal->data, sizeof(srv_chal->data));
-	memcpy(dc.clnt_cred.challenge.data, srv_chal->data, sizeof(srv_chal->data));
+	memcpy(dc.srv_chal.data          , srv_chal->data, sizeof(srv_chal->data));
+	memcpy(dc.srv_cred.challenge.data, srv_chal->data, sizeof(srv_chal->data));
 
 	bzero(dc.sess_key, sizeof(dc.sess_key));
 

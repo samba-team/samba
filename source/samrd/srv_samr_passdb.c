@@ -1646,7 +1646,12 @@ static BOOL get_user_info_12(SAM_USER_INFO_12 *id12, uint32 user_rid)
 		return False;
 	}
 
-	DEBUG(3,("User:[%s]\n", sam_pass->nt_name));
+	DEBUG(3,("User:[%s] %x\n", sam_pass->nt_name, sam_pass->acct_ctrl));
+
+	if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DISABLED))
+	{
+		return False;
+	}
 
 	make_sam_user_info12(id12,
 	                     sam_pass->smb_passwd,

@@ -289,8 +289,26 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		rpc_server/srv_netlog.o \
 		rpc_server/srv_pipe_netsec.o \
 		rpc_server/srv_lookup.o \
+		samrd/srv_samr_passdb.o \
 		lib/passcheck.o \
 		smbd/chgpasswd.o
+
+NETLOGONTDBD_OBJ1 = netlogond/netlogond.o \
+		netlogond/creds_db.o \
+		netlogond/srv_netlogon_nt.o \
+		rpc_server/srv_netlog.o \
+		rpc_server/srv_pipe_netsec.o \
+		rpc_server/srv_lookup.o \
+		lib/passcheck.o \
+		smbd/chgpasswd.o \
+		samrd/srv_samr_tdb_init.o \
+		samrd/srv_samr_dom_tdb.o \
+		samrd/srv_samr_sam_tdb.o \
+		samrd/srv_samr_usr_tdb.o \
+		samrd/srv_samr_grp_tdb.o \
+		samrd/srv_samr_als_tdb.o \
+		samrd/srv_samr_tdb.o
+
 
 SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
 		rpc_server/srv_pipe_ntlmssp.o \

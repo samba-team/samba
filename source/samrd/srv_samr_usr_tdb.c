@@ -451,6 +451,10 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
+			if (IS_BITS_SET_ALL(usr.acct_ctrl, ACB_DISABLED))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
 			make_sam_user_info12(ctr->info.id12,
 			                     usr.lm_pwd, usr.nt_pwd); 
 			break;
