@@ -44,6 +44,8 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	ADS_MODLIST mods;
 	ADS_STATUS status;
 	char *upn, *new_dn, *name, *controlstr;
+	const char *objectClass[] = {"top", "person", "organizationalPerson",
+				     "user", NULL};
 
 	if (fullname && *fullname) name = fullname;
 	else name = user;
@@ -63,14 +65,13 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	if (!(mods = ads_init_mods(ctx)))
 		goto done;
 
-	ads_mod_add(ctx, &mods, "cn", name);
-	ads_mod_add_var(ctx, &mods, LDAP_MOD_ADD, "objectClass", "top",
-			"person", "organizationalPerson", "user", NULL);
-	ads_mod_add(ctx, &mods, "userPrincipalName", upn);
-	ads_mod_add(ctx, &mods, "name", name);
-	ads_mod_add(ctx, &mods, "displayName", name);
-	ads_mod_add(ctx, &mods, "sAMAccountName", user);
-	ads_mod_add(ctx, &mods, "userAccountControl", controlstr);
+	ads_mod_str(ctx, &mods, "cn", name);
+	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
+	ads_mod_str(ctx, &mods, "userPrincipalName", upn);
+	ads_mod_str(ctx, &mods, "name", name);
+	ads_mod_str(ctx, &mods, "displayName", name);
+	ads_mod_str(ctx, &mods, "sAMAccountName", user);
+	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	status = ads_gen_add(ads, new_dn, mods);
 
  done:
@@ -85,6 +86,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	ADS_MODLIST mods;
 	ADS_STATUS status;
 	char *new_dn;
+	const char *objectClass[] = {"top", "group", NULL};
 
 	if (!(ctx = talloc_init_named("ads_add_group_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -97,13 +99,12 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	if (!(mods = ads_init_mods(ctx)))
 		goto done;
 
-	ads_mod_add(ctx, &mods, "cn", group);
-	ads_mod_add_var(ctx, &mods, LDAP_MOD_ADD, "objectClass", "top",
-			"group", NULL);
-	ads_mod_add(ctx, &mods, "name", group);
+	ads_mod_str(ctx, &mods, "cn", group);
+	ads_mod_strlist(ctx, &mods, "objectClass",objectClass);
+	ads_mod_str(ctx, &mods, "name", group);
 	if (comment)
-		ads_mod_add(ctx, &mods, "description", comment);
-	ads_mod_add(ctx, &mods, "sAMAccountName", group);
+		ads_mod_str(ctx, &mods, "description", comment);
+	ads_mod_str(ctx, &mods, "sAMAccountName", group);
 	status = ads_gen_add(ads, new_dn, mods);
 
  done:

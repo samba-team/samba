@@ -30,6 +30,11 @@
  *
  * The routines contained here should do the necessary ldap calls for
  * ads setups.
+ * 
+ * Important note: attribute names passed into ads_ routines must
+ * already be in UTF-8 format.  We do not convert them because in almost
+ * all cases, they are just ascii (which is represented with the same
+ * codepoints in UTF-8).  This may have to change at some point
  **/
 
 /**
@@ -112,8 +117,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
- * @param exp Search expression
- * @param attrs Attributes to retrieve
+ * @param exp Search expression - specified in local charset
+ * @param attrs Attributes to retrieve - specified in utf8 or ascii
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @param count Number of entries retrieved on this page
  * @param cookie The paged results cookie to be returned on subsequent calls
@@ -124,23 +129,16 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 			       const char **attrs, void **res, 
 			       int *count, void **cookie)
 {
-	int rc;
-	int version;
-	LDAPControl PagedResults; 
-	LDAPControl NoReferrals;
+	int rc, i, version;
+	char *utf8_exp, *utf8_path;
+	LDAPControl PagedResults, NoReferrals, *controls[3], **rcontrols; 
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
-	LDAPControl *controls[3];
-	LDAPControl **rcontrols;
-	int i;
 
 	*res = NULL;
 
+	/* Paged results only available on ldap v3 or later */
 	ldap_get_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-
-		/* Paged results only available on ldap v3 or later, so check
-		   version first before using, since at connect time we're
-		   only v2.  Not sure exactly why... */
 	if (version < LDAP_VERSION3) 
 		return ADS_ERROR(LDAP_NOT_SUPPORTED);
 
@@ -171,20 +169,29 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	*res = NULL;
 
 	/* we need to disable referrals as the openldap libs don't
-	   seem to handle them correctly. They result in the result
-	   record containing the server control being removed from the
-	   result list (tridge) 
+	   handle them and paged results at the same time.  Using them
+	   together results in the result record containing the server 
+	   page control being removed from the result list (tridge/jmcd) 
 	
 	   leaving this in despite the control that says don't generate
 	   referrals, in case the server doesn't support it (jmcd)
 	*/
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_ext_s(ads->ld, bind_path, scope, exp, 
+	if (!push_utf8_allocate((void **) &utf8_exp, exp))
+		utf8_exp = exp;
+	if (!push_utf8_allocate((void **) &utf8_path, bind_path))
+		utf8_path = bind_path;
+
+	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp, 
 			       (char **) attrs, 0, controls, NULL,
 			       NULL, LDAP_NO_LIMIT,
 			       (LDAPMessage **)res);
 
+	if (utf8_exp != exp)
+		SAFE_FREE(utf8_exp);
+	if (utf8_path != bind_path)
+		SAFE_FREE(utf8_path);
 	ber_free(cookie_be, 1);
 	ber_bvfree(cookie_bv);
 
@@ -262,7 +269,6 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 			next = ads_next_entry(ads, msg);
 			ldap_add_result_entry((LDAPMessage **)res, msg);
 		}
-
 		/* note that we do not free res2, as the memory is now
                    part of the main returned list */
 	}
@@ -276,15 +282,15 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
- * @param exp Search expression
- * @param attrs Attributes to retrieve
+ * @param exp Search expression - specified in local charset
+ * @param attrs Attributes to retrieve - specified in UTF-8 or ascii
  * @param fn Function which takes attr name, values list, and data_area
  * @param data_area Pointer which is passed to function on each call
  * @return status of search
  **/
 ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				int scope, const char *exp, const char **attrs,
-				void(*fn)(char *, void **, void *), 
+				BOOL(*fn)(char *, void **, void *), 
 				void *data_area)
 {
 	void *cookie = NULL;
@@ -329,16 +335,25 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 {
 	struct timeval timeout;
 	int rc;
+	char *utf8_exp, *utf8_path;
 
 	timeout.tv_sec = ADS_SEARCH_TIMEOUT;
 	timeout.tv_usec = 0;
 	*res = NULL;
 
-	rc = ldap_search_ext_s(ads->ld, 
-			       bind_path, scope,
-			       exp, (char **) attrs, 0, NULL, NULL, 
+	if (!push_utf8_allocate((void **) &utf8_exp, exp))
+		utf8_exp = exp;
+	if (!push_utf8_allocate((void **) &utf8_path, bind_path))
+		utf8_path = bind_path;
+
+	rc = ldap_search_ext_s(ads->ld, utf8_path, scope,
+			       utf8_exp, (char **) attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
+	if (utf8_exp != exp)
+		SAFE_FREE(utf8_exp);
+	if (utf8_path != bind_path)
+		SAFE_FREE(utf8_path);
 	if (rc == LDAP_SIZELIMIT_EXCEEDED) {
 		DEBUG(3,("Warning! sizelimit exceeded in ldap. Truncating.\n"));
 		rc = 0;
@@ -395,8 +410,7 @@ void ads_msgfree(ADS_STRUCT *ads, void *msg)
  **/
 void ads_memfree(ADS_STRUCT *ads, void *mem)
 {
-	if (!mem) return;
-	ldap_memfree(mem);
+	SAFE_FREE(mem);
 }
 
 /**
@@ -407,7 +421,12 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
  **/
 char *ads_get_dn(ADS_STRUCT *ads, void *res)
 {
-	return ldap_get_dn(ads->ld, res);
+	char *utf8_dn, *unix_dn;
+
+	utf8_dn = ldap_get_dn(ads->ld, res);
+	pull_utf8_allocate(&unix_dn, utf8_dn);
+	ldap_memfree(utf8_dn);
+	return unix_dn;
 }
 
 /**
@@ -431,25 +450,6 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 	return status;
 }
 
-/*
-  duplicate an already-assembled list of values so that it can be
-  freed as part of the standard msgfree call
-*/
-static char **ads_dup_values(TALLOC_CTX *ctx, char **values)
-{
-	char **newvals;
-	int i;
-#define ADS_MAX_NUM_VALUES 32
-
-	for (i=0; values[i] && i<ADS_MAX_NUM_VALUES; i++);
-	if (!(newvals = talloc_zero(ctx, (i+1)*sizeof(char *))))
-		return NULL;
-	for (i=0; values[i] && i<ADS_MAX_NUM_VALUES; i++)
-		newvals[i] = values[i];
-	newvals[i] = NULL;
-	return newvals;
-}
-
 /**
  * Initialize a list of mods to be used in a modify request
  * @param ctx An initialized TALLOC_CTX
@@ -470,13 +470,98 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 }
 
 /*
+  Duplicate a struct berval into talloc'ed memory
+ */
+static struct berval *dup_berval(TALLOC_CTX *ctx, struct berval *in_val)
+{
+	struct berval *value;
+
+	if (!in_val) return NULL;
+
+	value = talloc_zero(ctx, sizeof(struct berval));
+	if (in_val->bv_len == 0) return value;
+
+	value->bv_len = in_val->bv_len;
+	value->bv_val = talloc_memdup(ctx, in_val->bv_val, in_val->bv_len);
+	return value;
+}
+
+/*
+  Make a values list out of an array of (struct berval *)
+ */
+static struct berval **ads_dup_values(TALLOC_CTX *ctx, struct berval **in_vals)
+{
+	void **values;
+	int i;
+       
+	if (!in_vals) return NULL;
+	for (i=0; in_vals[i]; i++); /* count values */
+	values = talloc_zero(ctx, (i+1)*sizeof(struct berval *));
+	if (!values) return NULL;
+
+	for (i=0; in_vals[i]; i++) {
+		values[i] = dup_berval(ctx, in_vals[i]);
+	}
+	return values;
+}
+
+/*
+  UTF8-encode a values list out of an array of (char *)
+ */
+static char **ads_push_strvals(TALLOC_CTX *ctx, char **in_vals)
+{
+	void **values;
+	int i;
+       
+	if (!in_vals) return NULL;
+	for (i=0; in_vals[i]; i++); /* count values */
+	values = talloc_zero(ctx, (i+1)*sizeof(char *));
+	if (!values) return NULL;
+
+	for (i=0; in_vals[i]; i++) {
+		push_utf8_talloc(ctx, &values[i], in_vals[i]);
+	}
+	return values;
+}
+
+/*
+  Pull a (char *) array out of a UTF8-encoded values list
+ */
+static char **ads_pull_strvals(TALLOC_CTX *ctx, char **in_vals)
+{
+	void **values;
+	int i;
+       
+	if (!in_vals) return NULL;
+	for (i=0; in_vals[i]; i++); /* count values */
+	values = talloc_zero(ctx, (i+1)*sizeof(char *));
+	if (!values) return NULL;
+
+	for (i=0; in_vals[i]; i++) {
+		pull_utf8_talloc(ctx, &values[i], in_vals[i]);
+	}
+	return values;
+}
+
+/*
   add an attribute to the list, with values list already constructed
 */
 static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-				  int mod_op, const char *name, char **values)
+				  int mod_op, const char *name, void **invals)
 {
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
+	void **values;
+
+	if (!invals) {
+		values = NULL;
+		mod_op = LDAP_MOD_DELETE;
+	} else {
+		if (mod_op & LDAP_MOD_BVALUES)
+			values = ads_dup_values(ctx, invals);
+		else
+			values = ads_push_strvals(ctx, invals);
+	}
 
 	/* find the first empty slot */
 	for (curmod=0; modlist[curmod] && modlist[curmod] != (LDAPMod *) -1;
@@ -497,213 +582,62 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (mod_op & LDAP_MOD_BVALUES)
 		modlist[curmod]->mod_bvalues = (struct berval **) values;
 	else
-		modlist[curmod]->mod_values = values;
+		modlist[curmod]->mod_values = (char **) values;
 	modlist[curmod]->mod_op = mod_op;
 	return ADS_ERROR(LDAP_SUCCESS);
 }
 
 /**
- * Add an already-constructed list of values to a mod list for an ADD
+ * Add a single string value to a mod list
  * @param ctx An initialized TALLOC_CTX
  * @param mods An initialized ADS_MODLIST
  * @param name The attribute name to add
- * @param values Constructed values list to add
+ * @param val The value to add - NULL means DELETE
  * @return ADS STATUS indicating success of add
  **/
-ADS_STATUS ads_mod_add_list(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-			    char *name, char **values)
-{
-	char **newvals = ads_dup_values(ctx, values);
-	if (newvals)
-		return ads_modlist_add(ctx, mods, LDAP_MOD_ADD, name, newvals);
-	else
-		return ADS_ERROR(LDAP_NO_MEMORY);
-}
-
-/**
- * Add an already-constructed list of values to a mod list for a REPLACE
- * @param ctx An initialized TALLOC_CTX
- * @param mods An initialized ADS_MODLIST
- * @param name The attribute name to add
- * @param values Constructed values list to add
- * @return ADS STATUS indicating success of add
- **/
-ADS_STATUS ads_mod_repl_list(TALLOC_CTX *ctx, ADS_MODLIST *mods,
-			     char *name, char **values)
-{
-	char **newvals;
-	if (values && *values) {
-		if (!(newvals = ads_dup_values(ctx, values)))
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		else
-			return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE,
-						name, newvals);
-	}
-	else
-		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
-}
-
-/**
- * Add any number of string values to a mod list - for ADD or REPLACE
- * @param ctx An initialized TALLOC_CTX
- * @param mods An initialized ADS_MODLIST
- * @param mod_op Operation to perform (LDAP_MOD_ADD | LDAP_MOD_REPLACE)
- * @param name The attribute name to add
- * @param ... Any number of values, in (char *) form
- * @return ADS STATUS indicating success of add
- **/
-ADS_STATUS ads_mod_add_var(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-			   int mod_op, const char *name, ...)
-{
-	va_list ap;
-	int num_vals, i, do_op;
-	char *value, **values;
-
-	/* count the number of values */
-	va_start(ap, name);
-	for (num_vals=0; va_arg(ap, char *); num_vals++);
-	va_end(ap);
-
-	if (num_vals) {
-		if (!(values = talloc_zero(ctx, sizeof(char *)*(num_vals+1))))
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		va_start(ap, name);
-		for (i=0; (value = (char *) va_arg(ap, char *)) &&
-			     i < num_vals; i++)
-			values[i] = value;
-		va_end(ap);
-		values[i] = NULL;
-		do_op = mod_op;
-	} else {
-		do_op = LDAP_MOD_DELETE;
-		values = NULL;
-	}
-	return ads_modlist_add(ctx, mods, do_op, name, values);
-}
-
-/**
- * Add any number of ber values to a mod list - for ADD or REPLACE
- * @param ctx An initialized TALLOC_CTX
- * @param mods An initialized ADS_MODLIST
- * @param mod_op Operation to perform (LDAP_MOD_ADD | LDAP_MOD_REPLACE)
- * @param name The attribute name to add
- * @param ... Any number of values, in (struct berval *) form
- * @return ADS STATUS indicating success of add
- **/
-ADS_STATUS ads_mod_add_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-			   int mod_op, const char *name, ...)
-{
-	va_list ap;
-	int num_vals, i, do_op;
-	char *value, **values;
-
-	/* count the number of values */
-	va_start(ap, name);
-	for (num_vals=0; va_arg(ap, struct berval *); num_vals++);
-	va_end(ap);
-
-	if (num_vals) {
-		if (!(values = talloc_zero(ctx, sizeof(struct berval) * 
-					   (num_vals + 1))))
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		va_start(ap, name);
-		for (i=0; (value = (char *) va_arg(ap, char *)) &&
-			     i < num_vals; i++)
-			values[i] = value;
-		va_end(ap);
-		values[i] = NULL;
-		do_op = mod_op;
-	} else {
-		do_op = LDAP_MOD_DELETE;
-		values = NULL;
-	}
-	do_op |= LDAP_MOD_BVALUES;
-	return ads_modlist_add(ctx, mods, do_op, name, values);
-}
-
-/**
- * Add a single string value to a mod list - for REPLACE
- * @param ctx An initialized TALLOC_CTX
- * @param mods An initialized ADS_MODLIST
- * @param name The attribute name to replace
- * @param val The value to add
- * @return ADS STATUS indicating success of add
- **/
-ADS_STATUS ads_mod_repl(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-			char *name, char *val)
-{
-	if (val)
-		return ads_mod_add_var(ctx, mods, LDAP_MOD_REPLACE,
-				       name, val, NULL);
-	else
-		return ads_mod_add_var(ctx, mods, LDAP_MOD_DELETE, name, NULL);
-}
-
-/**
- * Add a single string value to a mod list - for ADD
- * @param ctx An initialized TALLOC_CTX
- * @param mods An initialized ADS_MODLIST
- * @param name The attribute name to add
- * @param val The value to add
- * @return ADS STATUS indicating success of add
- **/
-ADS_STATUS ads_mod_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const char *val)
 {
-	return ads_mod_add_var(ctx, mods, LDAP_MOD_ADD, name, val, NULL);
+	char *values[2] = {val, NULL};
+	if (!val)
+		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
+	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
+			       (void **) values);
 }
 
 /**
- * Add a single berval value to a mod list - for ADD
+ * Add an array of string values to a mod list
  * @param ctx An initialized TALLOC_CTX
  * @param mods An initialized ADS_MODLIST
  * @param name The attribute name to add
- * @param size The size of of the value
- * @param val The value to add
+ * @param vals The array of string values to add - NULL means DELETE
  * @return ADS STATUS indicating success of add
  **/
-ADS_STATUS ads_mod_add_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
-			   char *name, size_t size, char *val)
+ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
+			   const char *name, const char **vals)
 {
-	struct berval *bval = NULL;
-
-	if (!(bval = talloc_zero(ctx, sizeof(struct berval *))))
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	if (!(bval->bv_val = talloc_zero(ctx, sizeof(char *))))
-		return ADS_ERROR(LDAP_NO_MEMORY);
-
-	bval->bv_val = val;
-	bval->bv_len = size;
-	return ads_mod_add_ber(ctx, mods, LDAP_MOD_ADD, name, bval, NULL);
+	if (!vals)
+		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
+	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
+			       (void **) vals);
 }
 
 /**
- * Add a single berval value to a mod list - for REPLACE
+ * Add a single ber-encoded value to a mod list
  * @param ctx An initialized TALLOC_CTX
  * @param mods An initialized ADS_MODLIST
- * @param name The attribute name to replace
- * @param size The size of of the value
- * @param val The value to add
+ * @param name The attribute name to add
+ * @param val The value to add - NULL means DELETE
  * @return ADS STATUS indicating success of add
  **/
-ADS_STATUS ads_mod_repl_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
-			    const char *name, size_t size, char *val)
+ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+		       const char *name, const struct berval *val)
 {
-	struct berval *bval = NULL;
-
-	if (!(bval = talloc_zero(ctx, sizeof(struct berval *))))
-		return ADS_ERROR(LDAP_NO_MEMORY);
-
+	struct berval *values[2] = {val, NULL};
 	if (!val)
-		return ads_mod_add_ber(ctx, mods, LDAP_MOD_DELETE, name, NULL);
-	else {
-		if (!(bval->bv_val = talloc_zero(ctx, sizeof(char *))))
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		bval->bv_val = val;
-		bval->bv_len = size;
-		return ads_mod_add_ber(ctx, mods, LDAP_MOD_REPLACE, name, 
-				       bval, NULL);
-	}
+		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
+	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
+			       name, (void **) values);
 }
 
 /**
@@ -716,6 +650,7 @@ ADS_STATUS ads_mod_repl_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 {
 	int ret,i;
+	char *utf8_dn = NULL;
 	/* 
 	   this control is needed to modify that contains a currently 
 	   non-existent attribute (but allowable for the object) to run
@@ -729,12 +664,15 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
 
+	push_utf8_allocate(&utf8_dn, mod_dn);
+
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
-	ret = ldap_modify_ext_s(ads->ld, mod_dn, (LDAPMod **) mods,
-				controls, NULL);
+	ret = ldap_modify_ext_s(ads->ld, utf8_dn ? utf8_dn : mod_dn,
+				(LDAPMod **) mods, controls, NULL);
+	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -747,14 +685,19 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
  **/
 ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 {
-	int i;
+	int ret, i;
+	char *utf8_dn = NULL;
 
+	push_utf8_allocate(&utf8_dn, new_dn);
+	
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
 
-	return ADS_ERROR(ldap_add_s(ads->ld, new_dn, mods));
+	ret = ldap_add_s(ads->ld, utf8_dn ? utf8_dn : new_dn, mods);
+	SAFE_FREE(utf8_dn);
+	return ADS_ERROR(ret);
 }
 
 /**
@@ -765,7 +708,11 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
  **/
 ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 {
-	return ADS_ERROR(ldap_delete(ads->ld, del_dn));
+	int ret;
+	char *utf8_dn = NULL;
+	push_utf8_allocate(&utf8_dn, del_dn);
+	ret = ldap_delete(ads->ld, utf8_dn ? utf8_dn : del_dn);
+	return ADS_ERROR(ret);
 }
 
 /**
@@ -797,6 +744,8 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	char *ou_str;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
+	const char *objectClass[] = {"top", "person", "organizationalPerson",
+				     "user", "computer", NULL};
 
 	if (!(ctx = talloc_init_named("machine_account")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -824,17 +773,15 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	if (!(mods = ads_init_mods(ctx)))
 		goto done;
 	
-	ads_mod_add(ctx, &mods, "cn", hostname);
-	ads_mod_add(ctx, &mods, "sAMAccountName", samAccountName);
-	ads_mod_add_var(ctx, &mods, LDAP_MOD_ADD, "objectClass",
-			"top", "person", "organizationalPerson",
-			"user", "computer", NULL);
-	ads_mod_add(ctx, &mods, "userPrincipalName", host_upn);
-	ads_mod_add(ctx, &mods, "servicePrincipalName", host_spn);
-	ads_mod_add(ctx, &mods, "dNSHostName", hostname);
-	ads_mod_add(ctx, &mods, "userAccountControl", controlstr);
-	ads_mod_add(ctx, &mods, "operatingSystem", "Samba");
-	ads_mod_add(ctx, &mods, "operatingSystemVersion", VERSION);
+	ads_mod_str(ctx, &mods, "cn", hostname);
+	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
+	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
+	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
+	ads_mod_str(ctx, &mods, "servicePrincipalName", host_spn);
+	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
+	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
+	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
+	ads_mod_str(ctx, &mods, "operatingSystemVersion", VERSION);
 
 	ads_gen_add(ads, new_dn, mods);
 	ret = ads_set_machine_sd(ads, hostname, new_dn);
@@ -918,33 +865,39 @@ static void dump_string(const char *field, struct berval **values)
   used for debugging
 */
 
-static void ads_dump_field(char *field, void **values, void *data_area)
+static BOOL ads_dump_field(char *field, void **values, void *data_area)
 {
 	struct {
 		char *name;
+		BOOL string;
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
-		{"objectGUID", dump_binary},
-		{"nTSecurityDescriptor", dump_sd},
-		{"objectSid", dump_sid},
-		{NULL, NULL}
+		{"objectGUID", False, dump_binary},
+		{"nTSecurityDescriptor", False, dump_sd},
+		{"objectSid", False, dump_sid},
+		{NULL, True, NULL}
 	};
 	int i;
 
 	if (!field) { /* must be end of an entry */
 		printf("\n");
-		return;
+		return False;
 	}
 
 	for (i=0; handlers[i].name; i++) {
 		if (StrCaseCmp(handlers[i].name, field) == 0) {
+			if (!values) /* first time, indicate string or not */
+				return handlers[i].string;
 			handlers[i].handler(field, (struct berval **) values);
 			break;
 		}
 	}
 	if (!handlers[i].name) {
+		if (!values) /* first time, indicate string conversion */
+			return True;
 		dump_string(field, (struct berval **) values);
 	}
+	return False;
 }
 
 /**
@@ -971,62 +924,56 @@ void ads_dump(ADS_STRUCT *ads, void *res)
  * @param data_area user-defined area to pass to function
  **/
 void ads_process_results(ADS_STRUCT *ads, void *res,
-			 void(*fn)(char *, void **, void *),
+			 BOOL(*fn)(char *, void **, void *),
 			 void *data_area)
 {
 	void *msg;
+	TALLOC_CTX *ctx;
+
+	if (!(ctx = talloc_init()))
+		return;
 
 	for (msg = ads_first_entry(ads, res); msg; 
 	     msg = ads_next_entry(ads, msg)) {
-		char *field;
+		char *utf8_field;
 		BerElement *b;
 	
-		for (field = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &b); 
-		     field;
-		     field = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, b)) {
-			struct berval **values;
-			
-			values = ldap_get_values_len(ads->ld, (LDAPMessage *)msg, field);
-			fn(field, (void **) values, data_area);
+		for (utf8_field=ldap_first_attribute(ads->ld,
+						     (LDAPMessage *)msg,&b); 
+		     utf8_field;
+		     utf8_field=ldap_next_attribute(ads->ld,
+						    (LDAPMessage *)msg,b)) {
+			struct berval **ber_vals;
+			char **str_vals, **utf8_vals;
+			char *field;
+			BOOL string; 
 
-			ldap_value_free_len(values);
-			ldap_memfree(field);
+			pull_utf8_talloc(ctx, (void **) &field, utf8_field);
+			string = fn(field, NULL, data_area);
+
+			if (string) {
+				utf8_vals = ldap_get_values(ads->ld,
+					       	 (LDAPMessage *)msg, field);
+				str_vals = ads_pull_strvals(ctx, utf8_vals);
+				fn(field, (void **) str_vals, data_area);
+				ldap_value_free(utf8_vals);
+			} else {
+				ber_vals = ldap_get_values_len(ads->ld, 
+						 (LDAPMessage *)msg, field);
+				fn(field, (void **) ber_vals, data_area);
+
+				ldap_value_free_len(ber_vals);
+			}
+			ldap_memfree(utf8_field);
 		}
 		ber_free(b, 0);
+		talloc_destroy_pool(ctx);
 		fn(NULL, NULL, data_area); /* completed an entry */
 
 	}
+	talloc_destroy(ctx);
 }
 
-/**
- * Walk through an entry, calling a function for each attribute found.
- *  The function receives a field name, a berval * array of values,
- *  and a data area passed through from the start.
- * @param ads connection to ads server
- * @param res Results to process
- * @param fn Function for processing each result
- * @param data_area user-defined area to pass to function
- **/
-void ads_process_entry(ADS_STRUCT *ads, void *msg,
-		       void(*fn)(ADS_STRUCT *, char *, void **, void *),
-		       void *data_area)
-{
-	char *field;
-	BerElement *b;
-	
-	for (field = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &b); 
-	     field;
-	     field = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, b)) {
-		struct berval **values;
-
-		values = ldap_get_values_len(ads->ld, (LDAPMessage *)msg, field);
-		fn(ads, field, (void **) values, data_area);
-
-		ldap_value_free_len(values);
-		ldap_memfree(field);
-	}
-	ber_free(b, 0);
-}
 /**
  * count how many replies are in a LDAPMessage
  * @param ads connection to ads server
@@ -1138,6 +1085,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	char           *exp     = 0;
 	size_t          sd_size = 0;
 	struct berval **bvals   = 0;
+	struct berval   bval = {0, NULL};
 	prs_struct      ps;
 	prs_struct      ps_wire;
 
@@ -1192,7 +1140,9 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 #endif
 	if (!(mods = ads_init_mods(ctx))) return ADS_ERROR(LDAP_NO_MEMORY);
 
-	ads_mod_repl_len(ctx, &mods, attrs[0], sd_size, prs_data_p(&ps_wire));
+	bval.bv_len = sd_size;
+	bval.bv_val = prs_data_p(&ps_wire);
+	ads_mod_ber(ctx, &mods, attrs[0], &bval);
 	ret = ads_gen_mod(ads, dn, mods);
 
 	prs_mem_free(&ps);
@@ -1274,12 +1224,18 @@ char *ads_pull_string(ADS_STRUCT *ads,
 {
 	char **values;
 	char *ret = NULL;
+	char *ux_string;
+	int rc;
 
 	values = ldap_get_values(ads->ld, msg, field);
 	if (!values) return NULL;
 	
 	if (values[0]) {
-		ret = talloc_strdup(mem_ctx, values[0]);
+		rc = pull_utf8_talloc(mem_ctx, (void **)&ux_string, 
+				      values[0]);
+		if (rc != -1)
+			ret = ux_string;
+		
 	}
 	ldap_value_free(values);
 	return ret;
