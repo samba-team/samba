@@ -52,7 +52,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
 static const char *default_structural_object = "account";
 static char *structural_object;
-static int samba_forwardable;
+static krb5_boolean samba_forwardable;
 
 /*
  *
