@@ -271,13 +271,11 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
   	<para>The next step is to join the domain. To do that use the 
 	<command>smbpasswd</command> program like this:  </para>
  
-	<para><command>smbpasswd -j DOMAIN -r PDC -U
-	Administrator</command></para>
+	<para><command>net join -S PDC -U Administrator</command></para>
  
 	<para>The username after the <parameter>-U</parameter> can be any
 	Domain user that has administrator privileges on the machine.
-	Substitute your domain name for "DOMAIN" and the name of your PDC
-	for "PDC".</para>
+	Substitute the name or IP of your PDC for "PDC".</para>
 
 	<para>Next copy <filename>libnss_winbind.so</filename> to 
 	<filename>/lib</filename> and <filename>pam_winbind.so
