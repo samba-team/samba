@@ -125,26 +125,19 @@ static int net_ads_user(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
-	int rescount;
-	void *cookie = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
 	
 	if (!(ads = ads_startup())) return -1;
 
-	do {
-		rc = ads_do_paged_search(ads, ads->bind_path, 
-					 LDAP_SCOPE_SUBTREE, 
-					 "(objectclass=user)", attrs, &res, 
-					 &rescount, &cookie);
+	rc = ads_do_search_all(ads, ads->bind_path, 
+			       LDAP_SCOPE_SUBTREE, 
+			       "(objectclass=user)", attrs, &res);
 
-		if (!ADS_ERR_OK(rc)) {
-			d_printf("ads_search: %s\n", ads_errstr(rc));
-			return -1;
-		}
-		ads_dump(ads, res);
-
-	} while (cookie);
-
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_search: %s\n", ads_errstr(rc));
+		return -1;
+	}
+	ads_dump(ads, res);
 	ads_destroy(&ads);
 	return 0;
 }
@@ -154,26 +147,19 @@ static int net_ads_group(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
-	int rescount;
-	void *cookie = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
 
 	if (!(ads = ads_startup())) return -1;
 
-	do {
-		rc = ads_do_paged_search(ads, ads->bind_path, 
-					 LDAP_SCOPE_SUBTREE, 
-					 "(objectclass=group)", attrs, &res, 
-					 &rescount, &cookie);
+	rc = ads_do_search_all(ads, ads->bind_path, 
+			       LDAP_SCOPE_SUBTREE, 
+			       "(objectclass=group)", attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_search: %s\n", ads_errstr(rc));
+		return -1;
+	}
 
-		if (!ADS_ERR_OK(rc)) {
-			d_printf("ads_search: %s\n", ads_errstr(rc));
-			return -1;
-		}
-		ads_dump(ads, res);
-
-	} while (cookie);
-
+	ads_dump(ads, res);
 	ads_destroy(&ads);
 	return 0;
 }
