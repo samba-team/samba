@@ -1,3 +1,13 @@
+2000-05-12  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_key_usage): add some more
+	* lib/krb5/fcache.c (erase_file): try to detect symlink games.
+	also call revoke.
+	* lib/krb5/changepw.c (krb5_change_password): remember to close
+	the socket on error
+
+	* kdc/main.c (main): also call sigterm on SIGTERM
+
 2000-05-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/config_file.c (krb5_config_vget_string_default,
