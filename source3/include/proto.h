@@ -480,8 +480,6 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  locking/locking.c  */
 
-BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
-void process_blocking_lock_queue(time_t t);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       uint32 count,uint32 offset, int lock_type);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
@@ -1898,6 +1896,13 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid);
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
 BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
+
+/*The following definitions come from  smbd/blocking.c  */
+
+BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
+void remove_pending_lock_requests_by_fid(files_struct *fsp);
+void remove_pending_lock_requests_by_mid(int mid);
+void process_blocking_lock_queue(time_t t);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 

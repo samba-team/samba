@@ -142,6 +142,8 @@ void close_file(files_struct *fsp, BOOL normal_close)
 		string_free(&fsp->fsp_name);
 	}
 
+	remove_pending_lock_requests_by_fid(fsp);
+
 	file_free(fsp);
 }
 
@@ -151,10 +153,6 @@ void close_file(files_struct *fsp, BOOL normal_close)
   
 void close_directory(files_struct *fsp)
 {
-	/* TODO - walk the list of pending
-	   change notify requests and free
-	   any pertaining to this fsp. */
-
 	remove_pending_change_notify_requests_by_fid(fsp);
 
 	/*

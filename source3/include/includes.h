@@ -329,6 +329,8 @@ extern int errno;
 #include "kanji.h"
 #include "charset.h"
 
+#include "nterr.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
