@@ -224,7 +224,7 @@ int krb4_getc(FILE *F)
     }
     if(bytes){
 	bytes--;
-	return data_buffer[index++];
+	return (unsigned char)data_buffer[index++];
     }
     return EOF;
 }
