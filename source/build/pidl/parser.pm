@@ -286,7 +286,8 @@ sub CheckArraySizes($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	if (util::has_property($e, "size_is")) {
+	if (!defined $e->{CONFORMANT_SIZE} && 
+	    util::has_property($e, "size_is")) {
 		my $size = find_size_var($e, util::array_size($e), $var_prefix);
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		check_null_pointer($size);
