@@ -12,7 +12,6 @@ docs/docbook/manpages/smbcontrol.1.sgml - Document -s, samsync, samrepl, pool-us
 docs/docbook/manpages/smb.conf.5.sgml - 'restrict anonymous' isn't documented properly
 docs/docbook/projdoc/DOMAIN_MEMBER.sgml - Needs update to 3.0
 docs/docbook/projdoc/ADS-HOWTO.sgml - seems outdated (it says we require 'ads server' when in ads mode, though that's not true, according to the manpages...)
-docs/docbook/projdoc/ENCRYPTION.sgml - contains useless old info about smbpasswd
 docs/docbook/projdoc/Integrating-with-Windows.sgml - Should slowly go a way. Contains a little bit information about wins, a little bit about domain membership, a little about winbind, etc
 docs/docbook/projdoc/NT_Security.sgml - probably outdated
 docs/docbook/projdoc/Diagnosis.sgml - Needs extension and updating
@@ -22,8 +21,8 @@ docs/docbook/projdoc/Samba-BDC-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Samba-LDAP-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Samba-PDC-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Speed.sgml - contains outdated and invalid information
-docs/docbook/projdoc/UNIX_INSTALL.sgml - Needs a lot of updating (swat, ADS, PDC, etc)
-docs/docbook/projdoc/printer_driver2.sgml - Needs integration with printing.sgml, still up to date?
+docs/docbook/projdoc/UNIX_INSTALL.sgml - Needs a lot of updating (swat, etc)
+docs/docbook/projdoc/printer_driver2.sgml - still up to date?
 docs/docbook/projdoc/security_level.sgml - information about ads and domain should be added (currently only contains pointers to the ads and domain_member docs)
 docs/docbook/projdoc/winbind.sgml - needs documentation for ADS
 docs/textdocs/CUPS-PrintingInfo.txt - needs to be converted to sgml - Kurt Pfeifle
