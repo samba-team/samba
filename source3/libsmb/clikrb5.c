@@ -27,8 +27,6 @@
 #define OID_SPNEGO "1 3 6 1 5 5 2"
 #define OID_KERBEROS5 "1 2 840 113554 1 2 2"
 
-#define CHECK_CALL(x) if (! x) goto failed
-
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
@@ -141,16 +139,16 @@ ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16],
 
 	memset(&data, 0, sizeof(data));
 
-	CHECK_CALL(asn1_write(&data, guid, 16));
-	CHECK_CALL(asn1_push_tag(&data,ASN1_APPLICATION(0)));
-	CHECK_CALL(asn1_write_OID(&data,OID_SPNEGO));
-	CHECK_CALL(asn1_push_tag(&data,ASN1_CONTEXT(0)));
-	CHECK_CALL(asn1_push_tag(&data,ASN1_SEQUENCE(0)));
+	asn1_write(&data, guid, 16);
+	asn1_push_tag(&data,ASN1_APPLICATION(0));
+	asn1_write_OID(&data,OID_SPNEGO);
+	asn1_push_tag(&data,ASN1_CONTEXT(0));
+	asn1_push_tag(&data,ASN1_SEQUENCE(0));
 
-	CHECK_CALL(asn1_push_tag(&data,ASN1_CONTEXT(0)));
-	CHECK_CALL(asn1_push_tag(&data,ASN1_SEQUENCE(0)));
+	asn1_push_tag(&data,ASN1_CONTEXT(0));
+	asn1_push_tag(&data,ASN1_SEQUENCE(0));
 	for (i=0; OIDs[i]; i++) {
-		CHECK_CALL(asn1_write_OID(&data,OIDs[i]));
+		asn1_write_OID(&data,OIDs[i]);
 	}
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
@@ -168,11 +166,11 @@ ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16],
 
 	asn1_pop_tag(&data);
 
-	return data;
+	if (data.has_error) {
+		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
+		asn1_free(&data);
+	}
 
-failed:
-	DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
-	asn1_free(&data);
 	return data;
 }
 
@@ -260,6 +258,11 @@ static ASN1_DATA gen_negTokenTarg(const char *OIDs[], ASN1_DATA blob)
 
 	asn1_pop_tag(&data);
 
+	if (data.has_error) {
+		DEBUG(1,("Failed to build negTokenTarg at offset %d\n", (int)data.ofs));
+		asn1_free(&data);
+	}
+
 	return data;
 }
 
@@ -278,6 +281,11 @@ static ASN1_DATA spnego_gen_krb5_wrap(DATA_BLOB ticket)
 	asn1_write_BOOLEAN(&data, 0);
 	asn1_write(&data, ticket.data, ticket.length);
 	asn1_pop_tag(&data);
+
+	if (data.has_error) {
+		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data.ofs));
+		asn1_free(&data);
+	}
 
 	return data;
 }
