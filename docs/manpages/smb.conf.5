@@ -990,7 +990,7 @@ parameter for details\&. Note that some are synonyms\&.
 \fBdirectory mode\fP
 .IP 
 .IP o 
-linf(\fBdirectory security mask\fP)(directorysecuritymask)
+\fBdirectory security mask\fP
 .IP 
 .IP o 
 \fBdont descend\fP
@@ -1063,6 +1063,9 @@ linf(\fBdirectory security mask\fP)(directorysecuritymask)
 .IP 
 .IP o 
 \fBinvalid users\fP
+.IP 
+.IP o 
+\fBlevel2 oplocks\fP
 .IP 
 .IP o 
 \fBlocking\fP
@@ -1576,7 +1579,14 @@ correctly\&.
 .IP o 
 \fBISO8859-5\fP Russian Cyrillic UNIX character set\&. The parameter
 \fBclient code page\fP \fIMUST\fP be set to code
-page 866 if the \fBcharacter set\fP parameter is set to ISO8859-2
+page 866 if the \fBcharacter set\fP parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly\&. 
+.IP 
+.IP o 
+\fBISO8859-7\fP Greek UNIX character set\&. The parameter
+\fBclient code page\fP \fIMUST\fP be set to code
+page 737 if the \fBcharacter set\fP parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly\&. 
 .IP 
@@ -2834,28 +2844,38 @@ It takes the standard substitutions, except \fB%u\fP,
 .IP 
 .IP "\fBinterfaces (G)\fP" 
 .IP 
-This option allows you to setup multiple network interfaces, so that
-Samba can properly handle browsing on all interfaces\&.
+This option allows you to override the default network interfaces list
+that Samba will use for browsing, name registration and other NBT
+traffic\&. By default Samba will query the kernel for the list of all
+active interfaces and use any interfaces except 127\&.0\&.0\&.1 that are
+broadcast capable\&.
 .IP 
-The option takes a list of ip/netmask pairs\&. The netmask may either be
-a bitmask, or a bitlength\&.
+The option takes a list of interface strings\&. Each string can be in
+any of the following forms:
+.IP 
+.IP o 
+a network interface name (such as eth0)\&. This may include
+shell-like wildcards so eth* will match any interface starting
+with the substring "eth"
+if() a IP address\&. In this case the netmask is determined
+from the list of interfaces obtained from the kernel
+if() a IP/mask pair\&. 
+if() a broadcast/mask pair\&. 
+.IP 
+The "mask" parameters can either be a bit length (such as 24 for a C
+class network) or a full netmask in dotted decmal form\&.
+.IP 
+The "IP" parameters above can either be a full dotted decimal IP
+address or a hostname which will be looked up via the OSes normal
+hostname resolution mechanisms\&.
 .IP 
 For example, the following line:
 .IP 
-\f(CWinterfaces = 192\&.168\&.2\&.10/24 192\&.168\&.3\&.10/24\fP
+\f(CWinterfaces = eth0 192\&.168\&.2\&.10/24 192\&.168\&.3\&.10/255\&.255\&.255\&.0\fP
 .IP 
-would configure two network interfaces with IP addresses 192\&.168\&.2\&.10
-and 192\&.168\&.3\&.10\&. The netmasks of both interfaces would be set to
-255\&.255\&.255\&.0\&.
-.IP 
-You could produce an equivalent result by using:
-.IP 
-\f(CWinterfaces = 192\&.168\&.2\&.10/255\&.255\&.255\&.0 192\&.168\&.3\&.10/255\&.255\&.255\&.0\fP
-.IP 
-if you prefer that format\&.
-.IP 
-If this option is not set then Samba will attempt to find a primary
-interface, but won\'t attempt to configure more than one interface\&.
+would configure three network interfaces corresponding to the eth0
+device and IP addresses 192\&.168\&.2\&.10 and 192\&.168\&.3\&.10\&. The netmasks of
+the latter two interfaces would be set to 255\&.255\&.255\&.0\&.
 .IP 
 See also \fB"bind interfaces only"\fP\&.
 .IP 
@@ -2924,6 +2944,9 @@ data consistency between SMB/CIFS, NFS and local file access (and is a
 This parameter defaults to \fI"On"\fP on systems that have the support,
 and \fI"off"\fP on systems that don\'t\&. You should never need to touch
 this parameter\&.
+.IP 
+See also the \fB"oplocks"\fP and \fB"level2 oplocks"\fP
+parameters\&.
 .IP 
 .IP "\fBldap filter (G)\fP" 
 .IP 
@@ -3015,6 +3038,46 @@ for an entry in the LDAP password database\&.
 .IP 
 \fBDefault:\fP
 \f(CW	empty string\&.\fP
+.IP 
+.IP "\fBlevel2 oplocks (S)\fP" 
+.IP 
+This parameter (new in Samba 2\&.0\&.5) controls whether Samba supports
+level2 (read-only) oplocks on a share\&. In Samba 2\&.0\&.4 this parameter
+defaults to "False" as the code is new, but will default to "True"
+in a later release\&.
+.IP 
+Level2, or read-only oplocks allow Windows NT clients that have an
+oplock on a file to downgrade from a read-write oplock to a read-only
+oplock once a second client opens the file (instead of releasing all
+oplocks on a second open, as in traditional, exclusive oplocks)\&. This
+allows all openers of the file that support level2 oplocks to cache
+the file for read-ahead only (ie\&. they may not cache writes or lock
+requests) and increases performance for many acesses of files that
+are not commonly written (such as application \&.EXE files)\&.
+.IP 
+Once one of the clients which have a read-only oplock writes to
+the file all clients are notified (no reply is needed or waited
+for) and told to break their oplocks to "none" and delete any
+read-ahead caches\&.
+.IP 
+It is recommended that this parameter be turned on to speed access
+to shared executables (and also to test the code :-)\&.
+.IP 
+For more discussions on level2 oplocks see the CIFS spec\&.
+.IP 
+Currently, if \fB"kernel oplocks"\fP are supported
+then level2 oplocks are not granted (even if this parameter is set
+to \f(CW"true"\fP)\&. Note also, the \fB"oplocks"\fP parameter must
+be set to "true" on this share in order for this parameter to have any
+effect\&.
+.IP 
+See also the \fB"oplocks"\fP and \fB"kernel oplocks"\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW level2 oplocks = False\fP
+.IP 
+\fBExample:\fP
+\f(CW level2 oplocks = True\fP
 .IP 
 .IP "\fBlm announce (G)\fP" 
 .IP 
@@ -4165,6 +4228,9 @@ by the underlying operating system\&. This allows data synchronization between
 all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process\&. See the \fBkernel oplocks\fP parameter
 for details\&.
+.IP 
+See also the \fB"kernel oplocks"\fP and
+\fB"level2 oplocks"\fP parameters\&.
 .IP 
 \fBDefault:\fP
 \f(CW	oplocks = True\fP

@@ -5,7 +5,7 @@ smbclient \- ftp-like client to access SMB/CIFS resources on servers
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbclient\fP servicename [password] [-s smb\&.conf] [-B IP addr] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-b buffersize] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
+\fBsmbclient\fP servicename [-s smb\&.conf] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-b buffersize] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -65,9 +65,6 @@ Samba configuration file, smb\&.conf\&. This file controls all aspects of
 the Samba setup on the machine and smbclient also needs to read this
 file\&.
 .IP 
-.IP "\fB-B IP addr\fP" 
-The IP address to use when sending a broadcast packet\&.
-.IP 
 .IP "\fB-O socket options\fP" 
 TCP socket options to set on the client
 socket\&. See the socket options
@@ -104,8 +101,7 @@ no WINS server has been specified this method will be ignored\&.
 listed in the \fBinterfaces\fP parameter
 in the smb\&.conf file\&. This is the least reliable of the name resolution
 methods as it depends on the target host being on a locally connected
-subnet\&. To specify a particular broadcast address the \fB-B\fP option 
-may be used\&.
+subnet\&. 
 .IP 
 .IP 
 If this parameter is not set then the name resolve order defined
