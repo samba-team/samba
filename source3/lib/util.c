@@ -939,39 +939,45 @@ static char *automount_lookup(char *user_name)
   char *nis_domain;     /* yp_get_default_domain inits this */
   char *nis_map = (char *)lp_nis_home_map_name();
 
-  if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
-  {
+  if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
     DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
     return last_value;
   }
 
   DEBUG(5, ("NIS Domain: %s\n", nis_domain));
 
-  if (!strcmp(user_name, last_key))
-  {
-    nis_result = last_value;
+  if (!strcmp(user_name, last_key)) {
+	nis_result = last_value;
     nis_result_len = strlen(last_value);
     nis_error = 0;
-  }
-  else
-  {
+
+  } else {
+
     if ((nis_error = yp_match(nis_domain, nis_map,
                               user_name, strlen(user_name),
-                              &nis_result, &nis_result_len)) != 0)
-    {
-      DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
+                              &nis_result, &nis_result_len)) == 0) {
+       if (!nis_error && nis_result_len >= sizeof(pstring)) {
+               nis_result_len = sizeof(pstring)-1;
+       }
+       fstrcpy(last_key, user_name);
+       strncpy(last_value, nis_result, nis_result_len);
+       last_value[nis_result_len] = '\0';
+        strip_mount_options(&last_value);
+
+    } else if(nis_error == YPERR_KEY) {
+
+    /* If Key lookup fails user home server is not in nis_map 
+       use default information for server, and home directory */
+       last_value[0] = 0;
+       DEBUG(3, ("YP Key not found:  while looking up \"%s\" in map \"%s\"\n", 
+                user_name, nis_map));
+       DEBUG(3, ("using defaults for server and home directory\n"));
+    } else {
+       DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
                yperr_string(nis_error), user_name, nis_map));
     }
-    if (!nis_error && nis_result_len >= sizeof(pstring))
-    {
-      nis_result_len = sizeof(pstring)-1;
-    }
-    fstrcpy(last_key, user_name);
-    strncpy(last_value, nis_result, nis_result_len);
-    last_value[nis_result_len] = '\0';
   }
 
-  strip_mount_options(&last_value);
 
   DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
