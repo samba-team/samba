@@ -2488,12 +2488,12 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
         AC_MSG_RESULT(yes)
 
-	WINBIND_TARGETS="\$(WINBIND_PROGS)"
-	WINBIND_STARGETS="\$(WINBIND_SPROGS)"
-	WINBIND_LTARGETS="\$(WINBIND_LPROGS)"
+	WINBIND_TARGETS="bin/wbinfo"
+	WINBIND_STARGETS="bin/winbindd"
+	WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
 	case "$with_pam" in
 		yes)
-			WINBIND_PAM_PROGS="\$(WINBIND_PAM_PROGS)"
+			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
 		;;
 	esac
 else
@@ -2510,7 +2510,7 @@ fi
 AC_SUBST(WINBIND_TARGETS)
 AC_SUBST(WINBIND_STARGETS)
 AC_SUBST(WINBIND_LTARGETS)
-AC_SUBST(WINBIND_PAM_PROGS)
+AC_SUBST(WINBIND_PAM_TARGETS)
 
 #################################################
 # Check to see if we should use the included popt 

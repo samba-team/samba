@@ -13066,12 +13066,12 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
         echo "$ac_t""yes" 1>&6
 
-	WINBIND_TARGETS="\$(WINBIND_PROGS)"
-	WINBIND_STARGETS="\$(WINBIND_SPROGS)"
-	WINBIND_LTARGETS="\$(WINBIND_LPROGS)"
+	WINBIND_TARGETS="bin/wbinfo"
+	WINBIND_STARGETS="bin/winbindd"
+	WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
 	case "$with_pam" in
 		yes)
-			WINBIND_PAM_PROGS="\$(WINBIND_PAM_PROGS)"
+			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
 		;;
 	esac
 else
@@ -13372,7 +13372,7 @@ s%@manlangs@%$manlangs%g
 s%@WINBIND_TARGETS@%$WINBIND_TARGETS%g
 s%@WINBIND_STARGETS@%$WINBIND_STARGETS%g
 s%@WINBIND_LTARGETS@%$WINBIND_LTARGETS%g
-s%@WINBIND_PAM_PROGS@%$WINBIND_PAM_PROGS%g
+s%@WINBIND_PAM_TARGETS@%$WINBIND_PAM_TARGETS%g
 s%@BUILD_POPT@%$BUILD_POPT%g
 s%@FLAGS1@%$FLAGS1%g
 s%@builddir@%$builddir%g
