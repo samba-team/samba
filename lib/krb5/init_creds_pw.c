@@ -418,7 +418,7 @@ krb5_get_init_creds_password(krb5_context context,
 	free (prompt.prompt);
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
-	    ret = KRB5KDC_ERR_NONE;
+	    ret = KRB5_LIBOS_PWDINTR;
 	    goto out;
 	}
 	password = password_data.data;
