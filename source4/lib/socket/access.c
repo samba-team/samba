@@ -32,6 +32,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 #define	FAIL		(-1)
 #define ALLONES  ((uint32_t)0xFFFFFFFF)

@@ -326,7 +326,7 @@ duplicate a string
 #ifndef WITH_PTHREADS
 /* REWRITE: not thread safe */
 #ifdef REPLACE_INET_NTOA
-char *rep_inet_ntoa(struct in_addr ip)
+char *rep_inet_ntoa(struct ipv4_addr ip)
 {
 	uint8_t *p = (uint8_t *)&ip.s_addr;
 	static char buf[18];

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 static const struct opcode_names {
 	const char *nmb_opcode_name;
@@ -102,7 +103,7 @@ void debug_nmb_packet(struct packet_struct *p)
 
   if (DEBUGLVL(4)) {
 	  DEBUG(4, ("nmb packet from %s(%d) header: id=%d opcode=%s(%d) response=%s\n",
-		    inet_ntoa(p->ip), p->port,
+		    sys_inet_ntoa(p->ip), p->port,
 		    nmb->header.name_trn_id,
 		    lookup_opcode_name(nmb->header.opcode),
 		    nmb->header.opcode,
@@ -696,7 +697,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 	struct packet_struct *packet;
 	char buf[MAX_DGRAM_SIZE];
 	int length;
-	struct in_addr addr;
+	struct ipv4_addr addr;
 	int port;
 	
 	length = read_udp_socket(fd, buf, sizeof(buf), &addr, &port);
@@ -710,7 +711,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 	packet->port = port;
 	
 	DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
-		 length, inet_ntoa(packet->ip), packet->port));
+		 length, sys_inet_ntoa(packet->ip), packet->port));
 	
 	return packet;
 }
@@ -719,7 +720,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 /*******************************************************************
   send a udp packet on a already open socket
   ******************************************************************/
-static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
+static BOOL send_udp(int fd,char *buf,int len,struct ipv4_addr ip,int port)
 {
   BOOL ret = False;
   int i;
@@ -732,7 +733,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   sock_out.sin_family = AF_INET;
   
   DEBUG( 5, ( "Sending a packet of len %d to (%s) on port %d\n",
-	      len, inet_ntoa(ip), port ) );
+	      len, sys_inet_ntoa(ip), port ) );
 
   /*
    * Patch to fix asynch error notifications from Linux kernel.
@@ -746,7 +747,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 
   if (!ret)
     DEBUG(0,("Packet send failed to %s(%d) ERRNO=%s\n",
-	     inet_ntoa(ip),port,strerror(errno)));
+	     sys_inet_ntoa(ip),port,strerror(errno)));
 
   return(ret);
 }
@@ -1069,7 +1070,7 @@ static int name_query_comp(uint8_t *p1, uint8_t *p2)
 sort a set of 6 byte name query response records so that the IPs that
 have the most leading bits in common with the specified address come first
   ***************************************************************************/
-void sort_query_replies(char *data, int n, struct in_addr ip)
+void sort_query_replies(char *data, int n, struct ipv4_addr ip)
 {
 	if (n <= 1) return;
 

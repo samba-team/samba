@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 
 
@@ -64,9 +65,9 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 		case EPM_PROTOCOL_IP:
 			printf(" IP:");
 			{
-				struct in_addr in;
+				struct ipv4_addr in;
 				in.s_addr = htonl(rhs->ip.address);
-				printf("%s", inet_ntoa(in));
+				printf("%s", sys_inet_ntoa(in));
 			}
 			break;
 

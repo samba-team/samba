@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 
 /****************************************************************************
@@ -156,7 +157,7 @@ void set_socket_options(int fd, const char *options)
 ****************************************************************************/
 
 ssize_t read_udp_socket(int fd, char *buf, size_t len, 
-			struct in_addr *from_addr, int *from_port)
+			struct ipv4_addr *from_addr, int *from_port)
 {
 	ssize_t ret;
 	struct sockaddr_in sock;
@@ -169,7 +170,7 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len,
 	}
 
 	if (from_addr) {
-		*from_addr = sock.sin_addr;
+		from_addr->s_addr = sock.sin_addr.s_addr;
 	}
 	if (from_port) {
 		*from_port = ntohs(sock.sin_port);
@@ -337,7 +338,7 @@ int open_socket_in( int type, int port, int dlevel, uint32_t socket_addr, BOOL r
 /****************************************************************************
   create an outgoing socket. timeout is in milliseconds.
   **************************************************************************/
-int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
+int open_socket_out(int type, struct ipv4_addr *addr, int port, int timeout)
 {
 	struct sockaddr_in sock_out;
 	int res,ret;
@@ -360,7 +361,7 @@ int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
 	/* set it non-blocking */
 	set_blocking(res,False);
 	
-	DEBUG(3,("Connecting to %s at port %d\n",inet_ntoa(*addr),port));
+	DEBUG(3,("Connecting to %s at port %d\n", sys_inet_ntoa(*addr),port));
 	
 	/* and connect it to the destination */
 connect_again:
@@ -375,7 +376,7 @@ connect_again:
 	
 	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
 			errno == EAGAIN)) {
-		DEBUG(1,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
+		DEBUG(1,("timeout connecting to %s:%d\n", sys_inet_ntoa(*addr),port));
 		close(res);
 		return -1;
 	}
@@ -389,7 +390,7 @@ connect_again:
 	
 	if (ret < 0) {
 		DEBUG(2,("error connecting to %s:%d (%s)\n",
-			 inet_ntoa(*addr),port,strerror(errno)));
+			 sys_inet_ntoa(*addr),port,strerror(errno)));
 		close(res);
 		return -1;
 	}
@@ -408,7 +409,7 @@ int open_udp_socket(const char *host, int port)
 	int type = SOCK_DGRAM;
 	struct sockaddr_in sock_out;
 	int res;
-	struct in_addr addr;
+	struct ipv4_addr addr;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("open_udp_socket");
@@ -442,7 +443,7 @@ int open_udp_socket(const char *host, int port)
  matchname - determine if host name matches IP address. Used to
  confirm a hostname lookup to prevent spoof attacks
  ******************************************************************/
-static BOOL matchname(char *remotehost, struct in_addr addr)
+static BOOL matchname(char *remotehost, struct ipv4_addr addr)
 {
 	struct hostent *hp;
 	int     i;
@@ -480,7 +481,7 @@ static BOOL matchname(char *remotehost, struct in_addr addr)
 	 */
 	
 	DEBUG(0,("host name/address mismatch: %s != %s\n",
-		 inet_ntoa(addr), hp->h_name));
+		 sys_inet_ntoa(addr), hp->h_name));
 	return False;
 }
 
@@ -492,7 +493,7 @@ char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 {
 	char *name_buf;
 	struct hostent *hp;
-	struct in_addr addr;
+	struct ipv4_addr addr;
 	char *p;
 
 	/* reverse lookups can be *very* expensive, and in many

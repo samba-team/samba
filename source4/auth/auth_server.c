@@ -32,7 +32,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 {
 	struct smbcli_state *cli = NULL;
 	fstring desthost;
-	struct in_addr dest_ip;
+	struct ipv4_addr dest_ip;
 	const char *p;
 	char *pserver;
 	BOOL connected_ok = False;

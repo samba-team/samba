@@ -113,7 +113,7 @@ static char* namecache_key(TALLOC_CTX *mem_ctx, const char *name, int name_type)
  **/
 
 BOOL namecache_store(TALLOC_CTX *mem_ctx, const char *name, int name_type,
-                     int num_names, struct in_addr *ip_list)
+                     int num_names, struct ipv4_addr *ip_list)
 {
 	time_t expiry;
 	char *key, *value_string;
@@ -129,7 +129,7 @@ BOOL namecache_store(TALLOC_CTX *mem_ctx, const char *name, int name_type,
 	          num_names, num_names == 1 ? "": "es", name, name_type));
 
 	for (i = 0; i < num_names; i++) 
-		DEBUGADD(5, ("%s%s", inet_ntoa(ip_list[i]),
+		DEBUGADD(5, ("%s%s", sys_inet_ntoa(ip_list[i]),
 		             i == (num_names - 1) ? "" : ", "));
 
 	DEBUGADD(5, ("\n"));
@@ -172,7 +172,7 @@ BOOL namecache_store(TALLOC_CTX *mem_ctx, const char *name, int name_type,
  *         false if name isn't found in the cache or has expired
  **/
 
-BOOL namecache_fetch(TALLOC_CTX *mem_ctx, const char *name, int name_type, struct in_addr **ip_list,
+BOOL namecache_fetch(TALLOC_CTX *mem_ctx, const char *name, int name_type, struct ipv4_addr **ip_list,
                      int *num_names)
 {
 	char *key, *value;

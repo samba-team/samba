@@ -35,7 +35,7 @@ static pstring mpoint;
 static pstring service;
 static pstring options;
 
-static struct in_addr dest_ip;
+static struct ipv4_addr dest_ip;
 static BOOL have_ip;
 static int smb_port = 0;
 static BOOL got_user;
@@ -118,7 +118,7 @@ static struct smbcli_state *do_connection(char *the_service)
 	struct smbcli_state *c;
 	struct nmb_name called, calling;
 	char *server_n;
-	struct in_addr ip;
+	struct ipv4_addr ip;
 	pstring server;
 	char *share;
 
