@@ -204,6 +204,10 @@ static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		flgs |= MSG_DONTWAIT;
 	}
 
+	if (flags & SOCKET_FLAG_BLOCK) {
+		flgs |= MSG_WAITALL;
+	}
+
 	gotlen = recv(sock->fd, buf, wantlen, flgs);
 	if (gotlen == 0) {
 		talloc_free(buf);
