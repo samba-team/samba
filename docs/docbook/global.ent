@@ -450,6 +450,7 @@ an Active Directory environment.
 <!ENTITY MAN-WINBINDD SYSTEM "manpages/winbindd.8.xml">
 
 
+<!ENTITY AccessControls SYSTEM "projdoc/AccessControls.xml">
 <!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.xml">
 <!ENTITY BUGS SYSTEM "projdoc/Bugs.xml">
 <!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.xml">
@@ -463,7 +464,6 @@ an Active Directory environment.
 <!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.xml">
 <!ENTITY IntroSMB SYSTEM "projdoc/IntroSMB.xml">
 <!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.xml">
-<!ENTITY NT-Security SYSTEM "projdoc/NT_Security.xml">
 <!ENTITY NT4Migration SYSTEM "projdoc/NT4Migration.xml">
 <!ENTITY NetworkBrowsing SYSTEM "projdoc/NetworkBrowsing.xml">
 <!ENTITY Other-Clients SYSTEM "projdoc/Other-Clients.xml">
