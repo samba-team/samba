@@ -22,6 +22,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/composite/composite.h"
+#include "lib/cmdline/popt_common.h"
 
 #define BASEDIR "\\rawcontext"
 
@@ -57,7 +58,6 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
-	const char *username, *domain, *password;
 	struct smbcli_session *session;
 	struct smbcli_session *session2;
 	struct smbcli_session *session3;
@@ -76,18 +76,14 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	username = lp_parm_string(-1, "torture", "username");
-	password = lp_parm_string(-1, "torture", "password");
-	domain = lp_parm_string(-1, "torture", "userdomain");
-
 	printf("create a second security context on the same transport\n");
 	session = smbcli_session_init(cli->transport, mem_ctx, False);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.password = password;
-	setup.in.user = username;
-	setup.in.domain = domain;
+	setup.in.password = cli_credentials_get_password(cmdline_credentials);
+	setup.in.user = cli_credentials_get_username(cmdline_credentials);
+	setup.in.domain = cli_credentials_get_domain(cmdline_credentials);
 
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -100,9 +96,10 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.password = password;
-	setup.in.user = username;
-	setup.in.domain = domain;
+
+	setup.in.password = cli_credentials_get_password(cmdline_credentials);
+	setup.in.user = cli_credentials_get_username(cmdline_credentials);
+	setup.in.domain = cli_credentials_get_domain(cmdline_credentials);
 
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -120,9 +117,11 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities = 0; /* force a non extended security login (should fail) */
-		setup.in.password = password;
-		setup.in.user = username;
-		setup.in.domain = domain;
+
+
+		setup.in.password = cli_credentials_get_password(cmdline_credentials);
+		setup.in.user = cli_credentials_get_username(cmdline_credentials);
+		setup.in.domain = cli_credentials_get_domain(cmdline_credentials);
 
 		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);

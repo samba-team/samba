@@ -107,10 +107,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
 				       DCERPC_ATSVC_UUID,
 				       DCERPC_ATSVC_VERSION,
-				       lp_netbios_name(),
-				       gtk_rpc_binding_dialog_get_userdomain(d),
-				       gtk_rpc_binding_dialog_get_username(d),
-				       gtk_rpc_binding_dialog_get_password(d));
+				       gtk_rpc_binding_dialog_get_credentials(d));
 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);

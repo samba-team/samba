@@ -31,6 +31,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
         NTSTATUS status;
         struct dcesrv_remote_private *private;
 	const char *binding = lp_parm_string(-1, "dcerpc_remote", "binding");
+	struct cli_credentials credentials;
 
 	if (!binding) {
 		DEBUG(0,("You must specify a ncacn binding string\n"));
@@ -42,11 +43,12 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_NO_MEMORY;	
 	}
 
-	status = dcerpc_pipe_connect(&(private->c_pipe), binding, iface->uuid, iface->if_version,
-				     lp_netbios_name(),
-				     lp_workgroup(), 
-				     lp_parm_string(-1, "dcerpc_remote", "username"),
-				     lp_parm_string(-1, "dcerpc_remote", "password"));
+	cli_credentials_set_username(&credentials, lp_parm_string(-1, "dcerpc_remote", "username"), CRED_SPECIFIED);
+	cli_credentials_set_workstation(&credentials, lp_netbios_name(), CRED_SPECIFIED);
+	cli_credentials_set_domain(&credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_password(&credentials, lp_parm_string(-1, "dcerpc_remote", "password"), CRED_SPECIFIED);
+
+	status = dcerpc_pipe_connect(&(private->c_pipe), binding, iface->uuid, iface->if_version, &credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -143,10 +143,7 @@ done:
 */
 NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 				   const char *uuid, uint_t version,
-				   const char *workstation,
-				   const char *domain,
-				   const char *username,
-				   const char *password,
+				   struct cli_credentials *credentials,
 				   uint8_t auth_type,
 				   const char *service)
 {
@@ -162,28 +159,32 @@ NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = gensec_set_workstation(p->conn->security_state.generic_state, workstation);
+	status = gensec_set_workstation(p->conn->security_state.generic_state, 
+								cli_credentials_get_workstation(credentials));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client workstation name to %s: %s\n", 
-			  workstation, nt_errstr(status)));
+			  cli_credentials_get_workstation(credentials), nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_domain(p->conn->security_state.generic_state, domain);
+	status = gensec_set_domain(p->conn->security_state.generic_state, 
+							   cli_credentials_get_domain(credentials));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
-			  domain, nt_errstr(status)));
+			  cli_credentials_get_domain(credentials), nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_username(p->conn->security_state.generic_state, username);
+	status = gensec_set_username(p->conn->security_state.generic_state, 
+								 cli_credentials_get_username(credentials));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
-			  username, nt_errstr(status)));
+			  cli_credentials_get_username(credentials), nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_password(p->conn->security_state.generic_state, password);
+	status = gensec_set_password(p->conn->security_state.generic_state, 
+								 cli_credentials_get_password(credentials));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
 			  nt_errstr(status)));

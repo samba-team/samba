@@ -30,12 +30,10 @@
 
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
-struct dcom_client_context *dcom_client_init(struct com_context *ctx, const char *domain, const char *user, const char *password)
+struct dcom_client_context *dcom_client_init(struct com_context *ctx, struct cli_credentials *credentials)
 {
 	ctx->dcom = talloc(ctx, struct dcom_client_context);
-	ctx->dcom->domain = domain;
-	ctx->dcom->user = user;
-	ctx->dcom->password = password;
+	ctx->dcom->credentials = credentials;
 
 	return ctx->dcom;
 }
@@ -86,8 +84,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		return dcerpc_pipe_connect(p, "ncalrpc", 
 					   DCERPC_IREMOTEACTIVATION_UUID, 
 					   DCERPC_IREMOTEACTIVATION_VERSION,
-					   lp_netbios_name(),
-					   ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
+					   ctx->dcom->credentials);
 	}
 
 	/* Allow server name to contain a binding string */
@@ -95,8 +92,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		status = dcerpc_pipe_connect_b(p, bd, 
 					       DCERPC_IREMOTEACTIVATION_UUID, 
 					       DCERPC_IREMOTEACTIVATION_VERSION, 
-					       lp_netbios_name(),
-					       ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
+						   ctx->dcom->credentials);
 
 		talloc_free(mem_ctx);
 		return status;
@@ -113,8 +109,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		status = dcerpc_pipe_connect(p, binding, 
 					     DCERPC_IREMOTEACTIVATION_UUID, 
 					     DCERPC_IREMOTEACTIVATION_VERSION, 
-					     lp_netbios_name(),
-					     ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
+						 ctx->dcom->credentials);
 
 		if (NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
@@ -308,10 +303,7 @@ NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
 		} else {
 			status = dcerpc_pipe_connect_b(&p, binding, 
 						       uuid, 0.0, 
-						       lp_netbios_name(),
-						       iface->ctx->dcom->domain, 
-						       iface->ctx->dcom->user, 
-						       iface->ctx->dcom->password);
+							   iface->ctx->dcom->credentials);
 		}
 		talloc_free(binding);
 		i++;

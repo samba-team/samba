@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "lib/cmdline/popt_common.h"
 
 #define BASEDIR "\\composite"
 
@@ -149,9 +150,10 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.in.calling_name = lp_netbios_name();
 	io2.in.service = lp_parm_string(-1, "torture", "share");
 	io2.in.service_type = "A:";
-	io2.in.user = lp_parm_string(-1, "torture", "username");
-	io2.in.domain = lp_parm_string(-1, "torture", "userdomain");
-	io2.in.password = lp_parm_string(-1, "torture", "password");
+
+	io2.in.user = cli_credentials_get_username(cmdline_credentials);
+	io2.in.domain = cli_credentials_get_domain(cmdline_credentials);
+	io2.in.password = cli_credentials_get_password(cmdline_credentials);
 	io2.in.filename = fname;
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);

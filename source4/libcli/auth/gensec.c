@@ -511,65 +511,10 @@ BOOL gensec_have_feature(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_set_unparsed_username(struct gensec_security *gensec_security, const char *user) 
-{
-	char *p;
-	char *u = talloc_strdup(gensec_security, user);
-	if (!u) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	p = strchr_m(user, '@');
-	
-	if (p) {
-		*p = '\0';
-		gensec_security->user.name = talloc_strdup(gensec_security, u);
-		if (!gensec_security->user.name) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		gensec_security->user.realm = talloc_strdup(gensec_security, p+1);
-		if (!gensec_security->user.realm) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		return NT_STATUS_OK;
-	} 
-
-	p = strchr_m(user, '\\');
-	if (!p) {
-		p = strchr_m(user, '/');
-	}
-	
-	if (p) {
-		*p = '\0';
-		gensec_security->user.domain = talloc_strdup(gensec_security, u);
-		if (!gensec_security->user.domain) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		gensec_security->user.name = talloc_strdup(gensec_security, p+1);
-		if (!gensec_security->user.name) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		return NT_STATUS_OK;
-	} 
-	
-	gensec_security->user.name = u;
-	if (!gensec_security->user.name) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set a username on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
 NTSTATUS gensec_set_username(struct gensec_security *gensec_security, const char *user) 
 {
 	gensec_security->user.name = talloc_strdup(gensec_security, user);
-	if (!gensec_security->user.name) {
+	if (user && !gensec_security->user.name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
@@ -596,7 +541,7 @@ const char *gensec_get_username(struct gensec_security *gensec_security)
 NTSTATUS gensec_set_domain(struct gensec_security *gensec_security, const char *domain) 
 {
 	gensec_security->user.domain = talloc_strdup(gensec_security, domain);
-	if (!gensec_security->user.domain) {
+	if (domain && !gensec_security->user.domain) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
@@ -625,7 +570,7 @@ const char *gensec_get_domain(struct gensec_security *gensec_security)
 NTSTATUS gensec_set_workstation(struct gensec_security *gensec_security, const char *workstation) 
 {
 	gensec_security->user.workstation = talloc_strdup(gensec_security, workstation);
-	if (!gensec_security->user.workstation) {
+	if (workstation && !gensec_security->user.workstation) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
@@ -653,7 +598,7 @@ const char *gensec_get_workstation(struct gensec_security *gensec_security)
 NTSTATUS gensec_set_realm(struct gensec_security *gensec_security, const char *realm) 
 {
 	gensec_security->user.realm = talloc_strdup(gensec_security, realm);
-	if (!gensec_security->user.realm) {
+	if (realm && !gensec_security->user.realm) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
