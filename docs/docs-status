@@ -59,6 +59,7 @@ docs/docbook/manpages/rpcclient.1.sgml - Some commands could be documented more 
 docs/history - needs updating (is current up to 1998 - merge with 10year.html ?)
 
 Documentation for following smb.conf.5 parameters does not exist:
+max reported print jobs  // printing
 acl compatibility        // protocol
 client signing           // protocol
 client use spnego        // protocol
