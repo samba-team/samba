@@ -104,7 +104,7 @@ _hashtabdel(Hashtab * htab, void *ptr, int freep)
     if (h) {
 	if (freep)
 	    free(h->ptr);
-	if (*(h->prev) = h->next)
+	if ((*(h->prev) = h->next))
 	    h->next->prev = h->prev;
 	free(h);
 	return 0;
@@ -167,7 +167,7 @@ hashjpw(const char *ss)
 
     for (; *s; ++s) {
 	h = (h << TWELVE) + *s;
-	if (g = h & HIGH_BITS)
+	if ((g = h & HIGH_BITS))
 	    h = (h ^ (g >> SEVENTYFIVE)) & ~HIGH_BITS;
     }
     return h;
