@@ -244,6 +244,8 @@ typedef struct krb5_context_data{
     char *default_realm;
     time_t max_skew;
     time_t kdc_timeout;
+    int32_t kdc_sec_offset;
+    int32_t kdc_usec_offset;
     krb5_config_section *cf;
     struct error_table *et_list;
     struct krb5_log_facility *warn_dest;
@@ -1217,6 +1219,15 @@ krb5_change_password (krb5_context	context,
 #define KRB5_KPASSWD_HARDERROR	0
 #define KRB5_KPASSWD_AUTHERROR	0
 #define KRB5_KPASSWD_SOFTERROR	0
+
+krb5_error_code
+krb5_timeofday (krb5_context context,
+		int32_t *timeret);
+
+krb5_error_code
+krb5_us_timeofday (krb5_context context,
+		   int32_t *sec,
+		   int32_t *usec);
 
 /* XXX these are glue functions and really don't belong here */
 
