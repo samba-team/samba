@@ -2463,7 +2463,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		if ((parameter_offset + parameter_count < parameter_offset) ||
 				(parameter_offset + parameter_count < parameter_count))
 			goto bad_param;
-		if (smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)
+		if ((smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)||
+				(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
@@ -2473,7 +2474,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
 		if ((data_offset + data_count < data_offset) || (data_offset + data_count < data_count))
 			goto bad_param;
-		if (smb_base(inbuf) + data_offset + data_count > inbuf + length)
+		if ((smb_base(inbuf) + data_offset + data_count > inbuf + length) ||
+		   		(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy( data, smb_base(inbuf) + data_offset, data_count);
@@ -2534,7 +2536,10 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 				if ((parameter_displacement + parameter_count < parameter_displacement) ||
 						(parameter_displacement + parameter_count < parameter_count))
 					goto bad_param;
-				if (smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize)
+				if (parameter_displacement > total_parameter_count)
+					goto bad_param;
+				if ((smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize) ||
+						(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
 					goto bad_param;
 				if (parameter_displacement + params < params)
 					goto bad_param;
@@ -2548,7 +2553,10 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 				if ((data_displacement + data_count < data_displacement) ||
 						(data_displacement + data_count < data_count))
 					goto bad_param;
-				if (smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize)
+				if (data_displacement > total_data_count)
+					goto bad_param;
+				if ((smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize) ||
+						(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
 					goto bad_param;
 				if (data_displacement + data < data)
 					goto bad_param;
