@@ -217,6 +217,7 @@
 #undef HAVE_SNPRINTF_DECL
 #undef HAVE_VSNPRINTF_DECL
 #undef HAVE_NATIVE_ICONV
+#undef HAVE_UNIXSOCKET
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -946,9 +947,6 @@
 
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
-
-/* Define if you have the <sys/un.h> header file.  */
-#undef HAVE_SYS_UN_H
 
 /* Define if you have the <sys/unistd.h> header file.  */
 #undef HAVE_SYS_UNISTD_H
