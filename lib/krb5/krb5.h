@@ -640,6 +640,9 @@ extern const krb5_kt_ops krb5_any_ops;
 #define KPASSWD_PORT 464
 
 /* types for the new krbhst interface */
+struct krb5_krbhst_data;
+typedef struct krb5_krbhst_data *krb5_krbhst_handle;
+
 #define KRB5_KRBHST_KDC		1
 #define KRB5_KRBHST_ADMIN	2
 #define KRB5_KRBHST_CHANGEPW	3
