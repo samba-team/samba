@@ -1620,6 +1620,8 @@ sub ParseTypedefPrint($)
 
 	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_ARGS}->($e);
 
+	return unless !util::has_property($e, "noprint");
+
 	pidl "void ndr_print_$e->{NAME}($args)";
 	pidl "{";
 	indent;
@@ -1653,6 +1655,8 @@ sub ParseTypedefNdrSize($)
 sub ParseFunctionPrint($)
 {
 	my($fn) = shift;
+
+	return unless !util::has_property($fn, "noprint");
 
 	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
@@ -1735,6 +1739,8 @@ sub ParseFunctionPush($)
 { 
 	my($fn) = shift;
 	my $static = fn_prefix($fn);
+
+	return unless !util::has_property($fn, "nopush");
 
 	pidl $static . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
@@ -1848,6 +1854,8 @@ sub ParseFunctionPull($)
 { 
 	my($fn) = shift;
 	my $static = fn_prefix($fn);
+
+	return unless !util::has_property($fn, "nopull");
 
 	# pull function args
 	pidl $static . "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)";
@@ -2015,14 +2023,10 @@ sub ParseInterface($)
 	
 	# Print functions
 	foreach my $d (@{$data}) {
-		if ($d->{TYPE} eq "TYPEDEF" &&
-		    !util::has_property($d, "noprint")) {
+		($d->{TYPE} eq "TYPEDEF") &&
 			ParseTypedefPrint($d);
-		}
-		if ($d->{TYPE} eq "FUNCTION" &&
-		    !util::has_property($d, "noprint")) {
+		($d->{TYPE} eq "FUNCTION") &&
 			ParseFunctionPrint($d);
-		}
 	}
 
 	# Size functions
