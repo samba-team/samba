@@ -69,10 +69,10 @@ static NTSTATUS $name\__op_bind(struct dcesrv_call_state *dce_call, const struct
 #endif
 }
 
-static void $name\__op_unbind(struct dcesrv_connection *dce_conn, const struct dcesrv_interface *iface)
+static void $name\__op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
 #ifdef DCESRV_INTERFACE_$uname\_UNBIND
-	DCESRV_INTERFACE_$uname\_UNBIND(dce_conn,iface);
+	DCESRV_INTERFACE_$uname\_UNBIND(context, iface);
 #else
 	return;
 #endif

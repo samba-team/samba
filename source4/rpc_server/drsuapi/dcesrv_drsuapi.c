@@ -26,14 +26,6 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 
-/*
-  destroy a general handle. 
-*/
-static void drsuapi_handle_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
-{
-	talloc_free(h->data);
-}
-
 /* 
   drsuapi_DsBind 
 */
@@ -57,14 +49,13 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 		return WERR_FOOBAR;
 	}
 
-	handle = dcesrv_handle_new(dce_call->conn, DRSUAPI_BIND_HANDLE);
+	handle = dcesrv_handle_new(dce_call->context, DRSUAPI_BIND_HANDLE);
 	if (!handle) {
 		talloc_free(b_state);
 		return WERR_NOMEM;
 	}
 
-	handle->data = b_state;
-	handle->destroy = drsuapi_handle_destroy;
+	handle->data = talloc_steal(handle, b_state);
 
 	bind_info = talloc_p(mem_ctx, struct drsuapi_DsBindInfoCtr);
 	WERR_TALLOC_CHECK(bind_info);
@@ -88,7 +79,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
   drsuapi_DsUnbind 
 */
 static WERROR drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsUnbind *r)
+			       struct drsuapi_DsUnbind *r)
 {
 	struct dcesrv_handle *h;
 
@@ -96,10 +87,7 @@ static WERROR drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 
-	/* this causes the callback drsuapi_handle_destroy() to be called by
-	   the handle destroy code which destroys the state associated
-	   with the handle */
-	dcesrv_handle_destroy(dce_call->conn, h);
+	talloc_free(h);
 
 	ZERO_STRUCTP(r->out.bind_handle);
 

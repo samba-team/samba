@@ -65,24 +65,6 @@ struct lsa_account_state {
 };
 
 
-/*
-  destroy an open policy. This closes the database connection
-*/
-static void lsa_Policy_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
-{
-	struct lsa_policy_state *state = h->data;
-	talloc_free(state);
-}
-
-/*
-  destroy an open account.
-*/
-static void lsa_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
-{
-	struct lsa_account_state *astate = h->data;
-	talloc_free(astate);
-}
-
 /* 
   lsa_Close 
 */
@@ -95,10 +77,7 @@ static NTSTATUS lsa_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	/* this causes the callback samr_XXX_destroy() to be called by
-	   the handle destroy code which destroys the state associated
-	   with the handle */
-	dcesrv_handle_destroy(dce_call->conn, h);
+	talloc_free(h);
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -278,13 +257,12 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return status;
 	}
 
-	handle = dcesrv_handle_new(dce_call->conn, LSA_HANDLE_POLICY);
+	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_POLICY);
 	if (!handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	handle->data = talloc_reference(handle, state);
-	handle->destroy = lsa_Policy_destroy;
+	handle->data = talloc_steal(handle, state);
 
 	state->access_mask = r->in.access_mask;
 	state->handle = handle;
@@ -858,14 +836,13 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	astate->policy = talloc_reference(astate, state);
 	astate->access_mask = r->in.access_mask;
 
-	ah = dcesrv_handle_new(dce_call->conn, LSA_HANDLE_ACCOUNT);
+	ah = dcesrv_handle_new(dce_call->context, LSA_HANDLE_ACCOUNT);
 	if (!ah) {
 		talloc_free(astate);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ah->data = astate;
-	ah->destroy = lsa_Account_destroy;
+	ah->data = talloc_steal(ah, astate);
 
 	*r->out.acct_handle = ah->wire_handle;
 
