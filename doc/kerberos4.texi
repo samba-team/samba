@@ -7,8 +7,8 @@
 If compiled with version 4 support, the KDC can serve requests from a
 Kerberos 4 client. There are a few things you must do for this to work.
 
-You might also want use the built in kaserver emulation in the kdc
-when you have AFS-clients that use @code{klog}.
+The KDC will also have kaserver emulation and be able to handle
+AFS-clients that use @code{klog}.
 
 @menu
 * Principal conversion issues::  
