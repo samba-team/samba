@@ -21,9 +21,12 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-PICFLAGS = @PICFLAGS@
+PICFLAGS = @REAL_PICFLAGS@
+SHARED = @REAL_SHARED@
+SHLIBEXT = @REAL_SHLIBEXT@
+LD_FLAGS = @REAL_LD_FLAGS@
  
-LIB = @PAM_LIB@
+LIB = pam_krb4.$(SHLIBEXT)
 
 SOURCES = pam.c
 

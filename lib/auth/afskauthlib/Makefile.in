@@ -27,7 +27,7 @@ SHARED = @REAL_SHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
-LIB = @AFSKAUTH_LIB@
+LIB = afskauthlib.$(SHLIBEXT)
 
 SOURCES = verify.c
 
@@ -71,9 +71,11 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
+TAGS: $(SOURCES)
+	etags $(SOURCES)
 
 $(OBJECTS): ../../../config.h
 
-$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+$(LIB): $(OBJECTS)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes ../../roken/libroken.a
