@@ -316,7 +316,7 @@ SECTION THREE: Common client problems
 * 1: I can't see the Samba server in any browse lists!
 
 *** Until the FAQ can be updated, please check the file:
-*** ftp://samba.anu.edu.au/pub/samba/BROWSING.txt
+*** ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt
 *** for more information on browsing. 
 
 If your GUI client does not permit you to select non-browsable servers, you may
@@ -521,25 +521,39 @@ SECTION FOUR: Specific client problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 1: Are any MacIntosh clients for Samba.
 
-In Rob Newberry's words (rob@eats.com, Sun, 4 Dec 1994):
+Yes. Thursby Software Systems have released 'Dave' - a SMB client for
+MacIntosh systems. This is a commercial product and inclusion in this
+faq does not imply any endorsement by the Samba developers. Having said
+that, the first public demonstration of 'Dave' was to the Samba server
+run by Andrew Tridgell over the Internet from Redmond, Washington, USA to
+Australia as part of the first CIFS developers conference.
 
-The answer is "No." Samba speaks SMB, the protocol used for Microsoft networks.
-The Macintosh has ALWAYS spoken Appletalk. Even with Microsoft "services for
-Macintosh", it has been a matter of making the server speak Appletalk. It is
-the same for Novell Netware and the Macintosh, although I believe Novell has
-(VERY LATE) released an extension for the Mac to let it speak IPX.
+For more details on 'Dave' contact :
+
+Web contact: www.thursby.com
+
+Thursby Software Systems, Inc.
+5840 W. Interstate 20
+Arlington, Texas 76017 U.S.A.
+Voice: 817-478-5070
+FAX: 817-561-2313
+sales@thursby.com
+
+There are currently no Free Software solutions other than to make
+your UNIX server talk AppleTalk.
+
+In Rob Newberry's words (rob@eats.com, Sun, 4 Dec 1994):
 
 In future Apple System Software, you may see support for other protocols, such
 as SMB -- Applet is working on a new networking architecture that will make it
 easier to support additional protocols. But it's not here yet.
 
-Now, the nice part is that if you want your Unix machine to speak Appletalk,
-there are several options. "Netatalk" and "CAP" are free, and available on the
-net. There are also several commercial options, such as "PacerShare" and
-"Helios" (I think). In any case, you'll have to look around for a server, not
-anything for the Mac.
+If you want your Unix machine to speak Appletalk, there are several options. 
+"Netatalk" and "CAP" are free, and available on the net. There are also 
+several commercial options, such as "PacerShare" and "Helios" (I think). 
+In any case, you'll have to look around for a server, not anything for the Mac.
 
-Depending on you OS, some of these may not help you. I am currently
+Depending on your OS, some of these may not help you. I am currently
 coordinating the effort to get CAP working with Native Ethertalk under Linux,
 but we're not done yet.
 
@@ -781,7 +795,83 @@ worked for you then give it a go. If this does work then let me know
 and I'll make it the default. Currently the default is a 0 length
 string.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* 8: I have upgraded my NT 4.0 system to service pack 3. Why
+     can't I connect anymore ?
+
+This is not a bug.  Microsoft has changed their policy on sending
+unencrypted passwords over the net.  They no longer default to allowing
+unencrypted passwords to be sent over the net.  This effects all Samba
+servers which are configured to use security=share or security=user level
+security without password encryption. They do, however, have a fix which 
+can be applied to the registry to fix the problem.  Here's a synopsis 
+from the SP3 web page that discusses how to enable unencrypted password 
+sending from an NT 4.0 box.
+
+A better solution is to re-compile Samba to use encrypted passwords.
+See the document :
+
+ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt
+
+>SYMPTOMS
+>==========
+>
+>Connecting to SMB servers (such as Samba) with unencrypted password fails
+after upgrading to Windows NT 4.0 service pack 3 version 1.76. 
+>
+>CAUSE
+>======
+>
+>The SMB redirector in Windows NT 4.0 service pack 3 version 1.76 handles
+>unencrypted passwords differently than previous version of Windows NT.
+>Beginning with this version, the SMB redirector will not send an
+>unencrypted password unless you add a registry entry to enable them.
+>
+>RESOLUTION
+>===========
+>
+>To enable unencrypted (plain text) passwords modify the registry in this way.
+>
+>
+>
+>WARNING: Using Registry Editor incorrectly can cause serious, system-wide
+>problems that may require you to reinstall Windows NT to correct them.
+>Microsoft cannot guarantee that any problems resulting from the use of
+>Registry Editor can be solved. Use this tool at your own risk.
+>
+>
+>
+>1. Run Registry Editor (REGEDT32.EXE).
+>
+>2. From the HKEY_LOCAL_MACHINE subtree, go to the following key:
+>
+>
+>
+>\system\currentcontrolset\services\rdr\parameters
+>
+>
+>
+>3. From the Edit menu, select Add Value.
+>
+>4. Add the following:
+>
+>
+>
+>Value Name: EnablePlainTextPassword 
+>
+>Data Type: REG_DWORD
+>
+>Data: 1
+>
+>
+>
+>5. Choose OK and quit Registry Editor.
+>
+>6. Shutdown and restart Windows NT.
+>
+> 
+-----------------------------------------------------------------------
 
 ===============================================================================
 SECTION FIVE: Specific client application problems
