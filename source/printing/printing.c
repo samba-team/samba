@@ -44,9 +44,9 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
 */
 
 struct print_queue_update_context {
-	fstring sharename;
+	char* sharename;
 	enum printing_types printing_type;
-	pstring lpqcommand;
+	char* lpqcommand;
 };
 
 
@@ -993,16 +993,17 @@ static void check_job_changed(const char *sharename, TDB_DATA data, uint32 jobid
  Check if the print queue has been updated recently enough.
 ****************************************************************************/
 
-static BOOL print_cache_expired(const char *sharename)
+static BOOL print_cache_expired(const char *sharename, BOOL check_pending)
 {
 	fstring key;
 	time_t last_qscan_time, time_now = time(NULL);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
+	BOOL result = False;
 
 	if (!pdb)
 		return False;
 
-	slprintf(key, sizeof(key), "CACHE/%s", sharename);
+	snprintf(key, sizeof(key), "CACHE/%s", sharename);
 	last_qscan_time = (time_t)tdb_fetch_int32(pdb->tdb, key);
 
 	/*
@@ -1019,15 +1020,37 @@ static BOOL print_cache_expired(const char *sharename)
 		|| (time_now - last_qscan_time) >= lp_lpqcachetime() 
 		|| last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) 
 	{
-		DEBUG(3, ("print cache expired for queue %s " 
+		time_t msg_pending_time;
+
+		DEBUG(4, ("print_cache_expired: cache expired for queue %s " 
 			"(last_qscan_time = %d, time now = %d, qcachetime = %d)\n", 
 			sharename, (int)last_qscan_time, (int)time_now, 
 			(int)lp_lpqcachetime() ));
-		release_print_db(pdb);
-		return True;
+
+		/* check if another smbd has already sent a message to update the 
+		   queue.  Give the pending message one minute to clear and 
+		   then send another message anyways.  Make sure to check for 
+		   clocks that have been run forward and then back again. */
+
+		snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
+
+		if ( check_pending 
+			&& tdb_fetch_uint32( pdb->tdb, key, &msg_pending_time ) 
+			&& msg_pending_time > 0
+			&& msg_pending_time <= time_now 
+			&& (time_now - msg_pending_time) < 60 ) 
+		{
+			DEBUG(4,("print_cache_expired: message already pending for %s.  Accepting cache\n",
+				sharename));
+			goto done;
+		}
+		
+		result = True;
 	}
+
+done:
 	release_print_db(pdb);
-	return False;
+	return result;
 }
 
 /****************************************************************************
@@ -1052,7 +1075,7 @@ static void print_queue_update_internal( const char *sharename,
 	DEBUG(5,("print_queue_update_internal: printer = %s, type = %d, lpq command = [%s]\n",
 		sharename, current_printif->type, lpq_command));
 
-	if ( !print_cache_expired(sharename) ) {
+	if ( !print_cache_expired(sharename, False) ) {
 		DEBUG(5,("print_queue_update_internal: print cache for %s is still ok\n", sharename));
 		return;
 	}
@@ -1166,6 +1189,20 @@ static void print_queue_update_internal( const char *sharename,
 	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", sharename);
 	tdb_store_int32(pdb->tdb, keystr, (int32)time(NULL));
 
+	/* clear the msg pending record for this queue */
+
+	snprintf(keystr, sizeof(keystr), "MSG_PENDING/%s", sharename);
+
+	if ( !tdb_store_uint32( pdb->tdb, keystr, 0 ) ) {
+		/* log a message but continue on */
+
+		DEBUG(0,("print_queue_update: failed to store MSG_PENDING flag for [%s]!\n",
+			sharename));
+	}
+
+	release_print_db( pdb );
+
+	return;
 }
 
 /****************************************************************************
@@ -1255,19 +1292,31 @@ static void print_queue_update_with_lock(int snum)
 /****************************************************************************
 this is the receive function of the background lpq updater
 ****************************************************************************/
-static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t len)
+static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t msglen)
 {
 	struct print_queue_update_context ctx;
+	fstring sharename;
+	pstring lpqcommand;
+	size_t len;
 
-	if (len != sizeof(struct print_queue_update_context)) {
-		DEBUG(1, ("Got invalid print queue update message\n"));
+	len = tdb_unpack( buf, msglen, "fdP",
+		sharename,
+		&ctx.printing_type,
+		lpqcommand );
+
+	if ( len == -1 ) {
+		DEBUG(0,("print_queue_receive: Got invalid print queue update message\n"));
 		return;
 	}
 
-	memcpy(&ctx, buf, sizeof(struct print_queue_update_context));
+	ctx.sharename = sharename;
+	ctx.lpqcommand = lpqcommand;
+
 	print_queue_update_internal(ctx.sharename, 
 		get_printer_fns_from_type(ctx.printing_type),
 		ctx.lpqcommand );
+
+	return;
 }
 
 static pid_t background_lpq_updater_pid = -1;
@@ -1333,32 +1382,84 @@ update the internal database from the system print queue for a queue
 static void print_queue_update(int snum)
 {
 	struct print_queue_update_context ctx;
+	fstring key;
+	fstring sharename;
+	pstring lpqcommand;
+	char *buffer = NULL;
+	size_t len = 0;
+	size_t newlen;
+	struct tdb_print_db *pdb;
 
 	/* 
 	 * Make sure that the background queue process exists.  
 	 * Otherwise just do the update ourselves 
 	 */
-	   
-	if ( background_lpq_updater_pid != -1 ) {
-		fstrcpy(ctx.sharename, lp_const_servicename(snum));
-		ctx.printing_type = lp_printing(snum);
-
-		pstrcpy(ctx.lpqcommand, lp_lpqcommand(snum));
-		pstring_sub( ctx.lpqcommand, "%p", PRINTERNAME(snum) );
-		standard_sub_snum( snum, ctx.lpqcommand, sizeof(ctx.lpqcommand) );
-
-		DEBUG(10,("print_queue_update: Sending message -> printer = %s, "
-			"type = %d, lpq command = [%s]\n",
-			ctx.sharename, ctx.printing_type, ctx.lpqcommand ));
-
 	
-		become_root();
-		message_send_pid(background_lpq_updater_pid,
-				 MSG_PRINTER_UPDATE, &ctx, sizeof(ctx),
-				 False);
-		unbecome_root();
-	} else
+	if ( background_lpq_updater_pid == -1 ) {
 		print_queue_update_with_lock( snum );
+		return;
+	}
+
+	fstrcpy( sharename, lp_const_servicename(snum));
+
+	ctx.printing_type = lp_printing(snum);
+
+	pstrcpy( lpqcommand, lp_lpqcommand(snum));
+	pstring_sub( lpqcommand, "%p", PRINTERNAME(snum) );
+	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
+
+	ctx.sharename = SMB_STRDUP( sharename );
+	ctx.lpqcommand = SMB_STRDUP( lpqcommand );
+
+	/* get the length */
+
+	len = tdb_pack( buffer, len, "fdP",
+		ctx.sharename,
+		ctx.printing_type,
+		ctx.lpqcommand );
+
+	buffer = SMB_XMALLOC_ARRAY( char, len );
+
+	/* now pack the buffer */
+	newlen = tdb_pack( buffer, len, "fdP",
+		ctx.sharename,
+		ctx.printing_type,
+		ctx.lpqcommand );
+
+	SMB_ASSERT( newlen == len );
+
+	DEBUG(10,("print_queue_update: Sending message -> printer = %s, "
+		"type = %d, lpq command = [%s]\n",
+		ctx.sharename, ctx.printing_type, ctx.lpqcommand ));
+
+	/* here we set a msg pending record for other smbd processes 
+	   to throttle the number of duplicate print_queue_update msgs
+	   sent.  */
+
+	pdb = get_print_db_byname(sharename);
+	snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
+
+	if ( !tdb_store_uint32( pdb->tdb, key, time(NULL) ) ) {
+		/* log a message but continue on */
+
+		DEBUG(0,("print_queue_update: failed to store MSG_PENDING flag for [%s]!\n",
+			sharename));
+	}
+
+	release_print_db( pdb );
+
+	/* finally send the message */
+	
+	become_root();
+	message_send_pid(background_lpq_updater_pid,
+		 MSG_PRINTER_UPDATE, buffer, len, False);
+	unbecome_root();
+
+	SAFE_FREE( ctx.sharename );
+	SAFE_FREE( ctx.lpqcommand );
+	SAFE_FREE( buffer );
+
+	return;
 }
 
 /****************************************************************************
@@ -2001,7 +2102,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 	int len;
  
 	/* make sure the database is up to date */
-	if (print_cache_expired(lp_const_servicename(snum)))
+	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(snum);
  
 	/* also fetch the queue status */
@@ -2316,7 +2417,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	pjob_store(sharename, jobid, pjob);
 	
 	/* make sure the database is up to date */
-	if (print_cache_expired(lp_const_servicename(snum)))
+	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(snum);
 	
 	return True;
@@ -2348,7 +2449,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	const char* sharename = lp_servicename(snum);
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(lp_const_servicename(snum)))
+	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(snum);
  
 	*pcount = 0;
@@ -2469,7 +2570,7 @@ int print_queue_status(int snum,
 
 	/* make sure the database is up to date */
 
-	if (print_cache_expired(lp_const_servicename(snum)))
+	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(snum);
 
 	/* return if we are done */
@@ -2569,7 +2670,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 	}
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(lp_const_servicename(snum)))
+	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(snum);
 
 	/* Send a printer notify message */
