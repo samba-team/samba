@@ -92,6 +92,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
     set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
 
 #ifndef HAVE_EXECL
+	{
 	int ret;
 	pstring syscmd;  
 	char *path = lp_smbrun();
@@ -113,6 +114,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	ret = system(syscmd);
 	DEBUG(5,("gave %d\n",ret));
 	return(ret);
+	}
 #else
 	/* in this newer method we will exec /bin/sh with the correct
 	   arguments, after first setting stdout to point at the file */
