@@ -6,7 +6,7 @@
 #include "der.h"
 #include "gen.h"
 
-FILE *headerfile, *codefile;
+FILE *headerfile, *codefile, *logfile;
 
 #define STEM "asn1"
 
@@ -18,23 +18,14 @@ init_generate (char *filename)
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
 	     filename);
-    codefile = fopen (STEM ".c", "w");
-    fprintf (codefile, 
-	     "/* Generated from %s */\n"
-	     "/* Do not edit */\n\n"
-	     "#include <stdio.h>\n"
-	     "#include <stdlib.h>\n"
-	     "#include <time.h>\n"
-	     "#include <der.h>\n"
-	     "#include <" STEM ".h>\n\n",
-	     filename);
+    logfile = fopen(STEM "_files", "w");
 }
 
 void
 close_generate ()
 {
   fclose (headerfile);
-  fclose (codefile);
+  fclose (logfile);
 }
 
 void
@@ -697,9 +688,13 @@ free_type (char *name, Type *t)
 	  char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
 
 	  sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
+	  if(m->optional)
+	      fprintf(codefile, "if(%s) {\n", s);
 	  free_type (s, m->type);
 	  if(m->optional)
-	      fprintf(codefile, "if(%s) free(%s);\n", s, s);
+	      fprintf(codefile, 
+		      "free(%s);\n"
+		      "}\n",s);
 	  if (tag == -1)
 	      tag = m->val;
 	  free (s);
@@ -867,9 +862,24 @@ generate_type_length (Symbol *s)
 void
 generate_type (Symbol *s)
 {
-  generate_type_header (s);
-  generate_type_encode (s);
-  generate_type_decode (s);
-  generate_type_free (s);
-  generate_type_length (s);
+    char *filename = malloc(strlen(STEM) + strlen(s->gen_name) + 4);
+    sprintf(filename, "%s_%s.c", STEM, s->gen_name);
+    codefile = fopen (filename, "w");
+    fprintf(logfile, "%s ", filename);
+    free(filename);
+    fprintf (codefile, 
+	     "/* Generated from %s */\n"
+	     "/* Do not edit */\n\n"
+	     "#include <stdio.h>\n"
+	     "#include <stdlib.h>\n"
+	     "#include <time.h>\n"
+	     "#include <der.h>\n"
+	     "#include <" STEM ".h>\n\n",
+	     filename);
+    generate_type_header (s);
+    generate_type_encode (s);
+    generate_type_decode (s);
+    generate_type_free (s);
+    generate_type_length (s);
+    fclose(codefile);
 }
