@@ -932,7 +932,7 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
-//		NTLMSSP_NEGOTIATE_NTLM2 |
+/*		NTLMSSP_NEGOTIATE_NTLM2 | */
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
 		NTLMSSP_NEGOTIATE_SIGN |
 		NTLMSSP_NEGOTIATE_SEAL;
@@ -965,7 +965,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 	}
 	
 	if (ntlmssp_state->use_ntlmv2) {
-//		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+/*		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;*/
 	}
 
 	/* generate the ntlmssp negotiate packet */
@@ -1287,7 +1287,7 @@ NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
-//		NTLMSSP_NEGOTIATE_NTLM2 |
+/*		NTLMSSP_NEGOTIATE_NTLM2 |*/
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
 		/*
 		 * We need to set this to allow a later SetPassword
