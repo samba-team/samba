@@ -169,7 +169,7 @@ otp_parse_hex (OtpKey key, const char *s)
       if (b - buf >= 16)
 	return -1;
       else
-	*b++ = tolower(*s);
+	*b++ = tolower((unsigned char)*s);
     }
     s++;
   }
