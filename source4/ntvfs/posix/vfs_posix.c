@@ -180,26 +180,6 @@ static NTSTATUS pvfs_copy(struct ntvfs_module_context *ntvfs,
 }
 
 /*
-  seek in a file
-*/
-static NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, struct smb_seek *io)
-{
-	DEBUG(0,("pvfs_seek not implemented\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
-  set info on a pathname
-*/
-static NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_setfileinfo *st)
-{
-	DEBUG(0,("pvfs_setpathinfo not implemented\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
   return print queue info
 */
 static NTSTATUS pvfs_lpq(struct ntvfs_module_context *ntvfs,

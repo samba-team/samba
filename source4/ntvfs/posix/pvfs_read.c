@@ -67,6 +67,8 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
+	f->position = f->seek_offset = rd->readx.in.offset + ret;
+
 	rd->readx.out.nread = ret;
 	rd->readx.out.remaining = 0; /* should fill this in? */
 	rd->readx.out.compaction_mode = 0; 
