@@ -901,6 +901,16 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
     if (src_len + dest_len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
 		     (int)(src_len + dest_len - maxlength), src));
+	    if (dest_len > maxlength) {
+		    /* This really shouldn't happen -- we may have
+		     * already clobbered the buffer -- but it might if
+		     * for some reason we've been passed an unusually
+		     * short maxlength. */
+		    DEBUG(0, ("ERROR: safe_strcat: dest buffer is too long! "
+			      "%d > %d [%.50s]\n",
+			      src_len, maxlength, src));
+		    return dest;
+	    }
 	    src_len = maxlength - dest_len;
     }
       

@@ -3289,7 +3289,7 @@ int reply_printqueue(connection_struct *conn,
 			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
 			CVAL(p,11) = 0;
-			StrnCpy(p+12,queue[i].user,16);
+			StrnCpy(p+12,queue[i].fs_user,16);
 			p += 28;
 		}
 
