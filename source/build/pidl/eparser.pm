@@ -57,9 +57,9 @@ sub ParseStruct($)
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 	    if (defined $e->{POINTERS}) {
-		$res .= "\tptr_$e->{NAME} = prs_$e->{TYPE}_ptr(); /* $e->{NAME} */\n";
+		$res .= "\toffset = dissect_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME});\n";
 	    } else {
-		$res .= "\tprs_$e->{TYPE}(); /* $e->{NAME} */\n";
+		$res .= "\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree);\n";
 	    }
 	}	
 
@@ -68,7 +68,7 @@ sub ParseStruct($)
 	$res .= "\n\t/* Parse buffers */\n\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    $res .= "\tif (ptr_$e->{NAME})\n\t\tprs_$e->{TYPE}(); /* $e->{NAME} */\n\n",
+	    $res .= "\tif (ptr_$e->{NAME})\n\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree);\n\n",
 	    if (defined $e->{POINTERS});
 	}
     }
@@ -81,12 +81,12 @@ sub ParseUnionElement($)
 {
     my($element) = shift;
     
-#    $res .= "void prs_$element->{DATA}->{TYPE}()\n{\n";
+#    $res .= "int dissect_$element->{DATA}->{TYPE}()\n{\n";
 
 #    $res .= "}\n\n";
 
     $res .= "\tcase $element->{DATA}->{NAME}: \n";
-    $res .= "\t\tprs_$element->{DATA}->{TYPE}();\n\t\tbreak;\n";
+    $res .= "\t\toffset = dissect_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree);\n\t\tbreak;\n";
 
 #    $res .= "[case($element->{CASE})] ";
 #    ParseElement($element->{DATA});
@@ -98,8 +98,6 @@ sub ParseUnionElement($)
 sub ParseUnion($)
 {
     my($union) = shift;
-
-#    print Dumper($union);
 
     $res .= "\tswitch (level) {\n";
 
@@ -117,8 +115,6 @@ sub ParseType($)
 {
     my($data) = shift;
 
-    print Dumper $data;
-
     if (ref($data) eq "HASH") {
 	($data->{TYPE} eq "STRUCT") &&
 	    ParseStruct($data);
@@ -135,7 +131,8 @@ sub ParseTypedef($)
 {
     my($typedef) = shift;
 
-    $res .= "void prs_$typedef->{NAME}(void)\n{\n";
+    $res .= "static int dissect_$typedef->{NAME}(tvbuff_t *tvb, int offset,\
+\tpacket_info *pinfo, proto_tree *tree)\n{\n";
     ParseType($typedef->{DATA});
     $res .= "}\n\n";
 }
@@ -154,21 +151,20 @@ sub ParseFunctionArg($$)
 	    
 	foreach my $prop (@{$arg->{PROPERTIES}}) {
 	    if ($prop =~ /context_handle/) {
-		$res .= "\tprs_policy_hnd();";
+		$res .= "\toffset = dissect_policy_hnd(tvb, offset, pinfo, tree);\n";
 		$is_pol = 1;
 	    }
 	}
 	
 	if (!$is_pol) {
 	    if ($arg->{POINTERS}) {
-		$res .= "\tptr_$arg->{NAME} = prs_ptr();\n";
-		$res .= "\tif (ptr_$arg->{NAME})\n\t\tprs_$arg->{TYPE}();";
+		$res .= "\tptr_$arg->{NAME} = dissect_dcerpc_ptr(tvb, offset, pinfo, tree);\n";
+		$res .= "\tif (ptr_$arg->{NAME})\
+\t\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, NULL);\n\n";
 	    } else {
-		$res .= "\tprs_$arg->{TYPE}();";
+		$res .= "\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree);\n";
 	    }
 	}
-	
-	$res .= "\t/* $arg->{NAME} */\n";
     }
 }
     
@@ -180,25 +176,27 @@ sub ParseFunction($)
 
     # Input function
 
-    $res .= "void $function->{NAME}_q(void)\n{\n";
+    $res .= "static int $function->{NAME}_q(tvbuff_t *tvb, int offset,\
+\tpacket_info *pinfo, proto_tree *tree)\n{\n";
 
     foreach my $arg (@{$function->{DATA}}) {
 	ParseFunctionArg($arg, "in");
     }
     
-    $res .= "}\n\n";
+    $res .= "\n\treturn 0;\n}\n\n";
     
     # Output function
 
-    $res .= "void $function->{NAME}_r(void)\n{\n";
+    $res .= "static int $function->{NAME}_r(tvbuff_t *tvb, int offset,\
+\tpacket_info *pinfo, proto_tree *tree)\n{\n";
 
     foreach my $arg (@{$function->{DATA}}) {
 	ParseFunctionArg($arg, "out");
     }
 
-    $res .= "\tprs_$function->{RETURN_TYPE}();\t/* Return value */\n";
+    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree);\n";
 
-    $res .= "}\n\n";
+    $res .= "\n\treturn 0;\n}\n\n";
 
 }
 
