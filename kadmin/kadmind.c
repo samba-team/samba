@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -143,11 +143,12 @@ main(int argc, char **argv)
 
     {
 	int fd = 0;
-	struct sockaddr sa;
-	socklen_t sa_size;
+	struct sockaddr_storage __ss;
+	struct sockaddr *sa = (struct sockaddr *)&__ss;
+	socklen_t sa_size = sizeof(__ss);
 	krb5_auth_context ac = NULL;
 	int debug_port;
-	sa_size = sizeof(sa);
+
 	if(debug_flag) {
 	    if(port_str == NULL)
 		debug_port = krb5_getportbyname (context, "kerberos-adm", 
@@ -155,7 +156,7 @@ main(int argc, char **argv)
 	    else
 		debug_port = htons(atoi(port_str));
 	    mini_inetd(debug_port);
-	} else if(roken_getsockname(STDIN_FILENO, &sa, &sa_size) < 0 && 
+	} else if(roken_getsockname(STDIN_FILENO, sa, &sa_size) < 0 && 
 		   errno == ENOTSOCK) {
 	    parse_ports(context, port_str ? port_str : "+");
 	    pidfile(NULL);
