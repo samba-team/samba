@@ -187,9 +187,9 @@ static void get_username (char *username)
 	return;
 }
 
-/* Fetch the SID for this domain */
+/* Fetch the SID for this computer */
 
-void fetch_domain_sid(struct cli_state *cli)
+void fetch_machine_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
@@ -356,17 +356,17 @@ static struct cmd_set rpcclient_commands[] = {
 
 	{ "GENERAL OPTIONS" },
 
-	{ "help", 	cmd_help, 	"Get help on commands", "[command]" },
-	{ "?", 		cmd_help, 	"Get help on commands", "[command]" },
-	{ "debuglevel", cmd_debuglevel, "Set debug level", "level" },
-	{ "exit", 	cmd_quit, 	"Exit program", "" },
-	{ "quit", 	cmd_quit, 	"Exit program", "" },
+	{ "help", 	cmd_help, 	NULL,	"Get help on commands", "[command]" },
+	{ "?", 		cmd_help, 	NULL,	"Get help on commands", "[command]" },
+	{ "debuglevel", cmd_debuglevel, NULL,	"Set debug level", "level" },
+	{ "exit", 	cmd_quit, 	NULL,	"Exit program", "" },
+	{ "quit", 	cmd_quit, 	NULL,	"Exit program", "" },
 
 	{ NULL }
 };
 
 static struct cmd_set separator_command[] = {
-	{ "---------------", NULL,	"----------------------" },
+	{ "---------------", NULL,	NULL,	"----------------------" },
 	{ NULL }
 };
 
@@ -756,7 +756,9 @@ static void usage(void)
 		cmd_set++;
 	}
 
-        /* Do anything specified with -c */
+	fetch_machine_sid(&cli);
+ 
+       /* Do anything specified with -c */
         if (cmdstr[0]) {
                 char    *cmd;
                 char    *p = cmdstr;

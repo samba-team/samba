@@ -157,8 +157,6 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 	
 	sscanf(argv[1], "%i", &user_rid);
 
-	fetch_domain_sid(cli);
-
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	
@@ -260,8 +258,6 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 
 	group_rid = atoi(argv[1]);
 
-	fetch_domain_sid(cli);
-
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
@@ -322,8 +318,6 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 
 	sscanf(argv[1], "%i", &user_rid);
 
-	fetch_domain_sid(cli);
-
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 		
@@ -381,8 +375,6 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 
 	sscanf(argv[1], "%i", &group_rid);
 
-	fetch_domain_sid(cli);
-
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
@@ -438,8 +430,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	fetch_domain_sid(cli);
-
 	/* Get sam policy handle */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -491,8 +481,6 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 	}
 
 	sscanf(argv[1], "%i", &alias_rid);
-
-	fetch_domain_sid(cli);
 
 	/* Open SAMR handle */
 
@@ -555,8 +543,6 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	fetch_domain_sid(cli);
-
 	/* Get sam policy handle */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -615,8 +601,6 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 
 	if (argc == 2)
 		switch_value = atoi(argv[1]);
-
-	fetch_domain_sid(cli);
 
 	/* Get sam policy handle */
 
@@ -678,8 +662,6 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 
 	acct_name = argv[1];
 
-	fetch_domain_sid(cli);
-
 	/* Get sam policy handle */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -730,8 +712,6 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 		printf("Usage: %s name1 [name2 [name3] [...]]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
-
-	fetch_domain_sid(cli);
 
 	/* Get sam policy and domain handles */
 
@@ -794,8 +774,6 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	fetch_domain_sid(cli);
-
 	/* Get sam policy and domain handles */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -851,8 +829,6 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 		printf("Usage: %s username\n", argv[0]);
 		return NT_STATUS_OK;
 	}
-
-	fetch_domain_sid(cli);
 
 	/* Get sam policy and domain handles */
 
@@ -915,19 +891,19 @@ struct cmd_set samr_commands[] = {
 
 	{ "SAMR" },
 
-	{ "queryuser", 		cmd_samr_query_user, 		"Query user info",         "" },
-	{ "querygroup", 	cmd_samr_query_group, 		"Query group info",        "" },
-	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups",       "" },
-	{ "querygroupmem", 	cmd_samr_query_groupmem, 	"Query group membership",  "" },
-	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	"Query alias membership",  "" },
-	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	"Query display info",      "" },
-	{ "querydominfo", 	cmd_samr_query_dominfo, 	"Query domain info",       "" },
-	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       "Enumerate domain groups", "" },
+	{ "queryuser", 		cmd_samr_query_user, 		PIPE_SAMR,	"Query user info",         "" },
+	{ "querygroup", 	cmd_samr_query_group, 		PIPE_SAMR,	"Query group info",        "" },
+	{ "queryusergroups", 	cmd_samr_query_usergroups, 	PIPE_SAMR,	"Query user groups",       "" },
+	{ "querygroupmem", 	cmd_samr_query_groupmem, 	PIPE_SAMR,	"Query group membership",  "" },
+	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	PIPE_SAMR,	"Query alias membership",  "" },
+	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	PIPE_SAMR,	"Query display info",      "" },
+	{ "querydominfo", 	cmd_samr_query_dominfo, 	PIPE_SAMR,	"Query domain info",       "" },
+	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       PIPE_SAMR,	"Enumerate domain groups", "" },
 
-	{ "createdomuser",      cmd_samr_create_dom_user,       "Create domain user",      "" },
-	{ "samlookupnames",     cmd_samr_lookup_names,          "Look up names",           "" },
-	{ "samlookuprids",      cmd_samr_lookup_rids,           "Look up names",           "" },
-	{ "deletedomuser",      cmd_samr_delete_dom_user,       "Delete domain user",      "" },
+	{ "createdomuser",      cmd_samr_create_dom_user,       PIPE_SAMR,	"Create domain user",      "" },
+	{ "samlookupnames",     cmd_samr_lookup_names,          PIPE_SAMR,	"Look up names",           "" },
+	{ "samlookuprids",      cmd_samr_lookup_rids,           PIPE_SAMR,	"Look up names",           "" },
+	{ "deletedomuser",      cmd_samr_delete_dom_user,       PIPE_SAMR,	"Delete domain user",      "" },
 
 	{ NULL }
 };
