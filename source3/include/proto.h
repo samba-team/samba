@@ -152,11 +152,14 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 
 /*The following definitions come from  lib/messages.c  */
 
+void ping_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL message_init(void);
 BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len);
 void message_dispatch(void);
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
+void message_deregister(int msg_type);
+BOOL message_send_all(int msg_type, void *buf, size_t len);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 

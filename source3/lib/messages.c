@@ -304,3 +304,46 @@ void message_deregister(int msg_type)
 		}
 	}	
 }
+
+static struct {
+	int msg_type;
+	void *buf;
+	size_t len;
+} msg_all;
+
+/****************************************************************************
+send one of the messages for the broadcast
+****************************************************************************/
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	struct connections_data crec;
+
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+
+	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len);
+	return 0;
+}
+
+/****************************************************************************
+this is a useful function for sending messages to all smbd processes.
+It isn't very efficient, but should be OK for the sorts of applications that 
+use it. When we need efficient broadcast we can add it.
+****************************************************************************/
+BOOL message_send_all(int msg_type, void *buf, size_t len)
+{
+	TDB_CONTEXT *tdb;
+
+	tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+	if (!tdb) {
+		DEBUG(2,("Failed to open connections database in message_send_all\n"));
+		return False;
+	}
+
+	msg_all.msg_type = msg_type;
+	msg_all.buf = buf;
+	msg_all.len = len;
+
+	tdb_traverse(tdb, traverse_fn, NULL);
+	tdb_close(tdb);
+	return True;
+}

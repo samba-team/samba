@@ -83,7 +83,7 @@ FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
 FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus @RUNPROG@
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient @WRAP@ @WRAP32@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
@@ -226,7 +226,7 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
-MSGTEST_OBJ = utils/msgtest.o $(LOCKING_OBJ) $(PARAM_OBJ) \
+SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
@@ -470,9 +470,9 @@ bin/smbstatus: $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
+bin/smbcontrol: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
