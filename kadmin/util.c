@@ -269,7 +269,7 @@ deltat2str(unsigned t, char *str, size_t len)
  */
 
 int
-str2deltat(const char *str, unsigned *delta)
+str2deltat(const char *str, krb5_deltat *delta)
 {
     int res;
 
@@ -294,7 +294,7 @@ str2deltat(const char *str, unsigned *delta)
 int
 parse_deltat (const char *resp, krb5_deltat *value, int *mask, int bit)
 {
-    unsigned tmp;
+    krb5_deltat tmp;
 
     if (str2deltat(resp, &tmp) == 0) {
 	*value = tmp;
