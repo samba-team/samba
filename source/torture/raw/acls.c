@@ -291,6 +291,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					SID_CREATOR_OWNER,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
 					SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
+					0,
 					NULL);
 
 	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
@@ -327,6 +328,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
 					SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
+					0,
 					NULL);
 
 	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
@@ -380,6 +382,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
 					SEC_GENERIC_READ | SEC_STD_ALL,
+					0,
 					NULL);
 
 	set.set_secdesc.in.sd = sd;
@@ -392,6 +395,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					 owner_sid,
 					 SEC_ACE_TYPE_ACCESS_ALLOWED,
 					 SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
+					 0,
 					 NULL);
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
@@ -554,6 +558,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						file_mappings[i].gen_bits,
+						0,
 						NULL);
 
 		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
@@ -569,6 +574,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
 						 file_mappings[i].specific_bits,
+						 0,
 						 NULL);
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
@@ -599,6 +605,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						file_mappings[i].gen_bits,
+						0,
 						NULL);
 
 		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
@@ -614,6 +621,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
 						 file_mappings[i].specific_bits,
+						 0,
 						 NULL);
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
@@ -688,6 +696,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						dir_mappings[i].gen_bits,
+						0,
 						NULL);
 
 		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
@@ -703,6 +712,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
 						 dir_mappings[i].specific_bits,
+						 0,
 						 NULL);
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
@@ -737,6 +747,265 @@ done:
 }
 
 
+
+/*
+  test the inheritance of ACL flags onto new files and directories
+*/
+static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *dname = BASEDIR "\\inheritance";
+	const char *fname1 = BASEDIR "\\inheritance\\testfile";
+	const char *fname2 = BASEDIR "\\inheritance\\testdir";
+	BOOL ret = True;
+	int fnum, fnum2, i;
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_descriptor *sd, *sd_orig;
+	const char *owner_sid;
+	const struct {
+		uint32_t parent_flags;
+		uint32_t file_flags;
+		uint32_t dir_flags;
+	} test_flags[] = {
+		{
+			0, 
+			0,
+			0
+		},
+		{
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_INHERIT_ONLY,
+		},
+		{
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+			0,
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+		},
+		{
+			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+			0,
+			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+		},
+		{
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_INHERIT_ONLY,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+			0,
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT,
+			0,
+			0,
+		},
+		{
+			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT,
+			0,
+			0,
+		}
+	};
+
+	printf("TESTING ACL INHERITANCE\n");
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	printf("get the original sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd_orig = q.query_secdesc.out.sd;
+
+	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
+
+	for (i=0;i<ARRAY_SIZE(test_flags);i++) {
+		sd = security_descriptor_create(mem_ctx,
+						NULL, NULL,
+						owner_sid,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						SEC_FILE_ALL | SEC_STD_ALL,
+						test_flags[i].parent_flags,
+						SID_WORLD,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						SEC_FILE_ALL | SEC_STD_ALL,
+						0,
+						NULL);
+		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+		set.set_secdesc.file.fnum = fnum;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.sd = sd;
+		status = smb_raw_setfileinfo(cli->tree, &set);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		io.ntcreatex.in.fname = fname1;
+		io.ntcreatex.in.create_options = 0;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		fnum2 = io.ntcreatex.out.fnum;
+
+		q.query_secdesc.in.fnum = fnum2;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		smbcli_close(cli->tree, fnum2);
+		smbcli_unlink(cli->tree, fname1);
+
+
+		if (q.query_secdesc.out.sd->dacl == NULL ||
+		    q.query_secdesc.out.sd->dacl->num_aces < 1 ||
+		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
+				   sd_orig->owner_sid)) {
+			printf("Bad sd in child at %d\n", i);
+			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+			ret = False;
+			goto done;
+		}
+
+		if (q.query_secdesc.out.sd->dacl->aces[0].flags != 
+		    test_flags[i].file_flags) {
+			printf("incorrect file_flags 0x%x - expected 0x%x for parent 0x%x with (i=%d)\n",
+			       q.query_secdesc.out.sd->dacl->aces[0].flags,
+			       test_flags[i].file_flags,
+			       test_flags[i].parent_flags,
+			       i);
+			ret = False;
+		}
+
+		io.ntcreatex.in.fname = fname2;
+		io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		fnum2 = io.ntcreatex.out.fnum;
+
+		q.query_secdesc.in.fnum = fnum2;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		smbcli_close(cli->tree, fnum2);
+		smbcli_rmdir(cli->tree, fname2);
+
+		if (q.query_secdesc.out.sd->dacl == NULL ||
+		    q.query_secdesc.out.sd->dacl->num_aces < 1 ||
+		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
+				   sd_orig->owner_sid)) {
+			printf("Bad sd in child at %d\n", i);
+			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+			ret = False;
+			goto done;
+		}
+
+		if (q.query_secdesc.out.sd->dacl->aces[0].flags != 
+		    test_flags[i].dir_flags) {
+			printf("incorrect dir_flags 0x%x - expected 0x%x for parent 0x%x with (i=%d)\n",
+			       q.query_secdesc.out.sd->dacl->aces[0].flags,
+			       test_flags[i].dir_flags,
+			       test_flags[i].parent_flags,
+			       i);
+			ret = False;
+		}
+	}
+
+	printf("put back original sd\n");
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd_orig;
+	status = smb_raw_setfileinfo(cli->tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_rmdir(cli->tree, dname);
+
+
+done:
+	smbcli_close(cli->tree, fnum);
+	return ret;
+}
+
+
 /* 
    basic testing of security descriptor calls
 */
@@ -760,6 +1029,7 @@ BOOL torture_raw_acls(void)
 	ret &= test_nttrans_create(cli, mem_ctx);
 	ret &= test_creator_sid(cli, mem_ctx);
 	ret &= test_generic_bits(cli, mem_ctx);
+	ret &= test_inheritance(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
