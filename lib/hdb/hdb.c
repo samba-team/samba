@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -231,13 +231,13 @@ find_dynamic_method (krb5_context context,
     dl = NULL;
 
     p = strchr(filename, ':');
-    if (p != NULL) {
-	len = p - filename;
-	*rest = filename + len + 1;
-    } else {
-	len = strlen(filename);
-	*rest = "";
-    }
+
+    /* if no prefix, don't know what module to load, just ignore it */
+    if (p == NULL)
+	return NULL;
+
+    len = p - filename;
+    *rest = filename + len + 1;
     
     prefix = strndup(filename, len);
     if (prefix == NULL)
