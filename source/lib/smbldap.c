@@ -879,37 +879,69 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 	return NT_STATUS_OK;
 }
 
-int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
+static BOOL got_alarm;
+
+static void (*old_handler)(int);
+
+static void gotalarm_sig(int dummy)
 {
-	int rc;
-
-	SMB_ASSERT(ldap_state && attempts);
-		
-	if (*attempts != 0) {
-		unsigned int sleep_time;
-		uint8 rand_byte;
-
-		/* Sleep for a random timeout */
-		rand_byte = (char)(sys_random());
-
-		sleep_time = (((*attempts)*(*attempts))/2)*rand_byte*2; 
-		/* we retry after (0.5, 1, 2, 3, 4.5, 6) seconds
-		   on average.  
-		 */
-		DEBUG(3, ("Sleeping for %u milliseconds before reconnecting\n", 
-			  sleep_time));
-		smb_msleep(sleep_time);
-	}
-	(*attempts)++;
-
-	if ((rc = smbldap_open(ldap_state))) {
-		DEBUG(1,("Connection to LDAP Server failed for the %d try!\n",*attempts));
-		return rc;
-	} 
-	
-	return LDAP_SUCCESS;		
+	got_alarm = True;
 }
 
+static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
+			    int *attempts, time_t endtime)
+{
+	time_t now = time(NULL);
+	int open_rc = LDAP_SERVER_DOWN;
+
+	if (*rc != LDAP_SERVER_DOWN)
+		goto no_next;
+
+	now = time(NULL);
+
+	if (now >= endtime) {
+		smbldap_close(ldap_state);
+		*rc = LDAP_TIMEOUT;
+		goto no_next;
+	}
+
+	if (*attempts == 0) {
+		got_alarm = False;
+		old_handler = CatchSignal(SIGALRM, gotalarm_sig);
+		alarm(endtime - now);
+	}
+
+	while (1) {
+
+		if (*attempts != 0)
+			smb_msleep(1000);
+
+		*attempts += 1;
+
+		open_rc = smbldap_open(ldap_state);
+
+		if (open_rc == LDAP_SUCCESS) {
+			ldap_state->last_use = now;
+			return True;
+		}
+
+		if (got_alarm) {
+			*rc = LDAP_TIMEOUT;
+			break;
+		}
+
+		if (open_rc != LDAP_SUCCESS) {
+			DEBUG(1, ("Connection to LDAP server failed for the "
+				  "%d try!\n", *attempts));
+		}
+	}
+
+ no_next:
+	CatchSignal(SIGALRM, old_handler);
+	alarm(0);
+	ldap_state->last_use = now;
+	return False;
+}
 
 /*********************************************************************
  ********************************************************************/
@@ -922,6 +954,7 @@ int smbldap_search(struct smbldap_state *ldap_state,
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_filter;
+	time_t		endtime = time(NULL)+lp_ldap_timeout();
 
 	SMB_ASSERT(ldap_state);
 	
@@ -955,22 +988,10 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		return LDAP_NO_MEMORY;
 	}
 
-	while ((rc == LDAP_SERVER_DOWN) && (attempts < SMBLDAP_NUM_RETRIES)) {
-		
-		if ((rc = smbldap_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
-			continue;
-		
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
 		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, 
 				   utf8_filter, attrs, attrsonly, res);
-	}
 	
-	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
-		smbldap_close(ldap_state);	
-	}
-
-	ldap_state->last_use = time(NULL);
-
 	SAFE_FREE(utf8_filter);
 	return rc;
 }
@@ -980,6 +1001,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
+	time_t		endtime = time(NULL)+lp_ldap_timeout();
 
 	SMB_ASSERT(ldap_state);
 
@@ -989,21 +1011,9 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		return LDAP_NO_MEMORY;
 	}
 
-	while ((rc == LDAP_SERVER_DOWN) && (attempts < SMBLDAP_NUM_RETRIES)) {
-		
-		if ((rc = smbldap_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
-			continue;
-		
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
-	}
-	
-	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
-		smbldap_close(ldap_state);	
-	}
-	
-	ldap_state->last_use = time(NULL);
-
+		
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1013,6 +1023,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
+	time_t		endtime = time(NULL)+lp_ldap_timeout();
 	
 	SMB_ASSERT(ldap_state);
 
@@ -1022,21 +1033,9 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		return LDAP_NO_MEMORY;
 	}
 
-	while ((rc == LDAP_SERVER_DOWN) && (attempts < SMBLDAP_NUM_RETRIES)) {
-		
-		if ((rc = smbldap_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
-			continue;
-		
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
-	}
 	
-	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
-		smbldap_close(ldap_state);	
-	}
-		
-	ldap_state->last_use = time(NULL);
-
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1046,6 +1045,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
+	time_t		endtime = time(NULL)+lp_ldap_timeout();
 	
 	SMB_ASSERT(ldap_state);
 
@@ -1055,21 +1055,9 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		return LDAP_NO_MEMORY;
 	}
 
-	while ((rc == LDAP_SERVER_DOWN) && (attempts < SMBLDAP_NUM_RETRIES)) {
-		
-		if ((rc = smbldap_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
-			continue;
-		
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
-	}
 	
-	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
-		smbldap_close(ldap_state);	
-	}
-		
-	ldap_state->last_use = time(NULL);
-
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1081,26 +1069,15 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
+	time_t		endtime = time(NULL)+lp_ldap_timeout();
 	
 	if (!ldap_state)
 		return (-1);
 
-	while ((rc == LDAP_SERVER_DOWN) && (attempts < SMBLDAP_NUM_RETRIES)) {
-		
-		if ((rc = smbldap_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
-			continue;
-		
-		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid, reqdata, 
-					       serverctrls, clientctrls, retoidp, retdatap);
-	}
-	
-	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
-		smbldap_close(ldap_state);	
-	}
-		
-	ldap_state->last_use = time(NULL);
-
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
+					       reqdata, serverctrls,
+					       clientctrls, retoidp, retdatap);
 	return rc;
 }
 
