@@ -6300,6 +6300,10 @@ directory tree exported by the server are always allowed; this
 parameter controls access only to areas that are outside the directory
 tree being exported\&.
 .IP 
+Note that setting this parameter can have a negative effect on your
+server performance due to the extra system calls that Samba has to
+do in order to perform the link checks\&.
+.IP 
 \fBDefault:\fP
 \f(CW 	wide links = yes\fP
 .IP 

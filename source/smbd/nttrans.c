@@ -1734,7 +1734,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
      * Create the generic 3 element UNIX acl.
      */
 
-	owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
+    owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
 							S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
     group_access = map_unix_perms(&grp_acl_type, sbuf.st_mode,
 							S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);

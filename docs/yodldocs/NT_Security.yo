@@ -2,10 +2,10 @@ mailto(samba-bugs@samba.org)
 
 article(Viewing and changing UNIX permissions using the NT security dialogs in Samba 2.0.4)(Jeremy Allison, Samba Team)(12th April 1999)
 
-center(bf(Viewing and changing UNIX permissions using the NT security dialogs))
+center(bf(Viewing and changing UNIX permissions using the NT security dialogs))nl()
 center(bf(-------------------------------------------------------------------))
 
-New in the url(bf(Samba 2.0.4))(www.samba.org) release is the
+New in the bf(Samba 2.0.4) release is the
 ability for Windows NT clients to use their native security
 settings dialog box to view and modify the underlying UNIX
 permissions.
@@ -15,11 +15,11 @@ of the UNIX host Samba is running on, and still obeys all the
 file permission rules that a Samba administrator can set.
 
 In Samba 2.0.4 and above the default value of the parameter
-url(bf("nt acl support="))(smb.conf.5.html#ntaclsupport) has been
+url(bf("nt acl support"))(smb.conf.5.html#ntaclsupport) has been
 changed from "false" to "true", so manipulation of permissions is
 turned on by default.
 
-bf(How to view file security on a Samba share)
+bf(How to view file security on a Samba share)nl()
 bf(------------------------------------------)
 
 From an NT 4.0 client, single-click with the right mouse button on
@@ -37,7 +37,7 @@ NT Administrator. This dialog is non-functional with a Samba
 share at this time, as the only useful button, the tt(Add) button
 will not currently allow a list of users to be seen.
 
-bf(Viewing file ownership)
+bf(Viewing file ownership)nl()
 bf(----------------------)
 
 Clicking on the tt("Ownership") button brings up a dialog box telling
@@ -51,7 +51,7 @@ is the discriptive string identifying the user (normally found in the
 GECOS field of the UNIX password database). Click on the tt(Close)
 button to remove this dialog.
 
-If the parameter url(bf("nt acl support="))(smb.conf.5.html#ntaclsupport)
+If the parameter url(bf("nt acl support"))(smb.conf.5.html#ntaclsupport)
 is set to "false" then the file owner will be shown as the NT user
 tt("Everyone").
 
@@ -71,8 +71,8 @@ filesystem or remote mounted NTFS or Samba drive. This is available
 as part of the bf(Seclib) NT security library written by Jeremy
 Allison of the Samba Team, available from the main Samba ftp site.
 
-tt(Viewing file or directory permissions)
-tt(-------------------------------------)
+bf(Viewing file or directory permissions)nl()
+bf(-------------------------------------)
 
 The third button is the tt("Permissions") button. Clicking on this
 brings up a dialog box that shows both the permissions and the UNIX
@@ -85,15 +85,15 @@ is the user name of the UNIX user who owns the file, and tt((Long name))
 is the discriptive string identifying the user (normally found in the
 GECOS field of the UNIX password database).
 
-If the parameter url(bf("nt acl support="))(smb.conf.5.html#ntaclsupport)
+If the parameter url(bf("nt acl support"))(smb.conf.5.html#ntaclsupport)
 is set to "false" then the file owner will be shown as the NT user
 tt("Everyone") and the permissions will be shown as NT tt("Full Control").
 
 The permissions field is displayed differently for files and directories,
 so I'll describe the way file permissions are displayed first.
 
-tt(File Permissions)
-tt(----------------)
+bf(File Permissions)nl()
+bf(----------------)
 
 The standard UNIX user/group/world triple and the correspinding
 "read", "write", "execute" permissions triples are mapped by Samba
@@ -119,8 +119,8 @@ tt("O") bit set. This was chosen of course to make it look like a
 zero, meaning zero permissions. More details on the decision behind
 this will be given below.
 
-tt(Directory Permissions)
-tt(---------------------)
+bf(Directory Permissions)nl()
+bf(---------------------)
 
 Directories on an NT NTFS file system have two different sets of
 permissions. The first set of permissions is the ACL set on the
@@ -138,8 +138,8 @@ Samba synthesises these inherited permissions for NT by returning as
 an NT ACL the UNIX permission mode that a new file created by Samba
 on this share would receive.
 
-tt(Modifying file or directory permissions)
-tt(---------------------------------------)
+bf(Modifying file or directory permissions)nl()
+bf(---------------------------------------)
 
 Modifying file and directory permissions is as simple as changing
 the displayed permissions in the dialog box, and clicking the tt(OK)
@@ -147,7 +147,7 @@ button. However, there are limitations that a user needs to be aware
 of, and also interactions with the standard Samba permission masks
 and mapping of DOS attributes that need to also be taken into account.
 
-If the parameter url(bf("nt acl support="))(smb.conf.5.html#ntaclsupport)
+If the parameter url(bf("nt acl support"))(smb.conf.5.html#ntaclsupport)
 is set to "false" then any attempt to set security permissions will
 fail with an tt("Access Denied") message.
 
@@ -182,8 +182,8 @@ component then you may either highlight the component and click
 the tt("Remove") button, or set the component to only have the special
 tt("Take Ownership") permission (dsplayed as tt("O")) highlighted.
 
-tt(Interaction with the standard Samba create mask parameters)
-tt(----------------------------------------------------------)
+bf(Interaction with the standard Samba create mask parameters)nl()
+bf(----------------------------------------------------------)
 
 Once a user clicks tt("OK") to apply the permissions Samba maps
 the given permissions into a user/group/world r/w/x triple set,
@@ -209,8 +209,8 @@ tt(force create mode = 0)
 tt(directory mask = 0777)
 tt(force directory mode = 0)
 
-tt(Interaction with the standard Samba file attribute mapping)
-tt(----------------------------------------------------------)
+bf(Interaction with the standard Samba file attribute mapping)nl()
+bf(----------------------------------------------------------)
 
 Samba maps some of the DOS attribute bits (such as "read only")
 into the UNIX permissions of a file. This means there can be a

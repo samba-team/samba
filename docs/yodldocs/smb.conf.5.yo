@@ -6179,6 +6179,10 @@ directory tree exported by the server are always allowed; this
 parameter controls access only to areas that are outside the directory
 tree being exported.
 
+Note that setting this parameter can have a negative effect on your
+server performance due to the extra system calls that Samba has to
+do in order to perform the link checks.
+
   bf(Default:)
 tt( 	wide links = yes)
 
