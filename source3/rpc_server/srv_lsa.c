@@ -402,13 +402,17 @@ static BOOL lsa_reply_lookup_sids(prs_struct *rdata, DOM_SID2 *sid, int num_entr
 lsa_reply_lookup_names
  ***************************************************************************/
 
-static BOOL lsa_reply_lookup_names(prs_struct *rdata,
-                UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
+static BOOL lsa_reply_lookup_names(prs_struct *rdata, UNISTR2 *names, 
+				   int num_entries)
 {
 	LSA_R_LOOKUP_NAMES r_l;
 	DOM_R_REF ref;
 	DOM_RID2 rids[MAX_LOOKUP_SIDS];
 	uint32 mapped_count = 0;
+	TALLOC_CTX *mem_ctx = talloc_init();
+	BOOL result = True;
+
+	if (!mem_ctx) return False;
 
 	ZERO_STRUCT(r_l);
 	ZERO_STRUCT(ref);
@@ -419,12 +423,13 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata,
 	init_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
-	if(!lsa_io_r_lookup_names("", &r_l, rdata, 0)) {
+	if(!lsa_io_r_lookup_names(mem_ctx, "", &r_l, rdata, 0)) {
 		DEBUG(0,("lsa_reply_lookup_names: Failed to marshall LSA_R_LOOKUP_NAMES.\n"));
-		return False;
+		result = False;
 	}
 
-	return True;
+	talloc_destroy(mem_ctx);
+	return result;
 }
 
 /***************************************************************************
