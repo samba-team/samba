@@ -1,3 +1,8 @@
+2000-06-09  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c: remove all setuid(getuid()).  we do not
+	support telnet being setuid root
+
 2000-05-05  Assar Westerlund  <assar@sics.se>
 
 	* telnet/externs.h (sourceroute): update prototype
