@@ -239,9 +239,11 @@ encode_type (char *name, Type *t)
 	fprintf (codefile,
 		 "if(%s)\n",
 		 s);
+#if 1
       fprintf (codefile, "{\n"
 	       "int oldret = ret;\n"
 	       "ret = 0;\n");
+#endif
       encode_type (s, m->type);
       fprintf (codefile,
 	       "l = der_put_length_and_tag (p, len, ret, CONTEXT, CONS, %d);\n"
@@ -251,9 +253,11 @@ encode_type (char *name, Type *t)
 	       "len -= l;\n"
 	       "ret += l;\n\n",
 	       m->val);
+#if 1
       fprintf (codefile,
 	       "ret += oldret;\n"
 	       "}\n");
+#endif
       if (tag == -1)
 	tag = m->val;
       free (s);
@@ -272,13 +276,19 @@ encode_type (char *name, Type *t)
 
     fprintf (codefile,
 	     "for(i = (%s)->len - 1; i >= 0; --i) {\n"
+#if 1
 	     "int oldret = ret;\n"
 	     "ret = 0;\n",
+#else
+	     ,
+#endif
 	     name);
     sprintf (n, "&(%s)->val[i]", name);
     encode_type (n, t->subtype);
     fprintf (codefile,
+#if 1
 	     "ret += oldret;\n"
+#endif
 	     "}\n"
 	     "l = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence);\n"
 	     "if(l < 0)\n"
@@ -320,14 +330,38 @@ generate_type_encode (Symbol *s)
 
   fprintf (codefile, "int\n"
 	   "encode_%s(unsigned char *p, int len, %s *data)\n"
-	   "{\n"
-	   "int ret = 0;\n"
-	   "int l, i;\n\n",
+	   "{\n",
 	   s->gen_name, s->gen_name);
 
-  encode_type ("data", s->type);
-  fprintf (codefile, "return ret;\n"
-	   "}\n\n");
+  switch (s->type->type) {
+  case TInteger:
+    fprintf (codefile, "return encode_integer (p, len, data);\n");
+    break;
+  case TOctetString:
+    fprintf (codefile, "return encode_octet_string (p, len, data);\n");
+    break;
+  case TGeneralizedTime:
+    fprintf (codefile, "return encode_generalized_time (p, len, data);\n");
+    break;
+  case TGeneralString:
+    fprintf (codefile, "return encode_general_string (p, len, data);\n");
+    break;
+  case TBitString:
+  case TSequence:
+  case TSequenceOf:
+  case TApplication:
+  case TType:
+    fprintf (codefile,
+	     "int ret = 0;\n"
+	     "int l, i;\n\n");
+    
+    encode_type ("data", s->type);
+    fprintf (codefile, "return ret;\n");
+    break;
+  default:
+    abort ();
+  }
+  fprintf (codefile, "}\n\n");
 }
 
 static void
@@ -572,6 +606,50 @@ generate_type_decode (Symbol *s)
 
   fprintf (codefile, "int\n"
 	   "decode_%s(unsigned char *p, int len, %s *data)\n"
+	   "{\n",
+	   s->gen_name, s->gen_name);
+
+  switch (s->type->type) {
+  case TInteger:
+    fprintf (codefile, "return decode_integer (p, len, data);\n");
+    break;
+  case TOctetString:
+    fprintf (codefile, "return decode_octet_string (p, len, data);\n");
+    break;
+  case TGeneralizedTime:
+    fprintf (codefile, "return decode_generalized_time (p, len, data);\n");
+    break;
+  case TGeneralString:
+    fprintf (codefile, "return decode_general_string (p, len, data);\n");
+    break;
+  case TBitString:
+  case TSequence:
+  case TSequenceOf:
+  case TApplication:
+  case TType:
+    fprintf (codefile,
+	     "int ret = 0, reallen;\n"
+	     "int l, i;\n\n");
+    
+    decode_type ("data", s->type);
+    fprintf (codefile, "return ret;\n");
+    break;
+  default:
+    abort ();
+  }
+  fprintf (codefile, "}\n\n");
+}
+
+#if 0
+static void
+generate_type_decode (Symbol *s)
+{
+  fprintf (headerfile,
+	   "int decode_%s(unsigned char *, int, %s *);\n",
+	   s->gen_name, s->gen_name);
+
+  fprintf (codefile, "int\n"
+	   "decode_%s(unsigned char *p, int len, %s *data)\n"
 	   "{\n"
 	   "int ret = 0, reallen;\n"
 	   "int l, i;\n\n",
@@ -581,6 +659,7 @@ generate_type_decode (Symbol *s)
   fprintf (codefile, "return ret;\n"
 	   "}\n\n");
 }
+#endif
 
 void
 generate_type (Symbol *s)
