@@ -520,7 +520,7 @@ void start_background_queue(void)
 		if (!print_backend_init())
 			exit(1);
 
-		message_register(MSG_PRINTER_DRVUPGRADE, print_queue_receive);
+		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
 		
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
@@ -537,7 +537,7 @@ update the internal database from the system print queue for a queue
 static void print_queue_update(int snum)
 {
 	if (background_lpq_updater_pid > 0) {
-		message_send_pid(background_lpq_updater_pid, MSG_PRINTER_DRVUPGRADE, 
+		message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, 
 				 &snum, sizeof(snum), False);
 	}
 }
