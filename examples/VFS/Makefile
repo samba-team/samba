@@ -1,7 +1,7 @@
 #
 # Makefile for samba-vfs examples
 #
-# $Id: Makefile,v 1.2.2.1 2000/04/05 22:20:34 tpot Exp $
+# $Id: Makefile,v 1.2.2.2 2000/04/05 22:44:33 tpot Exp $
 #
 
 # Variables
@@ -29,4 +29,5 @@ default: $(VFS_OBJS)
 
 clean:
 	rm -rf .libs
-	rm -f core $(VFS_OBJS) $(VFS_OBJS:.so=.lo) *~ *% *.bak
+	rm -f core *~ *% *.bak \
+		$(VFS_OBJS) $(VFS_OBJS:.so=.o) $(VFS_OBJS:.so=.lo) 
