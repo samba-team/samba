@@ -41,7 +41,7 @@ sub randguid()
 	return sprintf("%08x-%04x-%04x-%04x-%08x%04x", $r1, $r2, $r3, $r4, $r5, $r6);
 }
 
-my $domainguid = randguid();
+my $opt_domainguid = randguid();
 my $hostguid = randguid();
 
 sub randsid()
@@ -50,7 +50,7 @@ sub randsid()
 		       int(rand(10**8)), int(rand(10**8)), int(rand(10**8)));
 }
 
-my $domainsid = randsid();
+my $opt_domainsid = randsid();
 
 # generate a random password. Poor algorithm :(
 sub randpass()
@@ -82,7 +82,7 @@ sub substitute($)
 	}
 
 	if ($var eq "DOMAINSID") {
-		return $domainsid;
+		return $opt_domainsid;
 	}
 
 	if ($var eq "DOMAIN") {
@@ -122,7 +122,7 @@ sub substitute($)
 	}
 
 	if ($var eq "DOMAINGUID") {
-		return $domainguid;
+		return $opt_domainguid;
 	}
 
 	if ($var eq "HOSTGUID") {
@@ -246,6 +246,8 @@ GetOptions(
 	    'help|h|?' => \$opt_help, 
 	    'realm=s' => \$opt_realm,
 	    'domain=s' => \$opt_domain,
+	    'domain-guid=s' => \$opt_domainguid,
+	    'domain-sid=s' => \$opt_domainsid,
 	    'hostname=s' => \$opt_hostname,
 	    'hostip=s' => \$opt_hostip,
 	    'adminpass=s' => \$opt_adminpass,
