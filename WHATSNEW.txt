@@ -130,6 +130,9 @@ o   Jelmer Vernooij <jelmer@samba.org>
     * Put functions for generating SQL queries in pdb_sql.c
     * Add pgSQL backend (based on patch by Hamish Friedlander)
     
+o   James Peach <jpeach@sgi.com>
+    * Change smbd to use pread/pwrite on platforms that support
+      these calls. Can lead to a significant speed increase.
 
 
 Changes since 3.0.0
