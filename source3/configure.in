@@ -1161,15 +1161,15 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    # try building a trivial shared library
    if test "$PICSUFFIX" = "po"; then
      $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes
    else
      $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
        mv shlib.$PICSUFFIX shlib.po &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes
    fi
-   rm -f shlib.so shlib.po
+   rm -f "shlib.$SHLIBEXT" shlib.po
 ])
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
@@ -2352,13 +2352,13 @@ fi
 
 ########################################################
 # Compile with MySQL support?
-AM_PATH_MYSQL([0.11.0],[MODULE_MYSQL=bin/pdb_mysql.$.so],[MODULE_MYSQL=])
+AM_PATH_MYSQL([0.11.0],[MODULE_MYSQL="bin/pdb_mysql.$SHLIBEXT"],[MODULE_MYSQL=])
 CFLAGS="$CFLAGS $MYSQL_CFLAGS"
 AC_SUBST(MODULE_MYSQL)
 
 ########################################################
 # Compile with XML support?
-AM_PATH_XML2([2.0.0],[MODULE_XML=bin/pdb_xml.so],[MODULE_XML=])
+AM_PATH_XML2([2.0.0],[MODULE_XML="bin/pdb_xml.$SHLIBEXT"],[MODULE_XML=])
 CFLAGS="$CFLAGS $XML_CFLAGS"
 AC_SUBST(MODULE_XML)
 
@@ -3332,14 +3332,14 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         if test x"$BLDSHARED" = x"true"; then
 		case "$host_os" in
 		*irix*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libns_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libns_winbind.$SHLIBEXT"
 			;;
 		*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.$SHLIBEXT"
 			;;
 		esac
 		if test x"$with_pam" = x"yes"; then
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.$SHLIBEXT"
 		fi
 	fi
 else
