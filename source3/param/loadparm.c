@@ -183,6 +183,7 @@ typedef struct
   BOOL bUnixRealname;
   BOOL bNISHomeMap;
   BOOL bTimeServer;
+  BOOL bInterfacesOnly;
 } global;
 
 static global Globals;
@@ -410,6 +411,7 @@ struct parm_struct
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL},
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL},
+  {"interfaces only",  P_BOOL,    P_GLOBAL, &Globals.bInterfacesOnly,   NULL},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
@@ -655,6 +657,7 @@ static void init_globals(void)
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
+  Globals.bInterfacesOnly = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -867,6 +870,7 @@ FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
+FN_GLOBAL_BOOL(lp_interfaces_only,&Globals.bInterfacesOnly)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

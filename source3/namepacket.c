@@ -622,18 +622,12 @@ BOOL listen_for_packets(BOOL run_election)
           struct packet_struct *packet = read_packet(sock_array[i], NMB_PACKET);
           if (packet)
           {
-
             /*
-             * If we got a packet on the broadcast socket check it
-             * came from one of our local nets. We should only be
-             * receiving broadcasts from nets we have subnets for.
-             *
-             * Note that this filter precludes remote announces.
-             * If we need this to work we will have to add an
-             * 'allow local announce' parameter that gives a
-             * list of networks we will allow through the filter.
+             * If we got a packet on the broadcast socket and interfaces
+             * only is set then check it came from one of our local nets. 
              */
-            if((sock_array[i] == ClientNMB) && (!is_local_net(packet->ip)))
+            if(lp_interfaces_only() && (sock_array[i] == ClientNMB) && 
+               (!is_local_net(packet->ip)))
             {
               DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
                         inet_ntoa(packet->ip),packet->port));	  
@@ -663,16 +657,11 @@ BOOL listen_for_packets(BOOL run_election)
           if (packet)
           {
             /*
-             * If we got a packet on the broadcast socket check it
-             * came from one of our local nets. We should only be
-             * receiving broadcasts from nets we have subnets for.
-             *
-             * Note that this filter precludes remote announces.
-             * If we need this to work we will have to add an
-             * 'allow local announce' parameter that gives a
-             * list of networks we will allow through the filter.
+             * If we got a packet on the broadcast socket and interfaces
+             * only is set then check it came from one of our local nets. 
              */
-            if((sock_array[i] == ClientDGRAM) && (!is_local_net(packet->ip)))
+            if(lp_interfaces_only() && (sock_array[i] == ClientDGRAM) && 
+                 (!is_local_net(packet->ip)))
             {
               DEBUG(7,("discarding dgram packet sent to broadcast socket from %s:%d\n",
                         inet_ntoa(packet->ip),packet->port));	  

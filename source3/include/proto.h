@@ -185,6 +185,7 @@ BOOL lp_browse_list(void);
 BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
 BOOL lp_time_server(void);
+BOOL lp_interfaces_only(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_log_size(void);
