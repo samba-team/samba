@@ -384,7 +384,7 @@
 		[in]	uint32 access_required,
 		[in]	uint32 level,
 		[in,switch_is(level)] spoolss_UserLevel userlevel,
-		[out]	policy_handle *handle
+		[out,ref]	policy_handle *handle
 		);
 
 	/******************/
