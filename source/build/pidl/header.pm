@@ -97,6 +97,9 @@ sub HeaderEnum($$)
 {
     my($enum) = shift;
     my($name) = shift;
+
+    util::register_enum($name);
+
     $res .= "\nenum $name {\n";
     $tab_depth++;
     my $els = \@{$enum->{ELEMENTS}};
@@ -160,6 +163,8 @@ sub HeaderType($$$)
 	}
 	if ($data =~ "string") {
 		$res .= "const char *";
+	} elsif (util::is_enum($e->{TYPE})) {
+		$res .= "enum $data";
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
 	} elsif (util::has_property($e, "switch_is")) {

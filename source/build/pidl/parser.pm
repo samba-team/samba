@@ -117,6 +117,18 @@ sub check_null_pointer($)
 	}
 }
 
+#####################################################################
+# check that a variable we get from find_size_var isn't a null pointer
+# void return varient
+sub check_null_pointer_void($)
+{
+	my $size = shift;
+	if ($size =~ /^\*/) {
+		my $size2 = substr($size, 1);
+		pidl "\tif ($size2 == NULL) return;\n";
+	}
+}
+
 
 #####################################################################
 # work out is a parse function should be declared static or not
@@ -457,7 +469,11 @@ sub ParseElementPullSwitch($$$$)
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		pidl "\t\t $e2->{TYPE} _level;\n";
+		if (util::is_enum($e2->{TYPE})) {
+			pidl "\t\t enum $e2->{TYPE} _level;\n";
+		} else {
+			pidl "\t\t $e2->{TYPE} _level;\n";
+		}
 		pidl "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, &_level));\n";
 		if ($switch_var =~ /r->in/) {
 			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
@@ -526,7 +542,7 @@ sub ParseElementPrintSwitch($$$)
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
 	my $cprefix = util::c_push_prefix($e);
 
-	check_null_pointer($switch_var);
+	check_null_pointer_void($switch_var);
 
 	pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});\n";
 }
@@ -776,6 +792,72 @@ sub ParseStructPush($)
 
 	end_flags($struct);
 }
+
+
+#####################################################################
+# generate a push function for an enum
+sub ParseEnumPush($)
+{
+	my($enum) = shift;
+
+	start_flags($enum);
+
+	if (util::has_property($enum->{PARENT}, "v1_enum")) {
+		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, r));\n";
+	} else {
+		pidl "\tNDR_CHECK(ndr_push_uint16(ndr, r));\n";
+	}
+
+	end_flags($enum);
+}
+
+#####################################################################
+# generate a pull function for an enum
+sub ParseEnumPull($)
+{
+	my($enum) = shift;
+
+	start_flags($enum);
+
+	if (util::has_property($enum->{PARENT}, "v1_enum")) {
+		pidl "\tuint32_t v;\n";
+		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &v));\n";
+	} else {
+		pidl "\tuint16_t v;\n";
+		pidl "\tNDR_CHECK(ndr_pull_uint16(ndr, &v));\n";
+	}
+	pidl "\t*r = v;\n";
+
+	end_flags($enum);
+}
+
+#####################################################################
+# generate a print function for an enum
+sub ParseEnumPrint($)
+{
+	my($enum) = shift;
+
+	start_flags($enum);
+
+	pidl "\tconst char *val = NULL;\n\n";
+
+	pidl "\tswitch (r) {\n";
+	my $els = \@{$enum->{ELEMENTS}};
+	foreach my $i (0 .. $#{$els}) {
+		my $e = ${$els}[$i];
+		chomp $e;
+		if ($e =~ /^(.*)=/) {
+			$e = $1;
+		}
+		pidl "\t\tcase $e: val = \"$e\"; break;\n";
+	}
+
+	pidl "\t}\n\n\tndr_print_enum(ndr, name, \"$enum->{TYPE}\", val, r);\n";
+
+	end_flags($enum);
+}
+
+
 
 #####################################################################
 # generate a struct print function
@@ -1128,6 +1210,8 @@ sub ParseTypePush($)
 		    ParseStructPush($data);
 		($data->{TYPE} eq "UNION") &&
 		    ParseUnionPush($data);
+		($data->{TYPE} eq "ENUM") &&
+		    ParseEnumPush($data);
 	}
 }
 
@@ -1142,6 +1226,8 @@ sub ParseTypePrint($)
 		    ParseStructPrint($data);
 		($data->{TYPE} eq "UNION") &&
 		    ParseUnionPrint($data);
+		($data->{TYPE} eq "ENUM") &&
+		    ParseEnumPrint($data);
 	}
 }
 
@@ -1156,6 +1242,8 @@ sub ParseTypePull($)
 		    ParseStructPull($data);
 		($data->{TYPE} eq "UNION") &&
 		    ParseUnionPull($data);
+		($data->{TYPE} eq "ENUM") &&
+		    ParseEnumPull($data);
 	}
 }
 
@@ -1172,7 +1260,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, const struct $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1180,7 +1268,15 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, const union $e->{NAME} *r)";
+		pidl "\n{\n";
+		ParseTypePush($e->{DATA});
+		pidl "\treturn NT_STATUS_OK;\n";
+		pidl "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "ENUM") {
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, enum $e->{NAME} r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1216,6 +1312,14 @@ sub ParseTypedefPull($)
 		pidl "\treturn NT_STATUS_OK;\n";
 		pidl "}\n\n";
 	}
+
+	if ($e->{DATA}->{TYPE} eq "ENUM") {
+		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, enum $e->{NAME} *r)";
+		pidl "\n{\n";
+		ParseTypePull($e->{DATA});
+		pidl "\treturn NT_STATUS_OK;\n";
+		pidl "}\n\n";
+	}
 }
 
 
@@ -1237,6 +1341,13 @@ sub ParseTypedefPrint($)
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_union(ndr, name, level, \"$e->{NAME}\");\n";
+		ParseTypePrint($e->{DATA});
+		pidl "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "ENUM") {
+		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
+		pidl "\n{\n";
 		ParseTypePrint($e->{DATA});
 		pidl "}\n\n";
 	}
