@@ -259,6 +259,8 @@ SMBW_OBJ = smbwrapper/smbw.o \
 
 SMBWRAPPER_OBJ = $(SMBW_OBJ) smbwrapper/wrapped.o
 
+LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o $(LIB_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
+
 CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(READLINE_OBJ)
@@ -339,6 +341,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		$(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
 
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
+LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.0=.po)
 
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
@@ -574,6 +577,10 @@ bin/smbwrapper.@SHLIBEXT@: $(PICOBJS)
 bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
+
+bin/libsmbclient.so: $(LIBSMBCLIENT_PICOBJS)
+	@echo Linking libsmbclient shared library $@
+	@$(LD) -shared -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
