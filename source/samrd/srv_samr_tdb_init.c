@@ -30,6 +30,8 @@ extern int DEBUGLEVEL;
 uint32 initialise_dom_tdb(const DOM_SID *sid)
 {
 	pstring usr;
+	pstring usg;
+	pstring usa;
 	pstring grp;
 	pstring als;
 	fstring tmp;
@@ -37,11 +39,15 @@ uint32 initialise_dom_tdb(const DOM_SID *sid)
 	sid_to_string(tmp, sid);
 
 	slprintf(usr, sizeof(usr)-1, "%s.usr.tdb", tmp);
+	slprintf(usg, sizeof(usg)-1, "%s.usg.tdb", tmp);
+	slprintf(usa, sizeof(usa)-1, "%s.usa.tdb", tmp);
 	slprintf(grp, sizeof(grp)-1, "%s.grp.tdb", tmp);
 	slprintf(als, sizeof(als)-1, "%s.als.tdb", tmp);
 
 	/* create if not-exist with root-readwrite, all others read */
 	if (tdb_close(tdb_open(passdb_path(usr),0,0,O_RDWR|O_CREAT,0644)) ||
+	    tdb_close(tdb_open(passdb_path(usg),0,0,O_RDWR|O_CREAT,0644)) ||
+	    tdb_close(tdb_open(passdb_path(usa),0,0,O_RDWR|O_CREAT,0644)) ||
 	    tdb_close(tdb_open(passdb_path(grp),0,0,O_RDWR|O_CREAT,0644)) ||
 	    tdb_close(tdb_open(passdb_path(als),0,0,O_RDWR|O_CREAT,0644)))
 	{

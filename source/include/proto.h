@@ -3887,20 +3887,30 @@ uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf);
 /*The following definitions come from  samrd/srv_samr_tdb.c  */
 
 BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb, uint32 rid);
+				TDB_CONTEXT *usr_tdb,
+				TDB_CONTEXT *grp_tdb,
+				TDB_CONTEXT *als_tdb,
+				uint32 rid);
 BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb, uint32 *rid);
+				TDB_CONTEXT **usr_tdb,
+				TDB_CONTEXT **grp_tdb,
+				TDB_CONTEXT **als_tdb,
+				uint32 *rid);
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb);
 BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **tdb);
 BOOL set_tdbdomsid(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *usr_tdb,
+				TDB_CONTEXT *usg_tdb,
+				TDB_CONTEXT *usa_tdb,
 				TDB_CONTEXT *grp_tdb,
 				TDB_CONTEXT *als_tdb,
 				const DOM_SID *sid);
 BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **usr_tdb,
+				TDB_CONTEXT **usg_tdb,
+				TDB_CONTEXT **usa_tdb,
 				TDB_CONTEXT **grp_tdb,
 				TDB_CONTEXT **als_tdb,
 				DOM_SID *sid);
@@ -3908,8 +3918,12 @@ BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb, const DOM_SID *sid);
 BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **tdb, DOM_SID *sid);
-uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
-				POLICY_HND *pol, uint32 access_mask, uint32 rid);
+uint32 samr_open_by_tdbrid( const POLICY_HND *parent_pol,
+				TDB_CONTEXT *usr_tdb,
+				TDB_CONTEXT *grp_tdb,
+				TDB_CONTEXT *als_tdb,
+				POLICY_HND *pol,
+				uint32 access_mask, uint32 rid);
 
 /*The following definitions come from  samrd/srv_samr_tdb_init.c  */
 
@@ -3952,7 +3966,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
 				DOM_GID **gids);
-uint32 _samr_query_useraliases(const POLICY_HND *pol,
+uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
 				const uint32 *ptr_sid, const DOM_SID2 *sid,
 				uint32 *num_aliases, uint32 **rid);
 uint32 _samr_open_user(const POLICY_HND *domain_pol,

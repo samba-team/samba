@@ -2115,7 +2115,6 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 
 		samr_io_r_query_usergroups("", &r_o, &rdata, 0);
 		*gid = r_o.gid;
-		r_o.gid = NULL;
 		p = rdata.offset != 0;
 		
 		if (p && r_o.status != 0)
@@ -2130,8 +2129,6 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 			valid_query = True;
 			*num_groups = r_o.num_entries;
 		}
-
-		samr_free_r_query_usergroups(&r_o);
 	}
 
 	prs_free_data(&data   );

@@ -316,7 +316,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf)
 	int len;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb, &rid))
+	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb, NULL, NULL, &rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}

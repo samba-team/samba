@@ -454,8 +454,6 @@ static void api_samr_query_useraliases( rpcsrv_struct *p, prs_struct *data, prs_
 	samr_free_q_query_useraliases(&q_u);
 	make_samr_r_query_useraliases(&r_u, num_rids, rid, status);
 	samr_io_r_query_useraliases("", &r_u, rdata, 0);
-	samr_free_r_query_useraliases(&r_u);
-
 }
 
 
@@ -732,8 +730,6 @@ static void api_samr_query_usergroups( rpcsrv_struct *p, prs_struct *data, prs_s
 
 	make_samr_r_query_usergroups(&r_u, num_groups, gids, status);
 	samr_io_r_query_usergroups("", &r_u, rdata, 0);
-
-	safe_free(gids);
 }
 
 /*******************************************************************

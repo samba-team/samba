@@ -410,8 +410,8 @@ BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		uint32 num_gids, DOM_GID *gid, uint32 status);
-BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
-void samr_free_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u);
+BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID **gid, prs_struct *ps, int depth);
+BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e, POLICY_HND *pol,
 				uint32 start_idx, uint32 size);
 BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps, int depth);
@@ -452,8 +452,8 @@ BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs
 void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u);
 BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status);
+BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid, prs_struct *ps, int depth);
 BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth);
-void samr_free_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u);
 BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, const POLICY_HND *pol,
 				uint32 unknown_0, uint32 rid);
 BOOL samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);

@@ -2489,9 +2489,50 @@ BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth)
+BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID **gid, prs_struct *ps, int depth)
 {
 	uint32 i;
+	if (gid == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_gids");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("num_gids", ps, depth, num_gids);
+
+	if ((*num_gids) != 0)
+	{
+		if (ps->io)
+		{
+			(*gid) = g_renew(DOM_GID, (*gid), (*num_gids));
+		}
+
+		if ((*gid) == NULL)
+		{
+			return False;
+		}
+
+		for (i = 0; i < (*num_gids); i++)
+		{
+			smb_io_gid("gids", &(*gid)[i], ps, depth);
+		}
+	}
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		safe_free((*gid));
+		(*gid) = NULL;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth)
+{
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_query_usergroups");
@@ -2506,47 +2547,14 @@ BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 		prs_uint32("num_entries ", ps, depth, &(r_u->num_entries));
 		prs_uint32("ptr_1       ", ps, depth, &(r_u->ptr_1      ));
 
-		if (r_u->num_entries != 0)
+		if (r_u->num_entries != 0 && r_u->ptr_1 != 0)
 		{
-			prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
-
-			if(ps->io)
-				r_u->gid = g_renew(DOM_GID, r_u->gid,
-						   r_u->num_entries2);
-			if (r_u->gid == NULL)
-			{
-				return False;
-			}
-
-			for (i = 0; i < r_u->num_entries2; i++)
-			{
-				smb_io_gid("", &(r_u->gid[i]), ps, depth);
-			}
+			samr_io_gids("gids", &(r_u->num_entries2), &r_u->gid, ps, depth);
 		}
 	}
 	prs_uint32("status", ps, depth, &(r_u->status));
 
-	if (!ps->io)
-	{
-		/* storing.  memory no longer needed */
-		samr_free_r_query_usergroups(r_u);
-	}
-
 	return True;
-}
-
-/*******************************************************************
-frees a structure.
-********************************************************************/
-void samr_free_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u)
-{
-	r_u->ptr_0 = 0;
-	r_u->num_entries = 0;
-	if (r_u->gid)
-	{
-		free(r_u->gid);
-		r_u->gid = NULL;
-	}
 }
 
 
@@ -3297,10 +3305,52 @@ BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth)
+BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid, prs_struct *ps, int depth)
 {
 	fstring tmp;
 	uint32 i;
+	if (rid == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_rids");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("num_rids", ps, depth, num_rids);
+
+	if ((*num_rids) != 0)
+	{
+		if (ps->io)
+		{
+			/* reading */
+			(*rid) = g_renew(uint32, (*rid), (*num_rids));
+		}
+		if ((*rid) == NULL)
+		{
+			return False;
+		}
+
+		for (i = 0; i < (*num_rids); i++)
+		{
+			slprintf(tmp, sizeof(tmp)-1, "rid[%02d]", i);
+			prs_uint32(tmp, ps, depth, &((*rid)[i]));
+		}
+	}
+
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		safe_free(*rid);
+		(*rid) = NULL;
+	}
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth)
+{
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_query_useraliases");
@@ -3310,45 +3360,15 @@ BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs
 
 	prs_uint32("num_entries", ps, depth, &(r_u->num_entries));
 	prs_uint32("ptr        ", ps, depth, &(r_u->ptr        ));
-	prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 
-	if (r_u->num_entries != 0)
+	if (r_u->ptr != 0)
 	{
-		r_u->rid = (uint32*)Realloc(r_u->rid,
-				       sizeof(r_u->rid[0]) * r_u->num_entries);
-		if (r_u->rid == NULL)
-		{
-			samr_free_r_query_useraliases(r_u);
-			return False;
-		}
-
-		for (i = 0; i < r_u->num_entries2; i++)
-		{
-			slprintf(tmp, sizeof(tmp)-1, "rid[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(r_u->rid[i]));
-		}
+		samr_io_rids("rids", &r_u->num_entries2, &r_u->rid, ps, depth);
 	}
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
-	if (!ps->io)
-	{
-		/* storing.  memory no longer needed */
-		samr_free_r_query_useraliases(r_u);
-	}
 	return True;
-}
-
-/*******************************************************************
-frees memory in a SAMR_R_QUERY_USERALIASES structure.
-********************************************************************/
-void samr_free_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u)
-{
-	if (r_u->rid == NULL)
-	{
-		free(r_u->rid);
-		r_u->rid = NULL;
-	}
 }
 
 /*******************************************************************

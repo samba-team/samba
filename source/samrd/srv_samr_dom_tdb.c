@@ -51,7 +51,7 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 	SAM_DATA_21 *data = (SAM_DATA_21*)state;
 	uint32 num_sam_entries = data->num_sam_entries + 1;
 
-	DEBUG(5,("tdb_user_traverse: idx: %d %d\n",
+	DEBUG(5,("tdb_user21_traverse: idx: %d %d\n",
 					data->current_idx,
 					num_sam_entries));
 
@@ -87,10 +87,14 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 
 static uint32 open_dom_dbs(const DOM_SID *sid, int perms,
 			TDB_CONTEXT **usr_tdb,
+			TDB_CONTEXT **usg_tdb,
+			TDB_CONTEXT **usa_tdb,
 			TDB_CONTEXT **grp_tdb,
 			TDB_CONTEXT **als_tdb)
 {
 	fstring usr;
+	fstring usg;
+	fstring usa;
 	fstring grp;
 	fstring als;
 	fstring tmp;
@@ -98,6 +102,8 @@ static uint32 open_dom_dbs(const DOM_SID *sid, int perms,
 	sid_to_string(tmp, sid);
 
 	slprintf(usr, sizeof(usr)-1, "%s.usr.tdb", tmp);
+	slprintf(usg, sizeof(usg)-1, "%s.usg.tdb", tmp);
+	slprintf(usa, sizeof(usa)-1, "%s.usa.tdb", tmp);
 	slprintf(als, sizeof(als)-1, "%s.als.tdb", tmp);
 	slprintf(grp, sizeof(grp)-1, "%s.grp.tdb", tmp);
 
@@ -108,11 +114,19 @@ static uint32 open_dom_dbs(const DOM_SID *sid, int perms,
 	DEBUGADD(10, ("\n"));
 
 	(*usr_tdb) = tdb_open(passdb_path(usr),0,0,perms, 0644);
+	(*usg_tdb) = tdb_open(passdb_path(usg),0,0,perms, 0644);
+	(*usa_tdb) = tdb_open(passdb_path(usa),0,0,perms, 0644);
 	(*grp_tdb) = tdb_open(passdb_path(grp),0,0,perms, 0644);
 	(*als_tdb) = tdb_open(passdb_path(als),0,0,perms, 0644);
-	if ((*usr_tdb) == NULL || (*grp_tdb) == NULL || (*als_tdb) == NULL)
+	if ((*usr_tdb) == NULL ||
+	    (*usg_tdb) == NULL || 
+	    (*usa_tdb) == NULL || 
+	    (*grp_tdb) == NULL || 
+	    (*als_tdb) == NULL)
 	{
 		tdb_close(*usr_tdb);
+		tdb_close(*usg_tdb);
+		tdb_close(*usa_tdb);
 		tdb_close(*grp_tdb);
 		tdb_close(*als_tdb);
 		return NT_STATUS_ACCESS_DENIED;
@@ -130,6 +144,8 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 {
 	TDB_CONTEXT *dom_tdb = NULL;
 	TDB_CONTEXT *usr_tdb = NULL;
+	TDB_CONTEXT *usg_tdb = NULL;
+	TDB_CONTEXT *usa_tdb = NULL;
 	TDB_CONTEXT *grp_tdb = NULL;
 	TDB_CONTEXT *als_tdb = NULL;
 
@@ -153,11 +169,13 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 		DEBUG(10,("_samr_open_domain: max perms requested\n"));
 
 		status = open_dom_dbs(sid, O_RDWR,
-		                      &usr_tdb, &grp_tdb, &als_tdb);
+		                      &usr_tdb, &usg_tdb, &usa_tdb,
+		                      &grp_tdb, &als_tdb);
 		if (status != 0x0)
 		{
 			status = open_dom_dbs(sid, O_RDONLY,
-					      &usr_tdb, &grp_tdb, &als_tdb);
+			              &usr_tdb, &usg_tdb, &usa_tdb,
+		                      &grp_tdb, &als_tdb);
 		}
 		if (status != 0x0)
 		{
@@ -180,7 +198,8 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 		if (perms_write && perms_read) perms = O_RDWR;
 
 		status = open_dom_dbs(sid, perms,
-		                      &usr_tdb, &grp_tdb, &als_tdb);
+		                      &usr_tdb, &usg_tdb, &usa_tdb,
+		                      &grp_tdb, &als_tdb);
 		if (status != 0x0)
 		{
 			return status;
@@ -189,9 +208,11 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 
 	/* associate the domain SID with the (unique) handle. */
 	if (!set_tdbdomsid(get_global_hnd_cache(), domain_pol,
-	                   usr_tdb, grp_tdb, als_tdb, sid))
+	                   usr_tdb, usg_tdb, usa_tdb, grp_tdb, als_tdb, sid))
 	{
 		tdb_close(usr_tdb);
+		tdb_close(usg_tdb);
+		tdb_close(usa_tdb);
 		tdb_close(grp_tdb);
 		tdb_close(als_tdb);
 		close_policy_hnd(get_global_hnd_cache(), domain_pol);
@@ -228,7 +249,7 @@ static int tdb_user_traverse(TDB_CONTEXT *tdb,
 	SAM_ENTRY *sam;
 	UNISTR2 *str;
 
-	DEBUG(5,("tdb_user21_traverse: idx: %d %d\n",
+	DEBUG(5,("tdb_user_traverse: idx: %d %d\n",
 					data->current_idx,
 					num_sam_entries));
 
@@ -287,7 +308,7 @@ uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx,
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), pol, &sam_tdb,
-					NULL, NULL, NULL))
+					NULL, NULL, NULL, NULL, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -447,7 +468,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbdomsid(get_global_hnd_cache(), pol,
-	                   NULL, NULL, &als_tdb, &sid))
+	                   NULL, NULL, NULL, NULL, &als_tdb, &sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -520,7 +541,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol, &sam_tdb,
-					NULL, NULL, NULL))
+					NULL, NULL, NULL, NULL, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -745,7 +766,7 @@ uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
 	if (!get_tdbdomsid(get_global_hnd_cache(), dom_pol,
-	                   &usr_tdb, NULL, NULL, &dom_sid))
+	                   &usr_tdb, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -865,7 +886,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 
 	if (!get_tdbdomsid(get_global_hnd_cache(), dom_pol,
-	                   &usr_tdb, NULL, NULL, &dom_sid))
+	                   &usr_tdb, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
