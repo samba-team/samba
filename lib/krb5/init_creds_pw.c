@@ -455,7 +455,7 @@ krb5_get_init_creds_password(krb5_context context,
 	    password = buf;
 	    break;
 	case KRB5KDC_ERR_PREAUTH_REQUIRED : {
-	    if(kdc_reply.error.e_data){
+	    if(kdc_reply.error.e_data) {
 		METHOD_DATA md;
 		int i;
 		decode_METHOD_DATA(kdc_reply.error.e_data->data, 
@@ -488,7 +488,7 @@ krb5_get_init_creds_password(krb5_context context,
 		    }
 		}
 		free_METHOD_DATA(&md);
-	    }else{
+	    } else {
 		if (pre_auth_types)
 		    free (pre_auth_types);
 		pre_auth_types = malloc(2 * sizeof(*pre_auth_types));
@@ -513,7 +513,8 @@ krb5_get_init_creds_password(krb5_context context,
 		      data);
 out:
     memset (buf, 0, sizeof(buf));
-    krb5_free_kdc_rep (context, &kdc_reply);
+    if (ret == 0)
+	krb5_free_kdc_rep (context, &kdc_reply);
 
     free (pre_auth_types);
     if(preauth) {
