@@ -86,7 +86,7 @@ typedef struct _SambaAfpInfo
 **
 ** We will be using infromation levels that are betwwen 0x300 and 0x399 for all Macintosh
 ** extentions calls. The first of these will be the SMB_MAC_QUERY_FS_INFO level which
-** will allow the server to return the MacQueryFSInfo structure. All feilds are Little
+** will allow the server to return the MacQueryFSInfo structure. All fields are Little
 ** Endian unless other wise specified.
 */
 #define SMB_MAC_QUERY_FS_INFO 0x301
