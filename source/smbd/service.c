@@ -91,6 +91,14 @@ int find_service(char *service)
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
+     int iHomeService;
+
+     /* We check that the HOMES_NAME exists before calling expensive
+	functions like get_user_home_dir */
+
+     if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
+     {
+
       char *phome_dir = get_user_home_dir(service);
 
       if(!phome_dir)
@@ -109,12 +117,10 @@ int find_service(char *service)
       if (phome_dir)
       {   
         int iHomeService;
-        if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
-        {
-          lp_add_home(service,iHomeService,phome_dir);
-          iService = lp_servicenumber(service);
-        }
+	lp_add_home(service,iHomeService,phome_dir);
+	iService = lp_servicenumber(service);
       }
+     }
    }
 
    /* If we still don't have a service, attempt to add it as a printer. */
