@@ -282,38 +282,37 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
-	char *destend;
-	const uint16 *src;
+	char *p;
+	uint16 *src;
 	size_t len;
-	register uint16 c;
+	int i;
+
+	if (str == NULL) {
+		*dest='\0';
+		return;
+	}
 
 	src = str->buffer;
 	len = MIN(str->uni_str_len, maxlen);
-	destend = dest + len;
 
-	while (dest < destend)
-	{
-		uint16 ucs2_val;
-		uint16 cp_val;
-
-		c = *src;
-		if (c == 0)
-		{
-			break;
-		}
-		
-		ucs2_val = SVAL(src++,0);
-		cp_val = ucs2_to_doscp[ucs2_val];
-				
-		if (cp_val < 256)
-			*(dest++) = (char)cp_val;
-		else {
-			*dest= (cp_val >> 8) & 0xff;
-			*(dest++) = (cp_val & 0xff);
-		}
+	if (len == 0) {
+		*dest='\0';
+		return;
 	}
 
-	*dest = 0;
+	for (p = dest; *src && p-dest < len; src++) {
+		uint16 ucs2_val = SVAL(src,0);
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
+
+		if (cp_val < 256)
+			*p++ = (char)cp_val;
+		else {
+			*p   = (cp_val >> 8) & 0xff;
+			*p++ = (cp_val & 0xff);
+		}
+	}
+	
+	*p = 0;
 }
 
 
