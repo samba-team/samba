@@ -54,7 +54,7 @@ static int num_models;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-static NTSTATUS register_process_model(const void *_ops)
+NTSTATUS register_process_model(const void *_ops)
 {
 	const struct model_ops *ops = _ops;
 
@@ -113,22 +113,4 @@ const struct process_model_critical_sizes *process_model_version(void)
 	};
 
 	return &critical_sizes;
-}
-
-/*
-  initialise the PROCESS_MODEL subsystem
-*/
-NTSTATUS process_model_init(void)
-{
-	NTSTATUS status;
-
-	status = register_subsystem("process_model", register_process_model); 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	process_model_init_static_modules;
-
-	DEBUG(3,("PROCESS subsystem version %d initialised\n", PROCESS_MODEL_VERSION));
-	return NT_STATUS_OK; 
 }

@@ -474,7 +474,7 @@ NTSTATUS process_model_thread_init(void)
 	ops.get_id = thread_get_id;
 
 	/* register ourselves with the PROCESS_MODEL subsystem. */
-	ret = register_backend("process_model", &ops);
+	ret = register_process_model(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register process_model 'thread'!\n"));
 		return ret;

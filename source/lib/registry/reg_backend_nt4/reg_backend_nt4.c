@@ -1743,5 +1743,5 @@ static struct registry_operations reg_backend_nt4 = {
 
 NTSTATUS registry_nt4_init(void)
 {
-	return register_backend("registry", &reg_backend_nt4);
+	return registry_register(&reg_backend_nt4);
 }

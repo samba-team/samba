@@ -924,7 +924,7 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.trans2 = NULL;
 
 	/* register ourselves with the NTVFS subsystem. */
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register nbench backend!\n"));

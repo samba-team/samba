@@ -252,10 +252,10 @@ NTSTATUS ntvfs_posix_init(void)
 	   under the name 'default' as we wish to be the default
 	   backend, and also register as 'posix' */
 	ops.name = "default";
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 
 	ops.name = "posix";
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register POSIX backend!\n"));

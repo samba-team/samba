@@ -352,5 +352,5 @@ static struct registry_operations reg_backend_w95 = {
 
 NTSTATUS registry_w95_init(void)
 {
-	return register_backend("registry", &reg_backend_w95);
+	return registry_register(&reg_backend_w95);
 }

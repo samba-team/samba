@@ -756,7 +756,7 @@ NTSTATUS ntvfs_ipc_init(void)
 	ops.cancel = ipc_cancel;
 
 	/* register ourselves with the NTVFS subsystem. */
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register IPC backend!\n"));

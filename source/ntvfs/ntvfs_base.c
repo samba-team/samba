@@ -45,7 +45,7 @@ static int num_backends;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-static NTSTATUS ntvfs_register(const void *_ops)
+NTSTATUS ntvfs_register(const void *_ops)
 {
 	const struct ntvfs_ops *ops = _ops;
 	struct ntvfs_ops *new_ops;
@@ -113,25 +113,6 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 	};
 
 	return &critical_sizes;
-}
-
-
-/*
-  initialise the NTVFS subsystem
-*/
-NTSTATUS ntvfs_init(void)
-{
-	NTSTATUS status;
-
-	status = register_subsystem("ntvfs", ntvfs_register); 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	ntvfs_init_static_modules;
-
-	DEBUG(3,("NTVFS subsystem version %d initialised\n", NTVFS_INTERFACE_VERSION));
-	return status;
 }
 
 

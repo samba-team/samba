@@ -59,21 +59,6 @@ NTSTATUS registry_register(const void *_function)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS registry_init(void)
-{
-	NTSTATUS status;
-	
-	status = register_subsystem("registry", registry_register);
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0, ("Error registering registry subsystem: %s\n", nt_errstr(status)));
-		return status;
-	}
-
-	registry_init_static_modules;
-
-	return NT_STATUS_OK;
-}
-
 /* Find a backend in the list of available backends */
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 {

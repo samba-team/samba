@@ -313,29 +313,10 @@ const struct server_service_ops *server_service_byname(const char *name)
 	return NULL;
 }
 
-static NTSTATUS register_server_service_ops(const void *_ops)
+NTSTATUS register_server_service_ops(const void *_ops)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
-
-/*
-  initialise the SERVER SERVICE subsystem
-*/
-NTSTATUS server_service_init(void)
-{
-	NTSTATUS status;
-
-	status = register_subsystem("service", register_server_service_ops); 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	server_service_init_static_modules;
-
-	DEBUG(3,("SERVER SERVICE subsystem version %d initialised\n", SERVER_SERVICE_VERSION));
-	return NT_STATUS_OK;
-}
-
 
 /*
   close all listening sockets. This is called by process models that fork, to 

@@ -66,7 +66,7 @@ sub ParseRegFunc($)
 	GUID_from_string(DCERPC_" . (uc $interface->{NAME}) . "_UUID, &iface.iid);
 	iface.proxy_vtable = talloc_memdup(NULL, &proxy, sizeof(struct dcom_$interface->{NAME}_vtable));
 
-	return register_backend(\"dcom_interface\", &iface);
+	return dcom_register_interface(&iface);
 }\n\n";
 }
 

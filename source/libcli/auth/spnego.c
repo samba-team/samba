@@ -714,7 +714,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 NTSTATUS gensec_spnego_init(void)
 {
 	NTSTATUS ret;
-	ret = register_backend("gensec", &gensec_spnego_security_ops);
+	ret = gensec_register(&gensec_spnego_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_spnego_security_ops.name));
