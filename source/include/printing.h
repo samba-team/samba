@@ -47,7 +47,10 @@ struct printjob {
 /* Information for print interfaces */
 struct printif
 {
-  int (*queue_get)(int snum, print_queue_struct **q,
+  int (*queue_get)(const char *printer_name,
+		   enum printing_types printing_type,
+		   const char *lpq_command,
+		   print_queue_struct **q,
                    print_status_struct *status);
   int (*queue_pause)(int snum);
   int (*queue_resume)(int snum);
