@@ -37,18 +37,26 @@ fi
 ])
 
 dnl Mark specified module as shared
-dnl SMB_MODULE(type,name,static_files,shared_files,subsystem)
+dnl SMB_MODULE(name,static_files,shared_files,subsystem)
 AC_DEFUN(SMB_MODULE,
 [
-	AC_MSG_CHECKING([how to build $2])
-	if test x"$1" = xSHARED; then
-		AC_DEFINE([$2][_init], [init_module], [Whether to build $2 as shared module])
-		$5_MODULES="$$5_MODULES $4"
+	AC_MSG_CHECKING([how to build $1])
+	if test "$[MODULE_][$1]"; then
+		DEST=$[MODULE_][$1]
+	elif test "$[MODULE_]translit([$4], [A-Z], [a-z])"; then
+		DEST=$[MODULE_]translit([$4], [A-Z], [a-z])
+	else
+		DEST=$[MODULE_DEFAULT_][$1]
+	fi
+	
+	if test x"$DEST" = xSHARED; then
+		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
+		$5_MODULES="$$4_MODULES $3"
 		AC_MSG_RESULT([shared])
-	elif test x"$1" = xSTATIC; then
-		[init_static_modules_]translit([$5], [A-Z], [a-z])="$[init_static_modules_]translit([$5], [A-Z], [a-z]) $2_init();"
-		$5_STATIC="$$5_STATIC $3"
-		AC_SUBST($5_STATIC)
+	elif test x"$DEST" = xSTATIC; then
+		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z]) $1_init();"
+		$5_STATIC="$$4_STATIC $2"
+		AC_SUBST($4_STATIC)
 		AC_MSG_RESULT([static])
 	else
 		AC_MSG_RESULT([not])
