@@ -242,6 +242,8 @@ get_init_creds_common(krb5_context context,
 					      *client_realm,
 					      "proxiable");
 
+    if (start_time)
+	flags->b.postdated = 1;
     if (cred->times.renew_till)
 	flags->b.renewable = 1;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST)
