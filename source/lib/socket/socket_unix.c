@@ -23,6 +23,40 @@
 
 #include "includes.h"
 
+
+
+/*
+  approximate errno mapping
+*/
+static NTSTATUS unixdom_error(int ernum)
+{
+	switch (ernum) {
+	case EBADF:
+	case ENOTCONN:
+	case ENOTSOCK:
+	case EFAULT:
+	case EINVAL:
+		return NT_STATUS_INVALID_PARAMETER;
+	case EAGAIN:
+	case EINTR:
+		return STATUS_MORE_ENTRIES;
+	case ECONNREFUSED:
+		return NT_STATUS_CONNECTION_REFUSED;
+	case ENOBUFS:
+	case ENOMEM:
+		return NT_STATUS_NO_MEMORY;
+	case ENFILE:
+	case EMFILE:
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	case EPIPE:
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	case EMSGSIZE:
+		return NT_STATUS_INVALID_BUFFER_SIZE;
+	}
+	
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
 static NTSTATUS unixdom_init(struct socket_context *sock)
 {
 	sock->fd = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -69,7 +103,7 @@ static NTSTATUS unixdom_connect(struct socket_context *sock,
 
 	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (ret == -1) {
-		return NT_STATUS_CONNECTION_REFUSED;
+		return unixdom_error(errno);
 	}
 
 	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
@@ -97,18 +131,18 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 
 	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	if (ret == -1) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return unixdom_error(errno);
 	}
 
 	ret = listen(sock->fd, queue_size);
 	if (ret == -1) {
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
+		return unixdom_error(errno);
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, False);
 		if (ret == -1) {
-			return NT_STATUS_INVALID_PARAMETER;
+			return unixdom_error(errno);
 		}
 	}
 
@@ -128,7 +162,7 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
+		return unixdom_error(errno);
 	}
 
 	(*new_sock) = talloc_p(NULL, struct socket_context);
@@ -180,23 +214,7 @@ static NTSTATUS unixdom_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		talloc_free(buf);
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
-		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-		switch (errno) {
-			case EBADF:
-			case ENOTCONN:
-			case ENOTSOCK:
-			case EFAULT:
-			case EINVAL:
-				status = NT_STATUS_INVALID_PARAMETER;
-				break;
-			case EAGAIN:
-			case EINTR:
-				status = STATUS_MORE_ENTRIES;
-				break;
-			case ECONNREFUSED:
-				status = NT_STATUS_CONNECTION_REFUSED;
-				break;
-		}
+		NTSTATUS status = unixdom_error(errno);
 		talloc_free(buf);
 		return status;
 	}
@@ -216,6 +234,8 @@ static NTSTATUS unixdom_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 	ssize_t len;
 	int flgs = 0;
 
+	*sendlen = 0;
+
 	/* TODO: we need to map all flags here */
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		flgs |= MSG_DONTWAIT;
@@ -223,34 +243,7 @@ static NTSTATUS unixdom_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 
 	len = send(sock->fd, blob->data, blob->length, flgs);
 	if (len == -1) {
-		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-		switch (errno) {
-			case EBADF:
-			case ENOTSOCK:
-			case EFAULT:
-			case EINVAL:
-				status = NT_STATUS_INVALID_PARAMETER;
-				break;
-			case EMSGSIZE:
-				status = NT_STATUS_INVALID_BUFFER_SIZE;
-				break;
-			case EAGAIN:
-			/*case EWOULDBLOCK: this is an alis of EAGAIN --metze */
-			case EINTR:
-				*sendlen = 0;
-				status = STATUS_MORE_ENTRIES;
-				break;
-			case ENOBUFS:
-				status = NT_STATUS_FOOBAR;
-				break;
-			case ENOMEM:
-				status = NT_STATUS_NO_MEMORY;
-				break;
-			case EPIPE:
-				status = NT_STATUS_CONNECTION_DISCONNECTED;
-				break;
-		}
-		return status;
+		return unixdom_error(errno);
 	}	
 
 	*sendlen = len;
