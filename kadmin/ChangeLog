@@ -1,3 +1,7 @@
+2001-05-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rename.c: fix argument number test
+	
 2001-04-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* del_enctype.c: fix argument count check after getarg change;
