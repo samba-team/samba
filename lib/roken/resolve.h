@@ -176,12 +176,12 @@ typedef int HEADER; /* will never be used */
 #endif
 
 struct dns_header {
-    u_int16_t id;
-    u_int16_t misc;
-    u_int16_t qdcount;
-    u_int16_t ancount;
-    u_int16_t nscount;
-    u_int16_t arcount;
+    unsigned id;
+    unsigned misc;
+    unsigned qdcount;
+    unsigned ancount;
+    unsigned nscount;
+    unsigned arcount;
 };
 
 struct dns_reply{
