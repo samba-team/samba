@@ -27,9 +27,58 @@ commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
+    * Correctly detect errno for no acl/ea support.
+    * BUG 2036: Fix seg fault in 'net ads join'.
 
+    
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Solaris packaging fixes.
+    * Fix seg fault in lanman printing code.
+    * BUG 2017: fix testparm reporting for the passwd program 
+      string.
+    * Fix output of smbstatus to match the man page.
+    * BUG 2027: fix conflict with declaration MD5_CTX in system 
+      headers.
+    * 2028: Avoid false error messages when copying a long 
+      printer name to the device mode.
 
+
+o   Guenther Deschner <gd@samba.org> 
+    * Allow deldriverex in rpcclient to delete drivers for a 
+      specific architecture and a specific version.
+    * Fix a couple of rpcclient spoolss commands (setprinter, 
+      setprintername, getdriver) w.r.t to printer-naming scheme.
+      Allow 'localhost' in the server string for certain server-side
+      spoolss functions.
+    * BUG 2015: Do not fail on setting file attributes with 
+      acl support enabled.
+
+
+o   Michel Gravey <michel.gravey@optogone.com>
+    * Fix build when using gcc 3.0.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix tdb open logic when checking our local_pid after 
+      the fork().
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 1932: Fix crash in 'net getlocalsid' when run as 
+      non-root user.
+
+
+o   Luke Mewburn <lukem@NetBSD.org>
+    BUG 1661: Fix KRB5_SETPW-defines
+
+
+o   Lars Müller <lmuelle@suse.de>
+    * BUG 2013: Fix unresolved symbols in libsmbclient.so.
+
+
+o   Martin Zielinski <mz@seh.de>
+    * Add DeletePrinterDriverEx() functionality to rpcclient.
+    
 
 Changes for older versions follow below:
 
