@@ -1,5 +1,5 @@
 !==
-!== Application_Serving.txt for Samba release 2.0.4 18 May 1999
+!== Application_Serving.txt for Samba release 2.0.7 26 Apr 2000
 !==
 Contributed:	January 7, 1997
 Updated:	March 24, 1998

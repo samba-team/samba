@@ -1,5 +1,5 @@
 !==
-!== Macintosh_Clients.txt for Samba release 2.0.4 18 May 1999
+!== Macintosh_Clients.txt for Samba release 2.0.7 26 Apr 2000
 !==
 > Are there any Macintosh clients for Samba?
 

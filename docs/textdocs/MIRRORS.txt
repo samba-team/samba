@@ -1,5 +1,5 @@
 !==
-!== MIRRORS.txt for Samba release 2.0.4 18 May 1999
+!== MIRRORS.txt for Samba release 2.0.7 26 Apr 2000
 !==
 
 For a list of web and ftp mirrors please see 

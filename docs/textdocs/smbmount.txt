@@ -1,5 +1,5 @@
 !==
-!== smbmount.txt for Samba release 2.0.6 15 Oct 1999
+!== smbmount.txt for Samba release 2.0.7 26 Apr 2000
 !==
 Date:           October 15, 1999
 Contributor:    Urban Widmark <urban@svenskatest.se>

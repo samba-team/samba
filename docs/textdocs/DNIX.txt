@@ -1,5 +1,5 @@
 !==
-!== DNIX.txt for Samba release 2.0.4 18 May 1999
+!== DNIX.txt for Samba release 2.0.7 26 Apr 2000
 !==
 DNIX has a problem with seteuid() and setegid(). These routines are
 needed for Samba to work correctly, but they were left out of the DNIX

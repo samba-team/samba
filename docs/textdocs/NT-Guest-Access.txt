@@ -1,5 +1,5 @@
 !==
-!== NT-Guest-Access.txt for Samba release 2.0.4 18 May 1999
+!== NT-Guest-Access.txt for Samba release 2.0.7 26 Apr 2000
 !==
 > Hi folks ... I don't know if you have seen this, have corrected this yet
 > or it is my configuration.

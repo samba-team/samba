@@ -1,5 +1,5 @@
 !==
-!== UNIX-SMB.txt for Samba release 2.0.4 18 May 1999
+!== UNIX-SMB.txt for Samba release 2.0.7 26 Apr 2000
 !==
 Contributor:	Andrew Tridgell <samba@samba.org>
 Date:		April 1995
