@@ -3,7 +3,7 @@
    RPC pipe client
 
    Copyright (C) Gerald Carter                     2001
-   Copyright (C) Tim Potter                        2000
+   Copyright (C) Tim Potter                   2000-2002
    Copyright (C) Andrew Tridgell              1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
  
@@ -1680,6 +1680,85 @@ done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS cmd_spoolss_rffpcnex(struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     char **argv)
+{
+	fstring servername, printername;
+	POLICY_HND hnd;
+	BOOL got_hnd = False;
+	WERROR result;
+	SPOOL_NOTIFY_OPTION option;
+
+	if (argc != 2) {
+		printf("Usage: %s printername\n", argv[0]);
+		result = WERR_OK;
+		goto done;
+	}
+
+	/* Open printer */
+
+	slprintf(servername, sizeof(fstring) - 1, "\\\\%s", cli->desthost);
+	strupper(servername);
+
+	slprintf(printername, sizeof(fstring) - 1, "\\\\%s\\%s", cli->desthost,
+		 argv[1]);
+	strupper(printername);
+
+	result = cli_spoolss_open_printer_ex(
+		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, 
+		servername, cli->user_name, &hnd);
+
+	if (!W_ERROR_IS_OK(result)) {
+		printf("Error opening %s\n", argv[1]);
+		goto done;
+	}
+
+	got_hnd = True;
+
+	/* Create spool options */
+
+	ZERO_STRUCT(option);
+
+	option.version = 2;
+	option.option_type_ptr = 1;
+	option.count = option.ctr.count = 2;
+
+	option.ctr.type = (SPOOL_NOTIFY_OPTION_TYPE *)talloc(
+		mem_ctx, sizeof(SPOOL_NOTIFY_OPTION_TYPE) * 2);
+
+	ZERO_STRUCT(option.ctr.type[0]);
+	option.ctr.type[0].type = PRINTER_NOTIFY_TYPE;
+	option.ctr.type[0].count = option.ctr.type[0].count2 = 1;
+	option.ctr.type[0].fields_ptr = 1;
+	option.ctr.type[0].fields[0] = PRINTER_NOTIFY_STATUS;
+
+	ZERO_STRUCT(option.ctr.type[1]);
+	option.ctr.type[1].type = JOB_NOTIFY_TYPE;
+	option.ctr.type[1].count = option.ctr.type[1].count2 = 1;
+	option.ctr.type[1].fields_ptr = 1;
+	option.ctr.type[1].fields[0] = JOB_NOTIFY_PRINTER_NAME;
+
+	/* Send rffpcnex */
+
+	slprintf(servername, sizeof(fstring) - 1, "\\\\%s", myhostname());
+	strupper(servername);
+
+	result = cli_spoolss_rffpcnex(
+		cli, mem_ctx, &hnd, 0, 0, servername, 123, &option);
+
+	if (!W_ERROR_IS_OK(result)) {
+		printf("Error rffpcnex %s\n", argv[1]);
+		goto done;
+	}
+
+done:		
+	if (got_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -1708,6 +1787,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumforms",          cmd_spoolss_enum_forms,         PIPE_SPOOLSS, "Enumerate forms",                     "" },
 	{ "setprinter",	        cmd_spoolss_setprinter,         PIPE_SPOOLSS, "Set printer comment",                 "" },
 	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PIPE_SPOOLSS, "Set REG_SZ printer data",             "" },
+	{ "rffpcnex",           cmd_spoolss_rffpcnex,           PIPE_SPOOLSS, "Rffpcnex test", "" },
 
 	{ NULL }
 };
