@@ -19,7 +19,7 @@ aaa new-model
 aaa authentication login default krb5-telnet krb5 enable
 aaa authorization exec krb5-instance
 kerberos local-realm FOO.SE
-kerberos srvtab entry host/router.foo.se.SE 0 891725446 4 1 8 012345678901234567
+kerberos srvtab entry host/router.foo.se 0 891725446 4 1 8 012345678901234567
 kerberos server FOO.SE 10.0.0.1
 kerberos instance map admin 15
 @end example
