@@ -193,7 +193,7 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
 			       skey,
 			       &rep->ticket.enc_part);
     
-    if(rep->msg_type == krb_as_rep)
+    if(rep->msg_type == krb_as_rep && !encode_as_rep_as_tgs_rep)
 	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
 				  ek, &len);
     else
@@ -576,8 +576,10 @@ as_rep(KDC_REQ *req,
     else
 	ret = find_keys2(client, server, &ckey, &cetype, &skey, &setype, 
 			 &sess_ktype, b->etype.val, b->etype.len);
-    if(ret)
+    if(ret) {
+	kdc_log(0, "Server/client has no support for etypes");
 	goto out;
+    }
 	
     {
 	char *cet, *set = NULL, *skt = NULL;
@@ -1017,8 +1019,10 @@ tgs_make_reply(KDC_REQ_BODY *b,
 	else
 	    ret = find_keys2(NULL, server, NULL, NULL, &skey, &setype, 
 			     &sess_ktype, b->etype.val, b->etype.len);
-	if(ret)
+	if(ret) {
+	    kdc_log(0, "Server has no support for etypes");
 	    return ret;
+	}
 	ekey = &skey->key;
     }
     
