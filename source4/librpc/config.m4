@@ -25,6 +25,12 @@ SMB_SUBSYSTEM(LIBRPC_RAW,[],
 		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o],
 		librpc/rpc/librpc_raw_public_proto.h)
 
+SMB_SUBSYSTEM(LIBRPC_CLIENT,[],
+		[librpc/rpc/dcerpc_lsa.o],
+		librpc/rpc/librpc/client/public_proto.h)
+
 SMB_SUBSYSTEM(LIBRPC,[],
-		[\$(LIBNDR_RAW_OBJS) \$(LIBRPC_RAW_OBJS)],
+		[\$(LIBNDR_RAW_OBJS) \$(LIBRPC_RAW_OBJS) \
+		 \$(LIBRPC_CLIENT_OBJS)],
 		librpc/librpc_public_proto.h)
+
