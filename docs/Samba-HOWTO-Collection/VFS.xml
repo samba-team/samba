@@ -138,6 +138,40 @@ This can be done using a configuration similar to the one shown in <link linkend
 		</tgroup>
 		</table>
 
+		<sect3>
+		<title>Configuration of Auditing</title>
+
+		<para>
+		This auditing tool is more felxible than most people readily will recognize. There are a number of ways
+		by which useful logging information can be recorded.
+		</para>
+
+		<itemizedlist>
+			<listitem><para>Syslog can be used to record all transaction. This can be disabled by setting
+					in the &smb.conf; file <parameter>syslog = 0</parameter>.</para></listitem>
+			<listitem><para>Logging can take place to the default log file (<filename>log.smbd</filename>)
+					for all loaded VFS modules just be setting in the &smb.conf; file
+					<parameter>log level = 0 vfs:x</parameter>, where x is the log level.
+					This will disable general logging while activating all logging of VFS
+					module activity at the log level specified.</para></listitem>
+			<listitem><para>Detailed logging can be obtained per user, per client machine, etc.
+					This requires the above together with the creative use of the
+					<parameter>log file</parameter> settings.</para>
+					<para>An example of detailed per-user and per-machine logging can
+					be obtained by setting 
+					<smbconfoption><name>log level</name>
+					<value>/var/log/samba/%U.%m.log</value></smbconfoption>.
+					</para></listitem>
+		</itemizedlist>
+
+		<para>
+		Auditing information often must be preserved for a long time. So that the log files do not get rotated
+		it is essential that the <smbconfoption><name>max log size</name><value>0</value></smbconfoption> be set
+		in the &smb.conf; file.
+		</para>
+
+		</sect3>
+
 	</sect2>
 
 	<sect2 id="fakeperms">
