@@ -1895,7 +1895,7 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups,
 /****************************************************************************
   make a connection to a service
 ****************************************************************************/
-int make_connection(char *service,char *user,char *password, int pwlen, char *dev,int vuid)
+int make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid)
 {
   int cnum;
   int snum;
@@ -2015,6 +2015,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     pcon->admin_user = False;
     
   pcon->force_user = force;
+  pcon->vuid = vuid;
   pcon->uid = pass->pw_uid;
   pcon->gid = pass->pw_gid;
   pcon->num_files_open = 0;
@@ -2103,7 +2104,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       smbrun(cmd,NULL,False);
     }
 
-  if (!become_user(cnum,pcon->uid))
+  if (!become_user(cnum,pcon->vuid))
     {
       DEBUG(0,("Can't become connected user!\n"));
       pcon->open = False;
@@ -2598,7 +2599,7 @@ static void close_open_files(int cnum)
 /****************************************************************************
 close a cnum
 ****************************************************************************/
-void close_cnum(int cnum, int uid)
+void close_cnum(int cnum, uint16 vuid)
 {
   DirCacheFlush(SNUM(cnum));
 
@@ -2626,7 +2627,7 @@ void close_cnum(int cnum, int uid)
   dptr_closecnum(cnum);
 
   /* execute any "postexec = " line */
-  if (*lp_postexec(SNUM(cnum)) && become_user(cnum,uid))
+  if (*lp_postexec(SNUM(cnum)) && become_user(cnum,vuid))
     {
       pstring cmd;
       strcpy(cmd,lp_postexec(SNUM(cnum)));
@@ -3130,14 +3131,14 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	{
 	  int cnum = SVAL(inbuf,smb_tid);
 	  int flags = smb_messages[match].flags;
-	  int uid = SVAL(inbuf,smb_uid);
+	  uint16 session_tag = SVAL(inbuf,smb_uid);
 
 	  /* does this protocol need to be run as root? */
 	  if (!(flags & AS_USER))
 	    unbecome_user();
 
 	  /* does this protocol need to be run as the connected user? */
-	  if ((flags & AS_USER) && !become_user(cnum,uid)) {
+	  if ((flags & AS_USER) && !become_user(cnum,session_tag)) {
 	    if (flags & AS_GUEST) 
 	      flags &= ~AS_USER;
 	    else
