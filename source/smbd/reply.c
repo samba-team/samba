@@ -2186,6 +2186,12 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	if (global_client_caps & CAP_LARGE_READX) {
 		smb_maxcnt |= ((((size_t)SVAL(inbuf,smb_vwv7)) & 1 )<<16);
+		if (smb_maxcnt > BUFFER_SIZE) {
+			DEBUG(0,("reply_read_and_X - read too large (%u) for reply buffer %u\n",
+				(unsigned int)smb_maxcnt, (unsigned int)BUFFER_SIZE));
+			END_PROFILE(SMBreadX);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 	}
 
 	if(CVAL(inbuf,smb_wct) == 12) {
