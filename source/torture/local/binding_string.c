@@ -94,7 +94,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 static const char *test_strings[] = {
 	"ncacn_np:", 
 	"ncalrpc:", 
-	"ncalrpc:[Security=Sane]", 
+	"ncalrpc:[,Security=Sane]", 
 	"ncacn_np:[rpcecho]",
 	"ncacn_np:127.0.0.1[rpcecho]",
 	"ncacn_ip_tcp:127.0.0.1",
@@ -105,6 +105,9 @@ static const char *test_strings[] = {
 	"ncadg_ip_udp:",
 	"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:localhost",
 	"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:127.0.0.1",
+	"ncacn_unix_stream:[/tmp/epmapper]",
+	"ncalrpc:[IDENTIFIER]",
+	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 };
 
 BOOL torture_local_binding_string(int dummy) 
