@@ -224,7 +224,7 @@ LDAP based user and machine account back end.
 <para>
 New to Samba-3 is the ability to use a back-end database that holds the same type of data as
 the NT4 style SAM (Security Account Manager) database (one of the registry files).
-<footnote>See also <link linkend="passdb"/>.</footnote>
+<footnote><para>See also <link linkend="passdb"/>.</para></footnote>
 </para>
 
 <para>
@@ -388,7 +388,7 @@ A Domain Controller is an SMB/CIFS server that:
 For Samba to provide these is rather easy to configure. Each Samba Domain Controller must provide
 the NETLOGON service which Samba calls the <smbconfoption><name>domain logons</name></smbconfoption> functionality
 (after the name of the parameter in the &smb.conf; file). Additionally, one (1) server in a Samba-3
-Domain must advertise itself as the domain master browser<footnote>See also <link linkend="NetworkBrowsing"/></footnote>. This causes the Primary Domain Controller
+Domain must advertise itself as the domain master browser<footnote><para>See also <link linkend="NetworkBrowsing"/></para></footnote>. This causes the Primary Domain Controller
 to claim domain specific NetBIOS name that identifies it as a domain master browser for its given
 domain/workgroup. Local master browsers in the same domain/workgroup on broadcast-isolated subnets
 then ask for a complete copy of the browse list for the whole wide area network. Browser clients

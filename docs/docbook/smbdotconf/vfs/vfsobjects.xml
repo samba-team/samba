@@ -2,19 +2,10 @@
                  context="S"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para>This parameter specifies the backend module names which 
+	<para>This parameter specifies the backend names which 
 	are used for Samba VFS I/O operations.  By default, normal 
 	disk I/O operations are used but these can be overloaded 
 	with one or more VFS objects. </para>
-
-	<para>Options for a given VFS module are specified one per line
-	smb.conf perfaced by the module name and a colon (:).  Such as</para>
-
-	<para>foo:bar=biddle</para>
-
-	<para>where 'foo' is the name of VFS module, 'bar' is a parameter supported
-	by ;foo;, and 'biddle' is the value of the option 'bar'.  Refer to the 
-	manpage for a given VFS modules regarding the options supported by that module.</para>
 		
 	<para>Default: <emphasis>no value</emphasis></para>
 
