@@ -121,12 +121,13 @@ if (@codepage) {
   }
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(update)\n";
-print IDB "f 0775 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base exitop(/usr/samba/mkprintcap.sh) removeop(rm /usr/samba/printcap)\n";
+print IDB "f 0755 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base exitop(/usr/samba/mkprintcap.sh) removeop(rm /usr/samba/printcap)\n";
 
-print IDB "f 0644 root sys usr/samba/src packaging/SGI samba.src.samba\n";
+print IDB "d 0755 root sys usr/samba/src packaging/SGI samba.src.samba\n";
 while (@allfiles) {
   $nextfile = shift @allfiles;
   ($file = $nextfile) =~ s/^.*\///;
+  next if grep(/packaging\/SGI/& (/Makefile/ | /samba\.spec/ | /samba\.idb/),$nextfile);
   next if grep(/source/,$nextfile) && ($ignores{$file});
   next if ($nextfile eq "CVS");
   if (grep(/\/$/,$nextfile)) {
