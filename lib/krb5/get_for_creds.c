@@ -63,9 +63,10 @@ add_addrs(krb5_context context,
     }
     for (a = ai; a != NULL; a = a->ai_next) {
 	ret = krb5_sockaddr2address (a->ai_addr, &addr->val[i++]);
-	if (ret)
+	if (ret != 0 && ret != KRB5_PROG_ATYPE_NOSUPP)
 	    goto fail;
     }
+    addr->len = i;
     return 0;
 fail:
     krb5_free_addresses (context, addr);
