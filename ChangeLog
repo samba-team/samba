@@ -1,5 +1,9 @@
 Sat Nov 29 07:10:11 1997  Assar Westerlund  <assar@sics.se>
 
+	* appl/rsh/rshd.c: updated to use getarg.
+	changed `struct fd_set' to `fd_set'.
+	implemented broken/BSD authentication (requires iruserok)
+
 	* lib/krb5/rd_req.c (krb5_rd_req): fixed obvious bug
 
 	* kdc/kaserver.c (create_reply_ticket): use a random nonce in the
