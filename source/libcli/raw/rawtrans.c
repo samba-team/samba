@@ -626,5 +626,5 @@ NTSTATUS smb_raw_nttrans(struct smbcli_tree *tree,
 */
 size_t smb_raw_max_trans_data(struct smbcli_tree *tree, size_t param_size)
 {
-	return tree->session->transport->options.max_xmit - (70 + param_size);
+	return tree->session->transport->negotiate.max_xmit - (70 + param_size);
 }
