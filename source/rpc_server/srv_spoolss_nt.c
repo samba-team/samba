@@ -4050,6 +4050,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	pstring driverlocation;
 	int numlines;
 	int ret;
+	fstring remote_machine = "%m";
 
 	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
 		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
@@ -4061,12 +4062,13 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			global_myname);
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
-	
+	standard_sub_basic(remote_machine);
+
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
-			printer->info_2->location, driverlocation);
+			printer->info_2->location, driverlocation, remote_machine);
 
 	unlink(tmp_file);
 
@@ -4433,6 +4435,14 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 			goto done;
 		}
 	
+	/*
+	 * When a *new* driver is bound to a printer, the drivername is used to 
+	 * lookup previously saved driver initialization info, which is then 
+	 * bound to the printer, simulating what happens in the Windows arch.
+	 */
+	if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		set_driver_init(printer, 2);
+
 	/* Update printer info */
 
 	if (add_a_printer(*printer, 2)!=0) {
@@ -6646,7 +6656,7 @@ uint32 _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	}
 	
 	/* The "PrinterDriverData" key should have no subkeys */
-	if (strcmp(key, PrinterKey) == 0)
+    if (strcmp(key, PrinterKey) == 0)
 	{
 		r_u-> needed = 2;
 		if (q_u->size < r_u->needed)
