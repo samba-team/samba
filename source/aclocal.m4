@@ -22,19 +22,6 @@ AC_DEFUN(AC_VALIDATE_CACHE_SYSTEM_TYPE, [
     ac_cv_target_system_type="$target"
 ])
 
-dnl based on Automake's maintainer mode
-AC_DEFUN(SAMBA_MAINTAINER_MODE,[
-  AC_ARG_ENABLE(maintainer-mode,
-	[  --enable-maintainer-mode enable some make rules for maintainers],
-      maint_mode=$enableval, maint_mode=no)
-  if test x"$maint_mode" = x"yes"; then MAINT=; else MAINT='#'; fi
-  AC_SUBST(MAINT)
-  AC_PATH_PROG(AUTOCONF, autoconf, autoconf)
-  AC_SUBST(AUTOCONF)
-  AC_PATH_PROG(AUTOHEADER, autoheader, autoheader)
-  AC_SUBST(AUTOHEADER)
-])
-
 
 dnl test whether dirent has a d_off member
 AC_DEFUN(AC_DIRENT_D_OFF,

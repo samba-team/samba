@@ -53,7 +53,6 @@ dnl Add #include for broken IRIX header files
 esac
 
 AC_VALIDATE_CACHE_SYSTEM_TYPE
-SAMBA_MAINTAINER_MODE
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
