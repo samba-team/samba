@@ -121,11 +121,11 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 		  return;
 	  }
 
-	  /* we only want to store the first part of translated_path,
-	     up to the length of original_path */
+	  /* we only want to store the first part of original_path,
+	     up to the length of translated_path */
 
-	  translated_path[original_path_length] = '\0';
-	  translated_path_length = original_path_length;
+	  original_path[translated_path_length] = '\0';
+	  original_path_length = translated_path_length;
   }
 
 #if 0
