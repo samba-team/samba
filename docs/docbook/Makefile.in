@@ -14,248 +14,280 @@ JADE = @JADE@
 NSGMLS = @NSGMLS@
 ONSGMLS=@ONSGMLS@
 SGMLSPL=@SGMLSPL@
+HTMLDOC=@HTMLDOC@
 #CATALOG = @CATALOG@
+MANDIR=../manpages
+HTMLDIR=../htmldocs
 
 #Stylesheets and Dependicies
-SGML_SHARE=/usr/local/share/sgml
+SGML_SHARE=@SGML_SHARE@
+#SGML_CATALOG_FILES=$(SGML_CATALOG_FILES):./dbsgml/catalog
 HTML_STYLESHEET = $(srcdir)/stylesheets/html.dsl
 HTML_DEPS = $(srcdir)/stylesheets/html-common.dsl $(srcdir)/stylesheets/common.dsl
-SGML_SHARE=/usr/local/share/sgml
 
-MANPAGES=findsmb.1 smbclient.1 \
-	smbspool.8 lmhosts.5 \
-	smbcontrol.1  smbstatus.1 \
-	make_smbcodepage.1  smbd.8 \
-	smbtar.1 nmbd.8 smbmnt.8 \
-	smbumount.8 nmblookup.1 \
-	smbmount.8 swat.8 rpcclient.1	 \
-	smbpasswd.5 testparm.1 samba.7 \
-	smbpasswd.8 testprns.1 \
-	smb.conf.5 smbrun.1 wbinfo.1 \
-	smbcacls.1 smbsh.1 winbindd.8 
+MANPAGES=$(MANDIR)/findsmb.1 $(MANDIR)/smbclient.1 \
+	$(MANDIR)/smbspool.8 $(MANDIR)/lmhosts.5 \
+	$(MANDIR)/smbcontrol.1  $(MANDIR)/smbstatus.1 \
+	$(MANDIR)/make_smbcodepage.1  $(MANDIR)/smbd.8 \
+	$(MANDIR)/smbtar.1 $(MANDIR)/nmbd.8 $(MANDIR)/smbmnt.8 \
+	$(MANDIR)/smbumount.8 $(MANDIR)/nmblookup.1 \
+	$(MANDIR)/smbmount.8 $(MANDIR)/swat.8 $(MANDIR)/rpcclient.1	 \
+	$(MANDIR)/smbpasswd.5 $(MANDIR)/testparm.1 $(MANDIR)/samba.7 \
+	$(MANDIR)/smbpasswd.8 $(MANDIR)/testprns.1 \
+	$(MANDIR)/smb.conf.5 $(MANDIR)/smbrun.1 $(MANDIR)/wbinfo.1 \
+	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 
+
+SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
+	manpages/smbspool.8.sgml manpages/lmhosts.5.sgml \
+	manpages/smbcontrol.1.sgml manpages/smbstatus.1.sgml \
+	manpages/make_smbcodepage.1.sgml  manpages/smbd.8.sgml \
+	manpages/smbtar.1.sgml manpages/nmbd.8.sgml manpages/smbmnt.8.sgml \
+	manpages/smbumount.8.sgml manpages/nmblookup.1.sgml \
+	manpages/smbmount.8.sgml manpages/swat.8.sgml \
+	manpages/rpcclient.1.sgml manpages/smbpasswd.5.sgml \
+	manpages/testparm.1.sgml manpages/samba.7.sgml \
+	manpages/smbpasswd.8.sgml manpages/testprns.1.sgml \
+	manpages/smb.conf.5.sgml manpages/smbrun.1.sgml \
+	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
+	manpages/smbsh.1.sgml manpages/winbindd.8.sgml
+
 
 ######################################################################
 # Make instructions
 ######################################################################
-all: man html
+all: man
 
-man: 
-	@echo Building man pages...
-	@for file in `/bin/ls manpages/*sgml`; do \
-	   manfile=`basename $$file | sed "s/\.sgml//g"`; \
-	   echo "Making $$manfile"; \
-	   $(ONSGMLS) -f /tmp/docbook2x.log $$file | $(SGMLSPL) \
-	      $(SGML_SHARE)/docbook2X/docbook2man-spec.pl; \
-	   cat /tmp/docbook2x.log | grep -v DTDDECL; \
-	   /bin/rm -f /tmp/docbook2x.log; \
-	   /bin/mv -f $$manfile ../manpages/$$manfile; \
-	done
-	
-html:
+man: $(MANPAGES)
+
+faq: 
+
+howto:
+
+proj-doc: 
+	@(cd projdoc; $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl samba-doc.sgml > ../samba-doc.html)
+	@$(HTMLDOC) -f samba-doc.pdf samba-doc.html
+
+
+
+## generate all HTML man pages
+html-all: $(SGMLMANSRC)
 	@echo Building HTML formatted man pages...
-		@for file in `/bin/ls manpages/*sgml`; do \
-	   htmlfile=`basename $$file | sed "s/\.sgml/\.html/g"`; \
+	@(for i in $?; do \
+	   htmlfile=`basename $$i | sed "s/\.sgml/\.html/g"`; \
 	   echo "Making $$htmlfile"; \
 	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
-	      -f /tmp/jade.log $$file > ../htmldocs/$$htmlfile; \
+	      -f /tmp/jade.log $$i > ../htmldocs/$$htmlfile; \
 	   cat /tmp/jade.log | grep -v DTDDECL; \
 	   /bin/rm -f /tmp/jade.log; \
-	done
+	done)
 
+## generate all man pages
+man-all: $(SGMLMANSRC)
+	@echo Building man pages...
+	@(for i in $?; do \
+		manfile=`basename $$i | sed "s/\.sgml//g"`; \
+		echo "Making $$manfile"; \
+		$(ONSGMLS) -f /tmp/docbook2x.log $$i | $(SGMLSPL) \
+	           $(SGML_SHARE)/docbook2X/docbook2man-spec.pl; \
+		cat /tmp/docbook2x.log | grep -v DTDDECL; \
+		/bin/rm -f /tmp/docbook2x.log; \
+		/bin/mv -f $$manfile $(MANDIR)/$$manfile; \
+	  done)
+
+
+	
 
 ##
 ## these rules are for building individual files
 ##
-findsmb.1:  manpages/findsmb.1.sgml
+$(MANDIR)/findsmb.1:  manpages/findsmb.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 	
-smbclient.1: manpages/smbclient.1.sgml
+$(MANDIR)/smbclient.1: manpages/smbclient.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbspool.8: manpages/smbspool.8.sgml
+$(MANDIR)/smbspool.8: manpages/smbspool.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-lmhosts.5: manpages/lmhosts.5.sgml
+$(MANDIR)/lmhosts.5: manpages/lmhosts.5.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbcontrol.1: manpages/smbcontrol.1.sgml
+$(MANDIR)/smbcontrol.1: manpages/smbcontrol.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbstatus.1: manpages/smbstatus.1.sgml
+$(MANDIR)/smbstatus.1: manpages/smbstatus.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-make_smbcodepage.1: manpages/make_smbcodepage.1.sgml
+$(MANDIR)/make_smbcodepage.1: manpages/make_smbcodepage.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbd.8: manpages/smbd.8.sgml
+$(MANDIR)/smbd.8: manpages/smbd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbtar.1: manpages/smbtar.1.sgml
+$(MANDIR)/smbtar.1: manpages/smbtar.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-nmbd.8: manpages/nmbd.8.sgml
+$(MANDIR)/nmbd.8: manpages/nmbd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbmnt.8: manpages/smbmnt.8.sgml
+$(MANDIR)/smbmnt.8: manpages/smbmnt.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbumount.8: manpages/smbumount.8.sgml
+$(MANDIR)/smbumount.8: manpages/smbumount.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-nmblookup.1: manpages/nmblookup.1.sgml
+$(MANDIR)/nmblookup.1: manpages/nmblookup.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbmount.8: manpages/smbmount.8.sgml
+$(MANDIR)/smbmount.8: manpages/smbmount.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-swat.8: manpages/swat.8.sgml
+$(MANDIR)/swat.8: manpages/swat.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-rpcclient.1: manpages/rpcclient.1.sgml
+$(MANDIR)/rpcclient.1: manpages/rpcclient.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbpasswd.5: manpages/smbpasswd.5.sgml
+$(MANDIR)/smbpasswd.5: manpages/smbpasswd.5.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-testparm.1: manpages/testparm.1.sgml
+$(MANDIR)/testparm.1: manpages/testparm.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-samba.7: manpages/samba.7.sgml
+$(MANDIR)/samba.7: manpages/samba.7.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbpasswd.8: manpages/smbpasswd.8.sgml
+$(MANDIR)/smbpasswd.8: manpages/smbpasswd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-testprns.1: manpages/testprns.1.sgml
+$(MANDIR)/testprns.1: manpages/testprns.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smb.conf.5: manpages/smb.conf.5.sgml
+$(MANDIR)/smb.conf.5: manpages/smb.conf.5.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbrun.1: manpages/smbrun.1.sgml
+$(MANDIR)/smbrun.1: manpages/smbrun.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-wbinfo.1: manpages/wbinfo.1.sgml
+$(MANDIR)/wbinfo.1: manpages/wbinfo.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbcacls.1: manpages/smbcacls.1.sgml
+$(MANDIR)/smbcacls.1: manpages/smbcacls.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-smbsh.1 : manpages/smbsh.1.sgml
+$(MANDIR)/smbsh.1 : manpages/smbsh.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
-winbindd.8: manpages/winbindd.8.sgml
+$(MANDIR)/winbindd.8: manpages/winbindd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) -f /tmp/docbook2x.log $< | $(SGMLSPL) \
-	   $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat /tmp/docbook2x.log | grep -v DTDDECL
-	@/bin/rm -f /tmp/docbook2x.log
-
-
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@/bin/mv `basename $@` $(MANDIR)
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -V nochunks -d $$SGML_SHARE/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
 
 ## Clean Rule

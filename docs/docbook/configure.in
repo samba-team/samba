@@ -12,6 +12,30 @@ AC_PATH_PROG(HTMLDOC, htmldoc)
 AC_PATH_PROG(ONSGMLS, onsgmls)
 AC_PATH_PROG(SGMLSPL, sgmlspl)
 
+dnl ----------------------------------------------------------------
+dnl --with-sgml-share
+SGML_SHARE="/usr/local/share/sgml"
+
+AC_ARG_WITH(SGML_SHARE,
+[  --with-sgml-share=DIR   change the default location of SGML stylesheets],
+[case "$withval" in
+        no) SGML_SHARE=""
+                ;;
+        yes)
+                ;;
+        /*|\\*)
+                SGML_SHARE="$withval"
+                ;;
+        *)
+                SGML_SHARE="/$withval"
+                ;;
+esac
+])dnl
+
+AC_SUBST(SGML_SHARE)dnl
+
+
+
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
 
