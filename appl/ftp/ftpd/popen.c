@@ -139,10 +139,7 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 	for (gargc = argc = 1; argv[argc] && gargc < MAXGLOBS - 1; argc++) {
 		glob_t gl;
 		int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE
-#ifdef GLOB_LIMIT
-		    | GLOB_LIMIT
-#endif
-		    ;
+		    | GLOB_LIMIT;
 
 		memset(&gl, 0, sizeof(gl));
 		if (no_glob || glob(argv[argc], flags, NULL, &gl))
