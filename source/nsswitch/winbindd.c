@@ -106,12 +106,12 @@ static void sigusr1_handler(int signum)
     BlockSignals(False, SIGUSR1);
 }
 
-static BOOL flush_cache;
+static BOOL do_sighup;
 
 static void sighup_handler(int signum)
 {
     BlockSignals(True, SIGHUP);
-    flush_cache = True;
+    do_sighup = True;
     BlockSignals(False, SIGHUP);
 }
 
@@ -232,8 +232,12 @@ static struct dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok },
+
+	/* Enumeration functions */
+
         { WINBINDD_LIST_USERS, winbindd_list_users },
         { WINBINDD_LIST_GROUPS, winbindd_list_groups },
+	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains },
 
 	/* SID related functions */
 
@@ -246,6 +250,10 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid },
+
+	/* Miscellaneous */
+
+	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct },
 
 	/* End of list */
 
@@ -460,127 +468,141 @@ static void client_write(struct winbindd_cli_state *state)
 
 static void process_loop(int accept_sock)
 {
-    /* We'll be doing this a lot */
+	/* We'll be doing this a lot */
 
-    while (1) {
-        struct winbindd_cli_state *state;
-        fd_set r_fds, w_fds;
-        int maxfd = accept_sock, selret;
-	struct timeval timeout;
+	while (1) {
+		struct winbindd_cli_state *state;
+		fd_set r_fds, w_fds;
+		int maxfd = accept_sock, selret;
+		struct timeval timeout;
 
-	/* Free up temporary memory */
+		/* Free up temporary memory */
 
-	lp_talloc_free();
+		lp_talloc_free();
 
-	/* Do any connection establishment that is needed */
+		/* Do any connection establishment that is needed */
 
-	establish_connections();	    
+		establish_connections(False);	    /* Honour timeout */
 
-        /* Initialise fd lists for select() */
+		/* Initialise fd lists for select() */
 
-        FD_ZERO(&r_fds);
-        FD_ZERO(&w_fds);
-        FD_SET(accept_sock, &r_fds);
+		FD_ZERO(&r_fds);
+		FD_ZERO(&w_fds);
+		FD_SET(accept_sock, &r_fds);
 
-	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
-	timeout.tv_usec = 0;
+		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
+		timeout.tv_usec = 0;
 
-        /* Set up client readers and writers */
+		/* Set up client readers and writers */
 
-        state = client_list;
+		state = client_list;
 
-        while (state) {
-            /* Dispose of client connection if it is marked as finished */ 
+		while (state) {
 
-            if (state->finished) {
-                struct winbindd_cli_state *next = state->next;
+			/* Dispose of client connection if it is marked as 
+			   finished */ 
 
-                remove_client(state);
-                state = next;
-                continue;
-            }
+			if (state->finished) {
+				struct winbindd_cli_state *next = state->next;
 
-            /* Select requires we know the highest fd used */
+				remove_client(state);
+				state = next;
+				continue;
+			}
 
-            if (state->sock > maxfd) maxfd = state->sock;
+			/* Select requires we know the highest fd used */
 
-            /* Add fd for reading */
+			if (state->sock > maxfd) maxfd = state->sock;
 
-            if (state->read_buf_len != sizeof(state->request)) {
-                FD_SET(state->sock, &r_fds);
-            }
+			/* Add fd for reading */
 
-            /* Add fd for writing */
+			if (state->read_buf_len != sizeof(state->request)) {
+				FD_SET(state->sock, &r_fds);
+			}
 
-            if (state->write_buf_len) {
-                FD_SET(state->sock, &w_fds);
-            }
+			/* Add fd for writing */
 
-            state = state->next;
-        }
+			if (state->write_buf_len) {
+				FD_SET(state->sock, &w_fds);
+			}
 
-        /* Check signal handling things */
+			state = state->next;
+		}
 
-        if (flush_cache) {
-            do_flush_caches();
-            reload_services_file();
-            flush_cache = False;
-        }
+		/* Check signal handling things */
 
-        if (print_winbindd_status) {
-            do_print_winbindd_status();
-            print_winbindd_status = False;
-        }
+		if (do_sighup) {
 
-        /* Call select */
+			/* Flush winbindd cache */
+
+			do_flush_caches();
+			reload_services_file();
+
+			/* Close and re-open all connections.  This will also
+			   refresh the trusted domains list */
+
+			winbindd_kill_connections();
+			establish_connections(True); /* Force re-establish */
+
+			do_sighup = False;
+		}
+
+		if (print_winbindd_status) {
+			do_print_winbindd_status();
+			print_winbindd_status = False;
+		}
+
+		/* Call select */
         
-        selret = select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
+		selret = select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
 
-	if (selret == 0) continue;
+		if (selret == 0) continue;
 
-        if ((selret == -1 && errno != EINTR) || selret == 0) {
+		if ((selret == -1 && errno != EINTR) || selret == 0) {
 
-            /* Select error, something is badly wrong */
+			/* Select error, something is badly wrong */
 
-            perror("select");
-            exit(1);
-        }
+			perror("select");
+			exit(1);
+		}
 
-        /* Create a new connection if accept_sock readable */
+		/* Create a new connection if accept_sock readable */
 
-        if (selret > 0) {
+		if (selret > 0) {
 
-            if (FD_ISSET(accept_sock, &r_fds)) {
-                new_connection(accept_sock);
-            }
+			if (FD_ISSET(accept_sock, &r_fds)) {
+				new_connection(accept_sock);
+			}
             
-            /* Process activity on client connections */
+			/* Process activity on client connections */
             
-            for (state = client_list; state ; state = state->next) {
+			for (state = client_list; state; state = state->next) {
                 
-                /* Data available for reading */
+				/* Data available for reading */
                 
-                if (FD_ISSET(state->sock, &r_fds)) {
+				if (FD_ISSET(state->sock, &r_fds)) {
                     
-                    /* Read data */
+					/* Read data */
                     
-                    client_read(state);
+					client_read(state);
                     
-                    /* A request packet might be complete */
+					/* A request packet might be 
+					   complete */
                     
-                    if (state->read_buf_len == sizeof(state->request)) {
-                        process_packet(state);
-                    }
-                }
+					if (state->read_buf_len == 
+					    sizeof(state->request)) {
+						process_packet(state);
+					}
+				}
                 
-                /* Data available for writing */
+				/* Data available for writing */
                 
-                if (FD_ISSET(state->sock, &w_fds)) {
-			client_write(state);
-                }
-            }
-        }
-    }
+				if (FD_ISSET(state->sock, &w_fds)) {
+					client_write(state);
+				}
+			}
+		}
+	}
 }
 
 /* Main function */
