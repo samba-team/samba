@@ -39,11 +39,19 @@ typedef struct {
 #define INIT_STAT_CACHE_SIZE 512
 static hash_table stat_cache;
 
-/****************************************************************************
- Add an entry into the stat cache.
-*****************************************************************************/
+/**
+ * Add an entry into the stat cache.
+ *
+ * @param full_orig_name       The original name as specified by the client
+ * @param orig_translated_path The name on our filesystem.
+ * 
+ * @note Only the first strlen(orig_translated_path) characters are stored 
+ *       into the cache.  This means that full_orig_name will be internally
+ *       truncated.
+ *
+ */
 
-void stat_cache_add( char *full_orig_name, char *orig_translated_path)
+void stat_cache_add( const char *full_orig_name, const char *orig_translated_path)
 {
   stat_cache_entry *scp;
   stat_cache_entry *found_scp;
@@ -105,11 +113,19 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
   if(!case_sensitive)
 	  strupper(original_path);
 
-  if(!(original_path_length == translated_path_length)) {
-	  DEBUG(0, ("OOPS - tried to store stat cache entry for non-equal length paths [%s] %u and [%s] %u)!\n", original_path, original_path_length, translated_path, translated_path_length));
-	  SAFE_FREE(original_path);
-	  SAFE_FREE(translated_path);
-	  return;
+  if (original_path_length != translated_path_length) {
+	  if (original_path_length < translated_path_length) {
+		  DEBUG(0, ("OOPS - tried to store stat cache entry for werid length paths [%s] %u and [%s] %u)!\n", original_path, original_path_length, translated_path, translated_path_length));
+		  SAFE_FREE(original_path);
+		  SAFE_FREE(translated_path);
+		  return;
+	  }
+
+	  /* we only want to store the first part of translated_path,
+	     up to the length of original_path */
+
+	  translated_path[original_path_length] = '\0';
+	  translated_path_length = original_path_length;
   }
 
 #if 0
