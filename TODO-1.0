@@ -8,5 +8,3 @@ $Id$
 - PAM?
 - kadmin: make it happy with reading and parsing kdc.conf
 - handle readline hiding in readline/readline.h
-- berkeley db circus
-- v4->v5 conversion in kdc
