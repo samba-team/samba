@@ -873,7 +873,7 @@ void smbd_process(void)
 	      return;
       }
 
-      if(global_machine_pasword_needs_changing)
+      if(global_machine_password_needs_changing)
       {
         unsigned char trust_passwd_hash[16];
         time_t lct;
@@ -908,7 +908,7 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
         if(t < lct + lp_machine_password_timeout()) {
           trust_password_unlock();
-          global_machine_pasword_needs_changing = False;
+          global_machine_password_needs_changing = False;
           continue;
         }
 
@@ -916,7 +916,7 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
         change_trust_account_password( global_myworkgroup, remote_machine_list);
         trust_password_unlock();
-        global_machine_pasword_needs_changing = False;
+        global_machine_password_needs_changing = False;
       }
 
       /*
