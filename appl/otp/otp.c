@@ -73,6 +73,11 @@ usage (void)
   exit (1);
 }
 
+/* 
+ * Renew the OTP for a user. 
+ * The pass-phrase is not required (RFC 1938/8.0)
+ */
+
 static int
 renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
 {
@@ -85,28 +90,21 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
   if (argc != 2)
     usage();
 
-  ctx = &oldctx;
-  if(otp_challenge (ctx, user, prompt, sizeof(prompt)))
-    return 1;
-  if(des_read_pw_string (pw, sizeof(pw), prompt, 0))
-    return 1;
-  ret = otp_verify_user_1 (ctx, pw);
-  if (ret == 0) {
-    newctx.alg = alg;
-    newctx.user = user;
-    newctx.n = atoi (argv[0]);
-    strncpy (newctx.seed, argv[1], sizeof(newctx.seed));
-    newctx.seed[sizeof(newctx.seed) - 1] = '\0';
-    strlwr(newctx.seed);
-    sprintf (prompt, "[ otp-%s %u %s ]",
-	     newctx.alg->name,
-	     newctx.n, 
-	     newctx.seed);
-    if (des_read_pw_string (pw, sizeof(pw), prompt, 0) == 0 &&
-	otp_parse (newctx.key, pw, alg) == 0) {
-      ctx = &newctx;
-    }
+  newctx.alg = alg;
+  newctx.user = user;
+  newctx.n = atoi (argv[0]);
+  strncpy (newctx.seed, argv[1], sizeof(newctx.seed));
+  newctx.seed[sizeof(newctx.seed) - 1] = '\0';
+  strlwr(newctx.seed);
+  sprintf (prompt, "[ otp-%s %u %s ]",
+	   newctx.alg->name,
+	   newctx.n, 
+	   newctx.seed);
+  if (des_read_pw_string (pw, sizeof(pw), prompt, 0) == 0 &&
+      otp_parse (newctx.key, pw, alg) == 0) {
+    ctx = &newctx;
   }
+
   dbm = otp_db_open ();
   if (dbm == NULL) {
     fprintf (stderr, "%s: otp_db_open failed\n", prog);
@@ -116,6 +114,32 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
   otp_db_close (dbm);
   return ret;
 }
+
+/*
+ * Return 0 if the user could enter the next OTP.
+ * I would rather have returned !=0 but it's shell-like here around.
+ */
+
+static int 
+verify_user_otp(char *username)
+{
+  OtpContext ctx;
+  char passwd[OTP_MAX_PASSPHRASE + 1];
+  char prompt[128], ss[256];
+
+  if (otp_challenge (&ctx, username, ss, sizeof(ss)) != 0) {
+    fprintf(stderr, "%s: no otp challenge found\n", prog);
+    return 1; 
+  }
+
+  sprintf (prompt, "%s's %s Password: ", username, ss);
+  des_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0);
+  return otp_verify_user (&ctx, passwd);
+}
+
+/* 
+ * Set the OTP for a user
+ */
 
 static int
 set (int argc, char **argv, OtpAlgorithm *alg, char *user)
@@ -185,6 +209,31 @@ delete_otp (int argc, char **argv, char *user)
   ret = otp_delete(db, &ctx);
   otp_db_close (db);
   return ret;
+}
+
+/* 
+ * Tell whether the user has an otp
+ */
+
+static int
+has_an_otp(char *user)
+{
+  void *db;
+  OtpContext ctx;
+  int ret;
+
+  db = otp_db_open ();
+  if(db == NULL) {
+    fprintf (stderr, "%s: otp_db_open failed\n", prog);
+    return 0; /* if no db no otp! */
+  }
+  
+  ctx.user = user;
+  ret = otp_simple_get(db, &ctx); 
+  if (!ret) free(ctx.alg);
+
+  otp_db_close (db);
+  return !ret;
 }
 
 /*
@@ -290,8 +339,8 @@ main (int argc, char **argv)
   if (!(listp || deletep || renewp))
     defaultp = 1;
 
-  if ( listp + deletep + renewp + defaultp != 1) /* one of -d or -l or -r or none */
-    usage();
+  if ( listp + deletep + renewp + defaultp != 1) 
+    usage(); /* one of -d or -l or -r or none */
 
   if (listp)
     return list_otps (argc, argv, user);
@@ -307,6 +356,23 @@ main (int argc, char **argv)
     user = pwd->pw_name;
   }
   
+  /*
+   * users other that root must provide the next OTP to update the sequence.
+   * it avoids someone to use a pending session to change an OTP sequence.
+   * see RFC 1938/8.0.
+   */
+  if (uid != 0 && (defaultp || renewp)) {
+    if (!has_an_otp(user)) {
+      fprintf(stderr, "%s: Only root can set an initial OTP\n", prog);
+      return 1;
+    } else { /* Check the next OTP (RFC 1938/8.0: SHOULD) */
+      if (verify_user_otp(user) != 0) {
+	fprintf(stderr, "%s: User authentification failed\n", prog);
+        return 1;
+      }
+    }
+  }
+
   if (deletep)
     return delete_otp (argc, argv, user);
   else if (renewp)
