@@ -147,7 +147,6 @@ typedef struct sam_passwd
 		
 		const char * username;     /* UNIX username string */
 		const char * domain;       /* Windows Domain name */
-		const char * nt_username;  /* Windows username string */
 		const char * full_name;    /* user's full name string */
 		const char * unix_home_dir;     /* UNIX home directory string */
 		const char * home_dir;     /* home directory string */

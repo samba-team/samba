@@ -5876,7 +5876,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
  *************************************************************************/
 
-NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *domain_sid)
+NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, const DOM_SID *domain_sid)
 {
 	NTTIME 		logon_time, logoff_time, kickoff_time,
 			pass_last_set_time, pass_can_change_time,

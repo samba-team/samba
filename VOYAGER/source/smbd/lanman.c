@@ -1815,7 +1815,7 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
-	SAM_ACCOUNT  *pwd=NULL;
+	struct sys_pwent *pwlist, *pwent;
 	int count_sent=0;
 	int count_total=0;
 	int errflags=0;
@@ -1851,20 +1851,20 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	p = *rdata;
 
-	/* to get user list enumerations for NetUserEnum in B21 format */
-	pdb_init_sam(&pwd);
-	
-	/* Open the passgrp file - not for update. */
-	become_root();
-	if(!pdb_setsampwent(False)) {
-		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
-		unbecome_root();
-		return False;
-	}
+	winbind_off();
+	pwlist = getpwent_list();
+	winbind_on();
+
 	errflags=NERR_Success;
 
-	while ( pdb_getsampwent(pwd) ) {
-		const char *name=pdb_get_username(pwd);	
+	for (pwent = pwlist; pwent != NULL; pwent = pwent->next) {
+
+		char *name;
+
+		become_root();
+		unix_username_to_ntname(NULL, pwent->pw_name, &name);
+		unbecome_root();
+
 		if ((name) && (*(name+strlen(name)-1)!='$')) { 
 			count_total++;
 			if(count_total>=resume_context) {
@@ -1877,16 +1877,15 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 					/* set overflow error */
 					DEBUG(10,("api_RNetUserEnum:overflow on entry %d username %s\n",count_sent,name));
 					errflags=234;
+					SAFE_FREE(name);
 					break;
 				}
 			}
 		}	
+		SAFE_FREE(name);
 	} ;
 
-	pdb_endsampwent();
-	unbecome_root();
-
-	pdb_free_sam(&pwd);
+	pwent_free(pwlist);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 

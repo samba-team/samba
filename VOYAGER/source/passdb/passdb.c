@@ -79,7 +79,6 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	   
 	user->private.username = "";
 	user->private.domain = "";
-	user->private.nt_username = "";
 	user->private.full_name = "";
 	user->private.home_dir = "";
 	user->private.logon_script = "";

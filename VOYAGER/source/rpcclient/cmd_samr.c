@@ -320,7 +320,17 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_sam_user_info_21(user_ctr->info.id21);
+	switch(info_level) {
+	case 16:
+		printf("\tacb_info :\t0x%04x\n",
+		       user_ctr->info.id10->acb_info );
+		break;
+	case 21:
+		display_sam_user_info_21(user_ctr->info.id21);
+		break;
+	default:
+		printf("Can't display level %d\n", info_level);
+	}
 
 done:
 	return result;
