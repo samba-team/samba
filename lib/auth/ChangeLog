@@ -1,3 +1,7 @@
+2001-07-17  Assar Westerlund  <assar@sics.se>
+
+	* sia/Makefile.am: use make-rpath to sort rpath arguments
+
 2001-07-15  Assar Westerlund  <assar@sics.se>
 
 	* afskauthlib/Makefile.am: use LIB_des, so that we link with
