@@ -321,6 +321,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
  api_ds_enum_dom_trusts:
  *************************************************************************/
 
+#if 0 	/* JERRY */
 static BOOL api_ds_enum_dom_trusts(pipes_struct *p)
 {
 	DS_Q_ENUM_DOM_TRUSTS q_u;
@@ -350,6 +351,7 @@ static BOOL api_ds_enum_dom_trusts(pipes_struct *p)
 
 	return True;
 }
+#endif	/* JERRY */
 
 /*******************************************************************
  array of \PIPE\NETLOGON operations
@@ -365,7 +367,9 @@ static struct api_struct api_net_cmds [] =
       { "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
       { "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
       { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
+#if 0	/* JERRY */
       { "DS_ENUM_DOM_TRUSTS", DS_ENUM_DOM_TRUSTS, api_ds_enum_dom_trusts }
+#endif	/* JERRY */
     };
 
 void netlog_get_pipe_fns( struct api_struct **fns, int *n_fns )
