@@ -4,6 +4,7 @@
 <!ENTITY MS-Dfs-Setup SYSTEM "msdfs_setup.sgml">
 <!ENTITY PRINTER-DRIVER2 SYSTEM "printer_driver2.sgml">
 <!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
+<!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
 ]>
 
@@ -27,6 +28,7 @@
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
 &DOMAIN-MEMBER;
+&WINBIND;
 &NT-Security;
 
 </book>
