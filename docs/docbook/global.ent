@@ -7,6 +7,7 @@
 <!ENTITY email.jerry   'jerry@samba.org'>
 <!ENTITY email.patches 'samba-patches@samba.org'>
 <!ENTITY email.jelmer  'jelmer@samba.org'>
+<!ENTITY email.jht     'jht@samba.org'>
 
 
 <!-- Author entities -->
