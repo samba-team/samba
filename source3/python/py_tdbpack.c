@@ -235,13 +235,6 @@ pytdbpack_data(const char *format_str,
 
 		case 'f':
 		case 'P':
-			if (!(packed_list = pytdbpack_str(ch, val_iter, packed_list, pytdb_dos_encoding)))
-				return NULL;
-			break;
-
-		case 'F':
-			/* We specify NULL encoding: Samba databases in this
-			   form are written in the default Python encoding. */
 			if (!(packed_list = pytdbpack_str(ch, val_iter, packed_list, pytdb_unix_encoding)))
 				return NULL;
 			break;
@@ -668,9 +661,6 @@ static PyObject *pytdbunpack_item(char ch,
 		result = pytdbunpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
-		result = pytdbunpack_string(pbuf, plen, pytdb_dos_encoding);
-	}
-	else if (ch == 'F') { /* nul-term string  */
 		result = pytdbunpack_string(pbuf, plen, pytdb_unix_encoding);
 	}
 	else if (ch == 'B') { /* length, buffer */
