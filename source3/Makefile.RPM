@@ -71,7 +71,7 @@ SMBRUN = $(BINDIR)/smbrun
 
 # This is for PAM authentication. RedHat Linux uses PAM.
 # If you use PAM, then uncomment the following lines:
-PAM_FLAGS = -DUSE_PAM -DNO_CRYPT
+PAM_FLAGS = -DUSE_PAM
 PAM_LIBS = -ldl -lpam
 
 # This is for AFS authentication.  If you use AFS then set AFS_BASE 
