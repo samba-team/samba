@@ -87,9 +87,9 @@ gethostname_fallback (krb5_addresses *res)
 }
 
 enum {
-    NOLOOP       = 0,		/* don't include loopback interfaces */
-    LOOP         = 1,		/* do include loopback interfaces */
-    LOOP_IF_NONE = 2		/* include loopback if no other if's */
+    LOOP            = 1,	/* do include loopback interfaces */
+    LOOP_IF_NONE    = 2,	/* include loopback if no other if's */
+    EXTRA_ADDRESSES = 4		/* include extra addresses */
 };
 
 /*
@@ -99,7 +99,7 @@ enum {
 
 static krb5_error_code
 find_all_addresses (krb5_context context,
-		    krb5_addresses *res, int loop,
+		    krb5_addresses *res, int flags,
 		    int af, int siocgifconf, int siocgifflags,
 		    size_t ifreq_sz)
 {
@@ -186,15 +186,14 @@ find_all_addresses (krb5_context context,
 	     continue;
 
 	 if (ifreq.ifr_flags & IFF_LOOPBACK) {
-	     if (loop == NOLOOP)
-		 continue;
-	     else if (loop == LOOP_IF_NONE) {
+	     if (flags & LOOP_IF_NONE) {
 		 ret = krb5_sockaddr2address (sa, &lo_addr);
 		 if (ret)
 		     goto error_out;
 		 got_lo = TRUE;
 		 continue;
-	     }
+	     } else if((flags & LOOP) == 0)
+		 continue;
 	 }
 
 	 ret = krb5_sockaddr2address (sa, &res->val[j]);
@@ -202,7 +201,7 @@ find_all_addresses (krb5_context context,
 	     goto error_out;
 	 ++j;
      }
-     if (loop == LOOP_IF_NONE && got_lo) {
+     if ((flags & LOOP_IF_NONE) && got_lo) {
 	 if (j == 0)
 	     res->val[j++] = lo_addr;
 	 else
@@ -237,31 +236,31 @@ cleanup:
 }
 
 static krb5_error_code
-get_addrs_int (krb5_context context, krb5_addresses *res, int loop)
+get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
 {
     krb5_error_code ret = -1;
 
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
     if (ret)
-	ret = find_all_addresses (context, res, loop,
+	ret = find_all_addresses (context, res, flags,
 				  AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
 				  sizeof(struct in6_ifreq));
 #endif
 #if defined(HAVE_IPV6) && defined(SIOCGIFCONF)
     if (ret)
-	ret = find_all_addresses (context, res, loop,
+	ret = find_all_addresses (context, res, flags,
 				  AF_INET6, SIOCGIFCONF, SIOCGIFFLAGS,
 				  sizeof(struct ifreq));
 #endif
 #if defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
     if (ret)
-	ret = find_all_addresses (context, res, loop,
+	ret = find_all_addresses (context, res, flags,
 				  AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
 				  sizeof(struct ifreq));
 #endif
     if(ret || res->len == 0)
 	ret = gethostname_fallback (res);
-    if(ret == 0) {
+    if(ret == 0 && (flags & EXTRA_ADDRESSES)) {
 	/* append user specified addresses */
 	krb5_addresses a;
 	ret = krb5_get_extra_addresses(context, &a);
@@ -290,7 +289,7 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int loop)
 krb5_error_code
 krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (context, res, LOOP_IF_NONE);
+    return get_addrs_int (context, res, LOOP_IF_NONE | EXTRA_ADDRESSES);
 }
 
 /*
