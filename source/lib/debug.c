@@ -84,6 +84,13 @@ BOOL    debug_warn_unknown_class = True;
 BOOL    debug_auto_add_unknown_class = True;
 BOOL    AllowDebugChange = True;
 
+/* 
+   used to check if the user specified a 
+   logfile on the command line 
+*/
+BOOL    override_logfile;		
+
+
 /*
  * This is to allow assignment to DEBUGLEVEL before the debug
  * system has been initialised.
