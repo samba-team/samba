@@ -156,7 +156,7 @@ NOTE: If you use the SVR4 style init system then you may like to look
 at the examples/svr4-startup script to make Samba fit into that system.
 
 
-STEP 7. Try listing the shares available on your server
+STEP 6. Try listing the shares available on your server
 
 smbclient -L yourhostname 
 
@@ -171,7 +171,7 @@ details. (you can force it to list the shares without a password by
 adding the option -U% to the command line. This will not work with
 non-Samba servers)
 
-STEP 8. try connecting with the unix client. eg:
+STEP 7. try connecting with the unix client. eg:
 
 smbclient '\\yourhostname\aservice'
 
@@ -188,7 +188,7 @@ smbclient '\\bambi\fred'
 NOTE: The number of slashes to use depends on the type of shell you
 use. You may need '\\\\bambi\\fred' with some shells.
 
-STEP 9. Try connecting from a dos/WfWg/Win95/NT/os-2 client. Try
+STEP 8. Try connecting from a dos/WfWg/Win95/NT/os-2 client. Try
 mounting disks. eg:
 
 net use d: \\servername\service
