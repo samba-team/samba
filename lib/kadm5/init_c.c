@@ -111,7 +111,7 @@ kadm5_c_init_with_password_ctx(krb5_context context,
     krb5_cc_default(context, &cc);
     krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
     ctx->ac = NULL;
-    ret = krb5_sendauth(context, &ctx->ac, &s, "hej", NULL, 
+    ret = krb5_sendauth(context, &ctx->ac, &s, KADMIN_APPL_VERSION, NULL, 
 			server, AP_OPTS_MUTUAL_REQUIRED, 
 			NULL, NULL, cc, NULL, NULL, NULL);
     if(ret){
