@@ -13,6 +13,8 @@
 
     include = PREFIX/lib/smb.conf.%L
 
+    add machine script = useradd %u -d /dev/null -s /bin/false
+
 [test]
     path = PREFIX/testdir
     read only = no

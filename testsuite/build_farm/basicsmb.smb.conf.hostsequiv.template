@@ -1,0 +1,3 @@
+       hostname lookups = yes
+       hosts equiv=PREFIX/lib/hosts.equiv
+
