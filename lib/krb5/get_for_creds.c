@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,7 +41,7 @@ add_addrs(krb5_context context,
 	  struct addrinfo *ai)
 {
     krb5_error_code ret;
-    unsigned n, i;
+    unsigned n, i, j;
     void *tmp;
     struct addrinfo *a;
 
@@ -57,6 +57,10 @@ add_addrs(krb5_context context,
 	goto fail;
     }
     addr->val = tmp;
+    for (j = i; j < addr->len; ++j) {
+	addr->val[i].addr_type = 0;
+	krb5_data_zero(&addr->val[i].address);
+    }
     for (a = ai; a != NULL; a = a->ai_next) {
 	ret = krb5_sockaddr2address (a->ai_addr, &addr->val[i++]);
 	if (ret)
