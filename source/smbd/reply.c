@@ -866,9 +866,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 	     domain,skip_string(p,1),skip_string(p,2)));
   }
 
-  /* don't allow strange characters in usernames */
+  /* don't allow strange characters in usernames or domains */
   alpha_strcpy(user, user, ". _-", sizeof(user));
-  if (strstr(user, "..")) {
+  alpha_strcpy(domain, domain, ". _-", sizeof(domain));
+  if (strstr(user, "..") || strstr(domain,"..")) {
 	  return bad_password_error(inbuf, outbuf);
   }
 
