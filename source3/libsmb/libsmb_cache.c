@@ -89,7 +89,7 @@ static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * new,
 		goto failed;
 	}
 
-	DLIST_ADD(((struct smbc_server_cache *)context->server_cache), srvcache);
+	DLIST_ADD((context->server_cache), srvcache);
 	return 0;
 
  failed:
@@ -139,7 +139,7 @@ static int smbc_remove_cached_server(SMBCCTX * context, SMBCSRV * server)
 		if (server == srv->server) { 
 
 			/* remove this sucker */
-			DLIST_REMOVE(((struct smbc_server_cache *)context->server_cache), srv);
+			DLIST_REMOVE(context->server_cache, srv);
 			SAFE_FREE(srv->server_name);
 			SAFE_FREE(srv->share_name);
 			SAFE_FREE(srv->workgroup);
