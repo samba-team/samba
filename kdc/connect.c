@@ -80,12 +80,21 @@ init_socket(struct descr *d, int type, int port)
 static int
 init_sockets(struct descr **d)
 {
-    *d = malloc(4 * sizeof(**d));
+    int nsockets = 4;
+
+#ifdef KASERVER
+    nsockets++;
+#endif
+
+    *d = malloc(nsockets * sizeof(**d));
     init_socket(*d + 0, SOCK_DGRAM, 88);
     init_socket(*d + 1, SOCK_DGRAM, 750);
     init_socket(*d + 2, SOCK_STREAM, 88);
     init_socket(*d + 3, SOCK_STREAM, 750);
-    return 4;
+#ifdef KASERVER
+    init_socket(*d + 4, SOCK_DGRAM, 7004);
+#endif
+    return nsockets;
 }
 
     
@@ -119,6 +128,12 @@ process_request(unsigned char *buf,
     else if(decode_Ticket(buf, len, &ticket, &i) == 0){
 	ret = do_524(&ticket, reply, from);
 	free_Ticket(&ticket);
+	return ret;
+    }
+#endif
+#ifdef KASERVER
+    else {
+	ret = do_kaserver (buf, len, reply, from, (struct sockaddr_in*)addr);
 	return ret;
     }
 #endif
