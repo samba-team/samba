@@ -62,6 +62,11 @@ o   Guenther Deschner <gd@suse.com>
       code.
 
 
+o   Bostjan Golob <golob@gimb.org>
+    * BUG 1046: Fix  getpwent_list() so that the username is not 
+      overwritten by other fields.
+
+
 o   Chris Hertel <crh@samba.org>
     * fix enumeration of shares 12 characters in length via 
       smbclient.
