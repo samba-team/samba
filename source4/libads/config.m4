@@ -234,6 +234,10 @@ if test x$with_krb5_support != x"no"; then
 	#MIT needs this, to let us see 'internal' parts of the headers we use
 	KRB5_CFLAGS="${KRB5_CFLAGS} -DKRB5_PRIVATE -DKRB5_DEPRECATED"
 
+	#Heimdal needs this
+	#TODO: we need to parse KRB5_LIBS for -L path
+	#      and set -Wl,-rpath -Wl,path
+
 	CFLAGS="$CFLAGS $KRB5_CFLAGS"
 	CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
 	LDFLAGS="$LDFLAGS $KRB5_LDFLAGS"
