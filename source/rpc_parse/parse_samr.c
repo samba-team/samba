@@ -5473,8 +5473,17 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 		       usr->hdr_munged_dial.buffer, ps, depth);	/* worksations user can log on from */
 	prs_align(ps);
 
-	prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6));
-	prs_uint32("padding4      ", ps, depth, &(usr->padding4));
+	/* ok, this is only guess-work (as usual) */
+	if (usr->unknown_5 != 0x0)
+	{
+		prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6));
+		prs_uint32("padding4      ", ps, depth, &(usr->padding4));
+	}
+	else if (UNMARSHALLING(ps))
+	{
+		usr->unknown_6 = 0;
+		usr->padding4 = 0;
+	}
 
 	if (usr->ptr_logon_hrs)
 	{
@@ -5948,7 +5957,7 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr,
 	prs_debug(ps, depth, desc, "samr_io_userinfo_ctr");
 	depth++;
 
-	prs_align(ps);
+	/* lkclXXXX DO NOT ALIGN BEFORE READING SWITCH VALUE! */
 
 	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
 	prs_align(ps);
