@@ -322,8 +322,8 @@ BOOL smbd_vfs_init(connection_struct *conn)
 	vfs_init_default(conn);
 	vfs_objects = lp_vfsobj(SNUM(conn));
 
-	/* Override VFS functions if 'vfs object' was specified*/
-	if (!vfs_objects)
+	/* Override VFS functions if 'vfs object' was not specified*/
+	if (!vfs_objects || !vfs_objects[0])
 		return True;
 
 	for(i=0; i<SMB_VFS_OP_LAST; i++) {
