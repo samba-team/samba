@@ -66,6 +66,10 @@ typedef struct _Printer{
 		uint32 printerlocal;
 		SPOOL_NOTIFY_OPTION *option;
 	} notify;
+	struct {
+		fstring machine;
+		fstring user;
+	} client;
 } Printer_entry;
 
 static ubi_dlList Printer_list;
@@ -159,8 +163,6 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 	ubi_dlRemThis(&Printer_list, Printer);
 
 	safe_free(Printer);
-
-	DEBUG(0,("[%d] entrys still in list\n", ubi_dlCount(&Printer_list)));
 
 	return True;
 }	
@@ -2632,25 +2634,30 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 	if (!OPEN_HANDLE(Printer))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!get_printer_snum(handle, &snum) )
-	{		 
+	if (!get_printer_snum(handle, &snum) )	 
 		return NT_STATUS_INVALID_HANDLE;
-	}
 
-	switch (command)
-	{
+	switch (command) {
 		case PRINTER_CONTROL_PAUSE:
 			/* pause the printer here */
 			status_printqueue(NULL, snum, LPSTAT_STOPPED);
 			return 0x0;
-
+			break;
 		case PRINTER_CONTROL_RESUME:
 		case PRINTER_CONTROL_UNPAUSE:
 			/* UN-pause the printer here */
 			status_printqueue(NULL, snum, LPSTAT_OK);
 			return 0x0;
+			break;
 		case PRINTER_CONTROL_PURGE:
-			/* Envoi des dragées FUCA dans l'imprimante */
+			/*
+			 * It's not handled by samba
+			 * we need a smb.conf param to do
+			 * lprm -P%p - on BSD
+			 * lprm -P%p all on LPRNG
+			 * I don't know on SysV
+			 * we could do it by looping in the job's list...
+			 */
 			break;
 	}
 
@@ -2675,9 +2682,8 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	
 	DEBUG(8,("update_printer\n"));
 	
-	if (level!=2)
-	{
-		DEBUG(0,("Send a mail to samba-bugs@samba.org\n"));
+	if (level!=2) {
+		DEBUG(0,("Send a mail to jfm@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -2688,13 +2694,12 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	if (!get_printer_snum(handle, &snum) )
 		return NT_STATUS_INVALID_HANDLE;
 	
-	get_a_printer(&printer, level, lp_servicename(snum));
+	get_a_printer(&printer, 2, lp_servicename(snum));
 
 	DEBUGADD(8,("Converting info_2 struct\n"));
 	convert_printer_info(info, &printer, level);
 	
-	if ((info->info_2)->devmode_ptr != 0)
-	{
+	if ((info->info_2)->devmode_ptr != 0) {
 		/* we have a valid devmode
 		   convert it and link it*/
 		
@@ -2710,36 +2715,30 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 				
 		convert_devicemode(*devmode, nt_devmode);
 	}
-	else
-	{
+	else {
 		if (printer.info_2->devmode != NULL)
-		{
 			free(printer.info_2->devmode);
-		}
 		printer.info_2->devmode=NULL;
 	}
 			
-	if (status == 0x0)
-	{
-		status = add_a_printer(printer, level);
-	}
-	if (status == 0x0)
-	{
-		status = free_a_printer(printer, level);
+	if (add_a_printer(printer, 2)!=0) {
+		free_a_printer(printer, 2);
+		
+		/* I don't really know what to return here !!! */
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	return status;
+	free_a_printer(printer, 2);
+
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setprinter( const POLICY_HND *handle,
-				uint32 level,
-				const SPOOL_PRINTER_INFO_LEVEL *info,
-				const DEVICEMODE *devmode,
-				uint32 sec_buf_size,
-				const char *sec_buf,
-				uint32 command)
+uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
+			   const SPOOL_PRINTER_INFO_LEVEL *info,
+			   const DEVMODE_CTR devmode_ctr,
+			   uint32 command)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
@@ -2747,13 +2746,12 @@ uint32 _spoolss_setprinter( const POLICY_HND *handle,
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check the level */	
-	switch (level)
-	{
+	switch (level) {
 		case 0:
 			return control_printer(handle, command);
 			break;
 		case 2:
-			return update_printer(handle, level, info, devmode);
+			return update_printer(handle, level, info, devmode_ctr.devmode);
 			break;
 	}
 
@@ -3094,7 +3092,7 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++)
 	{
-		DEBUGADD(6,("adding form [%d] to buffer\n",i));
+		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_1("", buffer, &(driver_info_1[i]), 0);
 	}
 
@@ -3135,7 +3133,7 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++)
 	{
-		DEBUGADD(6,("adding form [%d] to buffer\n",i));
+		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
 	}
 
@@ -3588,15 +3586,11 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, 
-				uint32 idx,
-				uint32 *valuesize,
-				UNISTR *uni_value,
-				uint32 *realvaluesize,
-				uint32 *type,
-				uint32 *datasize,
-				uint8  **data,
-				uint32 *realdatasize)
+uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
+				uint32 in_value_len, uint32 in_data_len,
+				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
+				uint32 *out_type,
+				uint32 *out_max_data_len, uint8  **out_data, uint32 *out_data_len)
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	
@@ -3606,12 +3600,22 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle,
 	uint32 biggest_valuesize;
 	uint32 biggest_datasize;
 	uint32 data_len;
-	uint32 status = 0x0;	
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	int snum;
+	uint8 *data=NULL;
+	uint32 type;
 
 	ZERO_STRUCT(printer);
-	(*data)=NULL;
+	
+	*out_max_value_len=0;
+	*out_value=NULL;
+	*out_value_len=0;
+
+	*out_type=0;
+
+	*out_max_data_len=0;
+	*out_data=NULL;
+	*out_data_len=0;
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
@@ -3621,74 +3625,77 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle,
 	if (!get_printer_snum(handle, &snum))
 		return NT_STATUS_INVALID_HANDLE;
 	
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0x0)
+		return NT_STATUS_INVALID_HANDLE;
 
-	if (status != 0x0)
-		return status;
-
-	/* The NT machine wants to know the biggest size of value and data */	
-	if ( ((*valuesize)==0) && ((*datasize)==0) )
-	{
+	/* 
+	 * The NT machine wants to know the biggest size of value and data
+	 *
+	 * cf: MSDN EnumPrinterData remark section
+	 */
+	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
-		
-		(*valuesize)=0;
-		(*realvaluesize)=0;
-		(*type)=0;
-		(*datasize)=0;
-		(*realdatasize)=0;
-		status=0;
 		
 		param_index=0;
 		biggest_valuesize=0;
 		biggest_datasize=0;
 		
-		while (get_specific_param_by_index(printer, 2, param_index, value, data, type, &data_len))
-		{
+		while (get_specific_param_by_index(printer, 2, param_index, value, &data, &type, &data_len)) {
 			if (strlen(value) > biggest_valuesize) biggest_valuesize=strlen(value);
-			if (data_len  > biggest_datasize)  biggest_datasize=data_len;
+			if (data_len > biggest_datasize) biggest_datasize=data_len;
 
+			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, biggest_datasize));
+
+			safe_free(data);
 			param_index++;
 		}
-		
-		/* I wrote it, I didn't designed the protocol */
-		if (biggest_valuesize!=0)
-		{
-			SIVAL(&(value),0, 2*(biggest_valuesize+1) );
-		}
-		(*data)=(uint8 *)malloc(4*sizeof(uint8));
-		SIVAL((*data), 0, biggest_datasize );
-	}
-	else
-	{
-		/* 
-		 * the value len is wrong in NT sp3
-		 * that's the number of bytes not the number of unicode chars
-		 */
-		 
-		if (get_specific_param_by_index(printer, 2, idx, value, data, type, &data_len))
-		{
-			init_unistr(uni_value, value);
-			
-			/* the length are in bytes including leading NULL */
-			(*realvaluesize)=2*(strlen(value)+1);
-			(*realdatasize)=data_len;
-			
-			status=0;
-		}
-		else
-		{
-			(*valuesize)=0;
-			(*realvaluesize)=0;
-			(*datasize)=0;
-			(*realdatasize)=0;
-			(*type)=0;
-			status=0x0103; /* ERROR_NO_MORE_ITEMS */
-		}		
+
+		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
+		*out_value_len=2*(1+biggest_valuesize);
+		*out_data_len=biggest_datasize;
+
+		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
+
+		free_a_printer(printer, 2);		
+		return NT_STATUS_NO_PROBLEMO;
 	}
 	
-	free_a_printer(printer, 2);
+	/* 
+	 * the value len is wrong in NT sp3
+	 * that's the number of bytes not the number of unicode chars
+	 */
+ 
+	if (!get_specific_param_by_index(printer, 2, index, value, &data, &type, &data_len)) {
+		free_a_printer(printer, 2);
+		return 0x0103; /* ERROR_NO_MORE_ITEMS */
+	}
+			
+	/* 
+	 * the value is:
+	 * - counted in bytes in the request
+	 * - counted in UNICODE chars in the max reply
+	 * - counted in bytes in the real size
+	 *
+	 * take a pause *before* coding not *during* coding
+	 */
+	 
+	*out_max_value_len=in_value_len/2;
+	*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8));
+	ascii_to_unistr(*out_value, value, *out_max_value_len);
+	*out_value_len=2*(1+strlen(value));
 
-	return status;
+	*out_type=type;
+
+	/* the data is counted in bytes */
+	*out_max_data_len=in_data_len;
+	*out_data=(uint8 *)malloc(in_data_len*sizeof(uint8));
+	memcpy(*out_data, data, data_len);
+	*out_data_len=data_len;
+
+	safe_free(data);
+	
+	free_a_printer(printer, 2);
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
