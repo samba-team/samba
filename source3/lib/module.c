@@ -53,12 +53,34 @@ NTSTATUS smb_load_module(const char *module_name)
 	return nt_status;
 }
 
+/* Load all modules in list and return number of 
+ * modules that has been successfully loaded */
+int smb_load_modules(const char **modules)
+{
+	int i;
+	int success = 0;
+
+	for(i = 0; modules[i]; i++){
+		if(NT_STATUS_IS_OK(smb_load_module(modules[i]))) {
+			success++;
+		}
+	}
+
+	return success;
+}
+
 #else /* HAVE_DLOPEN */
 
 NTSTATUS smb_load_module(const char *module_name)
 {
 	DEBUG(0,("This samba executable has not been build with plugin support"));
 	return NT_STATUS_NOT_SUPPORTED;
+}
+
+int smb_load_modules(const char **modules)
+{
+	DEBUG(0,("This samba executable has not been build with plugin support"));
+	return -1;
 }
 
 #endif /* HAVE_DLOPEN */
