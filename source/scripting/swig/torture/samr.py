@@ -90,7 +90,13 @@ def test_LookupDomain(pipe, handle, domain):
 
     result = dcerpc.samr_LookupDomain(pipe, r)
 
-    print result
+    r['domain']['name'] = 'xxNODOMAINxx'
+
+    try:
+        result = dcerpc.samr_LookupDomain(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xc00000df:
+            raise dcerpc.NTSTATUS(arg)
 
 def test_EnumDomains(pipe, handle):
 
