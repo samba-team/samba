@@ -34,6 +34,11 @@
    file handle per directory, but large numbers do use more memory */
 #define MAX_OPEN_DIRECTORIES 64
 
+/* max number of directory handles */
+/* As this now uses the bitmap code this can be
+   quite large. */
+#define MAX_DIRECTORY_HANDLES 2048
+
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
 #define SYSLOG_FACILITY LOG_DAEMON

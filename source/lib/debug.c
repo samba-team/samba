@@ -112,7 +112,7 @@ static int     debug_count    = 0;
 static int     syslog_level   = 0;
 #endif
 static pstring format_bufr    = { '\0' };
-static int     format_pos     = 0;
+static size_t     format_pos     = 0;
 
 
 /* -------------------------------------------------------------------------- **
@@ -428,7 +428,7 @@ static void bufr_print( void )
  */
 static void format_debug_text( char *msg )
   {
-  int i;
+  size_t i;
   BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || 
 					!(lp_loaded())));
 
