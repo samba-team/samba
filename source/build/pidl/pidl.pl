@@ -31,23 +31,14 @@ my($opt_eparser) = 0;
 my($opt_keep) = 0;
 my($opt_output);
 
+my $idl_parser = new idl;
+
 #####################################################################
 # parse an IDL file returning a structure containing all the data
 sub IdlParse($)
 {
-    # this autoaction allows us to handle simple nodes without an action
-#    $::RD_TRACE = 1;
-    $::RD_AUTOACTION = q { 
-                          $#item==1 && ref($item[1]) eq "" ? 
-                          $item[1] : 
-                          "XX_" . $item[0] . "_XX[$#item]"  };
-    my($filename) = shift;
-    my($parser) = idl->new;
-    my($saved_sep) = $/;
-
-    undef $/;
-    my($idl) = $parser->idl(`cpp $filename | grep -v '^#'`);
-    $/ = $saved_sep;
+    my $filename = shift;
+    my $idl = $idl_parser->parse_idl($filename);
     util::CleanData($idl);
     return $idl;
 }

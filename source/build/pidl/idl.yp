@@ -1,0 +1,307 @@
+########################
+# IDL Parse::Yapp parser
+# Copyright (C) Andrew Tridgell <tridge@samba.org>
+# released under the GNU GPL version 2 or later
+
+
+
+################
+# grammer
+%%
+idl: idl_interface 
+     | idl idl_interface { util::FlattenArray([$_[1],$_[2]]) }
+;
+
+idl_interface: module_header interface { [ $_[1], $_[2] ] }
+;
+
+module_header: '[' module_params ']'
+          {{ 
+              "TYPE" => "MODULEHEADER", 
+              "PROPERTIES" => util::FlattenHash($_[2])
+          }}
+;
+
+module_params: 
+    #empty
+    | module_param                    { [ $_[1] ] }            
+    | module_params ',' module_param  { push(@{$_[1]}, $_[3]); $_[1] }
+;
+
+module_param: identifier '(' listtext ')'
+{ { "$_[1]" => "$_[3]" } }
+;
+
+interface: 'interface' identifier '{' definitions '}'
+          {{
+                       "TYPE" => "INTERFACE", 
+		       "NAME" => $_[2],
+		       "DATA" => $_[4]
+          }}
+;
+
+definitions: 
+      definition              { [ $_[1] ] }    
+    | definitions definition  { push(@{$_[1]}, $_[2]); $_[1] }
+;    
+
+
+definition: function | const | typedef
+;
+
+const: 'const' identifier identifier '=' anytext ';' 
+        {{
+                     "TYPE"  => "CONST", 
+		     "DTYPE"  => $_[2],
+		     "NAME"  => $_[3],
+		     "VALUE" => $_[5]
+        }}
+;
+
+
+function: property_list type identifier '(' element_list2 ')' ';' 
+	 {{
+		"TYPE" => "FUNCTION",
+		"NAME" => $_[3],
+		"RETURN_TYPE" => $_[2],
+		"PROPERTIES" => $_[1],
+		"DATA" => $_[5]
+	 }}
+;
+
+typedef: 'typedef' type identifier array_len ';' 
+        {{
+                     "TYPE" => "TYPEDEF", 
+		     "NAME" => $_[3],
+		     "DATA" => $_[2],
+		     "ARRAY_LEN" => $_[4]
+        }}
+;
+
+type:   struct | union | enum | identifier 
+	| void { "void" }
+;
+
+
+enum: 'enum' '{' enum_elements '}' 
+        {{
+                     "TYPE" => "ENUM", 
+		     "ELEMENTS" => $_[3]
+        }}
+;
+
+enum_elements: 
+      enum_element                    { [ $_[1] ] }            
+    | enum_elements ',' enum_element  { push(@{$_[1]}, $_[3]); $_[1] }
+;
+
+enum_element: identifier 
+	      | identifier '=' anytext { "$_[1]$_[2]$_[3]" }
+;
+
+struct: property_list 'struct' '{' element_list1 '}' 
+        {{
+                     "TYPE" => "STRUCT", 
+		     "PROPERTIES" => $_[1],
+		     "ELEMENTS" => $_[4]
+        }}
+;
+
+union: property_list 'union' '{' union_elements '}' 
+	 {{
+		"TYPE" => "UNION",
+		"PROPERTIES" => $_[1],
+		"DATA" => $_[4]
+	 }}
+;
+
+union_elements: 
+      union_element                    { [ $_[1] ] }            
+    | union_elements union_element  { push(@{$_[1]}, $_[2]); $_[1] }
+;
+
+union_element: 
+         '[' 'case' '(' anytext ')' ']' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => $_[4],
+		"DATA" => $_[7]
+	 }}
+         | '[' 'case' '(' anytext ')' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => $_[4],
+	 }}
+         | '[' 'default' ']' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => "default",
+		"DATA" => $_[4]
+	 }}
+         | '[' 'default' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => "default",
+	 }}
+;
+
+base_element: property_list type pointers identifier array_len
+	      {{
+			   "NAME" => $_[4],
+			   "TYPE" => $_[2],
+			   "PROPERTIES" => $_[1],
+			   "POINTERS" => $_[3],
+			   "ARRAY_LEN" => $_[5]
+              }}
+;
+
+
+pointers: 
+  #empty            
+   { 0 }
+    | pointers '*'  { $_[1]+1 }
+;
+
+
+
+element_list1: 
+    #empty
+    | base_element ';'               { [ $_[1] ] }
+    | element_list1 base_element ';' { push(@{$_[1]}, $_[2]); $_[1] }
+;
+
+element_list2: 
+    #empty
+    | 'void'
+    | base_element                   { [ $_[1] ] }
+    | element_list2 ',' base_element { push(@{$_[1]}, $_[3]); $_[1] }
+;
+
+array_len: 
+    #empty 
+    | '[' ']'            { "*" }
+    | '[' '*' ']'        { "*" }
+    | '[' anytext ']'    { "$_[2]" }
+;
+
+
+property_list: 
+    #empty 
+    | '[' properties ']' { $_[2] }
+    | property_list '[' properties ']' { util::FlattenArray([$_[1],$_[3]]); }
+;
+
+properties: property          { [ $_[1] ] }
+    | properties ',' property { push(@{$_[1]}, $_[3]); $_[1] }
+;
+
+property: identifier
+          | identifier '(' anytext ')' {{ "$_[1]" => "$_[3]" }}
+;
+
+listtext:
+    anytext 
+    | listtext ',' anytext { "$_[1] $_[3]" }
+;
+
+anytext:  #empty
+    { "" }
+    | identifier | constant | text
+    | anytext '-' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '.' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '*' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '>' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '|' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '&' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '/' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '+' anytext  { "$_[1]$_[2]$_[3]" }
+    | anytext '(' anytext ')' anytext  { "$_[1]$_[2]$_[3]$_[4]$_[5]" }
+;
+
+identifier: IDENTIFIER
+;
+
+constant: CONSTANT
+;
+
+text: TEXT { "\"$_[1]\"" }
+;
+
+
+#####################################
+# start code
+%%
+
+use util;
+
+sub _Error {
+        if (exists $_[0]->YYData->{ERRMSG}) {
+		print $_[0]->YYData->{ERRMSG};
+		delete $_[0]->YYData->{ERRMSG};
+		return;
+	};
+	my $line = $_[0]->YYData->{LINE};
+	my $last_token = $_[0]->YYData->{LAST_TOKEN};
+	my $file = $_[0]->YYData->{INPUT_FILENAME};
+	
+	print "Syntax error at $file:$line near '$last_token'\n";
+}
+
+sub _Lexer {
+	my($parser)=shift;
+
+        $parser->YYData->{INPUT}
+        or  return('',undef);
+
+again:
+	$parser->YYData->{INPUT} =~ s/^[ \t]*//;
+
+	for ($parser->YYData->{INPUT}) {
+		if (s/^\# (\d+) \"(.*?)\"( \d+|)//) {
+			$parser->YYData->{LINE} = $1;
+			$parser->YYData->{INPUT_FILENAME} = $2;
+			goto again;
+		}
+		if (s/^(\n)//) {
+			$parser->YYData->{LINE}++;
+			goto again;
+		}
+		if (s/^\"(.*?)\"//) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return('TEXT',$1); 
+		}
+		if (s/^(\d+)(\W|$)/$2/) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return('CONSTANT',$1); 
+		}
+		if (s/^([\w_]+)//) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			if ($1 =~ 
+			    /^(interface|const|typedef|union
+			      |struct|enum|void|case|default)$/x) {
+				return $1;
+			}
+			return('IDENTIFIER',$1);
+		}
+		if (s/^(.)//s) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return($1,$1);
+		}
+	}
+}
+
+sub parse_idl($$)
+{
+	my $self = shift;
+	my $filename = shift;
+
+	my $saved_delim = $/;
+	undef $/;
+	my $data = `cpp $filename`;
+	$/ = $saved_delim;
+
+        $self->YYData->{INPUT} = $data;
+        $self->YYData->{LINE} = 0;
+        $self->YYData->{LAST_TOKEN} = "NONE";
+	return $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+}

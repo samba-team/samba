@@ -1,5 +1,5 @@
-idl.pm: idl.gram
-	perl -Ilib -MParse::RecDescent - idl.gram idl
+idl.pm: idl.yp
+	yapp idl.yp
 
 clean:
 	rm -f idl.pm
