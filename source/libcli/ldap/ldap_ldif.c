@@ -3,9 +3,6 @@
    LDAP protocol helper functions for SAMBA
    
    Copyright (C) Andrew Tridgell  2004
-   Copyright (C) Volker Lendecke 2004
-   Copyright (C) Stefan Metzmacher 2004
-   Copyright (C) Simo Sorce 2004
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -352,8 +349,8 @@ static struct ldap_message *ldif_read(int (*fgetc_fn)(void *),
 	}
 
 	if (strequal(value.data, "delete")) {
-		msg->type = LDAP_TAG_DelRequest;
-		msg->r.DelRequest.dn = dn;
+		msg->type = LDAP_TAG_DeleteRequest;
+		msg->r.DeleteRequest.dn = dn;
 		return msg;
 	}
 
