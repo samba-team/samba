@@ -243,8 +243,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 user_rid, uint32 *num_groups,
-				  uint32 **user_gids)
+				  const char *user_name, uint32 user_rid, 
+				  uint32 *num_groups, uint32 **user_gids)
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

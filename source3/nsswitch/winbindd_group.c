@@ -968,7 +968,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	status = domain->methods->lookup_usergroups(domain, mem_ctx, user_rid, &num_groups, &user_gids);
+	status = domain->methods->lookup_usergroups(domain, mem_ctx, name_user, user_rid, &num_groups, &user_gids);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	/* Copy data back to client */

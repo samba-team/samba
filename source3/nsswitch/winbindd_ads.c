@@ -344,10 +344,70 @@ error:
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 user_rid, uint32 *num_groups,
-				  uint32 **user_gids)
+				  const char *user_name, uint32 user_rid, 
+				  uint32 *num_groups, uint32 **user_gids)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"distinguishedName", NULL};
+	const char *attrs2[] = {"tokenGroups", "primaryGroupID", NULL};
+	int rc, count;
+	void *msg;
+	char *exp;
+	char *user_dn;
+	DOM_SID *sids;
+	int i;
+	uint32 primary_group;
+
+	DEBUG(3,("ads: lookup_usergroups\n"));
+
+	(*num_groups) = 0;
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(1,("ads_init failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ads_connect(ads);
+	if (rc) {
+		DEBUG(1,("lookup_usergroups ads_connect: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	asprintf(&exp, "(sAMAccountName=%s)", user_name);
+	rc = ads_search(ads, &msg, exp, attrs);
+	free(exp);
+	if (rc) {
+		DEBUG(1,("lookup_usergroups(%s) ads_search: %s\n", user_name, ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
+
+	rc = ads_search_dn(ads, &msg, user_dn, attrs2);
+	if (rc) {
+		DEBUG(1,("lookup_usergroups(%s) ads_search tokenGroups: %s\n", user_name, ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group)) {
+		DEBUG(1,("No primary group for %s !?\n", user_name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids) + 1;
+	(*user_gids) = (uint32 *)talloc(mem_ctx, sizeof(uint32) * count);
+	(*user_gids)[(*num_groups)++] = primary_group;
+
+	for (i=1;i<count;i++) {
+		uint32 rid;
+		if (!sid_peek_rid(&sids[i-1], &rid)) continue;
+		(*user_gids)[*num_groups] = rid;
+		(*num_groups)++;
+	}
+
+	ads_destroy(&ads);
+	return NT_STATUS_OK;
 }
 
 /* the ADS backend methods are exposed via this structure */
