@@ -618,6 +618,7 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 #define FS_ATTR_SPARSE_FILES                      0x00000040
 #define FS_ATTR_REPARSE_POINTS                    0x00000080
 #define FS_ATTR_REMOTE_STORAGE                    0x00000100
+#define FS_ATTR_LFN_SUPPORT                       0x00004000
 #define FS_ATTR_IS_COMPRESSED                     0x00008000
 #define FS_ATTR_OBJECT_IDS                        0x00010000
 #define FS_ATTR_ENCRYPTION                        0x00020000
