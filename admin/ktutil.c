@@ -360,14 +360,20 @@ kt_get(int argc, char **argv)
 static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
-    { "list",		kt_list,	"list",		"" },
-    { "srvconvert",	srvconv,	"srvconvert [flags]",	"" },
-    { "key2srvtab" },
-    { "srvcreate",	srvcreate,	"srvcreate [flags]",	"" },
+    { "list",		kt_list,	"list",
+      "shows contents of a keytab" },
+    { "srvconvert",	srvconv,	"srvconvert [flags]",
+      "convert v4 srvtab to keytab" },
     { "srv2keytab" },
-    { "add", 		kt_add,		"add", 		"" },
-    { "get", 		kt_get,		"get [principal...]", "" },
-    { "remove", 	kt_remove,	"remove", 	"" },
+    { "srvcreate",	srvcreate,	"srvcreate [flags]",
+      "convert keytab to v4 srvtab" },
+    { "key2srvtab" },
+    { "add", 		kt_add,		"add",
+      "adds key to keytab" },
+    { "get", 		kt_get,		"get [principal...]",
+      "create key in database and add to keytab" },
+    { "remove", 	kt_remove,	"remove",
+      "remove key from keytab" },
     { "help",		help,		"help",			"" },
     { NULL, 	NULL,		NULL, 			NULL }
 };
