@@ -48,11 +48,17 @@ static krb5_error_code
 make_keys(krb5_context context, krb5_principal principal, const char *password,
 	  Key **keys_ret, size_t *num_keys_ret)
 {
-    krb5_enctype all_etypes[] = { ETYPE_DES3_CBC_SHA1,
-				  ETYPE_DES_CBC_MD5,
-				  ETYPE_DES_CBC_MD4,
-				  ETYPE_DES_CBC_CRC };
+    krb5_enctype all_etypes[] = { 
+#ifdef ENABLE_AES
+	ETYPE_AES256_CTS_HMAC_SHA1_96,
+#endif
+	ETYPE_DES3_CBC_SHA1,
+	ETYPE_DES_CBC_MD5,
+	ETYPE_DES_CBC_MD4,
+	ETYPE_DES_CBC_CRC
+    };
 
+    unsigned n_all_etypes = sizeof(all_etypes) / sizeof(all_etypes[0]);
 
     krb5_enctype e;
 
@@ -64,7 +70,13 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
     Key key;
 
     int i;
-    char *v4_ktypes[] = {"des3:pw-salt", "v4", NULL};
+    char *v4_ktypes[] = { 
+#ifdef ENABLE_AES
+	"aes256-cts-hmac-sha1-96",
+#endif
+	"des3:pw-salt",
+	"v4",
+	NULL};
 
     ktypes = krb5_config_get_strings(context, NULL, "kadmin", 
 				     "default_keys", NULL);
@@ -118,11 +130,16 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
 		/* XXX there should be a string_to_etypes handling
                    special cases like `des' and `all' */
 		if(strcmp(buf[i], "des") == 0) {
-		    etypes = all_etypes + 1;
-		    num_etypes = 3;
+		    etypes = des_types;
+		    num_etypes = n_des_types;
 		    continue;
 		} else if(strcmp(buf[i], "des3") == 0) {
 		    e = ETYPE_DES3_CBC_SHA1;
+		    etypes = &e;
+		    num_etypes = 1;
+		    continue;
+		} else if(strcmp(buf[i], "aes") == 0) {
+		    e = ETYPE_AES256_CTS_HMAC_SHA1_96;
 		    etypes = &e;
 		    num_etypes = 1;
 		    continue;
@@ -143,13 +160,13 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
 		if(strcmp(buf[i], "pw-salt") == 0) {
 		    if(etypes == NULL) {
 			etypes = all_etypes;
-			num_etypes = 4;
+			num_etypes = n_all_etypes;
 		    }
 		    salt.salttype = KRB5_PW_SALT;
 		} else if(strcmp(buf[i], "afs3-salt") == 0) {
 		    if(etypes == NULL) {
-			etypes = all_etypes + 1;
-			num_etypes = 3;
+			etypes = des_types;
+			num_etypes = n_des_types;
 		    }
 		    salt.salttype = KRB5_AFS3_SALT;
 		}
@@ -260,7 +277,7 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
 	ret = krb5_get_pw_salt(context, principal, &v5_salt);
 	if(ret)
 	    goto out;
-	for(i = 0; i < 4; i++) {
+	for(i = 0; i < n_all_etypes; i++) {
 	    memset(&key, 0, sizeof(key));
 	    ret = krb5_string_to_key_salt(context, all_etypes[i], password, 
 					  v5_salt, &key.key);
