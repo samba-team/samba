@@ -30,6 +30,34 @@ extern pstring scope;
 extern pstring myname;
 extern struct in_addr ipzero;
 
+static struct opcode_names {
+    const char *nmb_opcode_name;
+    int opcode;
+} nmb_header_opcode_names[] = {
+      { "Query",           0 },
+      {"Registration",      5 },
+      {"Release",           6 },
+      {"WACK",              7 },
+      {"refresh",           8 },
+      {0, -1 }
+};
+
+/****************************************************************************
+ * Lookup a nmb opcode name.
+ ****************************************************************************/
+
+const char *lookup_opcode_name( int opcode )
+{
+  struct opcode_names *op_namep;
+  int i;
+
+  for(i = 0; nmb_header_opcode_names[i].nmb_opcode_name != 0; i++) {
+    op_namep = &nmb_header_opcode_names[i];
+    if(opcode == op_namep->opcode)
+      return op_namep->nmb_opcode_name;
+  }
+  return "<unknown opcode>";
+}
 
 /****************************************************************************
   print out a res_rec structure
@@ -79,9 +107,11 @@ void debug_nmb_packet(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
   
-  DEBUG(4,("nmb packet from %s header: id=%d opcode=%d response=%s\n",
+  DEBUG(4,("nmb packet from %s header: id=%d opcode=%s(%d) response=%s\n",
 	   inet_ntoa(p->ip),
-	   nmb->header.name_trn_id,nmb->header.opcode,BOOLSTR(nmb->header.response)));
+	   nmb->header.name_trn_id,
+           lookup_opcode_name(nmb->header.opcode),
+           nmb->header.opcode,BOOLSTR(nmb->header.response)));
   DEBUG(4,("    header: flags: bcast=%s rec_avail=%s rec_des=%s trunc=%s auth=%s\n",
 	   BOOLSTR(nmb->header.nm_flags.bcast),
 	   BOOLSTR(nmb->header.nm_flags.recursion_available),
