@@ -94,7 +94,7 @@ kadm5_s_create_principal(void *server_handle,
     ent.keys.len = 2;
     ent.keys.val = calloc(ent.keys.len, sizeof(*ent.keys.val));
     ent.keys.val[0].key.keytype = KEYTYPE_DES;
-    ent.keys.val[1].key.keytype = KEYTYPE_DES;
+    ent.keys.val[1].key.keytype = KEYTYPE_DES3;
 
     ret = _kadm5_set_keys(context, &ent, password);
 
