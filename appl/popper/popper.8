@@ -22,6 +22,7 @@ popper \- pop 3 server
 [ -k ]
 [ -t trace-file]
 [ -i ]
+[ -p portnum]
 .SH DESCRIPTION
 .I Popper
 is an implementation of the Post Office Protocol server that runs on a
@@ -54,6 +55,11 @@ The
 .B \-i
 flag tells popper it has not been started by inetd and should create
 its own socket and listen on it.  This is useful for debugging.
+.PP
+The
+.B \-p portnum
+flag tells popper on which port it should listen for connections when
+creating a socket.
 .SH HOW TO OBTAIN THE SERVER
 .PP
 The POP server is available via anonymous ftp from ftp.CC.Berkeley.EDU
