@@ -89,27 +89,27 @@ static BOOL ads_try_dns(ADS_STRUCT *ads)
 
 	realm = ads->server.realm;
 	if (!realm || !*realm) {
-		SAFE_FREE(realm);
 		realm = lp_realm();
 	}
 	if (!realm || !*realm) {
-		SAFE_FREE(realm);
 		realm = ads->server.workgroup;
 	}
 	if (!realm || !*realm) {
-		SAFE_FREE(realm);
 		realm = lp_workgroup();
 	}
 	if (!realm) {
 		return False;
 	}
+	realm = smb_xstrdup(realm);
 
 	DEBUG(6,("ads_try_dns: looking for realm '%s'\n", realm));
 	if (ldap_domain2hostlist(realm, &list) != LDAP_SUCCESS) {
+		SAFE_FREE(realm);
 		return False;
 	}
 
 	DEBUG(6,("ads_try_dns: ldap realm '%s' host list '%s'\n", realm, list));
+	SAFE_FREE(realm);
 
 	count = count_chars(list, ' ') + 1;
 	ip_list = malloc(count * sizeof(struct ldap_ip));
