@@ -52,9 +52,11 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 		return ltdb_connect(url, flags, options);
 	}
 
+#ifdef HAVE_LDAP
 	if (strncmp(url, "ldap", 4) == 0) {
 		return lldb_connect(url, flags, options);
 	}
+#endif /*HAVE_LDAP*/
 
 	errno = EINVAL;
 	return NULL;
