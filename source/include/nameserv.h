@@ -422,7 +422,7 @@ extern struct subnet_record *wins_subnet;
 
 #define FIRST_SUBNET subnetlist
 #define NEXT_SUBNET_EXCLUDING_WINS(x) ((x)->next)
-#define NEXT_SUBNET_INCLUDING_WINS(x) ( ((x) == wins_subnet) ? 0 : \
-                                        (((x)->next == 0) ? wins_subnet : \
+#define NEXT_SUBNET_INCLUDING_WINS(x) ( ((x) == wins_subnet) ? NULL : \
+                                        (((x)->next == NULL) ? wins_subnet : \
                                          (x)->next))
 
