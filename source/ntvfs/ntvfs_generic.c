@@ -96,7 +96,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			break;
 		case OPENX_MODE_ACCESS_RDWR:
 		case OPENX_MODE_ACCESS_FCB:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
 			break;
 		}
 
@@ -201,7 +201,6 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		switch(io->open.in.flags & OPEN_FLAGS_DENY_MASK) {
 			case OPEN_FLAGS_DENY_DOS:
 				/* DENY_DOS is quite strange - it depends on the filename! */
-				/* REWRITE: is this necessary for OPEN? */
 				if (is_exe_file(io->open.in.fname)) {
 					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
 				} else {
