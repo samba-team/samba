@@ -1226,8 +1226,6 @@ static void init_printer_values(service *pService)
 			string_set(&pService->szLpresumecommand, "");
 			string_set(&pService->szQueuepausecommand, "");
 			string_set(&pService->szQueueresumecommand, "");
-
-	                string_set(&Globals.szPrintcapname, "cups");
 #else
 			string_set(&pService->szLpqcommand, "/usr/bin/lpstat -o '%p'");
 			string_set(&pService->szLprmcommand, "/usr/bin/cancel '%p-%j'");
@@ -1236,7 +1234,6 @@ static void init_printer_values(service *pService)
 			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
 			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
 			string_set(&pService->szQueueresumecommand, "/usr/bin/enable '%p'");
-			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
 			break;
 
@@ -1346,7 +1343,6 @@ static void init_globals(void)
 	string_set(&Globals.szWorkgroup, lp_workgroup());
 	
 	string_set(&Globals.szPasswdProgram, "");
-	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szPidDir, dyn_PIDDIR);
 	string_set(&Globals.szLockDir, dyn_LOCKDIR);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
@@ -1626,7 +1622,6 @@ FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
-FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
@@ -4281,6 +4276,26 @@ int lp_maxprintjobs(int snum)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
 	return maxjobs;
+}
+
+const char *lp_printcapname(void)
+{
+	if ((Globals.szPrintcapname != NULL) &&
+	    (Globals.szPrintcapname[0] != '\0'))
+		return Globals.szPrintcapname;
+
+	if (sDefault.iPrinting == PRINT_CUPS) {
+#ifdef HAVE_CUPS
+		return "cups";
+#else
+		return "lpstat";
+#endif
+	}
+
+	if (sDefault.iPrinting == PRINT_BSD)
+		return "/etc/printcap";
+
+	return PRINTCAP_NAME;
 }
 
 /*******************************************************************
