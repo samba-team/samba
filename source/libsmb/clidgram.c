@@ -41,7 +41,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot,
   char *ptr, *p2;
   char tmp[4];
 
-  bzero((char *)&p, sizeof(p));
+  memset((char *)&p, '\0', sizeof(p));
 
   /*
    * Next, build the DGRAM ...
@@ -183,7 +183,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   /* Now, bind a local addr to it ... Try port 138 first ... */
 
-  bzero((char *)&sock_out, sizeof(sock_out));
+  memset((char *)&sock_out, '\0', sizeof(sock_out));
   sock_out.sin_addr.s_addr = INADDR_ANY;
   sock_out.sin_port = htons(138);
   sock_out.sin_family = AF_INET;
@@ -213,8 +213,8 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   /* Now, build the request */
 
-  bzero(cli_backup_list, sizeof(cli_backup_list));
-  bzero(outbuf, sizeof(outbuf));
+  memset(cli_backup_list, '\0', sizeof(cli_backup_list));
+  memset(outbuf, '\0', sizeof(outbuf));
 
   p = outbuf;
 

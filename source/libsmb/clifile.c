@@ -24,49 +24,47 @@
 #include "includes.h"
 
 /****************************************************************************
-rename a file
+ Rename a file.
 ****************************************************************************/
-BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
+
+BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
-        char *p;
+	char *p;
 
-        memset(cli->outbuf,'\0',smb_size);
-        memset(cli->inbuf,'\0',smb_size);
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
 
-        set_message(cli->outbuf,1, 0, True);
+	set_message(cli->outbuf,1, 0, True);
 
-        CVAL(cli->outbuf,smb_com) = SMBmv;
-        SSVAL(cli->outbuf,smb_tid,cli->cnum);
-        cli_setup_packet(cli);
+	CVAL(cli->outbuf,smb_com) = SMBmv;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
 
-        SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
+	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
 
-        p = smb_buf(cli->outbuf);
-        *p++ = 4;
-	p += clistr_push(cli, p, fname_src, -1, 
-			 STR_TERMINATE);
-        *p++ = 4;
-	p += clistr_push(cli, p, fname_dst, -1, 
-			 STR_TERMINATE);
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname_src, -1, STR_TERMINATE);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname_dst, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
-        cli_send_smb(cli);
-        if (!cli_receive_smb(cli)) {
-                return False;
-        }
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
 
-        if (cli_is_error(cli)) {
-                return False;
-        }
+	if (cli_is_error(cli))
+		return False;
 
-        return True;
+	return True;
 }
 
 /****************************************************************************
-delete a file
+ Delete a file.
 ****************************************************************************/
-BOOL cli_unlink(struct cli_state *cli, char *fname)
+
+BOOL cli_unlink(struct cli_state *cli, const char *fname)
 {
 	char *p;
 
@@ -99,9 +97,10 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 }
 
 /****************************************************************************
-create a directory
+ Create a directory.
 ****************************************************************************/
-BOOL cli_mkdir(struct cli_state *cli, char *dname)
+
+BOOL cli_mkdir(struct cli_state *cli, const char *dname)
 {
 	char *p;
 
@@ -133,9 +132,10 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 }
 
 /****************************************************************************
-remove a directory
+ Remove a directory.
 ****************************************************************************/
-BOOL cli_rmdir(struct cli_state *cli, char *dname)
+
+BOOL cli_rmdir(struct cli_state *cli, const char *dname)
 {
 	char *p;
 
@@ -208,7 +208,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 }
 
 /****************************************************************************
- open a file - exposing the full horror of the NT API :-).
+ Open a file - exposing the full horror of the NT API :-).
  Used in smbtorture.
 ****************************************************************************/
 
@@ -265,7 +265,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredA
 }
 
 /****************************************************************************
-open a file
+ Open a file.
 ****************************************************************************/
 
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess)
@@ -275,9 +275,10 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 }
 
 /****************************************************************************
-open a file
-WARNING: if you open with O_WRONLY then getattrE won't work!
+ Open a file
+ WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
+
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode)
 {
 	char *p;
@@ -352,12 +353,10 @@ int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode
 	return SVAL(cli->inbuf,smb_vwv2);
 }
 
-
-
-
 /****************************************************************************
-  close a file
+ Close a file.
 ****************************************************************************/
+
 BOOL cli_close(struct cli_state *cli, int fnum)
 {
 	memset(cli->outbuf,'\0',smb_size);
@@ -380,15 +379,15 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	return !cli_is_error(cli);
 }
 
-
 /****************************************************************************
-  lock a file
+ Lock a file.
 ****************************************************************************/
+
 BOOL cli_lock(struct cli_state *cli, int fnum, 
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
 	char *p;
-        int saved_timeout = cli->timeout;
+	int saved_timeout = cli->timeout;
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0', smb_size);
@@ -417,10 +416,10 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 
 	cli_send_smb(cli);
 
-        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+	cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
 
 	if (!cli_receive_smb(cli)) {
-                cli->timeout = saved_timeout;
+		cli->timeout = saved_timeout;
 		return False;
 	}
 
@@ -434,8 +433,9 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 }
 
 /****************************************************************************
-  unlock a file
+ Unlock a file.
 ****************************************************************************/
+
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 {
 	char *p;
@@ -474,10 +474,10 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 	return True;
 }
 
-
 /****************************************************************************
-  lock a file with 64 bit offsets
+ Lock a file with 64 bit offsets.
 ****************************************************************************/
+
 BOOL cli_lock64(struct cli_state *cli, int fnum, 
 		SMB_BIG_UINT offset, SMB_BIG_UINT len, int timeout, enum brl_type lock_type)
 {
@@ -534,8 +534,9 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 }
 
 /****************************************************************************
-  unlock a file with 64 bit offsets
+ Unlock a file with 64 bit offsets.
 ****************************************************************************/
+
 BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
 {
 	char *p;
@@ -578,13 +579,10 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 	return True;
 }
 
-
-
-
-
 /****************************************************************************
-do a SMBgetattrE call
+ Do a SMBgetattrE call.
 ****************************************************************************/
+
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time)
@@ -632,11 +630,11 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	return True;
 }
 
-
 /****************************************************************************
-do a SMBgetatr call
+ Do a SMBgetatr call
 ****************************************************************************/
-BOOL cli_getatr(struct cli_state *cli, char *fname, 
+
+BOOL cli_getatr(struct cli_state *cli, const char *fname, 
 		uint16 *attr, size_t *size, time_t *t)
 {
 	char *p;
@@ -681,11 +679,11 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 	return True;
 }
 
-
 /****************************************************************************
-do a SMBsetatr call
+ Do a SMBsetatr call.
 ****************************************************************************/
-BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
+
+BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 {
 	char *p;
 
@@ -720,11 +718,11 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	return True;
 }
 
-
 /****************************************************************************
-check for existance of a dir
+ Check for existance of a dir.
 ****************************************************************************/
-BOOL cli_chkpath(struct cli_state *cli, char *path)
+
+BOOL cli_chkpath(struct cli_state *cli, const char *path)
 {
 	pstring path2;
 	char *p;
@@ -754,11 +752,10 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	return True;
 }
 
-
-
 /****************************************************************************
-query disk space
+ Query disk space.
 ****************************************************************************/
+
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
 	memset(cli->outbuf,'\0',smb_size);
@@ -779,11 +776,11 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return True;
 }
 
-
 /****************************************************************************
-create and open a temporary file
+ Create and open a temporary file.
 ****************************************************************************/
-int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
+
+int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 {
 	int len;
 	char *p;

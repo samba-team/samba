@@ -149,7 +149,7 @@ static char *make_header(char *param, uint16 apinum, char *reqfmt, char *datafmt
 /****************************************************************************
  call a NetGroupDelete - delete user group from remote server
 ****************************************************************************/
-int cli_NetGroupDelete(struct cli_state *cli, char * group_name )
+int cli_NetGroupDelete(struct cli_state *cli, const char *group_name )
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -277,7 +277,7 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
   int res = -1;
   
   
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WGroupEnum,
 		  RAP_NetGroupEnum_REQ, RAP_GROUP_INFO_L1);
   PUTWORD(p,1); /* Info level 1 */  /* add level 0 */
@@ -328,7 +328,7 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
   return res;
 }
 
-int cli_NetGroupDelUser(struct cli_state * cli, char * group_name, char * user_name)
+int cli_NetGroupDelUser(struct cli_state * cli, const char *group_name, const char *user_name)
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -386,7 +386,7 @@ int cli_NetGroupDelUser(struct cli_state * cli, char * group_name, char * user_n
   return res; 
 }
 
-int cli_NetGroupAddUser(struct cli_state * cli, char * group_name, char * user_name)
+int cli_NetGroupAddUser(struct cli_state * cli, const char *group_name, const char *user_name)
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -442,7 +442,7 @@ int cli_NetGroupAddUser(struct cli_state * cli, char * group_name, char * user_n
 }
 
 
-int cli_NetGroupGetUsers(struct cli_state * cli, char * group_name, void (*fn)(const char *, void *), void *state )
+int cli_NetGroupGetUsers(struct cli_state * cli, const char *group_name, void (*fn)(const char *, void *), void *state )
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -497,7 +497,7 @@ int cli_NetGroupGetUsers(struct cli_state * cli, char * group_name, void (*fn)(c
   return res;
 }
 
-int cli_NetUserGetGroups(struct cli_state * cli, char * user_name, void (*fn)(const char *, void *), void *state )
+int cli_NetUserGetGroups(struct cli_state * cli, const char *user_name, void (*fn)(const char *, void *), void *state )
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -556,7 +556,7 @@ int cli_NetUserGetGroups(struct cli_state * cli, char * user_name, void (*fn)(co
 /****************************************************************************
  call a NetUserDelete - delete user from remote server
 ****************************************************************************/
-int cli_NetUserDelete(struct cli_state *cli, char * user_name )
+int cli_NetUserDelete(struct cli_state *cli, const char * user_name )
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -647,7 +647,7 @@ int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
     PUTWORD(p, 0); /* password length */
 
   p = data;
-  bzero(data, soffset);
+  memset(data, '\0', soffset);
 
   PUTSTRINGF(p, userinfo->user_name, RAP_USERNAME_LEN);
   PUTBYTE(p, 0); /* pad byte 0 */
@@ -707,7 +707,7 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
   int res = -1;
   
 
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WUserEnum,
 		  RAP_NetUserEnum_REQ, RAP_USER_INFO_L1);
   PUTWORD(p,1); /* Info level 1 */
@@ -984,7 +984,7 @@ int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo )
     + DWORDSIZE                       /* share path */
     + RAP_SPASSWD_LEN + 1;            /* share password + pad */
 
-  bzero(param,sizeof(param));
+  memset(param,'\0',sizeof(param));
   /* now send a SMBtrans command with api RNetShareAdd */
   p = make_header(param, RAP_WshareAdd,
 		  RAP_WShareAdd_REQ, RAP_SHARE_INFO_L2); 
@@ -1031,7 +1031,7 @@ int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo )
 /****************************************************************************
  call a NetShareDelete - unshare exported directory on remote server
 ****************************************************************************/
-int cli_NetShareDelete(struct cli_state *cli, char * share_name )
+int cli_NetShareDelete(struct cli_state *cli, const char * share_name )
 {
   char *rparam = NULL;
   char *rdata = NULL;
@@ -1424,7 +1424,9 @@ BOOL cli_NetWkstaUserLogoff(struct cli_state *cli,char *user, char *workstation)
   return (cli->rap_error == 0);
 }
  
-int cli_NetPrintQEnum(struct cli_state *cli,  void (*qfn)(char*,uint16,uint16,uint16,char*,char*,char*,char*,char*,uint16,uint16),void (*jfn)(uint16,char*,char*,char*,char*,uint16,uint16,char*,uint,uint,char*))
+int cli_NetPrintQEnum(struct cli_state *cli,
+		void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
+		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*))
 {
   char param[WORDSIZE                         /* api number    */
 	    +sizeof(RAP_NetPrintQEnum_REQ)    /* req string    */
@@ -1439,7 +1441,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,  void (*qfn)(char*,uint16,uint16,ui
   int res = -1;
   
 
-  bzero(param, sizeof(param));
+  memset(param, '\0',sizeof(param));
   p = make_header(param, RAP_WPrintQEnum, 
 		  RAP_NetPrintQEnum_REQ, RAP_PRINTQ_INFO_L2);
   PUTWORD(p,2); /* Info level 2 */
@@ -1525,7 +1527,9 @@ int cli_NetPrintQEnum(struct cli_state *cli,  void (*qfn)(char*,uint16,uint16,ui
   return res;  
 }
 
-int cli_NetPrintQGetInfo(struct cli_state *cli, char *printer, void (*qfn)(char*,uint16,uint16,uint16,char*,char*,char*,char*,char*,uint16,uint16),void (*jfn)(uint16,char*,char*,char*,char*,uint16,uint16,char*,uint,uint,char*))
+int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
+	void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
+	void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*))
 {
   char param[WORDSIZE                         /* api number    */
 	    +sizeof(RAP_NetPrintQGetInfo_REQ) /* req string    */
@@ -1541,7 +1545,7 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, char *printer, void (*qfn)(char*
   int res = -1;
   
 
-  bzero(param, sizeof(param));
+  memset(param, '\0',sizeof(param));
   p = make_header(param, RAP_WPrintQGetInfo,
 		  RAP_NetPrintQGetInfo_REQ, RAP_PRINTQ_INFO_L2);
   PUTSTRING(p, printer, RAP_SHARENAME_LEN-1);
@@ -1640,7 +1644,7 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
   int res = -1;
   
   
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WServiceEnum,
 		  RAP_NetServiceEnum_REQ, RAP_SERVICE_INFO_L2);
   PUTWORD(p,2); /* Info level 2 */  
@@ -1708,7 +1712,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
   int rprcnt, rdrcnt;
   int res = -1;
   
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WsessionEnum, 
 		  RAP_NetSessionEnum_REQ, RAP_SESSION_INFO_L2);
   PUTWORD(p,2);    /* Info level 2 */
@@ -1767,9 +1771,10 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
 }
 
 /****************************************************************************
-call a NetSessionGetInfo - get information about other session to an SMB server
+ Call a NetSessionGetInfo - get information about other session to an SMB server.
 ****************************************************************************/
-int cli_NetSessionGetInfo(struct cli_state *cli, char *workstation, void (*fn)(char *, char *, uint16, uint16, uint16, uint, uint, uint, char *))
+
+int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (*fn)(const char *, const char *, uint16, uint16, uint16, uint, uint, uint, const char *))
 {
   char param[WORDSIZE                          /* api number    */
 	    +sizeof(RAP_NetSessionGetInfo_REQ) /* req string    */
@@ -1784,7 +1789,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, char *workstation, void (*fn)(c
   int res = -1;
   
 
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WsessionGetInfo, 
 		  RAP_NetSessionGetInfo_REQ, RAP_SESSION_INFO_L2);
   PUTSTRING(p, workstation, RAP_MACHNAME_LEN-1);
@@ -1844,7 +1849,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, char *workstation, void (*fn)(c
 /****************************************************************************
 call a NetSessionDel - close a session to an SMB server
 ****************************************************************************/
-int cli_NetSessionDel(struct cli_state *cli, char *workstation)
+int cli_NetSessionDel(struct cli_state *cli, const char *workstation)
 {
   char param[WORDSIZE                      /* api number       */
 	    +sizeof(RAP_NetSessionDel_REQ) /* req string       */
@@ -1857,7 +1862,7 @@ int cli_NetSessionDel(struct cli_state *cli, char *workstation)
   int rprcnt, rdrcnt;
   int res;
 
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WsessionDel, RAP_NetSessionDel_REQ, NULL);
   PUTSTRING(p, workstation, RAP_MACHNAME_LEN-1);
   PUTWORD(p,0); /* reserved word of 0 */
@@ -1888,7 +1893,7 @@ int cli_NetSessionDel(struct cli_state *cli, char *workstation)
 }
   
 
-int cli_NetConnectionEnum(struct cli_state *cli, char *qualifier, void (*fn)(uint16 conid, uint16 contype, uint16 numopens, uint16 numusers, uint32 contime, char *username, char *netname))
+int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier, void (*fn)(uint16 conid, uint16 contype, uint16 numopens, uint16 numusers, uint32 contime, const char *username, const char *netname))
 {
   char param[WORDSIZE                          /* api number    */
 	    +sizeof(RAP_NetConnectionEnum_REQ) /* req string    */
@@ -1902,7 +1907,7 @@ int cli_NetConnectionEnum(struct cli_state *cli, char *qualifier, void (*fn)(uin
   int rprcnt, rdrcnt;
   int res = -1;
 
-  bzero(param, sizeof(param));
+  memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WconnectionEnum,
 		  RAP_NetConnectionEnum_REQ, RAP_CONNECTION_INFO_L1);
   PUTSTRING(p, qualifier, RAP_MACHNAME_LEN-1);/* Workstation name */
