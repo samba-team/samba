@@ -205,6 +205,9 @@ from Christoph Pfisterer.
 being sent to the wrong IP address.
 55). Fixed "recursion desired" bits set in nmbd so we are identical to
 Windows NT.
+56). nmbd now should process logon packets from Win95, Win98 and both
+versions of the NT logon packet.
+57). Correctly set parameter offset value for first trans2 reply.
 
 Older release notes for Samba 2.0.x follow.
 
