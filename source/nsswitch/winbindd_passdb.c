@@ -320,39 +320,48 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DOM_SID **dom_sids)
 {
 	NTSTATUS nt_status;
-	int enum_ctx = 0;
-	int num_sec_domains;
-	TRUSTDOM **domains;
+	SAM_TRUST_PASSWD *trust = NULL;
+	int i = 0;
 	*num_domains = 0;
 	*names = NULL;
 	*alt_names = NULL;
 	*dom_sids = NULL;
-	do {
-		int i;
-		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, 1,
-							&num_sec_domains,
-							&domains);
+
+	/* Init trust password */
+	nt_status = pdb_init_trustpw_talloc(mem_ctx, &trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
+		return nt_status;
+	}
+
+	/* Start trust passwords enumeration */
+	nt_status = pdb_settrustpwent();
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Unable to start enumerating trusted domains\n"));
+		return nt_status;
+	}
+
+	nt_status = pdb_gettrustpwent(trust);
+	while (NT_STATUS_IS_OK(nt_status) ||
+	       NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES)) {
+
+		(*num_domains)++;
 		*names = talloc_realloc(mem_ctx, *names,
-					sizeof(*names) *
-					(num_sec_domains + *num_domains));
+					sizeof(*names) * (*num_domains));
 		*alt_names = talloc_realloc(mem_ctx, *alt_names,
-					    sizeof(*alt_names) *
-					    (num_sec_domains + *num_domains));
+					    sizeof(*alt_names) * (*num_domains));
 		*dom_sids = talloc_realloc(mem_ctx, *dom_sids,
-					   sizeof(**dom_sids) *
-					   (num_sec_domains + *num_domains));
+					   sizeof(**dom_sids) * (*num_domains));
+		
+		(*names)[i] = smb_xstrdup(pdb_get_tp_domain_name_c(trust));
+		sid_copy(&(*dom_sids)[i], pdb_get_tp_domain_sid(trust));
+		(*alt_names)[i++] = NULL;
+		
+		nt_status = pdb_gettrustpwent(trust);
+	}
 
-		for (i=0; i< num_sec_domains; i++) {
-			if (pull_ucs2_talloc(mem_ctx, &(*names)[*num_domains],
-					     domains[i]->name) == -1) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			(*alt_names)[*num_domains] = NULL;
-			(*dom_sids)[*num_domains] = domains[i]->sid;
-			(*num_domains)++;
-		}
-
-	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+	/* End trust passwords enumeration */
+	pdb_endtrustpwent();
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
 		return NT_STATUS_OK;

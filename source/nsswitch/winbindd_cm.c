@@ -120,38 +120,46 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 static NTSTATUS setup_schannel( struct cli_state *cli, const char *domain )
 {
 	NTSTATUS ret;
-	uchar trust_password[16];
+	SAM_TRUST_PASSWD *trust = NULL;
 	uint32 sec_channel_type;
-	DOM_SID sid;
-	time_t lct;
+
 
 	/* use the domain trust password if we're on a DC 
 	   and this is not our domain */
 	
+	ret = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
 	if ( IS_DC && !strequal(domain, lp_workgroup()) ) {
-		char *pass = NULL;
 		
-		if ( !secrets_fetch_trusted_domain_password( domain, 
-			&pass, &sid, &lct) )
-		{
-			return NT_STATUS_UNSUCCESSFUL;
-		}	
-
-		sec_channel_type = SEC_CHAN_DOMAIN;
-		E_md4hash(pass, trust_password);
-		SAFE_FREE( pass );
-		
-	} else {
-		if (!secrets_fetch_trust_account_password(lp_workgroup(),
-			trust_password, NULL, &sec_channel_type)) 
-		{
+		ret = pdb_gettrustpwnam(trust, domain);
+		if (!NT_STATUS_IS_OK(ret)) {
+			trust->free_fn(&trust);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
+		
+		if (!(pdb_get_tp_flags(trust) & PASS_TRUST_DOMAIN)) {
+			trust->free_fn(&trust);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+	} else {
+		ret = pdb_gettrustpwnam(trust, lp_workgroup());
+		if (!NT_STATUS_IS_OK(ret)) {
+			trust->free_fn(&trust);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		
 	}
-
+	sec_channel_type = SCHANNEL_TYPE(pdb_get_tp_flags(trust));
+	
 	ret = cli_nt_setup_netsec(cli, sec_channel_type, 
-		AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, trust_password);
+				  AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN,
+				  pdb_get_tp_pass(trust));
 
+	trust->free_fn(&trust);
 	return ret;
 }
 

@@ -32,7 +32,7 @@
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uchar trust_passwd[16];
+	SAM_TRUST_PASSWD *trust = NULL;
         int num_retries = 0;
         struct cli_state *cli;
 	uint32 sec_channel_type;
@@ -41,15 +41,21 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	DEBUG(3, ("[%5lu]: check machine account\n", (unsigned long)state->pid));
 
 	/* Get trust account password */
-
+	result = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(result)) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	
  again:
-	if (!secrets_fetch_trust_account_password(
-		    lp_workgroup(), trust_passwd, NULL, &sec_channel_type)) {
+	result = pdb_gettrustpwnam(trust, lp_workgroup());
+	if (!NT_STATUS_IS_OK(result)) {
 		result = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
 
-
+	sec_channel_type = SCHANNEL_TYPE(trust->private.flags);
+	
 	contact_domain = find_our_domain();
         if (!contact_domain) {
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -61,8 +67,8 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
            the trust account password. */
 	/* Don't shut this down - it belongs to the connection cache code */
 	
-        result = cm_get_netlogon_cli(contact_domain,
-		trust_passwd, sec_channel_type, True, &cli);
+        result = cm_get_netlogon_cli(contact_domain, pdb_get_tp_pass(trust),
+				     sec_channel_type, True, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -96,6 +102,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Checking the trust account password returned %s\n", 
 						state->response.data.auth.nt_status_string));
+	trust->free_fn(&trust);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }

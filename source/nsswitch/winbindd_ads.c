@@ -38,6 +38,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	NTSTATUS nt_status;
+	SAM_TRUST_PASSWD *trust = NULL;
 
 	if (domain->private) {
 		ads = (ADS_STRUCT *)domain->private;
@@ -67,13 +69,26 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	/* the machine acct password might have change - fetch it every time */
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	/* the machine acct password might have changed - fetch it every time */
+	nt_status = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1,("could not initialise trust password\n"));
+		ads_destroy(&ads);
+		return NULL;
+	}
 
+	nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("could not get trust password for domain [%s]\n", lp_workgroup()));
+		ads_destroy(&ads);
+		return NULL;
+	}
+
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = smb_xstrdup(pdb_get_tp_pass(trust));
 	SAFE_FREE(ads->auth.realm);
 	ads->auth.realm = strdup(lp_realm());
-
+	
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
 		extern struct winbindd_methods msrpc_methods, cache_methods;
@@ -92,6 +107,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 				domain->methods = &msrpc_methods;
 			}
 		}
+
+		trust->free_fn(&trust);
 		return NULL;
 	}
 
@@ -102,6 +119,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ads->is_mine = False;
 
 	domain->private = (void *)ads;
+	trust->free_fn(&trust);
 	return ads;
 }
 

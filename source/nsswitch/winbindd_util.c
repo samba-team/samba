@@ -1006,25 +1006,35 @@ BOOL winbindd_upgrade_idmap(void)
 BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
                           time_t *pass_last_set_time, uint32 *channel)
 {
-	DOM_SID sid;
-	char *pwd;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_TRUST_PASSWD *trust = NULL;
 
 	/* if we are a DC and this is not our domain, then lookup an account
 	   for the domain trust */
+
+	nt_status = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
+		return False;
+	}
 	   
 	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
 	{
-		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
-			pass_last_set_time) ) 
-		{
+		nt_status = pdb_gettrustpwnam(trust, domain);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("get_trust_pw: could not fetch trust account "
 				  "password for trusted domain %s\n", domain));
+			trust->free_fn(&trust);
 			return False;
 		}
-		
-		*channel = SEC_CHAN_DOMAIN;
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
+
+		if (pdb_get_tp_flags(trust) & PASS_TRUST_DOMAIN)
+			*channel = SEC_CHAN_DOMAIN;
+		else
+			return False;
+
+		memcpy((void*)ret_pwd, pdb_get_tp_pass(trust), NT_HASH_LEN);
+		trust->free_fn(&trust);
 
 		return True;
 	}
@@ -1033,17 +1043,23 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 	{
 		/* get the machine trust account for our domain */
 
-		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
-			pass_last_set_time, channel) ) 
-		{
+		nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("get_trust_pw: could not fetch trust account "
 				  "password for my domain %s\n", domain));
+			trust->free_fn(&trust);
 			return False;
 		}
-		
+
+		*channel = SCHANNEL_TYPE(pdb_get_tp_flags(trust));
+
+		memcpy((void*)ret_pwd, pdb_get_tp_pass(trust), NT_HASH_LEN);
+		trust->free_fn(&trust);
+
 		return True;
 	}
 	
 	/* Failure */
+	trust->free_fn(&trust);
 }
 
