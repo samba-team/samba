@@ -34,14 +34,15 @@
 #include "kuser_locl.h"
 RCSID("$Id$");
 
-int forwardable		= 0;
-int proxiable		= 0;
-int renewable		= 0;
+int forwardable_flag	= 0;
+int proxiable_flag	= 0;
+int renewable_flag		= 0;
 int renew_flag		= 0;
 int validate_flag	= 0;
 int version_flag	= 0;
 int help_flag		= 0;
 int addrs_flag		= 1;
+int anonymous_flag	= 0;
 char *lifetime 		= NULL;
 char *renew_life	= NULL;
 char *server		= NULL;
@@ -67,7 +68,7 @@ struct getargs args[] = {
     { "cache", 		'c', arg_string, &cred_cache,
       "credentials cache", "cachename" },
 
-    { "forwardable",	'f', arg_flag, &forwardable,
+    { "forwardable",	'f', arg_flag, &forwardable_flag,
       "get forwardable tickets"},
 
     { "keytab",         't', arg_string, &keytab_str,
@@ -76,13 +77,13 @@ struct getargs args[] = {
     { "lifetime",	'l', arg_string, &lifetime,
       "lifetime of tickets", "seconds"},
 
-    { "proxiable",	'p', arg_flag, &proxiable,
+    { "proxiable",	'p', arg_flag, &proxiable_flag,
       "get proxiable tickets" },
 
     { "renew",          'R', arg_flag, &renew_flag,
       "renew TGT" },
 
-    { "renewable",	0,   arg_flag, &renewable,
+    { "renewable",	0,   arg_flag, &renewable_flag,
       "get renewable tickets" },
 
     { "renewable-life",	'r', arg_string, &renew_life,
@@ -108,6 +109,9 @@ struct getargs args[] = {
 
     { "addresses",	0,   arg_negative_flag,	&addrs_flag,
       "request a ticket with no addresses" },
+
+    { "anonymous",	0,   arg_flag,	&anonymous_flag,
+      "request an anonymous ticket" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -159,10 +163,11 @@ renew_validate(krb5_context context,
 	}
     }
     flags.i = 0;
-    flags.b.renewable   = flags.b.renew = renew;
-    flags.b.validate    = validate;
-    flags.b.forwardable = forwardable;
-    flags.b.proxiable   = proxiable;
+    flags.b.renewable         = flags.b.renew = renew;
+    flags.b.validate          = validate;
+    flags.b.forwardable       = forwardable_flag;
+    flags.b.proxiable         = proxiable_flag;
+    flags.b.request_anonymous = anonymous_flag;
     if(life)
 	in.times.endtime = time(NULL) + life;
 
@@ -215,10 +220,10 @@ main (int argc, char **argv)
     if (ret)
 	errx(1, "krb5_init_context failed: %u", ret);
   
-    forwardable = krb5_config_get_bool (context, NULL,
-					"libdefaults",
-					"forwardable",
-					NULL);
+    forwardable_flag = krb5_config_get_bool (context, NULL,
+					     "libdefaults",
+					     "forwardable",
+					     NULL);
 
 #ifdef KRB4
     get_v4_tgt = krb5_config_get_bool_default (context, NULL,
@@ -264,8 +269,9 @@ main (int argc, char **argv)
 
     krb5_get_init_creds_opt_init (&opt);
     
-    krb5_get_init_creds_opt_set_forwardable (&opt, forwardable);
-    krb5_get_init_creds_opt_set_proxiable (&opt, proxiable);
+    krb5_get_init_creds_opt_set_forwardable (&opt, forwardable_flag);
+    krb5_get_init_creds_opt_set_proxiable (&opt, proxiable_flag);
+    krb5_get_init_creds_opt_set_anonymous (&opt, anonymous_flag);
 
     if (!addrs_flag) {
 	no_addrs.len = 0;
@@ -280,7 +286,7 @@ main (int argc, char **argv)
 	    errx (1, "unparsable time: %s", renew_life);
 
 	krb5_get_init_creds_opt_set_renew_life (&opt, tmp);
-    } else if (renewable)
+    } else if (renewable_flag)
 	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
 
     if(ticket_life != 0)
@@ -321,8 +327,22 @@ main (int argc, char **argv)
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_parse_name");
-    } else
-	principal = NULL;
+    } else {
+	ret = krb5_get_default_principal (context, &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_get_default_principal");
+    }
+
+#ifdef KRB4
+    get_v4_tgt = krb5_config_get_bool_default (context,
+					       NULL,
+					       get_v4_tgt,
+					       "realms",
+					       krb5_princ_realm(context,
+								principal),
+					       "krb4_get_tickets",
+					       NULL);
+#endif
 
     if(use_keytab || keytab_str) {
 	krb5_keytab kt;
