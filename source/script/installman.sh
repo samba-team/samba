@@ -5,7 +5,7 @@
 #   modified to accomodate international man pages (inspired
 #   by Japanese edition's approach)
 
-MANDIR=$1
+MANDIR=`echo $1 | sed 's/\/\//\//g'`
 SRCDIR=$2/
 langs=$3
 

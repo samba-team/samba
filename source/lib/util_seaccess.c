@@ -23,22 +23,6 @@
 
 extern DOM_SID global_sid_Builtin;
 
-/**********************************************************************************
- Check if this ACE has a SID in common with the token.
-**********************************************************************************/
-
-static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
-{
-	size_t i;
-
-	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->trustee, &token->user_sids[i]))
-			return True;
-	}
-
-	return False;
-}
-
 /*********************************************************************************
  Check an ACE against a SID.  We return the remaining needed permission
  bits not yet granted. Zero means permission allowed (no more needed bits).
@@ -332,119 +316,6 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 	return False;
 }
 
-/* Create a child security descriptor using another security descriptor as
-   the parent container.  This child object can either be a container or
-   non-container object. */
-
-SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
-				      BOOL child_container)
-{
-	SEC_DESC_BUF *sdb;
-	SEC_DESC *sd;
-	SEC_ACL *new_dacl, *the_acl;
-	SEC_ACE *new_ace_list = NULL;
-	unsigned int new_ace_list_ndx = 0, i;
-	size_t size;
-
-	/* Currently we only process the dacl when creating the child.  The
-	   sacl should also be processed but this is left out as sacls are
-	   not implemented in Samba at the moment.*/
-
-	the_acl = parent_ctr->dacl;
-
-	if (!(new_ace_list = talloc(ctx, sizeof(SEC_ACE) * the_acl->num_aces))) 
-		return NULL;
-
-	for (i = 0; the_acl && i < the_acl->num_aces; i++) {
-		SEC_ACE *ace = &the_acl->ace[i];
-		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
-		uint8 new_flags = 0;
-		BOOL inherit = False;
-		fstring sid_str;
-
-		/* The OBJECT_INHERIT_ACE flag causes the ACE to be
-		   inherited by non-container children objects.  Container
-		   children objects will inherit it as an INHERIT_ONLY
-		   ACE. */
-
-		if (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
-
-			if (!child_container) {
-				new_flags |= SEC_ACE_FLAG_OBJECT_INHERIT;
-			} else {
-				new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
-			}
-
-			inherit = True;
-		}
-
-		/* The CONAINER_INHERIT_ACE flag means all child container
-		   objects will inherit and use the ACE. */
-
-		if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
-			if (!child_container) {
-				inherit = False;
-			} else {
-				new_flags |= SEC_ACE_FLAG_CONTAINER_INHERIT;
-			}
-		}
-
-		/* The INHERIT_ONLY_ACE is not used by the se_access_check()
-		   function for the parent container, but is inherited by
-		   all child objects as a normal ACE. */
-
-		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-			/* Move along, nothing to see here */
-		}
-
-		/* The SEC_ACE_FLAG_NO_PROPAGATE_INHERIT flag means the ACE
-		   is inherited by child objects but not grandchildren
-		   objects.  We clear the object inherit and container
-		   inherit flags in the inherited ACE. */
-
-		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
-			new_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT |
-				       SEC_ACE_FLAG_CONTAINER_INHERIT);
-		}
-
-		/* Add ACE to ACE list */
-
-		if (!inherit)
-			continue;
-
-		init_sec_access(&new_ace->info, ace->info.mask);
-		init_sec_ace(new_ace, &ace->trustee, ace->type,
-			     new_ace->info, new_flags);
-
-		sid_to_string(sid_str, &ace->trustee);
-
-		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
-			  " inherited as %s:%d/0x%02x/0x%08x\n", sid_str,
-			  ace->type, ace->flags, ace->info.mask,
-			  sid_str, new_ace->type, new_ace->flags,
-			  new_ace->info.mask));
-
-		new_ace_list_ndx++;
-	}
-
-	/* Create child security descriptor to return */
-	
-	new_dacl = make_sec_acl(ctx, ACL_REVISION, new_ace_list_ndx, new_ace_list);
-
-	/* Use the existing user and group sids.  I don't think this is
-	   correct.  Perhaps the user and group should be passed in as
-	   parameters by the caller? */
-
-	sd = make_sec_desc(ctx, SEC_DESC_REVISION,
-			   parent_ctr->owner_sid,
-			   parent_ctr->grp_sid,
-			   parent_ctr->sacl,
-			   new_dacl, &size);
-
-	sdb = make_sec_desc_buf(ctx, size, sd);
-
-	return sdb;
-}
 
 /*******************************************************************
  samr_make_sam_obj_sd
@@ -479,7 +350,7 @@ NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;

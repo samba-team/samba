@@ -189,7 +189,9 @@ typedef struct sam_user_info_23
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* pointer to logon hours */
 
-	uint32 unknown_5;     /* 0x0001 0000 */
+	/* Was unknown_5. */
+	uint16 bad_password_count;
+	uint16 logon_count;
 
 	uint8 padding1[6];
 		
@@ -312,7 +314,9 @@ typedef struct sam_user_info_21
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* unknown pointer */
 
-	uint32 unknown_5;     /* 0x0002 0000 */
+	/* Was unknown_5. */
+	uint16 bad_password_count;
+	uint16 logon_count;
 
 	uint8 padding1[6];
 		

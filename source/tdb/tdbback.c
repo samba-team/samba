@@ -18,6 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef STANDALONE
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,10 +32,16 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/mman.h>
+
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
 #include <signal.h>
+
+#else
+#include "includes.h"
+#endif
+
 #include "tdb.h"
 
 static int failed;
@@ -44,8 +55,7 @@ char *add_suffix(const char *name, const char *suffix)
 		fprintf(stderr,"Out of memory!\n");
 		exit(1);
 	}
-	strncpy(ret, name, len);
-	strncat(ret, suffix, len);
+	snprintf(ret, len, "%s%s", name, suffix);
 	return ret;
 }
 

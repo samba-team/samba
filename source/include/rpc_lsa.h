@@ -657,7 +657,7 @@ typedef struct lsa_r_enumprivsaccount
 {
 	uint32 ptr;
 	uint32 count;
-	PRIVILEGE_SET set;
+	PRIVILEGE_SET *set;
 	NTSTATUS status;
 } LSA_R_ENUMPRIVSACCOUNT;
 
@@ -703,7 +703,7 @@ typedef struct lsa_q_addprivs
 {
 	POLICY_HND pol; /* policy handle */
 	uint32 count;
-	PRIVILEGE_SET set;
+	PRIVILEGE_SET *set;
 } LSA_Q_ADDPRIVS;
 
 typedef struct lsa_r_addprivs
@@ -718,7 +718,7 @@ typedef struct lsa_q_removeprivs
 	uint32 allrights;
 	uint32 ptr;
 	uint32 count;
-	PRIVILEGE_SET set;
+	PRIVILEGE_SET *set;
 } LSA_Q_REMOVEPRIVS;
 
 typedef struct lsa_r_removeprivs
@@ -728,5 +728,3 @@ typedef struct lsa_r_removeprivs
 
 
 #endif /* _RPC_LSA_H */
-
-

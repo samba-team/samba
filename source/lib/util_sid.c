@@ -638,7 +638,7 @@ void print_guid(GUID *guid)
  Tallocs a duplicate SID. 
 ********************************************************************/ 
 
-DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, DOM_SID *src)
+DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
 {
 	DOM_SID *dst;
 	

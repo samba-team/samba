@@ -3,7 +3,8 @@
    Samba memory buffer functions
    Copyright (C) Andrew Tridgell              1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Jeremy Allison 1999.
+   Copyright (C) Jeremy Allison               1999
+   Copyright (C) Andrew Bartlett              2003.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1337,47 +1338,6 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
 	return True;
 }
 
-static void netsechash(uchar * key, uchar * data, int data_len)
-{
-	uchar hash[256];
-	uchar index_i = 0;
-	uchar index_j = 0;
-	uchar j = 0;
-	int ind;
-
-	for (ind = 0; ind < 256; ind++)
-	{
-		hash[ind] = (uchar) ind;
-	}
-
-	for (ind = 0; ind < 256; ind++)
-	{
-		uchar tc;
-
-		j += (hash[ind] + key[ind % 16]);
-
-		tc = hash[ind];
-		hash[ind] = hash[j];
-		hash[j] = tc;
-	}
-
-	for (ind = 0; ind < data_len; ind++)
-	{
-		uchar tc;
-		uchar t;
-
-		index_i++;
-		index_j += hash[index_i];
-
-		tc = hash[index_i];
-		hash[index_i] = hash[index_j];
-		hash[index_j] = tc;
-
-		t = hash[index_i] + hash[index_j];
-		data[ind] ^= hash[t];
-	}
-}
-
 
 /*******************************************************************
  Create a digest over the entire packet (including the data), and 
@@ -1400,7 +1360,7 @@ static void netsec_digest(struct netsec_auth_struct *a,
 	MD5Update(&ctx3, zeros, sizeof(zeros));
 	MD5Update(&ctx3, verf->sig, sizeof(verf->sig));
 	if (auth_flags & AUTH_PIPE_SEAL) {
-		MD5Update(&ctx3, verf->data8, sizeof(verf->data8));
+		MD5Update(&ctx3, verf->confounder, sizeof(verf->confounder));
 	}
 	MD5Update(&ctx3, (const unsigned char *)data, data_len);
 	MD5Final(whole_packet_digest, &ctx3);
@@ -1456,8 +1416,27 @@ static void netsec_deal_with_seq_num(struct netsec_auth_struct *a,
 	dump_data_pw("sequence_key:\n", sequence_key, sizeof(sequence_key));
 
 	dump_data_pw("seq_num (before):\n", verf->seq_num, sizeof(verf->seq_num));
-	netsechash(sequence_key, verf->seq_num, 8);
+	SamOEMhash(verf->seq_num, sequence_key, 8);
 	dump_data_pw("seq_num (after):\n", verf->seq_num, sizeof(verf->seq_num));
+}
+
+/*******************************************************************
+creates an RPC_AUTH_NETSEC_CHK structure.
+********************************************************************/
+static BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
+			      const uchar sig[8],
+			      const uchar packet_digest[8],
+			      const uchar seq_num[8], const uchar confounder[8])
+{
+	if (chk == NULL)
+		return False;
+
+	memcpy(chk->sig, sig, sizeof(chk->sig));
+	memcpy(chk->packet_digest, packet_digest, sizeof(chk->packet_digest));
+	memcpy(chk->seq_num, seq_num, sizeof(chk->seq_num));
+	memcpy(chk->confounder, confounder, sizeof(chk->confounder));
+
+	return True;
 }
 
 
@@ -1469,26 +1448,47 @@ static void netsec_deal_with_seq_num(struct netsec_auth_struct *a,
  ********************************************************************/
 void netsec_encode(struct netsec_auth_struct *a, int auth_flags, 
 		   enum netsec_direction direction,
-		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len)
+		   RPC_AUTH_NETSEC_CHK * verf,
+		   char *data, size_t data_len)
 {
 	uchar digest_final[16];
+	uchar confounder[8];
+	uchar seq_num[8];
+	static const uchar nullbytes[8];
+
+	static const uchar netsec_seal_sig[8] = NETSEC_SEAL_SIGNATURE;
+	static const uchar netsec_sign_sig[8] = NETSEC_SIGN_SIGNATURE;
+	const uchar *netsec_sig;
 
 	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
+	
+	if (auth_flags & AUTH_PIPE_SEAL) {
+		netsec_sig = netsec_seal_sig;
+	} else if (auth_flags & AUTH_PIPE_SIGN) {
+		netsec_sig = netsec_sign_sig;
+	}
+
+	/* fill the 'confounder' with random data */
+	generate_random_buffer(confounder, sizeof(confounder), False);
+
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 
-	RSIVAL(verf->seq_num, 0, a->seq_num);
+	RSIVAL(seq_num, 0, a->seq_num);
 
 	switch (direction) {
 	case SENDER_IS_INITIATOR:
-		SIVAL(verf->seq_num, 4, 0x80);
+		SIVAL(seq_num, 4, 0x80);
 		break;
 	case SENDER_IS_ACCEPTOR:
-		SIVAL(verf->seq_num, 4, 0x0);
+		SIVAL(seq_num, 4, 0x0);
 		break;
 	}
 
-	dump_data_pw("verf->seq_num:\n", verf->seq_num, sizeof(verf->seq_num));
+	dump_data_pw("verf->seq_num:\n", seq_num, sizeof(verf->seq_num));
 
+	init_rpc_auth_netsec_chk(verf, netsec_sig, nullbytes,
+				 seq_num, confounder);
+				
 	/* produce a digest of the packet to prove it's legit (before we seal it) */
 	netsec_digest(a, auth_flags, verf, data, data_len, digest_final);
 	memcpy(verf->packet_digest, digest_final, sizeof(verf->packet_digest));
@@ -1500,14 +1500,14 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 		netsec_get_sealing_key(a, verf, sealing_key);
 
 		/* encode the verification data */
-		dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
-		netsechash(sealing_key, verf->data8, 8);
+		dump_data_pw("verf->confounder:\n", verf->confounder, sizeof(verf->confounder));
+		SamOEMhash(verf->confounder, sealing_key, 8);
 
-		dump_data_pw("verf->data8_enc:\n", verf->data8, sizeof(verf->data8));
+		dump_data_pw("verf->confounder_enc:\n", verf->confounder, sizeof(verf->confounder));
 		
 		/* encode the packet payload */
 		dump_data_pw("data:\n", (const unsigned char *)data, data_len);
-		netsechash(sealing_key, (unsigned char *)data, data_len);
+		SamOEMhash((unsigned char *)data, sealing_key, data_len);
 		dump_data_pw("data_enc:\n", (const unsigned char *)data, data_len);
 	}
 
@@ -1531,8 +1531,21 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 {
 	uchar digest_final[16];
 
-	/* Create the expected sequence number for comparison */
+	static const uchar netsec_seal_sig[8] = NETSEC_SEAL_SIGNATURE;
+	static const uchar netsec_sign_sig[8] = NETSEC_SIGN_SIGNATURE;
+	const uchar *netsec_sig;
+
 	uchar seq_num[8];
+
+	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
+	
+	if (auth_flags & AUTH_PIPE_SEAL) {
+		netsec_sig = netsec_seal_sig;
+	} else if (auth_flags & AUTH_PIPE_SIGN) {
+		netsec_sig = netsec_sign_sig;
+	}
+
+	/* Create the expected sequence number for comparison */
 	RSIVAL(seq_num, 0, a->seq_num);
 
 	switch (direction) {
@@ -1560,6 +1573,20 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		   digest, as supplied by the client.  We check that it's a valid 
 		   checksum after the decode, below
 		*/
+		DEBUG(2, ("netsec_decode: FAILED: packet sequence number:\n"));
+		dump_data(2, verf->seq_num, sizeof(verf->seq_num));
+		DEBUG(2, ("should be:\n"));
+		dump_data(2, seq_num, sizeof(seq_num));
+
+		return False;
+	}
+
+	if (memcmp(verf->sig, netsec_sig, sizeof(verf->sig))) {
+		/* Validate that the other end sent the expected header */
+		DEBUG(2, ("netsec_decode: FAILED: packet header:\n"));
+		dump_data(2, verf->sig, sizeof(verf->sig));
+		DEBUG(2, ("should be:\n"));
+		dump_data(2, netsec_sig, sizeof(netsec_sig));
 		return False;
 	}
 
@@ -1570,16 +1597,16 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		netsec_get_sealing_key(a, verf, sealing_key);
 
 		/* extract the verification data */
-		dump_data_pw("verf->data8:\n", verf->data8, 
-			     sizeof(verf->data8));
-		netsechash(sealing_key, verf->data8, 8);
+		dump_data_pw("verf->confounder:\n", verf->confounder, 
+			     sizeof(verf->confounder));
+		SamOEMhash(verf->confounder, sealing_key, 8);
 
-		dump_data_pw("verf->data8_dec:\n", verf->data8, 
-			     sizeof(verf->data8));
+		dump_data_pw("verf->confounder_dec:\n", verf->confounder, 
+			     sizeof(verf->confounder));
 		
 		/* extract the packet payload */
 		dump_data_pw("data   :\n", (const unsigned char *)data, data_len);
-		netsechash(sealing_key, (unsigned char *)data, data_len);
+		SamOEMhash((unsigned char *)data, sealing_key, data_len);
 		dump_data_pw("datadec:\n", (const unsigned char *)data, data_len);	
 	}
 

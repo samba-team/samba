@@ -41,6 +41,11 @@
 
  */
 
+#ifdef STANDALONE
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,6 +59,13 @@
 #include <sys/time.h>
 #include <ctype.h>
 #include <signal.h>
+
+#else
+
+#include "includes.h"
+
+#endif
+
 #include "tdb.h"
 #include "tdbback.h"
 

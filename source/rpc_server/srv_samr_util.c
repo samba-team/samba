@@ -189,7 +189,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		pdb_set_acct_ctrl(to, from->acb_info, PDB_CHANGED);
 	}
 
-	DEBUG(10,("INFO_21 UNKOWN_3: %08X -> %08X\n",pdb_get_unknown_3(to),from->unknown_3));
+	DEBUG(10,("INFO_21 UNKNOWN_3: %08X -> %08X\n",pdb_get_unknown_3(to),from->unknown_3));
 	if (from->unknown_3 != pdb_get_unknown_3(to)) {
 		pdb_set_unknown_3(to, from->unknown_3, PDB_CHANGED);
 	}
@@ -208,12 +208,17 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 /* Fix me: only update if it changes --metze */
 	pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
 
-	DEBUG(10,("INFO_21 UNKOWN_5: %08X -> %08X\n",pdb_get_unknown_5(to),from->unknown_5));
-	if (from->unknown_5 != pdb_get_unknown_5(to)) {
-		pdb_set_unknown_5(to, from->unknown_5, PDB_CHANGED);
+	DEBUG(10,("INFO_21 BAD_PASSWORD_COUNT: %08X -> %08X\n",pdb_get_bad_password_count(to),from->bad_password_count));
+	if (from->bad_password_count != pdb_get_bad_password_count(to)) {
+		pdb_set_bad_password_count(to, from->bad_password_count, PDB_CHANGED);
 	}
 
-	DEBUG(10,("INFO_21 UNKOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
+	DEBUG(10,("INFO_21 LOGON_COUNT: %08X -> %08X\n",pdb_get_logon_count(to),from->logon_count));
+	if (from->logon_count != pdb_get_logon_count(to)) {
+		pdb_set_logon_count(to, from->logon_count, PDB_CHANGED);
+	}
+
+	DEBUG(10,("INFO_21 UNKNOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
 	if (from->unknown_6 != pdb_get_unknown_6(to)) {
 		pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
 	}
@@ -413,9 +418,14 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 /* Fix me: only update if it changes --metze */
 	pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
 
-	DEBUG(10,("INFO_23 UNKOWN_5: %08X -> %08X\n",pdb_get_unknown_5(to),from->unknown_5));
-	if (from->unknown_5 != pdb_get_unknown_5(to)) {
-		pdb_set_unknown_5(to, from->unknown_5, PDB_CHANGED);
+	DEBUG(10,("INFO_23 BAD_PASSWORD_COUNT: %08X -> %08X\n",pdb_get_bad_password_count(to),from->bad_password_count));
+	if (from->bad_password_count != pdb_get_bad_password_count(to)) {
+		pdb_set_bad_password_count(to, from->bad_password_count, PDB_CHANGED);
+	}
+
+	DEBUG(10,("INFO_23 LOGON_COUNT: %08X -> %08X\n",pdb_get_logon_count(to),from->logon_count));
+	if (from->logon_count != pdb_get_logon_count(to)) {
+		pdb_set_logon_count(to, from->logon_count, PDB_CHANGED);
 	}
 
 	DEBUG(10,("INFO_23 UNKOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));

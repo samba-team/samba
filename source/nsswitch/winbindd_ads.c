@@ -787,9 +787,13 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	}
 
 	rc = ads_USN(ads, seq);
+	
 	if (!ADS_ERR_OK(rc)) {
-		/* its a dead connection */
-		ads_destroy(&ads);
+	
+		/* its a dead connection ; don't destroy it 
+		   through since ads_USN() has already done 
+		   that indirectly */
+		   
 		domain->private = NULL;
 	}
 	return ads_ntstatus(rc);
@@ -910,8 +914,11 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	rc = ads_domain_sid(ads, sid);
 
 	if (!ADS_ERR_OK(rc)) {
-		/* its a dead connection */
-		ads_destroy(&ads);
+	
+		/* its a dead connection; don't destroy it though
+		   since that has already been done indirectly 
+		   by ads_domain_sid() */
+
 		domain->private = NULL;
 	}
 

@@ -93,6 +93,11 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	if (errno != 0)
 		DEBUG(3,("error string = %s\n",strerror(errno)));
   
+#if defined(DEVELOPER)
+	if (unix_ERR_class != SMB_SUCCESS || unix_ERR_code != 0 || !NT_STATUS_IS_OK(unix_ERR_ntstatus))
+		smb_panic("logic error in error processing");
+#endif
+
 	/*
 	 * We can explicitly force 32 bit error codes even when the
 	 * parameter "nt status" is set to no by pre-setting the

@@ -61,7 +61,12 @@ Init dom_query
 
 static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_sid)
 {
-	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
+	d_q->buffer_dom_name = (dom_name != NULL) ? 1 : 0; /* domain buffer pointer */
+	d_q->buffer_dom_sid = (dom_sid != NULL) ? 1 : 0;  /* domain sid pointer */
+
+	/* this string is supposed to be non-null terminated. */
+	/* But the maxlen in this UNISTR2 must include the terminating null. */
+	init_unistr2(&d_q->uni_domain_name, dom_name, UNI_MAXLEN_TERMINATE);
 
 	/*
 	 * I'm not sure why this really odd combination of length
@@ -71,14 +76,15 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 	 * a domain with both odd and even length names... JRA.
 	 */
 
-	d_q->uni_dom_str_len = domlen ? ((domlen + 1) * 2) : 0;
-	d_q->uni_dom_max_len = domlen * 2;
-	d_q->buffer_dom_name = domlen != 0 ? 1 : 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;  /* domain sid pointer */
+	/*
+	 * IMPORTANT NOTE !!!!
+	 * The two fields below probably are reversed in meaning, ie.
+	 * the first field is probably the str_len, the second the max
+	 * len. Both are measured in bytes anyway.
+	 */
 
-	/* this string is supposed to be character short */
-	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
-	d_q->uni_domain_name.uni_max_len++;
+	d_q->uni_dom_str_len = d_q->uni_domain_name.uni_max_len * 2;
+	d_q->uni_dom_max_len = d_q->uni_domain_name.uni_str_len * 2;
 
 	if (dom_sid != NULL)
 		init_dom_sid2(&d_q->dom_sid, dom_sid);
@@ -91,7 +97,6 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 {
 	int num = 0;
-	int len;
 
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->num_ref_doms_1; num++) {
@@ -114,14 +119,11 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	ref->max_entries = MAX_REF_DOMAINS;
 	ref->num_ref_doms_2 = num+1;
 
-	len = (dom_name != NULL) ? strlen(dom_name) : 0;
-	if(dom_name != NULL && len == 0)
-		len = 1;
-
-	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, len);
 	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
 
-	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, len);
+	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, UNI_FLAGS_NONE);
+	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, &ref->ref_dom[num].uni_dom_name);
+
 	init_dom_sid2(&ref->ref_dom[num].ref_dom, dom_sid );
 
 	return num;
@@ -334,7 +336,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if((*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION, &adm_sid, NULL, NULL, psa, sd_size)) == NULL)
+	if((*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, &adm_sid, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;
@@ -349,25 +351,22 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 			      GUID *dom_guid, DOM_SID *dom_sid)
 {
 	if (nb_name && *nb_name) {
-		init_uni_hdr(&r_l->hdr_nb_dom_name, strlen(nb_name));
-		init_unistr2(&r_l->uni_nb_dom_name, nb_name, 
-			     strlen(nb_name));
+		init_unistr2(&r_l->uni_nb_dom_name, nb_name, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_l->hdr_nb_dom_name, &r_l->uni_nb_dom_name);
 		r_l->hdr_nb_dom_name.uni_max_len += 2;
 		r_l->uni_nb_dom_name.uni_max_len += 1;
 	}
 	
 	if (dns_name && *dns_name) {
-		init_uni_hdr(&r_l->hdr_dns_dom_name, strlen(dns_name));
-		init_unistr2(&r_l->uni_dns_dom_name, dns_name,
-			     strlen(dns_name));
+		init_unistr2(&r_l->uni_dns_dom_name, dns_name, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_l->hdr_dns_dom_name, &r_l->uni_dns_dom_name);
 		r_l->hdr_dns_dom_name.uni_max_len += 2;
 		r_l->uni_dns_dom_name.uni_max_len += 1;
 	}
 
 	if (forest_name && *forest_name) {
-		init_uni_hdr(&r_l->hdr_forest_name, strlen(forest_name));
-		init_unistr2(&r_l->uni_forest_name, forest_name,
-			     strlen(forest_name));
+		init_unistr2(&r_l->uni_forest_name, forest_name, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_l->hdr_forest_name, &r_l->uni_forest_name);
 		r_l->hdr_forest_name.uni_max_len += 2;
 		r_l->uni_forest_name.uni_max_len += 1;
 	}
@@ -774,13 +773,13 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 
 	for (i = 0; i < PRIV_ALL_INDEX; i++, entry++) {
 		if( i<enum_context) {
-			init_uni_hdr(&entry->hdr_name, 0);
-			init_unistr2(&entry->name, NULL, 0 );
+			init_unistr2(&entry->name, NULL, UNI_FLAGS_NONE);
+			init_uni_hdr(&entry->hdr_name, &entry->name);
 			entry->luid_low = 0;
 			entry->luid_high = 0;
 		} else {
-			init_uni_hdr(&entry->hdr_name, strlen(privs[i+1].priv));
-			init_unistr2(&entry->name, privs[i+1].priv, strlen(privs[i+1].priv) );
+			init_unistr2(&entry->name, privs[i+1].priv, UNI_FLAGS_NONE);
+			init_uni_hdr(&entry->hdr_name, &entry->name);
 			entry->luid_low = privs[i+1].se_priv;
 			entry->luid_high = 0;
 		}
@@ -822,8 +821,8 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	
 	if (privs[i].se_priv!=SE_PRIV_ALL) {
 		DEBUG(10,(": %s\n", privs[i].description));
-		init_uni_hdr(&r_u->hdr_desc, strlen(privs[i].description));
-		init_unistr2(&r_u->desc, privs[i].description, strlen(privs[i].description) );
+		init_unistr2(&r_u->desc, privs[i].description, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);
 
 		r_u->ptr_info=0xdeadbeef;
 		r_u->lang_id=q_u->lang_id;
@@ -890,7 +889,6 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
 	fstring username, domname;
-	int ulen, dlen;
 	user_struct *vuser = get_valid_user_struct(p->vuid);
   
 	if (vuser == NULL)
@@ -899,18 +897,15 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
 	fstrcpy(username, vuser->user.smb_name);
 	fstrcpy(domname, vuser->user.domain);
   
-	ulen = strlen(username) + 1;
-	dlen = strlen(domname) + 1;
-  
-	init_uni_hdr(&r_u->hdr_user_name, ulen);
 	r_u->ptr_user_name = 1;
-	init_unistr2(&r_u->uni2_user_name, username, ulen);
+	init_unistr2(&r_u->uni2_user_name, username, UNI_STR_TERMINATE);
+	init_uni_hdr(&r_u->hdr_user_name, &r_u->uni2_user_name);
 
 	r_u->unk1 = 1;
   
-	init_uni_hdr(&r_u->hdr_dom_name, dlen);
 	r_u->ptr_dom_name = 1;
-	init_unistr2(&r_u->uni2_dom_name, domname, dlen);
+	init_unistr2(&r_u->uni2_dom_name, domname,  UNI_STR_TERMINATE);
+	init_uni_hdr(&r_u->hdr_dom_name, &r_u->uni2_dom_name);
 
 	r_u->status = NT_STATUS_OK;
   
@@ -960,7 +955,7 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
  For a given SID, enumerate all the privilege this account has.
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
+NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
@@ -976,29 +971,29 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 		return NT_STATUS_NO_SUCH_GROUP;
 
 #if 0 /* privileges currently not implemented! */
-	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set.count));
-	if (map.priv_set.count!=0) {
+	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set->count));
+	if (map.priv_set->count!=0) {
 	
-		set=(LUID_ATTR *)talloc(p->mem_ctx, map.priv_set.count*sizeof(LUID_ATTR));
+		set=(LUID_ATTR *)talloc(map.priv_set->mem_ctx, map.priv_set.count*sizeof(LUID_ATTR));
 		if (set == NULL) {
-			free_privilege(&map.priv_set);	
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		for (i=0; i<map.priv_set.count; i++) {
-			set[i].luid.low=map.priv_set.set[i].luid.low;
-			set[i].luid.high=map.priv_set.set[i].luid.high;
-			set[i].attr=map.priv_set.set[i].attr;
+		for (i = 0; i < map.priv_set.count; i++) {
+			set[i].luid.low = map.priv_set->set[i].luid.low;
+			set[i].luid.high = map.priv_set->set[i].luid.high;
+			set[i].attr = map.priv_set->set[i].attr;
 			DEBUG(10,("_lsa_enum_privsaccount: priv %d: %d:%d:%d\n", i, 
 				   set[i].luid.high, set[i].luid.low, set[i].attr));
 		}
 	}
 
-	init_lsa_r_enum_privsaccount(r_u, set, map.priv_set.count, 0);	
-	free_privilege(&map.priv_set);	
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, map.priv_set->count, 0);	
+	destroy_privilege(&map.priv_set);	
 #endif
 
-	init_lsa_r_enum_privsaccount(r_u, set, 0, 0);
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, 0, 0);
 
 	return r_u->status;
 }
@@ -1064,11 +1059,11 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u)
 {
 #if 0
-	struct lsa_info *info=NULL;
+	struct lsa_info *info = NULL;
 	GROUP_MAP map;
-	int i=0;
-	LUID_ATTR *luid_attr=NULL;
-	PRIVILEGE_SET *set=NULL;
+	int i = 0;
+	LUID_ATTR *luid_attr = NULL;
+	PRIVILEGE_SET *set = NULL;
 #endif
 
 	r_u->status = NT_STATUS_OK;
@@ -1081,24 +1076,24 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	set=&q_u->set;
+	set = &q_u->set;
 
-	for (i=0; i<set->count; i++) {
-		luid_attr=&set->set[i];
+	for (i = 0; i < set->count; i++) {
+		luid_attr = &set->set[i];
 		
 		/* check if the privilege is already there */
-		if (check_priv_in_privilege(&map.priv_set, *luid_attr)){
-			free_privilege(&map.priv_set);
+		if (check_priv_in_privilege(map.priv_set, *luid_attr)){
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 		
-		add_privilege(&map.priv_set, *luid_attr);
+		add_privilege(map.priv_set, *luid_attr);
 	}
 
 	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
-	free_privilege(&map.priv_set);	
+	destroy_privilege(&map.priv_set);	
 
 #endif
 	return r_u->status;
@@ -1111,11 +1106,11 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEPRIVS *r_u)
 {
 #if 0
-	struct lsa_info *info=NULL;
+	struct lsa_info *info = NULL;
 	GROUP_MAP map;
 	int i=0;
-	LUID_ATTR *luid_attr=NULL;
-	PRIVILEGE_SET *set=NULL;
+	LUID_ATTR *luid_attr = NULL;
+	PRIVILEGE_SET *set = NULL;
 #endif
 
 	r_u->status = NT_STATUS_OK;
@@ -1128,37 +1123,37 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	if (q_u->allrights!=0) {
+	if (q_u->allrights != 0) {
 		/* log it and return, until I see one myself don't do anything */
 		DEBUG(5,("_lsa_removeprivs: trying to remove all privileges ?\n"));
 		return NT_STATUS_OK;
 	}
 
-	if (q_u->ptr==0) {
+	if (q_u->ptr == 0) {
 		/* log it and return, until I see one myself don't do anything */
 		DEBUG(5,("_lsa_removeprivs: no privileges to remove ?\n"));
 		return NT_STATUS_OK;
 	}
 
-	set=&q_u->set;
+	set = &q_u->set;
 
-	for (i=0; i<set->count; i++) {
-		luid_attr=&set->set[i];
+	for (i = 0; i < set->count; i++) {
+		luid_attr = &set->set[i];
 		
 		/* if we don't have the privilege, we're trying to remove, give up */
 		/* what else can we do ??? JFM. */
-		if (!check_priv_in_privilege(&map.priv_set, *luid_attr)){
-			free_privilege(&map.priv_set);
+		if (!check_priv_in_privilege(map.priv_set, *luid_attr)){
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 		
-		remove_privilege(&map.priv_set, *luid_attr);
+		remove_privilege(map.priv_set, *luid_attr);
 	}
 
 	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
-	free_privilege(&map.priv_set);	
+	destroy_privilege(&map.priv_set);	
 #endif
 	return r_u->status;
 }

@@ -291,7 +291,9 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 	if (lp_invalid_users(snum)) {
 		str_list_copy(&invalid, lp_invalid_users(snum));
 		if (invalid && str_list_substitute(invalid, "%S", lp_servicename(snum))) {
-			ret = !user_in_list(user, (const char **)invalid, groups, n_groups);
+			if ( invalid && str_list_sub_basic(invalid, current_user_info.smb_name) ) {
+				ret = !user_in_list(user, (const char **)invalid, groups, n_groups);
+			}
 		}
 	}
 	if (invalid)
@@ -299,8 +301,10 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 
 	if (ret && lp_valid_users(snum)) {
 		str_list_copy(&valid, lp_valid_users(snum));
-		if ( valid && str_list_sub_basic(valid, current_user_info.smb_name) ) {
-			ret = user_in_list(user, (const char **)valid, groups, n_groups);
+		if ( valid && str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
+			if ( valid && str_list_sub_basic(valid, current_user_info.smb_name) ) {
+				ret = user_in_list(user, (const char **)valid, groups, n_groups);
+			}
 		}
 	}
 	if (valid)

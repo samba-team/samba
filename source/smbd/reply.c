@@ -39,18 +39,30 @@ unsigned int smb_echo_count = 0;
 extern BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
- Ensure we check the path in the same way as W2K.
+ Ensure we check the path in *exactly* the same way as W2K.
 ****************************************************************************/
 
-static NTSTATUS check_path_syntax(const char *name)
+NTSTATUS check_path_syntax(const char *name)
 {
-	while (*name == '\\')
+	while (*name == '\\' || *name == '/')
 		name++;
-	if (strequal(name, "."))
+	if (name[0] == '.' && name[1] == '\0')
 		return NT_STATUS_OBJECT_NAME_INVALID;
-	else if (strequal(name, ".."))
+	else if (name[0] == '.' && name[1] == '.' &&
+			(name[2] == '\\' || name [2] == '/' || name[2] == '\0'))
 		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Pull a string and check the path - provide for error return.
+****************************************************************************/
+
+size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len, int flags, NTSTATUS *err)
+{
+	size_t ret = srvstr_pull_buf( inbuf, dest, src, dest_len, flags);
+	*err = check_path_syntax(dest);
+	return ret;
 }
 
 /****************************************************************************
@@ -402,11 +414,11 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	START_PROFILE(SMBchkpth);
 
-	srvstr_pull_buf(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE);
-
-	status = check_path_syntax(name);
-	if (!NT_STATUS_IS_OK(status))
+	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBchkpth);
 		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
@@ -416,8 +428,10 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	if (check_name(name,conn)) {
 		if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)
-			if (!(ok = S_ISDIR(sbuf.st_mode)))
-				errno = ENOTDIR;
+			if (!(ok = S_ISDIR(sbuf.st_mode))) {
+				END_PROFILE(SMBchkpth);
+				return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
+			}
 	}
 
 	if (!ok) {
@@ -435,13 +449,18 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			 * if the path is invalid.
 			 */
 			if (bad_path) {
+				END_PROFILE(SMBchkpth);
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			} else {
+				END_PROFILE(SMBchkpth);
 				return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			}
-		} else if (errno == ENOTDIR)
+		} else if (errno == ENOTDIR) {
+			END_PROFILE(SMBchkpth);
 			return ERROR_NT(NT_STATUS_NOT_A_DIRECTORY);
+		}
 
+		END_PROFILE(SMBchkpth);
 		return(UNIXERROR(ERRDOS,ERRbadpath));
 	}
 
@@ -468,10 +487,16 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	time_t mtime=0;
 	BOOL bad_path = False;
 	char *p;
+	NTSTATUS status;
+
 	START_PROFILE(SMBgetatr);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_pull_buf(inbuf, fname, p, sizeof(fname), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, fname, p, sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBgetatr);
+		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
@@ -537,11 +562,17 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	char *p;
+	NTSTATUS status;
 
 	START_PROFILE(SMBsetatr);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_pull_buf(inbuf, fname, p, sizeof(fname), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, fname, p, sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBsetatr);
+		return ERROR_NT(status);
+	}
+
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
 
 	mode = SVAL(inbuf,smb_vwv0);
@@ -652,6 +683,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	BOOL expect_close = False;
 	BOOL can_open = True;
 	BOOL bad_path = False;
+	NTSTATUS nt_status;
 	START_PROFILE(SMBsearch);
 
 	*mask = *directory = *fname = 0;
@@ -664,7 +696,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	maxentries = SVAL(inbuf,smb_vwv0); 
 	dirtype = SVAL(inbuf,smb_vwv1);
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, path, p, sizeof(path), STR_TERMINATE,&nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		END_PROFILE(SMBsearch);
+		return ERROR_NT(nt_status);
+	}
 	p++;
 	status_len = SVAL(p, 0);
 	p += 2;
@@ -829,12 +865,17 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	char status[21];
 	int dptr_num= -2;
 	char *p;
+	NTSTATUS err;
 
 	START_PROFILE(SMBfclose);
 
 	outsize = set_message(outbuf,1,0,True);
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, path, p, sizeof(path), STR_TERMINATE,&err);
+	if (!NT_STATUS_IS_OK(err)) {
+		END_PROFILE(SMBfclose);
+		return ERROR_NT(err);
+	}
 	p++;
 	status_len = SVAL(p,0);
 	p += 2;
@@ -877,11 +918,16 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	NTSTATUS status;
 	START_PROFILE(SMBopen);
  
 	share_mode = SVAL(inbuf,smb_vwv0);
 
-	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), STR_TERMINATE);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopen);
+		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -954,6 +1000,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	int smb_action = 0;
 	BOOL bad_path = False;
 	files_struct *fsp;
+	NTSTATUS status;
 	START_PROFILE(SMBopenX);
 
 	/* If it's an IPC, pass off the pipe handler. */
@@ -968,7 +1015,11 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopenX);
+		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1074,12 +1125,17 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
 	START_PROFILE(SMBcreate);
  
 	com = SVAL(inbuf,smb_com);
 
 	createmode = SVAL(inbuf,smb_vwv0);
-	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), STR_TERMINATE);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcreate);
+		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1139,11 +1195,16 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	int tmpfd;
 	SMB_STRUCT_STAT sbuf;
 	char *p, *s;
+	NTSTATUS status;
 
 	START_PROFILE(SMBctemp);
 
 	createmode = SVAL(inbuf,smb_vwv0);
-	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), STR_TERMINATE);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBctemp);
+		return ERROR_NT(status);
+	}
 	pstrcat(fname,"\\TMXXXXXX");
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
@@ -1235,6 +1296,7 @@ static NTSTATUS can_rename(char *fname,connection_struct *conn, SMB_STRUCT_STAT 
 			ret = NT_STATUS_SHARING_VIOLATION;
 		unix_ERR_class = 0;
 		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
 		return ret;
 	}
 	close_file(fsp,False);
@@ -1423,12 +1485,12 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	dirtype = SVAL(inbuf,smb_vwv0);
 	
-	srvstr_pull_buf(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE);
-	
-	status = check_path_syntax(name);
-	if (!NT_STATUS_IS_OK(status))
+	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBunlink);
 		return ERROR_NT(status);
-
+	}
+	
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
@@ -1505,8 +1567,13 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 	if (nread > 0) {
 		ret = read_file(fsp,outbuf+4,startpos,nread);
+#if 0 /* mincount appears to be ignored in a W2K server. JRA. */
 		if (ret < mincount)
 			ret = 0;
+#else
+		if (ret < nread)
+			ret = 0;
+#endif
 	}
 
 	_smb_setlen(outbuf,ret);
@@ -1606,7 +1673,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
-	maxcount = MAX(mincount,maxcount);
 
 	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
 		SMB_OFF_T size = fsp->size;
@@ -1626,8 +1692,10 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 			nread = MIN(maxcount,(size - startpos));	  
 	}
 
+#if 0 /* mincount appears to be ignored in a W2K server. JRA. */
 	if (nread < mincount)
 		nread = 0;
+#endif
   
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
@@ -1652,6 +1720,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	size_t numtoread;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	BOOL my_lock_ctx = False;
 	START_PROFILE(SMBlockread);
 
 	CHECK_FSP(fsp,conn);
@@ -1671,13 +1740,21 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * protocol request that predates the read/write lock concept. 
 	 * Thus instead of asking for a read lock here we need to ask
 	 * for a write lock. JRA.
+	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 	
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), 
-			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK);
+			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &my_lock_ctx);
 
 	if (NT_STATUS_V(status)) {
-		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+#if 0
+		/*
+		 * We used to make lockread a blocking lock. It turns out
+		 * that this isn't on W2k. Found by the Samba 4 RAW-READ torture
+		 * tester. JRA.
+		 */
+
+		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -1689,10 +1766,21 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 				return -1;
 			}
 		}
+#endif
 		END_PROFILE(SMBlockread);
 		return ERROR_NT(status);
 	}
 
+	/*
+	 * However the requested READ size IS affected by max_recv. Insanity.... JRA.
+	 */
+
+	if (numtoread > max_recv) {
+		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u). \
+Returning short read of maximum allowed for compatibility with Windows 2000.\n",
+			(unsigned int)numtoread, (unsigned int)max_recv ));
+		numtoread = MIN(numtoread,max_recv);
+	}
 	nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
@@ -1734,6 +1822,16 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 
 	outsize = set_message(outbuf,5,3,True);
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
+	/*
+	 * The requested read size cannot be greater than max_recv. JRA.
+	 */
+	if (numtoread > max_recv) {
+		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u). \
+Returning short read of maximum allowed for compatibility with Windows 2000.\n",
+			(unsigned int)numtoread, (unsigned int)max_recv ));
+		numtoread = MIN(numtoread,max_recv);
+	}
+
 	data = smb_buf(outbuf) + 3;
   
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
@@ -1801,6 +1899,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		 * correct amount of data).
 		 */
 
+		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
@@ -1839,6 +1938,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
+	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,nread);
 	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 	SSVAL(smb_buf(outbuf),-2,nread);
@@ -1931,7 +2031,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	START_PROFILE(SMBwritebraw);
 
 	if (srv_is_signing_active()) {
-		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+		exit_server("reply_writebraw: SMB signing is active - raw reads/writes are disallowed.");
 	}
 
 	CHECK_FSP(fsp,conn);
@@ -2059,7 +2159,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	size_t numtowrite;
 	SMB_OFF_T startpos;
 	char *data;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int outsize = 0;
 	START_PROFILE(SMBwriteunlock);
@@ -2071,7 +2171,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
 		      WRITE_LOCK,False)) {
 		END_PROFILE(SMBwriteunlock);
 		return ERROR_DOS(ERRDOS,ERRlock);
@@ -2093,11 +2193,13 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
-	status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
-			   (SMB_BIG_UINT)startpos);
-	if (NT_STATUS_V(status)) {
-		END_PROFILE(SMBwriteunlock);
-		return ERROR_NT(status);
+	if (numtowrite) {
+		status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
+				   (SMB_BIG_UINT)startpos);
+		if (NT_STATUS_V(status)) {
+			END_PROFILE(SMBwriteunlock);
+			return ERROR_NT(status);
+		}
 	}
 	
 	outsize = set_message(outbuf,1,0,True);
@@ -2520,7 +2622,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
 		END_PROFILE(SMBwriteclose);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2529,7 +2631,16 @@ int reply_writeclose(connection_struct *conn,
 
 	set_filetime(conn, fsp->fsp_name,mtime);
   
-	close_err = close_file(fsp,True);
+	/*
+	 * More insanity. W2K only closes the file if writelen > 0.
+	 * JRA.
+	 */
+
+	if (numtowrite) {
+		DEBUG(3,("reply_writeclose: zero length write doesn't close file %s\n",
+			fsp->fsp_name ));
+		close_err = close_file(fsp,True);
+	}
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
 		 fsp->fnum, (int)numtowrite, (int)nwritten,
@@ -2564,6 +2675,8 @@ int reply_lock(connection_struct *conn,
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	BOOL my_lock_ctx = False;
+
 	START_PROFILE(SMBlock);
 
 	CHECK_FSP(fsp,conn);
@@ -2576,9 +2689,11 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK);
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
 	if (NT_STATUS_V(status)) {
-		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+#if 0
+		/* Tests using Samba4 against W2K show this call never creates a blocking lock. */
+		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -2589,6 +2704,7 @@ int reply_lock(connection_struct *conn,
 				return -1;
 			}
 		}
+#endif
 		END_PROFILE(SMBlock);
 		return ERROR_NT(status);
 	}
@@ -2921,13 +3037,19 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	START_PROFILE(SMBmkdir);
  
-	srvstr_pull_buf(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE);
+	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmkdir);
+		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
 	status = mkdir_internal(conn, directory);
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmkdir);
 		return ERROR_NT(status);
+	}
 
 	outsize = set_message(outbuf,0,0,True);
 
@@ -3082,9 +3204,14 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	BOOL ok = False;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
 	START_PROFILE(SMBrmdir);
 
-	srvstr_pull_buf(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE);
+	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBrmdir);
+		return ERROR_NT(status);
+	}
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
@@ -3579,9 +3706,17 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	START_PROFILE(SMBmv);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_pull_buf(inbuf, name, p, sizeof(name), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmv);
+		return ERROR_NT(status);
+	}
 	p++;
-	p += srvstr_pull_buf(inbuf, newname, p, sizeof(newname), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmv);
+		return ERROR_NT(status);
+	}
 	
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
@@ -3590,6 +3725,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	
 	status = rename_internals(conn, name, newname, False);
 	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
 	}
 
@@ -3707,14 +3843,23 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	BOOL bad_path2 = False;
 	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
+	NTSTATUS status;
 
 	START_PROFILE(SMBcopy);
 
 	*directory = *mask = 0;
 
 	p = smb_buf(inbuf);
-	p += srvstr_pull_buf(inbuf, name, p, sizeof(name), STR_TERMINATE);
-	p += srvstr_pull_buf(inbuf, newname, p, sizeof(newname), STR_TERMINATE);
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcopy);
+		return ERROR_NT(status);
+	}
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcopy);
+		return ERROR_NT(status);
+	}
    
 	DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
    
@@ -3860,6 +4005,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	int outsize = 0;
 	BOOL ok = False;
 	pstring newdir;
+	NTSTATUS status;
 
 	START_PROFILE(pathworks_setdir);
   
@@ -3869,7 +4015,11 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_pull_buf(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), STR_TERMINATE);
+	srvstr_get_path(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(pathworks_setdir);
+		return ERROR_NT(status);
+	}
   
 	if (strlen(newdir) == 0) {
 		ok = True;
@@ -4044,6 +4194,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	char *data;
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 	BOOL err;
+	BOOL my_lock_ctx = False;
 	NTSTATUS status;
 
 	START_PROFILE(SMBlockingX);
@@ -4164,9 +4315,9 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			fsp->fsp_name, (int)lock_timeout ));
 		
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
+				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
 		if (NT_STATUS_V(status)) {
-			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
 				/*
 				 * A blocking lock was requested. Package up
 				 * this smb into a queued request and push it

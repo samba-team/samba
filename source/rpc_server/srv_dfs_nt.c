@@ -198,7 +198,7 @@ static BOOL init_reply_dfs_info_1(struct junction_map* j, DFS_INFO_1* dfs1, int 
       slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname(), 
 	       j[i].service_name, j[i].volume_name);
       DEBUG(5,("init_reply_dfs_info_1: %d) initing entrypath: %s\n",i,str));
-      init_unistr2(&dfs1[i].entrypath,str,strlen(str)+1);
+      init_unistr2(&dfs1[i].entrypath,str,UNI_STR_TERMINATE);
     }
   return True;
 }
@@ -212,7 +212,7 @@ static BOOL init_reply_dfs_info_2(struct junction_map* j, DFS_INFO_2* dfs2, int 
       dfs2[i].ptr_entrypath = 1;
       slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname(),
 	       j[i].service_name, j[i].volume_name);
-      init_unistr2(&dfs2[i].entrypath, str, strlen(str)+1);
+      init_unistr2(&dfs2[i].entrypath, str, UNI_STR_TERMINATE);
       dfs2[i].ptr_comment = 0;
       dfs2[i].state = 1; /* set up state of dfs junction as OK */
       dfs2[i].num_storages = j[i].referral_count;
@@ -234,9 +234,9 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
 	      slprintf(str, sizeof(pstring)-1, "\\\\%s\\%s\\%s", global_myname(),
 		       j[i].service_name, j[i].volume_name);
 
-      init_unistr2(&dfs3[i].entrypath, str, strlen(str)+1);
+      init_unistr2(&dfs3[i].entrypath, str, UNI_STR_TERMINATE);
       dfs3[i].ptr_comment = 1;
-      init_unistr2(&dfs3[i].comment, "", 1); 
+      init_unistr2(&dfs3[i].comment, "", UNI_STR_TERMINATE);
       dfs3[i].state = 1;
       dfs3[i].num_storages = dfs3[i].num_storage_infos = j[i].referral_count;
       dfs3[i].ptr_storages = 1;
@@ -267,8 +267,8 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
 	  *p = '\0';
 	  DEBUG(5,("storage %d: %s.%s\n",ii,path,p+1));
 	  stor->state = 2; /* set all storages as ONLINE */
-	  init_unistr2(&stor->servername, path, strlen(path)+1);
-	  init_unistr2(&stor->sharename,  p+1, strlen(p+1)+1);
+	  init_unistr2(&stor->servername, path, UNI_STR_TERMINATE);
+	  init_unistr2(&stor->sharename,  p+1, UNI_STR_TERMINATE);
 	  stor->ptr_servername = stor->ptr_sharename = 1;
 	}
     }

@@ -467,7 +467,7 @@ static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;
@@ -510,7 +510,7 @@ static NTSTATUS samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 4, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;
@@ -549,7 +549,7 @@ static NTSTATUS samr_make_grp_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;
@@ -588,7 +588,7 @@ static NTSTATUS samr_make_ali_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, sd_size)) == NULL)
+	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;
@@ -719,7 +719,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	for (i = 0; i < num_entries; i++) {
 		pwd = &disp_user_info[i+start_idx];
 		temp_name = pdb_get_username(pwd);
-		init_unistr2(&uni_temp_name, temp_name, strlen(temp_name)+1);
+		init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
 		user_sid = pdb_get_user_sid(pwd);
 
 		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
@@ -731,7 +731,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		init_sam_entry(&sam[i], uni_temp_name.uni_str_len, user_rid);
+		init_sam_entry(&sam[i], &uni_temp_name, user_rid);
 		copy_unistr2(&uni_name[i], &uni_temp_name);
 	}
 
@@ -865,10 +865,8 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
 		/*
 		 * JRA. I think this should include the null. TNG does not.
 		 */
-		int len = strlen(grp[i].name)+1;
-
-		init_sam_entry(&sam[i], len, grp[i].rid);
-		init_unistr2(&uni_name[i], grp[i].name, len);
+		init_unistr2(&uni_name[i], grp[i].name, UNI_STR_TERMINATE);
+		init_sam_entry(&sam[i], &uni_name[i], grp[i].rid);
 	}
 
 	*sam_pp = sam;
@@ -1580,10 +1578,9 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 	}
 
 	for (i = 0; i < num_names; i++) {
-		int len = names[i] != NULL ? strlen(names[i]) : 0;
-		DEBUG(10, ("names[%d]:%s\n", i, names[i]));
-		init_uni_hdr(&hdr_name[i], len);
-		init_unistr2(&uni_name[i], names[i], len);
+		DEBUG(10, ("names[%d]:%s\n", i, names[i] ? names[i] : ""));
+		init_unistr2(&uni_name[i], names[i], UNI_FLAGS_NONE);
+		init_uni_hdr(&hdr_name[i], &uni_name[i]);
 	}
 
 	*pp_uni_name = uni_name;
@@ -2570,10 +2567,8 @@ static BOOL make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
 		return False;
 
 	for (i = 0; i < num_sam_entries; i++) {
-		int len = doms[i] != NULL ? strlen(doms[i]) : 0;
-
-		init_sam_entry(&sam[i], len, 0);
-		init_unistr2(&uni_name[i], doms[i], len);
+		init_unistr2(&uni_name[i], doms[i], UNI_FLAGS_NONE);
+		init_sam_entry(&sam[i], &uni_name[i], 0);
 	}
 
 	*pp_sam = sam;

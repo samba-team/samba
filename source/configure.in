@@ -166,6 +166,7 @@ AC_SUBST(EXTRA_ALL_TARGETS)
 AC_ARG_ENABLE(debug, 
 [  --enable-debug          Turn on compiler debugging information (default=no)],
     [if eval "test x$enable_debug = xyes"; then
+        echo "DEBUGGING TURNED ON!!!!"
 	CFLAGS="${CFLAGS} -g"
     fi])
 
@@ -192,10 +193,20 @@ then
 fi
 
 dnl Checks for programs.
+
+##
+## for some reason this macro resets the CFLAGS
+## so save and restore
+##
+OLD_CFLAGS=${CFLAGS}
 AC_PROG_CC
+CFLAGS=${OLD_CFLAGS}
+
 AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PATH_PROG(PERL, perl)
+
+AC_CHECK_TOOL(AR, ar)
 
 # compile with optimization and without debugging by default, but
 # allow people to set their own preference.
@@ -480,7 +491,7 @@ main() {
        /* Ensure this is kernel 2.4 or higher */
 
        uname(&uts);
-       release = uts.release;
+       release = strdup(uts.release);
        major = atoi(strsep(&release, "."));
        minor = atoi(strsep(&release, "."));
 
@@ -1686,7 +1697,7 @@ done
 if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
     AC_MSG_WARN([Sufficient support for iconv function was not found. 
     Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
-   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,"CP850",[Default dos charset name])
+   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,"ASCII",[Default dos charset name])
    AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,"ASCII",[Default display charset name])
    AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,"UTF8",[Default unix charset name])
 fi
@@ -2684,12 +2695,12 @@ AC_ARG_WITH(expsam,
     case "$i" in
     xml)
       ## pdb_xml
-      AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
+	  AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[AC_MSG_ERROR([Can't find XML libraries while XML support is requested])])
       CFLAGS="$CFLAGS $XML_CFLAGS"
       ;;
     mysql)
       ## pdb_mysql
-      AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[])
+	  AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[AC_MSG_ERROR([Can't find MySQL libraries while MySQL support is requested])])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
       ;;
     no)
@@ -3072,7 +3083,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4A 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4A=yes,samba_cv_HAVE_QUOTACTL_4A=no,samba_cv_HAVE_QUOTACTL_4A=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;AC_DEFINE(HAVE_QUOTACTL_4A,1,[Whether long quotactl(int cmd, char *special, qid_t id, caddr_t addr) is available])
@@ -3085,7 +3096,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4B 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     echo "int quotactl(const char *path, int cmd, int id, char *addr) is not reworked for the new sys_quota api"
@@ -3099,7 +3110,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_3 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_3=yes,samba_cv_HAVE_QUOTACTL_3=no,samba_cv_HAVE_QUOTACTL_3=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
     echo "CRAY int quotactl (char *spec, int request, char *arg) is NOT reworked for the sys_quota api"
@@ -4096,7 +4107,7 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB,
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
-SMB_SUBSYSTEM(PDB,passdb/pdb_interface.c)
+SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
@@ -4108,16 +4119,16 @@ SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
-SMB_SUBSYSTEM(RPC,smbd/server.c)
+SMB_SUBSYSTEM(RPC,smbd/server.o)
 
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
-SMB_SUBSYSTEM(IDMAP,sam/idmap.c)
+SMB_SUBSYSTEM(IDMAP,sam/idmap.o)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_CP437, modules/CP437.o, "bin/CP437.$SHLIBEXT", CHARSET)
-SMB_SUBSYSTEM(CHARSET,lib/iconv.c)
+SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 
 SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
@@ -4126,7 +4137,7 @@ SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/smbserver.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
-SMB_SUBSYSTEM(AUTH,auth/auth.c)
+SMB_SUBSYSTEM(AUTH,auth/auth.o)
 
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
@@ -4136,7 +4147,7 @@ SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", V
 SMB_MODULE(vfs_default_quota, \$(VFS_DEFAULT_QUOTA_OBJ), "bin/default_quota.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
-SMB_SUBSYSTEM(VFS,smbd/vfs.c)
+SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 

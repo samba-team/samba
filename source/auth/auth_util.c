@@ -644,6 +644,9 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
  *
  * currently this is a hack, as there is no sam implementation that is capable
  * of groups.
+ *
+ * NOTE!! This function will fail if you pass in a winbind user without 
+ * the domain   --jerry
  ******************************************************************************/
 
 static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
@@ -926,8 +929,10 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	   with just 'username'.  This is need for accessing the server
 	   as a trust user that actually maps to a local account */
 
-	if ( !passwd ) 
-		passwd = Get_Pwnam(username);
+	if ( !passwd ) {
+		fstrcpy( dom_user, username );
+		passwd = Get_Pwnam( dom_user );
+	}
 
 	if (passwd == NULL)
 		return NT_STATUS_NO_SUCH_USER;
@@ -935,7 +940,13 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	*uid = passwd->pw_uid;
 	*gid = passwd->pw_gid;
 
-	*found_username = talloc_strdup(mem_ctx, passwd->pw_name);
+	/* This is pointless -- there is no suport for differeing 
+	   unix and windows names.  Make sure to always store the 
+	   one we actuall looked up and succeeded. Have I mentioned
+	   why I hate the 'winbind use default domain' parameter?   
+	                                 --jerry              */
+	   
+	*found_username = talloc_strdup(mem_ctx, dom_user);
 
 	return pdb_init_sam_pw(sam_account, passwd);
 }

@@ -114,7 +114,8 @@ static int include_html(const char *fname)
 	fd = web_open(fname, O_RDONLY, 0);
 
 	if (fd == -1) {
-		d_printf("ERROR: Can't open %s\n", fname);
+		d_printf(_("ERROR: Can't open %s"), fname);
+		d_printf("\n");
 		return 0;
 	}
 
@@ -261,7 +262,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_INTEGER:
-		d_printf("<input type=text size=8 name=\"parm_%s\" value=%d>", make_parm_name(parm->label), *(int *)ptr);
+		d_printf("<input type=text size=8 name=\"parm_%s\" value=\"%d\">", make_parm_name(parm->label), *(int *)ptr);
 		d_printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
 			_("Set Default"), make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
@@ -404,7 +405,8 @@ static int save_reload(int snum)
 
 	f = sys_fopen(dyn_CONFIGFILE,"w");
 	if (!f) {
-		d_printf("failed to open %s for writing\n", dyn_CONFIGFILE);
+		d_printf(_("failed to open %s for writing"), dyn_CONFIGFILE);
+		d_printf("\n");
 		return 0;
 	}
 
@@ -426,7 +428,8 @@ static int save_reload(int snum)
 	lp_killunused(NULL);
 
 	if (!load_config(False)) {
-                d_printf("Can't reload %s\n", dyn_CONFIGFILE);
+                d_printf(_("Can't reload %s"), dyn_CONFIGFILE);
+		d_printf("\n");
                 return 0;
         }
 	iNumNonAutoPrintServices = lp_numservices();
@@ -495,7 +498,8 @@ static void show_main_buttons(void)
 	char *p;
 	
 	if ((p = cgi_user_name()) && strcmp(p, "root")) {
-		d_printf(_("Logged in as <b>%s</b><p>\n"), p);
+		d_printf(_("Logged in as <b>%s</b>"), p);
+		d_printf("<p>\n");
 	}
 
 	image_link(_("Home"), "", "images/home.gif");
@@ -519,10 +523,10 @@ static void show_main_buttons(void)
  ****************************************************************************/
 static void ViewModeBoxes(int mode)
 {
-	d_printf("<p>%s\n", _("Current View Is:&nbsp \n"));
-	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>Basic\n", (mode == 0) ? "checked" : "");
-	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>Advanced\n", (mode == 1) ? "checked" : "");
-	d_printf("<br>%s\n", _("Change View To:&nbsp"));
+	d_printf("<p>%s:&nbsp;\n", _("Current View Is"));
+	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>%s\n", ((mode == 0) ? "checked" : ""), _("Basic"));
+	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>%s\n", ((mode == 1) ? "checked" : ""), _("Advanced"));
+	d_printf("<br>%s:&nbsp;\n", _("Change View To"));
 	d_printf("<input type=submit name=\"BasicMode\" value=\"%s\">\n", _("Basic"));
 	d_printf("<input type=submit name=\"AdvMode\" value=\"%s\">\n", _("Advanced"));
 	d_printf("</p><br>\n");
@@ -572,7 +576,7 @@ static void wizard_params_page(void)
 	/* Here we first set and commit all the parameters that were selected
  	   in the previous screen. */
 
-	d_printf("<H2>Wizard Parameter Edit Page</H2>\n");
+	d_printf("<H2>%s</H2>\n", _("Wizard Parameter Edit Page"));
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
@@ -601,7 +605,7 @@ static void rewritecfg_file(void)
 {
 	commit_parameters(GLOBAL_SECTION_SNUM);
 	save_reload(0);
-	d_printf("<H2>Note: smb.conf %s</H2>\n", _("file has been read and rewritten"));
+	d_printf("<H2>%s</H2>\n", _("Note: smb.conf file has been read and rewritten"));
 }
 
 /****************************************************************************
@@ -709,36 +713,37 @@ static void wizard_page(void)
 	role = lp_server_role();
 	
 	/* Here we go ... */
-	d_printf("<H2>Samba Configuration Wizard</H2>\n");
+	d_printf("<H2>%s</H2>\n", _("Samba Configuration Wizard"));
 	d_printf("<form method=post action=wizard>\n");
 
 	if (have_write_access) {
-		d_printf(_("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments.\n"));
-		d_printf(_("The same will happen if you press the commit button."));
-		d_printf("<br><br>");
+		d_printf("%s\n", _("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments."));
+		d_printf("%s", _("The same will happen if you press the commit button."));
+		d_printf("<br><br>\n");
 		d_printf("<center>");
-		d_printf("<input type=submit name=\"Rewrite\" value=%s> &nbsp;&nbsp;",_("Rewrite smb.conf file"));
-		d_printf("<input type=submit name=\"Commit\" value=%s> &nbsp;&nbsp;",_("Commit"));
-		d_printf("<input type=submit name=\"GetWizardParams\" value=%s>", _("Edit Parameter Values"));
-		d_printf("</center>");
+		d_printf("<input type=submit name=\"Rewrite\" value=\"%s\"> &nbsp;&nbsp;",_("Rewrite smb.conf file"));
+		d_printf("<input type=submit name=\"Commit\" value=\"%s\"> &nbsp;&nbsp;",_("Commit"));
+		d_printf("<input type=submit name=\"GetWizardParams\" value=\"%s\">", _("Edit Parameter Values"));
+		d_printf("</center>\n");
 	}
 
 	d_printf("<hr>");
 	d_printf("<center><table border=0>");
-	d_printf("<tr><td><b>%s</b></td>\n", "Server Type:&nbsp;");
-	d_printf("<td><input type=radio name=\"ServerType\" value=0 %s> Stand Alone&nbsp;</td>", (role == ROLE_STANDALONE) ? "checked" : "");
-	d_printf("<td><input type=radio name=\"ServerType\" value=1 %s> Domain Member&nbsp;</td>", (role == ROLE_DOMAIN_MEMBER) ? "checked" : ""); 
-	d_printf("<td><input type=radio name=\"ServerType\" value=2 %s> Domain Controller&nbsp;</td>", (role == ROLE_DOMAIN_PDC) ? "checked" : "");
-	d_printf("</tr>");
+	d_printf("<tr><td><b>%s:&nbsp;</b></td>\n", _("Server Type"));
+	d_printf("<td><input type=radio name=\"ServerType\" value=\"0\" %s> %s&nbsp;</td>", ((role == ROLE_STANDALONE) ? "checked" : ""), _("Stand Alone"));
+	d_printf("<td><input type=radio name=\"ServerType\" value=\"1\" %s> %s&nbsp;</td>", ((role == ROLE_DOMAIN_MEMBER) ? "checked" : ""), _("Domain Member")); 
+	d_printf("<td><input type=radio name=\"ServerType\" value=\"2\" %s> %s&nbsp;</td>", ((role == ROLE_DOMAIN_PDC) ? "checked" : ""), _("Domain Controller"));
+	d_printf("</tr>\n");
 	if (role == ROLE_DOMAIN_BDC) {
-		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Unusual Type in smb.conf - Please Select New Mode</font></td></tr>");
+		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">%s</font></td></tr>\n", _("Unusual Type in smb.conf - Please Select New Mode"));
 	}
-	d_printf("<tr><td><b>%s</b></td>\n", "Configure WINS As:&nbsp;");
-	d_printf("<td><input type=radio name=\"WINSType\" value=0 %s> Not Used&nbsp;</td>", (winstype == 0) ? "checked" : "");
-	d_printf("<td><input type=radio name=\"WINSType\" value=1 %s> Server for client use&nbsp;</td>", (winstype == 1) ? "checked" : "");
-	d_printf("<td><input type=radio name=\"WINSType\" value=2 %s> Client of another WINS server&nbsp;</td>", (winstype == 2) ? "checked" : "");
-	d_printf("<tr><td></td><td></td><td></td><td>Remote WINS Server&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"");
-	
+	d_printf("<tr><td><b>%s:&nbsp;</b></td>\n", _("Configure WINS As"));
+	d_printf("<td><input type=radio name=\"WINSType\" value=\"0\" %s> %s&nbsp;</td>", ((winstype == 0) ? "checked" : ""), _("Not Used"));
+	d_printf("<td><input type=radio name=\"WINSType\" value=\"1\" %s> %s&nbsp;</td>", ((winstype == 1) ? "checked" : ""), _("Server for client use"));
+	d_printf("<td><input type=radio name=\"WINSType\" value=\"2\" %s> %s&nbsp;</td>", ((winstype == 2) ? "checked" : ""), _("Client of another WINS server"));
+	d_printf("</tr>\n");
+	d_printf("<tr><td></td><td></td><td></td><td>%s&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"", _("Remote WINS Server"));
+
 	/* Print out the list of wins servers */
 	if(lp_wins_server_list()) {
 		int i;
@@ -746,28 +751,27 @@ static void wizard_page(void)
 		for(i = 0; wins_servers[i]; i++) d_printf("%s ", wins_servers[i]);
 	}
 	
-	d_printf("\"></td></tr>");
+	d_printf("\"></td></tr>\n");
 	if (winstype == 3) {
-		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Error: WINS Server Mode and WINS Support both set in smb.conf</font></td></tr>");
-		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Please Select desired WINS mode above.</font></td></tr>");
+		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">%s</font></td></tr>\n", _("Error: WINS Server Mode and WINS Support both set in smb.conf"));
+		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">%s</font></td></tr>\n", _("Please Select desired WINS mode above."));
 	}
-	d_printf("</tr>");
-	d_printf("<tr><td><b>%s</b></td>\n","Expose Home Directories:&nbsp;");
-	d_printf("<td><input type=radio name=\"HomeExpo\" value=1 %s> Yes</td>", (have_home == -1) ? "" : "checked ");
-	d_printf("<td><input type=radio name=\"HomeExpo\" value=0 %s> No</td>", (have_home == -1 ) ? "checked" : "");
-	d_printf("<td></td></tr>");
+	d_printf("<tr><td><b>%s:&nbsp;</b></td>\n", _("Expose Home Directories"));
+	d_printf("<td><input type=radio name=\"HomeExpo\" value=\"1\" %s> Yes</td>", (have_home == -1) ? "" : "checked ");
+	d_printf("<td><input type=radio name=\"HomeExpo\" value=\"0\" %s> No</td>", (have_home == -1 ) ? "checked" : "");
+	d_printf("<td></td></tr>\n");
 	
 	/* Enable this when we are ready ....
-	 * d_printf("<tr><td><b>%s</b></td>\n","Is Print Server:&nbsp;");
-	 * d_printf("<td><input type=radio name=\"PtrSvr\" value=1 %s> Yes</td>");
-	 * d_printf("<td><input type=radio name=\"PtrSvr\" value=0 %s> No</td>");
-	 * d_printf("<td></td></tr>");
+	 * d_printf("<tr><td><b>%s:&nbsp;</b></td>\n", _("Is Print Server"));
+	 * d_printf("<td><input type=radio name=\"PtrSvr\" value=\"1\" %s> Yes</td>");
+	 * d_printf("<td><input type=radio name=\"PtrSvr\" value=\"0\" %s> No</td>");
+	 * d_printf("<td></td></tr>\n");
 	 */
 	
 	d_printf("</table></center>");
 	d_printf("<hr>");
 
-	d_printf(_("The above configuration options will set multiple parameters and will generally assist with rapid Samba deployment.\n"));
+	d_printf("%s\n", _("The above configuration options will set multiple parameters and will generally assist with rapid Samba deployment."));
 	d_printf("</form>\n");
 }
 
@@ -780,7 +784,7 @@ static void globals_page(void)
 	unsigned int parm_filter = FLAG_BASIC;
 	int mode = 0;
 
-	d_printf("<H2>%s</H2>\n", _("Global Variables"));
+	d_printf("<H2>%s</H2>\n", _("Global Parameters"));
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
@@ -937,7 +941,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 	pstring msg_str;
 
 	if (demo_mode) {
-		d_printf("%s<p>", _("password change in demo mode rejected\n"));
+		d_printf("%s\n<p>", _("password change in demo mode rejected"));
 		return False;
 	}
 	
@@ -950,7 +954,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 	}
 
 	if(!initialize_password_db(True)) {
-		d_printf("Can't setup password database vectors.\n<p>");
+		d_printf("%s\n<p>", _("Can't setup password database vectors."));
 		return False;
 	}
 	
@@ -976,7 +980,7 @@ static void chg_passwd(void)
 
 	/* Make sure users name has been specified */
 	if (strlen(cgi_variable(SWAT_USER)) == 0) {
-		d_printf("<p>%s", _(" Must specify \"User Name\" \n"));
+		d_printf("<p>%s\n", _(" Must specify \"User Name\" "));
 		return;
 	}
 
@@ -992,26 +996,26 @@ static void chg_passwd(void)
 		 */
 		if (((!am_root()) && (strlen( cgi_variable(OLD_PSWD)) <= 0)) ||
 		    ((cgi_variable(CHG_R_PASSWD_FLAG)) &&  (strlen( cgi_variable(OLD_PSWD)) <= 0))) {
-			d_printf("<p>%s", _(" Must specify \"Old Password\" \n"));
+			d_printf("<p>%s\n", _(" Must specify \"Old Password\" "));
 			return;
 		}
 
 		/* If changing a users password on a remote hosts we have to know what host */
 		if ((cgi_variable(CHG_R_PASSWD_FLAG)) && (strlen( cgi_variable(RHOST)) <= 0)) {
-			d_printf("<p>%s", _(" Must specify \"Remote Machine\" \n"));
+			d_printf("<p>%s\n", _(" Must specify \"Remote Machine\" "));
 			return;
 		}
 
 		/* Make sure new passwords have been specified */
 		if ((strlen( cgi_variable(NEW_PSWD)) <= 0) ||
 		    (strlen( cgi_variable(NEW2_PSWD)) <= 0)) {
-			d_printf("<p>%s", _(" Must specify \"New, and Re-typed Passwords\" \n"));
+			d_printf("<p>%s\n", _(" Must specify \"New, and Re-typed Passwords\" "));
 			return;
 		}
 
 		/* Make sure new passwords was typed correctly twice */
 		if (strcmp(cgi_variable(NEW_PSWD), cgi_variable(NEW2_PSWD)) != 0) {
-			d_printf("<p>%s", _(" Re-typed password didn't match new password\n"));
+			d_printf("<p>%s\n", _(" Re-typed password didn't match new password "));
 			return;
 		}
 	}
@@ -1041,9 +1045,11 @@ static void chg_passwd(void)
 	if(local_flags == 0) {
 		d_printf("<p>");
 		if (rslt == True) {
-			d_printf(_(" The passwd for '%s' has been changed. \n"), cgi_variable(SWAT_USER));
+			d_printf(_(" The passwd for '%s' has been changed."), cgi_variable(SWAT_USER));
+			d_printf("\n");
 		} else {
-			d_printf(_(" The passwd for '%s' has NOT been changed. \n"), cgi_variable(SWAT_USER));
+			d_printf(_(" The passwd for '%s' has NOT been changed."), cgi_variable(SWAT_USER));
+			d_printf("\n");
 		}
 	}
 	
@@ -1076,15 +1082,15 @@ static void passwd_page(void)
 	/* 
 	 * Create all the dialog boxes for data collection
 	 */
-	d_printf("<tr><td>%s</td>\n", _(" User Name : "));
+	d_printf("<tr><td> %s : </td>\n", _("User Name"));
 	d_printf("<td><input type=text size=30 name=%s value=%s></td></tr> \n", SWAT_USER, new_name);
 	if (!am_root()) {
-		d_printf("<tr><td>%s</td>\n", _(" Old Password : "));
+		d_printf("<tr><td> %s : </td>\n", _("Old Password"));
 		d_printf("<td><input type=password size=30 name=%s></td></tr> \n",OLD_PSWD);
 	}
-	d_printf("<tr><td>%s</td>\n", _(" New Password : "));
+	d_printf("<tr><td> %s : </td>\n", _("New Password"));
 	d_printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
-	d_printf("<tr><td>%s</td>\n", _(" Re-type New Password : "));
+	d_printf("<tr><td> %s : </td>\n", _("Re-type New Password"));
 	d_printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
 	d_printf("</table>\n");
 
@@ -1123,15 +1129,15 @@ static void passwd_page(void)
 	/* 
 	 * Create all the dialog boxes for data collection
 	 */
-	d_printf("<tr><td>%s</td>\n", _(" User Name : "));
+	d_printf("<tr><td> %s : </td>\n", _("User Name"));
 	d_printf("<td><input type=text size=30 name=%s value=%s></td></tr>\n",SWAT_USER, new_name);
-	d_printf("<tr><td>%s</td>\n", _(" Old Password : "));
+	d_printf("<tr><td> %s : </td>\n", _("Old Password"));
 	d_printf("<td><input type=password size=30 name=%s></td></tr>\n",OLD_PSWD);
-	d_printf("<tr><td>%s</td>\n", _(" New Password : "));
+	d_printf("<tr><td> %s : </td>\n", _("New Password"));
 	d_printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
-	d_printf("<tr><td>%s</td>\n", _(" Re-type New Password : "));
+	d_printf("<tr><td> %s : </td>\n", _("Re-type New Password"));
 	d_printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
-	d_printf("<tr><td>%s</td>\n", _(" Remote Machine : "));
+	d_printf("<tr><td> %s : </td>\n", _("Remote Machine"));
 	d_printf("<td><input type=text size=30 name=%s></td></tr>\n",RHOST);
 
 	d_printf("</table>");
@@ -1176,7 +1182,7 @@ static void printers_page(void)
         d_printf(_("Printer names marked with [*] in the Choose Printer drop-down box "));
         d_printf(_("are autoloaded printers from "));
         d_printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">%s</A>\n", _("Printcap Name"));
-        d_printf(_("Attempting to delete these printers from SWAT will have no effect.\n"));
+        d_printf("%s\n", _("Attempting to delete these printers from SWAT will have no effect."));
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -1222,8 +1228,8 @@ static void printers_page(void)
 			break;
 	}
 	d_printf("<table>\n");
-	d_printf("<tr><td><input type=submit name=selectshare value=\"%s\"></td>\n", _("Choose Printer"));
-	d_printf("<td><select name=share>\n");
+	d_printf("<tr><td><input type=submit name=\"selectshare\" value=\"%s\"></td>\n", _("Choose Printer"));
+	d_printf("<td><select name=\"share\">\n");
 	if (snum < 0 || !lp_print_ok(snum))
 		d_printf("<option value=\" \"> \n");
 	for (i=0;i<lp_numservices();i++) {
@@ -1248,8 +1254,8 @@ static void printers_page(void)
 
 	if (have_write_access) {
 		d_printf("<table>\n");
-		d_printf("<tr><td><input type=submit name=createshare value=\"%s\"></td>\n", _("Create Printer"));
-		d_printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+		d_printf("<tr><td><input type=submit name=\"createshare\" value=\"%s\"></td>\n", _("Create Printer"));
+		d_printf("<td><input type=text size=30 name=\"newshare\"></td></tr>\n");
 		d_printf("</table>");
 	}
 

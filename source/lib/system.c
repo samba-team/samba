@@ -693,7 +693,6 @@ int sys_getgroups(int setlen, gid_t *gidset)
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
-#ifdef HAVE_SETGROUPS
 
 /**************************************************************************
  Wrapper for setgroups. Deals with broken (int) case. Automatically used
@@ -702,6 +701,11 @@ int sys_getgroups(int setlen, gid_t *gidset)
 
 int sys_setgroups(int setlen, gid_t *gidset)
 {
+#if !defined(HAVE_SETGROUPS)
+	errno = ENOSYS;
+	return -1;
+#endif /* HAVE_SETGROUPS */
+
 #if !defined(HAVE_BROKEN_GETGROUPS)
 	return setgroups(setlen, gidset);
 #else
@@ -741,8 +745,6 @@ int sys_setgroups(int setlen, gid_t *gidset)
 	return 0 ;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
-
-#endif /* HAVE_SETGROUPS */
 
 /**************************************************************************
  Wrappers for setpwent(), getpwent() and endpwent()

@@ -690,7 +690,7 @@ static void notify_string(struct spoolss_notify_msg *msg,
 	
 	/* The length of the message includes the trailing \0 */
 
-	init_unistr2(&unistr, msg->notify.data, msg->len);
+	init_unistr2(&unistr, msg->notify.data, UNI_STR_TERMINATE);
 
 	data->notify_data.data.length = msg->len * 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, msg->len * 2);
@@ -1803,7 +1803,7 @@ Can't find printer handle we created for printer %s\n", name ));
 		&& (RA_WIN2K == get_remote_arch()) )
 	{
 		DEBUG(10,("_spoolss_open_printer_ex: Enabling LAN/WAN hack for Win2k clients.\n"));
-		usleep( 500000 );
+		sys_usleep( 500000 );
 	}
 
 	return WERR_OK;
@@ -6121,7 +6121,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	 */
 
 	if (!strequal(printer->info_2->comment, old_printer->info_2->comment)) {
-		init_unistr2( &buffer, printer->info_2->comment, strlen(printer->info_2->comment)+1 );
+		init_unistr2( &buffer, printer->info_2->comment, UNI_STR_TERMINATE);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "description",
 			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
@@ -6129,7 +6129,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	}
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
-		init_unistr2( &buffer, printer->info_2->sharename, strlen(printer->info_2->sharename)+1 );
+		init_unistr2( &buffer, printer->info_2->sharename, UNI_STR_TERMINATE);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
 			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shareName",
@@ -6139,7 +6139,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	}
 
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
-		init_unistr2( &buffer, printer->info_2->portname, strlen(printer->info_2->portname)+1 );
+		init_unistr2( &buffer, printer->info_2->portname, UNI_STR_TERMINATE);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "portName",
 			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
@@ -6147,7 +6147,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	}
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location)) {
-		init_unistr2( &buffer, printer->info_2->location, strlen(printer->info_2->location)+1 );
+		init_unistr2( &buffer, printer->info_2->location, UNI_STR_TERMINATE);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "location",
 			REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 
@@ -6157,7 +6157,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	/* here we need to update some more DsSpooler keys */
 	/* uNCName, serverName, shortServerName */
 	
-	init_unistr2( &buffer, global_myname(), strlen(global_myname())+1 );
+	init_unistr2( &buffer, global_myname(), UNI_STR_TERMINATE);
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "serverName",
 		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shortServerName",
@@ -6165,7 +6165,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
                  global_myname(), printer->info_2->sharename );
-	init_unistr2( &buffer, asc_buffer, strlen(asc_buffer)+1 );
+	init_unistr2( &buffer, asc_buffer, UNI_STR_TERMINATE);
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "uNCName",
 		REG_SZ, (uint8*)buffer.buffer, buffer.uni_str_len*2 );
 

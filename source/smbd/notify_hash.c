@@ -41,7 +41,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	SMB_STRUCT_STAT st;
 	pstring full_name;
 	char *p;
-	char *fname;
+	const char *fname;
 	size_t remaining_len;
 	size_t fullname_len;
 	void *dp;
@@ -115,7 +115,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
 			int i;
 			unsigned char tmp_hash[16];
-			mdfour(tmp_hash, (unsigned char *)fname, strlen(fname));
+			mdfour(tmp_hash, (const unsigned char *)fname, strlen(fname));
 			for (i=0;i<16;i++)
 				data->name_hash[i] ^= tmp_hash[i];
 		}
@@ -125,7 +125,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 */
 
 		if (flags & (FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_SECURITY))
-			data->mode_sum = st.st_mode;
+			data->mode_sum += st.st_mode;
 	}
 	
 	CloseDir(dp);

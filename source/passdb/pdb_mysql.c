@@ -49,7 +49,8 @@
 #define CONFIG_UNKNOWN_3_DEFAULT			"unknown_3"
 #define CONFIG_LOGON_DIVS_DEFAULT			"logon_divs"
 #define CONFIG_HOURS_LEN_DEFAULT			"hours_len"
-#define CONFIG_UNKNOWN_5_DEFAULT			"unknown_5"
+#define CONFIG_BAD_PASSWORD_COUNT_DEFAULT		"bad_password_count"
+#define CONFIG_LOGON_COUNT_DEFAULT			"logon_count"
 #define CONFIG_UNKNOWN_6_DEFAULT			"unknown_6"
 #define CONFIG_HOST_DEFAULT				"localhost"
 #define CONFIG_USER_DEFAULT				"samba"
@@ -155,7 +156,7 @@ static const char * config_value_write(pdb_mysql_data * data, const char *name, 
 	if (!v)
 		return NULL;
 
-	swrite = strchr(v, ':');
+	swrite = strrchr(v, ':');
 
 	/* Default to the same field as read field */
 	if (!swrite)
@@ -181,7 +182,7 @@ static const char * config_value_read(pdb_mysql_data * data, const char *name, c
 	if (!v)
 		return "NULL";
 
-	swrite = strchr(v, ':');
+	swrite = strrchr(v, ':');
 
 	/* If no write is specified, there are no problems */
 	if (!swrite) {
@@ -240,14 +241,20 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_unknown_str(u, row[16], PDB_SET);
 	pdb_set_munged_dial(u, row[17], PDB_SET);
 
-	if(row[18])string_to_sid(&sid, row[18]);
-	pdb_set_user_sid(u, &sid, PDB_SET);
-	if(row[19])string_to_sid(&sid, row[19]);
-	pdb_set_group_sid(u, &sid, PDB_SET);
+	if(!row[18] || !string_to_sid(&sid, row[18])) {
+		DEBUG(0,("No user SID retrieved from database!\n"));
+	} else {
+		pdb_set_user_sid(u, &sid, PDB_SET);
+	}
 
-	if (pdb_gethexpwd(row[20], temp), PDB_SET)
+	if(row[19]) {
+		string_to_sid(&sid, row[19]);
+		pdb_set_group_sid(u, &sid, PDB_SET);
+	}
+
+	if (pdb_gethexpwd(row[20], temp))
 		pdb_set_lanman_passwd(u, temp, PDB_SET);
-	if (pdb_gethexpwd(row[21], temp), PDB_SET)
+	if (pdb_gethexpwd(row[21], temp))
 		pdb_set_nt_passwd(u, temp, PDB_SET);
 
 	/* Only use plaintext password storage when lanman and nt are
@@ -259,8 +266,9 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_unknown_3(u, xatol(row[24]), PDB_SET);
 	pdb_set_logon_divs(u, xatol(row[25]), PDB_SET);
 	pdb_set_hours_len(u, xatol(row[26]), PDB_SET);
-	pdb_set_unknown_5(u, xatol(row[27]), PDB_SET);
-	pdb_set_unknown_6(u, xatol(row[28]), PDB_SET);
+	pdb_set_bad_password_count(u, xatol(row[27]), PDB_SET);
+	pdb_set_logon_count(u, xatol(row[28]), PDB_SET);
+	pdb_set_unknown_6(u, xatol(row[29]), PDB_SET);
 
 	return NT_STATUS_OK;
 }
@@ -278,7 +286,7 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	}
 
 	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
@@ -333,8 +341,10 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 							   CONFIG_LOGON_DIVS_DEFAULT),
 			 config_value_read(data, "hours len column",
 							   CONFIG_HOURS_LEN_DEFAULT),
-			 config_value_read(data, "unknown 5 column",
-							   CONFIG_UNKNOWN_5_DEFAULT),
+			 config_value_read(data, "bad password count column",
+							   CONFIG_BAD_PASSWORD_COUNT_DEFAULT),
+			 config_value_read(data, "logon count column",
+							   CONFIG_LOGON_COUNT_DEFAULT),
 			 config_value_read(data, "unknown 6 column",
 							   CONFIG_UNKNOWN_6_DEFAULT),
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT)
@@ -442,7 +452,7 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 	}
 
 	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
@@ -497,8 +507,10 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 							   CONFIG_LOGON_DIVS_DEFAULT),
 			 config_value_read(data, "hours len column",
 							   CONFIG_HOURS_LEN_DEFAULT),
-			 config_value_read(data, "unknown 5 column",
-							   CONFIG_UNKNOWN_5_DEFAULT),
+			 config_value_read(data, "bad password count column",
+							   CONFIG_BAD_PASSWORD_COUNT_DEFAULT),
+			 config_value_read(data, "logon count column",
+							   CONFIG_LOGON_COUNT_DEFAULT),
 			 config_value_read(data, "unknown 6 column",
 							   CONFIG_UNKNOWN_6_DEFAULT),
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT), field,
@@ -645,6 +657,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							 const SAM_ACCOUNT * newpwd, char isupdate)
 {
 	pstring temp;
+	char *field;
 	struct pdb_mysql_data *data;
 	pdb_mysql_query query;
 	fstring sid_str;
@@ -655,6 +668,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 	}
 
 	data = (struct pdb_mysql_data *) methods->private_data;
+
 	if (data == NULL || data->handle == NULL) {
 		DEBUG(0, ("invalid handle!\n"));
 		return NT_STATUS_INVALID_HANDLE;
@@ -872,6 +886,7 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 {
 	NTSTATUS nt_status;
 	struct pdb_mysql_data *data;
+	const char *sid_column, *username_column;
 
 	mysqlsam_debug_level = debug_add_class("mysqlsam");
 	if (mysqlsam_debug_level == -1) {
@@ -879,6 +894,7 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 		DEBUG(0,
 			  ("mysqlsam: Couldn't register custom debugging class!\n"));
 	}
+
 
 	if (!pdb_context) {
 		DEBUG(0, ("invalid pdb_methods specified\n"));
@@ -927,6 +943,14 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 		DEBUG(0, ("Failed to connect to server\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	sid_column = config_value_read(data, "user sid column", CONFIG_USER_SID_DEFAULT);
+	username_column = config_value_read(data, "username column", CONFIG_USERNAME_DEFAULT);
+	if(!strcmp(sid_column,"NULL") || !strcmp(username_column, "NULL")) {
+		DEBUG(0,("Please specify both a valid 'user sid column' and a valid 'username column' in smb.conf\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
 	/* Process correct entry in $HOME/.my.conf */
 	if (!mysql_real_connect(data->handle,
 			config_value(data, "mysql host", CONFIG_HOST_DEFAULT),

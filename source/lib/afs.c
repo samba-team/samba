@@ -154,7 +154,7 @@ BOOL afs_login(connection_struct *conn)
 	cell += 1;
 	strlower_m(cell);
 
-	DEBUG(10, ("Trying to log into AFS for user %s@%s\n",
+	DEBUG(10, ("Trying to log into AFS for user %s@%s\n", 
 		   afs_username, cell));
 
 	if (!secrets_init()) 

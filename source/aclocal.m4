@@ -73,7 +73,7 @@ AC_DEFUN(SMB_SUBSYSTEM,
 	AC_SUBST($1_STATIC)
 	AC_SUBST($1_MODULES)
 	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{$init_static_modules_]translit([$1], [A-Z], [a-z])[}], [Static init functions])
-    	ifelse([$2], , :, [touch $2])
+    	ifelse([$2], , :, [rm -f $2])
 ])
 
 dnl AC_PROG_CC_FLAG(flag)
@@ -179,7 +179,7 @@ AS_IF([test AS_VAR_GET(ac_Lib_ext) = yes],
 		    *-l$1*)
 			;;
 		    *)
-			$2="$$2 -l$1"
+			$2="-l$1 $$2"
 			;;
 		esac])
 		[$6]
