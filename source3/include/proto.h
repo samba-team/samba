@@ -2136,6 +2136,11 @@ BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
 				QUERY_SERVICE_CONFIG *cfg,
 				uint32 *buf_size);
 BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL svc_query_unknown_1b(struct cli_state *cli, uint16 fnum, 
+				const POLICY_HND *pol, uint32 switch_value,
+				uint32 unknown_1,
+				uint32 *num_items,
+				uint32 ***items);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
@@ -3398,7 +3403,7 @@ BOOL make_svc_q_start_service(SVC_Q_START_SERVICE *q_c, POLICY_HND *hnd,
 BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth);
 BOOL svc_io_r_start_service(char *desc,  SVC_R_START_SERVICE *r_s, prs_struct *ps, int depth);
 BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
-				uint32 service_item, uint32 start_item,
+				uint32 service_type, uint32 start_type,
 				uint32 error_control,
 				char* bin_path_name, char* load_order_grp, 
 				uint32 tag_id,
@@ -3406,7 +3411,7 @@ BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
 				char* disp_name);
 BOOL svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth);
 BOOL make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
-				uint32 service_item, uint32 service_state,
+				uint32 service_type, uint32 service_state,
 				uint32 buf_size, uint32 resume_hnd );
 BOOL svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_struct *ps, int depth);
 BOOL make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
@@ -3676,6 +3681,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 void cmd_svc_enum(struct client_info *info, int argc, char *argv[]);
 void cmd_svc_stop(struct client_info *info, int argc, char *argv[]);
 void cmd_svc_start(struct client_info *info, int argc, char *argv[]);
+void cmd_svc_test(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 

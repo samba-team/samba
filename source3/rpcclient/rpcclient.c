@@ -158,6 +158,13 @@ commands[] =
 	},
 
 	{
+		"svctest",
+		cmd_svc_test,
+		"<service> Test Service",
+		{COMPL_SVCLST, COMPL_NONE}
+	},
+
+	{
 		"svcstop",
 		cmd_svc_stop,
 		"<service> Stop Service",
