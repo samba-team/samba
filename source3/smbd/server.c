@@ -887,6 +887,13 @@ static void usage(char *pname)
 	if (!init_change_notify())
 		exit(1);
 
+	/* re-initialise the timezone */
+	TimeInit();
+
+	/* register our message handlers */
+	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	talloc_init_named("dummy!");
+
 	smbd_process();
 	
 	uni_group_cache_shutdown();
