@@ -58,7 +58,9 @@ krb5_error_code recv_priv(krb5_context, krb5_auth_context, int, krb5_data*);
 krb5_error_code send_clear(krb5_context context, int fd, krb5_data data);
 krb5_error_code recv_clear(krb5_context context, int fd, krb5_data *out);
 
-int v4_prop(void *arg, Principal *p);
-int v4_prop_dump(void *arg, const char *file);
+krb5_error_code v5_prop(krb5_context, HDB*, hdb_entry*, void*);
+int mit_prop_dump(void*, const char*);
+int v4_prop(void*, Principal*);
+int v4_prop_dump(void *arg, const char*);
 
 #endif /* __HPROP_H__ */
