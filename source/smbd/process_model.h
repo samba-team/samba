@@ -45,13 +45,13 @@ struct model_ops {
 	void (*accept_rpc_connection)(struct event_context *, struct fd_event *, time_t, uint16_t);
 				
 	/* function to terminate a connection */
-	void (*terminate_connection)(struct server_context *smb, const char *reason);
+	void (*terminate_connection)(struct smbsrv_context *smb, const char *reason);
 
 	/* function to terminate a connection */
 	void (*terminate_rpc_connection)(void *r, const char *reason);
 	
 	/* function to exit server */
-	void (*exit_server)(struct server_context *smb, const char *reason);
+	void (*exit_server)(struct smbsrv_context *smb, const char *reason);
 	
 	/* returns process or thread id */
 	int (*get_id)(struct request_context *req);

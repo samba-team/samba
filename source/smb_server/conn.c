@@ -30,18 +30,18 @@
 /****************************************************************************
 init the conn structures
 ****************************************************************************/
-void conn_init(struct server_context *smb)
+void conn_init(struct smbsrv_context *smb_ctx)
 {
-	smb->tree.bmap = bitmap_allocate(MAX_CONNECTIONS);
+	smb_ctx->tree.bmap = bitmap_allocate(MAX_CONNECTIONS);
 }
 
 /****************************************************************************
 check if a snum is in use
 ****************************************************************************/
-BOOL conn_snum_used(struct server_context *smb, int snum)
+BOOL conn_snum_used(struct smbsrv_context *smb_ctx, int snum)
 {
 	struct tcon_context *conn;
-	for (conn=smb->tree.connections;conn;conn=conn->next) {
+	for (conn=smb_ctx->tree.connections;conn;conn=conn->next) {
 		if (conn->service == snum) {
 			return(True);
 		}
@@ -53,15 +53,15 @@ BOOL conn_snum_used(struct server_context *smb, int snum)
 /****************************************************************************
 find a conn given a cnum
 ****************************************************************************/
-struct tcon_context *conn_find(struct server_context *smb, uint_t cnum)
+struct tcon_context *conn_find(struct smbsrv_context *smb_ctx, uint_t cnum)
 {
 	int count=0;
 	struct tcon_context *conn;
 
-	for (conn=smb->tree.connections;conn;conn=conn->next,count++) {
+	for (conn=smb_ctx->tree.connections;conn;conn=conn->next,count++) {
 		if (conn->cnum == cnum) {
 			if (count > 10) {
-				DLIST_PROMOTE(smb->tree.connections, conn);
+				DLIST_PROMOTE(smb_ctx->tree.connections, conn);
 			}
 			return conn;
 		}
@@ -76,13 +76,13 @@ struct tcon_context *conn_find(struct server_context *smb, uint_t cnum)
 The randomisation stops problems with the server dieing and clients
 thinking the server is still available.
 ****************************************************************************/
-struct tcon_context *conn_new(struct server_context *smb)
+struct tcon_context *conn_new(struct smbsrv_context *smb_ctx)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tcon_context *conn;
 	int i;
 
-	i = bitmap_find(smb->tree.bmap, 1);
+	i = bitmap_find(smb_ctx->tree.bmap, 1);
 	
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));	       
@@ -98,13 +98,13 @@ struct tcon_context *conn_new(struct server_context *smb)
 
 	conn->mem_ctx = mem_ctx;
 	conn->cnum = i;
-	conn->smb = smb;
+	conn->smb_ctx = smb_ctx;
 
-	bitmap_set(smb->tree.bmap, i);
+	bitmap_set(smb_ctx->tree.bmap, i);
 
-	smb->tree.num_open++;
+	smb_ctx->tree.num_open++;
 
-	DLIST_ADD(smb->tree.connections, conn);
+	DLIST_ADD(smb_ctx->tree.connections, conn);
 
 	return conn;
 }
@@ -112,10 +112,10 @@ struct tcon_context *conn_new(struct server_context *smb)
 /****************************************************************************
 close all conn structures
 ****************************************************************************/
-void conn_close_all(struct server_context *smb)
+void conn_close_all(struct smbsrv_context *smb_ctx)
 {
 	struct tcon_context *conn, *next;
-	for (conn=smb->tree.connections;conn;conn=next) {
+	for (conn=smb_ctx->tree.connections;conn;conn=next) {
 		next=conn->next;
 		close_cnum(conn);
 	}
@@ -126,12 +126,12 @@ void conn_close_all(struct server_context *smb)
 /****************************************************************************
 clear a vuid out of the validity cache, and as the 'owner' of a connection.
 ****************************************************************************/
-void conn_clear_vuid_cache(struct server_context *smb, uint16_t vuid)
+void conn_clear_vuid_cache(struct smbsrv_context *smb_ctx, uint16_t vuid)
 {
 	struct tcon_context *conn;
 	uint_t i;
 
-	for (conn=smb->tree.connections;conn;conn=conn->next) {
+	for (conn=smb_ctx->tree.connections;conn;conn=conn->next) {
 		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
 			if (conn->vuid_cache.list[i] == vuid) {
 				conn->vuid_cache.list[i] = UID_FIELD_INVALID;
@@ -145,12 +145,12 @@ void conn_clear_vuid_cache(struct server_context *smb, uint16_t vuid)
  Free a conn structure.
 ****************************************************************************/
 
-void conn_free(struct server_context *smb, struct tcon_context *conn)
+void conn_free(struct smbsrv_context *smb_ctx, struct tcon_context *conn)
 {
-	DLIST_REMOVE(smb->tree.connections, conn);
+	DLIST_REMOVE(smb_ctx->tree.connections, conn);
 
-	bitmap_clear(smb->tree.bmap, conn->cnum);
-	smb->tree.num_open--;
+	bitmap_clear(smb_ctx->tree.bmap, conn->cnum);
+	smb_ctx->tree.num_open--;
 
 	talloc_destroy(conn->mem_ctx);
 }
