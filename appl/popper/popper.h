@@ -153,6 +153,9 @@ extern int              pop_timeout;
 
 extern int              hangup;
 
+#define AUTH_NONE 0
+#define AUTH_OTP  1
+
 #define pop_command         pop_parm[0]     /*  POP command is first token */
 #define pop_subcommand      pop_parm[1]     /*  POP XTND subcommand is the 
                                                 second token */
@@ -230,7 +233,7 @@ typedef struct  {                               /*  POP parameter block */
 #ifdef KERBEROS
     AUTH_DAT		kdata;
 #endif
-    int			no_passwd;		/*  Dont allow cleartext */
+    int			auth_level;		/*  Dont allow cleartext */
     OtpContext		otp_ctx;		/*  OTP context */
 } POP;
 
