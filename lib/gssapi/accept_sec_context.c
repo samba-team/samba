@@ -773,6 +773,9 @@ spnego_accept_sec_context
     if (ret)
 	return ret;
 
+    if(len > data.length - taglen)
+	return ASN1_OVERRUN;
+
     ret = decode_NegTokenInit((const char *)data.data + taglen, len,
 			      &ni, &ni_len);
     if (ret)
