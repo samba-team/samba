@@ -418,7 +418,7 @@ smbclient
 ]
 .IR tarfile
 [
-.IR filenames....
+.IR filenames ...
 ]
 
 .RS 3
@@ -439,7 +439,9 @@ option is given, the tar files will be restored from the top level of
 the share. Must be followed by the name of the tar file, device or "\-"
 for standard input. Mutually exclusive with the
 .B c
-flag.
+flag. Restored files have theuir creation times (mtime) set to the date saved in
+the tar file. Directories currently do not get their creation dates restored 
+properly.
 
 .B I
 Include files and directories. Is the default behaviour when
@@ -481,6 +483,18 @@ up. Useful with the
 flags.
 .LP
 
+.B Long File Names
+
+smbclient's tar option now supports long file names both on backup and 
+restore. However, the full path name of the file must be less than 1024 bytes.
+Also, when a tar archive is created, smbclient's tar option places all files 
+in the archive with relative names, not absolute names.
+
+.B Filenames ...
+
+All file names can be given as DOS path names (with \e as the component 
+separator) or as UNIX path names (with / as the component separator).
+
 .B Examples
 
 smbclient \e\emypc\emyshare "" -N -Tx backup.tar
@@ -494,6 +508,14 @@ Restore everything except users/docs
 smbclient \e\emypc\emyshare "" -N -Tc backup.tar users/docs
 
 Create a tar file of the files beneath users/docs.
+
+smbclient \e\emypc\emyshare "" -N -tc backup.tar users\edocs
+
+Create the same tar file as above, but now use a DOS path name.
+
+smbclient \e\emypc\emyshare "" -N -Tc backup.tar \e*
+
+Create a tar file of all the files and directories in the share.
 .RE
 .RE
 
