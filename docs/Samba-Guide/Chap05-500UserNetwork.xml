@@ -194,7 +194,7 @@
 	<indexterm><primary>network load factors</primary></indexterm>
 	The example you are building in this chapter is an example of a network design that works,
 	but this does not make it a design that is recommended. As a general rule, there should
-	be at least one Backup Domain Controller per 50 Windows network clients. The principle behind
+	be at least one Backup Domain Controller per 150 Windows network clients. The principle behind
 	this recommendation is the fact that correct operation of MS Windows clients requires rapid
 	network response to all SMB/CIFS requests. The same rule says that if there are more than
 	50 clients per Domain Controller they are too busy to service requests. Let's put such
