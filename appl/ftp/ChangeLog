@@ -1,3 +1,7 @@
+199909-30  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd_locl.h: add prototype for fclose to make sunos happy
+
 1999-08-18  Assar Westerlund  <assar@sics.se>
 
 	* ftp/cmds.c (getit): be more suspicious when parsing the result
