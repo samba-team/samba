@@ -8,6 +8,12 @@ dnl otherwise test for it and define it.  also allow options for overriding
 dnl it when cross-compiling
 
 AC_DEFUN(KRB_C_BIGENDIAN, [
+AC_ARG_ENABLE(bigendian,
+[  --enable-bigendian	the target is big endian],
+krb_cv_c_bigendian=yes)
+AC_ARG_ENABLE(littleendian,
+[  --enable-littleendian	the target is little endian],
+krb_cv_c_bigendian=no)
 AC_CACHE_CHECK(whether byte order is known at compile time,
 krb_cv_c_bigendian_compile,
 [AC_TRY_COMPILE([
@@ -18,7 +24,9 @@ krb_cv_c_bigendian_compile,
 #endif], krb_cv_c_bigendian_compile=yes, krb_cv_c_bigendian_compile=no)
 if test "$krb_cv_cv_bigendian_compile" = no; then
   AC_CACHE_CHECK(whether byte ordering is bigendian, krb_cv_c_bigendian,[
-  krb_cv_c_bigendian=unknown
+  if test "$krb_cv_c_bigendian" = ""; then
+    krb_cv_c_bigendian=unknown
+  fi
   AC_TRY_COMPILE([
 #include <sys/types.h>
 #include <siys/param.h>],[
@@ -36,10 +44,7 @@ if test "$krb_cv_cv_bigendian_compile" = no; then
       u.l = 1;
       exit (u.c[sizeof (long) - 1] == 1);
     }], krb_cv_c_bigendian=no, krb_cv_c_bigendian=yes,
-    AC_ARG_ENABLE(bigendian,[
-  --enable-bigendian	the target is big endian], krb_cv_c_bigendian=yes)
-    AC_ARG_ENABLE(littleendian,[
-  --enable-littleendian	the target is little endian], krb_cv_c_bigendian=no))
+    AC_MSG_ERROR([specify either --enable-bigendian or --enable-littleendian]))
   fi
   ])
   if test "$krb_cv_bigendian" = "yes"; then
