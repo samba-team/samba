@@ -321,7 +321,7 @@ install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/
 install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/PHT/TurboLinux/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/PHT/TurboLinux/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/lmhosts
+echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
@@ -453,7 +453,6 @@ fi
 %attr(-,root,root) %{prefix}/bin/smbtar
 %attr(-,root,root) %{prefix}/bin/smbprint
 %attr(-,root,root) %{prefix}/bin/smbspool
-%attr(-,root,root) %{prefix}/bin/smbadduser
 %attr(755,root,root) /lib/libnss_win*
 %attr(755,root,root) /lib/security/pam_*
 %attr(-,root,root) %{prefix}/share/swat/help/*
