@@ -200,7 +200,7 @@ commands[] =
 	{
 		"shutdown",
 		cmd_reg_shutdown,
-		"[-m message] [-t timeout] [-r or --reboot] Server Shutdown",
+		"[-m message] [-t timeout] [-r or --reboot] [-f or --force-close] Remote Shutdown",
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
