@@ -156,6 +156,7 @@ struct pdb_init_function_entry {
 	char *name;
 	/* Function to create a member of the pdb_methods list */
 	pdb_init_function init;
+	struct pdb_init_function_entry *prev, *next;
 };
 
 #endif /* _PASSDB_H */
