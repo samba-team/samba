@@ -36,7 +36,8 @@
 	successfully and 1 if access was denied. ntlm_auth uses winbind to access 
 	the user and authentication data for a domain.  This utility 
 	is only indended to be used by other programs (currently
-	Squid).
+	<ulink url="http://www.squid-cache.org/">Squid</ulink>
+	and <ulink url="http://download.samba.org/ftp/unpacked/lorikeet/trunk/mod_ntlm_winbind/">mod_ntlm_winbind</ulink>)
 	</para>
 </refsect1>
 
@@ -107,7 +108,9 @@
 		authentication knowlege. </para>
 		  <para>This helper is a client, and as such may be run by any
 		user.  The protocol used is
-		effectivly the reverse of the previous protocol.
+		effectivly the reverse of the previous protocol.  A
+		<command>YR</command> command (without any arguments)
+		starts the authentication exchange.
                 </para>
                 </listitem>
 	      </varlistentry>
@@ -208,7 +211,7 @@
                 <command>LANMAN Challenge</command>.  Typically, this
                 is provided over the network by a client wishing to authenticate.
                 </para>	
-		      <para><example>LANMAN-Response: 010203040506070809101112131415161718192021222324</example></para>
+		      <para><example>LANMAN-Response: 0102030405060708090A0B0C0D0E0F101112131415161718</example></para>
 
 		    </listitem></varlistentry>
 
@@ -219,7 +222,7 @@
                 <command>LANMAN Challenge</command>.  Typically, this is 
                 provided over the network by a client wishing to authenticate.
                  </para>	
-		      <para><example>NT-Response: 010203040506070809101112131415161718192021222324</example></para>
+		      <para><example>NT-Response: 0102030405060708090A0B0C0D0E0F101112131415161718</example></para>
 
 		    </listitem></varlistentry>
 
