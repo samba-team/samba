@@ -44,7 +44,13 @@ krb5_build_authenticator (krb5_context context,
   len = (len + 7) & ~7;
   crc_init_table ();
   crc = crc_update(p, len, 0);
+#if 0
   memcpy(p + 8, &crc, 4);
+#endif
+  p[8]  = crc & 0xff;
+  p[9]  = (crc >> 8)  & 0xff;
+  p[10] = (crc >> 16) & 0xff;
+  p[11] = (crc >> 24) & 0xff;
   result->length = len;
   result->data = malloc(len);
   memcpy(result->data, p, len);
