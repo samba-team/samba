@@ -45,6 +45,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pstring fname;
+	pstring pipe_name;
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	pipes_struct *p;
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
@@ -52,26 +53,27 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	int i;
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+	srvstr_pull(inbuf, pipe_name, smb_buf(inbuf), sizeof(pipe_name), -1, STR_TERMINATE);
 
 	/* If the name doesn't start \PIPE\ then this is directed */
 	/* at a mailslot or something we really, really don't understand, */
 	/* not just something we really don't understand. */
-	if ( strncmp(fname,PIPE,PIPELEN) != 0 )
+	if ( strncmp(pipe_name,PIPE,PIPELEN) != 0 )
 		return(ERROR(ERRSRV,ERRaccess));
 
-	DEBUG(4,("Opening pipe %s.\n", fname));
+	DEBUG(4,("Opening pipe %s.\n", pipe_name));
 
 	/* See if it is one we want to handle. */
 	for( i = 0; pipe_names[i].client_pipe ; i++ )
-		if( strequal(fname,pipe_names[i].client_pipe) )
+		if( strequal(pipe_name,pipe_names[i].client_pipe) )
 			break;
 
 	if (pipe_names[i].client_pipe == NULL)
 		return(ERROR(ERRSRV,ERRaccess));
 
 	/* Strip \PIPE\ off the name. */
-	pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
+	pstrcpy(fname, pipe_name + PIPELEN);
+
 
 #if 0
 	/*
