@@ -10,7 +10,8 @@ if test t$SMB_EXT_LIB_ENABLE_gtk = tYES; then
 	SMB_SUBSYSTEM_ENABLE(GTKSMB, YES)
 	SMB_BINARY_ENABLE(gregedit, YES)
 	SMB_BINARY_ENABLE(gwcrontab, YES)
-	SMB_BINARY_ENABLE(gwsam, YES)
+	# this break the build on my SuSE 9.1 --metze
+	#SMB_BINARY_ENABLE(gwsam, YES)
 	AC_DEFINE(HAVE_GTK, 1, [Whether GTK+ is available])
 fi
 
