@@ -881,17 +881,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
-	if (server_info->nt_session_key.data) {
-		session_key = data_blob(server_info->nt_session_key.data, server_info->nt_session_key.length);
-	} else if (server_info->lm_session_key.length >= 8 && lm_resp.length == 24) {
-		session_key = data_blob(NULL, 16);
-		SMBsesskeygen_lmv1(server_info->lm_session_key.data, lm_resp.data, 
-				   session_key.data);
+	if (server_info->user_session_key.data) {
+		session_key = data_blob(server_info->user_session_key.data, server_info->user_session_key.length);
 	} else {
 		session_key = data_blob(NULL, 0);
 	}
 
-	data_blob_free(&lm_resp);
 	data_blob_clear_free(&plaintext_password);
 	
 	/* it's ok - setup a reply */
@@ -911,8 +906,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	   to a uid can get through without a password, on the same VC */
 
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, session_key, nt_resp, sub_user);
+	sess_vuid = register_vuid(server_info, session_key, nt_resp.data ? nt_resp : lm_resp, sub_user);
 	data_blob_free(&nt_resp);
+	data_blob_free(&lm_resp);
 
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
