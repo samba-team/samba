@@ -1,0 +1,5 @@
+usr/bin/smbtorture
+usr/bin/ndrdump
+usr/bin/gentest
+usr/bin/locktest
+usr/bin/masktest
