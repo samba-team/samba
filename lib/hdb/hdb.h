@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -77,15 +77,15 @@ krb5_error_code hdb_create(krb5_context, HDB**, const char*);
 krb5_error_code hdb_db_create(krb5_context, HDB**, const char*);
 krb5_error_code hdb_ndbm_create(krb5_context, HDB**, const char*);
 
+krb5_error_code hdb_next_enctype2key(krb5_context context,
+				     hdb_entry *e,
+				     krb5_enctype enctype,
+				     Key **key);
 
-krb5_error_code hdb_etype2key(krb5_context, hdb_entry*, 
-			      krb5_enctype, Key**);
-krb5_error_code hdb_next_etype2key(krb5_context, hdb_entry*, 
-				   krb5_enctype, Key**);
-krb5_error_code hdb_keytype2key(krb5_context, hdb_entry*, 
-				krb5_keytype, Key**);
-krb5_error_code hdb_next_keytype2key(krb5_context, hdb_entry*, 
-				     krb5_keytype, Key**);
+krb5_error_code hdb_enctype2key(krb5_context context, 
+				hdb_entry *e, 
+				krb5_enctype enctype, 
+				Key **key);
 
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry*, void*);
