@@ -133,48 +133,27 @@ config_find_realm(krb5_context context,
 }
 
 /*
- * Return the realm(s) of `host' as a NULL-terminated list in `realms'.  */
+ * This function assumes that `host' is a FQDN (and doesn't handle the
+ * special case of host == NULL either).
+ * Try to find mapping in the config file or DNS and it that fails,
+ * fall back to guessing
+ */
 
 krb5_error_code
-krb5_get_host_realm(krb5_context context,
-		    const char *host,
-		    krb5_realm **realms)
+krb5_get_host_realm_int (krb5_context context,
+			 const char *host,
+			 krb5_realm **realms)
 {
-    char hostname[MAXHOSTNAMELEN];
     const char *p;
-    struct in_addr addr;
-    struct hostent *hostent;
-    const char *orig_host;
 
-    if (host == NULL) {
-	if (gethostname (hostname, sizeof(hostname)))
-	    return errno;
-	host = hostname;
-    }
-
-    orig_host = host;
-
-    addr.s_addr = inet_addr(host);
-    hostent = roken_gethostbyname (host);
-    if (hostent == NULL && addr.s_addr != INADDR_NONE)
-	hostent = roken_gethostbyaddr ((const char *)&addr,
-				       sizeof(addr),
-				       AF_INET);
-    if (hostent != NULL)
-	host = hostent->h_name;
-
-    p = host;
-    while(p) {
+    for (p = host; p != NULL; p = strchr (p + 1, '.')) {
 	if(config_find_realm(context, p, realms) == 0)
 	    return 0;
 	else if(dns_find_realm(context, p, realms) == 0)
 	    return 0;
-	p = strchr(p + 1, '.');
     }
     p = strchr(host, '.');
-    if(p == NULL)
-	p = strchr(orig_host, '.');
-    if(p) {
+    if(p != NULL) {
 	p++;
 	*realms = malloc(2 * sizeof(krb5_realm));
 	if (*realms == NULL)
@@ -190,4 +169,24 @@ krb5_get_host_realm(krb5_context context,
 	return 0;
     }
     return KRB5_ERR_HOST_REALM_UNKNOWN;
+}
+
+/*
+ * Return the realm(s) of `host' as a NULL-terminated list in `realms'.
+ */
+
+krb5_error_code
+krb5_get_host_realm(krb5_context context,
+		    const char *host,
+		    krb5_realm **realms)
+{
+    char hostname[MAXHOSTNAMELEN];
+
+    if (host == NULL) {
+	if (gethostname (hostname, sizeof(hostname)))
+	    return errno;
+	host = hostname;
+    }
+
+    return krb5_get_host_realm_int (context, host, realms);
 }
