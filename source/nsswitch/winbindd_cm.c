@@ -140,11 +140,13 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 
 	DLIST_ADD(get_dc_name_cache, dcc);
 
-	/* Lookup domain controller name */
-		
-	if (!get_dc_list(False, domain, &ip_list, &count)) {
-		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-		return False;
+	/* Lookup domain controller name. Try the real PDC first to avoid
+	   SAM sync delays */
+	if (!get_dc_list(True, domain, &ip_list, &count)) {
+		if (!get_dc_list(False, domain, &ip_list, &count)) {
+			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+			return False;
+		}
 	}
 
 	/* Pick a nice close server */
