@@ -1179,7 +1179,7 @@ echo "$ac_t""$ac_cv_prog_cc_Ae" 1>&6
 #
 # Defines needed for HPUX large file support..
 #
-      case `uname =r` in
+      case `uname -r` in
 			*10*|*11*)
         		echo "$ac_t""enabling large file support" 1>&6
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"

@@ -58,7 +58,7 @@ case "$host_os" in
 #
 # Defines needed for HPUX large file support..
 #
-      case `uname =r` in
+      case `uname -r` in
 			*10*|*11*)
         		AC_MSG_RESULT([enabling large file support])
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
