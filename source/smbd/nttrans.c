@@ -808,8 +808,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
-	if((create_options & FILE_DIRECTORY_FILE)||
-			(IS_VALID_STAT(&sbuf) && S_ISDIR(sbuf.st_mode))) {
+	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
 		/* Can't open a temp directory. IFS kit test. */
@@ -1369,8 +1368,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
-	if((create_options & FILE_DIRECTORY_FILE)||
-			(IS_VALID_STAT(&sbuf) && S_ISDIR(sbuf.st_mode))) {
+	if(create_options & FILE_DIRECTORY_FILE) {
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
