@@ -32,7 +32,7 @@ int gendb_search_v(struct ldb_context *ldb,
 		   struct ldb_message ***res,
 		   const char * const *attrs,
 		   const char *format, 
-		   va_list ap)
+		   va_list ap)  _PRINTF_ATTRIBUTE(6,0)
 {
 	char *expr = NULL;
 	int count;

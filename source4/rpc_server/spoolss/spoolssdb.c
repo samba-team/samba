@@ -30,7 +30,7 @@ struct spoolssdb_context {
 /*
   this is used to catch debug messages from ldb
 */
-void spoolssdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
+void spoolssdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap) _PRINTF_ATTRIBUTE(3, 0)
 {
 	char *s = NULL;
 	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
