@@ -30,6 +30,19 @@ extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern pstring global_myname;
 
+/* given a stat buffer return the allocated size on disk, taking into
+   account sparse files */
+SMB_OFF_T get_allocation_size(SMB_STRUCT_STAT *sbuf)
+{
+	SMB_OFF_T ret;
+	ret = sbuf->st_blksize * (SMB_OFF_T)sbuf->st_blocks;
+	ret = SMB_ROUNDUP_ALLOCATION(ret);
+	return ret;
+}
+
+#define get_file_size(sbuf) (sbuf.st_size)
+
+
 /****************************************************************************
   Send the required number of replies back.
   We assume all fields other than the data fields are
@@ -256,7 +269,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
-	size = sbuf.st_size;
+	size = get_file_size(sbuf);
 	fmode = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
@@ -453,7 +466,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	uint32 reskey=0;
 	int prev_dirpos=0;
 	int mode=0;
-	SMB_OFF_T size = 0;
+	SMB_OFF_T file_size = 0;
 	SMB_OFF_T allocation_size = 0;
 	uint32 len;
 	time_t mdate=0, adate=0, cdate=0;
@@ -565,8 +578,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				continue;
 			}
 
-			size = sbuf.st_size;
-			allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
+			file_size = get_file_size(sbuf);
+			allocation_size = get_allocation_size(&sbuf);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
 			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
@@ -578,7 +591,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 
 			if(mode & aDIR)
-				size = 0;
+				file_size = 0;
 
 			DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
 	  
@@ -602,7 +615,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			put_dos_date2(p,l1_fdateCreation,cdate);
 			put_dos_date2(p,l1_fdateLastAccess,adate);
 			put_dos_date2(p,l1_fdateLastWrite,mdate);
-			SIVAL(p,l1_cbFile,(uint32)size);
+			SIVAL(p,l1_cbFile,(uint32)file_size);
 			SIVAL(p,l1_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(p,l1_attrFile,mode);
 			p += l1_achName;
@@ -621,7 +634,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			put_dos_date2(p,l2_fdateCreation,cdate);
 			put_dos_date2(p,l2_fdateLastAccess,adate);
 			put_dos_date2(p,l2_fdateLastWrite,mdate);
-			SIVAL(p,l2_cbFile,(uint32)size);
+			SIVAL(p,l2_cbFile,(uint32)file_size);
 			SIVAL(p,l2_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(p,l2_attrFile,mode);
 			SIVAL(p,l2_cbList,0); /* No extended attributes */
@@ -641,7 +654,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			put_long_date(p,adate); p += 8;
 			put_long_date(p,mdate); p += 8;
 			put_long_date(p,mdate); p += 8;
-			SOFF_T(p,0,size);
+			SOFF_T(p,0,file_size);
 			SOFF_T(p,8,allocation_size);
 			p += 16;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -675,7 +688,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			put_long_date(p,adate); p += 8;
 			put_long_date(p,mdate); p += 8;
 			put_long_date(p,mdate); p += 8;
-			SOFF_T(p,0,size);
+			SOFF_T(p,0,file_size);
 			SOFF_T(p,8,allocation_size);
 			p += 16;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -696,7 +709,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			put_long_date(p,adate); p += 8;
 			put_long_date(p,mdate); p += 8;
 			put_long_date(p,mdate); p += 8;
-			SOFF_T(p,0,size); 
+			SOFF_T(p,0,file_size); 
 			SOFF_T(p,8,allocation_size);
 			p += 16;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -735,14 +748,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,reskey); p+= 4;    /* Used for continuing search. */
 
 			/* Begin of SMB_QUERY_FILE_UNIX_BASIC */
-			SOFF_T(p,0,sbuf.st_size);             /* File size 64 Bit */
+			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
 			p+= 8;
 
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 			SOFF_T(p,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
 #else
 			/* Can't get the value - fake it using size. */
-			SOFF_T(p,0,sbuf.st_size);             /* Number of bytes used on disk - 64 Bit */
+			SOFF_T(p,0,get_file_size(sbuf));             /* Number of bytes used on disk - 64 Bit */
 #endif
 			p+= 8;
 
@@ -1528,7 +1541,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	uint16 tran_call = SVAL(inbuf, smb_setup0);
 	uint16 info_level;
 	int mode=0;
-	SMB_OFF_T size=0;
+	SMB_OFF_T file_size=0;
 	SMB_OFF_T allocation_size=0;
 	unsigned int data_size;
 	SMB_STRUCT_STAT sbuf;
@@ -1643,10 +1656,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 	mode = dos_mode(conn,fname,&sbuf);
 	fullpathname = fname;
-	size = sbuf.st_size;
-	allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
+	file_size = get_file_size(sbuf);
+	allocation_size = get_allocation_size(&sbuf);
 	if (mode & aDIR)
-		size = 0;
+		file_size = 0;
 
 	params = Realloc(*pparams,2);
 	if (params == NULL)
@@ -1692,7 +1705,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			put_dos_date2(pdata,l1_fdateCreation,c_time);
 			put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
 			put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
-			SIVAL(pdata,l1_cbFile,(uint32)size);
+			SIVAL(pdata,l1_cbFile,(uint32)file_size);
 			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
 			SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
@@ -1703,7 +1716,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			put_dos_date2(pdata,0,c_time);
 			put_dos_date2(pdata,4,sbuf.st_atime);
 			put_dos_date2(pdata,8,sbuf.st_mtime);
-			SIVAL(pdata,12,(uint32)size);
+			SIVAL(pdata,12,(uint32)file_size);
 			SIVAL(pdata,16,(uint32)allocation_size);
 			SIVAL(pdata,20,mode);
 			break;
@@ -1747,9 +1760,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_STANDARD_INFO:
 
 			data_size = 24;
-			/* Fake up allocation size. */
 			SOFF_T(pdata,0,allocation_size);
-			SOFF_T(pdata,8,size);
+			SOFF_T(pdata,8,file_size);
 			SIVAL(pdata,16,sbuf.st_nlink);
 			SCVAL(pdata,20,0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
@@ -1794,7 +1806,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_QUERY_FILE_END_OF_FILEINFO:
 			data_size = 8;
-			SOFF_T(pdata,0,size);
+			SOFF_T(pdata,0,file_size);
 			break;
 
 		case SMB_QUERY_FILE_ALL_INFO:
@@ -1805,7 +1817,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,32,mode);
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
-			SOFF_T(pdata,8,size);
+			SOFF_T(pdata,8,file_size);
 			SIVAL(pdata,16,sbuf.st_nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
@@ -1917,7 +1929,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
 				SIVAL(pdata,0,0); /* ??? */
 				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
-				SOFF_T(pdata,8,size);
+				SOFF_T(pdata,8,file_size);
 				SIVAL(pdata,16,allocation_size);
 				SIVAL(pdata,20,0); /* ??? */
 				data_size = 24 + byte_len;
@@ -1925,7 +1937,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_COMPRESSION_INFORMATION:
-			SOFF_T(pdata,0,size);
+			SOFF_T(pdata,0,allocation_size);
 			SIVAL(pdata,8,0); /* ??? */
 			SIVAL(pdata,12,0); /* ??? */
 			data_size = 16;
@@ -1937,7 +1949,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
 			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
 			SIVAL(pdata,32,allocation_size);
-			SOFF_T(pdata,40,size);
+			SOFF_T(pdata,40,file_size);
 			SIVAL(pdata,48,mode);
 			SIVAL(pdata,52,0); /* ??? */
 			data_size = 56;
@@ -1957,14 +1969,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 			DEBUG(4,("call_trans2qfilepathinfo: st_mode=%o\n",(int)sbuf.st_mode));
 
-			SOFF_T(pdata,0,sbuf.st_size);             /* File size 64 Bit */
+			SOFF_T(pdata,0,get_file_size(sbuf));             /* File size 64 Bit */
 			pdata += 8;
 
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 			SOFF_T(pdata,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
 #else
 			/* Can't get the value - fake it using size. */
-			SOFF_T(pdata,0,sbuf.st_size);             /* Number of bytes used on disk - 64 Bit */
+			SOFF_T(pdata,0,get_file_size(sbuf));             /* Number of bytes used on disk - 64 Bit */
 #endif
 			pdata += 8;
 
@@ -2246,7 +2258,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				SSVAL(params,0,0);
 				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 				return(-1);
-			}
+			} else
+				return (UNIXERROR(ERRDOS,ERRbadpath));
 	    } else {
 			/*
 			 * Original code - this is an open file.
@@ -2310,7 +2323,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		sbuf.st_mtime = fsp->pending_modtime;
 	}
 
-	size = sbuf.st_size;
+	size = get_file_size(sbuf);
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
 	dosmode = dos_mode(conn,fname,&sbuf);
@@ -2413,7 +2426,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 					fname, (double)allocation_size ));
 
-			if(allocation_size != sbuf.st_size) {
+			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;
  
 				DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new allocation size to %.0f\n",
@@ -2459,8 +2472,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				if (ret == -1)
 					return ERROR_NT(NT_STATUS_DISK_FULL);
 
-				/* Allocate can trucate size... */
-				size = new_sbuf.st_size;
+				/* Allocate can truncate size... */
+				size = get_file_size(new_sbuf);
 			}
 
 			break;
@@ -2715,7 +2728,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		 * changing the size of a file.
 		 */
 		if (!size)
-			size = sbuf.st_size;
+			size = get_file_size(sbuf);
 	}
 
 	/*
@@ -2757,7 +2770,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 	}
 
-	if(size != sbuf.st_size) {
+	if (size != get_file_size(sbuf)) {
 
 		int ret;
 
@@ -2970,9 +2983,11 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 {
 	char *pdata = *ppdata;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv15);
-
+	
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+		uint16 rap_jobid;
+
 		pdata = Realloc(*ppdata, 32);
 		if(pdata == NULL)
 			return ERROR_DOS(ERRDOS,ERRnomem);
@@ -2981,7 +2996,8 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 		/* NOTE - THIS IS ASCII ONLY AT THE MOMENT - NOT SURE IF OS/2
 			CAN ACCEPT THIS IN UNICODE. JRA. */
 
-		SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
+		rap_jobid = pjobid_to_rap(SNUM(fsp->conn), fsp->print_jobid);                     /* Job number */
+		SSVAL(pdata,0,rap_jobid);                     /* Job number */
 		srvstr_push( outbuf, pdata + 2, global_myname, 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
 		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);

@@ -722,6 +722,62 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 }
 
 /*******************************************************************
+check to see if a user can write a file (and only files, we do not
+check dirs on this one). This is only approximate,
+it is used as part of the "hide unwriteable" option. Don't
+use it for anything security sensitive
+********************************************************************/
+
+static BOOL user_can_write_file(connection_struct *conn, char *name)
+{
+	extern struct current_user current_user;
+	SMB_STRUCT_STAT ste;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	files_struct *fsp;
+	int smb_action;
+	int access_mode;
+	NTSTATUS status;
+	uint32 access_granted;
+
+	ZERO_STRUCT(ste);
+
+	/*
+	 * If user is a member of the Admin group
+	 * we never hide files from them.
+	 */
+
+	if (conn->admin_user)
+		return True;
+
+	/* If we can't stat it does not show it */
+	if (vfs_stat(conn, name, &ste) != 0)
+		return False;
+
+	/* Pseudo-open the file (note - no fd's created). */
+
+	if(S_ISDIR(ste.st_mode))	
+		return True;
+	else
+		fsp = open_file_shared1(conn, name, &ste, FILE_WRITE_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+
+	if (!fsp)
+		return False;
+
+	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
+	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
+	close_file(fsp, False);
+
+	/* No access if SD get failed. */
+	if (!sd_size)
+		return False;
+
+	return se_access_check(psd, current_user.nt_user_token, FILE_WRITE_DATA,
+                                 &access_granted, &status);
+}
+
+/*******************************************************************
  Open a directory.
 ********************************************************************/
 
@@ -775,6 +831,19 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
       
 			if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
 				ret = user_can_read_file(conn, entry);
+				SAFE_FREE(entry);
+			}
+			if (!ret)
+				continue;
+		}
+
+		/* Honour _hide unwriteable_ option */
+		if (normal_entry && conn && lp_hideunwriteable_files(SNUM(conn))) {
+			char *entry;
+			int ret=0;
+      
+			if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+				ret = user_can_write_file(conn, entry);
 				SAFE_FREE(entry);
 			}
 			if (!ret)

@@ -115,65 +115,67 @@ mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
 /****************************************************************************
   change a unix mode to a dos mode
 ****************************************************************************/
-int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
+uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 {
-  int result = 0;
+	int result = 0;
 
-  DEBUG(8,("dos_mode: %s\n", path));
+	DEBUG(8,("dos_mode: %s\n", path));
 
-  if ((sbuf->st_mode & S_IWUSR) == 0)
-      result |= aRONLY;
+	if ((sbuf->st_mode & S_IWUSR) == 0)
+		result |= aRONLY;
+	
+	if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
+		result |= aARCH;
 
-  if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
-    result |= aARCH;
-
-  if (MAP_SYSTEM(conn) && ((sbuf->st_mode & S_IXGRP) != 0))
-    result |= aSYSTEM;
-
-  if (MAP_HIDDEN(conn) && ((sbuf->st_mode & S_IXOTH) != 0))
-    result |= aHIDDEN;   
+	if (MAP_SYSTEM(conn) && ((sbuf->st_mode & S_IXGRP) != 0))
+		result |= aSYSTEM;
+	
+	if (MAP_HIDDEN(conn) && ((sbuf->st_mode & S_IXOTH) != 0))
+		result |= aHIDDEN;   
   
-  if (S_ISDIR(sbuf->st_mode))
-    result = aDIR | (result & aRONLY);
+	if (S_ISDIR(sbuf->st_mode))
+		result = aDIR | (result & aRONLY);
+
+	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)sbuf->st_blksize) {
+		result |= FILE_ATTRIBUTE_SPARSE;
+	}
  
 #ifdef S_ISLNK
 #if LINKS_READ_ONLY
-  if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
-    result |= aRONLY;
+	if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
+		result |= aRONLY;
 #endif
 #endif
 
-  /* hide files with a name starting with a . */
-  if (lp_hide_dot_files(SNUM(conn)))
-    {
-      char *p = strrchr_m(path,'/');
-      if (p)
-	p++;
-      else
-	p = path;
-      
-      if (p[0] == '.' && p[1] != '.' && p[1] != 0)
-	result |= aHIDDEN;
-    }
+	/* hide files with a name starting with a . */
+	if (lp_hide_dot_files(SNUM(conn))) {
+		char *p = strrchr_m(path,'/');
+		if (p)
+			p++;
+		else
+			p = path;
+		
+		if (p[0] == '.' && p[1] != '.' && p[1] != 0)
+			result |= aHIDDEN;
+	}
+	
+	/* Optimization : Only call is_hidden_path if it's not already
+	   hidden. */
+	if (!(result & aHIDDEN) && IS_HIDDEN_PATH(conn,path)) {
+		result |= aHIDDEN;
+	}
 
-  /* Optimization : Only call is_hidden_path if it's not already
-     hidden. */
-  if (!(result & aHIDDEN) && IS_HIDDEN_PATH(conn,path))
-  {
-    result |= aHIDDEN;
-  }
+	DEBUG(8,("dos_mode returning "));
 
-  DEBUG(8,("dos_mode returning "));
+	if (result & aHIDDEN) DEBUG(8, ("h"));
+	if (result & aRONLY ) DEBUG(8, ("r"));
+	if (result & aSYSTEM) DEBUG(8, ("s"));
+	if (result & aDIR   ) DEBUG(8, ("d"));
+	if (result & aARCH  ) DEBUG(8, ("a"));
+	
+	DEBUG(8,("\n"));
 
-  if (result & aHIDDEN) DEBUG(8, ("h"));
-  if (result & aRONLY ) DEBUG(8, ("r"));
-  if (result & aSYSTEM) DEBUG(8, ("s"));
-  if (result & aDIR   ) DEBUG(8, ("d"));
-  if (result & aARCH  ) DEBUG(8, ("a"));
-
-  DEBUG(8,("\n"));
-
-  return(result);
+	return(result);
 }
 
 /*******************************************************************

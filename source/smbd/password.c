@@ -90,29 +90,6 @@ void invalidate_all_vuids(void)
 }
 
 /****************************************************************************
-return a validated username
-****************************************************************************/
-char *validated_username(uint16 vuid)
-{
-	user_struct *vuser = get_valid_user_struct(vuid);
-	if (vuser == NULL)
-		return 0;
-	return(vuser->user.unix_name);
-}
-
-/****************************************************************************
-return a validated domain
-****************************************************************************/
-char *validated_domain(uint16 vuid)
-{
-	user_struct *vuser = get_valid_user_struct(vuid);
-	if (vuser == NULL)
-		return 0;
-	return(vuser->user.domain);
-}
-
-
-/****************************************************************************
  Create the SID list for this user.
 ****************************************************************************/
 
@@ -207,7 +184,7 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
+int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 {
 	user_struct *vuser = NULL;
 	uid_t uid;
@@ -297,7 +274,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	/* Create an NT_USER_TOKEN struct for this user. */
 	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, vuser->guest, server_info->ptok);
 
-	DEBUG(3,("uid %d registered to name %s\n",(int)vuser->uid,vuser->user.unix_name));
+	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
 
 	next_vuid++;
 	num_validated_vuids++;
@@ -311,8 +288,9 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	}
 
 	/* Register a home dir service for this user */
-	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)
-		&& (lp_servicenumber(vuser->user.unix_name) < 0)) {
+	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) {
+		DEBUG(3, ("Adding/updating homes service for user '%s' using home direcotry: '%s'\n", 
+			  vuser->user.unix_name, vuser->unix_homedir));
 		vuser->homes_snum = add_home_service(vuser->user.unix_name, vuser->user.unix_name, vuser->unix_homedir);	  
 	} else {
 		vuser->homes_snum = -1;
@@ -325,7 +303,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 /****************************************************************************
 add a name to the session users list
 ****************************************************************************/
-void add_session_user(char *user)
+void add_session_user(const char *user)
 {
   fstring suser;
   StrnCpy(suser,user,sizeof(suser)-1);
@@ -373,7 +351,7 @@ BOOL user_ok(const char *user,int snum)
 	if (valid) str_list_free (&valid);
 
 	if (ret && lp_onlyuser(snum)) {
-		char **user_list = str_list_make (lp_username(snum));
+		char **user_list = str_list_make (lp_username(snum), NULL);
 		if (user_list && str_list_substitute(user_list, "%S", lp_servicename(snum))) {
 			ret = user_in_list(user, user_list);
 		}

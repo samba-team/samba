@@ -167,17 +167,17 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 
 	/* Make slave stdin/out/err of child. */
 
-	if (dup2(slave, STDIN_FILENO) != STDIN_FILENO)
+	if (sys_dup2(slave, STDIN_FILENO) != STDIN_FILENO)
 	{
 		DEBUG(3, ("Could not re-direct stdin\n"));
 		return (False);
 	}
-	if (dup2(slave, STDOUT_FILENO) != STDOUT_FILENO)
+	if (sys_dup2(slave, STDOUT_FILENO) != STDOUT_FILENO)
 	{
 		DEBUG(3, ("Could not re-direct stdout\n"));
 		return (False);
 	}
-	if (dup2(slave, STDERR_FILENO) != STDERR_FILENO)
+	if (sys_dup2(slave, STDERR_FILENO) != STDERR_FILENO)
 	{
 		DEBUG(3, ("Could not re-direct stderr\n"));
 		return (False);
@@ -196,7 +196,9 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 	}
 	stermios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 	stermios.c_lflag |= ICANON;
+#ifdef ONLCR
  	stermios.c_oflag &= ~(ONLCR);
+#endif
 	if (tcsetattr(0, TCSANOW, &stermios) < 0)
 	{
 		DEBUG(3, ("could not set attributes of pty\n"));

@@ -440,44 +440,43 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
 	fstring sid;
-	BOOL ret = False;
+	BOOL local_lookup = False;
 	
 	*name_type = SID_NAME_UNKNOWN;
 
 	/* If we are looking up a domain user, make sure it is
 	   for the local machine only */
 	
-	switch (lp_server_role()) {
-	case ROLE_DOMAIN_PDC:
-	case ROLE_DOMAIN_BDC:
+	if (strequal(global_myname, domain)) {
+		local_lookup = True;
+	} else if (lp_server_role() == ROLE_DOMAIN_PDC || 
+		   lp_server_role() == ROLE_DOMAIN_PDC) {
 		if (strequal(domain, global_myworkgroup)) {
-			ret = local_lookup_name(name, psid, name_type);
+			local_lookup = True;
 		}
-		/* No break is deliberate here. JRA. */
-	default:
-		if (ret) {
-		} else if (strequal(global_myname, domain)) {
-			ret = local_lookup_name(name, psid, name_type);
-		} else {
-			DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
+	}
+		
+	if (local_lookup) {
+		if (local_lookup_name(name, psid, name_type)) {
+			DEBUG(10,
+			      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",
+			       domain, name, sid_to_string(sid,psid),
+			       sid_type_lookup(*name_type), (unsigned int)*name_type));
+			return True;
+		}
+	} else {
+		/* Remote */
+		if (winbind_lookup_name(domain, name, psid, name_type)) {
+			
+			DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
+				  domain, name, sid_to_string(sid, psid), 
+				  (unsigned int)*name_type));
+			return True;
 		}
 	}
 	
-	if (ret) {
-		DEBUG(10,
-		      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",
-		       domain, name, sid_to_string(sid,psid),
-		       sid_type_lookup(*name_type), (unsigned int)*name_type));
-		return True;
-	} else if (winbind_lookup_name(domain, name, psid, name_type)) {
-		
-		DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
-			  domain, name, sid_to_string(sid, psid), 
-			  (unsigned int)*name_type));
-		return True;
-	}
-
-	DEBUG(10, ("lookup_name: winbind and local lookups for [%s]\\[%s] failed\n", domain, name));
+	DEBUG(10, ("lookup_name: %s lookup for [%s]\\[%s] failed\n", 
+		   local_lookup ? "local" : "winbind", domain, name));
 
 	return False;
 }
@@ -593,13 +592,17 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
  was done correctly, False if not. sidtype is set by this function.
 *****************************************************************/  
 
-BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
+BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
 	fstring sid_str;
 
 	/* if we know its local then don't try winbindd */
 	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
-		return local_sid_to_uid(puid, psid, sidtype);
+		BOOL result;
+		become_root();
+		result = local_sid_to_uid(puid, psid, sidtype);
+		unbecome_root();
+		return result;
 	}
 
 /* (tridge) I commented out the slab of code below in order to support foreign SIDs
@@ -665,7 +668,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
  was done correctly, False if not.
 *****************************************************************/  
 
-BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
+BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 {
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
@@ -676,16 +679,21 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 	 * First we must look up the name and decide if this is a group sid.
 	 */
 
+	/* if we know its local then don't try winbindd */
+	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
+		BOOL result;
+		become_root();
+		result = local_sid_to_gid(pgid, psid, sidtype);
+		unbecome_root();
+		return result;
+	}
+
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
+		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed.\n",
 				sid_to_string(sid_str, psid) ));
-		if (!local_sid_to_gid(pgid, psid, sidtype)) {
-			/* this was probably a foreign sid - assume its a group rid 
-			   and continue */
-			name_type = SID_NAME_DOM_GRP;
-		} else {
-			return True;
-		}
+		/* this was probably a foreign sid - assume its a group rid 
+		   and continue */
+		name_type = SID_NAME_DOM_GRP;
 	}
 
 	/*
@@ -696,7 +704,7 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a known group (%u)\n",
 				(unsigned int)name_type ));
 
-		return local_sid_to_gid(pgid, psid, sidtype);
+		return False;
 	}
 
 	*sidtype = name_type;
