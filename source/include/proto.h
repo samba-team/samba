@@ -304,6 +304,7 @@ BOOL create_sidmap_table(void);
 BOOL generate_sam_sid(char *domain_name, DOM_SID *sid);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
+BOOL map_domain_sid_to_any_dc(DOM_SID *sid, char *dc_name);
 BOOL split_domain_name(const char *fullname, char *domain, char *name);
 BOOL enumtrustdoms(char ***doms, uint32 *num_entries);
 BOOL enumdomains(char ***doms, uint32 *num_entries);
@@ -485,6 +486,7 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 char *get_trusted_serverlist(const char* domain);
+BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -764,10 +766,17 @@ void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 BOOL cli_reestablish_connection(struct cli_state *cli);
 BOOL cli_establish_connection(struct cli_state *cli, 
-				char *dest_host, struct in_addr *dest_ip,
+				const char *dest_host, struct in_addr *dest_ip,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon);
+BOOL cli_connect_auth(struct cli_state *cli,
+				const char* desthost,
+				struct in_addr *dest_ip,
+				const struct user_credentials *usr);
+BOOL cli_connect_servers_auth(struct cli_state *cli,
+				char *p,
+				const struct user_credentials *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
 int cli_printjob_del(struct cli_state *cli, int job);
 int cli_print_queue(struct cli_state *cli, 
