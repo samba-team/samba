@@ -198,7 +198,7 @@ static FILE *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
     DEBUG(10, ("startsmbfilepwent_internal: opening file %s\n", pfile));
 
     if((fp = sys_fopen(pfile, open_mode)) == NULL) {
-      DEBUG(2, ("startsmbfilepwent_internal: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
+      DEBUG(0, ("startsmbfilepwent_internal: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
       return NULL;
     }
 
@@ -1340,9 +1340,9 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_AC
 /*****************************************************************
  Functions to be implemented by the new passdb API 
  ****************************************************************/
-static BOOL smbpasswd_setsampwent (struct pdb_context *context, BOOL update)
+static BOOL smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	
 	smbpasswd_state->pw_file = startsmbfilepwent(smbpasswd_state->smbpasswd_file, 
 						       update ? PWF_UPDATE : PWF_READ, 
@@ -1370,17 +1370,17 @@ static BOOL smbpasswd_setsampwent (struct pdb_context *context, BOOL update)
 	return (smbpasswd_state->pw_file != NULL);		   
 }
 
-static void smbpasswd_endsampwent (struct pdb_context *context)
+static void smbpasswd_endsampwent (struct pdb_methods *my_methods)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	endsmbfilepwent(smbpasswd_state->pw_file, &(smbpasswd_state->pw_file_lock_depth));
 }
  
 /*****************************************************************
  ****************************************************************/
-static BOOL smbpasswd_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
+static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *pw_buf=NULL;
 	BOOL done = False;
 	DEBUG(5,("pdb_getsampwent\n"));
@@ -1419,9 +1419,9 @@ static BOOL smbpasswd_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user
  call getpwnam() for unix account information until we have found
  the correct entry
  ***************************************************************/
-static BOOL smbpasswd_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const char *username)
+static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct, const char *username)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
 	char *domain = NULL;
@@ -1489,9 +1489,9 @@ static BOOL smbpasswd_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_
 }
 
 
-static BOOL smbpasswd_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_acct,uint32 rid)
+static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct,uint32 rid)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
 
@@ -1533,9 +1533,9 @@ static BOOL smbpasswd_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_
 	return True;
 }
 
-static BOOL smbpasswd_add_sam_account(struct pdb_context *context, const SAM_ACCOUNT *sampass)
+static BOOL smbpasswd_add_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT *sampass)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
@@ -1551,9 +1551,9 @@ static BOOL smbpasswd_add_sam_account(struct pdb_context *context, const SAM_ACC
 	return True;
 }
 
-static BOOL smbpasswd_update_sam_account(struct pdb_context *context, const SAM_ACCOUNT *sampass)
+static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT *sampass)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
@@ -1567,9 +1567,9 @@ static BOOL smbpasswd_update_sam_account(struct pdb_context *context, const SAM_
 	return True;
 }
 
-static BOOL smbpasswd_delete_sam_account (struct pdb_context *context, const SAM_ACCOUNT *sampass)
+static BOOL smbpasswd_delete_sam_account (struct pdb_methods *my_methods, const SAM_ACCOUNT *sampass)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
+	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 
 	const char *username = pdb_get_username(sampass);
 

@@ -4,6 +4,7 @@
    
    Copyright (C) Simo Sorce      2000
    Copyright (C) Andrew Bartlett 2001   
+   Copyright (C) Jelmer Vernooij 2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,40 +26,40 @@
 extern pstring global_myname;
 extern BOOL AllowDebugChange;
 
-/*
- * Next two lines needed for SunOS and don't
- * hurt anything else...
- */
-extern char *optarg;
-extern int optind;
-
 /*********************************************************
- Print command usage on stderr and die.
-**********************************************************/
-static void usage(void)
-{
-	if (getuid() == 0) {
-		printf("pdbedit options\n");
-	} else {
-		printf("You need to be root to use this tool!\n");
+ Add all currently available users to another db
+ ********************************************************/
+
+int export_database (struct pdb_context *in, char *db){
+	struct pdb_context *context;
+	SAM_ACCOUNT *user = NULL;
+
+	if(!NT_STATUS_IS_OK(make_pdb_context_name(&context, db))){
+		fprintf(stderr, "Can't initialize %s.\n", db);
+		return 1;
 	}
-	printf("(actually to add a user you need to use smbpasswd)\n");
-	printf("options:\n");
-	printf("  -l                   list usernames\n");
-	printf("     -v                verbose output\n");
-	printf("     -w                smbpasswd file style\n");
-	printf("  -u username          print user's info\n");
-	printf("     -f fullname       set Full Name\n");
-	printf("     -h homedir        set home directory\n");
-	printf("     -d drive          set home dir drive\n");
-	printf("     -s script         set logon script\n");
-	printf("     -p profile        set profile path\n");
-	printf("  -a                   create new account\n");
-	printf("     -m                it is a machine trust\n");
-	printf("  -x                   delete this user\n");
-	printf("  -i file              import account from file (smbpasswd style)\n");
-	printf("  -D debuglevel        set DEBUGELEVEL (default = 1)\n");
-	exit(1);
+
+	if(!in->pdb_setsampwent(in, 0)){
+		fprintf(stderr, "Can't sampwent!\n");
+		return 1;
+	}
+
+	if(!NT_STATUS_IS_OK(pdb_init_sam(&user))){
+		fprintf(stderr, "Can't initialize new SAM_ACCOUNT!\n");
+		return 1;
+	}
+
+	while(in->pdb_getsampwent(in,user)){
+		context->pdb_add_sam_account(context,user);
+		if(!NT_STATUS_IS_OK(pdb_reset_sam(user))){
+			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
+			return 1;
+		}
+	}
+
+	in->pdb_endsampwent(in);
+
+	return 0;
 }
 
 /*********************************************************
@@ -126,7 +127,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
  Get an Print User Info
 **********************************************************/
 
-static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
+static int print_user_info (struct pdb_context *in, char *username, BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
@@ -135,7 +136,7 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 		return -1;
 	}
 	
-	ret = pdb_getsampwnam (sam_pwent, username);
+	ret = in->pdb_getsampwnam (in, sam_pwent, username);
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
@@ -152,13 +153,13 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 /*********************************************************
  List Users
 **********************************************************/
-static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
+static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check, ret;
 	
 	errno = 0; /* testing --simo */
-	check = pdb_setsampwent(False);
+	check = in->pdb_setsampwent(in, False);
 	if (check && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
 		exit(1);
@@ -167,7 +168,7 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	check = True;
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
-	while (check && (ret = pdb_getsampwent (sam_pwent))) {
+	while (check && (ret = in->pdb_getsampwent (in, sam_pwent))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
@@ -176,7 +177,7 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	}
 	if (check) pdb_free_sam(&sam_pwent);
 	
-	pdb_endsampwent();
+	in->pdb_endsampwent(in);
 	return 0;
 }
 
@@ -184,14 +185,14 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
  Set User Info
 **********************************************************/
 
-static int set_user_info (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
+static int set_user_info (struct pdb_context *in, char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
 	
 	pdb_init_sam(&sam_pwent);
 	
-	ret = pdb_getsampwnam (sam_pwent, username);
+	ret = in->pdb_getsampwnam (in, sam_pwent, username);
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
 		pdb_free_sam(&sam_pwent);
@@ -209,8 +210,8 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	if (profile)
 		pdb_set_profile_path (sam_pwent, profile, True);
 	
-	if (pdb_update_sam_account (sam_pwent))
-		print_user_info (username, True, False);
+	if (in->pdb_update_sam_account (in, sam_pwent))
+		print_user_info (in, username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
 		pdb_free_sam(&sam_pwent);
@@ -223,7 +224,7 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 /*********************************************************
  Add New User
 **********************************************************/
-static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
+static int new_user (struct pdb_context *in, char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
@@ -265,8 +266,8 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL);
 	
-	if (pdb_add_sam_account (sam_pwent)) { 
-		print_user_info (username, True, False);
+	if (in->pdb_add_sam_account (in, sam_pwent)) { 
+		print_user_info (in, username, True, False);
 	} else {
 		fprintf (stderr, "Unable to add user! (does it alredy exist?)\n");
 		pdb_free_sam (&sam_pwent);
@@ -280,7 +281,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
  Add New Machine
 **********************************************************/
 
-static int new_machine (char *machinename)
+static int new_machine (struct pdb_context *in, char *machinename)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	char name[16];
@@ -307,8 +308,8 @@ static int new_machine (char *machinename)
 	
 	pdb_set_group_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS);
 	
-	if (pdb_add_sam_account (sam_pwent)) {
-		print_user_info (name, True, False);
+	if (in->pdb_add_sam_account (in, sam_pwent)) {
+		print_user_info (in, name, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
 		pdb_free_sam (&sam_pwent);
@@ -322,7 +323,7 @@ static int new_machine (char *machinename)
  Delete user entry
 **********************************************************/
 
-static int delete_user_entry (char *username)
+static int delete_user_entry (struct pdb_context *in, char *username)
 {
 	SAM_ACCOUNT *samaccount = NULL;
 
@@ -330,19 +331,19 @@ static int delete_user_entry (char *username)
 		return -1;
 	}
 
-	if (!pdb_getsampwnam(samaccount, username)) {
+	if (!in->pdb_getsampwnam(in, samaccount, username)) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
 		return -1;
 	}
 
-	return pdb_delete_sam_account (samaccount);
+	return in->pdb_delete_sam_account (in, samaccount);
 }
 
 /*********************************************************
  Delete machine entry
 **********************************************************/
 
-static int delete_machine_entry (char *machinename)
+static int delete_machine_entry (struct pdb_context *in, char *machinename)
 {
 	char name[16];
 	SAM_ACCOUNT *samaccount = NULL;
@@ -355,189 +356,12 @@ static int delete_machine_entry (char *machinename)
 		return -1;
 	}
 
-	if (!pdb_getsampwnam(samaccount, name)) {
+	if (!in->pdb_getsampwnam(in, samaccount, name)) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", name);
 		return -1;
 	}
 
-	return pdb_delete_sam_account (samaccount);
-}
-
-/*********************************************************
- Import smbpasswd style file
-**********************************************************/
-
-static int import_users (char *filename)
-{
-	FILE *fp = NULL;
-	SAM_ACCOUNT *sam_pwent = NULL;
-	static pstring  user_name;
-	static unsigned char smbpwd[16];
-	static unsigned char smbntpwd[16];
-	char linebuf[256];
-	size_t linebuf_len;
-	unsigned char c;
-	unsigned char *p;
-	long uidval;
-	int line = 0;
-	int good = 0;
-	struct passwd *pwd;
-
-	if((fp = sys_fopen(filename, "rb")) == NULL) {
-		fprintf (stderr, "%s\n", strerror (ferror (fp)));
-		return -1;
-	}
-	
-	while (!feof(fp)) {
-		/*Get a new line*/
-		linebuf[0] = '\0';
-		fgets(linebuf, 256, fp);
-		if (ferror(fp)) {
-			fprintf (stderr, "%s\n", strerror (ferror (fp)));
-			return -1;
-		}
-		if ((linebuf_len = strlen(linebuf)) == 0) {
-			line++;
-			continue;
-		}
-		if (linebuf[linebuf_len - 1] != '\n') {
-			c = '\0';
-			while (!ferror(fp) && !feof(fp)) {
-				c = fgetc(fp);
-				if (c == '\n') break;
-			}
-		} else
-			linebuf[linebuf_len - 1] = '\0';
-		linebuf[linebuf_len] = '\0';
-		if ((linebuf[0] == 0) && feof(fp)) {
-			/*end of file!!*/
-			return 0;
-		}
-		line++;
-		if (linebuf[0] == '#' || linebuf[0] == '\0')
-			continue;
-		
-		/* Get user name */
-		p = (unsigned char *) strchr_m(linebuf, ':');
-		if (p == NULL) {
-			fprintf (stderr, "Error: malformed password entry at line %d !!\n", line);
-			continue;
-		}
-		strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
-		user_name[PTR_DIFF(p, linebuf)] = '\0';
-
-		/* Get smb uid. */
-		p++;
-		if(*p == '-') {
-			fprintf (stderr, "Error: negative uid at line %d\n", line);
-			continue;
-		}
-		if (!isdigit(*p)) {
-			fprintf (stderr, "Error: malformed password entry at line %d (uid not number)\n", line);
-			continue;
-		}
-		uidval = atoi((char *) p);
-		while (*p && isdigit(*p)) p++;
-		if (*p != ':') {
-			fprintf (stderr, "Error: malformed password entry at line %d (no : after uid)\n", line);
-			continue;
-		}
-		if(!(pwd = sys_getpwnam(user_name))) {
-			fprintf(stderr, "User %s does not \
-exist in system password file (usually /etc/passwd). Cannot add \
-account without a valid local system user.\n", user_name);
-			return False;
-		}
-
-		if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pwent, pwd))) {
-			fprintf(stderr, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
-			return False;
-		}
-
-		/* Get passwords */
-		p++;
-		if (*p == '*' || *p == 'X') {
-			/* Password deliberately invalid */
-			fprintf (stderr, "Warning: entry invalidated for user %s\n", user_name);
-			pdb_set_lanman_passwd(sam_pwent, NULL);
-			pdb_set_nt_passwd(sam_pwent,NULL);
-			pdb_set_acct_ctrl(sam_pwent, pdb_get_acct_ctrl(sam_pwent) | ACB_DISABLED);
-		} else {
-			if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
-				fprintf (stderr, "Error: malformed password entry at line %d (password too short)\n",line);
-				pdb_free_sam (&sam_pwent);
-				continue;
-			}
-			if (p[32] != ':') {
-				fprintf (stderr, "Error: malformed password entry at line %d (no terminating :)\n",line);
-				pdb_free_sam (&sam_pwent);
-				continue;
-			}
-			if (!strncasecmp((char *) p, "NO PASSWORD", 11)) {
-				pdb_set_lanman_passwd(sam_pwent, NULL);
-				pdb_set_acct_ctrl(sam_pwent, pdb_get_acct_ctrl(sam_pwent) | ACB_PWNOTREQ);
-			} else {
-				if (!pdb_gethexpwd((char *)p, smbpwd)) {
-					fprintf (stderr, "Error: malformed Lanman password entry at line %d (non hex chars)\n", line);
-					pdb_free_sam (&sam_pwent);
-					continue;
-				}
-				pdb_set_lanman_passwd(sam_pwent, smbpwd);
-			}
-			/* NT password */
-			p += 33;
-			if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
-				if (*p != '*' && *p != 'X') {
-					if (pdb_gethexpwd((char *)p,smbntpwd)) {
-						pdb_set_nt_passwd(sam_pwent, smbntpwd);
-					}
-				}
-				p += 33;
-			}
-		}
-
-		/* Get ACCT_CTRL field if any */
-		if (*p == '[') {
-			uint16 acct_ctrl;
-			unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
-			
-			acct_ctrl = pdb_decode_acct_ctrl((char*)p);
-			if (acct_ctrl)
-				acct_ctrl = ACB_NORMAL;
-
-			pdb_set_acct_ctrl(sam_pwent, acct_ctrl);
-			
-			/* Get last change time */
-			if(end_p)
-				p = end_p + 1;
-			if(*p == ':') {
-				p++;
-				if(*p && (StrnCaseCmp((char *)p, "LCT-", 4)==0)) {
-					int i;
-					
-					p += 4;
-					for(i = 0; i < 8; i++) {
-						if(p[i] == '\0' || !isxdigit(p[i])) break;
-					}
-					if(i == 8) {
-						 pdb_set_pass_last_set_time (sam_pwent, (time_t)strtol((char *)p, NULL, 16));
-					}
-				}
-			}
-		}
-
-		 /* Now ADD the entry */
-		if (!(pdb_add_sam_account (sam_pwent))) {
-			fprintf (stderr, "Unable to add user entry!\n");
-			pdb_free_sam (&sam_pwent);
-			continue;
-		}
-		printf ("%s imported!\n", user_name);
-		good++;
-		pdb_free_sam (&sam_pwent);
-	}
-	printf ("%d lines read.\n%d entryes imported\n", line, good);
-	return 0;
+	return in->pdb_delete_sam_account (in, samaccount);
 }
 
 /*********************************************************
@@ -546,7 +370,7 @@ account without a valid local system user.\n", user_name);
 
 int main (int argc, char **argv)
 {
-	int ch;
+	struct pdb_context *in;
 	BOOL list_users = False;
 	BOOL verbose = False;
 	BOOL spstyle = False;
@@ -555,93 +379,64 @@ int main (int argc, char **argv)
 	BOOL add_user = False;
 	BOOL delete_user = False;
 	BOOL import = False;
-	char *user_name = NULL;
+	int opt;
 	char *full_name = NULL;
+	char *user_name = NULL;
 	char *home_dir = NULL;
 	char *home_drive = NULL;
+	char *backend_in = NULL;
+	char *backend_out = NULL;
 	char *logon_script = NULL;
 	char *profile_path = NULL;
-	char *smbpasswd = NULL;
-
-	setup_logging("pdbedit", True);
-
-	if (argc < 2) {
-		usage();
-		return 0;
-	}
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"list",	'l',POPT_ARG_VAL, &list_users, 1, "list all users", NULL},
+		{"verbose",	'v',POPT_ARG_VAL, &verbose, 1, "be verbose", NULL },
+		{"smbpasswd-style",	'w',POPT_ARG_VAL, &spstyle, 1, "give output in smbpasswd style", NULL},
+		{"user",	'u',POPT_ARG_STRING,&user_name, 0, "use username", "USER" },
+		{"fullname",	'f',POPT_ARG_STRING,&full_name, 0, "set full name", NULL},
+		{"homedir",	'h',POPT_ARG_STRING,&home_dir, 0, "set home directory", NULL},
+		{"drive",	'd',POPT_ARG_STRING,&home_drive, 0, "set home drive", NULL},
+		{"script",	's',POPT_ARG_STRING,&logon_script, 0, "set logon script", NULL},
+		{"profile",	'p',POPT_ARG_STRING,&profile_path, 0, "set profile path", NULL},
+		{"create",	'a',POPT_ARG_VAL,&add_user, 1, "create user", NULL},
+		{"machine",	'm',POPT_ARG_VAL,&machine, 1,"account is a machine account",NULL},
+		{"delete",	'x',POPT_ARG_VAL,&delete_user,1,"delete user",NULL},
+		{"import",	'i',POPT_ARG_STRING,&backend_in,0,"use different passdb backend",NULL},
+		{"export",	'e',POPT_ARG_STRING,&backend_out,0,"export user accounts to backend", NULL},
+		{"debuglevel",'D',POPT_ARG_INT,&DEBUGLEVEL,0,"set debuglevel",NULL},
+		{0,0,0,0}
+	};
 	
 	DEBUGLEVEL = 1;
+	setup_logging("pdbedit", True);
 	AllowDebugChange = False;
-
+	
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			dyn_CONFIGFILE);
 		exit(1);
 	}
-	
-	if(!initialize_password_db(True)) {
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
-	
-	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwxD:")) != EOF) {
-		switch(ch) {
-		case 'a':
-			add_user = True;
-			break;
-		case 'm':
-			machine = True;
-			break;
-		case 'l':
-			list_users = True;
-			break;
-		case 'v':
-			verbose = True;
-			break;
-		case 'w':
-			spstyle = True;
-			break;
-		case 'u':
-			user_name = optarg;
-			break;
-		case 'f':
-			setparms = True;
-			full_name = optarg;
-			break;
-		case 'h':
-			setparms = True;
-			home_dir = optarg;
-			break;
-		case 'd':
-			setparms = True;
-			home_drive = optarg;
-			break;
-		case 's':
-			setparms = True;
-			logon_script = optarg;
-			break;
-		case 'p':
-			setparms = True;
-			profile_path = optarg;
-			break;
-		case 'x':
-			delete_user = True;
-			break;
-		case 'i':
-			import = True;
-			smbpasswd = optarg;
-			break;
-		case 'D':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		default:
-			usage();
-		}
-	}
-	if (((add_user?1:0) + (delete_user?1:0) + (list_users?1:0) + (import?1:0) + (setparms?1:0)) > 1) {
+
+	backend_in = lp_passdb_backend();
+
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
+						POPT_CONTEXT_KEEP_FIRST);
+
+	while((opt = poptGetNextOpt(pc)) != -1);
+
+	setparms = (full_name || home_dir || home_drive || logon_script || profile_path);
+
+	if (((add_user?1:0) + (delete_user?1:0) + (list_users?1:0) + (import?1:0) + (setparms?1:0)) + (backend_out?1:0) > 1) {
 		fprintf (stderr, "Incompatible options on command line!\n");
-		usage();
 		exit(1);
+	}
+	
+
+	if(!NT_STATUS_IS_OK(make_pdb_context_name(&in, backend_in))){
+		fprintf(stderr, "Can't initialize %s.\n", backend_in);
+		return 1;
 	}
 
 	if (add_user) {
@@ -650,9 +445,9 @@ int main (int argc, char **argv)
 			return -1;
 		}
 		if (machine)
-			return new_machine (user_name);
+			return new_machine (in, user_name);
 		else
-			return new_user (user_name, full_name, home_dir, home_drive, logon_script, profile_path);
+			return new_user (in, user_name, full_name, home_dir, home_drive, logon_script, profile_path);
 	}
 
 	if (delete_user) {
@@ -661,32 +456,29 @@ int main (int argc, char **argv)
 			return -1;
 		}
 		if (machine)
-			return delete_machine_entry (user_name);
+			return delete_machine_entry (in, user_name);
 		else
-			return delete_user_entry (user_name);
+			return delete_user_entry (in, user_name);
 	}
 	
 	if (user_name) {
 		if (setparms)
-			set_user_info (	user_name, full_name,
+			return set_user_info (in,	user_name, full_name,
 						home_dir,
 						home_drive,
 						logon_script,
 						profile_path);
 		else
-			return print_user_info (user_name, verbose, spstyle);
-		
-		return 0;
+			return print_user_info (in, user_name, verbose, spstyle);
 	}
 
-	
 	if (list_users) 
-		return print_users_list (verbose, spstyle);
-	
-	if (import) 
-		return import_users (smbpasswd); 
-	
-	usage();
+		return print_users_list (in, verbose, spstyle);
 
-	return 0;
+	if (backend_out)
+		return export_database(in, backend_out);
+	
+	poptPrintHelp(pc, stderr, 0);
+	
+	return 1;
 }

@@ -1006,9 +1006,9 @@ static uint32 ldapsam_get_next_available_nua_rid(struct ldapsam_privates *ldap_s
 /**********************************************************************
 Connect to LDAP server for password enumeration
 *********************************************************************/
-static BOOL ldapsam_setsampwent(struct pdb_context *context, BOOL update)
+static BOOL ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	pstring filter;
 
@@ -1054,9 +1054,9 @@ static BOOL ldapsam_setsampwent(struct pdb_context *context, BOOL update)
 /**********************************************************************
 End enumeration of the LDAP password list 
 *********************************************************************/
-static void ldapsam_endsampwent(struct pdb_context *context)
+static void ldapsam_endsampwent(struct pdb_methods *my_methods)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	if (ldap_state->ldap_struct && ldap_state->result)
 	{
 		ldap_msgfree(ldap_state->result);
@@ -1069,9 +1069,9 @@ static void ldapsam_endsampwent(struct pdb_context *context)
 /**********************************************************************
 Get the next entry in the LDAP password database 
 *********************************************************************/
-static BOOL ldapsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT * user)
+static BOOL ldapsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT * user)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	BOOL ret = False;
 
 	while (!ret) {
@@ -1093,9 +1093,9 @@ static BOOL ldapsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT * user)
 /**********************************************************************
 Get SAM_ACCOUNT entry from LDAP by username 
 *********************************************************************/
-static BOOL ldapsam_getsampwnam(struct pdb_context *context, SAM_ACCOUNT * user, const char *sname)
+static BOOL ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const char *sname)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAP *ldap_struct;
 	LDAPMessage *result;
 	LDAPMessage *entry;
@@ -1144,9 +1144,9 @@ static BOOL ldapsam_getsampwnam(struct pdb_context *context, SAM_ACCOUNT * user,
 /**********************************************************************
 Get SAM_ACCOUNT entry from LDAP by rid 
 *********************************************************************/
-static BOOL ldapsam_getsampwrid(struct pdb_context *context, SAM_ACCOUNT * user, uint32 rid)
+static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, uint32 rid)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAP *ldap_struct;
 	LDAPMessage *result;
 	LDAPMessage *entry;
@@ -1199,9 +1199,9 @@ static BOOL ldapsam_getsampwrid(struct pdb_context *context, SAM_ACCOUNT * user,
 /**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
-static BOOL ldapsam_delete_sam_account(struct pdb_context *context, const SAM_ACCOUNT * sam_acct)
+static BOOL ldapsam_delete_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT * sam_acct)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	const char *sname;
 	int rc;
 	char *dn;
@@ -1259,9 +1259,9 @@ static BOOL ldapsam_delete_sam_account(struct pdb_context *context, const SAM_AC
 /**********************************************************************
 Update SAM_ACCOUNT 
 *********************************************************************/
-static BOOL ldapsam_update_sam_account(struct pdb_context *context, const SAM_ACCOUNT * newpwd)
+static BOOL ldapsam_update_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT * newpwd)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	char *dn;
 	LDAP *ldap_struct;
@@ -1326,9 +1326,9 @@ static BOOL ldapsam_update_sam_account(struct pdb_context *context, const SAM_AC
 /**********************************************************************
 Add SAM_ACCOUNT to LDAP 
 *********************************************************************/
-static BOOL ldapsam_add_sam_account(struct pdb_context *context, const SAM_ACCOUNT * newpwd)
+static BOOL ldapsam_add_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT * newpwd)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)context->pdb_selected->private_data;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	pstring filter;
 	LDAP *ldap_struct = NULL;

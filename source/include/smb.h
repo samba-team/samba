@@ -595,6 +595,8 @@ typedef struct sam_passwd
 	
 	void (*free_fn)(struct sam_passwd **);
 
+    struct pdb_methods *methods;
+
 	struct user_data {
 		/* initiailization flags */
 		uint32 init_flag;
