@@ -278,8 +278,10 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
  */
 void schannel_end(struct schannel_state **state)
 {
-	talloc_destroy((*state)->mem_ctx);
-	(*state) = NULL;
+	if (*state) {
+		talloc_destroy((*state)->mem_ctx);
+		(*state) = NULL;
+	}
 }
 
 /*
