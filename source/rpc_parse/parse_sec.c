@@ -278,6 +278,163 @@ size_t sec_desc_size(SEC_DESC *psd)
 }
 
 /*******************************************************************
+ Compares two SEC_ACE structures
+********************************************************************/
+
+BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
+{
+	/* Trivial case */
+
+	if (!s1 && !s2) return True;
+
+	/* Check top level stuff */
+
+	if (s1->type != s2->type || s1->flags != s2->flags ||
+	    s1->info.mask != s2->info.mask) {
+		return False;
+	}
+
+	/* Check SID */
+
+	if (!sid_equal(&s1->sid, &s2->sid)) {
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Compares two SEC_ACL structures
+********************************************************************/
+
+BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
+{
+	int i, j;
+
+	/* Trivial case */
+
+	if (!s1 && !s2) return True;
+
+	/* Check top level stuff */
+
+	if (s1->revision != s2->revision || s1->num_aces != s2->num_aces) {
+		return False;
+	}
+
+	/* The ACEs could be in any order so check each ACE in s1 against 
+	   each ACE in s2. */
+
+	for (i = 0; i < s1->num_aces; i++) {
+		BOOL found = False;
+
+		for (j = 0; j < s2->num_aces; j++) {
+			if (sec_ace_equal(&s1->ace[i], &s2->ace[j])) {
+				found = True;
+				break;
+			}
+		}
+
+		if (!found) return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Compares two SEC_DESC structures
+********************************************************************/
+
+BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
+{
+	/* Trivial case */
+
+	if (!s1 && !s2) return True;
+
+	/* Check top level stuff */
+
+	if (s1->revision != s2->revision || s1->type != s2->type) {
+		return False;
+	}
+
+	/* Check owner and group */
+
+	if (!sid_equal(s1->owner_sid, s2->owner_sid) ||
+	    !sid_equal(s1->grp_sid, s2->grp_sid)) {
+		return False;
+	}
+
+	/* Check ACLs present in one but not the other */
+
+	if ((s1->dacl && !s2->dacl) || (!s1->dacl && s2->dacl) ||
+	    (s1->sacl && !s2->sacl) || (!s1->sacl && s2->sacl)) {
+		return False;
+	}
+
+	/* Sigh - we have to do it the hard way by iterating over all
+	   the ACEs in the ACLs */
+
+	if (!sec_acl_equal(s1->dacl, s2->dacl) ||
+	    !sec_acl_equal(s1->sacl, s2->sacl)) {
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Merge part of security descriptor old_sec in to the empty sections of 
+ security descriptor new_sec.
+********************************************************************/
+
+SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
+{
+	DOM_SID *owner_sid, *group_sid;
+	SEC_DESC_BUF *return_sdb;
+	SEC_ACL *dacl, *sacl;
+	SEC_DESC *psd = NULL;
+	uint16 secdesc_type;
+	size_t secdesc_size;
+
+	/* Copy over owner and group sids.  There seems to be no flag for
+	   this so just check the pointer values. */
+
+	owner_sid = new_sdb->sec->owner_sid ? new_sdb->sec->owner_sid :
+		old_sdb->sec->owner_sid;
+
+	group_sid = new_sdb->sec->grp_sid ? new_sdb->sec->grp_sid :
+		old_sdb->sec->grp_sid;
+	
+	secdesc_type = new_sdb->sec->type;
+
+	/* Ignore changes to the system ACL.  This has the effect of making
+	   changes through the security tab audit button not sticking. 
+	   Perhaps in future Samba could implement these settings somehow. */
+
+	sacl = NULL;
+	secdesc_type &= ~SEC_DESC_SACL_PRESENT;
+
+	/* Copy across discretionary ACL */
+
+	if (secdesc_type & SEC_DESC_DACL_PRESENT) {
+		dacl = new_sdb->sec->dacl;
+	} else {
+		dacl = old_sdb->sec->dacl;
+		secdesc_type |= SEC_DESC_DACL_PRESENT;
+	}
+
+	/* Create new security descriptor from bits */
+
+	psd = make_sec_desc(new_sdb->sec->revision, secdesc_type,
+			    owner_sid, group_sid, sacl, dacl, &secdesc_size);
+
+	return_sdb = make_sec_desc_buf(secdesc_size, psd);
+
+	free_sec_desc(&psd);
+
+	return(return_sdb);
+}
+
+/*******************************************************************
  Creates a SEC_DESC structure
 ********************************************************************/
 
