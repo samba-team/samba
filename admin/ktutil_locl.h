@@ -65,8 +65,6 @@
 extern krb5_context context;
 extern krb5_keytab keytab;
 
-extern int help_flag;
-extern int version_flag;
 extern int verbose_flag;
 extern char *keytab_string; 
 
