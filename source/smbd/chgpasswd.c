@@ -297,9 +297,17 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
     return(False);
   }
 
+  /*
+   * We need to temporarily stop CatchChild from eating
+   * SIGCLD signals as it also eats the exit status code. JRA.
+   */
+
+  CatchChildLeaveStatus();
+
   if ((pid = fork()) < 0) {
     DEBUG(3,("Cannot fork() child for password change: %s\n",name));
     close(master);
+    CatchChild();
     return(False);
   }
 
@@ -313,8 +321,14 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
     if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
       close(master);
+      CatchChild();
       return(False);
     }
+
+    /*
+     * Go back to ignoring children.
+     */
+    CatchChild();
 
     close(master);
 

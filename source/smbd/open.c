@@ -144,10 +144,13 @@ static void fd_attempt_reopen(char *fname, mode_t mode, file_fd_struct *fd_ptr)
 fd support routines - attempt to close the file referenced by this fd.
 Decrements the ref_count and returns it.
 ****************************************************************************/
-uint16 fd_attempt_close(file_fd_struct *fd_ptr)
+
+uint16 fd_attempt_close(file_fd_struct *fd_ptr, int *err_ret)
 {
   extern struct current_user current_user;
   uint16 ret_ref = fd_ptr->ref_count;
+
+  *err_ret = 0;
 
   DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %.0f, open_flags = %d, ref_count = %d.\n",
           fd_ptr->fd, (unsigned int)fd_ptr->dev, (double)fd_ptr->inode,
@@ -160,12 +163,26 @@ uint16 fd_attempt_close(file_fd_struct *fd_ptr)
   ret_ref = fd_ptr->ref_count;
 
   if(fd_ptr->ref_count == 0) {
-    if(fd_ptr->fd != -1)
-      close(fd_ptr->fd);
-    if(fd_ptr->fd_readonly != -1)
-      close(fd_ptr->fd_readonly);
-    if(fd_ptr->fd_writeonly != -1)
-      close(fd_ptr->fd_writeonly);
+
+    if(fd_ptr->fd != -1) {
+      if(close(fd_ptr->fd) < 0)
+        *err_ret = errno;
+	}
+
+    if(fd_ptr->fd_readonly != -1) {
+      if(close(fd_ptr->fd_readonly) < 0) {
+        if(*err_ret == 0)
+          *err_ret = errno;
+      }
+	}
+
+    if(fd_ptr->fd_writeonly != -1) {
+      if( close(fd_ptr->fd_writeonly) < 0) {
+        if(*err_ret == 0)
+          *err_ret = errno;
+      }
+	}
+
     /*
      * Delete this fd_ptr.
      */
@@ -174,7 +191,7 @@ uint16 fd_attempt_close(file_fd_struct *fd_ptr)
     fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
   }
 
- return ret_ref;
+  return ret_ref;
 }
 
 /****************************************************************************
@@ -184,12 +201,21 @@ This is really ugly code, as due to POSIX locking braindamage we must
 fork and then attempt to open the file, and return success or failure
 via an exit code.
 ****************************************************************************/
+
 static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
 {
   pid_t child_pid;
 
+  /*
+   * We need to temporarily stop CatchChild from eating 
+   * SIGCLD signals as it also eats the exit status code. JRA.
+   */
+
+  CatchChildLeaveStatus();
+
   if((child_pid = fork()) < 0) {
     DEBUG(0,("check_access_allowed_for_current_user: fork failed.\n"));
+    CatchChild();
     return False;
   }
 
@@ -201,8 +227,14 @@ static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
     int status_code;
     if ((wpid = sys_waitpid(child_pid, &status_code, 0)) < 0) {
       DEBUG(0,("check_access_allowed_for_current_user: The process is no longer waiting!\n"));
+      CatchChild();
       return(False);
     }
+
+	/*
+	 * Go back to ignoring children.
+	 */
+	CatchChild();
 
     if (child_pid != wpid) {
       DEBUG(0,("check_access_allowed_for_current_user: We were waiting for the wrong process ID\n"));
@@ -449,7 +481,8 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     p = strrchr(dname,'/');
     if (p) *p = 0;
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < (SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
-      if(fd_attempt_close(fd_ptr) == 0)
+      int err;
+      if(fd_attempt_close(fd_ptr, &err) == 0)
         dos_unlink(fname);
       fsp->fd_ptr = 0;
       errno = ENOSPC;
@@ -459,10 +492,11 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     
   if (fd_ptr->fd < 0)
   {
+    int err;
     DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
       fname,strerror(errno),flags));
     /* Ensure the ref_count is decremented. */
-    fd_attempt_close(fd_ptr);
+    fd_attempt_close(fd_ptr,&err);
     check_for_pipe(fname);
     return;
   }
@@ -472,11 +506,12 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     if(sbuf == 0) {
       /* Do the fstat */
       if(sys_fstat(fd_ptr->fd, &statbuf) == -1) {
+        int err;
         /* Error - backout !! */
         DEBUG(3,("Error doing fstat on fd %d, file %s (%s)\n",
                  fd_ptr->fd, fname,strerror(errno)));
         /* Ensure the ref_count is decremented. */
-        fd_attempt_close(fd_ptr);
+        fd_attempt_close(fd_ptr,&err);
         return;
       }
       sbuf = &statbuf;

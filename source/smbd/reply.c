@@ -2610,6 +2610,7 @@ int reply_close(connection_struct *conn,
 		/*
 		 * Close ordinary file.
 		 */
+		int close_err;
 
 		/*
 		 * If there was a modify time outstanding,
@@ -2629,8 +2630,17 @@ int reply_close(connection_struct *conn,
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
 			 fsp->fd_ptr->fd, fsp->fnum,
 			 conn->num_files_open));
-  
-		close_file(fsp,True);
+ 
+		/*
+		 * close_file() returns the unix errno if an error
+		 * was detected on close - normally this is due to
+		 * a disk full error. If not then it was probably an I/O error.
+		 */
+ 
+		if((close_err = close_file(fsp,True)) != 0) {
+			errno = close_err;
+			return (UNIXERROR(ERRHRD,ERRgeneral));
+		}
 	}  
 
 	/* We have a cached error */
@@ -2650,6 +2660,7 @@ int reply_writeclose(connection_struct *conn,
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	int outsize = 0;
+	int close_err = 0;
 	SMB_OFF_T startpos;
 	char *data;
 	time_t mtime;
@@ -2674,7 +2685,7 @@ int reply_writeclose(connection_struct *conn,
 
 	set_filetime(conn, fsp->fsp_name,mtime);
   
-	close_file(fsp,True);
+	close_err = close_file(fsp,True);
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
 		 fsp->fnum, numtowrite, nwritten,
@@ -2682,7 +2693,12 @@ int reply_writeclose(connection_struct *conn,
   
 	if (nwritten <= 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
+ 
+	if(close_err != 0) {
+		errno = close_err;
+		return(UNIXERROR(ERRHRD,ERRgeneral));
+	}
+ 
 	outsize = set_message(outbuf,1,0,True);
   
 	SSVAL(outbuf,smb_vwv0,nwritten);
@@ -2887,6 +2903,7 @@ int reply_printclose(connection_struct *conn,
 {
 	int outsize = set_message(outbuf,0,0,True);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	int close_err = 0;
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
@@ -2897,7 +2914,12 @@ int reply_printclose(connection_struct *conn,
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
 		 fsp->fd_ptr->fd,fsp->fnum));
   
-	close_file(fsp,True);
+	close_err = close_file(fsp,True);
+
+	if(close_err != 0) {
+		errno = close_err;
+		return(UNIXERROR(ERRHRD,ERRgeneral));
+	}
 
 	return(outsize);
 }
@@ -3507,7 +3529,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
   ******************************************************************/
 
 static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
-		      int count,BOOL target_is_directory)
+		      int count,BOOL target_is_directory, int *err_ret)
 {
   int Access,action;
   SMB_STRUCT_STAT st;
@@ -3515,6 +3537,8 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   files_struct *fsp1,*fsp2;
   pstring dest;
   
+  *err_ret = 0;
+
   pstrcpy(dest,dest1);
   if (target_is_directory) {
     char *p = strrchr(src,'/');
@@ -3575,7 +3599,13 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
                         fsp2->fd_ptr->fd,st.st_size,NULL,0,0);
 
   close_file(fsp1,False);
-  close_file(fsp2,False);
+  /*
+   * As we are opening fsp1 read-only we only expect
+   * an error on close on fsp2 if we are out of space.
+   * Thus we don't look at the error return from the
+   * close of fsp1.
+   */
+  *err_ret = close_file(fsp2,False);
 
   return(ret == st.st_size);
 }
@@ -3594,6 +3624,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   char *p;
   int count=0;
   int error = ERRnoaccess;
+  int err = 0;
   BOOL has_wild;
   BOOL exists=False;
   int tid2 = SVAL(inbuf,smb_vwv0);
@@ -3655,7 +3686,11 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     pstrcat(directory,mask);
     if (resolve_wildcards(directory,newname) && 
 	copy_file(directory,newname,conn,ofun,
-		  count,target_is_directory)) count++;
+		  count,target_is_directory,&err)) count++;
+    if(!count && err) {
+		errno = err;
+		return(UNIXERROR(ERRHRD,ERRgeneral));
+	}
     if (!count) exists = dos_file_exist(directory,NULL);
   } else {
     void *dirptr = NULL;
@@ -3665,33 +3700,38 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     if (check_name(directory,conn))
       dirptr = OpenDir(conn, directory, True);
 
-    if (dirptr)
-      {
+    if (dirptr) {
 	error = ERRbadfile;
 
 	if (strequal(mask,"????????.???"))
 	  pstrcpy(mask,"*");
 
-	while ((dname = ReadDirName(dirptr)))
-	  {
+	while ((dname = ReadDirName(dirptr))) {
 	    pstring fname;
 	    pstrcpy(fname,dname);
 	    
-	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
+	    if(!mask_match(fname, mask, case_sensitive, False))
+			continue;
 
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    pstrcpy(destname,newname);
 	    if (resolve_wildcards(fname,destname) && 
 		copy_file(directory,newname,conn,ofun,
-			  count,target_is_directory)) count++;
+			  count,target_is_directory,&err)) count++;
 	    DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 	  }
 	CloseDir(dirptr);
-      }
+    }
   }
   
   if (count == 0) {
+    if(err) {
+      /* Error on close... */
+      errno = err;
+      return(UNIXERROR(ERRHRD,ERRgeneral));
+    }
+
     if (exists)
       return(ERROR(ERRDOS,error));
     else

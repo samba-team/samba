@@ -22,22 +22,31 @@
 
 #include "includes.h"
 
-
 /****************************************************************************
-catch child exits
+ Catch child exits and reap the child zombie status.
 ****************************************************************************/
+
 static void sig_cld(int signum)
 {
-	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0) ;
+	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0)
+		;
 
 	CatchSignal(SIGCLD, sig_cld);
 }
 
+/****************************************************************************
+catch child exits - leave status;
+****************************************************************************/
 
+static void sig_cld_leave_status(int signum)
+{
+	CatchSignal(SIGCLD, sig_cld_leave_status);
+}
 
 /*******************************************************************
-block sigs
+ Block sigs.
 ********************************************************************/
+
 void BlockSignals(BOOL block,int signum)
 {
 #ifdef HAVE_SIGPROCMASK
@@ -63,14 +72,13 @@ void BlockSignals(BOOL block,int signum)
 #endif
 }
 
-
-
 /*******************************************************************
-catch a signal. This should implement the following semantics:
+ Catch a signal. This should implement the following semantics:
 
-1) the handler remains installed after being called
-2) the signal should be blocked during handler execution
+ 1) The handler remains installed after being called.
+ 2) The signal should be blocked during handler execution.
 ********************************************************************/
+
 void CatchSignal(int signum,void (*handler)(int ))
 {
 #ifdef HAVE_SIGACTION
@@ -91,12 +99,20 @@ void CatchSignal(int signum,void (*handler)(int ))
 #endif
 }
 
-
-
 /*******************************************************************
-ignore SIGCLD via whatever means is necessary for this OS
+ Ignore SIGCLD via whatever means is necessary for this OS.
 ********************************************************************/
+
 void CatchChild(void)
 {
 	CatchSignal(SIGCLD, sig_cld);
+}
+
+/*******************************************************************
+ Catch SIGCLD but leave the child around so it's status can be reaped.
+********************************************************************/
+
+void CatchChildLeaveStatus(void)
+{
+	CatchSignal(SIGCLD, sig_cld_leave_status);
 }

@@ -94,14 +94,16 @@ static void close_filestruct(files_struct *fsp)
  the closing of the connection. In the latter case printing and
  magic scripts are not run.
 ****************************************************************************/
-void close_file(files_struct *fsp, BOOL normal_close)
+
+int close_file(files_struct *fsp, BOOL normal_close)
 {
 	SMB_DEV_T dev = fsp->fd_ptr->dev;
 	SMB_INO_T inode = fsp->fd_ptr->inode;
 	int token;
-    BOOL last_reference = False;
-    BOOL delete_on_close = fsp->fd_ptr->delete_on_close;
+	BOOL last_reference = False;
+	BOOL delete_on_close = fsp->fd_ptr->delete_on_close;
 	connection_struct *conn = fsp->conn;
+	int err = 0;
 
 	remove_pending_lock_requests_by_fid(fsp);
 
@@ -119,7 +121,7 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	if(fsp->granted_oplock == True)
 		release_file_oplock(fsp);
 
-	if(fd_attempt_close(fsp->fd_ptr) == 0)
+	if(fd_attempt_close(fsp->fd_ptr,&err) == 0)
 		last_reference = True;
 
     fsp->fd_ptr = NULL;
@@ -158,15 +160,17 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
         }
     }
 
-	DEBUG(2,("%s closed file %s (numopen=%d)\n",
+	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		 conn->user,fsp->fsp_name,
-		 conn->num_files_open));
+		 conn->num_files_open, err ? strerror(err) : ""));
 
 	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);
 	}
 
 	file_free(fsp);
+
+	return err;
 }
 
 /****************************************************************************
@@ -187,4 +191,3 @@ void close_directory(files_struct *fsp)
 	
 	file_free(fsp);
 }
-

@@ -38,6 +38,18 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 
   seek_ret = sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
 
+  /*
+   * We want to maintain the fiction that we can seek
+   * on a fifo for file system purposes. This allows 
+   * people to set up UNIX fifo's that feed data to Windows
+   * applications. JRA.
+   */
+
+  if((seek_ret == -1) && (errno == ESPIPE)) {
+    seek_ret = pos+offset;
+    errno = 0;
+  }
+
   if((seek_ret == -1) || (seek_ret != pos+offset)) {
     DEBUG(0,("seek_file: sys_lseek failed. Error was %s\n", strerror(errno) ));
     fsp->pos = -1;

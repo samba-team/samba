@@ -148,6 +148,7 @@ char *rep_inet_ntoa(struct in_addr ip);
 void BlockSignals(BOOL block,int signum);
 void CatchSignal(int signum,void (*handler)(int ));
 void CatchChild(void);
+void CatchChildLeaveStatus(void);
 
 /*The following definitions come from  lib/slprintf.c  */
 
@@ -316,6 +317,7 @@ void gain_root_privilege(void);
 void gain_root_group_privilege(void);
 int set_effective_uid(uid_t uid);
 int set_effective_gid(gid_t gid);
+int set_real_uid(uid_t uid);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_sid.c  */
@@ -2280,7 +2282,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
 
 /*The following definitions come from  smbd/close.c  */
 
-void close_file(files_struct *fsp, BOOL normal_close);
+int close_file(files_struct *fsp, BOOL normal_close);
 void close_directory(files_struct *fsp);
 
 /*The following definitions come from  smbd/conn.c  */
@@ -2432,7 +2434,7 @@ int reply_nttrans(connection_struct *conn,
 /*The following definitions come from  smbd/open.c  */
 
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-uint16 fd_attempt_close(file_fd_struct *fd_ptr);
+uint16 fd_attempt_close(file_fd_struct *fd_ptr, int *err_ret);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,

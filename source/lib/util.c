@@ -1572,12 +1572,11 @@ BOOL yesno(char *p)
   return(False);
 }
 
-
-
 /****************************************************************************
 set the length of a file from a filedescriptor.
 Returns 0 on success, -1 on failure.
 ****************************************************************************/
+
 int set_filelen(int fd, SMB_OFF_T len)
 {
 /* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
@@ -1601,7 +1600,8 @@ int set_filelen(int fd, SMB_OFF_T len)
     return -1;
 
 #ifdef S_ISFIFO
-  if (S_ISFIFO(st.st_mode)) return 0;
+  if (S_ISFIFO(st.st_mode))
+    return 0;
 #endif
 
   if(st.st_size == len)
