@@ -443,11 +443,11 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 					      len1, ofs, len2);
 		}
 		if (len2 == 0) {
-			*s = talloc_strdup(ndr->mem_ctx, "");
+			*s = talloc_strdup(ndr, "");
 			break;
 		}
 		NDR_PULL_NEED_BYTES(ndr, len2*2);
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len2*2,
 					    (const void **)&as);
@@ -476,10 +476,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
 		NDR_PULL_NEED_BYTES(ndr, len1*2);
 		if (len1 == 0) {
-			*s = talloc_strdup(ndr->mem_ctx, "");
+			*s = talloc_strdup(ndr, "");
 			break;
 		}
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1*2,
 					    (const void **)&as);
@@ -507,10 +507,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint16(ndr, &len3));
 		NDR_PULL_NEED_BYTES(ndr, len3);
 		if (len3 == 0) {
-			*s = talloc_strdup(ndr->mem_ctx, "");
+			*s = talloc_strdup(ndr, "");
 			break;
 		}
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len3,
 					    (const void **)&as);
@@ -528,7 +528,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		if (len1*2+2 <= ndr->data_size - ndr->offset) {
 			len1++;
 		}
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1*2,
 					    (const void **)&as);
@@ -855,7 +855,7 @@ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 
 void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
 {
-	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr->mem_ctx, t));
+	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr, t));
 }
 
 void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
@@ -863,7 +863,7 @@ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
 	if (t == (time_t)-1 || t == 0) {
 		ndr->print(ndr, "%-25s: (time_t)%d", name, (int)t);
 	} else {
-		ndr->print(ndr, "%-25s: %s", name, timestring(ndr->mem_ctx, t));
+		ndr->print(ndr, "%-25s: %s", name, timestring(ndr, t));
 	}
 }
 
@@ -1007,7 +1007,7 @@ const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
-	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr->mem_ctx, guid));
+	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
 }
 
 void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
@@ -1065,7 +1065,7 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 		NDR_CHECK(ndr_pull_uint32(ndr, &length));
 	}
 	NDR_PULL_NEED_BYTES(ndr, length);
-	*blob = data_blob_talloc(ndr->mem_ctx, ndr->data+ndr->offset, length);
+	*blob = data_blob_talloc(ndr, ndr->data+ndr->offset, length);
 	ndr->offset += length;
 	return NT_STATUS_OK;
 }

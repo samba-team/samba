@@ -28,18 +28,13 @@
 struct smbcli_socket *smbcli_sock_init(void)
 {
 	struct smbcli_socket *sock;
-	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("smbcli_socket");
-	if (!mem_ctx) return NULL;
-
-	sock = talloc_zero(mem_ctx, sizeof(*sock));
+	sock = talloc_named(NULL, sizeof(*sock), "smbcli_socket");
 	if (!sock) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
-	sock->mem_ctx = mem_ctx;
+	ZERO_STRUCTP(sock);
 	sock->fd = -1;
 	sock->port = 0;
 	/* 20 second default timeout */
@@ -153,7 +148,6 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 {
 	int name_type = 0x20;
 	struct in_addr ip;
-	TALLOC_CTX *mem_ctx;
 	char *name, *p;
 	BOOL ret;
 
@@ -162,10 +156,7 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 		return sock->fd != -1;
 	}
 
-	mem_ctx = talloc_init("smbcli_sock_connect_byname");
-	if (!mem_ctx) return False;
-
-	name = talloc_strdup(mem_ctx, host);
+	name = talloc_strdup(sock, host);
 
 	/* allow hostnames of the form NAME#xx and do a netbios lookup */
 	if ((p = strchr(name, '#'))) {
@@ -173,18 +164,18 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 		*p = 0;
 	}
 
-	if (!resolve_name(mem_ctx, name, &ip, name_type)) {
-		talloc_destroy(mem_ctx);
+	if (!resolve_name(name, name, &ip, name_type)) {
+		talloc_free(name);
 		return False;
 	}
 
 	ret = smbcli_sock_connect(sock, &ip, port);
 
 	if (ret) {
-		sock->hostname = talloc_steal(sock->mem_ctx, name);
+		sock->hostname = talloc_steal(sock, name);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_destroy(name);
 
 	return ret;
 }

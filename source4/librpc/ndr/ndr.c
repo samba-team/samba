@@ -54,7 +54,6 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 	ndr->data = blob->data;
 	ndr->data_size = blob->length;
 	ndr->offset = 0;
-	ndr->mem_ctx = mem_ctx;
 	ndr->ptr_count = 0;
 	ndr->relative_list = NULL;
 
@@ -130,10 +129,9 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	ndr->mem_ctx = mem_ctx;
 	ndr->flags = 0;
 	ndr->alloc_size = NDR_BASE_MARSHALL_SIZE;
-	ndr->data = talloc(ndr->mem_ctx, ndr->alloc_size);
+	ndr->data = talloc(ndr, ndr->alloc_size);
 	if (!ndr->data) {
 		return NULL;
 	}
@@ -161,7 +159,7 @@ struct ndr_push *ndr_push_init(void)
 /* free a ndr_push structure */
 void ndr_push_free(struct ndr_push *ndr)
 {
-	talloc_destroy(ndr->mem_ctx);
+	talloc_destroy(ndr);
 }
 
 
@@ -309,15 +307,15 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 		     const char *name,
 		     void *ptr)
 {
-	struct ndr_print ndr;
+	struct ndr_print *ndr;
 
-	ndr.mem_ctx = talloc_init("ndr_print_debug");
-	if (!ndr.mem_ctx) return;
-	ndr.print = ndr_print_debug_helper;
-	ndr.depth = 1;
-	ndr.flags = 0;
-	fn(&ndr, name, ptr);
-	talloc_destroy(ndr.mem_ctx);
+	ndr = talloc_p(NULL, struct ndr_print);
+	if (!ndr) return;
+	ndr->print = ndr_print_debug_helper;
+	ndr->depth = 1;
+	ndr->flags = 0;
+	fn(ndr, name, ptr);
+	talloc_free(ndr);
 }
 
 
@@ -329,15 +327,15 @@ void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32_t
 			   uint32_t level,
 			   void *ptr)
 {
-	struct ndr_print ndr;
+	struct ndr_print *ndr;
 
-	ndr.mem_ctx = talloc_init("ndr_print_union");
-	if (!ndr.mem_ctx) return;
-	ndr.print = ndr_print_debug_helper;
-	ndr.depth = 1;
-	ndr.flags = 0;
-	fn(&ndr, name, level, ptr);
-	talloc_destroy(ndr.mem_ctx);
+	ndr = talloc_p(NULL, struct ndr_print);
+	if (!ndr) return;
+	ndr->print = ndr_print_debug_helper;
+	ndr->depth = 1;
+	ndr->flags = 0;
+	fn(ndr, name, level, ptr);
+	talloc_free(ndr);
 }
 
 /*
@@ -348,15 +346,15 @@ void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int ,
 			      int flags,
 			      void *ptr)
 {
-	struct ndr_print ndr;
+	struct ndr_print *ndr;
 
-	ndr.mem_ctx = talloc_init("ndr_print_function");
-	if (!ndr.mem_ctx) return;
-	ndr.print = ndr_print_debug_helper;
-	ndr.depth = 1;
-	ndr.flags = 0;
-	fn(&ndr, name, flags, ptr);
-	talloc_destroy(ndr.mem_ctx);
+	ndr = talloc_p(NULL, struct ndr_print);
+	if (!ndr) return;
+	ndr->print = ndr_print_debug_helper;
+	ndr->depth = 1;
+	ndr->flags = 0;
+	fn(ndr, name, flags, ptr);
+	talloc_free(ndr);
 }
 
 
@@ -460,14 +458,14 @@ NTSTATUS ndr_pull_subcontext_fn(struct ndr_pull *ndr,
 				void *base,
 				NTSTATUS (*fn)(struct ndr_pull *, void *))
 {
-	struct ndr_pull ndr2;
-
-	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, &ndr2));
-	NDR_CHECK(fn(&ndr2, base));
+	struct ndr_pull *ndr2;
+	NDR_ALLOC(ndr, ndr2);
+	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, ndr2));
+	NDR_CHECK(fn(ndr2, base));
 	if (sub_size) {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2.data_size));
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2->data_size));
 	} else {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2.offset));
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2->offset));
 	}
 	return NT_STATUS_OK;
 }
@@ -478,14 +476,14 @@ NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr,
 				      void *base,
 				      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
 {
-	struct ndr_pull ndr2;
-
-	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, &ndr2));
-	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, base));
+	struct ndr_pull *ndr2;
+	NDR_ALLOC(ndr, ndr2);
+	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, ndr2));
+	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, base));
 	if (sub_size) {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2.data_size));
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2->data_size));
 	} else {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2.offset));
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2->offset));
 	}
 	return NT_STATUS_OK;
 }
@@ -496,14 +494,15 @@ NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr,
 				      void *base,
 				      NTSTATUS (*fn)(struct ndr_pull *, int , uint32_t , void *))
 {
-	struct ndr_pull ndr2;
+	struct ndr_pull *ndr2;
 
-	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, &ndr2));
-	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
+	NDR_ALLOC(ndr, ndr2);
+	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, ndr2));
+	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
 	if (sub_size) {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2.data_size));
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2->data_size));
 	} else {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2.offset));
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2->offset));
 	}
 	return NT_STATUS_OK;
 }
@@ -546,7 +545,7 @@ NTSTATUS ndr_push_subcontext_fn(struct ndr_push *ndr,
 {
 	struct ndr_push *ndr2;
 
-	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
+	ndr2 = ndr_push_init_ctx(ndr);
 	if (!ndr2) return NT_STATUS_NO_MEMORY;
 
 	ndr2->flags = ndr->flags;
@@ -566,7 +565,7 @@ NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr,
 {
 	struct ndr_push *ndr2;
 
-	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
+	ndr2 = ndr_push_init_ctx(ndr);
 	if (!ndr2) return NT_STATUS_NO_MEMORY;
 
 	ndr2->flags = ndr->flags;
@@ -587,7 +586,7 @@ NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr,
 {
 	struct ndr_push *ndr2;
 
-	ndr2 = ndr_push_init_ctx(ndr->mem_ctx);
+	ndr2 = ndr_push_init_ctx(ndr);
 	if (!ndr2) return NT_STATUS_NO_MEMORY;
 
 	ndr2->flags = ndr->flags;
@@ -635,11 +634,12 @@ void ndr_push_struct_end(struct ndr_push *ndr)
 NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size, 
 			   NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, void *))
 {
-	struct ndr_pull ndr2;
+	struct ndr_pull *ndr2;
 	uint32_t ofs;
 	struct ndr_pull_save save;
 	void *p;
 
+	NDR_ALLOC(ndr, ndr2);
 	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
 	if (ofs == 0) {
 		(*buf) = NULL;
@@ -651,16 +651,17 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 	   but I am keeping the code around in case I missed a
 	   critical use for it (tridge, august 2004) */
 	NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
-	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, ndr->data_size - ndr->offset));
+	NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, ndr->data_size - ndr->offset));
 	/* strings must be allocated by the backend functions */
 	if (ndr->flags & LIBNDR_STRING_FLAGS) {
-		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, &p));
+		NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, &p));
 	} else {
 		NDR_ALLOC_SIZE(ndr, p, size);
-		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, p));
+		NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, p));
 	}
 	(*buf) = p;
 	ndr_pull_restore(ndr, &save);
+	talloc_free(ndr2);
 	return NT_STATUS_OK;
 }
 
@@ -706,7 +707,7 @@ static uint32_t ndr_token_retrieve(struct ndr_token_list **list, const void *key
 */
 NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
-	return ndr_token_store(ndr->mem_ctx, &ndr->relative_list, p, rel_offset);
+	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
 }
 
 /*
@@ -734,7 +735,7 @@ NTSTATUS ndr_push_relative1(struct ndr_push *ndr, const void *p)
 		return NT_STATUS_OK;
 	}
 	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_token_store(ndr->mem_ctx, &ndr->relative_list, p, ndr->offset));
+	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
 	return ndr_push_uint32(ndr, 0xFFFFFFFF);
 }
 
