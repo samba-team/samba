@@ -88,7 +88,7 @@ kadm5_s_get_principal(void *server_handle,
     }
     if(mask & KADM5_MOD_NAME) {
 	if(ent.modified_by) {
-	    if (end.modified_by->principal != NULL)
+	    if (ent.modified_by->principal != NULL)
 		ret = krb5_copy_principal(context->context, 
 					  ent.modified_by->principal,
 					  &out->mod_name);
