@@ -387,6 +387,24 @@ AC_ARG_WITH(nisplus,
 )
 
 #################################################
+# check for a NISPLUS_HOME support 
+AC_MSG_CHECKING(whether to use NISPLUS_HOME)
+AC_ARG_WITH(nisplus-home,
+[  --with-nisplus-home     Include NISPLUS_HOME support
+  --without-nisplus-home  Don't include NISPLUS_HOME support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NISPLUS_HOME)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
 # check for the secure socket layer
 AC_MSG_CHECKING(whether to use SSL)
 AC_ARG_WITH(ssl,

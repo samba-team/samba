@@ -32,10 +32,6 @@ MANDIR = $(BASEDIR)/man
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-# Add any optimisation or debugging flags here
-# add -DSYSLOG for syslog support
-FLAGS1 = -O
-
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
