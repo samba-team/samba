@@ -106,6 +106,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		for ( i=0; i<(*count); i++ ) 
 			return_ip[i] = ret[i].ip;
 		
+		free( ret );
 		return return_ip;
 	}
 
