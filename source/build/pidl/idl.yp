@@ -23,9 +23,9 @@ idl:
 coclass: property_list 'coclass' identifier '{' interfaces '}' optional_semicolon
           {$_[3] => {
                "TYPE" => "COCLASS", 
-			   "PROPERTIES" => $_[1],
-		       "NAME" => $_[3],
-		       "DATA" => $_[5],
+	       "PROPERTIES" => $_[1],
+	       "NAME" => $_[3],
+	       "DATA" => $_[5],
           }}
 ;
 
@@ -37,10 +37,10 @@ interfaces:
 interface: property_list 'interface' identifier base_interface '{' definitions '}' optional_semicolon
           {$_[3] => {
                "TYPE" => "INTERFACE", 
-			   "PROPERTIES" => $_[1],
-		       "NAME" => $_[3],
-			   "BASE" => $_[4],
-		       "DATA" => $_[6],
+	       "PROPERTIES" => $_[1],
+	       "NAME" => $_[3],
+	       "BASE" => $_[4],
+	       "DATA" => $_[6],
           }}
 ;
 
@@ -117,19 +117,17 @@ enum_element: identifier
 	      | identifier '=' anytext { "$_[1]$_[2]$_[3]" }
 ;
 
-struct: property_list 'struct' '{' element_list1 '}' 
+struct: 'struct' '{' element_list1 '}' 
         {{
                      "TYPE" => "STRUCT", 
-		     "PROPERTIES" => $_[1],
-		     "ELEMENTS" => $_[4]
+		     "ELEMENTS" => $_[3]
         }}
 ;
 
-union: property_list 'union' '{' union_elements '}' 
+union: 'union' '{' union_elements '}' 
 	 {{
 		"TYPE" => "UNION",
-		"PROPERTIES" => $_[1],
-		"DATA" => $_[4]
+		"DATA" => $_[3]
 	 }}
 ;
 
