@@ -2156,7 +2156,7 @@ static struct file_lists
 keep a linked list of all config files so we know when one has changed 
 it's date and needs to be reloaded
 ********************************************************************/
-static void add_to_file_list(char *fname, char *subfname)
+static void add_to_file_list(const char *fname, const char *subfname)
 {
 	struct file_lists *f = file_lists;
 
@@ -3304,7 +3304,7 @@ static void set_server_role(void)
 Load the services array from the services file. Return True on success, 
 False on failure.
 ***************************************************************************/
-BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
+BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	     BOOL add_ipc)
 {
 	pstring n2;
