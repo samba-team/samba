@@ -38,13 +38,12 @@ This binary release includes encrypted password support.
 Please read the smb.conf file and ENCRYPTION.txt in the
 docs directory for implementation details.
 
-NOTE: Red Hat Linux uses PAM which has integrated support
-for Shadow passwords and quotas. Do NOT recompile with the
-SHADOW_PWD option enabled
-
 %changelog
+* Mon Apr 23 2001 Gerald (Jerry) Carter <jerry@samba.org>
+  - Added a few bug fixes to release the first Mandrake RPMS
+
 * Sat Apr 14 2001 John H Terpstra <jht@samba.org>
- - Added official samba-team support for Mandrakesoft
+  - Added official samba-team support for Mandrakesoft
 	- We get a lot of requests for this!
 
 %prep
@@ -69,7 +68,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--localstatedir=/var \
 	--with-configdir=/etc \
         --with-lockdir=/var/lock/samba \
-        --with-privatedir=/etc \
         --with-swatdir=%{prefix}/share/swat \
         --with-quotas \
         --with-smbmount \
@@ -288,7 +286,6 @@ fi
 %attr(-,root,root) %config(noreplace) /etc/lmhosts
 %attr(-,root,root) %config(noreplace) /etc/smb.conf
 %attr(-,root,root) %config(noreplace) /etc/smbusers
-%attr(-,root,root) /etc/smb.conf.sample
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) %config(noreplace) /etc/pam.d/samba
