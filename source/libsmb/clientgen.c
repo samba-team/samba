@@ -107,7 +107,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 }
 
 /****************************************************************************
-  send an smb to a fd.
+ Send an smb to a fd.
 ****************************************************************************/
 
 BOOL cli_send_smb(struct cli_state *cli)
@@ -117,31 +117,34 @@ BOOL cli_send_smb(struct cli_state *cli)
 	ssize_t ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False;
+	if (cli->fd == -1)
+		return False;
+
+	if (SVAL(cli->outbuf,smb_flg2) & FLAGS2_SMB_SECUIRTY_SIGNITURES)
+		cli_caclulate_sign_mac(cli);
 
 	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
 		if (ret <= 0) {
-                        close(cli->fd);
-                        cli->fd = -1;
-			DEBUG(0,("Error writing %d bytes to client. %d\n",
-				 (int)len,(int)ret));
+			close(cli->fd);
+			cli->fd = -1;
+			DEBUG(0,("Error writing %d bytes to client. %d\n", (int)len,(int)ret));
 			return False;
 		}
 		nwritten += ret;
 	}
-	
 	return True;
 }
 
 /****************************************************************************
-setup basics in a outgoing packet
+ Setup basics in a outgoing packet.
 ****************************************************************************/
+
 void cli_setup_packet(struct cli_state *cli)
 {
-        cli->rap_error = 0;
+	cli->rap_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
@@ -158,6 +161,8 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->use_spnego) {
 			flags2 |= FLAGS2_EXTENDED_SECURITY;
 		}
+		if (cli->sign_info.use_smb_signing)
+			flags2 |= FLAGS2_SMB_SECUIRTY_SIGNITURES;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }

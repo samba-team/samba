@@ -61,7 +61,8 @@ typedef struct smb_sign_info {
 	BOOL use_smb_signing;
 	size_t mac_key_len;
 	uint8 mac_key[44];
-	uint32 seq_num;
+	uint32 send_seq_num;
+	uint32 reply_seq_num;
 } smb_sign_info;
 
 struct cli_state {

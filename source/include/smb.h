@@ -787,7 +787,8 @@ struct bitmap {
 #define smb_err 11
 #define smb_flg 13
 #define smb_flg2 14
-#define smb_reb 13
+#define smb_pidhigh 16
+#define smb_ss_field 18
 #define smb_tid 28
 #define smb_pid 30
 #define smb_uid 32
