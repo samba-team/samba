@@ -118,9 +118,17 @@ _krb_time_to_life(time_t start, time_t end)
     
 }
 
+/* Convert the v5 credentials in `in_cred' to v4-dito in `v4creds'.
+ * This is done by sending them to the 524 function in the KDC.  If
+ * `in_cred' doesn't contain a DES session key (or actually, a session
+ * key of length 8...), then a new one is gotten from the KDC and
+ * stored in the cred cache `ccache'.
+ */
+
 krb5_error_code
 krb524_convert_creds_kdc(krb5_context context, 
-			 krb5_creds *v5creds, 
+			 krb5_ccache ccache,
+			 krb5_creds *in_cred,
 			 struct credentials *v4creds)
 {
     krb5_error_code ret;
@@ -129,19 +137,48 @@ krb524_convert_creds_kdc(krb5_context context,
     int32_t tmp;
     krb5_data ticket;
     char realm[REALM_SZ];
+    krb5_creds *v5_creds = in_cred;
 
-    ret = check_ticket_flags(v5creds->flags.b);
+    /* XXX */
+
+    if (v5_creds->session.keyvalue.length != 8) {
+	krb5_creds template;
+
+	memset (&template, 0, sizeof(template));
+	template.session.keytype = KEYTYPE_DES;
+	ret = krb5_copy_principal (context, in_cred->client, &template.client);
+	if (ret) {
+	    krb5_free_creds_contents (context, &template);
+	    return ret;
+	}
+	ret = krb5_copy_principal (context, in_cred->server, &template.server);
+	if (ret) {
+	    krb5_free_creds_contents (context, &template);
+	    return ret;
+	}
+
+	ret = krb5_get_credentials (context, 0, ccache,
+				    &template, &v5_creds);
+	krb5_free_creds_contents (context, &template);
+	if (ret)
+	    return ret;
+    }
+
+    ret = check_ticket_flags(v5_creds->flags.b);
     if(ret)
-	return ret;
+	goto out2;
+
     ret = krb5_sendto_kdc (context,
-			   &v5creds->ticket,
-			   krb5_princ_realm(context, v5creds->server),
+			   &v5_creds->ticket,
+			   krb5_princ_realm(context, v5_creds->server),
 			   &reply);
     if (ret)
-	return ret;
+	goto out2;
     sp = krb5_storage_from_mem(reply.data, reply.length);
-    if(sp == NULL)
-	return ENOMEM;
+    if(sp == NULL) {
+	ret = ENOMEM;
+	goto out2;
+    }
     krb5_ret_int32(sp, &tmp);
     ret = tmp;
     if(ret == 0) {
@@ -155,23 +192,26 @@ krb524_convert_creds_kdc(krb5_context context,
 	memcpy(v4creds->ticket_st.dat, ticket.data, ticket.length);
 	krb5_data_free(&ticket);
 	ret = krb5_524_conv_principal(context, 
-				      v5creds->server, 
+				      v5_creds->server, 
 				      v4creds->service, 
 				      v4creds->instance, 
 				      v4creds->realm);
 	if(ret) goto out;
-	v4creds->issue_date = v5creds->times.authtime;
+	v4creds->issue_date = v5_creds->times.authtime;
 	v4creds->lifetime = _krb_time_to_life(v4creds->issue_date,
-					      v5creds->times.endtime);
-	ret = krb5_524_conv_principal(context, v5creds->client, 
+					      v5_creds->times.endtime);
+	ret = krb5_524_conv_principal(context, v5_creds->client, 
 				      v4creds->pname, 
 				      v4creds->pinst, 
 				      realm);
 	if(ret) goto out;
-	memcpy(v4creds->session, v5creds->session.keyvalue.data, 8);
+	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
     }
 out:
     krb5_storage_free(sp);
     krb5_data_free(&reply);
+out2:
+    if (v5_creds != in_cred)
+	krb5_free_creds (context, v5_creds);
     return ret;
 }
