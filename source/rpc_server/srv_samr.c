@@ -1298,7 +1298,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_OPEN_ALIAS"       , SAMR_OPEN_ALIAS       , api_samr_open_alias       },
 	{ "SAMR_OPEN_DOMAIN"      , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
 	{ "SAMR_UNKNOWN_3"        , SAMR_UNKNOWN_3        , api_samr_unknown_3        },
-    { NULL                    , 0                     , NULL                      }
+	{ NULL                    , 0                     , NULL                      }
 };
 
 /*******************************************************************

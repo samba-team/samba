@@ -32,15 +32,23 @@ extern int DEBUGLEVEL;
    encrypted password into p24 */
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
 {
-  uchar p14[15], p21[21];
+	uchar p14[15], p21[21];
 
-  memset(p21,'\0',21);
-  memset(p14,'\0',14);
-  StrnCpy((char *)p14,(char *)passwd,14);
+	memset(p21,'\0',21);
+	memset(p14,'\0',14);
+	StrnCpy((char *)p14,(char *)passwd,14);
 
-  strupper((char *)p14);
-  E_P16(p14, p21); 
-  E_P24(p21, c8, p24);
+	strupper((char *)p14);
+	E_P16(p14, p21); 
+
+	SMBOWFencrypt(p21, c8, p24);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("SMBencrypt: lm#, challenge, response\n"));
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
+#endif
 }
 
 /* Routines for Windows NT MD4 Hash functions. */
@@ -102,12 +110,18 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 {
 	char passwd[130];
 
-    memset(passwd,'\0',130);
-    safe_strcpy( passwd, pwd, sizeof(passwd)-1);
+	memset(passwd,'\0',130);
+	safe_strcpy( passwd, pwd, sizeof(passwd)-1);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
 	E_md4hash((uchar *)passwd, nt_p16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
+	dump_data(120, passwd, strlen(passwd));
+	dump_data(100, nt_p16, 16);
+#endif
 
 	/* Mangle the passwords into Lanman format */
 	passwd[14] = '\0';
@@ -118,6 +132,11 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 	memset(p16, '\0', 16);
 	E_P16((uchar *) passwd, (uchar *)p16);
 
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
+	dump_data(120, passwd, strlen(passwd));
+	dump_data(100, p16, 16);
+#endif
 	/* clear out local copy of user's password (just being paranoid). */
 	bzero(passwd, sizeof(passwd));
 }
@@ -143,7 +162,14 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 	memset(p21,'\0',21);
  
 	E_md4hash(passwd, p21);    
-	E_P24(p21, c8, p24);
+	SMBOWFencrypt(p21, c8, p24);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("SMBNTencrypt: nt#, challenge, response\n"));
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
+#endif
 }
 
 

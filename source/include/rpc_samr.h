@@ -334,13 +334,13 @@ typedef struct sam_unkown_info_2_info
 	   pointer is referring to
 	 */
 
-	uint32 unknown_4; /* 0x0000 0099 */
+	uint32 unknown_4; /* 0x0000 0099, 0x0000 0045 */
 	uint32 unknown_5; /* 0x0000 0000 */
 	
 	uint32 unknown_6 ; /* 0x0000 0001 */
 	uint32 unknown_7 ; /* 0x0000 0003 */
 	uint32 unknown_8 ; /* 0x0000 0001 */
-	uint32 unknown_9 ; /* 0x0000 0008 */
+	uint32 unknown_9 ; /* 0x0000 0008, 0x0000 0006 */
 	uint32 unknown_10; /* 0x0000 0003 */
 
 	uint8 padding[16]; /* 16 bytes zeros */

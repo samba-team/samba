@@ -114,27 +114,6 @@ unable to join domain.\n", prog_name);
 }
 
 /*************************************************************
- Utility function to create password hashes.
-*************************************************************/
-
-static void create_new_hashes( char *new_passwd, uchar *new_p16, uchar *new_nt_p16)
-{
-  memset(new_nt_p16, '\0', 16);
-  E_md4hash((uchar *) new_passwd, new_nt_p16);
-  
-  /* Mangle the password into Lanman format */
-  new_passwd[14] = '\0';
-  strupper(new_passwd);
-  
-  /*
-   * Calculate the SMB (lanman) hash functions of the new password.
-   */
-  
-  memset(new_p16, '\0', 16);
-  E_P16((uchar *) new_passwd, new_p16);
-}
-
-/*************************************************************
  Utility function to prompt for new password.
 *************************************************************/
 
@@ -555,7 +534,7 @@ int main(int argc, char **argv)
 
   /* Calculate the MD4 hash (NT compatible) of the new password. */
   
-  create_new_hashes( new_passwd, new_p16, new_nt_p16);
+  nt_lm_owf_gen( new_passwd, new_nt_p16, new_p16);
 
   /*
    * Open the smbpaswd file.
@@ -634,7 +613,7 @@ int main(int argc, char **argv)
   else if (enable_user) {
     if(smb_pwent->smb_passwd == NULL) {
       prompt_for_new_password(new_passwd);
-      create_new_hashes( new_passwd, new_p16, new_nt_p16);
+      nt_lm_owf_gen( new_passwd, new_nt_p16, new_p16);
       smb_pwent->smb_passwd = new_p16;
       smb_pwent->smb_nt_passwd = new_nt_p16;
     }
