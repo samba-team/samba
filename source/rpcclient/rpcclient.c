@@ -24,6 +24,8 @@
 
 extern int DEBUGLEVEL;
 	
+/* Connect info */
+
 pstring password;
 pstring username;
 pstring workgroup;
@@ -34,6 +36,58 @@ pstring server;
 extern struct cmd_set lsarpc_commands[];
 extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
+
+DOM_SID domain_sid;
+
+/* Fetch the SID for this domain */
+
+void fetch_domain_sid(void)
+{
+	struct cli_state cli;
+	POLICY_HND pol;
+	uint32 result = 0, info_class = 5;
+	struct ntuser_creds creds;
+	fstring domain_name;
+	static BOOL got_domain_sid;
+
+	if (got_domain_sid) return;
+
+	ZERO_STRUCT(cli);
+	init_rpcclient_creds(&creds);
+
+	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
+		fprintf(stderr, "could not initialise lsa pipe\n");
+		goto error;
+	}
+
+	if ((result = cli_lsa_open_policy(&cli, True, 
+					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  &pol) != NT_STATUS_NOPROBLEMO)) {
+		goto error;
+	}
+
+	if ((result = cli_lsa_query_info_policy(&cli, &pol, info_class, 
+						domain_name, &domain_sid))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto error;
+	}
+
+	got_domain_sid = True;
+
+	cli_lsa_close(&cli, &pol);
+	cli_lsa_shutdown(&cli);
+
+	return;
+
+ error:
+	fprintf(stderr, "could not obtain sid for domain %s\n", workgroup);
+
+	if (result != NT_STATUS_NOPROBLEMO) {
+		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
+	}
+
+	exit(1);
+}
 
 /* Initialise client credentials for authenticated pipe access */
 
@@ -91,11 +145,17 @@ static uint32 cmd_debuglevel(int argc, char **argv)
 	return NT_STATUS_NOPROBLEMO;
 }
 
+static uint32 cmd_quit(int argc, char **argv)
+{
+	exit(0);
+}
+
 /* Build in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
 	{ "help", cmd_help, "Print list of commands" },
 	{ "debuglevel", cmd_debuglevel, "Set debug level" },
+	{ "quit", cmd_quit, "Exit program" },
 	{ "?", cmd_help, "Print list of commands" },
 
 	{ NULL, NULL, NULL }
@@ -235,6 +295,7 @@ static void usage(char *pname)
 	extern char *optarg;
 	extern int optind;
 	struct in_addr dest_ip;
+	extern pstring global_myname;
 	BOOL got_pass = False;
 	BOOL have_ip = False;
 	int opt;
@@ -264,6 +325,9 @@ static void usage(char *pname)
 	load_interfaces();
 
 	TimeInit();
+
+	get_myname((*global_myname)?NULL:global_myname);
+	strupper(global_myname);
 
 	/* Parse options */
 

@@ -64,7 +64,7 @@ static uint32 cmd_lsa_query_info_policy(int argc, char **argv)
 
 	got_policy_hnd = True;
 
-	/* Lookup the names */
+	/* Lookup info policy */
 
 	if ((result = cli_lsa_query_info_policy(&cli, &pol, info_class, 
 						domain_name, &dom_sid)) 
