@@ -65,7 +65,7 @@ void debug_browse_data(char *outbuf, int len)
 	for (j = 0; j < 16; j++)
 	  {
 	    if (i+j >= len) break;
-	    DEBUG(4, (" %02x", outbuf[i+j]));
+	    DEBUG(4, (" %02x", (unsigned char)outbuf[i+j]));
 	  }
 	
 	DEBUG(4, ("\n"));

@@ -232,7 +232,8 @@ static int readfile(char *b, int size, int n, FILE *f)
 	  n++;
 	}
       
-      b[i++] = c;
+      if(i < n)
+        b[i++] = c;
     }
   
   return(i);
@@ -3878,7 +3879,7 @@ static BOOL list_servers(char *wk_grp)
 
   p = skip_string(p,1);
   SSVAL(p,0,uLevel);
-  SSVAL(p,2,0x2000); /* buf length */
+  SSVAL(p,2,BUFFER_SIZE - SAFETY_MARGIN); /* buf length */
   p += 4;
 
   svtype_p = p;
@@ -3893,7 +3894,7 @@ static BOOL list_servers(char *wk_grp)
   SIVAL(svtype_p,0,SV_TYPE_ALL);
 
   if (call_api(PTR_DIFF(p+4,param),0,
-	       8,10000,
+	       8,BUFFER_SIZE - SAFETY_MARGIN,
 	       &rprcnt,&rdrcnt,
 	       param,NULL,
 	       &rparam,&rdata))
@@ -3932,7 +3933,7 @@ static BOOL list_servers(char *wk_grp)
   SIVAL(svtype_p,0,SV_TYPE_DOMAIN_ENUM);
 
   if (call_api(PTR_DIFF(p+4,param),0,
-	       8,10000,
+	       8,BUFFER_SIZE - SAFETY_MARGIN,
 	       &rprcnt,&rdrcnt,
 	       param,NULL,
 	       &rparam,&rdata))

@@ -808,7 +808,8 @@ int StrCaseCmp(const char *s, const char *t)
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
   int diff;
   for (;;)
   {
@@ -865,7 +866,8 @@ int StrnCaseCmp(const char *s, const char *t, int n)
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
   int diff;
   for (;n > 0;)
   {
@@ -962,7 +964,8 @@ void strlower(char *s)
 {
   while (*s)
     {
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
 	if (is_shift_jis (*s)) {
 	    if (is_sj_upper (s[0], s[1])) {
 	  	  s[1] = sj_tolower2 (s[1]);
@@ -990,7 +993,8 @@ void strupper(char *s)
 {
   while (*s)
     {
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
 	if (is_shift_jis (*s)) {
 	    if (is_sj_lower (s[0], s[1])) {
 		  s[1] = sj_toupper2 (s[1]);
@@ -1041,7 +1045,8 @@ void string_replace(char *s,char oldc,char newc)
 {
   while (*s)
     {
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
 	if (is_shift_jis (*s)) {
 	    s += 2;
 	} else if (is_kana (*s)) {
@@ -1136,8 +1141,8 @@ void show_msg(char *buf)
       if (j == 7) DEBUG(10, ("  "));
     }
 
-    DEBUG(10,("\n"));  
-  }
+  DEBUG(10,("\n"));  
+}
 }
 
 /*******************************************************************
@@ -1679,7 +1684,8 @@ BOOL strhasupper(char *s)
 {
   while (*s) 
     {
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
 	if (is_shift_jis (*s)) {
 	    s += 2;
 	} else if (is_kana (*s)) {
@@ -1703,7 +1709,8 @@ BOOL strhaslower(char *s)
 {
   while (*s) 
     {
-#ifdef KANJI
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
 	if (is_shift_jis (*s)) {
 	    if (is_sj_upper (s[0], s[1])) return(True);
 	    if (is_sj_lower (s[0], s[1])) return (True);
@@ -1728,17 +1735,18 @@ find the number of chars in a string
 int count_chars(char *s,char c)
 {
   int count=0;
-#ifdef KANJI
-  while (*s)
-  {
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+  while (*s) 
+    {
     if (is_shift_jis (*s))
 	  s += 2;
     else 
 	{
-	  if (*s == c)
-	    count++;
-	  s++;
-	}
+      if (*s == c)
+	count++;
+      s++;
+    }
   }
 #else /* KANJI */
   while (*s) 
@@ -3294,15 +3302,15 @@ Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
 Paul Rippin <pr3245@nopc.eurostat.cec.be>
 ********************************************************************/
 void standard_sub_basic(char *string)
-{
+  {
   char *s, *p;
-  char pidstr[10];
+    char pidstr[10];
   struct passwd *pass;
 
   for (s = string ; (p = strchr(s,'%')) != NULL ; s = p )
   {
     switch (*(p+1))
-    {
+  {
       case 'G' : if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
                    string_sub(p,"%G",gidtoname(pass->pw_gid));
                  else
@@ -3561,10 +3569,10 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
 
   /* if we have no list it's obviously not in the path */
   if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) 
-  {
+        {
     DEBUG(5,("is_in_path: no name list.\n"));
     return False;
-  }
+}
 
   /* Get the last component of the unix name. */
   p = strrchr(name, '/');
@@ -3593,7 +3601,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
     }
   }
   DEBUG(5,("is_in_path: match not found\n"));
-
+ 
   return False;
 }
 
@@ -3608,7 +3616,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
  * We also check if the entry contains a wildcard to
  * remove a potentially expensive call to mask_match
  * if possible.
- */
+   */
 
 void set_namearray(name_compare_entry **ppname_array, char *namelist)
 {
@@ -3626,14 +3634,14 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
      first to count the number of elements, the second
      to split it.
    */
-  while (*nameptr ) 
+  while(*nameptr) 
     {
       if ( *nameptr == '/' ) 
-      {
+        {
           /* cope with multiple (useless) /s) */
           nameptr++;
           continue;
-      }
+        }
       /* find the next / */
       name_end = strchr(nameptr, '/');
 
@@ -3651,16 +3659,16 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 
   if(( (*ppname_array) = (name_compare_entry *)malloc( 
            (num_entries + 1) * sizeof(name_compare_entry))) == NULL)
-  {
+        {
     DEBUG(0,("set_namearray: malloc fail\n"));
     return;
-  }
+        }
 
   /* Now copy out the names */
   nameptr = namelist;
   i = 0;
   while(*nameptr)
-    {
+             {
       if ( *nameptr == '/' ) 
       {
           /* cope with multiple (useless) /s) */
@@ -3671,10 +3679,10 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
       if ((name_end = strchr(nameptr, '/')) != NULL) 
       {
           *name_end = 0;
-      }
+         }
 
       /* oops - the last check for a / didn't find one. */
-      if (name_end == NULL)
+      if(name_end == NULL) 
         break;
 
       (*ppname_array)[i].is_wild = ((strchr( nameptr, '?')!=NULL) ||
@@ -3689,7 +3697,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
       nameptr = name_end + 1;
       i++;
     }
-
+  
   (*ppname_array)[i].name = NULL;
 
   return;
