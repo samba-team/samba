@@ -98,10 +98,11 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\stream.txt";
 	const char *sname1, *sname2;
 	BOOL ret = True;
-	int fnum, fnum2;
+	int fnum;
 	ssize_t retsize;
 
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
+	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname, "Second Stream");
 
 	printf("opening non-existant directory stream\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -149,7 +150,28 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	smbcli_close(cli->tree, fnum);
 
+	ret &= check_stream(cli, mem_ctx, fname, "Stream One:$FOO", NULL);
+
+	printf("creating a stream2 on a existing file\n");
+	io.ntcreatex.in.fname = sname2;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	printf("modifying stream\n");
+	retsize = smbcli_write(cli->tree, fnum, 0, "SECOND STREAM", 0, 13);
+	CHECK_VALUE(retsize, 13);
+
+	smbcli_close(cli->tree, fnum);
+
 	ret &= check_stream(cli, mem_ctx, fname, "Stream One", "test MORE DATA ");
+	ret &= check_stream(cli, mem_ctx, fname, "Stream One:$DATA", "test MORE DATA ");
+	ret &= check_stream(cli, mem_ctx, fname, "Stream One:", NULL);
+	ret &= check_stream(cli, mem_ctx, fname, "Second Stream", "SECOND STREAM");
+	ret &= check_stream(cli, mem_ctx, fname, "Second Stream:$DATA", "SECOND STREAM");
+	ret &= check_stream(cli, mem_ctx, fname, "Second Stream:", NULL);
+	ret &= check_stream(cli, mem_ctx, fname, "Second Stream:$FOO", NULL);
 
 	printf("deleting stream\n");
 	status = smbcli_unlink(cli->tree, sname1);
