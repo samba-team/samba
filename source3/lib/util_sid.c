@@ -647,3 +647,67 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
 	
 	return dst;
 }
+
+/********************************************************************
+ Add SID to an array SIDs
+********************************************************************/
+
+void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
+{
+	*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
+
+	if (*sids == NULL)
+		return;
+
+	sid_copy(&((*sids)[*num]), sid);
+	*num += 1;
+
+	return;
+}
+
+
+/********************************************************************
+ Add SID to an array SIDs ensuring that it is not already there
+********************************************************************/
+
+void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
+{
+	int i;
+
+	for (i=0; i<(*num_sids); i++) {
+		if (sid_compare(sid, &(*sids)[i]) == 0)
+			return;
+	}
+
+	add_sid_to_array(sid, sids, num_sids);
+}
+
+/********************************************************************
+ Remove SID from an array
+********************************************************************/
+
+void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, int *num)
+{
+	DOM_SID *sid_list = *sids;
+	int i;
+
+	for ( i=0; i<*num; i++ ) {
+
+		/* if we find the SID, then decrement the count
+		   and break out of the loop */
+
+		if ( sid_equal(sid, &sid_list[i]) ) {
+			*num -= 1;
+			break;
+		}
+	}
+
+	/* This loop will copy the remainder of the array 
+	   if i < num of sids ni the array */
+
+	for ( ; i<*num; i++ ) 
+		sid_copy( &sid_list[i], &sid_list[i+1] );
+	
+	return;
+}
+

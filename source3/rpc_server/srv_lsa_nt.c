@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
@@ -7,6 +7,7 @@
  *  Copyright (C) Jeremy Allison                    2001,
  *  Copyright (C) Rafal Szczesniak                  2002,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
+ *  Copyright (C) Simo Sorce                        2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -411,9 +412,12 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
 			 acc_granted, des_access));
 		DEBUGADD(4,("but overwritten by euid == 0\n"));
-		acc_granted = des_access;
 	}
 
+	/* This is needed for lsa_open_account and rpcclient .... :-) */
+
+	if (geteuid() == 0)
+		acc_granted = POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
 	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
@@ -758,49 +762,51 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 {
 	struct lsa_info *handle;
 	uint32 i;
+	uint32 enum_context = q_u->enum_context;
+	int num_privs = count_all_privileges();
+	LSA_PRIV_ENTRY *entries = NULL;
 
-	uint32 enum_context=q_u->enum_context;
-	LSA_PRIV_ENTRY *entry;
-	LSA_PRIV_ENTRY *entries=NULL;
+	/* remember that the enum_context starts at 0 and not 1 */
 
-	if (enum_context >= PRIV_ALL_INDEX)
+	if ( enum_context >= num_privs )
 		return NT_STATUS_NO_MORE_ENTRIES;
-
-	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, PRIV_ALL_INDEX);
-	if (entries==NULL)
+		
+	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", 
+		enum_context, num_privs));
+	
+	if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs + 1)))
 		return NT_STATUS_NO_MEMORY;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check if the user have enough rights */
+	/* check if the user have enough rights
+	   I don't know if it's the right one. not documented.  */
 
-	/*
-	 * I don't know if it's the right one. not documented.
-	 */
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	entry = entries;
-	
-	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", enum_context, PRIV_ALL_INDEX));
+	if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs )) )
+		return NT_STATUS_NO_MEMORY;
 
-	for (i = 0; i < PRIV_ALL_INDEX; i++, entry++) {
-		if( i<enum_context) {
-			init_unistr2(&entry->name, NULL, UNI_FLAGS_NONE);
-			init_uni_hdr(&entry->hdr_name, &entry->name);
-			entry->luid_low = 0;
-			entry->luid_high = 0;
+
+	for (i = 0; i < num_privs; i++) {
+		if( i < enum_context) {
+			init_unistr2(&entries[i].name, NULL, UNI_FLAGS_NONE);
+			init_uni_hdr(&entries[i].hdr_name, &entries[i].name);
+			entries[i].luid_low = 0;
+			entries[i].luid_high = 0;
 		} else {
-			init_unistr2(&entry->name, privs[i+1].priv, UNI_FLAGS_NONE);
-			init_uni_hdr(&entry->hdr_name, &entry->name);
-			entry->luid_low = privs[i+1].se_priv;
-			entry->luid_high = 0;
+			init_unistr2(&entries[i].name, privs[i].name, UNI_FLAGS_NONE);
+			init_uni_hdr(&entries[i].hdr_name, &entries[i].name);
+			entries[i].luid_low = privs[i].se_priv;
+			entries[i].luid_high = 0;
 		}
 	}
 
-	enum_context = PRIV_ALL_INDEX;
-	init_lsa_r_enum_privs(r_u, enum_context, PRIV_ALL_INDEX, entries);
+	enum_context = num_privs;
+	
+	init_lsa_r_enum_privs(r_u, enum_context, num_privs, entries);
 
 	return NT_STATUS_OK;
 }
@@ -813,7 +819,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 {
 	struct lsa_info *handle;
 	fstring name_asc;
-	int i=1;
+	int i = 0;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
@@ -828,22 +834,22 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 
 	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
 
-	DEBUG(10,("_lsa_priv_get_dispname: %s", name_asc));
+	DEBUG(10,("_lsa_priv_get_dispname: %s\n", name_asc));
 
-	while (privs[i].se_priv!=SE_PRIV_ALL && strcmp(name_asc, privs[i].priv))
+	while (privs[i].se_priv != SE_END && !strequal(name_asc, privs[i].name))
 		i++;
 	
-	if (privs[i].se_priv!=SE_PRIV_ALL) {
+	if (privs[i].se_priv != SE_END) {
 		DEBUG(10,(": %s\n", privs[i].description));
 		init_unistr2(&r_u->desc, privs[i].description, UNI_FLAGS_NONE);
 		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);
 
-		r_u->ptr_info=0xdeadbeef;
-		r_u->lang_id=q_u->lang_id;
+		r_u->ptr_info = 0xdeadbeef;
+		r_u->lang_id = q_u->lang_id;
 		return NT_STATUS_OK;
 	} else {
 		DEBUG(10,("_lsa_priv_get_dispname: doesn't exist\n"));
-		r_u->ptr_info=0;
+		r_u->ptr_info = 0;
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 }
@@ -855,32 +861,26 @@ _lsa_enum_accounts.
 NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENUM_ACCOUNTS *r_u)
 {
 	struct lsa_info *handle;
-	GROUP_MAP *map=NULL;
-	int num_entries=0;
+	DOM_SID *sid_list;
+	int i, j, num_entries;
 	LSA_SID_ENUM *sids=&r_u->sids;
-	int i=0,j=0;
-	BOOL ret;
+	NTSTATUS ret;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check if the user have enough rights */
-
-	/*
-	 * I don't know if it's the right one. not documented.
-	 */
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* get the list of mapped groups (domain, local, builtin) */
-	become_root();
-	ret = pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED);
-	unbecome_root();
-	if( !ret ) {
-		DEBUG(3,("_lsa_enum_accounts: enumeration of groups failed!\n"));
-		return NT_STATUS_OK;
+	sid_list = NULL;
+	num_entries = 0;
+
+	/* The only way we can currently find out all the SIDs that have been
+	   privileged is to scan all privileges */
+
+	if (!NT_STATUS_IS_OK(ret = privilege_enumerate_accounts(&sid_list, &num_entries))) {
+		return ret;
 	}
-	
 
 	if (q_u->enum_context >= num_entries)
 		return NT_STATUS_NO_MORE_ENTRIES;
@@ -889,19 +889,18 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	sids->sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_entries-q_u->enum_context);
 
 	if (sids->ptr_sid==NULL || sids->sid==NULL) {
-		SAFE_FREE(map);
+		SAFE_FREE(sid_list);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=q_u->enum_context, j=0; i<num_entries; i++) {
-		init_dom_sid2( &(*sids).sid[j],  &map[i].sid);
-		(*sids).ptr_sid[j]=1;
-		j++;
+	for (i = q_u->enum_context, j = 0; i < num_entries; i++, j++) {
+		init_dom_sid2(&(*sids).sid[j], &sid_list[i]);
+		(*sids).ptr_sid[j] = 1;
 	}
 
-	SAFE_FREE(map);
+	SAFE_FREE(sid_list);
 
-	init_lsa_r_enum_accounts(r_u, j);
+	init_lsa_r_enum_accounts(r_u, num_entries);
 
 	return NT_STATUS_OK;
 }
@@ -934,15 +933,13 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
 }
 
 /***************************************************************************
- 
+ Lsa Create Account 
  ***************************************************************************/
 
-NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
+NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CREATEACCOUNT *r_u)
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
-
-	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
@@ -969,7 +966,50 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return r_u->status;
+	return privilege_create_account( &info->sid );
+}
+
+
+/***************************************************************************
+ Lsa Open Account
+ ***************************************************************************/
+
+NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
+{
+	struct lsa_info *handle;
+	struct lsa_info *info;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* check if the user have enough rights */
+
+	/*
+	 * I don't know if it's the right one. not documented.
+	 * but guessed with rpcclient.
+	 */
+	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
+
+	/* TODO: Fis the parsing routine before reenabling this check! */
+	#if 0
+	if (!lookup_sid(&handle->sid, dom_name, name, &type))
+		return NT_STATUS_ACCESS_DENIED;
+	#endif
+	/* associate the user/group SID with the (unique) handle. */
+	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	info->sid = q_u->sid.sid;
+	info->access = q_u->access;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -979,44 +1019,24 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
-	GROUP_MAP map;
-	LUID_ATTR *set=NULL;
-
-	r_u->status = NT_STATUS_OK;
+	PRIVILEGE_SET priv;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid))
-		return NT_STATUS_NO_SUCH_GROUP;
+	privilege_set_init( &priv );
 
-#if 0 /* privileges currently not implemented! */
-	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set->count));
-	if (map.priv_set->count!=0) {
-	
-		set=(LUID_ATTR *)talloc(map.priv_set->mem_ctx, map.priv_set.count*sizeof(LUID_ATTR));
-		if (set == NULL) {
-			destroy_privilege(&map.priv_set);
-			return NT_STATUS_NO_MEMORY;
-		}
+	get_privileges_for_sids( &priv, &info->sid, 1 );
 
-		for (i = 0; i < map.priv_set.count; i++) {
-			set[i].luid.low = map.priv_set->set[i].luid.low;
-			set[i].luid.high = map.priv_set->set[i].luid.high;
-			set[i].attr = map.priv_set->set[i].attr;
-			DEBUG(10,("_lsa_enum_privsaccount: priv %d: %d:%d:%d\n", i, 
-				   set[i].luid.high, set[i].luid.low, set[i].attr));
-		}
-	}
+	DEBUG(10,("_lsa_enum_privsaccount: %s has %d privileges\n", 
+		sid_string_static(&info->sid), priv.count));
 
-	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, map.priv_set->count, 0);	
-	destroy_privilege(&map.priv_set);	
-#endif
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, priv.set, priv.count, 0);
 
-	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, 0, 0);
+	privilege_set_free( &priv );
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -1026,15 +1046,16 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
-	GROUP_MAP map;
-	r_u->status = NT_STATUS_OK;
+	fstring name, dom_name;
+	enum SID_NAME_USE type;
 
 	/* find the connection policy handle. */
+
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid))
-		return NT_STATUS_NO_SUCH_GROUP;
+	if (!lookup_sid(&info->sid, dom_name, name, &type))
+		return NT_STATUS_ACCESS_DENIED;
 
 	/*
 	  0x01 -> Log on locally
@@ -1047,7 +1068,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 
 	r_u->access = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -1079,44 +1100,31 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 
 NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u)
 {
-#if 0
 	struct lsa_info *info = NULL;
-	GROUP_MAP map;
 	int i = 0;
-	LUID_ATTR *luid_attr = NULL;
+	uint32 mask;
 	PRIVILEGE_SET *set = NULL;
-#endif
 
-	r_u->status = NT_STATUS_OK;
-
-#if 0 /* privileges are not implemented */
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid))
-		return NT_STATUS_NO_SUCH_GROUP;
-
 	set = &q_u->set;
 
 	for (i = 0; i < set->count; i++) {
-		luid_attr = &set->set[i];
-		
-		/* check if the privilege is already there */
-		if (check_priv_in_privilege(map.priv_set, *luid_attr)){
-			destroy_privilege(&map.priv_set);
+
+		mask = luid_to_privilege_mask( &(set->set[i].luid) );
+
+		if ( mask != SE_END ) {
+			if ( !grant_privilege( &info->sid, mask ) ) {
+				DEBUG(3,("_lsa_addprivs: grant_privilege( %s, 0x%x) failed!\n",
+					sid_string_static(&info->sid), mask ));
+				return NT_STATUS_NO_SUCH_PRIVILEGE;
+			}
 		}
-		
-		add_privilege(map.priv_set, *luid_attr);
 	}
 
-	if(!pdb_update_group_mapping_entry(&map))
-		return NT_STATUS_NO_SUCH_GROUP;
-	
-	destroy_privilege(&map.priv_set);	
-
-#endif
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -1125,57 +1133,30 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 
 NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEPRIVS *r_u)
 {
-#if 0
 	struct lsa_info *info = NULL;
-	GROUP_MAP map;
-	int i=0;
-	LUID_ATTR *luid_attr = NULL;
+	int i = 0;
+	uint32 mask;
 	PRIVILEGE_SET *set = NULL;
-#endif
 
-	r_u->status = NT_STATUS_OK;
-
-#if 0 /* privileges are not implemented */
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid))
-		return NT_STATUS_NO_SUCH_GROUP;
-
-	if (q_u->allrights != 0) {
-		/* log it and return, until I see one myself don't do anything */
-		DEBUG(5,("_lsa_removeprivs: trying to remove all privileges ?\n"));
-		return NT_STATUS_OK;
-	}
-
-	if (q_u->ptr == 0) {
-		/* log it and return, until I see one myself don't do anything */
-		DEBUG(5,("_lsa_removeprivs: no privileges to remove ?\n"));
-		return NT_STATUS_OK;
-	}
-
 	set = &q_u->set;
 
 	for (i = 0; i < set->count; i++) {
-		luid_attr = &set->set[i];
-		
-		/* if we don't have the privilege, we're trying to remove, give up */
-		/* what else can we do ??? JFM. */
-		if (!check_priv_in_privilege(map.priv_set, *luid_attr)){
-			destroy_privilege(&map.priv_set);
-			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		mask = luid_to_privilege_mask( &(set->set[i].luid) );
+
+		if ( mask != SE_END ) {
+			if ( !revoke_privilege( &info->sid, mask ) ) {
+				DEBUG(3,("_lsa_removeprivs: revoke_privilege( %s, 0x%x) failed!\n",
+					sid_string_static(&info->sid), mask ));
+				return NT_STATUS_NO_SUCH_PRIVILEGE;
+			}
 		}
-		
-		remove_privilege(map.priv_set, *luid_attr);
 	}
 
-	if(!pdb_update_group_mapping_entry(&map))
-		return NT_STATUS_NO_SUCH_GROUP;
-	
-	destroy_privilege(&map.priv_set);	
-#endif
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************

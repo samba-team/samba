@@ -2215,7 +2215,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
-	BOOL is_domain_admin = False;
+	BOOL can_add_machines = False;
 
 	/* Get the domain SID stored in the domain policy */
 	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted))
@@ -2242,10 +2242,10 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	/* check to see if we are a domain admin */
 	
-	is_domain_admin = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	can_add_machines = user_has_privilege( p->pipe_user.nt_user_token, SE_MACHINE_ACCOUNT );
 	
 	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
-		p->pipe_user_name, is_domain_admin ? "" : " not"));
+		p->pipe_user_name, can_add_machines ? "" : " not"));
 
 	pdb_init_sam(&sam_pass);
 
@@ -2280,9 +2280,9 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	pw = Get_Pwnam(account);
 	
-	/* ================ BEGIN DOMAIN ADMIN BLOCK ================ */
+	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
-	if ( is_domain_admin )				
+	if ( can_add_machines )				
 		become_root();
 	
 	if ( !pw ) {
@@ -2317,7 +2317,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
 	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account, new_rid)) ) {
-		if ( is_domain_admin )
+		if ( can_add_machines )
 			unbecome_root();
 		return nt_status;
 	}
@@ -2326,10 +2326,10 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	ret = pdb_add_sam_account(sam_pass);
 	
-	if ( is_domain_admin )				
+	if ( can_add_machines )				
 		unbecome_root();
 		
-	/* ================ END DOMAIN ADMIN BLOCK ================ */
+	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
  	if ( !ret ) {
  		pdb_free_sam(&sam_pass);
@@ -3033,7 +3033,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
 	uint32 acc_granted;
 	uint32 acc_required;
-	BOOL is_domain_admin;
+	BOOL can_add_machines;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
@@ -3067,14 +3067,14 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 	/* check to see if we are a domain admin */
 	
-	is_domain_admin = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	can_add_machines = user_has_privilege( p->pipe_user.nt_user_token, SE_MACHINE_ACCOUNT );
 	
 	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
-		p->pipe_user_name, is_domain_admin ? "" : " not"));
+		p->pipe_user_name, can_add_machines ? "" : " not"));
 
-	/* ================ BEGIN DOMAIN ADMIN BLOCK ================ */
+	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
-	if ( is_domain_admin )				
+	if ( can_add_machines )				
 		become_root();
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
@@ -3138,10 +3138,10 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	}
 
 	
-	if ( is_domain_admin )				
+	if ( can_add_machines )				
 		unbecome_root();
 		
-	/* ================ END DOMAIN ADMIN BLOCK ================ */
+	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
 	return r_u->status;
 }
@@ -3158,7 +3158,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint16 switch_value = q_u->switch_value;
 	uint32 acc_granted;
 	uint32 acc_required;
-	BOOL is_domain_admin;
+	BOOL can_add_machines;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
 
@@ -3184,14 +3184,14 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 	/* check to see if we are a domain admin */
 	
-	is_domain_admin = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	can_add_machines = user_has_privilege( p->pipe_user.nt_user_token, SE_MACHINE_ACCOUNT );
 	
 	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
-		p->pipe_user_name, is_domain_admin ? "" : " not"));
+		p->pipe_user_name, can_add_machines ? "" : " not"));
 
-	/* ================ BEGIN DOMAIN ADMIN BLOCK ================ */
+	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
-	if ( is_domain_admin )				
+	if ( can_add_machines )				
 		become_root();
 		
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
@@ -3218,10 +3218,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if ( is_domain_admin )				
+	if ( can_add_machines )				
 		unbecome_root();
 		
-	/* ================ END DOMAIN ADMIN BLOCK ================ */
+	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
 	return r_u->status;
 }
