@@ -3,6 +3,7 @@
    test suite for lsa rpc operations
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -682,7 +683,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	struct lsa_QuerySecret r6;
 	struct lsa_SetSecret r7;
 	struct lsa_QuerySecret r8;
-	struct policy_handle sec_handle, sec_handle2;
+	struct policy_handle sec_handle, sec_handle2, sec_handle3;
 	struct lsa_Delete d;
 	struct lsa_DATA_BUF buf1;
 	struct lsa_DATA_BUF_PTR bufp1;
@@ -721,6 +722,16 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 			return False;
 		}
 		
+		r.in.handle = handle;
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r.out.sec_handle = &sec_handle3;
+		
+		status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			printf("CreateSecret should have failed OBJECT_NAME_COLLISION - %s\n", nt_errstr(status));
+			return False;
+		}
+		
 		r2.in.handle = handle;
 		r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		r2.in.name = r.in.name;
@@ -742,7 +753,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		
 		enc_key = sess_encrypt_string(secret1, &session_key);
 		
-		r3.in.handle = &sec_handle;
+		r3.in.sec_handle = &sec_handle;
 		r3.in.new_val = &buf1;
 		r3.in.old_val = NULL;
 		r3.in.new_val->data = enc_key.data;
@@ -757,13 +768,31 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 			ret = False;
 		}
 		
+		r3.in.sec_handle = &sec_handle;
+		r3.in.new_val = &buf1;
+		r3.in.old_val = NULL;
+		r3.in.new_val->data = enc_key.data;
+		r3.in.new_val->length = enc_key.length;
+		r3.in.new_val->size = enc_key.length;
+		
+		/* break the encrypted data */
+		enc_key.data[0]++;
+
+		printf("Testing SetSecret with broken key\n");
+		
+		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_UNKNOWN_REVISION)) {
+			printf("SetSecret should have failed UNKNOWN_REVISION - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
 		data_blob_free(&enc_key);
 		
 		ZERO_STRUCT(new_mtime);
 		ZERO_STRUCT(old_mtime);
 		
 		/* fetch the secret back again */
-		r4.in.handle = &sec_handle;
+		r4.in.sec_handle = &sec_handle;
 		r4.in.new_val = &bufp1;
 		r4.in.new_mtime = &new_mtime;
 		r4.in.old_val = NULL;
@@ -771,17 +800,18 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		
 		bufp1.buf = NULL;
 		
+		printf("Testing QuerySecret\n");
 		status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r4);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QuerySecret failed - %s\n", nt_errstr(status));
 			ret = False;
 		} else {
-			if (r4.out.new_val->buf == NULL) {
+			if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL) {
 				printf("No secret buffer returned\n");
 				ret = False;
 			} else {
 				blob1.data = r4.out.new_val->buf->data;
-				blob1.length = r4.out.new_val->buf->length;
+				blob1.length = r4.out.new_val->buf->size;
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
@@ -797,7 +827,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		
 		enc_key = sess_encrypt_string(secret3, &session_key);
 		
-		r5.in.handle = &sec_handle;
+		r5.in.sec_handle = &sec_handle;
 		r5.in.new_val = &buf1;
 		r5.in.old_val = NULL;
 		r5.in.new_val->data = enc_key.data;
@@ -818,7 +848,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		ZERO_STRUCT(old_mtime);
 		
 		/* fetch the secret back again */
-		r6.in.handle = &sec_handle;
+		r6.in.sec_handle = &sec_handle;
 		r6.in.new_val = &bufp1;
 		r6.in.new_mtime = &new_mtime;
 		r6.in.old_val = &bufp2;
@@ -839,7 +869,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				ret = False;
 			} else {
 				blob1.data = r6.out.new_val->buf->data;
-				blob1.length = r6.out.new_val->buf->length;
+				blob1.length = r6.out.new_val->buf->size;
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
@@ -873,7 +903,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 
 		enc_key = sess_encrypt_string(secret5, &session_key);
 		
-		r7.in.handle = &sec_handle;
+		r7.in.sec_handle = &sec_handle;
 		r7.in.old_val = &buf1;
 		r7.in.old_val->data = enc_key.data;
 		r7.in.old_val->length = enc_key.length;
@@ -891,7 +921,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		data_blob_free(&enc_key);
 		
 		/* fetch the secret back again */
-		r8.in.handle = &sec_handle;
+		r8.in.sec_handle = &sec_handle;
 		r8.in.new_val = &bufp1;
 		r8.in.new_mtime = &new_mtime;
 		r8.in.old_val = &bufp2;
@@ -931,7 +961,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				}
 
 				blob1.data = r8.out.old_val->buf->data;
-				blob1.length = r8.out.old_val->buf->length;
+				blob1.length = r8.out.old_val->buf->size;
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
@@ -968,14 +998,15 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 			printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
 			ret = False;
-		}
+		} else {
 
-		printf("Testing OpenSecret of just-deleted secret\n");
-		
-		status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			printf("OpenSecret expected OBJECT_NAME_NOT_FOUND - %s\n", nt_errstr(status));
-			ret = False;
+			printf("Testing OpenSecret of just-deleted secret\n");
+			
+			status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				printf("OpenSecret expected OBJECT_NAME_NOT_FOUND - %s\n", nt_errstr(status));
+				ret = False;
+			}
 		}
 		
 	}

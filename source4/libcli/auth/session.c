@@ -113,15 +113,15 @@ char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
 
 	sess_crypt_blob(&out, blob, session_key, False);
 
-	slen = IVAL(out.data, 0);
-	if (slen > blob->length - 8) {
-		DEBUG(0,("Invalid crypt length %d\n", slen));
-		return NULL;
-	}
-
 	if (IVAL(out.data, 4) != 1) {
 		DEBUG(0,("Unexpected revision number %d in session crypted string\n",
 			 IVAL(out.data, 4)));
+		return NULL;
+	}
+
+	slen = IVAL(out.data, 0);
+	if (slen > blob->length - 8) {
+		DEBUG(0,("Invalid crypt length %d\n", slen));
 		return NULL;
 	}
 
@@ -169,42 +169,43 @@ DATA_BLOB sess_encrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob_in, const DATA_
 }
 
 /*
-  a convenient wrapper around sess_crypt_blob() for strings, using the LSA convention
-
-  caller should free the returned string
+  Decrypt a DATA_BLOB using the LSA convention
 */
-DATA_BLOB sess_decrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const DATA_BLOB *session_key)
+NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DATA_BLOB *session_key, 
+			   DATA_BLOB *ret)
 {
 	DATA_BLOB out;
 	int slen;
-	DATA_BLOB ret;
 
 	if (blob->length < 8) {
-		return data_blob(NULL, 0);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
 	out = data_blob_talloc(mem_ctx, NULL, blob->length);
 	if (!out.data) {
-		return data_blob(NULL, 0);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	sess_crypt_blob(&out, blob, session_key, False);
 
-	slen = IVAL(out.data, 0);
-	if (slen > blob->length - 8) {
-		DEBUG(0,("Invalid crypt length %d\n", slen));
-		return data_blob(NULL, 0);
-	}
-
 	if (IVAL(out.data, 4) != 1) {
 		DEBUG(0,("Unexpected revision number %d in session crypted string\n",
 			 IVAL(out.data, 4)));
-		return data_blob(NULL, 0);
+		return NT_STATUS_UNKNOWN_REVISION;
 	}
 		
-	ret = data_blob_talloc(mem_ctx, out.data+8, slen);
+	slen = IVAL(out.data, 0);
+	if (slen > blob->length - 8) {
+		DEBUG(0,("Invalid crypt length %d\n", slen));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	*ret = data_blob_talloc(mem_ctx, out.data+8, slen);
+	if (!ret->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	data_blob_free(&out);
 
-	return ret;
+	return NT_STATUS_OK;
 }
