@@ -37,6 +37,7 @@ static const struct {
 	{ "ldapsam", pdb_init_ldapsam },
 	{ "ldapsam_nua", pdb_init_ldapsam_nua },
 	{ "unixsam", pdb_init_unixsam },
+	{ "guest", pdb_init_guestsam },
 	{ "nisplussam", pdb_init_nisplussam },
 	{ NULL, NULL}
 };
@@ -763,6 +764,51 @@ BOOL initialize_password_db(BOOL reload)
 }
 
 
+/***************************************************************************
+  Default implementations of some functions.
+ ****************************************************************************/
+
+static NTSTATUS pdb_default_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+{
+	return NT_STATUS_NO_SUCH_USER;
+}
+
+static NTSTATUS pdb_default_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
+{
+	return NT_STATUS_NO_SUCH_USER;
+}
+
+static NTSTATUS pdb_default_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+{
+	DEBUG(0,("this backend (%s) should not be listed as the first passdb backend! You can't add users to it.\n", methods->name));
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_delete_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *pwd)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static void pdb_default_endsampwent(struct pdb_methods *methods)
+{
+	return; /* NT_STATUS_NOT_IMPLEMENTED; */
+}
+
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
 	*methods = talloc(mem_ctx, sizeof(struct pdb_methods));
@@ -772,6 +818,23 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	}
 
 	ZERO_STRUCTP(*methods);
+
+	(*methods)->setsampwent = pdb_default_setsampwent;
+	(*methods)->endsampwent = pdb_default_endsampwent;
+	(*methods)->getsampwent = pdb_default_getsampwent;
+	(*methods)->getsampwnam = pdb_default_getsampwnam;
+	(*methods)->getsampwsid = pdb_default_getsampwsid;
+	(*methods)->add_sam_account = pdb_default_add_sam_account;
+	(*methods)->update_sam_account = pdb_default_update_sam_account;
+	(*methods)->delete_sam_account = pdb_default_delete_sam_account;
+
+	(*methods)->getgrsid = pdb_default_getgrsid;
+	(*methods)->getgrgid = pdb_default_getgrgid;
+	(*methods)->getgrnam = pdb_default_getgrnam;
+	(*methods)->add_group_mapping_entry = pdb_default_add_group_mapping_entry;
+	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
+	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
+	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
 
 	return NT_STATUS_OK;
 }

@@ -841,6 +841,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	}
 
 	*num_entries=entries;
+
 	return True;
 }
 
@@ -1276,3 +1277,57 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 	DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 	return ret;
 }
+
+
+NTSTATUS pdb_default_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				 DOM_SID sid, BOOL with_priv)
+{
+	return get_group_map_from_sid(sid, map, with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				 gid_t gid, BOOL with_priv)
+{
+	return get_group_map_from_gid(gid, map, with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				 char *name, BOOL with_priv)
+{
+	return get_group_map_from_ntname(name, map, with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_add_group_mapping_entry(struct pdb_methods *methods,
+						GROUP_MAP *map)
+{
+	return add_mapping_entry(map, TDB_INSERT) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
+						   GROUP_MAP *map)
+{
+	return add_mapping_entry(map, TDB_REPLACE) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
+						   DOM_SID sid)
+{
+	return group_map_remove(sid) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
+					   enum SID_NAME_USE sid_name_use,
+					   GROUP_MAP **rmap, int *num_entries,
+					   BOOL unix_only, BOOL with_priv)
+{
+	return enum_group_mapping(sid_name_use, rmap, num_entries, unix_only,
+				  with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
