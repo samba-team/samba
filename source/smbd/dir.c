@@ -493,8 +493,6 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
   return(dptr->dnum);
 }
 
-#define DPTR_MASK ((uint32)(((uint32)1)<<31))
-
 /****************************************************************************
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
@@ -514,16 +512,6 @@ BOOL dptr_fill(char *buf1,unsigned int key)
   buf[0] = key;
   SIVAL(buf,1,offset | DPTR_MASK);
   return(True);
-}
-
-
-/****************************************************************************
- Return True if the offset is at zero.
-****************************************************************************/
-
-BOOL dptr_zero(char *buf)
-{
-  return((IVAL(buf,1)&~DPTR_MASK) == 0);
 }
 
 /****************************************************************************
