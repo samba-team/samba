@@ -1,0 +1,194 @@
+/* 
+   Unix SMB/CIFS implementation.
+   LDAP server
+   Copyright (C) Simo Sorce 2004
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "ldap_parse.h"
+
+struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
+{
+	struct ldap_dn *dn;
+	struct dn_component *component;
+	struct dn_attribute *attribute;
+	char *p, *start, *separator, *src, *dest, *dn_copy, *dn_end;
+	int i, size;
+
+	dn = talloc(mem_ctx, sizeof(struct ldap_dn));
+	dn->comp_num = 0;
+	dn->components = talloc(dn, sizeof(struct dn_component *));
+	component = talloc(dn, sizeof(struct dn_component));
+	component->attr_num = 0;
+
+	dn_copy = p = talloc_strdup(mem_ctx, orig_dn);
+	dn_end = dn_copy + strlen(orig_dn);
+	do {
+		component->attributes = talloc(component, sizeof(struct dn_attribute *));
+		attribute = talloc(component, sizeof(struct dn_attribute));
+
+		/* skip "spaces" */
+		while (*p == ' ' || *p == '\n') {
+			p++;
+		}
+
+		/* start parsing this component */
+		do {
+			start = p;
+
+			/* find out key separator '=' */
+			while (*p && *p != '=') {
+				if (*p == '\\') {
+					/* TODO: handle \XX cases too */
+					memmove(p, p + 1, dn_end - p);
+					dn_end--;
+				}
+				p++;
+			}
+			separator = p;
+
+			/* remove spaces */
+			while (*(p - 1) == ' ' || *(p - 1) == '\n') {
+				p--;
+			}
+
+			/* save key name */
+			attribute->name = talloc_strndup(attribute, start, p - start);
+			DEBUG(10, ("attribute name: [%s]\n", attribute->name));
+
+			p = separator + 1;
+
+			/* skip spaces past the separator */
+			p = separator + strspn(p, " \n") + 1;
+			start = p;
+
+			/* check if the value is enclosed in QUOTATION */
+			if (*p == '"') {
+				start = p + 1;
+				while (*p && *p != '"') {
+					if (*p == '\\') {
+						/* TODO: handle \XX cases too */
+						memmove(p, p + 1, dn_end - p);
+						dn_end--;
+					}
+					p++;
+				}
+
+				/* skip spaces until the separator */
+				separator = p + strspn(p, " \n");
+
+				if (*separator != ',' && *separator != ';' && *separator != '+') { /* there must be a separator here */
+					/* Error Malformed DN */
+					DEBUG (0, ("Error: Malformed DN!\n"));
+					break;
+				}
+			} else {
+				while (*p && !(*p == ',' || *p == ';' || *p == '+')) {
+					if (*p == '\\') {
+						/* TODO: handle \XX cases too */
+						memmove(p, p + 1, dn_end - p);
+						dn_end--;
+					}
+					p++;
+				} /* found separator */
+
+				separator = p;
+
+				/* remove spaces */
+				while (*(p - 1) == ' ' || *(p - 1) == '\n') {
+					p--;
+				}
+			}
+
+			/* save the value */
+			attribute->value = talloc_strndup(attribute, start, p - start);
+			DEBUG(10, ("attribute value: [%s]\n", attribute->value));
+
+			attribute->attribute = talloc_asprintf(attribute,"%s=%s", attribute->name, attribute->value);
+			DEBUG(10, ("attribute: [%s]\n", attribute->attribute));
+
+			/* save the attribute */
+			component->attributes[component->attr_num] = attribute;
+			component->attr_num++;
+
+			if (*separator == '+') { /* expect other attributes in this component */
+				component->attributes = talloc_realloc(component, component->attributes, sizeof(struct dn_attribute *) * (component->attr_num + 1));
+
+				/* allocate new attribute structure */
+				attribute = talloc(component, sizeof(struct dn_attribute));
+
+				/* skip spaces past the separator */
+				p = separator + strspn(p, " \n");
+			}
+
+		} while (*separator == '+');
+
+		/* found component bounds */
+		for (i = 0, size = 0; i < component->attr_num; i++) {
+			size = size + strlen(component->attributes[i]->attribute) + 1;
+		}
+
+		/* rebuild the normlaized component and put it here */
+		component->component = dest = talloc(component, size);
+		for (i = 0; i < component->attr_num; i++) {
+			if (i != 0) {
+				*dest = '+';
+				dest++;
+			}
+			src = component->attributes[i]->attribute;
+			do {
+				*(dest++) = *(src++);
+			} while(*src);
+			*dest = '\0';
+		}
+		DEBUG(10, ("component: [%s]\n", component->component));
+
+		dn->components[dn->comp_num] = component;
+		dn->comp_num++;
+
+		if (*separator == ',' || *separator == ';') {
+			dn->components = talloc_realloc(dn, dn->components, sizeof(struct dn_component *) * (dn->comp_num + 1));
+			component = talloc(dn, sizeof(struct dn_component));
+			component->attr_num = 0;
+		}
+		p = separator + 1;
+
+	} while(*separator == ',' || *separator == ';');
+
+	for (i = 0, size = 0; i < dn->comp_num; i++) {
+		size = size + strlen(dn->components[i]->component) + 1;
+	}
+
+	/* rebuild the normlaized dn and put it here */
+	dn->dn = dest = talloc(dn, size);
+	for (i = 0; i < dn->comp_num; i++) {
+		if (i != 0) {
+			*dest = ',';
+			dest++;
+		}
+		src = dn->components[i]->component;
+		do {
+			*(dest++) = *(src++);
+		} while(*src);
+		*dest = '\0';
+	}
+	DEBUG(10, ("dn: [%s]\n", dn->dn));
+
+	talloc_free(dn_copy);
+
+	return dn;
+}
