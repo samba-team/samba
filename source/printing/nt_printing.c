@@ -2135,6 +2135,86 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 	return len;
 }
 
+static void map_to_os2_driver(fstring drivername)
+{
+	static BOOL initialised=False;
+	static fstring last_from,last_to;
+	char *mapfile = lp_os2_driver_map();
+	char **lines = NULL;
+	int numlines = 0;
+	int i;
+
+	if (!strlen(drivername))
+		return;
+
+	if (!*mapfile)
+		return;
+
+	if (!initialised) {
+		*last_from = *last_to = 0;
+		initialised = True;
+	}
+
+	if (strequal(drivername,last_from)) {
+		DEBUG(3,("Mapped Windows driver %s to OS/2 driver %s\n",drivername,last_to));
+		fstrcpy(drivername,last_to);
+		return;
+	}
+
+	lines = file_lines_load(mapfile, &numlines, True);
+	if (numlines == 0) {
+		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
+		return;
+	}
+
+	DEBUG(4,("Scanning OS/2 driver map %s\n",mapfile));
+
+	for( i = 0; i < numlines; i++) {
+		char *nt_name = lines[i];
+		char *os2_name = strchr(nt_name,'=');
+
+		if (!os2_name)
+			continue;
+
+		*os2_name++ = 0;
+
+		while (isspace(*nt_name))
+			nt_name++;
+
+		if (!*nt_name || strchr("#;",*nt_name))
+			continue;
+
+		{
+			int l = strlen(nt_name);
+			while (l && isspace(nt_name[l-1])) {
+				nt_name[l-1] = 0;
+				l--;
+			}
+		}
+
+		while (isspace(*os2_name))
+			os2_name++;
+
+		{
+			int l = strlen(os2_name);
+			while (l && isspace(os2_name[l-1])) {
+				os2_name[l-1] = 0;
+				l--;
+			}
+		}
+
+		if (strequal(nt_name,drivername)) {
+			DEBUG(3,("Mapped windows driver %s to os2 driver%s\n",drivername,os2_name));
+			fstrcpy(last_from,drivername);
+			fstrcpy(last_to,os2_name);
+			fstrcpy(drivername,os2_name);
+			file_lines_free(lines);
+			return;
+		}
+	}
+
+	file_lines_free(lines);
+}
 
 /****************************************************************************
 get a default printer info 2 struct
@@ -2272,6 +2352,11 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
        passing this as a parameter... fixme... JRA ! */
 
 	nt_printing_getsec(get_talloc_ctx(), sharename, &info.secdesc_buf);
+
+	/* Fix for OS/2 drivers. */
+
+	if (get_remote_arch() == RA_OS2)
+		map_to_os2_driver(info.drivername);
 
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
