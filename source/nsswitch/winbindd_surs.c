@@ -21,342 +21,232 @@
 
 #include "includes.h"
 #include "sids.h"
-#include "winbindd.h"
+#include "lib/surs.h"
 
-#define WINBINDD_UID_BASE 1000
-#define WINBINDD_GID_BASE 1000
+struct winbind_domain_uid *domain_uid = NULL;
+struct winbind_domain_gid *domain_gid = NULL;
+int num_domain_uid = 0;
+int num_domain_gid = 0;
 
-struct surs_rid_acct {
-    uint32 rid;
-    char *name;
-};
+/* Given a domain name, return the domain sid and domain controller we
+   found in winbindd_surs_init(). */
 
-/* RIDs relative to each domain.  These live under S-1-5-21-?-?-? */
-
-struct surs_rid_acct domain_users[] = {
-    { DOMAIN_USER_RID_ADMIN, "Administrator" },
-    { DOMAIN_USER_RID_GUEST, "Guest" },
-    { 0, NULL}
-};
-
-struct surs_rid_acct domain_groups[] = {
-    { DOMAIN_GROUP_RID_ADMINS, "Domain Admins" },
-    { DOMAIN_GROUP_RID_USERS, "All Users" },
-    { DOMAIN_GROUP_RID_GUESTS, "Guests" },
-//    { DOMAIN_GROUP_RID_COMPUTERS, "???" },
-//    { DOMAIN_GROUP_RID_CONTROLLERS, "???" },
-//    { DOMAIN_GROUP_RID_CERT_ADMINS, "???" },
-//    { DOMAIN_GROUP_RID_SCHEMA_ADMINS, "???" },
-//    { DOMAIN_GROUP_RID_ENTERPRISE_ADMINS, "???" },
-//    { DOMAIN_GROUP_RID_POLICY_ADMINS, "???" },
-    { 0, NULL}
-};
-
-/* Well known RIDs.  These all live under S-1-5-32 */
-
-struct surs_rid_acct local_users[] = {
-    { 0, NULL}
-};
-
-struct surs_rid_acct local_groups[] = {
-    { BUILTIN_ALIAS_RID_ADMINS, "BUILTIN/Administrators" },
-    { BUILTIN_ALIAS_RID_USERS, "BUILTIN/Users" },
-    { BUILTIN_ALIAS_RID_GUESTS, "BUILTIN/Guests" },
-//    { BUILTIN_ALIAS_RID_POWER_USERS, "BUILTIN/00000223" },
-    { BUILTIN_ALIAS_RID_ACCOUNT_OPS, "BUILTIN/Account Operators" },
-    { BUILTIN_ALIAS_RID_SYSTEM_OPS, "BUILTIN/Server Operators" },
-    { BUILTIN_ALIAS_RID_PRINT_OPS, "BUILTIN/Print Operators" },
-    { BUILTIN_ALIAS_RID_BACKUP_OPS, "BUILTIN/Backup Operators" },
-    { BUILTIN_ALIAS_RID_REPLICATOR, "BUILTIN/Replicator" },
-    { 0, NULL }
-};
-
-static TDB_CONTEXT *surs_tdb_uid_by_sid = NULL;
-static TDB_CONTEXT *surs_tdb_gid_by_sid = NULL;
-static TDB_CONTEXT *surs_tdb_sid_by_uid = NULL;
-static TDB_CONTEXT *surs_tdb_sid_by_gid = NULL;
-static TDB_CONTEXT *surs_tdb_pwnam_by_sid = NULL;
-static TDB_CONTEXT *surs_tdb_grnam_by_sid = NULL;
-
-#define HWM_KEY "_HWM"
-
-static int create_new_id(fstring sid_str, int isgroup)
+BOOL find_domain_sid_from_domain(char *domain_name, DOM_SID *domain_sid, 
+                                 char *domain_controller)
 {
-    TDB_CONTEXT *id_by_sid = NULL;
-    TDB_DATA hwm_key, hwm_value;
-    TDB_DATA new_key, new_value;
-    uint32 hwm_id;
-    fstring temp;
+    struct winbind_domain_uid *tmp;
 
-    DEBUG(0,("TODO: create_new_id: lock tdb databases\n"));
+    /* Search through list */
 
-    isgroup ? (id_by_sid = surs_tdb_gid_by_sid) : 
-        (id_by_sid = surs_tdb_uid_by_sid);
+    for(tmp = domain_uid; tmp != NULL; tmp = tmp->next) {
+        if (strcmp(domain_name, tmp->domain_name) == 0) {
 
-    /* Get highest id value */
+            /* Copy domain sid */
 
-    hwm_key.dptr = HWM_KEY;
-    hwm_key.dsize = strlen(HWM_KEY) + 1;
+            if (domain_sid != NULL) {
+                sid_copy(domain_sid, &tmp->domain_sid);
+            }
+            
+            /* Copy domain controller */
 
-    hwm_value = tdb_fetch(id_by_sid, hwm_key);
-    hwm_id = atoi(hwm_value.dptr);
+            if (domain_controller != NULL) {
+                fstrcpy(domain_controller, tmp->domain_controller);
+            }
 
-    /* Add next id to database */
+            return True;
+        }
+    }
 
-    new_key.dptr = sid_str;
-    new_key.dsize = strlen(sid_str) + 1;
-
-    snprintf(temp, sizeof(temp) - 1, "%d", hwm_id);
-    new_value.dptr = temp;
-    new_value.dsize = strlen(temp) + 1;
-
-    /* Update hwm */
-
-    snprintf(temp, sizeof(temp) - 1, "%d", hwm_id + 1);
-
-    hwm_value.dptr = temp;
-    hwm_value.dsize = strlen(temp) + 1;
-
-    tdb_store(id_by_sid, hwm_key, hwm_value, TDB_REPLACE);
-
-    return hwm_id;
+    return False;
 }
 
-static int create_new_uid(fstring sid_str) 
+/* Given a uid, return the domain sid and domain controller */
+
+BOOL find_domain_sid_from_uid(uid_t uid, DOM_SID *domain_sid,
+                              char *domain_name,
+                              char *domain_controller)
 {
-    return create_new_id(sid_str, False);
+    struct winbind_domain_uid *tmp;
+
+    for(tmp = domain_uid; tmp != NULL; tmp = tmp->next) {
+        if ((uid >= tmp->uid_low) && (uid <= tmp->uid_high)) {
+
+            /* Copy domain sid */
+
+            if (domain_sid != NULL) {
+                sid_copy(domain_sid, &tmp->domain_sid);
+            }
+            
+            /* Copy domain controller */
+
+            if (domain_controller != NULL) {
+                fstrcpy(domain_controller, tmp->domain_controller);
+            }
+
+            /* Copy domain name */
+
+            if (domain_name != NULL) {
+                fstrcpy(domain_name, tmp->domain_name);
+            }
+
+            return True;
+        }
+    }
+
+    return False;
 }
 
-static int create_new_gid(fstring sid_str) 
+/* Given a uid, return the domain sid and domain controller */
+
+BOOL find_domain_sid_from_gid(gid_t gid, DOM_SID *domain_sid,
+                              char *domain_controller,
+                              char *domain_name)
 {
-    return create_new_id(sid_str, True);
+    struct winbind_domain_gid *tmp;
+
+    for(tmp = domain_gid; tmp != NULL; tmp = tmp->next) {
+        if ((gid >= tmp->gid_low) && (gid <= tmp->gid_high)) {
+
+            /* Copy domain sid */
+
+            if (domain_sid != NULL) {
+                sid_copy(domain_sid, &tmp->domain_sid);
+            }
+            
+            /* Copy domain controller */
+
+            if (domain_controller != NULL) {
+                fstrcpy(domain_controller, tmp->domain_controller);
+            }
+
+            /* Copy domain name */
+
+            if (domain_name != NULL) {
+                fstrcpy(domain_name, tmp->domain_name);
+            }
+
+            return True;
+        }
+    }
+
+    return False;
 }
 
 /* Initialise winbindd_surs database */
 
-int winbindd_surs_init(DOM_SID *domain_sid, char *domain_name)
+int winbindd_surs_init(void)
 {
-    /* Create tdb databases */
+    struct winbind_domain_gid *gid;
+    struct winbind_domain_uid *uid;
+    fstring value;
+    char *p;
 
-    if ((surs_tdb_uid_by_sid = tdb_open("/tmp/uid_by_sid.tdb", 0,
-                                        TDB_CLEAR_IF_FIRST, O_RDWR |
-                                        O_CREAT, 0600)) == NULL) {
-        DEBUG(1, ("error opening /tmp/uid_by_sid.tdb\n"));
-        return False;
-    }
+    /* Parse list of domains and uid ranges from "winbind uid" parameter */
 
-    if ((surs_tdb_gid_by_sid = tdb_open("/tmp/gid_by_sid.tdb", 0,
-                                        TDB_CLEAR_IF_FIRST, O_RDWR |
-                                        O_CREAT, 0600)) == NULL) {
-        DEBUG(1, ("error opening /tmp/gid_by_sid.tdb\n"));
-        return False;
+    fstrcpy(value, lp_winbind_uid());
+
+    for (p = strtok(value, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+
+        /* Create new domain entry */
+
+        if ((uid = (struct winbind_domain_uid *)
+             malloc(sizeof(*uid))) == NULL) {
+
+            return False;
+        }
+
+        ZERO_STRUCTP(uid);
+
+        /* Store info */
+
+        if ((sscanf(p, "%[^/]/%u-%u", uid->domain_name, &uid->uid_low,
+                    &uid->uid_high) != 3) && 
+            (sscanf(p, "%[^/]/%u", uid->domain_name, &uid->uid_low) != 2)) {
+
+            DEBUG(0, ("surs_init(): winbid uid parameter invalid\n"));
+            free(uid);
+            return False;
+        }
+
+        /* Lookup domain sid */
+        
+        if (strequal(uid->domain_name, "BUILTIN")) {
+            sid_copy(&uid->domain_sid, global_sid_builtin);
+            lookup_domain_sid(lp_workgroup(), NULL, uid->domain_controller);
+        } else if (!lookup_domain_sid(uid->domain_name, &uid->domain_sid, 
+                                      uid->domain_controller)) {
+            DEBUG(0, ("surs_init(): could not find domain sid for domain %s\n",
+                      uid->domain_name));
+            free(uid);
+            continue;
+        }
+
+        {
+            fstring temp;
+
+            sid_to_string(temp, &uid->domain_sid);
+
+            DEBUG(0, ("*** domain = %s, sid = %s, controller = %s\n",
+                      uid->domain_name, temp, uid->domain_controller));
+        }
+
+        /* Add to list */
+
+        DLIST_ADD(domain_uid, uid);
+        num_domain_uid++;
     }
     
-    if ((surs_tdb_sid_by_uid = tdb_open("/tmp/sid_by_uid.tdb", 0,
-                                        TDB_CLEAR_IF_FIRST, O_RDWR |
-                                        O_CREAT, 0600)) == NULL) {
-        DEBUG(1, ("error opening /tmp/sid_by_uid.tdb\n"));
-        return False;
-    }
+    /* Parse list of domains and gid ranges from "winbind gid" parameter */
 
-    if ((surs_tdb_sid_by_gid = tdb_open("/tmp/sid_by_gid.tdb", 0,
-                                        TDB_CLEAR_IF_FIRST, O_RDWR |
-                                        O_CREAT, 0600)) == NULL) {
-        DEBUG(1, ("error opening /tmp/sid_by_gid.tdb\n"));
-        return False;
-    }
-    
-    if ((surs_tdb_pwnam_by_sid = tdb_open("/tmp/pwnam_by_sid.tdb", 0,
-                                        TDB_CLEAR_IF_FIRST, O_RDWR |
-                                        O_CREAT, 0600)) == NULL) {
-        DEBUG(1, ("error opening /tmp/pwnam_by_sid.tdb\n"));
-        return False;
-    }
+    fstrcpy(value, lp_winbind_gid());
 
-    if ((surs_tdb_grnam_by_sid = tdb_open("/tmp/grnam_by_sid.tdb", 0,
-                                        TDB_CLEAR_IF_FIRST, O_RDWR |
-                                        O_CREAT, 0600)) == NULL) {
-        DEBUG(1, ("error opening /tmp/grnam_by_sid.tdb\n"));
-        return False;
-    }
-    
-    /* Add high/low watermarks for [gu]id by sid */
+    for (p = strtok(value, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
 
-    {
-        TDB_DATA key, value;
-        fstring temp;
+        /* Create new domain entry */
 
-        key.dptr = HWM_KEY;
-        key.dsize = strlen(HWM_KEY) + 1;
+        if ((gid = (struct winbind_domain_gid *)
+             malloc(sizeof(*gid))) == NULL) {
 
-        if (!tdb_exists(surs_tdb_uid_by_sid, key)) {
-            snprintf(temp, sizeof(temp) - 1, "%d", WINBINDD_UID_BASE);
-            value.dptr = temp;
-            value.dsize = strlen(temp) + 1;
-
-            tdb_store(surs_tdb_uid_by_sid, key, value, TDB_REPLACE);
+            return False;
         }
 
-        if (!tdb_exists(surs_tdb_gid_by_sid, key)) {
-            snprintf(temp, sizeof(temp) - 1, "%d", WINBINDD_GID_BASE);
-            value.dptr = temp;
-            value.dsize = strlen(temp) + 1;
+        ZERO_STRUCTP(gid);
 
-            tdb_store(surs_tdb_gid_by_sid, key, value, TDB_REPLACE);
-        }
-    }
+        /* Store info */
 
-    /* Add well known users and groups */
-
-    {
-        TDB_DATA sid, id, nam;
-        uint32 the_id;
-        fstring sid_str, temp, temp2, temp3;
-        int i;
-
-        /* Add domain users */
-
-        sid_to_string(sid_str, domain_sid);
-
-        for(i = 0; domain_users[i].name != NULL; i++) {
-
-            /* Key SID */
-
-            snprintf(temp, sizeof(temp) - 1, "%s-%d", sid_str, 
-                     domain_users[i].rid);
-
-            sid.dptr = temp;
-            sid.dsize = strlen(temp) + 1;
-
-            /* Key uid */
-
-            the_id = create_new_uid(sid_str);
-
-            snprintf(temp2, sizeof(temp) - 1, "%d", the_id);
-
-            id.dptr = temp2;
-            id.dsize = strlen(temp2) + 1;
-
-            /* Key username */
-
-            snprintf(temp3, sizeof(temp3) - 1, "%s/%s", domain_name, 
-                     domain_users[i].name);
-
-            nam.dptr = temp3;
-            nam.dsize = strlen(temp3) + 1;
-
-            /* Store entries */
-
-            tdb_store(surs_tdb_uid_by_sid, sid, id, TDB_REPLACE);
-            tdb_store(surs_tdb_sid_by_uid, id, sid, TDB_REPLACE);
-            tdb_store(surs_tdb_pwnam_by_sid, sid, nam, TDB_REPLACE);
+        if ((sscanf(p, "%[^/]/%u-%u", gid->domain_name, &gid->gid_low,
+                    &gid->gid_high) != 3) &&
+            (sscanf(p, "%[^/]/%u", gid->domain_name, &gid->gid_low) != 2)) {
+            DEBUG(0, ("surs_init(): winbid gid parameter invalid\n"));
+            free(gid);
+            return False;
         }
 
-        /* Add BUILTIN users */
-
-        sid_to_string(sid_str, &global_sid_S_1_5_32);
-
-        for(i = 0; local_users[i].name != NULL; i++) {
-
-            /* Key sid */
-
-            snprintf(temp, sizeof(temp) - 1, "%s-%d", sid_str, 
-                     local_users[i].rid);
-
-            sid.dptr = temp;
-            sid.dsize = strlen(temp) + 1;
-
-            /* Key uid */
-
-            the_id = create_new_uid(sid_str);
-
-            snprintf(temp2, sizeof(temp) - 1, "%d", the_id);
-
-            id.dptr = temp2;
-            id.dsize = strlen(temp2) + 1;
-
-            /* Key user name */
-
-            nam.dptr = local_users[i].name;
-            nam.dsize = strlen(local_users[i].name) + 1;
-
-            /* Store entries */
-
-            tdb_store(surs_tdb_uid_by_sid, sid, id, TDB_REPLACE);
-            tdb_store(surs_tdb_sid_by_uid, id, sid, TDB_REPLACE);
-            tdb_store(surs_tdb_pwnam_by_sid, sid, nam, TDB_REPLACE);
+        if (uid->uid_high == 0) {
+            uid->uid_high = -1;
         }
 
-        /* Add domain groups */
-
-        sid_to_string(sid_str, domain_sid);
-
-        for(i = 0; domain_groups[i].name != NULL; i++) {
-
-            /* Key SID */
-
-            snprintf(temp, sizeof(temp) - 1, "%s-%d", sid_str, 
-                     domain_groups[i].rid);
-
-            sid.dptr = temp;
-            sid.dsize = strlen(temp) + 1;
-
-            /* Key uid */
-
-            the_id = create_new_gid(sid_str);
-
-            snprintf(temp2, sizeof(temp2) - 1, "%d", the_id);
-
-            id.dptr = temp2;
-            id.dsize = strlen(temp2) + 1;
-
-            /* Key group name */
-
-            snprintf(temp3, sizeof(temp3) - 1, "%s/%s", domain_name,
-                     domain_groups[i].name);
-
-            nam.dptr = temp3;
-            nam.dsize = strlen(temp3) + 1;
-
-            tdb_store(surs_tdb_gid_by_sid, sid, id, TDB_REPLACE);
-            tdb_store(surs_tdb_sid_by_gid, id, sid, TDB_REPLACE);
-            tdb_store(surs_tdb_grnam_by_sid, sid, nam, TDB_REPLACE);
+        if (gid->gid_high == 0) {
+            gid->gid_high = -1;
         }
 
-        /* Add BUILTIN groups */
+        /* Lookup domain sid */
 
-        sid_to_string(sid_str, &global_sid_S_1_5_32);
-
-        for (i = 0; local_groups[i].name != NULL; i++) {
-
-            /* Key SID */
-
-            snprintf(temp, sizeof(temp) - 1, "%s-%d", sid_str, 
-                     local_users[i].rid);
-
-            sid.dptr = temp;
-            sid.dsize = strlen(temp) + 1;
-
-            /* Key uid */
-
-            the_id = create_new_gid(sid_str);
-
-            snprintf(temp2, sizeof(temp) - 1, "%d", the_id);
-
-            id.dptr = temp2;
-            id.dsize = strlen(temp2) + 1;
-
-            /* Key group name */
-
-            nam.dptr = local_groups[i].name;
-            nam.dsize = strlen(local_groups[i].name) + 1;
-
-            /* Store entries */
-
-            tdb_store(surs_tdb_gid_by_sid, sid, id, TDB_REPLACE);
-            tdb_store(surs_tdb_sid_by_gid, id, sid, TDB_REPLACE);
-            tdb_store(surs_tdb_grnam_by_sid, sid, nam, TDB_REPLACE);
+        if (strequal(gid->domain_name, "BUILTIN")) {
+            sid_copy(&gid->domain_sid, global_sid_builtin);
+            lookup_domain_sid(lp_workgroup(), NULL, gid->domain_controller);
+        } else if (!lookup_domain_sid(gid->domain_name, &gid->domain_sid, 
+                                      gid->domain_controller)) {
+            DEBUG(0, ("surs_init(): could not find domain sid for domain %s\n",
+                      gid->domain_name));
+            free(gid);
+            continue;
         }
+
+        /* Add to list */
+
+        DLIST_ADD(domain_gid, gid);
+        num_domain_gid++;
     }
 
     return True;
@@ -364,158 +254,145 @@ int winbindd_surs_init(DOM_SID *domain_sid, char *domain_name)
 
 /* Wrapper around "standard" surs sid to unixid function */
 
-BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, char *name, uint32 type, 
-                                     uint32 *id)
+BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, 
+                                     enum SID_NAME_USE name_type,
+                                     POSIX_ID *id)
 {
-    TDB_DATA key, value;
-    fstring temp, temp2;
+    DOM_SID tmp_sid;
+    fstring temp;
+    uint32 rid;
 
-    sid_to_string(temp, sid);
-    fprintf(stderr, "surs: sid %s/%s type %s ", temp, name,
-              (type == SID_NAME_USER) ? "user" : (
-                  (type == SID_NAME_DOM_GRP) ? "domain grp" : (
-                      (type == SID_NAME_ALIAS) ? "local grp" : "?")));
+    sid_copy(&tmp_sid, sid);
+    sid_split_rid(&tmp_sid, &rid);
 
-    key.dptr = temp;
-    key.dsize = strlen(temp) + 1;
+    sid_to_string(temp, &tmp_sid);
 
-    /* Lookup SID in user database */
+    DEBUG(0, ("** sam_sid_to_unixid(): Converting sid %s rid %d type %d to "
+              "unixid\n", temp, rid, name_type));
 
-    if (type == SID_NAME_USER) {
+    /* User names */
 
-        /* Add (sid,name) to database */
+    if (name_type == SID_NAME_USER) {
+        struct winbind_domain_uid *uid;
 
-        if (name != NULL) {
-            value.dptr = name;
-            value.dsize = strlen(name) + 1;
+        for(uid = domain_uid; uid != NULL; uid = uid->next) {
 
-            tdb_store(surs_tdb_pwnam_by_sid, key, value, TDB_REPLACE);
+            if (sid_equal(&uid->domain_sid, &tmp_sid)) {
+
+                DEBUG(0, ("Spotted sid in domain %s\n", uid->domain_name));
+
+                if ((uid->uid_low + rid) > uid->uid_high) {
+                    DEBUG(0, ("uid range to small for rid %d\n", rid));
+                    return False;
+                }
+
+                id->id = uid->uid_low + rid;
+                id->type = SURS_POSIX_UID_AS_USR;
+
+                DEBUG(0, ("allocated rid %d as uid %d\n", rid, id->id));
+                return True;
+            }
         }
 
-        /* Create and add (sid,uid) and (uid,sid) to databases */
-            
-        if (!tdb_exists(surs_tdb_uid_by_sid, key)) {
-            uint32 new_uid = create_new_uid(temp);
-
-            snprintf(temp2, sizeof(temp2) - 1, "%d", new_uid);
-
-            value.dptr = temp2;
-            value.dsize = strlen(temp2) + 1;
-
-            tdb_store(surs_tdb_uid_by_sid, key, value, TDB_REPLACE);
-            tdb_store(surs_tdb_sid_by_uid, value, key, TDB_REPLACE);
-        }
-        
-        /* Return it */
-
-        value = tdb_fetch(surs_tdb_uid_by_sid, key);
-
-        if (id != NULL) {
-            *id = atoi(value.dptr);
-        }
-        
-        fprintf(stderr, "ok\n");
-        return True;
+        return False;
     }
 
-    /* Lookup SID in domain and local group database */
+    /* Domain groups */
 
-    if ((type == SID_NAME_DOM_GRP) || (type == SID_NAME_ALIAS)) {
-
-        /* Add (sid,name) to database */
-
-        if (name != NULL) {
-            value.dptr = name;
-            value.dsize = strlen(name) + 1;
-
-            tdb_store(surs_tdb_grnam_by_sid, key, value, TDB_REPLACE);
-        }
-
-        /* Create and add (sid,gid) and (gid,sid) to databases */
-            
-        if (!tdb_exists(surs_tdb_gid_by_sid, key)) {
-            uint32 new_gid = create_new_gid(temp);
-
-            snprintf(temp2, sizeof(temp2) - 1, "%d", new_gid);
-
-            value.dptr = temp2;
-            value.dsize = strlen(temp2) + 1;
-
-            tdb_store(surs_tdb_gid_by_sid, key, value, TDB_REPLACE);
-            tdb_store(surs_tdb_sid_by_gid, value, key, TDB_REPLACE);
-        }
+    if ((name_type == SID_NAME_DOM_GRP) || (name_type == SID_NAME_ALIAS)) {
+        struct winbind_domain_gid *gid;
         
-        /* Return it */
+        for(gid = domain_gid; gid != NULL; gid = gid->next) {
 
-        value = tdb_fetch(surs_tdb_gid_by_sid, key);
+            if (sid_equal(&gid->domain_sid, &tmp_sid)) {
 
-        if (id != NULL) {
-            *id = atoi(value.dptr);
+                DEBUG(0, ("Spotted group sid in domain %s\n",
+                          gid->domain_name));
+
+                if ((gid->gid_low + rid) > gid->gid_high) {
+                    DEBUG(0, ("gid range too small for rid %d\n", rid));
+                    return False;
+                }
+
+                id->id = gid->gid_low + rid;
+                id->type = SURS_POSIX_GID_AS_GRP;
+
+                DEBUG(0, ("allocated rid %d as gid %d\n", rid, id->id));
+                return True;
+            }
         }
-        
-        fprintf(stderr, "ok\n");
-        return True;
+
+        return False;
     }
-    
-    fprintf(stderr, "not found\n");
+
     return False;
 }
 
 /* Wrapper around "standard" surs unixd to sid function */
 
-BOOL winbindd_surs_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
-                                     BOOL create)
+BOOL winbindd_surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create)
 {
-    TDB_DATA key, value;
-    fstring temp;
+    DEBUG(0, ("** unixid_to_sam_sid(): converting id %s/%d to sid\n", 
+              (id->type == SURS_POSIX_UID_AS_USR) ? "user" :
+              ((id->type == SURS_POSIX_GID_AS_GRP) ? "group" : 
+               ((id->type == SURS_POSIX_GID_AS_ALS) ? "alias" : "???")),
+              id->id));
 
-    fprintf(stderr, "surs: unixid %d type %s ", id,
-              (type == SID_NAME_USER) ? "user" : (
-                  (type == SID_NAME_DOM_GRP) ? "domain grp" : (
-                      (type == SID_NAME_ALIAS) ? "local grp" : "?")));
+    /* Process user uid */
 
-    snprintf(temp, sizeof(temp) - 1, "%d", id);
+    if (id->type == SURS_POSIX_UID_AS_USR) {
+        struct winbind_domain_uid *uid;
 
-    key.dptr = temp;
-    key.dsize = strlen(temp) + 1;
+        for(uid = domain_uid; uid != NULL; uid = uid->next) {
+            if ((id->id >= uid->uid_low) && (id->id <= uid->uid_high)) {
 
-    /* Lookup sid by uid */
+                /* uid falls within range for this domain */
 
-    if ((type == SID_NAME_USER) && tdb_exists(surs_tdb_sid_by_uid, key)) {
+                DEBUG(0, ("found uid in range for domain %s\n",
+                          uid->domain_name));
 
-        /* Get sid */
+                if (sid != NULL) {
+                    sid_copy(sid, &uid->domain_sid);
+                    sid_append_rid(sid, id->id - uid->uid_low);
+                }
 
-        value = tdb_fetch(surs_tdb_sid_by_uid, key);
-        if (sid != NULL) {
-            string_to_sid(sid, value.dptr);
+                return True;
+            }
         }
-
-        fprintf(stderr, "ok\n");
-        return True;
     }
 
-    /* Lookup sid by gid */
+    /* Process group gid */
 
-    if (((type == SID_NAME_DOM_GRP) || (type == SID_NAME_ALIAS)) &&
-        tdb_exists(surs_tdb_sid_by_gid, key)) {
+    if ((id->type == SURS_POSIX_GID_AS_GRP) ||
+        (id->type == SURS_POSIX_GID_AS_ALS)) {
+        
+        struct winbind_domain_gid *gid;
 
-        /* Get sid */
+        for(gid = domain_gid; gid != NULL; gid = gid->next) {
+            if ((id->id >= gid->gid_low) && (id->id <= gid->gid_high)) {
 
-        value = tdb_fetch(surs_tdb_sid_by_gid, key);
-        if (sid != NULL) {
-            string_to_sid(sid, value.dptr);
+                /* gid falls within range for this domain */
+
+                DEBUG(0, ("found gid in range for domain %s\n",
+                          gid->domain_name));
+
+                {
+                    fstring temp;
+
+                    sid_to_string(temp, &gid->domain_sid);
+                    DEBUG(0, ("domain %s has sid %s\n", gid->domain_name, 
+                              temp));
+                }
+
+                if (sid != NULL) {
+                    sid_copy(sid, &gid->domain_sid);
+                    sid_append_rid(sid, id->id - gid->gid_low);
+                }
+
+                return True;
+            }
         }
-
-        fprintf(stderr, "ok\n");
-        return True;
     }
 
-    fprintf(stderr, "not found\n");
     return False;
 }
-
-/*
-Local variables:
-compile-command: "make -C ~/work/nss-ntdom/samba-tng/source nsswitch"
-end:
-*/

@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "winbindd.h"
 
 /* Connect to winbindd socket */
 
@@ -50,7 +49,7 @@ int connect_sock(void)
 
     FD_ZERO(&writefd);
     FD_SET(sock, &writefd);
-    timeout.tv_sec = WINBINDD_TIMEOUT;
+    timeout.tv_sec = WINBINDD_TIMEOUT_SEC;
     timeout.tv_usec = 0;
     
     if ((result = select(sock + 1, NULL, &writefd, NULL, 
@@ -132,7 +131,7 @@ int write_sock(int sock, void *buffer, int count)
 
     FD_ZERO(&writefd);
     FD_SET(sock, &writefd);
-    timeout.tv_sec = WINBINDD_TIMEOUT;
+    timeout.tv_sec = WINBINDD_TIMEOUT_SEC;
     timeout.tv_usec = 0;
 
     while(nwritten < count) {
@@ -172,7 +171,7 @@ int read_sock(int sock, void *buffer, int count)
 
     FD_ZERO(&readfd);
     FD_SET(sock, &readfd);
-    timeout.tv_sec = WINBINDD_TIMEOUT;
+    timeout.tv_sec = WINBINDD_TIMEOUT_SEC;
     timeout.tv_usec = 0;
 
     while(nread < count) {
@@ -201,9 +200,3 @@ void remove_sock(void)
 {
     unlink(WINBINDD_SOCKET_NAME);
 }
-
-/*
-Local variables:
-compile-command: "make -C ~/work/nss-ntdom/samba-tng/source nsswitch"
-end:
-*/
