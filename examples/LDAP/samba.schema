@@ -389,6 +389,16 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.53 NAME 'sambaTrustFlags'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
 
+attributetype ( 1.3.6.1.4.1.7165.2.1.56 NAME 'sambaAccountPolicyName'
+	DESC 'Account Policy Name'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{255} SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.57 NAME 'sambaAccountPolicyValue'
+	DESC 'Account Policy Value'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
 
 #######################################################################
 ##              objectClasses used by Samba 3.0 schema               ##
@@ -477,4 +487,9 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.13 NAME 'sambaPrivilege' SUP top AUXILIARY
 	DESC 'Samba Privilege'
 	MUST ( sambaSID )
 	MAY ( sambaPrivilegeList ) )
+
+objectclass ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaAccountPolicy' SUP top STRUCTURAL
+	DESC 'Samba Account Policy'
+	MUST ( sambaAccountPolicyName $ sambaAccountPolicyValue )
+	MAY ( description ) )
 
