@@ -47,10 +47,9 @@ static printer_t *printers = NULL;
 
 static void populate_printers(void)
 {
-#ifdef HAVE_POPEN
 	FILE *fp;
 
-	if ((fp = popen("/usr/bin/lpstat -v", "r")) != NULL) {
+	if ((fp = sys_popen("/usr/bin/lpstat -v", "r")) != NULL) {
 		char buf[BUFSIZ];
 
 		while (fgets(buf, sizeof (buf), fp) != NULL) {
@@ -88,13 +87,10 @@ static void populate_printers(void)
 				DEBUG(0,("populate_printers: malloc fail for ptmp\n"));
 			}
 		}
-		pclose(fp);
+		sys_pclose(fp);
 	} else {
 		DEBUG(0,( "Unable to run lpstat!\n"));
 	}
-#else
-	DEBUG(0,( "No popen() defined: Unable to run lpstat!\n"));
-#endif
 }
 
 

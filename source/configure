@@ -4173,7 +4173,7 @@ else
 fi
 done
 
-for ac_func in initgroups select rdchk getgrnam getgrent pathconf popen
+for ac_func in initgroups select rdchk getgrnam getgrent pathconf
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:4180: checking for $ac_func" >&5
