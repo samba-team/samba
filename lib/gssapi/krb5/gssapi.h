@@ -50,6 +50,8 @@
 #include <config.h>
 #endif
 
+#include <sys/types.h>
+
 #include <bits.h>
 
 /*
