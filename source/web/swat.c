@@ -50,13 +50,25 @@ static char *fix_backslash(char *str)
 static char newstring[1024];
 char *p = newstring;
 
-	*p = '\0';
         while (*str) {
                 if (*str == '\\') {*p++ = '\\';*p++ = '\\';}
                 else *p++ = *str;
                 ++str;
-                *p = '\0';
         }
+	*p = '\0';
+	return newstring;
+}
+
+static char *stripspace(char *str)
+{
+static char newstring[1024];
+char *p = newstring;
+
+        while (*str) {
+                if (*str != ' ') *p++ = *str;
+                ++str;
+        }
+	*p = '\0';
 	return newstring;
 }
 
@@ -69,8 +81,8 @@ char *p = parmname;
 		if (*label == ' ') *p++ = '_';
 		else *p++ = *label;
 		++label;
-		*p = '\0';
 	}
+	*p = '\0';
 	return parmname;
 }
 
@@ -132,8 +144,8 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td><A HREF=\"/swat/help/parameters.html#%s\">?</A> %s</td><td>", 
-	       parm->label, parm->label);
+	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\">?</A> %s</td><td>", 
+	       stripspace(parm->label), parm->label);
 
 	switch (parm->type) {
 	case P_CHAR:
