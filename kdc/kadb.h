@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,7 +56,7 @@ struct ka_header {
 struct ka_entry {
     int32_t flags;			/* see below */
     int32_t next;			/* next in hash list */
-    int32_t pw_end;			/* expiration date */
+    int32_t valid_end;			/* expiration date */
     int32_t mod_time;			/* time last modified */
     int32_t mod_ptr;			/* pointer to modifier */
     int32_t pw_change;			/* last pw change */
@@ -66,6 +66,10 @@ struct ka_entry {
     char name[64];
     char instance[64];
     char key[8];
+    u_char pw_expire;			/* # days before password expires  */
+    u_char spare;
+    u_char attempts;
+    u_char locktime;
 };
 
 #define KAFNORMAL	(1<<0)
@@ -74,5 +78,7 @@ struct ka_entry {
 #define KAFNOSEAL       (1<<5)	/* ! allow principal as server in GetTicket */
 #define KAFNOCPW        (1<<6)	/* ! allow principal to change its own key */
 #define KAFSPECIAL      (1<<8)	/* set if special AuthServer principal */
+
+#define DEFAULT_DATABASE "/usr/afs/db/kaserver.DB0"
 
 #endif /* __kadb_h__ */
