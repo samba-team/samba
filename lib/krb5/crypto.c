@@ -134,6 +134,19 @@ static struct key_type *_find_keytype(krb5_keytype type);
 static krb5_error_code _get_derived_key(krb5_context, krb5_crypto, 
 					unsigned, struct key_data**);
 static struct key_data *_new_derived_key(krb5_crypto crypto, unsigned usage);
+static krb5_error_code derive_key(krb5_context context,
+				  struct encryption_type *et,
+				  struct key_data *key,
+				  const void *constant,
+				  size_t len);
+static void hmac(krb5_context context,
+		 struct checksum_type *cm, 
+		 const void *data, 
+		 size_t len, 
+		 unsigned usage,
+		 struct key_data *keyblock,
+		 Checksum *result);
+static void free_key_data(krb5_context context, struct key_data *key);
 
 /************************************************************
  *                                                          *
@@ -494,6 +507,180 @@ ARCFOUR_string_to_key(krb5_context context,
     return 0;
 }
 
+#ifdef ENABLE_AES
+/*
+ * AES
+ */
+
+/* iter is really 1 based, so iter == 0 will be 1 iteration */
+
+krb5_error_code
+krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
+		  krb5_data password, krb5_salt salt, u_int32_t iter,
+		  krb5_keytype type, krb5_keyblock *key)
+{
+    struct checksum_type *c = _find_checksum(cktype);
+    struct key_type *kt;
+    size_t datalen, leftofkey;
+    krb5_error_code ret;
+    u_int32_t keypart;
+    struct key_data ksign;
+    krb5_keyblock kb;
+    Checksum result;
+    char *data, *tmpcksum;
+    int i, j;
+    char *p;
+    
+    if (c == NULL) {
+	krb5_set_error_string(context, "checksum %d not supported", cktype);
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    }
+
+    kt = _find_keytype(type);
+    if (kt == NULL) {
+	krb5_set_error_string(context, "key type %d not supported", type);
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    }
+    
+    key->keytype = type;
+    ret = krb5_data_alloc (&key->keyvalue, kt->bits / 8);
+    if (ret) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ret;
+    }
+	
+    ret = krb5_data_alloc (&result.checksum, c->checksumsize);
+    if (ret) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_data_free (&key->keyvalue);
+	return ret;
+    }
+
+    tmpcksum = malloc(c->checksumsize);
+    if (tmpcksum == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_data_free (&key->keyvalue);
+	krb5_data_free (&result.checksum);
+	return ENOMEM;
+    }
+
+    datalen = salt.saltvalue.length + 4;
+    data = malloc(datalen);
+    if (data == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	free(tmpcksum);
+	krb5_data_free (&key->keyvalue);
+	krb5_data_free (&result.checksum);
+	return ENOMEM;
+    }
+
+    kb.keyvalue = password;
+    ksign.key = &kb;
+
+    memcpy(data, salt.saltvalue.data, salt.saltvalue.length);
+
+    keypart = 1;
+    leftofkey = key->keyvalue.length;
+    p = key->keyvalue.data;
+
+    while (leftofkey) {
+	int len;
+
+	if (leftofkey > c->checksumsize)
+	    len = c->checksumsize;
+	else
+	    len = leftofkey;
+
+	_krb5_put_int(data + datalen - 4, keypart, 4);
+
+	hmac(context, c, data, datalen, 0, &ksign, &result);
+	memcpy(p, result.checksum.data, len);
+	memcpy(tmpcksum, result.checksum.data, result.checksum.length);
+	for (i = 0; i < iter; i++) {
+	    hmac(context, c, tmpcksum, result.checksum.length,
+		 0, &ksign, &result);
+	    memcpy(tmpcksum, result.checksum.data, result.checksum.length);
+	    for (j = 0; j < len; j++)
+		p[j] ^= tmpcksum[j];
+	}
+
+	p += len;
+	leftofkey -= len;
+	keypart++;
+    }
+
+    free(data);
+    free(tmpcksum);
+    krb5_data_free (&result.checksum);
+
+    return 0;
+}
+
+static krb5_error_code
+AES_string_to_key(krb5_context context,
+		  krb5_enctype enctype,
+		  krb5_data password,
+		  krb5_salt salt,
+		  krb5_data opaque,
+		  krb5_keyblock *key)
+{
+    krb5_error_code ret;
+    u_int32_t iter;
+    struct encryption_type *et;
+    struct key_data kd;
+
+    if (opaque.length == 0)
+	iter = 45056 - 1;
+    else if (opaque.length == 4) {
+	unsigned long v;
+	_krb5_get_int(opaque.data, &v, 4);
+	iter = ((u_int32_t)v) - 1;
+    } else
+	return KRB5_PROG_KEYTYPE_NOSUPP; /* XXX */
+	
+
+    et = _find_enctype(enctype);
+    if (et == NULL)
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+
+    ret = krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
+			    iter, enctype, key);
+    if (ret)
+	return ret;
+
+    ret = krb5_copy_keyblock(context, key, &kd.key);
+    kd.schedule = NULL;
+
+    ret = derive_key(context, et, &kd, "kerberos", strlen("kerberos"));
+
+    if (ret) {
+	krb5_data_free(&key->keyvalue);
+    } else {
+	ret = krb5_copy_keyblock_contents(context, kd.key, key);
+	free_key_data(context, &kd);
+    }
+
+    return ret;
+}
+
+static void
+AES_schedule(krb5_context context, struct key_data *kd)
+{
+    AES_KEY *key = kd->schedule->data;
+    int bits = kd->key->keyvalue.length * 8;
+    
+    AES_set_encrypt_key(kd->key->keyvalue.data, bits, &key[0]);
+    AES_set_decrypt_key(kd->key->keyvalue.data, bits, &key[1]);
+}
+
+/*
+ *
+ */
+
+extern struct salt_type AES_salt[];
+
+#endif /* ENABLE_AES */
+
 extern struct salt_type des_salt[], 
     des3_salt[], des3_salt_derived[], arcfour_salt[];
 
@@ -541,6 +728,30 @@ struct key_type keytype_des3_derived = {
     des3_salt_derived
 };
 
+#ifdef ENABLE_AES
+struct key_type keytype_aes128 = {
+    KEYTYPE_AES128,
+    "aes-128",
+    128,
+    16,
+    sizeof(AES_KEY) * 2,
+    NULL,
+    AES_schedule,
+    AES_salt
+};
+
+struct key_type keytype_aes256 = {
+    KEYTYPE_AES256,
+    "aes-256",
+    256,
+    16,
+    sizeof(AES_KEY) * 2,
+    NULL,
+    AES_schedule,
+    AES_salt
+};
+#endif /* ENABLE_AES */
+
 struct key_type keytype_arcfour = {
     KEYTYPE_ARCFOUR,
     "arcfour",
@@ -557,6 +768,10 @@ struct key_type *keytypes[] = {
     &keytype_des,
     &keytype_des3_derived,
     &keytype_des3,
+#ifdef ENABLE_AES
+    &keytype_aes128,
+    &keytype_aes256,
+#endif /* ENABLE_AES */
     &keytype_arcfour
 };
 
@@ -604,6 +819,17 @@ struct salt_type des3_salt_derived[] = {
     },
     { 0 }
 };
+
+#ifdef ENABLE_AES
+struct salt_type AES_salt[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	AES_string_to_key
+    },
+    { 0 }
+};
+#endif /* ENABLE_AES */
 
 struct salt_type arcfour_salt[] = {
     {
@@ -1192,16 +1418,22 @@ hmac(krb5_context context,
 }
 
 static void
-HMAC_SHA1_DES3_checksum(krb5_context context,
-			struct key_data *key, 
-			const void *data, 
-			size_t len, 
-			unsigned usage,
-			Checksum *result)
+SP_HMAC_SHA1_checksum(krb5_context context,
+		      struct key_data *key, 
+		      const void *data, 
+		      size_t len, 
+		      unsigned usage,
+		      Checksum *result)
 {
     struct checksum_type *c = _find_checksum(CKSUMTYPE_SHA1);
+    Checksum res;
+    char sha1_data[20];
 
-    hmac(context, c, data, len, usage, key, result);
+    res.checksum.data = sha1_data;
+    res.checksum.length = sizeof(sha1_data);
+
+    hmac(context, c, data, len, usage, key, &res);
+    memcpy(result->checksum.data, res.checksum.data, result->checksum.length);
 }
 
 /*
@@ -1379,9 +1611,31 @@ struct checksum_type checksum_hmac_sha1_des3 = {
     64,
     20,
     F_KEYED | F_CPROOF | F_DERIVED,
-    HMAC_SHA1_DES3_checksum,
+    SP_HMAC_SHA1_checksum,
     NULL
 };
+
+#ifdef ENABLE_AES
+struct checksum_type checksum_hmac_sha1_aes128 = {
+    CKSUMTYPE_HMAC_SHA1_96_AES_128,
+    "hmac-sha1-96-aes128",
+    64,
+    12,
+    F_KEYED | F_CPROOF | F_DERIVED,
+    SP_HMAC_SHA1_checksum,
+    NULL
+};
+
+struct checksum_type checksum_hmac_sha1_aes256 = {
+    CKSUMTYPE_HMAC_SHA1_96_AES_256,
+    "hmac-sha1-96-aes256",
+    64,
+    12,
+    F_KEYED | F_CPROOF | F_DERIVED,
+    SP_HMAC_SHA1_checksum,
+    NULL
+};
+#endif /* ENABLE_AES */
 
 struct checksum_type checksum_hmac_md5 = {
     CKSUMTYPE_HMAC_MD5,
@@ -1418,6 +1672,10 @@ struct checksum_type *checksum_types[] = {
     &checksum_rsa_md5_des3,
     &checksum_sha1,
     &checksum_hmac_sha1_des3,
+#ifdef ENABLE_AES
+    &checksum_hmac_sha1_aes128,
+    &checksum_hmac_sha1_aes256,
+#endif
     &checksum_hmac_md5,
     &checksum_hmac_md5_enc
 };
@@ -1745,6 +2003,113 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
     return 0;
 }
 
+#ifdef ENABLE_AES
+
+/*
+ * AES draft-raeburn-krb-rijndael-krb-02
+ */
+
+void
+_krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
+		      size_t len, const AES_KEY *key,
+		      unsigned char *ivec, const int enc)
+{
+    unsigned char tmp[AES_BLOCK_SIZE];
+    int i;
+
+    /*
+     * In the framework of kerberos, the length can never be shorter
+     * then at least one blocksize.
+     */
+
+    if (enc == AES_ENCRYPT) {
+
+	while(len > AES_BLOCK_SIZE) {
+	    for (i = 0; i < AES_BLOCK_SIZE; i++)
+		tmp[i] = in[i] ^ ivec[i];
+	    AES_encrypt(tmp, out, key);
+	    memcpy(ivec, out, AES_BLOCK_SIZE);
+	    len -= AES_BLOCK_SIZE;
+	    in += AES_BLOCK_SIZE;
+	    out += AES_BLOCK_SIZE;
+	}
+
+	for (i = 0; i < len; i++)
+	    tmp[i] = in[i] ^ ivec[i];
+	for (; i < AES_BLOCK_SIZE; i++)
+	    tmp[i] = 0 ^ ivec[i];
+
+	AES_encrypt(tmp, out - AES_BLOCK_SIZE, key);
+
+	memcpy(out, ivec, len);
+
+    } else {
+	char tmp2[AES_BLOCK_SIZE];
+	char tmp3[AES_BLOCK_SIZE];
+
+	while(len > AES_BLOCK_SIZE * 2) {
+	    memcpy(tmp, in, AES_BLOCK_SIZE);
+	    AES_decrypt(in, out, key);
+	    for (i = 0; i < AES_BLOCK_SIZE; i++)
+		out[i] ^= ivec[i];
+	    memcpy(ivec, tmp, AES_BLOCK_SIZE);
+	    len -= AES_BLOCK_SIZE;
+	    in += AES_BLOCK_SIZE;
+	    out += AES_BLOCK_SIZE;
+	}
+
+	len -= AES_BLOCK_SIZE;
+
+	AES_decrypt(in, tmp2, key);
+
+	memcpy(tmp3, in + AES_BLOCK_SIZE, len);
+	memcpy(tmp3 + len, tmp2 + len, AES_BLOCK_SIZE - len); /* xor 0 */
+
+	for (i = 0; i < len; i++)
+	    out[i + AES_BLOCK_SIZE] = tmp2[i] ^ tmp3[i];
+
+	AES_decrypt(tmp3, out, key);
+	for (i = 0; i < AES_BLOCK_SIZE; i++)
+	    out[i] ^= ivec[i];
+    }
+}
+
+static krb5_error_code
+AES_CTS_encrypt(krb5_context context,
+		struct key_data *key,
+		void *data,
+		size_t len,
+		krb5_boolean encrypt,
+		int usage,
+		void *ivec)
+{
+    AES_KEY *k = key->schedule->data;
+    char local_ivec[AES_BLOCK_SIZE];
+
+    if (encrypt)
+	k = &k[0];
+    else
+	k = &k[1];
+    
+    if (len < AES_BLOCK_SIZE)
+	abort();
+    if (len == AES_BLOCK_SIZE) {
+	if (encrypt)
+	    AES_encrypt(data, data, k);
+	else
+	    AES_decrypt(data, data, k);
+    } else {
+	if(ivec == NULL) {
+	    memset(local_ivec, 0, sizeof(local_ivec));
+	    ivec = local_ivec;
+	}
+	_krb5_aes_cts_encrypt(data, data, len, k, ivec, encrypt);
+    }
+
+    return 0;
+}
+#endif /* ENABLE_AES */
+
 /*
  * section 6 of draft-brezak-win2k-krb-rc4-hmac-03
  *
@@ -2044,6 +2409,32 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
     0,
     DES3_CBC_encrypt,
 };
+#ifdef ENABLE_AES
+static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
+    ETYPE_AES128_CTS_HMAC_SHA1_96,
+    "aes128-cts-hmac-sha1-96",
+    16,
+    1,
+    16,
+    &keytype_aes128,
+    &checksum_sha1,
+    &checksum_hmac_sha1_aes128,
+    0,
+    AES_CTS_encrypt,
+};
+static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
+    ETYPE_AES256_CTS_HMAC_SHA1_96,
+    "aes256-cts-hmac-sha1-96",
+    16,
+    1,
+    16,
+    &keytype_aes256,
+    &checksum_sha1,
+    &checksum_hmac_sha1_aes256,
+    0,
+    AES_CTS_encrypt,
+};
+#endif /* ENABLE_AES */
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
     "des-cbc-none",
@@ -2102,6 +2493,10 @@ static struct encryption_type *etypes[] = {
     &enctype_des3_cbc_md5, 
     &enctype_des3_cbc_sha1,
     &enctype_old_des3_cbc_sha1,
+#ifdef ENABLE_AES
+    &enctype_aes128_cts_hmac_sha1,
+    &enctype_aes256_cts_hmac_sha1,
+#endif
     &enctype_des_cbc_none,
     &enctype_des_cfb64_none,
     &enctype_des_pcbc_none,
@@ -2913,6 +3308,12 @@ derive_key(krb5_context context,
     case KEYTYPE_DES3:
 	DES3_postproc(context, k, nblocks * et->blocksize, key);
 	break;
+#ifdef ENABLE_AES
+    case KEYTYPE_AES128:
+    case KEYTYPE_AES256:
+	memcpy(key->key->keyvalue.data, k, key->key->keyvalue.length);
+	break;
+#endif /* ENABLE_AES */
     default:
 	krb5_set_error_string(context,
 			      "derive_key() called with unknown keytype (%u)", 
@@ -3265,7 +3666,7 @@ main()
     d->key = &key;
     res.checksum.length = 20;
     res.checksum.data = malloc(res.checksum.length);
-    HMAC_SHA1_DES3_checksum(context, d, data, 28, &res);
+    SP_HMAC_SHA1_checksum(context, d, data, 28, &res);
 
     return 0;
 #endif
