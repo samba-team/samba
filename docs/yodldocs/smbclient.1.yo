@@ -40,10 +40,11 @@ host name of the server ! The name required is a NetBIOS server name,
 which may or may not be the same as the IP hostname of the machine
 running the server.
 
-The server name is looked up according to the url(bf(name resolve
-order))(smbclient.1.html#name resolve order) parameter in the smb.conf
-file, allowing an administrator to change the order and methods by
-which server names are looked up.
+The server name is looked up according to either the
+link(bf(-R))(nameresolveorder) parameter to bf(smbclient) or using the
+url(bf(name resolve order))(smb.conf.5.html#nameresolveorder)
+parameter in the smb.conf file, allowing an administrator to change
+the order and methods by which server names are looked up.
 
 dit(bf(password)) password is the password required to access the
 specified service on the specified server. If this parameter is
@@ -70,11 +71,11 @@ file.
 dit(bf(-B IP addr)) The IP address to use when sending a broadcast packet.
 
 dit(bf(-O socket_options)) TCP socket options to set on the client
-socket. See the url(socket options)(smb.conf.5.html#socket options)
+socket. See the url(socket options)(smb.conf.5.html#socketoptions)
 parameter in the url(bf(smb.conf (5)))(smb.conf.5.html) manpage for
 the list of valid options.
 
-label(name_resolve_order)
+label(nameresolveorder)
 dit(bf(-R name resolve order)) This option allows the user of
 smbclient to determine what name resolution services to use when
 looking up the NetBIOS name of the host being connected to.
@@ -92,7 +93,7 @@ resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the em(/etc/nsswitch.conf) file).  
 
 it() bf(wins) : Query a name with the IP address listed in the url(bf(wins
-server))(smb.conf.5.html#wins server) parameter in the smb.conf file. If 
+server))(smb.conf.5.html#winsserver) parameter in the smb.conf file. If 
 no WINS server has been specified this method will be ignored.
 
 it() bf(bcast) : Do a broadcast on each of the known local interfaces
@@ -106,12 +107,12 @@ endit()
 
 If this parameter is not set then the name resolver order defined
 in the url(bf(smb.conf))(smb.conf.5.html) file parameter 
-url((bf(name resolve order)))(smb.conf.5.html#name resolve order)
+url((bf(name resolve order)))(smb.conf.5.html#nameresolveorder)
 will be used.
 
 The default order is lmhosts, host, wins, bcast and without this
 parameter or any entry in the url(bf("name resolve
-order"))(smb.conf.5.html#name resolve order) parameter of the
+order"))(smb.conf.5.html#nameresolveorder) parameter of the
 url(bf(smb.conf))(smb.conf.5.html) file the name resolution methods
 will be attempted in this order.
 
@@ -137,7 +138,7 @@ will send the message in the file em(mymessage.txt) to the machine FRED.
 You may also find the bf(-U) and bf(-I) options useful, as they allow
 you to control the FROM and TO parts of the message.
 
-See the url(bf(message command))(smb.conf.5.html#message command)
+See the url(bf(message command))(smb.conf.5.html#messagecommand)
 parameter in the bf(smb.conf (5)) for a description of how to handle
 incoming WinPopup messages in Samba.
 
@@ -213,7 +214,7 @@ connect to. It should be specified in standard "a.b.c.d" notation.
 
 Normally the client would attempt to locate a named SMB/CIFS server by
 looking it up via the NetBIOS name resolution mechanism described
-above in the url(bf(name resolve order))(smbclient.1.html#name_resolve_order) parameter
+above in the link(bf(name resolve order))(nameresolveorder) parameter
 above. Using this parameter will force the client to assume that the
 server is on the machine with the specified IP address and the NetBIOS
 name component of the resource being connected to will be ignored.
@@ -617,11 +618,11 @@ label(rmdir) dit(bf(rmdir <directory name>)) Remove the specified
 directory (user access privileges permitting) from the server.
 
 label(tar) dit(bf(tar <c|x>[IXbgNa])) Performs a tar operation - see
-the url(bf(-T))(smbclient.1.html#minusT) command line option
-above. Behaviour may be affected by the link(bf(tarmode))(tarmode)
-command (see below). Using g (incremental) and N (newer) will affect
-tarmode settings. Note that using the "-" option with tar x may not
-work - use the command line option instead.
+the link(bf(-T))(minusT) command line option above. Behaviour may be
+affected by the link(bf(tarmode))(tarmode) command (see below). Using
+g (incremental) and N (newer) will affect tarmode settings. Note that
+using the "-" option with tar x may not work - use the command line
+option instead.
 
 label(blocksize) dit(bf(blocksize <blocksize>)) Blocksize. Must be
 followed by a valid (greater than zero) blocksize. Causes tar file to
@@ -658,7 +659,7 @@ be known to the server.
 smbclient supports long file names where the server supports the
 LANMAN2 protocol or above.
 
-label(ENVIRONMENT VARIABLES)
+label(ENVIRONMENTVARIABLES)
 manpagesection(ENVIRONMENT VARIABLES)
 
 The variable bf(USER) may contain the username of the person using the

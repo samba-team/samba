@@ -22,7 +22,10 @@ sessions on any machines that store SMB passwords.
 
 By default (when run with no arguments) it will attempt to change the
 current users SMB password on the local machine. This is similar to
-the way the bf(passwd (1)) program works. Note that in order for this
+the way the bf(passwd (1)) program works. bf(smbpasswd) differs from
+the bf(passwd) program works however in that it is not em(setuid root)
+but works in a client-server mode and communicates with a locally
+running url(bf(smbd))(smbd.8.html). As a consequence in order for this
 to succeed the url(bf(smbd))(smbd.8.html) daemon must be running on
 the local machine. On a UNIX machine the encrypted SMB passwords are
 usually stored in the url(bf(smbpasswd (5)))(smbpasswd.5.html) file.
@@ -37,8 +40,8 @@ press the <Enter> key when asked for your old password.
 
 bf(smbpasswd) also can be used by a normal user to change their SMB
 password on remote machines, such as Windows NT Primary Domain
-Controllers. See the link(bf(-r))(minusr) and link(bf(-U))(minusU)
-options below.
+Controllers. See the link((bf(-r)))(minusr) and
+link(bf(-U))(minusU) options below.
 
 When run by root, bf(smbpasswd) allows new users to be added and
 deleted in the url(bf(smbpasswd))(smbpasswd.5.html) file, as well as
@@ -121,23 +124,24 @@ url(bf(smbpasswd))(smbpasswd.5.html) file the administrator must set
 the following parameter in the [global] section of the
 url(bf(smb.conf))(smb.conf.5.html) file :
 
-url(null passwords = true)(smb.conf.5.html#null passwords)
+url(null passwords = true)(smb.conf.5.html#nullpasswords)
 
 This option is only available when running bf(smbpasswd) as root.
 
-dit(bf(-r remote machine name)) This option allows a user to specify
-what machine they wish to change their password on. Without this
-parameter bf(smbpasswd) defaults to the local host. The em("remote
-machine name") is the NetBIOS name of the SMB/CIFS server to contact
-to attempt the password change. This name is resolved into an IP
-address using the standard name resolution mechanism in all programs
-of the url(bf(Samba))(samba.7.html) suite. See the link(bf(-R name
-resolve order))(nameresolveorder) parameter for details on changing this
-resolving mechanism.
+label(minusr) dit(bf(-r remote machine name)) This option allows a
+user to specify what machine they wish to change their password
+on. Without this parameter bf(smbpasswd) defaults to the local
+host. The em("remote machine name") is the NetBIOS name of the
+SMB/CIFS server to contact to attempt the password change. This name
+is resolved into an IP address using the standard name resolution
+mechanism in all programs of the url(bf(Samba))(samba.7.html)
+suite. See the link(bf(-R name resolve order))(nameresolveorder) parameter for details on changing this resolving
+mechanism.
 
 The username whose password is changed is that of the current UNIX
-logged on user. See the link(bf(-U username))(minusU) parameter for
-details on changing the password for a different username.
+logged on user. See the link(bf(-U username))(minusU)
+parameter for details on changing the password for a different
+username.
  
 Note that if changing a Windows NT Domain password the remote machine
 specified must be the Primary Domain Controller for the domain (Backup
@@ -162,7 +166,7 @@ resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the em(/etc/nsswitch.conf) file).
 
 it() bf(wins) : Query a name with the IP address listed in the url(bf(wins
-server))(smb.conf.5.html#wins server) parameter in the smb.conf file. If 
+server))(smb.conf.5.html#winsserver) parameter in the smb.conf file. If 
 no WINS server has been specified this method will be ignored.
 
 it() bf(bcast) : Do a broadcast on each of the known local interfaces
@@ -175,7 +179,7 @@ endit()
 
 If this parameter is not set then the name resolver order defined
 in the url(bf(smb.conf))(smb.conf.5.html) file parameter 
-url((bf(name resolve order))(smb.conf.5.html#name resolve order)
+url(bf(name resolve order))(smb.conf.5.html#nameresolveorder)
 will be used.
 
 The default order is lmhosts, host, wins, bcast and without this
@@ -200,14 +204,14 @@ option in the url(bf(smb.conf (5)))(smb.conf.5.html) man page.
 
 In order to be used in this way, the Administrator for the Windows
 NT Domain must have used the program em("Server Manager for Domains")
-to add the url(primary NetBIOS name)(smb.conf.5.html#netbios name) of 
+to add the url(primary NetBIOS name)(smb.conf.5.html#netbiosname) of 
 the Samba server as a member of the Domain.
 
 After this has been done, to join the Domain invoke bf(smbpasswd) with
 this parameter. bf(smbpasswd) will then look up the Primary Domain
 Controller for the Domain (found in the
 url(bf(smb.conf))(smb.conf.5.html) file in the parameter
-url(bf("password server"))(smb.conf.5.html#password server) and change
+url(bf(password server))(smb.conf.5.html#passwordserver) and change
 the machine account password used to create the secure Domain
 communication.  This password is then stored by bf(smbpasswd) in a
 file, read only by root, called tt(<Domain>.<Machine>.mac) where
@@ -227,96 +231,53 @@ on that machine.
 This option is only available when running bf(smbpasswd) as root.
 
 label(minusU)
-dit(bf(-U username))
+dit(bf(-U username)) This option may only be used in
+conjunction with the link(bf(-r))(minusr)
+option. When changing a password on a remote machine it allows the
+user to specify the user name on that machine whose password will be
+changed. It is present to allow users who have different user names on
+different systems to change these passwords.
 
-HERE !!!!
+dir(bf(username)) This specifies the username for all of the em(root
+only) options to operate on. Only root can specify this parameter as
+only root has the permission needed to modify attributes directly
+in the local url(bf(smbpasswd))(smbpasswd.5.html) file.
 
-.RE
-.I username
+label(NOTES)
+manpagesection(NOTES)
 
-.RS 3
-You may only specify a username to the smbpasswd command
-if you are running as root. Only root should have the
-permission to modify other users smb passwords.
+As bf(smbpasswd) works in client-server mode communicating with a
+local url(bf(smbd))(smbd.8.html) for a non-root user then the bf(smbd)
+daemon must be running for this to work. A common problem is to add a
+restriction to the hosts that may access the bf(smbd) running on the
+local machine by specifying a url(bf("allow
+hosts"))(smb.conf.5.html#allowhosts) or url(bf("deny
+hosts"))(smb.conf.5.html#denyhosts) entry in the
+url(bf(smb.conf))(smb.conf.5.html) file and neglecting to allow
+em("localhost") access to the bf(smbd).
 
-NOTES
-
-.B New for 1.9.18p4.
-smbpasswd will now allow a user to change their password
-on a Windows NT server. To use this add the 
-.I \-r
-.I \<remote_machine\>
-paramter to the smbpasswd command. The machine name is looked
-up using the "name resolve order" parameter defined in the
-smb.conf [global] section. Note that when changing a Windows
-NT password for a domain user,
-.I \<remote machine\>
-must be the name of the Primary domain controller.
-
-To allow users to change their passwords from "NO PASSWORD" in the
-smbpasswd file to a valid password the administrator must set the
-following parameter in the [global] section of the smb.conf :
-
-null passwords = true
-
-This is .B NOT recommended as a general policy, it is recommended that
-new users be assigned a default password instead.
-
-
-The 
-.I \-a
-and 
-.I username
-options can only be used by a user running as root.
-
-.RE
-.RE
-.SH INSTALLATION
-
-The location of the server and its support files is a matter for individual
-system administrators. The following are thus suggestions only.
-
-It is recommended that the
-.B smbpasswd
-program be installed in the /usr/local/samba/bin directory. This should be
-a directory readable by all, writeable only by root. The program should be
-executable by all. The program 
-.B must not 
-be setuid root.
-
-.SH VERSION
-
-This man page is correct for version 1.9.18p4 of the Samba suite.
-These notes will necessarily lag behind 
-development of the software, so it is possible that your version of 
-the program has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
-.SH SEE ALSO
-.BR smbd (8), 
-.BR smb.conf (5) 
-.SH
-.B BUGS
-
-.RE
-The
-.B smbpasswd
-command is only useful if
-.I Samba
-has been set up to use encrypted passwords. See the file
-.I ENCRYPTION.txt
+In addition, the bf(smbpasswd) command is only useful if bf(Samba) has
+been set up to use encrypted passwords. See the file bf(ENCRYPTION.txt)
 in the docs directory for details on how to do this.
 
-.SH CREDITS
-.RE
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project. smbpasswd and the encrypted password
-file code was written by Jeremy Allison (samba-bugs@samba.anu.edu.au).
+label(VERSION)
+manpagesection(VERSION)
 
-This man page was written by Jeremy Allison. Bug reports to samba-bugs@samba.anu.edu.au.
+This man page is correct for version 2.0 of the Samba suite.
 
-See
-.BR smb.conf (5)
-for a full list of contributors and details of how to 
-submit bug reports, comments etc.
+label(AUTHOR)
+manpageauthor()
+
+The original Samba software and related utilities were created by
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
+
+The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2.0 release by Jeremy
+Allison, email(samba-bugs@samba.anu.edu.au).
+
+See url(bf(samba (7)))(samba.7.html) to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc.

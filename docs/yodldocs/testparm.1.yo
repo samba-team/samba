@@ -39,8 +39,8 @@ url(bf(smb.conf))(smb.conf.5.html) file will be checked.
 
 dit(bf(hostname)) If this parameter and the following are specified,
 then testparm will examine the url(bf("hosts
-allow"))(smb.conf.5.html#hosts_allow) and url(bf("hosts
-deny"))(smb.conf.5.html#hosts_deny) parameters in the
+allow"))(smb.conf.5.html#hostsallow) and url(bf("hosts
+deny"))(smb.conf.5.html#hostsdeny) parameters in the
 url(bf(smb.conf))(smb.conf.5.html) file to determine if the hostname
 with this IP address would be allowed acces to the
 url(bf(smbd))(smbd.8.html) server. If this parameter is supplied, the

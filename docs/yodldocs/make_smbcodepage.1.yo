@@ -39,8 +39,8 @@ dit(outputfile) This is the output file to produce.
 
 endit()
 
-label(Samba Codepage files)
-manpagesection(Samba Codepage files)
+label(SambaCodepageFiles)
+manpagesection(Samba Codepage Files)
 
 A text Samba codepage definition file is a description that tells
 Samba how to map from upper to lower case for characters greater than
@@ -70,8 +70,9 @@ Samba em(source/codepages) directory are compiled and installed when a
 em('make install') command is issued there.
 
 The client codepage used by the url(bf(smbd))(smbd.8.html) server is
-configured using the url(bf(client code page))(smb.conf.5.html#client
-code page) parameter in the url(bf(smb.conf))(smb.conf.5.html) file.
+configured using the url(bf(client code
+page))(smb.conf.5.html#clientcodepage) parameter in the
+url(bf(smb.conf))(smb.conf.5.html) file.
 
 label(FILES)
 manpagefiles()
