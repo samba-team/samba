@@ -303,37 +303,38 @@ const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d)
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_host));
 }
 
-const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, const char *pipe_name)
+struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx)
 {
-	const char *transport;
-	const char *host;
-	char *options = NULL;
+	struct dcerpc_binding *binding = talloc_p(mem_ctx, struct dcerpc_binding);
 
-	/* Format: TRANSPORT:host:[\pipe\foo,foo,foo] */
+	binding->object = NULL;
 
-	host = gtk_entry_get_text(GTK_ENTRY(d->entry_host));
-	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->transport_tcp_ip)))
-		transport = "ncacn_tcp";
-	else 
-		transport = "ncacn_np";
+	/* Format: TRANSPORT:host[\pipe\foo,foo,foo] */
 
-	if(pipe_name != NULL) {
-		options = talloc_asprintf(d->mem_ctx, "\\pipe\\%s", pipe_name);
+	binding->host = talloc_strdup(mem_ctx, gtk_entry_get_text(GTK_ENTRY(d->entry_host)));
+	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->transport_tcp_ip))) {
+		binding->transport = NCACN_IP_TCP;
+	} else {
+		binding->transport = NCACN_NP;
 	}
-	
+
+	binding->options = NULL;
+	binding->flags = 0;
+
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->chk_seal))) {
-		options = talloc_asprintf_append(options, ",seal");
+		binding->flags |= DCERPC_SEAL;
 	}
 
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->chk_sign))) {
-		options = talloc_asprintf_append(options, ",sign");
+		binding->flags |= DCERPC_SIGN;
 	}
 
-	if(options) {
-		return talloc_asprintf(d->mem_ctx, "%s:%s:[%s]", transport, host, options);
-	} else {
-		return talloc_asprintf(d->mem_ctx, "%s:%s", transport, host);
-	}
+	return binding;
+}
+
+const char *gtk_rpc_binding_dialog_get_binding_string(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx)
+{
+	return dcerpc_binding_string(mem_ctx, gtk_rpc_binding_dialog_get_binding(d, mem_ctx));
 }
 
 GtkWidget *create_gtk_samba_about_dialog (const char *appname)
