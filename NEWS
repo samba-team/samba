@@ -4,6 +4,10 @@ Changes in release 0.2r:
 
  * klist supports listing v4 tickets
 
+ * update config.guess and config.sub
+
+ * make v4 -> v5 principal name conversion more robust
+
  * support for anonymous tickets
 
  * new man-pages
@@ -12,6 +16,8 @@ Changes in release 0.2r:
 
  * use and set expiration and not password expiration when dumping
    to/from ka server databases / krb4 databases
+
+ * make the code happier with 64-bit time_t
 
  * follow RFC2782 and by default do not look for non-underscore SRV names
 
