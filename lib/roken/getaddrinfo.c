@@ -304,6 +304,7 @@ get_nodes (const char *nodename,
     int family = PF_UNSPEC;
     int flags  = 0;
     int ret = EAI_NONAME;
+    int error;
 
     if (hints != NULL) {
 	family = hints->ai_family;
@@ -314,21 +315,25 @@ get_nodes (const char *nodename,
     if (family == PF_INET6 || family == PF_UNSPEC) {
 	struct hostent *he;
 
-	he = gethostbyname2 (nodename, PF_INET6);
+	he = getipnodebyname (nodename, PF_INET6, 0, &error);
 
-	if (he != NULL)
+	if (he != NULL) {
 	    ret = add_hostent (port, protocol, socktype,
 			       &current, const_v6, he, &flags);
+	    freehostent (he);
+	}
     }
 #endif
     if (family == PF_INET || family == PF_UNSPEC) {
 	struct hostent *he;
 
-	he = gethostbyname (nodename);
+	he = getipnodebyname (nodename, PF_INET, 0, &error);
 
-	if (he != NULL)
+	if (he != NULL) {
 	    ret = add_hostent (port, protocol, socktype,
 			       &current, const_v4, he, &flags);
+	    freehostent (he);
+	}
     }
     *res = first;
     return ret;
