@@ -81,7 +81,7 @@ identifier:user sid column               - varchar(255) - NT user SID
 identifier:group sid column              - varchar(255) - NT group ID
 identifier:lanman pass column            - varchar(255) - encrypted lanman password
 identifier:nt pass column                - varchar(255) - encrypted nt passwd
-identifier:plaintext pass column         - varchar(255) - plaintext password
+identifier:plain pass column             - varchar(255) - plaintext password
 identifier:acct control column           - int(9) - nt user data
 identifier:unknown 3 column              - int(9) - unknown
 identifier:logon divs column             - int(9) - ?
@@ -107,11 +107,11 @@ I strongly discourage the use of plaintext passwords, however, you can use them:
 </para>
 
 <para>
-If you would like to use plaintext passwords, set 'identifier:lanman pass column' and 'identifier:nt pass column' to 'NULL' (without the quotes) and 'identifier:plaintext pass column' to the name of the column containing the plaintext passwords. 
+If you would like to use plaintext passwords, set 'identifier:lanman pass column' and 'identifier:nt pass column' to 'NULL' (without the quotes) and 'identifier:plain pass column' to the name of the column containing the plaintext passwords. 
 </para>
 
 <para>
-If you use encrypted passwords, set the 'identifier:plaintext pass column' to 'NULL' (without the quotes). This is the default.
+If you use encrypted passwords, set the 'identifier:plain pass column' to 'NULL' (without the quotes). This is the default.
 </para>
 
 </sect1>
