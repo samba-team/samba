@@ -104,7 +104,6 @@ proj-doc:
 	@(cd projdoc; $(JADE) -t sgml -i html -V nochunks -d  ../stylesheets/ldp.dsl\#html samba-doc.sgml > ../samba-doc.html)
 	@(cd scripts; ./ldp_print ../samba-doc.html)
 	@mv -f samba-doc.pdf ../Samba-HOWTO-Collection.pdf
-	#@$(HTMLDOC) -f ../Samba-HOWTO-Collection.pdf samba-doc.html
 	@/bin/mv -f samba-doc.html ../htmldocs/Samba-HOWTO-Collection.html
 
 
