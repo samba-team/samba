@@ -361,14 +361,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		reply_spnego_ntlmssp_ok(conn, outbuf, 
 						 global_ntlmssp_state);
 		auth_ntlmssp_end(&global_ntlmssp_state);
-		data_blob_free(&chal);
 
 		/* and tell smbd that we have already replied to this packet */
 		return -1;
 	} 
 
 	auth_ntlmssp_end(&global_ntlmssp_state);
-	data_blob_free(&chal);
 
 	return ERROR_NT(nt_status_squash(nt_status));
 }
@@ -392,15 +390,15 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	}
 
 	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
-					  auth, &auth_reply);
+					auth, &auth_reply);
 
 	data_blob_free(&auth);
-	data_blob_free(&auth_reply);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		reply_spnego_ntlmssp_ok(conn, outbuf, 
 					global_ntlmssp_state);
 		auth_ntlmssp_end(&global_ntlmssp_state);
+		data_blob_free(&auth_reply);
 
 	} else { /* !NT_STATUS_IS_OK(nt_status) */
 		auth_ntlmssp_end(&global_ntlmssp_state);
@@ -450,7 +448,8 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 /****************************************************************************
 reply to a session setup command
 ****************************************************************************/
-static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,char *outbuf,
+static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
+					char *outbuf,
 					int length,int bufsize)
 {
 	uint8 *p;

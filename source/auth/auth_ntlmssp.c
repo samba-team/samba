@@ -23,15 +23,15 @@
 
 #include "includes.h"
 
-static const uint8 *auth_ntlmssp_get_challenge(void *cookie)
+static const uint8 *auth_ntlmssp_get_challenge(struct ntlmssp_state *ntlmssp_state)
 {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = cookie;
+	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	return auth_ntlmssp_state->auth_context->get_ntlm_challenge(auth_ntlmssp_state->auth_context);
 }
 
-static NTSTATUS auth_ntlmssp_check_password(void *cookie) 
+static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state) 
 {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = cookie;
+	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	uint32 auth_flags = AUTH_FLAG_NONE;
 	auth_usersupplied_info *user_info = NULL;
 	DATA_BLOB plaintext_password = data_blob(NULL, 0);
@@ -107,6 +107,7 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	(*auth_ntlmssp_state)->ntlmssp_state->auth_context = (*auth_ntlmssp_state);
 	(*auth_ntlmssp_state)->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->check_password = auth_ntlmssp_check_password;
+	(*auth_ntlmssp_state)->ntlmssp_state->server_role = lp_server_role();
 
 	return NT_STATUS_OK;
 }

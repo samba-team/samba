@@ -221,3 +221,15 @@ enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state)
 
 	return WINBINDD_OK;
 }
+
+/* What's my name again? */
+
+enum winbindd_result winbindd_netbios_name(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request netbios name\n", state->pid));
+	
+	fstrcpy(state->response.data.netbios_name, global_myname());
+
+	return WINBINDD_OK;
+}
