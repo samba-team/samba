@@ -6,6 +6,8 @@
 /*The following definitions come from  browserd/browserd.c  */
 
 msrpc_service_fns *get_service_fns(void);
+uint32 _brs_query_info( const UNISTR2 *srv_name, uint16 switch_value,
+			void *id);
 
 /*The following definitions come from  client/client.c  */
 
@@ -2194,7 +2196,7 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
 				uint32 *num_sam_users);
-BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
+BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 				POLICY_HND *connect_pol);
 BOOL samr_open_user(  const POLICY_HND *pol,
 				uint32 unk_0, uint32 rid, 
@@ -2981,7 +2983,7 @@ BOOL make_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
 BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
-				uint16 unknown_0, uint32 acccess_mask);
+				uint16 unknown_0, uint32 access_mask);
 BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol);
@@ -3047,7 +3049,7 @@ BOOL make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx);
 BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth);
 BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth);
 BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
-				char *key_name, uint32 acces_mask);
+				char *key_name, uint32 access_mask);
 BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth);
 BOOL make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status);
@@ -3169,7 +3171,8 @@ BOOL make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 				uint32 status);
 BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
-				const POLICY_HND *hnd, uint32 unk, uint32 rid);
+				const POLICY_HND *hnd,
+				uint32 access_mask, uint32 rid);
 BOOL samr_io_q_open_group(char *desc,  SAMR_Q_OPEN_GROUP *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_group_info1(GROUP_INFO1 *gr1,
@@ -3322,13 +3325,13 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l);
 BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				const POLICY_HND *pol,
-				uint32 unk_0, uint32 rid);
+				uint32 access_mask, uint32 rid);
 BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
 				POLICY_HND *pol,
 				const char *name,
-				uint16 acb_info, uint32 unk_1);
+				uint16 acb_info, uint32 access_mask);
 BOOL samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
@@ -3467,7 +3470,7 @@ BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u,
 				uint32 status);
 BOOL samr_io_r_set_userinfo2(char *desc,  SAMR_R_SET_USERINFO2 *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				const char *srv_name, uint32 unknown_0);
+				const char *srv_name, uint32 access_mask);
 BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
@@ -4999,6 +5002,7 @@ uint32 _spoolss_getjob( const POLICY_HND *handle,
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
 msrpc_service_fns *get_service_fns(void);
+uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod );
 
 /*The following definitions come from  svcctld/svcctld.c  */
 
@@ -5066,9 +5070,8 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  wkssvcd/srv_wkssvc_nt.c  */
 
-uint32 _wks_query_info(WKS_Q_QUERY_INFO *q_u,
-				prs_struct *rdata,
-				int status);
+uint32 _wks_query_info( const UNISTR2 *srv_name, uint16 switch_value,
+			WKS_INFO_100 *wks100);
 
 /*The following definitions come from  wkssvcd/wkssvcd.c  */
 
