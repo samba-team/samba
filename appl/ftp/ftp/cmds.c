@@ -661,6 +661,12 @@ getit(int argc, char **argv, int restartit, char *mode)
 	return (0);
 }
 
+static int
+suspicious_filename(const char *fn)
+{
+    return stncmp(fn, "../", 3) == 0 || *fn == '/';
+}
+
 /*
  * Get multiple files.
  */
@@ -685,6 +691,8 @@ mget(int argc, char **argv)
 			mflag = 0;
 			continue;
 		}
+		if (mflag && suspicious_filename(cp))
+		    printf("*** Suspicious filename: %s\n", cp);
 		if (mflag && confirm(argv[0], cp)) {
 			tp = cp;
 			if (mcase) {
@@ -774,15 +782,9 @@ remglob(char **argv, int doswitch)
     while(fgets(buf, sizeof (buf), ftemp)) {
 	if ((cp = strchr(buf, '\n')) != NULL)
 	    *cp = '\0';
-	if(strncmp(buf, "../", 3) == 0 || *buf == '/'){
-	    if(interactive == 0){
-		printf("Ignoring remote globbed file `%s'\n", buf);
-		continue;
-	    }
-	    if(!confirm(buf, *buf == '/' ? 
-			" - retrieve file starting with `/'" : 
-			" - retrieve file starting with `..'"))
-		continue;
+	if(!interactive && suspicious_filename(buf)){
+	    printf("Ignoring remote globbed file `%s'\n", buf);
+	    continue;
 	}
 	return buf;
     }
