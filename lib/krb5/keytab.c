@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,7 +48,7 @@ krb5_kt_register(krb5_context context,
 
     if (strlen(ops->prefix) > KRB5_KT_PREFIX_MAX_LEN - 1) {
 	krb5_set_error_string(context, "krb5_kt_register; prefix too long");
-	return KRB5_KT_NAME_TOOLONG;
+	return KRB5_KT_BADNAME;
     }
 
     tmp = realloc(context->kt_types,
