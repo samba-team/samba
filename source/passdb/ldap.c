@@ -930,6 +930,11 @@ static struct smb_passwd *getldappwuid(uid_t smb_userid)
   return pdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
 }
 
+static struct smb_passwd *getldappwrid(uint32 user_rid)
+{
+  return pdb_sam_to_smb(iterate_getsam21pwuid(pdb_user_rid_to_uid(user_rid)));
+}
+
 static struct smb_passwd *getldappwent(void *vp)
 {
   return pdb_sam_to_smb(getldap21pwent(vp));
@@ -973,6 +978,7 @@ static struct passdb_ops ldap_ops =
 	setldappwpos,
 	getldappwnam,
 	getldappwuid,
+	getldappwrid,
 	getldappwent,
 	add_ldappwd_entry,
 	mod_ldappwd_entry,

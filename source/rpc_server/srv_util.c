@@ -224,7 +224,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 	}
 	else
 	{
-		data_len = p->hdr.frag_len;
+		data_len = p->hdr.frag_len - 0x18;
 	}
 
 	p->rhdr.data->offset.start = 0;

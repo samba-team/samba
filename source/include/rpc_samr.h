@@ -89,6 +89,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_USERGROUPS  0x27
 #define SAMR_UNKNOWN_12        0x12
 #define SAMR_UNKNOWN_21        0x21
+#define SAMR_UNKNOWN_2C        0x2c
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
 #define SAMR_CHGPASSWD_USER    0x37
@@ -210,7 +211,7 @@ typedef struct sam_user_info_11
 /* SAM_USER_INFO_10 */
 typedef struct sam_user_info_10
 {
-	uint32 rid_group;
+	uint32 acb_info;
 
 } SAM_USER_INFO_10;
 
@@ -234,13 +235,39 @@ typedef struct r_samr_close_hnd_info
 
 
 /****************************************************************************
+SAMR_Q_UNKNOWN_2C - a "set user info" occurs just after this
+*****************************************************************************/
+
+/* SAMR_Q_UNKNOWN_2C */
+typedef struct q_samr_unknown_2c_info
+{
+	POLICY_HND user_pol;          /* policy handle */
+
+} SAMR_Q_UNKNOWN_2C;
+
+
+/****************************************************************************
+SAMR_R_UNKNOWN_2C - a "set user info" occurs just after this
+*****************************************************************************/
+
+/* SAMR_R_UNKNOWN_2C */
+typedef struct r_samr_unknown_2c_info
+{
+	uint32 unknown_0; /* 0x0016 0000 */
+	uint32 unknown_1; /* 0x0000 0000 */
+	uint32 status; 
+
+} SAMR_R_UNKNOWN_2C;
+
+
+/****************************************************************************
 SAMR_Q_UNKNOWN_3 - info level 4.  returns SIDs.
 *****************************************************************************/
 
 /* SAMR_Q_UNKNOWN_3 - probably get domain info... */
 typedef struct q_samr_unknown_3_info
 {
-    POLICY_HND user_pol;          /* policy handle */
+	POLICY_HND user_pol;          /* policy handle */
 	uint16 switch_value;     /* 0x0000 0004 */
 	/* uint8 pad[2] */
 
@@ -317,7 +344,7 @@ SAMR_Q_UNKNOWN_8 - probably a query on domain group info.
 /* SAMR_Q_UNKNOWN_8 - */
 typedef struct q_samr_unknown_8_info
 {
-    POLICY_HND domain_pol;   /* policy handle */
+	POLICY_HND domain_pol;   /* policy handle */
 	uint16 switch_value;     /* 0x0002 */
 
 } SAMR_Q_UNKNOWN_8;
@@ -325,9 +352,8 @@ typedef struct q_samr_unknown_8_info
 typedef struct sam_unkown_info_2_info
 {
 	uint32 unknown_0; /* 0x0000 0000 */
-	uint32 unknown_1; /* 0x0000 0000 */
-	uint32 unknown_2; /* 0x8000 0000 */
-	uint32 unknown_3; /* 0x0000 0000 */
+	uint32 unknown_1; /* 0x8000 0000 */
+	uint32 unknown_2; /* 0x0000 0000 */
 
 	uint32 ptr_0;     /* pointer to unknown structure */
 	UNIHDR hdr_domain; /* domain name unicode header */
@@ -337,7 +363,7 @@ typedef struct sam_unkown_info_2_info
 	   pointer is referring to
 	 */
 
-	uint32 unknown_4; /* 0x0000 0099 */
+	uint32 unknown_4; /* 0x0000 0099 or 0x1000 0000 */
 	uint32 unknown_5; /* 0x0000 0000 */
 	
 	uint32 unknown_6 ; /* 0x0000 0001 */
@@ -368,7 +394,7 @@ typedef struct sam_unknown_ctr_info
 /* SAMR_R_UNKNOWN_8 - */
 typedef struct r_samr_unknown_8_info
 {
-	uint32 ptr_1;
+	uint32 ptr_0;
 	uint16 switch_value; /* same as in query */
 
 	SAM_UNK_CTR *ctr;

@@ -1140,6 +1140,7 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 /*The following definitions come from  passdb/passdb.c  */
 
 BOOL initialize_password_db(void);
+struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid);
 struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
 struct smb_passwd *iterate_getsmbpwnam(char *name);
 void *startsmbpwent(BOOL update);
@@ -1148,6 +1149,7 @@ struct smb_passwd *getsmbpwent(void *vp);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
 struct smb_passwd *getsmbpwnam(char *name);
+struct smb_passwd *getsmbpwrid(uint32 user_rid);
 struct smb_passwd *getsmbpwuid(uid_t smb_userid);
 struct sam_passwd *iterate_getsam21pwnam(char *name);
 struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
@@ -1174,6 +1176,7 @@ void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl);
 BOOL pdb_gethexpwd(char *p, char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 BOOL pdb_generate_machine_sid(void);
+uid_t pdb_user_rid_to_uid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
 BOOL pdb_rid_is_user(uint32 rid);
@@ -1610,12 +1613,22 @@ void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				DOM_SID *sid);
 void samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
+void make_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol);
+void samr_io_q_unknown_2c(char *desc,  SAMR_Q_UNKNOWN_2C *q_u, prs_struct *ps, int depth);
+void make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status);
+void samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, int depth);
 void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 				POLICY_HND *user_pol, uint16 switch_value);
 void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
 void make_samr_q_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int depth);
+void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
+void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
+void make_samr_r_unknown_8(SAMR_R_UNKNOWN_8 *r_u, 
+				uint16 switch_value, SAM_UNK_CTR *ctr,
+				uint32 status);
+void samr_io_r_unknown_8(char *desc, SAMR_R_UNKNOWN_8 *r_u, prs_struct *ps, int depth);
 void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid);
 void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
 				uint16 unknown_2, uint16 unknown_3,
@@ -1692,6 +1705,16 @@ void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
 void samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
+void make_sam_user_info10(SAM_USER_INFO_10 *usr,
+				uint32 acb_info);
+void sam_io_user_info10(char *desc,  SAM_USER_INFO_10 *usr, prs_struct *ps, int depth);
+void make_sam_user_info11(SAM_USER_INFO_11 *usr,
+				NTTIME *expiry,
+				char *mach_acct,
+				uint32 rid_user,
+				uint32 rid_group,
+				uint16 acct_ctrl);
+void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
 void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,

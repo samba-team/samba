@@ -626,6 +626,11 @@ static struct sam_passwd *getnisp21pwuid(uid_t smb_userid)
 	return getnisp21pwrid(pdb_uid_to_user_rid(smb_userid));
 }
 
+static struct smb_passwd *getnisppwrid(uid_t user_rid)
+{
+	return pdb_sam_to_smb(getnisp21pwuid(pdb_user_rid_to_uid(user_rid)));
+}
+
 static struct smb_passwd *getnisppwuid(uid_t smb_userid)
 {
 	return pdb_sam_to_smb(getnisp21pwuid(smb_userid));
@@ -653,6 +658,7 @@ static struct passdb_ops nispasswd_ops = {
   setnisppwpos,
   getnisppwnam,
   getnisppwuid,
+  getnisppwrid,
   getnisppwent,
   add_nisppwd_entry,
   mod_nisppwd_entry,

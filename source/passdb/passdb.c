@@ -85,6 +85,15 @@ BOOL initialize_password_db(void)
  */
 
 /************************************************************************
+ Utility function to search smb passwd by rid.  
+*************************************************************************/
+
+struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid)
+{
+	return iterate_getsmbpwuid(pdb_user_rid_to_uid(user_rid));
+}
+
+/************************************************************************
  Utility function to search smb passwd by uid.  use this if your database
  does not have search facilities.
 *************************************************************************/
@@ -220,6 +229,15 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 struct smb_passwd *getsmbpwnam(char *name)
 {
 	return pdb_ops->getsmbpwnam(name);
+}
+
+/************************************************************************
+ Routine to search smb passwd by user rid.
+*************************************************************************/
+
+struct smb_passwd *getsmbpwrid(uint32 user_rid)
+{
+	return pdb_ops->getsmbpwrid(user_rid);
 }
 
 /************************************************************************
@@ -961,6 +979,15 @@ Error was %s\n", sid_file, strerror(errno) ));
 	close(fd);
 	return True;
 }   
+
+/*******************************************************************
+ converts UNIX uid to an NT User RID.
+ ********************************************************************/
+
+uid_t pdb_user_rid_to_uid(uint32 user_rid)
+{
+	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+}
 
 /*******************************************************************
  converts UNIX uid to an NT User RID.
