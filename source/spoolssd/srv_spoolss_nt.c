@@ -721,12 +721,10 @@ uint32 _spoolss_rffpcnex(const POLICY_HND *handle,
 	return 0x0;
 }
 
-#if 0
-
 /*******************************************************************
  * fill a notify_info_data with the servername
  ********************************************************************/
-uint32 _spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	pstring temp_name;
 
@@ -740,7 +738,7 @@ uint32 _spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
  * fill a notify_info_data with the servicename
  * jfmxxxx: it's incorrect should be long_printername
  ********************************************************************/
-uint32 _spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 /*
 	data->notify_data.data.length=strlen(lp_servicename(snum));
@@ -755,7 +753,7 @@ uint32 _spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 /*******************************************************************
  * fill a notify_info_data with the servicename
  ********************************************************************/
-uint32 _spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_servicename(snum));
 	ascii_to_unistr(data->notify_data.data.string,
@@ -766,7 +764,7 @@ uint32 _spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 /*******************************************************************
  * fill a notify_info_data with the port name
  ********************************************************************/
-uint32 _spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	/* even if it's strange, that's consistant in all the code */
 
@@ -781,7 +779,7 @@ uint32 _spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
  * jfmxxxx: it's incorrect, should be lp_printerdrivername()
  * but it doesn't exist, have to see what to do
  ********************************************************************/
-uint32 _spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->drivername);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -792,7 +790,7 @@ uint32 _spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 /*******************************************************************
  * fill a notify_info_data with the comment
  ********************************************************************/
-uint32 _spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_comment(snum));
 	ascii_to_unistr(data->notify_data.data.string,
@@ -805,7 +803,7 @@ uint32 _spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_que
  * jfm:xxxx incorrect, have to create a new smb.conf option
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
-uint32 _spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->location);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -817,7 +815,7 @@ uint32 _spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
  * fill a notify_info_data with the device mode
  * jfm:xxxx don't to it for know but that's a real problem !!!
  ********************************************************************/
-uint32 _spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 }
 
@@ -826,7 +824,7 @@ uint32 _spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_que
  * jfm:xxxx just return no file could add an option to smb.conf
  * separator file = "separator.txt"
  ********************************************************************/
-uint32 _spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->sepfile);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -838,7 +836,7 @@ uint32 _spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_que
  * fill a notify_info_data with the print processor
  * jfm:xxxx return always winprint to indicate we don't do anything to it
  ********************************************************************/
-uint32 _spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->printprocessor);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -850,7 +848,7 @@ uint32 _spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
  * fill a notify_info_data with the print processor options
  * jfm:xxxx send an empty string
  ********************************************************************/
-uint32 _spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->parameters);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -862,7 +860,7 @@ uint32 _spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
  * fill a notify_info_data with the data type
  * jfm:xxxx always send RAW as data type
  ********************************************************************/
-uint32 _spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->datatype);
 	ascii_to_unistr(data->notify_data.data.string, 
@@ -875,7 +873,7 @@ uint32 _spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
  * jfm:xxxx send an null pointer to say no security desc
  * have to implement security before !
  ********************************************************************/
-uint32 _spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=0;
 	data->notify_data.data.string[0]=0x00;
@@ -885,7 +883,7 @@ uint32 _spoolss_notify_security_desc(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
  * fill a notify_info_data with the attributes
  * jfm:xxxx a samba printer is always shared
  ********************************************************************/
-uint32 _spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] =   PRINTER_ATTRIBUTE_SHARED   \
 	                             | PRINTER_ATTRIBUTE_NETWORK  \
@@ -895,7 +893,7 @@ uint32 _spoolss_notify_attributes(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 /*******************************************************************
  * fill a notify_info_data with the priority
  ********************************************************************/
-uint32 _spoolss_notify_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->priority;
 }
@@ -903,7 +901,7 @@ uint32 _spoolss_notify_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
 /*******************************************************************
  * fill a notify_info_data with the default priority
  ********************************************************************/
-uint32 _spoolss_notify_default_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_default_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->default_priority;
 }
@@ -911,7 +909,7 @@ uint32 _spoolss_notify_default_priority(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 /*******************************************************************
  * fill a notify_info_data with the start time
  ********************************************************************/
-uint32 _spoolss_notify_start_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_start_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->starttime;
 }
@@ -919,7 +917,7 @@ uint32 _spoolss_notify_start_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 /*******************************************************************
  * fill a notify_info_data with the until time
  ********************************************************************/
-uint32 _spoolss_notify_until_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_until_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0] = printer->info_2->untiltime;
 }
@@ -927,7 +925,7 @@ uint32 _spoolss_notify_until_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 /*******************************************************************
  * fill a notify_info_data with the status
  ********************************************************************/
-uint32 _spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	int count;
 	print_queue_struct *q=NULL;
@@ -944,7 +942,7 @@ uint32 _spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queu
 /*******************************************************************
  * fill a notify_info_data with the number of jobs queued
  ********************************************************************/
-uint32 _spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	print_queue_struct *q=NULL;
 	print_status_struct status;
@@ -958,7 +956,7 @@ uint32 _spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue
 /*******************************************************************
  * fill a notify_info_data with the average ppm
  ********************************************************************/
-uint32 _spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	/* always respond 8 pages per minutes */
 	/* a little hard ! */
@@ -968,7 +966,7 @@ uint32 _spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->user);
 	ascii_to_unistr(data->notify_data.data.string, queue->user, sizeof(data->notify_data.data.string)-1);
@@ -977,7 +975,7 @@ uint32 _spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=queue->status;
 }
@@ -985,7 +983,7 @@ uint32 _spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->file);
 	ascii_to_unistr(data->notify_data.data.string, queue->file, sizeof(data->notify_data.data.string)-1);
@@ -994,7 +992,7 @@ uint32 _spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen("En attente");
 	ascii_to_unistr(data->notify_data.data.string, "En attente", sizeof(data->notify_data.data.string)-1);
@@ -1003,7 +1001,7 @@ uint32 _spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data,
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=0x0;
 }
@@ -1011,7 +1009,7 @@ uint32 _spoolss_notify_job_time(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=queue->size;
 }
@@ -1019,7 +1017,7 @@ uint32 _spoolss_notify_job_size(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_qu
 /*******************************************************************
  * fill a notify_info_data with 
  ********************************************************************/
-uint32 _spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
+static void spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.value[0]=queue->job;
 }
@@ -1084,7 +1082,7 @@ struct s_notify_info_data_table notify_info_data_table[] =
 /*******************************************************************
 return the size of info_data structure
 ********************************************************************/  
-uint32 size_of_notify_info_data(uint16 type, uint16 field)
+static uint32 size_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
 
@@ -1104,7 +1102,7 @@ uint32 size_of_notify_info_data(uint16 type, uint16 field)
 /*******************************************************************
 return the type of notify_info_data
 ********************************************************************/  
-BOOL type_of_notify_info_data(uint16 type, uint16 field)
+static BOOL type_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
 
@@ -1274,7 +1272,8 @@ static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void printserver_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
+static uint32 printserver_notify_info(const POLICY_HND *hnd,
+				SPOOL_NOTIFY_INFO *info)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
@@ -1282,6 +1281,11 @@ static void printserver_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 	int i=0;
 	uint32 id=1;
 	info->count=0;
+
+	if (pnum == -1)
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	DEBUG(4,("Enumerating printers\n"));
 
@@ -1300,6 +1304,8 @@ static void printserver_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 	 }
 	}
 	DEBUG(4,("All printers enumerated\n"));
+
+	return 0x0;
 }
 
 /*******************************************************************
@@ -1307,7 +1313,8 @@ static void printserver_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
+static uint32 printer_notify_info(const POLICY_HND *hnd,
+				SPOOL_NOTIFY_INFO *info)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
@@ -1316,61 +1323,78 @@ static void printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 	
 	info->count=0;
 
-	if (get_printer_snum(hnd, &snum) )
+	if (pnum == -1 || !get_printer_snum(hnd, &snum) )
 	{
-		for (i=0; i<Printer[pnum].number_of_notify; i++)
-		{
-	 	 switch ( Printer[pnum].notify_info[i].type )
-		 {
-		  case PRINTER_NOTIFY_TYPE:
-		   {
-		  	construct_notify_printer_info(info, pnum, snum, i, id);
-			id--;
-			break;
-		   }
-		  case JOB_NOTIFY_TYPE:
-		   {
-		   	int count;
-			print_queue_struct *queue=NULL;
-			print_status_struct status;
-			bzero(&status, sizeof(status));	
-			count=get_printqueue(snum, NULL, &queue, &status);
-			for (j=0; j<count; j++)
-			{
-			   	construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job);
-			}
-			if (queue) free(queue);
-			break;
-		   }
-		 }
-		}
+		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	for (i=0; i<Printer[pnum].number_of_notify; i++)
+	{
+	 switch ( Printer[pnum].notify_info[i].type )
+	 {
+	  case PRINTER_NOTIFY_TYPE:
+	   {
+		construct_notify_printer_info(info, pnum, snum, i, id);
+		id--;
+		break;
+	   }
+	  case JOB_NOTIFY_TYPE:
+	   {
+		int count;
+		print_queue_struct *queue=NULL;
+		print_status_struct status;
+		bzero(&status, sizeof(status));	
+		count=get_printqueue(snum, NULL, &queue, &status);
+		for (j=0; j<count; j++)
+		{
+			construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job);
+		}
+		if (queue) free(queue);
+		break;
+	   }
+	 }
+	}
+
+	return 0x0;
 }
 
 /********************************************************************
  * spoolss_rfnpcnex
  ********************************************************************/
-uint32 _spoolss_rfnpcnex(SPOOL_Q_RFNPCNEX *q_u, prs_struct *rdata)
+uint32 _spoolss_rfnpcnex( const POLICY_HND *handle,
+				uint32 change,
+				const SPOOL_NOTIFY_OPTION *option,
+				uint32 *count,
+				SPOOL_NOTIFY_INFO *info)
 {
-	SPOOL_R_RFNPCNEX r_u;
 	int pnum=find_printer_index_by_hnd(handle);
 
-	if (OPEN_HANDLE(pnum))
+	if (pnum == -1 || !OPEN_HANDLE(pnum))
 	{
-		DEBUG(4,("Printer %x of type %x\n",pnum,Printer[pnum].printer_type));
-		switch (Printer[pnum].printer_type)
-		{
-		case PRINTER_HANDLE_IS_PRINTSERVER:
-			printserver_notify_info(handle, &(info));
-			break;
-		case PRINTER_HANDLE_IS_PRINTER:
-			printer_notify_info(handle, &(info));
-			break;
-		}
-		
-		spoolss_io_r_rfnpcnex("", &r_u, rdata, 0);
+		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	DEBUG(4,("Printer %x of type %x\n",pnum,Printer[pnum].printer_type));
+
+	/* lkxlXXXX - jfm, is this right? put a warning in for you to review! */
+	DEBUG(0,("_spoolss_rfnpcnex: change, option and count ignored\n"));
+
+	switch (Printer[pnum].printer_type)
+	{
+		case PRINTER_HANDLE_IS_PRINTSERVER:
+		{
+			return printserver_notify_info(handle, info);
+		}
+		case PRINTER_HANDLE_IS_PRINTER:
+		{
+			return printer_notify_info(handle, info);
+		}
+	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
+
+#if 0
 
 /********************************************************************
  * construct_printer_info_0

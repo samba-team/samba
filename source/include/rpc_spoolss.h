@@ -713,6 +713,8 @@ typedef struct spool_r_rfnpcnex
 {
 	uint32 count;
 	SPOOL_NOTIFY_INFO info;
+	uint32 status;
+
 } SPOOL_R_RFNPCNEX;
 
 /* Find Close Printer Notify */

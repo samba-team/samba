@@ -860,8 +860,6 @@ BOOL spoolss_io_r_rfnpcnex(char *desc,
                            SPOOL_R_RFNPCNEX *r_u, 
                            prs_struct *ps, int depth)
 {
-	uint32 x=0x0;
-	
 	prs_debug(ps, depth, desc, "spoolss_io_r_rfnpcnex");
 	depth++;
 
@@ -869,7 +867,7 @@ BOOL spoolss_io_r_rfnpcnex(char *desc,
 
 	smb_io_notify_info("notify info",&(r_u->info),ps,depth);		
 	prs_align(ps);
-	prs_uint32("status", ps, depth, &(x));
+	prs_uint32("status", ps, depth, &r_u->status);
 
 	return True;
 }
