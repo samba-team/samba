@@ -923,7 +923,7 @@ static void wbinfo_get_auth_user(void)
 
 	/* Pretty print authorised user info */
 
-	d_printf("%s%s%s%s%s\n", domain ? domain : "", domain ? "\\" : "",
+	d_printf("%s%s%s%s%s\n", domain ? domain : "", domain ? lp_winbind_separator(): "",
 		 user, password ? "%" : "", password ? password : "");
 
 	SAFE_FREE(user);

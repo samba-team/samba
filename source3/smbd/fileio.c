@@ -25,31 +25,6 @@
 static BOOL setup_write_cache(files_struct *, SMB_OFF_T);
 
 /****************************************************************************
- Seek a file. Try to avoid the seek if possible.
-****************************************************************************/
-
-static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
-{
-	SMB_OFF_T seek_ret;
-
-	seek_ret = SMB_VFS_LSEEK(fsp,fsp->fd,pos,SEEK_SET);
-
-	if(seek_ret == -1) {
-		DEBUG(0,("seek_file: (%s) sys_lseek failed. Error was %s\n",
-			fsp->fsp_name, strerror(errno) ));
-		fsp->pos = -1;
-		return -1;
-	}
-
-	fsp->pos = seek_ret;
-
-	DEBUG(10,("seek_file (%s): requested pos = %.0f, new pos = %.0f\n",
-		fsp->fsp_name, (double)pos, (double)fsp->pos ));
-
-	return(fsp->pos);
-}
-
-/****************************************************************************
  Read from write cache if we can.
 ****************************************************************************/
 
