@@ -96,7 +96,6 @@ with_krb5_support=auto
 krb5_withval=auto
 AC_MSG_CHECKING([for KRB5 support])
 
-KRB5_CONFIG=""
 # Do no harm to the values of CFLAGS and LIBS while testing for
 # Kerberos support.
 AC_ARG_WITH(krb5,
@@ -121,7 +120,7 @@ AC_ARG_WITH(krb5,
 			with_krb5_support=yes
 			AC_MSG_RESULT(yes)
 			krb5_withval=$withval
-			KRB5_CONFIG="$krb5_withval/bin/krb5-config"
+			KRB5CONFIG="$krb5_withval/bin/krb5-config"
         		;;
 	esac ],
 	AC_MSG_RESULT($with_krb5_support)
@@ -133,19 +132,19 @@ if test x$with_krb5_support != x"no"; then
 	#################################################
 	# check for krb5-config from recent MIT and Heimdal kerberos 5
 	AC_MSG_CHECKING(for working specified location for krb5-config)
-	if test x$KRB5_CONFIG != "x"; then
-		if test -x "$KRB5_CONFIG"; then
+	if test x$KRB5CONFIG != "x"; then
+		if test -x "$KRB5CONFIG"; then
 			ac_save_CFLAGS=$CFLAGS
 			CFLAGS="";export CFLAGS
 			ac_save_LDFLAGS=$LDFLAGS
 			LDFLAGS="";export LDFLAGS
-			KRB5_LIBS="`$KRB5_CONFIG --libs gssapi`"
-			KRB5_CFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`" 
-			KRB5_CPPFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`"
+			KRB5_LIBS="`$KRB5CONFIG --libs gssapi`"
+			KRB5_CFLAGS="`$KRB5CONFIG --cflags | sed s/@INCLUDE_des@//`" 
+			KRB5_CPPFLAGS="`$KRB5CONFIG --cflags | sed s/@INCLUDE_des@//`"
 			CFLAGS=$ac_save_CFLAGS;export CFLAGS
 			LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
 			FOUND_KRB5=yes
-			AC_MSG_RESULT(yes. Found $KRB5_CONFIG)
+			AC_MSG_RESULT(yes. Found $KRB5CONFIG)
 		else 
 			AC_MSG_RESULT(no. Fallback to specified directory)
 		fi
@@ -153,20 +152,20 @@ if test x$with_krb5_support != x"no"; then
 		AC_MSG_RESULT(no. Fallback to finding krb5-config in path)
 		#################################################
 		# check for krb5-config from recent MIT and Heimdal kerberos 5
-		AC_PATH_PROG(KRB5_CONFIG, krb5-config)
+		AC_PATH_PROG(KRB5CONFIG, krb5-config)
 		AC_MSG_CHECKING(for working krb5-config in path)
-		if test -x "$KRB5_CONFIG"; then
+		if test -x "$KRB5CONFIG"; then
 			ac_save_CFLAGS=$CFLAGS
 			CFLAGS="";export CFLAGS
 			ac_save_LDFLAGS=$LDFLAGS
 			LDFLAGS="";export LDFLAGS
-			KRB5_LIBS="`$KRB5_CONFIG --libs gssapi`"
-			KRB5_CFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`" 
-			KRB5_CPPFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`"
+			KRB5_LIBS="`$KRB5CONFIG --libs gssapi`"
+			KRB5_CFLAGS="`$KRB5CONFIG --cflags | sed s/@INCLUDE_des@//`" 
+			KRB5_CPPFLAGS="`$KRB5CONFIG --cflags | sed s/@INCLUDE_des@//`"
 			CFLAGS=$ac_save_CFLAGS;export CFLAGS
 			LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
 			FOUND_KRB5=yes
-			AC_MSG_RESULT(yes. Found $KRB5_CONFIG)
+			AC_MSG_RESULT(yes. Found $KRB5CONFIG)
 		else
 			AC_MSG_RESULT(no. Fallback to previous krb5 detection strategy)
 		fi
