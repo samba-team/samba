@@ -1874,8 +1874,7 @@ WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				  uint32 offered, uint32 *needed,
 				  POLICY_HND *hnd, char *valuename, 
-				  uint32 *data_type, char **data, 
-				  uint32 *data_size)
+				  REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDATA q;
@@ -1915,16 +1914,9 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if (data_type)
-		*data_type = r.type;
-
-	if (data) {
-		*data = (char *)talloc(mem_ctx, r.needed);
-		memcpy(*data, r.data, r.needed);
-	}
-
-	if (data_size) 
-		*data_size = r.needed;
+	value->data_p = talloc_memdup(mem_ctx, r.data, r.needed);
+	value->type = r.type;
+	value->size = r.size;
 
  done:
 	prs_mem_free(&qbuf);
@@ -1936,8 +1928,7 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    uint32 offered, uint32 *needed,
 				    POLICY_HND *hnd, char *keyname, 
-				    char *valuename, uint32 *data_type, 
-				    char **data, uint32 *data_size)
+				    char *valuename, REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDATAEX q;
@@ -1977,16 +1968,9 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if (data_type)
-		*data_type = r.type;
-
-	if (data) {
-		*data = (char *)talloc(mem_ctx, r.needed);
-		memcpy(*data, r.data, r.needed);
-	}
-
-	if (data_size) 
-		*data_size = r.needed;
+	value->data_p = talloc_memdup(mem_ctx, r.data, r.needed);
+	value->type = r.type;
+	value->size = r.needed;
 
  done:
 	prs_mem_free(&qbuf);
@@ -1998,9 +1982,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Set printer data */
 
 WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd, char *value, 
-				  uint32 data_type, char *data, 
-				  uint32 data_size)
+				  POLICY_HND *hnd, REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETPRINTERDATA q;
@@ -2017,7 +1999,8 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_setprinterdata(&q, hnd, value, data_type, data, data_size);
+        make_spoolss_q_setprinterdata(
+		&q, hnd, value->valuename, value->type, value->data_p, value->size);
 
 	/* Marshall data and send request */
 
@@ -2043,9 +2026,8 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *hnd, char * key, char *value, 
-				    uint32 data_type, char *data, 
-				    uint32 data_size)
+				    POLICY_HND *hnd, char *keyname, 
+				    REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETPRINTERDATAEX q;
@@ -2062,7 +2044,9 @@ WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_setprinterdataex(&q, hnd, key, value, data_type, data, data_size);
+        make_spoolss_q_setprinterdataex(
+		&q, hnd, keyname, value->valuename, value->type, value->data_p, 
+		value->size);
 
 	/* Marshall data and send request */
 
@@ -2093,8 +2077,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *hnd, uint32 ndx,
 				   uint32 value_offered, uint32 data_offered,
 				   uint32 *value_needed, uint32 *data_needed,
-				   char **value, uint32 *data_type, char **data, 
-				   uint32 *data_size)
+				   REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERDATA q;
@@ -2130,30 +2113,20 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 
 	/* Return data */
-
+	
 	if (value_needed)
 		*value_needed = r.realvaluesize;
 
 	if (data_needed)
 		*data_needed = r.realdatasize;
 
-	if (data_type) 
-		*data_type = r.type;
-
 	if (value) {
-		fstring the_value;
-
-		rpcstr_pull(the_value, r.value, sizeof(the_value), -1, 
+		rpcstr_pull(value->valuename, r.value, sizeof(value->valuename), -1,
 			    STR_TERMINATE);
-		
-		*value = talloc_strdup(mem_ctx, the_value);
+		value->data_p = talloc_memdup(mem_ctx, r.data, r.realdatasize);
+		value->type = r.type;
+		value->size = r.realdatasize;
 	}
-
-	if (data)
-		*data = talloc_memdup(mem_ctx, r.data, r.realdatasize);
-
-	if (data_size)
-		*data_size = r.realdatasize;
 
  done:
 	prs_mem_free(&qbuf);
@@ -2164,8 +2137,8 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				     uint32 offered, uint32 *needed,
-				     POLICY_HND *hnd, char *key,
-				     uint32 *returned, PRINTER_ENUM_VALUES **values)
+				     POLICY_HND *hnd, char *keyname, 
+				     REGVAL_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERDATAEX q;
@@ -2183,7 +2156,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_enumprinterdataex(&q, hnd, key, offered);
+        make_spoolss_q_enumprinterdataex(&q, hnd, keyname, offered);
 
 	/* Marshall data and send request */
 
@@ -2206,23 +2179,16 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return data */
 
-	*returned = r.returned;
-
-	/* Again, we have to deep copy the results on the passed in
-	   tdb context as they will disappear after the prs_free at
-	   the end of this function. */
-
-	*values = talloc(mem_ctx, sizeof(PRINTER_ENUM_VALUES) * r.returned);
+	ZERO_STRUCTP(ctr);
+	regval_ctr_init(ctr);
 
 	for (i = 0; i < r.returned; i++) {
 		PRINTER_ENUM_VALUES *v = &r.ctr.values[i];
+		fstring name;
 
-		(*values)[i].valuename.buffer = talloc(mem_ctx, v->value_len * 2);
-		unistrcpy((*values)[i].valuename.buffer, v->valuename.buffer);
-		(*values)[i].type = v->type;
-		(*values)[i].data = talloc(mem_ctx, v->data_len);
-		memcpy((*values)[i].data, v->data, v->data_len);
-		(*values)[i].data_len = v->data_len;
+		rpcstr_pull(name, v->valuename.buffer, sizeof(name), -1, 
+			    STR_TERMINATE);
+		regval_ctr_addvalue(ctr, name, v->type, v->data, v->data_len);
 	}
 
  done:
@@ -2327,7 +2293,8 @@ WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				       POLICY_HND *hnd, char *key, char *value)
+				       POLICY_HND *hnd, char *keyname, 
+				       char *valuename)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDATAEX q;
@@ -2344,7 +2311,7 @@ WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ct
 
 	/* Initialise input parameters */
 
-        make_spoolss_q_deleteprinterdataex(&q, hnd, key, value);
+        make_spoolss_q_deleteprinterdataex(&q, hnd, keyname, valuename);
 
 	/* Marshall data and send request */
 
