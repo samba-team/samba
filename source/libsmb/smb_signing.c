@@ -21,15 +21,6 @@
 
 #include "includes.h"
 
-/* the SNIA Technical Reference tells us that this is '40 or 44' bytes
-   long, but NTLM only uses 40, and we don't know what value to use for
-   NTLMv2 */
-
-/* my guess is 64, and other evidence indicates we don't setup the
-   session key correctly, so that's why it's failing */
-
-#define SIMPLE_SMB_SIGNING_MAC_KEY_LEN 64
-
 struct smb_basic_signing_context {
 	DATA_BLOB mac_key;
 	uint32 send_seq_num;
@@ -246,10 +237,10 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	data = smb_xmalloc(sizeof(*data));
 	cli->sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, MIN(response.length + 16, SIMPLE_SMB_SIGNING_MAC_KEY_LEN));
+	data->mac_key = data_blob(NULL, response.length + 16);
 
 	memcpy(&data->mac_key.data[0], user_session_key, 16);
-	memcpy(&data->mac_key.data[16],response.data, MIN(response.length, SIMPLE_SMB_SIGNING_MAC_KEY_LEN - 16));
+	memcpy(&data->mac_key.data[16],response.data, response.length);
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;
