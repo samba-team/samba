@@ -796,7 +796,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 			free_privilege(set);
 			continue;
 		}
-DEBUG(0, ("sid_name_use = %d, map.sid_name_use = %d",sid_name_use, map.sid_name_use));
+
 		/* list only the type or everything if UNKNOWN */
 		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) {
 			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
