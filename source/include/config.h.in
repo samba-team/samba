@@ -132,6 +132,10 @@
 #undef HAVE_LIBREADLINE
 #undef HAVE_KERNEL_OPLOCKS
 #undef HAVE_IRIX_SPECIFIC_CAPABILITIES
+#undef HAVE_INT16_FROM_RPC_RPC_H
+#undef HAVE_UINT16_FROM_RPC_RPC_H
+#undef HAVE_INT32_FROM_RPC_RPC_H
+#undef HAVE_UINT32_FROM_RPC_RPC_H
 #undef KRB4_AUTH
 #undef SEEKDIR_RETURNS_VOID
 #undef HAVE_DIRENT_D_OFF
@@ -649,20 +653,8 @@
 /* Define if you have the <readline/readline.h> header file.  */
 #undef HAVE_READLINE_READLINE_H
 
-/* Define if you have the <rpc/auth.h> header file.  */
-#undef HAVE_RPC_AUTH_H
-
-/* Define if you have the <rpc/clnt.h> header file.  */
-#undef HAVE_RPC_CLNT_H
-
 /* Define if you have the <rpc/rpc.h> header file.  */
 #undef HAVE_RPC_RPC_H
-
-/* Define if you have the <rpc/types.h> header file.  */
-#undef HAVE_RPC_TYPES_H
-
-/* Define if you have the <rpc/xdr.h> header file.  */
-#undef HAVE_RPC_XDR_H
 
 /* Define if you have the <rpcsvc/yp_prot.h> header file.  */
 #undef HAVE_RPCSVC_YP_PROT_H
