@@ -814,7 +814,7 @@ void client_setfd(int fd)
 
 char *client_name(void)
 {
-	return get_socket_name(client_fd,False);
+	return get_peer_name(client_fd,False);
 }
 
 char *client_addr(void)
@@ -896,7 +896,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-char *get_socket_name(int fd, BOOL force_lookup)
+char *get_peer_name(int fd, BOOL force_lookup)
 {
 	static pstring name_buf;
 	pstring tmp_name;
@@ -925,7 +925,11 @@ char *get_socket_name(int fd, BOOL force_lookup)
 
 	fstrcpy(addr_buf, p);
 
-	addr.s_addr = interpret_addr(p);
+	{
+		TALLOC_CTX *mem_ctx = talloc_init("dummy");
+		addr = *interpret_addr2(mem_ctx, p);
+		talloc_destroy(mem_ctx);
+	}
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {

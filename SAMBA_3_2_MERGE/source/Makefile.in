@@ -345,7 +345,7 @@ LIBCLI_OBJ1 = libcli/cliconnect.o libcli/clideltree.o \
              libcli/clifile.o libcli/clilist.o libcli/climessage.o \
              libcli/clireadwrite.o libcli/clitrans2.o
 
-LIBCLI_OBJ2 = lib/select.o lib/genrand.o
+LIBCLI_OBJ2 = lib/select.o lib/genrand.o libcli/rap.o
 
 LIBCLI_OBJ = $(LIBCLI_OBJ1) $(LIBCLI_OBJ2) $(LIBCLI_UTILS_OBJ) $(LIBCLI_AUTH_OBJ) \
              $(LIBCLI_RAW_OBJ) 
@@ -449,7 +449,7 @@ PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
 SLCACHE_OBJ = libsmb/samlogon_cache.o
 
-DCUTIL_OBJ  = libsmb/namequery_dc.o libsmb/trustdom_cache.o libsmb/trusts_util.o
+DCUTIL_OBJ  = 
 
 AUTH_BUILTIN_OBJ = auth/auth_builtin.o
 AUTH_DOMAIN_OBJ = auth/auth_domain.o
@@ -651,7 +651,7 @@ BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
             lib/util_sec.o lib/getsmbpass.o lib/pidfile.o \
             lib/replace.o lib/bitmap.o lib/util_uuid.o lib/fsusage.o  \
             lib/messages.o lib/tallocmsg.o lib/dmallocmsg.o lib/pam_errors.o 
-			
+
 ERROR_OBJ = libcli/util/smberr.o libcli/util/nterr.o libcli/util/doserr.o
 
 SMBENCRYPT_OBJ = libcli/util/smbencrypt.o libcli/util/smbdes.o
@@ -1651,7 +1651,7 @@ proto: headers
 
 .PHONY: headers proto
 .NOTPARALLEL: proto
-	
+
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 

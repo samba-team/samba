@@ -830,6 +830,7 @@ extern int errno;
 #include "smbprofile.h"
 
 #include "rap.h"
+#include "rap_client.h"
 
 #include "md5.h"
 #include "hmacmd5.h"

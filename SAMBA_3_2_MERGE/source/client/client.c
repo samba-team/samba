@@ -2305,10 +2305,61 @@ static BOOL browse_host(const char *query_host)
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-static BOOL list_servers(char *wk_grp)
+static BOOL list_servers(const char *server, const char *wk_grp)
 {
-	d_printf("REWRITE: list servers not implemented\n");
-	return False;
+	TALLOC_CTX *mem_ctx = talloc_init("list_servers");
+	struct rap_NetServerEnum2 r;
+	int i;
+	NTSTATUS result;
+	struct cli_state *my_cli = do_connect(server, "IPC$");
+
+	if (!my_cli) {
+		d_printf("Could not connect to %s\n", server);
+		return False;
+	}
+
+	d_printf("\n\tServer               Comment\n");
+	d_printf("\t---------            -------\n");
+
+	r.in.level = 1;
+	r.in.bufsize = 8192;
+	r.in.servertype = 0xffffffff;
+	r.in.domain = wk_grp;
+
+	result = cli_rap_netserverenum2(my_cli, mem_ctx, &r);
+
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(result))
+		return False;
+
+	for (i=0; i<r.out.count; i++) {
+		const char *name = r.out.info[i].info1.name;
+		const char *comment = r.out.info[i].info1.comment;
+
+		d_printf("\t%-16s     %s\n", name, comment);
+	}
+
+	d_printf("\n\tWorkgroup            Master\n");
+	d_printf("\t---------            -------\n");
+
+	r.in.level = 1;
+	r.in.bufsize = 8192;
+	r.in.servertype = 0x80000000;
+	r.in.domain = wk_grp;
+
+	result = cli_rap_netserverenum2(my_cli, mem_ctx, &r);
+
+	for (i=0; i<r.out.count; i++) {
+		const char *name = r.out.info[i].info1.name;
+		const char *comment = r.out.info[i].info1.comment;
+
+		d_printf("\t%-16s     %s\n", name, comment);
+	}
+
+	cli_shutdown(my_cli);
+
+	return True;
 }
 
 /* Some constants for completing filename arguments */
@@ -2893,7 +2944,7 @@ handle a -L query
 static int do_host_query(char *query_host)
 {
 	browse_host(query_host);
-	list_servers(lp_workgroup());
+	list_servers(query_host, lp_workgroup());
 	return(0);
 }
 
