@@ -22,7 +22,7 @@
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) wrong value for %s  0x%x - 0x%x\n", \
+		printf("(%d) wrong value for %s  got 0x%x - should be 0x%x\n", \
 		       __LINE__, #v, (int)v, (int)correct); \
 		ret = False; \
 	}} while (0)
@@ -155,7 +155,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 	CHECK_VAL(break_info.fnum, fnum);
-	CHECK_VAL(break_info.level, 2);
+	CHECK_VAL(break_info.level, 1);
 	CHECK_VAL(break_info.count, 1);
 
 
@@ -179,7 +179,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	CHECK_VAL(break_info.fnum, fnum);
-	CHECK_VAL(break_info.level, 2);
+	CHECK_VAL(break_info.level, 1);
 	CHECK_VAL(break_info.count, 1);
 
 	printf("a self read should not cause a break\n");
@@ -226,7 +226,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
-	CHECK_VAL(break_info.level, 2);
+	CHECK_VAL(break_info.level, 1);
 
 	printf("a 2nd open should get an oplock when we close instead of ack\n");
 	ZERO_STRUCT(break_info);
@@ -253,7 +253,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum2);
-	CHECK_VAL(break_info.level, 2);
+	CHECK_VAL(break_info.level, 1);
 	
 	cli_close(cli->tree, fnum);
 
@@ -283,6 +283,38 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
 	CHECK_VAL(break_info.level, 0);
+
+	cli_close(cli->tree, fnum);
+	cli_close(cli->tree, fnum2);
+	cli_unlink(cli->tree, fname);
+
+	printf("open with attributes only can create file\n");
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_READ_ATTRIBUTES|SA_RIGHT_FILE_WRITE_ATTRIBUTES|STD_RIGHT_SYNCHRONIZE_ACCESS;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	printf("Subsequent normal open should break oplock on attribute only open to level II\n");
+
+	ZERO_STRUCT(break_info);
+	cli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
 done:
 	cli_close(cli->tree, fnum);
