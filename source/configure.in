@@ -2932,6 +2932,11 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
 		ACLLIBS="$ACLLIBS -lpacl"
 		;;
+	*freebsd5*)
+		AC_MSG_RESULT(Using FreeBSD posix ACLs)
+		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
+		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+		;;
         *)
 		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
