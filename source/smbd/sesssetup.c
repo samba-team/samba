@@ -630,14 +630,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	if (Protocol < PROTOCOL_NT1) {
 		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
-		if (passlen1 > MAX_PASS_LEN) {
-			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
-		}
-
-		if (passlen1 > smb_buflen(inbuf)) {
+		if ((passlen1 > MAX_PASS_LEN) || (passlen1 > smb_bufrem(inbuf, smb_buf(inbuf)))) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
-		
+
 		if (doencrypt) {
 			lm_resp = data_blob(smb_buf(inbuf), passlen1);
 		} else {
@@ -669,13 +665,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			}
 		}
 		
-		if (passlen1 > MAX_PASS_LEN) {
-			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
-		}
-
-		passlen1 = MIN(passlen1, MAX_PASS_LEN);
-		passlen2 = MIN(passlen2, MAX_PASS_LEN);
-
 		if (!doencrypt) {
 			/* both Win95 and WinNT stuff up the password lengths for
 			   non-encrypting systems. Uggh. 
@@ -693,17 +682,21 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 				passlen2 = 0;
 		}
 		
+		/* check for nasty tricks */
+		if (passlen1 > MAX_PASS_LEN || passlen1 > smb_bufrem(inbuf, p)) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (passlen2 > MAX_PASS_LEN || passlen2 > smb_bufrem(inbuf, p+passlen1)) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
 		/* Save the lanman2 password and the NT md4 password. */
 		
 		if ((doencrypt) && (passlen1 != 0) && (passlen1 != 24)) {
 			doencrypt = False;
 		}
 
-		/* check for nasty tricks */
-		if (passlen1 > smb_buflen(inbuf) || passlen2 > smb_buflen(inbuf)) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-		}
-		
 		if (doencrypt) {
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
