@@ -155,9 +155,9 @@ client file systems for Linux, both available in the Linux kernel itself.
 	</para></listitem>
 
 	<listitem><para>
-	CIFS (Common Internet File System) is the successor to SMB, and is actively being worked
-	on in the upcoming version of the Linux kernel. The intent of this module is to 
-	provide advanced network file system functionality including support for dfs (heirarchical 
+	CIFS VFS (Common Internet File System Virtual File System) is the successor to SMBFS, and
+        is actively being worked on in the upcoming version of the Linux kernel. The intent of this module
+        is to provide advanced network file system functionality including support for dfs (heirarchical
 	name space), secure per-user session establishment, safe distributed caching (oplock), 
 	optional packet signing, Unicode and other internationalization improvements, and optional 
 	Winbind (nsswitch) integration.
