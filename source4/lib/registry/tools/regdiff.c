@@ -115,7 +115,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 	const char *credentials1= NULL, *credentials2 = NULL;
 	char *outputfile = NULL;
 	FILE *fd = stdout;
-	struct registry_context *h1, *h2;
+	struct registry_context *h1 = NULL, *h2;
 	int from_null = 0;
 	int i;
 	WERROR error, error2;
@@ -165,7 +165,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 			fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location1, backend1);
 			return 1;
 		}
-	}
+	} 
 
 	location2 = poptGetArg(pc);
 	if(!location2) {
@@ -196,8 +196,8 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 
 	error2 = error = WERR_OK; 
 
-	for(i = 0; i < h1->num_hives && i < h2->num_hives; i++) {
-		writediff(h1->hives[i]->root, h2->hives[i]->root, fd); 
+	for(i = 0; (!h1 || i < h1->num_hives) && i < h2->num_hives; i++) {
+		writediff(h1?h1->hives[i]->root:NULL, h2->hives[i]->root, fd); 
 	}
 
 	fclose(fd);
