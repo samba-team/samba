@@ -100,7 +100,7 @@ static NTSTATUS ntlmssp_make_packet_signiture(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 		HMACMD5Context ctx;
 		char seq_num[4];
 		uchar digest[16];
-		SIVAL(seq_num, 0, &ntlmssp_state->ntlmssp_seq_num);
+		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
 		hmac_md5_init_limK_to_64(ntlmssp_state->cli_sign_const, 16, &ctx);
 		hmac_md5_update(seq_num, 4, &ctx);
