@@ -108,13 +108,12 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
 	if (Ucrit_checkPid(e->pid)) {
           printf("%-5d  ",(int)e->pid);
-	  switch ((e->share_mode>>4)&0xF) {
+	  switch (GET_DENY_MODE(e->share_mode)) {
 	  case DENY_NONE: printf("DENY_NONE  "); break;
 	  case DENY_ALL:  printf("DENY_ALL   "); break;
 	  case DENY_DOS:  printf("DENY_DOS   "); break;
 	  case DENY_READ: printf("DENY_READ  "); break;
 	  case DENY_WRITE:printf("DENY_WRITE "); break;
-	  case 0xFF:
 	  case DENY_FCB:  printf("DENY_FCB "); break;
 	  }
 	  switch (e->share_mode&0xF) {
