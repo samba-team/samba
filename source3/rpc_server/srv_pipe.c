@@ -68,7 +68,11 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 	{
 		return False;
 	}
-	(*rlen) = read_data(p->m->fd, (*rdata), (*rlen));
+
+	/* read a minimum of an rpc header, then wait for up to 10 seconds
+	 * to read up to a maximum of the SMBtrans max data size
+	 */
+	(*rlen) = read_with_timeout(p->m->fd, (*rdata), 16, (*rlen), 10000);
 	if ((*rlen) < 0)
 	{
 		return False;
