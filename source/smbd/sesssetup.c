@@ -680,7 +680,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	
 	/* it's ok - setup a reply */
 	set_message(outbuf,3,0,True);
-	if (Protocol == PROTOCOL_NT1) {
+	if (Protocol >= PROTOCOL_NT1) {
 		add_signature(outbuf);
 		/* perhaps grab OS version here?? */
 	}
