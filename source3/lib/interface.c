@@ -154,7 +154,7 @@ static void get_broadcast(struct in_addr *if_ipaddr,
       }
     }
   }
-#elif defined(__FreeBSD__) || defined(NETBSD) || defined(AMIGA)
+#elif defined(__FreeBSD__) || defined(NETBSD) || defined(AMIGA) || defined(_AIX41)
   ifc.ifc_len = sizeof(buff);
   ifc.ifc_buf = buff;
   if (ioctl(sock, SIOCGIFCONF, &ifc) < 0) {

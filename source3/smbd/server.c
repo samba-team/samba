@@ -397,7 +397,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
       if (!name_map_mangle(name2,False,snum)) continue;
 
       if ((mangled && mangled_equal(name,name2))
-	  || fname_equal(name, name2))
+	  || fname_equal(name, dname))
 	{
 	  /* we've found the file, change it's name and return */
 	  if (docache) DirCacheAdd(path,name,dname,snum);
@@ -2102,7 +2102,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
       /* ready to listen */
       if (listen(s, 5) == -1) 
 	{
-	  DEBUG(0,("listen: %s",strerror(errno)));
+	  DEBUG(0,("listen: %s\n",strerror(errno)));
 	  close(s);
 	  return False;
 	}
@@ -2122,7 +2122,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 
 	  if (Client == -1)
 	    {
-	      DEBUG(0,("accept: %s",strerror(errno)));
+	      DEBUG(0,("accept: %s\n",strerror(errno)));
 	      continue;
 	    }
 
