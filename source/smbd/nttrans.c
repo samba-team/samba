@@ -1838,217 +1838,275 @@ static int call_nt_transact_ioctl(connection_struct *conn,
 /****************************************************************************
  Reply to a SMBNTtrans.
 ****************************************************************************/
+
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int  outsize = 0;
+	int  outsize = 0;
 #if 0 /* Not used. */
-  uint16 max_setup_count = CVAL(inbuf, smb_nt_MaxSetupCount);
-  uint32 max_parameter_count = IVAL(inbuf, smb_nt_MaxParameterCount);
-  uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+	uint16 max_setup_count = CVAL(inbuf, smb_nt_MaxSetupCount);
+	uint32 max_parameter_count = IVAL(inbuf, smb_nt_MaxParameterCount);
+	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 #endif /* Not used. */
-  uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
-  uint32 total_data_count = IVAL(inbuf, smb_nt_TotalDataCount);
-  uint32 parameter_count = IVAL(inbuf,smb_nt_ParameterCount);
-  uint32 parameter_offset = IVAL(inbuf,smb_nt_ParameterOffset);
-  uint32 data_count = IVAL(inbuf,smb_nt_DataCount);
-  uint32 data_offset = IVAL(inbuf,smb_nt_DataOffset);
-  uint16 setup_count = 2*CVAL(inbuf,smb_nt_SetupCount); /* setup count is in *words* */
-  uint16 function_code = SVAL( inbuf, smb_nt_Function);
-  char *params = NULL, *data = NULL, *setup = NULL;
-  uint32 num_params_sofar, num_data_sofar;
-  START_PROFILE(SMBnttrans);
+	uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
+	uint32 total_data_count = IVAL(inbuf, smb_nt_TotalDataCount);
+	uint32 parameter_count = IVAL(inbuf,smb_nt_ParameterCount);
+	uint32 parameter_offset = IVAL(inbuf,smb_nt_ParameterOffset);
+	uint32 data_count = IVAL(inbuf,smb_nt_DataCount);
+	uint32 data_offset = IVAL(inbuf,smb_nt_DataOffset);
+	uint16 setup_count = 2*CVAL(inbuf,smb_nt_SetupCount); /* setup count is in *words* */
+	uint16 function_code = SVAL( inbuf, smb_nt_Function);
+	char *params = NULL, *data = NULL, *setup = NULL;
+	uint32 num_params_sofar, num_data_sofar;
+	START_PROFILE(SMBnttrans);
 
-  if(global_oplock_break &&
-		  ((function_code == NT_TRANSACT_CREATE) ||
-		   (function_code == NT_TRANSACT_RENAME))) {
-    /*
-     * Queue this open message as we are the process of an oplock break.
-     */
+	if(global_oplock_break &&
+			((function_code == NT_TRANSACT_CREATE) ||
+			 (function_code == NT_TRANSACT_RENAME))) {
+		/*
+		 * Queue this open message as we are the process of an oplock break.
+		 */
 
-    DEBUG(2,("reply_nttrans: queueing message code 0x%x \
+		DEBUG(2,("reply_nttrans: queueing message code 0x%x \
 due to being in oplock break state.\n", (unsigned int)function_code ));
 
-    push_oplock_pending_smb_message( inbuf, length);
-    END_PROFILE(SMBnttrans);
-    return -1;
-  }
-
-  if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
-    END_PROFILE(SMBnttrans);
-    return ERROR_DOS(ERRSRV,ERRaccess);
-  }
-
-  outsize = set_message(outbuf,0,0,True);
-
-  /* 
-   * All nttrans messages we handle have smb_wct == 19 + setup_count.
-   * Ensure this is so as a sanity check.
-   */
-
-  if(CVAL(inbuf, smb_wct) != 19 + (setup_count/2)) {
-    DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
-          CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
-    END_PROFILE(SMBnttrans);
-    return ERROR_DOS(ERRSRV,ERRerror);
-  }
-    
-  /* Allocate the space for the setup, the maximum needed parameters and data */
-
-  if(setup_count > 0)
-    setup = (char *)malloc(setup_count);
-  if (total_parameter_count > 0)
-    params = (char *)malloc(total_parameter_count);
-  if (total_data_count > 0)
-    data = (char *)malloc(total_data_count);
- 
-  if ((total_parameter_count && !params)  || (total_data_count && !data) ||
-      (setup_count && !setup)) {
-	safe_free(setup);
-	safe_free(params);
-	safe_free(data);
-    DEBUG(0,("reply_nttrans : Out of memory\n"));
-    END_PROFILE(SMBnttrans);
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-
-  /* Copy the param and data bytes sent with this request into
-     the params buffer */
-  num_params_sofar = parameter_count;
-  num_data_sofar = data_count;
-
-  if (parameter_count > total_parameter_count || data_count > total_data_count)
-    exit_server("reply_nttrans: invalid sizes in packet.");
-
-  if(setup) {
-    memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
-    DEBUG(10,("reply_nttrans: setup_count = %d\n", setup_count));
-    dump_data(10, setup, setup_count);
-  }
-  if(params) {
-    memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
-    DEBUG(10,("reply_nttrans: parameter_count = %d\n", parameter_count));
-    dump_data(10, params, parameter_count);
-  }
-  if(data) {
-    memcpy( data, smb_base(inbuf) + data_offset, data_count);
-    DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
-    dump_data(10, data, data_count);
-  }
-
-  if(num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
-    /* We need to send an interim response then receive the rest
-       of the parameter/data bytes */
-    outsize = set_message(outbuf,0,0,True);
-    if (!send_smb(smbd_server_fd(),outbuf))
-      exit_server("reply_nttrans: send_smb failed.");
-
-    while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
-      BOOL ret;
-
-      ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
-
-      if((ret && (CVAL(inbuf, smb_com) != SMBnttranss)) || !ret) {
-        outsize = set_message(outbuf,0,0,True);
-        if(ret) {
-		DEBUG(0,("reply_nttrans: Invalid secondary nttrans packet\n"));
-        } else {
-		DEBUG(0,("reply_nttrans: %s in getting secondary nttrans response.\n",
-			 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+		push_oplock_pending_smb_message( inbuf, length);
+		END_PROFILE(SMBnttrans);
+		return -1;
 	}
-        SAFE_FREE(params);
-        SAFE_FREE(data);
-        SAFE_FREE(setup);
-	END_PROFILE(SMBnttrans);
-        return ERROR_DOS(ERRSRV,ERRerror);
-      }
+
+	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
+		END_PROFILE(SMBnttrans);
+		return ERROR_DOS(ERRSRV,ERRaccess);
+	}
+
+	outsize = set_message(outbuf,0,0,True);
+
+	/* 
+	 * All nttrans messages we handle have smb_wct == 19 + setup_count.
+	 * Ensure this is so as a sanity check.
+	 */
+
+	if(CVAL(inbuf, smb_wct) != 19 + (setup_count/2)) {
+		DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
+			CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
+		goto bad_param;
+	}
+    
+	/* Allocate the space for the setup, the maximum needed parameters and data */
+
+	if(setup_count > 0)
+		setup = (char *)malloc(setup_count);
+	if (total_parameter_count > 0)
+		params = (char *)malloc(total_parameter_count);
+	if (total_data_count > 0)
+		data = (char *)malloc(total_data_count);
+ 
+	if ((total_parameter_count && !params)  || (total_data_count && !data) ||
+				(setup_count && !setup)) {
+		SAFE_FREE(setup);
+		SAFE_FREE(params);
+		SAFE_FREE(data);
+		DEBUG(0,("reply_nttrans : Out of memory\n"));
+		END_PROFILE(SMBnttrans);
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	}
+
+	/* Copy the param and data bytes sent with this request into the params buffer */
+	num_params_sofar = parameter_count;
+	num_data_sofar = data_count;
+
+	if (parameter_count > total_parameter_count || data_count > total_data_count)
+		goto bad_param;
+
+	if(setup) {
+		DEBUG(10,("reply_nttrans: setup_count = %d\n", setup_count));
+		if ((smb_nt_SetupStart + setup_count < smb_nt_SetupStart) ||
+				(smb_nt_SetupStart + setup_count < setup_count))
+			goto bad_param;
+		if (smb_nt_SetupStart + setup_count > length)
+			goto bad_param;
+
+		memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
+		dump_data(10, setup, setup_count);
+	}
+	if(params) {
+		DEBUG(10,("reply_nttrans: parameter_count = %d\n", parameter_count));
+		if ((parameter_offset + parameter_count < parameter_offset) ||
+				(parameter_offset + parameter_count < parameter_count))
+			goto bad_param;
+		if (smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)
+			goto bad_param;
+
+		memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
+		dump_data(10, params, parameter_count);
+	}
+	if(data) {
+		DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
+		if ((data_offset + data_count < data_offset) || (data_offset + data_count < data_count))
+			goto bad_param;
+		if (smb_base(inbuf) + data_offset + data_count > inbuf + length)
+			goto bad_param;
+
+		memcpy( data, smb_base(inbuf) + data_offset, data_count);
+		dump_data(10, data, data_count);
+	}
+
+	if(num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
+		/* We need to send an interim response then receive the rest
+			of the parameter/data bytes */
+		outsize = set_message(outbuf,0,0,True);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_nttrans: send_smb failed.");
+
+		while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
+			BOOL ret;
+			uint32 parameter_displacement;
+			uint32 data_displacement;
+
+			ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
+
+			if((ret && (CVAL(inbuf, smb_com) != SMBnttranss)) || !ret) {
+				outsize = set_message(outbuf,0,0,True);
+				if(ret) {
+					DEBUG(0,("reply_nttrans: Invalid secondary nttrans packet\n"));
+				} else {
+					DEBUG(0,("reply_nttrans: %s in getting secondary nttrans response.\n",
+						(smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+				}
+				goto bad_param;
+			}
       
-      /* Revise total_params and total_data in case they have changed downwards */
-      total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
-      total_data_count = IVAL(inbuf, smb_nts_TotalDataCount);
-      num_params_sofar += (parameter_count = IVAL(inbuf,smb_nts_ParameterCount));
-      num_data_sofar += ( data_count = IVAL(inbuf, smb_nts_DataCount));
-      if (num_params_sofar > total_parameter_count || num_data_sofar > total_data_count)
-        exit_server("reply_nttrans2: data overflow in secondary nttrans packet");
+			/* Revise total_params and total_data in case they have changed downwards */
+			if (IVAL(inbuf, smb_nts_TotalParameterCount) < total_parameter_count)
+				total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
+			if (IVAL(inbuf, smb_nts_TotalDataCount) < total_data_count)
+				total_data_count = IVAL(inbuf, smb_nts_TotalDataCount);
 
-      memcpy( &params[ IVAL(inbuf, smb_nts_ParameterDisplacement)], 
-              smb_base(inbuf) + IVAL(inbuf, smb_nts_ParameterOffset), parameter_count);
-      memcpy( &data[IVAL(inbuf, smb_nts_DataDisplacement)],
-              smb_base(inbuf)+ IVAL(inbuf, smb_nts_DataOffset), data_count);
-    }
-  }
+			parameter_count = IVAL(inbuf,smb_nts_ParameterCount);
+			parameter_offset = IVAL(inbuf, smb_nts_ParameterOffset);
+			parameter_displacement = IVAL(inbuf, smb_nts_ParameterDisplacement);
+			num_params_sofar += parameter_count;
 
-  if (Protocol >= PROTOCOL_NT1)
-    SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
+			data_count = IVAL(inbuf, smb_nts_DataCount);
+			data_displacement = IVAL(inbuf, smb_nts_DataDisplacement);
+			data_offset = IVAL(inbuf, smb_nts_DataDisplacement);
+			num_data_sofar += data_count;
 
-  /* Now we must call the relevant NT_TRANS function */
-  switch(function_code) {
-    case NT_TRANSACT_CREATE:
-      START_PROFILE_NESTED(NT_transact_create);
-      outsize = call_nt_transact_create(conn, inbuf, outbuf, length, bufsize, 
-                                        &setup, &params, &data);
-      END_PROFILE_NESTED(NT_transact_create);
-      break;
-    case NT_TRANSACT_IOCTL:
-      START_PROFILE_NESTED(NT_transact_ioctl);
-      outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
-							length, bufsize, 
-							&setup, setup_count,
-							&params, parameter_count,
-							&data, data_count);
-      END_PROFILE_NESTED(NT_transact_ioctl);
-      break;
-    case NT_TRANSACT_SET_SECURITY_DESC:
-      START_PROFILE_NESTED(NT_transact_set_security_desc);
-      outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
-						   length, bufsize, 
-                                                   &setup, &params, &data);
-      END_PROFILE_NESTED(NT_transact_set_security_desc);
-      break;
-    case NT_TRANSACT_NOTIFY_CHANGE:
-      START_PROFILE_NESTED(NT_transact_notify_change);
-      outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
-					       length, bufsize, 
-                                               &setup, &params, &data);
-      END_PROFILE_NESTED(NT_transact_notify_change);
-      break;
-    case NT_TRANSACT_RENAME:
-      START_PROFILE_NESTED(NT_transact_rename);
-      outsize = call_nt_transact_rename(conn, inbuf, outbuf, length, 
+			if (num_params_sofar > total_parameter_count || num_data_sofar > total_data_count) {
+				DEBUG(0,("reply_nttrans2: data overflow in secondary nttrans packet"));
+				goto bad_param;
+			}
+
+			if (parameter_count) {
+				if (parameter_displacement + parameter_count >= total_parameter_count)
+					goto bad_param;
+				if ((parameter_displacement + parameter_count < parameter_displacement) ||
+						(parameter_displacement + parameter_count < parameter_count))
+					goto bad_param;
+				if (smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize)
+					goto bad_param;
+				if (params + parameter_displacement < params)
+					goto bad_param;
+
+				memcpy( &params[parameter_displacement], smb_base(inbuf) + parameter_offset, parameter_count);
+			}
+
+			if (data_count) {
+				if (data_displacement + data_count >= total_data_count)
+					goto bad_param;
+				if ((data_displacement + data_count < data_displacement) ||
+						(data_displacement + data_count < data_count))
+					goto bad_param;
+				if (smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize)
+					goto bad_param;
+				if (data + data_displacement < data)
+					goto bad_param;
+
+				memcpy( &data[data_displacement], smb_base(inbuf)+ data_offset, data_count);
+			}
+		}
+	}
+
+	if (Protocol >= PROTOCOL_NT1)
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
+
+	/* Now we must call the relevant NT_TRANS function */
+	switch(function_code) {
+		case NT_TRANSACT_CREATE:
+			START_PROFILE_NESTED(NT_transact_create);
+			outsize = call_nt_transact_create(conn, inbuf, outbuf, length, bufsize, 
+					&setup, &params, &data);
+			END_PROFILE_NESTED(NT_transact_create);
+			break;
+		case NT_TRANSACT_IOCTL:
+			START_PROFILE_NESTED(NT_transact_ioctl);
+			outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
+					length, bufsize, 
+					&setup, setup_count,
+					&params, parameter_count,
+					&data, data_count);
+			END_PROFILE_NESTED(NT_transact_ioctl);
+			break;
+		case NT_TRANSACT_SET_SECURITY_DESC:
+			START_PROFILE_NESTED(NT_transact_set_security_desc);
+			outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
+					length, bufsize, 
+					&setup, &params, &data);
+			END_PROFILE_NESTED(NT_transact_set_security_desc);
+			break;
+		case NT_TRANSACT_NOTIFY_CHANGE:
+			START_PROFILE_NESTED(NT_transact_notify_change);
+			outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
+					length, bufsize, 
+					&setup, &params, &data);
+			END_PROFILE_NESTED(NT_transact_notify_change);
+			break;
+		case NT_TRANSACT_RENAME:
+			START_PROFILE_NESTED(NT_transact_rename);
+			outsize = call_nt_transact_rename(conn, inbuf, outbuf, length, 
 					bufsize, 
-                                        &setup, &params, &data);
-      END_PROFILE_NESTED(NT_transact_rename);
-      break;
+					&setup, &params, &data);
+			END_PROFILE_NESTED(NT_transact_rename);
+			break;
 
-    case NT_TRANSACT_QUERY_SECURITY_DESC:
-      START_PROFILE_NESTED(NT_transact_query_security_desc);
-      outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
-						     length, bufsize, 
-                                                     &setup, &params, &data);
-      END_PROFILE_NESTED(NT_transact_query_security_desc);
-      break;
-  default:
-	  /* Error in request */
-	  DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));
-	  SAFE_FREE(setup);
-	  SAFE_FREE(params);
-	  SAFE_FREE(data);
-	  END_PROFILE(SMBnttrans);
-	  return ERROR_DOS(ERRSRV,ERRerror);
-  }
+		case NT_TRANSACT_QUERY_SECURITY_DESC:
+			START_PROFILE_NESTED(NT_transact_query_security_desc);
+			outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
+					length, bufsize, 
+					&setup, &params, &data);
+			END_PROFILE_NESTED(NT_transact_query_security_desc);
+			break;
+		default:
+			/* Error in request */
+			DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));
+			SAFE_FREE(setup);
+			SAFE_FREE(params);
+			SAFE_FREE(data);
+			END_PROFILE(SMBnttrans);
+			return ERROR_DOS(ERRSRV,ERRerror);
+	}
 
-  /* As we do not know how many data packets will need to be
-     returned here the various call_nt_transact_xxxx calls
-     must send their own. Thus a call_nt_transact_xxxx routine only
-     returns a value other than -1 when it wants to send
-     an error packet. 
-  */
+	/* As we do not know how many data packets will need to be
+		returned here the various call_nt_transact_xxxx calls
+		must send their own. Thus a call_nt_transact_xxxx routine only
+		returns a value other than -1 when it wants to send
+		an error packet. 
+	*/
 
-  SAFE_FREE(setup);
-  SAFE_FREE(params);
-  SAFE_FREE(data);
-  END_PROFILE(SMBnttrans);
-  return outsize; /* If a correct response was needed the call_nt_transact_xxxx 
-		     calls have already sent it. If outsize != -1 then it is
-		     returning an error packet. */
+	SAFE_FREE(setup);
+	SAFE_FREE(params);
+	SAFE_FREE(data);
+	END_PROFILE(SMBnttrans);
+	return outsize; /* If a correct response was needed the call_nt_transact_xxxx 
+				calls have already sent it. If outsize != -1 then it is
+				returning an error packet. */
+
+ bad_param:
+
+	SAFE_FREE(params);
+	SAFE_FREE(data);
+	SAFE_FREE(setup);
+	END_PROFILE(SMBnttrans);
+	return ERROR_DOS(ERRDOS,ERRinvalidparam);
 }
