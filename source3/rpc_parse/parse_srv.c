@@ -109,10 +109,14 @@ void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
 {
 	DEBUG(5,("init_srv_share_info2_str\n"));
 
-	init_unistr2(&sh2->uni_netname, net_name, strlen(net_name)+1);
-	init_unistr2(&sh2->uni_remark, remark, strlen(remark)+1);
-	init_unistr2(&sh2->uni_path, path, strlen(path)+1);
-	init_unistr2(&sh2->uni_passwd, passwd, strlen(passwd)+1);
+	if (net_name)
+		init_unistr2(&sh2->uni_netname, net_name, strlen(net_name)+1);
+	if (remark)
+		init_unistr2(&sh2->uni_remark, remark, strlen(remark)+1);
+	if (path)
+		init_unistr2(&sh2->uni_path, path, strlen(path)+1);
+	if (passwd)
+		init_unistr2(&sh2->uni_passwd, passwd, strlen(passwd)+1);
 }
 
 /*******************************************************************
@@ -955,8 +959,33 @@ BOOL srv_io_q_net_share_add(char *desc, SRV_Q_NET_SHARE_ADD *q_n, prs_struct *ps
 	if(!srv_io_srv_share_info("info  ", ps, depth, &q_n->info))
 		return False;
 
+	if(!prs_uint32("ptr_err_index", ps, depth, &q_n->ptr_err_index))
+		return False;
+	if (q_n->ptr_err_index)
+		if (!prs_uint32("err_index", ps, depth, &q_n->err_index))
+			return False;
+
 	return True;
 }
+
+void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, char *srvname,
+			      char *netname, uint32 type, char *remark, 
+			      uint32 perms, uint32 max_uses, uint32 num_uses,
+			      char *path, char *passwd)
+{
+	q->ptr_srv_name = 1;
+	init_unistr2(&q->uni_srv_name, srvname, strlen(srvname) +1);
+	q->info.switch_value = q->info_level = 2;
+
+	q->info.ptr_share_ctr = 1;
+	init_srv_share_info2(&q->info.share.info2.info_2, netname, type,
+			     remark, perms, max_uses, num_uses, path, passwd);
+	init_srv_share_info2_str(&q->info.share.info2.info_2_str, netname,
+				 remark, path, passwd);
+	q->ptr_err_index = 1;
+	q->err_index = 0;
+}
+
 
 /*******************************************************************
  Reads or writes a structure.
@@ -981,6 +1010,14 @@ BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD *q_n, prs_struct *ps
 	return True;
 }	
 
+void init_srv_q_net_share_del(SRV_Q_NET_SHARE_DEL *del, const char *srvname,
+			      const char *sharename)
+{
+	del->ptr_srv_name = 1;
+	init_unistr2(&del->uni_srv_name, srvname, strlen(srvname) +1 );
+	init_unistr2(&del->uni_share_name, sharename, strlen(sharename) + 1);
+}
+
 /*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
@@ -1002,6 +1039,11 @@ BOOL srv_io_q_net_share_del(char *desc, SRV_Q_NET_SHARE_DEL *q_n, prs_struct *ps
 		return False;
 
 	if(!smb_io_unistr2("", &q_n->uni_share_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("reserved", ps, depth, &q_n->reserved))
 		return False;
 
 	return True;
