@@ -106,7 +106,20 @@ disconnect:
 
 static NTSTATUS libnet_ChangePassword_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	union libnet_ChangePassword r2;
+
+	r2.generic.level	= LIBNET_CHANGE_PASSWORD_RPC;
+	r2.rpc.in.account_name	= NULL;
+	r2.rpc.in.domain_name	= NULL;
+	r2.rpc.in.oldpassword	= NULL;
+	r2.rpc.in.newpassword	= NULL;
+
+	status = libnet_ChangePassword(ctx, mem_ctx, &r2);
+
+	r->generic.out.error_string = r2.rpc.out.error_string;
+
+	return status;
 }
 
 NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
