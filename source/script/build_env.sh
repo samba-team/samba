@@ -6,10 +6,10 @@ srcdir=$1
 builddir=$2
 compiler=$3
 
-	if [ ! $USER = "" ]; then
+	if [ ! "x$USER" = "x" ]; then
 	    whoami=$USER
 	else 
-	    if [ ! $LOGNAME = "" ]; then
+	    if [ ! "x$LOGNAME" = "x" ]; then
 		whoami=$LOGNAME
 	    else
 		whoami=`whoami || id -un`
