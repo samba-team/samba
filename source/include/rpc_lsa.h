@@ -90,9 +90,6 @@ enum SID_NAME_USE
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
 
-#define LSA_MAX_GROUPS 96
-#define LSA_MAX_SIDS 128
-
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
 typedef struct dom_query_info
 {
@@ -362,7 +359,8 @@ typedef struct lsa_trans_name_info
 
 } LSA_TRANS_NAME;
 
-#define MAX_LOOKUP_SIDS 30
+/* This number purly arbitary - just to prevent a client from requesting large amounts of memory */
+#define MAX_LOOKUP_SIDS 256
 
 /* LSA_TRANS_NAME_ENUM - LSA Translated Name Enumeration container */
 typedef struct lsa_trans_name_enum_info

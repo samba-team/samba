@@ -140,6 +140,8 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
+	become_root(); /* lookup_name can require root privs */
+
 	for (i = 0; i < num_entries; i++) {
 		BOOL status = False;
 		DOM_SID sid;
@@ -158,7 +160,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		DEBUG(5, ("init_lsa_rid2s: looking up name %s\n", full_name));
 
-		status = lookup_name(full_name, &sid, &name_type);
+		status = lookup_name(dom_name, user, &sid, &name_type);
 
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
@@ -176,6 +178,8 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		init_dom_rid2(&rid2[total], rid, name_type, dom_idx);
 		total++;
 	}
+
+	unbecome_root();
 }
 
 /***************************************************************************
@@ -612,8 +616,13 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	if (!(handle->access & POLICY_LOOKUP_NAMES))
 		return NT_STATUS_ACCESS_DENIED;
 
+	if (num_entries >  MAX_LOOKUP_SIDS) {
+		num_entries = MAX_LOOKUP_SIDS;
+		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
+	}
+		
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
-	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*MAX_LOOKUP_SIDS);
+	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*num_entries);
 
 	if (!ref || !rids)
 		return NT_STATUS_NO_MEMORY;
