@@ -33,7 +33,7 @@
  *	@(#)pathnames.h	8.1 (Berkeley) 6/4/93
  */
 
-#ifdef HAVE_PATH_H
+#ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
 
