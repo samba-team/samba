@@ -59,22 +59,23 @@ if test "$berkeley_db"; then
 fi
 
 AC_CHECK_HEADERS([\
-	arpa/nameser.h				\
 	arpa/inet.h				\
+	arpa/nameser.h				\
 	config.h				\
 	crypt.h					\
 	dbm.h					\
 	db.h					\
+	dirent.h				\
 	errno.h					\
 	err.h					\
-	dirent.h				\
 	fcntl.h					\
-	fnmatch.h				\
 	grp.h					\
 	ndbm.h					\
 	netdb.h					\
 	netinet/in.h				\
+	netinet/in6.h				\
 	netinet/in_systm.h			\
+	netinet6/in6.h				\
 	paths.h					\
 	pwd.h					\
 	resolv.h				\
@@ -184,6 +185,12 @@ AC_CHECK_FUNCS([				\
 	asnprintf				\
 	asprintf				\
 	cgetent					\
+	getconfattr				\
+	getrlimit				\
+	getspnam				\
+	sysconf					\
+	sysctl					\
+	uname					\
 	vasnprintf				\
 	vasprintf				\
 ])
@@ -193,6 +200,23 @@ if test "$ac_cv_func_cgetent" = no; then
 fi
 
 AC_FUNC_GETLOGIN
+
+AC_FIND_FUNC_NO_LIBS(getsockopt,,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif],
+[0,0,0,0,0])
+AC_FIND_FUNC_NO_LIBS(setsockopt,,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif],
+[0,0,0,0,0])
 
 AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 [#ifdef HAVE_NETDB_H
