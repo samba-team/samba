@@ -206,6 +206,8 @@ int use_builtin_ls = -1;
 static int help_flag;
 static int version_flag;
 
+static const char *good_chars = "+-=_,.";
+
 struct getargs args[] = {
     { NULL, 'a', arg_string, &auth_string, "required authentication" },
     { NULL, 'i', arg_flag, &interactive_flag, "don't assume stdin is a socket" },
@@ -218,6 +220,7 @@ struct getargs args[] = {
     { NULL, 'd', arg_flag, &debug, "enable debugging" },
     { NULL, 'v', arg_flag, &debug, "enable debugging" },
     { "builtin-ls", 'B', arg_flag, &use_builtin_ls, "use built-in ls to list files" },
+    { "good-chars", 0, arg_string, &good_chars, "allowed anonymous upload filename chars" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 'h', arg_flag, &help_flag }
 };
@@ -1102,7 +1105,6 @@ done:
 int 
 filename_check(char *filename)
 {
-  static const char good_chars[] = "+-=_,.";
     char *p;
 
     p = strrchr(filename, '/');
