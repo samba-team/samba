@@ -189,7 +189,7 @@ static int pam_winbind_request_log(enum winbindd_cmd req_type,
 		return retval;
 	default:
 		/* we don't know anything about this return value */
-		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s'",
+		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s')",
 			 retval, user);
 		return retval;
 	}
