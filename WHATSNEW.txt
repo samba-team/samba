@@ -1,3 +1,219 @@
+		   ==================================
+                   Release Notes for Samba 3.0.12pre1
+                             Feb 25, 2005
+                   ===================================
+
+This is a preview release of the Samba 3.0.12 code base and
+is provided for testing only.  This release is *not* intended
+for production servers.  However, there have been several bug
+fixes and new features added since 3.0.11 that we feel are 
+important to make available to the Samba community for wider 
+testing.
+
+Common bugs fixed in 3.0.12pre1 include:
+
+  o Winbind failures when using 'disable netbios = yes'
+  o Failure to establish a trust relationship via 'net rpc 
+    trust establish'
+  o Various portability & compiler issues.
+  o Read only file deletion failure caused by new delete 
+    semantics in Windows XP SP2 and the MS 04-044 security 
+    hotfix.
+
+Additional features introduced in Samba 3.0.12pre1:
+
+  o Performance enhancements when serving directories 
+    containing large number of files.
+  o MS-DFS support added to smbclient.
+  o More performance improvements when using Samba/OpenLDAP
+    based DC's via the 'ldapsam:trusted=yes' option.
+
+
+Large Directory Support
+-----------------------
+
+Samba 3.0.12pre1 introduces a specific mechanism for dealing
+with file services that frequently contain a large number of files
+per directory.  Historically Samba's performance has suffered 
+in such environments due to the translation from case 
+insensitive lookups by Windows client to the case sensitive
+storage mechanisms used by UNIX filesystems.
+
+Configuration details along with a short HOWTO can be found at:
+
+http://www.samba.org/samba/ftp/HOWTO/Samba-LargeDirectory-HOWTO
+
+    
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.11
+--------------------
+smb.conf changes
+----------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    log nt token command		New
+
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * BUG 2146: Return correct allocation sizes so as not to crash 
+      the VC++ compiler.
+    * BUG 962: Ensure that parsing of service names in smb.conf is 
+      multibyte safe.
+    * BUG 2201, 2227: Support new delete semantics used by MS04-044
+      and XP SP2.
+    * BUG 1525: Correctly timestamps interpreted on 64-bit time_t 
+      values (patch submitted by Jay Fenlason <fenlason@redhat.com>).
+    * Add special hooks when serving directories containing large
+      numbers of files.
+    * Ensure that WINS negative name query responses and WACK 
+      packets use the correct RR type of 0xA instead of reflecting 
+      back what the query RR type was (0x20).
+    * BUG 2310: Only do 16-bit normalization on small dfree request.
+    * BUG 2323: Correct authentication failure when using plaintext 
+      passwords from Windows XP clients.
+    
+    
+o   Andrew Bartlett <abartlet@samba.org>
+    * Avoid length-limited intermediate copy of NT and LM responses 
+      in NETLOGON client.
+    * Debug message cleanups in the NTLMSSP implementation.
+      
+
+o   Manuel Baena <mbaena@lcc.uma.es>
+    * Print actual error message in smbmnt.c:fullpath().
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Add trans2 client call for checking dfs referrals
+    * Convert smbclient to use TRANS_QPATHINFO(SMB_QUERY_FILE_BASIC_INFO) 
+      when checking directories on modern CIFS servers.
+    * Add MS-DFS support to smbclient.
+    * Code cleanup of adt_tree.[ch].
+    * Add missing checks to allow root to manage user rights.
+    * Allow domain admins to manage rights assignments on domain members
+      servers.
+    * BUG 2333: Use the lpq command to pass in the correct printer name 
+      for cups_queue_get().  CUPS backend now sets 'lpq command= %p' as 
+      the default.
+    * BUG 1439: make sure to initialize pointer to prevent invalid 
+      free()'s on exit.
+    * BUG 2329: fix to re-enable winbindd to locate DC's when 'disable 
+      netbios = yes'.
+    * Add cups-devel to BuidlRequires directive in Fedora spec file.
+    * BUG 858: Fix order of popt args evaluation so we don't crash 
+      when given no command line args.
+    * Remove dependency on bash for source/autogen.sh.
+    * Fix clitar.c compile issues caused by broken MIT 1.4 headers.
+     
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix crash bug in the client-spoolss enumdataex-call.
+    * Expand the valid-workstation-scheme by expanding names 
+      beginning with a plus (+) as a unix group.
+    * Allow own netbios name to be set in smbclient's session setup.
+    * Better handling of LDAP over IPC connections that have expired 
+      on the LDAP-Server.
+    * Fix pipe-mismatch for NETDFS in cli_dfs.c.
+    * Add examples/misc/adssearch.pl.
+    * BUG 2343: Build fixes.
+    * Support get_user_info_7 in SAMR server RPC.
+    * Fix server_role in the samr_query_dom_info calls. 
+    
+    
+o   Steve French <sfrench@us.ibm.com>
+    * Ignore users mount parm in mount.cifs.
+
+
+o   SATOH Fumiyasu <fumiya@samba.gr.jp>
+    * BUG 1549: Don't truncate service names in smbstatus.
+    
+
+o   S Murthy Kambhampaty <smk_va@yahoo.com>
+    * Add idmap_rid module to Fedora and RedHat spec files.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix a memory leaks in privileges code and passdb backends.
+    * Fixes for samr_lookup_sids() client call.
+    * Optimize _samr_query_groupmem with LDAP backend for large 
+      domains.
+    * Support SIDs as %s replacements in the afs username map 
+      parameter.
+    * Add 'log nt token command' parameter. If set, %s is replaced 
+      with the user sid, and %t takes all the group sids.
+    * Do not use the "Local Unix Group"-default description for 
+      all kinds of group-mappings. 
+    * Fix uninitialized variable in Linux nss_winbind library.
+    * Move 'net afskey' into a subcommand of its own, 'net afs key'.
+    * Implement 'net afs impersonate'.
+    
+
+o   Herb Lewis <herb@samba.org>
+    * Fix build problem when HAVE_POSIX_ACL is not defined.
+    
+    
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes (BUGS BUG 2132, 2134, 2289, 2327, 2340, 2341, 
+       2342)
+    
+        
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fixes for server schannel implementation when 'restrict 
+      anonymous = 1' is set in smb.conf.
+    * Fix bug in server side lookupsids reply that crashed lsass.exe 
+      on Windows clients.
+    * Fix 'net rpc trustdom establish'.
+    * BUG 2062: Turn off broadcast for all 390 NICs.
+
+
+o   Stefan Metzmacher <metze@samba.org>    
+    * Fix memleaks in the nttrans code.
+
+
+o   Mike Nix <mnix@wanm.com.au>
+    * Add SMBsplopen and SMBsplclose client calls.
+    
+
+o   James Peach <jpeach@sgi.com>
+    * Fixes in string handling code.
+    
+
+o   Tim Potter <tpot@samba.org>
+    * Fix up example pdb modules after prototype change for 
+      setsampwent.
+    * BUG 2058: Fix for shared object creation in examples.
+    * BUG 2315: Fix segv in LSA privileges server code.
+    * Build fixes for python wrapper libraries.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * BUG 2044: Fix segv in profiles tool.
+    * Fix bogus error messages when enumerating user group 
+      membership via 'net rpc'.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Debian packaging fixes.
+      
+      
+o   Doug VanLeuven <roamdad-at-sonic.net>
+    * AIX compile fixes.
+    
+
+o   Shlomi Yaakobovich" <Shlomi@exanet.com>
+    * Detect infinite loops when traversing tdbs.
+    
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
 		   ==============================
                    Release Notes for Samba 3.0.11
                              Feb 5, 2005
@@ -487,8 +703,6 @@ o   Shiro Yamada <shiro@miraclelinux.com>
     * BUG 2190: Force SWAT to display parameters in unix charset and 
       not UTF-8.
 
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
