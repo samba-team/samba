@@ -52,7 +52,7 @@
  */
 
 #ifndef MAX_OPEN_FILES
-#define MAX_OPEN_FILES 4096
+#define MAX_OPEN_FILES 10000
 #endif
  
 /* the max number of simultanous connections to the server by all clients */
