@@ -646,9 +646,8 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 		return False;
 	}
-		
-	/* This now does the 'generic' mapping in pdb_unix */
-	/* 'guest' is also handled there */
+	
+	/* see if the passdb can help us with the name of the user */
 	if (pdb_getsampwsid(sam_account, sid)) {
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
