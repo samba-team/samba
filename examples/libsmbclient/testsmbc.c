@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 	      ((struct smbc_dirent *)dirp)->comment);
 
       dirp += dsize;
-      (char *)dirc -= dsize;
+      dirc -= dsize;
 
     }
 
