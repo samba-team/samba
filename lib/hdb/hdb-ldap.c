@@ -133,7 +133,7 @@ LDAP__hex2bytes(const char *hex_in, unsigned char *buffer, size_t len)
 
     p = hex_in;
     for (i = 0; i < len; i++)
-	buffer[i] = pos(p[i * 2]) | pos(p[(i * 2) + 1]) << 4;
+	buffer[i] = pos(p[i * 2]) << 4 | pos(p[(i * 2) + 1]);
     return 0;
 }
 
@@ -148,8 +148,8 @@ LDAP__bytes2hex(const char *buffer, size_t buf_len, char **out)
 	return ENOMEM;
     
     for (i = 0; i < buf_len; i++) {
-	p[i * 2] = hexchar[(unsigned char)buffer[i] & 0xf];
-	p[i * 2 + 1] = hexchar[((unsigned char)buffer[i] >> 4) & 0xf];
+	p[i * 2] = hexchar[((unsigned char)buffer[i] >> 4) & 0xf];
+	p[i * 2 + 1] = hexchar[(unsigned char)buffer[i] & 0xf];
     }
     p[i * 2] = '\0';
     *out = p;
