@@ -177,6 +177,7 @@ off_t	byte_count;
 #define CMASK 027
 #endif
 int	defumask = CMASK;		/* default umask value */
+int	guest_umask = 0777;	/* Paranoia for anonymous users */
 char	tmpline[10240];
 char	hostname[MaxHostNameLen];
 char	remotehost[MaxHostNameLen];
@@ -305,7 +306,7 @@ main(int argc, char **argv)
 	else
 	    port = htons(21);
 
-	while ((ch = getopt(argc, argv, "a:dilp:t:T:u:v")) != EOF) {
+	while ((ch = getopt(argc, argv, "a:dg:ilp:t:T:u:v")) != EOF) {
 		switch (ch) {
 		case 'a':
 		    auth_level = parse_auth_level(optarg);
@@ -317,6 +318,17 @@ main(int argc, char **argv)
 		case 'i':
 		    not_inetd = 1;
 		    break;
+		case 'g':
+		    {
+			long val = 0;
+
+			val = strtol(optarg, &optarg, 8);
+			if (*optarg != '\0' || val < 0)
+			    warnx("bad value for -g");
+			else
+			    guest_umask = val;
+			break;
+		    }
 		case 'l':
 		    logging++;	/* > 1 == extra logging */
 		    break;
@@ -560,7 +572,7 @@ user(char *name)
 		reply(530, "User %s access denied.", name);
 	    else if ((pw = sgetpwnam("ftp")) != NULL) {
 		guest = 1;
-		defumask = 0777; /* paranoia for incoming directories */
+		defumask = guest_umask;	/* paranoia for incoming */
 		askpasswd = 1;
 		reply(331, "Guest login ok, type your name as password.");
 	    } else
