@@ -481,11 +481,11 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 	LSA_TRANS_NAME_ENUM *names = NULL;
 	uint32 mapped_count = 0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
 	if (!ref || !names)
 		return NT_STATUS_NO_MEMORY;
@@ -509,11 +509,11 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*MAX_LOOKUP_SIDS);
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
 	if (!ref || !rids)
 		return NT_STATUS_NO_MEMORY;
