@@ -916,6 +916,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		BOOL result = set_delete_on_close_internal(fsp, delete_on_close);
 
 		if (!result) {
+			/* Remember to delete the mode we just added. */
+			del_share_mode(fsp, NULL);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);

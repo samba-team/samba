@@ -411,7 +411,7 @@ static int map_create_disposition( uint32 create_disposition)
 ****************************************************************************/
 
 static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_options,
-							uint32 desired_access, uint32 share_access, uint32 file_attributes)
+							uint32 *desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode = -1;
 
@@ -421,9 +421,9 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
    * Convert GENERIC bits to specific bits.
    */
 
-  se_map_generic(&desired_access, &file_generic_mapping);
+  se_map_generic(desired_access, &file_generic_mapping);
 
-  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
+  switch( *desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
   case FILE_READ_DATA:
     smb_open_mode = DOS_OPEN_RDONLY;
     break;
@@ -455,15 +455,15 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 
   if (smb_open_mode == -1) {
 
-	if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
+	if(*desired_access == WRITE_DAC_ACCESS || *desired_access == READ_CONTROL_ACCESS)
 		*pstat_open_only = True;
 
-    if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+    if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
                               FILE_EXECUTE|FILE_READ_ATTRIBUTES|
                               FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
                               FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
       smb_open_mode = DOS_OPEN_RDONLY;
-	} else if(desired_access == 0) {
+	} else if(*desired_access == 0) {
 
 		/* 
 		 * JRA - NT seems to sometimes send desired_access as zero. play it safe
@@ -475,7 +475,7 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 
 	} else {
       DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
-             (unsigned long)desired_access, fname));
+             (unsigned long)*desired_access, fname));
       return -1;
     }
   }
@@ -498,14 +498,13 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
    * is the only practical way. JRA.
    */
 
-  if(desired_access & DELETE_ACCESS) {
+  if(*desired_access & DELETE_ACCESS) {
     smb_open_mode |= DELETE_ACCESS_REQUESTED;
     DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
   }
 
   if (create_options & FILE_DELETE_ON_CLOSE) {
-    /* Implicit delete access requested... */
-    smb_open_mode |= DELETE_ACCESS_REQUESTED;
+    /* Implicit delete access *NOT* requested... */
 	smb_open_mode |= DELETE_ON_CLOSE_FLAG;
     DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
   }
@@ -534,7 +533,7 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
     smb_open_mode |= FILE_SYNC_OPENMODE;
 
   DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
-to open_mode 0x%x\n", (unsigned long)desired_access, (unsigned long)share_access,
+to open_mode 0x%x\n", (unsigned long)*desired_access, (unsigned long)share_access,
                     (unsigned long)file_attributes, smb_open_mode ));
  
   return smb_open_mode;
@@ -819,7 +818,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	if((smb_open_mode = map_share_mode(&stat_open_only, fname, create_options, desired_access, 
+	if((smb_open_mode = map_share_mode(&stat_open_only, fname, create_options, &desired_access, 
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
@@ -1246,7 +1245,7 @@ static int call_nt_transact_create(connection_struct *conn,
    * and the share access.
    */
 
-  if((smb_open_mode = map_share_mode( &stat_open_only, fname, create_options, desired_access,
+  if((smb_open_mode = map_share_mode( &stat_open_only, fname, create_options, &desired_access,
                                       share_access, file_attributes)) == -1)
     return(ERROR(ERRDOS,ERRbadaccess));
 
