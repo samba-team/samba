@@ -382,12 +382,9 @@ static void commit_parameters(int snum)
 /****************************************************************************
   load the smb.conf file into loadparm.
 ****************************************************************************/
-static void load_config(void)
+static BOOL load_config(void)
 {
-	if (!lp_load(servicesf,False,True,False)) {
-		printf("<b>Can't load %s - using defaults</b><p>\n", 
-		       servicesf);
-	}
+	return lp_load(servicesf,False,True,False);
 }
 
 /****************************************************************************
@@ -909,17 +906,13 @@ static void printers_page(void)
 		}
 	}
 
+	charset_initialise();
+	load_config();
+
 	cgi_setup(SWATDIR, !demo_mode);
 
 	print_header();
 	
-	charset_initialise();
-
-	/* if this binary is setuid then run completely as root */
-	setuid(0);
-
-	load_config();
-
 	cgi_load_variables(NULL);
 
 	show_main_buttons();

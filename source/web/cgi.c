@@ -46,6 +46,7 @@ static char *baseurl;
 static char *pathinfo;
 static char *C_user;
 static BOOL inetd_server;
+static BOOL got_request;
 
 static void unescape(char *buf)
 {
@@ -253,7 +254,21 @@ tell a browser about a fatal error in the http processing
   ***************************************************************************/
 static void cgi_setup_error(char *err, char *header, char *info)
 {
-	printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n", err, header, err, err, info);
+	if (!got_request) {
+		/* damn browsers don't like getting cut off before they give a request */
+		char line[1024];
+		while (fgets(line, sizeof(line)-1, stdin)) {
+			if (strncasecmp(line,"GET ", 4)==0 || 
+			    strncasecmp(line,"POST ", 5)==0 ||
+			    strncasecmp(line,"PUT ", 4)==0) {
+				break;
+			}
+		}
+	}
+
+	printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n\r\n", err, header, err, err, info);
+	fclose(stdin);
+	fclose(stdout);
 	exit(0);
 }
 
@@ -492,6 +507,11 @@ void cgi_setup(char *rootdir, int auth_required)
 
 	inetd_server = True;
 
+	if (!check_access(1, lp_hostsallow(-1), lp_hostsdeny(-1))) {
+		cgi_setup_error("400 Server Error", "",
+				"Samba is configured to deny access from this client\n<br>Check your \"hosts allow\" and \"hosts deny\" options in smb.conf ");
+	}
+
 #if CGI_LOGGING
 	f = sys_fopen("/tmp/cgi.log", "a");
 	if (f) fprintf(f,"\n[Date: %s   %s (%s)]\n", 
@@ -507,11 +527,14 @@ void cgi_setup(char *rootdir, int auth_required)
 #endif
 		if (line[0] == '\r' || line[0] == '\n') break;
 		if (strncasecmp(line,"GET ", 4)==0) {
+			got_request = True;
 			url = strdup(&line[4]);
 		} else if (strncasecmp(line,"POST ", 5)==0) {
+			got_request = True;
 			request_post = 1;
 			url = strdup(&line[5]);
 		} else if (strncasecmp(line,"PUT ", 4)==0) {
+			got_request = True;
 			cgi_setup_error("400 Bad Request", "",
 					"This server does not accept PUT requests");
 		} else if (strncasecmp(line,"Authorization: ", 15)==0) {
