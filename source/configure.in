@@ -3222,12 +3222,15 @@ AC_MSG_CHECKING(whether to build winbind)
 
 HAVE_WINBIND=yes
 
+WINBIND_NSS=libnss_winbind
+
 case "$host_os" in
 	*linux*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
 	*irix*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_irix.o"
+		WINBIND_NSS="libns_winbind"
 		;;
 	*solaris*)
 		# Solaris winbind client is implemented as a wrapper around
@@ -3248,6 +3251,7 @@ case "$host_os" in
 		;;
 esac
 
+AC_SUBST(WINBIND_NSS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
