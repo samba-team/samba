@@ -2385,7 +2385,15 @@ BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
 				const char* station, const char* user_name, 
 				uint32 level,
 				void ***ctr, JOB_INFO_FN(fn));
-BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* station, const char* user_name );
+BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, 
+		const char* station, const char* user_name );
+BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level, 
+		const char* station, const char* user_name, 
+		PRINTER_INFO_CTR ctr);
+BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
+		const char *environment, const uint32 level, 
+		const char* station, const char* user_name, 
+		PRINTER_DRIVER_CTR ctr);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
@@ -3058,6 +3066,8 @@ uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *arg
 uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
@@ -3182,6 +3192,8 @@ void display_job_info_1_ctr(FILE *out_hnd, enum action_type action,
 void display_job_info_ctr(FILE *out_hnd, enum action_type action, 
 				uint32 level, uint32 count,
 				void *const *const ctr);
+void display_printer_driver_ctr(FILE *out_hnd, enum action_type action, uint32 level,
+				uint32 count, PRINTER_DRIVER_CTR ctr);
 
 /*The following definitions come from  rpcclient/display_srv.c  */
 

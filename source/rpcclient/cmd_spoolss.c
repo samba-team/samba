@@ -307,3 +307,91 @@ uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *ar
 	report(out_hnd, "FAILED\n");
 	return NT_STATUS_UNSUCCESSFUL;
 }
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
+{
+	PRINTER_INFO_CTR ctr;
+	fstring srv_name;
+	fstring station;
+	char *printer_name;
+	uint32 level;
+	
+	if (argc < 2) {
+		report(out_hnd, "spoolgetprinter <printer name>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	printer_name = argv[1];
+
+	fstrcpy(station, "\\\\");
+	fstrcat(station, info->myhostname);
+	strupper(station);
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!strnequal("\\\\", printer_name, 2))
+	{
+		fstrcat(srv_name, "\\");
+		fstrcat(srv_name, printer_name);
+		printer_name = srv_name;
+	}
+
+	level=2;
+
+	if (msrpc_spoolss_getprinter(printer_name, level, station, "Administrator", ctr))
+		DEBUG(5,("cmd_spoolss_getprinter: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[])
+{
+	PRINTER_DRIVER_CTR ctr;
+	fstring srv_name;
+	fstring station;
+	char *printer_name;
+	fstring environment;
+	uint32 level;
+	
+	if (argc < 2) {
+		report(out_hnd, "spoolgetprinterdriver <printer name>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	printer_name = argv[1];
+
+	fstrcpy(station, "\\\\");
+	fstrcat(station, info->myhostname);
+	strupper(station);
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!strnequal("\\\\", printer_name, 2))
+	{
+		fstrcat(srv_name, "\\");
+		fstrcat(srv_name, printer_name);
+		printer_name = srv_name;
+	}
+
+	fstrcpy(environment, "Windows NT x86");
+	level=3;
+
+	if (msrpc_spoolss_getprinterdriver(printer_name, environment, level, station, "Administrator", ctr))
+		DEBUG(5,("cmd_spoolss_getprinterdriver: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+
+	return NT_STATUS_NOPROBLEMO;
+}

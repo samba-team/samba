@@ -23,6 +23,58 @@
 #include "includes.h"
 
 /****************************************************************************
+printer info level 0 display function
+****************************************************************************/
+static void display_print_info_0(FILE *out_hnd, PRINTER_INFO_0 *i1)
+{
+	fstring name;
+	fstring server;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->printername.buffer, sizeof(name)-1);
+	unistr_to_ascii(server, i1->servername.buffer, sizeof(server)-1);
+
+	report(out_hnd, "\tprintername:[%s]\n", name);
+	report(out_hnd, "\tservername:[%s]\n", server);
+	report(out_hnd, "\tcjobs:[%x]\n", i1->cjobs);
+	report(out_hnd, "\ttotal_jobs:[%x]\n", i1->total_jobs);
+	
+	report(out_hnd, "\t:date: [%d]-[%d]-[%d] (%d)\n", i1->year, i1->month, i1->day, i1->dayofweek);
+	report(out_hnd, "\t:time: [%d]-[%d]-[%d]-[%d]\n", i1->hour, i1->minute, i1->second, i1->milliseconds);
+	
+	report(out_hnd, "\tglobal_counter:[%x]\n", i1->global_counter);
+	report(out_hnd, "\ttotal_pages:[%x]\n", i1->total_pages);
+	
+	report(out_hnd, "\tmajorversion:[%x]\n", i1->major_version);
+	report(out_hnd, "\tbuildversion:[%x]\n", i1->build_version);
+	
+	report(out_hnd, "\tunknown7:[%x]\n", i1->unknown7);
+	report(out_hnd, "\tunknown8:[%x]\n", i1->unknown8);
+	report(out_hnd, "\tunknown9:[%x]\n", i1->unknown9);
+	report(out_hnd, "\tsession_counter:[%x]\n", i1->session_counter);
+	report(out_hnd, "\tunknown11:[%x]\n", i1->unknown11);
+	report(out_hnd, "\tprinter_errors:[%x]\n", i1->printer_errors);
+	report(out_hnd, "\tunknown13:[%x]\n", i1->unknown13);
+	report(out_hnd, "\tunknown14:[%x]\n", i1->unknown14);
+	report(out_hnd, "\tunknown15:[%x]\n", i1->unknown15);
+	report(out_hnd, "\tunknown16:[%x]\n", i1->unknown16);
+	report(out_hnd, "\tchange_id:[%x]\n", i1->change_id);
+	report(out_hnd, "\tunknown18:[%x]\n", i1->unknown18);
+	report(out_hnd, "\tstatus:[%x]\n", i1->status);
+	report(out_hnd, "\tunknown20:[%x]\n", i1->unknown20);
+	report(out_hnd, "\tc_setprinter:[%x]\n", i1->c_setprinter);
+	report(out_hnd, "\tunknown22:[%x]\n", i1->unknown22);
+	report(out_hnd, "\tunknown23:[%x]\n", i1->unknown23);
+	report(out_hnd, "\tunknown24:[%x]\n", i1->unknown24);
+	report(out_hnd, "\tunknown25:[%x]\n", i1->unknown25);
+	report(out_hnd, "\tunknown26:[%x]\n", i1->unknown26);
+	report(out_hnd, "\tunknown27:[%x]\n", i1->unknown27);
+	report(out_hnd, "\tunknown28:[%x]\n", i1->unknown28);
+	report(out_hnd, "\tunknown29:[%x]\n", i1->unknown29);
+}
+
+/****************************************************************************
 printer info level 1 display function
 ****************************************************************************/
 static void display_print_info_1(FILE *out_hnd, PRINTER_INFO_1 *i1)
@@ -97,6 +149,31 @@ static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i1)
 }
 
 /****************************************************************************
+connection info level 0 container display function
+****************************************************************************/
+static void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_INFO_CTR ctr)
+{
+	int i;
+	PRINTER_INFO_0 *in;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer Info Level 0:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i = 0; i < count; i++) {
+				in=ctr.printers_0;
+				display_print_info_0(out_hnd, &(in[i]) );
+			}
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
 connection info level 1 container display function
 ****************************************************************************/
 static void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_INFO_CTR ctr)
@@ -153,6 +230,9 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 lev
 				uint32 count, PRINTER_INFO_CTR ctr)
 {
 	switch (level) {
+		case 0:
+			display_printer_info_0_ctr(out_hnd, action, count, ctr);
+			break;
 		case 1:
 			display_printer_info_1_ctr(out_hnd, action, count, ctr);
 			break;
@@ -179,19 +259,19 @@ void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 idx
 	{
 		case ACTION_HEADER:
 			report(out_hnd, "Printer enum data:\n");
-			report(out_hnd, "\tindex\valuelen\tvalue\trvaluelen");
+			report(out_hnd, "index\tvaluelen\tvalue\t\trvaluelen");
 			report(out_hnd, "\ttype\tdatalen\tdata\trdatalen\n");
 			break;
 		case ACTION_ENUMERATE:
-			report(out_hnd, "\t%d", idx);
-			report(out_hnd, "\t%d", valuelen);
+			report(out_hnd, "[%d]", idx);
+			report(out_hnd, "\t[%d]", valuelen);
 			unistr_to_ascii(buffer, value, sizeof(buffer)-1);
-			report(out_hnd, "\t%s", buffer);
-			report(out_hnd, "\t%d", rvaluelen);
-			report(out_hnd, "\t%d", type);
-			report(out_hnd, "\t%d", datalen);
-			report(out_hnd, "\t%s", data);
-			report(out_hnd, "\t%d\n", rdatalen);
+			report(out_hnd, "\t[%s]", buffer);
+			report(out_hnd, "\t[%d]", rvaluelen);
+			report(out_hnd, "\t\t[%d]", type);
+			report(out_hnd, "\t[%d]", datalen);
+/*			report(out_hnd, "\t[%s]", data);*/
+			report(out_hnd, "\t[%d]\n", rdatalen);
 			break;
 		case ACTION_FOOTER:
 			report(out_hnd, "\n");
@@ -434,5 +514,193 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 			report(out_hnd, "display_job_info_ctr: Unknown Info Level\n");
 			break;
 		}
+	}
+}
+
+/****************************************************************************
+printer info level 0 display function
+****************************************************************************/
+static void display_print_driver_1(FILE *out_hnd, DRIVER_INFO_1 *i1)
+{
+	fstring name;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+
+	report(out_hnd, "\tname:[%s]\n", name);
+}
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_print_driver_2(FILE *out_hnd, DRIVER_INFO_2 *i1)
+{
+	fstring name;
+	fstring architecture;
+	fstring driverpath;
+	fstring datafile;
+	fstring configfile;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
+	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
+	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
+	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+
+	report(out_hnd, "\tversion:[%x]\n", i1->version);
+	report(out_hnd, "\tname:[%s]\n", name);
+	report(out_hnd, "\tarchitecture:[%s]\n", architecture);
+	report(out_hnd, "\tdriverpath:[%s]\n", driverpath);
+	report(out_hnd, "\tdatafile:[%s]\n", datafile);
+	report(out_hnd, "\tconfigfile:[%s]\n", configfile);
+}
+
+/****************************************************************************
+printer info level 2 display function
+****************************************************************************/
+static void display_print_driver_3(FILE *out_hnd, DRIVER_INFO_3 *i1)
+{
+	fstring name;
+	fstring architecture;
+	fstring driverpath;
+	fstring datafile;
+	fstring configfile;
+	fstring helpfile;
+	fstring dependentfiles;
+	fstring monitorname;
+	fstring defaultdatatype;
+	
+	int longueur=0;
+	
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
+	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
+	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
+	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+	unistr_to_ascii(helpfile, i1->helpfile.buffer, sizeof(helpfile)-1);
+	
+	unistr_to_ascii(monitorname, i1->monitorname.buffer, sizeof(monitorname)-1);
+	unistr_to_ascii(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype)-1);
+
+	report(out_hnd, "\tversion:[%x]\n", i1->version);
+	report(out_hnd, "\tname:[%s]\n",name );
+	report(out_hnd, "\tarchitecture:[%s]\n", architecture);
+	report(out_hnd, "\tdriverpath:[%s]\n", driverpath);
+	report(out_hnd, "\tdatafile:[%s]\n", datafile);
+	report(out_hnd, "\tconfigfile:[%s]\n", configfile);
+	report(out_hnd, "\thelpfile:[%s]\n\n", helpfile);
+
+	do {
+		unistr_to_ascii(dependentfiles, i1->dependentfiles+longueur, sizeof(dependentfiles)-1);
+		longueur+=strlen(dependentfiles)+1;
+		
+		report(out_hnd, "\tdependentfiles:[%s]\n", dependentfiles);
+	} while (dependentfiles[0]!='\0');
+	
+	report(out_hnd, "\n\tmonitorname:[%s]\n", monitorname);
+	report(out_hnd, "\tdefaultdatatype:[%s]\n", defaultdatatype);
+	
+}
+
+/****************************************************************************
+connection info level 1 container display function
+****************************************************************************/
+static void display_printer_driver_1_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_DRIVER_CTR ctr)
+{
+	int i;
+	DRIVER_INFO_1 *in;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer driver Level 1:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i = 0; i < count; i++) {
+				in=ctr.info1;
+				display_print_driver_1(out_hnd, &(in[i]) );
+			}
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
+connection info level 2 container display function
+****************************************************************************/
+static void display_printer_driver_2_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_DRIVER_CTR ctr)
+{
+	int i;
+	DRIVER_INFO_2 *in;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer driver Level 2:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i = 0; i < count; i++) {
+				in=ctr.info2;
+				display_print_driver_2(out_hnd, &(in[i]) );
+			}
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
+connection info level 3 container display function
+****************************************************************************/
+static void display_printer_driver_3_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_DRIVER_CTR ctr)
+{
+	int i;
+	DRIVER_INFO_3 *in;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer driver Level 3:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i = 0; i < count; i++) {
+				in=ctr.info3;
+				display_print_driver_3(out_hnd, &(in[i]) );
+			}
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_printer_driver_ctr(FILE *out_hnd, enum action_type action, uint32 level,
+				uint32 count, PRINTER_DRIVER_CTR ctr)
+{
+	switch (level) {
+		case 1:
+			display_printer_driver_1_ctr(out_hnd, action, count, ctr);
+			break;
+		case 2:
+			display_printer_driver_2_ctr(out_hnd, action, count, ctr);
+			break;
+		case 3:
+			display_printer_driver_3_ctr(out_hnd, action, count, ctr);
+			break;
+		default:
+			report(out_hnd, "display_printer_driver_ctr: Unknown Info Level\n");
+			break;
 	}
 }

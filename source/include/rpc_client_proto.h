@@ -386,6 +386,13 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
 			uint32 *valuelen, uint16 *value, uint32 *rvaluelen, 
 			uint32 *type, 
 			uint32 *datalen, uint8 *data, uint32 *rdatalen);
+uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level, 
+			     NEW_BUFFER *buffer, uint32 offered,
+			     uint32 *needed);
+uint32 spoolss_getprinterdriver(const POLICY_HND *hnd, 
+				const char *environment, uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered,
+				uint32 *needed);
 BOOL spoolss_open_printer_ex(  const char *printername,
 			 const char *datatype, uint32 access_required,
 			 const char *station,  const char *username,

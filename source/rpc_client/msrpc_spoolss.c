@@ -46,6 +46,22 @@ static void init_buffer(NEW_BUFFER *buffer, uint32 size)
 	buffer->prs.offset=0;
 }
 
+static void decode_printer_info_0(NEW_BUFFER *buffer, uint32 returned, PRINTER_INFO_0 **info)
+{
+	uint32 i;
+	PRINTER_INFO_0	*inf;
+
+	inf=(PRINTER_INFO_0 *)malloc(returned*sizeof(PRINTER_INFO_0));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_info_0("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
+
 static void decode_printer_info_1(NEW_BUFFER *buffer, uint32 returned, PRINTER_INFO_1 **info)
 {
 	uint32 i;
@@ -77,6 +93,55 @@ static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned, PRINTER_I
 	
 	*info=inf;
 }
+
+static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_1 **info)
+{
+	uint32 i;
+	DRIVER_INFO_1 *inf;
+
+	inf=(DRIVER_INFO_1 *)malloc(returned*sizeof(DRIVER_INFO_1));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
+
+static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_2 **info)
+{
+	uint32 i;
+	DRIVER_INFO_2 *inf;
+
+	inf=(DRIVER_INFO_2 *)malloc(returned*sizeof(DRIVER_INFO_2));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
+
+static void decode_printer_driver_3(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_3 **info)
+{
+	uint32 i;
+	DRIVER_INFO_3 *inf;
+
+	inf=(DRIVER_INFO_3 *)malloc(returned*sizeof(DRIVER_INFO_3));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
+
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
@@ -222,7 +287,8 @@ BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* station, const char* user_name )
+BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, 
+		const char* station, const char* user_name )
 {
 	POLICY_HND hnd;
 	uint32 status;
@@ -267,3 +333,115 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* stati
 	return True;
 }
 
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level, 
+		const char* station, const char* user_name, 
+		PRINTER_INFO_CTR ctr)
+{
+	POLICY_HND hnd;
+	uint32 status=0;
+	NEW_BUFFER buffer;
+	uint32 needed;
+
+	DEBUG(4,("spoolenum_getprinter - printer: %s\n", printer_name));
+
+	if(!spoolss_open_printer_ex( printer_name, "", PRINTER_ALL_ACCESS, station, user_name, &hnd))
+		return False;
+
+	init_buffer(&buffer, 0);
+
+	status = spoolss_getprinter(&hnd, level, &buffer, 0, &needed);
+
+	if (status==ERROR_INSUFFICIENT_BUFFER) {
+		init_buffer(&buffer, needed);
+		status = spoolss_getprinter(&hnd, level, &buffer, needed, &needed);
+	}
+
+	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+
+	if (status!=NT_STATUS_NO_PROBLEMO)
+		return False;
+		
+	switch (level) {
+	case 0:
+		decode_printer_info_0(&buffer, 1, &(ctr.printers_0));
+		break;
+	case 1:
+		decode_printer_info_1(&buffer, 1, &(ctr.printers_1));
+		break;
+	case 2:
+		decode_printer_info_2(&buffer, 1, &(ctr.printers_2));
+		break;
+	}		
+
+	display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, 1, ctr);
+	display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, 1, ctr);
+	display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, 1, ctr);
+
+	if (status!=NT_STATUS_NO_PROBLEMO) {
+		if (!spoolss_closeprinter(&hnd))
+			return False;
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
+		const char *environment, const uint32 level, 
+		const char* station, const char* user_name, 
+		PRINTER_DRIVER_CTR ctr)
+{
+	POLICY_HND hnd;
+	uint32 status=0;
+	NEW_BUFFER buffer;
+	uint32 needed;
+
+	DEBUG(4,("spoolenum_getprinterdriver - printer: %s\n", printer_name));
+
+	if(!spoolss_open_printer_ex( printer_name, "", PRINTER_ALL_ACCESS, station, user_name, &hnd))
+		return False;
+
+	init_buffer(&buffer, 0);
+
+	status = spoolss_getprinterdriver(&hnd, environment, level, &buffer, 0, &needed);
+
+	if (status==ERROR_INSUFFICIENT_BUFFER) {
+		init_buffer(&buffer, needed);
+		status = spoolss_getprinterdriver(&hnd, environment, level, &buffer, needed, &needed);
+	}
+
+	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+
+	if (status!=NT_STATUS_NO_PROBLEMO)
+		return False;
+		
+	switch (level) {
+	case 1:
+		decode_printer_driver_1(&buffer, 1, &(ctr.info1));
+		break;
+	case 2:
+		decode_printer_driver_2(&buffer, 1, &(ctr.info2));
+		break;
+	case 3:
+		decode_printer_driver_3(&buffer, 1, &(ctr.info3));
+		break;
+	}		
+
+	display_printer_driver_ctr(out_hnd, ACTION_HEADER   , level, 1, ctr);
+	display_printer_driver_ctr(out_hnd, ACTION_ENUMERATE, level, 1, ctr);
+	display_printer_driver_ctr(out_hnd, ACTION_FOOTER   , level, 1, ctr);
+
+	if (status!=NT_STATUS_NO_PROBLEMO) {
+		if (!spoolss_closeprinter(&hnd))
+			return False;
+		return False;
+	}
+
+	return True;
+}

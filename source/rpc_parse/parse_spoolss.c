@@ -2507,7 +2507,8 @@ uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info)
  * init a structure.
  ********************************************************************/
 BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
-			       const POLICY_HND *hnd, fstring architecture,
+			       const POLICY_HND *hnd,
+			       const fstring architecture,
 			       uint32 level, uint32 clientmajor, uint32 clientminor,
 			       NEW_BUFFER *buffer, uint32 offered)
 {      

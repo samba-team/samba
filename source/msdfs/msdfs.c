@@ -61,7 +61,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 */
 
   trim_string(temp,"\\","\\");
-  DEBUG(10,("temp in parse_dfs_path: .%s. after trimming \'s\n",temp));
+  DEBUG(10,("temp in parse_dfs_path: .%s. after trimming \\'s\n",temp));
 
   /* now tokenize */
   /* parse out hostname */
