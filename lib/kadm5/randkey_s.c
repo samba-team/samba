@@ -40,6 +40,11 @@
 
 RCSID("$Id$");
 
+/*
+ * Set the keys of `princ' to random values, returning the random keys
+ * in `new_keys', `n_keys'.
+ */
+
 kadm5_ret_t
 kadm5_s_randkey_principal(void *server_handle, 
 			  krb5_principal princ,
@@ -49,7 +54,6 @@ kadm5_s_randkey_principal(void *server_handle,
     kadm5_server_context *context = server_handle;
     hdb_entry ent;
     kadm5_ret_t ret;
-    krb5_keyblock *keys = NULL;
 
     ent.principal = princ;
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
@@ -58,46 +62,17 @@ kadm5_s_randkey_principal(void *server_handle,
     ret = context->db->fetch(context->context, context->db, 0, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
-    {
-	/* XXX this should be merged with set_keys */
-	int i;
 
-	keys = malloc(ent.keys.len * sizeof(*keys));
-	if (keys == NULL) {
-	    ret = ENOMEM;
-	    goto out2;
-	}
-	for(i = 0; i < ent.keys.len; i++){
-	    Key *key = &ent.keys.val[i];
-
-	    free(key->mkvno);
-	    key->mkvno = NULL;
-	    if(key->salt) {
-		/* zap any salt */
-		free_Salt(key->salt);
-		key->salt = NULL;
-	    }
-	    krb5_free_keyblock_contents(context->context, &key->key);
-	    ret = krb5_generate_random_keyblock(context->context,
-						key->key.keytype,
-						&key->key);
-
-	    if(ret)
-		break;
-	    ret = krb5_copy_keyblock_contents(context->context, 
-					      &key->key, &keys[i]);
-	    if(ret)
-		break;
-
-	    *n_keys = i + 1;
-	}
-	ent.kvno++;
-    }
-    if(ret)
+    ret = _kadm5_set_keys_randomly (context,
+				    &ent,
+				    new_keys,
+				    n_keys);
+    if (ret)
 	goto out2;
+
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
-	goto out2;
+	goto out3;
 
     hdb_seal_keys(context->db, &ent);
 
@@ -108,19 +83,19 @@ kadm5_s_randkey_principal(void *server_handle,
 
     ret = context->db->store(context->context, context->db, 
 			     HDB_F_REPLACE, &ent);
+out3:
+    if (ret) {
+	int i;
+
+	for (i = 0; i < *n_keys; ++i)
+	    krb5_free_keyblock_contents (context->context, &(*new_keys)[i]);
+	free (*new_keys);
+	*new_keys = NULL;
+	*n_keys = 0;
+    }
 out2:
     hdb_free_entry(context->context, &ent);
 out:
     context->db->close(context->context, context->db);
-    if(ret && keys != NULL) {
-	int i;
-	for(i = 0; i < *n_keys; i++)
-	    krb5_free_keyblock_contents(context->context, &keys[i]);
-	free(keys);
-	*n_keys = 0;
-    }
-    if (ret == 0)
-	*new_keys = keys;
     return _kadm5_error_code(ret);
 }
-
