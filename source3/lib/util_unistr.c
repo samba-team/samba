@@ -40,9 +40,12 @@ static uint8 *valid_table;
 static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
 
 
-/*******************************************************************
-load the case handling tables
-********************************************************************/
+/**
+ * Load or generate the case handling tables.
+ *
+ * The case tables are defined in UCS2 and don't depend on any
+ * configured parameters, so they never need to be reloaded.
+ **/
 void load_case_tables(void)
 {
 	static int initialised;
@@ -91,14 +94,9 @@ void load_case_tables(void)
   see if a ucs2 character can be mapped correctly to a dos character
   and mapped back to the same character in ucs2
 */
-static int check_dos_char(smb_ucs2_t c)
+int check_dos_char(smb_ucs2_t c)
 {
-	static int initialized = False;
-
-	if (!initialized) {
-		initialized = True;
-		init_doschar_table();
-	}
+	lazy_initialize_conv();
 	
 	/* Find the right byte, and right bit within the byte; return
 	 * 1 or 0 */
