@@ -433,7 +433,12 @@ Offset Size         Name
 #define SMB_QUERY_FILE_UNIX_LINK       0x201
 #define SMB_SET_FILE_UNIX_LINK         0x201
 #define SMB_SET_FILE_UNIX_HLINK        0x203
+/* SMB_QUERY_POSIX_ACL 0x204 see below */
+#define SMB_QUERY_XATTR                0x205 /* need for non-user XATTRs */
+#define SMB_QUERY_ATTR_FLAGS           0x206 /* chflags, chattr */
+#define SMB_SET_ATTR_FLAGS             0x206 
 
+/* Transact 2 Find First levels */
 #define SMB_FIND_FILE_UNIX             0x202
 
 /*
@@ -456,6 +461,26 @@ Offset Size         Name
 
 #define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
 #define CIFS_UNIX_POSIX_ACLS_CAP            0x2
+
+#define SMB_QUERY_POSIX_FS_INFO     0x201
+
+/* Returns FILE_SYSTEM_POSIX_INFO struct as follows
+      (NB   For undefined values return -1 in that field) 
+   le32 OptimalTransferSize;    bsize on some os, iosize on other os, This 
+				is a hint to the client about best size. Server
+				can return -1 if no preference, ie if SMB 
+				negotiated size is adequate for optimal
+				read/write performance
+   le32 BlockSize; (often 512 bytes) NB: BlockSize * TotalBlocks = disk space
+   le64 TotalBlocks;  redundant with other infolevels but easy to ret here
+   le64 BlocksAvail;  although redundant, easy to return
+   le64 UserBlocksAvail;      bavail 
+   le64 TotalFileNodes;
+   le64 FreeFileNodes;
+   le64 FileSysIdentifier;    fsid 
+   (NB statfs field Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call) 
+   (NB statfs field flags can come from FILE_SYSTEM_DEVICE_INFO call)  
+*/
 
 /* ... more as we think of them :-). */
 
