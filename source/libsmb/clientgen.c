@@ -1869,8 +1869,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	else
 	{
 		/* attempt encrypted session */
-		uchar nt_sess_pwd[24];
-		uchar lm_sess_pwd[24];
+		char nt_sess_pwd[24];
+		char lm_sess_pwd[24];
 
 		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
 		pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
