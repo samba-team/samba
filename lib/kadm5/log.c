@@ -516,14 +516,22 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     if (ret)
 	return ret;
     if (mask & KADM5_PRINC_EXPIRE_TIME) {
-	if (ent.valid_end == NULL)
-	    ent.valid_end = malloc(sizeof(*ent.valid_end));
-	*ent.valid_end = *log_ent.valid_end;
+	if (log_ent.valid_end == NULL) {
+	    ent.valid_end = NULL;
+	} else {
+	    if (ent.valid_end == NULL)
+		ent.valid_end = malloc(sizeof(*ent.valid_end));
+	    *ent.valid_end = *log_ent.valid_end;
+	}
     }
     if (mask & KADM5_PW_EXPIRATION) {
-	if (ent.pw_end == NULL)
-	    ent.pw_end = malloc(sizeof(*ent.pw_end));
-	*ent.pw_end = *log_ent.pw_end;
+	if (log.ent_pw_end == NULL) {
+	    ent.pw_end = NULL;
+	} else {
+	    if (ent.pw_end == NULL)
+		ent.pw_end = malloc(sizeof(*ent.pw_end));
+	    *ent.pw_end = *log_ent.pw_end;
+	}
     }
     if (mask & KADM5_LAST_PWD_CHANGE) {
 	abort ();		/* XXX */
