@@ -218,6 +218,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 	memset(k6_data, 0, sizeof(k6_data));
     }
     
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
 
@@ -238,6 +239,9 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     u_char *p;
     int cmp;
     
+    if (qop_state)
+	*qop_state = 0;
+
     p = token_buffer->value;
     omret = gssapi_krb5_verify_header (&p,
 				       token_buffer->length,
@@ -306,6 +310,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     if (omret)
 	return omret;
 
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
 
@@ -325,6 +330,9 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     krb5_keyblock Klocal;
     krb5_error_code ret;
     int32_t seq_number;
+
+    if (conf_state)
+	*conf_state = 0;
 
     datalen = input_message_buffer->length + 1 /* padding */;
     len = datalen + 30;
@@ -442,6 +450,9 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	memset(&rc4_key, 0, sizeof(rc4_key));
 	memset(k6_data, 0, sizeof(k6_data));
     }
+
+    if (conf_state)
+	*conf_state = conf_req_flag;
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
@@ -610,5 +621,6 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     if (conf_state)
 	*conf_state = conf_flag;
 
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
