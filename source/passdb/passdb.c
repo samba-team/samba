@@ -1167,11 +1167,18 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	GROUP_MAP group;
+	BOOL ret;
 	
 	/* we don't need to disable winbindd since the gid is stored in 
 	   the GROUP_MAP object */
+	   
+	/* done as root since ldap backend requires root to open a connection */
 
-	if ( !pdb_getgrgid( &group, gid ) ) {
+	become_root();
+	ret = pdb_getgrgid( &group, gid );
+	unbecome_root();
+	
+	if ( !ret ) {
 
 		/* fallback to rid mapping if enabled */
 
