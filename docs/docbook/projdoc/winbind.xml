@@ -582,9 +582,9 @@ include the following entries in the [global] section:
      # separate domain and username with '+', like DOMAIN+username
      <ulink url="winbindd.8.html#WINBINDSEPARATOR">winbind separator</ulink> = +
      # use uids from 10000 to 20000 for domain users
-     <ulink url="winbindd.8.html#WINBINDUID">winbind uid</ulink> = 10000-20000
+     <ulink url="winbindd.8.html#WINBINDUID">idmap uid</ulink> = 10000-20000
      # use gids from 10000 to 20000 for domain groups
-     <ulink url="winbindd.8.html#WINBINDGID">winbind gid</ulink> = 10000-20000
+     <ulink url="winbindd.8.html#WINBINDGID">idmap gid</ulink> = 10000-20000
      # allow enumeration of winbind users and groups
      <ulink url="winbindd.8.html#WINBINDENUMUSERS">winbind enum users</ulink> = yes
      <ulink url="winbindd.8.html#WINBINDENUMGROUP">winbind enum groups</ulink> = yes
