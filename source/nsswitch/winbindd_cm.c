@@ -713,10 +713,12 @@ static void dump_conn_list(void)
 
 		/* Display pipe info */
 		
-		asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, con->controller, con->pipe_name);
-		
-		DEBUG(0, ("%s\n", msg));
-		SAFE_FREE(msg);
+		if (asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, con->controller, con->pipe_name) < 0) {
+			DEBUG(0, ("Error: not enough memory!\n"));
+		} else {
+			DEBUG(0, ("%s\n", msg));
+			SAFE_FREE(msg);
+		}
 	}
 }
 

@@ -345,22 +345,25 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
                 /* Check DOMAIN\username first to catch winbind users, then
                    just the username for local users. */
 
-                asprintf(&dom_user, "%s%s%s", user_info->domain.str,
+                if (asprintf(&dom_user, "%s%s%s", user_info->domain.str,
                          lp_winbind_separator(),
-                         user_info->internal_username.str);
+                         user_info->internal_username.str) > 0) {
 
-                if (!(pass = Get_Pwnam(dom_user)))
-                        pass = Get_Pwnam(user_info->internal_username.str);
+			if (!(pass = Get_Pwnam(dom_user)))
+				pass = Get_Pwnam(user_info->internal_username.str);
 
-                SAFE_FREE(dom_user);
+			SAFE_FREE(dom_user);
 
-		if (pass) {
-			make_server_info_pw(server_info, pass);
-			if (!server_info) {
-				status = NT_STATUS_NO_MEMORY;
+			if (pass) {
+				make_server_info_pw(server_info, pass);
+				if (!server_info) {
+					status = NT_STATUS_NO_MEMORY;
+				}
+			} else {
+				status = NT_STATUS_NO_SUCH_USER;
 			}
 		} else {
-			status = NT_STATUS_NO_SUCH_USER;
+			status = NT_STATUS_NO_MEMORY;
 		}
 	}
 
