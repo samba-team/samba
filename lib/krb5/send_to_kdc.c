@@ -76,6 +76,8 @@ krb5_sendto_kdc (krb5_context context,
 	       if (colon)
 		    *colon = '\0';
 	       hostent = gethostbyname (p);
+	       if(hostent == NULL)
+		   continue;
 	       if (colon)
 		    *colon++ = ':';
 	       while ((addr = *hostent->h_addr_list++)) {
