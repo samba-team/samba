@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,12 +53,6 @@ RCSID("$Id$");
 #include "cms_asn1.h"
 #include "pkinit_asn1.h"
 
-#define KRB5_AP_ERR_NO_CERT_OR_KEY EINVAL
-#define KRB5_AP_ERR_NO_VALID_CA EINVAL
-#define KRB5_AP_ERR_CERT EINVAL
-#define KRB5_AP_ERR_PRIVATE_KEY EINVAL
-#define KRB5_AP_ERR_OPENSSL EINVAL
-
 #define OPENSSL_ASN1_MALLOC_ENCODE(T, B, BL, S, R)			\
 {									\
   unsigned char *p;							\
@@ -75,7 +69,7 @@ RCSID("$Id$");
         (BL) = i2d_##T((S), &p);					\
         if ((BL) <= 0) {						\
            free((B));                                          		\
-           (R) = KRB5_AP_ERR_OPENSSL;					\
+           (R) = ASN1_OVERRUN;					\
         }								\
     }									\
   }									\
@@ -167,7 +161,8 @@ _krb5_pk_create_sign(krb5_context context,
 {
     const heim_oid *digest_oid;
     SignerInfo *signer_info;
-    X509 *user_cert = NULL;
+    X509 *user_cert;
+    heim_big_integer *serial;
     krb5_error_code ret;
     krb5_data buf;
     SignedData sd;
@@ -179,11 +174,15 @@ _krb5_pk_create_sign(krb5_context context,
 
     memset(&sd, 0, sizeof(sd));
 
-    if (id == NULL || id->cert == NULL || id->private_key == NULL)
-	return EINVAL /* KRB5_AP_ERR_NO_CERT_OR_KEY */;
+    if (id == NULL)
+	return EINVAL; /* XXX */
+    if (id->cert == NULL)
+	return HEIM_PKINIT_NO_CERTIFICATE;
+    if (id->private_key)
+	return HEIM_PKINIT_NO_PRIVATE_KEY;
 
     if (sk_X509_num(id->cert) == 0)
-	return EINVAL /* KRB5_AP_ERR_NO_CERT_OR_KEY */;
+	return HEIM_PKINIT_NO_CERTIFICATE;
 
     sd.version = 3;
 
@@ -209,7 +208,7 @@ _krb5_pk_create_sign(krb5_context context,
 
     ALLOC_SEQ(&sd.signerInfos, 1);
     if (sd.signerInfos.val == NULL) {
-	krb5_clear_error_string(context);
+	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }
@@ -217,6 +216,11 @@ _krb5_pk_create_sign(krb5_context context,
     signer_info = &sd.signerInfos.val[0];
 
     user_cert = sk_X509_value(id->cert, 0);
+    if (user_cert == NULL) {
+	krb5_set_error_string(context, "pkinit: no user certificate");
+	ret = HEIM_PKINIT_NO_CERTIFICATE;
+	goto out;
+    }
 
     signer_info->version = 1;
 
@@ -227,14 +231,25 @@ _krb5_pk_create_sign(krb5_context context,
 			       buf.length,
 			       issuer_name,
 			       ret);
-    if (ret)
-	return ret;
+    if (ret) {
+	krb5_set_error_string(context, "pkinit: failed encoding name");
+	goto out;
+    }
     signer_info->sid.element = choice_SignerIdentifier_issuerAndSerialNumber;
     signer_info->sid.u.issuerAndSerialNumber.issuer.data = buf.data;
     signer_info->sid.u.issuerAndSerialNumber.issuer.length = buf.length;
 
-    signer_info->sid.u.issuerAndSerialNumber.serialNumber = 
-	ASN1_INTEGER_get(X509_get_serialNumber(user_cert));
+    serial = &signer_info->sid.u.issuerAndSerialNumber.serialNumber;
+    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER,
+			       serial->data,
+			       serial->length,
+			       X509_get_serialNumber(user_cert),
+			       ret);
+    if (ret) {
+	krb5_set_error_string(context, "pkinit: failed encoding "
+			      "serial number");
+	goto out;
+    }
 
     if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
 	digest_oid = &heim_sha1_oid;
@@ -360,7 +375,7 @@ _krb5_pk_create_sign(krb5_context context,
 }
 
 static int
-BN_to_any(krb5_context context, BIGNUM *bn, heim_any *any)
+BN_to_integer(krb5_context context, BIGNUM *bn, heim_big_integer *integer)
 {
     ASN1_INTEGER *i;
     int ret;
@@ -369,9 +384,9 @@ BN_to_any(krb5_context context, BIGNUM *bn, heim_any *any)
     if (i == NULL) {
 	krb5_set_error_string(context, "BN_to_ASN1_INTEGER() failed (%s)",
 			      ERR_error_string(ERR_get_error(), NULL));
-	return KRB5_AP_ERR_OPENSSL;
+	return ENOMEM;
     }
-    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER, any->data, any->length,
+    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER, integer->data, integer->length,
 			       i, ret);
     ASN1_INTEGER_free(i);
     return ret;
@@ -431,17 +446,17 @@ build_auth_pack(krb5_context context,
 	
 	memset(&dp, 0, sizeof(dp));
 
-	ret = BN_to_any(context, dh->p, &dp.p);
+	ret = BN_to_integer(context, dh->p, &dp.p);
 	if (ret) {
 	    free_DomainParameters(&dp);
 	    return ret;
 	}
-	ret = BN_to_any(context, dh->g, &dp.g);
+	ret = BN_to_integer(context, dh->g, &dp.g);
 	if (ret) {
 	    free_DomainParameters(&dp);
 	    return ret;
 	}
-	ret = BN_to_any(context, dh->q, &dp.q);
+	ret = BN_to_integer(context, dh->q, &dp.q);
 	if (ret) {
 	    free_DomainParameters(&dp);
 	    return ret;
@@ -471,7 +486,7 @@ build_auth_pack(krb5_context context,
 	if (dh_pub_key == NULL) {
 	    krb5_set_error_string(context, "BN_to_ASN1_INTEGER() failed (%s)",
 				  ERR_error_string(ERR_get_error(), NULL));
-	    return KRB5_AP_ERR_OPENSSL;
+	    return ENOMEM;
 	}
 	OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER, buf.data, buf.length,
 				   dh_pub_key, ret);
@@ -688,12 +703,17 @@ pk_peer_compare(krb5_context context,
 {
     switch (peer1->element) {
     case choice_SignerIdentifier_issuerAndSerialNumber: {
+	ASN1_INTEGER *i;
+	const heim_big_integer *serial;
 	X509_NAME *name;
 	unsigned char *p;
 	size_t len;
 
-	if (peer1->u.issuerAndSerialNumber.serialNumber != 
-	    ASN1_INTEGER_get(X509_get_serialNumber(peer2)))
+	i = X509_get_serialNumber(peer2);
+	serial = &peer1->u.issuerAndSerialNumber.serialNumber;
+
+	if (i->length != serial->length ||
+	    memcmp(i->data, serial->data, i->length) != 0)
 	    return FALSE;
 
 	p = peer1->u.issuerAndSerialNumber.issuer.data;
@@ -739,7 +759,7 @@ pk_decrypt_key(krb5_context context,
 	free(buf);
 	krb5_set_error_string(context, "Can't decrypt key: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
-	return KRB5_AP_ERR_OPENSSL;
+	return ENOMEM;
     }
 
     key->keytype = 0;
@@ -785,14 +805,14 @@ pk_verify_chain_standard(krb5_context context,
 
     cert_store = X509_STORE_new();
     if (cert_store == NULL) {
-	ret = KRB5_AP_ERR_OPENSSL;
+	ret = ENOMEM;
 	krb5_set_error_string(context, "Can't create X509 store: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
     }
 
     store_ctx = X509_STORE_CTX_new();
     if (store_ctx == NULL) {
-	ret = KRB5_AP_ERR_OPENSSL;
+	ret = ENOMEM;
 	krb5_set_error_string(context, "Can't create X509 store ctx: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
 	goto end;
@@ -1596,15 +1616,15 @@ _krb5_pk_load_openssl_id(krb5_context context,
 
     if (cert_file == NULL) {
 	krb5_set_error_string(context, "certificate file file missing");
-	return KRB5_AP_ERR_NO_CERT_OR_KEY;
+	return HEIM_PKINIT_NO_CERTIFICATE;
     }
     if (key_file == NULL) {
 	krb5_set_error_string(context, "key file missing");
-	return KRB5_AP_ERR_NO_CERT_OR_KEY;
+	return HEIM_PKINIT_NO_PRIVATE_KEY;
     }
     if (ca_dir == NULL) {
 	krb5_set_error_string(context, "No root ca directory given\n");
-	return KRB5_AP_ERR_NO_VALID_CA;
+	return HEIM_PKINIT_NO_VALID_CA;
     }
 
     f = fopen(cert_file, "r");
@@ -1625,7 +1645,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 		break;
 	    }
 	    krb5_set_error_string(context, "Can't read certificate");
-	    ret = KRB5_AP_ERR_CERT;
+	    ret = HEIM_PKINIT_CERTIFICATE_INVALID;
 	    fclose(f);
 	    goto out;
 	}
@@ -1634,7 +1654,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
     fclose(f);
     if (sk_X509_num(certificate) == 0) {
 	krb5_set_error_string(context, "No certificate found");
-	ret = KRB5_AP_ERR_CERT;
+	ret = HEIM_PKINIT_NO_CERTIFICATE;
 	goto out;
     }
     /* load private key */
@@ -1650,12 +1670,12 @@ _krb5_pk_load_openssl_id(krb5_context context,
     fclose(f);
     if (private_key == NULL) {
 	krb5_set_error_string(context, "Can't read private key");
-	ret = KRB5_AP_ERR_PRIVATE_KEY;
+	ret = HEIM_PKINIT_PRIVATE_KEY_INVALID;
 	goto out;
     }
     ret = X509_check_private_key(sk_X509_value(certificate, 0), private_key);
     if (ret != 1) {
-	ret = KRB5_AP_ERR_PRIVATE_KEY;
+	ret = HEIM_PKINIT_PRIVATE_KEY_INVALID;
 	krb5_set_error_string(context,
 			      "The private key doesn't match the public key "
 			      "certificate");
@@ -1711,7 +1731,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 
     if (sk_X509_num(trusted_certs) == 0) {
 	krb5_set_error_string(context, "No CA certificate(s) found");
-	ret = KRB5_AP_ERR_NO_VALID_CA;
+	ret = HEIM_PKINIT_NO_VALID_CA;
 	goto out;
     }
 
