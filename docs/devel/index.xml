@@ -1,29 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 <!ENTITY % globalentities SYSTEM '../entities/global.entities'> %globalentities;
-<!ENTITY NetBIOS SYSTEM "NetBIOS.xml">
-<!ENTITY Architecture SYSTEM "architecture.xml">
-<!ENTITY debug SYSTEM "debug.xml">
-<!ENTITY internals SYSTEM "internals.xml">
-<!ENTITY parsing SYSTEM "parsing.xml">
-<!ENTITY unix-smb SYSTEM "unix-smb.xml">
-<!ENTITY CodingSuggestions SYSTEM "CodingSuggestions.xml">
-<!ENTITY Tracing SYSTEM "Tracing.xml">
-<!ENTITY cifsntdomain SYSTEM "cifsntdomain.xml">
-<!ENTITY printing SYSTEM "printing.xml">
-<!ENTITY wins SYSTEM "wins.xml">
-<!ENTITY sam SYSTEM "sam.xml">
-<!ENTITY encryption SYSTEM "encryption.xml">
-<!ENTITY rpc-plugin SYSTEM "rpc_plugin.xml">
-<!ENTITY modules SYSTEM "modules.xml">
-<!ENTITY packagers SYSTEM "packagers.xml">
-<!ENTITY contributing SYSTEM "contributing.xml">
-<!ENTITY vfs SYSTEM "vfs.xml">
-<!ENTITY windows-deb SYSTEM "windows-debug.xml">
-<!ENTITY registry SYSTEM "registry.xml">
 ]>
 
-<book id="Samba-Developers-Guide">
+<book id="Samba-Developers-Guide"
+	xmlns:xi="http://www.w3.org/2003/XInclude">
 
 <title>SAMBA Developers Guide</title>
 
@@ -61,7 +42,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 <preface>
 	<title>Attributions</title>
 
-	&attributions-dev;
+	<xi:include href="attributions.xml"/>
 </preface>
 	
 
@@ -72,46 +53,45 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 <part>
 	<title>The protocol</title>
 
-	&NetBIOS;
-	&unix-smb;
-	&cifsntdomain;
+	<xi:include href="NetBIOS.xml"/>
+	<xi:include href="unix-smb.xml"/>
+	<xi:include href="cifsntdomain.xml"/>
 
 </part>
 
 <part>
 	<title>Samba Basics</title>
 
-&Architecture;
-&debug;
-&internals;
-&CodingSuggestions;
-&contributing;
-&modules;
+	<xi:include href="architecture.xml"/>
+	<xi:include href="debug.xml"/>
+	<xi:include href="internals.xml"/>
+	<xi:include href="CodingSuggestions.xml"/>
+	<xi:include href="contributing.xml"/>
+	<xi:include href="modules.xml"/>
 </part>
 
 <part>
 	<title>Samba Subsystems</title>
 	
-	&sam;
-	&rpc-plugin;
-	&vfs;
-	&registry;
-	&parsing;
-	&wins;
-	&encryption;
+	<xi:include href="rpc_plugin.xml"/>
+	<xi:include href="vfs.xml"/>
+	<xi:include href="registry.xml"/>
+	<xi:include href="parsing.xml"/>
+	<xi:include href="wins.xml"/>
+	<xi:include href="encryption.xml"/>
 
 </part>
 
 <part>
 	<title>Debugging and tracing</title>
 
-&Tracing;
-&windows-deb;
-&printing;
+	<xi:include href="Tracing.xml"/>
+	<xi:include href="windows-debug.xml"/>
+	<xi:include href="printing.xml"/>
 </part>
 
 <part><title>Appendices</title>
-	&packagers;
+	<xi:include href="packagers.xml"/>
 </part>
 
 </book>
