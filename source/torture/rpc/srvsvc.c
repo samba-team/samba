@@ -541,6 +541,44 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 }
 
 /**************************/
+/* srvsvc_NetSrv          */
+/**************************/
+static BOOL test_NetSrvGetInfo(struct dcerpc_pipe *p, 
+				 TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct srvsvc_NetSrvGetInfo r;
+	struct srvsvc_NetSrvInfo503 i503;
+	uint32_t levels[] = {100, 101, 102, 502, 503};
+	int i;
+	BOOL ret = True;
+	uint32_t resume_handle;
+
+	ZERO_STRUCT(i503);
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		ZERO_STRUCT(r.out);
+		resume_handle = 0;
+		r.in.level = levels[i];
+		printf("testing NetSrvGetInfo level %u\n", r.in.level);
+		status = dcerpc_srvsvc_NetSrvGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			continue;
+		}
+	}
+
+	return ret;
+}
+
+/**************************/
 /* srvsvc_NetDisk         */
 /**************************/
 static BOOL test_NetDiskEnum(struct dcerpc_pipe *p, 
@@ -655,6 +693,10 @@ BOOL torture_rpc_srvsvc(int dummy)
 	}
 
 	if (!test_NetShareEnumAll(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_NetSrvGetInfo(p, mem_ctx)) {
 		ret = False;
 	}
 
