@@ -769,7 +769,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			 pw ? "succeeded" : "failed" ));
 			 
 		if ( !pw )
-			slprintf(name, "unix_user.%u", (unsigned int)uid);	
+			fstr_sprintf(name, "unix_user.%u", (unsigned int)uid);	
 		else 
 			fstrcpy( name, pw->pw_name );
 			
@@ -792,7 +792,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			 gr ? "succeeded" : "failed" ));
 			
 		if( !gr )
-			slprintf(name, sizeof(fstring)-1, "unix_group.%u", (unsigned int)gid);
+			fstr_sprintf(name, "unix_group.%u", (unsigned int)gid);
 		else
 			fstrcpy( name, gr->gr_name);
 			
