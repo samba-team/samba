@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -471,6 +471,7 @@ get_cred_kdc(krb5_context context,
 				   &krbtgt->addresses,
 				   nonce,
 				   TRUE,
+				   flags.b.request_anonymous,
 				   decrypt_tkt_with_subkey,
 				   subkey);
 	krb5_free_kdc_rep(context, &rep);
