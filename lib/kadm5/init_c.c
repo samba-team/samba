@@ -115,7 +115,7 @@ get_kadm_ticket(krb5_context context,
     if(ret) 
 	return ret;
     ret = krb5_get_credentials(context, 0, id, &in, &out);
-    if(out != NULL)
+    if(ret == 0)
 	krb5_free_creds(context, out);
     krb5_free_principal(context, in.server);
     return ret;
@@ -170,10 +170,9 @@ get_new_cache(krb5_context context,
 	abort();
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
-	ret = KADM5_BAD_PASSWORD;
-	break;
+	return KADM5_BAD_PASSWORD;
     default:
-	break;
+	return ret;
     }
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
     if(ret)
@@ -258,7 +257,8 @@ get_cred_cache(krb5_context context,
     /* get creds via AS request */
     if(id)
 	krb5_cc_close(context, id);
-    krb5_free_principal(context, default_client);
+    if (client != default_client)
+	krb5_free_principal(context, default_client);
 
     ret = get_new_cache(context, client, password, prompter, keytab, 
 			server_name, ret_cache);
@@ -283,9 +283,11 @@ kadm5_c_init_with_context(krb5_context context,
     kadm5_client_context *ctx;
     krb5_principal server;
     krb5_ccache cc;
+    krb5_error *error;
     int s;
     struct sockaddr_in sin;
     struct hostent *hp;
+
     ret = _kadm5_c_init_context(&ctx, realm_params, context);
     if(ret)
 	return ret;
@@ -324,9 +326,9 @@ kadm5_c_init_with_context(krb5_context context,
     krb5_free_principal(context, server);
     if(ccache == NULL)
 	krb5_cc_close(context, cc);
-    if(ret){
+    if(ret) {
 	close(s);
-	return KADM5_FAILURE;
+	return ret;
     }
     ctx->sock = s;
     *server_handle = ctx;
