@@ -1,3 +1,8 @@
+2003-04-16  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kafs.3: Change .Fd #include <header.h> to .In header.h
+	from Thomas Klausner <wiz@netbsd.org>
+
 2003-04-14  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: (libkafs_la_LDFLAGS): update version

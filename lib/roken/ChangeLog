@@ -1,3 +1,8 @@
+2003-04-16  Love  <lha@stacken.kth.se>
+
+	* getarg.3: Change .Fd #include <header.h> to .In header.h
+	from Thomas Klausner <wiz@netbsd.org>
+
 2003-04-15  Love  <lha@stacken.kth.se>
 
 	* socket.c (socket_set_tos): if setsockopt failed with EINVAL
