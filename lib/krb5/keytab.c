@@ -336,7 +336,7 @@ krb5_kt_add_entry(krb5_context context,
     int fd;
     krb5_storage *sp;
 
-    fd = open (id->filename, O_APPEND);
+    fd = open (id->filename, O_WRONLY | O_APPEND);
     if (fd < 0) {
 	fd = open (id->filename, O_WRONLY | O_CREAT, 0600);
 	if (fd < 0)
