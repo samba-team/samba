@@ -2379,19 +2379,16 @@ get a default printer info 2 struct
 ****************************************************************************/
 static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharename)
 {
-	extern pstring global_myname;
-	extern fstring local_machine;
 	int snum;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	char *sub_name = *local_machine ? local_machine : global_myname;
 
 	ZERO_STRUCT(info);
 
 	snum = lp_servicenumber(sharename);
 
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", sub_name);
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
 	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\%s", 
-		 sub_name, sharename);
+		 get_called_name(), sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
@@ -2467,10 +2464,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 ****************************************************************************/
 static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharename)
 {
-	extern pstring global_myname;
-	extern fstring local_machine;
 	pstring key;
-	char *sub_name = *local_machine ? local_machine : global_myname;
 	NT_PRINTER_INFO_LEVEL_2 info;
 	int 		len = 0;
 	TDB_DATA kbuf, dbuf;
@@ -2515,8 +2509,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	info.attributes |= (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_RAW_ONLY);
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", sub_name);
-	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", sub_name,
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
+	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
 			info.printername);
 	fstrcpy(info.printername, printername);
 
