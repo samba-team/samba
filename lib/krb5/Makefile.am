@@ -91,6 +91,7 @@ libkrb5_la_SOURCES =				\
 	get_port.c				\
 	init_creds.c				\
 	init_creds_pw.c				\
+	kcm.c					\
 	keyblock.c				\
 	keytab.c				\
 	keytab_any.c				\
