@@ -1,3 +1,8 @@
+2002-06-07  Jacques Vidrine <n@nectar.com>
+
+	* ank.c: do not attempt to free uninitialized pointer when
+	kadm5_randkey_principal fails.
+
 2002-06-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* util.c: remove unused variable; reported by Hans Insulander
