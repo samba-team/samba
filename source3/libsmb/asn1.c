@@ -254,15 +254,12 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	asn1_read_uint8(data, &b);
 	if (b & 0x80) {
 		int n = b & 0x7f;
-		if (n > 2) {
-			data->has_error = True;
-			return False;
-		}
 		asn1_read_uint8(data, &b);
 		nesting->taglen = b;
-		if (n == 2) {
+		while (n > 1) {
 			asn1_read_uint8(data, &b);
 			nesting->taglen = (nesting->taglen << 8) | b;
+			n--;
 		}
 	} else {
 		nesting->taglen = b;
