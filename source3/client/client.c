@@ -2486,7 +2486,6 @@ static int do_message_op(void)
 			break;
 		case 'c':
 			cmdstr = optarg;
-			got_pass = True;
 			break;
 		case 'b':
 			io_bufsize = MAX(1, atoi(optarg));
