@@ -46,6 +46,7 @@ static int process_tok(fstring tok);
 static void cmd_help(struct client_info *info, int argc, char *argv[]);
 static void cmd_quit(struct client_info *info, int argc, char *argv[]);
 static void cmd_set (struct client_info *info, int argc, char *argv[]);
+static void cmd_net (struct client_info *info, int argc, char *argv[]);
 
 static struct user_credentials usr;
 
@@ -489,10 +490,19 @@ struct command_set commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 
+	/* maintenance */
+
 	{
 		"rpcclient",
 		cmd_set,
 		"run rpcclient inside rpcclient (change options etc.)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	{
+		"net",
+		cmd_net,
+		"net use and net view",
 		{COMPL_NONE, COMPL_NONE}
 	},
 	/*
@@ -724,7 +734,7 @@ static void wait_keyboard(struct cli_state *cli)
 
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
-		sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
+		sys_select(MAX(cli->fd,fileno(stdin))+1,NULL, &fds,&timeout);
       
 		if (FD_ISSET(fileno(stdin),&fds))
 			return;
@@ -1338,6 +1348,63 @@ static char *complete_cmd_null(char *text, int state)
 }
 
 #endif /* HAVE_LIBREADLINE */
+
+static void cmd_net(struct client_info *info, int argc, char *argv[])
+{
+	char opt;
+	BOOL net_use = False;
+	BOOL net_use_del = False;
+	BOOL net_use_add = False;
+
+	while ((opt = getopt(argc, argv, "udS:U:W:")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'u':
+			{
+				net_use = True;
+				break;
+			}
+
+			default:
+			{
+				report(out_hnd, "net -S \\server [-U user%%pass] [-W domain] [-d]\n");
+				report(out_hnd, "net -u\n");
+				break;
+			}
+		}
+	}
+
+	if (net_use)
+	{
+		int i;
+		uint32 num_uses;
+		struct use_info **use;
+		cli_net_use_enum(&num_uses, &use);
+
+		if (num_uses == 0)
+		{
+			report(out_hnd, "No connections\n");
+		}
+		else
+		{
+			report(out_hnd, "Connections:\n");
+
+			for (i = 0; i < num_uses; i++)
+			{
+				if (use[i] != NULL && use[i]->connected)
+				{
+					report(out_hnd, "Server:\t%s\t",
+					                 use[i]->srv_name);
+					report(out_hnd, "User:\t%s\t",
+					                 use[i]->user_name);
+					report(out_hnd, "Domain:\t%s\n",
+					                 use[i]->domain);
+				}
+			}
+		}
+	}
+}
 
 static void set_user_password(struct user_credentials *u,
 				BOOL got_pass, char *password)

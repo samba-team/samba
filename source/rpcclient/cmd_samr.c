@@ -1862,7 +1862,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 		if (True)
 		{
-			SAM_USER_INFO_24 *p = malloc(sizeof(SAM_USER_INFO_24));
+			SAM_USER_INFO_24 *p = (SAM_USER_INFO_24*)malloc(sizeof(SAM_USER_INFO_24));
 			make_sam_user_info24(p, pwbuf);
 
 			usr = p;
@@ -1871,7 +1871,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		
 		if (False)
 		{
-			SAM_USER_INFO_23 *p = malloc(sizeof(SAM_USER_INFO_23));
+			SAM_USER_INFO_23 *p = (SAM_USER_INFO_23*)malloc(sizeof(SAM_USER_INFO_23));
 			/* send user info query, level 0x15 */
 			make_sam_user_info23W(p,
 				&usr21.logon_time, 
