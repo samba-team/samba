@@ -48,11 +48,13 @@
 
 /* assume headers already included */
 
-#if defined(__NetBSD__) && __NetBSD_Version__ >= 106120000 && defined(ENABLE_PTHREAD_SUPPORT)
+#if defined(__NetBSD__) && __NetBSD_Version__ >= 106120000 && __NetBSD_Version__< 299001200 && defined(ENABLE_PTHREAD_SUPPORT)
 
 /* 
  * NetBSD have a thread lib that we can use that part of libc that
  * works regardless if application are linked to pthreads or not.
+ * NetBSD newer then 2.99.11 just use pthread.h, and the same thing
+ * will happen.
  */
 #include <threadlib.h>
 
@@ -79,7 +81,7 @@
 #define HEIMDAL_getspecific(k) thr_getspecific(k)
 #define HEIMDAL_key_delete(k) thr_keydelete(k)
 
-#elif defined(ENABLE_PTHREAD_SUPPORT) && !defined(__NetBSD__)
+#elif defined(ENABLE_PTHREAD_SUPPORT) && (!defined(__NetBSD__) || __NetBSD_Version__ >= 299001200)
 
 #include <pthread.h>
 
