@@ -1,8 +1,6 @@
 <chapter id="gencache">
 <chapterinfo>
-	<author>
-		<firstname>Rafal</firstname><surname>Szczesniak</surname>
-	</author>
+	&author.mimir;
 	<pubdate>April 2003</pubdate>
 </chapterinfo>
 

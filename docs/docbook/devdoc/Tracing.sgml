@@ -1,11 +1,6 @@
 <chapter id="tracing">
 <chapterinfo>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-		</affiliation>
-	</author>
+	&author.tridge;
 </chapterinfo>
 
 <title>Tracing samba system calls</title>

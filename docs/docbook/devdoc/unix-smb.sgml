@@ -1,8 +1,6 @@
 <chapter id="unix-smb">
 <chapterinfo>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-	</author>
+	&author.tridge;
 	<pubdate>April 1995</pubdate>
 </chapterinfo>
 
