@@ -1,3 +1,12 @@
+2000-07-27  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (decode_packet): be totally consistent with the
+	prototype of des_cbc_cksum
+	* kadmind.c: use sa_size instead of sa_len, some systems define
+	this to emulate anonymous unions
+	* kadm_conn.c: use sa_size instead of sa_len, some systems define
+	this to emulate anonymous unions
+
 2000-07-24  Assar Westerlund  <assar@sics.se>
 
 	* kadmin.c (commands): add quit
