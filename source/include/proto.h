@@ -617,6 +617,8 @@ void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *
 void split_at_last_component_w(smb_ucs2_t *path, smb_ucs2_t *front, smb_ucs2_t sep, smb_ucs2_t *back);
 smb_ucs2_t *octal_string_w(int i);
 smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
+smb_ucs2_t doscp2ucs2(int w);
+int ucs2doscp(smb_ucs2_t w);
 
 /*The following definitions come from  lib/wins_srv.c  */
 
@@ -3868,6 +3870,7 @@ int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
+int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 int vfs_unlink(connection_struct *conn, char *fname);
 int vfs_chmod(connection_struct *conn, char *fname,mode_t mode);
 int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid);

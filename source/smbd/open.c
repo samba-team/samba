@@ -897,8 +897,7 @@ files_struct *open_directory(connection_struct *conn,
 				return NULL;
 			}
 
-			if(conn->vfs_ops.mkdir(dos_to_unix(fname, False), 
-                                               unix_mode(conn,aDIR, fname)) < 0) {
+			if(vfs_mkdir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
 				DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				file_free(fsp);
