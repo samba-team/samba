@@ -227,13 +227,14 @@ doit(int sock, int tcpp)
      if (krb_net_read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
 	  return 1;
      if (passivep) {
-	  char tmp[16];
-
 	  display_num = get_xsockets (&localx, tcpp ? &tcpx : NULL);
 	  if (display_num < 0)
 	       return 1;
-	  sprintf (tmp, "%u", display_num);
-	  if (krb_net_write (sock, tmp, sizeof(tmp)) != sizeof(tmp))
+	  if (tcpp)
+	       sprintf (display, "localhost:%u", display_num);
+	  else
+	       sprintf (display, ":%u", display_num);
+	  if (krb_net_write (sock, display, display_size) != display_size)
 	       return 1;
 	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
 	  if (krb_net_write (sock, xauthfile, xauthfile_size) !=

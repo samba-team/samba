@@ -43,6 +43,8 @@ RCSID("$Id$");
 char x_socket[MaxPathLen];
 
 u_int32_t display_num;
+char display[MaxPathLen];
+int display_size = sizeof(display);
 char xauthfile[MaxPathLen];
 int xauthfile_size = sizeof(xauthfile);
 u_char cookie[16];

@@ -187,12 +187,12 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 	  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	  return -1;
      }
-     
-     if (krb_net_read (s, tmp, sizeof(tmp)) != sizeof(tmp)) {
-	  fprintf (stderr, "%s: read %s\n", prog, strerror(errno));
+
+     if (krb_net_read (s, display, display_size) != display_size) {
+	  fprintf (stderr, "%s: read: %s\n", prog, strerror(errno));
 	  return -1;
      }
-     sscanf (tmp, "%u", &display_num);
+     
      if (krb_net_read (s, xauthfile, xauthfile_size) != xauthfile_size) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
 		   strerror(errno));

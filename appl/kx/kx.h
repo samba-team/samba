@@ -114,6 +114,8 @@ int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 
 extern char x_socket[];
 extern u_int32_t display_num;
+extern char display[];
+extern int display_size;
 extern char xauthfile[];
 extern int xauthfile_size;
 extern u_char cookie[];
