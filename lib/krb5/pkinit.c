@@ -655,7 +655,7 @@ _krb5_pk_mk_padata(krb5_context context,
     if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
 
-	pa_type = KRB5_PADATA_PK_AS_REQ + 1;
+	pa_type = KRB5_PADATA_PK_AS_REQ_WIN;
 	memset(&winreq, 0, sizeof(winreq));
 
 	ASN1_MALLOC_ENCODE(ContentInfo,
@@ -875,6 +875,8 @@ pk_verify_chain_standard(krb5_context context,
 	*client_cert = X509_dup(cert);
 
  end:
+    if (cert_store)
+	X509_STORE_free(cert_store);
     if (store_ctx)
 	X509_STORE_CTX_free(store_ctx);
     return ret;
