@@ -293,29 +293,83 @@ static void base64_decode(char *s)
 /***************************************************************************
 handle a http authentication line
   ***************************************************************************/
-static int cgi_handle_authorization(char *line)
+static BOOL cgi_handle_authorization(char *line)
 {
-	char *p, *user, *pass;
+	char *p, *user, *user_pass;
+	struct passwd *pass = NULL;
+	int ret = False;
 
 	if (strncasecmp(line,"Basic ", 6)) {
 		cgi_setup_error("401 Bad Authorization", "", 
 				"Only basic authorization is understood");
+		return False;
 	}
 	line += 6;
 	while (line[0] == ' ') line++;
 	base64_decode(line);
 	if (!(p=strchr(line,':'))) {
+		/*
+		 * Always give the same error so a cracker
+		 * cannot tell why we fail.
+		 */
 		cgi_setup_error("401 Bad Authorization", "", 
 				"username/password must be supplied");
+		return False;
 	}
 	*p = 0;
 	user = line;
-	pass = p+1;
+	user_pass = p+1;
 
-	/* Save the users name */
-	C_user = strdup(user);
+	/*
+	 * Try and get the user from the UNIX password file.
+	 */
 
-	return pass_check(user, pass, strlen(pass), NULL, NULL);
+	if(!(pass = Get_Pwnam(user,False))) {
+		/*
+		 * Always give the same error so a cracker
+		 * cannot tell why we fail.
+		 */
+		cgi_setup_error("401 Bad Authorization", "",
+				"username/password must be supplied");
+		return False;
+	}
+
+	/*
+	 * Validate the password they have given.
+	 */
+
+	if((ret = pass_check(user, user_pass, strlen(user_pass), NULL, NULL)) == True) {
+
+		/*
+		 * Password was ok.
+		 */
+
+		if(pass->pw_uid != 0) {
+			/*
+			 * We have not authenticated as root,
+			 * become the user *permanently*.
+			 */
+			if(!become_user_permanently(pass->pw_uid, pass->pw_gid)) {
+				/*
+				 * Always give the same error so a cracker
+				 * cannot tell why we fail.
+				 */
+				cgi_setup_error("401 Bad Authorization", "",
+	                "username/password must be supplied");
+		        return False;
+			}
+
+			/*
+			 * On exit from here we are the authenticated
+			 * user - no way back.
+			 */
+		}
+
+		/* Save the users name */
+		C_user = strdup(user);
+	}
+
+	return ret;
 }
 
 /***************************************************************************
@@ -323,7 +377,7 @@ is this root?
   ***************************************************************************/
 BOOL am_root(void)
 {
-	if ((C_user) && (strcmp(C_user,"root") == 0)) {
+	if (geteuid() == 0) {
 		return( True);
 	} else {
 		return( False);
@@ -393,7 +447,7 @@ run as a true cgi program by a web browser or is itself a mini web server
   ***************************************************************************/
 void cgi_setup(char *rootdir, int auth_required)
 {
-	int authenticated = 0;
+	BOOL authenticated = False;
 	char line[1024];
 	char *url=NULL;
 	char *p;
