@@ -735,7 +735,7 @@ static void do_get(char *rname,char *lname)
 		get_total_time_ms += this_time;
 		get_total_size += nread;
 		
-		DEBUG(2,("(%g kb/s) (average %g kb/s)\n",
+		DEBUG(2,("(%3.1f kb/s) (average %3.1f kb/s)\n",
 			 nread / (1.024*this_time + 1.0e-4),
 			 get_total_size / (1.024*get_total_time_ms)));
 	}
@@ -1053,7 +1053,7 @@ static void do_put(char *rname,char *lname)
 		put_total_time_ms += this_time;
 		put_total_size += nread;
 		
-		DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
+		DEBUG(1,("(%3.1f kb/s) (average %3.1f kb/s)\n",
 			 nread / (1.024*this_time + 1.0e-4),
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
