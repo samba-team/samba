@@ -381,7 +381,7 @@ static void init_mount(void)
 	pstring svc2;
 	struct cli_state *c;
 	char *args[20];
-	int i, retval;
+	int i, status;
 
 	if (realpath(mpoint, mount_point) == NULL) {
 		fprintf(stderr, "Could not resolve mount point %s\n", mpoint);
@@ -440,15 +440,23 @@ static void init_mount(void)
 
 	if (fork() == 0) {
 		if (file_exist(BINDIR "/smbmnt", NULL)) {
-			exit(execv("smbmnt", args));
+			execv(BINDIR "/smbmnt", args);
+			fprintf(stderr,"execv of %s failed. Error was %s.", BINDIR "/smbmnt", strerror(errno));
 		} else {
-			exit(execvp("smbmnt", args));
+			execvp("smbmnt", args);
+			fprintf(stderr,"execvp of smbmnt failed. Error was %s.", strerror(errno) );
 		}
+		exit(1);
 	}
-	retval = -1;
-	waitpid(-1, &retval, 0);
-	if (retval) {
-		fprintf(stderr,"smbmnt failed\n");
+
+	if (waitpid(-1, &status, 0) == -1) {
+		fprintf(stderr,"waitpid failed: Error was %s", strerror(errno) );
+		/* FIXME: do some proper error handling */
+		exit(1);
+	}	
+
+	if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+		fprintf(stderr,"smbmnt failed: %d\n", WEXITSTATUS(status));
 	}
 
 	/* Ok...  This is the rubicon for that mount point...  At any point
