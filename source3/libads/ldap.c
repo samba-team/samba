@@ -608,14 +608,17 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	char *utf8_exp, *utf8_path, **search_attrs = NULL;
 	TALLOC_CTX *ctx;
 
-	if (!(ctx = talloc_init()))
+	if (!(ctx = talloc_init())) {
+		DEBUG(1,("ads_do_search: talloc_init() failed!"));
 		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
 	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
 	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
+		DEBUG(1,("ads_do_search: push_utf8_talloc() failed!"));
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -627,6 +630,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
 		if (!(str_list_copy(&search_attrs, attrs)))
 		{
+			DEBUG(1,("ads_do_search: str_list_copy() failed!"));
 			rc = LDAP_NO_MEMORY;
 			goto done;
 		}
