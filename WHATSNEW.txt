@@ -1,24 +1,62 @@
-              WHATS NEW IN Samba 2.2.0alpha2
+              WHATS NEW IN Samba 2.2.0alpha3
               ==============================
 
-This is the third alpha release of the new 2.2.0 codebase
+This is the fourth alpha release of the new 2.2.0 codebase
 for Samba. This version must not be run in production.
 
 This code will almost certainly have some bugs and is
 intended to help the Samba Team prepare an official 2.2.0
 release.
 
-The documentation in this alpha snapshot is not up to date,
-there are many new parameters since 2.0.7 and some defaults
-have changed. This will be corrected in a later alpha release.
+The documentation in this alpha snapshot has been updated and
+converted from Yodl to DocBook 4.1. There are many new parameters
+since 2.0.7 and some defaults have changed. Most of the changes
+are now documented.
 
-A known problem is this version of Samba will not act as a PDC
-for Win2k clients (although it works as a member server in a
-Win2k hosted domain). This is being actively worked on and
-it is intended this be fixed before 2.2.0 release.
+This version of Samba will act as a PDC for Win2k clients as
+well as for NT4.x clients.
 
-Several significant bugs have been fixed between alpha2
+Several significant bugs have been fixed between alpha3
 and alpha2, these include :
+
+./configure now supports a --with-acl-support that attempts
+to select the correct ACL implementation.
+./confugure now supports a --with-fhs option for the Linux
+file system standard.
+The ACL mapping code has been completely re-written and now
+supports Solaris ACLs and UnixWare ACLs in addition to Linux
+ACLS. IRIX ACL support is currently under development.
+smbmount fixes for Linux only.
+Byte ordering issues with AS/U on HPUX and PC-Netlink on Solaris
+have been fixed. PC-Netlink can now join and authenticate against
+a Samba 2.2 PDC (thanks to the CIFS/9000 Team at HP and Herb Lewis
+at SGI for getting this working).
+Restructuring of all the RPC interface code to allow TALLOC management
+of memory. Preparing for auto-generated RPC code in a future Samba
+release.
+Addition of OS/2 auto printer driver download support from IBM.
+Many scalability improvements in the RPC printing code.
+Merge of the new SAMR code from a TNG snapshot. Many fixes and
+updates since then from Jean-Francois.
+Re-written rpcclient to allow UNIX client upload/download of printer
+drivers.
+Modification to debug system - start to allow "classes" of debug.
+Code from John Reilly @ HP.
+Removed all uses of snprintf (security reasons) - replaced with
+slprintf.
+Password caching code fixed - no more null derefs.
+Prepare to split wildcard handling out for old DOS/Win3.x clients, not
+done yet.
+Changed length of fstring to 256 from 128. Longer filenames handled.
+CUPS integration with new printing backend (patches from Michael Sweet).
+Added ADMIN$ IPC share for AS/U integration.
+Policy handle allocation made per pipename specific.
+ 
+-------------------------------------------------------------
+Previous release notes.
+-------------------------------------------------------------
+Several significant bugs have been fixed between alpha2
+and alpha1, these include :
 
 Inclusion of mapping of NT ACLs to Linux ACLs, using the patch
 found at http://acl.bestbits.at.
