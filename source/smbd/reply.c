@@ -3977,6 +3977,10 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
 
 	close_file(fsp1,False);
+
+	/* Ensure the modtime is set correctly on the destination file. */
+	fsp2->pending_modtime = src_sbuf.st_mtime;
+
 	/*
 	 * As we are opening fsp1 read-only we only expect
 	 * an error on close on fsp2 if we are out of space.
