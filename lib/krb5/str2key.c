@@ -47,7 +47,7 @@ RCSID("$Id$");
 static void
 reverse (unsigned char *s)
 {
-     static unsigned char tbl[] = {
+     static const unsigned char tbl[] = {
 	  0x0,
 	  0x8,
 	  0x4,

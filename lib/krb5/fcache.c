@@ -365,7 +365,7 @@ fcc_set_flags(krb5_context context,
     return 0; /* XXX */
 }
 		    
-krb5_cc_ops krb5_fcc_ops = {
+const krb5_cc_ops krb5_fcc_ops = {
     "FILE",
     fcc_get_name,
     fcc_resolve,
