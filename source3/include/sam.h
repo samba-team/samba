@@ -72,6 +72,7 @@ typedef struct sam_domain_handle {
 		uint32 num_accounts; /* number of accounts in the domain */
 		uint32 num_groups; /* number of global groups */
 		uint32 num_aliases; /* number of local groups */
+		uint32 sam_sequence_number; /* global sequence number */
 	} private;
 } SAM_DOMAIN_HANDLE;
 
