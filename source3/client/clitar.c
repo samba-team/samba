@@ -181,7 +181,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   memset(hb.dummy, 0, sizeof(hb.dummy));
   
   l=strlen(aname);
-  if (l >= NAMSIZ) {
+  if (l >= NAMSIZ - 1) {
 	  /* write a GNU tar style long header */
 	  char *b;
 	  b = (char *)malloc(l+TBLOCK+100);
@@ -189,7 +189,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 		  DEBUG(0,("out of memory\n"));
 		  exit(1);
 	  }
-	  writetarheader(f, "/./@LongLink", l+1, 0, "     0 \0", 'L');
+	  writetarheader(f, "/./@LongLink", l+2, 0, "     0 \0", 'L');
 	  memset(b, 0, l+TBLOCK+100);
 	  fixtarname(b, aname, l);
 	  i = strlen(b)+1;

@@ -2515,6 +2515,8 @@ static int do_message_op(void)
 	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 
 	if (tar_type) {
+		if (cmdstr)
+			process_command_string(cmdstr);
 		return do_tar_op(base_directory);
 	}
 
