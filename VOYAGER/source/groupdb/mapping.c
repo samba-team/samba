@@ -27,6 +27,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define DATABASE_VERSION_V2 2 /* le format. */
 
 #define GROUP_PREFIX "UNIXGROUP/"
+#define NAME_PREFIX "NAMEMAP/"
 
 /* Alias memberships are stored reverse, as memberships. The performance
  * critical operation is to determine the aliases a SID is member of, not
@@ -1539,8 +1540,11 @@ void pdb_get_dom_grp_info(fstring unix_name, struct dom_grp_info *info)
 {
 	GROUP_MAP map;
 	BOOL res;
+	char *ntname;
 
-	fstrcpy(info->name, unix_name);
+	unix_groupname_to_ntname(unix_name, &ntname);
+	fstrcpy(info->name, ntname);
+	SAFE_FREE(ntname);
 	fstrcpy(info->desc, "");
 
 	become_root();
@@ -1548,7 +1552,6 @@ void pdb_get_dom_grp_info(fstring unix_name, struct dom_grp_info *info)
 	unbecome_root();
 
 	if (res && (map.sid_name_use == SID_NAME_DOM_GRP)) {
-		fstrcpy(info->name, map.nt_name);
 		fstrcpy(info->desc, map.comment);
 	}
 }
@@ -1569,4 +1572,204 @@ BOOL pdb_set_dom_grp_info(fstring unix_name, const struct dom_grp_info *info)
 	fstrcpy(map.comment, info->desc);
 
 	return pdb_update_group_mapping_entry(&map);
+}
+
+/* NT to Unix name table.
+ *
+ * The idea is the following: The table is keyed on the lower-case
+ * unix-charset of the nt-name to be able to search case-insensitively. The
+ * values contain the correct-case ntname, the unix name and a BOOL is_user.
+ *
+ * nt_to_unix_name simply looks into the table.
+ *
+ * unix_to_nt_name never fails and auto-generates the appropriate entry. The
+ * unified namespace problem is solved the following way: If we have to create
+ * an entry, look whether an entry for the opposite side already exists. If
+ * so, then append ".user" or ".group". If that happens to also exist try
+ * random stuff.
+ */
+
+BOOL nt_to_unix_name(const char *nt_name, char **unix_name, BOOL *is_user)
+{
+	TDB_DATA kbuf, dbuf;
+	char *lcname;
+	char *key;
+	int ret;
+	fstring tmp_ntname;
+
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return(False);
+	}
+
+	lcname = strdup(nt_name);
+	strlower_m(lcname);
+
+	asprintf(&key, "%s%s", NAME_PREFIX, lcname);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	if (!dbuf.dptr)
+		return False;
+
+	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ffd", &tmp_ntname,
+			 unix_name, is_user);
+
+	SAFE_FREE(lcname);
+	SAFE_FREE(key);
+	SAFE_FREE(dbuf.dptr);
+
+	return (ret > 0);
+}
+
+struct find_unixname_closure {
+	BOOL want_user;
+	const char *unixname;
+	char **ntname;
+	BOOL found;
+};
+
+static BOOL find_name_entry(TDB_CONTEXT *ctx, TDB_DATA key, TDB_DATA dbuf,
+			    void *data)
+{
+	struct find_unixname_closure *closure =
+		(struct find_unixname_closure *)data;
+
+	fstring ntname;
+	fstring unixname;
+	BOOL is_user;
+	int ret;
+
+	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ffd", ntname, unixname,
+			 &is_user);
+
+	if (ret == -1)
+		return True;
+
+	if ((closure->want_user != is_user) &&
+	    (strcmp(closure->unixname, unixname) != 0))
+		return True;
+
+	*(closure->ntname) = strdup(ntname);
+	closure->found = True;
+	return False;
+}
+
+static BOOL set_name_mapping(const char *unixname, const char *ntname,
+			     BOOL is_user, int tdb_flag)
+{
+	TDB_DATA kbuf, dbuf;
+	char *lcname;
+	char *key;
+	pstring buf;
+	int len;
+	BOOL res;
+
+	len = tdb_pack(buf, sizeof(buf), "ffd", ntname, unixname, is_user);
+
+	if (len > sizeof(buf))
+		return False;
+
+	dbuf.dptr = buf;
+	dbuf.dsize = len;
+
+	lcname = strdup(ntname);
+	strlower_m(lcname);
+
+	asprintf(&key, "%s%s", NAME_PREFIX, lcname);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	res = (tdb_store(tdb, kbuf, dbuf, 0) == 0);
+
+	SAFE_FREE(lcname);
+	SAFE_FREE(key);
+	return res;
+}
+
+static void generate_name_mapping(const char *unixname, char **ntname,
+				  BOOL is_user)
+{
+	fstring generated_name;
+	int attempts;
+
+	if (set_name_mapping(unixname, unixname, is_user, TDB_INSERT)) {
+		*ntname = strdup(unixname);
+		return;
+	}
+
+	slprintf(generated_name, sizeof(generated_name), "%s.%s",
+		 unixname, is_user ? "user" : "group");
+
+	if (set_name_mapping(unixname, unixname, is_user, TDB_INSERT)) {
+		*ntname = strdup(generated_name);
+		return;
+	}
+
+	/* Ok... Now try random stuff appended */
+
+	for (attempts = 0; attempts < 5; attempts++) {
+		slprintf(generated_name, sizeof(generated_name), "%s.%s",
+			 unixname, generate_random_str(4));
+		if (set_name_mapping(unixname, unixname, is_user,
+				     TDB_INSERT)) {
+			*ntname = strdup(generated_name);
+			return;
+		}
+	}
+
+	/* Weird... Completely random now */
+
+	for (attempts = 0; attempts < 5; attempts++) {
+		slprintf(generated_name, sizeof(generated_name), "%s",
+			 generate_random_str(8));
+		if (set_name_mapping(unixname, unixname, is_user,
+				     TDB_INSERT)) {
+			*ntname = strdup(generated_name);
+			return;
+		}
+	}
+
+	smb_panic("Could not generate a NT name\n");
+}
+
+static void unix_name_to_nt_name(const char *unixname, char **ntname,
+				 BOOL want_user)
+{
+	struct find_unixname_closure closure;
+	closure.want_user = want_user;
+	closure.unixname = unixname;
+	closure.ntname = ntname;
+	closure.found = False;
+
+	become_root();
+	if (!init_group_mapping()) {
+		unbecome_root();
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return;
+	}
+
+	tdb_traverse(tdb, find_name_entry, &closure);
+
+	if (closure.found) {
+		unbecome_root();
+		return;
+	}
+
+	generate_name_mapping(unixname, ntname, want_user);
+	unbecome_root();
+}
+
+void unix_username_to_ntname(const char *unixname, char **ntname)
+{
+	unix_name_to_nt_name(unixname, ntname, True);
+}
+
+void unix_groupname_to_ntname(const char *unixname, char **ntname)
+{
+	unix_name_to_nt_name(unixname, ntname, False);
 }
