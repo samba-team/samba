@@ -1,5 +1,9 @@
 Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
 
+	* admin/load.c (parse_keys): handle the case of an empty salt
+
+	* kdc/kaserver.c: fix up memory deallocation
+
 	* kdc/kaserver.c: quick hack at talking kaserver protocol
 
 	* kdc/kerberos4.c: Make `db-fetch4' global
