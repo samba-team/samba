@@ -849,7 +849,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 	size_t i;
 	uint qcount;
 
-	if (max_reported_jobs < pts->qcount)
+	if (max_reported_jobs && (max_reported_jobs < pts->qcount))
 		pts->qcount = max_reported_jobs;
 	qcount = pts->qcount;
 
@@ -2146,7 +2146,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	len = 0;
 	for( i  = 0; i < qcount; i++) {
 		uint32 qjob, qsize, qpage_count, qstatus, qpriority, qtime;
-		len += tdb_unpack(data.dptr + 4 + len, data.dsize - len, NULL, "ddddddff",
+		len += tdb_unpack(data.dptr + 4 + len, data.dsize - len, "ddddddff",
 				&qjob,
 				&qsize,
 				&qpage_count,
