@@ -55,6 +55,8 @@ typedef unsigned char OtpKey[OTPKEYSIZE];
 
 typedef enum { OTP_ALG_MD4, OTP_ALG_MD5, OTP_ALG_SHA } OtpAlgID;
 
+#define OTP_ALG_DEFAULT "md4"
+
 typedef struct {
   OtpAlgID id;
   char *name;
