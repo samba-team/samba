@@ -2,12 +2,6 @@
 
 RCSID("$Id$");
 
-/* XXX */
-
-#ifdef sun
-#define memmove(a,b,c) bcopy(b,a,c)
-#endif
-
 void
 krb5_data_free(krb5_data *p)
 {
