@@ -56,6 +56,31 @@ int net_ads_usage(int argc, const char **argv)
 }
 
 
+/*
+  this implements the CLDAP based netlogon lookup requests
+  for finding the domain controller of a ADS domain
+*/
+static int net_ads_lookup(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+
+	ads = ads_init(NULL, NULL, opt_host);
+	if (ads) {
+		ads->auth.no_bind = 1;
+	}
+
+	ads_connect(ads);
+
+	if (!ads || !ads->config.realm) {
+		d_printf("Didn't find the cldap server!\n");
+		return -1;
+	}
+
+	return ads_cldap_netlogon(ads);
+}
+
+
+
 static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
@@ -1009,6 +1034,7 @@ int net_ads(int argc, const char **argv)
 		{"PRINTER", net_ads_printer},
 		{"SEARCH", net_ads_search},
 		{"WORKGROUP", net_ads_workgroup},
+		{"LOOKUP", net_ads_lookup},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
