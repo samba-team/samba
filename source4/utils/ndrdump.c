@@ -181,7 +181,6 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 		if (ndr->offset != ndr->data_size) {
 			printf("WARNING! %d unread bytes while parsing context file\n", ndr->data_size - ndr->offset);
-			exit(1);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
