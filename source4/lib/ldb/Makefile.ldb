@@ -23,9 +23,11 @@ LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 
 COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
-	   common/ldb_alloc.o common/ldb_debug.o
+	   common/ldb_alloc.o common/ldb_debug.o common/ldb_modules.o
 
-OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
+MODULES_OBJ=modules/timestamps.o
+
+OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
 
 LDB_LIB = lib/libldb.a
 
@@ -67,7 +69,7 @@ bin/ldbtest: tools/ldbtest.o $(LIBS)
 	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
 
 manpages:
-	man/build_manpages.sh
+	-man/build_manpages.sh
 
 clean:
 	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB) man/man?/*.[13]

@@ -131,12 +131,14 @@ static int msg_add_element(struct ldb_context *ldb,
 /*
   add all elements from one message into another
  */
-static int msg_add_all_elements(struct ldb_context *ldb, struct ldb_message *ret,
+static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *ret,
 				const struct ldb_message *msg)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
+
 	for (i=0;i<msg->num_elements;i++) {
-		int flags = ltdb_attribute_flags(ldb, msg->elements[i].name);
+		int flags = ltdb_attribute_flags(module, msg->elements[i].name);
 		if ((msg->dn[0] != '@') && (flags & LTDB_FLAG_HIDDEN)) {
 			continue;
 		}
@@ -152,10 +154,11 @@ static int msg_add_all_elements(struct ldb_context *ldb, struct ldb_message *ret
 /*
   pull the specified list of attributes from a message
  */
-static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb, 
+static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module, 
 					   const struct ldb_message *msg, 
 					   const char * const *attrs)
 {
+	struct ldb_context *ldb = module->ldb;
 	struct ldb_message *ret;
 	int i;
 
@@ -175,7 +178,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 	ret->private_data = NULL;
 
 	if (!attrs) {
-		if (msg_add_all_elements(ldb, ret, msg) != 0) {
+		if (msg_add_all_elements(module, ret, msg) != 0) {
 			msg_free_all_parts(ldb, ret);
 			return NULL;
 		}
@@ -186,7 +189,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 		struct ldb_message_element *el;
 
 		if (strcmp(attrs[i], "*") == 0) {
-			if (msg_add_all_elements(ldb, ret, msg) != 0) {
+			if (msg_add_all_elements(module, ret, msg) != 0) {
 				msg_free_all_parts(ldb, ret);
 				return NULL;
 			}
@@ -237,7 +240,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
   see if a ldb_val is a wildcard
   return 1 if yes, 0 if no
 */
-int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name, 
+int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val)
 {
 	int flags;
@@ -251,7 +254,7 @@ int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name,
 		return 0;
 	}
 
-	flags = ltdb_attribute_flags(ldb, attr_name);
+	flags = ltdb_attribute_flags(module, attr_name);
 	if (flags & LTDB_FLAG_WILDCARD) {
 		return 1;
 	}
@@ -263,8 +266,9 @@ int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name,
 /*
   free the results of a ltdb_search_dn1 search
 */
-void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
+void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
 	ldb_free(ldb, msg->private_data);
 	for (i=0;i<msg->num_elements;i++) {
@@ -281,16 +285,17 @@ void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 
   return 1 on success, 0 on record-not-found and -1 on error
 */
-int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message *msg)
+int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	TDB_DATA tdb_key, tdb_data, tdb_data2;
 
 	memset(msg, 0, sizeof(*msg));
 
 	/* form the key */
-	tdb_key = ltdb_key(ldb, dn);
+	tdb_key = ltdb_key(module, dn);
 	if (!tdb_key.dptr) {
 		return -1;
 	}
@@ -335,20 +340,21 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 /*
   search the database for a single simple dn
 */
-int ltdb_search_dn(struct ldb_context *ldb, char *dn,
+int ltdb_search_dn(struct ldb_module *module, char *dn,
 		   const char * const attrs[], struct ldb_message ***res)
 {
+	struct ldb_context *ldb = module->ldb;
 	int ret;
 	struct ldb_message msg, *msg2;
 
-	ret = ltdb_search_dn1(ldb, dn, &msg);
+	ret = ltdb_search_dn1(module, dn, &msg);
 	if (ret != 1) {
 		return ret;
 	}
 
-	msg2 = ltdb_pull_attrs(ldb, &msg, attrs);
+	msg2 = ltdb_pull_attrs(module, &msg, attrs);
 
-	ltdb_search_dn1_free(ldb, &msg);
+	ltdb_search_dn1_free(module, &msg);
 
 	if (!msg2) {
 		return -1;		
@@ -371,16 +377,17 @@ int ltdb_search_dn(struct ldb_context *ldb, char *dn,
   add a set of attributes from a record to a set of results
   return 0 on success, -1 on failure
 */
-int ltdb_add_attr_results(struct ldb_context *ldb, struct ldb_message *msg,
+int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
 			  unsigned int *count, 
 			  struct ldb_message ***res)
 {
+	struct ldb_context *ldb = module->ldb;
 	struct ldb_message *msg2;
 	struct ldb_message **res2;
 
 	/* pull the attributes that the user wants */
-	msg2 = ltdb_pull_attrs(ldb, msg, attrs);
+	msg2 = ltdb_pull_attrs(module, msg, attrs);
 	if (!msg2) {
 		return -1;
 	}
@@ -406,7 +413,7 @@ int ltdb_add_attr_results(struct ldb_context *ldb, struct ldb_message *msg,
   internal search state during a full db search
 */
 struct ltdb_search_info {
-	struct ldb_context *ldb;
+	struct ldb_module *module;
 	struct ldb_parse_tree *tree;
 	const char *base;
 	enum ldb_scope scope;
@@ -432,7 +439,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* unpack the record */
-	ret = ltdb_unpack_data(sinfo->ldb, &data, &msg);
+	ret = ltdb_unpack_data(sinfo->module->ldb, &data, &msg);
 	if (ret == -1) {
 		sinfo->failures++;
 		return 0;
@@ -443,19 +450,19 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* see if it matches the given expression */
-	if (!ldb_message_match(sinfo->ldb, &msg, sinfo->tree, 
+	if (!ldb_message_match(sinfo->module, &msg, sinfo->tree, 
 			       sinfo->base, sinfo->scope)) {
-		ltdb_unpack_data_free(sinfo->ldb, &msg);
+		ltdb_unpack_data_free(sinfo->module->ldb, &msg);
 		return 0;
 	}
 
-	ret = ltdb_add_attr_results(sinfo->ldb, &msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
+	ret = ltdb_add_attr_results(sinfo->module, &msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
 
 	if (ret == -1) {
 		sinfo->failures++;
 	}
 
-	ltdb_unpack_data_free(sinfo->ldb, &msg);
+	ltdb_unpack_data_free(sinfo->module->ldb, &msg);
 
 	return ret;
 }
@@ -464,9 +471,10 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 /*
   free a set of search results
 */
-int ltdb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
+int ltdb_search_free(struct ldb_module *module, struct ldb_message **msgs)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	int i;
 
 	ltdb->last_err_string = NULL;
@@ -486,18 +494,18 @@ int ltdb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
-static int ltdb_search_full(struct ldb_context *ldb, 
+static int ltdb_search_full(struct ldb_module *module, 
 			    const char *base,
 			    enum ldb_scope scope,
 			    struct ldb_parse_tree *tree,
 			    const char * const attrs[], struct ldb_message ***res)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ltdb_search_info sinfo;
 
 	sinfo.tree = tree;
-	sinfo.ldb = ldb;
+	sinfo.module = module;
 	sinfo.scope = scope;
 	sinfo.base = base;
 	sinfo.attrs = attrs;
@@ -508,7 +516,7 @@ static int ltdb_search_full(struct ldb_context *ldb,
 	ret = tdb_traverse(ltdb->tdb, search_func, &sinfo);
 
 	if (ret == -1) {
-		ltdb_search_free(ldb, sinfo.msgs);
+		ltdb_search_free(module, sinfo.msgs);
 		return -1;
 	}
 
@@ -521,17 +529,18 @@ static int ltdb_search_full(struct ldb_context *ldb,
   search the database with a LDAP-like expression.
   choses a search method
 */
-int ltdb_search(struct ldb_context *ldb, const char *base,
+int ltdb_search(struct ldb_module *module, const char *base,
 		enum ldb_scope scope, const char *expression,
 		const char * const attrs[], struct ldb_message ***res)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_parse_tree *tree;
 	int ret;
 
 	ltdb->last_err_string = NULL;
 
-	if (ltdb_cache_load(ldb) != 0) {
+	if (ltdb_cache_load(module) != 0) {
 		return -1;
 	}
 
@@ -546,13 +555,13 @@ int ltdb_search(struct ldb_context *ldb, const char *base,
 
 	if (tree->operation == LDB_OP_SIMPLE && 
 	    ldb_attr_cmp(tree->u.simple.attr, "dn") == 0 &&
-	    !ltdb_has_wildcard(ldb, tree->u.simple.attr, &tree->u.simple.value)) {
+	    !ltdb_has_wildcard(module, tree->u.simple.attr, &tree->u.simple.value)) {
 		/* yay! its a nice simple one */
-		ret = ltdb_search_dn(ldb, tree->u.simple.value.data, attrs, res);
+		ret = ltdb_search_dn(module, tree->u.simple.value.data, attrs, res);
 	} else {
-		ret = ltdb_search_indexed(ldb, base, scope, tree, attrs, res);
+		ret = ltdb_search_indexed(module, base, scope, tree, attrs, res);
 		if (ret == -1) {
-			ret = ltdb_search_full(ldb, base, scope, tree, attrs, res);
+			ret = ltdb_search_full(module, base, scope, tree, attrs, res);
 		}
 	}
 

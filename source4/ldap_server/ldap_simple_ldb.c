@@ -385,8 +385,8 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 				break;
 			}
 
-			if (r->mods[i].attrib.num_values > 0) {
-				msg->elements[i].num_values = r->mods[i].attrib.num_values;
+			msg->elements[i].num_values = r->mods[i].attrib.num_values;
+			if (msg->elements[i].num_values > 0) {
 				msg->elements[i].values = talloc_array_p(msg, struct ldb_val, msg->elements[i].num_values);
 				ALLOC_CHECK(msg->elements[i].values);
 
@@ -399,11 +399,6 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 					msg->elements[i].values[j].length = r->mods[i].attrib.values[j].length;
 					msg->elements[i].values[j].data = r->mods[i].attrib.values[j].data;			
 				}
-			} else {
-				/* TODO: test what we should do here 
-				 *
-				 *       LDAP_MODIFY_DELETE is ok to pass here
-				 */
 			}
 		}
 	} else {

@@ -38,9 +38,10 @@
 /*
   initialise the baseinfo record
 */
-static int ltdb_baseinfo_init(struct ldb_context *ldb)
+static int ltdb_baseinfo_init(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message msg;
 	struct ldb_message_element el;
 	struct ldb_val val;
@@ -77,7 +78,7 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 	}
 	val.length = 1;
 	
-	ret = ltdb_store(ldb, &msg, TDB_INSERT);
+	ret = ltdb_store(module, &msg, TDB_INSERT);
 
 	ldb_free(ldb, msg.dn);
 	ldb_free(ldb, el.name);
@@ -89,17 +90,18 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 /*
   free any cache records
  */
-void ltdb_cache_free(struct ldb_context *ldb)
+void ltdb_cache_free(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_alloc_ops alloc = ldb->alloc_ops;
 	ldb->alloc_ops.alloc = NULL;
 
 	ltdb->sequence_number = 0;
-	ltdb_search_dn1_free(ldb, &ltdb->cache.baseinfo);
-	ltdb_search_dn1_free(ldb, &ltdb->cache.indexlist);
-	ltdb_search_dn1_free(ldb, &ltdb->cache.subclasses);
-	ltdb_search_dn1_free(ldb, &ltdb->cache.attributes);
+	ltdb_search_dn1_free(module, &ltdb->cache.baseinfo);
+	ltdb_search_dn1_free(module, &ltdb->cache.indexlist);
+	ltdb_search_dn1_free(module, &ltdb->cache.subclasses);
+	ltdb_search_dn1_free(module, &ltdb->cache.attributes);
 
 	ldb_free(ldb, ltdb->cache.last_attribute.name);
 	memset(&ltdb->cache, 0, sizeof(ltdb->cache));
@@ -110,26 +112,27 @@ void ltdb_cache_free(struct ldb_context *ldb)
 /*
   load the cache records
 */
-int ltdb_cache_load(struct ldb_context *ldb)
+int ltdb_cache_load(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	double seq;
 	struct ldb_alloc_ops alloc = ldb->alloc_ops;
 
 	ldb->alloc_ops.alloc = NULL;
 
-	ltdb_search_dn1_free(ldb, &ltdb->cache.baseinfo);
+	ltdb_search_dn1_free(module, &ltdb->cache.baseinfo);
 	
-	if (ltdb_search_dn1(ldb, LTDB_BASEINFO, &ltdb->cache.baseinfo) == -1) {
+	if (ltdb_search_dn1(module, LTDB_BASEINFO, &ltdb->cache.baseinfo) == -1) {
 		goto failed;
 	}
 	
 	/* possibly initialise the baseinfo */
 	if (!ltdb->cache.baseinfo.dn) {
-		if (ltdb_baseinfo_init(ldb) != 0) {
+		if (ltdb_baseinfo_init(module) != 0) {
 			goto failed;
 		}
-		if (ltdb_search_dn1(ldb, LTDB_BASEINFO, &ltdb->cache.baseinfo) != 1) {
+		if (ltdb_search_dn1(module, LTDB_BASEINFO, &ltdb->cache.baseinfo) != 1) {
 			goto failed;
 		}
 	}
@@ -145,17 +148,17 @@ int ltdb_cache_load(struct ldb_context *ldb)
 	ldb_free(ldb, ltdb->cache.last_attribute.name);
 	memset(&ltdb->cache.last_attribute, 0, sizeof(ltdb->cache.last_attribute));
 
-	ltdb_search_dn1_free(ldb, &ltdb->cache.indexlist);
-	ltdb_search_dn1_free(ldb, &ltdb->cache.subclasses);
-	ltdb_search_dn1_free(ldb, &ltdb->cache.attributes);
+	ltdb_search_dn1_free(module, &ltdb->cache.indexlist);
+	ltdb_search_dn1_free(module, &ltdb->cache.subclasses);
+	ltdb_search_dn1_free(module, &ltdb->cache.attributes);
 
-	if (ltdb_search_dn1(ldb, LTDB_INDEXLIST, &ltdb->cache.indexlist) == -1) {
+	if (ltdb_search_dn1(module, LTDB_INDEXLIST, &ltdb->cache.indexlist) == -1) {
 		goto failed;
 	}
-	if (ltdb_search_dn1(ldb, LTDB_SUBCLASSES, &ltdb->cache.subclasses) == -1) {
+	if (ltdb_search_dn1(module, LTDB_SUBCLASSES, &ltdb->cache.subclasses) == -1) {
 		goto failed;
 	}
-	if (ltdb_search_dn1(ldb, LTDB_ATTRIBUTES, &ltdb->cache.attributes) == -1) {
+	if (ltdb_search_dn1(module, LTDB_ATTRIBUTES, &ltdb->cache.attributes) == -1) {
 		goto failed;
 	}
 
@@ -172,9 +175,10 @@ failed:
 /*
   increase the sequence number to indicate a database change
 */
-int ltdb_increase_sequence_number(struct ldb_context *ldb)
+int ltdb_increase_sequence_number(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message msg;
 	struct ldb_message_element el;
 	struct ldb_val val;
@@ -197,7 +201,7 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
 	val.data = s;
 	val.length = strlen(s);
 
-	ret = ltdb_modify_internal(ldb, &msg);
+	ret = ltdb_modify_internal(module, &msg);
 
 	ldb_free(ldb, s);
 	ldb_free(ldb, msg.dn);
@@ -215,9 +219,10 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
   return the attribute flags from the @ATTRIBUTES record 
   for the given attribute
 */
-int ltdb_attribute_flags(struct ldb_context *ldb, const char *attr_name)
+int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	const char *attrs;
 	const struct {
 		const char *name;
