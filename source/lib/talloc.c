@@ -182,7 +182,7 @@ char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 	if (!ret) return NULL;
 
 	va_start(ap, fmt);
-	vsnprintf(ret, len, fmt, ap);
+	vsnprintf(ret, len+1, fmt, ap);
 	va_end(ap);
 
 	return ret;
