@@ -167,6 +167,9 @@ int copy_oid (const heim_oid *from, heim_oid *to);
 int copy_nulltype (void *, void *);
 int copy_utf8string (const heim_utf8_string*, heim_utf8_string*);
 
+int heim_oid_cmp(const heim_oid *, const heim_oid *);
+int heim_octet_string_cmp(const heim_octet_string *,const heim_octet_string *);
+
 int fix_dce(size_t reallen, size_t *len);
 
 #endif /* __DER_H__ */
