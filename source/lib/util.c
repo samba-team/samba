@@ -2347,7 +2347,7 @@ void smb_panic(char *why)
 /*******************************************************************
 a readdir wrapper which just returns the file name
 ********************************************************************/
-char *readdirname(void *p)
+char *readdirname(DIR *p)
 {
 	struct dirent *ptr;
 	char *dname;
@@ -2371,7 +2371,6 @@ char *readdirname(void *p)
 	{
 		static pstring buf;
 		memcpy(buf, dname, NAMLEN(ptr)+1);
-		unix_to_dos(buf, True);
 		dname = buf;
 	}
 

@@ -57,7 +57,22 @@ int dos_open(char *fname,int flags,mode_t mode)
 
 DIR *dos_opendir(char *dname)
 {
-	return(opendir(dos_to_unix(dname,False)));
+  return(opendir(dos_to_unix(dname,False)));
+}
+
+/*******************************************************************
+ Readdirname() wrapper that calls unix_to_dos.
+********************************************************************/
+
+char *dos_readdirname(DIR *p)
+{
+  char *dname = readdirname(p);
+
+  if (!dname)
+    return(NULL);
+ 
+  unix_to_dos(dname, True);
+  return(dname);
 }
 
 /*******************************************************************
