@@ -56,8 +56,9 @@
 #ifndef T_NAPTR
 #define T_NAPTR		35
 #endif
-
-
+#ifndef T_CERT
+#define T_CERT		37
+#endif
 
 struct dns_query{
     char *domain;
@@ -77,6 +78,35 @@ struct srv_record{
     char target[1];
 };
 
+struct key_record {
+    unsigned flags;
+    unsigned protocol;
+    unsigned algorithm;
+    size_t   key_len;
+    u_char   key_data[1];
+};
+
+struct sig_record {
+    unsigned type;
+    unsigned algorithm;
+    unsigned labels;
+    unsigned orig_ttl;
+    unsigned sig_expiration;
+    unsigned sig_inception;
+    unsigned key_tag;
+    char     *signer;
+    unsigned sig_len;
+    u_char   sig_data[1];	/* also includes signer */
+};
+
+struct cert_record {
+    unsigned type;
+    unsigned tag;
+    unsigned algorithm;
+    size_t   cert_len;
+    u_char   cert_data[1];
+};
+
 struct resource_record{
     char *domain;
     unsigned type;
@@ -90,6 +120,9 @@ struct resource_record{
 	struct srv_record *srv;
 	struct in_addr *a;
 	char *txt;
+	struct key_record *key;
+	struct cert_record *cert;
+	struct sig_record *sig;
     }u;
     struct resource_record *next;
 };
