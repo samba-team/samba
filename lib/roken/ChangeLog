@@ -1,3 +1,7 @@
+2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* resolve.c: use res_nsearch if we have it (from Larry Greenfield)
+
 2002-09-03  Assar Westerlund  <assar@kth.se>
 
 	* getifaddrs.c: add Linux AF_NETLINK getifaddrs from Hideaki

@@ -1,3 +1,7 @@
+2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-frag.m4: test for res_nsearch
+
 2002-09-03  Assar Westerlund  <assar@kth.se>
 
 	* roken-frag.m4: check for sys/mman.h and mmap (used by
