@@ -79,11 +79,13 @@ static void usage(void)
   printf("\t-M                    searches for a master browser\n");
   printf("\t-R                    set recursion desired in packet\n");
   printf("\t-S                    lookup node status as well\n");
+  printf("\t-T                    translate IP addresses into names\n");
   printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
   printf("\t-A                    Do a node status on <name> as an IP Address\n");
   printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
   printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
   printf("\t-h                    Print this help message.\n");
+  printf("\n  if name is \"-\", lookup __MSBROWSE__<01>\n");
   printf("\n");
 }
 
@@ -107,6 +109,7 @@ int main(int argc,char *argv[])
   BOOL got_bcast = False;
   BOOL lookup_by_ip = False;
   BOOL recursion_desired = False;
+  BOOL translate_addresses = False;
 
   DEBUGLEVEL = 1;
   *lookup = 0;
@@ -117,7 +120,7 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhAR")) != EOF)
+  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhART")) != EOF)
     switch (opt)
       {
       case 'B':
@@ -131,6 +134,9 @@ int main(int argc,char *argv[])
 	bcast_addr = *interpret_addr2(optarg);
 	got_bcast = True;
 	use_bcast = False;
+	break;
+      case 'T':
+        translate_addresses = !translate_addresses;
 	break;
       case 'i':
 	fstrcpy(scope,optarg);
@@ -224,9 +230,15 @@ int main(int argc,char *argv[])
       if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
 				use_bcast?True:recursion_desired,
 				bcast_addr,&count,NULL))) {
-	      for (j=0;j<count;j++)
+	      for (j=0;j<count;j++) {
+		      if (translate_addresses) {
+			struct hostent *host = gethostbyaddr((char *)&ip_list[j], sizeof(ip_list[j]), AF_INET);
+			if (host)
+			  printf("%s, ", host -> h_name);
+		      }
 		      printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
-	      
+	      }
+
 	      /* We can only do find_status if the ip address returned
 		 was valid - ie. name_query returned true.
 		 */
