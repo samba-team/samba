@@ -77,7 +77,9 @@ void sec_prot(int argc, char **argv)
     char *p;
     int level = -1;
     if(argc != 2){
-	fprintf(stderr, "foo?\n");
+	fprintf(stderr,
+		"usage: %s (clear | safe | confidential | private)\n",
+		argv[0]);
 	code = -1;
 	return;
     }
@@ -95,7 +97,9 @@ void sec_prot(int argc, char **argv)
     }
 
     if(level == -1){
-	fprintf(stderr, "ehu?\n");
+	fprintf(stderr,
+		"usage: %s (clear | safe | confidential | private)\n",
+		argv[0]);
 	code = -1;
 	return;
     }
@@ -120,7 +124,7 @@ void sec_prot(int argc, char **argv)
     
     ret = command("PROT %c", level["CSEP"]); /* XXX :-) */
     if(ret != COMPLETE){
-	fprintf(stderr, "Ehu?\n");
+	fprintf(stderr, "Ehu ?\n");
 	code = -1;
 	return;
     }
