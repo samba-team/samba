@@ -1,3 +1,7 @@
+2003-11-13  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rxtelnet.in: add telnet -F option
+
 2003-05-15  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kxd.c (recv_conn): pass pointer to sockaddr, not pointer to
