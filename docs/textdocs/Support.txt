@@ -37,7 +37,7 @@ Region                             Number of entries
     AMERICA - USA                                36
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      19
-    CANADA                                        8
+    CANADA                                        9
     EUROPE                                       41
     MIDDLE EAST                                   1
 
@@ -900,12 +900,9 @@ Novell/NT Systems.
 ------------------------------------------------------------------------------
 N.T - AUSTRALIA
 
-Open Systems Network Support
-
-Server Platforms        - Unix/Linux
-Client Platforms        - Windows3.1/95/NT, Macintosh, Unix/Linux
-
--- 
+Open Systems Network SupportServer Platforms        -
+Unix/Linux
+Client Platforms        - Windows3.1/95/NT, Macintosh, Unix/Linux--
 David Schroeder                 Darwin Network Services
 Ph/Fax (08) 8932 1156           PO Box 82383
 (Int) +61 8 8932 1156           Casuarina N.T
@@ -1079,6 +1076,28 @@ Email: ttcdg@cyberspace.co.nz
 
 CANADA
 ======
+
+------------------------------------------------------------------------------
+ALBERTA - CANADA
+
+GDS & Associates Systems Ltd.
+1010 First Edmonton Place
+10665 Jasper Ave.
+Edmonton, AB  
+Canada  T5J 3S9
+
+http://www.gds.ca/
+
++1 403 426 4484
+FAX:   426 2898
+
+Contact:  Iain O'Cain <iocain@gds.ca>
+
+GDS is an information management consulting company with headquarters in 
+Regina, Saskatchewan, and offices across Western Canada.  The Edmonton 
+office offers Systems Management services covering a variety of Unix and 
+similar server operating systems.
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 ONTARIO - CANADA
