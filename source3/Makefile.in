@@ -171,7 +171,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_wkssvc.o \
 	       libsmb/cli_dfs.o libsmb/cli_reg.o libsmb/trust_passwd.o\
-	       rpc_client/cli_pipe.o
+		rpc_client/cli_pipe.o libsmb/cli_spoolss_notify.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
 
@@ -196,8 +196,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o
 
 
-RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
-	rpc_client/cli_spoolss_notify.o
+RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -242,7 +241,6 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
             smbd/build_options.o \
 	    smbd/change_trust_pw.o \
-	    rpc_client/cli_spoolss_notify.o \
 	    $(MANGLE_OBJ)
 
 
@@ -250,7 +248,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
@@ -301,7 +299,7 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) printing/notify.o
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) 
