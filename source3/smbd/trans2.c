@@ -1368,7 +1368,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			 * the called hostname and the service name.
 			 */
 			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
-			len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, 0);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
 			DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
@@ -1397,7 +1397,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 
 		case SMB_QUERY_FS_LABEL_INFO:
 		case SMB_FS_LABEL_INFORMATION:
-			len = srvstr_push(outbuf, pdata+4, vname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, pdata+4, vname, -1, 0);
 			data_len = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -1412,7 +1412,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
 				(str_checksum(local_machine)<<16));
 
-			len = srvstr_push(outbuf, pdata+18, vname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, pdata+18, vname, -1, 0);
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 			DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n", 
