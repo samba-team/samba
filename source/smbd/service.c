@@ -279,7 +279,8 @@ void server_terminate_connection(struct server_connection *srv_conn, const char 
 void server_accept_handler(struct event_context *ev, struct fd_event *fde, 
 		       struct timeval t, uint16_t flags)
 {
-	struct server_stream_socket *stream_socket = fde->private;
+	struct server_stream_socket *stream_socket = talloc_get_type(fde->private,
+								     struct server_stream_socket);
 
 	stream_socket->service->server->model.ops->accept_connection(ev, fde, t, flags);
 }
@@ -287,7 +288,8 @@ void server_accept_handler(struct event_context *ev, struct fd_event *fde,
 void server_io_handler(struct event_context *ev, struct fd_event *fde, 
 		       struct timeval t, uint16_t flags)
 {
-	struct server_connection *conn = fde->private;
+	struct server_connection *conn = talloc_get_type(fde->private, 
+							 struct server_connection);
 
 	conn->event.idle->next_event = timeval_sum(&t,  &conn->event.idle_time);
 
@@ -305,7 +307,8 @@ void server_io_handler(struct event_context *ev, struct fd_event *fde,
 void server_idle_handler(struct event_context *ev, struct timed_event *idle, 
 			 struct timeval t)
 {
-	struct server_connection *conn = idle->private;
+	struct server_connection *conn = talloc_get_type(idle->private, 
+							 struct server_connection);
 
 	/* Not all services provide an idle handler */
 	if (conn->stream_socket->stream.ops->idle_handler) {
