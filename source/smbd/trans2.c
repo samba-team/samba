@@ -2135,7 +2135,7 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 /*
 	reply.server_function=rtp.type;
 */
-	reply.server_function=1;
+	reply.server_function=0x3;
 
 	/* write the header */
 #ifdef UNICODE_DFS
