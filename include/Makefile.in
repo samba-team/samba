@@ -1,5 +1,5 @@
 HEADERS = krb5.h krb5_err.h asn1_err.h asn1.h des.h md4.h \
-	bits.h cache.h keytab.h config_file.h
+	bits.h cache.h keytab.h config_file.h store.h
 
 srcdir	= @srcdir@
 VPATH	= $(srcdir)
@@ -48,6 +48,9 @@ des.h:
 
 md4.h:
 	$(LN_S) $(top_srcdir)/lib/des/md4.h .
+
+store.h:
+	$(LN_S) $(top_srcdir)/lib/krb5/store.h .
 
 bits.h: bits
 	./bits bits.h
