@@ -34,7 +34,7 @@ NTSTATUS smb_composite_wait(struct smbcli_composite *c)
 	if (c == NULL) return NT_STATUS_NO_MEMORY;
 
 	while (c->state < SMBCLI_REQUEST_DONE) {
-		if (event_loop_once(c->req->transport->event.ctx) != 0) {
+		if (event_loop_once(c->event_ctx) != 0) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
