@@ -965,9 +965,18 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
 	other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
 
-	DLIST_ADD(list_head, other_ace);
-	DLIST_ADD(list_head, group_ace);
-	DLIST_ADD(list_head, owner_ace);
+	if (other_ace->perms) {
+		DLIST_ADD(list_head, other_ace);
+	} else
+		safe_free(other_ace);
+	if (group_ace->perms) {
+		DLIST_ADD(list_head, group_ace);
+	} else
+		safe_free(group_ace);
+	if (owner_ace->perms) {
+		DLIST_ADD(list_head, owner_ace);
+	} else
+		safe_free(owner_ace);
 
 	return list_head;
 
