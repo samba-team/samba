@@ -1,3 +1,15 @@
+1999-05-04  Assar Westerlund  <assar@sics.se>
+
+	* server.c (v5_loop): remove unused variable
+
+	* kadmin_locl.h: add prototypes
+
+	* version4.c: re-insert krb_err.h and other miss
+
+	* server.c (kadmind_loop): break-up and restructure
+
+	* version4.c: add ACL checks more error code checks restructure
+	
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* load.c: check for (un-)encrypted keys

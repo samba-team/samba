@@ -1,3 +1,13 @@
+1999-05-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_cred.c (get_cred_from_kdc_flags): allocate and free
+	`*out_creds' properly
+
+	* lib/krb5/creds.c (krb5_compare_creds): just verify that the
+	keytypes/enctypes are compatible, not that they are the same
+
+	* kuser/kdestroy.c (cache): const-correctness
+
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/hdb/convert_db.c: add support for upgrading database
