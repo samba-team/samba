@@ -14,6 +14,10 @@ EOF
 exit 1;
 fi
 
+if [ -z "$VALGRIND" ]; then
+    export MALLOC_CHECK_=2
+fi
+
 server="$1"
 username="$2"
 password="$3"
@@ -23,7 +27,7 @@ shift 4
 testit() {
    trap "rm -f test.$$" EXIT
    cmdline="$*"
-   if ! $cmdline > test.$$ 2>&1; then
+   if ! $VALGRIND $cmdline > test.$$ 2>&1; then
        cat test.$$;
        rm -f test.$$;
        echo "TEST FAILED - $cmdline";
