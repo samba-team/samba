@@ -1312,6 +1312,7 @@ send_data(FILE *instr, FILE *outstr)
 		    } else {
 			transflag = 0;
 		    }
+		}
 	    }
 	
 #endif
