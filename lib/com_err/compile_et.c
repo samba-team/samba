@@ -42,6 +42,7 @@
 RCSID("$Id$");
 
 #include <roken.h>
+#include <err.h>
 #include "parse.h"
 
 int numerror;
@@ -124,7 +125,6 @@ generate_c(void)
 int
 generate_h(void)
 {
-    int n;
     struct error_code *ec;
     char fn[128];
     FILE *h_file = fopen(hfn, "w");
