@@ -94,6 +94,9 @@ AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
 #endif])
 
 AC_CHECK_HEADERS(netinet6/in6_var.h, , , [AC_INCLUDES_DEFAULT
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 #ifdef HAVE_NETINET6_IN6_H
 #include <netinet6/in6.h>
 #endif
