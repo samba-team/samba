@@ -75,7 +75,7 @@ interface krb5pac
 		dom_sid2 *dom_sid;
 
 		uint32 reserved16[2];
-		uint32 reserved17;      /* looks like it may be acb_info */
+		uint32 acct_flags;      /* looks like it may be acb_info */
 		uint32 reserved18[7];
 
 		uint32 extra_sids_count;
