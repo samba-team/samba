@@ -779,7 +779,7 @@ typedef struct printer_info_2
 	UNISTR printprocessor;
 	UNISTR datatype;
 	UNISTR parameters;
-	/*SECURITY_DESCRIPTOR securitydescriptor; */
+	SEC_DESC *secdesc;
 	uint32 attributes;
 	uint32 priority;
 	uint32 defaultpriority;

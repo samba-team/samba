@@ -1497,6 +1497,60 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 /*******************************************************************
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
+static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
+		SEC_DESC **secdesc)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "new_smb_io_relsecdesc");
+	depth++;
+
+	if (MARSHALLING(ps))
+	{
+		uint32 struct_offset = prs_offset(ps);
+		uint32 relative_offset;
+		
+		buffer->string_at_end -= 1024; /* HACK! */
+		
+		prs_set_offset(ps, buffer->string_at_end);
+		
+		/* write the secdesc */
+		if (!sec_io_desc(desc, *secdesc, ps, depth))
+			return False;
+
+		prs_set_offset(ps, struct_offset);
+		
+		relative_offset=buffer->string_at_end - buffer->struct_start;
+		/* write its offset */
+		if (!prs_uint32("offset", ps, depth, &relative_offset))
+			return False;
+	}
+	else
+	{
+		uint32 old_offset;
+		
+		/* read the offset */
+		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+			return False;
+
+		old_offset = prs_offset(ps);
+		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
+
+		/* read the sd */
+		*secdesc = g_new(SEC_DESC, 1);
+		if (*secdesc == NULL)
+			return False;
+		if (!sec_io_desc(desc, *secdesc, ps, depth))
+			return False;
+
+		prs_set_offset(ps, old_offset);
+	}
+	return True;
+}
+
+/*******************************************************************
+ Parse a DEVMODE structure and its relative pointer.
+********************************************************************/
 static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
 {
 	prs_struct *ps=&(buffer->prs);
@@ -1674,9 +1728,6 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
-	/* hack for the SEC DESC */
-	uint32 pipo=0;
-
 	prs_struct *ps=&(buffer->prs);
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
@@ -1712,8 +1763,9 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-	if (!prs_uint32("security descriptor", ps, depth, &pipo))
+	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
 		return False;
+
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
 		return False;
 	if (!prs_uint32("priority", ps, depth, &info->priority))
@@ -4496,6 +4548,7 @@ void free_printer_info_3(PRINTER_INFO_3 *printer)
 {
 	if (printer!=NULL)
 	{
+		free_sec_desc(&printer->sec);
 		free(printer);
 	}
 }
@@ -4505,6 +4558,13 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 	if (printer!=NULL)
 	{
 		free_devmode(printer->devmode);
+		printer->devmode = NULL;
+		if (printer->secdesc != NULL)
+		{
+			free_sec_desc(printer->secdesc);
+			free(printer->secdesc);
+			printer->secdesc = NULL;
+		}
 		free(printer);
 	}
 }
