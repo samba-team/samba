@@ -808,20 +808,17 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
     memcpy(userdata->data, (char *)&p, sizeof(struct packet_struct *) );
 
     /*
-     * As query_name uses the subnet broadcast address as the destination
-     * of the packet we temporarily change the subnet broadcast address to
-     * be the first IP address of the name owner and send the packet. This
-     * is a *horrible* hack but the alternative is to add the destination
-     * address parameter to all query_name() calls. I hate this code :-).
+     * Use the new call to send a query directly to an IP address.
+     * This sends the query directly to the IP address, and ensures
+     * the recursion desired flag is not set (you were right Luke :-).
+     * This function should *only* be called from the WINS server
+     * code. JRA.
      */
 
-    subrec->bcast_ip = *namerec->ip;
-
-    query_name( subrec, question->name, question->name_type, 
+    query_name_from_wins_server( *namerec->ip, question->name, question->name_type, 
                 wins_register_query_success,
                 wins_register_query_fail,
                 userdata);
-    subrec->bcast_ip = ipzero;
     return;
   }
 

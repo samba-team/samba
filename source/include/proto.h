@@ -1276,6 +1276,11 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
                    query_name_success_function success_fn,
                    query_name_fail_function fail_fn, 
                    struct userdata_struct *userdata);
+BOOL query_name_from_wins_server(struct in_addr ip_to, 
+                   char *name, int type,
+                   query_name_success_function success_fn,
+                   query_name_fail_function fail_fn, 
+                   struct userdata_struct *userdata);
 
 /*The following definitions come from  nmbd_nameregister.c  */
 
@@ -1341,6 +1346,13 @@ struct response_record *queue_refresh_name( struct subnet_record *subrec,
                           struct name_record *namerec,
                           struct in_addr refresh_ip);
 struct response_record *queue_query_name( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          query_name_success_function success_fn,
+                          query_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname);
+struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
                           response_function resp_fn,
                           timeout_response_function timeout_fn,
                           query_name_success_function success_fn,
