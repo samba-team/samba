@@ -37,8 +37,6 @@ static void sam_fill_default_account(SAM_ACCOUNT_HANDLE *account)
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	account->private.init_flag		    = FLAG_SAM_UNINIT;
-
 	/* FIXME: We should actually call get_nt_time_max() or sthng 
 	 * here */
 	unix_to_nt_time(&(account->private.logoff_time),get_time_t_max());
