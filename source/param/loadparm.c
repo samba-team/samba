@@ -3683,11 +3683,17 @@ const char *get_called_name(void)
 	if (! *local_machine)
 		return global_myname;
 
-	if ((*local_machine) && !StrCaseCmp(local_machine, "*SMBSERVER")) {
-		fstrcpy(called_name, get_my_primary_ip());
-		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
-			called_name));
-		return called_name;
+	/* 
+	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
+	 */
+
+	if (*local_machine) { 
+		if (!StrCaseCmp(local_machine, "*SMBSERVER") || !StrCaseCmp(local_machine, "*SMBSERV")) {
+			fstrcpy(called_name, get_my_primary_ip());
+			DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
+				called_name));
+			return called_name;
+		}
 	}
 
         return local_machine;
