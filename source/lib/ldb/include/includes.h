@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <fnmatch.h>
+#include <sys/time.h>
+#include <time.h>
 #include "ldb.h"
 #include "ldb_parse.h"
 
