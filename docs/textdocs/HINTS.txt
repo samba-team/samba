@@ -1,6 +1,3 @@
-!==
-!== HINTS.txt for Samba release 2.0.4 18 May 1999
-!==
 Contributor:	Many
 Updated:	Not for a long time!
 

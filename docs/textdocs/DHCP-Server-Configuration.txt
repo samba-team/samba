@@ -1,6 +1,3 @@
-!==
-!== DHCP-Server-Configuration.txt for Samba release 2.2.0-alpha3 24 Mar 2001
-!==
 Subject:	DHCP Server Configuration for SMB Clients
 Date:		March 1, 1998
 Updated:        May 15, 2001

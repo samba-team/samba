@@ -1,6 +1,3 @@
-!==
-!== SCO.txt for Samba release 2.0.4 18 May 1999
-!==
 Contributor:	Geza Makay <makayg@math.u-szeged.hu>
 Date:		Unknown
 Status:		Obsolete - Dates to SCO Unix v3.2.4 approx.

@@ -1,6 +1,3 @@
-!==
-!== RoutedNetworks.txt for Samba release 2.0.4 18 May 1999
-!==
 #NOFNR Flag in LMHosts to Communicate Across Routers
 
   Last reviewed: May 5, 1997 

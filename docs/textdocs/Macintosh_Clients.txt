@@ -1,6 +1,3 @@
-!==
-!== Macintosh_Clients.txt for Samba release 2.0.4 18 May 1999
-!==
 > Are there any Macintosh clients for Samba?
 
 Yes. Thursby now have a CIFS Client / Server called DAVE - see

@@ -1,6 +1,3 @@
-!==
-!== Support.txt for Samba release 2.0.4 18 May 1999
-!==
 The Samba Consultants List
 ==========================
 

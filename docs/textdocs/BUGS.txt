@@ -1,6 +1,3 @@
-!==
-!== BUGS.txt for Samba release 2.0.4 18 May 1999
-!==
 Contributor:	Samba Team
 Updated:	June 27, 1997
 
