@@ -1,0 +1,30 @@
+# $Source: /data/src/mirror/cvs/samba/examples/LDAP/smbldap-tools/ChangeLog,v $
+#
+## ChangeLog for SMBLDAP-TOOLS
+
+* 2002-07-24: top and account objectclasses replaced with inetorgperson
+* 2002-06-03: notes to webmin.idealx.org (idxldapaccounts)
+* 2002-06-01: release 0.7. tested with 2.2.4
+* 2002-05-31: fixed smbldap-populate compliance to smbldap_conf 
+              cleaned up smbldap_conf to be more readable 
+              some more documentation
+              bugfixes on smbldap-passwd and smbldap-populate
+* 2002-05-16: modified default mode on homes: now 700
+* 2002-05-13: fixed spec (relocation and reqs)
+* 2002-03-02: fixed 2.2.3 sambaAccount bug with smbldap-useradd.pl
+              (rid is now mandatory in the sambaAccount objectClass)
+* 2002-02-14: just modified default populate for Administrator
+* 2002-02-05: release 0.6. enable/disable user in usermod
+* 2002-02-04: release 0.5. added smbldap-migrate-groups to migrate NT groups
+              from a net group dump. added samba parameters to smbldap-useradd
+              and smbldap-usermod.
+* 2002-01-12: added smbldap-migrate-accounts to migrate users/machines
+              accounts from a PWDUMP dump
+* 2001-12-13: added smbldap-populate to create the initial base
+* 2001-12-13: initial release 0.1
+* 2001-12-12: fixed the SPEC file for RedHat
+* 2001-12-03: cleaned the code and use strict;
+* 2001-11-20: initial needs (for testing purpose on Samba-2.2.2 an Samba-TNG)
+
+
+# - The End
