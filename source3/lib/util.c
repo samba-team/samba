@@ -2060,7 +2060,7 @@ void data_blob_clear_free(DATA_BLOB *d)
 	data_blob_free(d);
 }
 
-#ifdef __INSURE__
+#ifdef __INSURE__XX_DISABLED_XX
 
 /*******************************************************************
 This routine is a trick to immediately catch errors when debugging
