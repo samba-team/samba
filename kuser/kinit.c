@@ -46,6 +46,7 @@ int renew_flag		= 0;
 int validate_flag	= 0;
 int version_flag	= 0;
 int help_flag		= 0;
+int no_addrs_flag	= 0;
 char *lifetime 		= NULL;
 char *renew_life	= NULL;
 char *server		= NULL;
@@ -109,6 +110,9 @@ struct getargs args[] = {
 
     { "fcache-version", 0,   arg_integer, &fcache_version,
       "file cache version to create" },
+
+    { "noaddresses",	0,   arg_flag,	&no_addrs_flag,
+      "request a ticket with no addresses" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -207,6 +211,7 @@ main (int argc, char **argv)
     krb5_get_init_creds_opt opt;
     krb5_deltat start_time = 0;
     krb5_deltat ticket_life = 0;
+    krb5_addresses no_addrs;
 
     set_progname (argv[0]);
     memset(&cred, 0, sizeof(cred));
@@ -253,6 +258,13 @@ main (int argc, char **argv)
     
     krb5_get_init_creds_opt_set_forwardable (&opt, forwardable);
     krb5_get_init_creds_opt_set_proxiable (&opt, proxiable);
+
+    if (no_addrs_flag) {
+	no_addrs.len = 0;
+	no_addrs.val = NULL;
+
+	krb5_get_init_creds_opt_set_address_list (&opt, &no_addrs);
+    }
 
     if(renew_life) {
 	int tmp = parse_time (renew_life, "s");
