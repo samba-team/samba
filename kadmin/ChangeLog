@@ -1,3 +1,12 @@
+2000-08-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: link with pidfile library
+
+	* kadmind.c: write a pid file, and setup password quality
+	functions
+
+	* kadmin_locl.h: util.h
+
 2000-07-27  Assar Westerlund  <assar@sics.se>
 
 	* version4.c (decode_packet): be totally consistent with the
@@ -57,6 +66,12 @@
 	type-correct and static
 
 	* kadmin_locl.h: add limits.h and sys/select.h
+
+2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadm_conn.c: put all processes in a new process group
+
+	* server.c (v5_loop): use krb5_{read,write}_priv_message
 
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
