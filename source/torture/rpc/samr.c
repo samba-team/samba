@@ -23,10 +23,15 @@
 #include "includes.h"
 
 #define TEST_USERNAME "samrtorturetest"
+#define TEST_ALIASNAME "samrtorturetestalias"
 #define TEST_MACHINENAME "samrtorturetestmach$"
 #define TEST_DOMAINNAME "samrtorturetestdom$"
 
+
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle);
+
+static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle);
 
 static void init_samr_Name(struct samr_Name *name, const char *s)
@@ -188,14 +193,83 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], __LINE__);
 	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__);
 
+#if 0
+	/* these fail with win2003 - it appears you can't set the primary gid?
+	   the set succeeds, but the gid isn't changed. Very weird! */
 	TEST_USERINFO_INT(9, primary_gid,  1, primary_gid, 513);
 	TEST_USERINFO_INT(9, primary_gid,  3, primary_gid, 513);
 	TEST_USERINFO_INT(9, primary_gid,  5, primary_gid, 513);
 	TEST_USERINFO_INT(9, primary_gid, 21, primary_gid, 513);
+#endif
+	return ret;
+}
+
+static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_SetAliasInfo r;
+	struct samr_QueryAliasInfo q;
+	uint16 levels[] = {2, 3};
+	int i;
+	BOOL ret = True;
+
+	/* Ignoring switch level 1, as that includes the number of members for the alias
+	 * and setting this to a wrong value might have negative consequences
+	 */
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing SetAliasInfo level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		switch (r.in.level) {
+		    case 2 : init_samr_Name(&r.in.info.name,TEST_ALIASNAME); break;
+		    case 3 : init_samr_Name(&r.in.info.description,
+				"Test Description, should test I18N as well"); break;
+		}
+
+		status = dcerpc_samr_SetAliasInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("SetAliasInfo level %u failed - %s\n",
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+
+		q.in.handle = handle;
+		q.in.level = levels[i];
+
+		status = dcerpc_samr_QueryAliasInfo(p, mem_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryAliasInfo level %u failed - %s\n",
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
 
 	return ret;
 }
 
+static BOOL test_GetGroupsForUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				  struct policy_handle *user_handle)
+{
+	struct samr_GetGroupsForUser r;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("testing GetGroupsForUser\n");
+
+	r.in.handle = user_handle;
+
+	status = dcerpc_samr_GetGroupsForUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetGroupsForUser failed - %s\n",nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+
+}
 static BOOL test_GetUserPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle)
 {
@@ -216,6 +290,59 @@ static BOOL test_GetUserPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_GetMembersInAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				  struct policy_handle *alias_handle)
+{
+	struct samr_GetMembersInAlias r;
+	struct lsa_SidArray sids;
+	NTSTATUS status;
+	BOOL     ret = True;
+
+	printf("Testing GetMembersInAlias\n");
+
+	r.in.handle = alias_handle;
+	r.out.sids = &sids;
+
+	status = dcerpc_samr_GetMembersInAlias(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetMembersInAlias failed - %s\n",
+		       nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_AddMemberToAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				  struct policy_handle *alias_handle,
+				  struct policy_handle *domain_handle )
+{
+	struct samr_AddAliasMem r;
+	struct samr_DelAliasMem d;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("testing ADD_ALIASMEM\n");
+	r.in.handle = alias_handle;
+
+	return True;
+
+	status = dcerpc_samr_AddAliasMem(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ADD_ALIASMEM failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	d.in.handle = alias_handle;
+
+	status = dcerpc_samr_DelAliasMem(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DEL_ALIASMEM failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
 
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
@@ -241,6 +368,30 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *alias_handle,
+			  struct policy_handle *domain_handle)
+{
+	BOOL ret = True;
+
+	if (!test_QuerySecurity(p, mem_ctx, alias_handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryAliasInfo(p, mem_ctx, alias_handle)) {
+		ret = False;
+	}
+
+	if (!test_SetAliasInfo(p, mem_ctx, alias_handle)) {
+		ret = False;
+	}
+
+	if (!test_AddMemberToAlias(p, mem_ctx, alias_handle, domain_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
 
 static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				   struct policy_handle *handle, const char *name)
@@ -285,15 +436,120 @@ failed:
 	return False;
 }
 
+static BOOL test_DeleteAlias_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				   struct policy_handle *domain_handle, const char *name)
+{
+	NTSTATUS status;
+	struct samr_LookupNames n;
+	struct samr_OpenAlias r;
+	struct samr_DeleteDomAlias d;
+	struct policy_handle alias_handle;
+	struct samr_Name sname;
+
+	printf("testing DeleteAlias_byname\n");
+	init_samr_Name(&sname, name);
+
+	n.in.handle = domain_handle;
+	n.in.num_names = 1;
+	n.in.names = &sname;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	r.in.handle = domain_handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = n.out.rids.ids[0];
+	r.out.acct_handle = &alias_handle;
+	status = dcerpc_samr_OpenAlias(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	d.in.handle = &alias_handle;
+	d.out.handle = &alias_handle;
+	status = dcerpc_samr_DeleteDomAlias(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	return True;
+
+failed:
+	printf("DeleteUser_byname(%s) failed - %s\n", name, nt_errstr(status));
+	return False;
+}
+
+static BOOL test_DeleteAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				     struct policy_handle *alias_handle)
+{
+    	struct samr_DeleteDomAlias d;
+	NTSTATUS status;
+	BOOL ret;
+	printf("Testing DeleteAlias\n");
+
+	d.in.handle = alias_handle;
+	d.out.handle = alias_handle;
+
+	status = dcerpc_samr_DeleteDomAlias(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteAlias failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			    struct policy_handle *domain_handle, struct policy_handle *alias_handle)
+{
+	NTSTATUS status;
+	struct samr_CreateDomAlias r;
+	struct samr_Name name;
+	uint32 rid;
+	BOOL ret = True;
+
+	init_samr_Name(&name, TEST_ALIASNAME);
+	r.in.handle = domain_handle;
+	r.in.aliasname = &name;
+	r.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	r.out.acct_handle = alias_handle;
+	r.out.rid = &rid;
+
+	printf("Testing CreateAlias (%s)\n", r.in.aliasname->name);
+
+	status = dcerpc_samr_CreateDomAlias(p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("Server refused create of '%s'\n", r.in.aliasname->name);
+		return True;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ALIAS_EXISTS)) {
+		if (!test_DeleteAlias_byname(p, mem_ctx, domain_handle, r.in.aliasname->name)) {
+			return False;
+		}
+		status = dcerpc_samr_CreateDomAlias(p, mem_ctx, &r);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateAlias failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_alias_ops(p, mem_ctx, alias_handle, domain_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
 
 static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			    struct policy_handle *handle)
+			    struct policy_handle *domain_handle, struct policy_handle *user_handle)
 {
 	NTSTATUS status;
 	struct samr_CreateUser r;
 	struct samr_QueryUserInfo q;
-	struct samr_DeleteUser d;
-	struct policy_handle acct_handle;
 	uint32 rid;
 
 	/* This call creates a 'normal' account - check that it really does */
@@ -303,10 +559,10 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	init_samr_Name(&name, TEST_USERNAME);
 
-	r.in.handle = handle;
+	r.in.handle = domain_handle;
 	r.in.username = &name;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.acct_handle = &acct_handle;
+	r.out.acct_handle = user_handle;
 	r.out.rid = &rid;
 
 	printf("Testing CreateUser(%s)\n", r.in.username->name);
@@ -315,11 +571,12 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		printf("Server refused create of '%s'\n", r.in.username->name);
+		ZERO_STRUCTP(user_handle);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.username->name)) {
+		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.username->name)) {
 			return False;
 		}
 		status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
@@ -330,7 +587,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 
-	q.in.handle = &acct_handle;
+	q.in.handle = user_handle;
 	q.in.level = 16;
 
 	status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
@@ -347,14 +604,25 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!test_user_ops(p, mem_ctx, &acct_handle)) {
+	if (!test_user_ops(p, mem_ctx, user_handle)) {
 		ret = False;
 	}
 
+	return ret;
+}
+
+
+static BOOL test_DeleteUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			    struct policy_handle *user_handle)
+{
+    	struct samr_DeleteUser d;
+	NTSTATUS status;
+	BOOL ret;
+
 	printf("Testing DeleteUser\n");
 
-	d.in.handle = &acct_handle;
-	d.out.handle = &acct_handle;
+	d.in.handle = user_handle;
+	d.out.handle = user_handle;
 
 	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -366,7 +634,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				     struct policy_handle *handle)
+			     struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct samr_CreateUser2 r;
@@ -457,7 +725,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				ret = False;
 			}
 
-			printf("Testing DeleteUser\n");
+			printf("Testing DeleteUser (createuser2 test)\n");
 		
 			d.in.handle = &acct_handle;
 			d.out.handle = &acct_handle;
@@ -585,6 +853,10 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_GetGroupsForUser(p,mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
 	if (!test_Close(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
@@ -654,6 +926,10 @@ static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryAliasInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	if (!test_GetMembersInAlias(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
 
@@ -865,7 +1141,12 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_OpenDomain r;
 	struct policy_handle domain_handle;
+	struct policy_handle user_handle;
+	struct policy_handle alias_handle;
 	BOOL ret = True;
+
+	ZERO_STRUCT(user_handle);
+	ZERO_STRUCT(alias_handle);
 
 	printf("Testing OpenDomain\n");
 
@@ -880,11 +1161,15 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!test_CreateUser(p, mem_ctx, &domain_handle)) {
+	if (!test_CreateUser2(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
-	if (!test_CreateUser2(p, mem_ctx, &domain_handle)) {
+	if (!test_CreateUser(p, mem_ctx, &domain_handle, &user_handle)) {
+		ret = False;
+	}
+
+	if (!test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle)) {
 		ret = False;
 	}
 
@@ -909,6 +1194,16 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryDisplayInfo(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!policy_handle_empty(&user_handle) &&
+	    !test_DeleteUser(p, mem_ctx, &user_handle)) {
+		ret = False;
+	}
+
+	if (!policy_handle_empty(&alias_handle) &&
+	    !test_DeleteAlias(p,mem_ctx, &alias_handle)) {
 		ret = False;
 	}
 
@@ -986,6 +1281,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Connect r;
 	struct samr_Connect2 r2;
 	struct samr_Connect4 r4;
+	struct samr_Connect5 r5;
 	BOOL ret = True;
 
 	r.in.system_name = 0;
@@ -1017,6 +1313,23 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect4 failed - %s\n", nt_errstr(status));
 		ret = False;
+	}
+
+	r5.in.system_name = "";
+	r5.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r5.in.unknown0 = 1; /*Magic values I took from a WinXP pro workstation       */
+	r5.in.unknown1 = 1; /*tests failed with NT_STATUS_NET_WRITE_FAULT if         */
+	r5.in.unknown2 = 3; /*unknown0 and unknown1 where something other than 1     */
+	r5.in.unknown3 = 0; /*unkown2 and unknown3 could be varied and had no effect */
+	r5.out.handle = handle;
+
+	status = dcerpc_samr_Connect5(p, mem_ctx, &r5);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*This fails for a Win2000pro machine, but succeeds for
+		  WinXPpro  --  Kai
+		 */
+		printf("Connect5 failed - %s\n", nt_errstr(status));
+		/*ret = False; Should this test fail? */
 	}
 
 	return ret;

@@ -243,7 +243,13 @@
 
 	/************************/
 	/* Function    0x0e     */
-	NTSTATUS samr_CREATE_DOM_ALIAS();
+	NTSTATUS samr_CreateDomAlias(
+		[in,ref]      policy_handle *handle,
+		[in,ref]      samr_Name     *aliasname,
+		[in]          uint32         access_mask,
+		[out,ref]     policy_handle *acct_handle,
+		[out,ref]     uint32        *rid
+		);
 
 	/************************/
 	/* Function    0x0f     */
@@ -260,17 +266,12 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dom_sid2 *sids;
-	} samr_Sids;
-
-	typedef struct {
-		uint32 count;
 		[size_is(count)] uint32 *ids;
 	} samr_Ids;
 
 	NTSTATUS samr_GetAliasMembership(
 		[in,ref]      policy_handle *handle,
-		[in]          samr_Sids *sids,
+		[in,ref]  lsa_SidArray  *sids,
 		[out]         samr_Ids *rids
 		);
 
@@ -323,10 +324,6 @@
 	} samr_GroupInfoAll;
 
 	typedef struct {
-		samr_Name Name;
-	} samr_GroupInfoName;
-
-	typedef struct {
 		uint32 unknown;
 	} samr_GroupInfoX;
 
@@ -342,10 +339,10 @@
 	} GroupInfo;
 
 	typedef union {
-		[case(GroupInfoAll)]         samr_GroupInfoAll        all;
-		[case(GroupInfoName)]        samr_GroupInfoName       name;
-		[case(GroupInfoX)]           samr_GroupInfoX          unknown;
-		[case(GroupInfoDescription)] samr_GroupInfoDesciption description;
+		[case(GroupInfoAll)]         samr_GroupInfoAll    all;
+		[case(GroupInfoName)]        samr_Name            name;
+		[case(GroupInfoX)]           samr_GroupInfoX      unknown;
+		[case(GroupInfoDescription)] samr_Name            description;
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(
@@ -398,18 +395,10 @@
 		samr_Name description;
 	} samr_AliasInfoAll;
 
-	typedef struct {
-		samr_Name name;
-	} samr_AliasInfoName;
-
-	typedef struct {
-		samr_Name description;
-	} samr_AliasInfoDescription;
-
 	typedef union {
 		[case(1)] samr_AliasInfoAll all;
-		[case(2)] samr_AliasInfoName name;
-		[case(3)] samr_AliasInfoDescription description;
+		[case(2)] samr_Name name;
+		[case(3)] samr_Name description;
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
@@ -420,23 +409,38 @@
 
 	/************************/
 	/* Function    0x1d     */
-	NTSTATUS samr_SET_ALIASINFO();
+	NTSTATUS samr_SetAliasInfo(
+		[in,ref]                  policy_handle  *handle,
+		[in]                      uint16          level,
+		[in,switch_is(level)]     samr_AliasInfo  info
+		);
 
 	/************************/
 	/* Function    0x1e     */
-	NTSTATUS samr_DELETE_DOM_ALIAS();
+	NTSTATUS samr_DeleteDomAlias(
+		[in,out,ref]  policy_handle *handle
+		);
 
 	/************************/
 	/* Function    0x1f     */
-	NTSTATUS samr_ADD_ALIASMEM();
+	NTSTATUS samr_AddAliasMem(
+		[in,ref]  policy_handle *handle,
+		[in,ref]  dom_sid2      *sid
+		);
 
 	/************************/
 	/* Function    0x20     */
-	NTSTATUS samr_DEL_ALIASMEM();
+	NTSTATUS samr_DelAliasMem(
+		[in,ref] policy_handle *handle,
+		[in,ref] dom_sid2      *sid
+		);
 
 	/************************/
 	/* Function    0x21     */
-	NTSTATUS samr_GET_MEMBERS_IN_ALIAS();
+	NTSTATUS samr_GetMembersInAlias(
+		[in,ref]   policy_handle *handle,
+		[out,ref]  lsa_SidArray    *sids
+		);
 
 	/************************/
 	/* Function    0x22     */
@@ -645,7 +649,21 @@
 
 	/************************/
 	/* Function    0x27     */
-	NTSTATUS samr_GET_GROUPS_FOR_USER();
+
+	typedef struct {
+		uint32 rid;
+		uint32 type;
+	} samr_RidType;
+
+	typedef struct {
+		uint32     count;
+		[size_is(count)] samr_RidType *rid;
+	} samr_RidArray;
+
+	NTSTATUS samr_GetGroupsForUser(
+		[in,ref]   policy_handle *handle,
+		[out]      samr_RidArray  *rids
+		);
 
 	/************************/
 	/* Function    0x28     */
@@ -842,7 +860,19 @@
 
 	/************************/
 	/* Function    0x40      */
-	NTSTATUS samr_CONNECT5();
+	NTSTATUS samr_Connect5(
+		[in]       unistr        *system_name,
+		[in]       uint32         access_mask,
+		[in]       uint32         unknown0,
+		[in]       uint32         unknown1,
+		[in]       uint32         unknown2,
+		[in]       uint32         unknown3,
+		[out]      uint32         unknown4,
+		[out]      uint32         unknown5,
+		[out]      uint32         unknown6,
+		[out]      uint32         unknown7,
+		[out,ref]  policy_handle *handle
+		);
 
 	/************************/
 	/* Function    0x41     */
