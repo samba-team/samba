@@ -1,99 +1,152 @@
-          WHATS NEW IN 2.0.0 ALPHA SERIES
-          ===============================
+          WHATS NEW IN Samba 2.0.0 beta1
+          ==============================
 
-This is an alpha release of Samba. Releases in this series are done
-automatically every week based on the latest code in the Samba CVS
-tree. 
+This is a MAJOR new release of Samba, the UNIX based SMB/CIFS file 
+and print server for Windows systems.
 
-THIS RELEASE IS NOT PRODUCTION QUALITY. IT MAY NOT EVEN COMPILE. 
+There have been many changes in Samba since the last major release,
+1.9.18. These have mainly been in the areas of performance and
+SMB protocol correctness. In addition, a Web based GUI interface
+for configuring Samba has been added.
 
-If you use this release then be aware of the following:
-
-- only use these releases if you can't use CVS for some
-  reason. Getting the code via anonymous cvs is preferable. See
-  http://samba.anu.edu.au/cvs.html 
-
-- don't use this code if you are not an experienced programmer. We are
-  doing these releases so that users who cannot access the CVS tree
-  directly for some reason can report/fix bugs. If you find bugs in
-  this release and you want to help fix them then please join the
-  samba-technical mailing list (see http://samba.anu.edu.au/listproc/)
-  and discuss it there.
-
-- the docs are not uptodate. If you find documentation errors then
-  please send patches to fix them. Out of date documentation is one of
-  the main things holding back a Samba 2.0 release.
+In addition, Samba has been re-written to help portability to
+other POSIX-based systems, based on the GNU autoconf tool.
 
 Major changes in Samba 2.0
 --------------------------
 
-There have been several major changes in Samba for version 2.0. Here
-are some of them:
+There are many major changes in Samba for version 2.0. Here are 
+some of them:
 
-1) autoconf
------------
+=====================================================================
 
-You now configure Samba by running "./configure" then make. See
-docs/UNIX_INSTALL.txt 
+1). Speed
+---------
 
-2) domain control
------------------
+Samba has been benchmarked on high-end UNIX hardware as out-performing
+all other SMB/CIFS servers using the Ziff-Davis NetBench benchmark.
+Many changes to the code to optimise high-end performance have been made.
 
-Samba can now (mostly) act as a NT primary domain controller and
-domain logon server. Unfortunately this is largely undocumented at the
-moment, but to get you started you want smb.conf entries like this:
+2). Correctness
+---------------
 
-	domain controller = Yes
-	domain logons = Yes
-	preferred master = Yes
-	domain master = Yes
+Samba now supports the Windows NT specific SMB requests. This
+means that on platforms that are capable Samba now presents a
+64 bit view of the filesystem to Windows NT clients and is
+capable of handling very large files.
 
-[netlogon]
-	path = /data/netlogon
-	read only = No
+3). Portability
+---------------
 
-further documentation on this still needs to be written :)
+Samba is now self-configuring using GNU autoconf, removing
+the need for people installing Samba to have to hand configure
+Makefiles, as was needed in previous versions.
 
-3) option defaults changed
---------------------------
+You now configure Samba by running "./configure" then "make". See
+docs/textdocs/UNIX_INSTALL.txt for details.
 
-several parameters have changed their default values. The most
-important of these is that the default security mode is now user level
-security rather than share level security.
-
-4) web based GUI configuration
+4) Web based GUI configuration
 ------------------------------
 
 Samba now comes with SWAT, a web based GUI config system. See
-swat/README for how to set it up.
+the swat man page for details on how to set it up.
 
-5) change to nmbd default logging behavior
-------------------------------------------
+5) Cross protocol data integrety
+--------------------------------
 
-The nmbd daemon now appends to pre-existing log files by default.  In
-previous releases, nmbd would overwrite old log files.  Both nmbd and smbd
-now accept the '-a' and '-o' options, which mean "append" and "overwrite",
-respectively.
+An open function interface has been defined to allow 
+"opportunistic locks" (oplocks for short) granted by Samba
+to be seen by other UNIX processes. This allows complete
+cross protocol (NFS and SMB) data integrety using Samba
+with platforms that support this feature.
 
+6) Domain client capability
+---------------------------
 
-Minor changes in Samba 2.0
---------------------------
+Samba is now capable of using a Windows NT PDC for user
+authentication in exactly the same was as a Windows NT
+server does, ie. it can be a member of a Domain. See
+docs/textdocs/DOMAIN_MEMBER.txt for details.
 
-1) timestamps on all log messages
----------------------------------
+7) Documentation Updates
+------------------------
 
-Both nmbd and smbd now place timestamp headers on all log messages.  The
-headers include the time and the message level.  On systems with compilers
-that support the necessary macros, the file & function names and the line
-number (of the call to Debug()) will also be listed.
+All the reference parts of the Samba documentation (the
+manual pages) have been updated and converted to a document
+format that allows automatic generation of HTML, SGML, and
+text formats. These documents now ship as standard in HTML
+and manpage format.
 
-2) NetBIOS name server has improved database
---------------------------------------------
+=====================================================================
 
-The linked list used to store NetBIOS names in the Samba "WINS" database
-has been replaced with a splay-balanced binary tree.  This should improve
-speed for installations with very large WINS lists.
+NOTE - Some important option defaults changed
+---------------------------------------------
 
+Several parameters have changed their default values. The most
+important of these is that the default security mode is now user
+level security rather than share level security.
 
-There have been lots of other changes as well. We'll add them here as
-we remember them :)
+This (incompatible) change was made to ease new Samba installs
+as user level security is easier to use for Windows 95/98 and
+Windows NT clients.
+
+********IMPORTANT NOTE****************
+
+If you have no "security=" line in the [global] section of 
+your current smb.conf and you update to Samba 2.0 you will
+need to add the line :
+
+security=share
+
+to get exactly the same behaviour with Samba 2.0 as you
+did with previous versions of Samba.
+
+********END IMPORTANT NOTE*************
+
+In addition, Samba now defaults to case sensitivity options that
+match a Windows NT server precisely, that is, case insensitive 
+but case preserving.
+
+=====================================================================
+
+NOTE - Primary Domain Controller Functionality
+----------------------------------------------
+
+This version of Samba contains code that correctly implements
+the undocumented Primary Domain Controller authentication
+protocols. However, there is much more to being a Primary
+Domain Controller than serving Windows NT logon requests.
+
+A useful version of a Primary Domain Controller contains
+many remote proceedure calls to do things like enumerate users, 
+groups, and security information, only some of which Samba currently
+implements. For this reason we have chosen not to advertise
+and actively support Primary Domain Controller functionality
+with this release.
+
+This work is being done in the CVS (developer) versions of Samba,
+development of which continues at a fast pace. If you are
+interested in participating in or helping with this development
+please join the Samba-NTDOM mailing list. Details on joining
+are available at :
+
+http://samba.anu.edu.au/listproc/
+
+Details on obtaining CVS (developer) versions of Samba
+are available at:
+
+http://samba.anu.edu.au/cvs.html
+
+=====================================================================
+
+If you have problems, or think you have found a bug please email 
+a report to :
+
+        samba-bugs@samba.anu.edu.au
+
+As always, all bugs are our responsibility.
+
+Regards,
+
+        The Samba Team. 
+
