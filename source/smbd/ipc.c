@@ -283,8 +283,8 @@ static BOOL init_package(struct pack_desc* p, int count, int subcount)
     i = n = 0;
     p->errcode = NERR_BufTooSmall;
   }
-
-  p->errcode = NERR_Success;
+  else
+    p->errcode = NERR_Success;
   p->buflen = i;
   n -= i;
   p->stringbuf = p->base + i;
