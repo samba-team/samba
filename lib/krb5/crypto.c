@@ -2664,7 +2664,6 @@ static int
 seed_something(void)
 {
     int fd = -1;
-    size_t len;
     char buf[1024], seedfile[256];
 
     /* If there is a seed file, load it. But such a file cannot be trusted,
@@ -2684,7 +2683,7 @@ seed_something(void)
        we do not have to deal with it. */
     if (RAND_status() != 1) {
 	krb5_context context;
-	char *p;
+	const char *p;
 
 	/* Try using egd */
 	if (!krb5_init_context(&context)) {
