@@ -175,10 +175,6 @@
 int rename(const char *zfrom, const char *zto);
 #endif
 
-#ifndef UINT16_MAX
-#define UINT16_MAX 65535
-#endif
-
 #ifndef HAVE_FTRUNCATE
 int ftruncate(int f,long l);
 #endif

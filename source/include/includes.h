@@ -321,10 +321,14 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
-#endif /* _INCLUDES_H */
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
 
 /*
   type safe varient of smb_xmalloc()
 */
 #define smb_xmalloc_p(type) (type *)smb_xmalloc(sizeof(type))
+
+#endif /* _INCLUDES_H */
 
