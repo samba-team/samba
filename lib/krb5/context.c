@@ -209,6 +209,10 @@ krb5_free_context(krb5_context context)
   free(context);
 }
 
+/*
+ * set `etype' to a malloced list of the default enctypes
+ */
+
 static krb5_error_code
 default_etypes(krb5_enctype **etype)
 {
@@ -216,6 +220,7 @@ default_etypes(krb5_enctype **etype)
 	ETYPE_DES3_CBC_SHA1,
 	ETYPE_DES3_CBC_MD5,
 	ETYPE_DES_CBC_MD5,
+	ETYPE_ARCFOUR_HMAC_MD5,
 	ETYPE_DES_CBC_MD4,
 	ETYPE_DES_CBC_CRC,
 	ETYPE_NULL
