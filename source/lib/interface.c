@@ -42,13 +42,13 @@ Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
 static struct interface *iface_find(struct in_addr ip)
 {
-  struct interface *i;
-  if (zero_ip(ip)) return local_interfaces;
+	struct interface *i;
+	if (zero_ip(ip)) return local_interfaces;
 
-  for (i=local_interfaces;i;i=i->next)
-    if (same_net(i->ip,ip,i->nmask)) return i;
+	for (i=local_interfaces;i;i=i->next)
+		if (same_net(i->ip,ip,i->nmask)) return i;
 
-  return NULL;
+	return NULL;
 }
 
 
@@ -203,8 +203,8 @@ load the remote and local interfaces
 ****************************************************************************/
 void load_interfaces(void)
 {
-  /* add the machine's interfaces to local interface structure*/
-  interpret_interfaces(lp_interfaces(), &local_interfaces,"interface");
+	/* add the machine's interfaces to local interface structure*/
+	interpret_interfaces(lp_interfaces(), &local_interfaces,"interface");
 }
 
 
@@ -213,10 +213,10 @@ void load_interfaces(void)
   **************************************************************************/
 BOOL ismyip(struct in_addr ip)
 {
-  struct interface *i;
-  for (i=local_interfaces;i;i=i->next)
-    if (ip_equal(i->ip,ip)) return True;
-  return False;
+	struct interface *i;
+	for (i=local_interfaces;i;i=i->next)
+		if (ip_equal(i->ip,ip)) return True;
+	return False;
 }
 
 /****************************************************************************
@@ -224,11 +224,13 @@ BOOL ismyip(struct in_addr ip)
   **************************************************************************/
 BOOL is_local_net(struct in_addr from)
 {
-  struct interface *i;
-  for (i=local_interfaces;i;i=i->next)
-    if((from.s_addr & i->nmask.s_addr) == (i->ip.s_addr & i->nmask.s_addr))
-      return True;
-  return False;
+	struct interface *i;
+	for (i=local_interfaces;i;i=i->next) {
+		if((from.s_addr & i->nmask.s_addr) == 
+		   (i->ip.s_addr & i->nmask.s_addr))
+			return True;
+	}
+	return False;
 }
 
 /****************************************************************************
@@ -236,12 +238,12 @@ BOOL is_local_net(struct in_addr from)
   **************************************************************************/
 int iface_count(void)
 {
-  int ret = 0;
-  struct interface *i;
+	int ret = 0;
+	struct interface *i;
 
-  for (i=local_interfaces;i;i=i->next)
-    ret++;
-  return ret;
+	for (i=local_interfaces;i;i=i->next)
+		ret++;
+	return ret;
 }
 
 /****************************************************************************
@@ -249,12 +251,12 @@ int iface_count(void)
   **************************************************************************/
 BOOL we_are_multihomed(void)
 {
-  static int multi = -1;
+	static int multi = -1;
 
-  if(multi == -1)
-    multi = (iface_count() > 1 ? True : False);
-
-  return multi;
+	if(multi == -1)
+		multi = (iface_count() > 1 ? True : False);
+	
+	return multi;
 }
 
 /****************************************************************************
@@ -262,13 +264,13 @@ BOOL we_are_multihomed(void)
   **************************************************************************/
 struct interface *get_interface(int n)
 { 
-  struct interface *i;
+	struct interface *i;
   
-  for (i=local_interfaces;i && n;i=i->next)
-    n--;
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
 
-  if (i) return i;
-  return NULL;
+	if (i) return i;
+	return NULL;
 }
 
 /****************************************************************************
@@ -276,13 +278,13 @@ struct interface *get_interface(int n)
   **************************************************************************/
 struct in_addr *iface_n_ip(int n)
 {
-  struct interface *i;
+	struct interface *i;
   
-  for (i=local_interfaces;i && n;i=i->next)
-    n--;
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
 
-  if (i) return &i->ip;
-  return NULL;
+	if (i) return &i->ip;
+	return NULL;
 }
 
 /****************************************************************************
@@ -290,13 +292,13 @@ struct in_addr *iface_n_ip(int n)
   **************************************************************************/
 struct in_addr *iface_n_bcast(int n)
 {
-  struct interface *i;
+	struct interface *i;
   
-  for (i=local_interfaces;i && n;i=i->next)
-    n--;
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
 
-  if (i) return &i->bcast;
-  return NULL;
+	if (i) return &i->bcast;
+	return NULL;
 }
 
 
@@ -328,15 +330,12 @@ unsigned iface_hash(void)
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->bcast : &local_interfaces->bcast);
+	struct interface *i = iface_find(ip);
+	return(i ? &i->bcast : &local_interfaces->bcast);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->ip : &local_interfaces->ip);
+	struct interface *i = iface_find(ip);
+	return(i ? &i->ip : &local_interfaces->ip);
 }
-
-
-
