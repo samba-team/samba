@@ -15,17 +15,21 @@ sub ParseFunction($)
 {
     my($fn) = shift;
 
-#    print Dumper($fn);
-
     # Input typemap
 
     $res .= "%typemap(in) struct $fn->{NAME} * (struct $fn->{NAME} temp) {\n";
-    $res .= "\tif (!PyDict_Check(\$input)) {\n";
-    $res .= "\t\tPyErr_SetString(PyExc_TypeError, \"dict arg expected\");\n";
-    $res .= "\t\treturn NULL;\n";
-    $res .= "\t}\n\n";
-    $res .= "\tmemset(&temp, 0, sizeof(temp));\n\n";
-    $res .= "\t/* store input params in dict */\n\n";
+#    $res .= "\tif (!PyDict_Check(\$input)) {\n";
+#    $res .= "\t\tPyErr_SetString(PyExc_TypeError, \"dict arg expected\");\n";
+#    $res .= "\t\treturn NULL;\n";
+#    $res .= "\t}\n\n";
+    $res .= "\tmemset(&temp, 0, sizeof(temp));\n";
+#    foreach my $e (@{$fn->{DATA}}) {
+#	if (util::has_property($e, "in")) {
+#	    $res .= "\ttemp.in.$e->{NAME} = $e->{TYPE}_from_python(PyDict_GetItem(\$input, PyString_FromString(\"$e->{NAME}\")));\n";
+#	}
+#    }
+
+#    $res .= "\n";
     $res .= "\t\$1 = &temp;\n";
     $res .= "}\n\n";
 
@@ -40,8 +44,16 @@ sub ParseFunction($)
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n";
     $res .= "\n";
-    $res .= "\tdict = PyDict_New();\n\n";
-    $res .= "\t/* store output params in dict */\n\n";
+    $res .= "\tdict = PyDict_New();\n";
+
+#    foreach my $e (@{$fn->{DATA}}) {
+#	if (util::has_property($e, "out")) {
+#	    $res .= "\t// PyDict_SetItem(dict, PyString_FromString(\"$e->{NAME}\"),\n";
+#	    $res .= "\t//\t$e->{TYPE}_to_python(\$1->out.$e->{NAME}));\n";
+#	}
+#    }
+
+    $res .= "\n";
     $res .= "\tresultobj = dict;\n";
     $res .= "}\n\n";
 
@@ -51,12 +63,35 @@ sub ParseFunction($)
     $res .= "$fn->{RETURN_TYPE} dcerpc_$fn->{NAME}(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $fn->{NAME} *r);\n\n";
 }
 
+sub ParseStruct($)
+{
+    my($s) = shift;
+
+    $res .= "%{\n\n";
+    $res .= "\t/* $s->{NAME} */\n\n";
+    
+    foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
+    }
+
+    $res .= "\n%}\n\n";    
+}
+
+sub ParseTypedef($)
+{
+    my($t) = shift;
+
+    foreach my $e ($t) {
+	($e->{DATA}{TYPE} eq "STRUCT") && ParseStruct($e);
+    }
+}
+
 sub ParseInheritedData($)
 {
     my($data) = shift;
 
     foreach my $e (@{$data}) {
 	($e->{TYPE} eq "FUNCTION") && ParseFunction($e);
+	($e->{TYPE} eq "TYPEDEF") && ParseTypedef($e);
     }
 }
 
