@@ -190,12 +190,12 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 
 	werror = cli_spoolss_getprinterdriver(
 		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, level,
-		version, arch, &ctr);
+		arch, version, &ctr);
 
 	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
 		werror = cli_spoolss_getprinterdriver(
 			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
-			level, version, arch, &ctr);
+			level, arch, version, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
