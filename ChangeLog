@@ -1,3 +1,33 @@
+1999-04-25  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_internal): try to handle old
+	DCE secd's that are not able to handle MD5 checksums by defaulting
+	to MD4 if the keytype was DES-CBC-CRC
+	
+	* lib/krb5/mk_req.c (krb5_mk_req): use auth_context->keytype
+	
+	* lib/krb5/krb5.h (krb5_auth_context_data): add `keytype' and
+	`cksumtype'
+
+	* lib/krb5/get_cred.c (make_pa_tgs_req): remove old kludge for
+	secd
+	(init_tgs_req): add all supported enctypes for the keytype in
+	`in_creds->session.keytype' if it's set
+
+	* lib/krb5/crypto.c (F_PSEUDO): new flag for non-protocol
+	encryption types
+	(do_checksum): new function
+	(verify_checksum): take the checksum to use from the checksum message
+	and not from the crypto struct
+	(etypes): add F_PSEUDO flags
+	(krb5_keytype_to_enctypes): new function
+
+	* lib/krb5/auth_context.c (krb5_auth_con_init): initalize keytype
+	and cksumtype
+	(krb5_auth_setcksumtype, krb5_auth_getcksumtype): implement
+	(krb5_auth_setkeytype, krb5_auth_getkeytype): implement
+	(krb5_auth_setenctype): comment out, it's rather bogus anyway
+
 Sat Apr 24 18:35:21 1999  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/config.c: pass context to krb5_config_file_free
@@ -38,6 +68,27 @@ Sat Apr 24 18:35:21 1999  Johan Danielsson  <joda@pdc.kth.se>
 	* lib/krb5/krb5.h: add support for reading and writing old version
 	cache files, and keytabs
 	
+Wed Apr 21 00:09:26 1999  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: fix test for readline.h remember to link with
+ 	$LIB_tgetent when trying linking with readline
+
+	* lib/krb5/init_creds_pw.c (get_init_creds_common): if start_time
+ 	is given, request a postdated ticket.
+
+	* lib/krb5/data.c (krb5_data_free): free data as long as it's not
+ 	NULL
+
+Tue Apr 20 20:18:14 1999  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/Makefile.am (kpasswdd_LDADD): add LIB_dlopen
+
+	* lib/krb5/krb5.h (KRB5_VERIFY_AP_REQ_IGNORE_INVALID): add
+
+	* lib/krb5/rd_req.c (krb5_decrypt_ticket): add `flags` and
+ 	KRB5_VERIFY_AP_REQ_IGNORE_INVALID for ignoring that the ticket is
+ 	invalid
+
 Tue Apr 20 12:42:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kpasswd/kpasswdd.c: don't try to load library by default; get
@@ -45,6 +96,54 @@ Tue Apr 20 12:42:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kpasswd/sample_passwd_check.c: sample password checking
  	functions
+
+Mon Apr 19 22:22:19 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/store.c (krb5_storage_to_data, krb5_ret_data): use
+ 	krb5_data_alloc and be careful with checking allocation and sizes.
+
+	* kuser/klist.c (--tokens): conditionalize on KRB4
+
+	* kuser/kinit.c (renew_validate): set all flags
+	(main): fix cut-n-paste error when setting start-time
+
+	* kdc/kerberos5.c (check_tgs_flags): starttime of a validate
+ 	ticket should be > than current time
+	(*): send flags to krb5_verify_ap_req and krb5_decrypt_ticket
+
+	* kuser/kinit.c (renew_validate): use the client realm instead of
+ 	the local realm when renewing tickets.
+
+	* lib/krb5/get_for_creds.c (krb5_fwd_tgs_creds): compat function
+	(krb5_get_forwarded_creds): correct freeing of out_creds
+
+	* kuser/kinit.c (renew_validate): hopefully fix up freeing of
+ 	memory
+
+	* configure.in: do all the krb4 tests with "$krb4" != "no"
+
+	* lib/krb5/keyblock.c (krb5_free_keyblock_contents): don't zero
+ 	keyvalue if it's NULL.  noticed by Ake Sandgren <ake@cs.umu.se>
+
+	* lib/krb5/get_in_tkt.c (add_padata): loop over all enctypes
+ 	instead of just taking the first one.  fix all callers.  From
+ 	"Brandon S. Allbery KF8NH" <allbery@kf8nh.apk.net>
+
+	* kdc/kdc_locl.h (enable_kaserver): declaration
+	
+	* kdc/hprop.c (ka_convert): print the failing principal.  AFS 3.4a
+ 	creates krbtgt.REALMOFCELL as NOTGS+NOSEAL, work around.  From
+ 	"Brandon S. Allbery KF8NH" <allbery@kf8nh.apk.net>
+
+	* kdc/hpropd.c (open_socket): stupid cast to get rid of a warning
+
+	* kdc/connect.c (add_standard_ports, process_request): look at
+ 	enable_kaserver.  From "Brandon S. Allbery KF8NH"
+ 	<allbery@kf8nh.apk.net>
+
+	* kdc/config.c: new flag --kaserver and config file option
+ 	enable-kaserver.  From "Brandon S. Allbery KF8NH"
+ 	<allbery@kf8nh.apk.net>
 
 Mon Apr 19 12:32:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 

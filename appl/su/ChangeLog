@@ -1,3 +1,10 @@
+Wed Apr 21 21:04:36 1999  Assar Westerlund  <assar@sics.se>
+
+	* su.c (-f): implement
+
+	* su.c: implement -i
+	(verify_krb5): correct the ownership on the credential cache
+
 Tue Apr 20 13:26:13 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* su.c: don't depend on paths.h

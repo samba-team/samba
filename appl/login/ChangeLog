@@ -1,3 +1,11 @@
+Mon Apr 19 22:30:55 1999  Assar Westerlund  <assar@sics.se>
+
+	* login.c: conditionalize the kafs calls on KRB4
+
+	* Makefile.am (LDADD): add kafs
+
+	* login.c: add support for getting afs tokens with v4 and v5
+
 Sun Apr 18 14:12:28 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* login.c: check _PATH_NOLOGIN
