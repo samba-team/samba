@@ -129,9 +129,6 @@ void build_options(BOOL screen)
 #ifdef WITH_QUOTAS
        output(screen,"   WITH_QUOTAS\n");
 #endif
-#ifdef WITH_MSDFS
-       output(screen,"   WITH_MSDFS\n");
-#endif
 #ifdef WITH_VFS
        output(screen,"   WITH_VFS\n");
 #endif
