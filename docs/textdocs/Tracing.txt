@@ -70,7 +70,7 @@ Once you are attached you then can do whatever it is on the client
 that is causing problems and you will capture all the system calls
 that smbd makes. 
 
-So how do you interpret the results? Generally I search thorugh the
+So how do you interpret the results? Generally I search through the
 output for strings that I know will appear when the problem
 happens. For example, if I am having touble with permissions on a file
 I would search for that files name in the strace output and look at
