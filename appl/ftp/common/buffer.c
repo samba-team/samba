@@ -38,6 +38,7 @@
 
 #include "common.h"
 #include <stdio.h>
+#include <err.h>
 #include "roken.h"
 
 RCSID("$Id$");
