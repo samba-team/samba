@@ -38,139 +38,19 @@ static char packet[BUFFER_SIZE];
 extern int DEBUGLEVEL;
 
 
-struct sock_redir
-{
-	int c;
-	int s;
-	int mid_offset;
-	struct cli_state *n;
-};
-
-static uint32 num_socks = 0;
-static struct sock_redir **socks = NULL;
 static uint16 mid_offset = 0x0;
 
 /****************************************************************************
 terminate sockent connection
 ****************************************************************************/
-static void sock_redir_free(struct sock_redir *sock)
+static void free_sock(void *sock)
 {
-	close(sock->c);
-	sock->c = -1;
-	if (sock->n != NULL)
-	{
-		sock->n->fd = sock->s;
-		cli_net_use_del(sock->n->desthost, &sock->n->usr,
-		                False, NULL);
-		sock->n = NULL;
-	}
-	free(sock);
-}
-
-/****************************************************************************
-free a sockent array
-****************************************************************************/
-static void free_sock_array(uint32 num_entries, struct sock_redir **entries)
-{
-	void(*fn)(void*) = (void(*)(void*))&sock_redir_free;
-	free_void_array(num_entries, (void**)entries, *fn);
-}
-
-/****************************************************************************
-add a sockent state to the array
-****************************************************************************/
-static struct sock_redir* add_sock_to_array(uint32 *len,
-				struct sock_redir ***array,
-				struct sock_redir *sock)
-{
-	int i;
-	for (i = 0; i < num_socks; i++)
-	{
-		if (socks[i] == NULL)
-		{
-			socks[i] = sock;
-			return sock;
-		}
-	}
-
-	return (struct sock_redir*)add_item_to_array(len,
-	                     (void***)array, (void*)sock);
-				
-}
-
-/****************************************************************************
-initiate sockent array
-****************************************************************************/
-void init_sock_redir(void)
-{
-	socks = NULL;
-	num_socks = 0;
-}
-
-/****************************************************************************
-terminate sockent array
-****************************************************************************/
-void free_sock_redir(void)
-{
-	free_sock_array(num_socks, socks);
-	init_sock_redir();
-}
-
-/****************************************************************************
-create a new sockent state from user credentials
-****************************************************************************/
-static struct sock_redir *sock_redir_get(int fd)
-{
-	struct sock_redir *sock = (struct sock_redir*)malloc(sizeof(*sock));
-
-	if (sock == NULL)
-	{
-		return NULL;
-	}
-
-	ZERO_STRUCTP(sock);
-
-	sock->c = fd;
-	sock->n = NULL;
-	sock->mid_offset = mid_offset;
-
-	DEBUG(10,("sock_redir_get:\tfd:\t%d\tmidoff:\t%d\n", fd, mid_offset));
-
-	return sock;
-}
-
-/****************************************************************************
-init sock state
-****************************************************************************/
-static void sock_add(int fd)
-{
-	struct sock_redir *sock;
-	sock = sock_redir_get(fd);
 	if (sock != NULL)
 	{
-		add_sock_to_array(&num_socks, &socks, sock);
+		struct cli_state *n = (struct cli_state*)sock;
+		cli_net_use_del(n->desthost, &n->usr,
+		                False, NULL);
 	}
-}
-
-/****************************************************************************
-delete a sockent state
-****************************************************************************/
-static BOOL sock_del(int fd)
-{
-	int i;
-
-	for (i = 0; i < num_socks; i++)
-	{
-		if (socks[i] == NULL) continue;
-		if (socks[i]->c == fd) 
-		{
-			sock_redir_free(socks[i]);
-			socks[i] = NULL;
-			return True;
-		}
-	}
-
-	return False;
 }
 
 static struct cli_state *init_client_connection(int c)
@@ -325,9 +205,10 @@ static void filter_reply(char *buf, int moff)
 
 }
 
-static BOOL process_cli_sock(struct sock_redir *sock)
+static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
+				struct sock_redir *sock)
 {
-	struct cli_state *n = sock->n;
+	struct cli_state *n = (struct cli_state*)sock->n;
 	if (n == NULL)
 	{
 		n = init_client_connection(sock->c);
@@ -335,7 +216,9 @@ static BOOL process_cli_sock(struct sock_redir *sock)
 		{
 			return False;
 		}
-		sock->n = n;
+		sock->n = (void*)n;
+		sock->s_id = mid_offset;
+		sock->s = n->fd;
 	}
 	else
 	{
@@ -345,7 +228,7 @@ static BOOL process_cli_sock(struct sock_redir *sock)
 			return False;
 		}
 
-		filter_reply(packet, sock->mid_offset);
+		filter_reply(packet, sock->s_id);
 		/* ignore keep-alives */
 		if (CVAL(packet, 0) != 0x85)
 		{
@@ -371,7 +254,8 @@ static int get_smbmid(char *buf)
 	return SVAL(buf,smb_mid);
 }
 
-static BOOL process_srv_sock(int fd)
+static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
+				int fd)
 {
 	int smbmid;
 	int i;
@@ -393,16 +277,18 @@ static BOOL process_srv_sock(int fd)
 	for (i = 0; i < num_socks; i++)
 	{
 		int moff;
+		struct cli_state *n;
 		if (socks[i] == NULL || socks[i]->n == NULL)
 		{
 			continue;
 		}
-		moff = socks[i]->mid_offset;
+		moff = socks[i]->s_id;
+		n = (struct cli_state*)socks[i]->n;
 		DEBUG(10,("list:\tfd:\t%d\tmid:\t%d\tmoff:\t%d\n",
 		           socks[i]->s,
-		           socks[i]->n->mid,
+		           n->mid,
 		           moff));
-		if (smbmid != socks[i]->n->mid + moff)
+		if (smbmid != n->mid + moff)
 		{
 			continue;
 		}
@@ -417,14 +303,12 @@ static BOOL process_srv_sock(int fd)
 	return False;
 }
 
-static void start_agent(void)
+static int get_agent_sock(void *id)
 {
-	int s, c;
+	int s;
 	struct sockaddr_un sa;
 	fstring path;
 	fstring dir;
-
-	CatchChild();
 
 	slprintf(dir, sizeof(dir)-1, "/tmp/.smb.%d", getuid());
 	mkdir(dir, S_IRUSR|S_IWUSR|S_IXUSR);
@@ -470,88 +354,25 @@ static void start_agent(void)
 		DEBUG(0,("listen failed\n"));
 		remove(path);
 	}
+	return s;
+}
 
-	while (1)
+static void start_smb_agent(void)
+{
+	struct vagent_ops va =
 	{
-		int i;
-		fd_set fds;
-		int num;
-		struct sockaddr_un addr;
-		int in_addrlen = sizeof(addr);
-		int maxfd = s;
-		
-		FD_ZERO(&fds);
-		FD_SET(s, &fds);
+		free_sock,
+		get_agent_sock,
+		process_cli_sock,
+		process_srv_sock,
+		NULL,
+		NULL,
+		0
+	};
+	
+	CatchChild();
 
-		for (i = 0; i < num_socks; i++)
-		{
-			if (socks[i] != NULL)
-			{
-				int fd = socks[i]->c;
-				FD_SET(fd, &fds);
-				maxfd = MAX(maxfd, fd);
-
-				if (socks[i]->n != NULL)
-				{
-					fd = socks[i]->s;
-					FD_SET(fd, &fds);
-					maxfd = MAX(fd, maxfd);
-				}
-			}
-		}
-
-		dbgflush();
-		num = sys_select(maxfd+1,&fds,NULL, NULL);
-
-		if (num <= 0)
-		{
-			continue;
-		}
-
-		if (FD_ISSET(s, &fds))
-		{
-			FD_CLR(s, &fds);
-			c = accept(s, (struct sockaddr*)&addr, &in_addrlen);
-			if (c != -1)
-			{
-				sock_add(c);
-			}
-		}
-
-		for (i = 0; i < num_socks; i++)
-		{
-			if (socks[i] == NULL)
-			{
-				continue;
-			}
-			if (FD_ISSET(socks[i]->c, &fds))
-			{
-				FD_CLR(socks[i]->c, &fds);
-				if (!process_cli_sock(socks[i]))
-				{
-					sock_redir_free(socks[i]);
-					socks[i] = NULL;
-				}
-			}
-			if (socks[i] == NULL)
-			{
-				continue;
-			}
-			if (socks[i]->n == NULL)
-			{
-				continue;
-			}
-			if (FD_ISSET(socks[i]->s, &fds))
-			{
-				FD_CLR(socks[i]->s, &fds);
-				if (!process_srv_sock(socks[i]->s))
-				{
-					sock_redir_free(socks[i]);
-					socks[i] = NULL;
-				}
-			}
-		}
-	}
+	start_agent(&va);
 }
 
 /****************************************************************************
@@ -612,7 +433,7 @@ int main(int argc, char *argv[])
 		become_daemon();
 	}
 
-	start_agent();
+	start_smb_agent();
 
 	return 0;
 }

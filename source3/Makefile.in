@@ -113,6 +113,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_file.o mem_man/mem_man.o \
 		lib/util_sock.o lib/unix_sec_ctxt.o \
 		lib/util_array.o \
+		lib/vagent.o \
 		lib/util_hnd.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
