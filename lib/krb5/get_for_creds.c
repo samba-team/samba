@@ -41,7 +41,7 @@ add_addrs(krb5_context context,
 	  struct addrinfo *ai)
 {
     krb5_error_code ret;
-    unsigned n, i, j;
+    unsigned n, i;
     void *tmp;
     struct addrinfo *a;
 
@@ -49,19 +49,18 @@ add_addrs(krb5_context context,
     for (a = ai; a != NULL; a = a->ai_next)
 	++n;
 
-    i = addr->len;
-    addr->len += n;
-    tmp = realloc(addr->val, addr->len * sizeof(*addr->val));
+    tmp = realloc(addr->val, (addr->len + n) * sizeof(*addr->val));
     if (tmp == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto fail;
     }
     addr->val = tmp;
-    for (j = i; j < addr->len; ++j) {
+    for (i = addr->len; i < (addr->len + n); ++i) {
 	addr->val[i].addr_type = 0;
 	krb5_data_zero(&addr->val[i].address);
     }
+    i = addr->len;
     for (a = ai; a != NULL; a = a->ai_next) {
 	ret = krb5_sockaddr2address (context, a->ai_addr, &addr->val[i]);
 	if (ret == 0)
@@ -70,8 +69,8 @@ add_addrs(krb5_context context,
 	    krb5_clear_error_string (context);
 	else
 	    goto fail;
+	addr->len = i;
     }
-    addr->len = i;
     return 0;
 fail:
     krb5_free_addresses (context, addr);
