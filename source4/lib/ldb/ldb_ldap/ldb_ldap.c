@@ -252,7 +252,9 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 	LDAPMessage *ldapres, *msg;
 
 	lldb->last_rc = ldap_search_s(lldb->ldap, base, (int)scope, 
-				      expression, attrs, 0, &ldapres);
+				      expression, 
+				      discard_const_p(char *, attrs), 
+				      0, &ldapres);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		return -1;
 	}

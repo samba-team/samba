@@ -57,12 +57,6 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 }
 
 
-static int ldb_close_registry(void *data) 
-{
-	ldb_close((struct ldb_context *)data);
-	return 0;
-}
-
 static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_key **subkey)
 {
 	struct ldb_context *c = k->hive->backend_data;
