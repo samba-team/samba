@@ -241,12 +241,6 @@ static void conn_wait(int port)
 	close(t);
 }
 
-
-
-#ifndef HAVE___PROGNAME
-char *__progname = "ftpd";
-#endif
-
 int
 main(int argc, char **argv, char **envp)
 {
@@ -1461,11 +1455,7 @@ pwd(void)
     /* SunOS has a broken getcwd that does popen(pwd) (!!!), this
      * failes miserably when running chroot 
      */
-#if defined(HAVE_GETCWD) && !defined(BROKEN_GETCWD)
     ret = getcwd(path, sizeof(path));
-#else
-    ret = getwd(path);
-#endif
     if (ret == NULL)
 	reply(550, "%s.", strerror(errno));
     else
