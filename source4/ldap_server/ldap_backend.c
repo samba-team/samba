@@ -45,9 +45,10 @@ NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *re
 	return NT_STATUS_OK;
 }
 
-struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn)
+struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn, enum ldap_scope scope)
 {
-	if (strcasecmp("", dn) == 0) {
+	if (scope == LDAP_SEARCH_SCOPE_BASE
+	    && strcasecmp("", dn) == 0) {
 		return conn->service->rootDSE;
 	}
 
@@ -87,7 +88,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	DEBUGADD(10, (" basedn: %s", req->basedn));
 	DEBUGADD(10, (" filter: %s\n", req->filter));
 
-	part = ldapsrv_get_partition(call->conn, req->basedn);
+	part = ldapsrv_get_partition(call->conn, req->basedn, req->scope);
 
 	if (!part->ops->Search) {
 		struct ldap_Result *done;
@@ -118,7 +119,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("ModifyRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
 
-	part = ldapsrv_get_partition(call->conn, req->dn);
+	part = ldapsrv_get_partition(call->conn, req->dn, LDAP_SEARCH_SCOPE_SUB);
 
 	if (!part->ops->Modify) {
 		return ldapsrv_unwilling(call, 53);
@@ -135,7 +136,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("AddRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
 
-	part = ldapsrv_get_partition(call->conn, req->dn);
+	part = ldapsrv_get_partition(call->conn, req->dn, LDAP_SEARCH_SCOPE_SUB);
 
 	if (!part->ops->Add) {
 		return ldapsrv_unwilling(call, 53);
@@ -152,7 +153,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("DelRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
 
-	part = ldapsrv_get_partition(call->conn, req->dn);
+	part = ldapsrv_get_partition(call->conn, req->dn, LDAP_SEARCH_SCOPE_SUB);
 
 	if (!part->ops->Del) {
 		return ldapsrv_unwilling(call, 53);
@@ -170,7 +171,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	DEBUGADD(10, (" dn: %s", req->dn));
 	DEBUGADD(10, (" newrdn: %s", req->newrdn));
 
-	part = ldapsrv_get_partition(call->conn, req->dn);
+	part = ldapsrv_get_partition(call->conn, req->dn, LDAP_SEARCH_SCOPE_SUB);
 
 	if (!part->ops->ModifyDN) {
 		return ldapsrv_unwilling(call, 53);
@@ -187,7 +188,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("CompareRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
 
-	part = ldapsrv_get_partition(call->conn, req->dn);
+	part = ldapsrv_get_partition(call->conn, req->dn, LDAP_SEARCH_SCOPE_SUB);
 
 	if (!part->ops->Compare) {
 		return ldapsrv_unwilling(call, 53);
