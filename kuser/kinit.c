@@ -147,6 +147,7 @@ renew_validate(krb5_context context,
 	}
     } else {
 	char *realm;
+
 	ret = krb5_get_default_realm(context, &realm);
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_get_default_realm");
@@ -154,11 +155,11 @@ renew_validate(krb5_context context,
 	}
 	ret = krb5_make_principal(context, &in.server, 
 				  realm, "krbtgt", realm, NULL);
+	free (realm);
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_make_principal");
 	    goto out;
 	}
-	free(realm);
     }
     flags.i = 0;
     flags.b.renewable = flags.b.renew = renew;
@@ -179,16 +180,18 @@ renew_validate(krb5_context context,
     }
     ret = krb5_cc_initialize(context, cache, in.client);
     if(ret) {
+	krb5_free_creds (context, out);
 	krb5_warn(context, ret, "krb5_cc_initialize");
 	goto out;
     }
     ret = krb5_cc_store_cred(context, cache, out);
+    krb5_free_creds (context, out);
     if(ret) {
 	krb5_warn(context, ret, "krb5_cc_store_cred");
 	goto out;
     }
 out:
-    krb5_free_creds(context, out);
+    krb5_free_creds_contents(context, &in);
     return ret;
 }
 
