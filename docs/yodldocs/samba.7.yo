@@ -2,7 +2,7 @@ mailto(samba-bugs@samba.anu.edu.au)
 manpage(Samba)(7)(23 Oct 1998)(Samba)()
 
 label(NAME)
-manpagename(Samba)(A Windows fileserver for UNIX)
+manpagename(Samba)(A Windows SMB/CIFS fileserver for UNIX)
 
 label(SYNOPSIS)
 manpagesynopsis()
@@ -28,29 +28,48 @@ enough then please send a patch to email(samba-bugs@samba.anu.edu.au).
 
 startdit() 
 
-dit(url(bf(smbd))(smbd.8.html)) nl() The bf(smbd) (8) daemon provides the file and print
-services to SMB clients, such as Windows 95/98, Windows NT, Windows
-for Workgroups or LanManager. The configuration file for this daemon
-is described in bf(smb.conf (5)).
+dit(url(bf(smbd))(smbd.8.html)) nl() nl() The url(bf(smbd)
+(8))(smbd.8.html) daemon provides the file and print services to SMB
+clients, such as Windows 95/98, Windows NT, Windows for Workgroups or
+LanManager. The configuration file for this daemon is described in
+url(bf(smb.conf (5)))(smb.conf.5.html).
 
-dit(url(bf(nmbd))(nmbd.8.html)) nl() The bf(nmbd) (8) daemon provides NetBIOS
-nameserving and browsing support. The configuration file for this
-daemon is described in bf(smb.conf (5)).
+dit(url(bf(nmbd))(nmbd.8.html)) nl() nl() The url(bf(nmbd)
+(8))(nmbd.8.html) daemon provides NetBIOS nameserving and browsing
+support. The configuration file for this daemon is described in
+url(bf(smb.conf (5)))(smb.conf.5.html).
 
-dit(url(bf(smbclient))(smbclient.1.html)) nl() The bf(smbclient) (1) program implements a simple
-ftp-like client. This is useful for accessing SMB shares on other
-compatible servers (such as Windows NT), and can also be used to allow
-a UNIX box to print to a printer attached to any SMB server (such as a
-PC running Windows NT).
+dit(url(bf(smbclient))(smbclient.1.html)) nl() nl() The url(bf(smbclient)
+(1))(smbclient.1.html) program implements a simple ftp-like
+client. This is useful for accessing SMB shares on other compatible
+servers (such as Windows NT), and can also be used to allow a UNIX box
+to print to a printer attached to any SMB server (such as a PC running
+Windows NT).
 
-dit(url(bf(testparm))(testparm.1.html)) nl() The bf(testparm) (1) utility allows you to test your
-bf(smb.conf (5)) configuration file.
+dit(url(bf(testparm))(testparm.1.html)) nl() nl() The url(bf(testparm
+(1)))(testparm.1.html) utility allows you to test your url(bf(smb.conf
+(5)))(smb.conf.5.html) configuration file.
 
-dit(url(bf(smbstatus))(smbstatus.1.html)) nl() The bf(smbstatus) (1) utility allows you to tell
-who is currently using the bf(smbd) (8) server.
+dit(url(bf(testprns))(testprns.1.html)) nl() nl() the url(bf(testprns
+(1)))(testprns.1.html) utility allows you to test the printers defined
+in your printcap file.
 
-dit(url(bf(nmblookup))(nmblookup.1.html)) nl() the bf(nmblookup) (1) utility allows NetBIOS
-name queries to be made from the UNIX machine. 
+dit(url(bf(smbstatus))(smbstatus.1.html)) nl() nl() The url(bf(smbstatus)
+(1))(smbstatus.1.html) utility allows you to tell who is currently
+using the url(bf(smbd (8)))(smbd.8.html) server.
+
+dit(url(bf(nmblookup))(nmblookup.1.html)) nl() nl() the
+url(bf(nmblookup (1)))(nmblookup.1.html) utility allows NetBIOS name
+queries to be made from the UNIX machine.
+
+dit(url(bf(make_smbcodepage))(make_smbcodepage.1.html)) nl() nl() The
+url(bf(make_smbcodepage (1)))(make_smbcodepage.1.html) utility allows
+you to create SMB code page definition files for your url(bf(smbd
+(8)))(smbd.8.html) server.
+
+dit(url(bf(smbpasswd))(smbpasswd.8.html)) nl() nl() The url(bf(smbpasswd
+(8)))(smbpasswd.8.html) utility allows you to change SMB encrypted
+passwords on Samba and Windows NT(tm) servers.
 
 enddit()
 
