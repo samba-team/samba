@@ -2563,12 +2563,14 @@ void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u)
 	{
 		case 1:			
 		{
-			free_job1_array(r_u->numofjobs, r_u->job.job_info_1);
+			free_job1_array(r_u->numofjobs,
+			                r_u->ctr.job.job_info_1);
 			break;
 		}
 		case 2:
 		{
-			free_job2_array(r_u->numofjobs, r_u->job.job_info_2);
+			free_job2_array(r_u->numofjobs,
+			                r_u->ctr.job.job_info_2);
 			break;
 		}
 	}
@@ -2599,7 +2601,7 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 				for (i=0; i<r_u->numofjobs; i++)
 				{
 					JOB_INFO_1 *info;
-					info=r_u->job.job_info_1[i];
+					info=r_u->ctr.job.job_info_1[i];
 					bufsize_required += spoolss_size_job_info_1(&(info[i]));
 				}
 				break;
@@ -2609,7 +2611,7 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 				for (i=0; i<r_u->numofjobs; i++)
 				{
 					JOB_INFO_2 *info;
-					info=r_u->job.job_info_2[i];
+					info=r_u->ctr.job.job_info_2[i];
 				
 					bufsize_required += spoolss_size_job_info_2(&(info[i]));
 				}
@@ -2617,8 +2619,10 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 			}	
 		}
 
-		DEBUG(4,("spoolss_io_r_enumjobs, size needed: %d\n",bufsize_required));
-		DEBUG(4,("spoolss_io_r_enumjobs, size offered: %d\n",r_u->offered));
+		DEBUG(4,("spoolss_io_r_enumjobs, size needed: %d\n",
+		          bufsize_required));
+		DEBUG(4,("spoolss_io_r_enumjobs, size offered: %d\n",
+		          r_u->offered));
 
 		/* check if the buffer is big enough for the datas */
 		if (r_u->offered<bufsize_required)
@@ -2670,9 +2674,9 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 					if (ps->io)
 					{
 						/* reading */
-						r_u->job.job_info_1[i] = add_job1_to_array(&tmp_ct, &r_u->job.job_info_1, NULL);
+						r_u->ctr.job.job_info_1[i] = add_job1_to_array(&tmp_ct, &r_u->ctr.job.job_info_1, NULL);
 					}
-					info = r_u->job.job_info_1[i];
+					info = r_u->ctr.job.job_info_1[i];
 					smb_io_job_info_1(desc, 
 							  info, 
 							  ps, 
@@ -2690,9 +2694,9 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 					if (ps->io)
 					{
 						/* reading */
-						r_u->job.job_info_2[i] = add_job2_to_array(&tmp_ct, &r_u->job.job_info_2, NULL);
+						r_u->ctr.job.job_info_2[i] = add_job2_to_array(&tmp_ct, &r_u->ctr.job.job_info_2, NULL);
 					}
-					info = r_u->job.job_info_2[i];
+					info = r_u->ctr.job.job_info_2[i];
 					smb_io_job_info_2(desc, 
 							  info, 
 							  ps, 

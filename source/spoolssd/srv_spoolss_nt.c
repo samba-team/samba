@@ -2541,8 +2541,6 @@ uint32 _spoolss_addjob( const POLICY_HND *handle, uint32 level,
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
 static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
@@ -2631,70 +2629,77 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
+uint32 _spoolss_enumjobs( const POLICY_HND *handle,
+				uint32 reqfirstjob,
+				uint32 reqnumofjobs,
+				uint32 level,
+				JOB_INFO_CTR *ctr,
+				uint32 *buf_size,
+				uint32 *numofjobs)
 {
-	SPOOL_R_ENUMJOBS r_u;
 	int snum;
 	int count;
 	int i;
 	print_queue_struct *queue=NULL;
-	print_status_struct status;
-	JOB_INFO_1 *job_info_1=NULL;
-	JOB_INFO_2 *job_info_2=NULL;
+	print_status_struct prt_status;
 
 	DEBUG(4,("spoolss_enumjobs\n"));
 	
-	bzero(&status,sizeof(status));
+	ZERO_STRUCT(prt_status);
 
-	offered=buf_size;
-
-
-	if (get_printer_snum(handle, &snum))
+	if (!get_printer_snum(handle, &snum))
 	{
-		count=get_printqueue(snum, NULL, &queue, &status);
-		numofjobs=0;
-		
-		level=level;
-		
-		DEBUG(4,("count:[%d], status:[%d], [%s]\n", count, status.status, status.message));
-		
-		switch (level)
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	count = get_printqueue(snum, NULL, &queue, &prt_status);
+	(*numofjobs) = 0;
+	
+	DEBUG(4,("count:[%d], status:[%d], [%s]\n",
+	          count, prt_status.status, prt_status.message));
+	
+	switch (level)
+	{
+		case 1:
 		{
-			case 1:
+			for (i=0; i<count; i++)
 			{
-				for (i=0; i<count; i++)
-				{
-					job_info_1=(JOB_INFO_1 *)malloc(count*sizeof(JOB_INFO_1));
-					add_job1_to_array(&numofjobs,
-							  &job.job_info_1,
-							  job_info_1);
+				JOB_INFO_1 *job_info_1;
+				job_info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
+				add_job1_to_array(numofjobs,
+						  &ctr->job.job_info_1,
+						  job_info_1);
 
-					fill_job_info_1(job.job_info_1[i], &(queue[i]), i, snum);
-				}
-				break;
+				fill_job_info_1(ctr->job.job_info_1[i],
+				                &(queue[i]), i, snum);
 			}
-			case 2:
+			safe_free(queue);
+			return 0x0;
+		}
+		case 2:
+		{
+			for (i=0; i<count; i++)
 			{
-				for (i=0; i<count; i++)
-				{
-					job_info_2=(JOB_INFO_2 *)malloc(count*sizeof(JOB_INFO_2));
-					add_job2_to_array(&numofjobs,
-							  &job.job_info_2,
-							  job_info_2);
+				JOB_INFO_2 *job_info_2;
+				job_info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
+				add_job2_to_array(numofjobs,
+						  &ctr->job.job_info_2,
+						  job_info_2);
 
-					fill_job_info_2(job.job_info_2[i], &(queue[i]), i, snum);
-				}
-				break;
+				fill_job_info_2(ctr->job.job_info_2[i],
+				                &(queue[i]), i, snum);
 			}
+			safe_free(queue);
+			return 0x0;
 		}
 	}
 
-	status = 0x0;
+	safe_free(queue);
 
-	spoolss_io_r_enumjobs("",&r_u,rdata,0);
-
-	if (queue) free(queue);
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

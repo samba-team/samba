@@ -957,72 +957,6 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	return (True);
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMJOBS r_u;
-	int snum;
-	int count;
-	int i;
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
-	JOB_INFO_1 *job_info_1=NULL;
-	JOB_INFO_2 *job_info_2=NULL;
-
-	DEBUG(4,("spoolss_reply_enumjobs\n"));
-	
-	bzero(&status,sizeof(status));
-
-	r_u.offered=q_u->buf_size;
-
-
-	if (get_printer_snum(&(q_u->handle), &snum))
-	{
-		count=get_printqueue(snum, NULL, &queue, &status);
-		r_u.numofjobs=0;
-		
-		r_u.level=q_u->level;
-		
-		DEBUG(4,("count:[%d], status:[%d], [%s]\n", count, status.status, status.message));
-		
-		switch (r_u.level)
-		{
-			case 1:
-			{
-				for (i=0; i<count; i++)
-				{
-					job_info_1=(JOB_INFO_1 *)malloc(count*sizeof(JOB_INFO_1));
-					add_job1_to_array(&r_u.numofjobs,
-							  &r_u.job.job_info_1,
-							  job_info_1);
-
-					fill_job_info_1(r_u.job.job_info_1[i], &(queue[i]), i, snum);
-				}
-				break;
-			}
-			case 2:
-			{
-				for (i=0; i<count; i++)
-				{
-					job_info_2=(JOB_INFO_2 *)malloc(count*sizeof(JOB_INFO_2));
-					add_job2_to_array(&r_u.numofjobs,
-							  &r_u.job.job_info_2,
-							  job_info_2);
-
-					fill_job_info_2(r_u.job.job_info_2[i], &(queue[i]), i, snum);
-				}
-				break;
-			}
-		}
-	}
-
-	r_u.status = 0x0;
-
-	spoolss_io_r_enumjobs("",&r_u,rdata,0);
-
-	if (queue) free(queue);
-}
 
 /****************************************************************************
 ****************************************************************************/
@@ -1030,12 +964,18 @@ static void api_spoolss_enumjobs(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMJOBS q_u;
+	SPOOL_R_ENUMJOBS r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_enumjobs("", &q_u, data, 0);
-
-	spoolss_reply_enumjobs(&q_u, rdata);
-	
+	r_u.offered = q_u.buf_size;
+	r_u.status = _spoolss_enumjobs(&q_u.handle,
+				q_u.firstjob, q_u.numofjobs, q_u.level,
+				&r_u.ctr, &r_u.offered, &r_u.numofjobs);
 	spoolss_io_free_buffer(&(q_u.buffer));
+	spoolss_io_r_enumjobs("",&r_u,rdata,0);
 }
 
 /****************************************************************************

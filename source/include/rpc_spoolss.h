@@ -1021,19 +1021,27 @@ typedef struct spool_q_enumjobs
 	uint32 level;
 	BUFFER buffer;
 	uint32 buf_size;
+
 } SPOOL_Q_ENUMJOBS;
 
-typedef struct spool_r_enumjobs
+typedef struct job_info_info
 {
-	uint32 level;
 	union {
 		JOB_INFO_1 **job_info_1;
 		JOB_INFO_2 **job_info_2;
 		void *info;
 	} job;
+
+} JOB_INFO_CTR;
+
+typedef struct spool_r_enumjobs
+{
+	uint32 level;
 	uint32 offered;
+	JOB_INFO_CTR ctr;
 	uint32 numofjobs;
 	uint32 status;
+
 } SPOOL_R_ENUMJOBS;
 
 typedef struct spool_q_schedulejob
