@@ -296,8 +296,8 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		return NULL;
 	}
 
-	if (b->object) { 
-		s = talloc_asprintf(mem_ctx, "%s@", GUID_string(mem_ctx, b->object));
+	if (!uuid_all_zero(&b->object)) { 
+		s = talloc_asprintf(mem_ctx, "%s@", GUID_string(mem_ctx, &b->object));
 	}
 
 	s = talloc_asprintf_append(s, "%s:", t_name);
@@ -347,9 +347,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
 		NTSTATUS status;
 
-		b->object = talloc_p(mem_ctx, struct GUID);
-		
-		status = GUID_from_string(s, b->object);
+		status = GUID_from_string(s, &b->object);
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(0, ("Failed parsing UUID\n"));
@@ -358,7 +356,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 		s = p + 1;
 	} else {
-		b->object = NULL;
+		ZERO_STRUCT(b->object);
 	}
 
 	p = strchr(s, ':');
@@ -609,7 +607,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	int i;
 
 	binding->transport = -1;
-	binding->object = NULL;
+	ZERO_STRUCT(binding->object);
 	binding->options = NULL;
 	binding->host = NULL;
 	binding->flags = 0;
@@ -642,10 +640,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	}
 
 	/* Set object uuid */
-	if (!uuid_all_zero(&tower->floors[0].lhs.info.uuid.uuid)) {
-		binding->object = talloc_p(mem_ctx, struct GUID);
-		*binding->object = tower->floors[0].lhs.info.uuid.uuid;
-	}
+	binding->object = tower->floors[0].lhs.info.uuid.uuid;
 
 	/* Ignore floor 1, it contains the NDR version info */
 	
@@ -697,11 +692,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 
 	/* Floor 0 */
 	(*tower)->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	if (binding->object) {
-		(*tower)->floors[0].lhs.info.uuid.uuid = *binding->object;
-	} else {
-		ZERO_STRUCT((*tower)->floors[0].lhs.info.uuid.uuid);
-	}
+	(*tower)->floors[0].lhs.info.uuid.uuid = binding->object;
 	(*tower)->floors[0].lhs.info.uuid.version = 0;
 	
 	/* Floor 1 */
