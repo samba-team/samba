@@ -2869,8 +2869,13 @@ static BOOL run_error_map_extract(int dummy) {
 
 	fstring user;
 
-	open_nbt_connection(&c_nt);
-	open_nbt_connection(&c_dos);
+	if (!open_nbt_connection(&c_dos)) {
+		return False;
+	}
+
+	if (!open_nbt_connection(&c_nt)) {
+		return False;
+	}
 
 	c_dos.force_dos_errors = True;
 
@@ -2922,7 +2927,7 @@ static BOOL run_error_map_extract(int dummy) {
 			printf("** Session setup succeeded.  This shouldn't happen...\n");
 		}
 		if (NT_STATUS_V(nt_status) == error) { 
-			printf("\t{%s,\t%s,\t%s}\n", smb_dos_err_class(errclass), smb_dos_err_name(errclass, errnum), get_nt_error_c_code(nt_status));
+			printf("\t{%s,\t%s,\t%s},\n", smb_dos_err_class(errclass), smb_dos_err_name(errclass, errnum), get_nt_error_c_code(nt_status));
 		} else {
 			printf("/*\t{ This NT error code was 'sqashed'\n\t from %s to %s \n\t during the session setup }\n*/\n", get_nt_error_c_code(NT_STATUS(error)), get_nt_error_c_code(nt_status));
 		}
