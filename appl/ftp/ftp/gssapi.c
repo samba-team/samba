@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -214,7 +214,7 @@ struct sec_server_mech gss_server_mech = {
     gss_userok
 };
 
-#else /* FTP_SEVER */
+#else /* FTP_SERVER */
 
 extern struct sockaddr_in hisctladdr, myctladdr;
 
