@@ -6,6 +6,7 @@ dn: @INDEXLIST
 @IDXATTR: member
 @IDXATTR: unixID
 @IDXATTR: unixName
+@IDXATTR: privilege
 
 dn: @ATTRIBUTES
 realm: CASE_INSENSITIVE
