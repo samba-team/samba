@@ -180,7 +180,7 @@ typedef struct krb5_cc_ops{
 typedef struct krb5_context_data{
     krb5_enctype *etypes;
     char *default_realm;
-    k5_cfile *cf;
+    krb5_config_section *cf;
     struct error_list *et_list;
     krb5_cc_ops *cc_ops;
     int num_ops;
