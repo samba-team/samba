@@ -4,8 +4,8 @@
 
 # add tests to this list as they start passing, so we test
 # that they stay passing
-ncacn_np_tests="RPC-DSSETUP RPC-EPMAPPER RPC-SAMR RPC-WKSSVC RPC-SRVSVC RPC-EVENTLOG RPC-NETLOGON"
-ncacn_ip_tcp_tests="RPC-EPMAPPER RPC-SAMR RPC-NETLOGON"
+ncacn_np_tests="RPC-DSSETUP RPC-EPMAPPER RPC-SAMR RPC-WKSSVC RPC-SRVSVC RPC-EVENTLOG RPC-NETLOGON RPC-LSA"
+ncacn_ip_tcp_tests="RPC-EPMAPPER RPC-SAMR RPC-LSA RPC-NETLOGON"
 
 if [ $# -lt 4 ]; then
 cat <<EOF
