@@ -23,6 +23,9 @@
 # Purpose of smbldap-usermod : user (posix,shadow,samba) modification
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
@@ -33,13 +36,13 @@ use Getopt::Std;
 my %Options;
 my $nscd_status;
 
-my $ok = getopts('A:B:C:D:E:F:H:IJxme:f:u:g:G:d:l:s:c:ok:?', \%Options);
-if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 [-awmugdsckxABCDEFGHI?] username\n";
+my $ok = getopts('A:B:C:D:E:F:H:IJN:S:xme:f:u:g:G:d:l:s:c:ok:?h', \%Options);
+if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) || ($Options{'h'}) ) {
+  print "Usage: $0 [-awmugdsckxABCDEFGHI?h] username\n";
+  print "Available options are:\n";
 	print "  -c	gecos\n";
 	print "  -d	home directory\n";
 	#print "  -m	move home directory\n";
-	#print "  -e	expire date (YYYY-MM-DD)\n";
 	#print "  -f	inactive days\n";
 	print "  -u	uid\n";
 	print "  -o	uid can be non unique\n";
@@ -47,6 +50,10 @@ if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
 	print "  -G	supplementary groups (comma separated)\n";
 	print "  -l	login name\n";
 	print "  -s	shell\n";
+  print "  -N    canonical name\n";
+  print "  -S    surname\n";
+  print " For samba users:\n";
+  print "  -e    expire date (\"YYYY-MM-DD HH:MM:SS\")\n";
 	print "  -x	creates rid and primaryGroupID in hex instead of decimal (for Samba 2.2.2 unpatched only)\n";
 	print "  -A	can change password ? 0 if no, 1 if yes\n";
 	print "  -B	must change password ? 0 if no, 1 if yes\n";
@@ -57,7 +64,7 @@ if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
 	print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
 	print "  -I	disable an user. Can't be used with -H or -J\n";
 	print "  -J	enable an user. Can't be used with -H or -I\n";
-	print "  -?	show this help message\n";
+  print "  -?|-h show this help message\n";
 	exit (1);
 }
 
@@ -69,30 +76,23 @@ if ($< != 0) {
 # Read only first @ARGV
 my $user = $ARGV[0];
 
-# Read user datas
-my $lines = read_user($user);
-if (!defined($lines)) {
+# Read user data
+my $user_entry = read_user_entry($user);
+if (!defined($user_entry)) {
     print "$0: user $user doesn't exist\n";
     exit (1);
 }
 
-#print "$lines\n";
-my $dn_line;
-if ( $lines =~ /(^dn: .*)/ ) {
-    $dn_line = $1;
-}
-
-chomp($dn_line);
-
 my $samba = 0;
-if ($lines =~ m/objectClass: sambaAccount/) {
+if (grep ($_ =~ /^sambaSamAccount$/i, $user_entry->get_value('objectClass'))) {
     $samba = 1;
 }
 
-############
+# get the dn of the user
+my $dn= $user_entry->dn();
 
 my $tmp;
-my $mods;
+my @mods;
 
 # Process options
 my $changed_uid;
@@ -119,15 +119,15 @@ if (defined($tmp = $Options{'u'})) {
 	}
 
     }
+  push(@mods, 'uidNumber', $tmp);
     $_userUidNumber = $tmp;
+  if ($samba) {
     # as rid we use 2 * uid + 1000
     my $_userRid = 2 * $_userUidNumber + 1000;
     if (defined($Options{'x'})) {
 	$_userRid= sprint("%x", $_userRid);
     }
-    $mods .= "uidNumber: $_userUidNumber\n";
-    if ($samba) {
-	$mods .= "rid: $_userRid\n";
+    push(@mods, 'sambaSID', $SID.'-'.$_userRid);
     }
     $changed_uid = 1;
 }
@@ -141,42 +141,42 @@ if (defined($tmp = $Options{'g'})) {
 	print "$0: group $tmp doesn't exist\n";
 	exit (6);
     }
+  push(@mods, 'gidNumber', $_userGidNumber);
+  if ($samba) {
 # as grouprid we use 2 * gid + 1001
     my $_userGroupRid = 2 * $_userGidNumber + 1001;
     if (defined($Options{'x'})) {
 	$_userGroupRid = sprint("%x", $_userGroupRid);
     }
-    $mods .= "gidNumber: $_userGidNumber\n";
-    if ($samba) {
-	$mods .= "primaryGroupID: $_userGroupRid\n";
+    push(@mods, 'sambaPrimaryGroupSid', $SID.'-'.$_userGroupRid);
     }
     $changed_gid = 1;
 }
 
-my $changed_shell;
-my $_userLoginShell;
 if (defined($tmp = $Options{'s'})) {
-    $_userLoginShell = $tmp;
-    $mods .= "loginShell: $_userLoginShell\n";
-    $changed_shell = 1;
+  push(@mods, 'loginShell' => $tmp);
 }
 
-my $changed_gecos;
-my $_userGecos;
+
 if (defined($tmp = $Options{'c'})) { 
-    $_userGecos = $tmp;
-    $mods .= "gecos: $_userGecos\n";
-    $changed_gecos = 1;
+  push(@mods, 'gecos' => $tmp,
+	   'description' => $tmp);
+  if ($samba == 1) {
+    push(@mods, 'displayName' => $tmp);
+  }
 }
 
-my $changed_homedir;
-my $newhomedir;
 if (defined($tmp = $Options{'d'})) {
-    $newhomedir = $tmp; 
-    $mods .= "homeDirectory: $newhomedir\n";
-    $changed_homedir = 1;
+  push(@mods, 'homeDirectory' => $tmp);
 }
 
+if (defined($tmp = $Options{'N'})) { 
+  push(@mods, 'cn' => $tmp);
+}
+
+if (defined($tmp = $Options{'S'})) { 
+  push(@mods, 'sn' => $tmp);
+}
 
 if (defined($tmp = $Options{'G'})) {
 
@@ -212,101 +212,134 @@ if (defined($tmp = $Options{'G'})) {
 my $attr;
 my $winmagic = 2147483647;
 
+my $samba = is_samba_user($user);
+
+if (defined($tmp = $Options{'e'})) {
+  if ($samba == 1) {
+	my $kickoffTime=`date --date='$tmp' +%s`;
+	chomp($kickoffTime);
+	push(@mods, 'sambakickoffTime' => $kickoffTime);
+  } else {
+  	print "User $user is not a samba user\n";
+  }
+}
+
+my $_sambaPwdCanChange;
 if (defined($tmp = $Options{'A'})) {
+  if ($samba == 1) {
     $attr = "sambaPwdCanChange";
     if ($tmp != 0) {
-	$mods .= "$attr: 0\n";
+      $_sambaPwdCanChange=0;
     } else {
-	$mods .= "$attr: $winmagic\n";
+      $_sambaPwdCanChange=$winmagic;
+    }
+    push(@mods, 'sambaPwdCanChange' => $_sambaPwdCanChange);
+    } else {
+  	print "User $user is not a samba user\n";
     }
 }
 
+my $_sambaPwdMustChange;
 if (defined($tmp = $Options{'B'})) {
-    $attr = "sambaPwdMustChange";
+  if ($samba == 1) {
     if ($tmp != 0) {
-	$mods .= "$attr: 0\n";
+      $_sambaPwdMustChange=0;
     } else {
-	$mods .= "$attr: $winmagic\n";
+      $_sambaPwdMustChange=$winmagic;
+    }
+    push(@mods, 'sambaPwdMustChange' => $_sambaPwdMustChange);
+    } else {
+  	print "User $user is not a samba user\n";
     }
 }
 
 if (defined($tmp = $Options{'C'})) {
-    $attr = "sambaHomePath";
+  if ($samba == 1) {
     #$tmp =~ s/\\/\\\\/g;
-    $mods .= "$attr: $tmp\n";
+    push(@mods, 'sambaHomePath' => $tmp);
+  } else {
+  	print "User $user is not a samba user\n";
+  }
 }
 
+my $_sambaHomeDrive;
 if (defined($tmp = $Options{'D'})) {
-    $attr = "sambaHomeDrive";
+  if ($samba == 1) {
     $tmp = $tmp.":" unless ($tmp =~ /:/);
-    $mods .= "$attr: $tmp\n";
+    push(@mods, 'sambaHomeDrive' => $tmp);
+  } else {
+  	print "User $user is not a samba user\n";
+  }
 }
 
 if (defined($tmp = $Options{'E'})) {
-    $attr = "sambaLogonScript";
+  if ($samba == 1) {
     #$tmp =~ s/\\/\\\\/g;
-    $mods .= "$attr: $tmp\n";
+    push(@mods, 'sambaLogonScript' => $tmp);
+  } else {
+  	print "User $user is not a samba user\n";
+  }
 }
 
 if (defined($tmp = $Options{'F'})) {
-    $attr = "sambaProfilePath";
+  if ($samba == 1) {
     #$tmp =~ s/\\/\\\\/g;
-    $mods .= "$attr: $tmp\n";
+    push(@mods, 'sambaProfilePath' => $tmp);
+  } else {
+  	print "User $user is not a samba user\n";
+  }
 }
 
+if ($samba == 1 and (defined $Options{'H'} or defined $Options{'I'} or defined $Options{'J'})) {
+  my $_sambaAcctFlags;
 if (defined($tmp = $Options{'H'})) {
-    $attr = "sambaAcctFlags";
     #$tmp =~ s/\\/\\\\/g;
-    $mods .= "$attr: $tmp\n";
-} elsif (defined($tmp = $Options{'I'})) {
+    $_sambaAcctFlags=$tmp;
+  } else {
+    # I or J
     my $flags;
+    $flags = $user_entry->get_value('sambaAcctFlags');
 
-    if ( $lines =~ /^sambaAcctFlags: (.*)/m ) {
-	$flags = $1;
-    }
-
-    chomp($flags);
-
+    if (defined($tmp = $Options{'I'})) {
     if ( !($flags =~ /D/) ) {
 	my $letters;
 	if ($flags =~ /(\w+)/) {
 	    $letters = $1;
 	}
-	$mods .= "sambaAcctFlags: \[D$letters\]\n";
+		$_sambaAcctFlags="\[D$letters\]";
     }
 } elsif (defined($tmp = $Options{'J'})) {
-    my $flags;
-
-    if ( $lines =~ /^sambaAcctFlags: (.*)/m ) {
-	$flags = $1;
-    }
-
-    chomp($flags);
-
     if ( $flags =~ /D/ ) {
 	my $letters;
 	if ($flags =~ /(\w+)/) {
 	    $letters = $1;
 	}
 	$letters =~ s/D//;
-	$mods .= "sambaAcctFlags: \[$letters\]\n";
+		$_sambaAcctFlags="\[$letters\]";
+	  }
     }
 }
 
-if ($mods ne '') {
-    #print "----\n$dn_line\n$mods\n----\n";
 
-    my $tmpldif =
-"$dn_line
-changetype: modify
-$mods
-";
+  if ("$_sambaAcctFlags" ne '') {
+    push(@mods, 'sambaAcctFlags' => $_sambaAcctFlags);
+  }
 
-    die "$0: error while modifying user $user\n"
-	unless (do_ldapmodify($tmpldif) == 0);
-
-    undef $tmpldif;
+} elsif (!$samba == 1 and (defined $Options{'H'} or defined $Options{'I'} or defined $Options{'J'})) {
+  print "User $user is not a samba user\n";
 }
+
+# Let's connect to the directory first
+my $ldap_master=connect_ldap_master();
+
+# apply changes
+my $modify = $ldap_master->modify ( "$dn",
+									'replace' => { @mods }
+								  );
+$modify->code && warn "failed to modify entry: ", $modify->error ;
+
+# take down session
+$ldap_master->unbind;
 
 $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 
@@ -358,7 +391,7 @@ if ($nscd_status == 0) {
 
        -l login_name
               The  name  of the user will be changed from login to login_name.
-              Nothing else is changed.  In particular, the user's home  direc­
+              Nothing else is changed.  In particular, the user's home  direcÂ­
               tory  name  should  probably be changed to reflect the new login
               name.
 
@@ -369,7 +402,7 @@ if ($nscd_status == 0) {
        -u uid The  numerical  value  of  the  user's  ID.   This value must be
               unique, unless the -o option is used.  The value  must  be  non-
               negative.  Any files which the user owns  and  which  are
-              located  in  the directory tree rooted at the user's home direc­
+              located  in  the directory tree rooted at the user's home direcÂ­
               tory will have the file user ID  changed  automatically.   Files
               outside of the user's home directory must be altered manually.
 

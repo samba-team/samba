@@ -23,6 +23,9 @@
 # Purpose of smbldap-userdel : user (posix,shadow,samba) deletion
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 
 

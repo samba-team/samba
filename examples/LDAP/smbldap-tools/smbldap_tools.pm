@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 use strict;
 package smbldap_tools;
 use smbldap_conf;
@@ -36,7 +36,9 @@ $VERSION = 1.00;
 @EXPORT = qw(
 get_user_dn
 get_group_dn
+			 is_group_member
 is_samba_user
+			 is_unix_user
 is_user_valid
 get_dn_from_line
 add_posix_machine
@@ -47,8 +49,10 @@ add_grouplist_user
 disable_user
 delete_user
 group_add
+			 group_del
 get_homedir
 read_user
+			 read_user_entry
 read_group
 find_groups_of
 parse_group
@@ -57,32 +61,74 @@ group_get_members
 do_ldapadd
 do_ldapmodify
 get_user_dn2
+			 connect_ldap_master
+			 connect_ldap_slave
 );
 
-# dn_line = get_user_dn($username)
-# where dn_line is like "dn: a=b,c=d"
+sub connect_ldap_master
+  {
+	# bind to a directory with dn and password
+	my $ldap_master = Net::LDAP->new(
+									 "$masterLDAP",
+									 port => "$masterPort",
+									 version => 3,
+									 # debug => 0xffff,
+									)
+	  or die "erreur LDAP: Can't contact master ldap server ($@)";
+	if ($ldapSSL == 1) {
+	  $ldap_master->start_tls(
+							  # verify => 'require',
+							  # clientcert => 'mycert.pem',
+							  # clientkey => 'mykey.pem',
+							  # decryptkey => sub { 'secret'; },
+							  # capath => '/usr/local/cacerts/'
+							 );
+	}
+	$ldap_master->bind ( "$binddn",
+						 password => "$masterPw"
+					   );
+	return($ldap_master);
+  }
 
-#sub ldap_search
-#{
-#my ($local_base,$local_scope,$local_filtre)=@_;
-#}
-
-
+sub connect_ldap_slave
+  {
+	# bind to a directory with dn and password
+	my $ldap_slave = Net::LDAP->new(
+									"$slaveLDAP",
+									port => "$slavePort",
+									version => 3,
+									# debug => 0xffff,
+								   )
+	  or die "erreur LDAP: Can't contact slave ldap server ($@)";
+	if ($ldapSSL == 1) {
+	  $ldap_slave->start_tls(
+							 # verify => 'require',
+							 # clientcert => 'mycert.pem',
+							 # clientkey => 'mykey.pem',
+							 # decryptkey => sub { 'secret'; },
+							 # capath => '/usr/local/cacerts/'
+							);
+	}
+	$ldap_slave->bind ( "$binddn",
+						password => "$slavePw"
+					  );
+	return($ldap_slave);
+  }
 
 sub get_user_dn
 {
     my $user = shift;
     my $dn='';
-    my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-    $ldap->bind ;
-    my  $mesg = $ldap->search (    base   => $suffix,
+    my $ldap_slave=connect_ldap_slave();
+    my  $mesg = $ldap_slave->search (    base   => $suffix,
 				   scope => $scope,
 				   filter => "(&(objectclass=posixAccount)(uid=$user))"
                               );
     $mesg->code && die $mesg->error;
     foreach my $entry ($mesg->all_entries) {
-	$dn= $entry->dn;}
-    $ldap->unbind;
+	  $dn= $entry->dn;
+	}
+    $ldap_slave->unbind;
     chomp($dn);
     if ($dn eq '') {
 	return undef;
@@ -92,28 +138,21 @@ sub get_user_dn
 }
 
 
-sub get_user_dn2     ## migré
+sub get_user_dn2
 {
     my $user = shift;
     my $dn='';
-    my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-    $ldap->bind ;
-    my  $mesg = $ldap->search (    base   => $suffix,
+    my $ldap_slave=connect_ldap_slave();
+    my  $mesg = $ldap_slave->search (    base   => $suffix,
 				   scope => $scope,
                                filter => "(&(objectclass=posixAccount)(uid=$user))"
                               );
-    # $mesg->code && warn $mesg->error;
-    if ($mesg->code)
-      {
-	  print("Code erreur : ",$mesg->code,"\n");
-	  print("Message d'erreur : ",$mesg->error,"\n");
-	  return (0,undef);
-      }
+    $mesg->code && warn "failed to perform search; ", $mesg->error;
 
     foreach my $entry ($mesg->all_entries) {
 	$dn= $entry->dn;
     }
-    $ldap->unbind;
+    $ldap_slave->unbind;
     chomp($dn);
     if ($dn eq '') {
 	return (1,undef);
@@ -127,16 +166,16 @@ sub get_group_dn
   {
       my $group = shift;
       my $dn='';
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (    base   => $groupsdn,
+	my $ldap_slave=connect_ldap_slave();
+	my  $mesg = $ldap_slave->search (    base   => $groupsdn,
 				     scope => $scope,
 				     filter => "(&(objectclass=posixGroup)(|(cn=$group)(gidNumber=$group)))"
 				);
       $mesg->code && die $mesg->error;
       foreach my $entry ($mesg->all_entries) {
-	  $dn= $entry->dn;}
-      $ldap->unbind;
+	  $dn= $entry->dn;
+	}
+	$ldap_slave->unbind;
       chomp($dn);
       if ($dn eq '') {
 	  return undef;
@@ -150,14 +189,41 @@ sub get_group_dn
 sub is_samba_user
   {
       my $user = shift;
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my $mesg = $ldap->search (    base   => $suffix,
+	my $ldap_slave=connect_ldap_slave();
+	my $mesg = $ldap_slave->search (    base   => $suffix,
 				    scope => $scope,
 				    filter => "(&(objectClass=sambaSamAccount)(uid=$user))"
 			       );
       $mesg->code && die $mesg->error;
-      $ldap->unbind;
+	$ldap_slave->unbind;
+	return ($mesg->count ne 0);
+  }
+
+sub is_unix_user
+  {
+	my $user = shift;
+	my $ldap_slave=connect_ldap_slave();
+	my $mesg = $ldap_slave->search (    base   => $suffix,
+										scope => $scope,
+										filter => "(&(objectClass=posixAccount)(uid=$user))"
+								   );
+	$mesg->code && die $mesg->error;
+	$ldap_slave->unbind;
+	return ($mesg->count ne 0);
+  }
+
+sub is_group_member
+  {
+	my $dn_group = shift;
+	my $user = shift;
+	my $ldap_slave=connect_ldap_slave();
+	my $mesg = $ldap_slave->search (
+									base   => "$dn_group",
+									scope => 'base',
+									filter => "(&(memberUid=$user))"
+								   );
+	$mesg->code && die $mesg->error;
+	$ldap_slave->unbind;
       return ($mesg->count ne 0);
   }
 
@@ -168,21 +234,19 @@ sub is_user_valid
       my ($user, $dn, $pass) = @_;
       my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
       my $mesg= $ldap->bind (dn => $dn, password => $pass );
-      if ($mesg->code eq 0)
-	{
+	if ($mesg->code eq 0) {
 	    $ldap->unbind;
 	    return 1;
-	}
-      else
-	{
+	} else {
 	    if($ldap->bind()) {
 		$ldap->unbind;
 		return 0;
 	    } else {
-		print ("Le serveur LDAP est indisponible.\nVérifier le serveur, les câblages, ...");
+		print ("The LDAP directory is not available.\n Check the server, cables ...");
 		$ldap->unbind;
 		return 0;
-	    } die "Problème : Contacter votre administrateur";
+	  }
+	  die "Problem : contact your administrator";
 	}
 }
 
@@ -199,26 +263,28 @@ sub get_dn_from_line
 sub add_posix_machine
   {
       my ($user, $uid, $gid) = @_;
-      my $tmpldif =
-	"dn: uid=$user,$computersdn
-objectclass: inetOrgPerson
-objectclass: posixAccount
-sn: $user
-cn: $user
-uid: $user
-uidNumber: $uid
-gidNumber: $gid
-homeDirectory: /dev/null
-loginShell: /bin/false
-description: Computer
+	# bind to a directory with dn and password
+	my $ldap_master=connect_ldap_master();
+	my $add = $ldap_master->add ( "uid=$user,$computersdn",
+								  attr => [
+										   'objectclass' => ['top','inetOrgPerson', 'posixAccount'],
+										   'cn'   => "$user",
+										   'sn'   => "$user",
+										   'uid'   => "$user",
+										   'uidNumber'   => "$uid",
+										   'gidNumber'   => "$gid",
+										   'homeDirectory'   => '/dev/null',
+										   'loginShell'   => '/bin/false',
+										   'description'   => 'Computer',
+										  ]
+								);
+	
+	$add->code && warn "failed to add entry: ", $add->error ;
+	# take down the session
+	$ldap_master->unbind;
 
-";
-
-      die "$0: error while adding posix account to machine $user\n"
-	unless (do_ldapadd($tmpldif) == 0);
-      undef $tmpldif;
-      return 1;
   }
+
 
 # success = add_samba_machine($computername)
 sub add_samba_machine
@@ -244,33 +310,31 @@ sub add_samba_machine_mkntpwd
       chomp(my $lmpassword = substr($ntpwd, 0, index($ntpwd, ':')));
       chomp(my $ntpassword = substr($ntpwd, index($ntpwd, ':')+1));
 
-      my $tmpldif =
-	"dn: uid=$user,$computersdn
-changetype: modify
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectClass: sambaSamAccount
-sambaPwdLastSet: 0
-sambaLogonTime: 0
-sambaLogoffTime: 2147483647
-sambaKickoffTime: 2147483647
-sambaPwdCanChange: 0
-sambaPwdMustChange: 2147483647
-sambaAcctFlags: [W          ]
-sambaLMPassword: $lmpassword
-sambaNTPassword: $ntpassword
-sambaSID: $smbldap_conf::SID-$sambaSID
-sambaPrimaryGroupSID: $smbldap_conf::SID-0
-
-";
-
-      die "$0: error while adding samba account to $user\n"
-	unless (do_ldapmodify($tmpldif) == 0);
-      undef $tmpldif;
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->modify ( "uid=$user,$computersdn",
+										changes => [
+													replace => [objectClass => ['inetOrgPerson', 'posixAccount', 'sambaSAMAccount']],
+													add => [sambaPwdLastSet => '0'],
+													add => [sambaLogonTime => '0'],
+													add => [sambaLogoffTime => '2147483647'],
+													add => [sambaKickoffTime => '2147483647'],
+													add => [sambaPwdCanChange => '0'],
+													add => [sambaPwdMustChange => '0'],
+													add => [sambaAcctFlags => '[W          ]'],
+													add => [sambaLMPassword => "$lmpassword"],
+													add => [sambaNTPassword => "$ntpassword"],
+													add => [sambaSID => "$SID-$sambaSID"],
+													add => [sambaPrimaryGroupSID => "$SID-0"]
+												   ]
+									  );
+	
+	$modify->code && die "failed to add entry: ", $modify->error ;
 
       return 1;
-  }
+	# take down the session
+	$ldap_master->unbind;
 
+  }
 
 
 sub group_add_user
@@ -278,55 +342,43 @@ sub group_add_user
       my ($group, $userid) = @_;
       my $members='';
       my $dn_line = get_group_dn($group);
+	if (!defined(get_group_dn($group))) {
+	  print "$0: group \"$group\" doesn't exist\n";
+	  exit (6); 
+	}
       if (!defined($dn_line)) {
 	  return 1;
       }
-      my $dn = get_dn_from_line($dn_line);
-
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (    base   =>$dn, scope => "base", filter => "(objectClass=*)" );
-      $mesg->code && die $mesg->error;
-      foreach my $entry ($mesg->all_entries){
-	  foreach my $attr ($entry->attributes)
-	    {
-		if ($attr=~/\bmemberUid\b/){
-		    foreach my $ent($entry->get_value($attr)) { $members.= $attr.": ".$ent."\n"; }
-		}
+	my $dn = get_dn_from_line("$dn_line");
+	# on look if the user is already present in the group
+	my $is_member=is_group_member($dn,$userid);
+	if ($is_member == 1) {
+	  print "User \"$userid\" already member of the group \"$group\".\n";
+	} else {
+	  # bind to a directory with dn and password
+	  my $ldap_master=connect_ldap_master();
+	  # It does not matter if the user already exist, Net::LDAP will add the user
+	  # if he does not exist, and ignore him if his already in the directory.
+	  my $modify = $ldap_master->modify ( "$dn",
+										  changes => [
+													  add => [memberUid => $userid]
+													 ]
+										);
+	  $modify->code && die "failed to modify entry: ", $modify->error ;
+	  # take down session
+	  $ldap_master->unbind;
 	    }
       }
-      $ldap->unbind;
-      chomp($members);
-      # user already member ?
-      if ($members =~ m/^memberUid: $userid/) {
-	  return 2;
-      }
-      my $mods = "";
-      if ($members ne '') {
-	  $mods="$dn_line
-changetype: modify
-replace: memberUid
-$members
-memberUid: $userid
 
-";
-      } else {
-	  $mods="$dn_line
-changetype: modify
-add: memberUid
-memberUid: $userid
-
-";
-      }
-    #print "$mods\n";
-      my $tmpldif =
-	"$mods
-";
-
-      die "$0: error while modifying group $group\n"
-	unless (do_ldapmodify($tmpldif) == 0);
-      undef $tmpldif;
-      return 0;
+sub group_del
+  {
+	my $group_dn=shift;
+	# bind to a directory with dn and password
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->delete ($group_dn);
+	$modify->code && die "failed to delete group : ", $modify->error ;
+	# take down session
+	$ldap_master->unbind;
   }
 
 sub add_grouplist_user
@@ -338,43 +390,34 @@ sub add_grouplist_user
       }
   }
 
-# XXX FIXME : sambaAcctFlags |= D, and not sambaAcctFlags = D
 sub disable_user
   {
       my $user = shift;
       my $dn_line;
+	my $dn = get_dn_from_line($dn_line);
 
       if (!defined($dn_line = get_user_dn($user))) {
 	  print "$0: user $user doesn't exist\n";
 	  exit (10);
       }
-
-      my $tmpldif =
-	"dn: $dn_line
-changetype: modify
-replace: userPassword
-userPassword: {crypt}!x
-
-";
-
-      die "$0: error while modifying user $user\n"
-	unless (do_ldapmodify($tmpldif) == 0);
-      undef $tmpldif;
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->modify ( "$dn",
+										changes => [
+													replace => [userPassword => '{crypt}!x']
+												   ]
+									  );
+	$modify->code && die "failed to modify entry: ", $modify->error ;
 
       if (is_samba_user($user)) {
-
-	  my $tmpldif =
-	    "dn: $dn_line
-changetype: modify
-replace: sambaAcctFlags
-sambaAcctFlags: [D       ]
-
-";
-
-	  die "$0: error while modifying user $user\n"
-	    unless (do_ldapmodify($tmpldif) == 0);
-	  undef $tmpldif;
+	  my $modify = $ldap_master->modify ( "$dn",
+										  changes => [
+													  replace => [sambaAcctFlags => '[D       ]']
+													 ]
+										);
+	  $modify->code && die "failed to modify entry: ", $modify->error ;
       }
+	# take down session
+	$ldap_master->unbind;
   }
 
 # delete_user($user)
@@ -389,7 +432,9 @@ sub delete_user
       }
 
       my $dn = get_dn_from_line($dn_line);
-      system "$ldapdelete $dn >/dev/null";
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->delete($dn);
+	$ldap_master->unbind;
   }
 
 # $success = group_add($groupname, $group_gid, $force_using_existing_gid)
@@ -415,17 +460,18 @@ sub group_add
       if ($nscd_status == 0) {
 	  system "/etc/init.d/nscd start > /dev/null 2>&1";
       }
-      my $tmpldif =
-	"dn: cn=$gname,$groupsdn
-objectclass: posixGroup
-cn: $gname
-gidNumber: $gid
-
-";
-
-      die "$0: error while adding posix group $gname\n"
-	unless (do_ldapadd($tmpldif) == 0);
-      undef $tmpldif;
+	my $ldap_master=connect_ldap_master();
+	my $modify = $ldap_master->add ( "cn=$gname,$groupsdn",
+									 attrs => [
+											   objectClass => 'posixGroup',
+											   cn => "$gname",
+											   gidNumber => "$gid"
+											  ]
+								   );
+	
+	$modify->code && die "failed to add entry: ", $modify->error ;
+	# take down session
+	$ldap_master->unbind;
       return 1;
   }
 
@@ -434,14 +480,15 @@ sub get_homedir
   {
       my $user = shift;
       my $homeDir='';
-      #  my $homeDir=`$ldapsearch -b '$suffix' -s '$scope' '(&(objectclass=posixAccount)(uid=$user))' | grep "^homeDirectory:"`;
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (    base   =>$suffix, scope => $scope, filter => "(&(objectclass=posixAccount)(uid=$user))" );
+	my $ldap_slave=connect_ldap_slave();
+	my  $mesg = $ldap_slave->search (
+									 base   =>$suffix,
+									 scope => $scope,
+									 filter => "(&(objectclass=posixAccount)(uid=$user))"
+									);
       $mesg->code && die $mesg->error;
       foreach my $entry ($mesg->all_entries){
-	  foreach my $attr ($entry->attributes)
-	    {
+	  foreach my $attr ($entry->attributes) {
 		if ($attr=~/\bhomeDirectory\b/){
 		    foreach my $ent($entry->get_value($attr)) {
 			$homeDir.= $attr.": ".$ent."\n";
@@ -449,7 +496,7 @@ sub get_homedir
 		}
 	    }
       }
-      $ldap->unbind;
+	$ldap_slave->unbind;
       chomp $homeDir;
       if ($homeDir eq '') {
 	  return undef;
@@ -463,9 +510,8 @@ sub read_user
   {
       my $user = shift;
       my $lines ='';
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (  # perform a search
+	my $ldap_slave=connect_ldap_slave();
+	my $mesg = $ldap_slave->search ( # perform a search
 				 base   => $suffix,
 				 scope => $scope,
 				 filter => "(&(objectclass=posixAccount)(uid=$user))"
@@ -480,7 +526,8 @@ sub read_user
 	      }
 	  }
       }
-      $ldap->unbind;   # take down sessio(n
+	# take down session
+	$ldap_slave->unbind;
       chomp $lines;
       if ($lines eq '') {
 	  return undef;
@@ -488,14 +535,31 @@ sub read_user
       return $lines;
   }
 
+# search for a user
+# return the attributes in an array
+sub read_user_entry
+  {
+	my $user = shift;
+	my $ldap_slave=connect_ldap_slave();
+	my  $mesg = $ldap_slave->search ( # perform a search
+									 base   => $suffix,
+									 scope => $scope,
+									 filter => "(&(objectclass=posixAccount)(uid=$user))"
+									);
+
+	$mesg->code && die $mesg->error;
+	my $entry = $mesg->entry();
+	$ldap_slave->unbind;
+	return $entry;
+  }
+
 # search for a group
 sub read_group
   {
       my $user = shift;
       my $lines ='';
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (  # perform a search
+	my $ldap_slave=connect_ldap_slave();
+	my  $mesg = $ldap_slave->search ( # perform a search
 				 base   => $groupsdn,
 				 scope => $scope,
 				 filter => "(&(objectclass=posixGroup)(cn=$user))"
@@ -510,8 +574,8 @@ sub read_group
 	      }
 	  }
       }
-
-      $ldap->unbind;   # take down sessio(n
+	# take down session
+	$ldap_slave->unbind;
       chomp $lines;
       if ($lines eq '') {
 	  return undef;
@@ -525,9 +589,8 @@ sub find_groups_of
   {
       my $user = shift;
       my $lines ='';
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (  # perform a search
+	my $ldap_slave=connect_ldap_slave;
+	my  $mesg = $ldap_slave->search ( # perform a search
 				 base   => $groupsdn,
 				 scope => $scope,
 				 filter => "(&(objectclass=posixGroup)(memberuid=$user))"
@@ -536,9 +599,11 @@ sub find_groups_of
       foreach my $entry ($mesg->all_entries) {
 	  $lines.= "dn: ".$entry->dn."\n";
       }
-      $ldap->unbind;
+	$ldap_slave->unbind;
       chomp($lines);
-      if ($lines eq '') {return undef; }
+	if ($lines eq '') {
+	  return undef;
+	}
       return $lines;
   }
 
@@ -571,53 +636,20 @@ sub group_remove_member
       if (!defined($grp_line)) {
 	  return 0;
       }
-
-      my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
-      $ldap->bind ;
-      my  $mesg = $ldap->search (    base   => $groupsdn,
-				     scope => $scope,
-				     filter => "(&(objectclass=posixgroup)(cn=$group))"
+	my $dn = get_dn_from_line($grp_line);
+	# we test if the user exist in the group
+	my $is_member=is_group_member($dn,$user);
+	if ($is_member == 1) {
+	  my $ldap_master=connect_ldap_master();
+	  # delete only the user from the group
+	  my $modify = $ldap_master->modify ( "$dn",
+										  changes => [
+													  delete => [memberUid => ["$user"]]
+													 ]
 				);
-      $mesg->code && die $mesg->error;
-      foreach my $entry ($mesg->all_entries){
-	  foreach my $attr ($entry->attributes)
-	    {
-		if ($attr=~/\bmemberUid\b/){
-		    foreach my $ent($entry->get_value($attr)) {
-			$members.= $attr.": ".$ent."\n";
-		    }
+	  $modify->code && die "failed to delete entry: ", $modify->error ;
+	  $ldap_master->unbind;
 		}
-	    }
-      }
-      #print "Valeurs de members :\n$members";
-      $ldap->unbind;
-      #    my $members = `$ldapsearch -b '$groupsdn' -s '$scope' '(&(objectclass=posixgroup)(cn=$group))' | grep -i "^memberUid:"`;
-      # print "avant ---\n$members\n";
-      $members =~ s/memberUid: $user\n//;
-      #print "après ---\n$members\n";
-      chomp($members);
-
-      my $header;
-      if ($members eq '') {
-	  $header = "changetype: modify\n";
-	  $header .= "delete: memberUid";
-      } else {
-	  $header = "changetype: modify\n";
-	  $header .= "replace: memberUid";
-      }
-
-      my $tmpldif =
-"$grp_line
-$header
-$members
-";
-
-      #print "Valeur du tmpldif : \n$tmpldif";
-      die "$0: error while modifying group $group\n"
-	unless (do_ldapmodify($tmpldif) == 0);
-      undef $tmpldif;
-
-      $ldap->unbind;
       return 1;
   }
 
@@ -627,11 +659,14 @@ sub group_get_members
       my $members;
       my @resultat;
       my $grp_line = get_group_dn($group);
-      if (!defined($grp_line)) {	return 0;  }
+	if (!defined($grp_line)) {
+	  return 0;
+	}
 
       my $ldap = Net::LDAP->new($slaveLDAP) or die "erreur LDAP";
       $ldap->bind ;
-      my  $mesg = $ldap->search (    base   => $groupsdn,
+	my  $mesg = $ldap->search (
+							   base   => $groupsdn,
 				     scope => $scope,
 				     filter => "(&(objectclass=posixgroup)(cn=$group))"
 				);
@@ -639,57 +674,13 @@ sub group_get_members
       foreach my $entry ($mesg->all_entries){
 	  foreach my $attr ($entry->attributes){
 	      if ($attr=~/\bmemberUid\b/){
-		  foreach my $ent($entry->get_value($attr)) { push (@resultat,$ent); }
+		  foreach my $ent ($entry->get_value($attr)) {
+			push (@resultat,$ent);
 	      }
 	  }
       }
-      return @resultat;
-  }
-
-sub file_write {
-    my ($filename, $filecontent) = @_;
-    local *FILE;
-    open (FILE, "> $filename") ||
-      die "Cannot open $filename for writing: $!\n";
-    print FILE $filecontent;
-    close FILE;
 }
-
-# wrapper for ldapadd
-sub do_ldapadd2
-  {
-      my $ldif = shift;
-      my $tempfile = "/tmp/smbldapadd.$$";
-      file_write($tempfile, $ldif);
-
-      my $rc = system "$ldapadd < $tempfile >/dev/null";
-      unlink($tempfile);
-      return $rc;
-  }
-
-sub do_ldapadd
-  {
-      my $ldif = shift;
-      my $FILE = "|$ldapadd >/dev/null";
-      open (FILE, $FILE) || die "$!\n";
-      print FILE <<EOF;
-$ldif
-EOF
-      ;
-      close FILE;
-      my $rc = $?;
-      return $rc;
-  }
-
-# wrapper for ldapmodify
-sub do_ldapmodify2
-  {
-      my $ldif = shift;
-      my $tempfile = "/tmp/smbldapmod.$$";
-      file_write($tempfile, $ldif);
-      my $rc = system "$ldapmodify -r < $tempfile >/dev/null";
-      unlink($tempfile);
-      return $rc;
+	return @resultat;
   }
 
 sub do_ldapmodify
