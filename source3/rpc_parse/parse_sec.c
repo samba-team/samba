@@ -674,12 +674,13 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 
 	*sd_size = (size_t)((offset == 0) ? SEC_DESC_HEADER_SIZE : offset);
 
-	dst->off_owner_sid = offset_sid;
-
-	if (dst->owner_sid != NULL)
+	if (dst->owner_sid != NULL) {
+		dst->off_owner_sid = offset_sid;
 		dst->off_grp_sid = offset_sid + sid_size(dst->owner_sid);
+	}
 	else
-		dst->off_grp_sid = offset_sid;
+		if (dst->grp_sid != NULL)
+			dst->off_grp_sid = offset_sid;
 
 	return dst;
 
