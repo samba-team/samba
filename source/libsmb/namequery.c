@@ -408,7 +408,7 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
       char *endptr;
 
       ptr++;
-      *name_type = (int)strtol(ptr, &endptr,0);
+      *name_type = (int)strtol(ptr, &endptr, 16);
 
       if(!*ptr || (endptr == ptr))
       {
