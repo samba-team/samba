@@ -32,7 +32,6 @@ extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 
 REGISTRY_HOOK reg_hooks[] = {
-  { KEY_TREE_ROOT,  &regdb_ops    },
   { KEY_PRINTING,   &printing_ops },
   { NULL, NULL }
 };
@@ -280,6 +279,58 @@ void regval_ctr_init( REGVAL_CTR *ctr )
 
 int regval_ctr_numvals( REGVAL_CTR *ctr )
 {
+	return ctr->num_values;
+}
+
+REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
+{
+	if ( !(idx < ctr->num_values) )
+		return NULL;
+		
+	return ctr->values[idx];
+}
+
+/***********************************************************************
+ Ad a new regostry value to the array
+ **********************************************************************/
+
+int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type, 
+                         char *data_p, size_t size )
+{
+	REGISTRY_VALUE **ppreg;
+	uint16 len;
+	
+	if ( name )
+	{
+		len = strlen( name );
+
+		if (  ctr->num_values == 0 )
+			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
+		else {
+			ppreg = talloc_realloc( ctr->ctx, ctr->values, sizeof(REGISTRY_VALUE*)*(ctr->num_values+1) );
+			if ( ppreg )
+				ctr->values = ppreg;
+		}
+
+		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
+		ctr->values[ctr->num_values]->type = type;
+		switch ( type )
+		{
+			case REG_SZ:
+				ctr->values[ctr->num_values]->data.string = talloc_strdup( ctr->ctx, data_p );
+				break;
+			case REG_DWORD:
+				break;
+			case REG_BINARY:
+				ctr->values[ctr->num_values]->data.binary = talloc_memdup( ctr->ctx, data_p, size );
+				break;
+				
+		}
+		ctr->values[ctr->num_values]->size = size;
+		
+		ctr->num_values++;
+	}
+
 	return ctr->num_values;
 }
 

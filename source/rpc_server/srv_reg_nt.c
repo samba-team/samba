@@ -219,34 +219,35 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum, 
                                     uint32 *maxlen, uint32 *maxsize )
 {
-	REGVAL_CTR 	val;
+	REGVAL_CTR 	values;
+	REGISTRY_VALUE	*val;
 	uint32 		sizemax, lenmax;
-	int 		num_values;
+	int 		i, num_values;
 	
 	if ( !key )
 		return False;
 
 	ZERO_STRUCTP( &val );
 	
-	regval_ctr_init( &val );
+	regval_ctr_init( &values );
 	
-	if ( fetch_reg_values( key, &val ) == -1 )
+	if ( fetch_reg_values( key, &values ) == -1 )
 		return False;
 	
 	lenmax = sizemax = 0;
-	num_values = regval_ctr_numvals( &val );
+	num_values = regval_ctr_numvals( &values );
 	
-#if 0 	/* JERRY */
-	for ( i=0; i<num_values; i++ ) {
+	for ( i=0; i<num_values && val; i++ ) {
+		val = regval_ctr_specific_value( &values, i );
 		lenmax  = MAX(lenmax,  strlen(val[i].valuename)+1 );
 		sizemax = MAX(sizemax, val[i].size );
 	}
-#endif
+
 	*maxnum   = num_values;
 	*maxlen   = lenmax;
 	*maxsize  = sizemax;
 	
-	regval_ctr_destroy( &val );
+	regval_ctr_destroy( &values );
 	
 	return True;
 }
