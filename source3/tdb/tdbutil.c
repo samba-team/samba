@@ -42,7 +42,7 @@ static void gotalarm_sig(void)
 static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = smb_xstrdup(dptr);
+	ret.dptr = dptr;
 	ret.dsize = dsize;
 	return ret;
 }
@@ -406,47 +406,47 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 		case 'b': /* unsigned 8-bit integer */
 			len = 1;
 			bt = (uint8)va_arg(ap, int);
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, bt);
 			break;
 		case 'w': /* unsigned 16-bit integer */
 			len = 2;
 			w = (uint16)va_arg(ap, int);
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, w);
 			break;
 		case 'd': /* signed 32-bit integer (standard int in most systems) */
 			len = 4;
 			d = va_arg(ap, uint32);
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
 			break;
 		case 'p': /* pointer */
 			len = 4;
 			p = va_arg(ap, void *);
 			d = p?1:0;
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
 			break;
 		case 'P': /* null-terminated string */
 			s = va_arg(ap,char *);
 			w = strlen(s);
 			len = w + 1;
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				memcpy(buf, s, len);
 			break;
 		case 'f': /* null-terminated string */
 			s = va_arg(ap,char *);
 			w = strlen(s);
 			len = w + 1;
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				memcpy(buf, s, len);
 			break;
 		case 'B': /* fixed-length string */
 			i = va_arg(ap, int);
 			s = va_arg(ap, char *);
 			len = 4+i;
-			if (bufsize >= len) {
+			if (bufsize && bufsize >= len) {
 				SIVAL(buf, 0, i);
 				memcpy(buf+4, s, i);
 			}
@@ -459,7 +459,10 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 		}
 
 		buf += len;
-		bufsize -= len;
+		if (bufsize)
+			bufsize -= len;
+		if (bufsize < 0)
+			bufsize = 0;
 	}
 
 	va_end(ap);
