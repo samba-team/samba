@@ -98,10 +98,33 @@ class SamrHandle:
 
     def __del__(self):
 
+        if self.handle is not None:
+            self.Close()
+
+    def Close(self):
+                    
         r = dcerpc.samr_Close()
         r.data_in.handle = self.handle
 
         dcerpc.dcerpc_samr_Close(self.pipe, r)
+
+        self.handle = None
+
+    def QuerySecurity(self, sec_info = 7):
+
+        r = dcerpc.samr_QuerySecurity()
+        r.data_in.handle = self.handle
+        r.data_in.sec_info = sec_info
+
+        result = dcerpc.dcerpc_samr_QuerySecurity(self.pipe, r)
+
+        return r.data_out.sdbuf.sd
+
+    def SetSecurity(self, sec_info = 7):
+
+        r = dcerpc.samr_SetSecurity()
+        r.data_in.handle = self.handle
+        r.data_in.sec_info = sec_info
 
 
 class ConnectHandle(SamrHandle):
@@ -150,6 +173,13 @@ class ConnectHandle(SamrHandle):
         result = dcerpc.dcerpc_samr_OpenDomain(self.pipe, r)
 
         return DomainHandle(self.pipe, r.data_out.domain_handle)
+
+    def Shutdown(self):
+
+        r = dcerpc.samr_Shutdown()
+        r.data_in.connect_handle = self.handle
+
+        result = dcerpc.dcerpc_samr_Shutdown(self.pipe, r)
 
 
 class DomainHandle(SamrHandle):
@@ -231,8 +261,75 @@ class DomainHandle(SamrHandle):
 
         return users
 
+    def CreateUser(self, account_name, access_mask = 0x02000000):
 
-def Connect(pipe, system_name = '', access_mask = 0x02000000):
+        r = dcerpc.samr_CreateUser()
+        r.data_in.domain_handle = self.handle
+        r.data_in.account_name = dcerpc.samr_String()
+        r.data_in.account_name.string = account_name
+        r.data_in.access_mask = access_mask
+
+        result = dcerpc.dcerpc_samr_CreateUser(self.pipe, r)
+
+        return (r.data_out.user_handle,
+                dcerpc.uint32_array_getitem(r.data_out.rid, 0))
+        
+    def OpenUser(self, rid, access_mask = 0x02000000):
+
+        r = dcerpc.samr_OpenUser()
+        r.data_in.domain_handle = self.handle
+        r.data_in.access_mask = access_mask
+        r.data_in.rid = rid
+
+        result = dcerpc.dcerpc_samr_OpenUser(self.pipe, r)
+
+        return UserHandle(pipe, r.data_out.user_handle)
+
+    def OpenGroup(self, rid, access_mask = 0x02000000):
+
+        r = dcerpc.samr_OpenGroup()
+        r.data_in.domain_handle = self.handle
+        r.data_in.access_mask = access_mask
+        r.data_in.rid = rid
+
+        result = dcerpc.dcerpc_samr_OpenGroup(self.pipe, r)
+
+        return GroupHandle(pipe, r.data_out.group_handle)
+
+    def OpenAlias(self, rid, access_mask = 0x02000000):
+
+        r = dcerpc.samr_OpenAlias()
+        r.data_in.domain_handle = self.handle
+        r.data_in.access_mask = access_mask
+        r.data_in.rid = rid
+
+        result = dcerpc.dcerpc_samr_OpenAlias(self.pipe, r)
+
+        return AliasHandle(pipe, r.data_out.group_handle)
+
+    def RidToSid(self, rid):
+
+        r = dcerpc.samr_RidToSid()
+        r.data_in.domain_handle = self.handle
+
+        result = dcerpc.dcerpc_samr_RidToSid(self.pipe, r)
+
+        return sid_to_string(r.data_out.sid)
+
+
+class UserHandle(SamrHandle):
+    pass
+    
+
+class GroupHandle(SamrHandle):
+    pass
+    
+
+class AliasHandle(SamrHandle):
+    pass
+    
+
+def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     """Connect to the SAMR pipe."""
 
     r = dcerpc.samr_Connect2()
@@ -242,3 +339,53 @@ def Connect(pipe, system_name = '', access_mask = 0x02000000):
     result = dcerpc.dcerpc_samr_Connect2(pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
+
+# CreateDomainGroup
+# CreateDomAlias
+# GetAliasMembership
+# LookupNames
+# QueryGroupInfo
+# SetGroupInfo
+# AddGroupMember
+# DeleteDomainGroup
+# DeleteGroupMember
+# QueryGroupMember
+# SetMemberAttributesofGroup
+# QueryAliasInfo
+# SetAliasInfo
+# DeleteDomAlias
+# AddAliasMember
+# DeleteAliasMember
+# GetMembersinAlias
+# DeleteUser
+# QueryUserInfo
+# SetUserInfo
+# ChangePasswordUser
+# GetGroupsForUser
+# QueryDisplayInfo
+# GetDisplayEnumerationIndex
+# TestPrivateFunctionsDomain
+# TestPrivateFunctionsUser
+# GetUserPwInfo
+# RemoveMemberFromForeignDomain
+# QueryDomainInfo2
+# QueryUserInfo2
+# QueryDisplayInfo2
+# GetDisplayEnumerationIndex2
+# CreateUser2
+# QueryDisplayInfo3
+# AddMultipleMembersToAlias
+# RemoveMultipleMembersFromAlias
+# OemChangePasswordUser2
+# ChangePasswordUser2
+# GetDomPwInfo
+# Connect
+# SetUserInfo2
+# SetBootKeyInformation
+# GetBootKeyInformation
+# Connect3
+# Connect4
+# ChangePasswordUser3
+# Connect5
+# SetDsrmPassword
+# ValidatePassword
