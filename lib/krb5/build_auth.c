@@ -98,6 +98,8 @@ krb5_build_authenticator (krb5_context context,
   if (auth_result)
     *auth_result = auth;
   else {
+    /* Don't free the `cksum', it's allocated by the caller */
+    auth->cksum = NULL;
     free_Authenticator (auth);
     free (auth);
   }
