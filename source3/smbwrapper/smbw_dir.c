@@ -31,9 +31,6 @@ extern int DEBUGLEVEL;
 
 extern int smbw_busy;
 
-#define DIRP_SIZE (sizeof(fstring) + 12)
-
-
 /***************************************************** 
 map a fd to a smbw_dir structure
 *******************************************************/
@@ -641,11 +638,13 @@ read one entry from a directory
 struct dirent *smbw_readdir(DIR *dirp)
 {
 	struct smbw_dir *d = (struct smbw_dir *)dirp;
-	static char buf[DIRP_SIZE];
-	struct dirent *de = (struct dirent *)buf;
+	static union {
+		char buf[DIRP_SIZE];
+		struct dirent de;
+	} dbuf;
 
-	if (smbw_getdents(d->fd, de, DIRP_SIZE) > 0) 
-		return de;
+	if (smbw_getdents(d->fd, &dbuf.de, DIRP_SIZE) > 0) 
+		return &dbuf.de;
 
 	return NULL;
 }
