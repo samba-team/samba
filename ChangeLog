@@ -1,5 +1,6 @@
 2001-04-25  Assar Westerlund  <assar@sics.se>
 
+	* admin/get.c (kt_get): allow specification of encryption types
 	* lib/krb5/verify_init.c (krb5_verify_init_creds): do not try to
 	close an unopened ccache, noted by <marc@mit.edu>
 
