@@ -16,7 +16,7 @@ extern const char *__progname;
 #endif
 
 void warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap)
-     __attribute__ ((noreturn, format (printf, 4, 0)));
+     __attribute__ ((format (printf, 4, 0)));
 
 void verr(int eval, const char *fmt, va_list ap)
      __attribute__ ((noreturn, format (printf, 2, 0)));
