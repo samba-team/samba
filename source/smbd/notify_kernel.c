@@ -39,7 +39,7 @@ static SIG_ATOMIC_T signals_received;
 
 
 #ifndef RT_SIGNAL_NOTIFY
-#define RT_SIGNAL_NOTIFY 34
+#define RT_SIGNAL_NOTIFY (SIGRTMIN+2)
 #endif
 
 #ifndef F_SETSIG
