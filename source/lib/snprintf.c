@@ -48,15 +48,19 @@
  *    missing.  Some systems only have snprintf() but not vsnprintf(), so
  *    the code is now broken down under HAVE_SNPRINTF and HAVE_VSNPRINTF.
  *
+ *  Andrew Tridgell (tridge@samba.anu.edu.au) Oct 1998
+ *    fixed handling of %.0f
+ *    added test for HAVE_LONG_DOUBLE
+ *
  **************************************************************/
 
 #include "config.h"
 
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF)
-
 #include <string.h>
 # include <ctype.h>
 #include <sys/types.h>
+
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF)
 
 /* Define this as a fall through, HAVE_STDARG_H is probably already set */
 
@@ -480,8 +484,8 @@ static void fmtint (char *buffer, size_t *currlen, size_t maxlen,
     spadlen = -spadlen; /* Left Justifty */
 
 #ifdef DEBUG_SNPRINTF
-  dprint (1, (debugfile, "zpad: %d, spad: %d, min: %d, max: %d, place: %d\n",
-      zpadlen, spadlen, min, max, place));
+  printf("zpad: %d, spad: %d, min: %d, max: %d, place: %d\n",
+	 zpadlen, spadlen, min, max, place);
 #endif
 
   /* Spaces */
@@ -609,7 +613,8 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
   }
 
 #ifdef DEBUG_SNPRINTF
-  dprint (1, (debugfile, "fmtfp: %f =? %d.%d\n", fvalue, intpart, fracpart));
+  printf("fmtfp: %g %d.%d min=%d max=%d\n", 
+	 (double)fvalue, intpart, fracpart, min, max);
 #endif
 
   /* Convert integer part */
@@ -665,14 +670,21 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
   while (iplace > 0) 
     dopr_outch (buffer, currlen, maxlen, iconvert[--iplace]);
 
+
+#ifdef DEBUG_SNPRINTF
+  printf("fmtfp: fplace=%d zpadlen=%d\n", fplace, zpadlen);
+#endif
+
   /*
    * Decimal point.  This should probably use locale to find the correct
    * char to print out.
    */
-  dopr_outch (buffer, currlen, maxlen, '.');
+  if (max > 0) {
+	  dopr_outch (buffer, currlen, maxlen, '.');
 
-  while (fplace > 0) 
-    dopr_outch (buffer, currlen, maxlen, fconvert[--fplace]);
+	  while (fplace > 0) 
+		  dopr_outch (buffer, currlen, maxlen, fconvert[--fplace]);
+  }
 
   while (zpadlen > 0)
   {
@@ -727,6 +739,12 @@ int snprintf (va_alist) va_dcl
   return(strlen(str));
 }
 
+
+#else
+ /* keep compilers happy about empty files */
+ void dummy_snprintf(void) {}
+#endif /* !HAVE_SNPRINTF */
+
 #ifdef TEST_SNPRINTF
 #ifndef LONG_STRING
 #define LONG_STRING 1024
@@ -747,6 +765,8 @@ int main (void)
     "%4f",
     "%3.1f",
     "%3.2f",
+    "%.0f",
+    "%.1f",
     NULL
   };
   double fp_nums[] = { -1.5, 134.21, 91340.2, 341.1234, 0203.9, 0.96, 0.996, 
@@ -801,7 +821,3 @@ int main (void)
 }
 #endif /* SNPRINTF_TEST */
 
-#else
- /* keep compilers happy about empty files */
- void dummy_snprintf(void) {}
-#endif /* !HAVE_SNPRINTF */
