@@ -424,14 +424,14 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	Unfortunately, the implementation of the immutible flag is NOT consistent with published documentation. For example, the
 	man page for the <command>chattr</command> on SUSE Linux 9.2 says:
 <screen>
-A file with the‘i attribute cannot be modified: it cannot be deleted or renamed,
-no link can be created to this file and no data can be written to the file. Only
-the superuser or a process possessing the CAP_LINUX_IMMUTABLE capability can set
-or clear this attribute.
+A file with the‘i attribute cannot be modified: it cannot be deleted
+or renamed, no link can be created to this file and no data can be
+written to the file. Only the superuser or a process possessing the
+CAP_LINUX_IMMUTABLE capability can set or clear this attribute.
 </screen>
 	A simple test can be done to check if the immutible flag is supported on files in the file system of the Samba host
 	server.
-	</para>o
+	</para>
 
 <procedure>
 	<step><para>
@@ -702,7 +702,11 @@ Before using any of the following options, please refer to the man page for &smb
 		</thead>
 		<tbody>
 		<row>
-			<entry><smbconfoption><name>case sensitive</name></smbconfoption>, <smbconfoption><name>default case</name></smbconfoption>, <smbconfoption><name>short preserve case</name></smbconfoption></entry>
+			<entry>
+			<smbconfoption><name>case sensitive</name></smbconfoption>,
+			<smbconfoption><name>default case</name></smbconfoption>,
+			<smbconfoption><name>short preserve case</name></smbconfoption>
+			</entry>
 			<entry><para>
 			This means that all file name lookup will be done in a case sensitive manner. 
 			Files will be created with the precise file name Samba received from the MS Windows client.
@@ -741,7 +745,11 @@ Before using any of the following options, please refer to the man page for &smb
 			</para></entry>
 		</row>
 		<row>
-			<entry><smbconfoption><name>hide dot files</name></smbconfoption>, <smbconfoption><name>hide files</name></smbconfoption>, <smbconfoption><name>veto files</name></smbconfoption></entry>
+			<entry>
+			<smbconfoption><name>hide dot files</name></smbconfoption>,
+			<smbconfoption><name>hide files</name></smbconfoption>,
+			<smbconfoption><name>veto files</name></smbconfoption>
+			</entry>
 			<entry><para>
 			Note: MS Windows Explorer allows over-ride of files marked as hidden so they will still be visible.
 			</para></entry>
@@ -808,8 +816,6 @@ Before using any of the following options, please refer to the man page for &smb
 			Server Manager is shipped with Windows NT4 Server products but not with Windows NT4 Workstation.
 			You can obtain the NT Server Manager for MS Windows NT4 Workstation from Microsoft &smbmdash; see details below.
 			</para>
-
-			<?latex \newpage ?>
 
 			<procedure>
 			<title>Instructions</title>
