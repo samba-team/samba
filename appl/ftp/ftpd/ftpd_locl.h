@@ -150,10 +150,6 @@
 #include <kafs.h>
 #endif
 
-#ifdef KRB5
-#include <krb5.h>
-#endif
-
 #ifdef OTP
 #include <otp.h>
 #endif
