@@ -2483,7 +2483,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 		if (strcmp(datatype, "RAW") != 0)
 		{
 			(*jobid)=0;
-			return STATUS_1804;
+			return ERROR_INVALID_DATATYPE;
 		}		
 	}		 
 	
@@ -3674,7 +3674,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
  
 	if (!get_specific_param_by_index(printer, 2, index, value, &data, &type, &data_len)) {
 		free_a_printer(printer, 2);
-		return 0x0103; /* ERROR_NO_MORE_ITEMS */
+		return ERROR_NO_MORE_ITEMS;
 	}
 			
 	/* 
