@@ -291,4 +291,5 @@ loop(krb5_context context)
 			handle_tcp(context, d, i, min_free);
 	}
     }
+    free (d);
 }
