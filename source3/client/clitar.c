@@ -190,7 +190,9 @@ static BOOL sub_dir(char *dir1, char *dir2)
 
 #endif /* Removed to get around gcc 'defined but not used' error. */
 
-/* Create a string of size size+1 (for the null) */
+/*******************************************************************
+Create  a string of size size+1 (for the null)
+*******************************************************************/
 static char * string_create_s(int size)
 {
   char *tmp;

@@ -554,7 +554,7 @@ static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 	pstring s2;
 	int count;
 
-	DEBUG(4,("make_dom_sid2s: %s\n", sids_str));
+	DEBUG(4,("make_dom_sid2s: %s\n", sids_str ? sids_str:""));
 
 	if (sids_str == NULL || *sids_str == 0) return 0;
 
