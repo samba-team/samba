@@ -296,6 +296,14 @@ extern gss_OID GSS_C_NT_ANONYMOUS;
 extern gss_OID GSS_C_NT_EXPORT_NAME;
 
 /*
+ * RFC2478, SPNEGO:
+ *  The security mechanism of the initial
+ *  negotiation token is identified by the Object Identifier
+ *  iso.org.dod.internet.security.mechanism.snego (1.3.6.1.5.5.2).
+ */
+extern gss_OID GSS_SPNEGO_MECHANISM;
+
+/*
  * This if for kerberos5 names.
  */
 
