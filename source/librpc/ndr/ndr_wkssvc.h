@@ -175,26 +175,22 @@ struct wkssvc_TransportInfoArray {
 	struct wkssvc_TransportInfo0 *transports;
 };
 
-union wkssvc_TransportUnion {
+union wkssvc_TransportInfo {
 /* [case(0)] */ struct wkssvc_TransportInfoArray *array;
-};
-
-struct wkssvc_TransportInfo {
-	uint32 level;
-	union wkssvc_TransportUnion u;
 };
 
 struct wkssvc_TransportEnum {
 	struct {
 		const char *server_name;
 		uint32 level;
-		struct wkssvc_TransportInfo *info;
+		union wkssvc_TransportInfo info;
 		uint32 max_buffer;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct wkssvc_TransportInfo *info;
+		uint32 level;
+		union wkssvc_TransportInfo info;
 		uint32 totalentries;
 		uint32 *resume_handle;
 		WERROR result;
