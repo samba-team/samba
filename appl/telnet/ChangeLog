@@ -1,3 +1,9 @@
+1999-04-25  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos5.c (kerberos5_send): use
+	`krb5_auth_setkeytype' instead of `krb5_auth_setenctype' to make
+	sure we get a DES session key.
+
 Thu Apr  1 16:59:27 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* telnetd/Makefile.am: don't run check-local

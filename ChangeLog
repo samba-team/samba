@@ -1,3 +1,11 @@
+Wed Apr 28 00:21:17 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mcache.c (mcc_get_next): get the current cursor
+ 	correctly
+
+	* acconfig.h: correct definition of KRB_PUT_INT for old krb4 code.
+  	From Ake Sandgren <ake@cs.umu.se>
+
 1999-04-25  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/mk_req_ext.c (krb5_mk_req_internal): try to handle old
