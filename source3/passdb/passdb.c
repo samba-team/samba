@@ -495,7 +495,7 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 /*************************************************************
  initialises a struct smb_passwd.
  **************************************************************/
-void pdb_init_sam(struct smb_passwd *user)
+void pdb_init_smb(struct smb_passwd *user)
 {
 	if (user == NULL) return;
 
@@ -528,7 +528,7 @@ struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
 
 	if (user == NULL) return NULL;
 
-	pdb_init_sam(&pw_buf);
+	pdb_init_smb(&pw_buf);
 
 	pw_buf.smb_userid         = user->smb_userid;
 	pw_buf.smb_name           = user->smb_name;
@@ -549,7 +549,7 @@ struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
 
 	if (user == NULL) return NULL;
 
-	pdb_init_smb(&pw_buf);
+	pdb_init_sam(&pw_buf);
 
 	pw_buf.smb_userid         = user->smb_userid;
 	pw_buf.smb_name           = user->smb_name;
