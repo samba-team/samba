@@ -661,8 +661,10 @@ pytdbpack_pack_data(const char *format_str,
 			long size;
 			char *sval;
 
-			if (!PyInt_Check(val_obj))
+			if (!PyInt_Check(val_obj)) {
+				pytdbpack_bad_type(ch, "Integer", val_obj);
 				return NULL;
+			}
 
 			size = PyInt_AsLong(val_obj);
 			pack_uint32(size, &packed);
