@@ -71,6 +71,8 @@ static int findpty(char **slave)
     *slave = ptsname(master);
     if (*slave == NULL) {
       DEBUG(0,("findpty: Unable to create master/slave pty pair.\n"));
+      /* Stop fd leak on error. */
+      close(master);
       return -1;
     } else {
       DEBUG(10, ("findpty: Allocated slave pty %s\n", *slave));
@@ -81,7 +83,8 @@ static int findpty(char **slave)
   fstrcpy( line, "/dev/ptyXX" );
 
   dirp = OpenDir(NULL, "/dev", False);
-  if (!dirp) return(-1);
+  if (!dirp)
+    return(-1);
   while ((dpname = ReadDirName(dirp)) != NULL) {
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
       DEBUG(3,("pty: try to open %s, line was %s\n", dpname, line ) );
@@ -89,10 +92,10 @@ static int findpty(char **slave)
       line[9] = dpname[4];
       if ((master = open(line, O_RDWR)) >= 0) {
         DEBUG(3,("pty: opened %s\n", line ) );
-	line[5] = 't';
-	*slave = line;
-	CloseDir(dirp);
-	return (master);
+        line[5] = 't';
+        *slave = line;
+        CloseDir(dirp);
+        return (master);
       }
     }
   }
