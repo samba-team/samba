@@ -1,5 +1,7 @@
 Changes in release 0.2r:
 
+ * new man-pages
+
  * telnetd: do not negotiate KERBEROS5 authentication if there's no keytab.
 
  * use and set expiration and not password expiration when dumping

@@ -1,3 +1,21 @@
+2000-03-04  Assar Westerlund  <assar@sics.se>
+
+	* kdc/string2key.8: add man-page for string2key
+
+2000-03-03  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hpropd.c (dump_krb4): get expiration date from `valid_end'
+	and not `pw_end'
+
+	* kdc/kadb.h (ka_entry): fix name pw_end -> valid_end.  add some
+	more fields
+
+	* kdc/hprop.c (v4_prop): set the `valid_end' from the v4
+	expiration date instead of the `pw_expire'
+	(ka_convert): set `valid_end' from ka expiration data and `pw_expire'
+	from pw_change + pw_expire
+	(main): add a default database for ka dumping
+
 2000-02-28  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/context.c (init_context_from_config_file): change
