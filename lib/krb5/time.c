@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,7 +53,7 @@ krb5_timeofday (krb5_context context,
 
 krb5_error_code
 krb5_us_timeofday (krb5_context context,
-		   int32_t *sec,
+		   krb5_timestamp *sec,
 		   int32_t *usec)
 {
     struct timeval tv;
