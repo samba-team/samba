@@ -240,11 +240,14 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
 					      call->mem_ctx,
-					      pkt->u.request.stub_and_verifier.data, 
+					      full_packet->data + DCERPC_REQUEST_LENGTH,
 					      pkt->u.request.stub_and_verifier.length, 
 					      full_packet->data,
 					      full_packet->length-auth.credentials.length,
 					      &auth.credentials);
+		memcpy(pkt->u.request.stub_and_verifier.data, 
+		       full_packet->data + DCERPC_REQUEST_LENGTH,
+		       pkt->u.request.stub_and_verifier.length);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
