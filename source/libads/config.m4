@@ -113,7 +113,7 @@ if test x"$with_ldap_support" != x"yes"; then
 fi
 
 if test x"$with_ads_support" != x"no"; then
-  FOUND_KRB5=no
+
   # Do no harm to the values of CFLAGS and LIBS while testing for
   # Kerberos support.
 
@@ -260,6 +260,7 @@ if test x"$with_ads_support" != x"no"; then
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
   AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_mk_req_extended)
+  AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_kt_compare)
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
@@ -282,6 +283,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_free_ktypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_data_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_get_comp_string, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_unparsed_name, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_keytab_entry_contents, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_kt_free_entry, $KRB5_LIBS)
 
   LIBS="$LIBS $KRB5_LIBS"
   
@@ -364,6 +368,18 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the AP_OPTS_USE_SUBKEY ap option is available])
   fi
 
+  AC_CACHE_CHECK([for KV5M_KEYTAB],
+                 samba_cv_HAVE_KV5M_KEYTAB,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytab_entry entry; entry.magic = KV5M_KEYTAB;],
+      samba_cv_HAVE_KV5M_KEYTAB=yes,
+      samba_cv_HAVE_KV5M_KEYTAB=no)])
+
+  if test x"$samba_cv_HAVE_KV5M_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_KV5M_KEYTAB,1,
+             [Whether the KV5M_KEYTAB option is available])
+  fi
+
   AC_CACHE_CHECK([for the krb5_princ_component macro],
                 samba_cv_HAVE_KRB5_PRINC_COMPONENT,[
     AC_TRY_LINK([#include <krb5.h>],
@@ -374,28 +390,6 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_KRB5_PRINC_COMPONENT" = x"yes"; then
     AC_DEFINE(HAVE_KRB5_PRINC_COMPONENT,1,
                [Whether krb5_princ_component is available])
-  fi
-
-  AC_CACHE_CHECK([for memory keytab support],
-		 samba_cv_HAVE_MEMORY_KEYTAB,[
-    AC_TRY_RUN([
-#include<krb5.h>
-  main()
-  {
-    krb5_context context;
-    krb5_keytab keytab;
-    
-    krb5_init_context(&context);
-    if (krb5_kt_resolve(context, "MEMORY:", &keytab))
-      exit(1);
-    exit(0);
-  }], 
-  samba_cv_HAVE_MEMORY_KEYTAB=yes,
-  samba_cv_HAVE_MEMORY_KEYTAB=no)])
-
-  if test x"$samba_cv_HAVE_MEMORY_KEYTAB" = x"yes"; then
-      AC_DEFINE(HAVE_MEMORY_KEYTAB,1,
-               [Whether in-memory keytabs are supported])
   fi
 
   AC_CACHE_CHECK([for key in krb5_keytab_entry],
@@ -425,10 +419,8 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
     AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
-    AC_MSG_CHECKING(whether Active Directory and KRB5 support is used)
+    AC_MSG_CHECKING(whether Active Directory and krb5 support is used)
     AC_MSG_RESULT(yes)
-    with_ads_support=yes
-    SMB_EXT_LIB_ENABLE(KRB5,YES)
   else
     if test x"$with_ads_support" = x"yes"; then
 	AC_MSG_ERROR(libkrb5 is needed for Active Directory support)
@@ -438,8 +430,47 @@ if test x"$with_ads_support" != x"no"; then
     KRB5_LIBS=""
     with_ads_support=no 
   fi
-  LIBS="$ac_save_LIBS"
+
+  AC_CACHE_CHECK([for WRFILE: keytab support],
+                samba_cv_HAVE_WRFILE_KEYTAB,[
+    AC_TRY_RUN([
+#include<krb5.h>
+  main()
+  {
+    krb5_context context;
+    krb5_keytab keytab;
+
+    krb5_init_context(&context);
+    if (krb5_kt_resolve(context, "WRFILE:api", &keytab))
+      exit(0);
+    exit(1);
+  }],
+  samba_cv_HAVE_WRFILE_KEYTAB=no,
+  samba_cv_HAVE_WRFILE_KEYTAB=yes)])
+
+  if test x"$samba_cv_HAVE_WRFILE_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_WRFILE_KEYTAB,1,
+               [Whether the WRFILE:-keytab is supported])
+  fi
+
+  AC_CACHE_CHECK([for krb5_princ_realm returns krb5_realm or krb5_data],
+               samba_cv_KRB5_PRINC_REALM_RETURNS_REALM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+    [
+    krb5_context context;
+    krb5_principal principal;
+    krb5_realm realm; realm = *krb5_princ_realm(context, principal);],
+    samba_cv_KRB5_PRINC_REALM_RETURNS_REALM=yes,
+    samba_cv_KRB5_PRINC_REALM_RETURNS_REALM=no)])
+
+  if test x"$samba_cv_KRB5_PRINC_REALM_RETURNS_REALM" = x"yes"; then
+    AC_DEFINE(KRB5_PRINC_REALM_RETURNS_REALM,1,
+              [Whether krb5_princ_realm returns krb5_realm or krb5_data])
+  fi
+
+LIBS="$ac_save_LIBS"
 fi
+
 
 SMB_EXT_LIB(LDAP,[${LDAP_LIBS}],[${LDAP_CFLAGS}],[${LDAP_CPPFLAGS}],[${LDAP_LDFLAGS}])
 SMB_EXT_LIB(KRB5,[${KRB5_LIBS}],[${KRB5_CFLAGS}],[${KRB5_CPPFLAGS}],[${KRB5_LDFLAGS}])
