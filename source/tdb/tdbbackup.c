@@ -18,6 +18,29 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/*
+
+  This program is meant for backup/restore of tdb databases. Typical usage would be:
+     tdbbackup /var/lock/samba/*.tdb
+  when Samba shuts down cleanly, which will make a backup of all the local databases
+  to *.bak files. Then on Samba startup you would use:
+     tdbbackup -v /var/lock/samba/*.tdb
+  and this will check the databases for corruption and if corruption is detected then
+  the backup will be restored.
+
+  You may also like to do a backup on a regular basis while Samba is
+  running, perhaps using cron.
+
+  The reason this program is needed is to cope with power failures
+  while Samba is running. A power failure could lead to database
+  corruption and Samba will then not start correctly.
+
+  Note that many of the databases in Samba are transient and thus
+  don't need to be backed up, so you can optimise the above a little
+  by only running the backup on the critical databases.
+
+ */
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
