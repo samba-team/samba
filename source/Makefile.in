@@ -610,7 +610,7 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 
 bin/libsmbclient.so: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library $@
-	@$(LD) -shared -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
 
 client/testsmbc: client/testsmbc.o bin/libsmbclient.so
 	@echo Linking testsmbc
@@ -630,11 +630,11 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 
 nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(LINK) -shared -o $@ $(WINBIND_NSS_PICOBJS)
+	@$(LINK) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS)
 
 nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -shared -o $@ $(PAM_WINBIND_OBJ)
+	@$(LINK) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ)
 
 bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bin/.dummy
 	@echo Linking $@

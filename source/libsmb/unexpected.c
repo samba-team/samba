@@ -49,7 +49,7 @@ void unexpected_packet(struct packet_struct *p)
 	int len=0;
 
 	if (!tdbd) {
-		tdbd = tdb_open(lock_path("unexpected.tdb"), 1, 
+		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 1, 
 			       TDB_CLEAR_IF_FIRST,
 			       O_RDWR | O_CREAT, 0644);
 		if (!tdbd) {

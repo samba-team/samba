@@ -180,7 +180,7 @@ BOOL nt_printing_init(void)
 	char *vstring = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid()) return True;
-	tdb = tdb_open(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open nt drivers database %s (%s)\n",
 			lock_path("ntdrivers.tdb"), strerror(errno) ));

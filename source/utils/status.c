@@ -310,7 +310,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return profile_dump();
 	}
 	
-	tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb) {
 		printf("connections.tdb not initialised\n");
 		if (!lp_status(-1))
