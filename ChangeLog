@@ -1,3 +1,14 @@
+2000-01-02  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab_file.c (fkt_add_entry): store timestamp
+	(fkt_next_entry_int): return timestamp
+
+	* lib/krb5/krb5.h (krb5_keytab_entry): add timestamp
+
+1999-12-30  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (krb4): use `-ldes' in tests
+
 1999-12-26  Assar Westerlund  <assar@sics.se>
 
 	* lib/hdb/print.c (event2string): handle events without principal.
