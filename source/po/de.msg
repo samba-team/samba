@@ -29,7 +29,7 @@ msgstr ""
 #: ../web/swat.c:117
 #, c-format
 msgid "ERROR: Can't open %s"
-msgstr "ERRORE: Kann %s nicht öffnen"
+msgstr "ERROR: Kann %s nicht öffnen"
 
 #: ../web/swat.c:200
 msgid "Help"
@@ -37,12 +37,12 @@ msgstr "Hilfe"
 
 #: ../web/swat.c:206 ../web/swat.c:220 ../web/swat.c:235 ../web/swat.c:243 ../web/swat.c:252 ../web/swat.c:261 ../web/swat.c:267 ../web/swat.c:273 ../web/swat.c:286
 msgid "Set Default"
-msgstr "Setze Standardwerte"
+msgstr "Standardwert"
 
 #: ../web/swat.c:408
 #, c-format
 msgid "failed to open %s for writing"
-msgstr ""
+msgstr "konnte %s nicht schreiben"
 
 #: ../web/swat.c:431
 #, c-format
@@ -72,7 +72,7 @@ msgstr "Drucker"
 
 #: ../web/swat.c:510
 msgid "Wizard"
-msgstr ""
+msgstr "Assistent"
 
 #: ../web/swat.c:513
 msgid "Status"
@@ -92,7 +92,7 @@ msgstr "Aktuelle Konfiguration"
 
 #: ../web/swat.c:527 ../web/swat.c:530
 msgid "Basic"
-msgstr "Basis Ansicht"
+msgstr "Einfache Ansicht"
 
 #: ../web/swat.c:528 ../web/swat.c:531
 msgid "Advanced"
@@ -100,7 +100,7 @@ msgstr "Erweiterte Ansicht"
 
 #: ../web/swat.c:529
 msgid "Change View To"
-msgstr "Ändere Passwort"
+msgstr "Ansicht anpassen"
 
 #: ../web/swat.c:554
 msgid "Current Config"
@@ -122,48 +122,48 @@ msgstr ""
 
 #: ../web/swat.c:608
 msgid "Note: smb.conf file has been read and rewritten"
-msgstr ""
+msgstr "Hinweis: smb.conf wurde gelesen und überschrieben"
 
 #. Here we go ...
 #: ../web/swat.c:716
 msgid "Samba Configuration Wizard"
-msgstr ""
+msgstr "Samba Konfigurations-Assistent"
 
 #: ../web/swat.c:720
 msgid "The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments."
-msgstr ""
+msgstr "Der Button \"Passe smb.conf an\" wird alle Kommentare und Standardwerte aus der smb.conf löschen."
 
 #: ../web/swat.c:721
 msgid "The same will happen if you press the commit button."
-msgstr ""
+msgstr "Das gleiche passiert bei \"übernehmen\"."
 
 #: ../web/swat.c:724
 msgid "Rewrite smb.conf file"
-msgstr ""
+msgstr "Schreibe smb.conf neu"
 
 #: ../web/swat.c:725
 msgid "Commit"
-msgstr "Kommentar"
+msgstr "übernehmen"
 
 #: ../web/swat.c:726
 msgid "Edit Parameter Values"
-msgstr "Drucker Parameter"
+msgstr "Bearbeite Parameter"
 
 #: ../web/swat.c:732
 msgid "Server Type"
-msgstr ""
+msgstr "Server-Typ"
 
 #: ../web/swat.c:733
 msgid "Stand Alone"
-msgstr ""
+msgstr "Einzelserver"
 
 #: ../web/swat.c:734
 msgid "Domain Member"
-msgstr "Domänen master"
+msgstr "Domänen-Mitglied"
 
 #: ../web/swat.c:735
 msgid "Domain Controller"
-msgstr "Domänen master"
+msgstr "Domänen-Controller"
 
 #: ../web/swat.c:738
 msgid "Unusual Type in smb.conf - Please Select New Mode"
@@ -171,51 +171,51 @@ msgstr ""
 
 #: ../web/swat.c:740
 msgid "Configure WINS As"
-msgstr ""
+msgstr "Konfiguriere WINS"
 
 #: ../web/swat.c:741
 msgid "Not Used"
-msgstr "nicht hinabsteigen"
+msgstr "nicht benutzt"
 
 #: ../web/swat.c:742
 msgid "Server for client use"
-msgstr ""
+msgstr "WINS-Server"
 
 #: ../web/swat.c:743
 msgid "Client of another WINS server"
-msgstr ""
+msgstr "WINS-Client an anderem Server"
 
 #: ../web/swat.c:745
 msgid "Remote WINS Server"
-msgstr ""
+msgstr "Zuständiger WINS-Server:"
 
 #: ../web/swat.c:756
 msgid "Error: WINS Server Mode and WINS Support both set in smb.conf"
-msgstr ""
+msgstr "Fehler: WINS-Server und WINS-Client zugleich in smb.conf gesetzt"
 
 #: ../web/swat.c:757
 msgid "Please Select desired WINS mode above."
-msgstr ""
+msgstr "Bitte wählen Sie den WINS-Modus."
 
 #: ../web/swat.c:759
 msgid "Expose Home Directories"
-msgstr ""
+msgstr "Home-Verzeichnisse freigeben"
 
 #: ../web/swat.c:774
 msgid "The above configuration options will set multiple parameters and will generally assist with rapid Samba deployment."
-msgstr ""
+msgstr "Diese Konfigurationsoptionen bearbeiten mehrere Parameter und dienen als Hilfe zur schnellen Samba-Einrichtung."
 
 #: ../web/swat.c:787
 msgid "Global Parameters"
-msgstr "Globale Variablen"
+msgstr "Globale Parameter"
 
 #: ../web/swat.c:815 ../web/swat.c:916 ../web/swat.c:1265
 msgid "Commit Changes"
-msgstr "Speichere Änderungen"
+msgstr "Änderungen speichern"
 
 #: ../web/swat.c:819 ../web/swat.c:919 ../web/swat.c:1267
 msgid "Reset Values"
-msgstr "Setze Werte zurück"
+msgstr "Werte zurücksetzen"
 
 #: ../web/swat.c:844
 msgid "Share Parameters"
@@ -247,19 +247,19 @@ msgstr " \"Benutzername\" muss angegeben werden "
 
 #: ../web/swat.c:999
 msgid " Must specify \"Old Password\" "
-msgstr " \"Altes Passwort\" muß angegeben werden "
+msgstr " \"Altes Passwort\" muss angegeben werden "
 
 #: ../web/swat.c:1005
 msgid " Must specify \"Remote Machine\" "
-msgstr " \"Remote Maschine\" muß angegeben werden "
+msgstr " \"Remote-Server\" muss angegeben werden "
 
 #: ../web/swat.c:1012
 msgid " Must specify \"New, and Re-typed Passwords\" "
-msgstr " \"Neues/Bestätige Passwort\" muß angegeben werden "
+msgstr " \"Neues/wiederholtes Passwort\" müssen angegeben werden "
 
 #: ../web/swat.c:1018
 msgid " Re-typed password didn't match new password "
-msgstr " Das bestätigte Passwort stimmt nicht mit dem neuen Passwort überein"
+msgstr " Das wiederholte Passwort stimmt nicht mit dem neuen Passwort überein"
 
 #: ../web/swat.c:1048
 #, c-format
@@ -269,7 +269,7 @@ msgstr " Das Passwort für '%s' wurde geändert."
 #: ../web/swat.c:1051
 #, c-format
 msgid " The passwd for '%s' has NOT been changed."
-msgstr " Das Passwort für '%s' wurde nicht geändert."
+msgstr " Das Passwort für '%s' wurde NICHT geändert."
 
 #: ../web/swat.c:1076
 msgid "Server Password Management"
@@ -292,7 +292,7 @@ msgstr "Neues Passwort"
 
 #: ../web/swat.c:1093 ../web/swat.c:1138
 msgid "Re-type New Password"
-msgstr "Bestätige neues Passwort"
+msgstr "Wiederhole neues Passwort"
 
 #: ../web/swat.c:1101 ../web/swat.c:1149
 msgid "Change Password"
@@ -320,7 +320,7 @@ msgstr "Client/Server Passwort Verwaltung"
 
 #: ../web/swat.c:1140
 msgid "Remote Machine"
-msgstr "Remote Maschine"
+msgstr "Remote-Server"
 
 #: ../web/swat.c:1179
 msgid "Printer Parameters"
@@ -328,15 +328,15 @@ msgstr "Drucker Parameter"
 
 #: ../web/swat.c:1181
 msgid "Important Note:"
-msgstr "Wichtige Hinweise:"
+msgstr "Wichtiger Hinweis:"
 
 #: ../web/swat.c:1182
 msgid "Printer names marked with [*] in the Choose Printer drop-down box "
-msgstr "Mit [*] gekennzeichnete Druckername in der Druckerauswahlliste"
+msgstr "Mit [*] gekennzeichnete Drucker in der Druckerauswahlliste"
 
 #: ../web/swat.c:1183
 msgid "are autoloaded printers from "
-msgstr "wurde automatisch geladen von :"
+msgstr "wurden automatisch geladen von :"
 
 #: ../web/swat.c:1184
 msgid "Printcap Name"
@@ -372,7 +372,7 @@ msgstr ""
 
 #: ../web/statuspage.c:309
 msgid "Server Status"
-msgstr "Server Status"
+msgstr "Server-Status"
 
 #: ../web/statuspage.c:314
 msgid "Auto Refresh"
@@ -384,7 +384,7 @@ msgstr "Aktualisierungsintervall: "
 
 #: ../web/statuspage.c:319
 msgid "Stop Refreshing"
-msgstr "Stop Aktualisierung"
+msgstr "Stoppe Aktualisierung"
 
 #: ../web/statuspage.c:334
 msgid "version:"
@@ -404,11 +404,11 @@ msgstr "inaktiv"
 
 #: ../web/statuspage.c:341
 msgid "Stop smbd"
-msgstr "Stopp smbd"
+msgstr "Stoppe smbd"
 
 #: ../web/statuspage.c:343
 msgid "Start smbd"
-msgstr "Start smbd"
+msgstr "Starte smbd"
 
 #: ../web/statuspage.c:345
 msgid "Restart smbd"
@@ -420,11 +420,11 @@ msgstr ""
 
 #: ../web/statuspage.c:354
 msgid "Stop nmbd"
-msgstr "Stopp nmbd"
+msgstr "Stoppe nmbd"
 
 #: ../web/statuspage.c:356
 msgid "Start nmbd"
-msgstr "Start nmbd"
+msgstr "Starte nmbd"
 
 #: ../web/statuspage.c:358
 msgid "Restart nmbd"
@@ -436,11 +436,11 @@ msgstr ""
 
 #: ../web/statuspage.c:368
 msgid "Stop winbindd"
-msgstr "Stopp winbindd"
+msgstr "Stoppe winbindd"
 
 #: ../web/statuspage.c:370
 msgid "Start winbindd"
-msgstr "Start winbindd"
+msgstr "Starte winbindd"
 
 #: ../web/statuspage.c:372
 msgid "Restart winbindd"
@@ -449,16 +449,16 @@ msgstr "Neustart winbindd"
 #. stop, restart all
 #: ../web/statuspage.c:381
 msgid "Stop All"
-msgstr ""
+msgstr "Alle Stoppen"
 
 #: ../web/statuspage.c:382
 msgid "Restart All"
-msgstr "Neustart Alle"
+msgstr "Alle neu starten"
 
 #. start all
 #: ../web/statuspage.c:386
 msgid "Start All"
-msgstr "Start Alle"
+msgstr "Alle Starten"
 
 #: ../web/statuspage.c:393
 msgid "Active Connections"
@@ -474,7 +474,7 @@ msgstr ""
 
 #: ../web/statuspage.c:395
 msgid "IP address"
-msgstr "IP Adresse"
+msgstr "IP-Adresse"
 
 #: ../web/statuspage.c:395 ../web/statuspage.c:408 ../web/statuspage.c:416
 msgid "Date"
@@ -482,7 +482,7 @@ msgstr "Datum"
 
 #: ../web/statuspage.c:397
 msgid "Kill"
-msgstr "Kill"
+msgstr "Killen"
 
 #: ../web/statuspage.c:405
 msgid "Active Shares"
@@ -518,7 +518,7 @@ msgstr ""
 
 #: ../web/statuspage.c:416
 msgid "File"
-msgstr ""
+msgstr "Datei"
 
 #: ../web/statuspage.c:425
 msgid "Show Client in col 1"
