@@ -224,7 +224,6 @@ static BOOL wbinfo_wins_byip(char *ip)
 static BOOL wbinfo_list_domains(void)
 {
 	struct winbindd_response response;
-	fstring name;
 
 	ZERO_STRUCT(response);
 
@@ -238,9 +237,19 @@ static BOOL wbinfo_list_domains(void)
 
 	if (response.extra_data) {
 		const char *extra_data = (char *)response.extra_data;
+		fstring name;
+		char *p;
 
-		while(next_token(&extra_data, name, ",", sizeof(fstring)))
+		while(next_token(&extra_data, name, "\n", sizeof(fstring))) {
+			p = strchr(name, '\\');
+			if (p == 0) {
+				d_printf("Got invalid response: %s\n",
+					 extra_data);
+				return False;
+			}
+			*p = 0;
 			d_printf("%s\n", name);
+		}
 
 		SAFE_FREE(response.extra_data);
 	}

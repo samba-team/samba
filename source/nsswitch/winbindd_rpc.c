@@ -829,14 +829,50 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	DEBUG(3,("rpc: trusted_domains\n"));
 
 	*num_domains = 0;
+	*names = NULL;
 	*alt_names = NULL;
+	*dom_sids = NULL;
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	return rpccli_lsa_enum_trust_dom(cli, mem_ctx, &lsa_policy, &enum_ctx,
-					 num_domains, names, dom_sids);
+	result = STATUS_MORE_ENTRIES;
+
+	while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+		uint32 start_idx, num;
+		char **tmp_names;
+		DOM_SID *tmp_sids;
+		int i;
+
+		result = rpccli_lsa_enum_trust_dom(cli, mem_ctx,
+						   &lsa_policy, &enum_ctx,
+						   &num, &tmp_names,
+						   &tmp_sids);
+
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
+			break;
+
+		start_idx = *num_domains;
+		*num_domains += num;
+		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names,
+					      char *, *num_domains);
+		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids,
+						 DOM_SID, *num_domains);
+		*alt_names = TALLOC_REALLOC_ARRAY(mem_ctx, *alt_names,
+						 char *, *num_domains);
+		if ((*names == NULL) || (*dom_sids == NULL) ||
+		    (*alt_names == NULL))
+			return NT_STATUS_NO_MEMORY;
+
+		for (i=0; i<num; i++) {
+			(*names)[start_idx+i] = tmp_names[i];
+			(*dom_sids)[start_idx+i] = tmp_sids[i];
+			(*alt_names)[start_idx+i] = talloc_strdup(mem_ctx, "");
+		}
+	}
+	return result;
 }
 
 /* find the domain sid for a domain */

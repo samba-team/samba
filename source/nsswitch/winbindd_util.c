@@ -246,10 +246,19 @@ static void trustdom_recv(void *private, BOOL success)
 	p = response->extra_data;
 
 	while ((p != NULL) && (*p != '\0')) {
-		char *sidstr;
+		char *sidstr, *alt_name;
 		DOM_SID sid;
 
-		sidstr = strchr(p, '\\');
+		alt_name = strchr(p, '\\');
+		if (alt_name == NULL) {
+			DEBUG(0, ("Got invalid trustdom response\n"));
+			break;
+		}
+
+		*alt_name = '\0';
+		alt_name += 1;
+
+		sidstr = strchr(alt_name, '\\');
 		if (sidstr == NULL) {
 			DEBUG(0, ("Got invalid trustdom response\n"));
 			break;
@@ -265,7 +274,8 @@ static void trustdom_recv(void *private, BOOL success)
 
 		if (find_domain_from_sid_noinit(&sid) == NULL) {
 			struct winbindd_domain *domain;
-			domain = add_trusted_domain(p, NULL, &cache_methods,
+			domain = add_trusted_domain(p, alt_name,
+						    &cache_methods,
 						    &sid);
 			setup_domain_child(&domain->child);
 		}
