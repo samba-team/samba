@@ -536,7 +536,7 @@ static struct functable net_func[] = {
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
-		{"debuglevel",  'D', POPT_ARG_STRING, &debuglevel},
+		{"debuglevel",  'd', POPT_ARG_STRING, &debuglevel},
 		{ 0, 0, 0, 0}
 	};
 
@@ -570,7 +570,8 @@ static struct functable net_func[] = {
 			}
 			break;
 		default:
-			d_printf("\nInvalid option %c (%d)\n", (char)opt, opt);
+			d_printf("\nInvalid option %s: %s\n", 
+				 poptBadOption(pc, 0), poptStrerror(opt));
 			net_help(argc, argv);
 			exit(1);
 		}
