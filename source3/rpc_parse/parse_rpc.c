@@ -264,9 +264,6 @@ BOOL smb_io_rpc_uuid(const char *desc, RPC_UUID *uuid, prs_struct *ps, int depth
 	prs_debug(ps, depth, desc, "smb_io_rpc_uuid");
 	depth++;
 
-	if(!prs_align(ps))
-		return False;
-
 	if(!prs_uint32 ("data   ", ps, depth, &uuid->time_low))
 		return False;
 	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_mid))
@@ -291,6 +288,9 @@ static BOOL smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
 	depth++;
+
+	if (!prs_align(ps))
+		return False;
 
 	if (!smb_io_rpc_uuid(  "uuid", &ifc->uuid, ps, depth))
 		return False;
