@@ -40,8 +40,9 @@ static NTSTATUS unicode_open(struct smbcli_tree *tree,
 	int i;
 	NTSTATUS status;
 
-	ucs_name = malloc((1+u_name_len)*2);
+	ucs_name = talloc(NULL, (1+u_name_len)*2);
 	if (!ucs_name) {
+		printf("Failed to create UCS2 Name - talloc() failure\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -50,16 +51,16 @@ static NTSTATUS unicode_open(struct smbcli_tree *tree,
 	}
 	SSVAL(ucs_name, i*2, 0);
 
-	i = convert_string_allocate(CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
+	i = convert_string_talloc(ucs_name, CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
 	if (i == -1) {
-		free(ucs_name);
+		printf("Failed to convert UCS2 Name into unix - convert_string_talloc() failure\n");
+		talloc_free(ucs_name);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	asprintf(&fname2, "%s%s", BASEDIR, fname);
+	fname2 = talloc_asprintf(ucs_name, "%s%s", BASEDIR, fname);
 	if (!fname2) {
-		free(fname);
-		free(ucs_name);
+		talloc_free(ucs_name);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -79,9 +80,7 @@ static NTSTATUS unicode_open(struct smbcli_tree *tree,
 
 	status = smb_raw_open(tree, mem_ctx, &io);
 
-	free(fname);
-	free(fname2);
-	free(ucs_name);
+	talloc_free(ucs_name);
 
 	return status;
 }
