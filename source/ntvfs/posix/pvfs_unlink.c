@@ -80,6 +80,10 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (pvfs_is_open(pvfs, name)) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
 	dir = talloc_p(req, struct pvfs_dir);
 	if (dir == NULL) {
 		return NT_STATUS_NO_MEMORY;
