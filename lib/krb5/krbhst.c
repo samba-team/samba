@@ -8,7 +8,7 @@ krb5_get_krbhst (krb5_context context,
 		 char ***hostlist)
 {
      char *r;
-     char *val;
+     const char *val;
 
 #ifdef USE_ASN1_PRINCIPAL
      r = *realm;
