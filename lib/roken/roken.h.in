@@ -253,6 +253,10 @@ int iruserok(unsigned raddr, int superuser, const char *ruser,
 	     const char *luser);
 #endif
 
+#ifndef HAVE_GETHOSTNAME
+int gethostname(char *name, int namelen);
+#endif
+
 #ifndef HAVE_WRITEV
 ssize_t
 writev(int d, const struct iovec *iov, int iovcnt);
@@ -287,6 +291,14 @@ int unix_verify_user(char *user, char *password);
 void inaddr2str(struct in_addr addr, char *s, size_t len);
 
 void mini_inetd (int port);
+
+int roken_concat (char *s, size_t len, ...);
+
+size_t roken_mconcat (char **s, size_t max_len, ...);
+
+int roken_vconcat (char *s, size_t len, va_list args);
+
+size_t roken_vmconcat (char **s, size_t max_len, va_list args);
 
 #ifndef HAVE_STRUCT_WINSIZE
 struct winsize {
