@@ -182,14 +182,31 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p);
 	$result = PyLong_FromLong(*$1);
 }
 
+%typemap(in) struct policy_handle * {
+
+	if ((SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor,
+			     SWIG_POINTER_EXCEPTION)) == -1) 
+	        return NULL;
+
+	if ($1 == NULL) {
+		PyErr_SetString(PyExc_TypeError, "None is not a valid policy handle");
+		return NULL;
+	}
+}
+
 /* When returning a policy handle to Python we need to make a copy of
    as the talloc context it is created under is destroyed after the
    wrapper function returns.  TODO: Fix memory leak created here. */
 
 %typemap(out) struct policy_handle * {
-	struct policy_handle *temp = (struct policy_handle *)malloc(sizeof(struct policy_handle));
-	memcpy(temp, $1, sizeof(struct policy_handle));
-	$result = SWIG_NewPointerObj(temp, SWIGTYPE_p_policy_handle, 0);
+	if ($1) {
+		struct policy_handle *temp = (struct policy_handle *)malloc(sizeof(struct policy_handle));
+		memcpy(temp, $1, sizeof(struct policy_handle));
+		$result = SWIG_NewPointerObj(temp, SWIGTYPE_p_policy_handle, 0);
+	} else {
+		Py_INCREF(Py_None);
+		$result = Py_None;
+	}
 }
 
 %{
