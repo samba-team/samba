@@ -1,11 +1,68 @@
+                  ==============================
+                  Release Notes for Samba 3.0.2a
+                        February 13, 2004
+                  ==============================
+
+Samba 3.0.2a is a minor patch release for the 3.0.2 code base
+to address, in particular, a problem when using pdbedit to 
+sanitize (--force-initialized-passwords) Samba's tdbsam 
+backend.   This is the latest stable release of Samba. This 
+is the version that all production Samba servers should be 
+running for all current bug-fixes.  
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.2
+-------------------
+
+commits
+-------
+
+Please refer to the CVS log for the SAMBA_3_0 branch for complete
+details.  The list of changes per contributor are as follows:
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Added paranoia checks in parsing code.
+    
+
+o   Andrew Bartlet <abartlet@samba.org>
+    * Ensure that changes to uninitialized passwords in ldapsam 
+      are written to the DIT.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fixed iterator in tdbsam.
+    * Fix bug disabling accounts with no password.
+    
+
+o   Steve French <sfrench@us.ibm.com>
+    * Added missing nosetuid and noexec options.
+
+    
+o   Sebastian Krahmer <krahmer@suse.de>
+    * Fixed potential crash bug in NTLMSSP parsing code.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Fixed logic in tdb_brlock error checking.
+
+    
+o   Urban Widmark <urban@teststation.com>
+    * Set nosuid,nodev flags in smbmnt by default.
+
+
+Changes for older versions follow below:
+
+        --------------------------------------------------
+
                   =============================
                   Release Notes for Samba 3.0.2
                         February 9, 2004
                   =============================
-
-This is the latest stable release of Samba. This is the version 
-that all production Samba servers should be running for all current
-bug-fixes.  
 
 It has been confirmed that previous versions of Samba 3.0 are
 susceptible to a password initialization bug that could grant an 
@@ -46,9 +103,6 @@ release include:
     with scripts based on the 2.2 version.
 
 
-######################################################################
-Changes
-#######
 Changes since 3.0.1
 -------------------
 
@@ -78,6 +132,8 @@ o   Jeremy Allison <jra@samba.org>
     * Fix SMB signing bug when copying large files.
     * Correct error logic in mkdir_internals() (caused a panic
       when combined with --enable-developer).
+    * BUG 830: Protect against crashes due to bad character 
+      conversions.
 
       
 o   Petri Asikainen <paca@sci.fi>
@@ -118,6 +174,7 @@ o   Andrew Bartlet <abartlet@samba.org>
     * Increase separation between DNS queries for hosts and queries
       for AD domain controllers.
     * Include additional NT_STATUS to PAM error mappings.
+    * Password initialization fixes.
 
     
 o   Justin Baugh <justin.baugh@request.com>
@@ -164,6 +221,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 977: Don't create a homes share for a user if a static 
       share already exists by the same name.
     * Removed unused smb.conf options.
+    * Password initialization fixes.
     * Set the disable flag for template accounts created by
       mksmbpasswd.sh.
     * Disable any account has no passwords and does not have the
@@ -286,6 +344,10 @@ o   J. Tournier <jerome.tournier@IDEALX.com>
     * Small fixes for the smbldap-tool scripts.
 
 
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix src len check in pull_usc2().
+    
+    
 o   Jelmer Vernooij <jelmer@samba.org>
     * Put functions for generating SQL queries in pdb_sql.c
     * Add pgSQL backend (based on patch by Hamish Friedlander)
@@ -295,7 +357,31 @@ o   Jelmer Vernooij <jelmer@samba.org>
     * Fix swatdir for --with-fhs.
 
 
-    
+        --------------------------------------------------
+
+                  =============================
+                  Release Notes for Samba 3.0.1
+                        December 15, 2003
+                  =============================
+
+Some of the more common bugs in 3.0.0 addressed in the release 
+include:
+
+  o Substitution problems with smb.conf variables.
+  o Errors in return codes which caused some applications
+    to fail to open files.
+  o General Protection Faults on Windows 2000/XP clients
+    using Samba point-n-print features.
+  o Several miscellaneous crash bugs.
+  o Access problems when enumerating group mappings are
+    stored in an LDAP Directory.
+  o Several common SWAT bugs when writing changes to
+    smb.conf.
+  o Internal inconsistencies when 'winbind use default
+    domain = yes'
+
+
+
 Changes since 3.0.0
 ----------------------
 
@@ -583,8 +669,10 @@ o   Fix bug in in-memory Kerberos keytab detection routines
 
 ######################################################################
 
+              The original 3.0.0 release notes follow
               =======================================
-              The original 3.0.0 release notes follow	       
+                    WHATS NEW IN Samba 3.0.0
+                        September 24, 2003
               =======================================
 
 

@@ -39,6 +39,7 @@ smbtree
 smbumount
 smbiconv
 swat
+tdbdump
 t_push_ucs2
 t_snprintf
 t_strcmp
