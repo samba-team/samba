@@ -5,6 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  Copyright (C) Jeremy Allison					2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3232,11 +3233,21 @@ static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
-			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+
+uint32 _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+
 	int snum;
-	
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
 	*needed=0;
 
 	if (!get_printer_snum(handle, &snum))

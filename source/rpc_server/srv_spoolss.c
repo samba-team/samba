@@ -5,6 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  Copyright (C) Jeremy Allison					2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -312,6 +313,7 @@ static BOOL api_spoolss_enumprinters(pipes_struct *p)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static BOOL api_spoolss_getprinter(pipes_struct *p)
 {
 	SPOOL_Q_GETPRINTER q_u;
@@ -327,12 +329,7 @@ static BOOL api_spoolss_getprinter(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_getprinter(&q_u.handle, q_u.level,
-					 r_u.buffer, q_u.offered, 
-					 &r_u.needed);
+	r_u.status = _spoolss_getprinter(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_getprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinter: unable to marshall SPOOL_R_GETPRINTER.\n"));

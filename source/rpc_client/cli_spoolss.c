@@ -546,7 +546,7 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
         strupper(the_client_name);
 	
 
-        make_spoolss_q_addprinterex(&q_o, srv_name, the_client_name, 
+        make_spoolss_q_addprinterex(mem_ctx, &q_o, srv_name, the_client_name, 
 				    /* "Administrator", */
 				    con->pCli_state->user_name,
 				    2, info2);
@@ -788,7 +788,7 @@ uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIV
         prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
 	
 	/* make the ADDPRINTERDRIVER PDU */
-	make_spoolss_q_addprinterdriver(&q_o, srv_name, level, info);
+	make_spoolss_q_addprinterdriver(mem_ctx, &q_o, srv_name, level, info);
 
 	/* turn the data into an io stream */
         if (spoolss_io_q_addprinterdriver("", &q_o, &buf, 0) &&
