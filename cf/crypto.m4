@@ -93,7 +93,8 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
     des_cbc_encrypt(0, 0, 0, 0, 0, 0);
     RC4(0, 0, 0, 0);
   ], [crypto_lib=krb4; AC_MSG_RESULT([krb4's libdes])])
-
+  CPPFLAGS="$save_CPPFLAGS"
+  LIBS="$save_LIBS"
 fi
 
 if test "$crypto_lib" = "unknown"; then
