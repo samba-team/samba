@@ -62,8 +62,8 @@ do_v4_fallback (krb5_context context,
 
     if (lifetime == 0)
 	lifetime = DEFAULT_TKT_LIFE;
-
-    lifetime = krb_time_to_life (0, lifetime * 60);
+    else
+	lifetime = krb_time_to_life (0, lifetime);
 
     kret = krb5_524_conv_principal (context, principal,
 				    princ.name,
