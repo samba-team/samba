@@ -228,6 +228,9 @@ static BOOL have_passwd_hash(void)
 
 struct passwd *hashed_getpwnam(const char *name)
 {
+#ifndef USE_HASHED_GETPWNAM
+  return getpwnam(name);
+#else
   struct passwd_hash_table_s *pht=&passwd_hash_table;
 
   DEBUG(5,("getpwnam(%s)\n", name));
@@ -257,6 +260,7 @@ struct passwd *hashed_getpwnam(const char *name)
   } 
   /* Fall back to real getpwnam() */
   return getpwnam(name);
+#endif
 }
 
 /*******************************************************************
