@@ -279,8 +279,6 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	return cli;
 }
 
-
-
 static int net_user(int argc, const char **argv)
 {
 	if (net_ads_check() == 0)
@@ -293,6 +291,18 @@ static int net_user(int argc, const char **argv)
 	return net_rap_user(argc, argv);
 }
 
+static int net_group(int argc, const char **argv)
+{
+	if (net_ads_check() == 0)
+		return net_ads_group(argc, argv);
+
+       
+	/* if server is not specified, default to PDC? */
+	/* not implemented yet	if (net_rpc_check(NET_FLAGS_PDC))
+	   return net_rpc_group(argc, argv); */
+
+	return net_rap_group(argc, argv);
+}
 
 static int net_join(int argc, const char **argv)
 {
@@ -319,7 +329,7 @@ static struct functable net_func[] = {
 	{"DOMAIN", net_rap_domain},
 	{"PRINTQ", net_rap_printq},
 	{"USER", net_user},
-	{"GROUP", net_rap_group},
+	{"GROUP", net_group},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
