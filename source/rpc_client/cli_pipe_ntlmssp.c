@@ -30,7 +30,6 @@
 #include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
-extern struct pipe_id_info pipe_names[];
 extern pstring global_myname;
 
 static void NTLMSSPcalc_ap( struct ntlmssp_auth_struct *a, unsigned char *data, int len)

@@ -30,7 +30,6 @@
 #include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
-extern struct pipe_id_info pipe_names[];
 extern pstring global_myname;
 
 /****************************************************************************

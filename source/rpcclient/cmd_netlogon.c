@@ -37,6 +37,106 @@ extern struct user_creds *usr_creds;
 
 extern FILE *out_hnd;
 
+#if 0
+/****************************************************************************
+experimental nt login trust account change.
+****************************************************************************/
+void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
+{
+	BOOL res = True;
+	char *nt_password;
+	uchar trust_passwd[16];
+	uchar nt_pw[16];
+	uchar lm_pw[16];
+	fstring trust_acct;
+	fstring domain;
+	char *p;
+	uint16 validation_level;
+
+	fstring wks_name;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	fstrcpy(wks_name, "\\\\");
+	if (strequal(srv_name, "\\\\.") &&
+	    strequal(info->dest_host, info->myhostname))
+	{
+		fstrcat(wks_name, ".");
+	}
+	else
+	{
+		fstrcat(wks_name, info->dest_host);
+	}
+	strupper(wks_name);
+
+	domain[0] = 0;
+	if (usr_creds != NULL)
+	{
+		fstrcpy(domain, usr_creds->ntc.domain);
+	}
+
+	if (domain[0] == 0)
+	{
+		fstrcpy(domain, info->dom.level3_dom);
+	}
+
+	argc--;
+	argv++;
+
+
+	if (domain[0] == 0)
+	{
+		report(out_hnd, "no domain specified.\n");
+	}
+
+	nt_owf_genW(nt_password, nt_pw, lm_pw);
+
+	DEBUG(5, ("do_nt_login_test: username %s from: %s\n",
+		  nt_user_name, info->myhostname));
+
+	fstrcpy(trust_acct, info->myhostname);
+	fstrcat(trust_acct, "$");
+
+	res = res ? msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
+						 trust_passwd, NULL) : False;
+
+	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
+				       trust_acct,
+				       trust_passwd,
+				       SEC_CHAN_WKSTA,
+				       &validation_level) == 0x0 : False;
+
+
+	memset(trust_passwd, 0, 16);
+
+	/* do an NT login */
+	res = res ? (cli_nt_login_interactive(srv_name, info->myhostname,
+					      domain, nt_user_name,
+					      getuid(), lm_pw, nt_pw,
+					      &info->dom.ctr,
+					      validation_level,
+					      &info->dom.user_info3) ==
+		     0x0) : False;
+
+
+#if 0
+	/* ok!  you're logged in!  do anything you like, then... */
+
+	/* do an NT logout */
+	res =
+		res ? cli_nt_logoff(srv_name, info->myhostname,
+				    &info->dom.ctr) : False;
+#endif
+
+	report(out_hnd, "cmd_nt_login: login (%s) test succeeded: %s\n",
+	       nt_user_name, BOOLSTR(res));
+}
+
+#endif
+
 
 /****************************************************************************
 experimental nt login.

@@ -660,6 +660,12 @@ BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 			            set_policy_con(get_global_hnd_cache(),
 			                                 connect_pol, con,
 			                                 cli_connection_unlink);
+			if (valid_pol)
+			{
+				policy_hnd_set_name(get_global_hnd_cache(),
+						    connect_pol,
+						    "SAM_CONNECT");
+			}
 		}
 	}
 
@@ -1697,6 +1703,8 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 		{
 			memcpy(domain_pol, &r_o.domain_pol, sizeof(r_o.domain_pol));
 			valid_pol = cli_pol_link(domain_pol, connect_pol);
+			policy_hnd_set_name(get_global_hnd_cache(),
+					    domain_pol, "SAM_DOMAIN");
 		}
 	}
 

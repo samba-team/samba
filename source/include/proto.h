@@ -1163,6 +1163,10 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 			   uint32 *num_doms, UNISTR2 **uni_names,
 			   DOM_SID ***sids);
+uint32 _lsa_lookup_names(const POLICY_HND *pol,
+			 uint32 num_entries, const UNISTR2 *name,
+			 DOM_R_REF *ref, DOM_RID2 **ret_rid2,
+			 uint32 *mapped_count);
 uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 			uint32 num_entries, DOM_SID2 *sid,
 			const LOOKUP_LEVEL *level,

@@ -1074,7 +1074,8 @@ nsswitch/ntdom.so: $(NSS_OBJ)
 	@echo "Linking $@"
 	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
 
-install: installdirs \
+install: all \
+	installdirs \
 	install-libs installbin install-sbin \
 	installman installscripts installcp installswat
 
@@ -1090,13 +1091,13 @@ install-libs: $(SHARED_LIBS) installdirs
 	  $(LIBTOOL) --mode=install $(INSTALL) $$p $(DESTDIR)$(LIBDIR); \
 	done
 
-installbin: all installdirs
+installbin: $(PROGS) installdirs
 	@list='$(PROGS)'; for p in $$list; do \
 	  echo Installing $$p in $(BINDIR) using libtool; \
 	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(BINDIR); \
 	done
 
-install-sbin: all installdirs
+install-sbin: $(SPROGS) installdirs
 	@list='$(SPROGS)'; for p in $$list; do \
 	  echo Installing $$p in $(SBINDIR) using libtool; \
 	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(SBINDIR); \

@@ -235,10 +235,10 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 	return status;
 }
 
-static uint32 _lsa_lookup_names(uint32 num_entries, const UNISTR2 *name,
-				DOM_R_REF *ref,
-				DOM_RID2 **ret_rid2,
-				uint32 *mapped_count)
+uint32 _lsa_lookup_names(const POLICY_HND *pol,
+			 uint32 num_entries, const UNISTR2 *name,
+			 DOM_R_REF *ref, DOM_RID2 **ret_rid2,
+			 uint32 *mapped_count)
 {
 	int i;
 	int total = 0;
@@ -268,8 +268,8 @@ static uint32 _lsa_lookup_names(uint32 num_entries, const UNISTR2 *name,
 		{
 			status1 = NT_STATUS_NONE_MAPPED;
 		}
-		if (status1 == NT_STATUS_NOPROBLEMO && map_domain_name_to_sid(&find_sid,
-		                                            &find_name))
+		if (status1 == NT_STATUS_NOPROBLEMO
+		    && map_domain_name_to_sid(&find_sid, &find_name))
 		{
 			sid_name_use = SID_NAME_DOMAIN;
 			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
@@ -329,9 +329,6 @@ static uint32 _lsa_lookup_names(uint32 num_entries, const UNISTR2 *name,
 
 	if ((*mapped_count) == 0)
 	{
-		safe_free(rid2);
-		(*ret_rid2) = NULL;
-
 		return NT_STATUS_NONE_MAPPED;
 	}
 	else

@@ -469,7 +469,9 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 				DEBUG(3, ("end of file from client\n"));
 				if (fn->idle != NULL)
 				{
+					become_root(False);
 					fn->idle();
+					unbecome_root(False);
 				}
 				return;
 			}
@@ -480,7 +482,9 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 					  strerror(errno)));
 				if (fn->idle != NULL)
 				{
+					become_root(False);
 					fn->idle();
+					unbecome_root(False);
 				}
 				return;
 			}
