@@ -237,6 +237,7 @@ void command(int top, char *tbuf, int cnt);
 
 void tninit(void);
 void usage(void);
+void set_forward_options(void);
 
 /* network.c */
 
@@ -299,7 +300,6 @@ void     TerminalFlushOutput (void);
 void     TerminalNewMode (int);
 void     TerminalRestoreState (void);
 void     TerminalSaveState (void);
-void     tninit (void);
 void     willoption (int);
 void     wontoption (int);
 
