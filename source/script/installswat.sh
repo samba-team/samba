@@ -103,7 +103,7 @@ if [ -d $SRCDIR../docs/htmldocs/ ]; then
               fi
           fi
           for f in $SRCDIR../docs/$dir/images/*.png; do
-              FNAME=$INSTALLDIR/`basename $f`
+              FNAME=$INSTALLDIR/images/`basename $f`
               echo $FNAME
               cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
               chmod 0644 $FNAME
