@@ -2844,6 +2844,7 @@ Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, in
  
   send_smb(Client, outbuf);
 
+  /* We need this in case a readraw crosses on the wire. */
   global_oplock_break = True;
  
   /* Process incoming messages. */
@@ -2879,10 +2880,6 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
     }
     process_smb(inbuf, outbuf);
 
-    /* We only need this in case a readraw crossed on the wire. */
-    if(global_oplock_break)
-      global_oplock_break = False;
-
     /*
      * Die if we go over the time limit.
      */
@@ -2897,6 +2894,10 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
       break;
     }
   }
+
+  /* We need this in case a readraw crossed on the wire. */
+  if(global_oplock_break)
+    global_oplock_break = False;
 
   /*
    * If the client did not respond we must die.
