@@ -67,8 +67,7 @@ static const struct charset_functions builtin_functions[] = {
 	{"UTF8",   utf8_pull,  utf8_push},
 	{"UTF-8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
-	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
-	{NULL, NULL, NULL}
+	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
 };
 
 static struct charset_functions *charsets = NULL;
@@ -161,10 +160,8 @@ static BOOL is_utf16(const char *name)
 smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
 	smb_iconv_t ret;
-	struct charset_functions *from, *to;
-	
-	from = charsets;
-	to = charsets;
+	const struct charset_functions *from=NULL, *to=NULL;
+	int i;
 
 	ret = (smb_iconv_t)talloc_named(NULL, sizeof(*ret), 
 					"iconv(%s,%s)", tocode, fromcode);
@@ -180,14 +177,25 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 		return ret;
 	}
 
-	while (from) {
-		if (strcasecmp(from->name, fromcode) == 0) break;
-		from = from->next;
+	for (i=0;i<ARRAY_SIZE(builtin_functions);i++) {
+		if (strcasecmp(fromcode, builtin_functions[i].name) == 0) {
+			from = &builtin_functions[i];
+		}
+		if (strcasecmp(tocode, builtin_functions[i].name) == 0) {
+			to = &builtin_functions[i];
+		}
 	}
 
-	while (to) {
-		if (strcasecmp(to->name, tocode) == 0) break;
-		to = to->next;
+	if (from == NULL) {
+		for (from=charsets; from; from=from->next) {
+			if (strcasecmp(from->name, fromcode) == 0) break;
+		}
+	}
+
+	if (to == NULL) {
+		for (to=charsets; to; to=to->next) {
+			if (strcasecmp(to->name, tocode) == 0) break;
+		}
 	}
 
 #ifdef HAVE_NATIVE_ICONV
