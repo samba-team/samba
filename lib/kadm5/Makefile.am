@@ -2,7 +2,10 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
+INCLUDES = $(WFLAGS)
 ##INCLUDES = -I$(top_builddir)/include
+
+COMPILE_ET = ../com_err/compile_et
 
 lib_LIBRARIES = libkadm5srv.a libkadm5clnt.a
 
@@ -74,10 +77,10 @@ all-local: $(inc_DATA)
 	done
 
 .et.h:
-	$(SHELL) ../error/compile_et $<
+	$(COMPILE_ET) $<
 
 .et.c:
-	$(SHELL) ../error/compile_et $<
+	$(COMPILE_ET) $<
 
 $(libkadm5srv_a_OBJECTS): kadm5_err.h
 
