@@ -29,7 +29,7 @@ static struct winbindd_cli_state *client_list;
 
 /* Print client information */
 
-void do_print_client_info(void)
+static void do_print_client_info(void)
 {
     struct winbindd_cli_state *client;
     int i;
@@ -51,8 +51,11 @@ void do_print_client_info(void)
 
 /* Flush client cache */
 
-void do_flush_cache(void)
+static void do_flush_caches(void)
 {
+    /* Clear cached user and group enumation info */
+
+    winbindd_flush_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -74,7 +77,7 @@ static void termination_handler(int signum)
 
 static BOOL print_client_info;
 
-static void siguser1_handler(int signum)
+static void sigusr1_handler(int signum)
 {
     BlockSignals(True, SIGUSR1);
     print_client_info = True;
@@ -432,7 +435,7 @@ static void process_loop(int accept_sock)
         /* Check signal handling things */
 
         if (flush_cache) {
-            do_flush_cache();
+            do_flush_caches();
             flush_cache = False;
         }
 
@@ -527,12 +530,16 @@ int main(int argc, char **argv)
 
     pwdb_initialise(False);
 
+    /* Winbind daemon initialisation */
+
     ZERO_STRUCT(server_state);
     fstrcpy(server_state.controller, lp_passwordserver());
 
     if (!winbindd_param_init()) {
         return 1;
     }
+
+    winbindd_cache_init();
 
     /* Setup signal handlers */
 
@@ -542,7 +549,7 @@ int main(int argc, char **argv)
 
     CatchSignal(SIGPIPE, SIG_IGN);                    /* Ignore sigpipe */
 
-    CatchSignal(SIGUSR1, siguser1_handler);           /* Debugging sigs */
+    CatchSignal(SIGUSR1, sigusr1_handler);            /* Debugging sigs */
     CatchSignal(SIGHUP, sighup_handler);
 
     /* Create UNIX domain socket */
