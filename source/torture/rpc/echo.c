@@ -308,7 +308,7 @@ BOOL torture_rpc_echo(int dummy)
 */
 	printf("\n");
 	
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 	return ret;

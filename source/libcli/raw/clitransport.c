@@ -52,7 +52,6 @@ static int transport_destructor(void *ptr)
 	event_remove_fd(transport->event.ctx, transport->event.fde);
 	event_remove_timed(transport->event.ctx, transport->event.te);
 	event_context_destroy(transport->event.ctx);
-	talloc_free(transport->socket);
 	return 0;
 }
 
@@ -75,7 +74,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 		return NULL;
 	}
 
-	transport->socket = sock;
+	transport->socket = talloc_reference(transport, sock);
 	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->options.use_spnego = lp_use_spnego();
 	transport->negotiate.max_xmit = ~0;
