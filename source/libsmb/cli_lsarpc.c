@@ -217,7 +217,10 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Lookup a list of sids */
+/** Lookup a list of sids  */
+/********************************************************************
+ Converts SIDs to names. Outgoing names are in UNIX charset.
+*********************************************************************/
 
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *pol, int num_sids, DOM_SID *sids, 
@@ -335,6 +338,9 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 /** Lookup a list of names */
+/********************************************************************
+ Converts names to SIDs. Incoming names are in UNIX charset.
+*********************************************************************/
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               POLICY_HND *pol, int num_names, 
@@ -358,6 +364,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
+	/* This call converts from UNIX to DOS charset then to unicode. */
 	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||

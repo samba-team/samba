@@ -110,6 +110,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		for (j=0;j<count;i++, j++) {
+			/* unistr2_tdup converts to UNIX charset. */
 			(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_acct_name);
 			(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_full_name);
 			(*info)[i].user_rid = info1.sam[j].rid_user;
