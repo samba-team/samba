@@ -108,9 +108,9 @@ void E_md4hash(uchar *passwd, uchar *p16)
 /* Does both the NT and LM owfs of a user's password */
 void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 {
-	char passwd[130];
+	char passwd[514];
 
-	memset(passwd,'\0',130);
+	memset(passwd,'\0',514);
 	safe_strcpy( passwd, pwd, sizeof(passwd)-1);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
@@ -231,7 +231,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 /***********************************************************
  decode a password buffer
 ************************************************************/
-BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
+BOOL decode_pw_buffer(char buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len)
 {
 	int uni_pw_len=0;
@@ -243,6 +243,7 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
 	  If you reuse that code somewhere else check first.
 	*/
 
+	ZERO_STRUCTP(new_pwrd);
 
 	/*
 	 * The length of the new password is in the last 4 bytes of
@@ -263,7 +264,7 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
 	uni_pw_len = *new_pw_len;
 	*new_pw_len /= 2;
 	pw = dos_unistrn2((uint16 *)(&buffer[512 - uni_pw_len]), uni_pw_len);
-	memcpy(new_pwrd, pw, *new_pw_len + 1);
+	memcpy(new_pwrd, pw, *new_pw_len);
 
 #ifdef DEBUG_PASSWORD
 	dump_data(100, new_pwrd, (*new_pw_len));

@@ -34,7 +34,7 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 			uint16 sid_name_use, char *name, uint32 idx)
 {
-	int len_name = strlen(name);
+	int len_name = strlen(name)+1;
 
 	if(len_name == 0)
 		len_name = 1;
@@ -359,7 +359,7 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
 	if (qos == NULL)
 		r_q->des_access = desired_access;
 
-	init_unistr2(&r_q->uni_server_name, server_name, strlen(server_name));
+	init_unistr2(&r_q->uni_server_name, server_name, strlen(server_name)+1);
 	init_lsa_obj_attr(&r_q->attr, attributes, qos);
 }
 
@@ -549,7 +549,7 @@ void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 	r_e->enum_context = enum_context;
 
 	if (status == 0) {
-		int len_domain_name = strlen(domain_name);
+		int len_domain_name = strlen(domain_name)+1;
 
 		r_e->num_domains  = 1;
 		r_e->ptr_enum_domains = 1;
@@ -872,7 +872,7 @@ void init_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
 
 	for (i = 0; i < num_names; i++) {
 		char* name = names[i];
-		int len = strlen(name);
+		int len = strlen(name)+1;
 		init_uni_hdr(&q_l->hdr_name[i], len);
 		init_unistr2(&q_l->uni_name[i], name, len);
 	}

@@ -664,7 +664,6 @@ void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
 void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
 {
 	static fstring smb_name="";
-	static fstring unix_name="";
 	static fstring full_name="";
 	static fstring home_dir="";
 	static fstring dir_drive="";
