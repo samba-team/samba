@@ -1,3 +1,8 @@
+2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sia/sia.c: Add support for AFS when using Kerberos 5, From:
+	Sergio.Gelato@astro.su.se
+	
 2003-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pam/Makefile.am: XXX inline COMPILE since automake wont add it
