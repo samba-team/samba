@@ -8,12 +8,7 @@
  *  Email:  crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
  *
- *  ubi_BinTree manages a simple binary tree.  Nothing fancy here.  No height
- *  balancing, no restructuring.  Still, a good tool for creating short, low-
- *  overhead sorted lists of things that need to be found in a hurry.
- *
- *  In addition, this module provides a good basis for creating other types
- *  of binary tree handling modules.
+ *  This module implements a simple binary tree.
  *
  * -------------------------------------------------------------------------- **
  *
@@ -32,6 +27,12 @@
  *  Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * -------------------------------------------------------------------------- **
+ *
+ * Log: ubi_BinTree.h,v
+ * Revision 2.5  1997/12/23 03:59:21  crh
+ * In this version, all constants & macros defined in the header file have
+ * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
+ * when run with '-pedantic -fsyntax-only -Wall'.
  *
  * Revision 2.4  1997/07/26 04:11:14  crh
  * + Just to be annoying I changed ubi_TRUE and ubi_FALSE to ubi_trTRUE
@@ -126,10 +127,10 @@
  *  Node link array index constants:  (Each node has an array of three
  *  pointers.  One to the left, one to the right, and one back to the
  *  parent.)
- *    LEFT    - Left child pointer.
- *    PARENT  - Parent pointer.
- *    RIGHT   - Right child pointer.
- *    EQUAL   - Synonym for PARENT.
+ *    ubi_trLEFT    - Left child pointer.
+ *    ubi_trPARENT  - Parent pointer.
+ *    ubi_trRIGHT   - Right child pointer.
+ *    ubi_trEQUAL   - Synonym for PARENT.
  *
  *  ubi_trCompOps:  These values are used in the ubi_trLocate() function.
  *    ubi_trLT  - request the first instance of the greatest key less than
@@ -152,10 +153,10 @@
 #define ubi_trDUPKEY    0x02        /* Turn on allow duplicate keys */
 
 /* Pointer array index constants... */
-#define LEFT   0x00
-#define PARENT 0x01
-#define RIGHT  0x02
-#define EQUAL  PARENT
+#define ubi_trLEFT   0x00
+#define ubi_trPARENT 0x01
+#define ubi_trRIGHT  0x02
+#define ubi_trEQUAL  ubi_trPARENT
 
 typedef enum {
   ubi_trLT = 1,
@@ -182,17 +183,19 @@ typedef enum {
  *                   is left as is.
  * -------------------------------------------------------------------------- **
  */
-#define Normalize(W) ((char)((W)-EQUAL))
-#define AbNormal(W) ((char)( EQUAL+((char)ubi_btSgn( (W) )) ))
-#define RevWay(W) ((char)((W)==LEFT?RIGHT:((W)==RIGHT?LEFT:EQUAL)))
+#define ubi_trNormalize(W) ((char)( (W) - ubi_trEQUAL ))
+#define ubi_trAbNormal(W)  ((char)( ((char)ubi_btSgn( W )) + ubi_trEQUAL ))
+#define ubi_trRevWay(W)    ((char)( ubi_trEQUAL - ((W) - ubi_trEQUAL) ))
 
 /* -------------------------------------------------------------------------- **
  * These macros allow us to quickly read the values of the OVERWRITE and
  * DUPlicate KEY bits of the tree root flags field.
  * -------------------------------------------------------------------------- **
  */
-#define Dups_OK(A) ((ubi_trDUPKEY & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
-#define Ovwt_OK(A) ((ubi_trOVERWRITE & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
+#define ubi_trDups_OK(A) \
+        ((ubi_trDUPKEY & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
+#define ubi_trOvwt_OK(A) \
+        ((ubi_trOVERWRITE & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
 
 /* -------------------------------------------------------------------------- **
  * Typedefs...

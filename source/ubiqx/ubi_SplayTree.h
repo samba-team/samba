@@ -36,6 +36,12 @@
  *
  * -------------------------------------------------------------------------- **
  *
+ * Log: ubi_SplayTree.h,v
+ * Revision 2.6  1997/12/23 04:02:20  crh
+ * In this version, all constants & macros defined in the header file have
+ * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
+ * when run with '-pedantic -fsyntax-only -Wall'.
+ *
  * Revision 2.5  1997/07/26 04:15:46  crh
  * + Cleaned up a few minor syntax annoyances that gcc discovered for me.
  * + Changed ubi_TRUE and ubi_FALSE to ubi_trTRUE and ubi_trFALSE.

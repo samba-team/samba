@@ -31,6 +31,12 @@
  *
  * -------------------------------------------------------------------------- **
  *
+ * Log: ubi_AVLtree.c,v
+ * Revision 2.5  1997/12/23 04:00:42  crh
+ * In this version, all constants & macros defined in the header file have
+ * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
+ * when run with '-pedantic -fsyntax-only -Wall'.
+ *
  * Revision 2.4  1997/07/26 04:36:20  crh
  * Andrew Leppard, aka "Grazgur", discovered that I still had my brains tied
  * on backwards with respect to node deletion.  I did some more digging and
@@ -123,8 +129,8 @@
  */
 
 static char ModuleID[] = "ubi_AVLtree\n\
-\tRevision: 2.4\n\
-\tDate: 1997/07/26 04:36:20\n\
+\tRevision: 2.5\n\
+\tDate: 1997/12/23 04:00:42\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **
@@ -153,22 +159,22 @@ static ubi_avlNodePtr L1( ubi_avlNodePtr p )
   {
   ubi_avlNodePtr tmp;
 
-  tmp                = p->Link[RIGHT];
-  p->Link[RIGHT]     = tmp->Link[LEFT];
-  tmp->Link[LEFT]    = p;
+  tmp                      = p->Link[ubi_trRIGHT];
+  p->Link[ubi_trRIGHT]     = tmp->Link[ubi_trLEFT];
+  tmp->Link[ubi_trLEFT]    = p;
 
-  tmp->Link[PARENT]  = p->Link[PARENT];
-  tmp->gender        = p->gender;
-  if(tmp->Link[PARENT])
-    (tmp->Link[PARENT])->Link[(tmp->gender)] = tmp;
-  p->Link[PARENT]    = tmp;
-  p->gender          = LEFT;
-  if( p->Link[RIGHT] )
+  tmp->Link[ubi_trPARENT]  = p->Link[ubi_trPARENT];
+  tmp->gender              = p->gender;
+  if(tmp->Link[ubi_trPARENT])
+    (tmp->Link[ubi_trPARENT])->Link[(int)(tmp->gender)] = tmp;
+  p->Link[ubi_trPARENT]    = tmp;
+  p->gender                = ubi_trLEFT;
+  if( p->Link[ubi_trRIGHT] )
     {
-    p->Link[RIGHT]->Link[PARENT] = p;
-    (p->Link[RIGHT])->gender     = RIGHT;
+    p->Link[ubi_trRIGHT]->Link[ubi_trPARENT] = p;
+    (p->Link[ubi_trRIGHT])->gender           = ubi_trRIGHT;
     }
-  p->balance -= Normalize( tmp->balance );
+  p->balance -= ubi_trNormalize( tmp->balance );
   (tmp->balance)--;
   return( tmp );
   } /* L1 */
@@ -185,22 +191,22 @@ static ubi_avlNodePtr R1( ubi_avlNodePtr p )
   {
   ubi_avlNodePtr tmp;
 
-  tmp                = p->Link[LEFT];
-  p->Link[LEFT]      = tmp->Link[RIGHT];
-  tmp->Link[RIGHT]   = p;
+  tmp                      = p->Link[ubi_trLEFT];
+  p->Link[ubi_trLEFT]      = tmp->Link[ubi_trRIGHT];
+  tmp->Link[ubi_trRIGHT]   = p;
 
-  tmp->Link[PARENT]  = p->Link[PARENT];
-  tmp->gender        = p->gender;
-  if(tmp->Link[PARENT])
-    (tmp->Link[PARENT])->Link[(tmp->gender)] = tmp;
-  p->Link[PARENT]    = tmp;
-  p->gender          = RIGHT;
-  if(p->Link[LEFT])
+  tmp->Link[ubi_trPARENT]  = p->Link[ubi_trPARENT];
+  tmp->gender              = p->gender;
+  if(tmp->Link[ubi_trPARENT])
+    (tmp->Link[ubi_trPARENT])->Link[(int)(tmp->gender)] = tmp;
+  p->Link[ubi_trPARENT]    = tmp;
+  p->gender                = ubi_trRIGHT;
+  if(p->Link[ubi_trLEFT])
     {
-    p->Link[LEFT]->Link[PARENT]  = p;
-    p->Link[LEFT]->gender        = LEFT;
+    p->Link[ubi_trLEFT]->Link[ubi_trPARENT]  = p;
+    p->Link[ubi_trLEFT]->gender              = ubi_trLEFT;
     }
-  p->balance -= Normalize( tmp->balance );
+  p->balance -= ubi_trNormalize( tmp->balance );
   (tmp->balance)++;
   return( tmp );
   } /* R1 */
@@ -217,43 +223,43 @@ static ubi_avlNodePtr L2( ubi_avlNodePtr tree )
   {
   ubi_avlNodePtr tmp, newroot;
 
-  tmp                   = tree->Link[RIGHT];
-  newroot               = tmp->Link[LEFT];
-  tmp->Link[LEFT]       = newroot->Link[RIGHT];
-  newroot->Link[RIGHT]  = tmp;
-  tree->Link[RIGHT]     = newroot->Link[LEFT];
-  newroot->Link[LEFT]   = tree;
+  tmp                         = tree->Link[ubi_trRIGHT];
+  newroot                     = tmp->Link[ubi_trLEFT];
+  tmp->Link[ubi_trLEFT]       = newroot->Link[ubi_trRIGHT];
+  newroot->Link[ubi_trRIGHT]  = tmp;
+  tree->Link[ubi_trRIGHT]     = newroot->Link[ubi_trLEFT];
+  newroot->Link[ubi_trLEFT]   = tree;
 
-  newroot->Link[PARENT] = tree->Link[PARENT];
-  newroot->gender       = tree->gender;
-  tree->Link[PARENT]    = newroot;
-  tree->gender          = LEFT;
-  tmp->Link[PARENT]     = newroot;
-  tmp->gender           = RIGHT;
+  newroot->Link[ubi_trPARENT] = tree->Link[ubi_trPARENT];
+  newroot->gender             = tree->gender;
+  tree->Link[ubi_trPARENT]    = newroot;
+  tree->gender                = ubi_trLEFT;
+  tmp->Link[ubi_trPARENT]     = newroot;
+  tmp->gender                 = ubi_trRIGHT;
 
-  if( tree->Link[RIGHT] )
+  if( tree->Link[ubi_trRIGHT] )
     {
-    tree->Link[RIGHT]->Link[PARENT] = tree;
-    tree->Link[RIGHT]->gender       = RIGHT;
+    tree->Link[ubi_trRIGHT]->Link[ubi_trPARENT] = tree;
+    tree->Link[ubi_trRIGHT]->gender             = ubi_trRIGHT;
     }
-  if( tmp->Link[LEFT] )
+  if( tmp->Link[ubi_trLEFT] )
     {
-    tmp->Link[LEFT]->Link[PARENT]   = tmp;
-    tmp->Link[LEFT]->gender         = LEFT;
+    tmp->Link[ubi_trLEFT]->Link[ubi_trPARENT]   = tmp;
+    tmp->Link[ubi_trLEFT]->gender               = ubi_trLEFT;
     }
-  if(newroot->Link[PARENT])
-    newroot->Link[PARENT]->Link[newroot->gender] = newroot;
+  if(newroot->Link[ubi_trPARENT])
+    newroot->Link[ubi_trPARENT]->Link[(int)(newroot->gender)] = newroot;
 
   switch( newroot->balance )
     {
-    case LEFT :
-      tree->balance = EQUAL; tmp->balance = RIGHT; break;
-    case EQUAL:
-      tree->balance = EQUAL; tmp->balance = EQUAL; break;
-    case RIGHT:
-      tree->balance = LEFT;  tmp->balance = EQUAL; break;
+    case ubi_trLEFT :
+      tree->balance = ubi_trEQUAL; tmp->balance = ubi_trRIGHT; break;
+    case ubi_trEQUAL:
+      tree->balance = ubi_trEQUAL; tmp->balance = ubi_trEQUAL; break;
+    case ubi_trRIGHT:
+      tree->balance = ubi_trLEFT;  tmp->balance = ubi_trEQUAL; break;
     }
-  newroot->balance = EQUAL;
+  newroot->balance = ubi_trEQUAL;
   return( newroot );
   } /* L2 */
 
@@ -269,43 +275,43 @@ static ubi_avlNodePtr R2( ubi_avlNodePtr tree )
   {
   ubi_avlNodePtr tmp, newroot;
 
-  tmp                   = tree->Link[LEFT];
-  newroot               = tmp->Link[RIGHT];
-  tmp->Link[RIGHT]      = newroot->Link[LEFT];
-  newroot->Link[LEFT]   = tmp;
-  tree->Link[LEFT]      = newroot->Link[RIGHT];
-  newroot->Link[RIGHT]  = tree;
+  tmp                         = tree->Link[ubi_trLEFT];
+  newroot                     = tmp->Link[ubi_trRIGHT];
+  tmp->Link[ubi_trRIGHT]      = newroot->Link[ubi_trLEFT];
+  newroot->Link[ubi_trLEFT]   = tmp;
+  tree->Link[ubi_trLEFT]      = newroot->Link[ubi_trRIGHT];
+  newroot->Link[ubi_trRIGHT]  = tree;
 
-  newroot->Link[PARENT] = tree->Link[PARENT];
-  newroot->gender       = tree->gender;
-  tree->Link[PARENT]    = newroot;
-  tree->gender          = RIGHT;
-  tmp->Link[PARENT]     = newroot;
-  tmp->gender           = LEFT;
+  newroot->Link[ubi_trPARENT] = tree->Link[ubi_trPARENT];
+  newroot->gender             = tree->gender;
+  tree->Link[ubi_trPARENT]    = newroot;
+  tree->gender                = ubi_trRIGHT;
+  tmp->Link[ubi_trPARENT]     = newroot;
+  tmp->gender                 = ubi_trLEFT;
 
-  if( tree->Link[LEFT] )
+  if( tree->Link[ubi_trLEFT] )
     {
-    tree->Link[LEFT]->Link[PARENT]  = tree;
-    tree->Link[LEFT]->gender        = LEFT;
+    tree->Link[ubi_trLEFT]->Link[ubi_trPARENT]  = tree;
+    tree->Link[ubi_trLEFT]->gender              = ubi_trLEFT;
     }
-  if( tmp->Link[RIGHT] )
+  if( tmp->Link[ubi_trRIGHT] )
     {
-    tmp->Link[RIGHT]->Link[PARENT]  = tmp;
-    tmp->Link[RIGHT]->gender        = RIGHT;
+    tmp->Link[ubi_trRIGHT]->Link[ubi_trPARENT]  = tmp;
+    tmp->Link[ubi_trRIGHT]->gender              = ubi_trRIGHT;
     }
-  if(newroot->Link[PARENT])
-    newroot->Link[PARENT]->Link[newroot->gender] = newroot;
+  if(newroot->Link[ubi_trPARENT])
+    newroot->Link[ubi_trPARENT]->Link[(int)(newroot->gender)] = newroot;
 
   switch( newroot->balance )
     {
-    case LEFT  :
-      tree->balance = RIGHT; tmp->balance = EQUAL; break;
-    case EQUAL :
-      tree->balance = EQUAL; tmp->balance = EQUAL; break;
-    case RIGHT :
-      tree->balance = EQUAL; tmp->balance = LEFT;  break;
+    case ubi_trLEFT  :
+      tree->balance = ubi_trRIGHT; tmp->balance = ubi_trEQUAL; break;
+    case ubi_trEQUAL :
+      tree->balance = ubi_trEQUAL; tmp->balance = ubi_trEQUAL; break;
+    case ubi_trRIGHT :
+      tree->balance = ubi_trEQUAL; tmp->balance = ubi_trLEFT;  break;
     }
-  newroot->balance = EQUAL;
+  newroot->balance = ubi_trEQUAL;
   return( newroot );
   } /* R2 */
 
@@ -329,16 +335,16 @@ static ubi_avlNodePtr Adjust( ubi_avlNodePtr p, char LorR )
    */
   {
   if( p->balance != LorR )
-    p->balance += Normalize(LorR);
+    p->balance += ubi_trNormalize(LorR);
   else
     {
     char tallerbal;  /* Balance value of the root of the taller subtree of p. */
 
-    tallerbal = p->Link[LorR]->balance;
-    if( ( EQUAL == tallerbal ) || ( p->balance == tallerbal ) )
-      p = ( (LEFT==LorR) ? R1(p) : L1(p) );   /* single rotation */
+    tallerbal = p->Link[(int)LorR]->balance;
+    if( ( ubi_trEQUAL == tallerbal ) || ( p->balance == tallerbal ) )
+      p = ( (ubi_trLEFT==LorR) ? R1(p) : L1(p) );   /* single rotation */
     else
-      p = ( (LEFT==LorR) ? R2(p) : L2(p) );   /* double rotation */
+      p = ( (ubi_trLEFT==LorR) ? R2(p) : L2(p) );   /* double rotation */
     }
   return( p );
   } /* Adjust */
@@ -371,12 +377,12 @@ static ubi_avlNodePtr Rebalance( ubi_avlNodePtr Root,
   while( subtree )
     {
     subtree = Adjust( subtree, LorR );
-    if( PARENT == subtree->gender )
+    if( ubi_trPARENT == subtree->gender )
       return( subtree );
-    if( EQUAL == subtree->balance )
+    if( ubi_trEQUAL == subtree->balance )
       return( Root );
     LorR = subtree->gender;
-    subtree = subtree->Link[PARENT];
+    subtree = subtree->Link[ubi_trPARENT];
     }
   return( Root );
   } /* Rebalance */
@@ -411,13 +417,13 @@ static ubi_avlNodePtr Debalance( ubi_avlNodePtr Root,
   {
   while( subtree )
     {
-    subtree = Adjust( subtree, RevWay(LorR) );
-    if( PARENT == subtree->gender )
+    subtree = Adjust( subtree, ubi_trRevWay(LorR) );
+    if( ubi_trPARENT == subtree->gender )
       return( subtree );
-    if( EQUAL != subtree->balance )
+    if( ubi_trEQUAL != subtree->balance )
       return( Root );
     LorR = subtree->gender;
-    subtree = subtree->Link[PARENT];
+    subtree = subtree->Link[ubi_trPARENT];
     }
   return( Root );
   } /* Debalance */
@@ -458,10 +464,10 @@ static void ReplaceNode( ubi_avlNodePtr *parent,
     ((unsigned char *)newnode)[i] = ((unsigned char *)oldnode)[i];
   (*parent) = newnode;
 
-  if(oldnode->Link[LEFT ] )
-    (oldnode->Link[LEFT ])->Link[PARENT] = newnode;
-  if(oldnode->Link[RIGHT] )
-    (oldnode->Link[RIGHT])->Link[PARENT] = newnode;
+  if(oldnode->Link[ubi_trLEFT ] )
+    (oldnode->Link[ubi_trLEFT ])->Link[ubi_trPARENT] = newnode;
+  if(oldnode->Link[ubi_trRIGHT] )
+    (oldnode->Link[ubi_trRIGHT])->Link[ubi_trPARENT] = newnode;
   } /* ReplaceNode */
 
 static void SwapNodes( ubi_btRootPtr  RootPtr,
@@ -489,20 +495,20 @@ static void SwapNodes( ubi_btRootPtr  RootPtr,
   ubi_avlNode     dummy;
   ubi_avlNodePtr  dummy_p = &dummy;
 
-  if( Node1->Link[PARENT] )
-    Parent = &((Node1->Link[PARENT])->Link[Node1->gender]);
+  if( Node1->Link[ubi_trPARENT] )
+    Parent = &((Node1->Link[ubi_trPARENT])->Link[(int)(Node1->gender)]);
   else
     Parent = (ubi_avlNodePtr *)&(RootPtr->root);
   ReplaceNode( Parent, Node1, dummy_p );
 
-  if( Node2->Link[PARENT] )
-    Parent = &((Node2->Link[PARENT])->Link[Node2->gender]);
+  if( Node2->Link[ubi_trPARENT] )
+    Parent = &((Node2->Link[ubi_trPARENT])->Link[(int)(Node2->gender)]);
   else
     Parent = (ubi_avlNodePtr *)&(RootPtr->root);
   ReplaceNode( Parent, Node2, Node1 );
 
-  if( dummy_p->Link[PARENT] )
-    Parent = &((dummy_p->Link[PARENT])->Link[dummy_p->gender]);
+  if( dummy_p->Link[ubi_trPARENT] )
+    Parent = &((dummy_p->Link[ubi_trPARENT])->Link[(int)(dummy_p->gender)]);
   else
     Parent = (ubi_avlNodePtr *)&(RootPtr->root);
   ReplaceNode( Parent, dummy_p, Node2 );
@@ -526,7 +532,7 @@ ubi_avlNodePtr ubi_avlInitNode( ubi_avlNodePtr NodePtr )
    */
   {
   (void)ubi_btInitNode( (ubi_btNodePtr)NodePtr );
-  NodePtr->balance = EQUAL;
+  NodePtr->balance = ubi_trEQUAL;
   return( NodePtr );
   } /* ubi_avlInitNode */
 
@@ -591,9 +597,9 @@ ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
       NewNode->balance = (*OldNode)->balance;
     else
       {
-      NewNode->balance = EQUAL;
+      NewNode->balance = ubi_trEQUAL;
       RootPtr->root = (ubi_btNodePtr)Rebalance( (ubi_avlNodePtr)RootPtr->root,
-                                                NewNode->Link[PARENT],
+                                                NewNode->Link[ubi_trPARENT],
                                                 NewNode->gender );
       }
     return( ubi_trTRUE );
@@ -625,33 +631,33 @@ ubi_avlNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
   /* if the node has both left and right subtrees, then we have to swap
    * it with another node.
    */
-  if( (DeadNode->Link[LEFT]) && (DeadNode->Link[RIGHT]) )
+  if( (DeadNode->Link[ubi_trLEFT]) && (DeadNode->Link[ubi_trRIGHT]) )
     SwapNodes( RootPtr, DeadNode, ubi_trPrev( DeadNode ) );
 
   /* The parent of the node to be deleted may be another node, or it may be
    * the root of the tree.  Since we're not sure, it's best just to have
    * a pointer to the parent pointer, whatever it is.
    */
-  if( DeadNode->Link[PARENT] )
+  if( DeadNode->Link[ubi_trPARENT] )
     parentp = (ubi_btNodePtr *)
-              &((DeadNode->Link[PARENT])->Link[(DeadNode->gender)]);
+              &((DeadNode->Link[ubi_trPARENT])->Link[(int)(DeadNode->gender)]);
   else
     parentp = &( RootPtr->root );
 
   /* Now link the parent to the only grand-child.  Patch up the gender and
    * such, and rebalance.
    */
-  if( EQUAL == DeadNode->balance )
+  if( ubi_trEQUAL == DeadNode->balance )
     (*parentp) = NULL;
   else
     {
-    p = (ubi_btNodePtr)(DeadNode->Link[(DeadNode->balance)]);
-    p->Link[PARENT]  = (ubi_btNodePtr)DeadNode->Link[PARENT];
-    p->gender        = DeadNode->gender;
+    p = (ubi_btNodePtr)(DeadNode->Link[(int)(DeadNode->balance)]);
+    p->Link[ubi_trPARENT] = (ubi_btNodePtr)DeadNode->Link[ubi_trPARENT];
+    p->gender  = DeadNode->gender;
     (*parentp) = p;
     }
   RootPtr->root = (ubi_btNodePtr)Debalance( (ubi_avlNodePtr)RootPtr->root,
-                                            DeadNode->Link[PARENT],
+                                            DeadNode->Link[ubi_trPARENT],
                                             DeadNode->gender );
 
   (RootPtr->count)--;

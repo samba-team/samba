@@ -34,6 +34,12 @@
  *
  * -------------------------------------------------------------------------- **
  *
+ * Log: ubi_SplayTree.c,v
+ * Revision 2.6  1997/12/23 04:01:12  crh
+ * In this version, all constants & macros defined in the header file have
+ * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
+ * when run with '-pedantic -fsyntax-only -Wall'.
+ *
  * Revision 2.5  1997/07/26 04:15:42  crh
  * + Cleaned up a few minor syntax annoyances that gcc discovered for me.
  * + Changed ubi_TRUE and ubi_FALSE to ubi_trTRUE and ubi_trFALSE.
@@ -117,8 +123,8 @@
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 2.5\n\
-\tDate: 1997/07/26 04:15:42\n\
+\tRevision: 2.6\n\
+\tDate: 1997/12/23 04:01:12\n\
 \tAuthor: crh\n";
 
 
@@ -146,30 +152,30 @@ static void Rotate( ubi_btNodePtr p )
   char          way;
   char          revway;
 
-  parentp = p->Link[PARENT];    /* Find parent. */
+  parentp = p->Link[ubi_trPARENT];    /* Find parent. */
 
   if( parentp )                 /* If no parent, then we're already the root. */
     {
-    way     = p->gender;
-    revway  = RevWay(way);
-    tmp     = p->Link[revway];
+    way    = p->gender;
+    revway = ubi_trRevWay(way);
+    tmp    = p->Link[(int)revway];
 
-    parentp->Link[way]  = tmp;
+    parentp->Link[(int)way] = tmp;
     if( tmp )
       {
-      tmp->Link[PARENT] = parentp;
-      tmp->gender       = way;
+      tmp->Link[ubi_trPARENT] = parentp;
+      tmp->gender             = way;
       }
 
-    tmp                 = parentp->Link[PARENT];
-    p->Link[PARENT]     = tmp;
-    p->gender           = parentp->gender;
+    tmp                   = parentp->Link[ubi_trPARENT];
+    p->Link[ubi_trPARENT] = tmp;
+    p->gender             = parentp->gender;
     if( tmp )
-      tmp->Link[p->gender] = p;
+      tmp->Link[(int)(p->gender)] = p;
 
-    parentp->Link[PARENT] = p;
-    parentp->gender       = revway;
-    p->Link[revway]       = parentp;
+    parentp->Link[ubi_trPARENT] = p;
+    parentp->gender             = revway;
+    p->Link[(int)revway]        = parentp;
     }
   } /* Rotate */
 
@@ -187,13 +193,13 @@ static ubi_btNodePtr Splay( ubi_btNodePtr SplayWithMe )
   {
   ubi_btNodePtr parent;
 
-  while( (parent = SplayWithMe->Link[PARENT]) )
+  while( (parent = SplayWithMe->Link[ubi_trPARENT]) )
     {
     if( parent->gender == SplayWithMe->gender )       /* Zig-Zig */
       Rotate( parent );
     else
       {
-      if( EQUAL != parent->gender )                   /* Zig-Zag */
+      if( ubi_trEQUAL != parent->gender )             /* Zig-Zag */
         Rotate( SplayWithMe );
       }
     Rotate( SplayWithMe );                            /* Zig */
@@ -289,24 +295,24 @@ ubi_btNodePtr ubi_sptRemove( ubi_btRootPtr RootPtr, ubi_btNodePtr DeadNode )
   ubi_btNodePtr p;
 
   (void)Splay( DeadNode );                  /* Move dead node to root.        */
-  if( (p = DeadNode->Link[LEFT]) )          /* If left subtree exists...      */
+  if( (p = DeadNode->Link[ubi_trLEFT]) )    /* If left subtree exists...      */
     {
-    ubi_btNodePtr q = DeadNode->Link[RIGHT];
+    ubi_btNodePtr q = DeadNode->Link[ubi_trRIGHT];
 
-    p->Link[PARENT] = NULL;                 /* Left subtree node becomes root.*/
-    p->gender       = PARENT;
-    p               = ubi_btLast( p );      /* Find rightmost left tree node..*/
-    p->Link[RIGHT]  = q;                    /* ...attach right tree.          */
+    p->Link[ubi_trPARENT] = NULL;           /* Left subtree node becomes root.*/
+    p->gender             = ubi_trPARENT;
+    p                     = ubi_btLast( p );  /* Find rightmost left node...  */
+    p->Link[ubi_trRIGHT]  = q;                /* ...attach right tree.        */
     if( q )
-      q->Link[PARENT] = p;
+      q->Link[ubi_trPARENT] = p;
     RootPtr->root   = Splay( p );           /* Resplay at p.                  */
     }
   else
     {
-    if( (p = DeadNode->Link[RIGHT]) )       /* No left, but right subtree...  */
+    if( (p = DeadNode->Link[ubi_trRIGHT]) ) /* No left, but right subtree...  */
       {                                     /* ...exists...                   */
-      p->Link[PARENT] = NULL;               /* Right subtree root becomes...  */
-      p->gender       = PARENT;             /* ...overall tree root.          */
+      p->Link[ubi_trPARENT] = NULL;         /* Right subtree root becomes...  */
+      p->gender       = ubi_trPARENT;       /* ...overall tree root.          */
       RootPtr->root   = p;
       }
     else
