@@ -66,102 +66,98 @@ static PyObject *pytdbpack_bad_type(char ch,
 				    PyObject *val_obj);
 
 static const char * pytdbpack_docstring =
-"Convert between Python values and Samba binary encodings.
-
-This module is conceptually similar to the standard 'struct' module, but it
-uses both a different binary format and a different description string.
-
-Samba's encoding is based on that used inside DCE-RPC and SMB: a
-little-endian, unpadded, non-self-describing binary format.  It is intended
-that these functions be as similar as possible to the routines in Samba's
-tdb/tdbutil module, with appropriate adjustments for Python datatypes.
-
-Python strings are used to specify the format of data to be packed or
-unpacked.
-
-String encodings are implied by the database format: they may be either DOS
-codepage (currently hardcoded to 850), or Unix codepage (currently hardcoded
-to be the same as the default Python encoding).
-
-tdbpack format strings:
-
-    'f': NUL-terminated string in codepage iso8859-1
-   
-    'P': same as 'f'
-
-    'F': NUL-terminated string in iso-8859-1
-
-    'd':  4 byte little-endian unsigned number
-
-    'w':  2 byte little-endian unsigned number
-
-    'P': \"Pointer\" value -- in the subset of DCERPC used by Samba, this is
-          really just an \"exists\" or \"does not exist\" flag.  The boolean
-          value of the Python object is used.
-    
-    'B': 4-byte LE length, followed by that many bytes of binary data.
-         Corresponds to a Python integer giving the length, followed by a byte
-         string of the appropriate length.
-
-    '$': Special flag indicating that the preceding format code should be
-         repeated while data remains.  This is only supported for unpacking.
-
-    Every code corresponds to a single Python object, except 'B' which
-    corresponds to two values (length and contents), and '$', which produces
-    however many make sense.
-";
-
+"Convert between Python values and Samba binary encodings.\n"
+"\n"
+"This module is conceptually similar to the standard 'struct' module, but it\n"
+"uses both a different binary format and a different description string.\n"
+"\n"
+"Samba's encoding is based on that used inside DCE-RPC and SMB: a\n"
+"little-endian, unpadded, non-self-describing binary format.  It is intended\n"
+"that these functions be as similar as possible to the routines in Samba's\n"
+"tdb/tdbutil module, with appropriate adjustments for Python datatypes.\n"
+"\n"
+"Python strings are used to specify the format of data to be packed or\n"
+"unpacked.\n"
+"\n"
+"String encodings are implied by the database format: they may be either DOS\n"
+"codepage (currently hardcoded to 850), or Unix codepage (currently hardcoded\n"
+"to be the same as the default Python encoding).\n"
+"\n"
+"tdbpack format strings:\n"
+"\n"
+"    'f': NUL-terminated string in codepage iso8859-1\n"
+"   \n"
+"    'P': same as 'f'\n"
+"\n"
+"    'F': NUL-terminated string in iso-8859-1\n"
+"\n"
+"    'd':  4 byte little-endian unsigned number\n"
+"\n"
+"    'w':  2 byte little-endian unsigned number\n"
+"\n"
+"    'P': \"Pointer\" value -- in the subset of DCERPC used by Samba, this is\n"
+"          really just an \"exists\" or \"does not exist\" flag.  The boolean\n"
+"          value of the Python object is used.\n"
+"    \n"
+"    'B': 4-byte LE length, followed by that many bytes of binary data.\n"
+"         Corresponds to a Python integer giving the length, followed by a byte\n"
+"         string of the appropriate length.\n"
+"\n"
+"    '$': Special flag indicating that the preceding format code should be\n"
+"         repeated while data remains.  This is only supported for unpacking.\n"
+"\n"
+"    Every code corresponds to a single Python object, except 'B' which\n"
+"    corresponds to two values (length and contents), and '$', which produces\n"
+"    however many make sense.\n";
 
 static char const pytdbpack_doc[] = 
-"pack(format, values) -> buffer
-Pack Python objects into Samba binary format according to format string.
-
-arguments:
-    format -- string of tdbpack format characters
-    values -- sequence of value objects corresponding 1:1 to format characters
-
-returns:
-    buffer -- string containing packed data
-
-raises:
-    IndexError -- if there are too few values for the format
-    ValueError -- if any of the format characters is illegal
-    TypeError  -- if the format is not a string, or values is not a sequence,
-        or any of the values is of the wrong type for the corresponding
-        format character
-
-notes:
-    For historical reasons, it is not an error to pass more values than are consumed
-    by the format.
-";
+"pack(format, values) -> buffer\n"
+"Pack Python objects into Samba binary format according to format string.\n"
+"\n"
+"arguments:\n"
+"    format -- string of tdbpack format characters\n"
+"    values -- sequence of value objects corresponding 1:1 to format characters\n"
+"\n"
+"returns:\n"
+"    buffer -- string containing packed data\n"
+"\n"
+"raises:\n"
+"    IndexError -- if there are too few values for the format\n"
+"    ValueError -- if any of the format characters is illegal\n"
+"    TypeError  -- if the format is not a string, or values is not a sequence,\n"
+"        or any of the values is of the wrong type for the corresponding\n"
+"        format character\n"
+"\n"
+"notes:\n"
+"    For historical reasons, it is not an error to pass more values than are consumed\n"
+"    by the format.\n";
 
 
 static char const pytdbunpack_doc[] =
-"unpack(format, buffer) -> (values, rest)
-Unpack Samba binary data according to format string.
-
-arguments:
-    format -- string of tdbpack characters
-    buffer -- string of packed binary data
-
-returns:
-    2-tuple of:
-        values -- sequence of values corresponding 1:1 to format characters
-        rest -- string containing data that was not decoded, or '' if the
-            whole string was consumed
-
-raises:
-    IndexError -- if there is insufficient data in the buffer for the
-        format (or if the data is corrupt and contains a variable-length
-        field extending past the end)
-    ValueError -- if any of the format characters is illegal
-
-notes:
-    Because unconsumed data is returned, you can feed it back in to the
-    unpacker to extract further fields.  Alternatively, if you wish to modify
-    some fields near the start of the data, you may be able to save time by
-    only unpacking and repacking the necessary part.
-";
+"unpack(format, buffer) -> (values, rest)\n"
+"Unpack Samba binary data according to format string.\n"
+"\n"
+"arguments:\n"
+"    format -- string of tdbpack characters\n"
+"    buffer -- string of packed binary data\n"
+"\n"
+"returns:\n"
+"    2-tuple of:\n"
+"        values -- sequence of values corresponding 1:1 to format characters\n"
+"        rest -- string containing data that was not decoded, or '' if the\n"
+"            whole string was consumed\n"
+"\n"
+"raises:\n"
+"    IndexError -- if there is insufficient data in the buffer for the\n"
+"        format (or if the data is corrupt and contains a variable-length\n"
+"        field extending past the end)\n"
+"    ValueError -- if any of the format characters is illegal\n"
+"\n"
+"notes:\n"
+"    Because unconsumed data is returned, you can feed it back in to the\n"
+"    unpacker to extract further fields.  Alternatively, if you wish to modify\n"
+"    some fields near the start of the data, you may be able to save time by\n"
+"    only unpacking and repacking the necessary part.\n";
 
 
 const char *pytdb_dos_encoding = "cp850";

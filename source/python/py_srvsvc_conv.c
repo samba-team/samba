@@ -33,8 +33,6 @@ static struct pyconv py_SRV_INFO_101[] = {
 
 BOOL py_from_SRV_INFO_101(PyObject **dict, SRV_INFO_101 *info)
 {
-	PyObject *obj;	
-
 	*dict = from_struct(info, py_SRV_INFO_101);
 
 	PyDict_SetItemString(*dict, "level", PyInt_FromLong(101));

@@ -173,22 +173,6 @@ PyObject *spoolss_hnd_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 	case 3:
 		py_from_PRINTER_INFO_3(&result, ctr.printers_3);
 		break;
-		
-		/* These info levels are supported by NT4 and higher
-                   but don't seem to be used by any clients we know of. */
-
-	case 4:
-	case 5:
-	case 6:
-		break;
-
-		/* These info levels are only supported by Windows 2000
-                   and higher. */
-
-	case 7:
-	case 8:
-	case 9:
-		break;
 	}
 
 	Py_INCREF(result);
