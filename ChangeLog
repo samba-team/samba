@@ -1,5 +1,8 @@
 2003-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/connect.c (grow_descr): increment the size after we succeed
+	to allocate the space
+
 	* lib/krb5/krb5_create_checksum.3: text about when
 	krb5_crypto_get_checksum_type is useful
 
