@@ -101,7 +101,7 @@ details
 8)  Use lp_realm() to find the default realm for 'net ads password'
 9)  Removed editreg from standard build until it is portable.
 10) Fix domain membership for servers not running winbindd
-11) Correct race condition in determining the high water make 
+11) Correct race condition in determining the high water mark 
     in the idmap backend (bug #181)
 12) Set the user's primary unix group from usrmgr.exe (partial 
     fix for bug #45)
@@ -114,7 +114,7 @@ details
 17) Build libnss_wins.so as part of nsswitch target (bug #160)
 18) Make net rpc vampire return an error if the sam sync RPC 
     returns an error
-19) Fail to join an NT 4 domain as a BDC if an workstation account
+19) Fail to join an NT 4 domain as a BDC if a workstation account
     using our name exists
 20) Fix various memory leaks in server and client code
 21) Remove the short option to --set-auth-user for wbinfo (-A) to 
@@ -131,7 +131,7 @@ details
     joined using NT4 protocols to a native mode AD domain
 29) Fix backend method selection for trusted NT 4 (or 2k 
     mixed mode) domains 
-30) Fixed bug that caused us to enuemrate domain local groups
+30) Fixed bug that caused us to enumerate domain local groups
     from native mode AD domains other than our own
 31) Correct group enumeration for viewing in the Windows 
     security tab (bug #110)
@@ -287,7 +287,7 @@ New Parameters (new parameters have been grouped by function):
   * hostname lookups
   * kernel change notify
   * mangle prefix
-  * map acl inheritence
+  * map acl inherit
   * msdfs proxy
   * set quota command
   * use sendfile
