@@ -40,7 +40,7 @@ static struct cmd_list {
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
-static char **completion_fn(char *text, int start, int end)
+static char **completion_fn(const char *text, int start, int end)
 {
 #define MAX_COMPLETIONS 100
 	char **matches;
@@ -361,7 +361,7 @@ static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	static uchar zeros[16];
 
 	if (argc == 2) {
-		strhex_to_str(cli->auth_info.sess_key,
+		strhex_to_str((char *)cli->auth_info.sess_key,
 			      strlen(argv[1]), 
 			      argv[1]);
 		memcpy(cli->sess_key, cli->auth_info.sess_key, sizeof(cli->sess_key));

@@ -108,7 +108,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, (unsigned int *)&hwm, 1);
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
 				return NT_STATUS_UNSUCCESSFUL;
@@ -138,7 +138,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, (unsigned int *)&hwm, 1);
 
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));

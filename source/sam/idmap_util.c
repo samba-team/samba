@@ -151,7 +151,7 @@ NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, uint32 flags)
 
 	flags |= ID_USERID;
 
-	ret = idmap_get_id_from_sid(&id, &flags, sid);
+	ret = idmap_get_id_from_sid(&id, (int *)&flags, sid);
 	
 	if ( NT_STATUS_IS_OK(ret) ) {
 		DEBUG(10,("idmap_sid_to_uid: uid = [%lu]\n", (unsigned long)id.uid));
@@ -180,7 +180,7 @@ NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, uint32 flags)
 
 	flags |= ID_GROUPID;
 
-	ret = idmap_get_id_from_sid(&id, &flags, sid);
+	ret = idmap_get_id_from_sid(&id, (int *)&flags, sid);
 	
 	if ( NT_STATUS_IS_OK(ret) ) 
 	{

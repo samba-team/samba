@@ -2930,7 +2930,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 		return WERR_NOMEM;
 	
 	regval_ctr_addvalue( &p2->data.keys[key_index].values, value,
-		type, data, real_len );
+		type, (const char *)data, real_len );
 	
 	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], type=> [%d], size => [%d]\n",
 		key, value, type, real_len  ));
@@ -3023,7 +3023,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 		
 		/* add the new value */
 		
-		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, data_p, size );
+		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, (const char *)data_p, size );
 
 		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
 

@@ -432,7 +432,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	}
 
 	centry = smb_xmalloc(sizeof(*centry));
-	centry->data = data.dptr;
+	centry->data = (unsigned char *)data.dptr;
 	centry->len = data.dsize;
 	centry->ofs = 0;
 
@@ -576,7 +576,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 
 	key.dptr = kstr;
 	key.dsize = strlen(kstr);
-	data.dptr = centry->data;
+	data.dptr = (char *)centry->data;
 	data.dsize = centry->ofs;
 
 	tdb_store(wcache->tdb, key, data, TDB_REPLACE);
@@ -924,7 +924,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
 	if (!centry)
 		goto do_query;
-	*type = centry_uint32(centry);
+	*type = (enum SID_NAME_USE)centry_uint32(centry);
 	sid2 = centry_sid(centry, mem_ctx);
 	if (!sid2) {
 		ZERO_STRUCTP(sid);
@@ -988,7 +988,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = centry_uint32(centry);
+		*type = (enum SID_NAME_USE)centry_uint32(centry);
 		*name = centry_string(centry, mem_ctx);
 	}
 	status = centry->status;

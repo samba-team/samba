@@ -310,7 +310,7 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
-	dump_data(10, request.data, request.length);
+	dump_data(10, (const char *)request.data, request.length);
 
 	nt_status = ntlmssp_server_update(ntlmssp_state, request, &reply);
 	
@@ -503,7 +503,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			ntlmssp_state->get_global_myname = get_winbind_netbios_name;
 
 			DEBUG(10, ("got NTLMSSP packet:\n"));
-			dump_data(10, request.negTokenInit.mechToken.data,
+			dump_data(10, (const char *)request.negTokenInit.mechToken.data,
 				  request.negTokenInit.mechToken.length);
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
@@ -915,7 +915,7 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 
 		/* We asked for a password and obviously got it :-) */
 
-		opt_password = strndup(request.data, request.length);
+		opt_password = strndup((const char *)request.data, request.length);
 
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
@@ -1115,8 +1115,8 @@ static BOOL check_auth_crap(void)
 					      &opt_lm_response, 
 					      &opt_nt_response, 
 					      flags,
-					      lm_key, 
-					      nt_key, 
+					      (unsigned char *)lm_key, 
+					      (unsigned char *)nt_key, 
 					      &error_string);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1130,7 +1130,7 @@ static BOOL check_auth_crap(void)
 	if (request_lm_key 
 	    && (memcmp(zeros, lm_key, 
 		       sizeof(lm_key)) != 0)) {
-		hex_encode(lm_key,
+		hex_encode((const unsigned char *)lm_key,
 			   sizeof(lm_key),
 			   &hex_lm_key);
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
@@ -1139,7 +1139,7 @@ static BOOL check_auth_crap(void)
 	if (request_nt_key 
 	    && (memcmp(zeros, nt_key, 
 		       sizeof(nt_key)) != 0)) {
-		hex_encode(nt_key, 
+		hex_encode((const unsigned char *)nt_key, 
 			   sizeof(nt_key), 
 			   &hex_nt_key);
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_nt_key);
@@ -1213,16 +1213,16 @@ static BOOL test_lm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 	}
 	if (memcmp(lm_hash, nt_key, 8) != 0) {
 		DEBUG(1, ("Session Key (first 8, lm hash) does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 8);
+		dump_data(1, (const char *)nt_key, 8);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 	}
         return True;
 }
@@ -1285,18 +1285,18 @@ static BOOL test_lm_ntlm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1328,10 +1328,10 @@ static BOOL test_ntlm(void)
 	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
-	E_md4hash(opt_password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+	E_md4hash(opt_password, (unsigned char *)nt_hash);
+	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, NULL, session_key.data);
 
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, (unsigned char *)lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -1339,8 +1339,8 @@ static BOOL test_ntlm(void)
 					      NULL,
 					      &nt_response,
 					      flags,
-					      lm_key,
-					      nt_key,
+					      (unsigned char *)lm_key,
+					      (unsigned char *)nt_key,
 					      &error_string);
 	
 	data_blob_free(&nt_response);
@@ -1368,7 +1368,7 @@ static BOOL test_ntlm(void)
  		DEBUG(1, ("nt_key:\n"));
 		dump_data(1, nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1424,17 +1424,17 @@ static BOOL test_ntlm_in_lm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(lm_hash, nt_key, 8) != 0) {
 		DEBUG(1, ("Session Key (first 8 lm hash) does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
         return pass;
@@ -1466,10 +1466,10 @@ static BOOL test_ntlm_in_both(void)
 	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
-	E_md4hash(opt_password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+	E_md4hash(opt_password, (unsigned char *)nt_hash);
+	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, NULL, session_key.data);
 
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, (unsigned char *)lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -1477,8 +1477,8 @@ static BOOL test_ntlm_in_both(void)
 					      &nt_response,
 					      &nt_response,
 					      flags,
-					      lm_key,
-					      nt_key,
+					      (unsigned char *)lm_key,
+					      (unsigned char *)nt_key,
 					      &error_string);
 	
 	data_blob_free(&nt_response);
@@ -1506,7 +1506,7 @@ static BOOL test_ntlm_in_both(void)
  		DEBUG(1, ("nt_key:\n"));
 		dump_data(1, nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
 
@@ -1568,9 +1568,9 @@ static BOOL test_ntlmv2(void)
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, nt_session_key.data, nt_session_key.length);
+		dump_data(1, (const char *)nt_session_key.data, nt_session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1632,9 +1632,9 @@ static BOOL test_lmv2_ntlmv2(void)
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, nt_session_key.data, nt_session_key.length);
+		dump_data(1, (const char *)nt_session_key.data, nt_session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1747,18 +1747,18 @@ static BOOL test_ntlm_broken(BOOL break_lm)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
+		dump_data(1, (const char *)lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
+		dump_data(1, (const char *)lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
+		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, session_key.data, session_key.length);
+		dump_data(1, (const char *)session_key.data, session_key.length);
 		pass = False;
 	}
         return pass;

@@ -35,7 +35,7 @@
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
  **/
-BOOL next_token(char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	char *s;
 	char *pbuf;
@@ -45,7 +45,7 @@ BOOL next_token(char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!ptr)
 		return(False);
 
-	s = *ptr;
+	s = (char *)*ptr;
 
 	/* default to simple separators */
 	if (!sep)
@@ -82,13 +82,13 @@ parameter so you can pass NULL. This is useful for user interface code
 but beware the fact that it is not re-entrant!
 **/
 
-static char *last_ptr=NULL;
+static const char *last_ptr=NULL;
 
-BOOL next_token_nr(char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	BOOL ret;
 	if (!ptr)
-		ptr = (char **)&last_ptr;
+		ptr = &last_ptr;
 
 	ret = next_token(ptr, buff, sep, bufsize);
 	last_ptr = *ptr;
@@ -109,7 +109,7 @@ void set_first_token(char *ptr)
 
 char **toktocliplist(int *ctok, const char *sep)
 {
-	char *s=last_ptr;
+	char *s=(char *)last_ptr;
 	int ictok=0;
 	char **ret, **iret;
 
@@ -132,7 +132,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s=last_ptr;
+	s=(char *)last_ptr;
 	
 	if (!(ret=iret=malloc(ictok*sizeof(char *))))
 		return NULL;

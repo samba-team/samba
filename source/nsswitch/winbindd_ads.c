@@ -823,7 +823,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	}
 	
 	if ( NT_STATUS_IS_OK(result) )
-		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, &count );
+		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, (unsigned int *)&count );
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
 	
