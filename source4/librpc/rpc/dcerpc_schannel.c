@@ -124,7 +124,8 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	  step 3 - authenticate on the netlogon pipe
 	*/
 	E_md4hash(password, mach_pwd);
-	creds_client_init(&creds, &credentials1, &credentials2, mach_pwd, &credentials3);
+	creds_client_init(&creds, &credentials1, &credentials2, mach_pwd, &credentials3,
+			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
 	a.in.username = talloc_asprintf(p->mem_ctx, "%s$", workstation);
