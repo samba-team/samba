@@ -73,9 +73,7 @@ gss_userok(void *app_data, char *username)
         
         /* more of krb-depend stuff :-( */
 	/* gss_add_cred() ? */
-        if (data->delegated_cred_handle && 
-            data->delegated_cred_handle->ccache ) {
-            
+        if (data->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
            krb5_ccache ccache = NULL; 
            char* ticketfile;
            struct passwd *pw;
@@ -98,8 +96,10 @@ gss_userok(void *app_data, char *username)
            ret = gss_krb5_copy_ccache(&minor_status,
 				      data->delegated_cred_handle,
 				      ccache);
-           if (ret)
+           if (ret) {
+	      ret = 0;
               goto fail;
+	   }
            
            chown (ticketfile+5, pw->pw_uid, pw->pw_gid);
            
@@ -111,9 +111,6 @@ gss_userok(void *app_data, char *username)
 fail:
            if (ccache)
               krb5_cc_close(gssapi_krb5_context, ccache); 
-           krb5_cc_destroy(gssapi_krb5_context, 
-                           data->delegated_cred_handle->ccache);
-           data->delegated_cred_handle->ccache = NULL;
            free(ticketfile);
         }
            
