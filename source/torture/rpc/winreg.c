@@ -322,7 +322,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
 	struct winreg_EnumValue r;
-	uint32 type;
+	uint32 type = 0;
 	uint32 size = max_valbufsize, zero = 0;
 	BOOL ret = True;
 	uint8_t buf8;
