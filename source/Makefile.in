@@ -406,7 +406,7 @@ NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
-           \
+           rpc_server/srv_lookup.o \
            $(SIDDB_OBJ) \
            $(STUB_UID_OBJ)
 SWAT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
@@ -428,6 +428,7 @@ TESTPRNS_OBJ = utils/testprns.o $(PRINTING_OBJ)
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
 		libsmb/clienttrust.o \
+           rpc_server/srv_lookup.o \
 		rpc_client/cli_netlogon_sync.o \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)
 SMBPASSWD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
