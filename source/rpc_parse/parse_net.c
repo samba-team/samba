@@ -182,6 +182,50 @@ static BOOL net_io_netinfo_2(const char *desc, NETLOGON_INFO_2 *info, prs_struct
 	return True;
 }
 
+static BOOL net_io_ctrl_data_info_5(const char *desc, CTRL_DATA_INFO_5 *info, prs_struct *ps, int depth)
+{
+	if (info == NULL)
+		return False;
+		
+	prs_debug(ps, depth, desc, "net_io_ctrl_data_info_5");
+	depth++;
+	
+	if ( !prs_uint32( "function_code", ps, depth, &info->function_code ) )
+		return False;
+	
+	if(!prs_uint32("ptr_domain", ps, depth, &info->ptr_domain))
+		return False;
+		
+	if ( info->ptr_domain ) {
+		if(!smb_io_unistr2("domain", &info->domain, info->ptr_domain, ps, depth))
+			return False;
+	}
+		
+	return True;
+}
+
+static BOOL net_io_ctrl_data_info_6(const char *desc, CTRL_DATA_INFO_6 *info, prs_struct *ps, int depth)
+{
+	if (info == NULL)
+		return False;
+		
+	prs_debug(ps, depth, desc, "net_io_ctrl_data_info_6");
+	depth++;
+	
+	if ( !prs_uint32( "function_code", ps, depth, &info->function_code ) )
+		return False;
+	
+	if(!prs_uint32("ptr_domain", ps, depth, &info->ptr_domain))
+		return False;
+		
+	if ( info->ptr_domain ) {
+		if(!smb_io_unistr2("domain", &info->domain, info->ptr_domain, ps, depth))
+			return False;
+	}
+		
+	return True;
+}
+
 /*******************************************************************
  Reads or writes an NET_Q_LOGON_CTRL2 structure.
 ********************************************************************/
@@ -210,9 +254,23 @@ BOOL net_io_q_logon_ctrl2(const char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *
 		return False;
 	if(!prs_uint32("query_level  ", ps, depth, &q_l->query_level))
 		return False;
-	if(!prs_uint32("switch_value ", ps, depth, &q_l->switch_value))
-		return False;
+	switch ( q_l->function_code ) {
+		case NETLOGON_CONTROL_REDISCOVER:
+			if ( !net_io_ctrl_data_info_5( "ctrl_data_info5", &q_l->info.info5, ps, depth) ) 
+				return False;
+			break;
+			
+		case NETLOGON_CONTROL_TC_QUERY:
+			if ( !net_io_ctrl_data_info_6( "ctrl_data_info6", &q_l->info.info6, ps, depth) ) 
+				return False;
+			break;
 
+		default:
+			DEBUG(0,("net_io_q_logon_ctrl2: unknown function_code [%d]\n",
+				q_l->function_code));
+			return False;
+	}
+	
 	return True;
 }
 
@@ -227,7 +285,6 @@ void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, const char *srv_name,
 
 	q_l->function_code = 0x01;
 	q_l->query_level = query_level;
-	q_l->switch_value  = 0x01;
 
 	init_unistr2(&q_l->uni_server_name, srv_name, UNI_STR_TERMINATE);
 }
@@ -241,9 +298,7 @@ void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 			    uint32 logon_attempts, uint32 tc_status, 
 			    const char *trusted_domain_name)
 {
-	DEBUG(5,("init_r_logon_ctrl2\n"));
-
-	r_l->switch_value  = query_level; /* should only be 0x1 */
+	r_l->switch_value  = query_level; 
 
 	switch (query_level) {
 	case 1:

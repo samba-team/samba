@@ -227,8 +227,6 @@ static BOOL api_net_trust_dom_list(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
-
 	/* grab the lsa trusted domain list query... */
 	if(!net_io_q_trust_dom("", &q_u, data, 0)) {
 		DEBUG(0,("api_net_trust_dom_list: Failed to unmarshall NET_Q_TRUST_DOM_LIST.\n"));
@@ -243,8 +241,6 @@ static BOOL api_net_trust_dom_list(pipes_struct *p)
 		DEBUG(0,("net_reply_trust_dom_list: Failed to marshall NET_R_TRUST_DOM_LIST.\n"));
 		return False;
 	}
-
-	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
 
 	return True;
 }
@@ -263,7 +259,6 @@ static BOOL api_net_logon_ctrl2(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
 
 	/* grab the lsa netlogon ctrl2 query... */
 	if(!net_io_q_logon_ctrl2("", &q_u, data, 0)) {
@@ -277,8 +272,6 @@ static BOOL api_net_logon_ctrl2(pipes_struct *p)
 		DEBUG(0,("net_reply_logon_ctrl2: Failed to marshall NET_R_LOGON_CTRL2.\n"));
 		return False;
 	}
-
-	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
 
 	return True;
 }
@@ -297,8 +290,6 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	DEBUG(6,("api_net_logon_ctrl: %d\n", __LINE__));
-
 	/* grab the lsa netlogon ctrl query... */
 	if(!net_io_q_logon_ctrl("", &q_u, data, 0)) {
 		DEBUG(0,("api_net_logon_ctrl: Failed to unmarshall NET_Q_LOGON_CTRL.\n"));
@@ -311,8 +302,6 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 		DEBUG(0,("net_reply_logon_ctrl2: Failed to marshall NET_R_LOGON_CTRL2.\n"));
 		return False;
 	}
-
-	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
 
 	return True;
 }

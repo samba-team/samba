@@ -71,7 +71,8 @@ enum RPC_PKT_TYPE
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
  
-#define NETLOGON_NEG_SCHANNEL    0x40000000
+#define NETLOGON_NEG_SCHANNEL    		0x40000000
+#define NETLOGON_NEG_DOMAIN_TRUST_ACCOUNT	0x2010b000
 
 enum netsec_direction
 {
