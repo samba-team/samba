@@ -43,6 +43,7 @@ do_list(struct list_options *opt, const char *keytab_string)
     krb5_keytab keytab;
     krb5_keytab_entry entry;
     krb5_kt_cursor cursor;
+    rtbl_t table;
 
     /* XXX specialcase the ANY type */
     if(strncasecmp(keytab_string, "ANY:", 4) == 0) {
@@ -76,7 +77,6 @@ do_list(struct list_options *opt, const char *keytab_string)
 
     printf ("%s:\n\n", keytab_string);
 	
-    rtbl_t table;
     table = rtbl_create();
     rtbl_add_column_by_id(table, 0, "Vno", RTBL_ALIGN_RIGHT);
     rtbl_add_column_by_id(table, 1, "Type", 0);
