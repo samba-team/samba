@@ -115,7 +115,9 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	status = samdb_set_password(a_state->sam_ctx, mem_ctx,
 				    a_state->account_dn, a_state->domain_state->domain_dn,
 				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
-				    True, NULL);
+				    True, /* this is a user password change */
+				    True, /* run restriction tests */
+				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -229,7 +231,9 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 				    user_dn, domain_dn, 
 				    mod, new_pass, 
 				    NULL, NULL,
-				    True, NULL);
+				    True, /* this is a user password change */
+				    True, /* run restriction tests */
+				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -378,7 +382,9 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 				    user_dn, domain_dn, 
 				    mod, new_pass, 
 				    NULL, NULL,
-				    True, &reason);
+				    True, /* this is a user password change */
+				    True, /* run restriction tests */
+				    &reason);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -481,6 +487,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 			    struct samr_Password *lmNewHash, 
 			    struct samr_Password *ntNewHash,
 			    BOOL user_change,
+			    BOOL restrict,
 			    uint32_t *reject_reason)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
@@ -536,7 +543,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 
 	if (new_pass) {
 		/* check the various password restrictions */
-		if (minPwdLength > strlen_m(new_pass)) {
+		if (restrict && minPwdLength > strlen_m(new_pass)) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_TOO_SHORT;
 			}
@@ -544,7 +551,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		}
 		
 		/* possibly check password complexity */
-		if (pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
+		if (restrict && pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
 		    !samdb_password_complexity_ok(new_pass)) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_COMPLEXITY;
@@ -560,7 +567,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		ntNewHash = &local_ntNewHash;
 	}
 
-	if (user_change) {
+	if (restrict && user_change) {
 		/* are all password changes disallowed? */
 		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
 			if (reject_reason) {
@@ -757,7 +764,8 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				  account_dn, domain_dn, 
 				  msg, new_pass, 
 				  NULL, NULL,
-				  False /* This is a password set, not change */,
+				  False, /* This is a password set, not change */
+				  True, /* run restriction tests */
 				  NULL);
 }
 
@@ -810,7 +818,8 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 				  account_dn, domain_dn, 
 				  msg, new_pass, 
 				  NULL, NULL,
-				  False,
+				  False, /* This is a password set, not change */
+				  True, /* run restriction tests */
 				  NULL);
 }
 
