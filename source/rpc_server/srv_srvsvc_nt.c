@@ -75,7 +75,8 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
 	pstring_sub(remark,"%S",lp_servicename(snum));
-	pstrcpy(path, lp_pathname(snum));
+	pstrcpy(path, "C:");
+	pstrcat(path, lp_pathname(snum));
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
@@ -140,7 +141,8 @@ static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
 	pstring_sub(remark,"%S",lp_servicename(snum));
-	pstrcpy(path, lp_pathname(snum));
+	pstrcpy(path, "C:");
+	pstrcat(path, lp_pathname(snum));
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
@@ -962,17 +964,17 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	if (snum >= 0) {
 		switch (q_u->info_level) {
 		case 1:
-			status = NT_STATUS_ACCESS_DENIED;
+			status = ERROR_ACCESS_DENIED;
 			break;
 		case 2:
-			status = NT_STATUS_ACCESS_DENIED;
+			status = ERROR_ACCESS_DENIED;
 			break;
 		case 502:
 			/* we set sd's here. FIXME. JRA */
-			status = NT_STATUS_ACCESS_DENIED;
+			status = ERROR_ACCESS_DENIED;
 			break;
 		case 1005:
-			status = NT_STATUS_ACCESS_DENIED;
+			status = ERROR_ACCESS_DENIED;
 			break;
 		default:
 			DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
@@ -983,6 +985,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		status = NT_STATUS_BAD_NETWORK_NAME;
 	}
 
+	r_u->switch_value = 0;
 	r_u->status = status;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
