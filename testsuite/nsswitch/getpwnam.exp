@@ -13,8 +13,11 @@ simple_compile "getpwnam"
 
 set user_list [split [util_start "bin/wbinfo" "-u"] "\n"]
 
+verbose $user_list
+
 foreach { user } $user_list {
     set output [util_start "$srcdir/$subdir/getpwnam" "\"$user\"" ""]
+
     verbose $output
 
     if {[regexp "PASS:" $output]} {
