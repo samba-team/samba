@@ -1,3 +1,14 @@
+2001-07-11  Assar Westerlund  <assar@sics.se>
+
+	* snprintf-test.c: add more %X tests, and long and conditional
+	long long tests
+	* snprintf.c: add support for printing long long (if available)
+
+2001-07-10  Assar Westerlund  <assar@sics.se>
+
+	* getaddrinfo.c (add_hostent): adapt to const hostent_find_fqdn
+	* hostent_find_fqdn.c (hostent_find_fqdn): const-ize
+
 2001-07-09  Assar Westerlund  <assar@sics.se>
 
 	* roken-common.h (hostent_find_fqdn): add
