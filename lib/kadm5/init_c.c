@@ -226,11 +226,21 @@ get_cred_cache(krb5_context context,
 	
 	if(client == NULL)
 	    client = default_client;
-	if(client == NULL)
-	    /* client_name not passed, and 
-	       couldn't get principal from cache */
-	    return -1;
-
+	if(client == NULL) {
+	    char *user;
+	    struct passwd *pw;
+	    user = getlogin();
+	    if(user == NULL) {
+		pw = getpwuid(getuid());
+		user = pw->pw_name;
+	    }
+	    if(user == NULL)
+		return KADM5_FAILURE;
+	    ret = krb5_make_principal(context, &client, 
+				      NULL, user, "admin", NULL);
+	    if(ret)
+		return ret;
+	}
 	if(client != default_client) {
 	    krb5_free_principal(context, default_client);
 	    default_client = NULL;
