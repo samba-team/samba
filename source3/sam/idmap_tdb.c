@@ -292,7 +292,7 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!(*id_type & ID_NOMAP) && (iderr != GET_ID_FROM_SID_OK) &&
+	if (!(*id_type & ID_QUERY_ONLY) && (iderr != GET_ID_FROM_SID_OK) &&
 		   (((*id_type & ID_TYPEMASK) == ID_USERID)
 		    || (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
 		TDB_DATA sid_data;
@@ -303,6 +303,13 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		
 		sid_data.dptr = sid_string;
 		sid_data.dsize = strlen(sid_string)+1;
+
+		/* Lock the record for this SID. */
+		if (tdb_chainlock(idmap_tdb, sid_data) != 0) {
+			DEBUG(10,("db_get_id_from_sid: failed to lock record %s. Error %s\n",
+					sid_string, tdb_errorstr(idmap_tdb) ));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
 		do {
 			fstring ugid_str;
@@ -343,9 +350,12 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 			if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
 				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
 				/* TODO: print tdb error !! */
+				tdb_chainunlock(idmap_tdb, sid_data);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
+
+		tdb_chainunlock(idmap_tdb, sid_data);
 	}
 	
 	return ret;
@@ -381,6 +391,13 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	/* *DELETE* prevoius mappings if any.
 	 * This is done both SID and [U|G]ID passed in */
 	
+	/* Lock the record for this SID. */
+	if (tdb_chainlock(idmap_tdb, ksid) != 0) {
+		DEBUG(10,("db_get_id_from_sid: failed to lock record %s. Error %s\n",
+				ksidstr, tdb_errorstr(idmap_tdb) ));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	DEBUG(10,("db_set_mapping: fetching %s\n", ksid.dptr));
 
 	data = tdb_fetch(idmap_tdb, ksid);
@@ -400,13 +417,16 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 
 	if (tdb_store(idmap_tdb, ksid, kid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 1 error: %s\n", tdb_errorstr(idmap_tdb)));
+		tdb_chainunlock(idmap_tdb, ksid);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (tdb_store(idmap_tdb, kid, ksid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
+		tdb_chainunlock(idmap_tdb, ksid);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	tdb_chainunlock(idmap_tdb, ksid);
 	DEBUG(10,("db_set_mapping: stored %s -> %s and %s -> %s\n", ksid.dptr, kid.dptr, kid.dptr, ksid.dptr ));
 	return NT_STATUS_OK;
 }

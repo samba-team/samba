@@ -146,13 +146,13 @@ NTSTATUS uid_to_sid(DOM_SID *sid, uid_t uid)
 
 	flags = ID_USERID;
 	if (!lp_idmap_only() && !idmap_check_ugid_is_in_free_range(uid)) {
-		flags |= ID_NOMAP;
+		flags |= ID_QUERY_ONLY;
 	}
 
 	id.uid = uid;
 	if (!NT_STATUS_IS_OK(ret = idmap_get_sid_from_id(sid, id, flags))) {
 		DEBUG(10, ("uid_to_sid: Failed to map uid = [%u]\n", (unsigned int)uid));
-		if (flags & ID_NOMAP) {
+		if (flags & ID_QUERY_ONLY) {
 			sid_copy(sid, get_global_sam_sid());
 			sid_append_rid(sid, fallback_pdb_uid_to_user_rid(uid));
 
@@ -182,13 +182,13 @@ NTSTATUS gid_to_sid(DOM_SID *sid, gid_t gid)
 
 	flags = ID_GROUPID;
 	if (!lp_idmap_only() && !idmap_check_ugid_is_in_free_range(gid)) {
-		flags |= ID_NOMAP;
+		flags |= ID_QUERY_ONLY;
 	}
 
 	id.gid = gid;
 	if (!NT_STATUS_IS_OK(ret = idmap_get_sid_from_id(sid, id, flags))) {
 		DEBUG(10, ("gid_to_sid: Failed to map gid = [%u]\n", (unsigned int)gid));
-		if (flags & ID_NOMAP) {
+		if (flags & ID_QUERY_ONLY) {
 			sid_copy(sid, get_global_sam_sid());
 			sid_append_rid(sid, pdb_gid_to_group_rid(gid));
 
@@ -221,7 +221,7 @@ NTSTATUS sid_to_uid(const DOM_SID *sid, uid_t *uid)
 	flags = ID_USERID;
 	if (!lp_idmap_only()) {
 		if (!idmap_check_sid_is_in_free_range(sid)) {
-			flags |= ID_NOMAP;
+			flags |= ID_QUERY_ONLY;
 			fallback = True;
 		}
 	}
@@ -278,7 +278,7 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 	flags = ID_GROUPID;
 	if (!lp_idmap_only()) {
 		if (!idmap_check_sid_is_in_free_range(sid)) {
-			flags |= ID_NOMAP;
+			flags |= ID_QUERY_ONLY;
 			fallback = True;
 		}
 	}
@@ -355,7 +355,7 @@ BOOL idmap_init_wellknown_sids(void)
 
 	/* check if DOMAIN_GROUP_RID_GUESTS SID is set, if not store the
 	 * guest account gid as mapping */
-	flags = ID_GROUPID | ID_NOMAP;
+	flags = ID_GROUPID | ID_QUERY_ONLY;
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, DOMAIN_GROUP_RID_GUESTS);
 	if (!NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &flags, &sid))) {

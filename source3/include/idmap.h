@@ -1,3 +1,5 @@
+#ifndef _IDMAP_H_
+#define _IDMAP_H_
 /* 
    Unix SMB/CIFS implementation.
 
@@ -32,8 +34,8 @@
 
 #define ID_TYPEMASK	0x0f
 
-#define ID_NOMAP	0x10
-#define ID_CACHE	0x20
+#define ID_QUERY_ONLY	0x10
+#define ID_CACHE_SAVE	0x20
 
 /* Filled out by IDMAP backends */
 struct idmap_methods {
@@ -51,4 +53,4 @@ struct idmap_methods {
 	/* Called to dump backend status */
 	void (*status)(void);
 };
-
+#endif /* _IDMAP_H_ */
