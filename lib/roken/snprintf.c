@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -135,7 +135,7 @@ use_alternative (int flags, u_longest num, unsigned base)
 
 static int
 append_number(struct snprintf_state *state,
-	      u_longest num, unsigned base, char *rep,
+	      u_longest num, unsigned base, const char *rep,
 	      int width, int prec, int flags, int minusp)
 {
   int len = 0;
