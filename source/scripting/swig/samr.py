@@ -89,6 +89,16 @@ def string_to_sid(string):
     return sid
 
 
+def call_fn(fn, pipe, args):
+    """Wrap up a RPC call and throw an exception is an error was returned."""
+    
+    result = fn(pipe, args);
+    if result & 0xc0000000:
+        raise dcerpc.NTSTATUS(result, dcerpc.nt_errstr(result));
+
+    return result;
+
+    
 class SamrHandle:
 
     def __init__(self, pipe, handle):
@@ -106,7 +116,7 @@ class SamrHandle:
         r = dcerpc.samr_Close()
         r.data_in.handle = self.handle
 
-        dcerpc.dcerpc_samr_Close(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_Close, self.pipe, r)
 
         self.handle = None
 
@@ -116,7 +126,7 @@ class SamrHandle:
         r.data_in.handle = self.handle
         r.data_in.sec_info = sec_info
 
-        result = dcerpc.dcerpc_samr_QuerySecurity(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_QuerySecurity, self.pipe, r)
 
         return r.data_out.sdbuf
 
@@ -127,7 +137,7 @@ class SamrHandle:
         r.data_in.sec_info = sec_info
         r.data_in.sdbuf = sdbuf
 
-        result = dcerpc.dcerpc_samr_SetSecurity(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_SetSecurity, self.pipe, r)
 
         
 class ConnectHandle(SamrHandle):
@@ -143,7 +153,7 @@ class ConnectHandle(SamrHandle):
 
         while 1:
 
-            result = dcerpc.dcerpc_samr_EnumDomains(self.pipe, r)
+            call_fn(dcerpc.dcerpc_samr_EnumDomains, self.pipe, r)
 
             for i in range(r.data_out.sam.count):
                 domains.append(dcerpc.samr_SamEntry_array_getitem(
@@ -162,7 +172,7 @@ class ConnectHandle(SamrHandle):
         r.data_in.domain = dcerpc.samr_String()
         r.data_in.domain.string = domain_name
 
-        result = dcerpc.dcerpc_samr_LookupDomain(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_LookupDomain, self.pipe, r)
 
         return sid_to_string(r.data_out.sid);
 
@@ -173,7 +183,7 @@ class ConnectHandle(SamrHandle):
         r.data_in.access_mask = access_mask
         r.data_in.sid = string_to_sid(domain_sid)
 
-        result = dcerpc.dcerpc_samr_OpenDomain(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_OpenDomain, self.pipe, r)
 
         return DomainHandle(self.pipe, r.data_out.domain_handle)
 
@@ -182,7 +192,7 @@ class ConnectHandle(SamrHandle):
         r = dcerpc.samr_Shutdown()
         r.data_in.connect_handle = self.handle
 
-        result = dcerpc.dcerpc_samr_Shutdown(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_Shutdown, self.pipe, r)
 
 
 class DomainHandle(SamrHandle):
@@ -193,7 +203,7 @@ class DomainHandle(SamrHandle):
         r.data_in.domain_handle = self.handle
         r.data_in.level = level
 
-        result = dcerpc.dcerpc_samr_QueryDomainInfo(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_QueryDomainInfo, self.pipe, r)
 
         return getattr(r.data_out.info, 'info%d' % level)
 
@@ -203,7 +213,7 @@ class DomainHandle(SamrHandle):
         r.data_in.domain_handle = self.handle
         r.data_in.level = level
 
-        result = dcerpc.dcerpc_samr_QueryDomainInfo2(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_QueryDomainInfo2, self.pipe, r)
 
         return getattr(r.data_out.info, 'info%d' % level)       
 
@@ -214,7 +224,7 @@ class DomainHandle(SamrHandle):
         r.data_in.resume_handle = 0
         r.data_in.max_size = 1000
 
-        result = dcerpc.dcerpc_samr_EnumDomainGroups(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_EnumDomainGroups, self.pipe, r)
 
         groups = []
 
@@ -234,7 +244,7 @@ class DomainHandle(SamrHandle):
         # no meaning so use 0xffffffff like W2K
         r.data_in.acct_flags = 0xffffffffL
 
-        result = dcerpc.dcerpc_samr_EnumDomainAliases(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_EnumDomainAliases, self.pipe, r)
 
         aliases = []
 
@@ -253,7 +263,7 @@ class DomainHandle(SamrHandle):
         r.data_in.acct_flags = user_account_flags
         r.data_in.max_size = 1000
 
-        result = dcerpc.dcerpc_samr_EnumDomainUsers(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_EnumDomainUsers, self.pipe, r)
 
         users = []
 
@@ -272,7 +282,7 @@ class DomainHandle(SamrHandle):
         r.data_in.account_name.string = account_name
         r.data_in.access_mask = access_mask
 
-        result = dcerpc.dcerpc_samr_CreateUser(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_CreateUser, self.pipe, r)
 
         return (r.data_out.user_handle,
                 dcerpc.uint32_array_getitem(r.data_out.rid, 0))
@@ -284,7 +294,7 @@ class DomainHandle(SamrHandle):
         r.data_in.access_mask = access_mask
         r.data_in.rid = rid
 
-        result = dcerpc.dcerpc_samr_OpenUser(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_OpenUser, self.pipe, r)
 
         return UserHandle(pipe, r.data_out.user_handle)
 
@@ -295,7 +305,7 @@ class DomainHandle(SamrHandle):
         r.data_in.access_mask = access_mask
         r.data_in.rid = rid
 
-        result = dcerpc.dcerpc_samr_OpenGroup(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_OpenGroup, self.pipe, r)
 
         return GroupHandle(pipe, r.data_out.group_handle)
 
@@ -306,7 +316,7 @@ class DomainHandle(SamrHandle):
         r.data_in.access_mask = access_mask
         r.data_in.rid = rid
 
-        result = dcerpc.dcerpc_samr_OpenAlias(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_OpenAlias, self.pipe, r)
 
         return AliasHandle(pipe, r.data_out.group_handle)
 
@@ -315,7 +325,7 @@ class DomainHandle(SamrHandle):
         r = dcerpc.samr_RidToSid()
         r.data_in.domain_handle = self.handle
 
-        result = dcerpc.dcerpc_samr_RidToSid(self.pipe, r)
+        call_fn(dcerpc.dcerpc_samr_RidToSid, self.pipe, r)
 
         return sid_to_string(r.data_out.sid)
 
@@ -339,7 +349,7 @@ def Connect(pipe, access_mask = 0x02000000):
     dcerpc.uint16_array_setitem(r.data_in.system_name, 0, ord('\\'))
     r.data_in.access_mask = access_mask
 
-    result = dcerpc.dcerpc_samr_Connect(pipe, r)
+    call_fn(dcerpc.dcerpc_samr_Connect, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
@@ -350,7 +360,7 @@ def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     r.data_in.system_name = system_name
     r.data_in.access_mask = access_mask
 
-    result = dcerpc.dcerpc_samr_Connect2(pipe, r)
+    call_fn(dcerpc.dcerpc_samr_Connect2, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
@@ -361,7 +371,7 @@ def Connect3(pipe, system_name = '', access_mask = 0x02000000):
     r.data_in.unknown = 0
     r.data_in.access_mask = access_mask
 
-    result = dcerpc.dcerpc_samr_Connect3(pipe, r)
+    call_fn(dcerpc.dcerpc_samr_Connect3, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
@@ -372,7 +382,7 @@ def Connect4(pipe, system_name = '', access_mask = 0x02000000):
     r.data_in.unknown = 0
     r.data_in.access_mask = access_mask
 
-    result = dcerpc.dcerpc_samr_Connect4(pipe, r)
+    call_fn(dcerpc.dcerpc_samr_Connect4, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
@@ -386,7 +396,7 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
     r.data_in.info.unknown1 = 0
     r.data_in.info.unknown2 = 0
 
-    result = dcerpc.dcerpc_samr_Connect5(pipe, r)
+    call_fn(dcerpc.dcerpc_samr_Connect5, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
     
