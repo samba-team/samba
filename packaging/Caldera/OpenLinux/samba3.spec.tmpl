@@ -13,7 +13,7 @@ Summary      : Samba SMB client and server.
 
 Copyright      : Andrew Tridgell, John H Terpstra; GPL Version 2
 Packager      : Klaus Singvogel <klaus@caldera.de>
-Icon              : Caldera-daemon.gif
+#Icon              : Caldera-daemon.gif
 URL              : http://samba.org/samba
 
 Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
@@ -23,7 +23,7 @@ BuildRoot   	: /tmp/%{Name}-%{Version}
 
 Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 #Patch0: %{Name}-%{Version}-smbmount.patch
-Patch1: %{Name}-%{Version}-install.patch
+#Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
 
 
@@ -43,7 +43,9 @@ Summary     	: Mount and unmount commands for SMB filesystems (smbfs).
 Group       	: Administration/Network
 Requires       : setup >= 2.0-2, tcp_wrappers
 
-Summary      : Samba Web Administration Tool.
+Summary		: Samba Web Adminsitration Tool.
+
+%Description
 Samba provides an SMB server which can be used to provide
 network services to SMB (sometimes called "Lan Manager")
 clients, including various versions of MS Windows, OS/2,
@@ -53,7 +55,7 @@ in Linux. Samba uses NetBIOS over TCP/IP (NetBT) protocols
 and does NOT need NetBEUI (Microsoft Raw NetBIOS frame)
 protocol.
 
-Samba-2.2 features working NT Domain Control capability and 
+Samba features working NT Domain Control capability and 
 includes the SWAT (Samba Web Administration Tool) that 
 allows samba's smb.conf file to be remotely managed using your 
 favourite web browser. For the time being this is being
@@ -67,10 +69,6 @@ Backup Domain control ability.
 Please refer to the WHATSNEW.txt document for fixup information.
 This binary release includes encrypted password support.
 
-Please read the smb.conf file and ENCRYPTION.txt in the
-docs directory for implementation details.
-
-%Description
 
 NOTE: Caldera OpenLinux uses PAM which has integrated support
 for Shadow passwordsand for quotas. Do NOT recompile with the 
@@ -102,9 +100,9 @@ allowing an administrator to easily look up the effects of any change.
 
 
 %Prep
-%setup -n samba
-#%%patch0 -p1
-%patch1 -p1
+%setup
+#%patch0 -p1
+#%patch1 -p1
 #%patch2 -p1
 
 # instead of patch (to help configuration) ...   ;^)
@@ -141,11 +139,6 @@ done
 %{fixUP} -vT docs/textdocs/Faxing.txt -e '
   s:/usr/local/etc/:/etc/: +
   s:/usr/local/:/usr/:;
-'
-%{fixUP} -vT docs/textdocs/ENCRYPTION.txt -e '
-  s:/usr/local/samba/private:%{EtcSamba}:g +
-  s:mksmbpasswd.sh:mksmbpasswd:g +
-  s:the Samba source directory:/usr/bin:;
 '
 # End of DirtyHack(TM)
 
@@ -325,5 +318,6 @@ lisa --inetd disable swat $1
 
 
 %ChangeLog
-* Mon Jan 01 1997 ...
+* Mon Mar 11 2002 John H Terpstra <jht@samba.org>
+- Make this work
 
