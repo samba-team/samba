@@ -507,7 +507,10 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 }
 
 
-static int ldapsam_search(struct ldapsam_privates *ldap_state, const char *base, int scope, const char *filter, const char *attrs[], int attrsonly, LDAPMessage **res)
+static int ldapsam_search(struct ldapsam_privates *ldap_state, 
+			  const char *base, int scope, const char *filter, 
+			  const char *attrs[], int attrsonly, 
+			  LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
@@ -519,7 +522,8 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state, const char *base,
 		if ((rc = ldapsam_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
 			continue;
 		
-		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, filter, attrs, attrsonly, res);
+		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, 
+				   filter, attrs, attrsonly, res);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
@@ -1556,20 +1560,20 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	LDAPMessage *entry;
 
 	if (ldapsam_search_one_user_by_name(ldap_state, sname, &result) != LDAP_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 	if (ldap_count_entries(ldap_state->ldap_struct, result) < 1) {
 		DEBUG(4,
 		      ("We don't find this user [%s] count=%d\n", sname,
 		       ldap_count_entries(ldap_state->ldap_struct, result)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
 	if (entry) {
 		if (!init_sam_from_ldap(ldap_state, user, entry)) {
 			DEBUG(1,("ldapsam_getsampwnam: init_sam_from_ldap failed for user '%s'!\n", sname));
 			ldap_msgfree(result);
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_NO_SUCH_USER;
 		}
 		ldap_msgfree(result);
 		ret = NT_STATUS_OK;
@@ -1585,19 +1589,20 @@ Get SAM_ACCOUNT entry from LDAP by rid
 static NTSTATUS ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *user, uint32 rid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	struct ldapsam_privates *ldap_state = 
+		(struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result;
 	LDAPMessage *entry;
 
 	if (ldapsam_search_one_user_by_rid(ldap_state, rid, &result) != LDAP_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) < 1) {
 		DEBUG(4,
 		      ("We don't find this rid [%i] count=%d\n", rid,
 		       ldap_count_entries(ldap_state->ldap_struct, result)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
@@ -1605,7 +1610,7 @@ static NTSTATUS ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		if (!init_sam_from_ldap(ldap_state, user, entry)) {
 			DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
 			ldap_msgfree(result);
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_NO_SUCH_USER;
 		}
 		ldap_msgfree(result);
 		ret = NT_STATUS_OK;
@@ -1619,7 +1624,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	return ldapsam_getsampwrid(my_methods, user, rid);
 }	
 
@@ -1729,7 +1734,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 
 	if (!sam_acct) {
 		DEBUG(0, ("sam_acct was NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	sname = pdb_get_username(sam_acct);
@@ -1738,13 +1743,13 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 
 	rc = ldapsam_search_one_user_by_name(ldap_state, sname, &result);
 	if (rc != LDAP_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (ldap_count_entries (ldap_state->ldap_struct, result) == 0) {
 		DEBUG (0, ("User doesn't exit!\n"));
 		ldap_msgfree (result);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	entry = ldap_first_entry (ldap_state->ldap_struct, result);
@@ -1760,7 +1765,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 		DEBUG (0,("failed to delete user with uid = %s with: %s\n\t%s\n",
 			sname, ldap_err2string (rc), ld_error));
 		free (ld_error);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_CANNOT_DELETE;
 	}
 
 	DEBUG (2,("successfully deleted uid = %s from the LDAP database\n", sname));
@@ -1840,7 +1845,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	const char *username = pdb_get_username(newpwd);
 	if (!username || !*username) {
 		DEBUG(0, ("Cannot add user without a username!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	rc = ldapsam_search_one_user_by_name (ldap_state, username, &result);
@@ -1902,7 +1907,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	if (mods == NULL) {
 		DEBUG(0,("mods is empty: nothing to add for user: %s\n",pdb_get_username(newpwd)));
 		return NT_STATUS_UNSUCCESSFUL;
-	}	
+	}
 	
 	make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "sambaAccount");
 
