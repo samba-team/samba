@@ -165,8 +165,8 @@ BOOL torture_casetable(int dummy)
 			int c2[MAX_EQUIVALENCE];
 
 			if (size/sizeof(int) >= MAX_EQUIVALENCE) {
-				printf("too many chars match?? size=%d c=0x%04x\n",
-				       size, c);
+				printf("too many chars match?? size=%ld c=0x%04x\n",
+				       (unsigned long)size, c);
 				cli_close(cli, fnum);
 				return False;
 			}
