@@ -2225,9 +2225,12 @@ static void add_to_file_list(char *fname, char *subfname)
 			return;
 		}
 		file_lists = f;
-	}
- 
-	f->modtime = file_modtime(subfname);
+		f->modtime = file_modtime(subfname);
+	} else {
+		time_t t = file_modtime(subfname);
+		if (t) 
+			f->modtime = t;
+	}	
 }
 
 /*******************************************************************
@@ -2250,7 +2253,7 @@ BOOL lp_file_list_changed(void)
  
 		mod_time = file_modtime(n2);
  
-		if ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0)) {
+		if (mod_time && ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))) {
 			DEBUGADD(6, ("file %s modified: %s\n", n2, ctime(&mod_time)));
 			f->modtime = mod_time;
 			SAFE_FREE(f->subfname);
