@@ -434,14 +434,10 @@ SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
 	uint16 secdesc_type;
 	size_t secdesc_size;
 
-	/* Copy over owner and group sids.  There seems to be no flag for
-	   this so just check the pointer values. */
+	/* Ignore changes to owner and group - APPLIANCE ONLY */
 
-	owner_sid = new_sdb->sec->owner_sid ? new_sdb->sec->owner_sid :
-		old_sdb->sec->owner_sid;
-
-	group_sid = new_sdb->sec->grp_sid ? new_sdb->sec->grp_sid :
-		old_sdb->sec->grp_sid;
+	owner_sid = old_sdb->sec->owner_sid;
+	group_sid = old_sdb->sec->grp_sid;
 	
 	secdesc_type = new_sdb->sec->type;
 
