@@ -28,6 +28,8 @@
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
 
+extern BOOL override_logfile;
+
 /* Reload configuration */
 
 static BOOL reload_services_file(void)
@@ -853,8 +855,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	pstr_sprintf(logfile, "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
+	if (!override_logfile) {
+		pstr_sprintf(logfile, "%s/log.winbindd", dyn_LOGFILEBASE);
+		lp_set_logfile(logfile);
+	}
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 

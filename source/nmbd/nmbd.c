@@ -29,6 +29,8 @@ int global_nmb_port = -1;
 
 extern BOOL global_in_nmbd;
 
+extern BOOL override_logfile;
+
 /* are we running as a daemon ? */
 static BOOL is_daemon;
 
@@ -623,8 +625,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	
 	sys_srandom(time(NULL) ^ sys_getpid());
 	
-	slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
+	if (!override_logfile) {
+		slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+		lp_set_logfile(logfile);
+	}
 	
 	fault_setup((void (*)(void *))fault_continue );
 	
