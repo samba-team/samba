@@ -110,7 +110,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      char user[ANAME_SZ + 1];
      char instance[INST_SZ + 1];
      int addrlen;
-     char version[KRB_SENDAUTH_VLEN];
+     char version[KRB_SENDAUTH_VLEN + 1];
      struct passwd *passwd;
      char remotehost[MaxHostNameLen];
      void *ret;
