@@ -48,6 +48,15 @@ BOOL global_machine_password_needs_changing = False;
 extern int max_send;
 
 /****************************************************************************
+ Function to return the current request mid from Inbuffer.
+****************************************************************************/
+
+uint16 get_current_mid(void)
+{
+	return SVAL(InBuffer,smb_mid);
+}
+
+/****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.
 ****************************************************************************/
@@ -88,7 +97,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 	ubi_slAddTail( list_head, msg);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(buf,smb_mid));
+	srv_defer_sign_response(SVAL(buf,smb_mid), True);
 
 	return True;
 }
