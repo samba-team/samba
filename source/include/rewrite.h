@@ -52,7 +52,6 @@ typedef int BOOL;
 #include "doserr.h"
 
 #include "enums.h"
-#include "events.h"
 
 /*
  * Loopback command offsets.
@@ -75,8 +74,6 @@ typedef int BOOL;
 #include "smb_macros.h"
 
 #include "rpc_secdes.h"
-
-#include "client.h"
 
 #define SAFE_NETBIOS_CHARS ". -_"
 

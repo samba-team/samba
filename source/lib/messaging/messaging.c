@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "system/time.h"
 #include "messages.h"
 #include "dlinklist.h"

@@ -106,3 +106,5 @@ union libnet_rpc_connect;
 union libnet_RemoteTOD;
 struct net_functable;
 struct net_context;
+
+struct file_info;

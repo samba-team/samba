@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "auth/auth.h"
 #include "dlinklist.h"
 #include "asn_1.h"

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "client.h"
 
 struct delete_state {
 	struct smbcli_tree *tree;
@@ -29,7 +30,7 @@ struct delete_state {
 /* 
    callback function for torture_deltree() 
 */
-static void delete_fn(file_info *finfo, const char *name, void *state)
+static void delete_fn(struct file_info *finfo, const char *name, void *state)
 {
 	struct delete_state *dstate = state;
 	char *s, *n;

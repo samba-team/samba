@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "smb_server/smb_server.h"
 #include "smbd/process_model.h"
 

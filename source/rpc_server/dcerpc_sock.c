@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "rpc_server/dcerpc_server.h"
 
 struct dcesrv_socket_context {
