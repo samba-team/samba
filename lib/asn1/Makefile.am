@@ -110,7 +110,7 @@ foo =						\
 	asn1_TransitedEncoding.x
 
 
-noinst_PROGRAMS = asn1_compile
+noinst_PROGRAMS = asn1_compile check-der
 
 asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
 	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
@@ -126,6 +126,10 @@ libasn1_la_SOURCES = \
 	$(BUILT_SOURCES)
 
 asn1_compile_LDADD = ../roken/libroken.la @LEXLIB@
+
+check_der_LDADD = libasn1.la ../roken/libroken.la
+
+TESTS = check-der
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
