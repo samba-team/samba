@@ -873,6 +873,8 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
 		BOOL result;
+
+		DEBUG(10,("sid_to_uid: sid is local [%s]\n", sid_string_static(get_global_sam_sid())));
 		become_root();
 		result = local_sid_to_uid(puid, psid, sidtype);
 		unbecome_root();
