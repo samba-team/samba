@@ -270,6 +270,68 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPorts r;
+	uint32_t buf_size;
+
+	r.in.servername = talloc_asprintf(mem_ctx, "\\\\%s", 
+					  dcerpc_server_name(p));
+	r.in.level = 2;
+	r.in.buffer = NULL;
+	buf_size = 0;
+	r.in.buf_size = &buf_size;
+	r.out.buf_size = &buf_size;
+
+	printf("Testing EnumPorts\n");
+
+	status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumPorts failed -- %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+		union spoolss_PortInfo *info;
+		int j;
+
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPorts failed -- %s\n", nt_errstr(status));
+			return False;
+		}
+
+		if (!r.out.buffer) {
+			printf("No ports returned");
+			return False;
+		}
+
+		status = pull_spoolss_PortInfoArray(r.out.buffer, mem_ctx,
+						    r.in.level, r.out.count,
+						    &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPortArray parse failed - %s\n",
+			       nt_errstr(status));
+			return False;
+		}
+
+		for (j=0;j<r.out.count;j++) {
+			printf("Port %d\n", j);
+			NDR_PRINT_UNION_DEBUG(spoolss_PortInfo, r.in.level,
+					      &info[j]);
+		}
+	}
+
+	return True;
+}
+
 static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		  struct policy_handle *handle, uint32_t job_id)
 {
@@ -971,6 +1033,10 @@ BOOL torture_rpc_spoolss(int dummy)
 					DCERPC_SPOOLSS_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
+
+	if (!test_EnumPorts(p, mem_ctx)) {
+		ret = False;
 	}
 
 	if (!test_EnumPrinters(p, mem_ctx)) {
