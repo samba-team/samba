@@ -36,7 +36,7 @@ extern int ClientDGRAM;
 
 extern int DEBUGLEVEL;
 
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 extern struct in_addr ipzero;
 
 extern pstring myname;
@@ -51,6 +51,11 @@ extern struct interface *local_interfaces;
 struct subnet_record *subnetlist = NULL;
 
 extern uint16 nb_type; /* samba's NetBIOS name type */
+
+/* Forward references. */
+static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
+				       struct in_addr mask_ip,
+				       char *name, BOOL add, BOOL lmhosts);
 
 /****************************************************************************
   add a domain into the list
@@ -81,31 +86,30 @@ static void add_subnet(struct subnet_record *d)
 struct subnet_record *find_subnet(struct in_addr bcast_ip)
 {   
   struct subnet_record *d;
-  struct in_addr wins_ip = ipgrp;
   
   /* search through subnet list for broadcast/netmask that matches
      the source ip address. a subnet 255.255.255.255 represents the
      WINS list. */
   
-	for (d = subnetlist; d; d = d->next)
+  for (d = subnetlist; d; d = d->next)
     {
-        if (ip_equal(bcast_ip, wins_ip))
+      if (ip_equal(bcast_ip, wins_ip))
+	{
+	  if (ip_equal(bcast_ip, d->bcast_ip))
 	    {
-			if (ip_equal(bcast_ip, d->bcast_ip))
-			{
-				return d;
-			}
-        }
-        else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
-	    {
-			if (!ip_equal(d->bcast_ip, wins_ip))
-			{
-				return d;
-			}
+	      return d;
 	    }
+        }
+      else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
+	{
+	  if (!ip_equal(d->bcast_ip, wins_ip))
+	    {
+	      return d;
+	    }
+	}
     }
   
-	return (NULL);
+  return (NULL);
 }
 
 
@@ -122,9 +126,19 @@ struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast)
     return find_subnet(*iface_bcast(ip));
   }
   /* find the subnet under the pseudo-ip of 255.255.255.255 */
-  return find_subnet(ipgrp);
+  return find_subnet(wins_ip);
 }
 
+/****************************************************************************
+  find a subnet in the subnetlist - if the subnet is not found
+  then return the WINS subnet.
+  **************************************************************************/
+struct subnet_record *find_subnet_all(struct in_addr bcast_ip)
+{
+  struct subnet_record *d = find_subnet(bcast_ip);
+  if(!d)
+    return find_subnet( wins_ip);
+}
 
 /****************************************************************************
   create a domain entry
@@ -157,24 +171,24 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   ****************************************************************************/
 void add_subnet_interfaces(void)
 {
-	struct interface *i;
+  struct interface *i;
 
-	/* loop on all local interfaces */
-	for (i = local_interfaces; i; i = i->next)
-	{
-		/* add the interface into our subnet database */
-		if (!find_subnet(i->bcast))
-		{
-		  make_subnet(i->bcast,i->nmask);
-		}
-	}
-
-	/* add the pseudo-ip interface for WINS: 255.255.255.255 */
-	if (lp_wins_support() || (*lp_wins_server()))
+  /* loop on all local interfaces */
+  for (i = local_interfaces; i; i = i->next)
     {
-		struct in_addr wins_bcast = ipgrp;
-		struct in_addr wins_nmask = ipzero;
-		make_subnet(wins_bcast, wins_nmask);
+      /* add the interface into our subnet database */
+      if (!find_subnet(i->bcast))
+	{
+	  make_subnet(i->bcast,i->nmask);
+	}
+    }
+
+  /* add the pseudo-ip interface for WINS: 255.255.255.255 */
+  if (lp_wins_support() || (*lp_wins_server()))
+    {
+      struct in_addr wins_bcast = wins_ip;
+      struct in_addr wins_nmask = ipzero;
+      make_subnet(wins_bcast, wins_nmask);
     }
 }
 
@@ -205,7 +219,7 @@ void add_my_subnets(char *group)
   add a domain entry. creates a workgroup, if necessary, and adds the domain
   to the named a workgroup.
   ****************************************************************************/
-struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
+static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
 				       struct in_addr mask_ip,
 				       char *name, BOOL add, BOOL lmhosts)
 {
@@ -215,7 +229,7 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
      in the DEBUG comment. i assume that the DEBUG comment below actually
      intends to refer to bcast_ip? i don't know.
 
-  struct in_addr ip = ipgrp;
+  struct in_addr ip = wins_ip;
 
   */
 
@@ -223,6 +237,8 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
     bcast_ip = *iface_bcast(bcast_ip);
   
   /* add the domain into our domain database */
+  /* Note that we never add into the WINS subnet as add_subnet_entry
+     is only called to add our local interfaces. */
   if ((d = find_subnet(bcast_ip)) ||
       (d = make_subnet(bcast_ip, mask_ip)))
     {

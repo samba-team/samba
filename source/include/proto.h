@@ -386,11 +386,9 @@ void expire_servers(time_t t);
 
 struct subnet_record *find_subnet(struct in_addr bcast_ip);
 struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast);
+struct subnet_record *find_subnet_all(struct in_addr bcast_ip);
 void add_subnet_interfaces(void);
 void add_my_subnets(char *group);
-struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
-				       struct in_addr mask_ip,
-				       char *name, BOOL add, BOOL lmhosts);
 void write_browse_list(time_t t);
 
 /*The following definitions come from  namedbwork.c  */
@@ -401,6 +399,7 @@ struct work_record *remove_workgroup(struct subnet_record *d,
 struct work_record *find_workgroupstruct(struct subnet_record *d, 
 					 fstring name, BOOL add);
 void dump_workgroups(void);
+int check_work_servertype(const char *work_name, int type_mask);
 
 /*The following definitions come from  nameelect.c  */
 

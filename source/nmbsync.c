@@ -140,7 +140,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 {
   uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
-  if (!d || !work || !AM_MASTER(work)) return;
+  if (!d || !work || !AM_ANY_MASTER(work)) return;
 
   pid = getpid();
   uid = getuid();

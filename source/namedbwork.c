@@ -38,7 +38,7 @@ extern int DEBUGLEVEL;
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
 
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 int workgroup_count = 0; /* unique index key: one for each workgroup */
 
@@ -201,7 +201,7 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
   
   if ((work = make_workgroup(name)))
     {
-      if (!ip_equal(d->bcast_ip, ipgrp) &&
+      if (!ip_equal(d->bcast_ip, wins_ip) &&
 	  lp_preferred_master() &&
 	  strequal(lp_workgroup(), name))
 	{
@@ -248,3 +248,42 @@ void dump_workgroups(void)
 	}
     }
 }
+
+/****************************************************************************
+  check to see if a ServerType bit is set in any workgroup on any interface
+  except WINS. Used to determine if a nmbd is a master browser or domain 
+  master browser in a particular workgroup on any subnet.
+  **************************************************************************/
+int check_work_servertype(const char *work_name, int type_mask)
+{
+  struct subnet_record *d;
+
+  for (d = subnetlist; d; d = d->next)
+    {
+      if(ip_equal(d->bcast_ip, wins_ip)) 
+        {
+          /* WINS ip */
+          DEBUG(10,("check_work_servertype: ignoring WINS subnet\n"));
+          continue;
+        }
+      if (d->workgrouplist)
+        {
+          struct work_record *work;
+
+          for (work = d->workgrouplist; work; work = work->next)
+            {
+              if(strequal(work->work_group, (char *)work_name) &&
+                    (type_mask & work->ServerType) != 0)
+                {
+                  DEBUG(10, ("check_work_servertype: Workgroup %s has \
+ServerType %x - match for type_mask %x\n", work_name, work->ServerType,
+                       type_mask));
+                  return 1;
+                }
+            }
+         }
+    }
+  DEBUG(10, ("check_work_servertype: Workgroup %s has no match for \
+type mask %x\n", work_name, type_mask));
+  return 0;
+}                

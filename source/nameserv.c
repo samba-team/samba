@@ -38,7 +38,7 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern pstring myname;
 extern struct in_addr ipzero;
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 extern struct subnet_record *subnetlist;
 
@@ -80,7 +80,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
      don't really own */  
   remove_netbios_name(d,name,type,SELF,n2->ip_flgs[0].ip);
 
-  if (ip_equal(d->bcast_ip, ipgrp))
+  if (ip_equal(d->bcast_ip, wins_ip))
   {
     if (!lp_wins_support())
     {
@@ -125,7 +125,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
      name entry to a local-subnet name database. see rfc1001.txt 15.1.1 p28
      regarding the point about M-nodes. */
 
-  if (ip_equal(d->bcast_ip, ipgrp))
+  if (ip_equal(d->bcast_ip, wins_ip))
   {
     if (lp_wins_support())
     {
@@ -194,10 +194,16 @@ void add_domain_names(time_t t)
 
     if (lp_domain_master() && work && work->dom_state == DOMAIN_NONE)
     {
+
+      DEBUG(0,("add_domain_names:Checking for domain master on workgroup %s\n", lp_workgroup()));
+
       make_nmb_name(&n,lp_workgroup(),0x1b,scope);
       if (!find_name(d->namelist, &n, FIND_SELF))
       {
-        if (ip_equal(d->bcast_ip,ipgrp))
+        DEBUG(0,("add_domain_names: attempting to become domain master browser on workgroup %s, bcast %s\n",
+                  lp_workgroup(), inet_ntoa(d->bcast_ip)));
+
+        if (ip_equal(d->bcast_ip,wins_ip))
         {
           if (lp_wins_support())
           {
@@ -220,6 +226,8 @@ void add_domain_names(time_t t)
              it's only polite that we check, before claiming the
              NetBIOS name 0x1b.
            */
+
+          DEBUG(0,("add_domain_names:querying for domain master on workgroup %s\n", lp_workgroup()));
 
           queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
           			lp_workgroup(), 0x1b,
@@ -246,7 +254,7 @@ void add_my_names(void)
 
   for (d = subnetlist; d; d = d->next)
   {
-    BOOL wins = lp_wins_support() && ip_equal(d->bcast_ip,ipgrp);
+    BOOL wins = lp_wins_support() && ip_equal(d->bcast_ip,wins_ip);
     struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
 
     add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
@@ -339,7 +347,7 @@ void refresh_my_names(time_t t)
 void query_refresh_names(time_t t)
 {
 	struct name_record *n;
-	struct subnet_record *d = find_subnet(ipgrp);
+	struct subnet_record *d = find_subnet(wins_ip);
 
 	static time_t lasttime = 0;
 

@@ -600,7 +600,7 @@ static void init_globals(void)
   Globals.bDomainMaster = False;
   Globals.bDomainLogons = False;
   Globals.bBrowseList = True;
-  Globals.bWINSsupport = True;
+  Globals.bWINSsupport = False;
   Globals.bWINSproxy = False;
   Globals.ReadSize = 16*1024;
 

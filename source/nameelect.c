@@ -41,7 +41,7 @@ extern pstring scope;
 
 extern pstring myname;
 extern struct in_addr ipzero;
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 /* here are my election parameters */
 
@@ -70,6 +70,10 @@ void check_master_browser(time_t t)
 	for (d = subnetlist; d; d = d->next)
 	{
 		struct work_record *work;
+
+                /* don't do election stuff on the WINS subnet */
+               if (ip_equal(d->bcast_ip,wins_ip)) 
+                  continue;
 
 		for (work = d->workgrouplist; work; work = work->next)
 		{
@@ -116,7 +120,7 @@ void browser_gone(char *work_name, struct in_addr ip)
   if (!work || !d) return;
 
   /* don't do election stuff on the WINS subnet */
-  if (ip_equal(d->bcast_ip,ipgrp)) 
+  if (ip_equal(d->bcast_ip,wins_ip)) 
     return;
 
   if (strequal(work->work_group, lp_workgroup()))
@@ -350,6 +354,9 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
 
       /* update our server status */
       work->ServerType |= SV_TYPE_MASTER_BROWSER;
+
+      DEBUG(3,("become_local_master: updating our server %s to type %x\n", myname, work->ServerType));
+
       add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
 
       if (work->serverlist == NULL) /* no servers! */
@@ -638,6 +645,14 @@ void run_elections(time_t t)
   for (d = subnetlist; d; d = d->next)
   {
     struct work_record *work;
+
+    if(ip_equal(d->bcast_ip, wins_ip)) 
+      {
+        /* WINS ip */
+        DEBUG(10,("run_elections: ignoring WINS subnet\n"));
+        continue;
+      }
+
     for (work = d->workgrouplist; work; work = work->next)
 	{
 	  if (work->RunningElection)
@@ -710,7 +725,7 @@ void process_election(struct packet_struct *p,char *buf)
 
   if (!d) return;
 
-  if (ip_equal(d->bcast_ip,ipgrp)) {
+  if (ip_equal(d->bcast_ip,wins_ip)) {
     DEBUG(3,("Unexpected election request from %s %s on WINS net\n",
 	     name, inet_ntoa(p->ip)));
     return;

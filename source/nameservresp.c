@@ -192,10 +192,13 @@ static void response_server_check(struct nmb_name *ans_name,
     enum state_type cmd = (n->state == NAME_QUERY_DOM_SRV_CHK) ?
 	      NAME_STATUS_DOM_SRV_CHK : NAME_STATUS_SRV_CHK;
 
-    /* initiate a name status check on the server that replied */
+    /* initiate a name status check on the server that replied 
+       in addition, the workgroup being checked has been stored
+       in the response_record->my_name (see announce_master) we
+       also propagate this into the same field. */
     queue_netbios_packet(d,ClientNMB,NMB_STATUS, cmd,
 				ans_name->name, ans_name->name_type,
-				0,0,0,NULL,NULL,
+				0,0,0,n->my_name,NULL,
 				False,False,n->send_ip,n->reply_to_ip);
 }
 
@@ -243,10 +246,12 @@ static BOOL interpret_node_status(struct subnet_record *d,
       if (NAME_MFLAG    (nb_flags)) { strcat(flags,"M "); }
       if (NAME_HFLAG    (nb_flags)) { strcat(flags,"H "); }
       if (NAME_DEREG    (nb_flags)) { strcat(flags,"<DEREGISTERING> "); }
-      if (NAME_CONFLICT (nb_flags)) { strcat(flags,"<CONFLICT> "); add=True;}
+      if (NAME_CONFLICT (nb_flags)) { strcat(flags,"<CONFLICT> "); }
       if (NAME_ACTIVE   (nb_flags)) { strcat(flags,"<ACTIVE> "); add=True; }
       if (NAME_PERMANENT(nb_flags)) { strcat(flags,"<PERMANENT> "); add=True;}
-      
+
+/* I don't think we should be messing with our namelist here... JRA */      
+#if 0
       /* might as well update our namelist while we're at it */
       if (add)
 	{
@@ -262,9 +267,10 @@ static BOOL interpret_node_status(struct subnet_record *d,
 	  }
 	  add_netbios_entry(d,qname,type,nb_flags,2*60*60,src,nameip,True,bcast);
 	} 
+#endif /* JRA */
 
       /* we want the server name */
-      if (serv_name && !*serv_name && !group && t == 0)
+      if (serv_name && !*serv_name && !group && type == 0x20)
 	{
 	  StrnCpy(serv_name,qname,15);
 	  serv_name[15] = 0;
@@ -275,8 +281,8 @@ static BOOL interpret_node_status(struct subnet_record *d,
 	{
 	  /* take a guess at some of the name types we're going to ask for.
 	     evaluate whether they are group names or no... */
-	  if (((t == 0x1b || t == 0x1d             ) && !group) ||
-	      ((t == 0x20 || t == 0x1c || t == 0x1e) &&  group))
+	  if (((t == 0x1b || t == 0x1d || t == 0x20 ) && !group) ||
+	      ((t == 0x1c || t == 0x1e              ) &&  group))
 	    {
 	      found = True;
 	      make_nmb_name(name,qname,type,scope);
@@ -306,17 +312,20 @@ static void response_name_status_check(struct in_addr ip,
 	fstring serv_name;
 
 	if (interpret_node_status(d,nmb->answers->rdata,
-	                          &name,name.name_type,serv_name,ip,bcast))
+	                          &name,0x20,serv_name,ip,bcast))
 	{
 		if (*serv_name)
 		{
+                        /* response_record->my_name contains the
+                           workgroup name to sync with. See 
+                           response_server_check() */
 			sync_server(n->state,serv_name,
-			            name.name,name.name_type, n->send_ip);
+			            n->my_name,name.name_type, n->send_ip);
 		}
 	}
 	else
 	{
-		DEBUG(1,("No 0x1d name type in interpret_node_status()\n"));
+		DEBUG(1,("No 0x20 name type in interpret_node_status()\n"));
 	}
 }
 
@@ -409,69 +418,74 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 		struct nmb_name *ans_name, BOOL bcast,
 		struct response_record *n, struct subnet_record *d)
 {
-	DEBUG(4, ("Name query at %s ip %s - ",
-		  namestr(&n->name), inet_ntoa(n->send_ip)));
+  DEBUG(4, ("Name query at %s ip %s - ",
+	    namestr(&n->name), inet_ntoa(n->send_ip)));
 
-	if (!name_equal(&n->name, ans_name))
-	{
-		/* someone gave us the wrong name as a reply. oops. */
-		DEBUG(4,("unexpected name received: %s\n", namestr(ans_name)));
-		return;
-	}
-
-	if (nmb->header.rcode == 0 && nmb->answers->rdata)
+  if (!name_equal(&n->name, ans_name))
     {
-		int nb_flags = nmb->answers->rdata[0];
-		struct in_addr found_ip;
+      /* someone gave us the wrong name as a reply. oops. */
+      DEBUG(4,("unexpected name received: %s\n", namestr(ans_name)));
+      return;
+    }
 
-		putip((char*)&found_ip,&nmb->answers->rdata[2]);
-
-		if (!ip_equal(n->send_ip, found_ip))
-		{
-			/* someone gave us the wrong ip as a reply. oops. */
-			DEBUG(4,("expected ip: %s\n", inet_ntoa(n->send_ip)));
-			DEBUG(4,("unexpected ip: %s\n", inet_ntoa(found_ip)));
-			return;
-		}
-
-		DEBUG(4, (" OK: %s\n", inet_ntoa(found_ip)));
-
-		if (n->state == NAME_QUERY_SYNC_LOCAL ||
-		    n->state == NAME_QUERY_SYNC_REMOTE)
-		{
-			struct work_record *work = NULL;
-			if ((work = find_workgroupstruct(d, ans_name->name, False)))
-			{
-				BOOL local_list_only = n->state == NAME_QUERY_SYNC_LOCAL;
-
-				/* the server is there: sync quick before it (possibly) dies! */
-				sync_browse_lists(d, work, ans_name->name, ans_name->name_type,
-							found_ip, local_list_only);
-			}
-		}
-		else
-		{
-			/* update our netbios name list (re-register it if necessary) */
-			add_netbios_entry(d, ans_name->name, ans_name->name_type,
-								nb_flags,GET_TTL(0),REGISTER,
-								found_ip,False,!bcast);
-		}
-	}
-	else
+  if (nmb->header.rcode == 0 && nmb->answers->rdata)
+    {
+      int nb_flags = nmb->answers->rdata[0];
+      struct in_addr found_ip;
+      
+      putip((char*)&found_ip,&nmb->answers->rdata[2]);
+      
+      if (!ip_equal(n->send_ip, found_ip))
 	{
-		DEBUG(4, (" NEGATIVE RESPONSE!\n"));
-
-		if (n->state == NAME_QUERY_CONFIRM)
-		{
-			/* XXXX remove_netbios_entry()? */
-			/* lots of things we ought to do, here. if we get here,
-			   then we're in a mess: our name database doesn't match
-			   reality. sort it out
-             */
-      		remove_netbios_name(d,n->name.name, n->name.name_type,
-								REGISTER,n->send_ip);
-		}
+	  /* someone gave us the wrong ip as a reply. oops. */
+	  DEBUG(4,("expected ip: %s\n", inet_ntoa(n->send_ip)));
+	  DEBUG(4,("unexpected ip: %s\n", inet_ntoa(found_ip)));
+	  return;
 	}
+
+      DEBUG(4, (" OK: %s\n", inet_ntoa(found_ip)));
+      
+      if (n->state == NAME_QUERY_SYNC_LOCAL ||
+	  n->state == NAME_QUERY_SYNC_REMOTE)
+	{
+	  struct work_record *work = NULL;
+	  /* We cheat here as we know that the workgroup name has
+	     been placed in the my_comment field of the 
+	     response_record struct by the code in 
+	     start_sync_browse_entry().
+	  */
+	  if ((work = find_workgroupstruct(d, n->my_comment, False)))
+	    {
+	      BOOL local_list_only = n->state == NAME_QUERY_SYNC_LOCAL;
+	      
+	      /* the server is there: sync quick before it (possibly) dies! */
+	      sync_browse_lists(d, work, ans_name->name, ans_name->name_type,
+				found_ip, local_list_only);
+	    }
+	}
+      else
+	{
+	  /* update our netbios name list (re-register it if necessary) */
+	  add_netbios_entry(d, ans_name->name, ans_name->name_type,
+			    nb_flags,GET_TTL(0),REGISTER,
+			    found_ip,False,!bcast);
+	}
+    }
+  else
+    {
+      DEBUG(4, (" NEGATIVE RESPONSE!\n"));
+      
+      if (n->state == NAME_QUERY_CONFIRM)
+	{
+	  /* XXXX remove_netbios_entry()? */
+	  /* lots of things we ought to do, here. if we get here,
+	     then we're in a mess: our name database doesn't match
+	     reality. sort it out
+             */
+	  remove_netbios_name(d,n->name.name, n->name.name_type,
+			      REGISTER,n->send_ip);
+	}
+    }
 }
 
 
@@ -481,13 +495,13 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 static void debug_rr_type(int rr_type)
 {
   switch (rr_type)
-  {
-      case NMB_STATUS: DEBUG(3,("Name status ")); break;
-	  case NMB_QUERY : DEBUG(3,("Name query ")); break;
-	  case NMB_REG   : DEBUG(3,("Name registration ")); break;
-	  case NMB_REL   : DEBUG(3,("Name release ")); break;
-      default        : DEBUG(1,("wrong response packet type received")); break;
-  }
+    {
+    case NMB_STATUS: DEBUG(3,("Name status ")); break;
+    case NMB_QUERY : DEBUG(3,("Name query ")); break;
+    case NMB_REG   : DEBUG(3,("Name registration ")); break;
+    case NMB_REL   : DEBUG(3,("Name release ")); break;
+    default        : DEBUG(1,("wrong response packet type received")); break;
+    }
 }
 
 /****************************************************************************
@@ -497,8 +511,8 @@ void debug_state_type(int state)
 {
   /* report the state type to help debugging */
   switch (state)
-  {
-    case NAME_QUERY_DOM_SRV_CHK  : DEBUG(4,("MASTER_SVR_CHECK\n")); break;
+    {
+    case NAME_QUERY_DOM_SRV_CHK  : DEBUG(4,("NAME_QUERY_DOM_SRV_CHK\n")); break;
     case NAME_QUERY_SRV_CHK      : DEBUG(4,("NAME_QUERY_SRV_CHK\n")); break;
     case NAME_QUERY_FIND_MST     : DEBUG(4,("NAME_QUERY_FIND_MST\n")); break;
     case NAME_QUERY_MST_CHK      : DEBUG(4,("NAME_QUERY_MST_CHK\n")); break;
@@ -506,17 +520,17 @@ void debug_state_type(int state)
     case NAME_QUERY_SYNC_LOCAL   : DEBUG(4,("NAME_QUERY_SYNC_LOCAL\n")); break;
     case NAME_QUERY_SYNC_REMOTE  : DEBUG(4,("NAME_QUERY_SYNC_REMOTE\n")); break;
     case NAME_QUERY_ANNOUNCE_HOST: DEBUG(4,("NAME_QUERY_ANNCE_HOST\n"));break;
-
+      
     case NAME_REGISTER           : DEBUG(4,("NAME_REGISTER\n")); break;
     case NAME_REGISTER_CHALLENGE : DEBUG(4,("NAME_REGISTER_CHALLENGE\n"));break;
-
+      
     case NAME_RELEASE            : DEBUG(4,("NAME_RELEASE\n")); break;
-
-    case NAME_STATUS_DOM_SRV_CHK : DEBUG(4,("NAME_STAT_MST_CHK\n")); break;
+      
+    case NAME_STATUS_DOM_SRV_CHK : DEBUG(4,("NAME_STATUS_DOM_SRV_CHK\n")); break;
     case NAME_STATUS_SRV_CHK     : DEBUG(4,("NAME_STATUS_SRV_CHK\n")); break;
-
+      
     default: break;
-  }
+    }
 }
 
 /****************************************************************************
@@ -528,87 +542,95 @@ static BOOL response_problem_check(struct response_record *n,
 			struct nmb_packet *nmb, char *ans_name)
 {
   switch (nmb->answers->rr_type)
-  {
-    case NMB_REL:
     {
+    case NMB_REL:
+      {
         if (n->num_msgs > 1)
-        {
+	  {
             DEBUG(1,("more than one release name response received!\n"));
             return True;
-        }
+	  }
         break;
-    }
+      }
 
     case NMB_REG:
-    {
+      {
         if (n->num_msgs > 1)
-        {
+	  {
             DEBUG(1,("more than one register name response received!\n"));
             return True;
-        }
+	  }
         break;
-    }
-
+      }
+    
     case NMB_QUERY:
-    { 
-      if (n->num_msgs > 1)
-      {
-		  if (nmb->header.rcode == 0 && nmb->answers->rdata)
+      { 
+	if (n->num_msgs > 1)
+	  {
+	    if (nmb->header.rcode == 0 && nmb->answers->rdata)
+	      {
+		int nb_flags = nmb->answers->rdata[0];
+		
+		if ((!NAME_GROUP(nb_flags)))
 		  {
-			int nb_flags = nmb->answers->rdata[0];
-
-			if ((!NAME_GROUP(nb_flags)))
+		    /* oh dear. more than one person responded to a 
+		       unique name.
+		       there is either a network problem, a 
+		       configuration problem
+		       or a server is mis-behaving */
+		    
+		    /* XXXX mark the name as in conflict, and then let the
+		       person who just responded know that they 
+		       must also mark it
+		       as in conflict, and therefore must NOT use it.
+		       see rfc1001.txt 15.1.3.5 */
+		    
+		    /* this may cause problems for some 
+		       early versions of nmbd */
+		    
+		    switch (n->state)
+		      {
+		      case NAME_QUERY_FIND_MST:
 			{
-			   /* oh dear. more than one person responded to a unique name.
-				  there is either a network problem, a configuration problem
-				  or a server is mis-behaving */
-
-			   /* XXXX mark the name as in conflict, and then let the
-				  person who just responded know that they must also mark it
-				  as in conflict, and therefore must NOT use it.
-                  see rfc1001.txt 15.1.3.5 */
-					
-               /* this may cause problems for some early versions of nmbd */
-
-               switch (n->state)
-               {
-                case NAME_QUERY_FIND_MST:
-                {
-                  /* query for ^1^2__MSBROWSE__^2^1 expect lots of responses */
-                  return False;
-                }
-    			case NAME_QUERY_ANNOUNCE_HOST:
-    			case NAME_QUERY_DOM_SRV_CHK:
-                case NAME_QUERY_SRV_CHK:
-                case NAME_QUERY_MST_CHK:
-                {
-	              if (!strequal(ans_name,n->name.name))
-	              {
-		             /* one subnet, one master browser per workgroup */
-		             /* XXXX force an election? */
-
-		             DEBUG(3,("more than one master browser replied!\n"));
-			         return True;
-	      		  }
-                   break;
-                }
-                default: break;
-               }
-               DEBUG(3,("Unique Name conflict detected!\n"));
-			   return True;
+			  /* query for ^1^2__MSBROWSE__^2^1 expect 
+			     lots of responses */
+			  return False;
 			}
+		      case NAME_QUERY_ANNOUNCE_HOST:
+		      case NAME_QUERY_DOM_SRV_CHK:
+		      case NAME_QUERY_SRV_CHK:
+		      case NAME_QUERY_MST_CHK:
+			{
+			  if (!strequal(ans_name,n->name.name))
+			    {
+			      /* one subnet, one master browser 
+				 per workgroup */
+			      /* XXXX force an election? */
+			      
+			      DEBUG(3,("more than one master browser replied!\n"));
+			      return True;
+			    }
+			  break;
+			}
+		      default: break;
+		      }
+		    DEBUG(3,("Unique Name conflict detected!\n"));
+		    return True;
 		  }
-		  else
-		  {
-             /* we have received a negative reply, having already received
-                at least one response (pos/neg). something's really wrong! */
-
-	         DEBUG(3,("wierd name query problem detected!\n"));
-		     return True;
-		  }
-       }
+	      }
+	    else
+	      {
+		/* we have received a negative reply, 
+		   having already received
+		   at least one response (pos/neg). 
+		   something's really wrong! */
+		
+		DEBUG(3,("wierd name query problem detected!\n"));
+		return True;
+	      }
+	  }
+      }
     }
-  }
   return False;
 }
 
@@ -685,73 +707,73 @@ static BOOL response_compatible(struct response_record *n,
   process the response packet received
   ****************************************************************************/
 static void response_process(struct subnet_record *d, struct packet_struct *p,
-				struct response_record *n, struct nmb_packet *nmb,
-				BOOL bcast, struct nmb_name *ans_name)
+			     struct response_record *n, struct nmb_packet *nmb,
+			     BOOL bcast, struct nmb_name *ans_name)
 {
   switch (n->state)
-  {
-    case NAME_RELEASE:
     {
+    case NAME_RELEASE:
+      {
         response_name_release(ans_name, d, p);
         break;
-    }
+      }
 
     case NAME_REGISTER:
-    {
+      {
        	response_name_reg(ans_name, d, p);
         break;
-    }
+      }
 
     case NAME_REGISTER_CHALLENGE:
-    {
+      {
         response_name_query_register(nmb, ans_name, n, d);
         break;
-    }
+      }
 
     case NAME_QUERY_DOM_SRV_CHK:
     case NAME_QUERY_SRV_CHK:
     case NAME_QUERY_FIND_MST:
-    {
-		response_server_check(ans_name, n, d);
-		break;
-    }
-      
+      {
+	response_server_check(ans_name, n, d);
+	break;
+      }
+    
     case NAME_STATUS_DOM_SRV_CHK:
     case NAME_STATUS_SRV_CHK:
-    {
-		response_name_status_check(p->ip, nmb, bcast, n, d);
-		break;
-    }
-      
+      {
+	response_name_status_check(p->ip, nmb, bcast, n, d);
+	break;
+      }
+    
     case NAME_QUERY_ANNOUNCE_HOST:
-    {
-		response_announce_host(ans_name, nmb, n, d);
-		break;
-    }
+      {
+	response_announce_host(ans_name, nmb, n, d);
+	break;
+      }
       
     case NAME_QUERY_CONFIRM:
     case NAME_QUERY_SYNC_LOCAL:
     case NAME_QUERY_SYNC_REMOTE:
-    {
-		response_name_query_sync(nmb, ans_name, bcast, n, d);
-		break;
-    }
+      {
+	response_name_query_sync(nmb, ans_name, bcast, n, d);
+	break;
+      }
     case NAME_QUERY_MST_CHK:
-    {
-		/* no action required here. it's when NO responses are received
-		   that we need to do something. see expire_name_query_entries() */
+      {
+	/* no action required here. it's when NO responses are received
+	   that we need to do something. see expire_name_query_entries() */
 	
-		DEBUG(4, ("Master browser exists for %s at %s (just checking!)\n",
-					namestr(&n->name), inet_ntoa(n->send_ip)));
-		break;
-    }
-
+	DEBUG(4, ("Master browser exists for %s at %s (just checking!)\n",
+		  namestr(&n->name), inet_ntoa(n->send_ip)));
+	break;
+      }
+    
     default:
-    {
-		DEBUG(1,("unknown state type received in response_netbios_packet\n"));
-		break;
+      {
+	DEBUG(1,("unknown state type received in response_netbios_packet\n"));
+	break;
+      }
     }
-  }
 }
 
 
@@ -772,43 +794,41 @@ void response_netbios_packet(struct packet_struct *p)
   }
 
   if (!d)
-  {
-    DEBUG(2,("response packet: subnet %s not known\n", inet_ntoa(p->ip)));
-    return;
-  }
+    {
+      DEBUG(2,("response packet: subnet %s not known\n", inet_ntoa(p->ip)));
+      return;
+    }
 
   /* args wrong way round: spotted by ccm@shentel.net */
   if (!same_net(d->bcast_ip, p->ip, d->mask_ip)) /* copes with WINS 'subnet' */
-  {
-    DEBUG(2,("response from %s. ", inet_ntoa(p->ip)));
-    DEBUG(2,("expected on subnet %s. hmm.\n", inet_ntoa(d->bcast_ip)));
-  }
-
+    {
+      DEBUG(2,("response from %s. ", inet_ntoa(p->ip)));
+      DEBUG(2,("expected on subnet %s. hmm.\n", inet_ntoa(d->bcast_ip)));
+    }
+  
   if (nmb->answers == NULL)
-  {
+    {
       /* hm. the packet received was a response, but with no answer. wierd! */
       DEBUG(2,("NMB packet response from %s (bcast=%s) - UNKNOWN\n",
 	       inet_ntoa(p->ip), BOOLSTR(bcast)));
       return;
-  }
+    }
 
   ans_name = &nmb->answers->rr_name;
   DEBUG(3,("response for %s from %s (bcast=%s)\n",
 	   namestr(ans_name), inet_ntoa(p->ip), BOOLSTR(bcast)));
   
   debug_rr_type(nmb->answers->rr_type);
-
+  
   n->num_msgs++; /* count number of responses received */
   n->repeat_count = 0; /* don't resend: see expire_netbios_packets() */
-
+  
   debug_state_type(n->state);
-
+  
   /* problem checking: multiple responses etc */
   if (response_problem_check(n, nmb, ans_name->name))
     return;
-
+  
   /* now deal with the current state */
   response_process(d, p, n, nmb, bcast, ans_name);
 }
-
-

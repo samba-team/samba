@@ -36,7 +36,7 @@ extern int num_response_packets;
 
 BOOL CanRecurse = True;
 extern pstring scope;
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 static uint16 name_trn_id=0;
 
@@ -91,9 +91,9 @@ static void update_name_trn_id(void)
   initiate a netbios packet
   ****************************************************************************/
 void initiate_netbios_packet(uint16 *id,
-				int fd,int quest_type,char *name,int name_type,
-			    int nb_flags,BOOL bcast,BOOL recurse,
-			    struct in_addr to_ip)
+			     int fd,int quest_type,char *name,int name_type,
+			     int nb_flags,BOOL bcast,BOOL recurse,
+			     struct in_addr to_ip)
 {
   struct packet_struct p;
   struct nmb_packet *nmb = &p.packet.nmb;
@@ -323,8 +323,10 @@ static BOOL listening(struct packet_struct *p,struct nmb_name *n)
   struct subnet_record *d;
   struct name_record *n1;
 
+  /* We explicitly don't search WINS here - this will be done
+     in find_name_search is it was a packet from a non-local subnet. */
   d = find_subnet(p->ip);
-  
+
   n1 = find_name_search(&d,n,FIND_LOCAL|FIND_WINS|FIND_SELF,p->ip);
 
   return (n1 != NULL);
@@ -565,7 +567,6 @@ BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,char *buf,int len,ch
 {
   struct packet_struct p;
   struct dgram_packet *dgram = &p.packet.dgram;
-  struct in_addr wins_ip = ipgrp;
   char *ptr,*p2;
   char tmp[4];
 
