@@ -384,6 +384,10 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	if (!interactive) {
 		if (argc < 2) usage(True);
+		/*
+		 * We want to return !do_command so we get the 
+		 * right shell semantics (0 = success, 1 = fail)
+		 */
 		return (!do_command(argv[0],argv[1], argc-2, argc > 2 ? &argv[2] : 0));
 	}
 
