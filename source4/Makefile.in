@@ -20,6 +20,7 @@ EXEEXT=@EXEEXT@
 LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
+PERL=@PERL@
 DYNEXP=@DYNEXP@
 PYTHON=@PYTHON@
 
@@ -1101,7 +1102,7 @@ delheaders:
 
 include/proto.h:
 	@echo Building include/proto.h
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _PROTO_H_ $(builddir)/include/proto.h \
 	  $(PROTO_OBJ)
 
@@ -1111,37 +1112,37 @@ include/build_env.h:
 
 include/wrepld_proto.h:
 	@echo Building include/wrepld_proto.h
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
 	  $(WREPL_OBJ1)
 
 nsswitch/winbindd_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
 ntvfs/tank/vfs_tank_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _VFS_TANK_PROTO_H_ ntvfs/tank/vfs_tank_proto.h \
 	  $(STFS_OBJS)
 
 web/swat_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _SWAT_PROTO_H_ web/swat_proto.h \
 	  $(SWAT_OBJ1)
 
 client/client_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _CLIENT_PROTO_H_ client/client_proto.h \
 	  $(CLIENT_OBJ1)
 
 utils/net_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _CLIENT_PROTO_H_ utils/net_proto.h \
 	  $(NET_OBJ1)
 
 include/tdbsam2_parse_info.h:
-	@cd $(srcdir) && @PERL@ -w script/genstruct.pl \
+	@cd $(srcdir) && $(PERL) -w script/genstruct.pl \
 	-o include/tdbsam2_parse_info.h $(CC) -E -g \
 	include/tdbsam2.h
 
@@ -1186,8 +1187,8 @@ distclean: realclean
 # range of machines and is used to produce a list of potentially
 # dead (ie. unused) functions in the code. (tridge)
 finddead:
-	nm */*.o |grep 'U ' | awk '{print $$2}' | sort -u > nmused.txt
-	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
+	nm */*.o |grep 'U ' | $(AWK) '{print $$2}' | sort -u > nmused.txt
+	nm */*.o |grep 'T ' | $(AWK) '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
 
 
