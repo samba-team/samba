@@ -1,3 +1,16 @@
+2004-09-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rshd.c: rename loop to rshd_loop
+	
+	* rshd.c: pass errsock status to init_ivecs
+	
+	* rsh.c: rename loop() to rsh_loop()
+	
+	* rsh.c (loop): pass errsock status to init_ivecs
+	
+	* common.c (init_ivecs): if we don't have an errsock the ivecs
+	should point to the same data
+	
 2003-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.1: document -d
