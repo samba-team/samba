@@ -1,3 +1,12 @@
+Mon Feb 15 22:22:09 1999  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (pfrom): use libexecdir
+
+	* Makefile.am: build and install pfrom
+
+	* push.c (do_connect): init `s'
+	(pop_state): spell-check enums
+
 Tue Nov 24 23:20:54 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: build and install pfrom
