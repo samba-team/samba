@@ -1,3 +1,11 @@
+2004-07-02  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* load.c: make merge/load work again
+	
+	* del.c: fix usage string
+	
+	* ank.c: fix slc lossage
+	
 2004-06-28  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmin.c: use kadm5_ad_init_with_password_ctx
