@@ -334,11 +334,13 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	StrnCpy(smb_apasswd,p + passlen1,smb_apasslen);
       }
     }
+#if NT_WORKAROUND
     if (passlen2 == 1) {
       /* apparently NT sometimes sets passlen2 to 1 when it means 0. This
 	 tries to work around that problem */
       passlen2 = 0;
     }
+#endif
     p += passlen1 + passlen2;
     strcpy(user,p); p = skip_string(p,1);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
