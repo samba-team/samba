@@ -591,9 +591,11 @@ static BOOL is_owner(struct current_user *user, int jobid)
 	if (!pjob || !user) return False;
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		return strequal(pjob->user, vuser->user.smb_name);
+		return strequal(pjob->user, 
+				unix_to_dos(vuser->user.smb_name,False));
 	} else {
-		return strequal(pjob->user, uidtoname(user->uid));
+		return strequal(pjob->user, 
+				unix_to_dos(uidtoname(user->uid),False));
 	}
 }
 
