@@ -344,10 +344,10 @@ main(int argc, char **argv)
 
 
 	/*	(void) freopen(_PATH_DEVNULL, "w", stderr); */
-	(void) signal(SIGPIPE, lostconn);
-	(void) signal(SIGCHLD, SIG_IGN);
-	if ((long)signal(SIGURG, myoob) < 0)
-		syslog(LOG_ERR, "signal: %m");
+	signal(SIGPIPE, lostconn);
+	signal(SIGCHLD, SIG_IGN);
+	if ((int)signal(SIGURG, myoob) < 0)
+	    syslog(LOG_ERR, "signal: %m");
 
 	auth_init();
 
@@ -773,18 +773,54 @@ set_buffer_size(int fd, int read)
 void
 retrieve(char *cmd, char *name)
 {
-	FILE *fin, *dout;
+	FILE *fin = NULL, *dout;
 	struct stat st;
 	int (*closefunc) (FILE *);
+	char line[BUFSIZ];
+
 
 	if (cmd == 0) {
-		fin = fopen(name, "r"), closefunc = fclose;
+		fin = fopen(name, "r");
+		closefunc = fclose;
 		st.st_size = 0;
+		if(fin == NULL){
+		    struct cmds {
+			char *ext;
+			char *cmd;
+		    } cmds[] = {
+			/* XXX -- fix below if %s is not last element */
+			".tar", "/bin/gtar cPf - %s",
+			".tar.gz", "/bin/gtar zcPf - %s",
+			".tar.Z", "/bin/gtar ZcPf - %s",
+			".gz", "/bin/gzip -c %s",
+			".Z", "/bin/compress -c %s",
+			NULL, NULL
+		    };
+		    struct cmds *p;
+		    for(p = cmds; p->ext; p++){
+			char *tail = name + strlen(name) - strlen(p->ext);
+			
+			if(strcmp(tail, p->ext) == 0){
+			    sprintf(line, p->cmd, name);
+			    /* XXX */
+			    line[tail - name] = 0; 
+			    break;
+			}
+		    }
+		    if(p->ext){
+			fin = ftpd_popen(line, "r", 0);
+			closefunc = ftpd_pclose;
+			st.st_size = -1;
+#ifdef HAVE_ST_BLKSIZE
+			st.st_blksize = BUFSIZ;
+			cmd = line;
+#endif
+		    }
+		}
 	} else {
-		char line[BUFSIZ];
-
-		(void) sprintf(line, cmd, name), name = line;
-		fin = ftpd_popen(line, "r"), closefunc = ftpd_pclose;
+		sprintf(line, cmd, name), name = line;
+		fin = ftpd_popen(line, "r", 1);
+		closefunc = ftpd_pclose;
 		st.st_size = -1;
 #ifdef HAVE_ST_BLKSIZE
 		st.st_blksize = BUFSIZ;
@@ -1260,7 +1296,7 @@ statfilecmd(char *filename)
 	char line[LINE_MAX];
 
 	sprintf(line, "/bin/ls -lA %s", filename);
-	fin = ftpd_popen(line, "r");
+	fin = ftpd_popen(line, "r", 1);
 	lreply(211, "status of %s:", filename);
 	while ((c = getc(fin)) != EOF) {
 		if (c == '\n') {
