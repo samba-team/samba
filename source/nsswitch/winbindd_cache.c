@@ -119,6 +119,12 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	char *ret;
 
 	len = centry_uint32(centry);
+
+	if (len == 0xFFFF) {
+		/* a deliberate NULL string */
+		return NULL;
+	}
+
 	if (centry->len - centry->ofs < len) {
 		DEBUG(0,("centry corruption? needed %d bytes, have %d\n", 
 			 len, centry->len - centry->ofs));
@@ -267,7 +273,15 @@ static void centry_put_uint32(struct cache_entry *centry, uint32 v)
  */
 static void centry_put_string(struct cache_entry *centry, const char *s)
 {
-	int len = strlen(s);
+	int len;
+
+	if (!s) {
+		/* null strings are marked as len 0xFFFF */
+		centry_put_uint32(centry, 0xFFFF);
+		return;
+	}
+
+	len = strlen(s);
 	centry_put_uint32(centry, len);
 	centry_expand(centry, len);
 	memcpy(centry->data + centry->ofs, s, len);
