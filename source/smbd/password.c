@@ -404,33 +404,33 @@ static int PAM_conv (int num_msg,
                      const struct pam_message **msg,
                      struct pam_response **resp,
                      void *appdata_ptr) {
-  int count = 0, replies = 0;
+  int replies = 0;
   struct pam_response *reply = NULL;
-  int size = sizeof(struct pam_response);
 
-  #define GET_MEM if (reply) realloc(reply, size); else reply = malloc(size); \
-  if (!reply) return PAM_CONV_ERR; \
-  size += sizeof(struct pam_response)
   #define COPY_STRING(s) (s) ? strdup(s) : NULL
 
-  for (count = 0; count < num_msg; count++) {
-    switch (msg[count]->msg_style) {
+  reply = malloc(sizeof(struct pam_response) * num_msg);
+  if (!reply) return PAM_CONV_ERR;
+
+  for (replies = 0; replies < num_msg; replies++) {
+    switch (msg[replies]->msg_style) {
       case PAM_PROMPT_ECHO_ON:
-        GET_MEM;
         reply[replies].resp_retcode = PAM_SUCCESS;
-        reply[replies++].resp = COPY_STRING(PAM_username);
+        reply[replies].resp = COPY_STRING(PAM_username);
           /* PAM frees resp */
         break;
       case PAM_PROMPT_ECHO_OFF:
-        GET_MEM;
         reply[replies].resp_retcode = PAM_SUCCESS;
-        reply[replies++].resp = COPY_STRING(PAM_password);
+        reply[replies].resp = COPY_STRING(PAM_password);
           /* PAM frees resp */
         break;
       case PAM_TEXT_INFO:
-        /* ignore it... */
-        break;
+	/* fall through */
       case PAM_ERROR_MSG:
+        /* ignore it... */
+        reply[replies].resp_retcode = PAM_SUCCESS;
+        reply[replies].resp = NULL;
+        break;
       default:
         /* Must be an error of some sort... */
         free (reply);
