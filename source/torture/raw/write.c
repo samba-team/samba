@@ -22,22 +22,22 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) Incorrect value %s=%d - should be %d\n", \
-		       __LINE__, #v, v, correct); \
+		printf("(%s) Incorrect value %s=%d - should be %d\n", \
+		       __location__, #v, v, correct); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_BUFFER(buf, seed, len) do { \
-	if (!check_buffer(buf, seed, len, __LINE__)) { \
+	if (!check_buffer(buf, seed, len, __location__)) { \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -48,8 +48,8 @@
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	if ((v) != finfo.all_info.out.field) { \
-		printf("(%d) wrong value for field %s  %.0f - %.0f\n", \
-		       __LINE__, #field, (double)v, (double)finfo.all_info.out.field); \
+		printf("(%s) wrong value for field %s  %.0f - %.0f\n", \
+		       __location__, #field, (double)v, (double)finfo.all_info.out.field); \
 		dump_all_info(mem_ctx, &finfo); \
 		ret = False; \
 	}} while (0)
@@ -83,15 +83,15 @@ static void setup_buffer(char *buf, uint_t seed, int len)
 /*
   check a random buffer based on a seed
 */
-static BOOL check_buffer(char *buf, uint_t seed, int len, int line)
+static BOOL check_buffer(char *buf, uint_t seed, int len, const char *location)
 {
 	int i;
 	srandom(seed);
 	for (i=0;i<len;i++) {
 		char v = random();
 		if (buf[i] != v) {
-			printf("Buffer incorrect at line %d! ofs=%d buf=0x%x correct=0x%x\n", 
-			       line, i, buf[i], v);
+			printf("Buffer incorrect at %s! ofs=%d buf=0x%x correct=0x%x\n", 
+			       location, i, buf[i], v);
 			return False;
 		}
 	}
@@ -151,7 +151,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -170,7 +170,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -201,7 +201,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -269,7 +269,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -288,7 +288,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -321,7 +321,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Trying locked region\n");
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 3, 1, 0, WRITE_LOCK))) {
-		printf("Failed to lock file at %d\n", __LINE__);
+		printf("Failed to lock file at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -349,7 +349,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -363,19 +363,23 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.writex.in.offset = ((uint64_t)1) << i;
 		io.writex.in.data = buf;
 		status = smb_raw_write(cli->tree, &io);
+		if (i>40 &&
+		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			break;
+		}
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_VALUE(io.writex.out.nwritten, 4000);
 		CHECK_ALL_INFO(io.writex.in.count + (uint64_t)io.writex.in.offset, size);
 
 		memset(buf, 0, maxsize);
 		if (smbcli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
-			printf("read failed at %d\n", __LINE__);
+			printf("read failed at %s\n", __location__);
 			ret = False;
 			goto done;
 		}
 		CHECK_BUFFER(buf, seed+1, 4000);
 	}
-
+	printf("limit is 2^%d\n", i);
 
 	setup_buffer(buf, seed, maxsize);
 
@@ -437,7 +441,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -453,7 +457,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -477,7 +481,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -510,7 +514,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writeunlock.in.offset, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -585,7 +589,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.writeclose.in.fnum = fnum;
 
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -602,7 +606,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -627,7 +631,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -661,7 +665,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writeclose.in.offset, 4000) != 4000) {
-		printf("read failed at %d\n", __LINE__);
+		printf("read failed at %s\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -773,8 +777,10 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	const char *fname = BASEDIR "\\torture_file.txt";
 	NTSTATUS status;
 	int fnum1 = -1;
+	int fnum2;
 	BOOL ret = True;
 	ssize_t written;
+	struct smbcli_state *cli2=NULL;
 
 	printf("Testing finfo update on close\n");
 
@@ -804,77 +810,83 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
 	if (written != 1) {
+		printf("(%s) written gave %d - should have been 1\n", 
+		       __location__, written);
 		ret = False;
 		goto done;
 	}
 
-	{
-		struct smbcli_state *cli2;
-		int fnum2;
-
-		if (!torture_open_connection(&cli2)) {
-			return False;
-		}
-
-		fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
-		if (fnum2 == -1) {
-			ret = False;
-			goto done;
-		}
-
-		written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
-
-		if (written != 1) {
-			ret = False;
-			goto done;
-		}
-
-		finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-		finfo2.basic_info.in.fname = fname;
-
-		status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = False;
-			goto done;
-		}
-
-		if (finfo1.basic_info.out.create_time !=
-		    finfo2.basic_info.out.create_time) {
-			ret = False;
-			goto done;
-		}
-		
-		if (finfo1.basic_info.out.access_time !=
-		    finfo2.basic_info.out.access_time) {
-			ret = False;
-			goto done;
-		}
-		
-		if (finfo1.basic_info.out.write_time !=
-		    finfo2.basic_info.out.write_time) {
-			ret = False;
-			goto done;
-		}
-		
-		if (finfo1.basic_info.out.change_time !=
-		    finfo2.basic_info.out.change_time) {
-			ret = False;
-			goto done;
-		}
-
-		/* One of the two following calls updates the qpathinfo. */
-
-		/* If you had skipped the smbcli_write on fnum2, it would
-		 * *not* have updated the stat on disk */
-
-		smbcli_close(cli2->tree, fnum2);
-		torture_close_connection(cli2);
+	if (!torture_open_connection(&cli2)) {
+		return False;
 	}
 
-	/* This call is only for the people looking at ethereal :-) */
+	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("(%s) failed to open 2nd time - %s\n", 
+		       __location__, smbcli_errstr(cli2->tree));
+		ret = False;
+		goto done;
+	}
+	
+	written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
+	
+	if (written != 1) {
+		printf("(%s) written gave %d - should have been 1\n", 
+		       __location__, written);
+		ret = False;
+		goto done;
+	}
+	
+	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo2.basic_info.in.fname = fname;
+	
+	status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("(%s) fileinfo failed: %s\n", 
+			  __location__, nt_errstr(status)));
+		ret = False;
+		goto done;
+	}
+	
+	if (finfo1.basic_info.out.create_time !=
+	    finfo2.basic_info.out.create_time) {
+		printf("(%s) create_time changed\n", __location__);
+		ret = False;
+		goto done;
+	}
+	
+	if (finfo1.basic_info.out.access_time !=
+	    finfo2.basic_info.out.access_time) {
+		printf("(%s) access_time changed\n", __location__);
+		ret = False;
+		goto done;
+	}
+	
+	if (finfo1.basic_info.out.write_time !=
+	    finfo2.basic_info.out.write_time) {
+		printf("(%s) write_time changed\n", __location__);
+		ret = False;
+		goto done;
+	}
+	
+	if (finfo1.basic_info.out.change_time !=
+	    finfo2.basic_info.out.change_time) {
+		printf("(%s) change_time changed\n", __location__);
+		ret = False;
+		goto done;
+	}
+	
+	/* One of the two following calls updates the qpathinfo. */
+	
+	/* If you had skipped the smbcli_write on fnum2, it would
+	 * *not* have updated the stat on disk */
+	
+	smbcli_close(cli2->tree, fnum2);
+	torture_close_connection(cli2);
+	cli2 = NULL;
 
+	/* This call is only for the people looking at ethereal :-) */
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo2.basic_info.in.fname = fname;
 
@@ -891,6 +903,9 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 		smbcli_close(cli->tree, fnum1);
 	smbcli_unlink(cli->tree, fname);
 	smbcli_deltree(cli->tree, BASEDIR);
+	if (cli2 != NULL) {
+		torture_close_connection(cli2);
+	}
 
 	return ret;
 }
@@ -910,29 +925,12 @@ BOOL torture_raw_write(int dummy)
 
 	mem_ctx = talloc_init("torture_raw_write");
 
-	if (!test_finfo_after_write(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_delayed_write_update(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_write(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_writeunlock(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_writeclose(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_writex(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_finfo_after_write(cli, mem_ctx);
+	ret &= test_delayed_write_update(cli, mem_ctx);
+	ret &= test_write(cli, mem_ctx);
+	ret &= test_writeunlock(cli, mem_ctx);
+	ret &= test_writeclose(cli, mem_ctx);
+	ret &= test_writex(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
