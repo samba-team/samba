@@ -25,15 +25,317 @@
 #include "winbind_nss_config.h"
 #include "winbindd_nss.h"
 
-/* Prototypes from common.c */
+#ifdef HAVE_NS_API_H
+#undef VOLATILE
+
+#include <ns_daemon.h>
+#endif
+
+#define MAX_GETPWENT_USERS 250
+
+/* Prototypes from wb_common.c */
+
+extern int winbindd_fd;
 
 void init_request(struct winbindd_request *req,int rq_type);
+NSS_STATUS winbindd_send_request(int req_type,
+				 struct winbindd_request *request);
+NSS_STATUS winbindd_get_response(struct winbindd_response *response);
 NSS_STATUS winbindd_request(int req_type, 
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
+int winbind_open_pipe_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
+
+#ifdef HAVE_NS_API_H
+/* IRIX version */
+
+static int send_next_request(nsd_file_t *, struct winbindd_request *);
+
+static nsd_file_t *current_rq = NULL;
+static int current_winbind_xid = 0;
+static int next_winbind_xid = 0;
+
+typedef struct winbind_xid {
+	int			xid;
+	nsd_file_t		*rq;
+	struct winbindd_request *request;
+	struct winbind_xid	*next;
+} winbind_xid_t;
+
+static winbind_xid_t *winbind_xids = (winbind_xid_t *)0;
+
+static int
+winbind_xid_new(int xid, nsd_file_t *rq, struct winbindd_request *request)
+{
+	winbind_xid_t *new;
+
+	nsd_logprintf(NSD_LOG_LOW,
+		"entering winbind_xid_new xid = %d rq = 0x%x, request = 0x%x\n",
+		xid, rq, request);
+	new = (winbind_xid_t *)nsd_calloc(1,sizeof(winbind_xid_t));
+	if (!new) {
+		nsd_logprintf(NSD_LOG_RESOURCE,"winbind_xid_new: failed malloc\n");
+		return NSD_ERROR;
+	}
+
+	new->xid = xid;
+	new->rq = rq;
+	new->request = request;
+	new->next = winbind_xids;
+	winbind_xids = new;
+
+	return NSD_CONTINUE;
+}
+
+/*
+** This routine will look down the xid list and return the request
+** associated with an xid.  We remove the record if it is found.
+*/
+nsd_file_t *
+winbind_xid_lookup(int xid, struct winbindd_request **requestp)
+{
+        winbind_xid_t **last, *dx;
+        nsd_file_t *result=0;
+
+        for (last = &winbind_xids, dx = winbind_xids; dx && (dx->xid != xid);
+            last = &dx->next, dx = dx->next);
+        if (dx) {
+                *last = dx->next;
+                result = dx->rq;
+		*requestp = dx->request;
+                free(dx);
+        }
+	nsd_logprintf(NSD_LOG_LOW,
+		"entering winbind_xid_lookup xid = %d rq = 0x%x, request = 0x%x\n",
+		xid, result, dx->request);
+
+        return result;
+}
+
+int init(void)
+{
+	nsd_logprintf(NSD_LOG_MIN, "entering init (winbind)\n");
+	return(NSD_OK);
+}
+
+static int
+winbind_startnext_timeout(nsd_file_t **rqp, nsd_times_t *to)
+{
+	nsd_file_t *rq;
+	struct winbindd_request *request;
+
+	nsd_logprintf(NSD_LOG_MIN, "timeout (winbind startnext)\n");
+	rq = to->t_file;
+	*rqp = rq;
+	nsd_timeout_remove(rq);
+	request = to->t_clientdata;
+	return(send_next_request(rq, request));
+}
+
+static void
+dequeue_request()
+{
+	nsd_file_t *rq;
+	struct winbindd_request *request;
+
+	/*
+	 * Check for queued requests
+	 */
+	if (winbind_xids) {
+	    nsd_logprintf(NSD_LOG_MIN, "timeout (winbind) unqueue xid %d\n",
+			current_winbind_xid);
+	    rq = winbind_xid_lookup(current_winbind_xid++, &request);
+	    /* cause a timeout on the queued request so we can send it */
+	    nsd_timeout_new(rq,1,winbind_startnext_timeout,request);
+	}
+}
+
+static int 
+winbind_callback(nsd_file_t **rqp, int fd)
+{
+	struct winbindd_response response;
+	struct winbindd_pw *pw = &response.data.pw;
+	struct winbindd_gr *gr = &response.data.gr;
+	nsd_file_t *rq;
+	NSS_STATUS status;
+	char result[1024];
+	char *members;
+
+	dequeue_request();
+
+	nsd_logprintf(NSD_LOG_MIN, "entering callback (winbind)\n");
+
+	rq = current_rq;
+	*rqp = rq;
+
+	nsd_timeout_remove(rq);
+	nsd_callback_remove(fd);
+
+	ZERO_STRUCT(response);
+	status = winbindd_get_response(&response);
+
+	if (status != NSS_STATUS_SUCCESS) {
+		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) returning not found\n");
+		rq->f_status = NS_NOTFOUND;
+		return NSD_NEXT;
+	}
+	switch ((int)rq->f_cmd_data) {
+	    case WINBINDD_GETPWNAM_FROM_UID:
+	    case WINBINDD_GETPWNAM_FROM_USER:
+		snprintf(result,1023,"%s:%s:%d:%d:%s:%s:%s\n",
+			pw->pw_name,
+			pw->pw_passwd,
+			pw->pw_uid,
+			pw->pw_gid,
+			pw->pw_gecos,
+			pw->pw_dir,
+			pw->pw_shell);
+		nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
+		return NSD_OK;
+	    case WINBINDD_GETGRNAM_FROM_GROUP:
+	    case WINBINDD_GETGRNAM_FROM_GID:
+		if (gr->num_gr_mem && response.extra_data)
+			members = response.extra_data;
+		else
+			members = "";
+		snprintf(result,1023,"%s:%s:%d:%s\n",
+			gr->gr_name, gr->gr_passwd, gr->gr_gid, members);
+		nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
+		return NSD_OK;
+	}
+	nsd_logprintf(NSD_LOG_MIN, "exit callback (winbind) - no valid command\n");
+	return NSD_NEXT;
+}
+
+static int 
+winbind_timeout(nsd_file_t **rqp, nsd_times_t *to)
+{
+	nsd_file_t *rq;
+
+	dequeue_request();
+
+	nsd_logprintf(NSD_LOG_MIN, "timeout (winbind)\n");
+
+	rq = to->t_file;
+	*rqp = rq;
+
+	/* Remove the callback and timeout */
+	nsd_callback_remove(winbindd_fd);
+	nsd_timeout_remove(rq);
+
+	rq->f_status = NS_NOTFOUND;
+	return NSD_NEXT;
+}
+
+static int
+send_next_request(nsd_file_t *rq, struct winbindd_request *request)
+{
+	NSS_STATUS status;
+	long timeout;
+
+	timeout = 1000;
+
+	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) %d to = %d\n",
+			rq->f_cmd_data, timeout);
+	status = winbindd_send_request((int)rq->f_cmd_data,request);
+	free(request);
+
+	if (status != NSS_STATUS_SUCCESS) {
+		nsd_logprintf(NSD_LOG_MIN, 
+			"send_next_request (winbind) error status = %d\n",status);
+		rq->f_status = status;
+		return NSD_NEXT;
+	}
+
+	current_rq = rq;
+
+	/*
+	 * Set up callback and timeouts
+	 */
+	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) fd = %d\n",winbindd_fd);
+	nsd_callback_new(winbindd_fd,winbind_callback,NSD_READ);
+	nsd_timeout_new(rq,timeout,winbind_timeout,(void *)0);
+	return NSD_CONTINUE;
+}
+
+int lookup(nsd_file_t *rq)
+{
+	char *map;
+	char *key;
+	struct winbindd_request *request;
+
+	nsd_logprintf(NSD_LOG_MIN, "entering lookup (winbind)\n");
+	if (! rq)
+		return NSD_ERROR;
+
+	map = nsd_attr_fetch_string(rq->f_attrs, "table", (char*)0);
+	key = nsd_attr_fetch_string(rq->f_attrs, "key", (char*)0);
+	if (! map || ! key) {
+		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) table or key not defined\n");
+		rq->f_status = NS_BADREQ;
+		return NSD_ERROR;
+	}
+
+	request = (struct winbindd_request *)nsd_calloc(1,sizeof(struct winbindd_request));
+	if (! request) {
+		nsd_logprintf(NSD_LOG_RESOURCE,
+			"lookup (winbind): failed malloc\n");
+		return NSD_ERROR;
+	}
+
+	if (strcasecmp(map,"passwd.byuid") == 0) {
+	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
+	    request->data.uid = atoi(key);
+	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM_FROM_UID;
+	} else if (strcasecmp(map,"passwd.byname") == 0) {
+	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
+	    strncpy(request->data.username, key, 
+		sizeof(request->data.username) - 1);
+	    request->data.username[sizeof(request->data.username) - 1] = '\0';
+	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM_FROM_USER; 
+	} else if (strcasecmp(map,"group.byname") == 0) {
+	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
+	    strncpy(request->data.groupname, key, 
+		sizeof(request->data.groupname) - 1);
+	    request->data.groupname[sizeof(request->data.groupname) - 1] = '\0';
+	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GROUP; 
+	} else if (strcasecmp(map,"group.bygid") == 0) {
+	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
+	    request->data.gid = atoi(key);
+	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GID;
+	} else {
+		/*
+		 * Don't understand this map - just return not found
+		 */
+		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) unknown table %s\n",map);
+		free(request);
+		rq->f_status = NS_NOTFOUND;
+		return NSD_NEXT;
+	}
+
+	if (winbind_xids == NULL) {
+		/*
+		 * No outstanding requests.
+		 * Send off the request to winbindd
+		 */
+		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) sending request\n");
+		return(send_next_request(rq, request));
+	} else {
+		/*
+		 * Just queue it up for now - previous callout or timout
+		 * will start it up
+		 */
+		nsd_logprintf(NSD_LOG_MIN,
+			"lookup (winbind): queue request xid = %d\n",
+			next_winbind_xid);
+		return(winbind_xid_new(next_winbind_xid++, rq, request));
+	}
+}
+
+#else
 
 /* Allocate some space from the nss static buffer.  The buffer and buflen
    are the pointers passed in by the C library to the _nss_ntdom_*
@@ -49,16 +351,6 @@ static char *get_static(char **buffer, int *buflen, int len)
 	if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
 		return NULL;
 	}
-
-	/* Some architectures, like Sparc, need pointers aligned on 
-	   boundaries */
-#if _ALIGNMENT_REQUIRED
-	{
-		int mod = len % _MAX_ALIGNMENT;
-		if(mod != 0)
-			len += _MAX_ALIGNMENT - mod;
-	}
-#endif
 
 	/* Return an index into the static buffer */
 
@@ -194,6 +486,7 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 {
 	fstring name;
 	int i;
+	char *tst;
 
 	/* Group name */
 
@@ -229,14 +522,20 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 		gr->num_gr_mem = 0;
 	}
 
-	if ((result->gr_mem = 
-	     (char **)get_static(buffer, buflen, (gr->num_gr_mem + 1) * 
-				 sizeof(char *))) == NULL) {
+	/* this next value is a pointer to a pointer so let's align it */
+
+	/* Calculate number of extra bytes needed to align on pointer size boundry */
+	if (i = (int)*buffer % sizeof(char*))
+		i = sizeof(char*) - i;
+	
+	if ((tst = get_static(buffer, buflen, ((gr->num_gr_mem + 1) * 
+				 sizeof(char *)+i))) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
+	result->gr_mem = (char **)(tst + i);
 
 	if (gr->num_gr_mem == 0) {
 
@@ -317,8 +616,6 @@ _nss_winbind_endpwent(void)
 }
 
 /* Fetch the next password entry from ntdom password database */
-
-#define MAX_GETPWENT_USERS 250
 
 NSS_STATUS
 _nss_winbind_getpwent_r(struct passwd *result, char *buffer, 
@@ -844,3 +1141,5 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
  done:
 	return ret;
 }
+
+#endif
