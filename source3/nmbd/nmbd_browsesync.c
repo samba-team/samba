@@ -460,7 +460,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 						return;
 
 					/* remember who the master is */
-					fstrcpy(work->local_master_browser_name, server_name);
+					nstrcpy(work->local_master_browser_name, server_name);
 					make_nmb_name(&nmbname, server_name, 0x20);
 					work->dmb_name = nmbname;
 					work->dmb_addr = from_ip;
@@ -639,14 +639,14 @@ void sync_all_dmbs(time_t t)
      
 	/* count how many syncs we might need to do */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(lp_workgroup(), work->work_group)) {
+		if (strncmp(lp_workgroup(), work->work_group, sizeof(nstring))) {
 			count++;
 		}
 	}
 
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(lp_workgroup(), work->work_group)) {
+		if (strncmp(lp_workgroup(), work->work_group, sizeof(nstring))) {
 			nstring dmb_name;
 
 			if (((unsigned)sys_random()) % count != 0)
