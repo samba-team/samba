@@ -198,6 +198,7 @@ static int fill_grent(struct group *result,
                       char **buffer, int *buflen, int *errnop)
 {
     struct winbindd_gr *gr = &response->data.gr;
+    char *tmp_data;
     fstring name;
     int i;
 
@@ -259,7 +260,9 @@ static int fill_grent(struct group *result,
 
     i = 0;
 
-    while(next_token((char **)&response->extra_data, name, ",", 
+    tmp_data = response->extra_data;
+
+    while(next_token((char **)&tmp_data, name, ",", 
 		     sizeof(fstring))) {
         
         /* Allocate space for member */
@@ -313,10 +316,15 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 	enum nss_status ret;
 	struct winbindd_response response;
 
-	ret = generic_request(WINBINDD_GETPWENT, NULL, &response);
-	if (ret != NSS_STATUS_SUCCESS) return ret;
+	ZERO_STRUCT(response);
 
-	return fill_pwent(result, &response, &buffer, &buflen, errnop);
+	ret = generic_request(WINBINDD_GETPWENT, NULL, &response);
+	if (ret == NSS_STATUS_SUCCESS) {
+		ret = fill_pwent(result, &response, &buffer, &buflen, errnop);
+	}
+
+	free_response(&response);
+	return ret;
 }
 
 /* Return passwd struct from uid */
@@ -328,13 +336,19 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 	enum nss_status ret;
 	struct winbindd_response response;
 	struct winbindd_request request;
+	
+	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
 
 	request.data.uid = uid;
 
 	ret = generic_request(WINBINDD_GETPWNAM_FROM_UID, &request, &response);
-	if (ret != NSS_STATUS_SUCCESS) return ret;
+	if (ret == NSS_STATUS_SUCCESS) {
+		ret = fill_pwent(result, &response, &buffer, &buflen, errnop);
+	}
 
-	return fill_pwent(result, &response, &buffer, &buflen, errnop);
+	free_response(&response);
+	return ret;
 }
 
 /* Return passwd struct from username */
@@ -347,15 +361,21 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 	struct winbindd_response response;
 	struct winbindd_request request;
 
+	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+
 	strncpy(request.data.username, name, 
 		sizeof(request.data.username) - 1);
 	request.data.username[sizeof(request.data.username) - 1] = '\0';
 
 	ret = generic_request(WINBINDD_GETPWNAM_FROM_USER, &request, 
 			      &response);
-	if (ret != NSS_STATUS_SUCCESS) return ret;
+	if (ret == NSS_STATUS_SUCCESS) {
+		ret = fill_pwent(result, &response, &buffer, &buflen, errnop);
+	}
 
-	return fill_pwent(result, &response, &buffer, &buflen, errnop);
+	free_response(&response);
+	return ret;
 }
 
 /*
@@ -387,10 +407,15 @@ _nss_winbind_getgrent_r(struct group *result,
 	enum nss_status ret;
 	struct winbindd_response response;
 
-	ret = generic_request(WINBINDD_GETGRENT, NULL, &response);
-	if (ret != NSS_STATUS_SUCCESS) return ret;
+	ZERO_STRUCT(response);
 
-	return fill_grent(result, &response, &buffer, &buflen, errnop);
+	ret = generic_request(WINBINDD_GETGRENT, NULL, &response);
+	if (ret == NSS_STATUS_SUCCESS) {
+		ret = fill_grent(result, &response, &buffer, &buflen, errnop);
+	}
+
+	free_response(&response);
+	return ret;
 }
 
 /* Return group struct from group name */
@@ -404,15 +429,21 @@ _nss_winbind_getgrnam_r(const char *name,
 	struct winbindd_response response;
 	struct winbindd_request request;
 
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
 	strncpy(request.data.groupname, name, sizeof(request.data.groupname));
 	request.data.groupname[sizeof(request.data.groupname) - 1] = '\0';
 
 	ret = generic_request(WINBINDD_GETGRNAM_FROM_GROUP, &request, 
 			      &response);
 
-	if (ret != NSS_STATUS_SUCCESS) return ret;
+	if (ret == NSS_STATUS_SUCCESS) {
+		ret = fill_grent(result, &response, &buffer, &buflen, errnop);
+	}
 
-	return fill_grent(result, &response, &buffer, &buflen, errnop);
+	free_response(&response);
+	return ret;
 }
 
 /* Return group struct from gid */
@@ -426,10 +457,16 @@ _nss_winbind_getgrgid_r(gid_t gid,
 	struct winbindd_response response;
 	struct winbindd_request request;
 
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
 	request.data.gid = gid;
 
 	ret = generic_request(WINBINDD_GETGRNAM_FROM_GID, &request, &response);
-	if (ret != NSS_STATUS_SUCCESS) return ret;
+	if (ret == NSS_STATUS_SUCCESS) {
+		ret = fill_grent(result, &response, &buffer, &buflen, errnop);
+	}
 
-	return fill_grent(result, &response, &buffer, &buflen, errnop);
+	free_response(&response);
+	return ret;
 }
