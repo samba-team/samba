@@ -6216,7 +6216,7 @@ BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *
 
 BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth)
 {		
-	prs_debug(ps, depth, desc, "spoolss_io_r_replycloseprinter");
+	prs_debug(ps, depth, desc, "spoolss_io_r_reply_rrpcn");
 	depth++;
 
 	if (!prs_align(ps))
