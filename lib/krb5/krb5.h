@@ -119,6 +119,8 @@ typedef enum krb5_keytype {
 
 typedef EncryptionKey krb5_keyblock;
 
+typedef AP_REQ krb5_ap_req;
+
 struct krb5_cc_ops;
 
 typedef struct krb5_ccache_data{
@@ -575,6 +577,19 @@ krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_flags *ap_req_options,
 			  krb5_ticket **ticket);
 
+krb5_error_code
+krb5_decode_ap_req(krb5_context context,
+		   const krb5_data *inbuf,
+		   krb5_ap_req *ap_req);
+
+krb5_error_code
+krb5_verify_ap_req(krb5_context context,
+		   krb5_auth_context *auth_context,
+		   krb5_ap_req *ap_req,
+		   krb5_const_principal server,
+		   krb5_keyblock *keyblock,
+		   krb5_flags *ap_req_options,
+		   krb5_ticket **ticket);
 
 krb5_error_code
 krb5_free_creds (krb5_context context,
