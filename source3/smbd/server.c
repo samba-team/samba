@@ -1957,7 +1957,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 	}
       
       if(atexit_set == 0)
-        atexit(&killkids);
+        atexit(killkids);
 
       /* now accept incoming connections - forking a new process
 	 for each incoming connection */
