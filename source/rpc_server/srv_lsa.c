@@ -443,7 +443,7 @@ static BOOL api_lsa_enum_privsaccount(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _lsa_enum_privsaccount(p, &q_u, &r_u);
+	r_u.status = _lsa_enum_privsaccount(p, rdata, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_enum_privsaccount("", &r_u, rdata, 0)) {
