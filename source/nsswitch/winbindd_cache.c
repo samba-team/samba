@@ -102,7 +102,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	struct winbind_cache *ret = wcache;
 
 	if (!domain->backend) {
-		extern struct winbindd_methods msrpc_methods;
+		extern struct winbindd_methods reconnect_methods;
 		switch (lp_security()) {
 #ifdef HAVE_ADS
 		case SEC_ADS: {
@@ -130,7 +130,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		default:
 			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n",
 				domain->name));
-			domain->backend = &msrpc_methods;
+			domain->backend = &reconnect_methods;
 		}
 	}
 

@@ -654,9 +654,10 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	NTSTATUS result;
 	char *oldpass, *newpass;
 	fstring domain, user;
-	CLI_POLICY_HND *hnd;
+	POLICY_HND dom_pol;
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_domain *contact_domain;
+	struct rpc_pipe_client *cli;
 
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
@@ -689,12 +690,14 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(contact_domain, &hnd)) ) {
+	result = cm_connect_sam(contact_domain, mem_ctx, &cli, &dom_pol);
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
 		goto done;
 	}
 
-	result = cli_samr_chgpasswd_user(hnd->cli, mem_ctx, user, newpass, oldpass);
+	result = rpccli_samr_chgpasswd_user(cli, mem_ctx, user, newpass,
+					    oldpass);
 
 done:    
 	state->response.data.auth.nt_status = NT_STATUS_V(result);

@@ -235,9 +235,11 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /** Lookup a list of sids */
 
-NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *pol, int num_sids, const DOM_SID *sids, 
-                             char ***domains, char ***names, uint32 **types)
+NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				POLICY_HND *pol, int num_sids,
+				const DOM_SID *sids, 
+				char ***domains, char ***names, uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -260,7 +262,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_lookup_sids(mem_ctx, &q, pol, num_sids, sids, 1);
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -350,12 +352,23 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, int num_sids,
+			     const DOM_SID *sids, 
+                             char ***domains, char ***names, uint32 **types)
+{
+	return rpccli_lsa_lookup_sids(&cli->pipes[PI_LSARPC], mem_ctx,
+				      pol, num_sids, sids,
+				      domains, names, types);
+}
+
 /** Lookup a list of names */
 
-NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, 
-			      const char **names, DOM_SID **sids, 
-			      uint32 **types)
+NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol, int num_names, 
+				 const char **names, DOM_SID **sids, 
+				 uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -377,7 +390,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -449,6 +462,15 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              POLICY_HND *pol, int num_names, 
+			      const char **names, DOM_SID **sids, 
+			      uint32 **types)
+{
+	return rpccli_lsa_lookup_names(&cli->pipes[PI_LSARPC], mem_ctx,
+				       pol, num_names, names, sids, types);
 }
 
 /** Query info policy
@@ -661,10 +683,11 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  * @return nt status code of response
  **/
 
-NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *pol, uint32 *enum_ctx, 
-                                uint32 *num_domains,
-                                char ***domain_names, DOM_SID **domain_sids)
+NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   POLICY_HND *pol, uint32 *enum_ctx, 
+				   uint32 *num_domains,
+				   char ***domain_names, DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;
@@ -686,7 +709,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_q_enum_trust_dom(&q, pol, *enum_ctx, 0x10000);
 
 	if (!lsa_io_q_enum_trust_dom("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -752,6 +775,15 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_ctx, 
+                                uint32 *num_domains,
+                                char ***domain_names, DOM_SID **domain_sids)
+{
+	return rpccli_lsa_enum_trust_dom(&cli->pipes[PI_LSARPC], mem_ctx,
+					 pol, enum_ctx, num_domains,
+					 domain_names, domain_sids);
+}
 
 /** Enumerate privileges*/
 

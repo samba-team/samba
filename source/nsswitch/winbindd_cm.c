@@ -73,6 +73,12 @@ struct winbindd_cm_conn {
 	fstring pipe_name;
 	struct cli_state *cli;
 	POLICY_HND pol;
+
+	struct rpc_pipe_client *samr_pipe;
+	POLICY_HND sam_connect_handle, sam_domain_handle;
+
+	struct rpc_pipe_client *lsa_pipe;
+	POLICY_HND lsa_policy;
 };
 
 static struct winbindd_cm_conn *cm_conns = NULL;
@@ -904,6 +910,24 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 	return True;
 }
 
+static void invalidate_cm_connection(struct winbindd_cm_conn *conn)
+{
+	if (conn->samr_pipe != NULL) {
+		cli_rpc_close(conn->samr_pipe);
+		conn->samr_pipe = NULL;
+	}
+
+	if (conn->lsa_pipe != NULL) {
+		cli_rpc_close(conn->lsa_pipe);
+		conn->lsa_pipe = NULL;
+	}
+
+	if (conn->cli)
+		cli_shutdown(conn->cli);
+
+	conn->cli = NULL;
+}
+
 /* Search the cache for a connection. If there is a broken one,
    shut it down properly and return NULL. */
 
@@ -918,8 +942,7 @@ static void find_cm_connection(struct winbindd_domain *domain, const char *pipe_
 			if (!connection_ok(conn)) {
 				/* Dead connection - remove it. */
 				struct winbindd_cm_conn *conn_temp = conn->next;
-				if (conn->cli)
-					cli_shutdown(conn->cli);
+				invalidate_cm_connection(conn);
 				DLIST_REMOVE(cm_conns, conn);
 				SAFE_FREE(conn);
 				conn = conn_temp;  /* Keep the loop moving */
@@ -1093,116 +1116,78 @@ done:
 	return;
 }
 
-
-
-/* Return a LSA policy handle on a domain */
-
-NTSTATUS cm_get_lsa_handle(struct winbindd_domain *domain, CLI_POLICY_HND **return_hnd)
+NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
+			struct rpc_pipe_client **cli, POLICY_HND *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	NTSTATUS result;
-	static CLI_POLICY_HND hnd;
 
-	/* Look for existing connections */
-
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
+	result = get_connection_from_cache(domain, PIPE_SAMR, &conn);
+	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	/* This *shitty* code needs scrapping ! JRA */
-	
-	if (policy_handle_is_valid(&conn->pol)) {
-		hnd.pol = conn->pol;
-		hnd.cli = conn->cli;
-		*return_hnd = &hnd;
+	if (conn->samr_pipe == NULL) {
+		conn->samr_pipe = cli_rpc_open_noauth(conn->cli, PI_SAMR);
+		if (conn->samr_pipe == NULL) {
+			result = NT_STATUS_PIPE_NOT_AVAILABLE;
+			goto done;
+		}
 
-		return NT_STATUS_OK;
+		result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
+					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     &conn->sam_connect_handle);
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+
+		result = rpccli_samr_open_domain(conn->samr_pipe, mem_ctx,
+						 &conn->sam_connect_handle,
+						 SEC_RIGHTS_MAXIMUM_ALLOWED,
+						 &domain->sid,
+						 &conn->sam_domain_handle);
 	}
-	
-	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
-				     des_access, &conn->pol);
 
+ done:
 	if (!NT_STATUS_IS_OK(result)) {
-		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
-		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
-				return result;
+		invalidate_cm_connection(conn);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
-						     des_access, &conn->pol);
-		}
-
-		if (!NT_STATUS_IS_OK(result)) {
-			cli_shutdown(conn->cli);
-			DLIST_REMOVE(cm_conns, conn);
-			SAFE_FREE(conn);
-			return result;
-		}
-	}	
-
-	hnd.pol = conn->pol;
-	hnd.cli = conn->cli;
-
-	*return_hnd = &hnd;
-
-	return NT_STATUS_OK;
+	*cli = conn->samr_pipe;
+	*sam_handle = conn->sam_domain_handle;
+	return result;
 }
 
-/* Return a SAM policy handle on a domain */
-
-NTSTATUS cm_get_sam_handle(struct winbindd_domain *domain, CLI_POLICY_HND **return_hnd)
-{ 
+NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
+			struct rpc_pipe_client **cli, POLICY_HND *lsa_policy)
+{
 	struct winbindd_cm_conn *conn;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	NTSTATUS result;
-	static CLI_POLICY_HND hnd;
 
-	/* Look for existing connections */
-
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
+	result = get_connection_from_cache(domain, PIPE_SAMR, &conn);
+	if (!NT_STATUS_IS_OK(result))
 		return result;
-	
-	/* This *shitty* code needs scrapping ! JRA */
-	
-	if (policy_handle_is_valid(&conn->pol)) {
-		hnd.pol = conn->pol;
-		hnd.cli = conn->cli;
-		
-		*return_hnd = &hnd;
 
-		return NT_STATUS_OK;
+	if (conn->lsa_pipe == NULL) {
+		conn->lsa_pipe = cli_rpc_open_noauth(conn->cli, PI_LSARPC);
+		if (conn->lsa_pipe == NULL) {
+			result = NT_STATUS_PIPE_NOT_AVAILABLE;
+			goto done;
+		}
+
+		result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
+						SEC_RIGHTS_MAXIMUM_ALLOWED,
+						&conn->lsa_policy);
 	}
-	
-	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
-				  des_access, &conn->pol);
 
+ done:
 	if (!NT_STATUS_IS_OK(result)) {
-		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
-		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-		
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
-				return result;
+		invalidate_cm_connection(conn);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
-						  des_access, &conn->pol);
-		}
-
-		if (!NT_STATUS_IS_OK(result)) {
-		
-			cli_shutdown(conn->cli);
-			DLIST_REMOVE(cm_conns, conn);
-			SAFE_FREE(conn);
-			
-			return result;
-		}
-	}	
-
-	hnd.pol = conn->pol;
-	hnd.cli = conn->cli;
-
-	*return_hnd = &hnd;
-
-	return NT_STATUS_OK;
+	*cli = conn->lsa_pipe;
+	*lsa_policy = conn->lsa_policy;
+	return result;
 }
 
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
