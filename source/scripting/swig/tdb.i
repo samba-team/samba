@@ -28,6 +28,13 @@
 
 %{
 
+/* This symbol is used in both includes.h and Python.h which causes an
+   annoying compiler warning. */
+
+#ifdef HAVE_FSTAT
+#undef HAVE_FSTAT
+#endif
+
 /* The tdb_set_lock_alarm() function requires the SIG_ATOMIC_T
    function from includes.h */
 
@@ -43,6 +50,7 @@ typedef int SIG_ATOMIC_T;
 #include "lib/tdb/include/tdb.h"
 
 %}
+
 
 /* The tdb functions will crash if a NULL tdb is passed */
 
