@@ -1168,7 +1168,7 @@ process_pa_data_to_key(krb5_context context,
 	ret = pa_data_to_key_plain(context, creds->client, ctx, 
 				   paid.salt, paid.s2kparams, etype, key);
     else {
-	krb5_set_error_string(context, "no usable pa data type");
+	krb5_set_error_string(context, "No usable pa data type");
 	ret = EINVAL;
     }
 
