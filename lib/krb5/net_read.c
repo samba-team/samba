@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,16 +47,6 @@ krb5_net_read (krb5_context context,
 	       size_t len)
 {
   int fd = *((int *)p_fd);
-  char *cbuf = (char *)buf;
-  ssize_t count;
-  size_t rem = len;
 
-  while (rem > 0) {
-    count = read (fd, cbuf, rem);
-    if (count <= 0)
-      return count;
-    cbuf += count;
-    rem -= count;
-  }
-  return len;
+  return net_read (fd, buf, len);
 }
