@@ -1,0 +1,161 @@
+#include "idl_types.h"
+
+/*
+  svcctl interface definitions
+*/
+
+[ uuid(367abb81-9844-35f1-ad32-98f038001003),
+  version(2.0),
+  pointer_default(unique)
+] interface svcctl
+{
+	typedef struct {
+		uint32 is_locked;
+		unistr *lock_owner;
+		uint32 lock_duration;
+	} SERVICE_LOCK_STATUS;
+
+	typedef struct {
+		uint32 type;
+		uint32 state;
+		uint32 controls_accepted;
+		uint32 win32_exit_code;
+		uint32 service_exit_code;
+		uint32 check_point;
+		uint32 wait_hint;
+	} SERVICE_STATUS;
+
+	typedef struct {
+		unistr *service_name;
+		unistr *display_name;
+		SERVICE_STATUS status;
+	} ENUM_SERVICE_STATUS;
+
+	typedef enum {
+		SERVICE_TYPE_KERNEL_DRIVER=0x01,
+		SERVICE_TYPE_FS_DRIVER=0x02,
+		SERVICE_TYPE_ADAPTER=0x04,
+		SERVICE_TYPE_RECOGNIZER_DRIVER=0x08,
+		SERVICE_TYPE_DRIVER=SERVICE_TYPE_KERNEL_DRIVER|SERVICE_TYPE_FS_DRIVER|SERVICE_TYPE_RECOGNIZER_DRIVER,
+		SERVICE_TYPE_WIN32_OWN_PROCESS=0x10,
+		SERVICE_TYPE_WIN32_SHARE_PROCESS=0x20,
+		SERVICE_TYPE_WIN32=SERVICE_TYPE_WIN32_OWN_PROCESS|SERVICE_TYPE_WIN32_SHARE_PROCESS
+	} ServiceType;
+
+	typedef enum {
+		SERVICE_STATE_ACTIVE=0x01,
+		SERVICE_STATE_INACTIVE=0x02,
+		SERVICE_STATE_ALL=0x03
+	} ServiceState;
+	
+	/*****************/
+	/* Function 0x00 */
+	uint32 svcctl_CloseServiceHandle(
+						[in,out,ref] policy_handle *handle
+						);
+
+	/*****************/
+	/* Function 0x01 */
+
+	WERROR svcctl_ControlService();
+
+	/*****************/
+	/* Function 0x02 */
+	WERROR svcctl_DeleteService();
+
+	/*****************/
+	/* Function 0x03 */
+
+	WERROR svcctl_LockServiceDatabase(
+							 [in,ref] policy_handle *handle,
+							 [out] policy_handle lock
+							);
+
+	/*****************/
+	/* Function 0x04 */
+	WERROR svcctl_QueryServiceObjectSecurity();
+
+	/*****************/
+	/* Function 0x05 */
+	WERROR svcctl_SetServiceObjectSecurity();
+
+	/*****************/
+	/* Function 0x06 */
+	WERROR svcctl_QueryServiceStatus(
+							  [in,ref] policy_handle *handle,
+							  [out,ref] SERVICE_STATUS *status);
+
+	/*****************/
+	/* Function 0x07 */
+	WERROR svcctl_SetServiceStatus();
+
+	/*****************/
+	/* Function 0x08 */
+	WERROR svcctl_UnlockServiceDatabase(
+							   [in,out,ref] policy_handle *lock
+							  );
+
+	/*****************/
+	/* Function 0x09 */
+	WERROR svcctl_NotifyBootConfigStatus();
+
+	/*****************/
+	/* Function 0x0a */
+	WERROR svcctl_SCSetServiceBits();
+
+	/*****************/
+	/* Function 0x0b */
+	WERROR svcctl_ChangeServiceConfig();
+
+	/*****************/
+	/* Function 0x0c */
+	WERROR svcctl_CreateService();
+
+	/*****************/
+	/* Function 0x0d */
+	WERROR svcctl_EnumDependentServices();
+
+	/*****************/
+	/* Function 0x0e */
+	WERROR svcctl_EnumServicesStatus(
+							[in,ref] policy_handle *handle,
+							[in] uint32 type,
+							[in] uint32 state,
+							[out,size_is(buf_size)] ENUM_SERVICE_STATUS *service,
+							[in] uint32 buf_size,
+							[out] uint32 bytes_needed,
+							[out] uint32 services_returned,
+							[in,out] uint32 *resume_handle
+						   );
+	/*****************/
+	/* Function 0x0f */
+	WERROR svcctl_OpenSCManager(
+					   [in] unistr *MachineName,
+					   [in] unistr *DatabaseName,
+					   [in] uint32 access_mask,
+					   [out,ref] policy_handle *handle);
+
+	/*****************/
+	/* Function 0x10 */
+	WERROR svcctl_OpenService();
+
+	/*****************/
+	/* Function 0x11 */
+	WERROR svcctl_QueryServiceConfig();
+
+	/*****************/
+	/* Function 0x12 */
+	WERROR svcctl_QueryServiceLockStatus(
+		[in,ref] policy_handle *handle,
+		[in] uint32 buf_size,
+		[out,ref] SERVICE_LOCK_STATUS *status,
+		[out,ref] uint32 *required_buf_size
+		);
+
+	/*****************/
+	/* Function 0x13 */
+	WERROR svcctl_StartService(
+							   [in,ref] policy_handle *handle,
+							   [in] uint32 NumArgs,
+							   [in,length_of(NumArgs)] unistr *Arguments);
+}
