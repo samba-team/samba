@@ -103,6 +103,93 @@ void dual_select(fd_set *fds)
 	}
 }
 
+/* Return true if a winbindd request of the type given in state->request
+   is already queued to be sent to the dual-daemon. */
+
+static BOOL dual_already_queued(struct winbindd_cli_state *state)
+{
+	struct dual_list *l;
+
+	for (l = dual_list; l; l = l->next) {
+		struct winbindd_request *req;
+
+		/* Simple check if this is really a winbindd request */
+
+		if (l->length != sizeof(struct winbindd_request)) {
+			DEBUG(10, ("dual_already_queued: list->length != "
+				   "sizeof(struct winbindd_request)!\n"));
+			continue;
+		}
+
+		req = (struct winbindd_request *)l->data;
+
+		/* Check command type */
+
+		if (req->cmd != state->request.cmd)
+			continue;
+
+		/* The following winbindd commands result in a call to
+                   wcache_fetch() which can result in a dual request
+                   being queued. */
+
+		switch(req->cmd) {
+		case WINBINDD_GETPWNAM:
+			if (strequal(state->request.data.username,
+				     req->data.username))
+				goto already_queued;
+			break;
+		case WINBINDD_GETPWUID:
+			if (state->request.data.uid == req->data.uid)
+				goto already_queued;
+			break;
+		case WINBINDD_LIST_USERS:
+		case WINBINDD_LIST_GROUPS:
+			goto already_queued;
+		case WINBINDD_LOOKUPNAME:
+			if (strequal(state->request.data.name.dom_name,
+				     req->data.name.dom_name) &&
+			    strequal(state->request.data.name.name,
+				     req->data.name.name))
+				goto already_queued;
+			break;
+		case WINBINDD_LOOKUPSID:
+			if (strequal(state->request.data.sid, req->data.sid))
+				goto already_queued;
+			break;
+		case WINBINDD_GETGROUPS:
+			if (strequal(state->request.data.username,
+				     req->data.username))
+				goto already_queued;
+			break;
+		case WINBINDD_GETGRNAM:
+			if (strequal(state->request.data.groupname,
+				     req->data.groupname))
+				goto already_queued;
+			break;
+		case WINBINDD_GETGRGID:
+			if (state->request.data.gid == req->data.gid)
+				goto already_queued;
+			break;
+		case WINBINDD_GETPWENT:
+		case WINBINDD_GETGRENT:
+			goto already_queued;
+		default:
+			DEBUG(3, ("dual_already_queued: unhandled request "
+				  "type %d\n", req->cmd));
+			break;
+		}
+	}
+
+	return False;
+
+already_queued:
+
+	DEBUG(3, ("dual_already_queued: request already queued\n", 
+		  state->request.cmd));
+
+	return True;
+}
+
 /* 
    send a request to the background daemon 
    this is called for stale cached entries
@@ -112,6 +199,11 @@ void dual_send_request(struct winbindd_cli_state *state)
 	struct dual_list *list;
 
 	if (!background_process) return;
+
+	background_process = False;
+
+	if (dual_already_queued(state))
+		return;
 
 	list = malloc(sizeof(*list));
 	if (!list) return;
@@ -128,8 +220,6 @@ void dual_send_request(struct winbindd_cli_state *state)
 		dual_list_end->next = list;
 		dual_list_end = list;
 	}
-
-	background_process = False;
 }
 
 
@@ -209,4 +299,3 @@ void do_dual_daemon(void)
 		}
 	}
 }
-
