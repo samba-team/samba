@@ -1262,7 +1262,7 @@ static void printers_page(void)
  int main(int argc, char *argv[])
 {
 	int opt;
-	char *page;
+	const char *page;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
