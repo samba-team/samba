@@ -42,7 +42,7 @@
 
 /* Table to map the driver version */
 /* to OS */
-char * drv_ver_to_os[] = {
+static const char * drv_ver_to_os[] = {
 	"WIN9X",   /* driver version/cversion 0 */
 	"",        /* unused ? */
 	"WINNT",   /* driver version/cversion 2 */
@@ -50,8 +50,8 @@ char * drv_ver_to_os[] = {
 };
 
 struct table_node {
-	char    *long_archi;
-	char    *short_archi;
+	const char    *long_archi;
+	const char    *short_archi;
 	int     version;
 };
 
@@ -712,7 +712,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 }
 
 struct notify2_message_table {
-	char *name;
+	const char *name;
 	void (*fn)(struct spoolss_notify_msg *msg,
 		   SPOOL_NOTIFY_INFO_DATA *data, TALLOC_CTX *mem_ctx);
 };
@@ -1708,7 +1708,7 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	return result;
 }
 
-BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
+BOOL convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode)
 {
 	NT_DEVICEMODE *nt_devmode = *pp_nt_devmode;
@@ -2085,7 +2085,7 @@ done:
  ***************************************************************************/
 
 static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, 
-                                  char *key, char *value, uint32 *type, uint8 **data, 
+                                  const char *key, const char *value, uint32 *type, uint8 **data, 
 				  uint32 *needed, uint32 in_size  )
 {
 	REGISTRY_VALUE 		*val;
@@ -2121,7 +2121,7 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
  Internal routine for removing printerdata
  ***************************************************************************/
 
-static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, char *value )
+static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value )
 {
 	delete_printer_data( printer->info_2, key, value );
 	
@@ -2132,7 +2132,7 @@ static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, 
  Internal routine for storing printerdata
  ***************************************************************************/
 
-static WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, char *value, 
+static WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value, 
                                   uint32 type, uint8 *data, int real_len  )
 {
 	delete_printer_data( printer->info_2, key, value );
@@ -3094,7 +3094,7 @@ static void spoolss_notify_job_status_string(int snum,
 	 * Now we're returning job status codes we just return a "" here. JRA.
 	 */
 
-	char *p = "";
+	const char *p = "";
 	pstring temp;
 	uint32 len;
 
@@ -3247,7 +3247,7 @@ struct s_notify_info_data_table
 {
 	uint16 type;
 	uint16 field;
-	char *name;
+	const char *name;
 	uint32 size;
 	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
 		    print_queue_struct *queue,
@@ -3258,7 +3258,7 @@ struct s_notify_info_data_table
    whether the notification data is a pointer to a variable sized
    buffer, a one value uint32 or a two value uint32. */
 
-struct s_notify_info_data_table notify_info_data_table[] =
+static const struct s_notify_info_data_table notify_info_data_table[] =
 {
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         NOTIFY_STRING,   spoolss_notify_server_name },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,        "PRINTER_NOTIFY_PRINTER_NAME",        NOTIFY_STRING,   spoolss_notify_printer_name },
@@ -4897,11 +4897,11 @@ static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
  * convert an array of ascii string to a UNICODE string
  ********************************************************************/
 
-static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *servername)
+static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const char *servername)
 {
 	int i=0;
 	int j=0;
-	char *v;
+	const char *v;
 	pstring line;
 	uint16 *tuary;
 
@@ -6839,7 +6839,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_port_1(PORT_INFO_1 *port, char *name)
+static void fill_port_1(PORT_INFO_1 *port, const char *name)
 {
 	init_unistr(&port->port_name, name);
 }
@@ -6847,7 +6847,7 @@ static void fill_port_1(PORT_INFO_1 *port, char *name)
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_port_2(PORT_INFO_2 *port, char *name)
+static void fill_port_2(PORT_INFO_2 *port, const char *name)
 {
 	init_unistr(&port->port_name, name);
 	init_unistr(&port->monitor_name, "Local Monitor");

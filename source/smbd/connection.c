@@ -35,7 +35,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
 	return tdb;
 }
 
-static void make_conn_key(connection_struct *conn,char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
+static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
 	ZERO_STRUCTP(pkey);
 	pkey->pid = sys_getpid();
@@ -50,7 +50,7 @@ static void make_conn_key(connection_struct *conn,char *name, TDB_DATA *pkbuf, s
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn,char *name)
+BOOL yield_connection(connection_struct *conn, const char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
@@ -116,7 +116,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear, uint32 msg_flags)
+BOOL claim_connection(connection_struct *conn, const char *name,int max_connections,BOOL Clear, uint32 msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;

@@ -94,7 +94,7 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
-static char *display_time(NTTIME nttime)
+static const char *display_time(NTTIME nttime)
 {
 	static fstring string;
 

@@ -60,7 +60,7 @@ BOOL smbpasswd_gethexpwd(char *p, unsigned char *pwd)
 {
 	int i;
 	unsigned char   lonybble, hinybble;
-	char           *hexchars = "0123456789ABCDEF";
+	const char      *hexchars = "0123456789ABCDEF";
 	char           *p1, *p2;
 	
 	if (!p) return (False);

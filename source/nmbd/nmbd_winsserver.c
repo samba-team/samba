@@ -100,7 +100,7 @@ static void get_global_id_and_update(SMB_BIG_UINT *current_id, BOOL update)
 /****************************************************************************
 possibly call the WINS hook external program when a WINS change is made
 *****************************************************************************/
-static void wins_hook(char *operation, struct name_record *namerec, int ttl)
+static void wins_hook(const char *operation, struct name_record *namerec, int ttl)
 {
 	pstring command;
 	char *cmd = lp_wins_hook();

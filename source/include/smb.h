@@ -651,19 +651,19 @@ typedef struct sam_passwd
 		time_t pass_can_change_time;  /* password can change time */
 		time_t pass_must_change_time; /* password must change time */
 		
-		char * username;     /* UNIX username string */
-		char * domain;       /* Windows Domain name */
-		char * nt_username;  /* Windows username string */
-		char * full_name;    /* user's full name string */
-		char * unix_home_dir;     /* UNIX home directory string */
-		char * home_dir;     /* home directory string */
-		char * dir_drive;    /* home directory drive string */
-		char * logon_script; /* logon script string */
-		char * profile_path; /* profile path string */
-		char * acct_desc  ;  /* user description string */
-		char * workstations; /* login from workstations string */
-		char * unknown_str ; /* don't know what this is, yet. */
-		char * munged_dial ; /* munged path name and dial-back tel number */
+		const char * username;     /* UNIX username string */
+		const char * domain;       /* Windows Domain name */
+		const char * nt_username;  /* Windows username string */
+		const char * full_name;    /* user's full name string */
+		const char * unix_home_dir;     /* UNIX home directory string */
+		const char * home_dir;     /* home directory string */
+		const char * dir_drive;    /* home directory drive string */
+		const char * logon_script; /* logon script string */
+		const char * profile_path; /* profile path string */
+		const char * acct_desc  ;  /* user description string */
+		const char * workstations; /* login from workstations string */
+		const char * unknown_str ; /* don't know what this is, yet. */
+		const char * munged_dial ; /* munged path name and dial-back tel number */
 		
 		uid_t uid;          /* this is a unix uid_t */
 		gid_t gid;          /* this is a unix gid_t */
@@ -775,7 +775,7 @@ enum brl_type {READ_LOCK, WRITE_LOCK};
 
 struct enum_list {
 	int value;
-	char *name;
+	const char *name;
 };
 
 #define BRLOCK_FN_CAST() \
@@ -788,12 +788,12 @@ struct enum_list {
 				 br_off start, br_off size)
 struct parm_struct
 {
-	char *label;
+	const char *label;
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(char *, char **);
-	struct enum_list *enum_list;
+	BOOL (*special)(const char *, char **);
+	const struct enum_list *enum_list;
 	unsigned flags;
 	union {
 		BOOL bvalue;

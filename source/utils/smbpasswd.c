@@ -33,7 +33,7 @@ static BOOL got_pass = False, got_username = False;
 static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
 static char *new_passwd = NULL;
-static char *remote_machine = NULL;
+static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
@@ -241,7 +241,7 @@ static char *stdin_new_passwd(void)
  Used if the '-s' option is set to silently get passwords
  to enable scripting.
 *************************************************************/
-static char *get_pass( char *prompt, BOOL stdin_get)
+static char *get_pass( const char *prompt, BOOL stdin_get)
 {
 	char *p;
 	if (stdin_get) {

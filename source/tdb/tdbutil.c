@@ -73,7 +73,7 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
  Lock a chain by string. Return -1 if timeout or lock failed.
 ****************************************************************************/
 
-int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
+int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
 	TDB_DATA key;
 
@@ -87,7 +87,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
  Unlock a chain by string.
 ****************************************************************************/
 
-void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
+void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
 	TDB_DATA key;
 
@@ -101,7 +101,7 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
  Read lock a chain by string. Return -1 if timeout or lock failed.
 ****************************************************************************/
 
-int tdb_read_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
+int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
 	TDB_DATA key;
 
@@ -115,7 +115,7 @@ int tdb_read_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
  Read unlock a chain by string.
 ****************************************************************************/
 
-void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
+void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
 	TDB_DATA key;
 
@@ -131,7 +131,7 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
  Output is int32 in native byte order.
 ****************************************************************************/
 
-int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
+int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 {
 	TDB_DATA key, data;
 	int32 ret;
@@ -154,7 +154,7 @@ int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
  Output is int32 in native byte order.
 ****************************************************************************/
 
-int32 tdb_fetch_int32(TDB_CONTEXT *tdb, char *keystr)
+int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
 {
 	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
 }
@@ -164,7 +164,7 @@ int32 tdb_fetch_int32(TDB_CONTEXT *tdb, char *keystr)
  Input is int32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int32 v)
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32 v)
 {
 	TDB_DATA key, data;
 	int32 v_store;
@@ -183,7 +183,7 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int32 v)
  Input is int32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32(TDB_CONTEXT *tdb, char *keystr, int32 v)
+int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
 {
 	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
@@ -193,7 +193,7 @@ int tdb_store_int32(TDB_CONTEXT *tdb, char *keystr, int32 v)
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len, uint32 *value)
+BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32 *value)
 {
 	TDB_DATA key, data;
 
@@ -215,7 +215,7 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len, uint32 
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 *value)
+BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
 {
 	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -225,7 +225,7 @@ BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 *value)
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, uint32 value)
+BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32 value)
 {
 	TDB_DATA key, data;
 	uint32 v_store;
@@ -248,7 +248,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, uint32 
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 value)
+BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 {
 	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -257,7 +257,7 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 value)
  on failure.
 ****************************************************************************/
 
-int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, TDB_DATA data, int flags)
+int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
     TDB_DATA key;
 
@@ -272,7 +272,7 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, TDB_DATA data, int flags
  free() on the result dptr.
 ****************************************************************************/
 
-TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
+TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
 {
     TDB_DATA key;
 
@@ -286,7 +286,7 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
  Delete an entry using a null terminated string key. 
 ****************************************************************************/
 
-int tdb_delete_by_string(TDB_CONTEXT *tdb, char *keystr)
+int tdb_delete_by_string(TDB_CONTEXT *tdb, const char *keystr)
 {
     TDB_DATA key;
 
@@ -300,7 +300,7 @@ int tdb_delete_by_string(TDB_CONTEXT *tdb, char *keystr)
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int32 change_val)
+int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldval, int32 change_val)
 {
 	int32 val;
 	int32 ret = -1;
@@ -341,7 +341,7 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
  Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, uint32 change_val)
+BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldval, uint32 change_val)
 {
 	uint32 val;
 	BOOL ret = False;
@@ -384,7 +384,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, ui
  integers and strings.
 ****************************************************************************/
 
-size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
+size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint16 w;
@@ -395,7 +395,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 	char *s;
 	char c;
 	char *buf0 = buf;
-	char *fmt0 = fmt;
+	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
 	va_start(ap, fmt);
@@ -468,7 +468,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
+int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint16 *w;
@@ -479,7 +479,7 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 	char *s, **b;
 	char c;
 	char *buf0 = buf;
-	char *fmt0 = fmt;
+	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
 	va_start(ap, fmt);

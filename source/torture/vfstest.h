@@ -37,9 +37,9 @@ struct vfs_state {
 };
 
 struct cmd_set {
-	char *name;
+	const char *name;
 	NTSTATUS (*fn)(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
                        char **argv);
-	char *description;
-	char *usage;
+	const char *description;
+	const char *usage;
 };

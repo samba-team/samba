@@ -105,7 +105,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
         uint32 pdc_connection_status = 0x0;
         uint32 logon_attempts = 0x0;
         uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-        char *trusted_domain = "test_domain";
+        const char *trusted_domain = "test_domain";
 
         DEBUG(0, ("*** net long ctrl2 %d, %d, %d\n",
                   q_u->function_code, q_u->query_level, q_u->switch_value));
@@ -132,7 +132,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 
 NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
 {
-	char *trusted_domain = "test_domain";
+	const char *trusted_domain = "test_domain";
 	uint32 num_trust_domains = 1;
 
 	DEBUG(6,("_net_trust_dom_list: %d\n", __LINE__));

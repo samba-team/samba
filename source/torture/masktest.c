@@ -28,16 +28,16 @@ static int got_pass;
 static int max_protocol = PROTOCOL_NT1;
 static BOOL showall = False;
 static BOOL old_list = False;
-static char *maskchars = "<>\"?*abc.";
-static char *filechars = "abcdefghijklm.";
+static const char *maskchars = "<>\"?*abc.";
+static const char *filechars = "abcdefghijklm.";
 static int verbose;
 static int die_on_error;
 static int NumLoops = 0;
 
 /* a test fn for LANMAN mask support */
-int ms_fnmatch_lanman_core(char *pattern, char *string)
+int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 {
-	char *p = pattern, *n = string;
+	const char *p = pattern, *n = string;
 	char c;
 
 	if (strcmp(p,"?")==0 && strcmp(n,".")==0) goto match;
@@ -109,10 +109,12 @@ next:
 	return 0;
 }
 
-int ms_fnmatch_lanman(char *pattern, char *string)
+int ms_fnmatch_lanman(const char *pattern, const char *string)
 {
 	if (!strpbrk(pattern, "?*<>\"")) {
-		if (strcmp(string,"..") == 0) string = ".";
+		if (strcmp(string,"..") == 0) 
+			string = ".";
+
 		return strcmp(pattern, string);
 	}
 
@@ -124,7 +126,7 @@ int ms_fnmatch_lanman(char *pattern, char *string)
 	return ms_fnmatch_lanman_core(pattern, string);
 }
 
-static BOOL reg_match_one(struct cli_state *cli, char *pattern, char *file)
+static BOOL reg_match_one(struct cli_state *cli, const char *pattern, const char *file)
 {
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;

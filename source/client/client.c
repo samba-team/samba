@@ -2057,9 +2057,9 @@ static BOOL list_servers(char *wk_grp)
  */
 static struct
 {
-  char *name;
+  const char *name;
   int (*fn)(void);
-  char *description;
+  const char *description;
   char compl_args[2];      /* Completion argument info */
 } commands[] = 
 {

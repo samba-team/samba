@@ -27,7 +27,7 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 
-static char *known_nt_pipes[] = {
+static const char *known_nt_pipes[] = {
 	"\\LANMAN",
 	"\\srvsvc",
 	"\\samr",

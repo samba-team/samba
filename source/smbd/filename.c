@@ -31,7 +31,7 @@ extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern BOOL use_mangled_map;
 
-static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
+static BOOL scan_directory(const char *path, pstring name,connection_struct *conn,BOOL docache);
 
 /****************************************************************************
  Check if two filenames are equal.
@@ -387,7 +387,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
  a valid one for the user to access.
 ****************************************************************************/
 
-BOOL check_name(char *name,connection_struct *conn)
+BOOL check_name(pstring name,connection_struct *conn)
 {
 	BOOL ret;
 
@@ -428,7 +428,7 @@ BOOL check_name(char *name,connection_struct *conn)
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache)
+static BOOL scan_directory(const char *path, pstring name,connection_struct *conn,BOOL docache)
 {
 	void *cur_dir;
 	char *dname;

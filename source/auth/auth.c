@@ -25,7 +25,7 @@
 
 /** List of various built-in authentication modules */
 
-const struct auth_init_function_entry builtin_auth_init_functions[] = {
+static const struct auth_init_function_entry builtin_auth_init_functions[] = {
 	{ "guest", auth_init_guest },
 	{ "rhosts", auth_init_rhosts },
 	{ "hostsequiv", auth_init_hostsequiv },
@@ -52,7 +52,7 @@ const struct auth_init_function_entry builtin_auth_init_functions[] = {
 static const uint8 *get_ntlm_challenge(struct auth_context *auth_context) 
 {
 	DATA_BLOB challenge = data_blob(NULL, 0);
-	char *challenge_set_by = NULL;
+	const char *challenge_set_by = NULL;
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 

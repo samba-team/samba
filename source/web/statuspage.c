@@ -216,7 +216,7 @@ static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 /* show the current server status */
 void status_page(void)
 {
-	char *v;
+	const char *v;
 	int autorefresh=0;
 	int refresh_interval=30;
 	TDB_CONTEXT *tdb;

@@ -27,7 +27,7 @@
  This function contains code to prevent core dumps if the server returns 
  invalid data.
 *****************************************************************************/
-static char *fix_char_ptr(unsigned int datap, unsigned int converter, 
+static const char *fix_char_ptr(unsigned int datap, unsigned int converter, 
 			  char *rdata, int rdrcnt)
 {
 	if (datap == 0)	{	/* turn NULL pointers into zero length strings */

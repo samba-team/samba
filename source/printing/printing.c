@@ -165,7 +165,7 @@ static int get_queue_status(int, print_status_struct *);
 
 BOOL print_backend_init(void)
 {
-	char *sversion = "INFO/version";
+	const char *sversion = "INFO/version";
 	pstring printing_path;
 	int services = lp_numservices();
 	int snum;
@@ -1291,10 +1291,10 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 		*errcode = WERR_ACCESS_DENIED;
 
 		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR, (char *)
-			 "Permission denied-- user not allowed to delete, \
+		sys_adminlog( LOG_ERR, 
+			      "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-				uidtoname(user->uid), PRINTERNAME(snum) );
+			      uidtoname(user->uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 
 		return False;
@@ -1356,7 +1356,7 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 		DEBUG(3, ("pause denied by security descriptor\n"));
 
 		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR, (char *)
+		sys_adminlog( LOG_ERR, 
 			"Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
 				uidtoname(user->uid), PRINTERNAME(snum) );
@@ -1407,7 +1407,7 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 		*errcode = WERR_ACCESS_DENIED;
 
 		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR, (char *)
+		sys_adminlog( LOG_ERR, 
 			 "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
 			uidtoname(user->uid), PRINTERNAME(snum) );

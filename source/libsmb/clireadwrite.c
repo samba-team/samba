@@ -248,7 +248,8 @@ ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, si
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
 
-static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint16 mode, char *buf,
+static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, 
+			    uint16 mode, const char *buf,
 			    size_t size, int i)
 {
 	char *p;
@@ -316,7 +317,7 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
-		  char *buf, off_t offset, size_t size)
+		  const char *buf, off_t offset, size_t size)
 {
 	int bwritten = 0;
 	int issued = 0;

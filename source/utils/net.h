@@ -37,20 +37,24 @@
 
 
 extern int opt_maxusers;
-extern char *opt_comment;
+extern const char *opt_comment;
 extern int opt_flags;
 
-extern char *opt_comment;
+extern const char *opt_comment;
 
-extern char *opt_target_workgroup;
+extern const char *opt_target_workgroup;
+extern const char *opt_workgroup;
 extern int opt_long_list_entries;
 extern int opt_reboot;
 extern int opt_force;
 extern int opt_timeout;
-extern char *opt_host;
-extern char *opt_user_name;
-extern char *opt_password;
+extern const char *opt_host;
+extern const char *opt_user_name;
+extern const char *opt_password;
 extern BOOL opt_user_specified;
+
+extern BOOL opt_have_ip;
+extern struct in_addr opt_dest_ip;
 
 extern const char *share_type[];
 

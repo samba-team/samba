@@ -121,7 +121,7 @@ static char *query_flags(int flags)
 /****************************************************************************
 do a node status query
 ****************************************************************************/
-static void do_node_status(int fd, char *name, int type, struct in_addr ip)
+static void do_node_status(int fd, const char *name, int type, struct in_addr ip)
 {
 	struct nmb_name nname;
 	int count, i, j;
@@ -150,7 +150,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 /****************************************************************************
 send out one query
 ****************************************************************************/
-static BOOL query_one(char *lookup, unsigned int lookup_type)
+static BOOL query_one(const char *lookup, unsigned int lookup_type)
 {
 	int j, count, flags = 0;
 	struct in_addr *ip_list=NULL;

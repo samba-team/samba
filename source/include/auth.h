@@ -100,7 +100,7 @@ struct auth_context {
 	DATA_BLOB challenge; 
 
 	/* Who set this up in the first place? */ 
-	char *challenge_set_by; 
+	const char *challenge_set_by; 
 
 	struct auth_methods *challenge_set_method; 
 	/* What order are the various methods in?   Try to stop it changing under us */ 
@@ -118,7 +118,7 @@ struct auth_context {
 typedef struct auth_methods
 {
 	struct auth_methods *prev, *next;
-	char *name; /* What name got this module */
+	const char *name; /* What name got this module */
 
 	NTSTATUS (*auth)(const struct auth_context *auth_context,
 			 void *my_private_data, 
@@ -144,7 +144,7 @@ typedef struct auth_methods
 typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
 
 struct auth_init_function_entry {
-	char *name;
+	const char *name;
 	/* Function to create a member of the authmethods list */
 
 	auth_init_function init;

@@ -110,7 +110,7 @@ void clear_unexpected(time_t t)
 static struct packet_struct *matched_packet;
 static int match_id;
 static enum packet_type match_type;
-static char *match_name;
+static const char *match_name;
 
 /****************************************************************************
 tdb traversal fn to find a matching 137 packet
@@ -144,7 +144,7 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 check for a particular packet in the unexpected packet queue
   **************************************************************************/
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
-					 char *mailslot_name)
+					 const char *mailslot_name)
 {
 	TDB_CONTEXT *tdb2;
 

@@ -40,7 +40,7 @@ void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
  Add a new key to the array
  **********************************************************************/
 
-int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, char *keyname )
+int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 {
 	uint32 len;
 	char **pp;
@@ -345,7 +345,7 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
  No need to free memory since it is talloc'd.
  **********************************************************************/
 
-REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, char *name )
+REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, const char *name )
 {
 	int 	i;
 	

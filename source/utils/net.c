@@ -56,10 +56,10 @@
 /************************************************************************************/
 
 /* Yes, these buggers are globals.... */
-char *opt_requester_name = NULL;
-char *opt_host = NULL; 
-char *opt_password = NULL;
-char *opt_user_name = NULL;
+const char *opt_requester_name = NULL;
+const char *opt_host = NULL; 
+const char *opt_password = NULL;
+const char *opt_user_name = NULL;
 BOOL opt_user_specified = False;
 const char *opt_workgroup = NULL;
 int opt_long_list_entries = 0;
@@ -67,11 +67,11 @@ int opt_reboot = 0;
 int opt_force = 0;
 int opt_port = 0;
 int opt_maxusers = -1;
-char *opt_comment = "";
+const char *opt_comment = "";
 int opt_flags = -1;
 int opt_jobid = 0;
 int opt_timeout = 0;
-char *opt_target_workgroup = NULL;
+const char *opt_target_workgroup = NULL;
 static int opt_machine_pass = 0;
 
 BOOL opt_have_ip = False;
@@ -536,6 +536,7 @@ static struct functable net_func[] = {
 	load_interfaces();
 
 	if (opt_machine_pass) {
+		char *user;
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
@@ -544,7 +545,8 @@ static struct functable net_func[] = {
 			exit(1);
 		}
 
-		asprintf(&opt_user_name,"%s$", global_myname());
+		asprintf(&user,"%s$", global_myname());
+		opt_user_name = user;
 		opt_password = secrets_fetch_machine_password();
 		if (!opt_password) {
 			d_printf("ERROR: Unable to fetch machine password\n");

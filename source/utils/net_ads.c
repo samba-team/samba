@@ -544,8 +544,10 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	if (!opt_password) {
-		asprintf(&opt_user_name, "%s$", global_myname());
+		char *user_name;
+		asprintf(&user_name, "%s$", global_myname());
 		opt_password = secrets_fetch_machine_password();
+		opt_user_name = user_name;
 	}
 
 	if (!(ads = ads_startup())) {
@@ -566,6 +568,7 @@ static int net_ads_leave(int argc, const char **argv)
 
 static int net_ads_join_ok(void)
 {
+	char *user_name;
 	ADS_STRUCT *ads = NULL;
 
 	if (!secrets_init()) {
@@ -573,7 +576,8 @@ static int net_ads_join_ok(void)
 		return -1;
 	}
 
-	asprintf(&opt_user_name, "%s$", global_myname());
+	asprintf(&user_name, "%s$", global_myname());
+	opt_user_name = user_name;
 	opt_password = secrets_fetch_machine_password();
 
 	if (!(ads = ads_startup())) {
@@ -743,11 +747,10 @@ static int net_ads_printer_publish(int argc, const char **argv)
 {
         ADS_STRUCT *ads;
         ADS_STATUS rc;
-	char *servername;
+	const char *servername;
 	struct cli_state *cli;
 	struct in_addr 		server_ip;
 	NTSTATUS nt_status;
-	extern char *opt_workgroup;
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
 	char *prt_dn, *srv_dn, **srv_cn;
@@ -853,8 +856,8 @@ static int net_ads_printer(int argc, const char **argv)
 static int net_ads_password(int argc, const char **argv)
 {
     ADS_STRUCT *ads;
-    char *auth_principal = opt_user_name;
-    char *auth_password = opt_password;
+    const char *auth_principal = opt_user_name;
+    const char *auth_password = opt_password;
     char *realm = NULL;
     char *new_password = NULL;
     char *c;
@@ -902,13 +905,16 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     char *host_principal;
     char *hostname;
     ADS_STATUS ret;
+    char *user_name;
 
     if (!secrets_init()) {
 	    DEBUG(1,("Failed to initialise secrets database\n"));
 	    return -1;
     }
 
-    asprintf(&opt_user_name, "%s$", global_myname());
+    asprintf(&user_name, "%s$", global_myname());
+    opt_user_name = user_name;
+
     opt_password = secrets_fetch_machine_password();
 
     if (!(ads = ads_startup())) {

@@ -128,7 +128,7 @@ static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
 BOOL share_info_db_init(void)
 {
 	static pid_t local_pid;
-	char *vstring = "INFO/version";
+	const char *vstring = "INFO/version";
 	int32 vers_id;
  
 	if (share_tdb && local_pid == sys_getpid())
@@ -1008,7 +1008,7 @@ static void init_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *sto
 static void init_srv_conn_1_info(CONN_INFO_1 *se1, CONN_INFO_1_STR *str1,
 				uint32 id, uint32 type,
 				uint32 num_opens, uint32 num_users, uint32 open_time,
-				char *usr_name, char *net_name)
+				const char *usr_name, const char *net_name)
 {
 	init_srv_conn_info1(se1 , id, type, num_opens, num_users, open_time, usr_name, net_name);
 	init_srv_conn_info1_str(str1, usr_name, net_name);
