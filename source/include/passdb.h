@@ -98,7 +98,7 @@ typedef struct sam_passwd
 	struct pdb_methods *methods;
 
 	struct user_data {
-		/* initiailization flags */
+		/* initialization flags */
 		struct bitmap *change_flags;
 		struct bitmap *set_flags;
 
@@ -161,7 +161,7 @@ typedef struct sam_group {
 	struct pdb_methods *methods;
 
 	struct group_data {
-		/* initiailization flags */
+		/* initialization flags */
 		struct bitmap *change_flags;
 		struct bitmap *set_flags;
 
