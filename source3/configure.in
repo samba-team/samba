@@ -1801,7 +1801,7 @@ AC_ARG_WITH(nisplus-home,
 # check for the secure socket layer
 AC_MSG_CHECKING(whether to use SSL)
 AC_ARG_WITH(ssl,
-[  --with-ssl              Include SSL support (default=no)],
+[  --with-ssl              Include SSL support (default=no)
   --with-sslinc=DIR       Where the SSL includes are (defaults to /usr/local/ssl)],
 [ case "$withval" in
   yes)
