@@ -2352,7 +2352,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
   if ((lp_syncalways(SNUM(conn)) || write_through) && 
       lp_strict_sync(SNUM(conn)))
-      conn->vfs_ops.fsync(fsp->fd);
+      sync_file(conn,fsp);
 
   DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
 	   fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
@@ -2400,7 +2400,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
-      conn->vfs_ops.fsync(fsp->fd);
+      sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2455,7 +2455,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
-    conn->vfs_ops.fsync(fsp->fd);
+    sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2552,7 +2552,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	   fsp->fnum, (int)numtowrite, (int)nwritten));
 
   if (lp_syncalways(SNUM(conn)) || write_through)
-    conn->vfs_ops.fsync(fsp->fd);
+    sync_file(conn,fsp);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2649,7 +2649,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   if (!fsp) {
 	  file_sync_all(conn);
   } else {
-	  conn->vfs_ops.fsync(fsp->fd);
+		sync_file(conn,fsp);
   }
 
   DEBUG(3,("flush\n"));
@@ -4246,7 +4246,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   nwritten = write_file(fsp,data,startpos,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
-      conn->vfs_ops.fsync(fsp->fd);
+      sync_file(conn,fsp);
   
   if(nwritten < (ssize_t)numtowrite)
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -4347,7 +4347,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   nwritten = write_file(fsp,data,startpos,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
-    conn->vfs_ops.fsync(fsp->fd);
+    sync_file(conn,fsp);
   
   if (nwritten < (ssize_t)numtowrite)
   {

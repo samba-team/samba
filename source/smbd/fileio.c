@@ -650,7 +650,7 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 sync a file
 ********************************************************************/
 
-void sys_fsync_file(connection_struct *conn, files_struct *fsp)
+void sync_file(connection_struct *conn, files_struct *fsp)
 {
     if(lp_strict_sync(SNUM(conn)) && fsp->fd != -1) {
       flush_write_cache(fsp, SYNC_FLUSH);
