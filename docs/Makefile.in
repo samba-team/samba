@@ -52,6 +52,7 @@ DVIDIR = $(OUTPUTDIR)
 FODIR = $(OUTPUTDIR)
 HTMLHELPDIR = $(OUTPUTDIR)/htmlhelp
 VALIDATEDIR = $(OUTPUTDIR)/validate
+PEARSONDIR = $(OUTPUTDIR)/pearson
 TXTDIR = $(OUTPUTDIR)/textdocs
 HTMLDIR=$(OUTPUTDIR)/htmldocs
 PLUCKERDIR=$(OUTPUTDIR)/plucker
@@ -301,13 +302,21 @@ $(MANDIR):
 $(MANDIR)/%: %.xml
 	$(XSLTPROC) --output $@ xslt/man.xsl $<
 
+$(PEARSONDIR):
+	mkdir $@
+
+$(PEARSONDIR)/%.xml: %.xml
+	$(XSLTPROC) --xinclude --output $@ xslt/pearson.xsl $<
+
+pearson: $(PEARSONDIR) $(PEARSONDIR)/Samba-HOWTO-Collection.xml
+
 $(VALIDATEDIR):
 	mkdir $@
 
 $(VALIDATEDIR)/%.report.html: %.xml
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
-verify: $(VALIDATEDIR) $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html
+verify: $(VALIDATEDIR) $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html $(PEARSONDIR)/Samba-HOWTO-Collection.xml
 
 # Find undocumented parameters
 
