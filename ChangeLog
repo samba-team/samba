@@ -1,3 +1,10 @@
+1999-08-13  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_addrs.c (get_addrs_int): try the different ways
+ 	sequentially instead of just one.  this helps if your heimdal was
+ 	built with v6-support but your kernel doesn't have it, for
+ 	example.
+
 1999-08-12  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hpropd.c: add inetd flag.  default means try to figure out
