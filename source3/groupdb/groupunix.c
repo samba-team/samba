@@ -227,7 +227,6 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		}
 
 		fstrcpy(gp_buf.name, gmep.nt_name);
-		grps->grp_idx++;
 		break;
 	}
 
@@ -253,6 +252,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		DEBUG(10,("line: '%s'\n", linebuf));
 	}
 
+	grps->grp_idx++; /* advance so next enum gets next entry */
 	return &gp_buf;
 }
 
