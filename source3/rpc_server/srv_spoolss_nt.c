@@ -1724,9 +1724,8 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
  * _spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  *
- * jfmxxxx: before replying OK: status=0
- * should do a rpc call to the workstation asking ReplyOpenPrinter
- * have to code it, later.
+ * before replying OK: status=0 a rpc call is made to the workstation
+ * asking ReplyOpenPrinter 
  *
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex
@@ -7970,4 +7969,3 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	return WERR_ACCESS_DENIED;
 }
-
