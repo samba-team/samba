@@ -128,8 +128,8 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 		if (addr->ipaddr == NULL) goto failed;
 	}
 
-	DEBUG(7,("Sending name query reply for %s<%02x> at %s to %s:%d\n", 
-		 name->name, name->type, addresses[0], src_address, src_port));
+	DEBUG(7,("Sending name query reply for %s at %s to %s:%d\n", 
+		 nbt_name_string(packet, name), addresses[0], src_address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
@@ -168,8 +168,8 @@ void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock,
 	packet->answers[0].ttl       = 0;
 	ZERO_STRUCT(packet->answers[0].rdata);
 
-	DEBUG(7,("Sending negative name query reply for %s<%02x> to %s:%d\n", 
-		 name->name, name->type, src_address, src_port));
+	DEBUG(7,("Sending negative name query reply for %s to %s:%d\n", 
+		 nbt_name_string(packet, name), src_address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
@@ -209,12 +209,11 @@ void nbtd_negative_name_registration_reply(struct nbt_name_socket *nbtsock,
 	packet->answers[0].ttl      = 0;
 	packet->answers[0].rdata    = request_packet->additional[0].rdata;
 
-	DEBUG(7,("Sending negative name registration reply for %s<%02x> to %s:%d\n", 
-		 name->name, name->type, src_address, src_port));
+	DEBUG(7,("Sending negative name registration reply for %s to %s:%d\n", 
+		 nbt_name_string(packet, name), src_address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:
 	talloc_free(packet);
 }
-

@@ -66,30 +66,31 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* our WINS server is dead - start registration over
 		   from scratch */
-		DEBUG(2,("Failed to refresh %s<%02x> with WINS server %s\n",
-			 iname->name.name, iname->name.type, iname->wins_server));
+		DEBUG(2,("Failed to refresh %s with WINS server %s\n",
+			 nbt_name_string(tmp_ctx, &iname->name), iname->wins_server));
+		talloc_free(tmp_ctx);
 		nbtd_winsclient_register(iname);
 		return;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("Name refresh failure with WINS for %s<%02x> - %s\n", 
-			 iname->name.name, iname->name.type, nt_errstr(status)));
+		DEBUG(1,("Name refresh failure with WINS for %s - %s\n", 
+			 nbt_name_string(tmp_ctx, &iname->name), nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return;
 	}	
 
 	if (io.out.rcode != 0) {
-		DEBUG(1,("WINS server %s rejected name refresh of %s<%02x> - %s\n", 
-			 io.out.wins_server, iname->name.name, iname->name.type, 
+		DEBUG(1,("WINS server %s rejected name refresh of %s - %s\n", 
+			 io.out.wins_server, nbt_name_string(tmp_ctx, &iname->name), 
 			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
 		iname->nb_flags |= NBT_NM_CONFLICT;
 		talloc_free(tmp_ctx);
 		return;
 	}	
 
-	DEBUG(4,("Refreshed name %s<%02x> with WINS server %s\n",
-		 iname->name.name, iname->name.type, iname->wins_server));
+	DEBUG(4,("Refreshed name %s with WINS server %s\n",
+		 nbt_name_string(tmp_ctx, &iname->name), iname->wins_server));
 	/* success - start a periodic name refresh */
 	iname->nb_flags |= NBT_NM_ACTIVE;
 	if (iname->wins_server) {
@@ -167,15 +168,15 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("Name register failure with WINS for %s<%02x> - %s\n", 
-			 iname->name.name, iname->name.type, nt_errstr(status)));
+		DEBUG(1,("Name register failure with WINS for %s - %s\n", 
+			 nbt_name_string(tmp_ctx, &iname->name), nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return;
 	}	
 
 	if (io.out.rcode != 0) {
-		DEBUG(1,("WINS server %s rejected name register of %s<%02x> - %s\n", 
-			 io.out.wins_server, iname->name.name, iname->name.type, 
+		DEBUG(1,("WINS server %s rejected name register of %s - %s\n", 
+			 io.out.wins_server, nbt_name_string(tmp_ctx, &iname->name), 
 			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
 		iname->nb_flags |= NBT_NM_CONFLICT;
 		talloc_free(tmp_ctx);
@@ -196,8 +197,8 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 			nbtd_wins_refresh,
 			iname);
 
-	DEBUG(3,("Registered %s<%02x> with WINS server %s\n",
-		 iname->name.name, iname->name.type, iname->wins_server));
+	DEBUG(3,("Registered %s with WINS server %s\n",
+		 nbt_name_string(tmp_ctx, &iname->name), iname->wins_server));
 
 	talloc_free(tmp_ctx);
 }

@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "system/iconv.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 /* don't allow an unlimited number of name components */
@@ -320,3 +321,59 @@ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
 
 	n->name = talloc_strdup(mem_ctx, name);
 }
+
+
+/*
+  escape a string into a form containing only a small set of characters,
+  the rest is hex encoded. This is similar to URL encoding
+*/
+static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
+{
+	int i, len;
+	char *ret;
+	const char *valid_chars = "_-.$@";
+
+	for (len=i=0;s[i];i++,len++) {
+		if (!isalnum(s[i]) && !strchr(valid_chars, s[i])) {
+			len += 2;
+		}
+	}
+
+	ret = talloc_array(mem_ctx, char, len+1);
+	if (ret == NULL) return NULL;
+
+	for (len=i=0;s[i];i++) {
+		if (isalnum(s[i]) || strchr(valid_chars, s[i])) {
+			ret[len++] = s[i];
+		} else {
+			snprintf(&ret[len], 3, "%02x", s[i]);
+			len += 3;
+		}
+	}
+	ret[len] = 0;
+
+	return ret;
+}
+
+
+/*
+  form a string for a NBT name
+*/
+const char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *ret;
+	if (name->scope) {		
+		ret = talloc_asprintf(mem_ctx, "%s<%02x>-%s",
+				      nbt_hex_encode(tmp_ctx, name->name),
+				      name->type, 
+				      nbt_hex_encode(tmp_ctx, name->scope));
+	} else {
+		ret = talloc_asprintf(mem_ctx, "%s<%02x>", 
+				      nbt_hex_encode(tmp_ctx, name->name), 
+				      name->type);
+	}
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
