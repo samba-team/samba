@@ -37,6 +37,10 @@ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 	uint32_t node[6];
 	int i;
 
+	if (s == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (11 == sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 			 &time_low, &time_mid, &time_hi_and_version, 
 			 &clock_seq[0], &clock_seq[1],
