@@ -60,6 +60,10 @@ if test "$ac_cv_type_signal" = "void" ; then
 fi
 AC_SUBST(VOID_RETSIGTYPE)
 
+dnl How to figure out where in the timezone world we are
+
+AC_HAVE_STRUCT_FIELD([#include <time.h>], [tm], [int], [tm_gmtoff])
+AC_KRB_VAR_TIMEZONE
 
 AC_GROK_TYPES(int8_t int16_t int32_t int64_t)
 AC_GROK_TYPES(u_int8_t u_int16_t u_int32_t u_int64_t)
