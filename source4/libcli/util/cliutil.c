@@ -76,13 +76,13 @@ BOOL yesno(char *p)
 
 const char *readdirname(DIR *p)
 {
-	SMB_STRUCT_DIRENT *ptr;
+	struct smb_dirent *ptr;
 	char *dname;
 
 	if (!p)
 		return(NULL);
   
-	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
+	ptr = (struct smb_dirent *)sys_readdir(p);
 	if (!ptr)
 		return(NULL);
 

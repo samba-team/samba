@@ -324,7 +324,7 @@ FILE *sys_fopen(const char *path, const char *type)
  A readdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
+struct smb_dirent *sys_readdir(DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
 	return readdir64(dirp);

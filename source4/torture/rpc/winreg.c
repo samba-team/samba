@@ -173,7 +173,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	keyname.unknown = 0x0000020a;
 	init_winreg_String(&keyname.key_name, NULL);
 	init_winreg_String(&classname, NULL);
-	r.in.name = &keyname;
+	r.in.in_name = &keyname;
 	r.in.class = &classname;
 	tm.low = tm.high = 0x7fffffff;
 	r.in.last_changed_time = &tm;

@@ -21,6 +21,55 @@ sub print_footer {
 	printf "\n#endif /*  %s  */\n", $header_name;
 }
 
+
+sub handle_loadparm {
+	my $line = shift;
+	
+	if ($line =~ /^FN_GLOBAL_STRING/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "char *$fnName(void);\n";
+	} elsif ($line =~ /^FN_LOCAL_STRING/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "char *$fnName(int );\n";
+	} elsif ($line =~ /^FN_GLOBAL_BOOL/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "BOOL $fnName(void);\n";
+	}
+	elsif ($line =~ /^FN_LOCAL_BOOL/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "BOOL $fnName(int );\n";
+	}
+	elsif ($line =~ /^FN_GLOBAL_INTEGER/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "int $fnName(void);\n";
+	}
+	elsif ($line =~ /^FN_LOCAL_INTEGER/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "int $fnName(int );\n";
+	}
+	elsif ($line =~ /^FN_GLOBAL_LIST/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "const char **$fnName(void);\n";
+	}
+	elsif ($line =~ /^FN_LOCAL_LIST/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "const char **$fnName(int );\n";
+	}
+	elsif ($line =~ /^FN_GLOBAL_CONST_STRING/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "const char *$fnName(void);\n";
+	}
+	elsif ($line =~ /^FN_LOCAL_CONST_STRING/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "const char *$fnName(int );\n";
+	}
+	elsif ($line =~ /^FN_LOCAL_CHAR/o) {
+		my $fnName = (split(/[\(,]/, $line))[1];
+		print "char $fnName(int );\n";
+	}
+}
+
+
 sub process_files {
 	my $line;
 	my $inheader;
@@ -57,60 +106,19 @@ sub process_files {
 			}
 
 
-			if ($line =~ /^FN_GLOBAL_STRING/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "char *$fnName(void);\n";
-			}
-			elsif ($line =~ /^FN_LOCAL_STRING/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "char *$fnName(int );\n";
-			}
-			elsif ($line =~ /^FN_GLOBAL_BOOL/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "BOOL $fnName(void);\n";
-			}
-			elsif ($line =~ /^FN_LOCAL_BOOL/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "BOOL $fnName(int );\n";
-			}
-			elsif ($line =~ /^FN_GLOBAL_INTEGER/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "int $fnName(void);\n";
-			}
-			elsif ($line =~ /^FN_LOCAL_INTEGER/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "int $fnName(int );\n";
-			}
-			elsif ($line =~ /^FN_GLOBAL_LIST/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "const char **$fnName(void);\n";
-			}
-			elsif ($line =~ /^FN_LOCAL_LIST/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "const char **$fnName(int );\n";
-			}
-			elsif ($line =~ /^FN_GLOBAL_CONST_STRING/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "const char *$fnName(void);\n";
-			}
-			elsif ($line =~ /^FN_LOCAL_CONST_STRING/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "const char *$fnName(int );\n";
-			}
-			elsif ($line =~ /^FN_LOCAL_CHAR/o) {
-				my $fnName = (split(/[\(,]/, $line))[1];
-				print "char $fnName(int );\n";
+			if ($line =~ /^FN_/) {
+				handle_loadparm($line);
 			}
 
 
 			# I'm going to leave these as is for now - perl can probably handle larger regex, though -- vance
 			# I've also sort of put these in approximate order of most commonly called
 
-			elsif ( $line =~ /^NTSTATUS|^void|^BOOL|^int|^struct|^char|^const|^PyObject|^ssize_t|^size_t|^uint|^ADS_STATUS|^ADS_STRUCT|^enum.*\(|^SMB_ACL_T|^time|^smb_ucs2_t|^DATA_BLOB|^WERROR/o ) {
+			elsif ( $line =~ /^NTSTATUS|^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR/o ) {
 				$gotstart = 1;
-			} elsif ( $line =~ /^smb_iconv_t|^long|^CLI_POLICY_HND|^FILE|^XFILE|^SMB_OFF_T|^pipes_struct|^smb_np_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^DIR|^user/o) {
+			} elsif ( $line =~ /^long|^XFILE|^FILE|^unsigned|^DIR/o) {
 				$gotstart = 1;
-			} elsif ( $line =~ /^pid_t|^ino_t|^off_t|^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NT_DEVICEMODE|^NT_USER_TOKEN|^ADS_MODLIST|^SORTED_TREE|^REGISTRY_HOOK|^REGISTRY_VALUE|^NTTIME|^UNISTR2|^SMB_STRUCT_DIRENT|^SEC_DESC|^DOM_SID/o ) {
+			} elsif ( $line =~ /^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME/o ) {
 				$gotstart = 1;
 			}
 

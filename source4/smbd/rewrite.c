@@ -64,15 +64,13 @@ BOOL init_names(void)
 
 BOOL uid_to_sid(DOM_SID *sid, uid_t uid)
 {
-	*sid = *get_global_sam_sid();
-	sid_append_rid(sid, uid*2);
+	ZERO_STRUCTP(sid);
 	return True;
 }
 
 BOOL gid_to_sid(DOM_SID *sid, gid_t gid)
 {
-	*sid = *get_global_sam_sid();
-	sid_append_rid(sid, gid*2 + 1);
+	ZERO_STRUCTP(sid);
 	return True;
 }
 

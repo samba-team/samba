@@ -346,7 +346,7 @@ typedef struct sid_info
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-typedef struct _nt_user_token {
+typedef struct nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 } NT_USER_TOKEN;

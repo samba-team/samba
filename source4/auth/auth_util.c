@@ -618,7 +618,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
  Create the SID list for this user.
 ****************************************************************************/
 
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest)
+struct nt_user_token *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest)
 {
 	DOM_SID user_sid;
 	DOM_SID group_sid;
@@ -1169,7 +1169,7 @@ void delete_nt_token(NT_USER_TOKEN **pptoken)
  Duplicate a SID token.
 ****************************************************************************/
 
-NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
+struct nt_user_token *dup_nt_token(NT_USER_TOKEN *ptoken)
 {
 	NT_USER_TOKEN *token;
 
