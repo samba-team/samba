@@ -543,7 +543,9 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#userhosts"><strong>use rhosts</strong></a>
 <p><li > <a href="smb.conf.5.html#usernamelevel"><strong>username level</strong></a>
 <p><li > <a href="smb.conf.5.html#usernamemap"><strong>username map</strong></a>
+<p><li > <a href="smb.conf.5.html#utmpconsolidate"><strong>utmp consolidate</strong></a>
 <p><li > <a href="smb.conf.5.html#utmpdirectory"><strong>utmp directory</strong></a>
+<p><li > <a href="smb.conf.5.html#utmphostname"><strong>utmp hostname</strong></a>
 <p><li > <a href="smb.conf.5.html#validchars"><strong>valid chars</strong></a>
 <p><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><li > <a href="smb.conf.5.html#winsproxy"><strong>wins proxy</strong></a>
@@ -551,6 +553,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#winssupport"><strong>wins support</strong></a>
 <p><li > <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a>
 <p><li > <a href="smb.conf.5.html#writeraw"><strong>write raw</strong></a>
+<p><li > <a href="smb.conf.5.html#wtmpdirectory"><strong>wtmp directory</strong></a>
 <p></dl>
 <p><a name="COMPLETELISTOFSERVICEPARAMETERS"></a>
 <h2>COMPLETE LIST OF SERVICE PARAMETERS</h2>
@@ -4679,6 +4682,16 @@ user connecting to a Samba share.
 <code>utmp = False</code>
 <p><strong>Example:</strong>
 <code>utmp = True</code>
+<p><a name="utmpconsolidate"></a>
+<p></p><dt><strong><strong>utmp consolidate(G)</strong></strong><dd>
+<p>This parameter is only available if Samba has been configured and compiled
+with the option <code>--with-utmp</code>.  Normally each share create a utmp record,
+but if there are many connections each with many shares, it can be desirable
+to consolidate the shares down to one-per-connection.
+<p><strong>Default:</strong>
+<code>utmp consolidate = no</code>
+<p><strong>Example:</strong>
+<code>utmp consolidate = yes</code>
 <p><a name="utmpdirectory"></a>
 <p></p><dt><strong><strong>utmp directory(G)</strong></strong><dd>
 <p>This parameter is only available if Samba has been configured and compiled
@@ -4691,6 +4704,16 @@ utmp file the native system is set to use (usually /var/run/utmp on Linux).
 <code>no utmp directory</code>
 <p><strong>Example:</strong>
 <code>utmp directory = /var/adm/</code>
+<p><a name="utmphostname"></a>
+<p></p><dt><strong><strong>utmp hostname(G)</strong></strong><dd>
+<p>This parameter is only available if Samba has been configured and compiled
+with the option <code>--with-utmp</code>. It specifies the ut_host field of the
+utmp and wtmp records.  The default is the NetBIOS name (%m), but a very
+useful alternative might be the Internet/DNS anme (%M).
+<p><strong>Default:</strong>
+<code>utmp hostname = %m</code>
+<p><strong>Example:</strong>
+<code>utmp hostname = %M</code>
 <p><a name="validchars"></a>
 <p></p><dt><strong><strong>valid chars (G)</strong></strong><dd>
 <p>The option allows you to specify additional characters that should be
@@ -4977,6 +5000,20 @@ permitting), but only via spooling operations.
 
 </pre>
 
+<p><a name="wtmpdirectory"></a>
+<p></p><dt><strong><strong>wtmp directory(G)</strong></strong><dd>
+<p>This parameter is only available if Samba has been configured and compiled
+with the option <code>--with-utmp</code>. It specifies a directory pathname that is
+used to store the wtmp or wtmpx files (depending on the UNIX system) that
+record user connections to a Samba server. See also the
+<a href="smb.conf.5.html#utmpdirectory"><strong>"utmp directory"</strong></a> parameter. By default this is
+not set, meaning the system will use either what has been set by
+<a href="smb.conf.5.html#utmp"><strong>"utmp"</strong></a> or whatever wtmp file the native system is set to use
+(usually /var/run/wtmp on Linux).
+<p><strong>Default:</strong>
+<code>no wtmp directory</code>
+<p><strong>Example:</strong>
+<code>wtmp directory = /var/adm/</code>
 <p></dl>
 <p><a name="WARNINGS"></a>
 <h2>WARNINGS</h2>

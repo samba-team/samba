@@ -161,6 +161,9 @@ typedef struct
   char *szWINSHook;
 #ifdef WITH_UTMP
   char *szUtmpDir;
+  char *szWtmpDir;
+  char *szUtmpHostname;
+  BOOL bUtmpConsolidate;
 #endif /* WITH_UTMP */
   char *szSourceEnv;
   int max_log_size;
@@ -820,6 +823,10 @@ static struct parm_struct parm_table[] =
 #ifdef WITH_UTMP
   {"utmp directory",   P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
   {"utmp dir",         P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+  {"wtmp directory",   P_STRING,  P_GLOBAL, &Globals.szWtmpDir,         NULL,   NULL,  0},
+  {"wtmp dir",         P_STRING,  P_GLOBAL, &Globals.szWtmpDir,         NULL,   NULL,  0},
+  {"utmp hostname",    P_STRING,  P_GLOBAL, &Globals.szUtmpHostname,    NULL,   NULL,  0},
+  {"utmp consolidate", P_BOOL,    P_GLOBAL, &Globals.bUtmpConsolidate,  NULL,   NULL,  0},
 #endif /* WITH_UTMP */
   {"default service",  P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"default",          P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
@@ -907,6 +914,9 @@ static void init_globals(void)
   string_set(&Globals.szRootdir, "/");
 #ifdef WITH_UTMP
   string_set(&Globals.szUtmpDir, "");
+  string_set(&Globals.szWtmpDir, "");
+  string_set(&Globals.szUtmpHostname, "%m");
+  Globals.bUtmpConsolidate = False;
 #endif /* WITH_UTMP */
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
@@ -1177,6 +1187,9 @@ FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir,&Globals.szUtmpDir)
+FN_GLOBAL_STRING(lp_wtmpdir,&Globals.szWtmpDir)
+FN_GLOBAL_STRING(lp_utmp_hostname,&Globals.szUtmpHostname)
+FN_GLOBAL_BOOL(lp_utmp_consolidate,&Globals.bUtmpConsolidate)
 #endif /* WITH_UTMP */
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
 FN_GLOBAL_STRING(lp_source_environment,&Globals.szSourceEnv)

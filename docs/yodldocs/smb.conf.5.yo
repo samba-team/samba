@@ -764,7 +764,11 @@ it() link(bf(username level))(usernamelevel)
 
 it() link(bf(username map))(usernamemap)
 
+it() link(bf(utmp consolidate))(utmpconsolidate)
+
 it() link(bf(utmp directory))(utmpdirectory)
+
+it() link(bf(utmp hostname))(utmphostname)
 
 it() link(bf(valid chars))(validchars)
 
@@ -779,6 +783,8 @@ it() link(bf(wins support))(winssupport)
 it() link(bf(workgroup))(workgroup)
 
 it() link(bf(write raw))(writeraw)
+
+it() link(bf(wtmp directory))(wtmpdirectory)
 
 endit()
 
@@ -6463,6 +6469,20 @@ tt(utmp = False)
   bf(Example:)
 tt(utmp = True)
 
+label(utmpconsolidate)
+dit(bf(utmp consolidate(G)))
+
+This parameter is only available if Samba has been configured and compiled
+with the option tt(--with-utmp).  Normally each share create a utmp record,
+but if there are many connections each with many shares, it can be desirable
+to consolidate the shares down to one-per-connection.
+
+  bf(Default:)
+tt(utmp consolidate = no)
+
+  bf(Example:)
+tt(utmp consolidate = yes)
+
 label(utmpdirectory)
 dit(bf(utmp directory(G)))
 
@@ -6478,6 +6498,20 @@ tt(no utmp directory)
 
   bf(Example:)
 tt(utmp directory = /var/adm/)
+
+label(utmphostname)
+dit(bf(utmp hostname(G)))
+
+This parameter is only available if Samba has been configured and compiled
+with the option tt(--with-utmp). It specifies the ut_host field of the
+utmp and wtmp records.  The default is the NetBIOS name (%m), but a very
+useful alternative might be the Internet/DNS anme (%M).
+
+  bf(Default:)
+tt(utmp hostname = %m)
+
+  bf(Example:)
+tt(utmp hostname = %M)
 
 label(validchars)
 dit(bf(valid chars (G)))
@@ -6848,6 +6882,24 @@ verb(
  	writeable = yes
  	write ok = yes
 )
+
+label(wtmpdirectory)
+dit(bf(wtmp directory(G)))
+
+This parameter is only available if Samba has been configured and compiled
+with the option tt(--with-utmp). It specifies a directory pathname that is
+used to store the wtmp or wtmpx files (depending on the UNIX system) that
+record user connections to a Samba server. See also the
+link(bf("utmp directory"))(utmpdirectory) parameter. By default this is
+not set, meaning the system will use either what has been set by
+link(bf("utmp"))(utmp) or whatever wtmp file the native system is set to use
+(usually /var/run/wtmp on Linux).
+
+  bf(Default:)
+tt(no wtmp directory)
+
+  bf(Example:)
+tt(wtmp directory = /var/adm/)
 
 endit()
 

@@ -707,6 +707,59 @@ if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF)
 fi
 
+dnl  utmp and utmpx come in many flavours
+dnl  We need to check for many of them
+dnl  But we don't need to do each and every one, because our code uses
+dnl  mostly just the utmp (not utmpx) fields.
+
+AC_CACHE_CHECK([for ut_name in utmp],samba_cv_HAVE_UT_UT_NAME,[
+AC_TRY_COMPILE([#include <utmp.h>],
+[struct utmp ut;  ut.ut_name[0] = 'a';],
+samba_cv_HAVE_UT_UT_NAME=yes,samba_cv_HAVE_UT_UT_NAME=no,samba_cv_HAVE_UT_UT_NAME=cross)])
+if test x"$samba_cv_HAVE_UT_UT_NAME" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_NAME)
+fi 
+
+AC_CACHE_CHECK([for ut_user in utmp],samba_cv_HAVE_UT_UT_USER,[
+AC_TRY_COMPILE([#include <utmp.h>],
+[struct utmp ut;  ut.ut_user[0] = 'a';],
+samba_cv_HAVE_UT_UT_USER=yes,samba_cv_HAVE_UT_UT_USER=no,samba_cv_HAVE_UT_UT_USER=cross)])
+if test x"$samba_cv_HAVE_UT_UT_USER" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_USER)
+fi 
+
+AC_CACHE_CHECK([for ut_id in utmp],samba_cv_HAVE_UT_UT_ID,[
+AC_TRY_COMPILE([#include <utmp.h>],
+[struct utmp ut;  ut.ut_id[0] = 'a';],
+samba_cv_HAVE_UT_UT_ID=yes,samba_cv_HAVE_UT_UT_ID=no,samba_cv_HAVE_UT_UT_ID=cross)])
+if test x"$samba_cv_HAVE_UT_UT_ID" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_ID)
+fi 
+
+AC_CACHE_CHECK([for ut_host in utmp],samba_cv_HAVE_UT_UT_HOST,[
+AC_TRY_COMPILE([#include <utmp.h>],
+[struct utmp ut;  ut.ut_host[0] = 'a';],
+samba_cv_HAVE_UT_UT_HOST=yes,samba_cv_HAVE_UT_UT_HOST=no,samba_cv_HAVE_UT_UT_HOST=cross)])
+if test x"$samba_cv_HAVE_UT_UT_HOST" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_HOST)
+fi 
+
+AC_CACHE_CHECK([for ut_time in utmp],samba_cv_HAVE_UT_UT_TIME,[
+AC_TRY_COMPILE([#include <utmp.h>],
+[struct utmp ut;  time_t t; ut.ut_time = t;],
+samba_cv_HAVE_UT_UT_TIME=yes,samba_cv_HAVE_UT_UT_TIME=no,samba_cv_HAVE_UT_UT_TIME=cross)])
+if test x"$samba_cv_HAVE_UT_UT_TIME" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_TIME)
+fi 
+
+AC_CACHE_CHECK([for ut_tv in utmp],samba_cv_HAVE_UT_UT_TV,[
+AC_TRY_COMPILE([#include <utmp.h>],
+[struct utmp ut;  struct timeval tv; ut.ut_tv = tv;],
+samba_cv_HAVE_UT_UT_TV=yes,samba_cv_HAVE_UT_UT_TV=no,samba_cv_HAVE_UT_UT_TV=cross)])
+if test x"$samba_cv_HAVE_UT_UT_TV" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_TV)
+fi 
+
 AC_CACHE_CHECK([for ut_syslen in utmpx],samba_cv_HAVE_UX_UT_SYSLEN,[
 AC_TRY_COMPILE([#include <utmpx.h>],
 [struct utmpx ux;  ux.ut_syslen = 0;],

@@ -919,7 +919,13 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBusername map\fP
 .IP 
 .IP o 
+\fButmp consolidate\fP
+.IP 
+.IP o 
 \fButmp directory\fP
+.IP 
+.IP o 
+\fButmp hostname\fP
 .IP 
 .IP o 
 \fBvalid chars\fP
@@ -941,6 +947,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBwrite raw\fP
+.IP 
+.IP o 
+\fBwtmp directory\fP
 .IP 
 .PP 
 .SH "COMPLETE LIST OF SERVICE PARAMETERS" 
@@ -6571,6 +6580,19 @@ See also the \fB"utmp directory"\fP parameter\&.
 \fBExample:\fP
 \f(CWutmp = True\fP
 .IP 
+.IP "\fButmp consolidate(G)\fP" 
+.IP 
+This parameter is only available if Samba has been configured and compiled
+with the option \f(CW--with-utmp\fP\&.  Normally each share create a utmp record,
+but if there are many connections each with many shares, it can be desirable
+to consolidate the shares down to one-per-connection\&.
+.IP 
+\fBDefault:\fP
+\f(CWutmp consolidate = no\fP
+.IP 
+\fBExample:\fP
+\f(CWutmp consolidate = yes\fP
+.IP 
 .IP "\fButmp directory(G)\fP" 
 .IP 
 This parameter is only available if Samba has been configured and compiled
@@ -6585,6 +6607,19 @@ utmp file the native system is set to use (usually /var/run/utmp on Linux)\&.
 .IP 
 \fBExample:\fP
 \f(CWutmp directory = /var/adm/\fP
+.IP 
+.IP "\fButmp hostname(G)\fP" 
+.IP 
+This parameter is only available if Samba has been configured and compiled
+with the option \f(CW--with-utmp\fP\&. It specifies the ut_host field of the
+utmp and wtmp records\&.  The default is the NetBIOS name (%m), but a very
+useful alternative might be the Internet/DNS anme (%M)\&.
+.IP 
+\fBDefault:\fP
+\f(CWutmp hostname = %m\fP
+.IP 
+\fBExample:\fP
+\f(CWutmp hostname = %M\fP
 .IP 
 .IP "\fBvalid chars (G)\fP" 
 .IP 
@@ -6968,6 +7003,23 @@ permitting), but only via spooling operations\&.
 .DE 
  
 
+.IP 
+.IP "\fBwtmp directory(G)\fP" 
+.IP 
+This parameter is only available if Samba has been configured and compiled
+with the option \f(CW--with-utmp\fP\&. It specifies a directory pathname that is
+used to store the wtmp or wtmpx files (depending on the UNIX system) that
+record user connections to a Samba server\&. See also the
+\fB"utmp directory"\fP parameter\&. By default this is
+not set, meaning the system will use either what has been set by
+\fB"utmp"\fP or whatever wtmp file the native system is set to use
+(usually /var/run/wtmp on Linux)\&.
+.IP 
+\fBDefault:\fP
+\f(CWno wtmp directory\fP
+.IP 
+\fBExample:\fP
+\f(CWwtmp directory = /var/adm/\fP
 .IP 
 .PP 
 .SH "WARNINGS" 

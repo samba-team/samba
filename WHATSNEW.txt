@@ -5,12 +5,6 @@ This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
-TODO Before Official 2.0.7 release
-----------------------------------
-
-Update "Using Samba" html to match 2.0.7 code.
-Update packaging code to include all new files.
-
 New Documentation in 2.0.7
 --------------------------
 
@@ -60,15 +54,16 @@ There are 5 new parameters in the smb.conf file.
 
 utmp
 utmp dir
+utmp hostname
+utmp consolidate
+wtmp directory
 
-These two parameters are only available if the "--with-utmp"
+These parameters are only available if the "--with-utmp"
 option was selected at configure time. The yes/no option "utmp"
 specifies whether utmp records should be recorded on user
-logon/logoff. It defaults to "no". The "utmp dir" (which
-also has a synonym of "utmp directory") parameter is a
-string parameter specifying a pathname to the directory containing
-the utmp file databases. This defaults to "" (the empty string).
-See the smb.conf man page for more details.
+logon/logoff. It defaults to "no". The "utmp dir" and "wtmp dir"
+are string parameters specifying pathnames to the directories containing
+the utmp/wtmp file databases. See the smb.conf man page for more details.
 
 inherit permissions
 

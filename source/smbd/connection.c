@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 
 #ifdef WITH_UTMP
 static void utmp_yield(pid_t pid, const connection_struct *conn, int i);
-static void utmp_claim(const struct connect_record *crec, const connection_struct *conn, int i);
+static void utmp_claim(const struct connect_record *crec, connection_struct *conn, int i);
 #endif
 
 /****************************************************************************
@@ -258,6 +258,9 @@ OS status:
 	HPUX 9.x:  Not tested.  Appears not to have "x".
 	IRIX 6.5:  Not tested.  Appears to have "x".
 
+OS observations:
+	Almost every OS seems to have its own quirks.
+
 Notes:
 	The 4 byte 'ut_id' component is vital to distinguish connections,
 	of which there could be several hundered or even thousand.
@@ -288,6 +291,14 @@ Notes:
 ****************************************************************************/
 
 #include <utmp.h>
+
+/*
+ * Apparently AIX has utmpx.h but doesn't implement it.
+ * The test for this ought to be (a) more automatic (b) elsewhere.
+ */
+#if defined (AIX)
+#undef HAVE_UTMPX_H
+#endif
 
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
@@ -320,60 +331,130 @@ ut_id_encode(int i, char *fourbyte)
 	return(i);	/* 0: good; else overflow */
 }
 
-static int utmp_fill(struct utmp *u, const connection_struct *conn, pid_t pid, int i)
+/*
+ * Fill in a utmp (not utmpx) template
+ */
+static int utmp_fill(struct utmp *u, const connection_struct *conn, pid_t pid,
+  int i, pstring host)
 {
+#if defined(HAVE_UT_UT_TIME)
 	struct timeval timeval;
-	int rc;
+#endif /* defined(HAVE_UT_UT_TIME) */
+	int rc = 0;
 
+#if defined(HAVE_UT_UT_USER)
 	pstrcpy(u->ut_user, conn->user);
-	rc = ut_id_encode(i, u->ut_id);
+#endif /* defined(HAVE_UT_UT_USER) */
+
+#if defined(HAVE_UT_UT_NAME)
+	pstrcpy(u->ut_name, conn->user);
+#endif /* defined(HAVE_UT_UT_NAME) */
+
 	slprintf(u->ut_line, 12, "smb/%d", i);
 
 	u->ut_pid = pid;
 
+#if defined(HAVE_UT_UT_TIME)
 	gettimeofday(&timeval, NULL);
 	u->ut_time = timeval.tv_sec;
+#endif /* defined(HAVE_UT_UT_TIME) */
+
+#if defined(HAVE_UT_UT_TV)
+	gettimeofday(&timeval, NULL);
+	u->ut_tv = timeval;
+#endif /* defined(HAVE_UT_UT_TV) */
+
+#if defined(HAVE_UT_UT_HOST)
+	if (host) {
+		pstrcpy(u->ut_host, host);
+	}
+#endif /* defined(HAVE_UT_UT_HOST) */
+
+#if defined(HAVE_UT_UT_ID)
+	rc = ut_id_encode(i, u->ut_id);
+#endif /* defined(HAVE_UT_UT_ID) */
 
 	return(rc);
 }
 
-/* Default path (if possible) */
+/*
+ * Default paths to various {u,w}tmp{,x} files
+ */
 #ifdef	HAVE_UTMPX_H
 
-# ifdef UTMPX_FILE
-static char *ut_pathname = UTMPX_FILE;
+static char *ux_pathname =
+# if defined (UTMPX_FILE)
+	UTMPX_FILE ;
+# elif defined (_UTMPX_FILE)
+	_UTMPX_FILE ;
+# elif defined (_PATH_UTMPX)
+	_PATH_UTMPX ;
 # else
-static char *ut_pathname = "";
-# endif
-# ifdef WTMPX_FILE
-static char *wt_pathname = WTMPX_FILE;
-# else
-static char *wt_pathname = "";
+	"" ;
 # endif
 
-#else	/* HAVE_UTMPX_H */
-
-# ifdef UTMP_FILE
-static char *ut_pathname = UTMP_FILE;
+static char *wx_pathname =
+# if defined (WTMPX_FILE)
+	WTMPX_FILE ;
+# elif defined (_WTMPX_FILE)
+	_WTMPX_FILE ;
+# elif defined (_PATH_WTMPX)
+	_PATH_WTMPX ;
 # else
-static char *ut_pathname = "";
-# endif
-# ifdef WTMP_FILE
-static char *wt_pathname = WTMP_FILE;
-# else
-static char *wt_pathname = "";
+	"" ;
 # endif
 
 #endif	/* HAVE_UTMPX_H */
 
-static void uw_pathname(pstring fname, const char *uw_name)
+static char *ut_pathname =
+# if defined (UTMP_FILE)
+	UTMP_FILE ;
+# elif defined (_UTMP_FILE)
+	_UTMP_FILE ;
+# elif defined (_PATH_UTMP)
+	_PATH_UTMP ;
+# else
+	"" ;
+# endif
+
+static char *wt_pathname =
+# if defined (WTMP_FILE)
+	WTMP_FILE ;
+# elif defined (_WTMP_FILE)
+	_WTMP_FILE ;
+# elif defined (_PATH_WTMP)
+	_PATH_WTMP ;
+# else
+	"" ;
+# endif
+
+/*
+ * Get name of {u,w}tmp{,x} file.
+ *	return: fname contains filename
+ *		Possibly empty if this code not yet ported to this system.
+ *
+ * utmp{,x}:  try "utmp dir", then default (a define)
+ * wtmp{,x}:  try "wtmp dir", then "utmp dir", then default (a define)
+ */
+static void uw_pathname(pstring fname, const char *uw_name, const char *uw_default)
 {
 	pstring dirname;
 
-	pstrcpy(dirname,lp_utmpdir());
-	trim_string(dirname,"","/");
+	pstrcpy(dirname, "");
 
-	/* Given directory: use it */
+	/* For w-files, first look for explicit "wtmp dir" */
+	if (uw_name[0] == 'w') {
+		pstrcpy(dirname,lp_wtmpdir());
+		trim_string(dirname,"","/");
+	}
+
+	/* For u-files and non-explicit w-dir, look for "utmp dir" */
+	if (dirname == 0 || strlen(dirname) == 0) {
+		pstrcpy(dirname,lp_utmpdir());
+		trim_string(dirname,"","/");
+	}
+
+	/* If explicit directory above, use it */
 	if (dirname != 0 && strlen(dirname) != 0) {
 		pstrcpy(fname, dirname);
 		pstrcat(fname, "/");
@@ -381,21 +462,17 @@ static void uw_pathname(pstring fname, const char *uw_name)
 		return;
 	}
 
-	/* No given directory: attempt to use default paths */
-	if (uw_name[0] == 'u') {
-		pstrcpy(fname, ut_pathname);
-		return;
+	/* No explicit directory: attempt to use default paths */
+	if (strlen(uw_default) == 0) {
+		/* No explicit setting, no known default.
+		 * Has it yet been ported to this OS?
+		 */
+		DEBUG(2,("uw_pathname: unable to determine pathname\n"));
 	}
-
-	if (uw_name[0] == 'w') {
-		pstrcpy(fname, wt_pathname);
-		return;
-	}
-
-	pstrcpy(fname, "");
+	pstrcpy(fname, uw_default);
 }
 
-static void utmp_update(const struct utmp *u, const char *host)
+static void utmp_update(const struct utmp *u, pstring host)
 {
 	pstring fname;
 
@@ -410,31 +487,35 @@ static void utmp_update(const struct utmp *u, const char *host)
 		pstrcpy(ux.ut_host, host);
 	}
 
-	uw_pathname(fname, "utmpx");
+	uw_pathname(fname, "utmpx", ux_pathname);
 	DEBUG(2,("utmp_update: fname:%s\n", fname));
 	if (strlen(fname) != 0) {
 		utmpxname(fname);
 	}
+	setutxent();
 	uxrc = pututxline(&ux);
+	endutxent();
 	if (uxrc == NULL) {
 		DEBUG(2,("utmp_update: pututxline() failed\n"));
 		return;
 	}
 
-	uw_pathname(fname, "wtmpx");
+	uw_pathname(fname, "wtmpx", wx_pathname);
 	DEBUG(2,("utmp_update: fname:%s\n", fname));
 	if (strlen(fname) != 0) {
 		updwtmpx(fname, &ux);
 	}
 #else
-	uw_pathname(fname, "utmp");
+	uw_pathname(fname, "utmp", ut_pathname);
 	DEBUG(2,("utmp_update: fname:%s\n", fname));
 	if (strlen(fname) != 0) {
 		utmpname(fname);
 	}
+	setutent();
 	pututline(u);
+	endutent();
 
-	uw_pathname(fname, "wtmp");
+	uw_pathname(fname, "wtmp", wt_pathname);
 
 	/* *** Hmmm.  Appending wtmp (as distinct from overwriting utmp) has
 	me baffled.  How is it to be done? *** */
@@ -444,28 +525,36 @@ static void utmp_update(const struct utmp *u, const char *host)
 static void utmp_yield(pid_t pid, const connection_struct *conn, int i)
 {
 	struct utmp u;
+	int nopen;
 
 	if (! lp_utmp(SNUM(conn))) {
 		DEBUG(2,("utmp_yield: lp_utmp() NULL\n"));
 		return;
 	}
 
-	DEBUG(2,("utmp_yield: conn: user:%s cnum:%d i:%d\n",
-	  conn->user, conn->cnum, i));
+	nopen = conn_num_open();
+	DEBUG(2,("utmp_yield: conn: user:%s cnum:%d i:%d (nopen:%d)\n",
+	  conn->user, conn->cnum, i, nopen));
+
+	if (lp_utmp_consolidate() && nopen > 1) {
+		DEBUG(2,("utmp_yield: utmp consolidate: %d entries open\n", nopen));
+		return;
+	}
 
 	memset((char *)&u, '\0', sizeof(struct utmp));
 	u.ut_type = DEAD_PROCESS;
 	u.ut_exit.e_termination = 0;
 	u.ut_exit.e_exit = 0;
-	if (utmp_fill(&u, conn, pid, i) == 0) {
+	if (utmp_fill(&u, conn, pid, i, NULL) == 0) {
 		utmp_update(&u, NULL);
 	}
 }
 
-static void utmp_claim(const struct connect_record *crec, const connection_struct *conn, int i)
+static void utmp_claim(const struct connect_record *crec, connection_struct *conn, int i)
 {
-	extern int Client;
 	struct utmp u;
+	pstring host;
+	int nopen;
 
 	if (conn == NULL) {
 		DEBUG(2,("utmp_claim: conn NULL\n"));
@@ -477,16 +566,32 @@ static void utmp_claim(const struct connect_record *crec, const connection_struc
 		return;
 	}
 
-	DEBUG(2,("utmp_claim: conn: user:%s cnum:%d i:%d\n",
-	  conn->user, conn->cnum, i));
-	DEBUG(2,("utmp_claim: crec: pid:%d, cnum:%d name:%s addr:%s mach:%s DNS:%s\n",
-	  crec->pid, crec->cnum, crec->name, crec->addr, crec->machine, client_name(Client)));
+	nopen = conn_num_open();
+	if (lp_utmp_consolidate() && nopen > 1) {
+		DEBUG(2,("utmp_claim: utmp consolidate: %d entries open\n", nopen));
+		return;
+	}
+
+	pstrcpy(host, lp_utmp_hostname());
+	if (host == 0 || strlen(host) == 0) {
+		pstrcpy(host, crec->machine);
+	}
+	else {
+		/* explicit "utmp host": expand for any "%" variables */
+		standard_sub(conn, host);
+	}
+
+	nopen = conn_num_open();
+	DEBUG(2,("utmp_claim: conn: user:%s cnum:%d i:%d (nopen:%d)\n",
+	  conn->user, conn->cnum, i, nopen));
+	DEBUG(2,("utmp_claim: crec: pid:%d, cnum:%d name:%s addr:%s mach:%s host:%s\n",
+	  crec->pid, crec->cnum, crec->name, crec->addr, crec->machine, host));
 
 
 	memset((char *)&u, '\0', sizeof(struct utmp));
 	u.ut_type = USER_PROCESS;
-	if (utmp_fill(&u, conn, crec->pid, i) == 0) {
-		utmp_update(&u, crec->machine);
+	if (utmp_fill(&u, conn, crec->pid, i, host) == 0) {
+		utmp_update(&u, host);
 	}
 }
 
