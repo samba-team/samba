@@ -45,3 +45,5 @@ void gss_err(int exitval, int status, const char *fmt, ...)
     __attribute__ ((format (printf, 3, 4)));
 
 gss_OID select_mech(const char *);
+
+void print_gss_name(const char *, gss_name_t);

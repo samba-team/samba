@@ -128,3 +128,24 @@ select_mech(const char *mech)
     else
 	errx (1, "Unknown mechanism '%s' (spnego, krb5, no-oid)", mech);
 }
+
+void
+print_gss_name(const char *prefix, gss_name_t name)
+{
+    OM_uint32 maj_stat, min_stat;
+    gss_buffer_desc name_token;
+
+    maj_stat = gss_display_name (&min_stat,
+				 name,
+				 &name_token,
+				 NULL);
+    if (GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_display_name");
+
+    fprintf (stderr, "%s `%.*s'\n", prefix,
+	     (int)name_token.length,
+	     (char *)name_token.value);
+
+    gss_release_buffer (&min_stat, &name_token);
+
+}
