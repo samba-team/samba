@@ -88,7 +88,7 @@ test_seq(int t, OM_uint32 flags, OM_uint32 start_seq,
     OM_uint32 maj_stat, min_stat;
     int i;
 
-    maj_stat = gssapi_msg_order_create(&min_stat, &o, flags, start_seq, 20);
+    maj_stat = gssapi_msg_order_create(&min_stat, &o, flags, start_seq, 20, 0);
     if (maj_stat)
 	err(1, "create: %d %d", maj_stat, min_stat);
 
