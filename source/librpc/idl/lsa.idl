@@ -652,6 +652,7 @@
 	/* Function 0x2f */
 	NTSTATUS lsa_SetInfoPolicy2();
 
+	/**********************/
 	/* Function 0x30 */
 	NTSTATUS lsa_QueryTrustedDomainInfoByName(
 		[in,ref]               policy_handle         *handle,
@@ -678,6 +679,7 @@
 	/* Function 0x36 */
 	NTSTATUS lsa_SetDomInfoPolicy();
 
+	/**********************/
 	/* Function 0x37 */
 	NTSTATUS lsa_OpenTrustedDomainByName(
 		[in,ref]     policy_handle *handle,
@@ -689,11 +691,58 @@
 	/* Function 0x38 */
 	NTSTATUS lsa_TestCall();
 
+	/**********************/
 	/* Function 0x39 */
-	NTSTATUS lsa_LookupSids2();
 
+	typedef struct {
+		uint16 sid_type;
+		lsa_String name;
+		uint32 sid_index;
+		uint32 unknown;
+	} lsa_TranslatedName2;
+
+	typedef struct {
+		[range(0,1000)] uint32 count;
+		[size_is(count)] lsa_TranslatedName2 *names;
+	} lsa_TransNameArray2;
+
+	NTSTATUS lsa_LookupSids2(
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_SidArray *sids,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransNameArray2 *names,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count,
+		[in]         uint32 unknown1,
+		[in]         uint32 unknown2
+		);
+
+	/**********************/
 	/* Function 0x3a */
-	NTSTATUS lsa_LookupNames2();
+
+	typedef struct {
+		uint16 sid_type;
+		uint32 rid;
+		uint32 sid_index;
+		uint32 unknown;
+	} lsa_TranslatedSid2;
+
+	typedef struct {
+		[range(0,1000)] uint32 count;
+		[size_is(count)] lsa_TranslatedSid2 *sids;
+	} lsa_TransSidArray2;
+
+	NTSTATUS lsa_LookupNames2 (
+		[in,ref]     policy_handle *handle,
+		[in,range(0,1000)] uint32 num_names,
+		[in,ref,size_is(num_names)]  lsa_String *names,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransSidArray2 *sids,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count,
+		[in]         uint32 unknown1,
+		[in]         uint32 unknown2
+		);
 
 	/* Function 0x3b */
 	NTSTATUS lsa_CreateTrustedDomainEx2();
