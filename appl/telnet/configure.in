@@ -289,6 +289,14 @@ case "`uname -sr`" in
 SunOS\ 4*|OSF1*)
 	krb_cv_sys_streamspty=no
 	;;
+AIX*)
+	os_rel=`uname -v`.`uname -r`
+	if expr "$os_rel" : "3*" >/dev/null 2>&1; then
+		krb_cv_sys_streamspty=no
+	else
+		krb_cv_sys_streamspty="$ac_cv_func_getmsg"
+	fi
+	;;
 *)
 	krb_cv_sys_streamspty="$ac_cv_func_getmsg"
 	;;
