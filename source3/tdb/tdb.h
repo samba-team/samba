@@ -114,12 +114,12 @@ TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn);
+			 tdb_log_func log_fn,
+			 tdb_hash_func hash_fn);
 
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);
 void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func);
-void tdb_set_hash_function(TDB_CONTEXT *tdb, tdb_hash_func);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);

@@ -1689,11 +1689,6 @@ static u32 default_tdb_hash(TDB_DATA *key)
 	return (1103515243 * value + 12345);  
 }
 
-void tdb_set_hash_function(TDB_CONTEXT *tdb, tdb_hash_func fn)
-{
-	tdb->hash_fn = fn;
-}
-
 /* open the database, creating it if necessary 
 
    The open_flags and mode are passed straight to the open call on the
@@ -1707,13 +1702,14 @@ void tdb_set_hash_function(TDB_CONTEXT *tdb, tdb_hash_func fn)
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
-	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL);
+	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL);
 }
 
 
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn)
+			 tdb_log_func log_fn,
+			 tdb_hash_func hash_fn)
 {
 	TDB_CONTEXT *tdb;
 	struct stat st;
@@ -1733,7 +1729,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn;
-	tdb->hash_fn = default_tdb_hash;
+	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
