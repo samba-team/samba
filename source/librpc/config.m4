@@ -35,6 +35,7 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_protected_storage.o
 		librpc/gen_ndr/ndr_dcom.o
 		librpc/gen_ndr/ndr_oxidresolver.o
+		librpc/gen_ndr/ndr_remact.o
 		librpc/gen_ndr/ndr_wzcsvc.o
 		librpc/gen_ndr/ndr_browser.o
 		librpc/gen_ndr/ndr_w32time.o
