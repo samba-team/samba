@@ -133,9 +133,6 @@ static BOOL check_domain_match(const char *user, const char *domain)
  * Check a user's password, as given in the user_info struct and return various
  * interesting details in the server_info struct.
  *
- * This function does NOT need to be in a become_root()/unbecome_root() pair
- * as it makes the calls itself when needed.
- *
  * The return value takes precedence over the contents of the server_info 
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
