@@ -611,6 +611,7 @@ extern int errno;
 #include "hash.h"
 #include "trans2.h"
 #include "nterr.h"
+#include "secrets.h"
 
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>

@@ -498,6 +498,8 @@ static void init_structs(void )
 	init_printer_hnd();
 	
 	init_dptrs();
+
+	secrets_init();
 }
 
 /****************************************************************************

@@ -920,16 +920,9 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
      * First, open the machine password file with an exclusive lock.
      */
 
-    if(!trust_password_lock( global_myworkgroup, global_myname, True)) {
-      DEBUG(0,("process: unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-      return True;
-    }
-
-    if(!get_trust_account_password( trust_passwd_hash, &lct)) {
+    if(!get_trust_account_password(global_myworkgroup, trust_passwd_hash, &lct)) {
       DEBUG(0,("process: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-      trust_password_unlock();
       return True;
     }
 
@@ -938,7 +931,6 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
      */
 
     if(t < lct + lp_machine_password_timeout()) {
-      trust_password_unlock();
       global_machine_password_needs_changing = False;
       return True;
     }
@@ -946,7 +938,6 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
     pstrcpy(remote_machine_list, lp_passwordserver());
 
     change_trust_account_password( global_myworkgroup, remote_machine_list);
-    trust_password_unlock();
     global_machine_password_needs_changing = False;
   }
 
