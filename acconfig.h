@@ -45,6 +45,26 @@
 /*  Define this if you have a struct sockaddr_in6 */
 #undef HAVE_STRUCT_SOCKADDR_IN6
 
+/* define if prototype of gethostbyname is compatible with
+   `struct hostent *gethostbyname(const char *)
+   */
+#undef GETHOSTBYNAME_PROTO_COMPATIBLE
+
+/* define if prototype of gethostbyaddr is compatible with
+   `struct hostent *gethostbyaddr(const void *, size_t, int)
+   */
+#undef GETHOSTBYADDR_PROTO_COMPATIBLE
+
+/* define if prototype of getservbyname is compatible with
+   `struct servent *getservbyname(const char *, const char *)
+   */
+#undef GETSERVBYNAME_PROTO_COMPATIBLE
+
+/* define if prototype of openlog is compatible with
+   `void open(const char *, int, int)'
+   */
+#undef OPENLOG_PROTO_COMPATIBLE
+
 /* define if you have h_errno */
 #undef HAVE_H_ERRNO
 
@@ -137,6 +157,9 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #endif
 
 /* telnet stuff ----------------------------------------------- */
+
+/* define this for OTP support */
+#undef OTP
 
 /* define this if you have kerberos 4 */
 #undef KRB4
