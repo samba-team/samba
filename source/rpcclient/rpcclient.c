@@ -707,6 +707,9 @@ static void usage(void)
 	if (!interactive) 
 		reopen_logs();
 	
+	TimeInit();
+	charset_initialise();
+
 	/* Load smb.conf file */
 	/* FIXME!  How to get this DEBUGLEVEL to last over lp_load()? */
 	olddebug = DEBUGLEVEL;
@@ -715,9 +718,9 @@ static void usage(void)
 	}
 	DEBUGLEVEL = olddebug;
 
-	load_interfaces();
+	codepage_initialise(lp_client_code_page());
 
-	TimeInit();
+	load_interfaces();
 
 	get_myname((*global_myname)?NULL:global_myname);
 	strupper(global_myname);
