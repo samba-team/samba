@@ -48,7 +48,7 @@ static int gethexpwd(char *p, char *pwd)
 	return (True);
 }
 
-struct smb_passwd *
+static struct smb_passwd *
 _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd, 
 		BOOL *got_valid_nt_entry, long *pwd_seekpos)
 {

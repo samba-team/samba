@@ -690,8 +690,6 @@ static struct share_ops share_ops = {
   ******************************************************************/
 struct share_ops *locking_shm_init(int ronly)
 {
-	pstring shmem_file_name;
-
 	read_only = ronly;
 
 #ifdef USE_SYSV_IPC
