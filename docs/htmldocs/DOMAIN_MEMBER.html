@@ -1,7 +1,7 @@
 <HTML
 ><HEAD
 ><TITLE
-></TITLE
+>security = domain in Samba 2.x</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
@@ -15,11 +15,20 @@ ALINK="#0000FF"
 ><DIV
 CLASS="ARTICLE"
 ><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN1"
+>security = domain in Samba 2.x</A
+></H1
+><HR></DIV
+><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2"
+NAME="AEN3"
 >Joining an NT Domain with Samba 2.2</A
 ></H1
 ><P
@@ -85,6 +94,11 @@ TARGET="_top"
 >	smbpasswd(8)</A
 > man page for more details.</P
 ><P
+>There is existing development code to join a domain
+	without having to create the machine trust account on the PDC
+	beforehand.  This code will hopefully be available soon
+	in release branches as well.</P
+><P
 >This command goes through the machine account password 
 	change protocol, then writes the new (random) machine account 
 	password for this Samba server into a file in the same directory 
@@ -104,11 +118,11 @@ CLASS="REPLACEABLE"
 ><I
 >&lt;NT DOMAIN NAME&gt;</I
 ></TT
->.
-	<TT
+>.<TT
 CLASS="REPLACEABLE"
 ><I
->&lt;Samba Server Name&gt;</I
+>&lt;Samba 
+	Server Name&gt;</I
 ></TT
 >.mac</TT
 ></P
@@ -242,7 +256,32 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN65"
+NAME="AEN67"
+>Samba and Windows 2000 Domains</A
+></H1
+><P
+>Many people have asked regarding the state of Samba's ability to participate in
+a Windows 2000 Domain.  Samba 2.2 is able to act as a member server of a Windows
+2000 domain operating in mixed or native mode.</P
+><P
+>There is much confusion between the circumstances that require a "mixed" mode
+Win2k DC and a when this host can be switched to "native" mode.  A "mixed" mode
+Win2k domain controller is only needed if Windows NT BDCs must exist in the same
+domain.  By default, a Win2k DC in "native" mode will still support
+NetBIOS and NTLMv1 for authentication of legacy clients such as Windows 9x and 
+NT 4.0.  Samba has the same requirements as a Windows NT 4.0 member server.</P
+><P
+>The steps for adding a Samba 2.2 host to a Win2k domain are the same as those
+for adding a Samba server to a Windows NT 4.0 domain. The only exception is that 
+the "Server Manager" from NT 4 has been replaced by the "Active Directory Users and 
+Computers" MMC (Microsoft Management Console) plugin.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN72"
 >Why is this better than security = server?</A
 ></H1
 ><P
@@ -256,13 +295,23 @@ CLASS="CONSTANT"
 	to be a local Unix user fred to represent that user in the Unix 
 	filesystem. This is very similar to the older Samba security mode 
 	<A
-HREF="smb.conf.5.html#SECURITYEQUALSERVER"
+HREF="smb.conf.5.html#SECURITYEQUALSSERVER"
 TARGET="_top"
 >security = server</A
 >, 
 	where Samba would pass through the authentication request to a Windows 
 	NT server in the same way as a Windows 95 or Windows 98 server would.
 	</P
+><P
+>Please refer to the <A
+HREF="winbind.html"
+TARGET="_top"
+>Winbind 
+	paper</A
+> for information on a system to automatically
+	assign UNIX uids and gids to Windows NT Domain users and groups.
+	This code is available in development branches only at the moment,
+	but will be moved to release branches soon.</P
 ><P
 >The advantage to domain-level security is that the 
 	authentication in domain-level security is passed down the authenticated 

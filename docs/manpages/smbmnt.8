@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMNT" "8" "23 February 2001" "" ""
+.TH SMBMNT 8 "24 Mar 2001" "smbmnt 2.2.0-alpha3"
 .SH NAME
 smbmnt \- helper utility for mounting SMB filesystems
 .SH SYNOPSIS
 .sp
-\fBsmbumount\fR \fBmount-point\fR [ \fB-s <share>\fR ]  [ \fB-r\fR ]  [ \fB-u <uid>\fR ]  [ \fB-g <gid>\fR ]  [ \fB-f <mask>\fR ]  [ \fB-d <mask>\fR ] 
+\fBsmbmnt\fR \fBmount-point\fR [ \fB-s <share>\fR ]  [ \fB-r\fR ]  [ \fB-u <uid>\fR ]  [ \fB-g <gid>\fR ]  [ \fB-f <mask>\fR ]  [ \fB-d <mask>\fR ]  [ \fB-o <options>\fR ] 
 .SH "DESCRIPTION"
 .PP
 \fBsmbmnt\fR is a helper application used 
@@ -20,7 +20,7 @@ then mounts the directory.
 .PP
 The \fBsmbmnt\fR program is normally invoked 
 by \fBsmbmount(8)\fR
- <URL:smbmount.8.html>. It should not be invoked directly by users. 
+. It should not be invoked directly by users. 
 .SH "OPTIONS"
 .TP
 \fB-r\fR
@@ -40,11 +40,20 @@ specify the octal file mask applied
 \fB-d mask\fR
 specify the octal directory mask 
 applied 
+.TP
+\fB-o options\fR
+list of options that are passed as-is to smbfs, if this
+command is run on a 2.4 or higher linux kernel.
 .SH "AUTHOR"
+.PP
+Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
+and others.
 .PP
 The current maintainer of smbfs and the userspace
 tools \fBsmbmount\fR, \fBsmbumount\fR,
 and \fBsmbmnt\fR is Urban Widmark <URL:mailto:urban@teststation.com>.
+The SAMBA Mailing list <URL:mailto:samba@samba.org>
+is the preferred place to ask questions regarding these programs.
 .PP
 The conversion of this manpage for Samba 2.2 was performed 
 by Gerald Carter

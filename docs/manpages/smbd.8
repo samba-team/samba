@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "23 February 2001" "" ""
+.TH SMBD 8 "24 Mar 2001" "smbd 2.2.0-alpha3"
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
@@ -26,13 +26,12 @@ An extensive description of the services that the
 server can provide is given in the man page for the 
 configuration file controlling the attributes of those 
 services (see \fIsmb.conf(5)
-\fR <URL:smb.conf.5.html>. This man page will not describe the 
+\fR. This man page will not describe the 
 services, but will concentrate on the administrative aspects 
 of running the server.
 .PP
 Please note that there are significant security 
-implications to running this server, and the \fIsmb.conf(5)\fR <URL:smb.conf.5.html> 
-manpage should be regarded as mandatory reading before 
+implications to running this server, and the \fIsmb.conf(5)\fRmanpage should be regarded as mandatory reading before 
 proceeding with installation.
 .PP
 A session is created whenever a client requests one. 
@@ -103,21 +102,19 @@ data, most of which is extremely cryptic.
 
 Note that specifying this parameter here will 
 override the log
-level <URL:smb.conf.5.html#loglevel> parameter in the  \fIsmb.conf(5)\fR <URL:smb.conf.5.html> file.
+levelfile.
 .TP
 \fB-l <log file>\fR
 If specified, \fBlog file\fR 
 specifies a log filename into which informational and debug 
 messages from the running server will be logged. The log 
 file generated is never removed by the server although 
-its size may be controlled by the max log size <URL:smb.conf.5.html#maxlogsize>
-option in the \fI smb.conf(5)\fR <URL:smb.conf.5.html> file. The default log 
+its size may be controlled by the max log sizeoption in the \fI smb.conf(5)\fRfile. The default log 
 file name is specified at compile time.
 .TP
 \fB-O <socket options>\fR
-See the socket options <URL:smb.conf.5.html#socketoptions> 
-parameter in the \fIsmb.conf(5)
-\fR <URL:smb.conf.5.html> file for details.
+See the socket optionsparameter in the \fIsmb.conf(5)
+\fRfile for details.
 .TP
 \fB-p <port number>\fR
 port number is a positive integer 
@@ -148,7 +145,7 @@ configuration details required by the server. The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See \fI smb.conf(5)\fR <URL:smb.conf.5.html> for more information.
+to provide. See \fI smb.conf(5)\fRfor more information.
 The default configuration file name is determined at 
 compile time.
 .SH "FILES"
@@ -177,13 +174,12 @@ See the section INSTALLATION below.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
 This is the default location of the 
-\fIsmb.conf\fR <URL:smb.conf.5.html>
-server configuration file. Other common places that systems 
+\fIsmb.conf\fRserver configuration file. Other common places that systems 
 install this file are \fI/usr/samba/lib/smb.conf\fR 
 and \fI/etc/smb.conf\fR.
 
 This file describes all the services the server 
-is to make available to clients. See  \fIsmb.conf(5)\fR <URL:smb.conf.5.html> for more information.
+is to make available to clients. See  \fIsmb.conf(5)\fRfor more information.
 .SH "LIMITATIONS"
 .PP
 On some systems \fBsmbd\fR cannot change uid back 
@@ -315,10 +311,10 @@ need the assistance of your system administrator to modify the
 system files.
 .PP
 You will probably want to set up the NetBIOS name server 
-\fBnmbd\fR <URL:nmbd.8.html> at
+\fBnmbd\fRat
 the same time as \fBsmbd\fR. To do this refer to the 
 man page for \fBnmbd(8)\fR
- <URL:nmbd.8.html>.
+.
 .PP
 First, ensure that a port is configured in the file 
 \fI/etc/services\fR. The well-known port 139 
@@ -387,7 +383,7 @@ to the service \fI\\\\fred\\mary\fR.
 .PP
 To properly test and experiment with the server, we 
 recommend using the \fBsmbclient\fR program (see 
-\fBsmbclient(1)\fR <URL:smbclient.1.html>) 
+\fBsmbclient(1)\fR) 
 and also going through the steps outlined in the file 
 \fIDIAGNOSIS.txt\fR in the \fIdocs/\fR
 directory of your Samba installation.
@@ -439,10 +435,10 @@ them after, however this would affect performance.
 .SH "SEE ALSO"
 .PP
 hosts_access(5), \fBinetd(8)\fR, 
-\fBnmbd(8)\fR <URL:nmbd.8.html>, 
+\fBnmbd(8)\fR, 
 \fIsmb.conf(5)\fR
- <URL:smb.conf.5.html>, \fBsmbclient(1)
-\fR <URL:smbclient.1.html>, \fB testparm(1)\fR <URL:testparm.1.html>,  \fBtestprns(1)\fR <URL:testprns.1.html>, and the Internet RFC's
+, \fBsmbclient(1)
+\fR, and the Internet RFC's
 \fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
 In addition the CIFS (formerly SMB) specification is available 
 as a link from the Web page  
