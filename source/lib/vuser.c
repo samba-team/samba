@@ -48,6 +48,7 @@ user_struct *get_valid_user_struct(const vuser_key *key)
 	{
 		return NULL;
 	}
+	ZERO_STRUCTP(usr);
 	if (!tdb_lookup_vuid(key, usr))
 	{
 		vuid_free_user_struct(usr);

@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
+ *  Copyright (C) Andrew Tridgell              1992-2000
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Paul Ashton                  1997-2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -212,6 +212,9 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 
 	if (l->data_i.offset == 0) return False;
 
+	assoc_gid = l->hdr_rb.bba.assoc_gid;
+	l->key.pid = assoc_gid;
+
 	if (l->hdr.auth_len != 0)
 	{
 		RPC_HDR_AUTH  auth_info;
@@ -244,6 +247,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 		l->auth_info = NULL;
 		
 		assoc_gid = l->hdr_rb.bba.assoc_gid;
+		l->key.pid = assoc_gid;
 	}
 
 	if (l->auth != NULL)
@@ -495,8 +499,18 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 			else
 			{
 				/* read the rpc header */
-				smb_io_rpc_hdr_req("req", &(l->hdr_req), &l->data_i, 0);
-				reply = api_pipe_request(l, name, resp);
+				reply = smb_io_rpc_hdr_req("req", &(l->hdr_req), &l->data_i, 0);
+				if (reply)
+				{
+					l->key.vuid = l->hdr_req.context_id;
+					reply = become_vuser(&l->key) ||
+					        become_guest();
+
+				}
+				if (reply)
+				{	
+					reply = api_pipe_request(l, name, resp);
+				}
 			}
 			break;
 		}

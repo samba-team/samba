@@ -205,14 +205,17 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 				const vuser_key *key,
 				const struct user_creds *usr)
 {
-	struct msrpc_state msrpc_redir;
-
 	int sock = msrpc->fd;
+	uint32 len;
+#if 0
 	char *data;
 	prs_struct ps;
-	uint32 len;
+#endif
 	char *in = msrpc->inbuf;
 	char *out = msrpc->outbuf;
+
+	msrpc->nt.key = *key;
+#if 0
 	uint16 command;
 
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
@@ -240,9 +243,10 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 		DEBUG(0,("write failed\n"));
 		return False;
 	}
-
+#endif
 	if (msrpc->redirect)
 	{
+		struct msrpc_state msrpc_redir;
 		len = read(sock, &msrpc_redir, sizeof(msrpc_redir));
 
 		if (len != sizeof(msrpc_redir))
@@ -259,10 +263,12 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 	}
 	else
 	{
+#if 0
 		uint32 status;
 		len = read(sock, &status, sizeof(status));
 
 		return len == sizeof(status) && status == 0x0;
+#endif
 	}
 	return True;
 }

@@ -40,8 +40,15 @@ BOOL become_vuser(const vuser_key *k)
 
 	unbecome_vuser();
 
-	if((vuser != NULL) && !check_vuser_ok(&vcache, vuser, -1))
+	if (vuser == NULL)
+	{
 		return False;
+	}
+
+	if (!check_vuser_ok(&vcache, vuser, -1))
+	{
+		return False;
+	}
 
 	return become_unix_sec_ctx(k, NULL, vuser->uid, vuser->gid,
 	                           vuser->n_groups, vuser->groups);
