@@ -591,17 +591,27 @@ BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
 	return !data->has_error;
 }
 
-/* read an interger */
-BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
+/* read an interger without tag*/
+BOOL asn1_read_implicit_Integer(ASN1_DATA *data, int *i)
 {
 	uint8_t b;
 	*i = 0;
-	
-	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
+
 	while (asn1_tag_remaining(data)>0) {
-		asn1_read_uint8(data, &b);
+		if (!asn1_read_uint8(data, &b)) return False;
 		*i = (*i << 8) + b;
 	}
+	return !data->has_error;	
+	
+}
+
+/* read an interger */
+BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
+{
+	*i = 0;
+
+	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
+	if (!asn1_read_implicit_Integer(data, i)) return False;
 	return asn1_end_tag(data);	
 	
 }
