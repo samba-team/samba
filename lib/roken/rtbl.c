@@ -156,7 +156,6 @@ rtbl_add_column (rtbl_t table, const char *header, unsigned int flags)
     return rtbl_add_column_by_id(table, 0, header, flags);
 }
 
-int rtbl_new_row(rtbl_t);
 int
 rtbl_new_row(rtbl_t table)
 {
