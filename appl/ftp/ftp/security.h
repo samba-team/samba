@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -76,6 +76,10 @@ struct sec_server_mech {
     int (*ccc)(void*);
     int (*userok)(void*, char*);
 };
+
+#define AUTH_OK		0
+#define AUTH_CONTINUE	1
+#define AUTH_ERROR	2
 
 #ifdef FTP_SERVER
 extern struct sec_server_mech krb4_server_mech, gss_server_mech;
