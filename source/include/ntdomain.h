@@ -153,8 +153,9 @@ struct policy
 };
 
 struct handle_list {
-	struct policy *Policy;
-	size_t count;
+	struct policy *Policy; 	/* List of policies. */
+	size_t count;			/* Current number of handles. */
+	size_t pipe_ref_count;	/* Number of pipe handles referring to this list. */
 };
 
 /* Domain controller authentication protocol info */
@@ -246,7 +247,7 @@ typedef struct pipes_struct
 	TALLOC_CTX *mem_ctx;
 
 	/* handle database to use on this pipe. */
-	struct handle_list pipe_handles;
+	struct handle_list *pipe_handles;
 
 } pipes_struct;
 
