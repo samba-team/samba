@@ -1409,9 +1409,17 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	}
 
 	if (delete_on_close) {
-		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
+		uint32 dosmode = existing_dos_mode;
+		NTSTATUS result;
+
+		if (action == FILE_WAS_OVERWRITTEN || action == FILE_WAS_CREATED) {
+			dosmode = new_dos_mode;
+		}
+		result = set_delete_on_close_internal(fsp, delete_on_close, dosmode);
 
 		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			uint8 u_e_c;
+			uint32 u_e_code;
 			/* Remember to delete the mode we just added. */
 			if (add_share_mode) {
 				del_share_mode(fsp, NULL);
@@ -1419,6 +1427,10 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
+			ntstatus_to_dos(result, &u_e_c, &u_e_code);
+                        unix_ERR_ntstatus = result;
+                        unix_ERR_class = u_e_c;
+                        unix_ERR_code = u_e_code;
 			return NULL;
 		}
 	}
@@ -1651,7 +1663,7 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	string_set(&fsp->fsp_name,fname);
 
 	if (delete_on_close) {
-		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
+		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close, 0);
 
 		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
 			file_free(fsp);
