@@ -1291,7 +1291,7 @@ static int file_find(struct file_list **list, const char *directory,
         int ret;
         char *path;
 	BOOL isdir;
-	char *dname;
+	const char *dname;
 
         dir = opendir(directory);
 	if (!dir) return -1;
