@@ -916,7 +916,7 @@ static NTSTATUS tdb_update_trustpw(const SAM_TRUST_PASSWD *pass, int tdb_flag)
 	TDB_DATA key, data;
 	
 	char* domain = NULL, *tp_key = NULL;
-	char** buffer;
+	char* buffer;
 	size_t buffer_len;
 
 	secrets_tdb = secrets_open();
@@ -947,11 +947,11 @@ static NTSTATUS tdb_update_trustpw(const SAM_TRUST_PASSWD *pass, int tdb_flag)
 	}
 
 	/* prepare storage record */
-	buffer_len = pdb_init_buffer_from_trustpw(mem_ctx, buffer, pass);
+	buffer_len = pdb_init_buffer_from_trustpw(mem_ctx, &buffer, pass);
 
 	key.dptr   = tp_key;
 	key.dsize  = strlen(tp_key);
-	data.dptr  = *buffer;
+	data.dptr  = buffer;
 	data.dsize = buffer_len;
 
 	/* write the packed structure in secrets.tdb */
@@ -1491,15 +1491,14 @@ static int tdbsam_traverse_accounts(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 
 	/* check we have a PRIV_+SID entry */
 	if (strncmp(key.dptr, PRIVPREFIX, prefixlen) == 0) {
+		/* add the discovered sid */
+		DOM_SID tmpsid;
 
 		fstring sid_str;
 		/* add to privilege_set if any of the sid in the token
 		 * contain the privilege */
 
 		fstrcpy(sid_str, &key.dptr[strlen(PRIVPREFIX)]);
-
-		/* add the discovered sid */
-		DOM_SID tmpsid;
 
 		if (!string_to_sid(&tmpsid, sid_str)) {
 			DEBUG(3, ("Could not convert SID\n"));
