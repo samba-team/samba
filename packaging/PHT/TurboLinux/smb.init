@@ -22,17 +22,20 @@ case "$1" in
 	echo -n "Starting SMB services: "
 	daemon smbd -D 	
 	daemon nmbd -D 
+	daemon winbindd
 	echo
 	touch /var/lock/subsys/smb
 	;;
   stop)
 	echo -n "Shutting down SMB services: "
+	killproc winbindd
 	killproc smbd
 	killproc nmbd
 	rm -f /var/lock/subsys/smb
 	echo ""
 	;;
   status)
+	status winbind
 	status smbd
 	status nmbd
 	;;
