@@ -1626,7 +1626,7 @@ AC_ARG_WITH(msdfs,
 [ case "$withval" in
   yes)
      AC_MSG_RESULT(yes)
-     AC_DEFINE(MS_DFS)
+     AC_DEFINE(WITH_MSDFS)
      ;;
   *)
     AC_MSG_RESULT(no)

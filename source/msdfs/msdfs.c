@@ -26,8 +26,11 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern uint32 global_client_caps;
 
-#ifdef MS_DFS
+#ifdef WITH_MSDFS
 
+/**********************************************************************
+ Create a tcon relative path from a dfs_path structure
+ **********************************************************************/
 static void create_nondfs_path(char* pathname, struct dfs_path* pdp)
 {
   pstrcpy(pathname,pdp->volumename); 
@@ -35,8 +38,10 @@ static void create_nondfs_path(char* pathname, struct dfs_path* pdp)
   pstrcat(pathname,pdp->restofthepath); 
 }
 
-/* Parse the pathname  of the form \hostname\service\volume\restofthepath
-   into the dfs_path structure */
+/**********************************************************************
+  Parse the pathname  of the form \hostname\service\volume\restofthepath
+  into the dfs_path structure 
+ **********************************************************************/
 static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 {
   pstring pathname_local;
@@ -88,6 +93,14 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
   DEBUG(10,("rest of the path: %s\n",pdp->restofthepath));
   return True;
 }
+
+/**********************************************************************
+ Forms a valid Unix pathname from the junction 
+ **********************************************************************/
+
+/**********************************************************************
+ Creates a junction structure from the Dfs pathname
+ **********************************************************************/
 
 /**********************************************************************
  Parse the contents of a symlink to verify if it is an msdfs referral
@@ -569,8 +582,13 @@ int dfs_path_error(char* inbuf, char* outbuf)
   return(ERROR(ERRSRV,ERRbadpath)); 
 }
 
+/**********************************************************************
+ The following functions are called by the NETDFS RPC pipe functions
+ **********************************************************************/
+
+
 #else
-/* Stub functions if MS_DFS not defined */
+/* Stub functions if WITH_MSDFS not defined */
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata)
 {
