@@ -1980,17 +1980,22 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	}
 
 	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
-	if (!ADS_ERR_OK(status)) return status;
+	if (!ADS_ERR_OK(status)) {
+		talloc_destroy(ctx);
+		return status;
+	}
 
 	value = ads_pull_string(ads, ctx, res, "ldapServiceName");
 	if (!value) {
 		ads_msgfree(ads, res);
+		talloc_destroy(ctx);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
 	timestr = ads_pull_string(ads, ctx, res, "currentTime");
 	if (!timestr) {
 		ads_msgfree(ads, res);
+		talloc_destroy(ctx);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
