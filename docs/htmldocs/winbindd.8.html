@@ -169,7 +169,7 @@ the shell for that user.
 <p>To setup winbindd for user and group lookups plus authentication from
 a domain controller use something like the following setup. This was
 tested on a RedHat 6.2 Linux box.
-<p>In /etc/nsswitch.conf put the following:
+<p>In <code>/etc/nsswitch.conf</code> put the following:
 <pre>
 
    passwd:     files winbind
@@ -177,7 +177,7 @@ tested on a RedHat 6.2 Linux box.
 
 </pre>
 
-<p>In /etc/pam.d/* replace the auth lines with something like this:
+<p>In <code>/etc/pam.d/*</code> replace the <code>auth</code> lines with something like this:
 <pre>
 
 	auth       required	/lib/security/pam_securetty.so
@@ -187,8 +187,8 @@ tested on a RedHat 6.2 Linux box.
 
 </pre>
 
-<p>Note in particular the use of the sufficient keyword and the
-use_first_pass keyword.
+<p>Note in particular the use of the <code>sufficient</code> keyword and the
+<code>use_first_pass</code> keyword.
 <p>Now replace the account lines with this:
 <pre>
 
@@ -211,10 +211,10 @@ program like this:
 
 </pre>
 
-<p>This assumes your domain is called DOMAIN and your Samba workstation
-is called MACHINE.
-<p>Next copy libnss_winbind.so.2 to /lib and pam_winbind.so to
-/lib/security.
+<p>This assumes your domain is called <code>DOMAIN</code> and your Samba workstation
+is called <code>MACHINE</code>.
+<p>Next copy <code>libnss_winbind.so.2</code> to <code>/lib</code> and <code>pam_winbind.so</code> to
+<code>/lib/security</code>.
 <p>Finally, setup a smb.conf containing directives like the following:
 <pre>
 
@@ -233,11 +233,29 @@ is called MACHINE.
 
 <p>Now start winbindd and you should find that your user and group
 database is expanded to include your NT users and groups, and that you
-can login to your unix box as a domain user, using the DOMAIN+user
+can login to your unix box as a domain user, using the <code>DOMAIN+user</code>
 syntax for the username. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
 winbindd. 
-<p>NOTE: nmbd must be running on the local machine for winbindd to work.
+<p>NOTE: <a href="nmbd.8.html"><strong>nmbd</strong></a> must be running on the local machine for
+<a href="winbindd.8.html"><strong>winbindd</strong></a> to work.
+<p><a name="SIGNALS"></a>
+<h2>SIGNALS</h2>
+    
+<p>The following signals can be used to manipulate the
+<a href="winbindd.8.html"><strong>winbindd</strong></a> daemon.
+<p><dl>
+<p><p></p><dt><strong><code>SIGHUP</code></strong><dd>
+<p>Reload the <code>smb.conf</code> file and apply any parameter changes to the running
+version of <a href="winbindd.8.html"><strong>winbindd</strong></a>.  This signal also clears any
+cached user and group information.
+<p><p></p><dt><strong><code>SIGUSR1</code></strong><dd>
+<p>The <code>SIGUSR1</code> signal will cause <a href="winbindd.8.html"><strong>winbindd</strong></a> to
+write status information to the winbind log file including information
+about the number of user and group ids allocated by
+<a href="winbindd.8.html"><strong>winbindd</strong></a>.
+<p>Log files are stored in the filename specified by the <strong>log file</strong> parameter.
+<p></dl>
 <p><a name="FILES"></a>
 <h2>FILES</h2>
     

@@ -186,7 +186,7 @@ To setup winbindd for user and group lookups plus authentication from
 a domain controller use something like the following setup\&. This was
 tested on a RedHat 6\&.2 Linux box\&.
 .PP 
-In /etc/nsswitch\&.conf put the following:
+In \f(CW/etc/nsswitch\&.conf\fP put the following:
 
 .nf 
  
@@ -198,7 +198,7 @@ In /etc/nsswitch\&.conf put the following:
  
 
 .PP 
-In /etc/pam\&.d/* replace the auth lines with something like this:
+In \f(CW/etc/pam\&.d/*\fP replace the \f(CWauth\fP lines with something like this:
 
 .nf 
  
@@ -212,8 +212,8 @@ In /etc/pam\&.d/* replace the auth lines with something like this:
  
 
 .PP 
-Note in particular the use of the sufficient keyword and the
-use_first_pass keyword\&.
+Note in particular the use of the \f(CWsufficient\fP keyword and the
+\f(CWuse_first_pass\fP keyword\&.
 .PP 
 Now replace the account lines with this:
 
@@ -249,11 +249,11 @@ Then within samedit run the command:
  
 
 .PP 
-This assumes your domain is called DOMAIN and your Samba workstation
-is called MACHINE\&.
+This assumes your domain is called \f(CWDOMAIN\fP and your Samba workstation
+is called \f(CWMACHINE\fP\&.
 .PP 
-Next copy libnss_winbind\&.so\&.2 to /lib and pam_winbind\&.so to
-/lib/security\&.
+Next copy \f(CWlibnss_winbind\&.so\&.2\fP to \f(CW/lib\fP and \f(CWpam_winbind\&.so\fP to
+\f(CW/lib/security\fP\&.
 .PP 
 Finally, setup a smb\&.conf containing directives like the following:
 
@@ -277,12 +277,35 @@ Finally, setup a smb\&.conf containing directives like the following:
 .PP 
 Now start winbindd and you should find that your user and group
 database is expanded to include your NT users and groups, and that you
-can login to your unix box as a domain user, using the DOMAIN+user
+can login to your unix box as a domain user, using the \f(CWDOMAIN+user\fP
 syntax for the username\&. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
 winbindd\&. 
 .PP 
-NOTE: nmbd must be running on the local machine for winbindd to work\&.
+NOTE: \fBnmbd\fP must be running on the local machine for
+\fBwinbindd\fP to work\&.
+.PP 
+.SH "SIGNALS" 
+.PP 
+The following signals can be used to manipulate the
+\fBwinbindd\fP daemon\&.
+.PP 
+.IP 
+.IP "\f(CWSIGHUP\fP" 
+.IP 
+Reload the \f(CWsmb\&.conf\fP file and apply any parameter changes to the running
+version of \fBwinbindd\fP\&.  This signal also clears any
+cached user and group information\&.
+.IP 
+.IP "\f(CWSIGUSR1\fP" 
+.IP 
+The \f(CWSIGUSR1\fP signal will cause \fBwinbindd\fP to
+write status information to the winbind log file including information
+about the number of user and group ids allocated by
+\fBwinbindd\fP\&.
+.IP 
+Log files are stored in the filename specified by the \fBlog file\fP parameter\&.
+.IP 
 .PP 
 .SH "FILES" 
 .PP 

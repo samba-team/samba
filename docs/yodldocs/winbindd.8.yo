@@ -196,13 +196,13 @@ To setup winbindd for user and group lookups plus authentication from
 a domain controller use something like the following setup. This was
 tested on a RedHat 6.2 Linux box.
 
-In /etc/nsswitch.conf put the following:
+In tt(/etc/nsswitch.conf) put the following:
 verb(
    passwd:     files winbind
    group:      files winbind
 )
 
-In /etc/pam.d/* replace the auth lines with something like this:
+In tt(/etc/pam.d/*) replace the tt(auth) lines with something like this:
 verb(
 	auth       required	/lib/security/pam_securetty.so
 	auth       required	/lib/security/pam_nologin.so
@@ -210,8 +210,8 @@ verb(
 	auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 )
 
-Note in particular the use of the sufficient keyword and the
-use_first_pass keyword.
+Note in particular the use of the tt(sufficient) keyword and the
+tt(use_first_pass) keyword.
 
 Now replace the account lines with this:
 verb(
@@ -229,11 +229,11 @@ verb(
 	createuser MACHINE$ -j DOMAIN -L
 )
 
-This assumes your domain is called DOMAIN and your Samba workstation
-is called MACHINE.
+This assumes your domain is called tt(DOMAIN) and your Samba workstation
+is called tt(MACHINE).
 
-Next copy libnss_winbind.so.2 to /lib and pam_winbind.so to
-/lib/security.
+Next copy tt(libnss_winbind.so.2) to tt(/lib) and tt(pam_winbind.so) to
+tt(/lib/security).
 
 Finally, setup a smb.conf containing directives like the following:
 verb(
@@ -251,12 +251,38 @@ verb(
 
 Now start winbindd and you should find that your user and group
 database is expanded to include your NT users and groups, and that you
-can login to your unix box as a domain user, using the DOMAIN+user
+can login to your unix box as a domain user, using the tt(DOMAIN+user)
 syntax for the username. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
 winbindd. 
 
-NOTE: nmbd must be running on the local machine for winbindd to work.
+NOTE: url(bf(nmbd))(nmbd.8.html) must be running on the local machine for
+url(bf(winbindd))(winbindd.8.html) to work.
+
+label(SIGNALS)
+manpagesection(SIGNALS)
+
+The following signals can be used to manipulate the
+url(bf(winbindd))(winbindd.8.html) daemon.
+
+startdit()
+
+dit(tt(SIGHUP))
+
+Reload the tt(smb.conf) file and apply any parameter changes to the running
+version of url(bf(winbindd))(winbindd.8.html).  This signal also clears any
+cached user and group information.
+
+dit(tt(SIGUSR1))
+
+The tt(SIGUSR1) signal will cause url(bf(winbindd))(winbindd.8.html) to
+write status information to the winbind log file including information
+about the number of user and group ids allocated by
+url(bf(winbindd))(winbindd.8.html).
+
+Log files are stored in the filename specified by the bf(log file) parameter.
+
+enddit()
 
 label(FILES)
 manpagefiles()
