@@ -112,8 +112,8 @@ static int tdb_chainlock_with_timeout_internal(TDB_CONTEXT *tdb, TDB_DATA key, u
 		alarm(0);
 		TdbCatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
-			tdb_debug(tdb, 0, "tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
-				timeout, key.dptr, tdb->name );
+			tdb->log_fn(tdb, 0, "tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
+				timeout, key.dptr, tdb->name);
 			/* TODO: If we time out waiting for a lock, it might
 			 * be nice to use F_GETLK to get the pid of the
 			 * process currently holding the lock and print that
@@ -492,8 +492,8 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			}
 			break;
 		default:
-			tdb_debug(tdb, 0,"Unknown tdb_pack format %c in %s\n", 
-				 c, fmt);
+			tdb->log_fn(tdb, 0,"Unknown tdb_pack format %c in %s\n", 
+				    c, fmt);
 			len = 0;
 			break;
 		}
@@ -507,8 +507,8 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	tdb_debug(tdb, 18,"tdb_pack(%s, %d) -> %d\n", 
-		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
+	tdb->log_fn(tdb, 18,"tdb_pack(%s, %d) -> %d\n", 
+		    fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
 	
 	return PTR_DIFF(buf, buf0);
 }
@@ -599,7 +599,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			memcpy(*b, buf+4, *i);
 			break;
 		default:
-			tdb_debug(tdb, 0, "Unknown tdb_unpack format %c in %s\n", 
+			tdb->log_fn(tdb, 0, "Unknown tdb_unpack format %c in %s\n", 
 				 c, fmt);
 
 			len = 0;
@@ -612,30 +612,14 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	tdb_debug(tdb, 18, "tdb_unpack(%s, %d) -> %d\n", 
-		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
+	tdb->log_fn(tdb, 18, "tdb_unpack(%s, %d) -> %d\n", 
+		    fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
 
 	return PTR_DIFF(buf, buf0);
 
  no_space:
 	return -1;
 }
-
-/****************************************************************************
- Print out debug messages.
-****************************************************************************/
-
-void tdb_debug(TDB_CONTEXT *tdb, int level, const char *fmt, ...)
-{
-	va_list ap;
-	if (tdb->log_fn == NULL) {
-		return;
-	}
-	va_start(ap, fmt);
-	tdb->log_fn(tdb, level, fmt, ap);
-	va_end(ap);
-}
-
 
 /****************************************************************************
  Allow tdb_delete to be used as a tdb_traversal_fn.
@@ -669,11 +653,11 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 		char *key_str = (char*) strndup(key.dptr, key.dsize);
 #if 0
 		if (!key_str) {
-			tdb_debug(tdb, 0, "tdb_search_keys: strndup() failed!\n");
+			tdb->log_fn(tdb, 0, "tdb_search_keys: strndup() failed!\n");
 			smb_panic("strndup failed!\n");
 		}
 #endif
-		tdb_debug(tdb, 18, "checking %s for match to pattern %s\n", key_str, pattern);
+		tdb->log_fn(tdb, 18, "checking %s for match to pattern %s\n", key_str, pattern);
 		
 		next = tdb_nextkey(tdb, key);
 
@@ -686,7 +670,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 			DLIST_ADD_END(list, rec, TDB_LIST_NODE *);
 		
-			tdb_debug(tdb, 18, "checking %s matched pattern %s\n", key_str, pattern);
+			tdb->log_fn(tdb, 18, "checking %s matched pattern %s\n", key_str, pattern);
 		} else {
 			free(key.dptr);
 		}
