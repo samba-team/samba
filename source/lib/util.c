@@ -855,30 +855,24 @@ static void strip_mount_options( pstring *str)
 *******************************************************************/
 
 #ifdef WITH_NISPLUS_HOME
-static char *automount_lookup(char *user_name)
+char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
   static pstring last_value = "";
  
   char *nis_map = (char *)lp_nis_home_map_name();
  
-  char nis_domain[NIS_MAXNAMELEN + 1];
   char buffer[NIS_MAXATTRVAL + 1];
   nis_result *result;
   nis_object *object;
   entry_obj  *entry;
  
-  strncpy(nis_domain, (char *)nis_local_directory(), NIS_MAXNAMELEN);
-  nis_domain[NIS_MAXNAMELEN] = '\0';
- 
-  DEBUG(5, ("NIS+ Domain: %s\n", nis_domain));
- 
   if (strcmp(user_name, last_key))
   {
-    slprintf(buffer, sizeof(buffer)-1, "[%s=%s]%s.%s", "key", user_name, nis_map, nis_domain);
+    slprintf(buffer, sizeof(buffer)-1, "[key=%s],%s", user_name, nis_map);
     DEBUG(5, ("NIS+ querystring: %s\n", buffer));
  
-    if (result = nis_list(buffer, RETURN_RESULT, NULL, NULL))
+    if (result = nis_list(buffer, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP, NULL, NULL))
     {
        if (result->status != NIS_SUCCESS)
       {

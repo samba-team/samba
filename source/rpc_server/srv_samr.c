@@ -791,6 +791,8 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 
 		while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
 		{
+			int i;
+			uint32 trid;
 			name = grp->gr_name;
 
 			/* Don't return winbind groups as they are not local! */
@@ -799,8 +801,14 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 				continue;
 			}
 
+			trid = pdb_gid_to_group_rid(grp->gr_gid);
+			for( i = 0; i <= num_entries; i++)
+				if ( pass[i].user_rid == trid ) break;
+			if ( i <= num_entries )
+				continue; /* rid was there, dup! */
+
 			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
-			pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
+			pass[num_entries].user_rid = trid;
 			num_entries++;
 		}
 
