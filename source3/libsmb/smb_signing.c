@@ -61,8 +61,6 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 			return True;
 		}
 	}
-	DEBUG(0, ("Unexpected incoming packet, it's MID (%u) does not match"
-		  " a MID in our outstanding list!\n", mid));
 	return False;
 }
 
@@ -501,6 +499,8 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
+	uint32 send_seq_number = data->send_seq_num;
+	BOOL was_deferred_packet;
 
 	if (!si->doing_signing)
 		return;
@@ -515,7 +515,12 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
 
-	simple_packet_signature(data, outbuf, data->send_seq_num, calc_md5_mac);
+	/* See if this is a reply for a deferred packet. */
+	was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, 
+				    SVAL(outbuf, smb_mid), 
+				    &send_seq_number);
+
+	simple_packet_signature(data, outbuf, send_seq_number, calc_md5_mac);
 
 	DEBUG(10, ("srv_sign_outgoing_message: sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
@@ -525,13 +530,8 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
-	data->send_seq_num++;
-#if 0 /* JRATEST */
-	store_sequence_for_reply(&data->outstanding_packet_list, 
-				 SVAL(outbuf,smb_mid),
-				 data->send_seq_num);
-	data->send_seq_num++;
-#endif /* JRATEST */
+	if (!was_deferred_packet)
+		data->send_seq_num++;
 }
 
 /***********************************************************
@@ -555,16 +555,8 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		return False;
 	}
 
-#if 0 /* JRATEST */
-	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
-				    SVAL(inbuf, smb_mid), 
-				    &reply_seq_number)) {
-		return False;
-	}
-#else /* JRATEST */
 	reply_seq_number = data->send_seq_num;
 	data->send_seq_num++;
-#endif /* JRATEST */
 
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
 
@@ -632,6 +624,24 @@ void srv_calculate_sign_mac(char *outbuf)
 		return;
 
 	srv_sign_info.sign_outgoing_message(outbuf, &srv_sign_info);
+}
+
+/***********************************************************
+ Called by server to defer an outgoing packet.
+************************************************************/
+
+void srv_defer_sign_response(uint16 mid)
+{
+	struct smb_basic_signing_context *data;
+
+	if (!srv_sign_info.doing_signing)
+		return;
+
+	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
+
+	store_sequence_for_reply(&data->outstanding_packet_list, 
+				 mid, data->send_seq_num);
+	data->send_seq_num++;
 }
 
 /***********************************************************

@@ -178,7 +178,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	struct change_notify *cnbp;
 
 	if((cnbp = (struct change_notify *)malloc(sizeof(*cnbp))) == NULL) {
-		DEBUG(0,("call_nt_transact_notify_change: malloc fail !\n" ));
+		DEBUG(0,("change_notify_set: malloc fail !\n" ));
 		return -1;
 	}
 
