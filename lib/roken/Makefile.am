@@ -35,7 +35,7 @@ libroken_la_SOURCES =		\
 	get_default_username.c	\
 	get_window_size.c	\
 	getarg.c		\
-	inaddr2str.c		\
+	getnameinfo_verified.c	\
 	issuid.c		\
 	k_getpwnam.c		\
 	k_getpwuid.c		\
