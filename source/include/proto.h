@@ -430,7 +430,7 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
-BOOL parse_resolvconf(char name_server_arr[][16]);
+void dump_resolvconf(void);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -1790,6 +1790,8 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 #if OLD_NTDOMAIN
 BOOL nt_printing_init(void);
+uint32 update_c_setprinter(BOOL initialize);
+uint32 get_c_setprinter();
 int get_builtin_ntforms(nt_forms_struct **list);
 BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form);
 int get_ntforms(nt_forms_struct **list);
@@ -1816,6 +1818,7 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
+uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param);
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);

@@ -32,6 +32,7 @@ extern pstring global_myname;
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
 
+#define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
 #define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
@@ -654,15 +655,17 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 
 void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	fstring printer;
 	uint32 status;
 	Printer_entry *find_printer;
-	char *msg = (char *)buf;
+	POLICY_HND *handle = (POLICY_HND*)((char*)buf + sizeof(uint32));
 
-	*printer = '\0';
-
-	if (len < 5 + sizeof(POLICY_HND)) {
+	if (len != sizeof(uint32) + sizeof(POLICY_HND)) {
 		DEBUG(0,("srv_spoolss_receive_message: got null message !\n"));
+		return;
+	}
+
+	if (IVAL(buf,0) != (uint32)sys_getpid()) {
+		DEBUG(10,("srv_spoolss_receive_message: not our own handle.\n"));
 		return;
 	}
 
@@ -671,18 +674,6 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
      * the given handle, we know it's still open.
      */
  
-	fstrcpy(printer,&msg[4 + sizeof(POLICY_HND)]);
-	DEBUG(10,("srv_spoolss_receive_message: Got message about printer %s\n", printer ));
- 
-	if (IVAL(buf,0) == (uint32)sys_getpid()) {
-		POLICY_HND sent_pol;
- 
-		memcpy(&sent_pol, &msg[4], sizeof(POLICY_HND));
-		DEBUG(10,("srv_spoolss_receive_message: using our own handle.\n"));
-		cli_spoolss_reply_rrpcn(&cli, &sent_pol, PRINTER_CHANGE_ALL, 0x0, &status);
-		return;
-	}
-
 	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
 
 	/* Iterate the printer list. */
@@ -693,13 +684,14 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 		 * we send the message
 		 */
 
-		if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
-			if (strcmp(find_printer->dev.handlename, printer))
+		if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER) {
+			DEBUG(10,("srv_spoolss_receive_message: printer %s\n", find_printer->dev.handlename ));
+			if (memcmp((char*)&find_printer->printer_hnd, (char*)handle, sizeof(POLICY_HND)))
 				continue;
+		}
 
 		if (find_printer->notify.client_connected==True)
-			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
-
+			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_PRINTER, 0x0, &status);
 	}
 }
 
@@ -709,9 +701,9 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 
 static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 {
-	pstring msg;
-	size_t msg_len;
- 
+	char msg[sizeof(uint32) + sizeof(POLICY_HND)];
+	uint32 mypid = (uint32)sys_getpid();
+
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
  
 	if (!Printer) {
@@ -719,22 +711,15 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 		return False;
 	}
  
-	memset(msg, '\0', sizeof(msg));
- 
-	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTER) {
-		uint32 mypid = (uint32)sys_getpid();
-		SIVAL(msg,0,mypid);
-		memcpy(&msg[4], handle, sizeof(POLICY_HND));
-		fstrcpy(&msg[4+sizeof(POLICY_HND)], Printer->dev.handlename);
-		msg_len = 4 + sizeof(POLICY_HND) + strlen(Printer->dev.handlename) + 1;
-	} else {
-		fstrcpy(&msg[4+sizeof(POLICY_HND)], "");
-		msg_len = 4 + sizeof(POLICY_HND) + 1;
-	}
- 
-	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", &msg[4+sizeof(POLICY_HND)] ));
- 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, msg_len, False);
+	SIVAL(msg,0,mypid);
+	memcpy(&msg[4], handle, sizeof(POLICY_HND));
+
+	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
+		DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", Printer->dev.handlename));
+	else    
+		DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer server %s\n", Printer->dev.printerservername));
+
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(msg), False);
 	return True;
 }	
 
@@ -1059,6 +1044,8 @@ uint32 _spoolss_deleteprinter(POLICY_HND *handle)
 		_spoolss_enddocprinter(handle);  /* print job was not closed */
 
 	result = delete_printer_handle(handle);
+
+	update_c_setprinter(FALSE);
 
 	if (result == ERROR_SUCCESS) {
 		srv_spoolss_sendnotify(handle);
@@ -2502,7 +2489,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	printer->unknown18 =  0x0;
 	printer->status = nt_printq_status(status.status);
 	printer->unknown20 =  0x0;
-	printer->c_setprinter = ntprinter->info_2->c_setprinter; /* how many times setprinter has been called */
+	printer->c_setprinter = get_c_setprinter(); /* monotonically increasing sum of delta printer counts */
 	printer->unknown22 = 0x0;
 	printer->unknown23 = 0x6; 		/* 6  ???*/
 	printer->unknown24 = 0; 		/* unknown 24 to 26 are always 0 */
@@ -4381,7 +4368,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 	result = NT_STATUS_NO_PROBLEMO;
 
 	if (level!=2) {
-		DEBUG(0,("Send a mail to samba@samba.org\n"));
+		DEBUG(0,("update_printer: Send a mail to samba@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
 		result = ERROR_INVALID_LEVEL;
 		goto done;
@@ -4403,7 +4390,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	DEBUGADD(8,("Converting info_2 struct\n"));
+	DEBUGADD(8,("update_printer: Converting info_2 struct\n"));
 
 	/*
 	 * convert_printer_info converts the incoming
@@ -4417,7 +4404,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		/* we have a valid devmode
 		   convert it and link it*/
 
-		DEBUGADD(8,("Converting the devicemode struct\n"));
+		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
 		if (!convert_devicemode(printer->info_2->printername, devmode,
 				&printer->info_2->devmode)) {
 			result =  ERROR_NOT_ENOUGH_MEMORY;
@@ -4437,7 +4424,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 	   annoying permission denied dialog box. */
 
 	if (nt_printer_info_level_equal(printer, old_printer)) {
-		DEBUG(3, ("printer info has not changed\n"));
+		DEBUG(3, ("update_printer: printer info has not changed\n"));
 		result = NT_STATUS_NO_PROBLEMO;
 		goto done;
 	}
@@ -4445,7 +4432,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 	/* Check calling user has permission to update printer description */
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("printer property change denied by security "
+		DEBUG(3, ("update_printer: printer property change denied by security "
 			  "descriptor\n"));
 		result = ERROR_ACCESS_DENIED;
 		goto done;
@@ -4458,14 +4445,34 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 			result = ERROR_ACCESS_DENIED;
 			goto done;
 		}
-	
+
 	/*
-	 * When a *new* driver is bound to a printer, the drivername is used to 
-	 * lookup previously saved driver initialization info, which is then 
-	 * bound to the printer, simulating what happens in the Windows arch.
+	 * Set the DRIVER_INIT info in the tdb; trigger on magic value for the
+	 * DEVMODE.displayfrequency, which is not used for printer drivers. This
+	 * requires Win32 client code (see other notes elsewhere in the code).
 	 */
-	if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
-		set_driver_init(printer, 2);
+	if (printer->info_2->devmode && 
+		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) {
+
+		DEBUG(10,("update_printer: Save printer driver init data\n"));
+		printer->info_2->devmode->displayfrequency = 0;
+
+		if (update_driver_init(*printer, 2)!=0) {
+			DEBUG(10,("update_printer: error updating printer driver init DEVMODE\n"));
+			result = ERROR_ACCESS_DENIED;
+			goto done;
+		}
+	}
+	else
+	{
+		/*
+		 * When a *new* driver is bound to a printer, the drivername is used to 
+		 * lookup previously saved driver initialization info, which is then 
+		 * bound to the printer, simulating what happens in the Windows arch.
+		 */
+		if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+			set_driver_init(printer, 2);
+	}
 
 	/* Update printer info */
 
@@ -5592,6 +5599,8 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 	free_a_printer(&printer,2);
 
+	update_c_setprinter(FALSE);
+
 	srv_spoolss_sendnotify(handle);
 
 	return NT_STATUS_NO_PROBLEMO;
@@ -5998,6 +6007,8 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	if (param)
 		free_nt_printer_param(&param);
 	safe_free(old_param.data);
+
+	srv_spoolss_sendnotify(handle);
 
 	return status;
 }
