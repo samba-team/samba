@@ -1307,6 +1307,7 @@ krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
+krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 #endif /* HAVE_KRB5 */
 
 
