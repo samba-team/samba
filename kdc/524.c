@@ -151,7 +151,7 @@ do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
 	kdc_log(0, "Failed to encode v4 ticket (%s)", spn);
 	goto out;
     }
-    ret = get_des_key(server, &skey);
+    ret = get_des_key(server, FALSE, &skey);
     if(ret){
 	kdc_log(0, "No DES key for server (%s)", spn);
 	goto out;

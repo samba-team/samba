@@ -258,7 +258,7 @@ do_version4(unsigned char *buf,
 	    goto out1;
 	}
 
-	ret = get_des_key(client, &ckey);
+	ret = get_des_key(client, FALSE, &ckey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
@@ -281,7 +281,7 @@ do_version4(unsigned char *buf,
 	}
 #endif
 	
-	ret = get_des_key(server, &skey);
+	ret = get_des_key(server, FALSE, &skey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
@@ -365,7 +365,7 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 
-	ret = get_des_key(tgt, &tkey);
+	ret = get_des_key(tgt, FALSE, &tkey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
@@ -452,7 +452,7 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 
-	ret = get_des_key(server, &skey);
+	ret = get_des_key(server, FALSE, &skey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */

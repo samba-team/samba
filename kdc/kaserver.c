@@ -277,9 +277,6 @@ create_reply_ticket (struct rx_header *hdr,
     krb5_generate_random_block(&fyrtiosjuelva, sizeof(fyrtiosjuelva));
     fyrtiosjuelva &= 0xffffffff;
     krb5_store_int32 (sp, fyrtiosjuelva);
-#if 0
-    krb5_store_int32 (sp, 4711); /* XXX */
-#endif
     krb5_store_int32 (sp, challenge);
     sp->store  (sp, session, 8);
     memset (&session, 0, sizeof(session));
@@ -436,7 +433,7 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(client_entry, &ckey);
+    ret = get_des_key(client_entry, TRUE, &ckey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -444,7 +441,7 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(server_entry, &skey);
+    ret = get_des_key(server_entry, TRUE, &skey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -625,7 +622,7 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(krbtgt_entry, &kkey);
+    ret = get_des_key(krbtgt_entry, TRUE, &kkey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -633,7 +630,7 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(server_entry, &skey);
+    ret = get_des_key(server_entry, TRUE, &skey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
