@@ -698,20 +698,20 @@ typedef struct lsa_r_setsystemaccount
 	NTSTATUS status;
 } LSA_R_SETSYSTEMACCOUNT;
 
+typedef struct {
+	UNIHDR hdr;
+	UNISTR2 unistring;
+} LSA_STRING;
 
-typedef struct lsa_q_lookupprivvalue
-{
+typedef struct {
 	POLICY_HND pol; /* policy handle */
-	UNIHDR hdr_right;
-	UNISTR2 uni2_right;
-} LSA_Q_LOOKUPPRIVVALUE;
+	LSA_STRING privname;
+} LSA_Q_LOOKUP_PRIV_VALUE;
 
-typedef struct lsa_r_lookupprivvalue
-{
+typedef struct {
 	LUID luid;
 	NTSTATUS status;
-} LSA_R_LOOKUPPRIVVALUE;
-
+} LSA_R_LOOKUP_PRIV_VALUE;
 
 typedef struct lsa_q_addprivs
 {
@@ -739,6 +739,5 @@ typedef struct lsa_r_removeprivs
 {
 	NTSTATUS status;
 } LSA_R_REMOVEPRIVS;
-
 
 #endif /* _RPC_LSA_H */
