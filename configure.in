@@ -219,6 +219,13 @@ AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 #include <netdb.h>
 #endif],
 17)
+if test "$ac_cv_func_hstrerror" = yes; then
+AC_NEED_PROTO([
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],
+hstrerror)
+fi
 
 AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton initgroups)
