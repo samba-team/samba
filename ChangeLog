@@ -1,5 +1,8 @@
 2001-07-02  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/write_message.c: remove priv parameter from
+	write_safe_message; don't know why it was there in the first place
+
 	* doc/install.texi: remove kaserver switches, it's always compiled
 	in now
 
