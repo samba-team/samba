@@ -243,7 +243,7 @@ static BOOL write_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *toke
 	return !asn1->has_error;
 }
 
-ssize_t read_spnego_data(DATA_BLOB data, struct spnego_data *token)
+ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 {
 	ASN1_DATA asn1;
 	ssize_t ret = -1;
@@ -276,7 +276,7 @@ ssize_t read_spnego_data(DATA_BLOB data, struct spnego_data *token)
 	return ret;
 }
 
-ssize_t write_spnego_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_data *spnego)
+ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_data *spnego)
 {
 	ASN1_DATA asn1;
 	ssize_t ret = -1;
@@ -307,7 +307,7 @@ ssize_t write_spnego_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 	return ret;
 }
 
-BOOL free_spnego_data(struct spnego_data *spnego)
+BOOL spnego_free_data(struct spnego_data *spnego)
 {
 	BOOL ret = True;
 
