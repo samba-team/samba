@@ -125,4 +125,14 @@ int get_deltat(const char*, const char*, unsigned *);
 int edit_entry(kadm5_principal_ent_t ent, int *mask);
 int foreach_principal(const char *, int (*)(krb5_principal, void*), void *);
 
+/* server.c */
+
+krb5_error_code
+kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
+
+/* version4.c */
+
+void
+handle_v4(krb5_context context, int len, int fd);
+
 #endif /* __ADMIN_LOCL_H__ */
