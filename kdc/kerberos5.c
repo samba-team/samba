@@ -918,6 +918,7 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 	}
 	et->flags.renewable = 1;
 	ALLOC(et->renew_till);
+	fix_time(&b->rtime);
 	*et->renew_till = *b->rtime;
     }
     if(f.renew){
@@ -931,7 +932,7 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 	    old_life -= *tgt->starttime;
 	else
 	    old_life -= tgt->authtime;
-	et->endtime = *et->starttime + old_life;
+	et->endtime = min(*b->till, *et->starttime + old_life);
     }	    
     
     /* checks for excess flags */
