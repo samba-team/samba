@@ -384,7 +384,9 @@ typedef struct
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
-
+#ifdef WITH_SENDFILE
+	BOOL bUseSendfile;
+#endif
 	char dummy[3];		/* for alignment */
 }
 service;
@@ -504,6 +506,9 @@ static service sDefault = {
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
+#ifdef WITH_SENDFILE
+	False,			/* bUseSendfile */
+#endif
 
 	""			/* dummy */
 };
@@ -841,6 +846,9 @@ static struct parm_struct parm_table[] = {
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, FLAG_DEVELOPER},
+#ifdef WITH_SENDFILE
+	{"use sendfile", P_BOOL, P_LOCAL, &sDefault.bUseSendfile, NULL, NULL, FLAG_SHARE},
+#endif
 	{"hostname lookups", P_BOOL, P_GLOBAL, &Globals.bHostnameLookups, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
 
@@ -1728,6 +1736,9 @@ FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
+#ifdef WITH_SENDFILE
+FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
+#endif
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
