@@ -29,71 +29,19 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-static int dgram_sock = -1;
-
-int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
+int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot, 
+		      char *buf, int len,
 		      const char *srcname, int src_type, 
 		      const char *dstname, int dest_type,
 		      struct in_addr dest_ip, struct in_addr src_ip,
-		      int dest_port)
+		      int dest_port, int src_port)
 {
   struct packet_struct p;
   struct dgram_packet *dgram = &p.packet.dgram;
-  struct sockaddr_in sock_out;
   char *ptr, *p2;
   char tmp[4];
-  int name_size;
 
   bzero((char *)&p, sizeof(p));
-
-  /* 
-   * First, check if we have an open socket to the dest IP 
-   */
-
-  if (dgram_sock < 1) {
-
-    if ((dgram_sock = open_socket_out(SOCK_DGRAM, &dest_ip, 138, LONG_CONNECT_TIMEOUT)) < 0) {
-
-      DEBUG(4, ("open_sock_out failed ..."));
-      return False;
-
-    }
-
-    /* Make it a broadcast socket ... */
-
-    set_socket_options(dgram_sock, "SO_BROADCAST");
-
-    /* Now, bind my addr to it ... */
-
-    bzero((char *)&sock_out, sizeof(sock_out));
-    sock_out.sin_addr.s_addr = INADDR_ANY;
-    sock_out.sin_port = htons(138);
-    sock_out.sin_family = AF_INET;
-
-    if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
-
-      /* Try again on any port ... */
-
-      sock_out.sin_port = INADDR_ANY;
-
-      if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
-
-	DEBUG(4, ("failed to bind socket to address ...\n"));
-	return False;
-
-      }
-
-    }
-
-  }
-
-  /* Now, figure out what socket name we were bound to. We want the port */
-
-  name_size = sizeof(sock_out);
-
-  getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
-
-  fprintf(stderr, "Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port));
 
   /*
    * Next, build the DGRAM ...
@@ -105,9 +53,9 @@ int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
   dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
-  dgram->header.source_ip.s_addr = sock_out.sin_addr.s_addr;
+  dgram->header.source_ip.s_addr = src_ip.s_addr;
   fprintf(stderr, "Source IP = %0X\n", dgram->header.source_ip);
-  dgram->header.source_port = ntohs(sock_out.sin_port);
+  dgram->header.source_port = ntohs(src_port);
   fprintf(stderr, "Source Port = %0X\n", dgram->header.source_port);
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
   dgram->header.packet_offset = 0;
@@ -157,11 +105,11 @@ int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
 /*
  * cli_get_response: Get a response ...
  */
-int cli_get_response(BOOL unique, char *mailslot, char *buf, int bufsiz)
+int cli_get_response(int dgram_sock, BOOL unique, char *mailslot, char *buf, int bufsiz)
 {
   struct packet_struct *packet;
 
-  packet = receive_dgram_packet(dgram_sock, 2, mailslot);
+  packet = receive_dgram_packet(dgram_sock, 5, mailslot);
 
   if (packet) { /* We got one, pull what we want out of the SMB data ... */
 
@@ -193,6 +141,9 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
   char outbuf[15];
   char *p;
   struct in_addr sendto_ip, my_ip;
+  int dgram_sock;
+  struct sockaddr_in sock_out;
+  int name_size;
 
   if (!resolve_name(send_to_name, &sendto_ip, 0x1d)) {
 
@@ -208,6 +159,57 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   }
 
+  if ((dgram_sock = open_socket_out(SOCK_DGRAM, &sendto_ip, 138, LONG_CONNECT_TIMEOUT)) < 0) {
+
+    DEBUG(4, ("open_sock_out failed ..."));
+    return False;
+
+  }
+
+  /* Make it a broadcast socket ... */
+
+  set_socket_options(dgram_sock, "SO_BROADCAST");
+
+  /* Make it non-blocking??? */
+
+  if (fcntl(dgram_sock, F_SETFL, O_NONBLOCK) < 0) {
+
+    fprintf(stderr, "Unable to set non blocking on dgram sock\n");
+
+  }
+
+  /* Now, bind a local addr to it ... Try port 138 first ... */
+
+  bzero((char *)&sock_out, sizeof(sock_out));
+  sock_out.sin_addr.s_addr = INADDR_ANY;
+  sock_out.sin_port = htons(138);
+  sock_out.sin_family = AF_INET;
+
+  if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
+
+    /* Try again on any port ... */
+
+    sock_out.sin_port = INADDR_ANY;
+
+    if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
+
+      DEBUG(4, ("failed to bind socket to address ...\n"));
+      return False;
+	
+    }
+
+  }
+
+  /* Now, figure out what socket name we were bound to. We want the port */
+
+  name_size = sizeof(sock_out);
+
+  getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
+
+  fprintf(stderr, "Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port));
+
+  /* Now, build the request */
+
   bzero(cli_backup_list, sizeof(cli_backup_list));
   bzero(outbuf, sizeof(outbuf));
 
@@ -222,16 +224,19 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
   SIVAL(p, 0, 1); /* The sender's token ... */
   p += 4;
 
-  cli_send_mailslot(True, "\\MAILSLOT\\BROWSE", outbuf, PTR_DIFF(p, outbuf),
-		    myname, 0, send_to_name, 0x1d, sendto_ip, my_ip, 138);
+  cli_send_mailslot(dgram_sock, True, "\\MAILSLOT\\BROWSE", outbuf, 
+		    PTR_DIFF(p, outbuf), myname, 0, send_to_name, 
+		    0x1d, sendto_ip, my_ip, 138, sock_out.sin_port);
 
   /* We should check the error and return if we got one */
 
   /* Now, get the response ... */
 
-  cli_get_response(True, "\\MAILSLOT\\BROWSE", cli_backup_list, sizeof(cli_backup_list));
+  cli_get_response(dgram_sock, True, "\\MAILSLOT\\BROWSE", cli_backup_list, sizeof(cli_backup_list));
 
   /* Should check the response here ... FIXME */
+
+  close(dgram_sock);
 
 }
 
@@ -245,6 +250,12 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
   /* Get the backup list first. We could pull this from the cache later */
 
   cli_get_backup_list(my_name, target);  /* FIXME: Check the response */
+
+  if (!cli_backup_list[0]) { /* Empty list ... try again */
+
+    cli_get_backup_list(my_name, target);
+
+  }
 
   strncpy(servername, cli_backup_list, MIN(16, namesize));
 
