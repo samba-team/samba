@@ -675,6 +675,7 @@ struct winbindd_methods ads_methods = {
 	True,
 	query_user_list,
 	enum_dom_groups,
+	NULL,
 	name_to_sid,
 	sid_to_name,
 	query_user,
