@@ -82,20 +82,21 @@ interface netlogon
 		unistr_noterm *string;
 	} netr_String;
 	
-	typedef struct {
-		uint32 acct_lock_max_count;
-		uint32 acct_lock_offset;
-		uint32 acct_lock_actual_count;
+	/* in netr_AcctLockStr size seems to be be 24, and rrenard thinks 
+	   that the structure of the bindata looks like this:
+
 		ULONG8 lockout_duration;
 		ULONG8 reset_count;
 		uint32 bad_attempt_lockout;
 		uint32 dummy;	
-	} netr_AcctLockCtr;
-	
+
+	   but it doesn't look as though this structure is reflected at the
+	   NDR level. Maybe it is left to the application to decode the bindata array.
+	*/
 	typedef struct {
 		uint16 size;
 		uint16 length;
-		netr_AcctLockCtr *acct_lk_info;
+		[size_is(size/2),length_is(length/2)] uint16 *bindata;
 	} netr_AcctLockStr;
 
 	typedef struct {
