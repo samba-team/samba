@@ -121,8 +121,6 @@ while (@docs) {
   next if ($nextfile eq "CVS");
   ($junk,$file) = split(/\//,$nextfile,2);
   if (grep(/\/$/,$nextfile)) {
-    chop $nextfile;
-    chop $file;
     print IDB "d 0755 root sys usr/samba/docs/$file $nextfile samba.man.doc\n";
   }
   else {
@@ -143,14 +141,14 @@ print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.s
 print IDB "f 0755 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
 
 print IDB "d 0755 root sys usr/samba/src packaging/SGI samba.src.samba\n";
-while (@allfiles) {
-  $nextfile = shift @allfiles;
+@sorted = sort(@allfiles);
+while (@sorted) {
+  $nextfile = shift @sorted;
   ($file = $nextfile) =~ s/^.*\///;
   next if grep(/packaging\/SGI/& (/Makefile/ | /samba\.spec/ | /samba\.idb/),$nextfile);
   next if grep(/source/,$nextfile) && ($ignores{$file});
   next if ($nextfile eq "CVS");
   if (grep(/\/$/,$nextfile)) {
-    chop $nextfile;
     print IDB "d 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
   }
   else {
@@ -169,7 +167,6 @@ while (@swatfiles) {
   ($file = $nextfile) =~ s/^packaging\/SGI\/swat\///;
   next if !$file;
   if (grep(/\/$/,$file)) {
-    chop $file;
     print IDB "d 0755 root sys usr/samba/swat/$file packaging/SGI/swat/$file samba.sw.base\n";
   }
   else {
