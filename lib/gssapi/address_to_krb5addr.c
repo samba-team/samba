@@ -33,6 +33,8 @@
 
 #include "gssapi_locl.h"
 
+#include <roken.h>
+
 krb5_error_code
 gss_address_to_krb5addr(OM_uint32 gss_addr_type,
                         gss_buffer_desc *gss_addr,
