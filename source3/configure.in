@@ -657,10 +657,10 @@ case "$host_os" in
 			;;
 esac
 
-# try to work out how to produce pic code with this compiler
-AC_PROG_CC_FLAG(fpic)
-if test $ac_cv_prog_cc_fpic = yes; then
-    PICFLAG="-fpic";
+# try to work out how to produce PIC code with this compiler
+AC_PROG_CC_FLAG(fPIC)
+if test $ac_cv_prog_cc_fPIC = yes; then
+    PICFLAG="-fPIC";
 fi
 if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(KPIC)
