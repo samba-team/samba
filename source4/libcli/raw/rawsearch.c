@@ -413,8 +413,34 @@ static int parse_trans2_search(struct cli_tree *tree,
 			return -1;
 		}
 		return ofs;
-	}
 	
+	case RAW_SEARCH_UNIX_INFO:
+		if (blob->length < 105) return -1;
+		ofs                                  = IVAL(blob->data,             0);
+		data->unix_info.file_index           = IVAL(blob->data,             4);
+		data->unix_info.size                 = BVAL(blob->data,             8);
+		data->unix_info.alloc_size           = BVAL(blob->data,            16);
+		data->unix_info.status_change_time   = cli_pull_nttime(blob->data, 24);
+		data->unix_info.access_time          = cli_pull_nttime(blob->data, 32);
+		data->unix_info.change_time          = cli_pull_nttime(blob->data, 40);
+		data->unix_info.uid                  = IVAL(blob->data,            48);
+		data->unix_info.gid                  = IVAL(blob->data,            56);
+		data->unix_info.file_type            = IVAL(blob->data,            64);
+		data->unix_info.dev_major            = BVAL(blob->data,            68);
+		data->unix_info.dev_minor            = BVAL(blob->data,            76);
+		data->unix_info.unique_id            = BVAL(blob->data,            84);
+		data->unix_info.permissions          = IVAL(blob->data,            92);
+		data->unix_info.nlink                = IVAL(blob->data,           100);
+		/* There is no length field for this name but we know it's null terminated. */
+		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+					   &data->unix_info.name,
+					   0, 104, 0);
+		if (ofs != 0 && ofs < 104+len) {
+			return -1;
+		}
+		return ofs;
+
+	}
 	/* invalid level */
 	return -1;
 }
