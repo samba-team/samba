@@ -31,14 +31,14 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-char inst[100];
-char name[100];
-char realm[REALM_SZ + 1];
+static char name[ANAME_SZ];
+static char inst[INST_SZ];
+static char realm[REALM_SZ + 1];
 
 #define font_height(font)	  	(font->ascent + font->descent)
 
-char *SPACE_STRING = "                                                      ";
-char STRING[] = "****************";
+static char *SPACE_STRING = "                                                      ";
+static char STRING[] = "****************";
 
 #define STRING_LENGTH (sizeof(STRING))
 #define MAX_PASSWD_LENGTH 256
@@ -56,36 +56,32 @@ char STRING[] = "****************";
 #define XNLOCK_CTRL 1
 #define XNLOCK_NOCTRL 0
 
-#ifndef min
-#define min(x,y) (((x)<(y))?(x):(y))
-#endif
-
-XtAppContext	app;
-Display        *dpy;
-unsigned short	Width, Height;
-Widget		widget;
-GC		gc;
-XtIntervalId	timeout_id;
-char	       *ProgName, *words;
-int		x, y;
-Pixel		Black, White;
-XFontStruct    *font;
-struct passwd  *pw;
-char		root_pw[16];
-int		time_left, prompt_x, prompt_y, time_x, time_y;
-unsigned long	interval;
-Pixmap		left0, left1, right0, right1, left_front,
+static XtAppContext	app;
+static Display        *dpy;
+static unsigned short	Width, Height;
+static Widget		widget;
+static GC		gc;
+static XtIntervalId	timeout_id;
+static char	       *ProgName, *words;
+static int		x, y;
+static Pixel		Black, White;
+static XFontStruct    *font;
+static struct passwd  *pw;
+static char		root_pw[16];
+static int		time_left, prompt_x, prompt_y, time_x, time_y;
+static unsigned long	interval;
+static Pixmap		left0, left1, right0, right1, left_front,
 		right_front, front, down;
 
 #define MAXLINES 40
 
 #define IS_MOVING  1
 #define GET_PASSWD 2
-int state; /* indicates states: walking or getting passwd */
+static int state; /* indicates states: walking or getting passwd */
 
-int ALLOW_LOGOUT = (60*10);	/* Allow logout after nn seconds */
-char LOGOUT_PASSWD[] = "LOGOUT"; /* when given password "xx" */
-time_t locked_at;
+static int ALLOW_LOGOUT = (60*10);	/* Allow logout after nn seconds */
+static char LOGOUT_PASSWD[] = "LOGOUT"; /* when given password "xx" */
+static time_t locked_at;
 
 struct appres_t {
     Pixel bg;
