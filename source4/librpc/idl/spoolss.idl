@@ -9,9 +9,6 @@
   pointer_default(unique)
 ] interface spoolss
 {
-	/******************/
-	/* Function: 0x00 */
-
 	typedef struct {
 		nstring devicename;
 		uint16 specversion;
@@ -130,6 +127,8 @@
 		[case(7)] spoolss_PrinterInfo7 info7;
 	} spoolss_PrinterInfo;
 
+	/******************/
+	/* Function: 0x00 */
 	WERROR spoolss_EnumPrinters(
 		[in]	     uint32 flags,
 		[in]	     unistr *server,
@@ -215,18 +214,18 @@
 	/******************/
 	/* Function: 0x05 */
 	WERROR spoolss_AddPrinter(
-		/* This function is not implemented in Samba 3 as no
-		   clients have been observed using it. */
+ 		/* This function is not implemented in Samba 3 as no
+ 		   clients have been observed using it. */
 	);
 
 	/******************/
 	/* Function: 0x06 */
-	WERROR spoolss_06(
+	WERROR spoolss_DeletePrinter(
 	);
 
 	/******************/
 	/* Function: 0x07 */
-	WERROR spoolss_07(
+	WERROR spoolss_SetPrinter(
 	);
 
 	/******************/
@@ -241,7 +240,7 @@
 
 	/******************/
 	/* Function: 0x09 */
-	WERROR spoolss_09(
+	WERROR spoolss_AddPrinterDriver(
 	);
 
 	typedef struct {
@@ -289,12 +288,12 @@
 
 	/******************/
 	/* Function: 0x0b */
-	WERROR spoolss_0b(
+	WERROR spoolss_GetPrinterDriver(
 	);
 
 	/******************/
 	/* Function: 0x0c */
-	WERROR spoolss_0c(
+	WERROR spoolss_GetPrinterDriverDirectory(
 	);
 
 	/******************/
@@ -308,22 +307,22 @@
 
 	/******************/
 	/* Function: 0x0e */
-	WERROR spoolss_0e(
+	WERROR spoolss_AddPrintProcessor(
 	);
 
 	/******************/
 	/* Function: 0x0f */
-	WERROR spoolss_0f(
+	WERROR spoolss_EnumPrintProcessors(
 	);
 
 	/******************/
 	/* Function: 0x10 */
-	WERROR spoolss_10(
+	WERROR spoolss_GetPrintProcessorDirectory(
 	);
 
 	/******************/
 	/* Function: 0x11 */
-	WERROR spoolss_11(
+	WERROR spoolss_StartDocPrinter(
 	);
 
 	/******************/
@@ -334,7 +333,7 @@
 
 	/******************/
 	/* Function: 0x13 */
-	WERROR spoolss_13(
+	WERROR spoolss_WritePrinter(
 	);
 
 	/******************/
@@ -345,12 +344,12 @@
 
 	/******************/
 	/* Function: 0x15 */
-	WERROR spoolss_15(
+	WERROR spoolss_AbortPrinter(
 	);
 
 	/******************/
 	/* Function: 0x16 */
-	WERROR spoolss_16(
+	WERROR spoolss_ReadPrinter(
 	);
 
 	/******************/
@@ -360,12 +359,12 @@
 
 	/******************/
 	/* Function: 0x18 */
-	WERROR spoolss_18(
+	WERROR spoolss_AddJob(
 	);
 
 	/******************/
 	/* Function: 0x19 */
-	WERROR spoolss_19(
+	WERROR spoolss_ScheduleJob(
 	);
 
 	/******************/
@@ -390,7 +389,7 @@
 
 	/******************/
 	/* Function: 0x1c */
-	WERROR spoolss_1c(
+	WERROR spoolss_WaitForPrinterChange(
 	);
 
 	/******************/
@@ -465,92 +464,94 @@
 
 	/******************/
 	/* Function: 0x23 */
-	WERROR spoolss_23(
+	WERROR spoolss_EnumPorts(
 	);
 
 	/******************/
 	/* Function: 0x24 */
-	WERROR spoolss_24(
+	WERROR spoolss_EnumMonitors(
 	);
 
 	/******************/
 	/* Function: 0x25 */
-	WERROR spoolss_25(
+	WERROR spoolss_AddPort(
 	);
 
 	/******************/
 	/* Function: 0x26 */
-	WERROR spoolss_26(
+	WERROR spoolss_ConfigurePort(
 	);
 
 	/******************/
 	/* Function: 0x27 */
-	WERROR spoolss_27(
+	WERROR spoolss_DeletePort(
 	);
 
 	/******************/
 	/* Function: 0x28 */
-	WERROR spoolss_28(
+	WERROR spoolss_CreatePrinterIC(
 	);
 
 	/******************/
 	/* Function: 0x29 */
-	WERROR spoolss_29(
+	WERROR spoolss_PlayGDIScriptOnPrinterIC(
 	);
 
 	/******************/
 	/* Function: 0x2a */
-	WERROR spoolss_2a(
+	WERROR spoolss_DeletePrinterIC(
 	);
 
 	/******************/
 	/* Function: 0x2b */
-	WERROR spoolss_2b(
+	WERROR spoolss_AddPrinterConnection(
 	);
 
 	/******************/
 	/* Function: 0x2c */
-	WERROR spoolss_2c(
+	WERROR spoolss_DeletePrinterConnection(
 	);
 
 	/******************/
 	/* Function: 0x2d */
-	WERROR spoolss_2d(
+	WERROR spoolss_PrinterMessageBox(
+		/* Marked as obsolete in MSDN.  "Not necessary and has
+		   no effect". */
 	);
 
 	/******************/
 	/* Function: 0x2e */
-	WERROR spoolss_2e(
+	WERROR spoolss_AddMonitor(
 	);
 
 	/******************/
 	/* Function: 0x2f */
-	WERROR spoolss_2f(
+	WERROR spoolss_DeleteMonitor(
 	);
 
 	/******************/
 	/* Function: 0x30 */
-	WERROR spoolss_30(
+	WERROR spoolss_DeletePrintProcessor(
 	);
 
 	/******************/
 	/* Function: 0x31 */
-	WERROR spoolss_31(
+	WERROR spoolss_AddPrintProvidor(
 	);
 
 	/******************/
 	/* Function: 0x32 */
-	WERROR spoolss_32(
+	WERROR spoolss_DeletePrintProvidor(
 	);
 
 	/******************/
 	/* Function: 0x33 */
-	WERROR spoolss_33(
+	WERROR spoolss_EnumPrintProcDataTypes(
 	);
 
 	/******************/
 	/* Function: 0x34 */
-	WERROR spoolss_34(
+	WERROR spoolss_ResetPrinter(
 	);
 
 	/******************/
@@ -569,72 +570,72 @@
 
 	/******************/
 	/* Function: 0x36 */
-	WERROR spoolss_36(
+	WERROR spoolss_FindFirstPrinterChangeNotification(
 	);
 
 	/******************/
 	/* Function: 0x37 */
-	WERROR spoolss_37(
+	WERROR spoolss_FindNextPrinterChangeNotification(
 	);
 
 	/******************/
 	/* Function: 0x38 */
-	WERROR spoolss_38(
+	WERROR spoolss_FindClosePrinterNotify(
 	);
 
 	/******************/
 	/* Function: 0x39 */
-	WERROR spoolss_39(
+	WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(
 	);
 
 	/******************/
 	/* Function: 0x3a */
-	WERROR spoolss_3a(
+	WERROR spoolss_ReplyOpenPrinter(
 	);
 
 	/******************/
 	/* Function: 0x3b */
-	WERROR spoolss_3b(
+	WERROR spoolss_RouterReplyPrinter(
 	);
 
 	/******************/
 	/* Function: 0x3c */
-	WERROR spoolss_3c(
+	WERROR spoolss_ReplyClosePrinter(
 	);
 
 	/******************/
 	/* Function: 0x3d */
-	WERROR spoolss_3d(
+	WERROR spoolss_AddPortEx(
 	);
 
 	/******************/
 	/* Function: 0x3e */
-	WERROR spoolss_3e(
+	WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(
 	);
 
 	/******************/
 	/* Function: 0x3f */
-	WERROR spoolss_3f(
+	WERROR spoolss_SpoolerInit(
 	);
 
 	/******************/
 	/* Function: 0x40 */
-	WERROR spoolss_40(
+	WERROR spoolss_ResetPrinterEx(
 	);
 
 	/******************/
 	/* Function: 0x41 */
-	WERROR spoolss_41(
+	WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
 	);
 
 	/******************/
 	/* Function: 0x42 */
-	WERROR spoolss_42(
+	WERROR spoolss_RouterRefreshPrinterChangeNotification(
 	);
 
 	/******************/
 	/* Function: 0x43 */
-	WERROR spoolss_43(
+	WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(
 	);
 
 	/******************/
@@ -759,7 +760,7 @@
 
 	/******************/
 	/* Function: 0x50 */
-	WERROR spoolss_50(
+	WERROR spoolss_EnumPrinterKey(
 	);
 
 	/******************/
@@ -772,7 +773,7 @@
 
 	/******************/
 	/* Function: 0x52 */
-	WERROR spoolss_52(
+	WERROR spoolss_DeletePrinterKey(
 	);
 
 	/******************/
@@ -782,7 +783,7 @@
 
 	/******************/
 	/* Function: 0x54 */
-	WERROR spoolss_54(
+	WERROR spoolss_DeletePrinterDriverEx(
 	);
 
 	/******************/
@@ -807,7 +808,7 @@
 
 	/******************/
 	/* Function: 0x59 */
-	WERROR spoolss_59(
+	WERROR spoolss_AddPrinterDriverEx(
 	);
 
 	/******************/
