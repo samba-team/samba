@@ -1,3 +1,7 @@
+2003-09-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5.conf.5: document appdefaults/{forward,encrypt}
+
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* include/make_crypto.c: include <openssl/ui.h> in the openssl
