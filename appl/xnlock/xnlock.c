@@ -522,21 +522,6 @@ countdown(XtPointer _t, XtIntervalId *_d)
 }
 
 static int
-verify_unix(char *user, char *password)
-{
-    struct passwd *pw;
-    
-    pw = k_getpwnam(user);
-    if(pw == NULL)
-	return -1;
-    if(strlen(pw->pw_passwd) == 0 && strlen(password) == 0)
-	return 0;
-    if(strcmp(crypt(password, pw->pw_passwd), pw->pw_passwd) == 0)
-    return 0;
-    return -1;
-}
-
-static int
 verify(char *password)
 {
     int ret;
@@ -545,7 +530,7 @@ verify(char *password)
      * First try with root password, if allowed.
      */
     
-    if(appres.accept_root && verify_unix("root", password) == 0)
+    if(appres.accept_root && verify_unix_user("root", password) == 0)
 	return 0;
     /*
      * Password that log out user
@@ -582,7 +567,7 @@ verify(char *password)
     /*
      * Try to verify as user.
      */
-    if(verify_unix(name, password) == 0)
+    if(verify_unix_user(name, password) == 0)
 	return 0;
     return -1;
 }
