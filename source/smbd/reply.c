@@ -38,13 +38,13 @@ extern uint32 global_client_caps;
 extern BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
- Ensure we check the path in *exactly* the same way as W2K.
+ Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
  We're assuming here that '/' is not the second byte in any multibyte char
  set (a safe assumption). '\\' *may* be the second byte in a multibyte char
  set.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_wcard_names)
+NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 {
 	char *d = destname;
 	const char *s = srcname;
@@ -118,20 +118,16 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 		}
 
 		if (!(*s & 0x80)) {
-			if (allow_wcard_names) {
-				*d++ = *s++;
-			} else {
-				switch (*s) {
-					case '*':
-					case '?':
-					case '<':
-					case '>':
-					case '"':
-						return NT_STATUS_OBJECT_NAME_INVALID;
-					default:
-						*d++ = *s++;
-						break;
-				}
+			switch (*s) {
+				case '*':
+				case '?':
+				case '<':
+				case '>':
+				case '"':
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				default:
+					*d++ = *s++;
+					break;
 			}
 		} else {
 			switch(next_mb_char_size(s)) {
@@ -157,16 +153,126 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 	}
 
 	if (NT_STATUS_EQUAL(ret, NT_STATUS_OBJECT_NAME_INVALID)) {
+		if (num_bad_components > 1) {
+			ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+	}
+
+	*d = '\0';
+	return ret;
+}
+
+/****************************************************************************
+ Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
+ path or anything including wildcards.
+ We're assuming here that '/' is not the second byte in any multibyte char
+ set (a safe assumption). '\\' *may* be the second byte in a multibyte char
+ set.
+****************************************************************************/
+
+NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname)
+{
+	char *d = destname;
+	const char *s = srcname;
+	NTSTATUS ret = NT_STATUS_OK;
+	BOOL start_of_name_component = True;
+	unsigned int num_bad_components = 0;
+
+	while (*s) {
+		if (IS_DIRECTORY_SEP(*s)) {
+			/*
+			 * Safe to assume is not the second part of a mb char as this is handled below.
+			 */
+			/* Eat multiple '/' or '\\' */
+			while (IS_DIRECTORY_SEP(*s)) {
+				s++;
+			}
+			if ((d != destname) && (*s != '\0')) {
+				/* We only care about non-leading or trailing '/' or '\\' */
+				*d++ = '/';
+			}
+
+			start_of_name_component = True;
+			continue;
+		}
+
+		if (start_of_name_component) {
+			if ((s[0] == '.') && (s[1] == '.') && (IS_DIRECTORY_SEP(s[2]) || s[2] == '\0')) {
+				/* Uh oh - "/../" or "\\..\\"  or "/..\0" or "\\..\0" ! */
+
+				/*
+				 * No mb char starts with '.' so we're safe checking the directory separator here.
+				 */
+
+				/* If  we just added a '/' - delete it */
+				if ((d > destname) && (*(d-1) == '/')) {
+					*(d-1) = '\0';
+					d--;
+				}
+
+				/* Are we at the start ? Can't go back further if so. */
+				if (d <= destname) {
+					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+					break;
+				}
+				/* Go back one level... */
+				/* We know this is safe as '/' cannot be part of a mb sequence. */
+				/* NOTE - if this assumption is invalid we are not in good shape... */
+				/* Decrement d first as d points to the *next* char to write into. */
+				for (d--; d > destname; d--) {
+					if (*d == '/')
+						break;
+				}
+				s += 2; /* Else go past the .. */
+				/* We're still at the start of a name component, just the previous one. */
+
+				if (num_bad_components) {
+					/* Hmmm. Should we only decrement the bad_components if
+					   we're removing a bad component ? Need to check this. JRA. */
+					num_bad_components--;
+				}
+
+				continue;
+
+			} else if ((s[0] == '.') && ((s[1] == '\0') || IS_DIRECTORY_SEP(s[1]))) {
+				/* Component of pathname can't be "." only. */
+				ret =  NT_STATUS_OBJECT_NAME_INVALID;
+				num_bad_components++;
+				*d++ = *s++;
+				continue;
+			}
+		}
+
+		if (!(*s & 0x80)) {
+			*d++ = *s++;
+		} else {
+			switch(next_mb_char_size(s)) {
+				case 4:
+					*d++ = *s++;
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					DEBUG(0,("check_path_syntax_wcard: character length assumptions invalid !\n"));
+					*d = '\0';
+					return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		if (start_of_name_component && num_bad_components) {
+			num_bad_components++;
+		}
+		start_of_name_component = False;
+	}
+
+	if (NT_STATUS_EQUAL(ret, NT_STATUS_OBJECT_NAME_INVALID)) {
 		/* For some strange reason being called from findfirst changes
 		   the num_components number to cause the error return to change. JRA. */
-		if (allow_wcard_names) {
-			if (num_bad_components > 2) {
-				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		} else {
-			if (num_bad_components > 1) {
-				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
+		if (num_bad_components > 2) {
+			ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 	}
 
@@ -192,7 +298,11 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 	} else {
 		ret = srvstr_pull( inbuf, tmppath_ptr, src, dest_len, src_len, flags);
 	}
-	*err = check_path_syntax(dest, tmppath, allow_wcard_names);
+	if (allow_wcard_names) {
+		*err = check_path_syntax_wcard(dest, tmppath);
+	} else {
+		*err = check_path_syntax(dest, tmppath);
+	}
 	return ret;
 }
 
