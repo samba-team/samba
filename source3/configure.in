@@ -1216,7 +1216,7 @@ if test "$enable_shared" = "yes"; then
 			if test $ac_cv_prog_cc_Ae = yes; then
 				BLDSHARED="true"
 				SHLD="/usr/bin/ld"
-				LDSHFLAGS="-B symbolic -b -z"
+				LDSHFLAGS="-b -Wl,-B,symbolic,-b,-z"
 				SONAMEFLAG="+h "
 				PICFLAGS="+z"
 			elif test "${GCC}" = "yes"; then
@@ -4236,7 +4236,7 @@ AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
-# Check the setting of --with-winbindd
+# Check the setting of --with-winbind
 
 AC_ARG_WITH(winbind,
 [  --with-winbind          Build winbind (default, if supported by OS)],
