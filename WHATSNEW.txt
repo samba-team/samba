@@ -1,5 +1,5 @@
-                   WHATS NEW IN Samba 3.0.0 RC2
-                          August 28 2003
+                   WHATS NEW IN Samba 3.0.0 RC3
+                          September 8, 2003
                   ==============================
 
 This is the third release candidate snapshot of Samba 3.0.0. A release 
@@ -100,12 +100,13 @@ details:
 7)  Support for in-memory keytabs, which are needed to make heimdal 
     work properly.  MIT does not support them, so this check will be 
     used to decide whether to use them.  (partial fix for bug 372).
-8)  Disable rc4-hmac on broken heimdal setups.  
+8)  Disable RC4-HMAC on broken heimdal setups.  (remainder of bug 
+    372).
 9)  Correct bug in smbclient that resulted in errors when untarring
     long filenames (bug 308).
 10) Improve autoconf checks for PAM header files and libs.
 11) Added fast path to convert_string() when dealing with 
-    ASCII -> ASCII, ucs2-le to ASCII and ASCII to ucs2-le with 
+    ASCII->ASCII, UCS2-LE->ASCII, and ASCII->UCS2-LE with 
     values <= 0x7F. 
 12) Quiet debug messages when we don't find a module and it is not
     a critical error (bug 375).
