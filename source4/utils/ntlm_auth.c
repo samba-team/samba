@@ -702,10 +702,10 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 }
 
 static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_function fn) {
+	void *private = NULL;
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
-	void *private = NULL;
 	while(1) {
 		manage_squid_request(stdio_mode, fn, &private);
 	}
