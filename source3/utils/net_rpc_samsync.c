@@ -111,6 +111,37 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 	case SAM_DELTA_GROUP_INFO:
 		display_group_info(hdr_delta->target_rid, &delta->group_info);
 		break;
+		/* The following types are recognised but not handled */
+	case SAM_DELTA_RENAME_GROUP:
+		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
+		break;
+	case SAM_DELTA_RENAME_USER:
+		d_printf("SAM_DELTA_RENAME_USER not handled\n");
+		break;
+	case SAM_DELTA_RENAME_ALIAS:
+		d_printf("SAM_DELTA_RENAME_ALIAS not handled\n");
+		break;
+	case SAM_DELTA_POLICY_INFO:
+		d_printf("SAM_DELTA_POLICY_INFO not handled\n");
+		break;
+	case SAM_DELTA_TRUST_DOMS:
+		d_printf("SAM_DELTA_TRUST_DOMS not handled\n");
+		break;
+	case SAM_DELTA_PRIVS_INFO:
+		d_printf("SAM_DELTA_PRIVS_INFO not handled\n");
+		break;
+	case SAM_DELTA_SECRET_INFO:
+		d_printf("SAM_DELTA_SECRET_INFO not handled\n");
+		break;
+	case SAM_DELTA_DELETE_GROUP:
+		d_printf("SAM_DELTA_DELETE_GROUP not handled\n");
+		break;
+	case SAM_DELTA_DELETE_USER:
+		d_printf("SAM_DELTA_DELETE_USER not handled\n");
+		break;
+	case SAM_DELTA_MODIFIED_COUNT:
+		d_printf("SAM_DELTA_MODIFIED_COUNT not handled\n");
+		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);
 		break;
@@ -132,7 +163,20 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 		return;
 	}
 
-	d_printf("Dumping database %u\n", db_type);
+	switch( db_type ) {
+	case SAM_DATABASE_DOMAIN:
+		d_printf("Dumping DOMAIN database\n");
+		break;
+	case SAM_DATABASE_BUILTIN:
+		d_printf("Dumping BUILTIN database\n");
+		break;
+	case SAM_DATABASE_PRIVS:
+		d_printf("Dumping PRIVS databases\n");
+		break;
+	default:
+		d_printf("Dumping unknown database type %u\n", db_type );
+		break;
+	}
 
 	do {
 		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
@@ -197,70 +241,143 @@ fail:
 }
 
 /* Convert a SAM_ACCOUNT_DELTA to a SAM_ACCOUNT. */
+#define STRING_CHANGED (old_string && !new_string) ||\
+		    (!old_string && new_string) ||\
+		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
 static NTSTATUS
 sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 {
-	fstring s;
+	const char *old_string, *new_string;
+	time_t unix_time, stored_time;
 	uchar lm_passwd[16], nt_passwd[16];
 	static uchar zero_buf[16];
 
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
 
-	unistr2_to_ascii(s, &delta->uni_acct_name, sizeof(s) - 1);
-	pdb_set_nt_username(account, s, PDB_CHANGED);
+	if (delta->hdr_acct_name.buffer) {
+		old_string = pdb_get_nt_username(account);
+		new_string = unistr2_static(&delta->uni_acct_name);
 
-	/* Unix username is the same - for sainity */
-	pdb_set_username(account, s, PDB_CHANGED);
+		if (STRING_CHANGED) {
+			pdb_set_nt_username(account, new_string, PDB_CHANGED);
+              
+		}
+         
+		/* Unix username is the same - for sanity */
+		old_string = pdb_get_username( account );
+		if (STRING_CHANGED) {
+			pdb_set_username(account, new_string, PDB_CHANGED);
+		}
+	}
 
-	unistr2_to_ascii(s, &delta->uni_full_name, sizeof(s) - 1);
-	pdb_set_fullname(account, s, PDB_CHANGED);
+	if (delta->hdr_full_name.buffer) {
+		old_string = pdb_get_fullname(account);
+		new_string = unistr2_static(&delta->uni_full_name);
 
-	unistr2_to_ascii(s, &delta->uni_home_dir, sizeof(s) - 1);
-	pdb_set_homedir(account, s, PDB_CHANGED);
+		if (STRING_CHANGED)
+			pdb_set_fullname(account, new_string, PDB_CHANGED);
+	}
 
-	unistr2_to_ascii(s, &delta->uni_dir_drive, sizeof(s) - 1);
-	pdb_set_dir_drive(account, s, PDB_CHANGED);
+	if (delta->hdr_home_dir.buffer) {
+		old_string = pdb_get_homedir(account);
+		new_string = unistr2_static(&delta->uni_home_dir);
 
-	unistr2_to_ascii(s, &delta->uni_logon_script, sizeof(s) - 1);
-	pdb_set_logon_script(account, s, PDB_CHANGED);
+		if (STRING_CHANGED)
+			pdb_set_homedir(account, new_string, PDB_CHANGED);
+	}
 
-	unistr2_to_ascii(s, &delta->uni_acct_desc, sizeof(s) - 1);
-	pdb_set_acct_desc(account, s, PDB_CHANGED);
+	if (delta->hdr_dir_drive.buffer) {
+		old_string = pdb_get_dir_drive(account);
+		new_string = unistr2_static(&delta->uni_dir_drive);
 
-	unistr2_to_ascii(s, &delta->uni_workstations, sizeof(s) - 1);
-	pdb_set_workstations(account, s, PDB_CHANGED);
+		if (STRING_CHANGED)
+			pdb_set_dir_drive(account, new_string, PDB_CHANGED);
+	}
 
-	unistr2_to_ascii(s, &delta->uni_profile, sizeof(s) - 1);
-	pdb_set_profile_path(account, s, PDB_CHANGED);
+	if (delta->hdr_logon_script.buffer) {
+		old_string = pdb_get_logon_script(account);
+		new_string = unistr2_static(&delta->uni_logon_script);
+
+		if (STRING_CHANGED)
+			pdb_set_logon_script(account, new_string, PDB_CHANGED);
+	}
+
+	if (delta->hdr_acct_desc.buffer) {
+		old_string = pdb_get_acct_desc(account);
+		new_string = unistr2_static(&delta->uni_acct_desc);
+
+		if (STRING_CHANGED)
+			pdb_set_acct_desc(account, new_string, PDB_CHANGED);
+	}
+
+	if (delta->hdr_workstations.buffer) {
+		old_string = pdb_get_workstations(account);
+		new_string = unistr2_static(&delta->uni_workstations);
+
+		if (STRING_CHANGED)
+			pdb_set_workstations(account, new_string, PDB_CHANGED);
+	}
+
+	if (delta->hdr_profile.buffer) {
+		old_string = pdb_get_profile_path(account);
+		new_string = unistr2_static(&delta->uni_profile);
+
+		if (STRING_CHANGED)
+			pdb_set_profile_path(account, new_string, PDB_CHANGED);
+	}
 
 	/* User and group sid */
-
-	pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
-	pdb_set_group_sid_from_rid(account, delta->group_rid, PDB_CHANGED);
+	if (pdb_get_user_rid(account) != delta->user_rid)
+		pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
+	if (pdb_get_group_rid(account) != delta->group_rid)
+		pdb_set_group_sid_from_rid(account, delta->group_rid, PDB_CHANGED);
 
 	/* Logon and password information */
+	if (!nt_time_is_zero(&delta->logon_time)) {
+		unix_time = nt_time_to_unix(&delta->logon_time);
+		stored_time = pdb_get_logon_time(account);
+		if (stored_time != unix_time)
+			pdb_set_logon_time(account, unix_time, PDB_CHANGED);
+	}
 
-	pdb_set_logon_time(account, nt_time_to_unix(&delta->logon_time), PDB_CHANGED);
-	pdb_set_logoff_time(account, nt_time_to_unix(&delta->logoff_time),
-			    PDB_CHANGED);
-	pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
+	if (!nt_time_is_zero(&delta->logoff_time)) {
+		unix_time = nt_time_to_unix(&delta->logoff_time);
+		stored_time = pdb_get_logoff_time(account);
+		if (stored_time != unix_time)
+			pdb_set_logoff_time(account, unix_time,PDB_CHANGED);
+	}
+
+	if (pdb_get_logon_divs(account) != delta->logon_divs)
+		pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
 
 	/* TODO: logon hours */
 	/* TODO: bad password count */
 	/* TODO: logon count */
 
-	pdb_set_pass_last_set_time(
-		account, nt_time_to_unix(&delta->pwd_last_set_time), PDB_CHANGED);
+	if (!nt_time_is_zero(&delta->pwd_last_set_time)) {
+		unix_time = nt_time_to_unix(&delta->pwd_last_set_time);
+		stored_time = pdb_get_pass_last_set_time(account);
+		if (stored_time != unix_time)
+			pdb_set_pass_last_set_time(account, unix_time, PDB_CHANGED);
+	}
 
-	pdb_set_kickoff_time(account, get_time_t_max(), PDB_CHANGED);
+#if 0
+/*	No kickoff time in the delta? */
+	if (!nt_time_is_zero(&delta->kickoff_time)) {
+		unix_time = nt_time_to_unix(&delta->kickoff_time);
+		stored_time = pdb_get_kickoff_time(account);
+		if (stored_time != unix_time)
+			pdb_set_kickoff_time(account, unix_time, PDB_CHANGED);
+	}
+#endif
 
 	/* Decode hashes from password hash 
 	   Note that win2000 may send us all zeros for the hashes if it doesn't 
 	   think this channel is secure enough - don't set the passwords at all
 	   in that case
-	 */
+	*/
 	if (memcmp(delta->pass.buf_lm_pwd, zero_buf, 16) != 0) {
 		sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
 		pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
@@ -273,7 +390,9 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 
 	/* TODO: account expiry time */
 
-	pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
+	if (pdb_get_acct_ctrl(account) != delta->acb_info)
+		pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
+
 	return NT_STATUS_OK;
 }
 
@@ -300,7 +419,8 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		if (delta->acb_info & ACB_NORMAL) {
 			pstrcpy(add_script, lp_adduser_script());
 		} else if ( (delta->acb_info & ACB_WSTRUST) ||
-			    (delta->acb_info & ACB_SVRTRUST) ) {
+			    (delta->acb_info & ACB_SVRTRUST) ||
+			    (delta->acb_info & ACB_DOMTRUST) ) {
 			pstrcpy(add_script, lp_addmachine_script());
 		} else {
 			DEBUG(1, ("Unknown user type: %s\n",
@@ -386,7 +506,7 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
-				/* No appropriate group found, create one */
+			/* No appropriate group found, create one */
 			d_printf("Creating unix group: '%s'\n", name);
 			if (smb_create_group(name, &gid) != 0)
 				return NT_STATUS_ACCESS_DENIED;
@@ -565,7 +685,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
-				/* No appropriate group found, create one */
+			/* No appropriate group found, create one */
 			d_printf("Creating unix group: '%s'\n", name);
 			if (smb_create_group(name, &gid) != 0)
 				return NT_STATUS_ACCESS_DENIED;
