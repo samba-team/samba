@@ -266,6 +266,11 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
+		if (!r.out.buffer) {
+			printf("No printers returned");
+			continue;
+		}
+
 		status = pull_spoolss_PrinterInfoArray(r.out.buffer, mem_ctx, r.in.level, r.out.count, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("EnumPrintersArray parse failed - %s\n", nt_errstr(status));
