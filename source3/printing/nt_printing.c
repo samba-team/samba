@@ -491,37 +491,52 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 
 	if (!nt_devmode) return len;
 
-	len += tdb_pack(buf+len, buflen-len, "fddddddddddddddddddddddp",
-		       nt_devmode->formname,
-		       nt_devmode->specversion,
-		       nt_devmode->driverversion,
-		       nt_devmode->size,
-		       nt_devmode->driverextra,
-		       nt_devmode->fields,
-		       nt_devmode->orientation,
-		       nt_devmode->papersize,
-		       nt_devmode->paperlength,
-		       nt_devmode->paperwidth,
-		       nt_devmode->scale,
-		       nt_devmode->copies,
-		       nt_devmode->defaultsource,
-		       nt_devmode->printquality,
-		       nt_devmode->color,
-		       nt_devmode->duplex,
-		       nt_devmode->yresolution,
-		       nt_devmode->ttoption,
-		       nt_devmode->collate,
-		       nt_devmode->icmmethod,
-		       nt_devmode->icmintent,
-		       nt_devmode->mediatype,
-		       nt_devmode->dithertype,
-		       nt_devmode->private);
+	len += tdb_pack(buf+len, buflen-len, "fwwwwwwwwwwwwwwwwwwddddddddddddddp",
+			nt_devmode->formname,
+
+			nt_devmode->specversion,
+			nt_devmode->driverversion,
+			nt_devmode->size,
+			nt_devmode->driverextra,
+			nt_devmode->orientation,
+			nt_devmode->papersize,
+			nt_devmode->paperlength,
+			nt_devmode->paperwidth,
+			nt_devmode->scale,
+			nt_devmode->copies,
+			nt_devmode->defaultsource,
+			nt_devmode->printquality,
+			nt_devmode->color,
+			nt_devmode->duplex,
+			nt_devmode->yresolution,
+			nt_devmode->ttoption,
+			nt_devmode->collate,
+			nt_devmode->logpixels,
+			
+			nt_devmode->fields,
+			nt_devmode->bitsperpel,
+			nt_devmode->pelswidth,
+			nt_devmode->pelsheight,
+			nt_devmode->displayflags,
+			nt_devmode->displayfrequency,
+			nt_devmode->icmmethod,
+			nt_devmode->icmintent,
+			nt_devmode->mediatype,
+			nt_devmode->dithertype,
+			nt_devmode->reserved1,
+			nt_devmode->reserved2,
+			nt_devmode->panningwidth,
+			nt_devmode->panningheight,
+			nt_devmode->private);
+
 	
 	if (nt_devmode->private) {
 		len += tdb_pack(buf+len, buflen-len, "B",
 				nt_devmode->driverextra,
 				nt_devmode->private);
 	}
+
+	DEBUG(8,("Packed devicemode [%s]\n", nt_devmode->formname));
 
 	return len;
 }
@@ -651,6 +666,9 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	safe_free(buf);
+
+	DEBUG(8,("packed printer [%s] with form [%s] len=%d\n", 
+		 info->portname, info->devmode->formname, len));
 
 	return ret;
 }
@@ -893,31 +911,43 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	if (!*nt_devmode) return len;
 
-	len += tdb_unpack(buf+len, buflen-len, "fddddddddddddddddddddddp",
-		       devmode.formname,
-		       &devmode.specversion,
-		       &devmode.driverversion,
-		       &devmode.size,
-		       &devmode.driverextra,
-		       &devmode.fields,
-		       &devmode.orientation,
-		       &devmode.papersize,
-		       &devmode.paperlength,
-		       &devmode.paperwidth,
-		       &devmode.scale,
-		       &devmode.copies,
-		       &devmode.defaultsource,
-		       &devmode.printquality,
-		       &devmode.color,
-		       &devmode.duplex,
-		       &devmode.yresolution,
-		       &devmode.ttoption,
-		       &devmode.collate,
-		       &devmode.icmmethod,
-		       &devmode.icmintent,
-		       &devmode.mediatype,
-		       &devmode.dithertype,
-		       &devmode.private);
+	len += tdb_unpack(buf+len, buflen-len, "fwwwwwwwwwwwwwwwwwwddddddddddddddp",
+			  devmode.formname,
+
+			  &devmode.specversion,
+			  &devmode.driverversion,
+			  &devmode.size,
+			  &devmode.driverextra,
+			  &devmode.orientation,
+			  &devmode.papersize,
+			  &devmode.paperlength,
+			  &devmode.paperwidth,
+			  &devmode.scale,
+			  &devmode.copies,
+			  &devmode.defaultsource,
+			  &devmode.printquality,
+			  &devmode.color,
+			  &devmode.duplex,
+			  &devmode.yresolution,
+			  &devmode.ttoption,
+			  &devmode.collate,
+			  &devmode.logpixels,
+			  
+			  &devmode.fields,
+			  &devmode.bitsperpel,
+			  &devmode.pelswidth,
+			  &devmode.pelsheight,
+			  &devmode.displayflags,
+			  &devmode.displayfrequency,
+			  &devmode.icmmethod,
+			  &devmode.icmintent,
+			  &devmode.mediatype,
+			  &devmode.dithertype,
+			  &devmode.reserved1,
+			  &devmode.reserved2,
+			  &devmode.panningwidth,
+			  &devmode.panningheight,
+			  &devmode.private);
 	
 	if (devmode.private) {
 		devmode.private = (uint8 *)malloc(devmode.driverextra);
@@ -928,6 +958,8 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 	}
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
+
+	DEBUG(8,("Unpacked devicemode [%s]\n", devmode.formname));
 
 	return len;
 }
