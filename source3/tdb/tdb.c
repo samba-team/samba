@@ -252,8 +252,13 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 	struct stat st;
 	if (len <= tdb->map_size)
 		return 0;
-	if (tdb->flags & TDB_INTERNAL)
-		return 0;
+	if (tdb->flags & TDB_INTERNAL) {
+		if (!probe) {
+			TDB_LOG((tdb, 0,"tdb_oob len %d beyond internal malloc size %d\n",
+				 (int)len, (int)tdb->map_size));
+		}
+		return TDB_ERRCODE(TDB_ERR_IO, -1);
+	}
 
 	if (fstat(tdb->fd, &st) == -1)
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
