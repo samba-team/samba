@@ -83,6 +83,103 @@ static void check_for_pipe(const char *fname)
 }
 
 /****************************************************************************
+ Change the ownership of a file to that of the parent directory.
+ Do this by fd if possible.
+****************************************************************************/
+
+void change_owner_to_parent(connection_struct *conn, files_struct *fsp, const char *fname, SMB_STRUCT_STAT *psbuf)
+{
+	const char *parent_path = parent_dirname(fname);
+	SMB_STRUCT_STAT parent_st;
+	int ret;
+
+	ret = SMB_VFS_STAT(conn, parent_path, &parent_st);
+	if (ret == -1) {
+		DEBUG(0,("change_owner_to_parent: failed to stat parent directory %s. Error was %s\n",
+			parent_path, strerror(errno) ));
+		return;
+	}
+
+	if (fsp && fsp->fd != -1) {
+		become_root();
+		ret = SMB_VFS_FCHOWN(fsp, fsp->fd, parent_st.st_uid, (gid_t)-1);
+		unbecome_root();
+		if (ret == -1) {
+			DEBUG(0,("change_owner_to_parent: failed to fchown file %s to parent directory uid %u. \
+Error was %s\n",
+				fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
+		}
+
+		DEBUG(10,("change_owner_to_parent: changed new file %s to parent directory uid %u.\n",
+			fname, (unsigned int)parent_st.st_uid ));
+
+	} else {
+		/* We've already done an lstat into psbuf, and we know it's a directory. If
+		   we can do an open/fstat and the dev/ino are the same then we can safely
+		   fchown without races. This works under Linux - but should just fail gracefully
+		   if any step on the way fails. JRA */
+
+		BOOL need_close_fsp = False;
+		SMB_STRUCT_STAT sbuf;
+		int fd = -1;
+
+		if (!fsp) {
+			int action;
+			fsp = open_directory(conn, fname, psbuf, FILE_GENERIC_READ,
+					SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+					FILE_EXISTS_OPEN, &action);
+			if (!fsp) {
+				DEBUG(10,("change_owner_to_parent: open_directory on %s failed. Error was %s\n",
+					fname, strerror(errno) ));
+				return;
+			}
+			need_close_fsp = True;
+		} 
+		fd = SMB_VFS_OPEN(conn,fname,O_RDONLY,0);
+		if (fd == -1) {
+			DEBUG(10,("change_owner_to_parent: failed to VFS_OPEN directory %s. Error was %s\n",
+				fname, strerror(errno) ));
+			goto out;
+		}
+		ret = SMB_VFS_FSTAT(fsp,fd,&sbuf);
+		if (ret == -1) {
+			DEBUG(10,("change_owner_to_parent: failed to VFS_STAT directory %s. Error was %s\n",
+				fname, strerror(errno) ));
+			goto out;
+		}
+
+		/* Ensure we're pointing at the same place. */
+		if (sbuf.st_dev != psbuf->st_dev || sbuf.st_ino != psbuf->st_ino || !S_ISDIR(sbuf.st_mode)) {
+			DEBUG(0,("change_owner_to_parent: device/inode/mode on director %s changed. Refusing to fchown !\n",
+				fname ));
+			goto out;
+		}
+
+		become_root();
+		ret = SMB_VFS_FCHOWN(fsp, fd, parent_st.st_uid, (gid_t)-1);
+		unbecome_root();
+		if (ret == -1) {
+			DEBUG(10,("change_owner_to_parent: failed to fchown directory %s to parent directory uid %u. \
+Error was %s\n",
+				fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
+			goto out;
+		}
+
+		DEBUG(10,("change_owner_to_parent: changed new directory %s to parent directory uid %u.\n",
+			fname, (unsigned int)parent_st.st_uid ));
+
+  out:
+
+		if (fd != -1) {
+			SMB_VFS_CLOSE(fsp,fd);
+		}
+		if (need_close_fsp) {
+			close_file(fsp, False);
+		}
+	}
+}
+
+/****************************************************************************
  Open a file.
 ****************************************************************************/
 
@@ -1391,8 +1488,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		action = FILE_WAS_OPENED;
 	if (file_existed && (flags2 & O_TRUNC))
 		action = FILE_WAS_OVERWRITTEN;
-	if (!file_existed) 
+	if (!file_existed) {
 		action = FILE_WAS_CREATED;
+		/* Change the owner if required. */
+		if (lp_inherit_owner(SNUM(conn))) {
+			change_owner_to_parent(conn, fsp, fsp->fsp_name, psbuf);
+		}
+	}
 
 	if (paction) {
 		*paction = action;
@@ -1547,7 +1649,7 @@ int close_file_fchmod(files_struct *fsp)
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
-files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf,
+files_struct *open_directory(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf,
 			uint32 desired_access, int share_mode, int smb_ofun, int *action)
 {
 	extern struct current_user current_user;
@@ -1585,39 +1687,29 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 			 * Try and create the directory.
 			 */
 
-			if(!CAN_WRITE(conn)) {
-				DEBUG(2,("open_directory: failing create on read-only share\n"));
-				file_free(fsp);
-				errno = EACCES;
-				return NULL;
-			}
+			/* We know bad_path is false as it's caught earlier. */
 
-			if (ms_has_wild(fname))  {
-				file_free(fsp);
-				DEBUG(5,("open_directory: failing create on filename %s with wildcards\n", fname));
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRinvalidname;
-				unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
-				return NULL;
-			}
+			NTSTATUS status = mkdir_internal(conn, fname, False);
 
-			if( strchr_m(fname, ':')) {
-				file_free(fsp);
-				DEBUG(5,("open_directory: failing create on filename %s with colon in name\n", fname));
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRinvalidname;
-				unix_ERR_ntstatus = NT_STATUS_NOT_A_DIRECTORY;
-				return NULL;
-			}
-
-			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname, True)) < 0) {
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				file_free(fsp);
+				/* Ensure we return the correct NT status to the client. */
+				unix_ERR_ntstatus = status;
 				return NULL;
 			}
 
-			if(SMB_VFS_STAT(conn,fname, psbuf) != 0) {
+			/* Ensure we're checking for a symlink here.... */
+			/* We don't want to get caught by a symlink racer. */
+
+			if(SMB_VFS_LSTAT(conn,fname, psbuf) != 0) {
+				file_free(fsp);
+				return NULL;
+			}
+
+			if(!S_ISDIR(psbuf->st_mode)) {
+				DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 				file_free(fsp);
 				return NULL;
 			}
@@ -1674,13 +1766,19 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	string_set(&fsp->fsp_name,fname);
 
 	if (delete_on_close) {
-		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close, 0);
+		NTSTATUS status = set_delete_on_close_internal(fsp, delete_on_close, 0);
 
-		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			file_free(fsp);
 			return NULL;
 		}
 	}
+
+	/* Change the owner if required. */
+	if ((*action == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {
+		change_owner_to_parent(conn, fsp, fsp->fsp_name, psbuf);
+	}
+
 	conn->num_files_open++;
 
 	return fsp;

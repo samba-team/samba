@@ -3303,29 +3303,47 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
  code. 
 ****************************************************************************/
 
-NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
+NTSTATUS mkdir_internal(connection_struct *conn, const pstring directory, BOOL bad_path)
 {
-	BOOL bad_path = False;
-	SMB_STRUCT_STAT sbuf;
 	int ret= -1;
 	
-	unix_convert(directory,conn,0,&bad_path,&sbuf);
-
-	if( strchr_m(directory, ':')) {
-		return NT_STATUS_NOT_A_DIRECTORY;
+	if(!CAN_WRITE(conn)) {
+		DEBUG(5,("mkdir_internal: failing create on read-only share %s\n", lp_servicename(SNUM(conn))));
+		errno = EACCES;
+		return map_nt_error_from_unix(errno);
 	}
 
+	/* The following 2 clauses set explicit DOS error codes. JRA. */
 	if (ms_has_wild(directory)) {
+		DEBUG(5,("mkdir_internal: failing create on filename %s with wildcards\n", directory));
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRinvalidname;
 		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	if( strchr_m(directory, ':')) {
+		DEBUG(5,("mkdir_internal: failing create on filename %s with colon in name\n", directory));
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRinvalidname;
+		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	if (bad_path) {
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	if (check_name(directory, conn))
-		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
-	
+	if (!check_name(directory, conn)) {
+		if(errno == ENOENT) {
+			if (bad_path) {
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
 	if (ret == -1) {
 	        if(errno == ENOENT) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -3345,6 +3363,9 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	pstring directory;
 	int outsize;
 	NTSTATUS status;
+	BOOL bad_path = False;
+	SMB_STRUCT_STAT sbuf;
+
 	START_PROFILE(SMBmkdir);
  
 	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), 0, STR_TERMINATE, &status, False);
@@ -3355,10 +3376,30 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
-	status = mkdir_internal(conn, directory);
+	unix_convert(directory,conn,0,&bad_path,&sbuf);
+
+	status = mkdir_internal(conn, directory,bad_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmkdir);
 		return ERROR_NT(status);
+	}
+
+	if (lp_inherit_owner(SNUM(conn))) {
+		/* Ensure we're checking for a symlink here.... */
+		/* We don't want to get caught by a symlink racer. */
+                                                                                                                                                   
+		if(SMB_VFS_LSTAT(conn,directory, &sbuf) != 0) {
+			END_PROFILE(SMBmkdir);
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+                                                                                                                                                   
+		if(!S_ISDIR(sbuf.st_mode)) {
+			DEBUG(0,("reply_mkdir: %s is not a directory !\n", directory ));
+			END_PROFILE(SMBmkdir);
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+
+		change_owner_to_parent(conn, NULL, directory, &sbuf);
 	}
 
 	outsize = set_message(outbuf,0,0,True);
