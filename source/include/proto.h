@@ -1849,6 +1849,8 @@ char *lp_nt_forms(void);
 char *lp_nt_drivers_file(void);
 char *lp_winbind_uid(void);
 char *lp_winbind_gid(void);
+char *lp_template_homedir(void);
+char *lp_template_shell(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_bind_as(void);
@@ -2372,6 +2374,22 @@ BOOL profile_setup(BOOL rdonly);
 /*The following definitions come from  rpc_client/cli_netlogon_sync.c  */
 
 BOOL synchronise_passdb(void);
+
+/*The following definitions come from  rpc_client/msrpc_spoolss.c  */
+
+BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, uint32 level, PRINTER_INFO_CTR ctr);
+uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
+				const char* station, 
+				const char* user_name, 
+				const char* value_name, 
+				uint32 *type,
+				NEW_BUFFER *buffer,
+				void *fn) ;
+BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
+				const char* station, const char* user_name, 
+				uint32 level,
+				void ***ctr, JOB_INFO_FN(fn));
+BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* station, const char* user_name );
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
@@ -3825,8 +3843,7 @@ void send_trans_reply(char *outbuf,
 		      prs_struct *rparam,
 		      uint16 *setup, int lsetup, int max_data_ret,
 		      BOOL pipe_data_outstanding);
-int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
-		int size, int bufsize);
+int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
 
 /*The following definitions come from  smbd/lanman.c  */
 
