@@ -153,11 +153,13 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 {
 	int pam_error;
 
+	*pamh = (pam_handle_t *)NULL;
+
 	DEBUG(4,("PAM: Init user: %s\n", user));
 
 	pam_error = pam_start("samba", user, &smb_pam_conversation, pamh);
 	if( !smb_pam_error_handler(*pamh, pam_error, "Init Failed", 0)) {
-		smb_pam_end(*pamh);
+		*pamh = (pam_handle_t *)NULL;
 		return False;
 	}
 
@@ -172,6 +174,7 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 	pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
 	if(!smb_pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
 		smb_pam_end(*pamh);
+		*pamh = (pam_handle_t *)NULL;
 		return False;
 	}
 #endif
@@ -180,6 +183,7 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 	pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
 	if (!smb_pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
 		smb_pam_end(*pamh);
+		*pamh = (pam_handle_t *)NULL;
 		return False;
 	}
 #endif
@@ -358,7 +362,6 @@ BOOL smb_pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
 	}
 
 	if (!smb_pam_start(&pamh, user, rhost)) {
-		smb_pam_end(pamh);
 		return False;
 	}
 
