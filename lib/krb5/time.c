@@ -36,8 +36,9 @@
 RCSID("$Id$");
 
 /*
- * Set the time absolute time that the caller knows the kdc has to the
- * kerberos library can calculate the relative diffrence.
+ * Set the absolute time that the caller knows the kdc has so the
+ * kerberos library can calculate the relative diffrence beteen the
+ * KDC time and local system time.
  */
 
 krb5_error_code
