@@ -222,7 +222,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 			<varlistentry>
 			<term>recycle:noversions</term>
 				<listitem><para>
-				Opposite of <parameter>recycle:versions</parameter>. If both options are specified, this one takes precedence.
+				Specifies a list of paths (wildcards such as * and ? are supported) for which no versioning should be used. Only useful when <emphasis>recycle:versions</emphasis> is enabled.
 				</para></listitem>
 			</varlistentry>
 		</variablelist>
