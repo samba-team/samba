@@ -6,15 +6,15 @@ fi
 
 test_joindomain_nt4() {
 
-	smbpasswd -a -m buildfarm$
+	smbpasswd -L -a -m buildfarm$
 
-	echo $prefix/bin/smbpasswd -L -j TESTWG
-	$prefix/bin/smbpasswd -L -j TESTWG
+	echo $prefix/bin/net rpc join oldstyle -S localhost
+        $prefix/bin/net rpc join oldstyle -S localhost
 	status=$?
 	if [ $status = 0 ]; then
-	    echo "smbpasswd correctly joined the domain ($workgroup)"
+	    echo "'net rpc join oldstyle' correctly joined the domain ($workgroup)"
 	else
-	    echo "smbpasswd failed to join the domain ($workgroup)! (status $status)"
+	    echo "'net rpc join oldstyle' failed to join the domain ($workgroup)! (status $status)"
 	    return 1
 	fi
 	return 0

@@ -111,6 +111,7 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
 	char *szPassdbModulePath;
+	char *szPassdbBackend;
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szWorkGroup;
@@ -150,6 +151,7 @@ typedef struct
 	char *szSourceEnv;
 	char *szWinbindUID;
 	char *szWinbindGID;
+	char *szNonUnixAccountRange;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
@@ -525,6 +527,7 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
+static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
@@ -693,6 +696,8 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, 0},
 	{"passdb module path", P_STRING, P_GLOBAL, &Globals.szPassdbModulePath, NULL, NULL, 0},
+	{"passdb backend", P_STRING, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, 0},
+	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, 0},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
@@ -1200,6 +1205,7 @@ static void init_globals(void)
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 	string_set(&Globals.szPassdbModulePath, "");
+	string_set(&Globals.szPassdbBackend, "smbpasswd");
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
@@ -1454,6 +1460,7 @@ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_passdb_module_path, &Globals.szPassdbModulePath)
+FN_GLOBAL_STRING(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
@@ -2444,7 +2451,7 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
- Handle winbind uid and gid allocation parameters.  The format of these
+ Handle winbind/non unix account uid and gid allocation parameters.  The format of these
  parameters is:
 
  [global]
@@ -2461,6 +2468,7 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 
 static uid_t winbind_uid_low, winbind_uid_high;
 static gid_t winbind_gid_low, winbind_gid_high;
+static uint32 non_unix_account_low, non_unix_account_high;
 
 BOOL lp_winbind_uid(uid_t *low, uid_t *high)
 {
@@ -2486,6 +2494,20 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
         if (high)
                 *high = winbind_gid_high;
+
+        return True;
+}
+
+BOOL lp_non_unix_account_range(uint32 *low, uint32 *high)
+{
+        if (non_unix_account_low == 0 || non_unix_account_high == 0)
+                return False;
+
+        if (low)
+                *low = non_unix_account_low;
+
+        if (high)
+                *high = non_unix_account_high;
 
         return True;
 }
@@ -2522,6 +2544,25 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
 
         winbind_gid_low = low;
         winbind_gid_high = high;
+
+	return True;
+}
+
+/* Do some simple checks on "non unix account range" parameter values */
+
+static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr)
+{
+	uint32 low, high;
+
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
+		return False;
+
+	/* Parse OK */
+
+	string_set(ptr, pszParmValue);
+
+        non_unix_account_low = low;
+        non_unix_account_high = high;
 
 	return True;
 }

@@ -17,6 +17,10 @@
 
     panic action = echo bt | gdb PREFIX/sbin/smbd %d
 
+    passdb backend = smbpasswd_nua
+
+    non unix account range = 10000-20000
+
 [test]
     path = PREFIX/testdir
     read only = no

@@ -86,9 +86,10 @@
 		new password typed (type &lt;Enter&gt; for the old password). This 
 		option is ignored if the username following already exists in 
 		the smbpasswd file and it is treated like a regular change 
-		password command. Note that the user to be added must already exist 
-		in the system password file (usually <filename>/etc/passwd</filename>)
-		else the request to add the user will fail. </para>
+		password command.  Note that the default passdb backends require 
+                the user to already exist in the system password file (usually 
+                <filename>/etc/passwd</filename>), else the request to add the 
+                user will fail.  </para>
 		
 		<para>This option is only available when running smbpasswd 
 		as root. </para></listitem>
@@ -119,8 +120,7 @@
 		
 		<para>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
 		format) there is no space in the user's password entry to write
-		this information and so the user is disabled by writing 'X' characters 
-		into the password space in the smbpasswd file. See <command>smbpasswd(5)
+		this information and the command will FAIL. See <command>smbpasswd(5)
 		</command> for details on the 'old' and new password file formats.
 		</para>
 
@@ -138,10 +138,8 @@
 		the user will be able to authenticate via SMB once again. </para>
 		
 		<para>If the smbpasswd file is in the 'old' format, then <command>
-		smbpasswd</command> will prompt for a new password for this user, 
-		otherwise the account will be enabled by removing the <constant>'D'
-		</constant> flag from account control space in the <filename>
-		smbpasswd</filename> file. See <command>smbpasswd (5)</command> for 
+		smbpasswd</command> will FAIL to enable the account.  
+                See <command>smbpasswd (5)</command> for 
 		details on the 'old' and new password file formats. </para>
 
 		<para>This option is only available when running smbpasswd as root. 
@@ -275,45 +273,6 @@
 		
 		
 		<varlistentry>
-		<term>-j DOMAIN</term>
-		<listitem><para>This option is used to add a Samba server 
-		into a Windows NT Domain, as a Domain member capable of authenticating 
-		user accounts to any Domain Controller in the same way as a Windows 
-		NT Server. See the <command>security = domain</command> option in 
-		the <filename>smb.conf(5)</filename> man page. </para>
-		
-		<para>In order to be used in this way, the Administrator for 
-		the Windows NT Domain must have used the program "Server Manager 
-		for Domains" to add the primary NetBIOS name of  the Samba server 
-		as a member of the Domain. </para>
-		
-		<para>After this has been done, to join the Domain invoke <command>
-		smbpasswd</command> with this parameter. smbpasswd will then 
-		look up the Primary Domain Controller for the Domain (found in 
-		the <filename>smb.conf</filename> file in the parameter 
-		<parameter>password server</parameter> and change the machine account 
-		password used to create the secure Domain communication.  This 
-		password is then stored by smbpasswd in a TDB, writeable only by root, 
-		called <filename>secrets.tdb</filename> </para>
-		
-		<para>Once this operation has been performed the <filename>
-		smb.conf</filename> file may be updated to set the <command>
-		security = domain</command> option and all future logins
-		to the Samba server will be authenticated to the Windows NT 
-		PDC. </para>
-		
-		<para>Note that even though the authentication is being 
-		done to the PDC all users accessing the Samba server must still 
-		have a valid UNIX account on that machine. </para>
-
-
-		<para>This option is only available when running smbpasswd as root. 
-		</para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
 		<term>-U username</term>
 		<listitem><para>This option may only be used in conjunction 
 		with the <parameter>-r</parameter> option. When changing
@@ -395,7 +354,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 
@@ -424,3 +383,7 @@
 </refsect1>
 
 </refentry>
+
+
+
+

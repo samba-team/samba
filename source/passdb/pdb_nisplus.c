@@ -1039,14 +1039,22 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 /*************************************************************************
  Routine to remove entry from the nisplus smbpasswd table
  *************************************************************************/
-BOOL pdb_delete_sam_account(const char *sname)
+BOOL pdb_delete_sam_account(SAM_ACCOUNT * user)
 {
+  const char *sname;
   char *pfile = lp_smb_passwd_file();
   pstring nisname;
   nis_result *result, *delresult;
   nis_object *obj;
   int i;
-  
+ 
+  if (!user) {
+	  DEBUG(0, ("no SAM_ACCOUNT specified!\n"));
+	  return False;
+  }
+
+  suser = pdb_get_username(user);
+
   if (!*pfile)
     {
       DEBUG(0, ("no SMB password file set\n"));
@@ -1095,7 +1103,7 @@ BOOL pdb_delete_sam_account(const char *sname)
 /************************************************************************
  Routine to add an entry to the nisplus passwd file.
 *************************************************************************/
-BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
+BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 {
   int local_user = 0;
   char           *pfile;
@@ -1290,7 +1298,7 @@ BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 /************************************************************************
  Routine to modify the nisplus passwd entry.
 ************************************************************************/
-BOOL pdb_update_sam_account(const SAM_ACCOUNT * newpwd, BOOL override)
+BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd)
 {
   nis_result *result, *addresult;
   nis_object *obj;

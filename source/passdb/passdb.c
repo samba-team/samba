@@ -32,28 +32,6 @@
 
 extern DOM_SID global_sam_sid;
 
-struct passdb_ops *pdb_ops;
-
-#if 0	/* JERRY */
-static void* pdb_handle = NULL;
-#endif
-
-/***************************************************************
- Initialize the password db operations.
-***************************************************************/
-
-BOOL initialize_password_db(BOOL reload)
-{	
-	/* 
-	 * This function is unfinished right now, so just 
-	 * ignore the details and always return True.  It 
-	 * is here only as a placeholder          --jerry 
-	 */
-	return True;
-	
-}
-
-
 /************************************************************
  Fill the SAM_ACCOUNT with default values.
  ***********************************************************/
@@ -639,6 +617,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 	DOM_SID local_sid;
 	fstring user;
 	fstring domain;
+	SAM_ACCOUNT *sam_account = NULL;
 
 	*psid_name_use = SID_NAME_UNKNOWN;
 
@@ -671,9 +650,20 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 
 	(void)map_username(user);
 
-	if((pass = Get_Pwnam(user))) {
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
+		return False;
+	}
+	
+	if (pdb_getsampwnam(sam_account, user)) {
+		sid_append_rid( &local_sid, pdb_get_user_rid(sam_account));
+		*psid_name_use = SID_NAME_USER;
+		pdb_free_sam(&sam_account);
+
+	} else if((pass = Get_Pwnam(user))) {
 		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
 		*psid_name_use = SID_NAME_USER;
+		pdb_free_sam(&sam_account);
+
 	} else {
 		/*
 		 * Maybe it was a group ?
@@ -681,6 +671,8 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 		struct group *grp;
 		GROUP_MAP map;
 		
+		pdb_free_sam(&sam_account);
+
 		/* check if it's a mapped group */
 		if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
 			if (map.gid!=-1) {
@@ -1021,29 +1013,33 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		pdb_free_sam(&sam_pass);
 		
 		if (local_flags & LOCAL_ADD_USER) {
-			/*
-			 * Check for a local account - if we're adding only.
-			 */
-			
-			if(!(pwd = getpwnam_alloc(user_name))) {
-				slprintf(err_str, err_str_len - 1, "User %s does not \
-exist in system password file (usually /etc/passwd). Cannot add \
-account without a valid local system user.\n", user_name);
-				return False;
-			}
+			pwd = getpwnam_alloc(user_name);
 		} else {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
 			return False;
 		}
-
-		if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pass, pwd))){
-			slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
-			passwd_free(&pwd);
-			return False;
-		}
 		
-		passwd_free(&pwd);
-	
+		if (pwd) {
+			/* Local user found, so init from this */
+			if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pass, pwd))){
+				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
+				passwd_free(&pwd);
+				return False;
+			}
+		
+			passwd_free(&pwd);
+		} else {
+			if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_pass))){
+				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
+				return False;
+			}
+
+	        	if (!pdb_set_username(sam_pass, user_name)) {
+	                	slprintf(err_str, err_str_len - 1, "Failed to set username for user %s.\n", user_name);
+	               	 	pdb_free_sam(&sam_pass);
+	               	 	return False;
+	        	}
+		}
 		if (local_flags & LOCAL_TRUST_ACCOUNT) {
 	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST)) {
 	                	slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
@@ -1135,14 +1131,14 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 	} else if (local_flags & LOCAL_DELETE_USER) {
-		if (!pdb_delete_sam_account(user_name)) {
+		if (!pdb_delete_sam_account(sam_pass)) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
 	} else {
-		if(!pdb_update_sam_account(sam_pass, True)) {
+		if(!pdb_update_sam_account(sam_pass)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;

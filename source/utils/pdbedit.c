@@ -21,14 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* base uid for trust accounts is set to 60000 ! 
- * May be we should add the defines in smb.h to make it possible having 
- * different values on different platforms?
- */
-
-#define BASE_MACHINE_UID 60000
-#define MAX_MACHINE_UID 65500 /* 5500 trust accounts aren't enough? */
-
 #include "includes.h"
 
 extern pstring global_myname;
@@ -213,7 +205,7 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	if (profile)
 		pdb_set_profile_path (sam_pwent, profile, True);
 	
-	if (pdb_update_sam_account (sam_pwent, True))
+	if (pdb_update_sam_account (sam_pwent))
 		print_user_info (username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
@@ -284,10 +276,8 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 static int new_machine (char *machinename)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
-	SAM_ACCOUNT *sam_trust=NULL;
 	char name[16];
 	char *password = NULL;
-	uid_t uid;
 	
 	pdb_init_sam (&sam_pwent);
 
@@ -304,23 +294,6 @@ static int new_machine (char *machinename)
 
 	pdb_set_username (sam_pwent, name);
 	
-	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++) {
-		pdb_init_sam (&sam_trust);
-		if (pdb_getsampwrid (sam_trust, pdb_uid_to_user_rid (uid))) {
-			pdb_free_sam (&sam_trust);
-		} else {
-			break;
-		}
-	}
-
-	if (uid>MAX_MACHINE_UID) {
-		fprintf (stderr, "No more free UIDs available to Machine accounts!\n");
-		pdb_free_sam(&sam_pwent);		
-		return -1;
-	}
-
-	pdb_set_user_rid (sam_pwent,pdb_uid_to_user_rid (uid));
-	pdb_set_group_rid (sam_pwent, pdb_gid_to_group_rid (BASE_MACHINE_UID));
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST);
 	
 	if (pdb_add_sam_account (sam_pwent)) {
@@ -340,7 +313,16 @@ static int new_machine (char *machinename)
 
 static int delete_user_entry (char *username)
 {
-	return pdb_delete_sam_account (username);
+	SAM_ACCOUNT *samaccount;
+
+	pdb_init_sam(&samaccount);
+
+	if (!pdb_getsampwnam(samaccount, username)) {
+		fprintf (stderr, "user %s does not exist in the passdb\n", username);
+		return -1;
+	}
+
+	return pdb_delete_sam_account (samaccount);
 }
 
 /*********************************************************
@@ -350,11 +332,20 @@ static int delete_user_entry (char *username)
 static int delete_machine_entry (char *machinename)
 {
 	char name[16];
+	SAM_ACCOUNT *samaccount;
 	
 	safe_strcpy (name, machinename, 16);
 	if (name[strlen(name)] != '$')
 		safe_strcat (name, "$", 16);
-	return pdb_delete_sam_account (name);
+
+	pdb_init_sam(&samaccount);
+
+	if (!pdb_getsampwnam(samaccount, name)) {
+		fprintf (stderr, "user %s does not exist in the passdb\n", name);
+		return -1;
+	}
+
+	return pdb_delete_sam_account (samaccount);
 }
 
 /*********************************************************
@@ -564,17 +555,17 @@ int main (int argc, char **argv)
 		return 0;
 	}
 	
-	if(!initialize_password_db(True)) {
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
-	
 	DEBUGLEVEL = 1;
 	AllowDebugChange = False;
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			dyn_CONFIGFILE);
+		exit(1);
+	}
+	
+	if(!initialize_password_db(True)) {
+		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}
 	

@@ -60,9 +60,7 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	/* Now write it into the file. */
 	become_root();
 
-	/* Here, the override flag is True, because we want to ignore the
-           XXXXXXX'd out password */
-	ret = pdb_update_sam_account (sampass, True);
+	ret = pdb_update_sam_account (sampass);
 
 	unbecome_root();
 
