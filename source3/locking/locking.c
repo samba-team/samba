@@ -39,6 +39,35 @@ extern files_struct Files[];
 static struct share_ops *share_ops;
 
 /****************************************************************************
+ Utility function to map a lock type correctly depending on the real open
+ mode of a file.
+****************************************************************************/
+
+static int map_lock_type( files_struct *fsp, int lock_type)
+{
+  if((lock_type == F_WRLCK) && (fsp->fd_ptr->real_open_flags == O_RDONLY)) {
+    /*
+     * Many UNIX's cannot get a write lock on a file opened read-only.
+     * Win32 locking semantics allow this.
+     * Do the best we can and attempt a read-only lock.
+     */
+    return F_RDLCK;
+  } else if( (lock_type == F_RDLCK) && (fsp->fd_ptr->real_open_flags == O_WRONLY)) {
+    /*
+     * Ditto for read locks on write only files.
+     */
+    return F_WRLCK;
+  }
+
+  /*
+   * This return should be the most normal, as we attempt
+   * to always open files read/write.
+   */
+
+  return lock_type;
+}
+
+/****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
 
@@ -53,10 +82,8 @@ BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type)
   if (!lp_locking(snum) || !lp_strict_locking(snum))
     return(False);
 
-  if((lock_type == F_WRLCK) && !fsp->can_write)
-    lock_type = F_RDLCK;
-
-  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
+  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,
+                    map_lock_type(fsp,lock_type)));
 }
 
 
@@ -79,12 +106,9 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
     return False;
   }
 
-  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum)) {
-    if(lock_type == F_WRLCK && !fsp->can_write)
-      lock_type = F_RDLCK;
-
-    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,lock_type);
-  }
+  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
+    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
+                    map_lock_type(fsp,lock_type));
 
   if (!ok) {
     *eclass = ERRDOS;
