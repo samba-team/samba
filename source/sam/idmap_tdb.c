@@ -211,7 +211,7 @@ idok:
 	return ret;
 }
 
-static NTSTATUS db_set_mapping(DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
 	TDB_DATA ksid, kid;
 	fstring ksidstr;
@@ -252,21 +252,43 @@ static NTSTATUS db_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 static NTSTATUS db_idmap_init(void)
 {
 	SMB_STRUCT_STAT stbuf;
+	char *tdbfile;
+	int32 version;
 
-	/* move to the new database on first startup */
+	/* use the old database if present */
 	if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
 		if (file_exist(lock_path("winbindd_idmap.tdb"), &stbuf)) {
-			DEBUG(0, ("idmap_init: winbindd_idmap.tdb is present and idmap.tdb is not!\nPlease RUN winbindd first to convert the db to the new format!\n"));
-			return NT_STATUS_UNSUCCESSFUL;
+			DEBUG(0, ("idmap_init: using winbindd_idmap.tdb file!\n"));
+			tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
+			if (!tdbfile) {
+				DEBUG(0, ("idmap_init: out of memory!\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+	} else {
+		tdbfile = strdup(lock_path("idmap.tdb"));
+		if (!tdbfile) {
+			DEBUG(0, ("idmap_init: out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	/* Open tdb cache */
-	if (!(idmap_tdb = tdb_open_log(lock_path("idmap.tdb"), 0,
+	if (!(idmap_tdb = tdb_open_log(tdbfile, 0,
 				       TDB_DEFAULT, O_RDWR | O_CREAT,
 				       0600))) {
 		DEBUG(0, ("idmap_init: Unable to open idmap database\n"));
+		SAFE_FREE(tdbfile);
 		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	SAFE_FREE(tdbfile);
+
+	/* check against earlier versions */
+	version = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
+	if (version != IDMAP_VERSION) {
+		DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
+		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
 	/* Create high water marks for group and user id */
