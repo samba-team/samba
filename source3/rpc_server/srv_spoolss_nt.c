@@ -3009,7 +3009,9 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 				 const SPOOL_PRINTER_INFO_LEVEL *info,
 				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
 {
+	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	struct current_user user;
+	uint32 acc_granted, status;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
@@ -3018,6 +3020,8 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 		return ERROR_INVALID_HANDLE;
 	}
 
+	/* Work out which user is performing the operation */
+
 	if (p->ntlmssp_auth_validated) {
 		memcpy(&user, &p->pipe_user, sizeof(user));
 	} else {
@@ -3025,8 +3029,29 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 		memcpy(&user, &current_user, sizeof(user));
 	}
 
-	return nt_printing_setsec(Printer->dev.printername, &user, 
-				  secdesc_ctr);
+	/* Get old security descriptor */
+
+	if (!nt_printing_getsec(Printer->dev.printername, &old_secdesc_ctr)) {
+		DEBUG(3, ("could not get old security descriptor for "
+			  "printer %s", Printer->dev.printername));
+		return ERROR_INVALID_FUNCTION;
+	}
+
+	/* Check the user has permissions to change the security
+	   descriptor.  By experimentation with two NT machines, the user
+	   requires Full Access to the printer to change security
+	   information. */ 
+
+	if (!se_access_check(old_secdesc_ctr->sec, &user,
+			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
+			     &status)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		free_sec_desc_buf(&old_secdesc_ctr);
+		return status;
+	}
+
+	return nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
 }
 
 /********************************************************************
@@ -3059,8 +3084,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (!se_access_check(sd->sec, current_user.uid, current_user.gid,
-			     current_user.ngroups, current_user.groups,
+	if (!se_access_check(sd->sec, &current_user,
 			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
 			     &result)) {
 		DEBUG(3, ("printer property change denied by security "
