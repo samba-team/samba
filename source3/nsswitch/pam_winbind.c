@@ -245,8 +245,6 @@ int _winbind_read_password(pam_handle_t * pamh
 	const char *item;
 	char *token;
 
-	D(("called"));
-
 	/*
 	 * make sure nothing inappropriate gets returned
 	 */
@@ -502,8 +500,6 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	
 	int retry = 0;
 
-	D(("called."));
-
 	/*
 	 * First get the name of a user
 	 */
@@ -523,15 +519,12 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		return retval;
 	}
 
-	D(("Got username of %s", user));
-
 	/*
 	 * obtain and verify the current password (OLDAUTHTOK) for
 	 * the user.
 	 */
 
 	if (flags & PAM_PRELIM_CHECK) {
-		D(("prelim check"));
 		
 		/* instruct user what is happening */
 #define greeting "Changing password for "
@@ -565,7 +558,6 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		if (retval != PAM_ACCT_EXPIRED 
 		    && retval != PAM_NEW_AUTHTOK_REQD 
 		    && retval != PAM_SUCCESS) {
-			D(("Authentication failed"));
 			pass_old = NULL;
 			return retval;
 		}
@@ -582,22 +574,17 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * obtain the proposed password
 		 */
 		
-		D(("do update"));
-		
 		/*
 		 * get the old token back. 
 		 */
 		
 		retval = pam_get_item(pamh, PAM_OLDAUTHTOK
 				      ,(const void **) &pass_old);
-		D(("pass_old [%s]", pass_old));
 		
 		if (retval != PAM_SUCCESS) {
 			_pam_log(LOG_NOTICE, "user not authenticated");
 			return retval;
 		}
-		
-		D(("get new password now"));
 		
 		lctrl = ctrl;
 		
@@ -626,8 +613,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 				pass_old = NULL;/* tidy up */
 				return retval;
 			}
-			D(("returned to main routine"));
-			
+
 			/*
 			 * At this point we know who the user is and what they
 			 * propose as their new password. Verify that the new
@@ -652,7 +638,6 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		retval = PAM_SERVICE_ERR;
 	}
 	
-	D(("retval was %d", retval));
 	return retval;
 }
 
