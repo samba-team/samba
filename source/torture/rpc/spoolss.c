@@ -836,6 +836,7 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.architecture = "W32X86";
 	r.in.level = 1;
 	buf_size = 0;
+	r.in.buffer = NULL;
 	r.in.buf_size = r.out.buf_size = &buf_size;
 	r.in.client_major_version = 0;
 	r.in.client_minor_version = 0;
