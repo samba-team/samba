@@ -42,7 +42,7 @@ int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope,
 	}
 
 	while (count--) {
-		rc = ads_do_search(ads->ld, bind_path, scope, exp, attrs, res);
+		rc = ads_do_search(ads, bind_path, scope, exp, attrs, res);
 		if (rc == 0) return rc;
 
 		if (*res) ads_msgfree(ads, *res);
@@ -89,7 +89,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	int rc;
-	char *password;
 
 	if (domain->private) {
 		return (ADS_STRUCT *)domain->private;
