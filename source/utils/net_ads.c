@@ -169,7 +169,7 @@ retry:
         * extract the realm and convert to upper case.
         * This is only used to establish the connection.
         */
-       if ((cp = strchr(ads->auth.user_name, '@'))!=0) {
+       if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
                *cp++ = '\0';
                ads->auth.realm = smb_xstrdup(cp);
                strupper_m(ads->auth.realm);
@@ -1126,7 +1126,7 @@ static int net_ads_password(int argc, const char **argv)
 	}
 
 	use_in_memory_ccache();    
-	c = strchr(auth_principal, '@');
+	c = strchr_m(auth_principal, '@');
 	if (c) {
 		realm = ++c;
 	} else {
