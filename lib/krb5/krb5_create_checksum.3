@@ -100,6 +100,10 @@ hash functions MD5, and SHA1 are not keyed.
 returns the checksum type that will be used when creating a checksum for the given
 .Fa crypto
 context.
+This function is useful in combination with
+.Fn krb5_checksumsize
+when you want to know the size a checksum will
+use when you create it.
 .\" .Sh EXAMPLE
 .\" .Sh BUGS
 .Sh SEE ALSO
