@@ -848,6 +848,7 @@ static void do_tar(file_info *finfo)
       ntarf++;  /* Make sure we have a file on there */
       safe_strcpy(mtar_mask,cur_dir, sizeof(pstring));
       safe_strcat(mtar_mask,"*", sizeof(pstring));
+      DEBUG(5, ("Doing list with mtar_mask: %s\n, mtar_mask));
       do_list(mtar_mask, attribute, do_tar, False, True);
       safe_strcpy(cur_dir,saved_curdir, sizeof(pstring));
     }
@@ -1461,17 +1462,20 @@ int process_tar(void)
 	  safe_strcpy(cur_dir, tarmac, sizeof(pstring));
 	  *(strrchr(cur_dir, '\\')+1)='\0';
 
+	  DEBUG(5, "process_tar, do_list with tarmac: %s\n", tarmac);
 	  do_list(tarmac,attribute,do_tar, False, True);
 	  safe_strcpy(cur_dir,saved_dir, sizeof(pstring));
 	} else {
 	  safe_strcpy(tarmac, cur_dir, sizeof(pstring));
 	  safe_strcat(tarmac, cliplist[i], sizeof(pstring));
+	  DEBUG(5, "process_tar, do_list with tarmac: %s\n", tarmac);
 	  do_list(tarmac,attribute,do_tar, False, True);
 	}
       }
     } else {
       pstring mask;
       safe_strcpy(mask,cur_dir, sizeof(pstring));
+      DEBUG(5, process_tar, do_list with mask: $s\n", mask);
       safe_strcat(mask,"\\*", sizeof(pstring));
       do_list(mask,attribute,do_tar,False, True);
     }
