@@ -106,7 +106,7 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 /*********************************************************
  List the groups.
 **********************************************************/
-int net_groupmap_list(int argc, const char **argv)
+static int net_groupmap_list(int argc, const char **argv)
 {
 	int entries;
 	BOOL long_list = False;
@@ -177,7 +177,7 @@ int net_groupmap_list(int argc, const char **argv)
  Add a new group mapping entry
 **********************************************************/
 
-int net_groupmap_add(int argc, const char **argv)
+static int net_groupmap_add(int argc, const char **argv)
 {
 	DOM_SID sid;
 	fstring ntgroup = "";
@@ -283,7 +283,7 @@ int net_groupmap_add(int argc, const char **argv)
 	return 0;
 }
 
-int net_groupmap_modify(int argc, const char **argv)
+static int net_groupmap_modify(int argc, const char **argv)
 {
 	DOM_SID sid;
 	GROUP_MAP map;
@@ -412,7 +412,7 @@ int net_groupmap_modify(int argc, const char **argv)
 	return 0;
 }
 
-int net_groupmap_delete(int argc, const char **argv)
+static int net_groupmap_delete(int argc, const char **argv)
 {
 	DOM_SID sid;
 	fstring ntgroup = "";
@@ -464,5 +464,47 @@ int net_groupmap_delete(int argc, const char **argv)
 	d_printf("Sucessfully removed %s from the mapping db\n", ntgroup);
 
 	return 0;
+}
+
+int net_help_groupmap(int argc, const char **argv)
+{
+	d_printf("net groupmap add"\
+		"\n  Create a new group mapping\n");
+	d_printf("net groupmap modify"\
+		"\n  Update a group mapping\n");
+	d_printf("net groupmap delete"\
+		"\n  Remove a group mapping\n");
+	d_printf("net groupmap list"\
+		"\n  List current group map\n");
+	
+	return -1;
+}
+
+
+/***********************************************************
+ migrated functionality from smbgroupedit
+ **********************************************************/
+int net_groupmap(int argc, const char **argv)
+{
+	/* we shouldn't have silly checks like this */
+	if (getuid() != 0) {
+		d_printf("You must be root to edit group mappings.\nExiting...\n");
+		return -1;
+	}
+	
+	struct functable func[] = {
+		{"add", net_groupmap_add},
+		{"modify", net_groupmap_modify},
+		{"delete", net_groupmap_delete},
+		{"list", net_groupmap_list},
+		{"help", net_help_groupmap},
+		{NULL, NULL}
+	};
+
+	return net_run_function(argc, argv, func, net_help_groupmap);
+	if ( 0 == argc )
+		return net_help_groupmap( argc, argv );
+
+	return net_help_groupmap( argc, argv );
 }
 

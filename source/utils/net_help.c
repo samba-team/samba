@@ -99,36 +99,6 @@ int net_help_group(int argc, const char **argv)
 	return -1;
 }
 
-int net_help_groupmap(int argc, const char **argv)
-{
-	if (getuid() != 0) {
-		d_printf("You must be root to edit group mappings.\nExiting...\n");
-		return -1;
-	}
-	
-	d_printf("net groupmap add"\
-		"\n  Create a new group mapping\n");
-	d_printf("net groupmap modify"\
-		"\n  Update a group mapping\n");
-	d_printf("net groupmap delete"\
-		"\n  Remove a group mapping\n");
-	d_printf("net groupmap list"\
-		"\n  List current group map\n");
-	
-	return -1;
-}
-
-int net_help_idmap(int argc, const char **argv)
-{
-	d_printf("net idmap dump filename"\
-		 "\n  Dump current id mapping\n");
-
-	d_printf("net idmap restore"\
-		 "\n  Restore entries from stdin to current local idmap\n");
-
-	return -1;
-}
-
 int net_help_join(int argc, const char **argv)
 {
 	d_printf("\nnet [<method>] join [misc. options]\n"
