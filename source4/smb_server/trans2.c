@@ -119,8 +119,8 @@ static size_t trans2_pull_blob_string(struct smbsrv_request *req,
 */
 static size_t trans2_push_data_string(struct smbsrv_request *req, 
 				      struct smb_trans2 *trans,
-				      uint16_t len_offset,
-				      uint16_t offset,
+				      uint32_t len_offset,
+				      uint32_t offset,
 				      const WIRE_STRING *str,
 				      int dest_len,
 				      int flags)
@@ -193,7 +193,7 @@ static void trans2_append_data_string(struct smbsrv_request *req,
 					int flags)
 {
 	size_t ret;
-	uint16_t offset;
+	uint32_t offset;
 	const int max_bytes_per_char = 3;
 
 	offset = trans->out.data.length;
@@ -718,7 +718,7 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 		SSVAL(trans->out.params.data, 0, 0);
 
 		for (i=0;i<st->stream_info.out.num_streams;i++) {
-			uint16_t data_size = trans->out.data.length;
+			uint32_t data_size = trans->out.data.length;
 			uint8_t *data;
 
 			trans2_grow_data(req, trans, data_size + 24);
@@ -1277,7 +1277,8 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *
 		}
 	}
 
-	/* setup the private state structure that the backend will give us in the callback */
+	/* setup the private state structure that the backend will
+	   give us in the callback */
 	state.req = req;
 	state.trans = trans;
 	state.level = search.t2ffirst.level;
