@@ -47,17 +47,17 @@ struct winbindd_domain *domain_list = NULL;
 
 struct winbindd_domain *find_domain_from_name(char *domain_name)
 {
-	struct winbindd_domain *tmp;
+	struct winbindd_domain *domain;
 
 	if (domain_list == NULL)
 		get_domain_info();
 
 	/* Search through list */
 
-	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strcasecmp(domain_name, tmp->name) == 0 ||
-		    strcasecmp(domain_name, tmp->full_name) == 0)
-			return tmp;
+	for (domain = domain_list; domain != NULL; domain = domain->next) {
+		if (strcasecmp(domain_name, domain->name) == 0 ||
+		    strcasecmp(domain_name, domain->full_name) == 0)
+			return domain;
 	}
 
 	/* Not found */
@@ -69,15 +69,15 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 {
-	struct winbindd_domain *tmp;
+	struct winbindd_domain *domain;
 
 	if (domain_list == NULL)
 		get_domain_info();
 
 	/* Search through list */
-	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (sid_compare_domain(sid, &tmp->sid) == 0)
-			return tmp;
+	for (domain = domain_list; domain != NULL; domain = domain->next) {
+		if (sid_compare_domain(sid, &domain->sid) == 0)
+			return domain;
 	}
 
 	/* Not found */
@@ -90,22 +90,26 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 static struct winbindd_domain *add_trusted_domain(char *domain_name,
 						  struct winbindd_methods *methods)
 {
-	struct winbindd_domain *domain, *tmp;
+	struct winbindd_domain *domain;
         
-	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strcmp(domain_name, tmp->name) == 0) {
-			DEBUG(3, ("domain %s already in domain list\n", domain_name));
-			return tmp;
+	for (domain = domain_list; domain; domain = domain->next) {
+		if (strcmp(domain_name, domain->name) == 0) {
+			DEBUG(3, ("domain %s already in domain list\n", 
+				  domain_name));
+			return domain;
 		}
 	}
         
 	/* Create new domain entry */
-	if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
+
+	if ((domain = (struct winbindd_domain *)
+	     malloc(sizeof(*domain))) == NULL)
 		return NULL;
 
 	/* Fill in fields */
         
 	ZERO_STRUCTP(domain);
+
 	fstrcpy(domain->name, domain_name);
         domain->methods = methods;
 	domain->sequence_number = DOM_SEQUENCE_NONE;
@@ -130,7 +134,7 @@ BOOL get_domain_info(void)
 	char **names;
 	int num_domains = 0;
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("get_domain_info")))
 		return False;
 
 	domain = add_trusted_domain(lp_workgroup(), &cache_methods);
@@ -222,6 +226,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 	struct winbindd_domain *domain;
 
 	domain = find_domain_from_sid(sid);
+
 	if (!domain) {
 		DEBUG(1,("Can't find domain from sid\n"));
 		return False;
@@ -229,7 +234,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 
 	/* Lookup name */
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("winbindd_lookup_name_by_sid")))
 		return False;
         
 	result = domain->methods->sid_to_name(domain, mem_ctx, sid, &names, type);

@@ -135,7 +135,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		uint32 count = 0, start = *num_entries;
 		TALLOC_CTX *mem_ctx2;
 
-		mem_ctx2 = talloc_init();
+		mem_ctx2 = talloc_init_named("enum_dom_groups[rpc]");
 
 		status = cli_samr_enum_dom_groups(hnd->cli, mem_ctx2, &dom_pol,
 						  &start,
@@ -178,7 +178,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	uint32 *types = NULL;
 	int num_sids;
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;
         
 	if (!(hnd = cm_get_lsa_handle(domain->name)))
@@ -465,7 +465,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	*seq = DOM_SEQUENCE_NONE;
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("sequence_number[rpc]")))
 		return NT_STATUS_NO_MEMORY;
 
 	/* Get sam handle */
@@ -539,7 +539,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	CLI_POLICY_HND *hnd;
 	fstring level5_dom;
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("domain_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;
 
 	/* Get sam handle */

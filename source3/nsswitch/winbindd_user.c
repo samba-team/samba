@@ -93,7 +93,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 
 /* Return a password structure from a username.  */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state) 
 {
 	uint32 user_rid;
 	WINBIND_USERINFO user_info;
@@ -114,7 +114,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 		return WINBINDD_ERROR;
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
-		DEBUG(5, ("No such domain: %s\n", name_domain));
+		DEBUG(5, ("no such domain: %s\n", name_domain));
 		return WINBINDD_ERROR;
 	}
 
@@ -137,24 +137,28 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 	   from the winbind_lookup_by_name() call and use it in a
 	   winbind_lookup_userinfo() */
     
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init_named("winbindd_getpwnam(%s)", 
+					  name_user))) {
 		DEBUG(1, ("out of memory\n"));
 		return WINBINDD_ERROR;
 	}
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	status = domain->methods->query_user(domain, mem_ctx, user_rid, &user_info);
+	status = domain->methods->query_user(domain, mem_ctx, user_rid, 
+					     &user_info);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("pwnam_from_user(): error getting user info for "
-			  "user '%s'\n", name_user));
+		DEBUG(1, ("error getting user info for user '%s'\n", 
+			  name_user));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
     
 	/* Now take all this information and fill in a passwd structure */	
 	if (!winbindd_fill_pwent(name_domain, state->request.data.username, 
-				 user_rid, user_info.group_rid, user_info.full_name,
+				 user_rid, user_info.group_rid, 
+				 user_info.full_name,
 				 &state->response.data.pw)) {
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
@@ -167,7 +171,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 
 /* Return a password structure given a uid number */
 
-enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
@@ -192,7 +196,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 
 	if (!winbindd_idmap_get_rid_from_uid(state->request.data.uid, 
 					     &user_rid, &domain)) {
-		DEBUG(1, ("Could not convert uid %d to rid\n", 
+		DEBUG(1, ("could not convert uid %d to rid\n", 
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
 	}
@@ -206,7 +210,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 		fstring temp;
 		
 		sid_to_string(temp, &user_sid);
-		DEBUG(1, ("Could not lookup sid %s\n", temp));
+		DEBUG(1, ("could not lookup sid %s\n", temp));
 		return WINBINDD_ERROR;
 	}
 	
@@ -216,15 +220,19 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 
 	/* Get some user info */
 	
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init_named("winbind_getpwuid(%d)",
+					  state->request.data.uid))) {
+
 		DEBUG(1, ("out of memory\n"));
 		return WINBINDD_ERROR;
 	}
 
-	status = domain->methods->query_user(domain, mem_ctx, user_rid, &user_info);
+	status = domain->methods->query_user(domain, mem_ctx, user_rid, 
+					     &user_info);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
-			  "user '%s'\n", user_name));
+		DEBUG(1, ("error getting user info for user '%s'\n", 
+			  user_name));
 		return WINBINDD_ERROR;
 	}
 	
@@ -255,7 +263,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *tmp;
+	struct winbindd_domain *domain;
         
 	DEBUG(3, ("[%5d]: setpwent\n", state->pid));
         
@@ -276,7 +284,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 	if (domain_list == NULL)
 		get_domain_info();
 
-	for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+	for(domain = domain_list; domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
                 
 		/*
@@ -285,17 +293,19 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 		 */
                 
 		if ((strcmp(state->request.domain, "") != 0) &&
-				!check_domain_env(state->request.domain, tmp->name))
+				!check_domain_env(state->request.domain, 
+						  domain->name))
 			continue;
 
 		/* Create a state record for this domain */
                 
-		if ((domain_state = (struct getent_state *)malloc(sizeof(struct getent_state))) == NULL)
+		if ((domain_state = (struct getent_state *)
+		     malloc(sizeof(struct getent_state))) == NULL)
 			return WINBINDD_ERROR;
                 
 		ZERO_STRUCTP(domain_state);
 
-		domain_state->domain = tmp;
+		domain_state->domain = domain;
 
 		/* Add to list of open domains */
                 
@@ -338,7 +348,8 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	if (ent->num_sam_entries)
 		return False;
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("get_sam_user_entries(%s)",
+					  ent->domain->name)))
 		return False;
 
 	methods = ent->domain->methods;
@@ -363,7 +374,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 						       num_entries));
 		
 		if (!tnl) {
-			DEBUG(0,("get_sam_user_entries: Realloc failed.\n"));
+			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
 			SAFE_FREE(name_list);
 			goto done;
 		} else
@@ -531,7 +542,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
 
-	if (!(mem_ctx = talloc_init()))
+	if (!(mem_ctx = talloc_init_named("winbindd_list_users")))
 		return WINBINDD_ERROR;
 
 	/* Enumerate over trusted domains */
@@ -566,7 +577,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		ted = Realloc(extra_data, sizeof(fstring) * total_entries);
 			
 		if (!ted) {
-			DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
+			DEBUG(0,("failed to enlarge buffer!\n"));
 			SAFE_FREE(extra_data);
 			goto done;
 		} else 
