@@ -26,33 +26,47 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 bindir = @bindir@
+includedir = @includedir@
 
 PICFLAGS = @PICFLAGS@
  
-PROGS = compile_et
 LIBNAME = $(LIBPREFIX)com_err
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
-LIB = $(LIBNAME).$(LIBEXT)
+lib_LIBRARIES = $(LIBNAME).$(LIBEXT)
+bin_PROGRAMS = compile_et
+include_HEADERS = com_right.h com_err.h
 
 SOURCES = error.c com_err.c
 OBJECTS = error.o com_err.o
 
-all: $(LIB) $(PROGS)
+all: $(lib_LIBRARIES) $(bin_PROGRAMS) $(include_HEADERS)
 
 Wall:
 	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
+	$(CC) -c $(DEFS) -I../../include -I. -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
+	$(MKINSTALLDIRS) $(includedir)
+	@for i in $(include_HEADERS); do \
+	if test -f "$(srcdir)/$$i" ; then x="$(srcdir)/$$i"; \
+	else x="$$i"; fi ;\
+	echo "$(INSTALL_DATA) $$x $(includedir)" ;\
+	$(INSTALL_DATA) $$x $(includedir) ; done
+
 	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
+	@for i in $(lib_LIBRARIES); do \
+	echo "$(INSTALL) -m 0555 $$i $(libdir)" ;\
+	$(INSTALL) -m 0555 $$i $(libdir) ; done
+
 	$(MKINSTALLDIRS) $(bindir)
-	$(INSTALL_DATA) -m 0555 $(PROGS) $(bindir)
+	@for i in $(bin_PROGRAMS); do \
+	echo "$(INSTALL) -m 0555 $$i $(bindir)" ;\
+	$(INSTALL) -m 0555 $$i $(bindir) ; done
 
 uninstall:
 	rm -f $(libdir)/$(LIB)
@@ -61,7 +75,8 @@ TAGS: $(SOURCES)
 	etags $(SOURCES)
 
 clean:
-	rm -f $(LIB) *.o *.a krb_err.c krb_err.h $(PROGS)  $(EXTRA_SOURCE)
+	rm -f $(LIB) *.o *.a krb_err.c krb_err.h parse.h parse.c lex.c \
+	$(lib_LIBRARIES) $(bin_PROGRAMS)
 
 mostlyclean: clean
 
@@ -86,6 +101,19 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS) $(LDOBJ)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LDOBJ) $(LIBDES)
 
-compile_et: $(srcdir)/compile_et.in
-	sed -e 's/@awk@/$(AWK)/' -e "/#awksrc/r $(srcdir)/compile_et.awk" $(srcdir)/compile_et.in > compile_et
-	chmod +x compile_et
+
+COBJ = compile_et.o parse.o lex.o
+
+$(COBJ): parse.h
+
+compile_et: $(COBJ)
+	$(CC) -o compile_et $(COBJ) -L../roken -lroken
+
+parse.c parse.h: $(srcdir)/parse.y
+	$(YACC) -d $(srcdir)/parse.y
+	mv -f y.tab.h parse.h
+	mv -f y.tab.c parse.c
+
+lex.c: $(srcdir)/lex.l
+	$(LEX) $(srcdir)/lex.l
+	mv -f lex.yy.c lex.c
