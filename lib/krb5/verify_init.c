@@ -170,7 +170,7 @@ krb5_verify_init_creds(krb5_context context,
 	    || krb5_config_get_bool (context->cf,
 				     "libdefaults",
 				     "verify_ap_req_nofail",
-				     NULL))
+				     NULL)) {
 	    goto cleanup;
 	} else {
 	    ret = 0;
