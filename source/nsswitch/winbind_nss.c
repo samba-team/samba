@@ -25,8 +25,12 @@
 #include "winbind_nss_config.h"
 #include "winbindd_nss.h"
 
-/* prototypes from common.c */
+/* Prototypes from common.c */
+
 void init_request(struct winbindd_request *req,int rq_type);
+enum nss_status generic_request(int req_type, 
+				struct winbindd_request *request,
+				struct winbindd_response *response);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 
@@ -57,10 +61,6 @@ static char *get_static(char **buffer, int *buflen, int len)
 /* I've copied the strtok() replacement function next_token() from
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
-
-#ifdef strchr /* Aargh! This points at multibyte_strchr(). )-: */
-#undef strchr
-#endif
 
 static char *last_ptr = NULL;
 
@@ -102,38 +102,6 @@ BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
     last_ptr = *ptr;
   
     return(True);
-}
-
-
-/* handle simple types of requests */
-static enum nss_status generic_request(int req_type, 
-				       struct winbindd_request *request,
-				       struct winbindd_response *response)
-{
-	struct winbindd_request lrequest;
-	struct winbindd_response lresponse;
-
-	if (!response) response = &lresponse;
-	if (!request) request = &lrequest;
-	
-	/* Fill in request and send down pipe */
-	init_request(request, req_type);
-	
-	if (write_sock(request, sizeof(*request)) == -1) {
-		return NSS_STATUS_UNAVAIL;
-	}
-	
-	/* Wait for reply */
-	if (read_reply(response) == -1) {
-		return NSS_STATUS_UNAVAIL;
-	}
-
-	/* Copy reply data from socket */
-	if (response->result != WINBINDD_OK) {
-		return NSS_STATUS_NOTFOUND;
-	}
-	
-	return NSS_STATUS_SUCCESS;
 }
 
 /* Fill a pwent structure from a winbindd_response structure.  We use
@@ -291,7 +259,8 @@ static int fill_grent(struct group *result,
 
     i = 0;
 
-    while(next_token(&response->extra_data, name, ",", sizeof(fstring))) {
+    while(next_token((char **)&response->extra_data, name, ",", 
+		     sizeof(fstring))) {
         
         /* Allocate space for member */
         
@@ -378,10 +347,12 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 	struct winbindd_response response;
 	struct winbindd_request request;
 
-	strncpy(request.data.username, name, sizeof(request.data.username) - 1);
+	strncpy(request.data.username, name, 
+		sizeof(request.data.username) - 1);
 	request.data.username[sizeof(request.data.username) - 1] = '\0';
 
-	ret = generic_request(WINBINDD_GETPWNAM_FROM_USER, &request, &response);
+	ret = generic_request(WINBINDD_GETPWNAM_FROM_USER, &request, 
+			      &response);
 	if (ret != NSS_STATUS_SUCCESS) return ret;
 
 	return fill_pwent(result, &response, &buffer, &buflen, errnop);
@@ -406,8 +377,6 @@ _nss_winbind_endgrent(void)
 {
 	return generic_request(WINBINDD_ENDGRENT, NULL, NULL);
 }
-
-
 
 /* Get next entry from ntdom group database */
 
@@ -438,7 +407,9 @@ _nss_winbind_getgrnam_r(const char *name,
 	strncpy(request.data.groupname, name, sizeof(request.data.groupname));
 	request.data.groupname[sizeof(request.data.groupname) - 1] = '\0';
 
-	ret = generic_request(WINBINDD_GETGRNAM_FROM_GROUP, &request, &response);
+	ret = generic_request(WINBINDD_GETGRNAM_FROM_GROUP, &request, 
+			      &response);
+
 	if (ret != NSS_STATUS_SUCCESS) return ret;
 
 	return fill_grent(result, &response, &buffer, &buflen, errnop);
