@@ -414,7 +414,7 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 		return 0x0;
 	}
 
-	unix_uid = uid_to_user_rid(rid);
+	unix_uid = pdb_uid_to_user_rid(rid);
 	DEBUG(5,(" uid: %d", unix_uid));
 
 	/* ok, it's a user.  find the user account */

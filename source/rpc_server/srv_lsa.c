@@ -372,7 +372,7 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	for (i = 0; i < q_l.num_entries; i++)
 	{
 		char *user_name = unistr2(q_l.lookup_name[i].str.buffer);
-		if (!name_to_rid(user_name, &dom_rids[i], &dummy_g_rid))
+		if (!pdb_name_to_rid(user_name, &dom_rids[i], &dummy_g_rid))
 		{
 			/* WHOOPS!  we should really do something about this... */
 			dom_rids[i] = 0;

@@ -725,7 +725,7 @@ static void api_net_sam_logon( int uid,
 
     sam_logon_in_ssb = False;
 
-    if (name_to_rid(samlogon_user, &r_uid, &r_gid))
+    if (pdb_name_to_rid(samlogon_user, &r_uid, &r_gid))
     {
       make_net_user_info3(&usr_info,
                           &dummy_time, /* logon_time */

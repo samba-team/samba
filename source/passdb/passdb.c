@@ -532,7 +532,7 @@ time_t pdb_get_last_set_time(char *p)
 /*******************************************************************
  sets password-database-format time in a string.
  ********************************************************************/
-static set_time_in_string(char *p, int max_len, char *type, time_t t)
+static void set_time_in_string(char *p, int max_len, char *type, time_t t)
 {
 	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
 }
@@ -679,11 +679,11 @@ BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 	{
 		/* turn the unix UID into a Domain RID.  this is what the posix
 		   sub-system does (adds 1000 to the uid) */
-		*u_rid = uid_to_user_rid(pw->pw_uid);
+		*u_rid = pdb_uid_to_user_rid(pw->pw_uid);
 	}
 
 	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
-	*g_rid = gid_to_group_rid(pw->pw_gid);
+	*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
 
 	return True;
 }
