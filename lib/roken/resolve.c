@@ -203,6 +203,7 @@ parse_reply(unsigned char *data, int len)
 	p += size;
 	rr = &(*rr)->next;
     }
+    *rr = NULL;
     return r;
 }
 
