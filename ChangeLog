@@ -1,5 +1,8 @@
 Thu Feb 12 03:28:40 1998  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_in_tkt.c (_krb5_extract_ticket): if time difference
+ 	is larger than max_skew, return KRB5KRB_AP_ERR_SKEW
+
 	* lib/kadm5/log.c (get_version): globalize
 
 	* lib/kadm5/kadm5_locl.h: include <sys/file.h>
